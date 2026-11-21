@@ -73,9 +73,8 @@ From `Constructs/Categories.json` and the part files:
 - **Stripes and markings**: the `hazard paint` finish; Bay Marking, Lane Marking, Kick Plate (interior dressing).
 - **Panels and services**: Wall Rib, Pipe Bank, Duct Run, Cable Tray Run, Tool Board; Fender, Bumper, Hubcap Plate.
 - **Chimneys and stacks**: Medium Chimney and Smokestack (1x2 to 2x8 m), Large (4x8 to 8x32 m), Capital (16x32 to 32x128 m).
-- **Clutter and identity** ("Body panels"): Satellite Dish, Router Antenna, Wi-Fi Mast, Phone Mast, Loudhailer, Cable Reel,
-  Traffic Cone, Queue Post, Office Plant, Desk Fan, Teapot, Wee Keg; faction pieces: Saltire Flag, Union Flag, Thistle,
-  Haggis on a Post, Wee Caber, Skull Trophy, Horned Skull, Iron Spike, Gift Card Sign, Employee of the Month.
+- **Clutter and identity** ("Body panels"): Satellite Dish, Router Antenna, Wi-Fi Mast, Phone Mast, Loudhailer,
+  Traffic Cone, Garden Gnome, Office Plant, Desk Fan, Network Switch; raider pieces: Skull Trophy, Horned Skull, Iron Spike.
 - **Furniture** (interiors): Locker, Tool Rack, Gun Rack, Mess Table, Chart Table, Galley Stove, Medical Station.
 
 ## Rules of thumb

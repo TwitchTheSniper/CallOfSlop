@@ -248,7 +248,7 @@ public sealed partial class Vehicle
         }
     }
 
-    /// <summary>A Highland chrome grille on a lofted hood's nose, where the plan's nose is a grille or none (a ram or a bull bar keeps the socket), on its own fork.</summary>
+    /// <summary>A chrome grille on a lofted hood's nose, where the plan's nose is a grille or none (a ram or a bull bar keeps the socket), on its own fork.</summary>
     private bool ChromeGrille(VPart hood)
     {
         var rule = Rule;

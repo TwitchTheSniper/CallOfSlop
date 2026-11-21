@@ -52,6 +52,10 @@ The Traders' freighter: a glass-nosed crew cab, a hull-only spine with three car
 
 The farmers' medium hauler in a combine harvester's clothes: a glass cab room standing out on the nose, a crew block, six standard containers in a bay open to the sky inside a raised tank coaming, an engine box with exhaust stacks and two low drive pods.
 
+## [The Dibber lander](constructs/dibber.md), 3 KB
+
+The farmers' small vertical lander: an eight-sided capsule on end on four jointed legs, a glass cab low on the nose, two decks (cockpit and belly hatch below, systems above), one belly jet and a trim jet under each leg.
+
 ## [The Satchel courier](constructs/courier.md), 2 KB
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.

@@ -39,7 +39,7 @@ public static class CrewFleetCheck
             ok &= CrewAdmiralsCheck.Run(args); // (phase 6: a player's hired ships escort their mining ship, CrewAdmiralsCheck.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
-                int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1",
+                int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "IT Helicopter 3",
                 seconds > 0 ? seconds : 5, float.TryParse(Arg("--fleet-spread"), out var sp) ? sp : 0, byte.TryParse(Arg("--far-every"), out var fe) ? fe : ConstructFar.Every);
         Console.WriteLine($"fleet: {(ok ? "OK" : "FAILED")}");
         return ok ? 0 : 1;
@@ -206,7 +206,7 @@ public static class CrewFleetCheck
         var q = new SelfTest.DriveWorld();
         var crew = new CrewWorld();
         var power = CrewPowers.ForKindName(kind);
-        var bp = Bp("Bandit Helicopter 1");
+        var bp = Bp("IT Helicopter 3");
         var ships = new List<Construct>();
         for (var i = 0; i < 3; i++)
         {
@@ -254,11 +254,11 @@ public static class CrewFleetCheck
         return ok;
     }
 
-    /// <summary>A spawner-style convoy (four Bandit ground vehicles, Militia) under an admiral: sent 300 m out, then a strong frigate appears and the admiral weighs it.</summary>
+    /// <summary>A spawner-style convoy (four IT ground vehicles, Militia) under an admiral: sent 300 m out, then a strong frigate appears and the admiral weighs it.</summary>
     private static bool Convoy(int seconds)
     {
         Console.WriteLine("fleet convoy: four Militia ground vehicles as a convoy under an admiral; sent off at 5 s; a hostile Zero Day near at 45 s");
-        var names = new[] { "Bandit Gun Wagon 1", "Bandit Buggy 1", "Bandit Car 1", "Bandit Monster Truck 1" };
+        var names = new[] { "IT Gun Wagon 1", "IT Buggy 1", "IT Buggy 3", "IT Buggy 6" };
         var place = VehicleDriveCheck.Place(1);
         var w = new ConstructWorld();
         var q = new SelfTest.DriveWorld();
@@ -308,7 +308,7 @@ public static class CrewFleetCheck
             Tick(crew, w, q, place, people);
             Flush(crew);
             if (t > 15 * World.TickRate && t < 45 * World.TickRate)
-                for (var k = 2; k < bodies.Count; k++) // (as phase 2's convoy check: the Bandit Buggy second in line is slow to its place)
+                for (var k = 2; k < bodies.Count; k++) // (as phase 2's convoy check: the Raider Buggy second in line is slow to its place)
                     if (crew.ShipOf(bodies[k].Id)?.Ai is { State: var st } && (st.StartsWith("following", StringComparison.Ordinal) || st.StartsWith("ordered: form", StringComparison.Ordinal)))
                     {
                         gapSum += MathF.Abs(float.Parse(st.Split(' ')[st.StartsWith("following", StringComparison.Ordinal) ? 1 : 2].TrimEnd(','), System.Globalization.CultureInfo.InvariantCulture));
@@ -328,7 +328,7 @@ public static class CrewFleetCheck
     /// <summary>A civilian mining group (three Traders helicopters): mine at one place 10 s, deliver at another 10 s, round again.</summary>
     private static bool Mining(int seconds)
     {
-        Console.WriteLine("fleet mining: three Traders Zero Days on a route: mine 900 m north (10 s), deliver at home (10 s), again (helicopters fly poorly under the crews' flying: their noses wander, as in --crew-check \"Bandit Helicopter 1\")");
+        Console.WriteLine("fleet mining: three Traders Zero Days on a route: mine 900 m north (10 s), deliver at home (10 s), again (helicopters fly poorly under the crews' flying: their noses wander, as in --crew-check \"IT Helicopter 3\")");
         var place = VehicleDriveCheck.Place(1);
         var w = new ConstructWorld();
         var q = new SelfTest.DriveWorld();
@@ -384,7 +384,7 @@ public static class CrewFleetCheck
         var b = new List<Construct>();
         for (var i = 0; i < 5; i++)
         {
-            var c = CrewCheck.Build(w, Bp("Bandit Helicopter 1"), new Vector3(i * 60 + (i >= 3 ? 2000 : 0), 0, 0), 0, place);
+            var c = CrewCheck.Build(w, Bp("IT Helicopter 3"), new Vector3(i * 60 + (i >= 3 ? 2000 : 0), 0, 0), 0, place);
             crew.Crew(c, ShipAiMode.Everyone, faction: power);
             (i < 3 ? a : b).Add(c);
         }

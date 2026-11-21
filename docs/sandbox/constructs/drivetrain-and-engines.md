@@ -680,12 +680,12 @@ is made as before (`--gen-vehicles`: 238 identical). A generator sets `Vehicle.A
   (`EngineWish.GripLimitKwPerTonne`, proposed: about 28 m/s, so tiers 3-5), falling back to two-wheel drive when the layout refuses.
   `--2wd` keeps two. `--gen-vehicles`: 238 identical.
 
-Measured (`--speed-test`, tier 5 kit engine asking 36 m/s, Bandit Technical seeds 1, 6, 13): two-wheel drive 25.5, 29.2, 30.2 m/s, all
+Measured (`--speed-test`, tier 5 kit engine asking 36 m/s, Raider Technical seeds 1, 6, 13): two-wheel drive 25.5, 29.2, 30.2 m/s, all
 grip-limited; all-wheel drive 34.2, 35.2, 32.5 m/s, limited by power against drag; 0-20 m/s in 2.6, 1.8, 1.8 s (was 6.7, 4.2, 4.0).
 Each passed the spawn drive check. Seed 6's tyres set by blueprint to a dry grip of 0.4 g and 1.6 g (two-wheel drive): 15.7 and 37.3 m/s.
 
-Phase 2 (tier 5 asking 36 m/s; top m/s, 0-20 m/s s, two-wheel drive then all-wheel drive): Bandit Technical 1 25.5 / 6.7 then
-34.2 / 2.6; Technical 23 (0.75 m wing) 23.0 / 8.9 then 26.8 / 5.2; Bandit War Bus 1 26.8 / 5.2 then 29.2 / 2.2; Highland Giant Truck 8
+Phase 2 (tier 5 asking 36 m/s; top m/s, 0-20 m/s s, two-wheel drive then all-wheel drive): Raider Technical 1 25.5 / 6.7 then
+34.2 / 2.6; Technical 23 (0.75 m wing) 23.0 / 8.9 then 26.8 / 5.2; Raider War Bus 1 26.8 / 5.2 then 29.2 / 2.2; a Giant Truck
 (tandem, 6 of 6 driven) 25.5 / 6.6 then 26.7 / 3.0. Every two-wheel twin is grip-limited, every all-wheel one power against drag.
 
 **Tyre settings** were already there ("The tyre's settings" above): dry, dirt and side grip, rolling drag and bounciness.
@@ -706,8 +706,8 @@ Phase 3 (feat/wheels-3, 2026-11-11):
   width is the load on each wheel over `FormedLoadPerM2` (1600 kg per metre of width per metre of diameter, proposed; 0.2 to 1 m). A width that
   won't go in falls back to the catalogue wheel's width. Rubber, or steel for a wheel that can't go flat. The vehicle is weighed first with its
   catalogue wheels. Named "... [formed wheels]". Off-road tyres are rubber too: Extrusion.json has no off-road `wheels` row yet.
-  Measured (`--speed-test`, 25 s, stock V8; catalogue then formed): Bandit Technical 1 23.9 / 24.3 m/s, 0-20 m/s 4.9 / 4.6 s (25x90 rubber
-  front, 30x85 steel rear); Bandit War Bus 1 17.5 / 17.5 (35x110, 40x90 rubber); Highland Giant Truck 8 17.1 / 17.0 (35x110 rubber, 45x85 steel).
+  Measured (`--speed-test`, 25 s, stock V8; catalogue then formed): Raider Technical 1 23.9 / 24.3 m/s, 0-20 m/s 4.9 / 4.6 s (25x90 rubber
+  front, 30x85 steel rear); Raider War Bus 1 17.5 / 17.5 (35x110, 40x90 rubber); a Giant Truck 17.1 / 17.0 (35x110 rubber, 45x85 steel).
   All six passed the drive check.
 - **All-wheel drive on the Gun Wagon.** The refusal was not the T Gearbox. `Vehicle.RailZ` counted rows from `FrontAxleZ`, which all-wheel drive
   moves an eighth ahead of the rails, so every bed sill was asked for between two sockets. It now counts from `Vehicle.RailGrid`, the rails' own

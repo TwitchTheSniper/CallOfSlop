@@ -110,6 +110,14 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
 - The block is rewritten at most three times a frame (`glBufferSubData`): the world pass (mode 1, the grid at each
   pixel), the first-person gun (mode 2: drawn in camera space, so the CPU samples the grid once at the eye and turns the
   light's direction into view space) and menus and previews (mode 0, the classic light; every frame starts there).
+- **Sun shadows from constructs** (`SunShadows.cs`, Karl 2026-11-21, phase 5 of the ship looks): the grid's sun visibility covers
+  the static world only, so before each world pass (`Program.DrawSunShadows`, ahead of `BeginWorld`) the 12 nearest bodies' boxes
+  are drawn from the key light into one depth map (2048 or 4096, a 96 m square a little ahead of the camera, snapped to texels).
+  The block carries its matrix (`uShadowVP`, relative to `uShadowC`), the normal offset, the depth sign and bias (`uShadowQ`) and
+  the key light's multiplier (`uKeyQ`); the map sits on texture unit 20 (`uSunShadow`, don't reuse it). `SunShadow(p, n)` in
+  `Lighting.Glsl` (12 taps, rotated per pixel, fading out at the map's edge) multiplies the sun in every mode but the gun's probe;
+  `Off()` and the gun's pass leave it off. Settings > Video > Sun shadows (Low off), Key light (0.7-1.6x); `--no-sun-shadows`.
+  Moving parts cast at rest, glass doesn't cast, and wedge shapes cast as their whole box.
 - `LitGrid(p, n)` reads the grid for a surface (C# twin: `LightBake.SampleSurface`): a little over half a cell along the
   normal, with the GPU's own trilinear filtering, unless the 8 cells round that point are a mixed block (one texel
   fetch of the low corner's flags). Then it filters them itself, leaving out cells inside boxes, cells behind the

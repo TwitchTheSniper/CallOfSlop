@@ -1,5 +1,7 @@
 # The Engine Kit (Source/EngineKit)
 
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+
 A request for an engine (power, torque, fit, mass, layout, tier, seed) and a built modular engine back: the modular engine's
 own pieces (docs/sandbox/CONSTRUCTS.md "Modular engines") put together through the game's build rules (the vehicle kit's
 `BlueprintScript`), with the numbers the game itself works out for it. It is in C#: the first native generator, which the
@@ -12,14 +14,13 @@ they are and what tops them out (`Source/EngineKit/EngineKitSpeed.cs`). Measured
 
 | Vehicle | Mass kg | Engine | Peak kW | Gears x final | Wheel r m | Top m/s | 0-10 s | 0-20 s | Gear at top | rpm at top | Gearing's top m/s | Drag kW at top |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| BanditCar1 | 1653 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 24.6 | 2.0 | 6.5 | 3/4 | 5512 | 39.2 | 147 |
+| RaiderCar1 | 1653 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 24.6 | 2.0 | 6.5 | 3/4 | 5512 | 39.2 | 147 |
 | ITCar1 | 1451 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 25.4 | 2.0 | 6.6 | 3/4 | 5707 | 39.2 | 143 |
-| HighlandCar1 | 1500 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 24.4 | 1.3 | 4.5 | 3/4 | 5473 | 39.2 | 131 |
-| BritishTechnical2 | 1439 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 26.1 | 1.4 | 4.4 | 4/4 | 4087 | 39.2 | 153 |
-| ScamTechnical1 | 1595 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 24.4 | 1.5 | 4.8 | 3/4 | 5478 | 39.2 | 139 |
-| BanditBoxTruck1 | 2475 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 19.3 | 1.6 | - | 3/4 | 4334 | 39.2 | 107 |
+| MercenaryTechnical2 | 1439 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 26.1 | 1.4 | 4.4 | 4/4 | 4087 | 39.2 | 153 |
+| SalvagerTechnical1 | 1595 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 24.4 | 1.5 | 4.8 | 3/4 | 5478 | 39.2 | 139 |
+| RaiderBoxTruck1 | 2475 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 19.3 | 1.6 | - | 3/4 | 4334 | 39.2 | 107 |
 | ITBoxTruck1 | 2492 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.1 | 0.55 | 20.8 | 2.1 | 8.9 | 2/4 | 4730 | 53.7 | 134 |
-| BanditWarBus1 | 3448 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 17.5 | 2.5 | - | 2/4 | 5468 | 39.2 | 111 |
+| RaiderWarBus1 | 3448 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 17.5 | 2.5 | - | 2/4 | 5468 | 39.2 | 111 |
 | ITWarBus1 | 4401 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.6 | 0.45 | 15.2 | 3.4 | - | 2/4 | 4729 | 39.2 | 92 |
 | ITBuggy1 | 1272 | V8 Engine | 218 | 4.6/3.2/2.3/1.7 x 4.1 | 0.55 | 25.7 | 1.1 | 3.1 | 3/4 | 4190 | 53.7 | 129 |
 
@@ -191,19 +192,19 @@ What happens (`VehicleRegistry.WithKitEngine`, `Vehicle.KitEngine.cs`):
 3. The flywheel stands on the engine sill by its `-y` where the stock engine would (centre at the same height), the gearbox on its `+z`,
    the cranks run forward, the fuel pipe goes to its "Fuel in" and the Driving Module's wire to it. No hood: the cylinders stand open.
    A refused piece fails the generation (the spawner rerolls; the command line prints why).
-4. Named with the wish (`Bandit War Bus 1 [engine tier 4, 33 m/s]`, never a committed file), a kit line note, and the spawn's drive check
+4. Named with the wish (`Raider War Bus 1 [engine tier 4, 33 m/s]`, never a committed file), a kit line note, and the spawn's drive check
    (`DriveGate`). The first request's warm-up is in `VehicleGenJob.Warm` (11-21 ms after the Technical, measured on a loaded box).
 
 ### Measured (2026-11-11, `--speed-test`, 40 s on the drive check's hard floor)
 
 | Vehicle | Engine | kW (x V8) | Mass kg | Top m/s | 0-10 s | 0-20 s | Limit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Bandit Technical 1 (stock) | V8 | 218 | 1598 | 23.9 | 1.4 | 4.9 | power against drag |
+| Raider Technical 1 (stock) | V8 | 218 | 1598 | 23.9 | 1.4 | 4.9 | power against drag |
 | tier 3, 30 m/s | V8 bored | 416 (1.9x) | 1713 | 26.1 | 1.9 | 6.3 | grip |
 | tier 4, 33 m/s | V8 performance, injected | 614 (2.8x) | 1731 | 25.9 | 2.0 | 6.4 | grip |
 | tier 5, 36 m/s | V8 racing, injected | 768 (3.5x) | 1754 | 25.5 | 2.0 | 6.7 | grip |
 | tier 5, 45 m/s | | 960 (4.4x) | 1876 | 22.6 | 2.6 | 9.6 | grip |
-| Bandit War Bus 1 (stock) | V8 | 218 | 3448 | 17.5 | 2.5 | - | power against drag |
+| Raider War Bus 1 (stock) | V8 | 218 | 3448 | 17.5 | 2.5 | - | power against drag |
 | tier 3, 22 m/s | V6 bored, injected | 374 (1.7x) | 3021 | 21.9 | 1.9 | 5.6 | power against drag: as predicted |
 | tier 3, 30 m/s | V10 bored | 624 (2.9x) | 3244 | 26.8 | 1.8 | 5.2 | grip |
 | tier 4 / 5 | V10 | 768 / 960 (3.5x / 4.4x) | 3272 / 3300 | 26.8 | 1.8 | 5.2 | grip |
@@ -237,9 +238,8 @@ note says what was added. At tier 5 (36 m/s, all-wheel drive):
 
 | Vehicle | Burn l/s | Fuel l | Added | Full power |
 | --- | --- | --- | --- | --- |
-| Bandit Technical 1 | 0.324 | 360 | 2 behind | 18.5 min |
-| Bandit War Bus 1 | 0.406 | 400 | 3 behind (hull skirts between the axles) | 16.4 min |
-| Highland Giant Truck 8 | 0.406 | 400 | 2 between, 1 behind | 16.4 min |
+| Raider Technical 1 | 0.324 | 360 | 2 behind | 18.5 min |
+| Raider War Bus 1 | 0.406 | 400 | 3 behind (hull skirts between the axles) | 16.4 min |
 
 ## Generator sets
 
@@ -276,6 +276,6 @@ down (`EngineKitGenset.Request`: the heads' shafts stand 0.5 m over the floor); 
    if mediums need more in less room, add a "Small x2" size (scale 2, about 300 kW a cylinder) to the rules and the kit.
 4. **Gearing for fast vehicles.** The Automatic Gearbox's top gear (1.7) with a 4.1-4.6 final drive allows 39-54 m/s; enough for
    35 m/s cars. Its upshift waits for 90% of the limiter, past the petrol peak: a kit car could set its own.
-5. **Faction flavour.** Only `Paint` today; a style could prefer layouts (a Bandit's exposed V, a Highland inline) by scoring.
+5. **Faction flavour.** Only `Paint` today; a style could prefer layouts (a Raider's exposed V, another's inline) by scoring.
 6. **engine_parts.py is retired.** The part kit's `--gen-parts engine_parts` (`Source/PartKit/Generators/EngineParts.cs`) writes the 40 plain
    pieces and `ModularEngine.json`, byte for byte as the Python did. The tier cylinders read the plain cylinder's file, so they follow it.

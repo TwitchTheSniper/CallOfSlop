@@ -133,7 +133,7 @@ public static class ShapeGrammar
         ["Gun Wagon"] = new("Gun Wagon", "crew", "gun wagon",
             [new(3, Hutch), new(1, GunBay, GunBed(2f, 3f)), new(1, Room(0, 0), GunBed(2f, 3f))],
             [("bare", 2), ("porch", 2), ("porch hitch", 1), ("hitch", 1)], 1, 2),
-        // (phase 5: the British double decker, made by the grammar since its upper deck can be lofted: an open-topped deck over a long room, as kit 1's was, behind a
+        // (phase 5: the Mercenary double decker, made by the grammar since its upper deck can be lofted: an open-topped deck over a long room, as kit 1's was, behind a
         // bulwark in the bus's own lines; a stern gun deck more often than not, since the deck takes the roof a turret would stand on)
         ["Double Decker"] = new("Double Decker", "bus", "double-decker bus",
             [new(1, Room(3, 4))],
@@ -1140,7 +1140,7 @@ public static class ShapeGrammar
                         front += 0.25f;
                     var barrel = MathF.Round(s.Len);
                     // (phase 9b: the barrel stood on its front foot's sill, and a front over the rear axle or a station took that sill away and left it nowhere to
-                    // stand (Bandit and Highland Scrap Tanker 3): the front steps back a row at a time, up to 0.75 m, until every cradle can go in, and failing
+                    // stand (Raider Scrap Tanker 3 and another): the front steps back a row at a time, up to 0.75 m, until every cradle can go in, and failing
                     // that the barrel stands on the first cradle there is)
                     bool Fits(float f)
                     {

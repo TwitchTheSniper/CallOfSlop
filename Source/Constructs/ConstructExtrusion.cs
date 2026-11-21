@@ -600,7 +600,7 @@ public static class Extrusion
         var lathe = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = WheelSides, Inner = -1 });
         var volume = WheelVolume(k);
         var d = Stats(k, new ExtrusionMaterial(row.Material, row.UnitsPerM3, row.HealthPerM3, row.ArmourPerCm, row.MaxArmour, row.Class), 0, volume, across * 0.1f,
-            $"A wheel off a Wheel Former: {across:0.##} m across, {wide:0.##} m wide, of {names.NameOf(k.Material)}.");
+            $"A wheel off a Grow Former: {across:0.##} m across, {wide:0.##} m wide, of {names.NameOf(k.Material)}.");
         d.Boxes =
         [
             new CPartBox(solid, new Vector3(middle, r * 0.92f, r * 0.38f), tyre, Hidden: true, Paintable: false),
@@ -696,7 +696,7 @@ public static class Extrusion
         var cloth = row.Class == "cloth";
         float chord = k.W / 100f, span = k.L / 100f, half = chord * 0.5f, thick = MathF.Max(0.04f, chord * 0.08f);
         var skin = names.ColourOf(k.Material);
-        var d = Stats(k, row, 0, WingVolume(k), thick, $"{kind.Label} off an Airframe Former: {chord:0.##} m of chord, {span:0.##} m of span, of {names.NameOf(k.Material)}.");
+        var d = Stats(k, row, 0, WingVolume(k), thick, $"{kind.Label} off a Grow Former: {chord:0.##} m of chord, {span:0.##} m of span, of {names.NameOf(k.Material)}.");
         var list = new List<CPartBox>();
         var bound = new Vector3(half, thick * 0.5f, 0);
         var min = -bound;
@@ -780,7 +780,7 @@ public static class Extrusion
         var disc = MathF.PI * r * r;
         var style = FanStyleOf(k.Wall);
         var bladeVolume = r * chord * chord * 0.12f * StyleRow(style).Area;
-        var d = Stats(k, row, 0, FanVolume(k), chord * 0.12f, $"A {kind.Label.ToLowerInvariant()} off a Fan Former: {across:0.##} m across, {blades} blades of {names.NameOf(k.Material)}.");
+        var d = Stats(k, row, 0, FanVolume(k), chord * 0.12f, $"A {kind.Label.ToLowerInvariant()} off a Grow Former: {across:0.##} m across, {blades} blades of {names.NameOf(k.Material)}.");
         var colour = names.ColourOf(k.Material);
         var lathe = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = WheelSides, Inner = -1 });
         var mid = new Vector3(0, 0, deep * 0.5f);

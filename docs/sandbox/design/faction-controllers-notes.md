@@ -171,7 +171,7 @@ captains, combat or civilian.
 - `--crew-fleet strike`: three Militia Zero Days, two frigates (one shot about to 35%): all three on the shot-about one 12 of 12 looks, it
   fell to 30%. `screen`: a Traders convoy of three Zero Days, a threat to its north: both escorts screening between 8 of 8 looks, the
   flagship kept on its way. `succession`: Militia, Captain Una in command 9.2 s after the admiral was shot (delay 8 s); Raiders, the
-  group broke 0.7 s after and all three ran. `convoy` (four Bandit ground vehicles as Militia, the leader the flagship): sent 300 m,
+  group broke 0.7 s after and all three ran. `convoy` (four Raider ground vehicles as Militia, the leader the flagship): sent 300 m,
   followers 14 m off their places (as phase 2's check measures it), the leader there; a Zero Day 220 m off, the admiral pulled back.
   `mining` (three Traders Zero Days): mine, deliver, then back to mine. `interrogate`: the admiral gave up its group's two captains and
   the other admiral (three positions), a captain its ship and crew; resistance 0.76: 71 s with an interrogator of skill 200, 274 s alone.
@@ -179,7 +179,7 @@ captains, combat or civilian.
   Admiral Vera on the leader, the other two joined with Form orders; the client's look lines read "Admiral Vera's flagship, Militia
   group 1, Captain Zed, crew of 5".
 - Scale (`--crew-fleet scale`): 256 groups of 4 (1,024 bodies, 64 awake): the admirals 2.4 us a tick, worst 35 us, 0 bytes. 1,000
-  Bandit Helicopter 1 (23 parts) all awake and driven in 84 groups (driver cap raised to 1,000): admirals 34 us, crews 0.81 ms, the
+  Raider Helicopter 1 (23 parts) all awake and driven in 84 groups (driver cap raised to 1,000): admirals 34 us, crews 0.81 ms, the
   world's own step 12.6 ms a tick (worst 55 ms): 13.4 ms, over the 8 ms budget. 100 Zero Day Frigates (276 parts) all awake: the world's
   step 78.5 ms a tick (about 0.8 ms a frigate), so about ten awake frigates fit in 8 ms today. The brain is not the limit; the physics
   of awake bodies is (and the world step allocated 166 KB in 300 ticks with 1,024 bodies: not the crews' or the admirals').
@@ -257,8 +257,8 @@ A plan (in `Crew/Controllers.json` "kinds", or a power file's "plan"):
 ```
 
 Roles are cargo, escort, raider and warship; missions convoy, raid, defend and patrol. A kind with no plan has no economy (fields and trades
-nothing). Bills today: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Bandit Buggy 1 373, Bandit Technical 1 371, British
-Technical 2 393, British Gun Wagon 1 479.
+nothing). Bills today: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Raider Buggy 1 373, Raider Technical 1 371, Mercenary
+Technical 2 393, Mercenary Gun Wagon 1 479.
 
 ### Saves and network
 
@@ -380,7 +380,7 @@ groups between planets), 4 (far fights by strength, a closed world never opened)
   same pass); asleep far bodies' logic and power too. Sleep counts a far step as 4 ticks and lets a far body sleep at 4 times the still speed (at a
   coarse step a body at rest jitters at 0.2 m/s and never slept).
 - **Network:** two more pose bands: past 1.5 km a body is sent every 32 pose ticks, past 4 km every 128 (the sleeping refresh tells a far body's last pose).
-- **Measured** (`--crew-fleet scale --fleet-scale 1000 --fleet-awake 1000 --fleet-spread 8000`, Bandit Helicopter 1, 23 parts, the 2-core box shared):
+- **Measured** (`--crew-fleet scale --fleet-scale 1000 --fleet-awake 1000 --fleet-spread 8000`, Raider Helicopter 1, 23 parts, the 2-core box shared):
   the world's step 4.26 ms a tick before, 2.49 to 2.94 ms after (physics 1.71 to 0.75-0.82 ms, logic 1.75 to 0.79 ms); crews 0.20-0.27 ms; one client
   by the person gets 32 poses, 1.9 KB in 2.1 packets a pose tick with 427 movers. With all 1,000 within 1.1 km (phase 2's case) nothing changes: 8.6
   ms a tick, the near bodies' own cost.

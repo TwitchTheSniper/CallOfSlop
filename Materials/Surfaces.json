@@ -57,7 +57,7 @@
     { "material": "concrete", "surface": "concrete" },
     { "material": "stone", "surface": "stone" },
     { "material": "sand", "surface": "concrete" },
-    { "folder": "Bandit", "surface": "dirty steel" },
+    { "folder": "Scrap", "surface": "dirty steel" },
     { "hue": [14, 34], "dark": 0.72, "role": ["transfer", "alternator", "hose", "generator", "battery"], "surface": "copper" },
     { "hue": [14, 34], "dark": 0.72, "folder": "ModularEngine", "surface": "copper" },
     { "hue": [36, 56], "role": ["transfer", "hose", "enginePiece", "gunPart", "gun", "ammoBox", "feedChute"], "surface": "brass" },

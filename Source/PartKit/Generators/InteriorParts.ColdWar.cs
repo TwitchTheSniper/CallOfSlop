@@ -3,7 +3,7 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Ministry's fittings (docs/sandbox/constructs/buildings.md, "Inside: the cold war"): what a government building of the
+/// Cold war fittings (docs/sandbox/constructs/buildings.md, "Inside: the cold war"): what a government building of the
 /// last century was fitted out with and never refitted. Old light switches that work (a wire from one to a lamp), strip lights
 /// and bulkhead lamps on the mains, a radiator, a filing cabinet, a wall clock, a teleprinter and a cabinet of tape reels. Hung
 /// pieces go on a wall's face socket by their "back" (the part stands in +z, into the room); furniture stands on a floor socket
@@ -41,7 +41,7 @@ public sealed partial class InteriorParts
         }));
     }
 
-    /// <summary>A fluorescent batten, 1.2 m: the light every corridor of the Ministry is the colour of.</summary>
+    /// <summary>A fluorescent batten, 1.2 m: the light every old corridor is the colour of.</summary>
     private static Part StripLight()
     {
         var p = Hung("Strip Light", "A fluorescent strip on the mains. It hums. Lights while the power circuit reaches it; a wire into it switches it.",
@@ -69,7 +69,7 @@ public sealed partial class InteriorParts
     /// <summary>A column radiator under a window: hung by its back, low on the wall.</summary>
     private static Part Radiator()
     {
-        var p = Hung("Cast Iron Radiator", "A column radiator. Lukewarm since the Ministry was founded.", color: OldCream, mass: 60, health: 200, armour: 4, finish: "worn paint");
+        var p = Hung("Cast Iron Radiator", "A column radiator. Lukewarm since it was fitted.", color: OldCream, mass: 60, health: 200, armour: 4, finish: "worn paint");
         p.Add(B([-0.5, -0.05, 0.0], [0.5, 0.55, 0.17], OldCream));
         for (var k = 0; k < 9; k++) // (the gaps between the columns)
         {
@@ -103,7 +103,7 @@ public sealed partial class InteriorParts
     /// <summary>A round clock: stopped.</summary>
     private static Part WallClock()
     {
-        var p = Hung("Wall Clock", "A Ministry clock. Right twice a day, which is above target.", color: CastIron, mass: 2, health: 20, armour: 0);
+        var p = Hung("Wall Clock", "An office clock. Right twice a day, which is above target.", color: CastIron, mass: 2, health: 20, armour: 0);
         p.Add(B([-0.17, -0.17, 0.0], [0.17, 0.17, 0.03], CastIron)); // (its box: what is hit)
         p.Add(Cyl([-0.19, -0.19, 0.03], [0.19, 0.19, 0.05], CastIron, "+z", segments: 16));
         // (the part kit drops a box thinner than 10 mm, so the face, the marks and the hands are each at least that deep)
@@ -119,7 +119,7 @@ public sealed partial class InteriorParts
     private static Part Teleprinter()
     {
         double w = 0.6, h = 1.0, d = 0.5;
-        var p = Furniture("Teleprinter", "A teleprinter on a stand. It prints the Ministry's wires, in capitals, eventually.", "frame", w, h, d, CastIron, mass: 45, health: 160, finish: "worn paint");
+        var p = Furniture("Teleprinter", "A teleprinter on a stand. It prints the wires, in capitals, eventually.", "frame", w, h, d, CastIron, mass: 45, health: 160, finish: "worn paint");
         p.Add(B([-w / 2, 0, -d / 2], [w / 2, 0.62, d / 2], CastIron)); // the stand
         p.Add(B([-0.27, 0.62, -0.22], [0.27, 0.86, 0.2], OldCream, false, ("finish", "worn paint"))); // the machine
         p.Add(B([-0.22, 0.66, 0.2], [0.22, 0.72, 0.3], "#1c1c1c", false, ("paintable", false), ("finish", "plastic"))); // the keys
@@ -129,7 +129,7 @@ public sealed partial class InteriorParts
         return p.Set(("power", 40));
     }
 
-    /// <summary>A cabinet of tape reels and lamps: the Ministry's computer.</summary>
+    /// <summary>A cabinet of tape reels and lamps: an old office's computer.</summary>
     private static Part TapeCabinet()
     {
         double w = 1.0, h = 1.9, d = 0.6;
@@ -224,7 +224,7 @@ public sealed partial class InteriorParts
         return p.Set(("seat", new PyDict { ["at"] = new List<object?> { 0.0, -0.4, 0.0 }, ["bunk"] = true }));
     }
 
-    /// <summary>Steel shelving, 2 m by 2 m, against a store's wall: bins of what the Ministry issues, and what it doesn't.</summary>
+    /// <summary>Steel shelving, 2 m by 2 m, against a store's wall: bins of what stores issue, and what they don't.</summary>
     private static Part StoreShelving()
     {
         double w = 2.0, h = 2.0, d = 0.5;

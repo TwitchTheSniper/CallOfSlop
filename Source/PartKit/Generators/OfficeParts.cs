@@ -5,12 +5,12 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// Office equipment: Constructs/Parts/Office (docs/vehiclekit/VEHICLEKIT.md, "The IT style"). Was tools/constructs/office_parts.py.
 ///
-/// What the IT style bolts on where bandits hang skulls and spikes: a potted plant, a desk fan, a satellite dish and a network switch as
+/// What the IT style bolts on where raiders hang skulls and spikes: a potted plant, a desk fan, a satellite dish and a network switch as
 /// trophies, and router antennas down the flanks as spikes. In its rooms: server racks (loot on their shelves), and the Computer and the
 /// Fax Machine, the office desk's line in and out (GameSandboxOffice.cs). (The joke pieces, the CRT monitor, the Employee of the Month
 /// plaque and the cable reel, went with the old factions, 2026-11-17.) Furniture stands on feet on the floor's quarter grid and faces its own +z, into
 /// the room, as BodyParts' does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
-/// it outward, as the bandit parts do (BanditParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
+/// it outward, as the raider parts do (ScrapParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
 /// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
 /// </summary>
 public sealed class OfficeParts : IPartGenerator
@@ -127,14 +127,9 @@ public sealed class OfficeParts : IPartGenerator
         return p;
     }
 
-    // The adverts on a computer's screen (OfficeParts.FillComputer picks their words; Story/Office/Scammers.json): two banners under the text.
-    private static List<object?> Adverts() => Py.L(
-        Kw(("action", "office.advert"), ("at", Py.L(0.02, 0.2, 0.98, 0.36)), ("label", "AD")),
-        Kw(("action", "office.advert2"), ("at", Py.L(0.02, 0.03, 0.98, 0.19)), ("label", "AD")));
-
     private static Part Computer()
     {
-        var p = new Part("Computer", Small, Office, "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department. Don't click the adverts.", role: "panel", tool: "wrench", color: Beige, group: "Logic");
+        var p = new Part("Computer", Small, Office, "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department.", role: "panel", tool: "wrench", color: Beige, group: "Logic");
         var top = 0.74;
         p.Add(Box([-0.4, top, -0.3], [0.4, top + 0.03, 0.3], "#6e6a60")); // (the desk top)
         foreach (var sx in new[] { -1, 1 })
@@ -158,7 +153,7 @@ public sealed class OfficeParts : IPartGenerator
         Feet(p, [-0.25, 0.25], [0.0]);
         p.Stats(22, 60, 1, 2.0);
         p.Set(("power", 60), ("office", "computer"), ("centreSockets", false),
-            ("panels", Py.L(Kw(("source", "office.computer"), ("at", Py.L(0, Py.Round(t + 0.18, 3), 0.056)), ("size", Py.L(0.33, 0.25)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 10), ("touch", Adverts())))));
+            ("panels", Py.L(Kw(("source", "office.computer"), ("at", Py.L(0, Py.Round(t + 0.18, 3), 0.056)), ("size", Py.L(0.33, 0.25)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 10)))));
         return p;
     }
 

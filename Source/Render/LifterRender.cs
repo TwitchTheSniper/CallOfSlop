@@ -211,7 +211,7 @@ public static class LifterRender
     /// </summary>
     private static void DrawCrane(Renderer gfx, LifterDef ld, Matrix4x4 part, Vector3 grip)
     {
-        var k = MathF.Max(0.25f, ld.Depth / 0.6f); // (Medium 1, Large 4, Capital 16)
+        var k = ld.Hall ? 2f : MathF.Max(0.25f, ld.Depth / 0.6f); // (Medium 1, Large 4, Capital 16; a Hall Crane 2: its 2 m rail blocks)
         var b = ld.Base;
         var hz = grip.Z;
         var id = Matrix4x4.Identity;
@@ -225,6 +225,8 @@ public static class LifterRender
         var gl = ld.Span + 0.6f * k;
         for (var s = -1; s <= 1; s += 2)
             Box(gfx, part, id, new Vector3(b.X + ld.Span * 0.5f, b.Y + 0.545f * k, hz + s * 0.4f * k), new Vector3(gl, 0.5f * k, 0.26f * k), CraneYellow);
+        if (ld.Hall)
+            DrawHallCab(gfx, ld, part, k, hz);
         var hx = grip.X;
         Box(gfx, part, id, new Vector3(hx, b.Y + 0.999f * k, hz), new Vector3(1.0f, 0.4f, 1.24f) * k, CraneDark);
         Box(gfx, part, id, new Vector3(hx + 0.3f * k, b.Y + 1.25f * k, hz), new Vector3(0.36f, 0.12f, 0.5f) * k, CraneSteel); // (its hoist drum's housing)
@@ -234,10 +236,50 @@ public static class LifterRender
             Beam(gfx, part, new Vector3(hx, b.Y + 0.8f * k, hz + s * 0.08f * k), block + new Vector3(0, 0.1f * k, s * 0.08f * k), 0.035f * k, CraneDark);
         Box(gfx, part, id, block, new Vector3(0.3f, 0.36f, 0.34f) * k, Out);
         Box(gfx, part, id, block + new Vector3(0.152f * k, 0, 0), new Vector3(0.004f, 0.3f, 0.26f) * k, CraneDark); // (a dark band on the block)
+        if (ld.Hall)
+            for (var st = -1; st <= 1; st++) // (a Hall Crane's hook block: hazard stripes on both faces, drawing 24's warning)
+                for (var f = -1; f <= 1; f += 2)
+                    Box(gfx, part, id, block + new Vector3(st * 0.09f * k, 0, f * 0.171f * k), new Vector3(0.04f * k, 0.36f * k, 0.004f * k), CraneDark);
         Beam(gfx, part, block - Vector3.UnitY * 0.18f * k, grip + Vector3.UnitY * 0.01f, 0.06f * k, CraneSteel); // (the hook's shank to the piece)
     }
 
     private static readonly Vector3 MachineAccent = new(0.95f, 0.69f, 0.12f);
+
+    private static readonly Vector3 CabGlass = new(0.12f, 0.2f, 0.26f), SignPale = new(0.93f, 0.92f, 0.89f);
+
+    /// <summary>
+    /// A Hall Crane's cab (drawing 24), hung under the bridge's girders 2 m in from the near rail, travelling with the bridge: a yellow
+    /// box on two hangers, its windows dark glass all round, a KEEP CLEAR plate (pale, dark lettering bars) on each long side, and the
+    /// festoon cable's loops along the near girder.
+    /// </summary>
+    private static void DrawHallCab(Renderer gfx, LifterDef ld, Matrix4x4 part, float k, float hz)
+    {
+        var id = Matrix4x4.Identity;
+        var b = ld.Base;
+        var at = new Vector3(b.X + 1.1f * k, b.Y - 0.42f * k, hz + 0.45f * k);
+        for (var s = -1; s <= 1; s += 2)
+            Box(gfx, part, id, at + new Vector3(s * 0.25f * k, 0.5f * k, 0), new Vector3(0.06f, 0.4f, 0.06f) * k, CraneDark); // (its hangers)
+        Box(gfx, part, id, at, new Vector3(0.9f, 0.62f, 0.7f) * k, CraneYellow);
+        Box(gfx, part, id, at + new Vector3(0, 0.08f * k, 0), new Vector3(0.905f, 0.22f, 0.705f) * k, CabGlass); // (its window band)
+        Box(gfx, part, id, at - new Vector3(0, 0.34f * k, 0), new Vector3(0.94f, 0.06f, 0.74f) * k, CraneDark); // (its floor)
+        for (var s = -1; s <= 1; s += 2)
+        {
+            var side = at + new Vector3(0, -0.2f * k, s * 0.353f * k);
+            Box(gfx, part, id, side, new Vector3(0.6f, 0.12f, 0.004f) * k, SignPale); // (KEEP CLEAR)
+            Box(gfx, part, id, side + new Vector3(0, 0.025f * k, s * 0.002f * k), new Vector3(0.46f, 0.025f, 0.004f) * k, CraneDark);
+            Box(gfx, part, id, side + new Vector3(0, -0.025f * k, s * 0.002f * k), new Vector3(0.36f, 0.025f, 0.004f) * k, CraneDark);
+        }
+        // The festoon: cable loops hanging between trolleys along the near girder's outer side.
+        var n = Math.Clamp((int)(ld.Span / (1.5f * k)), 2, 20);
+        for (var i = 0; i < n; i++)
+        {
+            var x = b.X + (0.6f + i * 0.9f) * k;
+            if (x > b.X + ld.Span - 0.6f * k)
+                break;
+            Box(gfx, part, id, new Vector3(x, b.Y + 0.28f * k, hz - 0.58f * k), new Vector3(0.08f, 0.08f, 0.08f) * k, CraneSteel);
+            Box(gfx, part, id, new Vector3(x + 0.45f * k, b.Y + 0.14f * k, hz - 0.58f * k), new Vector3(0.75f, 0.03f, 0.03f) * k, CraneDark);
+        }
+    }
 
     /// <summary>A crane's reach view: its box's edges in amber, under the rails from the hook's highest point to its drop.</summary>
     private static void DrawCraneReach(Renderer gfx, LifterDef ld, Matrix4x4 frame)

@@ -114,7 +114,7 @@ public struct BriefLoot
 {
     public BriefRef Part;
     public string Table;
-    public byte Tier; // the table's tier: "bandit 3" is 3, a style's own table 2
+    public byte Tier; // the table's tier: "raider 3" is 3, a style's own table 2
 }
 
 /// <summary>

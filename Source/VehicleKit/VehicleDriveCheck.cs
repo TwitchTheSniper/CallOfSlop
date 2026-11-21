@@ -6,7 +6,7 @@ namespace CallOfSlop.VehicleKit;
 /// <summary>
 /// The spawn-time drive check (docs/vehiclekit/VEHICLEKIT.md, "The drive check"): a generated vehicle is built from its own blueprint text in a world of its own,
 /// settled on a flat floor, measured for level, and given a short throttle pulse through its seat; one that stands crooked or doesn't move is refused, and the
-/// plan is made again as the identity gate does (<see cref="Vehicle.DriveGate"/>). Spawn generation used to check only that a vehicle builds, so Bandit convoy 3's
+/// plan is made again as the identity gate does (<see cref="Vehicle.DriveGate"/>). Spawn generation used to check only that a vehicle builds, so Raider convoy 3's
 /// leader (a Box Truck on Heavy Pogo Struts in front and Heavy Suspension behind) spawned standing 10.5 degrees nose up on its tail rails, unable to move.
 /// <para>
 /// It runs inside a generation (<see cref="VehicleGenJob"/>), so every step yields: the build goes a step at a time (<see cref="ConstructBuild.GroundJob"/>), the

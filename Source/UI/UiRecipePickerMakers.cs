@@ -44,13 +44,15 @@ public sealed partial class Ui
             var shades = new ImColor8[] { new(96, 120, 150, 255), new(110, 140, 112, 255), new(150, 128, 92, 255), new(128, 104, 140, 255) };
             for (var k = 0; k < opts.Length; k++)
             {
-                var what = d.IsFanFormer
+                var what = d.IsGrowFormer
+                    ? $"{opts[k]}: what its own settings and its Queue button make next, at the sizes set with the configure tool, of what its bin holds. An order makes what it asks."
+                    : d.IsFanFormer
                     ? $"{opts[k]}: what it makes next, at the Across, Blades and Blade style set with the configure tool, of what its bin holds."
                     : $"{opts[k]}: what it cuts next, at the Chord and Span set with the configure tool, skinned in what its bin holds.";
                 tiles.Add(new RpTile { Value = k, Name = opts[k], Search = opts[k].ToLowerInvariant(), Tip = what, Swatch = shades[k % shades.Length] });
             }
         }
-        var title = d.IsLathe ? "Cuts" : d.IsPress ? "Pattern" : d.IsFanFormer ? "Makes" : d.IsAirframeFormer ? "Cuts" : "Recipe";
+        var title = d.IsLathe ? "Cuts" : d.IsPress ? "Pattern" : d.IsGrowFormer || d.IsFanFormer ? "Makes" : d.IsAirframeFormer ? "Cuts" : "Recipe";
         return new RpSet { Tiles = tiles.ToArray(), Groups = groups.ToArray(), Title = $"{title}: {d.Name}###rpick", Key = key };
     }
 
