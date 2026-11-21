@@ -53,6 +53,39 @@ public static partial class HullLoft
 
     public static bool IsSectionName(string name) => name.StartsWith(SectionPrefix, StringComparison.Ordinal);
 
+    /// <summary>
+    /// A plain skin's key (style -, salt 0, extras -), read with no allocation: what a Panel Former forms (Sean, 2026-11-21: "the whole sections
+    /// should start in the panel former"). A key that only looks plain is still read whole where the part is made.
+    /// </summary>
+    public static bool IsPlainSectionName(string name) =>
+        IsSectionName(name) && name.AsSpan(SectionPrefix.Length).IndexOf(" - 0 - | ", StringComparison.Ordinal) is var at and > 0
+        && name.AsSpan(SectionPrefix.Length, at).IndexOf(" | ", StringComparison.Ordinal) < 0;
+
+    /// <summary>
+    /// A plain skin laid flat (m), as a Panel Former's blank must cover it: its longest facet edge along the section (a tapered section's edges
+    /// run aslant) by the facets' widths added across (the wider of its two ends), and which way its outer face looks, on the whole (the part's
+    /// frame: the bed lays it face up, so its pins rise inside the skin's arch).
+    /// </summary>
+    public static void SectionFlat(SectionShape sh, out float along, out float across, out Vector3 outward)
+    {
+        double len = sh.L / 100.0, a = 0, b = 0, most = len;
+        double axisY = (sh.A.Min(q => q.Y) + sh.A.Max(q => q.Y)) / 200.0;
+        var o = Vector3.Zero;
+        double[] Pt((int H, int Y) q, double z) => [sh.Side * q.H / 100.0, q.Y / 100.0, z];
+        static double Dist(double[] p, double[] q) => Math.Sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]) + (p[2] - q[2]) * (p[2] - q[2]));
+        for (var k = sh.K0; k <= sh.K1; k++)
+        {
+            var band = new HullDress.Band(Pt(sh.A[k - 1], 0), Pt(sh.A[k], 0), Pt(sh.B[k - 1], len), Pt(sh.B[k], len), len);
+            a += Dist(band.A0, band.B0);
+            b += Dist(band.A1, band.B1);
+            most = Math.Max(most, Math.Max(Dist(band.A0, band.A1), Dist(band.B0, band.B1)));
+            var n = HullDress.Normal(band, 0, axisY);
+            var w = (float)(Dist(band.A0, band.B0) + Dist(band.A1, band.B1)); // (each facet's look by its size)
+            o += new Vector3((float)n[0], (float)n[1], (float)n[2]) * w;
+        }
+        (along, across, outward) = ((float)most, (float)Math.Max(a, b), o);
+    }
+
     /// <summary>A hull section's key read, or null with the reason (a refusal names what is wrong).</summary>
     public static SectionShape? SectionOf(string name, out string why)
     {
@@ -182,6 +215,7 @@ public static partial class HullLoft
     // ---- The part ------------------------------------------------------------------------------------------------
 
     private const double SecT = 0.04; // the skin's thickness (the Zero Day's)
+    public const int SectionSkinCm = 4; // ...in whole cm: a plain skin's blank is a sheet this thick (ConstructPanelFormer.FlatOf)
     private const double SecTrim = 0.003; // dress stops this far short of the section's ends (rails 1x, the light strip 2x, conduit 3x), so no two pieces' ends share a plane
 
     /// <summary>The trim for a section this long: <see cref="SecTrim"/> up to 8 m, then 1/800 of its length (at most 5 cm), the z-fighting rule's

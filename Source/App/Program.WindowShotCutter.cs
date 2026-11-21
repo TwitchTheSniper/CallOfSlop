@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <c>cutter</c> prints each cutter as this peer has it (its state, offcut bin and tenths, bed, stroke, head order) and the cut parts lying
 /// loose; <c>cutter order KEY [N]</c> (host) queues an order at the first cutter that takes it, as a designer's ORDER does;
 /// <c>cutter feed KEY</c> (host) puts a blank on the conveyor into a cutter, or with none lays it on the first cutter's bed by its Piece in's
-/// own rule; <c>cutter await</c> waits (a tick at a time, 120 s at most) until the first busy cutter's cut ends, printing the seconds it took.
+/// own rule (a Panel Former whose queued order takes the blank first: its bed, by the same rule); <c>cutter await</c> waits (a tick at a time, 120 s at most) until the first busy cutter's cut ends, printing the seconds it took.
 /// </summary>
 public static unsafe partial class Program
 {
@@ -51,8 +51,15 @@ public static unsafe partial class Program
                 }
                 foreach (var c in bodies)
                     for (var i = 0; i < c.PartCount; i++)
-                        if (c.DefOf(i).IsLaserCutter)
+                        if (c.DefOf(i).IsLaserCutter || c.DefOf(i).IsPanelFormer && ConstructPanelFormer.Wants(w, c, i, piece)) // (a Panel Former whose order takes this blank: a plain hull skin's)
                         {
+                            if (!c.DefOf(i).IsLaserCutter)
+                            {
+                                var laid = ConstructPanelFormer.TakeFromConveyor(w, c, i, piece);
+                                WsSay($"cutter feed: {piece.Name} {(laid ? "laid on the bed of" : "refused by")} {c.DefOf(i).Name}#{i}");
+                                _wsWait = 2;
+                                return true;
+                            }
                             for (var k = 0; k < c.RouteCount; k++)
                                 if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To == i)
                                 {

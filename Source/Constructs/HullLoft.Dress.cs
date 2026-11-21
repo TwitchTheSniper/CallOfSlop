@@ -225,7 +225,12 @@ public static partial class HullLoft
             for (var a = 0; a < anchors.Length; a++)
                 p.Pad($"d{k}.{a}", anchors[a].At, anchors[a].Out, AnchorPad);
         }
-        var mass = (float)Math.Round(area * 60, 1);
+        // Its mass is its plate's: 4 cm of steel at the Extrusion row's units a cubic metre and the unit's weight, so a Panel Former forms it from
+        // a sheet blank that weighs what it does (ConstructPanelFormer.FlatOf). Health keeps the skin's frame (60 kg a square metre's worth).
+        var steel = RecyclingTable.Current.IdOf("steel");
+        var perM3 = ExtrusionTable.Current.Find(steel)?.UnitsPerM3 ?? 200;
+        var mass = (float)Math.Round(area * SecT * perM3 * RecyclingTable.Current.WeightOf(steel), 1);
+        var health = MathF.Round(Math.Clamp((float)(area * 60 * 7), 200, 9000));
         counts = new SectionCounts(facets, 0, 0, 0, 0, 0, 0, 0, 0, hidden, p.Sockets.Count, mass);
         return new JsonObject
         {
@@ -237,7 +242,7 @@ public static partial class HullLoft
             ["role"] = "frame",
             ["tool"] = "welder",
             ["mass"] = mass,
-            ["health"] = MathF.Round(Math.Clamp(mass * 7, 200, 9000)),
+            ["health"] = health,
             ["armour"] = 30,
             ["material"] = "steel",
             ["color"] = PlainSkinColour,
