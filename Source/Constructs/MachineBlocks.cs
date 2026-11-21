@@ -71,7 +71,7 @@ public static class MachineBlocks
     {
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -89,11 +89,24 @@ public static class MachineBlocks
         d.BlockCell = ConstructParts.Opt(mb, "cell") is { } cell ? ConstructParts.Num(cell, file, "machineBlock.cell") : DefaultCell;
         if (d.BlockCell is < 0.5f or > 8f)
             throw new ConstructPartException($"{file}: \"machineBlock.cell\" is 0.5 to 8 m, not {d.BlockCell}");
+        if (ConstructParts.Opt(mb, "origin") is { } origin)
+        {
+            if (d.BlockRole != BlockRole.Core)
+                throw new ConstructPartException($"{file}: only a Core gives \"machineBlock.origin\" (its own cell's middle)");
+            d.BlockOrigin = ConstructParts.Vec(origin, file, "machineBlock.origin");
+        }
+        if (ConstructParts.Opt(mb, "plane") is { } plane)
+            d.BlockFace = ConstructParts.Str(plane, file, "machineBlock.plane") switch
+            {
+                "bed" => false,
+                "face" => true,
+                var v => throw new ConstructPartException($"{file}: \"machineBlock.plane\" is bed or face, not \"{v}\""),
+            };
         if (d.BlockRole is BlockRole.Block or BlockRole.Shared)
         {
             // A cell is one lattice step across and along (a shared cell may be any whole number of steps: an Out Table's width).
             var size = d.BoundsMax - d.BoundsMin;
-            foreach (var (a, label) in new[] { (size.X, "x"), (size.Z, "z") })
+            foreach (var (a, label) in d.BlockFace ? new[] { (size.X, "x"), (size.Y, "y") } : new[] { (size.X, "x"), (size.Z, "z") })
             {
                 var steps = a / d.BlockCell;
                 if (MathF.Abs(steps - MathF.Round(steps)) > 0.02f || MathF.Round(steps) < 1 || d.BlockRole == BlockRole.Block && MathF.Round(steps) != 1)
@@ -214,7 +227,7 @@ public static class MachineBlocks
         var cell = cd.BlockCell;
         var coreRot = c.Parts[core].Rot;
         var unrot = Rot24Inverse(coreRot);
-        var coreMid = Middle(c, core);
+        var coreMid = cd.BlockOrigin is { } org ? c.Parts[core].Pos + Rot24.Apply(coreRot, org) : Middle(c, core); // (a Core whose looks stand out of its cell names the cell's middle)
         c.BlockAsmOf[core] = id;
         int count = 0, at = 0;
         queue[count++] = (ushort)core;
@@ -227,20 +240,37 @@ public static class MachineBlocks
             {
                 var o = c.OtherEnd(e);
                 var d = c.Parts[o].D;
-                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || MathF.Abs(d.BlockCell - cell) > 0.01f)
+                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
                     continue;
                 if (c.BlockAsmOf[o] >= 0)
-                    continue; // (in this machine already, or another Core's)
+                    continue; // (in this machine already, or another Core's; a broken cell idles until it is mended)
                 if (cellCount >= MaxCells)
                 {
                     asm.Capped = true;
                     Caps.Hit("cells in one block machine", MaxCells, cellCount + 1);
                     continue;
                 }
+                // A block turned off the Core's lattice (its cell's square not in the Core's grid plane) isn't part of the machine.
+                var span = Vector3.Abs(Rot24.Apply(unrot, Rot24.Apply(c.Parts[o].Rot, d.BoundsMax - d.BoundsMin))) / cell;
+                var spanAlong = cd.BlockFace ? span.Y : span.Z;
+                if (d.BlockRole == BlockRole.Block && (MathF.Abs(span.X - 1) > 0.02f || MathF.Abs(spanAlong - 1) > 0.02f))
+                    continue;
                 // Its place on the Core's lattice: the cell of its lowest corner's first step (a shared cell several steps wide marks
                 // its first step only; the Core's own middle is cell 0, so a cell's lowest corner sits half a step under its cell's middle).
                 var rel = Rot24.Apply(unrot, Corner(c, o, unrot) - coreMid) / cell;
-                int x = (int)MathF.Floor(rel.X + 0.5f + 0.01f), y = (int)MathF.Round(Rot24.Apply(unrot, Middle(c, o) - coreMid).Y / cell), z = (int)MathF.Floor(rel.Z + 0.5f + 0.01f);
+                int x = (int)MathF.Floor(rel.X + 0.5f + 0.01f), y, z;
+                if (cd.BlockFace)
+                {
+                    // A face machine's cells stand in the Core's x-y face (an Extruder's Die Blocks beside its Core): the grid's "along" is up
+                    // the face, and a cell's layer is how far its front stands out from the Core's (flush is the die's layer, 0).
+                    z = (int)MathF.Floor(rel.Y + 0.5f + 0.01f);
+                    y = (int)MathF.Round((Front(c, o, unrot) - Front(c, core, unrot)) / cell);
+                }
+                else
+                {
+                    y = (int)MathF.Round(Rot24.Apply(unrot, Middle(c, o) - coreMid).Y / cell);
+                    z = (int)MathF.Floor(rel.Z + 0.5f + 0.01f);
+                }
                 if (Math.Abs(x) > Mid || Math.Abs(z) > Mid || Math.Abs(y) > 127)
                     continue; // (beyond the grid: not part of this machine)
                 c.BlockAsmOf[o] = id;
@@ -248,9 +278,8 @@ public static class MachineBlocks
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
                 cz[count] = (sbyte)z;
-                var span = Vector3.Abs(Rot24.Apply(unrot, Rot24.Apply(c.Parts[o].Rot, d.BoundsMax - d.BoundsMin))) / cell;
                 steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, MaxSide);
-                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(span.Z), 1, MaxSide);
+                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(spanAlong), 1, MaxSide);
                 queue[count++] = (ushort)o;
             }
         }
@@ -294,7 +323,7 @@ public static class MachineBlocks
         }
     }
 
-    /// <summary>The largest full rectangle of bed cells, at most MaxSide a side and MaxCells in all; of equals, the one nearest the Core.</summary>
+    /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most MaxSide a side and MaxCells in all; of equals, the one nearest the Core.</summary>
     private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm)
     {
         const int S = GridSide + 1;
@@ -317,8 +346,8 @@ public static class MachineBlocks
                         int x1 = x0 + w, z1 = z0 + l;
                         if (sum[x1 * S + z1] - sum[x0 * S + z1] - sum[x1 * S + z0] + sum[x0 * S + z0] != area)
                             break; // (a gap: a longer one has it too)
-                        if (area < best)
-                            continue;
+                        if (area < best || !Touches(x0, z0, w, l))
+                            continue; // (the machine is the rectangle that holds a cell welded to its Core: a stray patch elsewhere idles)
                         var near = Math.Abs(x0 + w / 2 - Mid) + Math.Abs(z0 + l / 2 - Mid);
                         if (area > best || near < bestNear)
                             (best, bestNear, bx, bz, bw, bl) = (area, near, x0, z0, w, l);
@@ -331,6 +360,13 @@ public static class MachineBlocks
         asm.L = (byte)bl;
     }
 
+    /// <summary>Does the rectangle of grid cells from (x0, z0), w by l, hold one of the four cells beside the Core's (the grid's middle)?</summary>
+    private static bool Touches(int x0, int z0, int w, int l)
+    {
+        bool In(int x, int z) => x >= x0 && x < x0 + w && z >= z0 && z < z0 + l;
+        return In(Mid + 1, Mid) || In(Mid - 1, Mid) || In(Mid, Mid + 1) || In(Mid, Mid - 1);
+    }
+
     /// <summary>The corner of part <paramref name="part"/>'s bounds lowest in x and z of the Core's frame (<paramref name="unrot"/> turns into it), in the body frame.</summary>
     private static Vector3 Corner(Construct c, int part, byte unrot)
     {
@@ -339,6 +375,15 @@ public static class MachineBlocks
         Vector3 a = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMin)), b = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMax));
         var lo = Vector3.Min(a, b);
         return Rot24.Apply(Rot24Inverse(unrot), lo);
+    }
+
+    /// <summary>How far part <paramref name="part"/>'s bounds reach along the Core's +z (<paramref name="unrot"/> turns into its frame): a face machine's front.</summary>
+    private static float Front(Construct c, int part, byte unrot)
+    {
+        ref readonly var p = ref c.Parts[part];
+        var d = p.D;
+        Vector3 a = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMin)), b = Rot24.Apply(unrot, p.Pos + Rot24.Apply(p.Rot, d.BoundsMax));
+        return MathF.Max(a.Z, b.Z);
     }
 
     private static Vector3 Middle(Construct c, int part)

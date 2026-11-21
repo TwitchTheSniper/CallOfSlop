@@ -54,7 +54,7 @@ public static class Extrusion
     public const int Grid = 8; // cells a side of a section
     public const int MaxRects = 16; // solid boxes a section may mesh into (each is a draw and a collision box)
     public const int StepCm = 5; // lengths go in steps of this, so the 0.1 m and 0.25 m lattices are both reachable
-    public const int MaxLengthCm = 19200; // 192 m: no piece is longer (the Capital Extruder's; ConstructParts.MaxPartReach is 200 m)
+    public const int MaxLengthCm = 19200; // 192 m: no piece is longer (an Extruder's with its Run-out Tables; ConstructParts.MaxPartReach is 200 m)
     public const int MinSectionCm = 10, MaxSectionCm = 3200; // 0.1 to 32 m a side
     public const int MinBoreCm = 5; // a pipe's wall always leaves this much hole
     public const int MaxWallCm = 200; // and is at most this thick

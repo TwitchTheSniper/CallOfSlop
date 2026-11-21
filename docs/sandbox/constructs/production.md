@@ -119,40 +119,31 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 - **Sockets.** A finished piece has `base` and `tip`, and four faces (`+x0`, `-x0`, `+y0`, `-y0`...) at up to nine stations about 1 m
   apart (further on a long piece), 38 at most, each on the outermost cell of that side nearest the middle. Point and freeform attachments reach everywhere else. A
   piece is physics-only ("extruded"): attach tool, physics gun, cargo volumes.
-- **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`): a bin (`any`, 400) with a die at its +z face, 0.2 m/s, 900 W
-  while it runs. Material comes by chute or F; Run and power as a [production machine](#refining-decision-14) (`ConstructGatherer.HeldOff`,
-  `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far, in metres.
-  Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
-  becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
-- **By size class.** The limits are part data.
-
-  | Machine | Die | Longest piece | Speed | Bin | Power |
-  | --- | --- | --- | --- | --- | --- |
-  | Extruder (Small) | 0.5 m, Die Frames to 8 x 8 m | 48 m | 0.2 m/s | 400 | 900 W |
-  | Medium Extruder | 8 x 8 m | 64 m | 0.4 m/s | 2,000 | 3.6 kW |
-  | Large Extruder | 16 x 16 m | 128 m | 0.8 m/s | 8,000 | 14.4 kW |
-  | Capital Extruder | 32 x 32 m | 192 m | 1.6 m/s | 32,000 | 57.6 kW |
-
-  The big machines are their die (a block of their class's cells, `sizeClass` sockets) and take no frames. 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass`
-  and `MaxPartHealth` (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
-- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
-  to each other) on any side: the die reaches across every working frame joined to it, up to 8 by 8 m, and its centre moves with
-  them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
-- **Expansion pieces** (the user, 2026-11-13: build a bigger Extruder, or add pieces to it, to print bigger things; `ConstructExtruderGrowth.cs`,
-  made by `ExtrusionParts.Growth`). A piece counts only on a machine of its own size class, joined to it directly or through others of its kind, and not broken;
-  everything is read from the construct's parts and links (`ConstructExtruder.Reach`: the die and the longest piece in one walk), so a client agrees with the host
-  after one is welded on or shot off.
-  - **Die Extensions** (Medium 2 m, Large 4 m; `"dieExtension"`): welded to the machine's side on the die face's row of sockets (`-x.4.5` on the Medium), flush with
-    the die face (one standing further back doesn't count). Each adds its row on that side of the die, chained outward, up to the machine's `growSection` (the next
-    class's die: 16 and 32 m); the die's centre moves with them. The Capital takes none (32 m is `Extrusion.MaxSectionCm`).
-  - **Run-out Tables** (Small 8 m, Medium and Large 16 m; `"runOut"`): roller beds under the die on the machine's `outBed` socket (kind `runOut`: nothing else fits),
-    the next on the last one's far end. Each adds to the longest piece up to `growLength` (64, 128, 192 m); their tops stand below the die's foot so a piece rides over.
-    The Capital takes none (192 m is `Extrusion.MaxLengthCm`). The step walks the tables only within 1 m of the plain cap.
-  - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel Former's sheet
-    link) names an expansion piece on this machine first, then the smallest Extruder that takes it (`ConstructExtruder.WideFix`, `LongFix`, `Bigger`), then, for a
-    Panel Former's sheet, strips. The recipe picker says the die and the longest piece as built and what the pieces make of them; the screen's length bar reads the grown cap.
-  - **Cost**: each piece about 30% of the next machine's recipe (600 steel, 150 rubber and parts; tier of its class), so one row or table is cheaper than the next
-    Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
+- **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`; on the block system since 2026-11-21, Sean: "production machines
+  without size classes", design page drawing 15): an **Extruder Core**, a 2 x 2 m face 1.5 m deep, with a bin (`any`, 32,000) and its own 0.5 m die
+  low on its +z face, 0.2 m/s, 900 W while it runs. Material comes by chute or F; Run and power as a [production machine](#refining-decision-14)
+  (`ConstructGatherer.HeldOff`, `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far,
+  in metres. Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and
+  what is shown becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
+  The four size classes, Die Frames and Die Extensions are gone, with no compatibility kept (tools/MIGRATING.md).
+- **Die Blocks** (`Die Block.json`, `"machineBlock": {"family": "extruder", "role": "block", "plane": "face"}`; MachineBlocks.cs,
+  `ConstructExtruderGrowth.cs`). One 2 x 2 m cell of die, 4 m deep (its die tile, container slice, heater and ram). Weld the first to the Core's
+  `+x` socket, beside it and flush with its die face, and more beside, above or below that one. The die is the largest full rectangle of blocks that
+  holds one welded to the Core, at most 16 x 16 blocks (32 m, `Extrusion.MaxSectionCm`) and 128 blocks; blocks outside it idle, and a block turned off
+  the Core's lattice isn't part of the machine. The section is centred on the die (`ConstructExtruder.Reach`). Each block in the die adds 6 kN of push
+  (`blockPush`) and 900 W of draw (`blockPower`), so the speed is the same at any size and throughput grows with the die's area. A block's flanges on a
+  side are seam boxes, not drawn while a block of the same machine is welded there, so a bank reads as one die plate in one frame. Each block keeps its
+  own collision and health: a broken one leaves the die at the next rebuild. A piece off a block's die still hands off to the Core's `Piece out`
+  conveyor (a conveyor takes at most 2 m, so a wide die's pieces go on Run-out Tables, pads or the crane).
+- **Run-out Tables** (`"runOut": 8`): one roller bed, 2 m wide and 8 m long, on the Core's or any block's `outBed` socket (kind `runOut`: nothing else
+  fits), the next on the last one's far end; lay them side by side under a wide die. The longest piece is the Core's 16 m, or out to the farthest
+  table's end, up to 192 m (`growLength`, `Extrusion.MaxLengthCm`). A table's top is level with the machine's foot, so a block machine stands on
+  Foundations and its tables on the ground in front. The step walks the tables only within 1 m of the plain cap.
+- **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
+  Former's sheet link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`), then, for a Panel
+  Former's sheet, strips. The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
+- **Sizes.** 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass` and `MaxPartHealth`
+  (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
   at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
   (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
@@ -161,7 +152,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   A growing piece has one socket (the die's), so nothing can be fitted to it, and joins onto it are refused. A piece no longer linked
   to a die (taken off, the machine gone) finishes at the next rebuild, with its full sockets.
 - **Its path.** Each step checks the new slab, box by box (an I-beam's notch stays a notch): the ground, walls, its own construct and anything
-  anchored stop it ("blocked"). A free body is pushed along the path (`pushForce`, 6 kN, at most 0.6 m/s) and growth waits for it to go, so
+  anchored stop it ("blocked"). A free body is pushed along the path (`pushForce`, 6 kN and 6 kN a Die Block, at most 0.6 m/s) and growth waits for it to go, so
   nothing is ever grown into; one that doesn't move in 1.5 s stops it ("too heavy to push").
 - **Why it stopped** is the store's `Refused` byte (`ExtrudeStall`, on the wire): no power, needs material, can't extrude that, the bin holds another
   material than the piece, the section can't be made, at the cap, blocked, too heavy. The look line has the bin, the die, the section, the length so far, the
@@ -174,13 +165,12 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   are each machine's own, so `StructureHash` mixes the key's hash. `CBodyKind.Extrude` carries width, height and length. A client out of table room (`Extrusion.MaxDefs`, 48,000 pieces in a run) shows a stand-in, and a server
   there stalls with "too many different pieces".
 - **Blueprints and saves.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section), `Extrusion round 50x50x400 metal`, `Extrusion pipe3 50x50x400 metal` (a 3 cm wall) or `Extrusion wheel 30x100x0 rubber`
-  (30 cm wide, 1 m across) in any step, map list or world save. `base`, `tip`, the face names and a wheel's `axle` are its sockets. **Extruder Line**: a Foundation, an Extruder, a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the Extruder's Cut.
+  (30 cm wide, 1 m across) in any step, map list or world save. `base`, `tip`, the face names and a wheel's `axle` are its sockets. **Extruder Line**: two Foundations, an Extruder, and behind it a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the Extruder's Cut.
 - **The Cut-off Saws are gone** (2026-11-04). A saved world holding one loads without it: the world's log says "left out N x Cut-off Saw", and what only the saw joined to its construct splits off. A blueprint naming one is refused at that step with the part's name, as any unknown part. The saw's job is the Cut input and Cut every.
 
 Choices made (the developer may change them): the cut is at the die and takes the whole piece (a saw could stand anywhere along the path, and left the rest on the die); Cut every moved from the saw to the Extruder rather than going, so a line needs no logic; a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
 table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
-own construct, not a body of its own (so it uses one of the construct's 16,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
-one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
+own construct, not a body of its own (so it uses one of the construct's 16,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
 
 ### Run-time parts and their slots
 
@@ -995,7 +985,7 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
   that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
   section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
-  on the network takes it, phase 5: the link waits and says what would make it, Die Frames on an Extruder whose most section takes it or the smallest bigger Extruder (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 303) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  on the network takes it, phase 5: the link waits and says what would make it, Die Blocks on an Extruder whose most section takes it (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 303) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -1092,7 +1082,7 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   queue.
 - **Accepting.** `WorkOrders.Refusal` gives one reason and a refused order is never queued: the wrong family (an Extruder takes
   sections, rounds and pipes; a Wheel Former wheels; a Fan Former props; an Airframe Former wings and its presets: [below](#a-formers-orders)), a size past the die as it stands
-  (Die Frames counted) or the machine, a length off the 5 cm step or past `maxLength`, a wheel smaller than the machine's first, a
+  (Die Blocks counted) or the machine, a length off the 5 cm step or past `maxLength`, a wheel smaller than the machine's first, a
   section that can't be meshed, a material its table hasn't, a full queue, and **another material**: a machine fed metal refuses an
   order in wood ("the Extruder is fed metal: an order in wood is another line"). An empty bin takes any; it then waits Starved with
   "needs metal for its order" until its chute brings it.
@@ -1749,7 +1739,7 @@ with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the mach
      press's output rides a conveyor (a Large Join where a 1.18 m Differential must pass) into the station's back port.
   6. **The tool room** (back floor, south): an orders-only Extruder, a Die Lathe set to Bracket Dies, a die stock rack and a Die Rack. Its
      own console's bill is one bar: Bill, then Send, and it cuts one spare Bracket Die (a Die Lathe takes no work orders).
-  7. **Panels and the cutter** (main floor, row 1): an Extruder with a Die Frame (a 1 m die) makes sheet sized to each panel for the
+  7. **Panels and the cutter** (main floor, row 1): an Extruder with a Die Block (a 2 m die) makes sheet sized to each panel for the
      Panel Former (the hood); Router P sends a panel the cutter ordered through a Join into the Laser Cutter (the windscreen frame's
      opening), the rest south to the station line. A second Panel Former fed glass forms the pane's blank, cut there too.
   8. **Wheels and the station line** (row 2): the Wheel Former's wheels, the panels and the cut parts meet through Joins at Router S,

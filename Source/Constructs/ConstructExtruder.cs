@@ -108,8 +108,8 @@ public static partial class ConstructExtruder
     }
 
     /// <summary>
-    /// The machine's die in its own frame: its centre and size across the face. It starts as the part's own and reaches across
-    /// every working Die Frame joined to it (through its links and other frames), up to the part's maximum.
+    /// The machine's die in its own frame: its centre and size across the face. A Core's own, or the rectangle of Die Blocks beside it
+    /// (MachineBlocks.cs, ConstructExtruderGrowth.cs).
     /// </summary>
     public static void Die(Construct c, int part, out Vector2 centre, out Vector2 size) => Reach(c, part, out centre, out size, out _);
 
@@ -391,7 +391,7 @@ public static partial class ConstructExtruder
             return ExtrudeStall.BadShape;
         if (fresh && c.PartCount >= Construct.MaxParts)
             return ExtrudeStall.Blocked;
-        var path = PathClear(query, world, c, product, next, origin, rot, p.Seg, len, steps, d.ExtPush);
+        var path = PathClear(query, world, c, product, next, origin, rot, p.Seg, len, steps, PushOf(c, part));
         if (path == Path.Blocked)
             (LastBlockBody, LastBlockPart) = (c.Id, part); // (the window tool's note is this machine's)
         else if (LastBlockBody == c.Id && LastBlockPart == part)
@@ -494,7 +494,7 @@ public static partial class ConstructExtruder
             return ExtrudeStall.BadShape;
         if (fresh && c.PartCount >= Construct.MaxParts)
             return ExtrudeStall.Blocked;
-        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, d.ExtPush))
+        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, PushOf(c, part)))
         {
             case Path.Blocked:
                 st.JobTicks = StepMm - 1;
@@ -611,7 +611,7 @@ public static partial class ConstructExtruder
             return ExtrudeStall.BadShape;
         if (fresh && c.PartCount >= Construct.MaxParts)
             return ExtrudeStall.Blocked;
-        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, d.ExtPush))
+        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, PushOf(c, part)))
         {
             case Path.Blocked:
                 st.JobTicks = StepMm - 1;
@@ -746,7 +746,7 @@ public static partial class ConstructExtruder
         var reach = obb.Half.Length();
         for (var i = 0; i < b.PartCount; i++)
         {
-            if (i == skip || own && b.Parts[i].D is { ExtRunOut: > 0 } or { ExtGrowStep: > 0 } or { IsDieFrame: true }) // (an Extruder's own expansion pieces never block its piece)
+            if (i == skip || own && b.Parts[i].D is { ExtRunOut: > 0 } or { BlockRole: BlockRole.Block }) // (an Extruder's own Run-out Tables and Die Blocks never block its piece)
                 continue;
             b.WorldFrame(b.Parts[i].Seg, out var q, out var t);
             b.PartBounds(i, out var mn, out var mx);
@@ -1025,7 +1025,7 @@ public static class ConstructExtruderParts
         const System.Text.Json.JsonValueKind Obj = System.Text.Json.JsonValueKind.Object;
         if (b.ValueKind != Obj || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner)
             throw new ConstructPartException($"{file}: storage \"extrude\" is an object (speed, die, at, maxSection, maxLength, pushForce) on a bin: what feeds it");
-        ConstructParts.Known(b, ["speed", "die", "at", "maxSection", "maxLength", "pushForce", "growSection", "growLength"], $"{bw}.extrude");
+        ConstructParts.Known(b, ["speed", "die", "at", "maxSection", "maxLength", "pushForce", "growLength", "blockPush", "blockPower"], $"{bw}.extrude");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: an Extruder's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
         d.ExtSpeed = ConstructParts.Num(ConstructParts.Need(b, "speed", $"{bw}.extrude"), file, "storage.extrude.speed");
@@ -1039,14 +1039,21 @@ public static class ConstructExtruderParts
         ConstructParts.Range(d.ExtPush, 0, 1000000, file, "storage.extrude.pushForce");
         if (d.ExtDie.X > d.ExtMaxSection.X || d.ExtDie.Y > d.ExtMaxSection.Y || d.ExtMaxSection.X * 100 > Extrusion.MaxSectionCm || d.ExtMaxSection.Y * 100 > Extrusion.MaxSectionCm)
             throw new ConstructPartException($"{file}: storage.extrude: \"die\" fits inside \"maxSection\", at most {Extrusion.MaxSectionCm / 100} m a side");
-        d.ExtGrowSection = ConstructParts.Opt(b, "growSection") is { } gs ? Pair(gs, file, "storage.extrude.growSection") : d.ExtMaxSection;
-        if (d.ExtGrowSection.X < d.ExtMaxSection.X || d.ExtGrowSection.Y < d.ExtMaxSection.Y || d.ExtGrowSection != d.ExtMaxSection && d.ExtDie != d.ExtMaxSection)
-            throw new ConstructPartException($"{file}: storage.extrude: \"growSection\" (Die Extensions) is at least \"maxSection\", on a machine that is its die (no Die Frames)");
         d.ExtGrowLength = d.ExtMaxLength;
         if (ConstructParts.Opt(b, "growLength") is { } gl)
         {
             d.ExtGrowLength = ConstructParts.Num(gl, file, "storage.extrude.growLength");
             ConstructParts.Range(d.ExtGrowLength, d.ExtMaxLength, Extrusion.MaxLengthCm / 100f, file, "storage.extrude.growLength");
+        }
+        if (ConstructParts.Opt(b, "blockPush") is { } bp)
+        {
+            d.ExtBlockPush = ConstructParts.Num(bp, file, "storage.extrude.blockPush");
+            ConstructParts.Range(d.ExtBlockPush, 0, 1000000, file, "storage.extrude.blockPush");
+        }
+        if (ConstructParts.Opt(b, "blockPower") is { } bpw)
+        {
+            d.ExtBlockPower = ConstructParts.Num(bpw, file, "storage.extrude.blockPower");
+            ConstructParts.Range(d.ExtBlockPower, 0, 1000000, file, "storage.extrude.blockPower");
         }
         Socket(d, file);
         d.IsExtruder = true;

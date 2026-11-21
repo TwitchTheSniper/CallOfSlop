@@ -1,0 +1,335 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Die Block",
+  "description": "Weld it beside an Extruder Core, or beside, above or below another Die Block, flush with the die face: 2 x 2 m more die. The die is the largest full rectangle of blocks next to the Core; a block outside it idles.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6000.0,
+  "health": 3000,
+  "armour": 8,
+  "material": "steel",
+  "color": "#b5452b",
+  "attachSeconds": 20,
+  "machineBlock": {
+    "family": "extruder",
+    "role": "block",
+    "plane": "face"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.997,
+        0.003,
+        -3.25
+      ],
+      "max": [
+        0.997,
+        1.997,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.997,
+        0.003,
+        0.74
+      ],
+      "max": [
+        0.997,
+        1.997,
+        0.756
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        0.94,
+        0.0,
+        0.73
+      ],
+      "max": [
+        1.0,
+        2.0,
+        0.77
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        -1.0,
+        0.0,
+        0.73
+      ],
+      "max": [
+        -0.94,
+        2.0,
+        0.77
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -0.94,
+        1.94,
+        0.73
+      ],
+      "max": [
+        0.94,
+        2.0,
+        0.77
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+y"
+    },
+    {
+      "min": [
+        -0.94,
+        0.0,
+        0.73
+      ],
+      "max": [
+        0.94,
+        0.06,
+        0.77
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-y"
+    },
+    {
+      "min": [
+        0.94,
+        0.0,
+        -3.27
+      ],
+      "max": [
+        1.0,
+        2.0,
+        -3.05
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        -1.0,
+        0.0,
+        -3.27
+      ],
+      "max": [
+        -0.94,
+        2.0,
+        -3.05
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -0.94,
+        1.94,
+        -3.27
+      ],
+      "max": [
+        0.94,
+        2.0,
+        -3.05
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "+y"
+    },
+    {
+      "min": [
+        -0.94,
+        0.0,
+        -3.27
+      ],
+      "max": [
+        0.94,
+        0.06,
+        -3.05
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "-y"
+    },
+    {
+      "min": [
+        0.97,
+        0.25,
+        -2.1
+      ],
+      "max": [
+        1.0,
+        1.75,
+        -1.5
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "paintable": false,
+      "work": "glow",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        -1.0,
+        0.25,
+        -2.1
+      ],
+      "max": [
+        -0.97,
+        1.75,
+        -1.5
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "paintable": false,
+      "work": "glow",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -0.85,
+        1.97,
+        -2.1
+      ],
+      "max": [
+        0.85,
+        2.0,
+        -1.5
+      ],
+      "color": "#5a2414",
+      "detail": true,
+      "paintable": false,
+      "seam": "+y"
+    },
+    {
+      "min": [
+        -0.94,
+        0.0,
+        -3.0
+      ],
+      "max": [
+        0.94,
+        0.14,
+        0.65
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "-y"
+    },
+    {
+      "min": [
+        -0.45,
+        0.55,
+        -3.95
+      ],
+      "max": [
+        0.45,
+        1.45,
+        -3.254
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "-z",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.82,
+        -4.25
+      ],
+      "max": [
+        0.18,
+        1.18,
+        -3.95
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        1.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "outBed",
+      "at": [
+        0.0,
+        0.0,
+        0.75
+      ],
+      "dir": "+z",
+      "kind": "runOut"
+    }
+  ]
+}

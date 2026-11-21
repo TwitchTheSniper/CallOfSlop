@@ -49,12 +49,12 @@ public static partial class SelfTest
             want(t.Problem.Contains(why) && t.Rows.Length > 0, $"{json} wasn't refused for \"{why}\" (\"{t.Problem}\")");
         }
         var extruder = ConstructParts.Need("Extruder");
-        var frame = ConstructParts.Need("Die Frame");
+        var block = ConstructParts.Need("Die Block");
         want(extruder.IsExtruder && extruder.IsBin && extruder.PhysicsOnly && extruder.MaxInputs == 2 && extruder.HasOutput && extruder.PowerDraw > 0 && extruder.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName], "the Extruder part");
         var former = ConstructParts.Need("Wheel Former");
         want(former.IsExtruder && former.IsWheelFormer && former.MaxInputs == 3 && former.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName], "the Wheel Former part");
         want(ConstructParts.Find("Cut-off Saw") == null && ConstructParts.Find("Large Cut-off Saw") == null, "the saws are still parts");
-        want(frame.IsDieFrame && ConstructParts.Need("Large Die Frame").IsDieFrame, "the Die Frames");
+        want(block.BlockRole == BlockRole.Block && block.BlockFamily == extruder.BlockFamily && extruder.BlockRole == BlockRole.Core && block.BlockFace, "the Die Block");
         want(!ConstructParts.All.Any(d => d.IsExtrusion), "a piece is listed among the part files");
         var file = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Extrusion", "Extruder.json")).Replace("\r\n", "\n");
         ConstructParts.Parse(file, "good.json");
@@ -62,7 +62,7 @@ public static partial class SelfTest
         [
             ("\"speed\": 0.2", "\"speed\": 90", "speed"),
             ("\"kind\": \"die\"", "\"kind\": \"struct\"", "die"),
-            (string.Create(System.Globalization.CultureInfo.InvariantCulture, $"\"maxSection\": [\n        {extruder.ExtMaxSection.X:0.##},\n        {extruder.ExtMaxSection.Y:0.##}\n      ]"), "\"maxSection\": [0.2, 0.2]", "maxSection"), // (the file's own numbers, from its def: leftovers 3 took the frames to 8 m)
+            (string.Create(System.Globalization.CultureInfo.InvariantCulture, $"\"maxSection\": [\n        {extruder.ExtMaxSection.X:0.##},\n        {extruder.ExtMaxSection.Y:0.##}\n      ]"), "\"maxSection\": [0.2, 0.2]", "maxSection"), // (the file's own numbers, from its def)
             ("\"extrude\": {", "\"extrude\": { \"haste\": 2, ", "haste"),
             ("\"material\": \"any\"", "\"material\": \"metal\"", "any"),
         ];
@@ -410,7 +410,7 @@ public static partial class SelfTest
             return i;
         }
         var e = Fit2(0, "top21", "Extruder", "bottom");
-        Fit2(0, "top00", "Battery", "-y");
+        Fit2(0, "top03", "Battery", "-y"); // (clear of the Core's 2 x 1.5 m and of its die's way)
         if (e < 0)
             return null;
         var st = w.StoreOf(c, e)!;
@@ -519,33 +519,42 @@ public static partial class SelfTest
         p.Cfg[d.CfgSlot[(int)CfgKey.Height]] = 0.25f;
         ConstructExtruder.Section(c, e, out _, out var w0, out var h0, out _);
         want(w0 == 50 && h0 == 25, $"a section held to the die: {w0} by {h0}");
-        want(ConstructExtruder.Look(c, e, st, false, new SandboxInventory()).Contains("Die Frames"), "the look line says what to add");
-        // A Die Frame on each side, through the real rules: wider; the machine is wider too.
-        var frame = ConstructParts.Need("Die Frame");
+        want(ConstructExtruder.Look(c, e, st, false, new SandboxInventory()).Contains("Die Blocks"), "the look line says what to add");
+        // Die Blocks beside the Core, through the real rules: one makes a 2 x 2 m die beside it, two in a row a 4 x 2 m one.
+        var block = ConstructParts.Need("Die Block");
         var fits = new List<int>();
-        foreach (var sock in (string[])["+x", "-x"])
+        var on = e;
+        for (var k = 0; k < 2; k++)
         {
-            var ts = Array.FindIndex(d.Sockets, s => s.Name == sock);
-            if (ConstructBuild.Place(c, e, ts, frame, Array.FindIndex(frame.Sockets, s => s.Name == "-x"), 0, out var g) is { } why)
+            var od = c.DefOf(on);
+            var ts = Array.FindIndex(od.Sockets, s => s.Name == "+x");
+            if (ConstructBuild.Place(c, on, ts, block, Array.FindIndex(block.Sockets, s => s.Name == "-x"), 0, out var g) is { } why)
             {
-                want(false, $"a Die Frame on {sock}: {why}");
-                continue;
+                want(false, $"a Die Block on {od.Name} +x: {why}");
+                break;
             }
-            fits.Add(ConstructBuild.Attach(w, c, frame, g));
+            on = ConstructBuild.Attach(w, c, block, g);
+            fits.Add(on);
             c.Rebuild();
+            if (k == 0)
+            {
+                ConstructExtruder.Die(c, e, out var m1, out var s1);
+                want(Vector2.Distance(s1, new Vector2(2, 2)) < 0.02f && Vector2.Distance(m1, new Vector2(2, 1)) < 0.02f, $"one block makes a {s1} m die about {m1}");
+            }
         }
-        ConstructExtruder.Die(c, e, out _, out var size1);
-        want(fits.Count == 2 && MathF.Abs(size1.X - 2f) < 0.02f, $"two frames make a {size1.X} m die");
+        ConstructExtruder.Die(c, e, out var mid1, out var size1);
+        want(fits.Count == 2 && Vector2.Distance(size1, new Vector2(4, 2)) < 0.02f && Vector2.Distance(mid1, new Vector2(3, 1)) < 0.02f, $"two blocks make a {size1} m die about {mid1}");
         want(c.LocalMax.X - c.LocalMin.X >= bounds0.X, "the machine grew");
+        want(ConstructExtruder.PushOf(c, e) > d.ExtPush && ConstructExtruder.PowerOf(c, e) > d.PowerDraw, "the blocks add push and power");
         ConstructExtruder.Section(c, e, out _, out var w1, out _, out var centre1);
-        want(w1 == 200 && MathF.Abs(centre1.X) < 0.01f, $"the section takes the die ({w1}, centre {centre1})");
+        want(w1 == 200 && MathF.Abs(centre1.X - 3) < 0.01f, $"the section takes the die ({w1}, centre {centre1})");
         if (fits.Count < 2)
             return;
-        // A frame on one side only moves the die's centre; a broken frame gives its width back.
+        // A block shot off gives its share of the die back.
         w.DamagePart(c, fits[1], 1e6f, out _);
         c.Rebuild();
         ConstructExtruder.Die(c, e, out var mid2, out var size2);
-        want(size2.X < size1.X && MathF.Abs(mid2.X) > 0.1f, $"a frame gone: {size2.X} m about {mid2.X}");
+        want(size2.X < size1.X, $"a block gone: {size2.X} m about {mid2.X}");
         _ = mid0;
     }
 

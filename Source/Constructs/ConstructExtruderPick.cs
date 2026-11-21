@@ -22,7 +22,7 @@ public static class ExtruderPicks
     /// <summary>How many Profile choices it has (the presets, Custom, Round, Pipe and the foils).</summary>
     public static int Profiles(ConstructPartDef d) => d.Config[d.CfgSlot[(int)CfgKey.Profile]].Options.Length;
 
-    /// <summary>The widest and tallest section this machine's die makes now (its Die Frames counted), in cm on the 5 cm step.</summary>
+    /// <summary>The widest and tallest section this machine's die makes now (its Die Blocks counted), in cm on the 5 cm step.</summary>
     public static (int W, int H) DieCm(Construct c, int part)
     {
         ConstructExtruder.Die(c, part, out _, out var size);

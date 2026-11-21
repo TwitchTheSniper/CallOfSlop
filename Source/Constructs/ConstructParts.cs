@@ -265,7 +265,7 @@ public enum SocketKind : byte
     Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
-    RunOut, // an Extruder's out bed and a Run-out Table's ends: only a Run-out Table of its size class goes there (ConstructExtruderGrowth.cs)
+    RunOut, // an Extruder's (or a Die Block's) out bed and a Run-out Table's ends: only a Run-out Table goes there (ConstructExtruderGrowth.cs)
     Module, // a Module Socket's face and a Module Plug's: only a plug of the plate's footprint goes there, at the turns it allows (ModuleSockets.cs)
 }
 
@@ -698,9 +698,9 @@ public sealed partial class ConstructPartDef
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
     public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
-    public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most Die Frames can make of it (metres across, up the face)
-    public Vector2 ExtGrowSection; // ...the most die its expansion pieces make (Die Frames or Die Extensions; "growSection", else maxSection)
+    public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most its Die Blocks can make (metres across, up the face)
     public float ExtGrowLength; // ...the longest piece with its Run-out Tables ("growLength", else maxLength)
+    public float ExtBlockPush, ExtBlockPower; // ...an Extruder Core: what each Die Block in its die adds to its push (N) and its draw (W) ("blockPush", "blockPower")
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
@@ -709,9 +709,9 @@ public sealed partial class ConstructPartDef
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
-    public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
-    public float ExtGrowStep; // a Die Extension ("dieExtension": metres): flush with the die face of an Extruder of its size class, it adds a row or column of that much die (ExtruderGrowth.cs)
-    public float ExtRunOut; // a Run-out Table ("runOut": metres): joined to an Extruder of its size class (or another such table), it adds that much to the longest piece
+    public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
+    public bool BlockFace; // ...its cells stand in its x-y face, not on its x-z bed ("plane": "face": an Extruder's Die Blocks beside its Core)
+    public float ExtRunOut; // a Run-out Table ("runOut": metres): under an Extruder's die (its Core's or a Die Block's out bed, or another table), it takes the longest piece out to its far end
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
@@ -1373,7 +1373,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1732,13 +1732,7 @@ public static partial class ConstructParts
         }
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
-        d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
         MachineBlocks.Parse(d, root, file); // (after the sockets and bounds: a cell is checked against its lattice step)
-        if (Opt(root, "dieExtension") is { } dext)
-        {
-            d.ExtGrowStep = Num(dext, file, "dieExtension");
-            Range(d.ExtGrowStep, 0.25f, 8, file, "dieExtension");
-        }
         if (Opt(root, "runOut") is { } rout)
         {
             d.ExtRunOut = Num(rout, file, "runOut");

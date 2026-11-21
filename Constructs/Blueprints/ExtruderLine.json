@@ -9,24 +9,30 @@
     {
       "part": "Extruder",
       "on": 0,
-      "socket": "top21",
+      "socket": "top11",
       "by": "bottom"
     },
     {
-      "part": "Materials Bin",
+      "part": "Foundation",
       "on": 0,
+      "socket": "z-1",
+      "by": "z+1"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
       "socket": "top01",
       "by": "bottom"
     },
     {
       "part": "Battery",
-      "on": 0,
+      "on": 2,
       "socket": "top02",
       "by": "-y"
     },
     {
       "part": "Timer",
-      "on": 0,
+      "on": 2,
       "socket": "top03",
       "by": "-y",
       "config": {
@@ -38,12 +44,12 @@
   "links": [
     {
       "type": "chute",
-      "from": 2,
+      "from": 3,
       "to": 1
     },
     {
       "type": "data",
-      "from": 4,
+      "from": 5,
       "to": 1,
       "toPort": "Cut"
     }
