@@ -106,7 +106,7 @@ public static class ModuleCut
             ref var p = ref c.Parts[s.Plate];
             ConstructConfig.Put(ref p, p.D, CfgKey.ModCut, MathF.Max(0.1f, job.Seconds));
             world.StructureDirty.Add(c.Id);
-            world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} starts cutting its well: {plan.Cuts.Count} parts, {plan.Thick * 100:0} cm of hull, {plan.Seconds:0} s at {plan.Watts / 1000:0.#} kW"));
+            world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} starts cutting its {(s.Style == ModStyle.Through ? "opening" : "well")}: {plan.Cuts.Count} parts, {plan.Thick * 100:0} cm of hull, {plan.Seconds:0} s at {plan.Watts / 1000:0.#} kW"));
         }
     }
 
@@ -163,6 +163,28 @@ public static class ModuleCut
         return true;
     }
 
+    /// <summary>
+    /// The tunnel a socket's cut burns, from its mouth along -<paramref name="n"/> for <paramref name="len"/>, and its liner's two ends (the mouth's
+    /// first). A well (flush, Well): from just over the surface, <c>Depth</c> over the plate's face, down to just over the face. An Opening
+    /// (<see cref="ModStyle.Through"/>): from inside the plate back through what it is welded to, <c>Depth</c> behind its back, lined from its back.
+    /// </summary>
+    public static void Tunnel(Construct c, in CModSocket s, Vector3 face, Vector3 n, out Vector3 mouth, out float len, out Vector3 linerA, out Vector3 linerB)
+    {
+        if (s.Style == ModStyle.Through)
+        {
+            var thick = ModuleSockets.Thickness(c.DefOf(s.Plate));
+            mouth = face - n * OverPlate;
+            len = thick + s.Depth - OverPlate;
+            linerA = face - n * (thick + LinerOverPlate);
+            linerB = face - n * (thick + s.Depth);
+            return;
+        }
+        mouth = face + n * (s.Depth + OverSurface);
+        len = s.Depth + OverSurface - OverPlate;
+        linerA = face + n * (s.Depth + LinerOverSurface);
+        linerB = face + n * LinerOverPlate;
+    }
+
     /// <summary>The plate's frame in the world: its face's middle, its normal (out of the face), its across (x) and its up (z, the long side).</summary>
     private static void Frame(Construct c, int plate, out Vector3 face, out Vector3 n, out Vector3 across, out Vector3 up)
     {
@@ -188,14 +210,13 @@ public static class ModuleCut
             return new Plan(cuts, s.Plate, "a socket on a joint can't cut a well", 0, 0, 0);
         Frame(c, s.Plate, out var face, out var n, out var across, out var up);
         var depth = s.Depth;
-        var mouth = face + n * (depth + OverSurface);
-        var len = depth + OverSurface - OverPlate;
+        Tunnel(c, s, face, n, out var mouth, out var len, out _, out _);
         var halfW = s.W * 0.5f + Margin;
         var halfL = s.L * 0.5f + Margin;
         // The candidates: parts near the tunnel's box in the rest frame (the plate is on the body's own frame).
         var inv = Quaternion.Conjugate(c.Rot);
         Vector3 R(Vector3 w) => Vector3.Transform(w - c.Pos, inv);
-        var ra = R(face + n * OverPlate - across * halfW - up * halfL);
+        var ra = R(mouth - n * len - across * halfW - up * halfL);
         var rb = R(mouth + across * halfW + up * halfL);
         var lo = Vector3.Min(ra, rb);
         var hi = Vector3.Max(ra, rb);
@@ -283,7 +304,7 @@ public static class ModuleCut
         c.Dirty = true;
         world.StructureDirty.Add(c.Id);
         c.Wake();
-        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} well, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
+        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} {(s.Style == ModStyle.Through ? "opening" : "well")}, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
         if ((!world.Creative || world.TimedMachines) && lost > 1f)
             Slug(world, c, s, face, n, lost);
     }
@@ -297,8 +318,8 @@ public static class ModuleCut
         Vector3 D(Vector3 w) => Vector3.Transform(w, iq);
         var hw = s.W * 0.5f + LinerGap;
         var hl = s.L * 0.5f + LinerGap;
-        var v = HullHoles.Sleeve.Of(L(face + n * (s.Depth + LinerOverSurface)), D(across), D(up), hw, hl,
-            L(face + n * LinerOverPlate), D(across), D(up), hw, hl);
+        Tunnel(c, s, face, n, out _, out _, out var a, out var b);
+        var v = HullHoles.Sleeve.Of(L(a), D(across), D(up), hw, hl, L(b), D(across), D(up), hw, hl);
         var d = c.DefOf(part);
         if (HullHoles.WithSleeve(d, v) is not { } lined)
         {
@@ -367,7 +388,7 @@ public static class ModuleCut
             return null;
         var total = ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0);
         if (total > 0)
-            return FormattableString.Invariant($"cutting its well, {Math.Clamp(sinceSeen / total, 0, 0.99) * 100:0}% ({ModuleSocketTable.Current.CutWattsPerMetre * (s.W + s.L) * 0.5f / 1000:0.#} kW)");
+            return FormattableString.Invariant($"{(s.Style == ModStyle.Through ? "punching its opening" : "cutting its well")}, {Math.Clamp(sinceSeen / total, 0, 0.99) * 100:0}% ({ModuleSocketTable.Current.CutWattsPerMetre * (s.W + s.L) * 0.5f / 1000:0.#} kW)");
         if (s.InTheWay < 0 || s.Module >= 0)
             return null;
         var d = c.DefOf(s.InTheWay);

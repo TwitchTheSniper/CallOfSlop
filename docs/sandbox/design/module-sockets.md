@@ -104,6 +104,16 @@ surface** (the outer face of the part the socket was placed on):
 | **Proud** | on the surface | a box over the footprint, `above` metres tall (default twice the short side), plus `side` clearance (5 cm) | its height over the plug face |
 | **Flush** | at the foot of a well `depth` deep | the well only: nothing stands above the surface | its **face**: its outer face's height over the plug face. It fits when face = depth (1 cm grid); the face then stands 3 mm proud of the surface (z-fighting rule) |
 | **Opening** | at the foot of a well `depth` deep | the well, plus a box `above` metres over the surface (0: a closed bay) | how far below and above the surface it stands when seated at that depth |
+| **Opening** (through; Sean 2026-11-21) | on the surface, drawn as a frame with a hole in its middle | the box `above` over the face, plus the hole: back through the plate and `depth` metres behind its back | as proud; parts may also reach back into the hole (a rack that retracts into the wall) |
+
+The settings panel names the styles Proud, Flush, **Well** and **Opening**: the file and wire name `"opening"` is the Well above (the
+plate at a well's foot, which the retrofit ships use), and `"through"` (`ModStyle.Through`, the fourth, at the end of the wire's
+order) is the see-through Opening. An Opening socket punches through whatever it is welded to: its cut (`ModuleCut.Tunnel`) runs from
+inside the plate back through its back `depth` metres, holes every part it meets, lines the hole from the plate's back down, and the
+room goes back the same way, so nothing of the ship may stand in the hole. The plate draws as a frame (its boxes marked `"middle"`
+are left out: `ModuleSockets.FrameLook`, walked by the render batch), and so does the plug fitted to it, so a module can pass back
+through both; a plug's frame carries four Small sockets (`rz0`, `rz1`, `rx0`, `rx1`, round: `r.0`-`r.3`) for a piston's base or
+the like, its middle sockets standing in the air over the hole. Square and round alike.
 
 - **Depth** 0.25 m upward in 0.25 m steps, at most the short side x 2 (6 m for a 3x3; planned to 30 m); **above** 0 to
   4 x the long side in 0.5 m steps.
@@ -176,8 +186,8 @@ keyed; a round module's blueprint block says `"round": true`, and faction choice
 (`ModuleSlot.Round`, `ModuleCandidate.Round`). Look: a dark base flange, the hazard ring with four index ticks and a bolt circle,
 a seal gasket and centre boss under the plug, the keying notch on the -x -z side; the plug a disc with a bolted ledge carrying the
 four lifting lugs outside its top, so a part as wide as the top stands between them; the stand a plate on a pedestal with four ribs.
-Collision is three hidden boxes per disc (a square and a cross inside the circle). Rating, room and the flush or opening well still go
-by the square footprint: the well a round socket cuts is square (`HullHoles` cuts rectangles; a round hole is later).
+Collision is three hidden boxes per disc (a square and a cross inside the circle). Rating, room and the flush, Well or Opening cut still go
+by the square footprint: the hole a round socket cuts is square (`HullHoles` cuts rectangles; a round hole is later).
 
 ## 3. Fitting checks: clearance and collision
 

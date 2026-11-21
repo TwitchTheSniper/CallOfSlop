@@ -38,6 +38,19 @@ public sealed partial class ModuleSocketParts
         p.Add(Box([cx - 0.38 * r, y0, cz - 0.92 * r], [cx + 0.38 * r, y1, cz + 0.92 * r], hidden: true));
     }
 
+    /// <summary>
+    /// A ring's solid (a plate's or plug's frame, whose middle an Opening leaves open): four hidden bars round a square hole of half
+    /// <paramref name="hole"/>, inside the footprint's square. The middle is drawn only, so things pass through the hole.
+    /// </summary>
+    private static void SolidRing(Part p, double cx, double cz, double hole, double r, double y0, double y1)
+    {
+        var s = 0.7 * r;
+        p.Add(Box([cx - s, y0, cz + hole], [cx + s, y1, cz + r], hidden: true));
+        p.Add(Box([cx - s, y0, cz - r], [cx + s, y1, cz - hole], hidden: true));
+        p.Add(Box([cx + hole, y0, cz - hole], [cx + r, y1, cz + hole], hidden: true));
+        p.Add(Box([cx - r, y0, cz - hole], [cx - hole, y1, cz + hole], hidden: true));
+    }
+
     /// <summary>A ring round (<paramref name="cx"/>, <paramref name="cz"/>) from radius <paramref name="r0"/> out to <paramref name="r1"/>.</summary>
     private static PyDict? Ring(double cx, double cz, double r0, double r1, double y0, double y1, string colour, int segs, bool detail = false) =>
         Box([cx - r1, y0, cz - r1], [cx + r1, y1, cz + r1], colour, detail: detail, shape: Tube(segs, r0 / r1));
@@ -98,12 +111,16 @@ public sealed partial class ModuleSocketParts
     {
         var segs = Segs(d);
         double c = (d - 1) * 0.5, r = d * 0.5, face = top - Drawn;
-        SolidDisc(p, c, c, r, y0, face);
-        p.Add(Disc(c, c, r, y0, y0 + 0.035, LugC, segs, detail: true)); // the base flange: full width, dark
-        p.Add(Disc(c, c, r - 0.02, y0 + 0.035, face - 0.016, PlateC, segs, detail: true)); // the plate's body
+        SolidRing(p, c, c, r - FrameW - 0.01, r, y0, face); // (nothing solid inside the round hole)
+        // The base flange (full width, dark) and the body, each a ring round a middle that an Opening socket leaves out (a frame).
+        var hole = r - FrameW - 0.01;
+        p.Add(Ring(c, c, hole, r, y0, y0 + 0.035, LugC, segs, detail: true));
+        p.Add(Mid(Disc(c, c, hole, y0, y0 + 0.035, LugC, segs, detail: true)));
+        p.Add(Ring(c, c, hole, r - 0.02, y0 + 0.035, face - 0.016, PlateC, segs, detail: true));
+        p.Add(Mid(Disc(c, c, hole, y0 + 0.035, face - 0.016, PlateC, segs, detail: true)));
         // The face: the hazard ring round a plain middle, one slab high (the same segments, so their shared edge meets).
         p.Add(Ring(c, c, r - 0.13, r - 0.024, face - 0.016, face, RimC, segs, detail: true));
-        p.Add(Disc(c, c, r - 0.13, face - 0.016, face, PlateC, segs, detail: true));
+        p.Add(Mid(Disc(c, c, r - 0.13, face - 0.016, face, PlateC, segs, detail: true)));
         // The index ticks across the ring at its four quarters, standing on its face (detail).
         foreach (var (x, z) in Circle(c, c, r - 0.077, 4))
         {
@@ -117,12 +134,12 @@ public sealed partial class ModuleSocketParts
         foreach (var (x, z) in Circle(c, c, r - 0.077, bolts, 180.0 / bolts))
             p.Add(Disc(x, z, 0.02, face - 0.01, face + 0.006, BoltC, 8, detail: true));
         // The seal gasket the plug's rim lands on, and the centre's locating boss (both under the plug).
-        p.Add(Ring(c, c, r - 0.2, r - 0.165, face - 0.01, face + 0.004, GasketC, segs, detail: true));
-        p.Add(Ring(c, c, 0.06, 0.1, face - 0.01, face + 0.004, BoltC, 16, detail: true));
+        p.Add(Mid(Ring(c, c, r - 0.2, r - 0.165, face - 0.01, face + 0.004, GasketC, segs, detail: true)));
+        p.Add(Mid(Ring(c, c, 0.06, 0.1, face - 0.01, face + 0.004, BoltC, 16, detail: true)));
         // The keying notch: a dark block on the -x -z side (a keyed socket takes its module with the notches together).
         var k = c - (r - 0.27) * Math.Sqrt(0.5);
-        p.Add(Box([k - 0.05, face - 0.01, k - 0.05], [k + 0.05, face + 0.006, k + 0.05], LugC, detail: true));
-        p.Add(Box([c - 0.1, top - 0.012, c - 0.1], [c + 0.1, top, c + 0.1], hidden: true)); // (the socket's solid face; never drawn)
+        p.Add(Mid(Box([k - 0.05, face - 0.01, k - 0.05], [k + 0.05, face + 0.006, k + 0.05], LugC, detail: true)));
+        p.Add(Box([c - 0.03, top - 0.012, c - 0.03], [c + 0.03, top, c + 0.03], hidden: true)); // (the socket's solid face; never drawn: small, as it stands in an Opening's hole)
         p.Sock("module", [c, top, c], "+y", kind: "module");
     }
 
@@ -134,7 +151,7 @@ public sealed partial class ModuleSocketParts
         RoundPlate(p, d, Back, PlateTop);
         double c = (d - 1) * 0.5, r = d * 0.5;
         var l = c + (r - 0.27) * Math.Sqrt(0.5);
-        p.Add(Box([l - 0.03, PlateTop - Drawn - 0.01, c - (l - c) - 0.03], [l + 0.03, PlateTop + 0.003, c - (l - c) + 0.03], LampC, detail: true)); // the lamp (+x -z): the last box
+        p.Add(Mid(Box([l - 0.03, PlateTop - Drawn - 0.01, c - (l - c) - 0.03], [l + 0.03, PlateTop + 0.003, c - (l - c) + 0.03], LampC, detail: true))); // the lamp (+x -z): the last box
         RoundBackSockets(p, d, Back, "-y");
         p.Sock("bc", [c, Back, c], "-y", Small); // (the back's middle, so a plate goes centred on a Small mount)
         var area = Math.PI / 4 * d * d;
@@ -151,9 +168,13 @@ public sealed partial class ModuleSocketParts
         var segs = Segs(d);
         double c = (d - 1) * 0.5, r = d * 0.5 - Inset;
         double y0 = Back + 0.012, y1 = Back + PlugT; // (its underside 12 mm over its socket: 15 mm over the plate's drawn face, clear of its bolts)
-        SolidDisc(p, c, c, r, y0, y1);
-        p.Add(Disc(c, c, r, y0, y1 - 0.02, PlugC, segs, detail: true)); // the body, its rim a ledge round the top
-        p.Add(Disc(c, c, r - 0.06, y1 - 0.02, y1, PlugTopC, segs, detail: true)); // the top, where parts weld
+        SolidRing(p, c, c, d * 0.5 - FrameW - 0.01, r, y0, y1);
+        // The body (its rim a ledge round the top) and the top where parts weld, each a ring round a middle left out on an Opening socket.
+        var hole = d * 0.5 - FrameW - 0.01;
+        p.Add(Ring(c, c, hole, r, y0, y1 - 0.02, PlugC, segs, detail: true));
+        p.Add(Mid(Disc(c, c, hole, y0, y1 - 0.02, PlugC, segs, detail: true)));
+        p.Add(Ring(c, c, hole, r - 0.06, y1 - 0.02, y1, PlugTopC, segs, detail: true));
+        p.Add(Mid(Disc(c, c, hole, y1 - 0.02, y1, PlugTopC, segs, detail: true)));
         // The ledge's bolt circle.
         var bolts = Math.Max(8, (int)Math.Round(2 * Math.PI * (r - 0.03) / 0.3 / 4) * 4);
         foreach (var (x, z) in Circle(c, c, r - 0.03, bolts, 180.0 / bolts))
@@ -169,7 +190,7 @@ public sealed partial class ModuleSocketParts
         // The keying notch on the ledge, matching the plate's (-x -z).
         var k = c - (r - 0.03) * Math.Sqrt(0.5);
         p.Add(Box([k - 0.018, y1 - 0.02, k - 0.018], [k + 0.018, y1 + 0.004, k + 0.018], LugC, detail: true));
-        p.Add(Box([c - 0.1, Back, c - 0.1], [c + 0.1, Back + 0.012, c + 0.1], hidden: true)); // (the socket's solid face)
+        p.Add(Box([c - 0.03, Back, c - 0.03], [c + 0.03, Back + 0.012, c + 0.03], hidden: true)); // (the socket's solid face: small, as it stands in an Opening's hole)
         p.Sock("module", [c, Back, c], "-y", kind: "module");
         for (var i = 0; i < d; i++)
             for (var j = 0; j < d; j++)
@@ -187,6 +208,10 @@ public sealed partial class ModuleSocketParts
                     p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small);
         if (d % 2 == 0)
             p.Sock("tc", [c, y1, c], "+y", Small); // (the top's middle where no cell's is, so one part stands centred)
+        // The frame's sockets (an Opening socket: a piston's base on the frame, what it moves through the hole): four round the top ring.
+        var k2 = 0;
+        foreach (var (x, z) in Circle(c, c, (hole + r - 0.06) * 0.5, 4, 45))
+            p.Sock($"r.{k2++}", [Py.Round(x, 3), y1, Py.Round(z, 3)], "+y", Small);
         var area = Math.PI / 4 * d * d;
         p.Stats(Math.Round(area * 60), Math.Round(100 + area * Medium.HealthM2), Medium.Armour, seconds: Math.Round(3.0 + area, 1));
         p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", d), ("l", d), ("round", true))), ("ports", RoundPorts(d, y1, "out", "+y")));

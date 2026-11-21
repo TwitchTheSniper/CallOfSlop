@@ -32,6 +32,26 @@ public sealed partial class ModuleSocketParts : IPartGenerator
 
     private static string Size(int w, int l) => $"{w}x{l}";
 
+    private const double FrameW = 0.12; // a plate's or plug's frame round the hole it shows in an Opening socket (the hazard rim's width)
+
+    /// <summary>A box inside the frame (<c>"middle"</c>): left undrawn while the plate is an Opening socket, or the plug is on one (ModuleSockets.FrameLook).</summary>
+    private static PyDict? Mid(PyDict? b)
+    {
+        b!["middle"] = true;
+        return b;
+    }
+
+    /// <summary>A slab from (x0, z0) to (x1, z1), y0 to y1, as a frame <see cref="FrameW"/> wide round its footprint's edge (ex0..ex1, ez0..ez1) and a middle.</summary>
+    private static void FramedSlab(Part p, double x0, double x1, double z0, double z1, double y0, double y1, double ex0, double ex1, double ez0, double ez1, string colour)
+    {
+        double ix0 = ex0 + FrameW, ix1 = ex1 - FrameW, iz0 = ez0 + FrameW, iz1 = ez1 - FrameW;
+        p.Add(Box([x0, y0, z0], [x1, y1, iz0], colour));
+        p.Add(Box([x0, y0, iz1], [x1, y1, z1], colour));
+        p.Add(Box([x0, y0, iz0], [ix0, y1, iz1], colour));
+        p.Add(Box([ix1, y0, iz0], [x1, y1, iz1], colour));
+        p.Add(Mid(Box([ix0, y0, iz0], [ix1, y1, iz1], colour, detail: true))); // (drawn only: the hole an Opening shows lets things through; what is behind carries the rest)
+    }
+
     /// <summary>
     /// The pipe couplings (module-sockets.md 2.5; the table's "couplings"): where each stands in the footprint's 0..1 square, the fluid, and
     /// the smallest area that has it. The plate takes a pipe in at its back; the plug's port of the same name gives it out of its top
@@ -103,18 +123,18 @@ public sealed partial class ModuleSocketParts : IPartGenerator
     private static void Plate(Part p, int w, int l, double y0, double top)
     {
         var face = top - Drawn;
-        p.Add(Box([-0.5, y0, -0.5], [w - 0.5, face - 0.016, l - 0.5], PlateC));
+        FramedSlab(p, -0.5, w - 0.5, -0.5, l - 0.5, y0, face - 0.016, -0.5, w - 0.5, -0.5, l - 0.5, PlateC); // (its middle left out in an Opening socket: a frame)
         // The face: a hazard rim round a plain middle, one slab high.
-        p.Add(Box([-0.5 + 0.12, face - 0.016, -0.5 + 0.12], [w - 0.5 - 0.12, face, l - 0.5 - 0.12], PlateC));
+        p.Add(Mid(Box([-0.5 + 0.12, face - 0.016, -0.5 + 0.12], [w - 0.5 - 0.12, face, l - 0.5 - 0.12], PlateC, detail: true)));
         p.Add(Box([-0.5 + 0.004, face - 0.016, -0.5 + 0.004], [w - 0.5 - 0.004, face, -0.5 + 0.12], RimC));
         p.Add(Box([-0.5 + 0.004, face - 0.016, l - 0.5 - 0.12], [w - 0.5 - 0.004, face, l - 0.5 - 0.004], RimC));
         p.Add(Box([-0.5 + 0.004, face - 0.016, -0.5 + 0.12], [-0.5 + 0.12, face, l - 0.5 - 0.12], RimC));
         p.Add(Box([w - 0.5 - 0.12, face - 0.016, -0.5 + 0.12], [w - 0.5 - 0.004, face, l - 0.5 - 0.12], RimC));
         Bolts(p, w, l, face);
         // The keying notch: a dark corner block (a keyed socket takes its module with the notched corners together).
-        p.Add(Box([-0.5 + 0.13, face - 0.01, -0.5 + 0.13], [-0.5 + 0.25, face + 0.006, -0.5 + 0.25], LugC, detail: true));
+        p.Add(Mid(Box([-0.5 + 0.13, face - 0.01, -0.5 + 0.13], [-0.5 + 0.25, face + 0.006, -0.5 + 0.25], LugC, detail: true)));
         double cx = (w - 1) * 0.5, cz = (l - 1) * 0.5;
-        p.Add(Box([cx - 0.1, top - 0.012, cz - 0.1], [cx + 0.1, top, cz + 0.1], hidden: true)); // (the socket's solid face; never drawn)
+        p.Add(Box([cx - 0.03, top - 0.012, cz - 0.03], [cx + 0.03, top, cz + 0.03], hidden: true)); // (the socket's solid face; never drawn: small, as it stands in an Opening's hole)
         p.Sock("module", [cx, top, cz], "+y", kind: "module");
     }
 
@@ -124,7 +144,7 @@ public sealed partial class ModuleSocketParts : IPartGenerator
             $"A standard {Size(w, l)} m socket: a Module Plug of its size fits it. F with a module near fits it; F again takes it off.",
             role: "frame", color: PlateC, group: Group);
         Plate(p, w, l, Back, PlateTop);
-        p.Add(Box([w - 0.5 - 0.2, PlateTop - Drawn - 0.01, -0.5 + 0.14], [w - 0.5 - 0.14, PlateTop + 0.003, -0.5 + 0.2], LampC, detail: true)); // the lamp: the last box
+        p.Add(Mid(Box([w - 0.5 - 0.2, PlateTop - Drawn - 0.01, -0.5 + 0.14], [w - 0.5 - 0.14, PlateTop + 0.003, -0.5 + 0.2], LampC, detail: true))); // the lamp: the last box
         BackSockets(p, w, l, Back, "-y");
         p.Sock("bc", [(w - 1) * 0.5, Back, (l - 1) * 0.5], "-y", Small); // (phase 6: the back's middle, so a plate goes centred on a Small mount: after every older socket)
         var area = w * l;
@@ -140,10 +160,10 @@ public sealed partial class ModuleSocketParts : IPartGenerator
             role: "frame", color: PlugC, group: Group);
         double y0 = Back + 0.012, y1 = Back + PlugT; // (its underside 12 mm over its socket: 15 mm over the plate's drawn face, clear of its bolts)
         double x0 = -0.5 + Inset, x1 = w - 0.5 - Inset, z0 = -0.5 + Inset, z1 = l - 0.5 - Inset;
-        p.Add(Box([x0, y0, z0], [x1, y1 - 0.02, z1], PlugC));
-        p.Add(Box([x0 + 0.03, y1 - 0.02, z0 + 0.03], [x1 - 0.03, y1, z1 - 0.03], PlugTopC));
+        FramedSlab(p, x0, x1, z0, z1, y0, y1 - 0.02, -0.5, w - 0.5, -0.5, l - 0.5, PlugC); // (a frame on an Opening socket, so the module passes back through it)
+        FramedSlab(p, x0 + 0.03, x1 - 0.03, z0 + 0.03, z1 - 0.03, y1 - 0.02, y1, -0.5, w - 0.5, -0.5, l - 0.5, PlugTopC);
         double cx = (w - 1) * 0.5, cz = (l - 1) * 0.5;
-        p.Add(Box([cx - 0.1, Back, cz - 0.1], [cx + 0.1, Back + 0.012, cz + 0.1], hidden: true)); // (the socket's solid face)
+        p.Add(Box([cx - 0.03, Back, cz - 0.03], [cx + 0.03, Back + 0.012, cz + 0.03], hidden: true)); // (the socket's solid face: small, as it stands in an Opening's hole)
         // The lifting lugs: a block at each corner with an eye over it (inside the footprint, so never out of the room).
         // (each 7.5 cm square, 1 cm in from the plug's edge: a part 1.8 m across, as a Zero Day Reactor, stands between a 2x2 plug's lugs)
         foreach (var (lx, lz) in new[] { (x0 + 0.01, z0 + 0.01), (x1 - 0.085, z0 + 0.01), (x0 + 0.01, z1 - 0.085), (x1 - 0.085, z1 - 0.085) })
@@ -152,7 +172,7 @@ public sealed partial class ModuleSocketParts : IPartGenerator
             p.Add(Box([lx + 0.02, y1 + 0.06, lz + 0.025], [lx + 0.055, y1 + 0.1, lz + 0.05], BoltC, detail: true));
         }
         // The keying notch, matching the plate's corner.
-        p.Add(Box([-0.5 + 0.13, y1 - 0.02, -0.5 + 0.13], [-0.5 + 0.25, y1 + 0.004, -0.5 + 0.25], LugC, detail: true));
+        p.Add(Mid(Box([-0.5 + 0.13, y1 - 0.02, -0.5 + 0.13], [-0.5 + 0.25, y1 + 0.004, -0.5 + 0.25], LugC, detail: true)));
         p.Sock("module", [cx, Back, cz], "-y", kind: "module");
         for (var i = 0; i < w; i++)
             for (var j = 0; j < l; j++)
@@ -168,10 +188,24 @@ public sealed partial class ModuleSocketParts : IPartGenerator
                 p.Sock($"s{i}.{j}", [i, y1, j], "+y", Small);
         if (w % 2 == 0 || l % 2 == 0)
             p.Sock("tc", [(w - 1) * 0.5, y1, (l - 1) * 0.5], "+y", Small); // (phase 6: the top's middle where no cell's is, so one part stands centred: last)
+        RimSockets(p, w, l, y1);
         var area = w * l;
         p.Stats(area * 60, 100 + area * Medium.HealthM2, Medium.Armour, seconds: 3.0 + area);
         p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l))), ("ports", PipePorts(w, l, y1, "out", "+y")));
         return p;
+    }
+
+    /// <summary>
+    /// Small sockets on a plug's frame (Sean 2026-11-21, the Opening style): the middle of its rim on each side, so a part such as a piston's
+    /// base stands on the frame while what it moves passes through the hole. After every older socket (saves keep links by index).
+    /// </summary>
+    private static void RimSockets(Part p, int w, int l, double y)
+    {
+        double e = FrameW * 0.5, cx = (w - 1) * 0.5, cz = (l - 1) * 0.5;
+        p.Sock("rz0", [cx, y, -0.5 + e], "+y", Small);
+        p.Sock("rz1", [cx, y, l - 0.5 - e], "+y", Small);
+        p.Sock("rx0", [-0.5 + e, y, cz], "+y", Small);
+        p.Sock("rx1", [w - 0.5 - e, y, cz], "+y", Small);
     }
 
     private static Part Stand(int w, int l)
