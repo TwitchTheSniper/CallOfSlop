@@ -682,7 +682,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 402: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
     //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
     // 403: the clamshell Press (400 above) landed after 401 and 402, so the number moves on past them.
-    public const ushort ProtocolVersion = 403;
+    // 407: Press part 2 (Sean, 2026-11-21): dies lose their size classes and one Die Lathe cuts them all (the Medium, Large and Capital dies,
+    //      lathes and the Medium Die Rack go: part ids shift). 404 to 406 are kept for the Hall Crane, the Grow Former and the Laser Cutter's follow-up.
+    public const ushort ProtocolVersion = 407;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
