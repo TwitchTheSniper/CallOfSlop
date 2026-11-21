@@ -457,6 +457,8 @@ public static unsafe partial class Program
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
         if (args.Any(a => a.Equals("--no-contrast", StringComparison.OrdinalIgnoreCase)))
             LightGrid.ContrastForcedOff = true; // each material's own roughness whatever the Video setting (a before picture of material contrast)
+        if (args.Any(a => a.Equals("--no-sun-shadows", StringComparison.OrdinalIgnoreCase)))
+            SunShadows.ForcedOff = true; // no ship shadows from the sun whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
             PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
@@ -1179,6 +1181,17 @@ public static unsafe partial class Program
         MoverRender.Draw(Gfx, map, tick);
     }
 
+    private static void DrawSunShadows()
+    {
+        if (_game is not { } g || !Matrix4x4.Invert(Gfx.View, out var inv))
+        {
+            SunShadows.EndWorld();
+            return;
+        }
+        using (Perf.Measure(PerfArea.ConstructDraw))
+            SunShadows.Render(Gfx, g.Constructs, Gfx.CameraPosition, -new Vector3(inv.M31, inv.M32, inv.M33), g.TickAlpha, g.IsServer);
+    }
+
     private static void DrawArena()
     {
         var map = World.Map;
@@ -1194,6 +1207,7 @@ public static unsafe partial class Program
             SpaceSky.Update(map, _session?.Space, spaceT, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
         Lighting.Use(StormLight(map)); // this map's sun, ambient and sky-coloured fog in every scene shader, under its storm if it has one (no-op if unchanged; Program.Storm.cs)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
+        DrawSunShadows(); // the ships' and vehicles' shadow map from the key light, before anything it falls on (Source/Render/SunShadows.cs)
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs).
         // Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.

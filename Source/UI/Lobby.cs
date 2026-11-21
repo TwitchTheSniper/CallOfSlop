@@ -1017,6 +1017,10 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
             ImGui.Checkbox("Contact shadows##post"u8, ref s.ContactShadows);
             ImGui.TextColored(Dim, "A soft shadow on the ground under ships and vehicles, darker the closer they sit."u8);
+            VideoLevelRow("Sun shadows"u8, "sunshadows", ref s.SunShadows);
+            ImGui.TextColored(Dim, "Ships and vehicles near you cast the sun's shadow on the ground, buildings and each other. Low: off. Medium: soft edges. High: sharper detail, a little slower."u8);
+            ImGui.SliderFloat("Key light"u8, ref s.KeyLight, 0.7f, 1.6f, "%.2fx"u8);
+            ImGui.TextColored(Dim, "How strong the sun is against the sky's light: higher gives harder light and deeper shade."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

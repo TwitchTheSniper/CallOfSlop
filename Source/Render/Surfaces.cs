@@ -387,7 +387,7 @@ public static class Surfaces
             float norm = (power + 8.0) * 0.04;
             vec3 h = normalize(uSunDir + v);
             float nl = max(dot(nn, uSunDir), 0.0);
-            col += uSunColor * gSunVis * fres * pow(max(dot(nn, h), 0.0), power) * norm * nl;
+            col += uSunColor * (uKeyQ.x > 0.0 ? uKeyQ.x : 1.0) * gSunVis * fres * pow(max(dot(nn, h), 0.0), power) * norm * nl;
             if (uLitMode.x > 0.5 && dot(gLitDir, gLitDir) > 0.01)
             {
                 vec3 ld = normalize(gLitDir);

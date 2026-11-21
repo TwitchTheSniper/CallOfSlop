@@ -60,7 +60,7 @@ public static unsafe class LightGrid
     /// <summary>Settings > Video > Dynamic lights (muzzle flashes and blasts light lit maps, at most <see cref="MaxDynamic"/>).</summary>
     public static bool DynamicEnabled = true;
 
-    /// <summary>The LitFrame block as std140 lays it out: 6 vec4s, then 4 positions and 4 colours, then the materials setting.</summary>
+    /// <summary>The LitFrame block as std140 lays it out: 6 vec4s, then the dynamic lights, the materials setting, the sun shadow map and the key light.</summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct FrameBlock
     {
@@ -73,6 +73,10 @@ public static unsafe class LightGrid
         public DynArray Dyn;  // dynamic lights: position, range
         public DynArray DynC; // colour * intensity
         public Vector4 Surf;    // x: the materials setting (Surfaces.cs); z: edge bevels on; w: material contrast on
+        public Matrix4x4 ShadowVP; // world (less ShadowC) to the sun shadow map's u, v and stored depth (SunShadows.cs)
+        public Vector4 ShadowC;   // xyz: the map's centre; w: the normal offset (m)
+        public Vector4 ShadowQ;   // x: 1 while the map is live; y: the soft edge's radius (uv); z: the depth sign; w: the depth bias
+        public Vector4 Key;       // x: the key light's multiplier (Video: Key light)
     }
 
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
@@ -88,6 +92,7 @@ public static unsafe class LightGrid
     public static bool MarkGlow;
 
     private static float _lastMark;
+    private static bool _shadowSent;
 
     private static FrameBlock _block;
     private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
@@ -118,6 +123,7 @@ public static unsafe class LightGrid
         SetSampler(program, "uLitA\0"u8, UnitA);
         SetSampler(program, "uLitB\0"u8, UnitB);
         SetSampler(program, "uLitC\0"u8, UnitC);
+        SetSampler(program, "uSunShadow\0"u8, SunShadows.Unit);
     }
 
     private static void SetSampler(GlProgram program, ReadOnlySpan<byte> nameZ, int unit)
@@ -256,7 +262,8 @@ public static unsafe class LightGrid
     /// <summary>Menus, gun pictures and thumbnails: the classic light (mode 0).</summary>
     public static void Off()
     {
-        if (!_ready || (_lastMode == 0f && _lastMark == 0f))
+        SunShadows.EndWorld();
+        if (!_ready || (_lastMode == 0f && _lastMark == 0f && !_shadowSent))
             return;
         _block.Mode = Vector4.Zero;
         MarkGlow = false;
@@ -286,6 +293,16 @@ public static unsafe class LightGrid
         _block.Surf.Z = Bevels ? 1f : 0f;
         _block.Surf.W = Contrast ? 1f : 0f;
         _block.Surf.Y = _lastMark = MarkGlow ? 1f : 0f;
+        _block.Key = new Vector4(SunShadows.KeyLight, 0f, 0f, 0f);
+        if (SunShadows.Live && _block.Mode.X is < 1.5f or > 2.5f) // (not the first-person gun's probe pass, drawn in its own space)
+        {
+            _block.ShadowVP = SunShadows.Lookup;
+            _block.ShadowC = new Vector4(SunShadows.Centre, SunShadows.NormalOffset);
+            _block.ShadowQ = new Vector4(1f, SunShadows.TexelUv * 1.6f, SunShadows.DepthSign, SunShadows.DepthBias);
+        }
+        else
+            _block.ShadowQ = Vector4.Zero;
+        _shadowSent = _block.ShadowQ.X > 0f;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)
             Native.glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameBlock), p);

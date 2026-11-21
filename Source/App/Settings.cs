@@ -112,6 +112,8 @@ public sealed class Settings
     public bool Bloom = true, HeatHaze = true, AmbientOcclusion = true; // each post effect's own switch
     public float AoStrength = 1f, AoRadius = 0.8f; // ambient occlusion's darkness (0.25-2) and reach in metres (0.3-2.5) (PostFx.cs)
     public bool MaterialContrast = true; // Materials Medium and High: paint a satin 0.6 roughness, dark framing and rubber rough (Surfaces.cs)
+    public VideoLevel SunShadows = VideoLevel.Medium; // ships and vehicles shade the sun: Low off, Medium a 2048 map, High 4096 (SunShadows.cs)
+    public float KeyLight = 1f; // the sun's (key light's) strength, 0.7-1.6x (SunShadows.KeyLight)
     public bool ContactShadows = true; // at any Post effects level: a soft shadow on the ground under ships and vehicles (PostFx.Contact.cs)
     public bool EdgeBevels = true; // Materials Medium and High: every box edge drawn as a thin chamfer that catches the light (Surfaces.cs)
     public bool HiddenCulling = true; // big ships: parts hidden behind hulls and walls aren't drawn (ConstructRenderOcclusion.cs)
@@ -581,6 +583,8 @@ public sealed class Settings
                     case "ao_radius" when float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var aoR): s.AoRadius = Math.Clamp(aoR, 0.3f, 2.5f); break;
                     case "ambient_occlusion" when bool.TryParse(v, out var aoOn): s.AmbientOcclusion = aoOn; break;
                     case "material_contrast" when bool.TryParse(v, out var contrastOn): s.MaterialContrast = contrastOn; break;
+                    case "sun_shadows" when Enum.TryParse<VideoLevel>(v, out var shq) && Enum.IsDefined(shq): s.SunShadows = shq; break;
+                    case "key_light" when float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var keyL): s.KeyLight = Math.Clamp(keyL, 0.7f, 1.6f); break;
                     case "contact_shadows" when bool.TryParse(v, out var contactOn): s.ContactShadows = contactOn; break;
                     case "edge_bevels" when bool.TryParse(v, out var bevelOn): s.EdgeBevels = bevelOn; break;
                     case "hidden_culling" when bool.TryParse(v, out var hcOn): s.HiddenCulling = hcOn; break;
@@ -740,6 +744,8 @@ public sealed class Settings
                     $"ao_radius={AoRadius.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
                     $"edge_bevels={EdgeBevels}",
                     $"contact_shadows={ContactShadows}",
+                    $"sun_shadows={SunShadows}",
+                    $"key_light={KeyLight.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
                     $"material_contrast={MaterialContrast}",
                     $"hidden_culling={HiddenCulling}",
                     $"far_detail={FarDetail}",
