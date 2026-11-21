@@ -56,8 +56,8 @@ public sealed class ClocheParts : IPartGenerator
     private static readonly double[] Bays = [-14.2, -6.6, 1.0, 8.6];
     private const double HoleX0 = 1.6, HoleX1 = 2.8, HoleZ0 = -8.0, HoleZ1 = -6.9; // (each greenhouse's hatch through the roof: x mirrored)
 
-    // Flying it: eight lift jets under the belly, a drive in each nacelle's tail, each under the 500 kN that needs works.
-    private const double LiftForce = 400000, DriveForce = 450000, Burn = 2.5;
+    // Flying it: sixteen lift jets under the belly, a drive in each nacelle's tail, each under the 500 kN that needs works.
+    private const double LiftForce = 480000, DriveForce = 450000, Burn = 2.5;
     private const string LiftJetName = "Cloche Lift Jet", DriveName = "Cloche Drive";
     private const double NacR = 1.35, NacY = 3.4, NacX = 6.9, NacZ0 = 10.85, NacTail = 17.7;
 
@@ -254,7 +254,7 @@ public sealed class ClocheParts : IPartGenerator
         for (var z = z0 + 1.6; z < z1 - 1.2; z += 3.2)
             Detail(p, -2.9, 0.22, z - 0.1, 2.9, 0.36, z + 0.1, Rib, "dirty steel"); // (cross braces between the skids)
         p.Set(("fuelTank", Kw(("capacity", 900))));
-        return p.Stats(aft ? 16000 : 12000, 9000, 30, 8.0);
+        return p.Stats(aft ? 7000 : 6000, 9000, 30, 8.0);
     }
 
     /// <summary>A length of one side: the red skin, the chamfer up to the roof, dark ribs wrapped over both, the lining inside, labels and hazard marks.</summary>
@@ -283,7 +283,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, s * (In - 0.02), LineY, z0 + 0.003, s * In, 2.3, z1 - 0.003, WallLow, "painted plating");
         Detail(p, s * (In - 0.015), 2.3, z0 + 0.003, s * In, CeilY - 0.025, z1 - 0.003, Wall, "wall panelling");
         Detail(p, s * (In - 0.035), 2.27, z0 + 0.003, s * In, 2.34, z1 - 0.003, Rib, "painted steel");
-        return p.Stats(5000, 5000, 20, 6.0);
+        return p.Stats(3000, 5000, 20, 6.0);
     }
 
     /// <summary>A length of the roof: dark red deck plate between the chamfers, the ceiling under it, and in one length a hatch up into each greenhouse.</summary>
@@ -305,7 +305,7 @@ public sealed class ClocheParts : IPartGenerator
             Detail(p, hx0 - 0.1, RoofY, hz0 - 0.1, hx1 + 0.1, RoofY + 0.012, hz0 - 0.02, Hazard, "hazard paint");
             Detail(p, hx0 - 0.1, RoofY, hz1 + 0.02, hx1 + 0.1, RoofY + 0.012, hz1 + 0.1, Hazard, "hazard paint");
         }
-        return p.Stats(5000, 5000, 20, 6.0);
+        return p.Stats(3000, 5000, 20, 6.0);
     }
 
     /// <summary>The bow: the front wall with the way into the cab and a side door, its dark-framed chamfers, an electrical cabinet.</summary>
@@ -338,7 +338,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, 3.3, 1.45, BowZ - 0.4, 4.35, 1.55, BowZ - 0.004, Rib, "dirty steel");
         // Inside: the lining.
         Less(-In + 0.04, FloorY, In - 0.04, CeilY - 0.025, holes, (a0, b0, a1, b1) => Detail(p, a0, Math.Max(b0, LineY), BowIn, a1, b1, BowIn + 0.02, b1 <= 2.31 ? WallLow : Wall, "wall panelling"));
-        return p.Stats(6000, 7000, 25, 6.0);
+        return p.Stats(4000, 7000, 25, 6.0);
     }
 
     /// <summary>The cab: a cream bus front, a big split windscreen and glass doors, a bumper with lamps, side windows, a visor roof you can walk on.</summary>
@@ -409,7 +409,7 @@ public sealed class ClocheParts : IPartGenerator
         foreach (var s in new[] { -1, 1 })
             Detail(p, s * (CabX - 0.12), FloorY, CabZ0 + 0.1, s * (CabX - 0.1), 1.62, BowZ - 0.003, Cream2, "painted plating");
         Detail(p, -CabX + 0.1, FloorY, CabZ0 + 0.1, 0.97, 1.62, CabZ0 + 0.12, Cream2, "painted plating");
-        return p.Stats(4000, 4000, 15, 6.0);
+        return p.Stats(3000, 4000, 15, 6.0);
     }
 
     /// <summary>The balcony across the bow at the cab roof's height: grating, a dark fascia and railings (a gap for the ladder up from the port step).</summary>
@@ -518,7 +518,7 @@ public sealed class ClocheParts : IPartGenerator
             Detail(p, s * (Hw - 0.004), 8.25, 10.7 + k * 0.16, s * (Hw + 0.014), 8.4, 10.78 + k * 0.16, k % 2 == 0 ? Hazard : HazDark, "hazard paint");
         Detail(p, s * (In - 0.02), LineY, AftZ + 0.003, s * In, 2.3, SternIn - 0.003, WallLow, "painted plating");
         Detail(p, s * (In - 0.015), 2.3, AftZ + 0.003, s * In, AftCeil - 0.025, SternIn - 0.003, Wall, "wall panelling");
-        return p.Stats(7000, 7000, 22, 6.0);
+        return p.Stats(5000, 7000, 22, 6.0);
     }
 
     /// <summary>The aft block's roof: the top, the chamfers fore and aft, two stacks, two masts, the radome on its yellow tower and a grille.</summary>
@@ -566,7 +566,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, -1.0, AftTop, 14.9, 1.1, AftTop + 0.03, 16.3, Rib, "dirty steel");
         for (var k = 0; k < 6; k++)
             Detail(p, -0.9, AftTop + 0.03, 15.0 + k * 0.22, 1.0, AftTop + 0.06, 15.1 + k * 0.22, "#4d504c", "dirty steel");
-        return p.Stats(6000, 6000, 20, 6.0);
+        return p.Stats(4000, 6000, 20, 6.0);
     }
 
     /// <summary>The stern: the red face, two ribs down it, tail lamps, a maintenance panel.</summary>
@@ -589,7 +589,7 @@ public sealed class ClocheParts : IPartGenerator
         for (var k = 0; k < 6; k++)
             Detail(p, -1.2 + k * 0.42, 5.0, SternZ + 0.015, -1.0 + k * 0.42, 5.3, SternZ + 0.04, k % 2 == 0 ? Hazard : HazDark, "hazard paint");
         Detail(p, -(In - 0.03), LineY, SternIn - 0.02, In - 0.03, AftCeil - 0.01, SternIn, Wall, "wall panelling");
-        return p.Stats(5000, 6000, 20, 6.0);
+        return p.Stats(3500, 6000, 20, 6.0);
     }
 
     // ---- the greenhouses
@@ -685,7 +685,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, xc - 0.95, 8.7, zm - 0.06, xc + 0.95, 8.8, zm + 0.06, Yellow, "painted steel");
         Detail(p, xc - 0.03, 8.0, zm - 0.6, xc + 0.03, 8.7, zm + 0.6, Yellow, "painted steel"); // (a hanger for the misting line)
         Detail(p, xc - 0.04, 8.0, ga + 0.2, xc + 0.04, 8.06, gb - 0.2, Pipe, "painted steel");
-        return p.Stats(2000, 1500, 5, 5.0);
+        return p.Stats(1200, 1500, 5, 5.0);
     }
 
     // ---- the tanks and the nacelles
@@ -717,7 +717,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, s * (Hw - 0.01), 4.67, z1 + 0.24, px + s * 0.09, 4.85, z1 + 0.42, Pipe, "painted steel");
         Detail(p, px - 0.13, 3.5, z1 + 0.2, px + 0.13, 3.72, z1 + 0.46, Rib, "painted steel"); // (a valve)
         Detail(p, px - 0.03, 3.72, z1 + 0.3, px + 0.03, 3.9, z1 + 0.36, RedLamp, "painted steel");
-        return p.Stats(fore ? 5500 : 4500, 2500, 10, 6.0);
+        return p.Stats(fore ? 2500 : 2000, 2500, 10, 6.0);
     }
 
     /// <summary>A nacelle on the aft block's flank: an eight-sided red pod on a dark pylon, a cream intake ring round a dark grille, dark rings, a cream panel, a pipe from the block, the tail plate the drive hangs on.</summary>
@@ -748,7 +748,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, pxa, yc + 1.05, pz0, s * (NacX - 0.2), yc + 1.3, pz1, Pipe, "painted steel");
         Detail(p, pxa - 0.05, 5.4, pz0 - 0.05, pxb + 0.05, 5.6, pz1 + 0.05, Rib, "painted steel");
         p.Set(("fuelTank", Kw(("capacity", 1500))));
-        return p.Stats(6000, 4000, 15, 6.0);
+        return p.Stats(4000, 4000, 15, 6.0);
     }
 
     // ---- fittings (part frame, raw)
@@ -775,7 +775,7 @@ public sealed class ClocheParts : IPartGenerator
     /// <summary>A lift jet under the belly: a cream collar, a dark louvred skirt, a nozzle glowing inside.</summary>
     private static Part LiftJet()
     {
-        var p = Fitting(LiftJetName, $"A lift jet: {LiftForce / 1e3:0} kN straight down from under the Cloche's belly. Eight of them hold it up; the flight computer tips it on them.", "thruster", Chassis);
+        var p = Fitting(LiftJetName, $"A lift jet: {LiftForce / 1e3:0} kN straight down from under the Cloche's belly. Sixteen of them hold it up; the flight computer tips it on them.", "thruster", Chassis);
         CylY(p, 0, 0, -0.12, -0.003, 0.5, 0.5, Cream, "painted plating", raw: true);
         CylY(p, 0, 0, -0.42, -0.12, 0.44, 0.4, Rib, "dirty steel", raw: true);
         for (var k = 0; k < 3; k++)
@@ -817,7 +817,7 @@ public sealed class ClocheParts : IPartGenerator
         Prism(p, W(0.24, 0), W(0.24, 0.03), Rib, "rubber", raw: true);
         Prism(p, W(0.07, -0.01), W(0.07, 0.045), Grey, "painted steel", raw: true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 40000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 120000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
         return p.Stats(260, 800, 8, 3.0);
     }
 
@@ -917,7 +917,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, -hx + 0.04, 2.7, -hz + 0.04, hx - 0.04, 2.75, hz - 0.04, Rib, "painted steel", raw: true);
         CylZ(p, hx - 0.1, 0.18, -hz, hz, 0.04, 0.04, Pipe, "painted steel", 6, raw: true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        return p.Stats(450, 400, 3, 3.0);
+        return p.Stats(250, 400, 3, 3.0);
     }
 
     /// <summary>A grow bed for the greenhouses: a waist-high cream trough of soil on dark legs, rows of plants, a misting line over it. Long along z.</summary>
@@ -947,7 +947,7 @@ public sealed class ClocheParts : IPartGenerator
         }
         Detail(p, -hx - 0.012, 0.66, -0.25, -hx + 0.004, 0.82, 0.25, Leaf2, "matte paint", raw: true); // (a tag)
         p.Sock("bottom", [0, 0, 0], "-y");
-        return p.Stats(300, 300, 2, 3.0);
+        return p.Stats(150, 300, 2, 3.0);
     }
 
     /// <summary>A ladder: dark rails, rungs, a yellow hoop over its top; its back socket on the face it stands against.</summary>
@@ -1095,7 +1095,7 @@ public sealed class ClocheParts : IPartGenerator
 
     private static readonly double[] RackZ = [-9.4, -6.8, -4.2, -1.6, 1.0, 3.6, 6.2];
     private static readonly double[] MidRackZ = [-5.4, -2.8, -0.2, 2.4, 5.0];
-    private static readonly (double X, double Z)[] Jets = [(-1.6, -12.6), (1.6, -12.6), (-1.6, -5.4), (1.6, -5.4), (-1.6, 4.6), (1.6, 4.6), (-1.6, 12.6), (1.6, 12.6)];
+    private static readonly (double X, double Z)[] Jets = [.. new[] { -13.6, -7.6, -1.2, 4.6, 10.6, 15.6 }.SelectMany(z => new[] { (-1.6, z), (1.6, z) }), (0, -16.0), (0, -4.3), (0, 8.4), (0, 16.2)];
     private static readonly (string Name, double X, double Y, double Z, string Dir, bool Turned)[] Lamps =
     [
         ("lampDoor", (DoorX0 + DoorX1) / 2, DoorTop + 0.45, BowZ, "-z", true),
@@ -1145,7 +1145,7 @@ public sealed class ClocheParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Eight lift jets under the belly hold it up and the two nacelle drives push it along.", defs, maxSteps: 220);
+        var bp = new BuildingParts.Blueprint(ShipName, "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Sixteen lift jets under the belly hold it up and the two nacelle drives push it along.", defs, maxSteps: 220);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var st = new Dictionary<string, int>();
@@ -1233,6 +1233,7 @@ public sealed class ClocheParts : IPartGenerator
         o.Own(Out);
         foreach (var p in parts)
         {
+            p.Set(("collider", "boxes")); // (the faceted looks are drawn only: the hidden and solid boxes are what collides)
             var d = p.Json();
             var name = (string)d["name"]!;
             if (name.Length > 32)

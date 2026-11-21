@@ -8,7 +8,7 @@
   "tool": "wrench",
   "logic": {
     "kind": "flightstabilizer",
-    "gyro": 40000000
+    "gyro": 120000000
   },
   "config": [
     {
@@ -619,6 +619,7 @@
   "material": "steel",
   "color": "#262a2d",
   "attachSeconds": 3.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [

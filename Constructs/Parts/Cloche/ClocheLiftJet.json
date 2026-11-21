@@ -1,13 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cloche Lift Jet",
-  "description": "A lift jet: 400 kN straight down from under the Cloche's belly. Eight of them hold it up; the flight computer tips it on them.",
+  "description": "A lift jet: 480 kN straight down from under the Cloche's belly. Sixteen of them hold it up; the flight computer tips it on them.",
   "group": "Ship",
   "section": "Cloche greenhouse ship",
   "role": "thruster",
   "tool": "wrench",
   "thruster": {
-    "force": 400000.0,
+    "force": 480000.0,
     "spool": 0.5,
     "exhaust": "-y",
     "at": [
@@ -15,7 +15,7 @@
       -0.48,
       0
     ],
-    "burnRate": 1.0
+    "burnRate": 1.2
   },
   "ports": [
     {
@@ -50,6 +50,7 @@
   "material": "steel",
   "color": "#242624",
   "attachSeconds": 5.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [

@@ -9,12 +9,13 @@
   "fuelTank": {
     "capacity": 900
   },
-  "mass": 16000.0,
+  "mass": 7000.0,
   "health": 9000,
   "armour": 30,
   "material": "steel",
   "color": "#242624",
   "attachSeconds": 8.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [
@@ -300,20 +301,47 @@
   ],
   "sockets": [
     {
-      "name": "jet6",
+      "name": "jet8",
       "at": [
         -1.725,
         0.375,
-        12.475
+        10.475
       ],
       "dir": "-y"
     },
     {
-      "name": "jet7",
+      "name": "jet9",
       "at": [
         1.475,
         0.375,
-        12.475
+        10.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "jet10",
+      "at": [
+        -1.725,
+        0.375,
+        15.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "jet11",
+      "at": [
+        1.475,
+        0.375,
+        15.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "jet15",
+      "at": [
+        -0.125,
+        0.375,
+        16.075
       ],
       "dir": "-y"
     },

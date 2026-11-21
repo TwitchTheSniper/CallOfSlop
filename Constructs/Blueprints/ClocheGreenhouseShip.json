@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Cloche Greenhouse Ship",
-  "description": "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Eight lift jets under the belly hold it up and the two nacelle drives push it along.",
+  "description": "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Sixteen lift jets under the belly hold it up and the two nacelle drives push it along.",
   "steps": [
     {
       "part": "Cloche Keel 3"
@@ -266,26 +266,74 @@
     },
     {
       "part": "Cloche Lift Jet",
-      "on": 2,
+      "on": 0,
       "socket": "jet4",
       "by": "top"
     },
     {
       "part": "Cloche Lift Jet",
-      "on": 2,
+      "on": 0,
       "socket": "jet5",
       "by": "top"
     },
     {
       "part": "Cloche Lift Jet",
-      "on": 8,
+      "on": 2,
       "socket": "jet6",
       "by": "top"
     },
     {
       "part": "Cloche Lift Jet",
-      "on": 8,
+      "on": 2,
       "socket": "jet7",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet8",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet9",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet10",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet11",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 5,
+      "socket": "jet12",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 0,
+      "socket": "jet13",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 2,
+      "socket": "jet14",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet15",
       "by": "top"
     },
     {
@@ -793,8 +841,8 @@
   ],
   "wires": [
     [
-      50,
-      51
+      58,
+      59
     ]
   ],
   "conduit": true

@@ -9,12 +9,13 @@
   "fuelTank": {
     "capacity": 1500
   },
-  "mass": 6000.0,
+  "mass": 4000.0,
   "health": 4000,
   "armour": 15,
   "material": "steel",
   "color": "#a63a30",
   "attachSeconds": 6.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [

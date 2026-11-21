@@ -13,6 +13,7 @@
   "material": "steel",
   "color": "#2e302e",
   "attachSeconds": 3.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [

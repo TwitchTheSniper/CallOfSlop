@@ -6,12 +6,13 @@
   "section": "Cloche greenhouse ship",
   "role": "frame",
   "tool": "welder",
-  "mass": 4500.0,
+  "mass": 2000.0,
   "health": 2500,
   "armour": 10,
   "material": "steel",
   "color": "#a63a30",
   "attachSeconds": 6.0,
+  "collider": "boxes",
   "boxes": [
     {
       "min": [
