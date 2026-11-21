@@ -74,7 +74,8 @@ public sealed class CStore
     public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
     public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
-    public bool OvenFailed; // a Bake Oven: its last bake or un-bake was refused at the end of the heat (server only: ConstructBakeOven.cs)
+    public bool OvenFailed, OvenUnbaked; // a Bake Oven: its last bake or un-bake was refused at the end of the heat; that last was an un-bake (server only: ConstructBakeOven.cs)
+    private bool _ovenUnused; // a Bake Oven: its last bake or un-bake was refused at the end of the heat (server only: ConstructBakeOven.cs)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)

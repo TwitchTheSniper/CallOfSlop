@@ -193,8 +193,9 @@ public static class ConstructBakeOven
         if (phase == OvenPhase.Open)
         {
             var why = Check(world, c, part, asm, bed, out var group, out var parts);
-            if (group != 0 && why is not (OvenStall.Several or OvenStall.Empty) && st.Refused is (byte)OvenStall.Done or (byte)OvenStall.Failed && st.JobAmount == group)
-                why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it waits to be lifted off)
+            if (group != 0 && why is not (OvenStall.Several or OvenStall.Empty) && st.Refused is (byte)OvenStall.Done or (byte)OvenStall.Failed && st.JobAmount == group
+                && st.OvenUnbaked == Unbaking(p, d))
+                why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it waits to be lifted off, or the mode turned)
             else if (why == OvenStall.None && !powered)
                 why = OvenStall.NoPower;
             if (why != OvenStall.None || held || p.Broken)
@@ -265,7 +266,7 @@ public static class ConstructBakeOven
     private static void Act(ConstructWorld world, Construct c, int part, CStore st)
     {
         st.OvenFailed = false;
-        var unbake = Unbaking(c.Parts[part], c.Parts[part].D);
+        var unbake = st.OvenUnbaked = Unbaking(c.Parts[part], c.Parts[part].D);
         if (world.Get((ushort)st.JobAmount) is not { } group)
         {
             st.OvenFailed = true;

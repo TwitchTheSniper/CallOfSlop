@@ -24,6 +24,15 @@ public static unsafe partial class Program
                     continue;
                 var bed = new ConstructBakeOven.Bed(c, asm);
                 var why = ConstructBakeOven.Check(w, c, asm.Core, asm, bed, out var group, out var parts);
+                if (sub[0] == "mode" && g.IsServer && n == 0)
+                {
+                    // oven mode bake|unbake: the Core's Mode setting, as the configure tool sets it.
+                    var cd = c.Parts[asm.Core].D;
+                    ConstructConfig.Set(ref c.Parts[asm.Core], cd, cd.CfgSlot[(int)CfgKey.Mode], sub.Length > 1 && sub[1] == "unbake" ? 1 : 0);
+                    w.StructureDirty.Add(c.Id);
+                    WsSay($"oven: mode {(ConstructBakeOven.Unbaking(c.Parts[asm.Core], cd) ? "Un-bake" : "Bake")}");
+                    return true;
+                }
                 if (sub[0] == "put" && g.IsServer && n == 0)
                 {
                     // The clear cells' middle: the mean of every free cell's middle, on the bed's top.
@@ -41,7 +50,9 @@ public static unsafe partial class Program
                     var at = Vector3.Transform(local, ConstructBakeOven.CoreFrame(c, asm.Core));
                     Construct? made = null;
                     var name = sub.Length > 1 ? sub[1] : "";
-                    if (ConstructParts.Find(name) is { } pd)
+                    if (name.Contains('+'))
+                        made = WsOvenGroup(w, name.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), at, ConstructBakeOven.CoreFrame(c, asm.Core));
+                    else if (ConstructParts.Find(name) is { } pd)
                         made = ConstructBuild.PlaceNew(w, pd, at, 0);
                     else if (ConstructBuild.FindBlueprint(name) is { } bp)
                         made = ConstructBuild.Build(w, bp, at, Quaternion.Identity, out _);
@@ -53,6 +64,42 @@ public static unsafe partial class Program
             }
         if (n == 0)
             WsSay("oven: no Bake Oven");
+        foreach (var c in w.Bodies)
+            for (var i = 0; i < c.PartCount; i++)
+                if (BakedParts.IsBaked(c.DefOf(i)))
+                    WsSay($"oven: body {c.Id} part {i}: {c.DefOf(i).Name}, {c.DefOf(i).Boxes.Length} boxes, {c.DefOf(i).Mass:0} kg, health {c.Parts[i].Health:0}/{c.DefOf(i).Health:0}, design {(BakedParts.DesignOf(c.DefOf(i)) is { } bd ? $"{bd.Subs.Length} subparts" : "unknown")}");
         return true;
+    }
+
+    /// <summary>(oven put A+B+C) A new body of those parts in a row along the bed's x, each turned a quarter more about y, their feet at <paramref name="at"/>.</summary>
+    private static Construct? WsOvenGroup(ConstructWorld w, string[] names, Vector3 at, Matrix4x4 frame)
+    {
+        var defs = new List<ConstructPartDef>();
+        foreach (var name in names)
+            if (ConstructParts.Find(name) is { } d)
+                defs.Add(d);
+            else
+                WsSay($"oven: no part {name}");
+        if (defs.Count == 0)
+            return null;
+        var rot = Quaternion.CreateFromRotationMatrix(frame with { M41 = 0, M42 = 0, M43 = 0 });
+        if (w.Create(at, rot) is not { } c)
+            return null;
+        float width = 0;
+        foreach (var d in defs)
+            width += MathF.Max(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) + 0.02f;
+        var x = -width / 2;
+        byte turn = 0;
+        foreach (var d in defs)
+        {
+            var span = MathF.Max(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) + 0.02f;
+            var min = Vector3.Min(Rot24.Apply(turn, d.BoundsMin), Rot24.Apply(turn, d.BoundsMax));
+            var mid = (Rot24.Apply(turn, d.BoundsMin) + Rot24.Apply(turn, d.BoundsMax)) / 2;
+            w.AddPart(c, d, new Vector3(x + span / 2 - mid.X, 0.01f - min.Y, -mid.Z), turn);
+            x += span;
+            turn = Rot24.Compose(Rot24.Nearest(Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2), out _), turn);
+        }
+        c.Rebuild();
+        return c;
     }
 }
