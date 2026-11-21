@@ -680,6 +680,7 @@ public static partial class ConstructRender
         var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
         var fitted = d.ShellBody ? ShellFittedLooks.FittedMask(in p, d) : 0; // (a slot with a module that isn't its frame's own: drawn from the module's part, ShellFittedLooks)
         var hideSlots = offSlots | fitted;
+        var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : 0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
@@ -688,6 +689,8 @@ public static partial class ConstructRender
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
             if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
                 continue;
+            if (box.Seam != 0 && (seams >> (box.Seam - 1) & 1) != 0)
+                continue; // (a block machine's skirt or cap on a face welded to its own machine: MachineBlocks.cs)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
