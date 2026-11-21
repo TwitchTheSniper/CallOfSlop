@@ -306,6 +306,18 @@ public static class ToolRender
         st.LightColour = light;
     }
 
+    /// <summary>
+    /// A third-person frame drawn on a body grown about its feet (a robot shell's frame, PlayerRig's Root): the arms are nodes under
+    /// that matrix, the tool and a carried part are drawn at their own poses, so they take it here, and the tip moves with them.
+    /// </summary>
+    public static void Grow(int slot, ref ToolFrame f, in Matrix4x4 grow)
+    {
+        f.Pose *= grow;
+        f.HeldPose *= grow;
+        if (f.Model != null)
+            NoteTip(slot, f, Matrix4x4.Identity);
+    }
+
     /// <summary>Where a slot's tool tip was drawn lately (in the world), or null when it hasn't been drawn for a moment.</summary>
     public static Vector3? TipOf(int slot, double now) => (uint)slot < (uint)States.Length && now - States[slot].TipAt is >= 0 and < 0.25 ? States[slot].Tip : null;
 

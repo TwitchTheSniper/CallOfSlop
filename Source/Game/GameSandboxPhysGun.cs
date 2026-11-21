@@ -229,7 +229,7 @@ public sealed partial class Game
                 return;
             }
             _sbJointHave = false;
-            if (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0 && Constructs.Get(h.GrabBody) is { } held)
+            if (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0 && Constructs.Get(h.GrabBody) is { } held && !ModuleGuide.NearFreeSocket(Constructs, held)) // (a module near a free socket: its pull is the server's, so the server's pose is drawn)
             {
                 held.GrabLocal = h.GrabLocal; // (cj01: the client's copy never had it, so pr01 put the body's origin on the aim, not the point held)
                 body = h.GrabBody;

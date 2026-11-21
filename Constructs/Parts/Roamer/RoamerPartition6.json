@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roamer Partition 6",
+  "description": "A partition of the Roamer's rooms, with its doorways.",
+  "group": "Ship",
+  "section": "Roamer",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 400.0,
+  "health": 1200,
+  "armour": 15,
+  "material": "steel",
+  "color": "#cbbd98",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        1.375,
+        3.125,
+        7.75
+      ],
+      "max": [
+        3.75,
+        5.875,
+        8.0
+      ],
+      "color": "#cbbd98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.375,
+        3.129,
+        7.733
+      ],
+      "max": [
+        3.75,
+        4.025,
+        7.745
+      ],
+      "color": "#7a5434",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        1.375,
+        3.129,
+        8.005
+      ],
+      "max": [
+        3.75,
+        4.025,
+        8.017
+      ],
+      "color": "#7a5434",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "desk",
+      "at": [
+        2.775,
+        3.25,
+        7.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        2.565,
+        3.125,
+        7.815
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        1.375,
+        4.495,
+        7.815
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        3.75,
+        4.495,
+        7.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.565,
+        5.875,
+        7.815
+      ],
+      "dir": "+y"
+    }
+  ]
+}

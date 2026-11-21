@@ -7,8 +7,9 @@ namespace CallOfSlop.PartKit.Generators;
 /// blueprint (docs/sandbox/CONSTRUCTS.md, "The Press"). Was tools/constructs/press_parts.py.
 ///
 /// A press stamps parts out of extruded pieces. It has 2 or 3 bays and a die slot; the die sets the family, the material the tier, a
-/// piece's size across or its length the size or the count. Presses, lathes and dies come in the four size classes, and a die fits a press
-/// of its own class. All sizes are in cells of the class, so a new class or a new die family is a row here. The table is flat on purpose:
+/// piece's size across or its length the size or the count. The Press is one Core and its blocks (its size comes from them); a die is one
+/// 0.5 m cassette per family that fits it at any size, and one Die Lathe cuts any die from a steel bar (Press part 2, design page drawing
+/// 17: dies lost their size classes). A new die family is a row here. The table is flat on purpose:
 /// one row per family, material and size band, so the coverage of the Assembler's list can be counted. Run the part kit's assembling (--gen-parts assembling)
 /// after it for the machines' recipes.
 /// </summary>
@@ -29,45 +30,38 @@ public sealed class PressParts : IPartGenerator
     private const string BodyC = "#4d5a66", Trim = "#39424b", Dark = "#23272c", Gold = "#c8a13a", Bed = "#2f363d";
     private const string Blue = "#2f5f8f", LatheBlue = "#2a6878"; // the Press family's body colours (look.md, "Machine look")
 
-    // (class, bays, speed, W, kg, health)
-    private static readonly (Cls C, int Bays, int Speed, int Power, int Mass, int Health)[] Presses =
-    [
-        (Small, 2, 1, 900, 520, 800),
-        (Medium, 3, 2, 3600, 18000, 6000),
-        (Large, 3, 4, 14400, 200000, 40000),
-        (Capital, 3, 8, 57600, 1800000, 240000),
-    ];
+    // The one Die Lathe (Press part 2: dies have no size classes, so one lathe cuts them all): (speed, W, kg, health). The Press itself is
+    // one Press Core and any number of Press Blocks (PressCore, PressBlock; design page drawings 17 and 17b).
+    private const int LatheSpeed = 1, LathePower = 900, LatheMass = 520, LatheHealth = 800;
 
-    // Dies: family, classes it is made in, what it is cut from, die tier (1: a starter), colour
-    private static readonly (string Family, Cls[] Classes, string Block, int Tier, string Colour)[] Families =
+    // Dies: family, die tier (1: a starter), colour. One die a family (Press part 2): a 0.5 m cassette, cut from a 0.25 m steel bar.
+    private static readonly (string Family, int Tier, string Colour)[] Families =
     [
-        ("Button", [Small, Medium], "metal", 1, "#c06040"),
-        ("Bracket", [Small, Medium, Large, Capital], "metal", 1, "#7f8a94"),
-        ("Gear", [Small], "metal", 1, "#a8763a"),
-        ("Board", [Small], "steel", 2, "#3f9b5c"),
-        ("Piston", [Small], "steel", 2, "#6f7d8c"),
-        ("Housing", [Small, Medium, Large, Capital], "steel", 2, "#55708a"),
-        ("Cylinder", [Small, Medium, Large, Capital], "steel", 3, "#8a5570"),
-        ("Plate", [Small, Medium, Large, Capital], "metal", 1, "#8c96a0"),
-        ("Drive", [Small, Medium, Large, Capital], "steel", 2, "#4f7a5a"),
-        ("Shaft", [Small, Medium], "steel", 2, "#6b7f8f"),
-        ("Actuator", [Small, Medium, Large], "steel", 3, "#8f6b3f"),
-        ("Spring", [Small, Medium, Large], "steel", 2, "#5f8f6b"),
-        ("Cable", [Small, Medium], "metal", 1, "#b0703a"),
-        ("Control", [Small, Medium, Large], "steel", 2, "#3f6f9f"),
-        ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
-        ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
-        ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
-        ("Receiver", [Small, Medium], "steel", 2, "#4a5146"),
-        ("Engine", [Small, Medium, Large, Capital], "steel", 3, "#6a4f3a"),
+        ("Button", 1, "#c06040"),
+        ("Bracket", 1, "#7f8a94"),
+        ("Gear", 1, "#a8763a"),
+        ("Board", 2, "#3f9b5c"),
+        ("Piston", 2, "#6f7d8c"),
+        ("Housing", 2, "#55708a"),
+        ("Cylinder", 3, "#8a5570"),
+        ("Plate", 1, "#8c96a0"),
+        ("Drive", 2, "#4f7a5a"),
+        ("Shaft", 2, "#6b7f8f"),
+        ("Actuator", 3, "#8f6b3f"),
+        ("Spring", 2, "#5f8f6b"),
+        ("Cable", 1, "#b0703a"),
+        ("Control", 2, "#3f6f9f"),
+        ("Tank", 2, "#9f4a3f"),
+        ("Beam", 1, "#7a7f88"),
+        ("Barrel", 2, "#4a4d52"),
+        ("Receiver", 2, "#4a5146"),
+        ("Engine", 3, "#6a4f3a"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
     private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver", "Engine"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
-
-    private static int Rank(Cls c) => Array.IndexOf(Classes, c);
 
     // (side m, int or float; class; cells)
     private static readonly (object Side, Cls C, int N)[] Housings = [(0.25, Small, 1), (0.5, Small, 2), (1, Medium, 1), (2, Medium, 2), (4, Large, 1), (8, Large, 2), (16, Capital, 1)];
@@ -204,81 +198,332 @@ public sealed class PressParts : IPartGenerator
             Kw(("min", Py.L(R3(mid + gap), y, z0)), ("max", Py.L(R3(x1 - gap), R3(y + (z1 - z0)), z1)), ("stack", 12), ("label", "Tray")));
     }
 
-    private static Part Press((Cls C, int Bays, int Speed, int Power, int Mass, int Health) row)
+    // ---- The Press on the block system (design page drawings 17 and 17b; ConstructPressBlocks.cs) -------------------------------
+    // A Press Core, a 2 m cube (the die slot, the screen, the bays: bay 1 for the blank, bay 2 the kit hopper), and one Press Block, a
+    // 2 m cube, welded beside it and to each other: blocks on the Core's layer make the bed, blocks stacked on the bed's two long edges its
+    // walls. The machine reads its daylight, width, bites and speed from them at each rebuild.
+    private const int CoreCells = 8; // the Core: 8 Small cells a side, 2 m
+    private const int CorePower = 900, CoreMass = 900, CoreHealth = 1200;
+    private const int BlockMass = 4000, BlockHealth = 2500;
+
+    private static PyDict BlockKey(string role, double[]? origin = null) => origin is null
+        ? Kw(("family", "press"), ("role", role))
+        : Kw(("family", "press"), ("role", role), ("origin", Py.L(origin[0], origin[1], origin[2])));
+
+    private static Part PressCore()
     {
-        var (c, bays, speed, power, mass, health) = row;
+        var c = Small;
         var k = c.Cell;
-        int nx = 7, ny = 8, nz = 6;
-        var p = new Part(NameOf(c, "Press"), c, Section, $"Stamps parts out of extruded pieces. {bays} bays and a die slot: the die sets what it makes. Set pieces in the bays with the physics gun or by chute. Needs power.",
+        const int n = CoreCells;
+        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces between two shells that slam shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the shells (1.6 m of daylight, 2 m more a block; each side needs a clear strip as wide as its shells are tall), and it works faster with every block. The shells never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
             role: "storage", group: "Production", color: Blue);
-        var f = PressBody(p, nx, ny, nz, bays, true);
-        BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(3, "+x", "-x", "+y", "-y"));
-        for (var i = 0; i < f.Centres.Count; i++)
-            p.Sock($"bay{i + 1}", [f.Centres[i], f.Y, f.Z0], "-z", kind: "die");
-        var mid = (f.X0 + f.X1) / 2;
-        var zm = (f.Z0 + f.Z1) / 2;
-        p.Sock("dieslot", [mid, f.Base, zm], "+y", kind: "pressdie");
-        p.Stats(mass, health, c.Armour, c != Small ? null : 4);
-        var bayList = f.Centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5))))).ToList();
-        var width = Min(k * 3.2, (f.X1 - f.X0 - k) / bays - k * 0.1);
-        var tz0 = R3(zm + k * 1.3);
-        var tz1 = R3(f.Z1 - k * 0.55);
-        p.Set(("power", power), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
+        double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), y1 = c.Hi(n), z0 = c.Lo(), z1 = c.Hi(n);
+        double mid = (x0 + x1) / 2, my = (y0 + y1) / 2, zm = (z0 + z1) / 2;
+        const double cabH = 1.2, rim = 0.06, deckT = 0.05, leafH = 0.6, leafT = 0.08;
+        var cab = y0 + cabH; // (the cabinet's top: the deck lies on it)
+        var deck = cab + deckT; // (the bed: the die and the tray stand on it)
+        var bayY = y0 + 0.6; // (the bays' sockets on the back: each Piece in 11 cm under, ConstructPorts.cs)
+        var mk = 0.015;
+        // The cabinet and the deck: the only collision (the leaves are looks that swing).
+        p.Add(Box([x0, y0, z0], [x1, cab, z1]));
+        p.Add(Box([x0 + rim, cab, z0 + rim], [x1 - rim, deck, z1 - rim], MachineLook.Base)!.Update(("paintable", false), ("finish", "tread plate")));
+        foreach (var px in new[] { x0, x1 - 0.06 }) // (a steel post up each corner to the cell's top: the Core fills its 2 m cell, and the leaves swing between them)
+            foreach (var pz in new[] { z0, z1 - 0.06 })
+                p.Add(Box([px, cab, pz], [px + 0.06, y1, pz + 0.06], MachineLook.Steel)!.Update(("paintable", false), ("finish", "steel")));
+        // The plinth and the cap band, front and back (a side's are seams: a Press Block welded there hides them).
+        foreach (var (zl, zh) in new[] { (z0 - mk, z0), (z1, z1 + mk) })
+        {
+            p.Add(MachineLook.D([x0 + 0.004, y0, zl], [x1 - 0.004, y0 + 0.15, zh], MachineLook.Base));
+            p.Add(MachineLook.D([x0 + 0.004, cab - 0.075, zl], [x1 - 0.004, cab - 0.01, zh], MachineLook.Base));
+        }
+        foreach (var (side, xl, xh) in new[] { ("+x", x1, x1 + mk), ("-x", x0 - mk, x0) })
+        {
+            p.Add(Seam(MachineLook.D([xl, y0, z0 + 0.004], [xh, y0 + 0.15, z1 - 0.004], MachineLook.Base)!, side));
+            p.Add(Seam(MachineLook.D([xl, cab - 0.075, z0 + 0.004], [xh, cab - 0.01, z1 - 0.004], MachineLook.Base)!, side));
+            for (var i = 0; i < 5; i++) // (louvres)
+            {
+                var ly = y0 + 0.4 + i * 0.09;
+                p.Add(Seam(MachineLook.D([side == "+x" ? x1 - 0.004 : x0 - 0.02, ly, z0 + 0.45], [side == "+x" ? x1 + 0.02 : x0 + 0.004, ly + 0.04, z1 - 0.45], MachineLook.Base)!, side));
+            }
+        }
+        // The small clamshell on the deck: two leaves hinged along the deck's front and back edges, each a side plate and a roof half that
+        // meet over the die; they swing open flat out and slam shut while it works ("hinge": ConstructPressShells.cs), shut at rest.
+        foreach (var sg in new[] { -1, 1 })
+        {
+            var edge = sg < 0 ? z0 + rim : z1 - rim; // (the hinge line, over the deck's edge)
+            var inner = edge - sg * leafT;
+            var top = deck + leafH;
+            double[] pivot = [R3(mid), R3(deck), R3(edge)];
+            var axis = sg < 0 ? "-z" : "+z";
+            PyDict Leaf(double[] lo, double[] hi, string colour, string? finish = null, bool paintable = false)
+            {
+                var bx = MachineLook.Work(MachineLook.D(lo, hi, colour, finish, paintable), "hinge", axis, 95)!;
+                bx["pivot"] = Py.L(pivot[0], pivot[1], pivot[2]);
+                return bx;
+            }
+            double Zs(double a, double b) => Math.Min(a, b);
+            double Zb(double a, double b) => Math.Max(a, b);
+            p.Add(Leaf([x0 + 0.1, deck + 0.004, Zs(inner, edge)], [x1 - 0.1, top - 0.04, Zb(inner, edge)], Blue, paintable: true)); // (its side plate)
+            var tip = zm + sg * 0.003; // (3 mm short of the middle: the two roof halves never share a face)
+            p.Add(Leaf([x0 + 0.1, top - leafT, Zs(edge - sg * 0.04, tip)], [x1 - 0.1, top, Zb(edge - sg * 0.04, tip)], MachineLook.Base)); // (its roof half)
+            var outer = sg < 0 ? edge - 0.012 : edge + 0.012;
+            p.Add(Leaf([x0 + 0.12, top - 0.2, Zs(edge - sg * 0.004, outer)], [x1 - 0.12, top - 0.1, Zb(edge - sg * 0.004, outer)], MachineLook.Accent, "hazard paint")); // (a hazard band on its outer face)
+            foreach (var rx in new[] { mid - 0.55, mid, mid + 0.55 })
+                p.Add(Leaf([rx - 0.03, deck + 0.04, Zs(edge - sg * 0.004, outer + sg * 0.004)], [rx + 0.03, top - 0.22, Zb(edge - sg * 0.004, outer + sg * 0.004)], MachineLook.Base)); // (its ribs)
+            for (var t = 0; t < 4; t++) // (red latch teeth along the roof half's leading edge)
+            {
+                var tx = x0 + 0.3 + t * 0.47;
+                p.Add(Leaf([tx - 0.06, top - leafT - 0.05, Zs(tip - sg * 0.06, tip - sg * 0.006)], [tx + 0.06, top - leafT + 0.004, Zb(tip - sg * 0.06, tip - sg * 0.006)], "#c0392b"));
+            }
+            p.Add(MachineLook.D([x0 + 0.14, deck - 0.02, edge - 0.03], [x1 - 0.14, deck + 0.04, edge + 0.03], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x")))); // (its hinge pin, which stays)
+        }
+        // The front: the die screen (Panels), the status lamp over it, an orange band and arrow down to the Piece out, a run-off lip,
+        // a pressure gauge, the maker's plate and corner bolts.
+        p.Add(MachineLook.D([x0 + 0.12, y0 + 0.17, z1], [x1 - 0.12, y0 + 0.27, z1 + mk], MachineLook.Out));
+        MachineLook.Arrow(p, 2, z1 + mk, 1, 1, -1, y0 + 0.44, mid, k * 0.4, k * 0.6, MachineLook.Ink, mk);
+        p.Add(MachineLook.D([mid - k * 1.2, y0 + 0.004, z1 - 0.004], [mid + k * 1.2, y0 + 0.1 - 0.004, z1 + k * 0.2 - 0.003], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([x0 + 0.1, y0 + 0.4, z1 - 0.004], [x0 + 0.28, y0 + 0.58, z1 + 0.036], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z"))));
+        p.Add(MachineLook.D([x0 + 0.08, y0 + 0.38, z1 - 0.006], [x0 + 0.3, y0 + 0.6, z1 + 0.024], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z")))); // (its bezel)
+        p.Add(MachineLook.D([x1 - 0.42, y0 + 0.42, z1 - 0.004], [x1 - 0.12, y0 + 0.56, z1 + 0.02], MachineLook.In)); // (the maker's plate)
+        foreach (var bx in new[] { x0 + 0.035, x1 - 0.065 })
+            foreach (var by in new[] { y0 + 0.2, cab - 0.13 })
+                p.Add(MachineLook.D([bx, by, z1 - 0.004], [bx + 0.03, by + 0.03, z1 + 0.026], MachineLook.Steel, "steel"));
+        // The back: each bay's Piece in with the one port look (MachineLook.Port), a white band under the bays' cards, oil lines up its
+        // corners with a clamp each.
+        var span = x1 - x0 - k;
+        var centres = Enumerable.Range(0, 2).Select(i => R3(x1 - k * 0.5 - span * (i + 0.5) / 2)).ToList(); // (bay 1 on the left as you stand at the back)
+        foreach (var bx in centres)
+            MachineLook.Port(p, [bx, bayY - 0.11, z0], 2, -1, 0.13, 0.1, true);
+        p.Add(MachineLook.D([x0 + 0.1, y0 + 0.8, z0 - mk], [x1 - 0.1, y0 + 0.83, z0], MachineLook.In));
+        foreach (var hx in new[] { x0 + 0.03, x1 - 0.075 })
+        {
+            p.Add(MachineLook.D([hx, y0 + 0.17, z0 - 0.045], [hx + 0.045, cab - 0.09, z0 - 0.006], Hose, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+y"))));
+            p.Add(MachineLook.D([hx - 0.012, y0 + 0.55, z0 - 0.055], [hx + 0.057, y0 + 0.61, z0 - 0.002], MachineLook.Steel, "steel"));
+        }
+        // Sockets: its feet (and blocks under it), the first Press Block of its bed beside it, the bays, the die on the deck.
+        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"), skip: ["+y"]); // (nothing stands on its clamshell)
+        p.Sock("+x", [R3(x1), R3(my), R3(zm)], "+x");
+        p.Sock("-x", [R3(x0), R3(my), R3(zm)], "-x");
+        for (var i = 0; i < centres.Count; i++)
+            p.Sock($"bay{i + 1}", [centres[i], R3(bayY), R3(z0)], "-z", kind: "die");
+        p.Sock("dieslot", [R3(mid), R3(deck), R3(zm)], "+y", kind: "pressdie");
+        p.Stats(CoreMass, CoreHealth, c.Armour, 4);
+        var bayList = centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(bayY - 0.3), R3(z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(bayY + 0.3), R3(z0 + k * 1.5))))).ToList();
+        // (a Frame for the shared screens: the bays' cards on the back over their mouths and the die's on the front, both 0.85 m up; the lamp over the die's)
+        var f = new Frame(x0, x1, y0, cab, z0, z1, deck, y0 + 0.75, cab, bayY, centres);
+        var width = Min(k * 3.2, (x1 - x0 - k) / 2 - k * 0.1);
+        p.Set(("power", CorePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
                 ("tooltip", "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them.")))),
             ("storage", Kw(
-                ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), tz0, tz1)),
+                ("slots", Tray(x0 + k * 0.55, x1 - k * 0.55, R3(deck + k * 0.01), R3(zm + k * 1.3), R3(z1 - rim - leafT - 0.02))),
                 ("press", Kw(("bays", bayList),
-                    ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
-                    ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
+                    ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(deck), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(deck + leafH - leafT), R3(z1 + k * 2))))),
+                    ("maxAcross", MaxAcross(c)), ("speed", 1), ("outAt", Py.L(R3(mid), R3(y0), R3(z1 + k * 0.2))), ("outDir", "+z"))))),
+            ("machineBlock", BlockKey("core", [R3(mid), R3(my), R3(zm)])),
             ("panels", Panels(p, f, width, pattern: true)));
         p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
 
-    private static Part Lathe((Cls C, int Bays, int Speed, int Power, int Mass, int Health) row)
+    private const string Hose = "#1d1f22";
+
+    /// <summary>
+    /// A Press Block: one 2 m cube of a press's bed or wall. Its bolted rims, skirt and hazard edge on a side are drawn only while no block
+    /// of the same press is welded there (MachineBlocks: "seam"), so a bed reads as one plate with a hazard edge round it, and a wall as one.
+    /// A wall block on one of the bed's long edges is a clamshell segment: the game swings it about its hinge (ConstructPressShells.cs).
+    /// </summary>
+    private static Part PressBlock()
     {
-        var (c, _, speed, power, mass, health) = row;
-        var k = c.Cell;
-        int nx = 7, ny = 6, nz = 5;
-        var p = new Part(NameOf(c, "Die Lathe"), c, Section, "Cuts press dies from a solid block. Choose the die with the Recipe button on its screen (or the configure tool), and set the block in its bay. Needs power.",
-            role: "storage", group: "Production", color: LatheBlue);
-        var f = PressBody(p, nx, ny, nz, 1, false);
-        BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(3, "+x", "-x", "+y", "-y"));
-        var c0 = f.Centres[0];
-        p.Sock("bay1", [c0, f.Y, f.Z0], "-z", kind: "die");
-        p.Add(MachineLook.Work(MachineLook.D([c0 - k * 0.7, f.Y - k * 0.7, f.Z0 + k], [c0 + k * 0.7, f.Y + k * 0.7, f.Z0 + k * 2], MachineLook.Steel, "steel"), "spin", "+z")); // (the chuck: it turns while it cuts)
-        p.Add(MachineLook.D([c0 - k * 1.1, f.Y - k * 1.1, f.Z0 + k * 2], [c0 + k * 1.1, f.Y + k * 1.1, f.Z0 + k * 2.18], MachineLook.Base)); // (the headstock behind it)
-        p.Add(MachineLook.Work(MachineLook.D([c0 - k * 0.5, f.Y - k * 0.12, f.Z0 + k * 0.85], [c0 + k * 0.5, f.Y + k * 0.12, f.Z0 + k], MachineLook.Accent), "spin", "+z"));
-        p.Stats(mass * 0.6, health * 0.7, c.Armour, c != Small ? null : 4);
-        var width = Min(k * 3.2, f.X1 - f.X0 - k - k * 0.1);
-        p.Set(("power", power), ("config", Py.L(Kw(("key", "recipe"), ("label", "Cuts"), ("group", "Work"), ("tooltip", "The die it cuts from the block in its bay. A lathe cuts dies of its own size.")))),
-            ("storage", Kw(
-                ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), R3(f.Z0 + k * 2.2), R3(f.Z1 - k * 0.55))),
-                ("press", Kw(("lathe", true),
-                    ("bays", Py.L(Kw(("socket", "bay1"), ("min", Py.L(R3(c0 - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(c0 + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5)))))),
-                    ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3((f.X0 + f.X1) / 2), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
-            ("panels", Panels(p, f, width)));
-        p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
+        var p = new Part("Press Block", Small, Section,
+            "Weld it beside a Press Core, or beside or on another Press Block: blocks on the Core's layer make the bed (2 m a block, the widest blank it takes), blocks stacked on the bed's two long edges make the walls (the tallest). The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
+            group: "Production", color: Blue);
+        const double e = 0.997, t = 0.06; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; the rims make the cell)
+        p.Add(Box([-e, 0.003, -e], [e, 1.997 - 0.04, e]));
+        p.Add(Box([-e, 1.997 - 0.04, -e], [e, 1.997, e], Bed)!.Update(("paintable", false), ("finish", "tread plate"))); // (the bed's top: the dark working tone)
+        foreach (var (side, lo, hi) in new[]
+        {
+            ("+x", new[] { 1 - t, 0, -1 + t }, new[] { 1.0, 2, 1 - t }), ("-x", new[] { -1.0, 0, -1 + t }, new[] { -1 + t, 2, 1 - t }),
+            ("+z", new[] { -1 + t, 0, 1 - t }, new[] { 1 - t, 2, 1.0 }), ("-z", new[] { -1 + t, 0, -1.0 }, new[] { 1 - t, 2, -1 + t }),
+        })
+        {
+            // Each side's frame (its corner posts are the two neighbours' frames meeting) and, at its top edge, the hazard band round the bed.
+            p.Add(Seam(MachineLook.D(lo, hi, MachineLook.Base)!, side));
+            var axis = side[1] == 'x' ? 0 : 2;
+            var sign = side[0] == '+' ? 1 : -1;
+            double[] hl = [-1 + t + 0.004, 1.84, -1 + t + 0.004], hh = [1 - t - 0.004, 1.94, 1 - t - 0.004];
+            hl[axis] = sign > 0 ? 0.996 : -1.008;
+            hh[axis] = sign > 0 ? 1.008 : -0.996; // (into the frame, so no face of it lies on the frame's)
+            p.Add(Seam(MachineLook.D(hl, hh, MachineLook.Accent, "hazard paint")!, side));
+            // Its production detail (Sean 2026-11-21), on the side's plate and gone with it when a block is welded there: two
+            // stiffener ribs up the plate, a row of bolt heads along its foot and one under the hazard band.
+            var u = axis == 0 ? 2 : 0;
+            double n0 = sign > 0 ? 0.994 : -1.016, n1 = sign > 0 ? 1.016 : -0.994;
+            foreach (var c in new[] { -0.5, 0.5 })
+            {
+                double[] rl = new double[3], rh = new double[3];
+                (rl[axis], rh[axis], rl[1], rh[1], rl[u], rh[u]) = (n0, n1, 0.16, 1.78, c - 0.03, c + 0.03);
+                p.Add(Seam(MachineLook.D(rl, rh, MachineLook.Base)!, side));
+            }
+            double b0 = sign > 0 ? 0.992 : -1.022, b1 = sign > 0 ? 1.022 : -0.992;
+            foreach (var c in new[] { -0.8, -0.25, 0.0, 0.25, 0.8 })
+                foreach (var by in new[] { 0.08, 1.74 })
+                {
+                    if (c == 0.0 && by > 1)
+                        continue;
+                    double[] bl = new double[3], bh = new double[3];
+                    (bl[axis], bh[axis], bl[1], bh[1], bl[u], bh[u]) = (b0, b1, by, by + 0.035, c - 0.0175, c + 0.0175);
+                    p.Add(Seam(MachineLook.D(bl, bh, MachineLook.Steel, "steel")!, side));
+                }
+        }
+        foreach (var (x, z) in new[] { (-1.0, -1.0), (1 - t, -1.0), (-1.0, 1 - t), (1 - t, 1 - t) })
+            p.Add(MachineLook.D([x, 0, z], [x + t, 2, z + t], MachineLook.Base)); // (the corner posts)
+        p.Sock("+x", [1, 1, 0], "+x");
+        p.Sock("-x", [-1, 1, 0], "-x");
+        p.Sock("+z", [0, 1, 1], "+z");
+        p.Sock("-z", [0, 1, -1], "-z");
+        p.Sock("top", [0, 2, 0], "+y");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(BlockMass, BlockHealth, 8, 20);
+        p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false));
         return p;
     }
 
-    private static Part Die(string family, Cls c, string colour)
+    private static PyDict Seam(PyDict box, string face) => box.Update(("seam", face));
+
+    // ---- The Die Lathe (Press part 2, design page drawing 17): one fixed machine that cuts any die from 0.25 m of steel bar --------------
+    // A bench lathe on a cabinet: the headstock on the left with its chuck, the bed's two ways, a carriage with its tool post that feeds
+    // along the bar while it cuts, the tailstock on the right, the lead screw under the ways. The bar goes in at the back through the
+    // headstock (bay 1, the shared port look); the cut die lands in the tray at the front, under the machine's screen.
+    private static Part Lathe()
     {
+        var c = Small;
         var k = c.Cell;
-        var s = k * 1.2;
-        var h = k * 0.45;
-        var nm = NameOf(c, $"{family} Die");
-        var mass = c == Small ? 12 : c == Medium ? 36 : c == Large ? 2000 : 60000;
-        var press = $"Fits a {(c.Name.Length > 0 ? c.Name.ToLowerInvariant() + " " : "")}press";
+        int nx = 7, ny = 6, nz = 5;
+        double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), y1 = c.Hi(ny), z0 = c.Lo(), z1 = c.Hi(nz);
+        var p = new Part("Die Lathe", c, Section, "Cuts press dies from a steel bar, any die from 0.25 m of bar. Choose the die with the Recipe button on its screen (or the configure tool), and set the bar in its bay at the back. Needs power.",
+            role: "storage", group: "Production", color: LatheBlue);
+        var cab = y0 + 0.75; // the cabinet's top
+        const double splash = 0.06; // the back splash's thickness
+        var zb = z0 + splash; // the bed's back
+        var hsX = x0 + 0.45; // the headstock's face
+        var zc = R3((zb + z1 - 0.2) / 2); // the spindle's line across the bed
+        var ax = R3(cab + 0.33); // its height
+        // The body: the cabinet (paintable), the back splash up to the bounds' top (the bay's wall), the headstock.
+        p.Add(Box([x0, y0, z0], [x1, cab, z1]));
+        p.Add(Box([x0 + 0.06, cab, z0], [x1 - 0.06, y1, zb]));
+        p.Add(Box([x0, cab, zb], [hsX, cab + 0.6, z1 - 0.2]));
+        MachineLook.Skirt(p, x0, x1, z0, z1, y0, y0 + 0.08, 0.004);
+        // The bed: a chip pan between two steel ways, the lead screw along the front edge (it turns while the lathe cuts).
+        p.Add(MachineLook.D([hsX + 0.004, cab + 0.003, zc - 0.26], [x1 - 0.05, cab + 0.018, zc + 0.26], MachineLook.Base));
+        foreach (var wz in new[] { zc - 0.17, zc + 0.11 })
+            p.Add(MachineLook.D([hsX + 0.004, cab + 0.018, wz], [x1 - 0.05, cab + 0.075, wz + 0.06], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.06, cab + 0.022, zc + 0.2], [x1 - 0.11, cab + 0.062, zc + 0.24], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
+        foreach (var bx in new[] { hsX + 0.008, x1 - 0.108 }) // (the screw's two bearing blocks, in front of the ways)
+            p.Add(MachineLook.D([bx, cab + 0.018, zc + 0.19], [bx + 0.05, cab + 0.08, zc + 0.25], MachineLook.Base));
+        // The chuck on the headstock's face, its three jaws, and the spindle nose behind it: they turn while it cuts.
+        p.Add(MachineLook.D([hsX - 0.002, ax - 0.09, zc - 0.09], [hsX + 0.03, ax + 0.09, zc + 0.09], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.03, ax - 0.13, zc - 0.13], [hsX + 0.12, ax + 0.13, zc + 0.13], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))), "spin", "+x"));
+        // (the jaws are two bars across the chuck's face, each centred on the spindle: a spin box turns about its own middle)
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.12, ax - 0.11, zc - 0.022], [hsX + 0.16, ax + 0.11, zc + 0.022], MachineLook.Accent), "spin", "+x"));
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.124, ax - 0.022, zc - 0.07], [hsX + 0.156, ax + 0.022, zc + 0.07], MachineLook.Accent), "spin", "+x"));
+        // The carriage: a saddle across the ways, the cross slide, the tool post and its cutter; they feed along the bar while it cuts.
+        var cx = x0 + 0.95;
+        const double feed = 0.22;
+        p.Add(MachineLook.Work(MachineLook.D([cx - 0.15, cab + 0.075, zc - 0.24], [cx + 0.15, cab + 0.135, zc + 0.24], MachineLook.Base), "stroke", "+x", feed));
+        p.Add(MachineLook.Work(MachineLook.D([cx - 0.1, cab + 0.135, zc - 0.05], [cx + 0.1, cab + 0.18, zc + 0.2], LatheBlue, paintable: true), "stroke", "+x", feed));
+        p.Add(MachineLook.Work(MachineLook.D([cx - 0.05, cab + 0.18, zc + 0.07], [cx + 0.05, cab + 0.28, zc + 0.17], MachineLook.Steel, "steel"), "stroke", "+x", feed));
+        p.Add(MachineLook.Work(MachineLook.D([cx - 0.015, ax - 0.02, zc + 0.02], [cx + 0.015, ax + 0.004, zc + 0.1], MachineLook.Accent), "stroke", "+x", feed)); // (the cutter, at the spindle's height)
+        p.Add(MachineLook.Work(MachineLook.D([cx - 0.04, cab + 0.06, zc + 0.24], [cx + 0.04, cab + 0.12, zc + 0.27], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+z"))), "stroke", "+x", feed)); // (the apron's handwheel)
+        // The tailstock on the right of the ways, its quill and centre pointing at the chuck.
+        var tx = x1 - 0.32;
+        p.Add(MachineLook.D([tx, cab + 0.075, zc - 0.15], [tx + 0.24, ax + 0.08, zc + 0.15], LatheBlue, paintable: true));
+        p.Add(MachineLook.D([tx - 0.12, ax - 0.04, zc - 0.04], [tx, ax + 0.04, zc + 0.04], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "-x"))));
+        p.Add(MachineLook.D([tx + 0.24, ax - 0.05, zc - 0.05], [tx + 0.27, ax + 0.05, zc + 0.05], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x")))); // (its handwheel)
+        // The headstock's dressing: a speed gauge and bezel, the maker's plate, louvres down its outer side, a cap band.
+        var hf = z1 - 0.2;
+        p.Add(MachineLook.D([x0 + 0.13, ax - 0.065, hf], [x0 + 0.29, ax + 0.095, hf + 0.012], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z"))));
+        p.Add(MachineLook.D([x0 + 0.145, ax - 0.05, hf + 0.012], [x0 + 0.275, ax + 0.08, hf + 0.02], MachineLook.In, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+z"))));
+        p.Add(MachineLook.D([x0 + 0.2, ax + 0.012, hf + 0.02], [x0 + 0.215, ax + 0.07, hf + 0.033], MachineLook.Stop)); // (its needle)
+        p.Add(MachineLook.D([x0 + 0.09, cab + 0.09, hf], [x0 + 0.33, cab + 0.18, hf + 0.008], Gold, "brass"));
+        for (var i = 0; i < 4; i++)
+            p.Add(MachineLook.D([x0 - 0.012, cab + 0.12 + i * 0.09, zb + 0.12], [x0, cab + 0.16 + i * 0.09, hf - 0.12], MachineLook.Base));
+        p.Add(MachineLook.D([x0 - 0.004, cab + 0.56, zb], [hsX + 0.004, cab + 0.604, hf + 0.004], MachineLook.Base));
+        // The coolant line: down the splash's front from a pump box to a nozzle over the cutter's path.
+        p.Add(MachineLook.D([x1 - 0.42, cab + 0.42, zb], [x1 - 0.26, cab + 0.56, zb + 0.1], MachineLook.Base));
+        p.Add(MachineLook.D([x1 - 0.36, cab + 0.5, zb + 0.1], [x1 - 0.33, cab + 0.53, zc - 0.02], Hose));
+        p.Add(MachineLook.D([cx - 0.02, cab + 0.47, zc - 0.05], [x1 - 0.33, cab + 0.5, zc - 0.02], Hose));
+        p.Add(MachineLook.D([cx - 0.02, ax + 0.09, zc - 0.05], [cx + 0.01, cab + 0.47, zc - 0.02], MachineLook.Steel, "steel")); // (the nozzle)
+        // The switch box on the right side: a stop button and the conduit up to the splash.
+        p.Add(MachineLook.D([x1, cab - 0.35, z1 - 0.4], [x1 + 0.06, cab - 0.12, z1 - 0.15], MachineLook.Base));
+        p.Add(MachineLook.D([x1 + 0.06, cab - 0.27, z1 - 0.31], [x1 + 0.085, cab - 0.2, z1 - 0.24], MachineLook.Stop, shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x"))));
+        p.Add(MachineLook.D([x1 + 0.012, cab - 0.12, z1 - 0.3], [x1 + 0.04, cab + 0.004, z1 - 0.27], Hose));
+        // Corner bolts on the cabinet's front, and the bed's oil cups.
+        foreach (var bx in new[] { x0 + 0.05, x1 - 0.08 })
+            foreach (var by in new[] { y0 + 0.13, cab - 0.18 })
+                p.Add(MachineLook.D([bx, by, z1], [bx + 0.03, by + 0.03, z1 + 0.014], MachineLook.Steel, "steel"));
+        foreach (var oz in new[] { zc - 0.14, zc + 0.14 })
+            p.Add(MachineLook.D([x1 - 0.1, cab + 0.075, oz - 0.015], [x1 - 0.07, cab + 0.105, oz + 0.015], Gold, "brass"));
+        // The tray at the front, where the cut die lands: a steel pan with a lip.
+        double tx0 = hsX + 0.05, tx1 = x1 - 0.05, tz0 = zc + 0.29, tz1 = z1 - 0.03;
+        p.Add(MachineLook.D([tx0, cab + 0.003, tz0], [tx1, cab + 0.015, tz1], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([tx0, cab + 0.015, tz1 - 0.015], [tx1, cab + 0.06, tz1], MachineLook.Steel, "steel"));
+        // In and out: the bay's port at the back (the bar goes in through the headstock), a white band on the splash, the orange band on
+        // the cabinet's front over the screen.
+        var bay = new[] { R3(x0 + 0.225), ax, z0 };
+        p.Sock("bay1", bay, "-z", kind: "die");
+        MachineLook.Port(p, [bay[0], R3(ax - 0.11), z0], 2, -1, 0.13, 0.1, true);
+        p.Add(MachineLook.D([x0 + 0.5, cab + 0.03, z0 - 0.012], [x1 - 0.1, cab + 0.09, z0], MachineLook.In));
+        p.Add(MachineLook.D([x0 + 0.06, cab - 0.12, z1], [x1 - 0.06, cab - 0.02, z1 + 0.012], MachineLook.Out));
+        MachineLook.Arrow(p, 2, z1 + 0.012, 1, 1, -1, cab - 0.07, (x0 + x1) / 2, 0.08, 0.12, MachineLook.Ink, 0.012);
+        BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(3, "+x", "-x", "+y", "-y"));
+        p.Stats(LatheMass * 0.6, LatheHealth * 0.7, c.Armour, 4);
+        var proud = 0.004;
+        var card = Kw(("source", "press.die"), ("at", Py.L(R3((x0 + x1) / 2), R3(y0 + 0.4), Py.Round(z1 + proud, 4))), ("size", Py.L(R3(k * 5.8), R3(k * 1.2))), ("face", "+z"), ("up", "+y"), ("rows", 4));
+        card["touch"] = Py.L(Kw(("action", "machine.recipe"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Recipe")));
+        var bayCard = Kw(("source", "press.bay"), ("slot", 0), ("at", Py.L(R3(x0 + 1.05), R3(cab + 0.42), Py.Round(z0 - proud, 4))), ("size", Py.L(0.9, 0.4)), ("face", "-z"), ("up", "+y"), ("rows", 5));
+        p.Set(("power", LathePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Cuts"), ("group", "Work"), ("tooltip", "The die it cuts from the bar in its bay. It cuts any die from 0.25 m of steel bar.")))),
+            ("storage", Kw(
+                ("slots", Py.L(Kw(("min", Py.L(R3(tx0 + 0.01), R3(cab + 0.02), R3(tz0))), ("max", Py.L(R3(tx1 - 0.01), R3(cab + 0.58), R3(tz1 - 0.015))), ("stack", 12), ("label", "Tray")))), // (one slot the tray's width and 0.56 m up: a 0.5 m die cassette stands in it on edge)
+                ("press", Kw(("lathe", true),
+                    ("bays", Py.L(Kw(("socket", "bay1"), ("min", Py.L(R3(bay[0] - 0.24), R3(ax - 0.24), R3(z0 - 0.375))), ("max", Py.L(R3(bay[0] + 0.24), R3(ax + 0.24), R3(z0 + 0.375)))))),
+                    ("maxAcross", MaxAcross(Small)), ("speed", LatheSpeed), ("outAt", Py.L(R3((x0 + x1) / 2), R3(y0), R3(z1 + k * 0.2))), ("outDir", "+z"))))),
+            ("panels", Py.L(bayCard, card)));
+        var lamp = MachineLook.D([R3((x0 + x1) / 2 - 0.62), R3(y0 + 0.57), R3(z1 + 0.003)], [R3((x0 + x1) / 2 + 0.62), R3(y0 + 0.6), R3(z1 + 0.012)], "#2b3036");
+        if (lamp is not null)
+            lamp["status"] = true;
+        p.Add(lamp); // (its line state over its own screen: ProductionLines)
+        return p;
+    }
+
+    /// <summary>
+    /// A die: a 0.5 m cassette (Press part 2), the same for every family and any press. A lower shoe on the mount, four guide posts, the
+    /// upper shoe with the family's coloured punch on top, two grab handles and the family's label plate on its front.
+    /// </summary>
+    private static Part Die(string family, string colour)
+    {
+        var c = Small;
+        const double s = 0.25, lo = 0.07, hi0 = 0.15, hi1 = 0.2;
         var what = Array.IndexOf(SizedFamilies, family) >= 0
-            ? $"{press} and makes it press a whole piece into one {family.ToLowerInvariant()} part, sized by the piece. A standard piece gives the standard part."
-            : $"{press} and makes it stamp {family.ToLowerInvariant()} parts. Every material a {family.ToLowerInvariant()} part comes in uses this die.";
-        var p = new Part(nm, c, Dies, what,
-            role: "panel", tool: "wrench", group: "Production", color: Bed);
-        p.Add(Box([-s, 0, -s], [s, h, s]));
-        p.Add(Box([-s * 0.55, h, -s * 0.55], [s * 0.55, h * 1.5, s * 0.55], colour));
+            ? $"A press die cassette. Fit it to a press of any size and it presses a whole piece into one {family.ToLowerInvariant()} part, sized by the piece. A standard piece gives the standard part."
+            : $"A press die cassette. Fit it to a press of any size and it stamps {family.ToLowerInvariant()} parts. Every material a {family.ToLowerInvariant()} part comes in uses this die.";
+        var p = new Part($"{family} Die", c, Dies, what, role: "panel", tool: "wrench", group: "Production", color: Bed);
+        p.Add(Box([-s, 0, -s], [s, lo, s]));
+        p.Add(Box([-s + 0.02, hi0, -s + 0.02], [s - 0.02, hi1, s - 0.02]));
+        p.Add(Box([-s * 0.55, hi1, -s * 0.55], [s * 0.55, hi1 + 0.05, s * 0.55], colour));
+        foreach (var gx in new[] { -s + 0.03, s - 0.07 })
+            foreach (var gz in new[] { -s + 0.03, s - 0.07 })
+                p.Add(MachineLook.D([gx, lo - 0.004, gz], [gx + 0.04, hi0 + 0.004, gz + 0.04], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+y"))));
+        foreach (var sg in new[] { -1, 1 })
+        {
+            var fx = sg < 0 ? -s : s;
+            p.Add(MachineLook.D([sg < 0 ? fx - 0.05 : fx, lo * 0.5 - 0.015, -0.12], [sg < 0 ? fx : fx + 0.05, lo * 0.5 + 0.015, -0.09], MachineLook.Base));
+            p.Add(MachineLook.D([sg < 0 ? fx - 0.05 : fx, lo * 0.5 - 0.015, 0.09], [sg < 0 ? fx : fx + 0.05, lo * 0.5 + 0.015, 0.12], MachineLook.Base));
+            p.Add(MachineLook.D([sg < 0 ? fx - 0.065 : fx + 0.035, lo * 0.5 - 0.02, -0.12], [sg < 0 ? fx - 0.035 : fx + 0.065, lo * 0.5 + 0.02, 0.12], MachineLook.Accent));
+        }
+        p.Add(MachineLook.D([-0.15, 0.015, s], [0.15, lo - 0.015, s + 0.008], colour));
+        p.Add(MachineLook.D([-0.17, hi0 + 0.012, s - 0.02], [0.17, hi1 - 0.012, s - 0.012], MachineLook.Accent, "hazard paint"));
         p.Sock("mount", [0, 0, 0], "-y", kind: "pressdie");
-        p.Stats(mass, 300 * c.X, c.Armour, c == Small ? 2 : null);
+        p.Stats(12, 300, c.Armour, 2);
         p.Set(("pressDie", family), ("centreSockets", false));
         return p;
     }
@@ -988,13 +1233,9 @@ public sealed class PressParts : IPartGenerator
     private static List<object?> LatheRows()
     {
         var r = new List<object?>();
-        foreach (var (family, classes, block, tier, _) in Families)
-            foreach (var c in classes)
-            {
-                object across = c.Key switch { "small" => 0.25, "medium" => 1, "large" => 4, _ => 8 };
-                r.Add(Kw(("output", NameOf(c, $"{family} Die")), ("seconds", 15 * tier * (1 + Rank(c))),
-                    ("bays", Py.L(BayRow("Block", ["solid"], block == "steel" ? ["steel"] : ["metal", "steel"], across, MaxAcross(c), use: across)))));
-            }
+        foreach (var (family, tier, _) in Families)
+            r.Add(Kw(("output", $"{family} Die"), ("seconds", 15 * tier),
+                ("bays", Py.L(BayRow("Bar", ["solid"], ["steel"], 0.25, MaxAcross(Small), use: 0.25)))));
         return r;
     }
 
@@ -1005,26 +1246,23 @@ public sealed class PressParts : IPartGenerator
         ("description", "An Extruder chuted into a Press, with a bin and a battery: fit a die and tip in material."),
         ("steps", Py.L(
             Kw(("part", "Foundation")),
-            Kw(("part", "Extruder"), ("on", 0), ("socket", "top21"), ("by", "bottom"), ("config", Kw(("profile", 1), ("width", 0.3), ("height", 0.3), ("cutLength", 2)))),
-            Kw(("part", "Materials Bin"), ("on", 0), ("socket", "top01"), ("by", "bottom")),
-            Kw(("part", "Battery"), ("on", 0), ("socket", "top02"), ("by", "-y")),
+            Kw(("part", "Extruder"), ("on", 0), ("socket", "top11"), ("by", "bottom"), ("config", Kw(("profile", 1), ("width", 0.3), ("height", 0.3), ("cutLength", 2)))),
+            Kw(("part", "Foundation"), ("on", 0), ("socket", "z-1"), ("by", "z+1")), // (behind the Extruder: its feed and power, clear of its 2 x 1.5 m)
+            Kw(("part", "Materials Bin"), ("on", 2), ("socket", "top01"), ("by", "bottom")),
+            Kw(("part", "Battery"), ("on", 2), ("socket", "top02"), ("by", "-y")),
             Kw(("part", "Foundation"), ("on", 0), ("socket", "x+1"), ("by", "x-1")),
-            Kw(("part", "Press"), ("on", 4), ("socket", "top00"), ("by", "-y.0.0")))),
-        ("links", Py.L(Kw(("type", "chute"), ("from", 2), ("to", 1)), Kw(("type", "chute"), ("from", 1), ("to", 5)))));
+            Kw(("part", "Press"), ("on", 5), ("socket", "top00"), ("by", "-y.0.0")))),
+        ("links", Py.L(Kw(("type", "chute"), ("from", 3), ("to", 1)), Kw(("type", "chute"), ("from", 1), ("to", 6)))));
 
     public void Make(PartOutput o)
     {
         var parts = new List<(string, Part)>();
-        foreach (var r in Presses)
-        {
-            parts.Add(("", Press(r)));
-            parts.Add(("", Lathe(r)));
-        }
-        foreach (var (family, classes, _, _, colour) in Families)
-            foreach (var c in classes)
-                parts.Add(("Dies", Die(family, c, colour)));
+        parts.Add(("", PressCore()));
+        parts.Add(("", PressBlock()));
+        parts.Add(("", Lathe()));
+        foreach (var (family, _, colour) in Families)
+            parts.Add(("Dies", Die(family, colour)));
         parts.Add(("", Rack(Small, 6, 6, 3)));
-        parts.Add(("", Rack(Medium, 6, 6, 3)));
         foreach (var (side, c, n) in Housings)
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));

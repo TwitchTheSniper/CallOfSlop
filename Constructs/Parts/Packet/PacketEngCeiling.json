@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Packet Eng Ceiling",
+  "description": "The ceiling of the Packet's eng.",
+  "group": "Ship",
+  "section": "Packet freighter",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1028.6,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#b4b6b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.125,
+        2.625,
+        17.875
+      ],
+      "max": [
+        2.875,
+        2.875,
+        26.125
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.245,
+        2.6,
+        18.35
+      ],
+      "max": [
+        -0.005,
+        2.625,
+        25.65
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -3.005,
+        2.625,
+        21.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.755,
+        2.625,
+        21.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.125,
+        2.755,
+        19.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -3.125,
+        2.755,
+        24.005
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.875,
+        2.755,
+        19.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        2.875,
+        2.755,
+        24.005
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -0.125,
+        2.875,
+        19.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -0.125,
+        2.875,
+        24.005
+      ],
+      "dir": "+y"
+    }
+  ]
+}

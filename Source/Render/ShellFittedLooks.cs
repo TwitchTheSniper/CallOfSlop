@@ -54,9 +54,30 @@ public static class ShellFittedLooks
         return look;
     }
 
+    private static readonly Dictionary<(ConstructPartDef Shell, byte Slot), CPartBox[]?> _own = [];
+
+    /// <summary>
+    /// The frame's own module in slot <paramref name="slot"/> of shell type <paramref name="d"/> as its part file has it (ShellParts.ModuleOnBody
+    /// places it the same way), or null: that module has no part (the hopper, the drill arm). ConstructGantry.BoxSlots finds a slot's boxes by it.
+    /// </summary>
+    public static CPartBox[]? Own(ConstructPartDef d, int slot)
+    {
+        if ((uint)slot >= ShellFrames.SlotCount)
+            return null;
+        var key = (d, (byte)slot);
+        if (_own.TryGetValue(key, out var made))
+            return made;
+        var frame = ShellFrames.Of(ShellFrames.FrameOf(d));
+        CPartBox[]? look = null;
+        if (frame.Modules[slot] is { Part.Length: > 0 } m && ConstructParts.Find(m.Part) is { } md)
+            look = Place(md, m, slot, frame.Scale);
+        _own[key] = look;
+        return look;
+    }
+
     /// <summary>
     /// A module part's boxes on a standing shell of size <paramref name="k"/> (the frame's scale), in a person-sized shell's places
-    /// (ShellParts.Robot) times <paramref name="k"/>: a head on the neck, a back module behind the torso facing out, an arm module hung
+    /// (ShellParts.Robot, whose ModuleOnBody places a frame's own modules the same way: keep the two alike) times <paramref name="k"/>: a head on the neck, a back module behind the torso facing out, an arm module hung
     /// from the elbow, a leg from the hip to the ground at its hip's height (its "joints"). A left arm or leg is mirrored.
     /// </summary>
     private static CPartBox[] Place(ConstructPartDef md, ShellModule m, int slot, float k)
@@ -71,7 +92,7 @@ public static class ShellFittedLooks
                 at = new Vector3(0, 1.485f, 0); // (its neck 5 mm over the shell's: no shared face)
                 break;
             case 1:
-                at = new Vector3(0, 1.07f, 0.19f); // (its back 5 mm off the torso's)
+                at = new Vector3(0, 1.07f, 0.14f); // (sunk into the torso's back, its case's back on the shell's back socket at 0.2: a dock clamps on it)
                 turn = true; // (its front, its lamps, faces out behind)
                 break;
             case 2 or 3:

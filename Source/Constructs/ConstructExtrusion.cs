@@ -54,7 +54,7 @@ public static class Extrusion
     public const int Grid = 8; // cells a side of a section
     public const int MaxRects = 16; // solid boxes a section may mesh into (each is a draw and a collision box)
     public const int StepCm = 5; // lengths go in steps of this, so the 0.1 m and 0.25 m lattices are both reachable
-    public const int MaxLengthCm = 19200; // 192 m: no piece is longer (the Capital Extruder's; ConstructParts.MaxPartReach is 200 m)
+    public const int MaxLengthCm = 19200; // 192 m: no piece is longer (an Extruder's with its Run-out Tables; ConstructParts.MaxPartReach is 200 m)
     public const int MinSectionCm = 10, MaxSectionCm = 3200; // 0.1 to 32 m a side
     public const int MinBoreCm = 5; // a pipe's wall always leaves this much hole
     public const int MaxWallCm = 200; // and is at most this thick
@@ -63,7 +63,7 @@ public static class Extrusion
     public const int MaxDefs = 48000; // distinct pieces in one run of the game (a length step of one line is one): past this no new shape can be made
     public const ushort RuntimeBase = 0x4000; // well above ConstructParts.MaxTypes
     public const ushort WireMark = 0xFFFE; // in a Full's part list: a key follows instead of a part id
-    public const int MinFanCm = 40, MaxFanCm = 9600; // a fan: 0.4 to 96 m across
+    public const int MinFanCm = 40, MaxFanCm = 6400; // a fan: 0.4 to 64 m across (Sean, 2026-11-20: the 96 m props went; the block-machine former tops out at 64 m)
     public const int MinChordCm = 10, MaxChordCm = 3200; // a wing: 0.1 to 32 m of chord
     private const float WingSkin = 0.0225f; // m of skin and ribs over its area, before chord's root
     public const int MaxBladeStyles = 8; // (three bits of a Fan's Wall)

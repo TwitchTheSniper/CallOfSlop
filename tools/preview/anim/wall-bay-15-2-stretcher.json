@@ -1,6 +1,6 @@
 {
   // In-wall bay (WallBayParts.cs): a stretcher drawer as long as the bay runs out under a med cabinet.
-  "blueprint": "Wall Bay 1.5m Stretcher",
+  "blueprint": "blueprints/wall-bays/WallBay15mStretcher.json",
   "title": "1.5 m bay: stretcher",
   "shelf": "In-wall bays 1.5 m",
   "description": "A waist-high tray as long as the bay runs out 1.42 m with a padded stretcher and a trauma kit on it; a med cabinet over it.",

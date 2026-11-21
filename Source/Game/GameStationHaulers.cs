@@ -33,7 +33,28 @@ public sealed partial class Game
         public HaulStage Stage;
         public long Since, RetryAt;
         public string Last = ""; // the last line logged for its leg (so a refusal repeated every try is logged once)
+        public long EscortNext; // when a lost escort may be replaced
     }
+
+    /// <summary>An escort (phase 3: convoys): a warship of the route's power that holds beside its hauler with a Meet order, and off the station while the hauler docks.</summary>
+    private sealed class EscortRun
+    {
+        public ushort Ship, Hauler; // (Hauler 0: its hauler was lost; it waits for the route's next)
+        public int Route;
+        public long RetryAt;
+        public string Last = "";
+    }
+
+    private readonly List<EscortRun> _escorts = new(8);
+
+    /// <summary>How near its escorts must be before a hauler sets out on a leg (m), and how much longer than its wait it waits for them (s).</summary>
+    private const float EscortGather = 5000, EscortGatherMost = 120;
+
+    /// <summary>How far under or over the station's circle an escort waits while its hauler docks (m), and how near the station it keeps that circle whichever way it drifts (m).</summary>
+    private const float EscortCircle = 1000, EscortOffStation = 3000;
+
+    /// <summary>The least of a good a hauler loads (units): less is left for the next run.</summary>
+    private const int HaulLeastLot = 50;
 
     private readonly List<HaulRun> _hauls = new(8);
 
@@ -172,6 +193,10 @@ public sealed partial class Game
         var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
         _hauls.Add(r);
         Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
+        EscortsAdopt(r); // (a lost hauler's escorts first)
+        for (var k = EscortsOf(r); k < h.Escorts; k++)
+            if (EscortOut(r, c, k) == null)
+                break;
         return r;
     }
 
@@ -186,6 +211,19 @@ public sealed partial class Game
             if (c.HaulRoute >= routes)
             {
                 c.HaulRoute = -1; // (a route the data no longer has: a plain crewed ship now)
+                c.HaulEscort = false;
+                continue;
+            }
+            if (c.HaulEscort)
+            {
+                var had = false;
+                foreach (var e in _escorts)
+                    had |= e.Ship == c.Id;
+                if (!had)
+                {
+                    _escorts.Add(new EscortRun { Ship = c.Id, Route = c.HaulRoute }); // (its hauler is found again: EscortStep)
+                    Log($"[haul] construct {c.Id} goes on escorting on route {c.HaulRoute}");
+                }
                 continue;
             }
             var known = false;
@@ -193,7 +231,7 @@ public sealed partial class Game
                 known |= run.Ship == c.Id;
             if (known)
                 continue;
-            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate });
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
     }
@@ -208,6 +246,9 @@ public sealed partial class Game
                 var to = StationMarkets.All[run.AtTo ? h.To : h.From].Name.ToUpperInvariant();
                 return run.Stage == HaulStage.Going ? "HAULING TO " + to : "TRADING AT " + to;
             }
+        foreach (var e in _escorts)
+            if (e.Ship == ship)
+                return e.Hauler != 0 ? $"ESCORTING HAULER {e.Hauler}" : "ESCORT: WAITING FOR A HAULER";
         return null;
     }
 
@@ -224,7 +265,11 @@ public sealed partial class Game
             Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
         }
         if (_haulAdopt)
+        {
             HaulAdopt(routes.Length);
+            foreach (var run in _hauls)
+                EscortsAdopt(run); // (a loaded world's escorts with its haulers, before any is replaced)
+        }
         for (var i = _hauls.Count - 1; i >= 0; i--)
             if (Constructs.Get(_hauls[i].Ship) is not { Wreck: false, PartCount: > 0 })
             {
@@ -248,9 +293,184 @@ public sealed partial class Game
             if (Constructs.Get(from != 0 ? from : to) is { SpaceAway: 0, SpaceShip: not 0 } st) // (a station here, in this world's space)
                 HaulerOut(ri, st, from == 0);
         }
+        for (var i = _escorts.Count - 1; i >= 0; i--)
+            if (Constructs.Get(_escorts[i].Ship) is not { Wreck: false, PartCount: > 0 })
+            {
+                Log($"[haul] escort {_escorts[i].Ship} is gone");
+                foreach (var run in _hauls)
+                    if (run.Ship == _escorts[i].Hauler)
+                        run.EscortNext = Math.Max(run.EscortNext, ServerTick + 60 * World.TickRate);
+                _escorts.RemoveAt(i);
+            }
         foreach (var run in _hauls)
             if (Constructs.Get(run.Ship) is { } c)
+            {
                 HaulStep(s, run, c);
+                // A lost escort is replaced at the hauler's next station in this world, a minute on at least.
+                if (run.Stage == HaulStage.Moored && ServerTick >= run.EscortNext && EscortsOf(run) < routes[run.Route].Escorts)
+                {
+                    run.EscortNext = ServerTick + 60 * World.TickRate;
+                    EscortsAdopt(run);
+                    if (EscortsOf(run) < routes[run.Route].Escorts)
+                        EscortOut(run, c, EscortsOf(run));
+                }
+            }
+        foreach (var e in _escorts)
+            if (Constructs.Get(e.Ship) is { } c)
+                EscortStep(s, e, c);
+    }
+
+    /// <summary>Escorts on <paramref name="run"/>'s route with no hauler (theirs was lost, or a loaded world's) join it, up to the route's count.</summary>
+    private void EscortsAdopt(HaulRun run)
+    {
+        var most = StationMarkets.Haulers[run.Route].Escorts;
+        foreach (var e in _escorts)
+        {
+            if (EscortsOf(run) >= most)
+                return;
+            if (e.Route != run.Route || e.Hauler == run.Ship)
+                continue;
+            var has = false;
+            foreach (var r in _hauls)
+                has |= r.Ship == e.Hauler;
+            if (has)
+                continue;
+            e.Hauler = run.Ship;
+            e.RetryAt = 0;
+            Log($"[haul] construct {e.Ship} now escorts hauler {run.Ship}");
+        }
+    }
+
+    /// <summary>How many escorts fly with <paramref name="run"/>'s hauler now.</summary>
+    private int EscortsOf(HaulRun run)
+    {
+        var n = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship)
+                n++;
+        return n;
+    }
+
+    /// <summary>
+    /// Server: an escort for <paramref name="run"/>'s hauler <paramref name="hauler"/>, built off its side (and further for each one it has),
+    /// going round with it, nobody's and crewed by the route's power. Null: none was built (logged).
+    /// </summary>
+    private Construct? EscortOut(HaulRun run, Construct hauler, int k)
+    {
+        var h = StationMarkets.Haulers[run.Route];
+        var power = CrewPowers.Find(h.Power);
+        if (power == 0 || h.Escort.Length == 0 || ConstructBuild.FindBlueprint(h.Escort) is not { } bp || GravityFrames.Point is not { } planet)
+        {
+            if (h.Escort.Length > 0)
+                Log($"[haul] route {run.Route} ({h.Power}): {(power == 0 ? "no such power" : "no blueprint " + h.Escort)} for its escort");
+            return null;
+        }
+        if (hauler.Dirty)
+            hauler.Rebuild();
+        var up = Vector3.Normalize(hauler.WorldCom - planet.Center);
+        var fwd = hauler.Vel.LengthSquared() > 1 ? Vector3.Normalize(hauler.Vel - up * Vector3.Dot(hauler.Vel, up)) : Vector3.Normalize(Vector3.Cross(up, Vector3.UnitX));
+        var z = -fwd;
+        var x = Vector3.Cross(up, z);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, up.X, up.Y, up.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        // Off its side across the orbit (and up, clear of a station it is moored at), so it doesn't build inside either.
+        var at = hauler.WorldCom + x * ((k % 2 == 0 ? 1 : -1) * (hauler.Radius + 200f + h.EscortGap + 250f * (k / 2))) + up * 300f;
+        var c = ConstructBuild.Build(Constructs, bp, at, rot, out var why);
+        if (c == null)
+        {
+            Log($"[haul] an escort {h.Escort} for {h.Power} didn't build in orbit: {why}");
+            return null;
+        }
+        c.Rebuild();
+        c.Owner = 255; // (nobody's: the power's)
+        c.Vel = hauler.Vel;
+        c.PrevPos = c.Pos;
+        c.Wake();
+        var crew = Crew.Crew(c, ShipAiMode.Strangers, faction: power);
+        if (Crew.Events.Count > 0)
+            CrewLog();
+        c.HaulRoute = (sbyte)run.Route;
+        c.HaulEscort = true;
+        _escorts.Add(new EscortRun { Ship = c.Id, Hauler = run.Ship, Route = run.Route, RetryAt = ServerTick + 3 * World.TickRate });
+        Log($"[haul] construct {c.Id}, a {h.Escort} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), escorts hauler {run.Ship}");
+        return c;
+    }
+
+    /// <summary>
+    /// Host: one escort's second. With its hauler out on a leg it holds beside it (a Meet order: between worlds too, on the trip planner);
+    /// while the hauler closes on, docks at or lies moored at a station in this world, it holds off that station instead, clear of the
+    /// berths. One that lost its hauler joins the route's hauler with the fewest escorts.
+    /// </summary>
+    private void EscortStep(SpaceSession s, EscortRun e, Construct c)
+    {
+        var h = StationMarkets.Haulers[e.Route];
+        HaulRun? run = null;
+        foreach (var r in _hauls)
+            if (r.Ship == e.Hauler)
+                run = r;
+        if (run == null)
+        {
+            e.Hauler = 0;
+            var fewest = int.MaxValue;
+            foreach (var r in _hauls)
+                if (r.Route == e.Route && EscortsOf(r) < Math.Min(fewest, h.Escorts))
+                    (run, fewest) = (r, EscortsOf(r));
+            if (run == null)
+                return; // (it keeps its last order until the route's next hauler sets out)
+            e.Hauler = run.Ship;
+            Log($"[haul] construct {c.Id} now escorts hauler {run.Ship}");
+        }
+        if (ServerTick < e.RetryAt || Constructs.Get(run.Ship) is not { } hauler)
+            return;
+        var d = StationMarkets.All[run.AtTo ? h.To : h.From];
+        var st = StationBodyOf(run.AtTo ? h.To : h.From);
+        var o = NavOf(c.Id);
+        string? why;
+        string line;
+        var docking = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 } stb && hauler.SpaceAway == 0
+            && (hauler.MooredTo == st || Vector3.DistanceSquared(stb.WorldCom, hauler.WorldCom) < HaulDockFrom * HaulDockFrom);
+        var resting = hauler.SpaceAway == 0 && NavOf(hauler.Id) is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting or NavPhase.Short } ho && ho.Body == s.Bubble.Body; // (on a circle, or waiting there for a trip in reach)
+        if ((docking || resting) && c.SpaceAway == 0 && GravityFrames.Point is { } gp && Constructs.Get(docking ? st : hauler.Id) is { } sb)
+        {
+            // While the hauler docks (or rests on a circle), off the station (or it) on a circle of its own a kilometre under or over its (under when the station
+            // is ahead, so it gains on it; over when behind), its drive at rest: held beside a point by the station on a single drive it
+            // turned about all the while (2026-11-21), and beside the hauler it would hold inside the station's ring.
+            var stR = (sb.WorldCom - gp.Center).Length();
+            var off = sb.WorldCom - c.WorldCom;
+            var near = off.LengthSquared() < EscortOffStation * EscortOffStation;
+            var radius = stR + (Vector3.Dot(off, c.Vel) > 0 ? -1 : 1) * EscortCircle;
+            if (o is { Kind: NavKind.Orbit } && o.Body == s.Bubble.Body && (near || Math.Abs(o.Radius - radius) < EscortCircle))
+                return; // (on its circle; far off, it changes circle only when the station has passed it)
+            if (c.Dirty)
+                c.Rebuild();
+            why = NavApply(s, c, NavKind.Orbit, s.Bubble.Body, Vec3d.Zero, radius, 255, h.Power + " escort", null, out _);
+            var what = docking ? d.Name : "hauler " + hauler.Id;
+            line = why != null ? $"can't wait off {what}: {why}" : FormattableString.Invariant($"waits off {what} on a circle {(radius - stR) / 1000:+0.0;-0.0} km from its{(docking ? $" while hauler {hauler.Id} docks" : "")}");
+        }
+        else
+        {
+            if (o is { Kind: NavKind.Meet } && o.Target == hauler.Id)
+                return; // (with it)
+            if (c.Dirty)
+                c.Rebuild();
+            why = NavApply(s, c, NavKind.Meet, 0, Vec3d.Zero, h.EscortGap, 255, h.Power + " escort", null, out _, hauler.Id);
+            line = why != null ? $"can't hold with hauler {hauler.Id}: {why}" : $"flies with hauler {hauler.Id}";
+        }
+        e.RetryAt = ServerTick + 10 * World.TickRate;
+        if (line != e.Last)
+        {
+            e.Last = line;
+            Log($"[haul] escort {c.Id} {line}");
+        }
+    }
+
+    /// <summary>Is every escort of <paramref name="run"/> within <see cref="EscortGather"/> of its hauler (a convoy waits for them before a leg)?</summary>
+    private bool EscortsGathered(HaulRun run, Construct hauler)
+    {
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } c && (c.SpaceAway != hauler.SpaceAway
+                || c.SpaceAway == 0 && Vector3.DistanceSquared(c.WorldCom, hauler.WorldCom) > EscortGather * EscortGather))
+                return false;
+        return true;
     }
 
     /// <summary>Host: one hauler's second: moored or on its station's circle, it trades and waits; else it is given its leg's order.</summary>
@@ -275,6 +495,11 @@ public sealed partial class Game
         {
             if (ServerTick - run.Since < (long)(h.Wait * World.TickRate))
                 return;
+            if (ServerTick - run.Since < (long)((h.Wait + EscortGatherMost) * World.TickRate) && !EscortsGathered(run, c))
+            {
+                HaulSay(run, c, "waits for its escorts");
+                return; // (a convoy sets out together)
+            }
             run.AtTo = !run.AtTo; // (the next leg)
             c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
@@ -354,6 +579,12 @@ public sealed partial class Game
             Log($"[haul] construct {c.Id} took on {cap - c.Fuel:0} L of fuel at {name}");
             c.Fuel = cap; // (a station fills its haulers' tanks: a leg between planets takes most of a tank)
         }
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } es && es.Fuel < es.FuelCapacity())
+            {
+                Log($"[haul] escort {es.Id} took on {es.FuelCapacity() - es.Fuel:0} L of fuel at {name}");
+                es.Fuel = es.FuelCapacity(); // (its escorts' too, wherever they hold)
+            }
         Span<int> sold = stackalloc int[StationMarkets.All[def].Goods.Length];
         var value = StationTakeCargo(m, c, sold);
         if (value > 0)
@@ -369,16 +600,46 @@ public sealed partial class Game
         var goods = StationMarkets.All[def].Goods;
         Span<int> bought = stackalloc int[goods.Length];
         double cost = 0;
-        foreach (var mat in run.AtTo ? h.Back : h.Goods)
-            for (var k = 0; k < goods.Length; k++)
-                if (goods[k].Material == mat && goods[k].Sell > 0)
-                {
-                    var afford = pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock - cost)) : 0; // (priced across the stock the load moves)
-                    var n = StationLoadCargo(m, c, k, afford, out var paid);
-                    bought[k] += n;
-                    cost += paid;
-                    break;
-                }
+        // What it loads for the next leg, most needed at the far end first (phase 3: supply lines by what a station lacks): the route's own
+        // goods, and with "needs" any good this station sells that the far one is short of (under its want). A good the far one is full of stays.
+        var far = run.AtTo ? h.From : h.To;
+        var fm = MarketOfDef(far);
+        var fg = StationMarkets.All[far].Goods;
+        Span<int> pick = stackalloc int[goods.Length];
+        Span<float> want = stackalloc float[goods.Length];
+        var np = 0;
+        var listed = run.AtTo ? h.Back : h.Goods;
+        for (var k = 0; k < goods.Length; k++)
+        {
+            if (goods[k].Sell <= 0 || m.Stock[k] <= 0)
+                continue;
+            var fk = -1;
+            for (var j = 0; j < fg.Length && fk < 0; j++)
+                if (fg[j].Material == goods[k].Material)
+                    fk = j;
+            var need = fk >= 0 && fk < fm.Stock.Length && fg[fk].Buy > 0 ? 1f - fm.Stock[fk] / (float)fg[fk].Target : -1f; // (above 0: short of its want)
+            var mine = Array.IndexOf(listed, goods[k].Material) >= 0;
+            if (mine ? fk >= 0 && fk < fm.Stock.Length && fm.Stock[fk] >= fg[fk].Most : !h.Needs || need <= 0)
+                continue;
+            pick[np] = k;
+            want[np++] = need + (mine ? 0.01f : 0); // (a tie goes to the route's own)
+        }
+        for (var i = 1; i < np; i++) // (most needed first: a few goods, an insertion sort)
+            for (var j = i; j > 0 && want[j] > want[j - 1]; j--)
+            {
+                (want[j], want[j - 1]) = (want[j - 1], want[j]);
+                (pick[j], pick[j - 1]) = (pick[j - 1], pick[j]);
+            }
+        for (var i = 0; i < np; i++)
+        {
+            var k = pick[i];
+            var afford = pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock - cost)) : 0; // (priced across the stock the load moves)
+            if (afford < HaulLeastLot)
+                continue; // (a handful isn't worth a bin: what its power can afford of it, or the station has)
+            var n = StationLoadCargo(m, c, k, afford, out var paid);
+            bought[k] += n;
+            cost += paid;
+        }
         if (cost > 0 && pw != null)
         {
             pw.Stock -= cost;

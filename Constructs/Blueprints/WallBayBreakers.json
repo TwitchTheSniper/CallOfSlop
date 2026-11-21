@@ -2,17 +2,16 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Breakers",
   "group": "In-wall bays",
-  "description": "A breaker panel in an in-wall bay: the breaker cassette wears, the fuse drawer under it holds the fuses.",
+  "description": "A breaker panel in an in-wall bay: the breaker cassette wears, the fuse drawer under it holds the fuses. A 1x2 module: fit it with F to a Wall Bay Socket.",
   "steps": [
     {
-      "part": "Wall Bay",
-      "spin": 2
+      "part": "Module Plug 1x2"
     },
     {
       "part": "Breaker Panel Insert",
       "on": 0,
-      "socket": "insert",
-      "by": "bay"
+      "socket": "tc",
+      "by": "plug"
     },
     {
       "part": "Twist Latch",
@@ -32,5 +31,13 @@
       "socket": "wear",
       "by": "hang"
     }
-  ]
+  ],
+  "module": {
+    "w": 1,
+    "l": 2,
+    "primary": "utility",
+    "tags": [
+      "utility"
+    ]
+  }
 }

@@ -25,9 +25,25 @@ public sealed partial class Game
 
     /// <summary>
     /// Any peer: the docking port on <paramref name="target"/> that <paramref name="ship"/> would dock at: a working one that
-    /// holds nothing and takes its mass, armed ones first, then the nearest. -1: no port available.
+    /// holds nothing and takes its mass, armed ones first, then the nearest. -1: no port available. With <paramref name="orders"/>, a port another
+    /// ship's Dock order is flying to is passed over while another will do (2026-11-20: three Traders haulers, each picking the same snuggest
+    /// Magpie berth at the Highport, met in its lane and knocked one another kilometres off).
     /// </summary>
-    public static int NavDockFor(ConstructWorld world, Construct target, Construct ship)
+    public static int NavDockFor(ConstructWorld world, Construct target, Construct ship, List<NavOrder>? orders = null)
+    {
+        var free = NavDockPick(world, target, ship, orders);
+        return free >= 0 || orders == null ? free : NavDockPick(world, target, ship, null);
+    }
+
+    private static bool NavDockClaimed(List<NavOrder> orders, Construct target, int part, Construct ship)
+    {
+        foreach (var o in orders)
+            if (o.Kind == NavKind.Dock && o.Target == target.Id && o.TargetPart == part && o.Construct != ship.Id)
+                return true;
+        return false;
+    }
+
+    private static int NavDockPick(ConstructWorld world, Construct target, Construct ship, List<NavOrder>? orders)
     {
         if (target == ship || target.Wreck || !target.HasLogic || target.PartCount == 0)
             return -1;
@@ -38,7 +54,7 @@ public sealed partial class Game
         var from = ship.WorldCom;
         for (var i = 0; i < target.PartCount; i++)
         {
-            if (!NavDockFree(world, target, i, ship))
+            if (!NavDockFree(world, target, i, ship) || orders != null && NavDockClaimed(orders, target, i, ship))
                 continue;
             var armed = ConstructCargo.IsFrozen(target.Parts[i]);
             var d = Vector3.DistanceSquared(NavDockCentre(target, i, out _, out _), from);
@@ -123,7 +139,7 @@ public sealed partial class Game
         if (c.MooredTo != 0)
             return "It is moored at a station: give it another order to cast off";
         StationLanes(t); // (a station's berths' ways in, once: GameStations.cs)
-        port = NavDockFor(Constructs, t, c);
+        port = NavDockFor(Constructs, t, c, NavOrders);
         return port >= 0 ? null : t.IsStation && NavDockNoFit(Constructs, t, c) ? $"No berth on {t.DisplayName()} fits it" : "No port available on " + t.DisplayName();
     }
 
@@ -151,7 +167,7 @@ public sealed partial class Game
             o.DockLook = 0;
             if (!NavDockFree(Constructs, t, o.TargetPart, c))
             {
-                var port = NavDockFor(Constructs, t, c);
+                var port = NavDockFor(Constructs, t, c, NavOrders);
                 if (port < 0)
                 {
                     NavEnd(o, c, "no port available on " + t.DisplayName() + " any more");

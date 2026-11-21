@@ -172,6 +172,8 @@ public static class ConstructModules
     public static float Output(Construct c, int part, int port)
     {
         ref var p = ref c.Parts[part];
+        if (p.D.ModPart == ModPart.Socket)
+            return ModuleSockets.PortValue(c, part, port); // (a plate's Attached and Locked)
         if (p.D.Monitor == MonitorKind.Console)
             return ProductionLines.PortValue(p, port); // (a Line Console's Alarm, Running and Made)
         if (p.D.Monitor == MonitorKind.Network)

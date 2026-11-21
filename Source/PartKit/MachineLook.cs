@@ -71,6 +71,45 @@ public static class MachineLook
         return list;
     }
 
+    /// <summary>
+    /// A machine's port, the same on every machine (Sean 2026-11-21: one port look for all machines): a collar standing
+    /// <paramref name="stand"/> proud of the body on a bolted flange, a band round it in the side's colour (white in, orange out), and
+    /// the shared mouth (<see cref="Mouth"/>) at its top, where the port's point is. So a chute, a pipe or a conveyor's end has a
+    /// fitting to meet that reads the same on an Extruder as on a Press. <paramref name="face"/>: the port's point, on the body's face (the
+    /// collar stands out from it);
+    /// <paramref name="n"/>, <paramref name="sg"/>: the axis and sign it faces; <paramref name="half"/>: half the opening. Looks only.
+    /// </summary>
+    public static void Port(Part p, double[] face, int n, int sg, double half, double stand, bool input)
+    {
+        var at = (double[])face.Clone();
+        at[n] += sg * stand; // (the mouth: the port's point stays on the body's face, so the link leaves the part's surface straight out, through the collar)
+        p.Boxes.AddRange(Mouth(at, n, sg, half, stand - 0.03, input)); // (the spout stops 3 cm short of the face: no look box within 2 cm of the port)
+        int u = (n + 1) % 3, v = (n + 2) % 3;
+        void Add(double n0, double n1, double u0, double u1, double v0, double v1, string color)
+        {
+            double[] mn = new double[3], mx = new double[3];
+            (mn[n], mx[n]) = sg > 0 ? (at[n] - n1, at[n] - n0) : (at[n] + n0, at[n] + n1); // (n0, n1: how far behind the mouth's plane)
+            (mn[u], mx[u], mn[v], mx[v]) = (at[u] + u0, at[u] + u1, at[v] + v0, at[v] + v1);
+            if (D(mn, mx, color) is { } box)
+                p.Boxes.Add(box);
+        }
+        void Ring(double n0, double n1, double i, double o, string color)
+        {
+            Add(n0, n1, -o, o, i, o, color);
+            Add(n0, n1, -o, o, -o, -i, color);
+            Add(n0, n1, i, o, -i, i, color);
+            Add(n0, n1, -o, -i, -i, i, color);
+        }
+        Ring(0.037, stand + 0.016, half + 0.004, half + 0.06, Base); // (the collar, behind the mouth's rim)
+        Ring(0.045, 0.075, half + 0.056, half + 0.072, input ? In : Out); // (its band)
+        Ring(stand - 0.03, stand + 0.012, half + 0.05, half + 0.1, Base); // (the flange it stands on)
+        foreach (var (a, b) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1), (1, 0), (-1, 0), (0, 1), (0, -1) })
+        {
+            double cu = a * (half + 0.08), cv = b * (half + 0.08);
+            Add(stand - 0.05, stand - 0.026, cu - 0.015, cu + 0.015, cv - 0.015, cv + 0.015, Steel); // (its bolts)
+        }
+    }
+
     /// <summary>A box that shows work (the game's "work" tag): "spin" about <paramref name="axis"/>, "stroke" along it by <paramref name="travel"/>, "glow" or "smoke".</summary>
     public static PyDict? Work(PyDict? b, string kind, string? axis = null, double travel = 0)
     {

@@ -143,7 +143,7 @@ public static class ConstructLogisticsPlan
     /// The sheet a chained Panel Former order asks for (the user, phase 3 Q1): a solid section the panel's width (5 cm steps), 10 cm
     /// thick, cut so one piece holds one panel's <paramref name="units"/> with less than a 5 cm step to spare. When no Extruder on the
     /// network takes that width and the Panel Former's "Too wide: make strips" is on (<paramref name="strips"/>; the user, phase 5: the
-    /// player chooses strips, a bigger Extruder or Die Frames come first), the panel is split across into the fewest equal strips the
+    /// player chooses strips, a bigger Extruder or Die Blocks come first), the panel is split across into the fewest equal strips the
     /// widest one takes, each holding its share of the units (so the count goes up); a piece longer than the best Extruder makes is cut
     /// at its most. Strips off, or none takes any: the full-width sheet is asked for and the chain line says what would make it (<see cref="TooWideText"/>).
     /// </summary>
@@ -180,14 +180,14 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
-    /// Why a sheet <paramref name="w"/> cm wide waits, and what would make it (the user, phase 5: a bigger Extruder or Die Frames first,
-    /// strips as the player's choice): an Extruder on the network whose most section takes it but whose die is narrower wants Die Frames;
+    /// Why a sheet <paramref name="w"/> cm wide waits, and what would make it (the user, phase 5: a bigger Extruder or Die Blocks first,
+    /// strips as the player's choice): an Extruder on the network whose most section takes it but whose die is narrower wants Die Blocks;
     /// else the smallest Extruder in the catalogue that takes it; then the strips setting with the count it would make. Null when the
     /// widest Extruder here takes it after all (the usual refusal stands). Made only when the entry's reason changes (the caller compares).
     /// </summary>
     private static string? TooWideText(Construct c, CraftNet net, int w) => TooWideAdvice(c, net, w) is { } advice ? $"waiting on sheet {w / 100f:0.##} m wide: {advice}" : null;
 
-    /// <summary>What a sheet <paramref name="w"/> cm wide needs ("the widest Extruder here makes 0.5 m. Weld Die Frames ..."), or null: the chain line's and the list row's shared part.</summary>
+    /// <summary>What a sheet <paramref name="w"/> cm wide needs ("the widest Extruder here makes 0.5 m. Weld Die Blocks ..."), or null: the chain line's and the list row's shared part.</summary>
     private static string? TooWideAdvice(Construct c, CraftNet net, int w)
     {
         var widest = WidestTaken(c, net, SheetThickCm);
@@ -209,7 +209,7 @@ public static class ConstructLogisticsPlan
 
     /// <summary>
     /// A Panel Former's sheet link that waits with no maker follows the former's strips setting as it is now: when the sheet it would ask
-    /// for now differs (the player turned strips on, or welded Die Frames, or built a bigger Extruder), the link asks for that one instead,
+    /// for now differs (the player turned strips on, or welded Die Blocks, or built a bigger Extruder), the link asks for that one instead,
     /// the count by the units it held. Only while nothing of it is made, riding or claimed. True when it changed.
     /// </summary>
     private static bool Rekey(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e)
@@ -498,7 +498,7 @@ public static class ConstructLogisticsPlan
             return -1;
         var end = -1;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Source == maker && c.Routes[k].FedEnd)
+            if (c.Routes[k].Type == RouteType.Conveyor && MachineBlocks.Owner(c, c.Routes[k].Source) == maker && c.Routes[k].FedEnd)
             {
                 if (end >= 0)
                     return -1; // (two lines out: not judged)
@@ -806,7 +806,7 @@ public static class ConstructLogisticsPlan
     public const int RetrySteps = 120;
 
     /// <summary>
-    /// What a maker's refusal depends on, folded into one number without allocating: the body's links and rebuilds (a Die Frame, a
+    /// What a maker's refusal depends on, folded into one number without allocating: the body's links and rebuilds (a Die Block, a
     /// die, a new machine), and each machine's queue, bin and settings. A blocked link is asked again when it changes.
     /// </summary>
     private static uint Seen(ConstructWorld world, Construct c, CraftNet net)

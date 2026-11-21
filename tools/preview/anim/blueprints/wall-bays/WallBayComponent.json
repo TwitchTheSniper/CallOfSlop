@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Component Sled (fitted)",
+  "description": "The Wall Bay Component Sled module fitted in a Wall Bay Socket.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "Component Bay Insert",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Component Bay Cover",
+      "on": 2,
+      "socket": "cover",
+      "by": "hang"
+    },
+    {
+      "part": "Component Sled",
+      "on": 2,
+      "socket": "sled",
+      "by": "hang"
+    }
+  ]
+}

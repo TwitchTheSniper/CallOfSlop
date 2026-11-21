@@ -35,6 +35,7 @@ public sealed partial class WallBayParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/WallBays";
     private const string BpOut = "Constructs/Blueprints";
+    private const string AnimOut = "tools/preview/anim/blueprints/wall-bays"; // (the Animation gallery's drafts: each fill fitted in its bay)
     private const string Section = "In-wall bays";
     private const string Group = "Interior"; // (was the style sheet's unlisted group while a draft)
 
@@ -62,55 +63,142 @@ public sealed partial class WallBayParts : IPartGenerator
         return new FittingLookParts.Kit(p);
     }
 
-    private static void Solid(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1) =>
-        k.P.Add(Box([Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)], [Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)], hidden: true));
+    // ---- the socket frame (Sean, 2026-11-21: "the wall base should be sockets, so it can unify the systems")
+    // A Wall Bay Socket is a Module Socket 1x2, whose "module" socket faces its +y from the footprint's middle (ModuleSockets.Parse).
+    // Its boxes are written in the bay's own frame (y up, the room +z) and turned here while Turned is set: a quarter turn about x
+    // (the room to +y, up to -z), the plate's face (z = TurnZ) to y 0 and the opening's middle height (Yc) to z 0.5, the footprint's
+    // middle (its origin is the middle of its first metre cell).
+    private static bool Turned;
+    private static double TurnZ;
+    private const double Yc = 1.05; // the middle of the opening's 2 m footprint (sill 0.1, head 2.0)
+    private const double PlugTop = 0.10; // a Module Plug's top over its plate's face (ModuleSocketParts.PlugT)
+    private const double LugClear = 0.066; // an insert's back over the plug's top: clear of its corner lugs (6 cm) by 6 mm
+    private const double PlugGap = PlugTop + LugClear; // the bay's back plate (a socket's face) stands this far behind the insert's
+
+    private static (double X, double Y, double Z) M(double x, double y, double z) => Turned ? (x, z - TurnZ, 0.5 - (y - Yc)) : (x, y, z);
+
+    private static (double[] Mn, double[] Mx) Mb(double x0, double y0, double z0, double x1, double y1, double z1)
+    {
+        var a = M(x0, y0, z0);
+        var b = M(x1, y1, z1);
+        return ([Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Min(a.Z, b.Z)], [Math.Max(a.X, b.X), Math.Max(a.Y, b.Y), Math.Max(a.Z, b.Z)]);
+    }
+
+    private static string Md(string dir) => !Turned ? dir : dir switch { "+z" => "+y", "-z" => "-y", "+y" => "-z", "-y" => "+z", _ => dir };
+
+    private static void Bx(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1, string col, string finish)
+    {
+        var (a, b) = Mb(x0, y0, z0, x1, y1, z1);
+        k.Box(a[0], a[1], a[2], b[0], b[1], b[2], col, finish);
+    }
+
+    private static void Pt(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1, string col, string finish = "painted steel")
+    {
+        var (a, b) = Mb(x0, y0, z0, x1, y1, z1);
+        k.Paint(a[0], a[1], a[2], b[0], b[1], b[2], col, finish);
+    }
+
+    private static void Gl(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1, string col)
+    {
+        var (a, b) = Mb(x0, y0, z0, x1, y1, z1);
+        k.Glow(a[0], a[1], a[2], b[0], b[1], b[2], col);
+    }
+
+    private static void Sk(Part p, string name, double x, double y, double z, string dir, string? kind = null, Cls? cls = null)
+    {
+        var a = M(x, y, z);
+        p.Sock(name, [Py.Round(a.X, 4), Py.Round(a.Y, 4), Py.Round(a.Z, 4)], Md(dir), cls, kind);
+    }
+
+    private static void Solid(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1)
+    {
+        var (a, b) = Mb(x0, y0, z0, x1, y1, z1);
+        k.P.Add(Box(a, b, hidden: true));
+    }
 
     /// <summary>A cylinder along <paramref name="axis"/> (+x, +y or +z) through the box's middle.</summary>
-    private static void Rod(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1, string axis, string col, string finish, int seg = 12) =>
-        k.P.Add(Box([Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)], [Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)], col, detail: true,
-            shape: Kw(("shape", "cylinder"), ("segments", seg), ("front", axis), ("finish", finish), ("paintable", false))));
+    private static void Rod(FittingLookParts.Kit k, double x0, double y0, double z0, double x1, double y1, double z1, string axis, string col, string finish, int seg = 12)
+    {
+        var (a, b) = Mb(x0, y0, z0, x1, y1, z1);
+        k.P.Add(Box(a, b, col, detail: true, shape: Kw(("shape", "cylinder"), ("segments", seg), ("front", Md(axis)), ("finish", finish), ("paintable", false))));
+    }
 
     private static List<object?> V(double x, double y, double z) => [Py.Round(x, 4), Py.Round(y, 4), Py.Round(z, 4)];
 
     // ---- the bay and its slice of ship
 
-    private static Part Bay()
+    /// <summary>
+    /// The wall base. <paramref name="socket"/>: the Wall Bay Socket (Sean, 2026-11-21), a 1x2 Module Socket whose fill is a module on a
+    /// Module Plug 1x2, fitted with F as any module is; its back plate stands <see cref="PlugGap"/> further back, where the plug sits.
+    /// Else the first draft's Wall Bay, whose insert hangs on its "insert" socket: legacy, kept so saves that hold one load as they were.
+    /// </summary>
+    private static Part Bay(bool socket = false)
     {
         var takes = D < 0.75 ? "a jump seat, drawers, a rack, a component sled, a Murphy bed, a desk, a breaker panel, a flight computer or a damage control locker"
             : D < 1.25 ? "a suit rack, deep shelves, a long component sled, a toilet, a consumables rack, a CO2 scrubber, a water reclaimer, a coolant pump, an RCS feed, a sensor rack or a PDC feed"
             : "a spacewalk pack sled, a stretcher, deeper shelves, a module sled, an oxygen generator or a reactor fuel loader";
-        var k = K("Wall Bay" + Sfx, "frame", $"An in-wall bay: a 0.9 x 1.9 m opening in a ship's interior lining, {Py.G(D)} m deep into the void before the hull. It takes one insert: {takes}. It comes as a wall section: its own deck, lining either side and the hull behind.");
-        // The deck: plate on the room side, grating over the void's floor.
-        k.Paint(-Sw, -0.06, -0.005, Sw, 0, 0.62, Deck, "painted deck plate");
-        Solid(k, -Sw, -0.06, -0.005, Sw, 0, 0.62);
-        k.Box(-Sw, -0.06, HullZ + 0.01, Sw, -0.012, -0.012, Frame, "painted grating");
-        Lining(k);
-        // The recess: dark lining, sides, floor and roof, the back plate.
-        k.Box(-W, Y0, -D - 0.03, W, Y1, -D, Recess, "dirty steel");
-        foreach (var s in new[] { -1.0, 1.0 })
-            k.Box(s * W, Y0 - 0.03, -D - 0.03, s * (W + 0.03), Y1 + 0.03, -Lt - 0.002, Recess, "dirty steel");
-        k.Box(-W, Y0 - 0.03, -D, W, Y0, -Lt - 0.002, Recess, "dirty steel");
-        k.Box(-W, Y1, -D, W, Y1 + 0.03, -Lt - 0.002, Recess, "dirty steel");
-        Solid(k, -W - 0.03, Y0 - 0.03, -D - 0.03, W + 0.03, Y1 + 0.03, -D);
-        // The void behind: two ribs, the hull's skin with lagging on it, armour outside.
-        foreach (var s in new[] { -1.0, 1.0 })
+        var k = socket
+            ? K("Wall Bay Socket" + Sfx, "frame", $"An in-wall bay on the module socket standard: a 0.9 x 1.9 m opening in a ship's interior lining, {Py.G(D)} m deep into the void before the hull, with a 1x2 Module Socket at its back. Its fill is a 1x2 module, fitted with F: {takes}. It comes as a wall section: its own deck, lining either side and the hull behind.")
+            : K("Wall Bay" + Sfx, "frame", $"The first in-wall bay, replaced by the Wall Bay Socket{Sfx}: a 0.9 x 1.9 m opening, {Py.G(D)} m deep, whose insert hangs on it. Kept so older ships load.");
+        var back = socket ? -D - PlugGap : -D; // (the back plate's face: a socket's plate face, its Module socket on it)
+        (Turned, TurnZ) = (socket, back);
+        try
         {
-            k.Box(s * 0.66, -0.06, HullZ, s * 0.76, Top + 0.1, -Lt - 0.004, Armour2, "plated steel");
-            k.Box(s * 0.68, 0.3, HullZ + 0.12, s * 0.74, Top - 0.2, -0.16, Frame, "dirty steel"); // (the rib's flange)
-            Solid(k, s * 0.66, -0.06, HullZ, s * 0.76, Top + 0.1, -Lt);
+            // The deck: plate on the room side, grating over the void's floor.
+            Pt(k, -Sw, -0.06, -0.005, Sw, 0, 0.62, Deck, "painted deck plate");
+            Solid(k, -Sw, -0.06, -0.005, Sw, 0, 0.62);
+            Bx(k, -Sw, -0.06, HullZ + 0.01, Sw, -0.012, -0.012, Frame, "painted grating");
+            Lining(k);
+            // The recess: dark lining, sides, floor and roof, the back plate.
+            Bx(k, -W, Y0, back - 0.03, W, Y1, back, Recess, "dirty steel");
+            foreach (var s in new[] { -1.0, 1.0 })
+                Bx(k, s * W, Y0 - 0.03, back - 0.03, s * (W + 0.03), Y1 + 0.03, -Lt - 0.002, Recess, "dirty steel");
+            Bx(k, -W, Y0 - 0.03, back, W, Y0, -Lt - 0.002, Recess, "dirty steel");
+            Bx(k, -W, Y1, back, W, Y1 + 0.03, -Lt - 0.002, Recess, "dirty steel");
+            Solid(k, -W - 0.03, Y0 - 0.03, back - 0.03, W + 0.03, Y1 + 0.03, back);
+            // The void behind: two ribs, the hull's skin with lagging on it, armour outside.
+            foreach (var s in new[] { -1.0, 1.0 })
+            {
+                Bx(k, s * 0.66, -0.06, HullZ, s * 0.76, Top + 0.1, -Lt - 0.004, Armour2, "plated steel");
+                Bx(k, s * 0.68, 0.3, HullZ + 0.12, s * 0.74, Top - 0.2, -0.16, Frame, "dirty steel"); // (the rib's flange)
+                Solid(k, s * 0.66, -0.06, HullZ, s * 0.76, Top + 0.1, -Lt);
+            }
+            Bx(k, -Sw, -0.06, HullZ - 0.06, Sw, Top + 0.15, HullZ, Skin2, "painted plating");
+            Bx(k, -Sw, -0.06, HullZ - 0.12, Sw, Top + 0.15, HullZ - 0.06, Armour2, "plated steel");
+            foreach (var s in new[] { -1.0, 1.0 })
+                Bx(k, s * 0.78, 0.0, HullZ + 0.002, s * (Sw - 0.01), Top + 0.1, HullZ + 0.07, Lag, "lagging");
+            Solid(k, -Sw, -0.06, HullZ - 0.12, Sw, Top + 0.15, HullZ);
+            // Runs through the void over the bay: a red and a blue pipe, a yellow one low, a cable tray with its bundle.
+            Rod(k, -Sw, 2.13, HullZ + 0.06, Sw, 2.21, HullZ + 0.14, "+x", PipeRed, "painted steel");
+            Rod(k, -Sw, 2.13, HullZ + 0.17, Sw, 2.21, HullZ + 0.25, "+x", PipeBlue, "painted steel");
+            Rod(k, -Sw, 0.16, HullZ + 0.04, Sw, 0.22, HullZ + 0.10, "+x", PipeYellow, "painted steel");
+            Bx(k, -Sw, 2.08, -0.40, Sw, 2.1, -0.16, Steel, "steel");
+            Bx(k, -Sw, 2.1, -0.38, Sw, 2.18, -0.18, Frame, "rubber");
+            Sk(k.P, "deck", 0, -0.06, 0.2, "-y");
+            Sk(k.P, "hull", 0, 1.0, HullZ - 0.12, "-z");
+            if (socket)
+            {
+                Sk(k.P, "module", 0, Yc, back, "+z", kind: "module", cls: Medium); // (a plug is Medium class)
+                k.P.Set(("moduleSocket", Kw(("w", 1), ("l", 2), ("hide", false))), ("config", Py.L(
+                    Kw(("key", "modStyle"), ("type", "choice"), ("options", Py.L("Proud", "Flush", "Opening")), ("default", "Opening"), ("label", "Style"), ("group", "Module socket"),
+                        ("tooltip", "Opening: the fill stands in the bay and may stand a little into the room. Proud and flush as any socket.")),
+                    Kw(("key", "modDepth"), ("type", "number"), ("min", 0.25), ("max", 2.0), ("step", 0.25), ("default", D), ("unit", "m"), ("label", "Well depth"), ("group", "Module socket"),
+                        ("tooltip", "The bay's depth from its back plate to the lining.")),
+                    Kw(("key", "modAbove"), ("type", "number"), ("min", 0), ("max", 8.0), ("step", 0.5), ("default", 0.5), ("unit", "m"), ("label", "Room above"), ("group", "Module socket"),
+                        ("tooltip", "How far a fill may stand into the room past the lining. Nothing of the ship may be in this room.")),
+                    Kw(("key", "modKeyed"), ("type", "toggle"), ("default", true), ("label", "Keyed"), ("group", "Module socket"),
+                        ("tooltip", "On: a fill goes in one way up only.")))));
+            }
+            else
+            {
+                k.P.Sock("insert", [0, 1.0, -D], "+z");
+                k.P.Set(("legacy", true));
+            }
         }
-        k.Box(-Sw, -0.06, HullZ - 0.06, Sw, Top + 0.15, HullZ, Skin2, "painted plating");
-        k.Box(-Sw, -0.06, HullZ - 0.12, Sw, Top + 0.15, HullZ - 0.06, Armour2, "plated steel");
-        foreach (var s in new[] { -1.0, 1.0 })
-            k.Box(s * 0.78, 0.0, HullZ + 0.002, s * (Sw - 0.01), Top + 0.1, HullZ + 0.07, Lag, "lagging");
-        Solid(k, -Sw, -0.06, HullZ - 0.12, Sw, Top + 0.15, HullZ);
-        // Runs through the void over the bay: a red and a blue pipe, a yellow one low, a cable tray with its bundle.
-        Rod(k, -Sw, 2.13, HullZ + 0.06, Sw, 2.21, HullZ + 0.14, "+x", PipeRed, "painted steel");
-        Rod(k, -Sw, 2.13, HullZ + 0.17, Sw, 2.21, HullZ + 0.25, "+x", PipeBlue, "painted steel");
-        Rod(k, -Sw, 0.16, HullZ + 0.04, Sw, 0.22, HullZ + 0.10, "+x", PipeYellow, "painted steel");
-        k.Box(-Sw, 2.08, -0.40, Sw, 2.1, -0.16, Steel, "steel");
-        k.Box(-Sw, 2.1, -0.38, Sw, 2.18, -0.18, Frame, "rubber");
-        p_Sockets(k.P);
+        finally
+        {
+            Turned = false;
+        }
         return k.P.Stats(100 + 120 * D, 1500, 20, 6.0); // (a deeper bay is more steel: 160, 220, 280 kg)
     }
 
@@ -121,32 +209,25 @@ public sealed partial class WallBayParts : IPartGenerator
         foreach (var s in new[] { -1.0, 1.0 })
         {
             double a = s * (W + 0.08), b = s < 0 ? -Sw : right;
-            k.Paint(a, 0.38, -Lt, b, Top, 0, Wall, "wall panelling");
-            k.Paint(a, 0, -Lt, b, 0.38, 0.006, WallLow, "painted steel");
-            k.Box(a + s * 0.20, 0.4, -0.004, a + s * 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a panel seam)
+            Pt(k, a, 0.38, -Lt, b, Top, 0, Wall, "wall panelling");
+            Pt(k, a, 0, -Lt, b, 0.38, 0.006, WallLow, "painted steel");
+            Bx(k, a + s * 0.20, 0.4, -0.004, a + s * 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a panel seam)
             Solid(k, a, 0, -Lt, b, Top, 0);
         }
         if (right > Sw + 0.3)
-            k.Box(Sw + 0.2, 0.4, -0.004, Sw + 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a seam on a wider slice)
-        k.Paint(-(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0, Wall, "wall panelling");
+            Bx(k, Sw + 0.2, 0.4, -0.004, Sw + 0.215, Top - 0.02, 0.003, Trim, "plastic"); // (a seam on a wider slice)
+        Pt(k, -(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0, Wall, "wall panelling");
         Solid(k, -(W + 0.08), Y1 + 0.08, -Lt, W + 0.08, Top, 0);
         // The bezel: dark trim round the opening, 20 mm proud; a hazard edge on the sill; a lit label and the latch lamp on the head.
-        k.Box(-(W + 0.08), 0.02, -Lt, -W, Y1 + 0.08, 0.02, Trim, "plastic");
-        k.Box(W, 0.02, -Lt, W + 0.08, Y1 + 0.08, 0.02, Trim, "plastic");
-        k.Box(-W, 0.02, -Lt, W, Y0, 0.02, Trim, "plastic");
-        k.Box(-W, Y1, -Lt, W, Y1 + 0.08, 0.02, Trim, "plastic");
+        Bx(k, -(W + 0.08), 0.02, -Lt, -W, Y1 + 0.08, 0.02, Trim, "plastic");
+        Bx(k, W, 0.02, -Lt, W + 0.08, Y1 + 0.08, 0.02, Trim, "plastic");
+        Bx(k, -W, 0.02, -Lt, W, Y0, 0.02, Trim, "plastic");
+        Bx(k, -W, Y1, -Lt, W, Y1 + 0.08, 0.02, Trim, "plastic");
         for (var i = 0; i < 9; i++)
-            k.Box(-W + 0.02 + i * 0.1, 0.035, 0.019, -W + 0.07 + i * 0.1, 0.085, 0.026, Hazard, "hazard paint");
-        k.Box(-0.16, Y1 + 0.02, 0.019, 0.16, Y1 + 0.06, 0.027, Frame, "plastic");
-        k.Glow(-0.14, Y1 + 0.03, 0.026, 0.1, Y1 + 0.05, 0.031, Glow);
-        k.Glow(0.12, Y1 + 0.03, 0.026, 0.14, Y1 + 0.05, 0.032, Green);
-    }
-
-    private static void p_Sockets(Part p)
-    {
-        p.Sock("deck", [0, -0.06, 0.2], "-y");
-        p.Sock("hull", [0, 1.0, HullZ - 0.12], "-z");
-        p.Sock("insert", [0, 1.0, -D], "+z");
+            Bx(k, -W + 0.02 + i * 0.1, 0.035, 0.019, -W + 0.07 + i * 0.1, 0.085, 0.026, Hazard, "hazard paint");
+        Bx(k, -0.16, Y1 + 0.02, 0.019, 0.16, Y1 + 0.06, 0.027, Frame, "plastic");
+        Gl(k, -0.14, Y1 + 0.03, 0.026, 0.1, Y1 + 0.05, 0.031, Glow);
+        Gl(k, 0.12, Y1 + 0.03, 0.026, 0.14, Y1 + 0.05, 0.032, Green);
     }
 
     /// <summary>An insert: the fixed carcass of one fill, hung on the bay's back plate.</summary>
@@ -1181,11 +1262,11 @@ public sealed partial class WallBayParts : IPartGenerator
         o.Own(Out);
         var parts = new List<Part>();
         var fills = new List<(string File, string Name, string Desc, string Bay, string? Insert, (string Part, string Sock)[] Movers)>();
-        void Fill(string file, string name, string desc, string insert, params (string, string)[] movers) => fills.Add((file, name, desc, "Wall Bay" + Sfx, insert, movers));
+        void Fill(string file, string name, string desc, string insert, params (string, string)[] movers) => fills.Add((file, name, desc, "Wall Bay Socket" + Sfx, insert, movers));
 
         // 0.5 m: the standard bay. A seat, drawers, a rack, a component sled, a Murphy bed and a desk; the twist latch, any depth.
         Depth(0.5);
-        parts.AddRange([Bay(), SeatInsert(), SeatFlap(), HelmetDoor(), DrawerInsert(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), BunkInsert(), Bunk(), DeskInsert(), Desk(), TwistLatch(),
+        parts.AddRange([Bay(), Bay(socket: true), SeatInsert(), SeatFlap(), HelmetDoor(), DrawerInsert(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), BunkInsert(), Bunk(), DeskInsert(), Desk(), TwistLatch(),
             .. Breakers(), .. Computer(), .. DamageControl()]);
         parts.AddRange(Enumerable.Range(0, Drawers).Select(Drawer));
         Fill("WallBayJumpSeat", "Wall Bay Jump Seat", "An in-wall bay with a jump seat that flips down and a helmet locker over it.", "Jump Seat Insert", ("Jump Seat", "seat"), ("Helmet Locker Door", "helmet"));
@@ -1201,7 +1282,7 @@ public sealed partial class WallBayParts : IPartGenerator
 
         // 1 m: a suit rack, deep shelves, a long component sled, a toilet, a consumables rack; two ship systems, a CO2 scrubber and a water reclaimer.
         Depth(1.0);
-        parts.AddRange([Bay(), SuitInsert(), SuitRack(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), ToiletInsert(), ToiletPan(), RackInsert(true), Rack(true),
+        parts.AddRange([Bay(), Bay(socket: true), SuitInsert(), SuitRack(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), ToiletInsert(), ToiletPan(), RackInsert(true), Rack(true),
             ScrubberInsert(), ScrubberTray(), ScrubberFan(), WaterInsert(), FilterDrawer(), ReclaimerPump(), .. Coolant(), .. Rcs(), .. Sensors(), .. Pdc()]);
         Fill("WallBay1mSuit", "Wall Bay 1m Suit Rack", "A 1 m in-wall bay whose suit rack runs out with a pressure suit on it.", "Suit Rack Insert" + Sfx, ("Suit Rack" + Sfx, "suit"));
         Fill("WallBay1mRack", "Wall Bay 1m Rack", "A 1 m in-wall bay with deep shelves, two loads deep, that pull out of the wall.", "Pull-out Rack Insert" + Sfx, ("Pull-out Rack" + Sfx, "rack"));
@@ -1217,7 +1298,7 @@ public sealed partial class WallBayParts : IPartGenerator
 
         // 1.5 m: a spacewalk pack bay, a stretcher drawer, deeper shelves, a heavy module sled; an oxygen generator that burns candles.
         Depth(1.5);
-        parts.AddRange([Bay(), MmuInsert(), MmuDoor(), MmuSled(), StretcherInsert(), Stretcher(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), OxygenInsert(), CandleBreech(), CandleDrawer(),
+        parts.AddRange([Bay(), Bay(socket: true), MmuInsert(), MmuDoor(), MmuSled(), StretcherInsert(), Stretcher(), RackInsert(), Rack(), SledInsert(), SledCover(), Sled(), OxygenInsert(), CandleBreech(), CandleDrawer(),
             AirlockChamber(), AirlockInnerDoor(), AirlockOuterHatch(), .. ReactorFuel()]);
         Fill("WallBay15mMmu", "Wall Bay 1.5m MMU", "A 1.5 m in-wall bay: its door swings aside and a sled brings a spacewalk pack out into the room.", "MMU Bay Insert" + Sfx, ("MMU Bay Door" + Sfx, "door"), ("MMU Sled" + Sfx, "mmu"));
         Fill("WallBay15mStretcher", "Wall Bay 1.5m Stretcher", "A 1.5 m in-wall bay with a stretcher drawer under a med cabinet.", "Stretcher Insert" + Sfx, ("Stretcher Drawer" + Sfx, "stretcher"));
@@ -1229,6 +1310,16 @@ public sealed partial class WallBayParts : IPartGenerator
         fills.Add(("HullAirlock", "Hull Airlock", "A hull airlock: a pressure door with a twist latch in the interior lining, a one-person chamber through the 1.5 m void, and a hatch that slides aside along rails outside the hull.",
             "Airlock Chamber", null, [("Airlock Inner Door", "inner"), ("Twist Latch", "latch"), ("Airlock Outer Hatch", "outer")]));
 
+        // Every insert also takes a Module Plug 1x2 by its back (Sean, 2026-11-21): "plug", clear of the plug's lugs, after
+        // every older socket (saves keep links by socket index, so a legacy bay's insert stays on its "bay").
+        foreach (var p in parts)
+            if (p.Sockets.Find(x => (string)x["name"]! == "bay") is { } bs)
+            {
+                var z = Convert.ToDouble(((List<object?>)bs["at"]!)[2], System.Globalization.CultureInfo.InvariantCulture);
+                p.Add(Box([-0.08, Yc - 0.08, Py.Round(z - LugClear, 4)], [0.08, Yc + 0.08, z], Recess, detail: false)); // (the stand-off the plug bolts to, between its lugs)
+                p.Sock("plug", [0, Yc, Py.Round(z - LugClear, 4)], "-z");
+            }
+
         var defs = new Dictionary<string, PyDict>();
         foreach (var p in parts)
         {
@@ -1237,14 +1328,40 @@ public sealed partial class WallBayParts : IPartGenerator
             defs.Add(name, d);
             o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
+        const string Plug = "Module Plug 1x2";
+        defs[Plug] = (PyDict)o.ReadJson("Constructs/Parts/Modules/ModulePlug1x2.json")!;
+        int upright = BuildingParts.Turn("+x", "-z"), facing = BuildingParts.Turn("-x", "-z"); // (an insert upright on a plug lying as its socket does; a bay facing -z, the galleries' side)
         foreach (var f in fills)
         {
-            var bp = new BuildingParts.Blueprint(f.Name, f.Desc, defs) { Group = Section }; // (the Blueprints tab's section)
-            var bay = bp.First(f.Bay, 2); // (turned half round: the galleries look from -z, and the room is the bay's +z)
-            var ins = f.Insert == null ? bay : bp.Hang(f.Insert, bay, "insert", "bay");
+            if (f.Insert == null)
+            {
+                // The hull airlock: its doors hang on the chamber itself (not a module).
+                var ab = new BuildingParts.Blueprint(f.Name, f.Desc, defs) { Group = Section };
+                var ch = ab.First(f.Bay, 2); // (turned half round: the galleries look from -z, and the room is the chamber's +z)
+                foreach (var (m, sock) in f.Movers)
+                    ab.Hang(m, ch, sock, "hang");
+                o.File($"{BpOut}/{f.File}.json", PyJson.Dumps(ab.Json(), 2) + "\n");
+                continue;
+            }
+            // The fill: a 1x2 module design (the Blueprints tab), its insert on the plug's top, upright when the plug sits in a Wall
+            // Bay Socket the one way a keyed socket takes it.
+            var bp = new BuildingParts.Blueprint(f.Name, f.Desc + $" A 1x2 module: fit it with F to a {f.Bay}.", defs) { Group = Section };
+            var plug = bp.First(Plug);
+            var ins = bp.HangTurned(f.Insert, plug, "tc", "plug", upright);
             foreach (var (m, sock) in f.Movers)
-                bp.Hang(m, ins, sock, "hang");
-            o.File($"{BpOut}/{f.File}.json", PyJson.Dumps(bp.Json(), 2) + "\n");
+                bp.HangTurned(m, ins, sock, "hang", upright); // (in the insert's frame: the most upright turn would lay it flat)
+            var j = bp.Json();
+            j["module"] = Kw(("w", 1), ("l", 2), ("primary", "utility"), ("tags", Py.L("utility")));
+            o.File($"{BpOut}/{f.File}.json", PyJson.Dumps(j, 2) + "\n");
+            // The Animation gallery's draft: the same module fitted in its Wall Bay Socket, facing the galleries' side.
+            var gb = new BuildingParts.Blueprint(f.Name + " (fitted)", $"The {f.Name} module fitted in a {f.Bay}.", defs);
+            var bay = gb.First(f.Bay, facing);
+            var gp = gb.HangTurned(Plug, bay, "module", "module", facing);
+            var stood = BuildingParts.Turn("-x", "+y");
+            var gi = gb.HangTurned(f.Insert, gp, "tc", "plug", stood);
+            foreach (var (m, sock) in f.Movers)
+                gb.HangTurned(m, gi, sock, "hang", stood);
+            o.File($"{AnimOut}/{f.File}.json", PyJson.Dumps(gb.Json(), 2) + "\n");
         }
     }
 }

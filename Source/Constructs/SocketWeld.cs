@@ -446,7 +446,7 @@ public static class SocketWeld
     }
 
     /// <summary>Would the piece at world pose <paramref name="pos"/> / <paramref name="rot"/> overlap the construct, the map or a player? Null, or why.</summary>
-    public static string? Overlap(ConstructWorld world, IWorldQuery? q, Construct mover, Construct target, Vector3 pos, Quaternion rot, ReadOnlySpan<Vector3> feet)
+    public static string? Overlap(ConstructWorld world, IWorldQuery? q, Construct mover, Construct target, Vector3 pos, Quaternion rot, ReadOnlySpan<Vector3> feet, int skipPart = -1)
     {
         if (target.Dirty)
             target.Rebuild();
@@ -470,6 +470,8 @@ public static class SocketWeld
                     continue;
                 for (var j = 0; j < target.PartCount; j++)
                 {
+                    if (j == skipPart)
+                        continue; // (a Flush or Well socket's plate: its module goes down through the frame to the well's floor)
                     var od = target.DefOf(j);
                     target.WorldFrame(target.Parts[j].Seg, out var cq, out var ct);
                     for (var k = 0; k < od.SolidBoxes; k++)
