@@ -749,6 +749,9 @@ public sealed partial class ConstructPartDef
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
+    public bool IsBakeOven; // a Bake Oven's Core (storage "bake": ConstructBakeOven.cs, design page drawing 19): its bed blocks, corner masts and hood
+    public float BakeBedTop, BakeKwBlock, BakeHoodSpeed, BakePartSeconds; // ...the bed's top (m), each bed block's heat (kW), the hood's speed (m/s), seconds a subpart on 12 blocks
+    public int BakePartsBlock, BakeMaxParts; // ...subparts a bed block takes, and the most any bed takes
     public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
     public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel

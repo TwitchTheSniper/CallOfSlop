@@ -1261,6 +1261,7 @@ public sealed partial class Game : IDisposable
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
+        ServerTickMachineHazards(now); // crushed or burned by a production machine (GameMachineHazards.cs)
         perf = Perf.Measure(PerfArea.TerrainStream);
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
         perf.Dispose();
