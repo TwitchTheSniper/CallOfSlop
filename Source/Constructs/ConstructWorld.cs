@@ -1038,12 +1038,16 @@ public sealed partial class ConstructWorld
             ConstructBreakUp.Hit(this, c, part, taken, DamageAt); // (a big body: where it was hurt weakens its structure there, ConstructBreakUp.cs)
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;
-        c.Wake();
+        if (!raw || p.Health <= 0)
+            c.Wake(); // (a fire's damage moves nothing until the part goes: a wreck burning for minutes still sleeps, and costs no physics)
         if (p.Health > 0)
         {
             HealthDirty.Add((c.Id, (ushort)part));
             if (d.DamagedTo >= 0 && p.Health < d.DamagedBelow * d.Health)
+            {
+                c.Wake(); // (its shape changes)
                 LoseChunk(c, part);
+            }
             return false;
         }
         p.Health = 0;
@@ -1104,9 +1108,9 @@ public sealed partial class ConstructWorld
             RemovePart(c, part);
             return true;
         }
-        if (ConstructBreakUp.Big(c) && ConstructBreakUp.Scrappable(c, part))
+        if (ConstructBreakUp.Sheds(c) && ConstructBreakUp.Scrappable(c, part))
         {
-            // Off a capital-sized body, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
+            // Off a capital-sized body, or a medium one, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
             Events.Add($"construct {c.Id}: {d.Name} shot to scrap");
             c.PartBounds(part, out var smn, out var smx);
             var sc = t + Vector3.Transform((smn + smx) * 0.5f, q);

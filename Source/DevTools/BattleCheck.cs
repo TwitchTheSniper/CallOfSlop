@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--battle-check [SHIP] [--idle --ground [--map NAME]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
+/// <c>--battle-check [SHIP] [--idle --ground [--map NAME] [--nuke DIST [--rounds N] [--show K]]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
 /// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Zero Day) is built on the Proving Ground and
 /// held still in the air; a Zero Day (for its railgun) is held far off; then N shots are fired at it from its broadside, K in a
 /// tick, each at a random point on its middle, through the real round (<see cref="ConstructWeapons.ShotFrom"/>), and a world
@@ -65,8 +65,18 @@ public static class BattleCheck
         {
             var dt0 = 1f / World.TickRate;
             var sw1 = Stopwatch.StartNew();
-            for (var round = 0; round < 12; round++)
+
+            var nukeAt = args.Contains("--nuke") ? 2 : -1; // (a fission warhead DIST m off once it has settled, then each second the bodies awake: does its wreck go to sleep?)
+            var rounds = int.Parse(Arg("--rounds", "12"), inv);
+            for (var round = 0; round < rounds; round++)
             {
+                if (round == nukeAt)
+                {
+                    var at = ship.WorldCom + new Vector3(float.Parse(Arg("--nuke", "25"), inv), 0, 0);
+                    at = ConstructWorld.Ground(World.Query, at.X, at.Z) + new Vector3(0, 0.5f, 0);
+                    var ok = w.StartMega(at, w.CapRadius(4000), 22000, 0, 1, 255, 0, -1);
+                    Console.WriteLine($"nuke at {at} started {ok}, radius {w.CapRadius(4000):0}");
+                }
                 Array.Clear(ConstructPhysics.PartMs);
                 var phys = 0.0;
                 var worst = 0.0;
@@ -77,6 +87,43 @@ public static class BattleCheck
                     var e = Stopwatch.GetElapsedTime(p0).TotalMilliseconds;
                     phys += e;
                     worst = Math.Max(worst, e);
+                    if (args.Contains("--contacts") && i == 59)
+                    {
+                        var cs = new Dictionary<string, (int n, float worst, float jn)>();
+                        ConstructPhysics.DevContacts(cs, 0.01f);
+                        foreach (var kv in cs.OrderByDescending(kv => kv.Value.worst).Take(10))
+                            Console.WriteLine($"  contact {kv.Key}: {kv.Value.n} over 1 cm, deepest {kv.Value.worst:0.000} m, impulse {kv.Value.jn:0}");
+                    }
+                }
+                if (nukeAt >= 0)
+                {
+                    int awake = 0, selfStill = 0;
+                    var lines = new List<string>();
+                    foreach (var b in w.Bodies)
+                    {
+                        if (b.Asleep || b.Anchored)
+                            continue;
+                        awake++;
+                        var why = PerfCaptureBodies.WhyAwake(b);
+                        if (why == PerfCaptureBodies.Why.None)
+                            selfStill++;
+                        lines.Add($"  body {b.Id} {b.DefOf(0).Name} x{b.PartCount} {b.Mass:0} kg v {b.Vel.Length():0.000} w {b.AngVel.Length():0.0000} r {b.Radius:0.0} sleepTicks {b.SleepTicks} why {why} wreck {b.Wreck} framed {b.Framed}");
+                    }
+                    if (args.Contains("--clear-named") && round == 8)
+                        for (var i = w.Bodies.Count - 1; i >= 0; i--)
+                            if (w.Bodies[i] != ship && w.Bodies[i].DefOf(0).Name.Contains(Arg("--clear-named", "Lower")))
+                                w.Remove(w.Bodies[i]);
+
+
+
+
+                    if (args.Contains("--events"))
+                        foreach (var g in w.Events.Select(e => System.Text.RegularExpressions.Regex.Replace(e, "[0-9]+", "N")).GroupBy(e => e).OrderByDescending(g => g.Count()).Take(8))
+                            Console.WriteLine($"  event x{g.Count()}: {g.Key}");
+                    w.Events.Clear();
+                    Console.WriteLine($"round {round}: awake {awake} (still by itself {selfStill}), stepped {ConstructPhysics.LastSimulated} of {w.Bodies.Count}");
+                    foreach (var l in lines.Take(int.Parse(Arg("--show", "12"), inv)))
+                        Console.WriteLine(l);
                 }
                 var pm = ConstructPhysics.PartMs;
                 Console.WriteLine($"ground {round}: world step {phys / 60:0.000} ms a tick (worst {worst:0.00}); physics list {pm[0] / 60:0.000}, bodies {pm[1] / 60:0.000}, contacts {pm[2] / 60:0.000}, solve {pm[3] / 60:0.000}, rest {pm[4] / 60:0.000}; asleep {ship.Asleep}, speed {ship.Vel.Length():0.000}, spin {ship.AngVel.Length():0.00000} (x radius {ship.AngVel.Length() * MathF.Max(1, ship.Radius / 8f):0.0000}), sleep ticks {ship.SleepTicks}, hover {ship.HoverOn} stab {ship.StabLive} thrust {ship.ThrustShow:0.00} active {ship.ActiveSignal}, bodies {w.Bodies.Count}, contacts {ConstructPhysics.LastContacts}, rays {ConstructPhysics.LastRays}");
