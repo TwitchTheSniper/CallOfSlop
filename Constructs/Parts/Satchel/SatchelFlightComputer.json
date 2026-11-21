@@ -1,14 +1,14 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Satchel Flight Computer",
-  "description": "The Satchel's flight computer: a flight stabilizer with a courier's gyro in a console between the couches. Fit it level, its arrow forward.",
+  "description": "The Satchel's flight computer: a flight stabilizer with a courier's gyro (half the Packet's: a lighter hull overshoots on a big one) in a console between the couches. Fit it level, its arrow forward.",
   "group": "Ship",
   "section": "Satchel courier",
   "role": "logic",
   "tool": "wrench",
   "logic": {
     "kind": "flightstabilizer",
-    "gyro": 40000000
+    "gyro": 20000000
   },
   "config": [
     {

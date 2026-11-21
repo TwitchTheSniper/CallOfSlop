@@ -44,6 +44,10 @@ The Zero Day's 8-person boarding pod, docked under its keel: the command view's 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
+## [The Satchel courier](constructs/courier.md), 2 KB
+
+The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

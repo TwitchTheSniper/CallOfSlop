@@ -79,7 +79,7 @@ public sealed class CourierParts : IPartGenerator
     // ---- flying it: two big nacelles, lift jets and legs under the cab and engineering, attitude jets at both ends.
 
     /// <summary>The nacelles: middles off the centreline and up, the housing's flat distance, the nose, the tank's ends, the tail.</summary>
-    private const double NacX = 6.4, NacY = 2.2, NacF = 1.4, NacNose = 0.4, NacTank0 = 1.8, NacTank1 = 8.6, NacTail = 14.0;
+    private const double NacX = 6.4, NacY = 1.5, NacF = 1.4, NacNose = 0.4, NacTank0 = 1.8, NacTank1 = 8.6, NacTail = 14.0;
     private const double PylonX = 4.42, PylonZ = 5.6; // the pylon's hardpoint on engineering's flank
     private const int KeelFuel = 7000, NacFuel = 7000; // litres
     private const double LiftForce = 1200000, JetScale = 1.05, Burn = 2.5;
@@ -1173,11 +1173,11 @@ public sealed class CourierParts : IPartGenerator
                 VoidT(p, za, zb, ya, yb, PassOut + SLine + 0.004, za == ZEng ? 0.0 : 0.004, zb == ZEngEnd ? 0.0 : 0.004);
         Sock(p, "panel", Cx - PassOut, Ft + 0.6, 6.9, "+x");
         Sock(p, "tools", Cx - PassOut, Ft + 0.9, 8.9, "+x");
-        Sock(p, "plant", Cx + 2.3, Ft, 9.2, "+y");
+        Sock(p, "plant", Cx - 2.3, Ft, 9.2, "+y"); // (to port: the airlock, its shaft and the batteries are to starboard)
         for (var i = 0; i < 3; i++)
             Sock(p, $"battery{i}", Cx + PassOut - 0.3, Ft, 6.2 + i * 0.7, "+y");
-        Sock(p, "suit", Cx - 2.6, Ft + 0.125, ZEngAW - 0.125, "-z");
-        Sock(p, "locker", Cx - 1.8, Ft + 0.125, ZEngAW - 0.125, "-z");
+        Sock(p, "suit", Cx + 2.6, Ft + 0.125, ZEngAW - 0.125, "-z");
+        Sock(p, "locker", Cx + 1.8, Ft + 0.125, ZEngAW - 0.125, "-z");
         Sock(p, "mmuDock", Cx - 0.4, Ft + 0.125, ZEngAW - 0.125, "-z");
         Sock(p, "lampEngL", Cx - PassOut, Ft + 2.3, 7.6, "+x");
         Sock(p, "lampEngR", Cx + PassOut, Ft + 2.3, 7.9, "-x");
@@ -1356,11 +1356,11 @@ public sealed class CourierParts : IPartGenerator
         return p.Stats(2400, 3500, 25, 10.0);
     }
 
-    /// <summary>The flight computer: a flight stabilizer with a courier's gyro in a console between the couches and the dash.</summary>
+    /// <summary>The flight computer: a flight stabilizer with a courier's gyro (half the Packet's: a lighter hull overshoots on a big one) in a console between the couches and the dash.</summary>
     private static Part FlightComputer()
     {
         const string console = "#22262b";
-        var p = new Part("Satchel Flight Computer", Small, Section, "The Satchel's flight computer: a flight stabilizer with a courier's gyro in a console between the couches. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: console, group: Group);
+        var p = new Part("Satchel Flight Computer", Small, Section, "The Satchel's flight computer: a flight stabilizer with a courier's gyro (half the Packet's: a lighter hull overshoots on a big one) in a console between the couches. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: console, group: Group);
         void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, PyDict shape, bool detail = false) =>
             p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: detail, shape: shape));
         B(-0.4, 0, -0.28, 0.4, 0.75, 0.28, console, Kw(("finish", "plastic")));
@@ -1370,7 +1370,7 @@ public sealed class CourierParts : IPartGenerator
         B(-0.05, 0.751, -0.2, 0.05, 0.767, 0.1, Hazard, Kw(("finish", "hazard paint")), true); // (the arrow, forward)
         B(-0.12, 0.751, -0.2, 0.12, 0.767, -0.12, Hazard, Kw(("finish", "hazard paint")), true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 40000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 20000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
         return p.Stats(300, 600, 8, 3.0);
     }
 
