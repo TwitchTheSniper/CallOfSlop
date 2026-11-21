@@ -455,6 +455,8 @@ public static unsafe partial class Program
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
+        if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
+            LightGrid.BevelsForcedOff = true; // box edges drawn sharp whatever the Video setting (a before picture of edge bevels)
         if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
         if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))

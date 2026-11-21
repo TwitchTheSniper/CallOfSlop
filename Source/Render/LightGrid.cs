@@ -72,11 +72,14 @@ public static unsafe class LightGrid
         public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
         public DynArray Dyn;  // dynamic lights: position, range
         public DynArray DynC; // colour * intensity
-        public Vector4 Surf;    // x: the materials setting (Surfaces.cs)
+        public Vector4 Surf;    // x: the materials setting (Surfaces.cs); z: edge bevels on
     }
 
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
     public static float SurfaceLevel = 1f;
+
+    /// <summary>Settings > Video > Edge bevels (Materials Medium and High): box edges drawn as thin chamfers in <c>SurfaceLit</c>. <see cref="BevelsForcedOff"/>: --no-bevels, for a before picture.</summary>
+    public static bool Bevels = true, BevelsForcedOff;
 
     /// <summary>The world is being drawn for the bloom: props mark what glows in the back buffer's alpha (PostFx.cs). Menus and pictures never do.</summary>
     public static bool MarkGlow;
@@ -277,6 +280,7 @@ public static unsafe class LightGrid
     private static void Send()
     {
         _block.Surf.X = SurfaceLevel;
+        _block.Surf.Z = Bevels ? 1f : 0f;
         _block.Surf.Y = _lastMark = MarkGlow ? 1f : 0f;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)

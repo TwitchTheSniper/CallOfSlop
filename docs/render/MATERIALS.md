@@ -45,6 +45,11 @@ already has, with no textures:
   box at random; a box's own edges show through the edge wear. Painted steel has no seams (a faint orange peel instead).
 - A part's health comes in the fraction of the row's code (`Surfaces.Code`): rust and scorch grow from noise as it falls.
 
+- **Edge bevels** (Karl, 2026-11-21, from the Ship Render Bench artifact RC5DA1XgTZ5PJUhMb8HBoB): Settings > Video > Edge bevels (on by
+  default, Medium and High only; `--no-bevels` forces it off for a before picture). A band along each face edge takes a 45-degree chamfer's
+  normal (2 cm, or 1.2 pixels where wider, at most half the face) and its albedo goes up 20%, so every box edge catches a sliver of light.
+  It is the box's own edge distance (as the edge wear), so it costs a few multiplies and needs no mesh change. `uSurfQ.z` carries the switch.
+
 Low skips all of this (`uSurfQ.x`, in `LitFrame`) and draws what the game always drew. High adds a second noise octave and tilts the
 normal by the pattern (a detail texture's bumps are drawn on Medium too). Terrain, buildings and map boxes aren't in it.
 

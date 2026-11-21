@@ -341,6 +341,24 @@ public static class Surfaces
                     rough = mix(rough, 0.95, rust);
                 }
             }
+            if (uSurfQ.z > 0.5 && size.x > 0.0)
+            {
+                // Edge bevels (Settings > Video, the Ship Render Bench's micro-bevels): a band along each edge of the face takes the
+                // normal of a 45-degree chamfer, so a thin sliver of light or shade runs along every box edge and panels read apart.
+                // The band is 2 cm, or 1.2 pixels where that is wider, so it still reads from far off; never more than half the face.
+                // Its edge is spread over the pixel (as the edge wear), so nothing sparkles. The face's u and v in the world come from
+                // the derivatives' frame, as the pattern bumps' do, so it holds on a moving part and far from the map's middle.
+                vec2 fwv = max(abs(dx) + abs(dy), vec2(1e-5));
+                vec2 ed = hs - abs(uv);
+                vec2 bw = min(max(vec2(0.02), 1.2 * fwv), hs * 0.5);
+                vec2 be = clamp((bw - ed) / fwv + 0.5, 0.0, 1.0);
+                vec3 b2 = cross(dpy, n), b1 = cross(n, dpx);
+                vec3 bu = b2 * dx.x + b1 * dy.x, bv = b2 * dx.y + b1 * dy.y;
+                bu *= inversesqrt(max(dot(bu, bu), 1e-24));
+                bv *= inversesqrt(max(dot(bv, bv), 1e-24));
+                nn = normalize(nn + bu * (sign(uv.x) * be.x) + bv * (sign(uv.y) * be.y));
+                albedo *= 1.0 + 0.2 * max(be.x, be.y); // (the glint: a lit chamfer is a little brighter than the face)
+            }
             vec3 diffuse = albedo * (1.0 - metal * 0.92);
             vec3 col = ApplyLightAt(diffuse, nn, 0.0, p);
             float amb = gLitAmb;
