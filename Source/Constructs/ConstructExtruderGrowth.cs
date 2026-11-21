@@ -81,14 +81,17 @@ public static partial class ConstructExtruder
     public static float PushOf(Construct c, int part)
     {
         var d = c.Parts[part].D;
-        return d.ExtBlockPush > 0 ? d.ExtPush + Blocks(c, part) * d.ExtBlockPush : d.ExtPush;
+        return d.ExtBlockPush > 0 ? (d.ExtPush + Blocks(c, part) * d.ExtBlockPush) * TierPower(c, part) : d.ExtPush;
     }
+
+    /// <summary>A block machine's tier (its tier pieces, drawing 21) as a multiplier of its draw and push: 1 at tier 1.</summary>
+    private static float TierPower(Construct c, int part) => PartKit.Generators.MachineTiers.Multipliers(MachineBlocks.TierOf(c, part)).Power;
 
     /// <summary>What the machine draws while it works (W): the Core's own and each block's in its die.</summary>
     public static float PowerOf(Construct c, int part)
     {
         var d = c.Parts[part].D;
-        return d.ExtBlockPower > 0 ? d.PowerDraw + Blocks(c, part) * d.ExtBlockPower : d.PowerDraw;
+        return d.ExtBlockPower > 0 ? (d.PowerDraw + Blocks(c, part) * d.ExtBlockPower) * TierPower(c, part) : d.PowerDraw;
     }
 
     /// <summary>The longest piece the machine makes now (m), its Run-out Tables counted.</summary>

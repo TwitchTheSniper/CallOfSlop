@@ -120,7 +120,15 @@ public static partial class ConstructExtruder
         if (!d.IsGrowFormer)
             return d.ExtSpeed;
         GrowBed(c, part, out _, out _, out _, out var blocks);
-        return d.ExtSpeed * MathF.Sqrt(blocks / 4f) * (s == ExShape.Wing ? 2.5f : 1f);
+        return d.ExtSpeed * MathF.Sqrt(blocks / 4f) * (s == ExShape.Wing ? 2.5f : 1f) * PartKit.Generators.MachineTiers.Multipliers(MachineBlocks.TierOf(c, part)).Rate;
+    }
+
+    /// <summary>What a Grow Former's bin holds now (units): the Core's own and each bed block's share, times its tier's capacity, at most its file's bulk capacity.</summary>
+    public static int GrowBinOf(Construct c, int part)
+    {
+        var d = c.Parts[part].D;
+        var cap = PartKit.Generators.MachineTiers.Multipliers(MachineBlocks.TierOf(c, part)).Cap;
+        return Math.Min(d.BulkCapacity, (int)((d.GrowBin + d.GrowBinBlock * Blocks(c, part)) * cap));
     }
 
     /// <summary>Where a Grow Former's hub puts a wheel or a prop <paramref name="acrossCm"/> across (part frame): raised on its slide so its rim clears the bed.</summary>

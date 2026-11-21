@@ -697,9 +697,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 414: the Grapnel Salvage Tug (Karl, 2026-11-21): its 61 part files come in a new folder, Constructs/Parts/Grapnel (ids move).
     // 415: the story engine removed (Karl, 2026-11-21): Msg.Jobs, TalkChoices, Fragments, StoryPaths, TalkInvite, StandIn and TalkTopics are Removed slots, CActKind.Talk unread, the Ministry uniforms gone (uniform indices shift), the Data Centre Terminal part gone (part ids shift).
     // 416: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
-    // 417: shutting a craft down from its pilot's seat (Karl, 2026-11-21): CActKind.Reactor and CActKind.Thrusters (u16 body) at its end;
+    // 417: the block machines' tier pieces (Sean, 2026-11-21, drawing 21): Power Coupling, Coolant Loop, Servo Rack and Plasma Conditioner part files come in Constructs/Parts/TierPieces (ids move), SocketKind.Tier; a Grow Former's bin goes with its bed and tier (read from the construct on each peer).
+    // 418: shutting a craft down from its pilot's seat (Karl, 2026-11-21): CActKind.Reactor and CActKind.Thrusters (u16 body) at its end;
     //   CfgKey Shutdown in the unused Blade4's slot (the enum is full), a new setting on every power plant and thruster (ConstructShutdown.cs).
-    public const ushort ProtocolVersion = 417;
+    public const ushort ProtocolVersion = 418;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

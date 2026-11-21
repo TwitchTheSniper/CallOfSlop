@@ -12,6 +12,7 @@ public enum BlockRole : byte
     Block, // one identical cell of one family's machine (an Extruder's Die Block, a Press Block)
     Shared, // a cell any family's machine takes in (the 2 m cube used as masts and walls)
     End, // a cell that closes a bed's far end (the Out Table): any family's machine takes it in, never as bed; nothing floods on past it
+    Tier, // a tier piece bolted on a Core's tier slot (design page drawing 21): the Power Coupling (2) to the Plasma Conditioner (5); never a cell
 }
 
 /// <summary>A Core's machine, found at the rebuild (MachineBlocks.Build): the cells joined to it and the bed rectangle they make.</summary>
@@ -29,6 +30,8 @@ public struct CMachineAsm
     public ushort Out; // the first "end" cell (Out Table) just past the bed's far edge, the side away from the Core (ushort.MaxValue: none)
     public byte OutCells; // the bed's far edge cells that an end cell covers (W or L when the whole edge is closed)
     public byte OutSide; // the far edge's side in the Core's frame (a direction, ConstructParts.DirVector: 0 +x, 1 -x, 4 +z, 5 -z)
+    public byte Tier; // the machine's tier, 1 to 5: the highest n with a tier piece of every tier from 2 to n bolted on its Core (drawing 21)
+    public byte TierPieces; // bits by tier (2 to 5) of the tier pieces bolted on its Core, a gap included
 }
 
 public sealed partial class Construct
@@ -57,6 +60,7 @@ public static class MachineBlocks
     public const int GridSide = 2 * MaxSide + 1; // the column grid's side: the Core's cell in the middle, MaxSide either way
     private const int Mid = MaxSide;
     public const float DefaultCell = 2f; // m: the lattice step (the 2 m grid)
+    public const int MaxTier = 5; // the tiers of drawing 21: 1 a bare Core, 2 to 5 by its tier pieces
 
     /// <summary>The families named by part files, in load order: an index is stable for one load (never saved or sent).</summary>
     public static readonly List<string> Families = [];
@@ -79,7 +83,7 @@ public static class MachineBlocks
         d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -87,8 +91,24 @@ public static class MachineBlocks
             "block" => BlockRole.Block,
             "shared" => BlockRole.Shared,
             "end" => BlockRole.End,
-            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared or end, not \"{role}\""),
+            "tier" => BlockRole.Tier,
+            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared, end or tier, not \"{role}\""),
         };
+        if (d.BlockRole == BlockRole.Tier)
+        {
+            // A tier piece (drawing 21) goes with every family's Core, on its "tier" socket; its own mount is a "tier" socket too.
+            var t = ConstructParts.Opt(mb, "tier") is { } tv ? ConstructParts.Num(tv, file, "machineBlock.tier") : 0;
+            if (t is < 2 or > MaxTier || t != MathF.Round(t))
+                throw new ConstructPartException($"{file}: a tier piece says its \"machineBlock.tier\", 2 to {MaxTier}");
+            if (!d.Sockets.Any(s => s.Kind == SocketKind.Tier))
+                throw new ConstructPartException($"{file}: a tier piece has a socket of kind \"tier\" (its mount on a Core's tier slot)");
+            d.BlockTier = (byte)t;
+            d.BlockFamily = 255;
+            d.BlockCell = DefaultCell;
+            return;
+        }
+        if (ConstructParts.Opt(mb, "tier") is not null)
+            throw new ConstructPartException($"{file}: only a tier piece (role tier) says \"machineBlock.tier\"");
         if (ConstructParts.Opt(mb, "family") is { } fam)
             d.BlockFamily = FamilyOf(ConstructParts.Str(fam, file, "machineBlock.family"));
         else if (d.BlockRole is not (BlockRole.Shared or BlockRole.End))
@@ -282,6 +302,28 @@ public static class MachineBlocks
         return s;
     }
 
+    /// <summary>The tiers' names (drawing 21, as the machine lines' tiers: docs "Machine tiers") and the piece that brings each, by tier.</summary>
+    public static readonly string[] TierNames = ["", "Scrap", "Workshop", "Industrial", "Military", "Plasma"];
+    public static readonly string[] TierPieceNames = ["", "", "Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner"];
+
+    /// <summary>A machine's tier for its look line: "tier 3 Industrial", and the piece a gap waits for ("a Servo Rack waits for a Coolant Loop").</summary>
+    public static string TierText(in CMachineAsm asm)
+    {
+        var t = Math.Clamp((int)asm.Tier, 1, MaxTier);
+        var s = $"tier {t} {TierNames[t]}";
+        if (asm.TierPieces >> (t + 1) != 0 && t < MaxTier)
+        {
+            var above = t + 2;
+            while (above <= MaxTier && (asm.TierPieces & 1 << above) == 0)
+                above++;
+            if (above <= MaxTier)
+                s += $" (its {TierPieceNames[above]} waits for a {TierPieceNames[t + 1]})";
+        }
+        else if (t < MaxTier)
+            s += $" (bolt a {TierPieceNames[t + 1]} on for tier {t + 1})";
+        return s;
+    }
+
     // ---- The rebuild ---------------------------------------------------------------------------------------------------------
 
     /// <summary>Find every Core's machine (with the caches, after the welds are known). Nothing to do on a construct with no Core.</summary>
@@ -457,6 +499,7 @@ public static class MachineBlocks
             }
         }
         asm.Cells = (short)cellCount;
+        Tiers(c, core, id, ref asm);
         // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column. A seed is a bed cell itself.
         if (seeded)
             grid[Mid * GridSide + Mid] |= 0x80;
@@ -500,6 +543,37 @@ public static class MachineBlocks
             c.BlockJoined[i] = mask;
         }
     }
+
+    /// <summary>
+    /// The tier pieces bolted on the Core's own tier slots (drawing 21): each whole one joins the Core's assembly (so it shows its Core's
+    /// work), and the machine's tier is the highest n with a piece of every tier from 2 to n there. A piece with a gap below it does nothing yet.
+    /// </summary>
+    private static void Tiers(Construct c, int core, short id, ref CMachineAsm asm)
+    {
+        asm.Tier = 1;
+        if (c.Parts[core].D.BlockSeed)
+            return;
+        for (var e = c.FirstLink(core); e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            var d = c.Parts[o].D;
+            if (d.BlockRole != BlockRole.Tier || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
+                continue;
+            ref readonly var l = ref c.Links[e >> 1];
+            var cs = (e & 1) == 0 ? l.SA : l.SB; // (the Core's own socket of the weld: only its tier slots count)
+            var socks = c.Parts[core].D.Sockets;
+            if (cs >= socks.Length || socks[cs].Kind != SocketKind.Tier)
+                continue;
+            c.BlockAsmOf[o] = id;
+            c.BlockCellOf[o] = Pack(0, 0, 0);
+            asm.TierPieces |= (byte)(1 << d.BlockTier);
+        }
+        while (asm.Tier < MaxTier && (asm.TierPieces & 1 << (asm.Tier + 1)) != 0)
+            asm.Tier++;
+    }
+
+    /// <summary>The tier of the machine part <paramref name="part"/> is in (1 with no tier pieces, or not a block machine).</summary>
+    public static int TierOf(Construct c, int part) => TryOf(c, part, out var asm) && asm.Tier > 0 ? asm.Tier : 1;
 
     /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most MaxSide a side and MaxCells in all; of equals, the one nearest the Core.</summary>
     private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded)

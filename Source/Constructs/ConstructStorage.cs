@@ -493,6 +493,11 @@ public static class ConstructStorage
         var d = c.Parts[part].D;
         if (d.IsVolumeStore)
             return ConstructStoreVolume.Fill(c, part, st, out centre, out half);
+        if (d.IsGrowFormer) // (its bin grows with its bed and tier: the level is of what it holds now)
+        {
+            centre = half = Vector3.Zero;
+            return d.IsBin && Level(c.Parts[part], d.FillMin, d.FillMax, st.Amount, Capacity(c, part), out centre, out half);
+        }
         return FillBox(c.Parts[part], d, st.Amount, out centre, out half);
     }
 
@@ -500,7 +505,7 @@ public static class ConstructStorage
     public static int Capacity(Construct c, int part)
     {
         var d = c.DefOf(part);
-        return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.BulkCapacity;
+        return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.IsGrowFormer ? ConstructExtruder.GrowBinOf(c, part) : d.BulkCapacity;
     }
 
     /// <summary>A production machine's input fill, as <see cref="FillBox"/>; false when empty.</summary>

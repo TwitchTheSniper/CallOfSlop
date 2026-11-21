@@ -124,6 +124,10 @@ Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings,
 
 The twelve Wheel, Fan and Airframe Formers are now one machine, the **Grow Former**. A saved world loads each old former as a Grow Former. Its size now comes from blocks: weld **Former Blocks** on the floor in front of it and stack **Mast Blocks** on it, then set **Makes** (Wheel, Prop or Wing) with the configure tool. An Assembler that was set to a recipe may show a different one after this update: pick its recipe again.
 
+### Grow Former bins and tier pieces (2026-11-21)
+
+A Grow Former's bin now goes with its bed: 400 and 100 for each Former Block in its bed, so a former on its own holds 400, not 13,200. One in an older world that holds more than its new bin keeps what it has, but takes no more until it uses some. Four new **tier pieces** (Power Coupling, Coolant Loop, Servo Rack, Plasma Conditioner, made at an Assembler) bolt on the slots along its back: each raises its tier by one when every lower piece is there, and a higher tier works faster, holds more and draws more power. New recipes were added at the end of the Assembler's list, so your Assemblers keep their recipes.
+
 ### Panel Formers and wide panels in a saved world (2026-11-13)
 
 A Panel Former no longer splits a panel wider than your Extruders make into strips by itself. An order for one now waits and says which bigger Extruder, or Die Frames on the one you have, would make it. To keep the old behaviour, open the Panel Former with the configure tool and turn on **Too wide: make strips** (in its Logistics settings).

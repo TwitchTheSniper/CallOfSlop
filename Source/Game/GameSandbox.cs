@@ -117,8 +117,8 @@ public enum CActKind : byte
     Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
     SeamBreak, // u16 body, u16 part, u16 other part: the attach tool's RMB breaks the seam between the two (protocol 373; ConstructSeams.cs)
     ModControl, // u16 body, u16 part, u8 control (1 eject, 2 lock, 3 gun pull on, 4 off), vec point (body frame): a module socket's controls (protocol 394; ModuleGuide.cs)
-    Reactor, // u16 body (the seat's): the seated player shuts that craft's power plants down or starts them (protocol 417; ConstructShutdown.ToggleReactor)
-    Thrusters, // u16 body (the seat's): ...its thrusters (protocol 417; ConstructShutdown.ToggleThrusters)
+    Reactor, // u16 body (the seat's): the seated player shuts that craft's power plants down or starts them (protocol 418; ConstructShutdown.ToggleReactor)
+    Thrusters, // u16 body (the seat's): ...its thrusters (protocol 418; ConstructShutdown.ToggleThrusters)
 }
 
 /// <summary>

@@ -1125,7 +1125,7 @@ public static unsafe partial class Program
         if (hit.Body.DefOf(hit.Part).IsBuildStation)
             key ^= RouteRender.BayLook(hit.Body, hit.Part) * 2654435761L; // (a Building Station: its bay is outlined while it is looked at, and its line follows its job)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
-            key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
+            key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L ^ (long)(MachineBlocks.TierOf(hit.Body, hit.Part) + 8 * ConstructStorage.Capacity(hit.Body, hit.Part)) * 0x9E3779B97F4AL; // (the piece's length, which the store doesn't change with; its tier and bin, which go with its tier pieces and bed)
         if (hit.Body.DefOf(hit.Part) is { IsRecycler: true } or { IsGatherer: true })
             key ^= (long)(ProductionLines.Raw(g.Constructs, hit.Body, hit.Part, st) ?? 0) * 0x9E3779B97F4AL; // (its line state: the mains or a shaft change it, not the store)
         if (key == _sbStoreKey)
