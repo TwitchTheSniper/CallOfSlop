@@ -406,8 +406,11 @@ public sealed class ExtrusionParts : IPartGenerator
     private const double GrowHubY = 1.2; // the hub's rest height on the Core's face
     private const double GrowFace = 1.0; // the Core's front face (z), where the hub's plate is
     private const double BedTile = 0.3, BedDeck = 0.012, BedKerb = 0.02; // a Former Block: its slab, the deck tiles on it and the hazard kerb round the bed
+    private const double GrowTierFoot = 0.2; // a tier piece's foot on the Core's back (the slots stand over the foot slab)
     private const double GrowRide = 40; // m: how far the hub's carriage and chuck may ride up the slide (the masts' column; drawn only)
-    private const int GrowBlockPush = 1500, GrowBlockPower = 225, GrowBin = 13200; // each block's push (N) and draw (W); a bin of 400 and 100 a block for the biggest bed
+    private const int GrowBlockPush = 1500, GrowBlockPower = 225; // each block's push (N) and draw (W)
+    private const int GrowBin = 400, GrowBinBlock = 100; // its bin: 400 and 100 a bed block (drawing 22), times its tier's capacity, up to a bin's most
+    private static readonly double[] GrowTierSlots = [-0.63, -0.21, 0.21, 0.63]; // the tier slots across its back (x), tier 2 to 5 from its left as seen from behind
     private static List<object?> GrowMakesNames() => Py.L("Wheel", "Prop", "Wing");
 
     private static PyDict GrowBlockKey(string role) => role == "core"
@@ -442,12 +445,14 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Sock("-x", [-e, BedTile / 2, 0], "-x");
         p.Sock("back", [0, 1, -e], "-z");
         p.Sock("die", [0, GrowHubY, GrowFace], "+z", kind: "die");
+        for (var k = 0; k < GrowTierSlots.Length; k++)
+            p.Sock($"tier{k + 2}", [GrowTierSlots[k], GrowTierFoot + MachineTierParts.MountY, -e], "-z", kind: "tier"); // (tier pieces, drawing 21: any piece in any slot)
         p.Stats(2400, 2000, 8, 12);
         p.Set(("power", GrowBlockPower), ("storage", Kw(
-                ("bulk", Kw(("material", "any"), ("capacity", GrowBin), ("min", Py.L(-0.6, 0.9, -0.9)), ("max", Py.L(0.6, 1.7, -0.3)))),
+                ("bulk", Kw(("material", "any"), ("capacity", ConstructStorage.MaxBulk), ("min", Py.L(-0.6, 0.9, -0.9)), ("max", Py.L(0.6, 1.7, -0.3)))),
                 ("wheel", Kw(("grow", true), ("speed", 0.1), ("at", Py.L(0, GrowHubY, GrowFace)), ("maxWidth", 20), ("maxDiameter", 32), ("startWidth", 0.1), ("startDiameter", 0.4),
                     ("fanMax", 64), ("fanStart", 0.5), ("wingMax", Py.L(32, 192)), ("wingStart", Py.L(0.3, 0.5)), ("bedTop", BedTile + BedDeck + BedKerb),
-                    ("pushForce", GrowBlockPush), ("blockPush", GrowBlockPush), ("blockPower", GrowBlockPower))))),
+                    ("pushForce", GrowBlockPush), ("blockPush", GrowBlockPush), ("blockPower", GrowBlockPower), ("bin", GrowBin), ("binBlock", GrowBinBlock))))),
             ("machineBlock", GrowBlockKey("core")),
             ("config", GrowConfig()),
             ("collider", "boxes")); // (the hub and the saw are looks: their cylinders never become a hull)
@@ -517,14 +522,24 @@ public sealed class ExtrusionParts : IPartGenerator
         // ---- The back: the hopper's port, its rim and arrow, a gauge and the maker's plate ----
         MachineLook.Port(p, [0, 1.3, -e], 2, -1, 0.2, 0.13, true);
         p.Set(("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("at", Py.L(0, 1.3, -e)), ("face", "-z")))));
-        p.Add(L([-0.5, 0.78, -e - 0.014], [0.5, 0.86, -e], MachineLook.In));
+        p.Add(L([-0.5, 0.97, -e - 0.014], [0.5, 1.04, -e], MachineLook.In)); // (over the tier pieces' beacons)
         MachineLook.Arrow(p, 2, -e - 0.014, -1, 1, -1, 0, 1.72, 0.18, 0.18, MachineLook.In);
         p.Add(L([0.52, 1.1, -e - 0.036], [0.72, 1.3, -e], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
         p.Add(L([0.6, 1.18, -e - 0.048], [0.64, 1.27, -e - 0.032], MachineLook.Ink));
         p.Add(L([-0.74, 1.12, -e - 0.024], [-0.48, 1.28, -e], MachineLook.In));
         p.Add(L([-0.71, 1.18, -e - 0.036], [-0.51, 1.22, -e - 0.02], MachineLook.Ink));
-        foreach (var x in new[] { -0.5, 0.5 })
-            p.Add(L([x - 0.012, foot + 0.04, -sunk - 0.016], [x + 0.012, 0.74, -sunk + 0.004], Trim, paintable: true)); // (cladding seams under the plate)
+        // The tier slots along the back's foot (drawing 21): a dark recess plate each, a pip a tier above it; a tier piece bolts over it.
+        for (var k = 0; k < GrowTierSlots.Length; k++)
+        {
+            var x = GrowTierSlots[k];
+            p.Add(L([x - 0.17, GrowTierFoot + 0.02, -e - 0.008], [x + 0.17, GrowTierFoot + 0.48, -sunk + 0.002], MachineLook.Base));
+            p.Add(L([x - 0.13, GrowTierFoot + 0.06, -e - 0.016], [x + 0.13, GrowTierFoot + 0.1, -e - 0.004], MachineLook.Accent)); // (its bolt rail)
+            for (var n = 0; n < k + 2; n++)
+            {
+                var px = x + (n - (k + 1) / 2.0) * 0.05;
+                p.Add(L([px - 0.014, GrowTierFoot + 0.4, -e - 0.02], [px + 0.014, GrowTierFoot + 0.428, -e - 0.008], MachineLook.In));
+            }
+        }
 
         // ---- The right: the drive motor, its turning coupling, the oil lines and a cable down to the foot ----
         p.Add(L([sunk - 0.004, 0.9, -0.55], [e + 0.16, 1.5, 0.05], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))));

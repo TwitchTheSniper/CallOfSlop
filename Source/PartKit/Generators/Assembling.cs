@@ -973,6 +973,11 @@ public sealed class Assembling : IPartGenerator
         ("Docket", "Docket Tow Yoke", null),
         ("Docket", "Docket Wheelhouse", null),
         ("Docket", "Docket Wheelhouse Ladder", null),
+        // (the block machines' tier pieces, design page drawing 21: MachineTierParts; Sean 2026-11-21)
+        (null, null, Rec("Power Coupling", 40, 1, m: [("steel", 30), ("copper", 40), ("rubber", 6)], p: [("Wiring Loom", 2)])),
+        (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
+        (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Control Unit", 1)])),
+        (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
     ];
 
     /// <summary>

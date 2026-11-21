@@ -41,6 +41,13 @@ public sealed class MachineTiers : IPartGenerator
         (16, 9.6, 16, 6.25, 6.25, 4.0, 2.0),
     ];
 
+    /// <summary>A tier's Rate, Power and Cap multipliers (1 to 5; tier 1 outside): a block machine's tier pieces give its Core these at run time (MachineBlocks.TierOf, drawing 21).</summary>
+    public static (float Rate, float Power, float Cap) Multipliers(int tier)
+    {
+        var t = Curve[Math.Clamp(tier, 1, Curve.Length - 1)];
+        return (t.Rate, (float)t.Power, (float)t.Cap);
+    }
+
     private static List<object?> L(params object?[] v) => [.. v];
 
     private static PyDict Sk(string name, List<object?> at, string dir) => new() { ["name"] = name, ["at"] = at, ["dir"] = dir };
