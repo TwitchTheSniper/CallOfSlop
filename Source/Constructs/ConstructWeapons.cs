@@ -22,6 +22,7 @@ public struct CGun
     public float Blast, BlastDamage, Speed, Kick; // the splash of an explosive round, the tracer's speed, the push back on the body
     public byte BoxCount; // ammo boxes its feed chain reaches (Construct.GunBoxes, BoxesPerGun a gun)
     public short Seat; // the gunner's seat that fires and aims it (when nothing is wired into it), or -1
+    public short KeySeat; // the seat whose fire key fires it through an Input Reader wired into it (a hood gun: the driver's), -2 the driver's seat whichever it is, or -1 (crews' gunnery: ConstructShipAi.Gunnery)
     public const ushort NoSensor = ushort.MaxValue;
     public ushort Sensor; // a proximity sensor wired into it: a sentry, pointing at the nearest player in the sensor's range (255: none)
     public byte AimJoints; // turntables and motor hinges up its chain that a gunner or a sensor can point
@@ -217,7 +218,7 @@ public static class ConstructWeapons
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1, Ring = -1 };
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, KeySeat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1, Ring = -1 };
             using var gunScratch = Scratch.Begin(); // (a frame a gun: given back each turn of the loop, as the old stackalloc never was)
             Span<bool> mine = gunScratch.Take<bool>(c.PartCount);
             try
@@ -813,6 +814,18 @@ public static class ConstructWeapons
             }
             else if (logic == CLogic.Proximity && g.Sensor == CGun.NoSensor)
                 g.Sensor = from;
+            else if (logic == CLogic.Reader && g.KeySeat == -1 && c.Parts[from].D is { Settings.Length: > 0 } rd
+                     && ((ushort)rd.Settings[Math.Min(c.Parts[from].Setting, (byte)(rd.Settings.Length - 1))] & ConstructParts.KeyFire) != 0)
+            {
+                // A reader of the fire key (ConstructLogic: the seat wired into it, else the driver's): that seat's fire key fires this gun.
+                g.KeySeat = -2;
+                for (var r = 0; r < c.WireCount; r++)
+                    if (c.Wires[r].To == from && c.Wires[r].From < c.PartCount && c.Parts[c.Wires[r].From].D.Role == PartRole.Seat)
+                    {
+                        g.KeySeat = (short)c.Wires[r].From;
+                        break;
+                    }
+            }
         }
         ConstructOrdnance.SightOn(c, ref g);
         g.AimJoints = 0;

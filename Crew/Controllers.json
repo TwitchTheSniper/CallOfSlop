@@ -13,6 +13,7 @@
     "cargoValue": 900,
     "raidSight": 3000,
     "raidLoot": 0.5,
+    "raidTake": 0.9,
     "callRange": 5000,
     "defendMinutes": 4,
     "quietSeconds": 40,
