@@ -948,6 +948,7 @@ public static partial class ConstructExtruder
                 ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the panel - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
                 ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
                 ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
+                ExtrudeStall.OrderTooLong => " - " + (WorkOrders.HeadOf(c.Parts[part], out var bh) && bh.Name != null && ConstructParts.Find(bh.Name) is { } bp ? ConstructPanelFormer.BedRefusal(c, part, bp) ?? "its bed changed" : "its bed changed") + ", or Cancel it",
                 ExtrudeStall.NoOrders => ", waiting for orders (Queue on its screen, or a Line Console's bill)",
                 _ => st.Busy ? ", forming" : ", waiting",
             };
@@ -991,6 +992,8 @@ public static partial class ConstructExtruder
                 ConstructLaserCutter.Look(c, part, st, sb);
             else if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
                 sb.Append(", ").Append(ph.Name);
+            if (!d.IsLaserCutter && d.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var pasm))
+                sb.Append(", ").Append(MachineBlocks.Describe(c, pasm)); // (its bed: "bed 3 x 2 (6.0 x 4.0 m), 1 idle")
             sb.Append(Status(c, part, st));
         }
         else if (d.IsWheelFormer)
