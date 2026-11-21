@@ -268,6 +268,7 @@ public static unsafe partial class Program
                       ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
                       ^ (d.Labelled && part.Text != null ? (long)part.Text.GetHashCode() * 6151L : 0) // (a switch's label)
+                      ^ (d.ModPart == ModPart.Socket ? (ModControlAt(hit, out _) + 1L) * 104729L ^ (long)hit.Body.RebuildStamp * 7907L ^ (ConstructConfig.Get(part, d, CfgKey.ModLock, 0) >= 0.5f ? 1L << 52 : 0) : 0) // (a socket: its frame's control under the crosshair, its module, its lock)
                       ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
             if (key != _sbLookKey)
             {
@@ -337,6 +338,8 @@ public static unsafe partial class Program
                     _sbLookText = _sbLookText.Replace(d.Name, label); // (a labelled switch, button, lever...: "Hangar lights: off"; LogicText.Name)
                 if (ModuleSockets.LookText(hit.Body, hit.Part) is { } modLook)
                     _sbLookText = d.ModPart == ModPart.Socket ? SandboxKeys.Line(d.Name, modLook) : $"{_sbLookText}  ({modLook})"; // (module sockets: the socket's state, or the module a part is in, ModuleSockets.cs)
+                if (d.ModPart == ModPart.Socket && near && ModControlAt(hit, out _) is var modCtl and > 0)
+                    _sbLookText = $"{_sbLookText}  {SandboxKeys.Do(use, modCtl == 1 ? "eject the module" : ModuleSockets.Locked(hit.Body, hit.Part) ? "unlock" : "lock")}"; // (its frame's eject button and lock slider)
                 if (HullHoles.IsHoled(d) && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)
@@ -466,6 +469,8 @@ public static unsafe partial class Program
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
+            else if (aimed && !join && hit.Distance <= ConstructBuild.UseReach + 1.4f && ModControlAt(hit, out var ctlAt) is var ctl and > 0)
+                g.SandboxSend(CActKind.ModControl, body: hit.Body.Id, part: (ushort)hit.Part, variant: ctl, at: ctlAt); // (a socket's eject button or lock slider: ModuleGuide.cs)
             else if (aimed && !join && !hit.Body.Loose && LinkedUse(hit.Body, hit.Part, hit.Distance))
                 OpenLinkedPanel(hit.Body, hit.Part); // (a linked logistics part: Program.SandboxLinked.cs)
             else if (aimed && !join && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance)) // (the Welder's join first)

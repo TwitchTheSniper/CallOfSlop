@@ -223,6 +223,17 @@ public static partial class Program
         var range = g.SandboxHands.ReachOf(me.Id, creative); // (this player's, with their tool upgrades: ConstructEditsUpgrades.cs)
         var catchRange = g.SandboxHands.CatchOf(me.Id, creative); // (the tractor beam catches further and reels it in to the reach)
         var holding = h.GrabBody != 0 && g.Constructs.Get(h.GrabBody) != null;
+        if (_pgModPull && (holding || !Down(GameAction.Fire)))
+        {
+            if (!holding)
+                g.SandboxSend(CActKind.ModControl, variant: 4); // (let go before it came clear: it slides back and seats again, ModuleGuide.cs)
+            _pgModPull = false; // (clear of its frame, the server handed it to the beam: held as anything is)
+        }
+        if (_pgModPull)
+        {
+            g.SandboxLookText = SandboxKeys.Line("Module", null, null, $"keep pulling (hold {SandboxKeys.Fire}): it slides out slowly, and seats again if you let go");
+            return;
+        }
         if (!holding && PhysGunStoredPiece(g, me, in h, eye, dir, MathF.Min(World.RaycastWorld(eye, dir, catchRange), catchRange), range))
             return; // (a piece stored on a Piece Rack or riding a conveyor: the beam pulls it off)
         if (!holding)
@@ -262,6 +273,37 @@ public static partial class Program
                     _pgLookText = why != null ? SandboxKeys.Line(what, null, why) : SandboxKeys.Line(what, pieceCold ? "frozen piece" : "moving side", null, $"hold {SandboxKeys.Fire}: move it{coldKey}");
                 }
                 g.SandboxLookText = _pgLookText;
+            }
+            else if (aimed && FittedModule(hit.Body, hit.Part) is var modSock and >= 0)
+            {
+                // A fitted module: the beam pulls it off its socket, if the player pulls and keeps pulling (ModuleGuide.cs).
+                var plate = hit.Body.ModSockets[modSock].Plate;
+                why = ModuleSockets.Locked(hit.Body, plate) ? "its socket is locked: slide the lock on the plate's side off first" : null;
+                ConstructRender.AimBody = hit.Body;
+                ConstructRender.AimPart = hit.Part;
+                ConstructRender.AimRefused = why != null;
+                ConstructRender.AimHands = false;
+                var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)hit.Part << 50) ^ (3L << 45) ^ hit.Body.RebuildStamp;
+                if (key != _pgLookKey)
+                {
+                    _pgLookKey = key;
+                    _pgLookText = why ?? SandboxKeys.Line(ModuleSockets.ModuleName(hit.Body, hit.Body.ModSockets[modSock].Module), "fitted", null, $"hold {SandboxKeys.Fire} and pull back: unseat it");
+                }
+                g.SandboxLookText = _pgLookText;
+                if (Pressed(GameAction.Fire) && !_swallowClick)
+                {
+                    if (why != null)
+                    {
+                        BuildSounds.Play(BuildSound.Refuse, default);
+                        g.SandboxSay(why);
+                    }
+                    else
+                    {
+                        g.SandboxSend(CActKind.ModControl, body: hit.Body.Id, part: (ushort)hit.Part, variant: 3, at: hit.Body.ToLocal(hit.Point));
+                        _pgModPull = true;
+                    }
+                }
+                return;
             }
             else if (aimed)
             {
@@ -465,5 +507,17 @@ public static partial class Program
                 }
             }
         }
+    }
+
+    private static bool _pgModPull; // the beam pulls on a fitted module (Fire held since it was sent): ModuleGuide's pull
+
+    /// <summary>The socket (an index into ModSockets) of the fitted module part <paramref name="part"/> is in, or -1.</summary>
+    private static int FittedModule(Construct c, int part)
+    {
+        var mi = ModuleSockets.ModuleOfPart(c, part);
+        if (mi < 0 || mi >= c.Modules.Length || c.Modules[mi].Socket < 0 || c.Modules[mi].Socket >= c.ModSockets.Length)
+            return -1;
+        var si = c.Modules[mi].Socket;
+        return c.ModSockets[si].Stand ? -1 : si;
     }
 }
