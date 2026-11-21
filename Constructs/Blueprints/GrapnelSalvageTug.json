@@ -1,0 +1,1310 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Grapnel Salvage Tug",
+  "description": "The Salvagers' salvage tug (Karl's picture): a boxy yellow hull with a glass cockpit over a chin carrying two claw arms and a cutting wheel, a crew cab behind it (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers for sorted salvage in a bay open to the sky, four banded tanks on each flank, and engineering, whose two hull drives bolt to the stern with their engines inside. Lift jets and four legs set it down; attitude jets at both ends move it about.",
+  "steps": [
+    {
+      "part": "Grapnel Keel"
+    },
+    {
+      "part": "Grapnel Cab",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Hull Port 4",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Hull Stbd 4",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 1",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 2",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 3",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 5",
+      "on": 1,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 1",
+      "on": 1,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 2",
+      "on": 1,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 3",
+      "on": 1,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 4",
+      "on": 1,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 5",
+      "on": 1,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 6",
+      "on": 1,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 7",
+      "on": 1,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Hull Port 1",
+      "on": 1,
+      "socket": "j12",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Hull Port 2",
+      "on": 1,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Hull Port 3",
+      "on": 1,
+      "socket": "j14",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Hull Port 5",
+      "on": 1,
+      "socket": "j16",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Hull Stbd 1",
+      "on": 1,
+      "socket": "j17",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Hull Stbd 2",
+      "on": 1,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Hull Stbd 3",
+      "on": 1,
+      "socket": "j19",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Hull Stbd 5",
+      "on": 1,
+      "socket": "j21",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Cab Ceiling",
+      "on": 2,
+      "socket": "j3",
+      "by": "j7"
+    },
+    {
+      "part": "Grapnel Bow",
+      "on": 4,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Cab Wall 8",
+      "on": 9,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Roof",
+      "on": 23,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Roof 3",
+      "on": 23,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Roof 5",
+      "on": 23,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Bay Ceiling",
+      "on": 25,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Bay Hull Port 6",
+      "on": 25,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Bay Hull Stbd 6",
+      "on": 25,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Bay Wall 1",
+      "on": 29,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Grapnel Bay Wall 2",
+      "on": 29,
+      "socket": "j2",
+      "by": "j3"
+    },
+    {
+      "part": "Grapnel Bay Wall 3",
+      "on": 29,
+      "socket": "j3",
+      "by": "j3"
+    },
+    {
+      "part": "Grapnel Bay Wall 4",
+      "on": 29,
+      "socket": "j4",
+      "by": "j3"
+    },
+    {
+      "part": "Grapnel Bay Hull Port 7",
+      "on": 29,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Bay Hull Stbd 7",
+      "on": 29,
+      "socket": "j8",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Eng Ceiling",
+      "on": 29,
+      "socket": "j9",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Roof 6",
+      "on": 29,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Roof 7",
+      "on": 29,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Bay",
+      "on": 30,
+      "socket": "j1",
+      "by": "j6"
+    },
+    {
+      "part": "Grapnel Eng Hull Port 8",
+      "on": 36,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Eng Hull Stbd 8",
+      "on": 37,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Eng Hull Port 9",
+      "on": 38,
+      "socket": "j3",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Eng Hull Stbd 9",
+      "on": 38,
+      "socket": "j5",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Roof 8",
+      "on": 38,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Roof 9",
+      "on": 38,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Stern",
+      "on": 38,
+      "socket": "j8",
+      "by": "j1"
+    },
+    {
+      "part": "Grapnel Keel 6",
+      "on": 41,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 7",
+      "on": 41,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Engineering",
+      "on": 41,
+      "socket": "j10",
+      "by": "j2"
+    },
+    {
+      "part": "Grapnel Keel 8",
+      "on": 51,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Grapnel Keel 9",
+      "on": 51,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 8,
+      "socket": "doorCk",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 25,
+      "socket": "doorAft",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 11,
+      "socket": "doorBunk",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 11,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 12,
+      "socket": "doorGalley",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 12,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#e2702a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Grapnel Flight Computer",
+      "on": 1,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true,
+        "strength": 150
+      }
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "bunk0",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 1,
+      "socket": "bunk1",
+      "by": "bottom"
+    },
+    {
+      "part": "Service Locker",
+      "on": 13,
+      "socket": "lockerBunk",
+      "by": "wall",
+      "paint": "#d9a12b"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 9,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 9,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 25,
+      "socket": "shower",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Galley Range",
+      "on": 8,
+      "socket": "range",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 8,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Mess Table",
+      "on": 1,
+      "socket": "table",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 10,
+      "socket": "suit0",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 10,
+      "socket": "suit1",
+      "by": "wall"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 25,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 25,
+      "socket": "o2Tank0",
+      "by": "wall"
+    },
+    {
+      "part": "Grapnel Belly Hatch",
+      "on": 1,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Grapnel Boarding Ladder",
+      "on": 76,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#2f3134",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 12,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 44,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Power Board",
+      "on": 33,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Grapnel Power Plant",
+      "on": 51,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 51,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 51,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 51,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 33,
+      "socket": "suit",
+      "by": "wall"
+    },
+    {
+      "part": "Pressure Locker",
+      "on": 33,
+      "socket": "locker",
+      "by": "wall",
+      "paint": "#d9a12b"
+    },
+    {
+      "part": "MMU Dock",
+      "on": 33,
+      "socket": "mmuDock",
+      "by": "wall"
+    },
+    {
+      "part": "Manned Manoeuvring Unit",
+      "on": 87,
+      "socket": "mmu",
+      "by": "mount"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 45,
+      "socket": "tools",
+      "by": "back"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 48,
+      "socket": "drive0",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 48,
+      "socket": "engine0",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 91,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Drive Nozzle M",
+      "on": 48,
+      "socket": "drive1",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 48,
+      "socket": "engine1",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump M",
+      "on": 94,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Grapnel Tank Rack L",
+      "on": 36,
+      "socket": "rackL",
+      "by": "hull"
+    },
+    {
+      "part": "Grapnel Tank Rack R",
+      "on": 37,
+      "socket": "rackR",
+      "by": "hull"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 27,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 6,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 24,
+      "socket": "rcsUp2L",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 24,
+      "socket": "rcsDown2L",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 17,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsUp2L",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsDown2L",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 27,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 6,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 24,
+      "socket": "rcsUp2R",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 24,
+      "socket": "rcsDown2R",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 21,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsUp2R",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsDown2R",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 48,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#2f3134",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Grapnel Lift Jet",
+      "on": 0,
+      "socket": "lift0",
+      "by": "top"
+    },
+    {
+      "part": "Grapnel Lift Jet",
+      "on": 0,
+      "socket": "lift1",
+      "by": "top"
+    },
+    {
+      "part": "Grapnel Lift Jet",
+      "on": 53,
+      "socket": "lift2",
+      "by": "top"
+    },
+    {
+      "part": "Grapnel Lift Jet",
+      "on": 53,
+      "socket": "lift3",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 6,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 124,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 124,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 124,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 124,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 128,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 124,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 6,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 131,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 131,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 131,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 131,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 135,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 131,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 53,
+      "socket": "leg2",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 138,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 138,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 138,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 138,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 142,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 138,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 53,
+      "socket": "leg3",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 145,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 145,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 145,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 145,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 149,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 145,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 41,
+      "socket": "lockL0",
+      "by": "foot.0",
+      "paint": "#8a4a2a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 152,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#8a4a2a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 152,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#8a4a2a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 152,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 152,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 152,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 41,
+      "socket": "lockR0",
+      "by": "foot.0",
+      "paint": "#5f6b73",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 158,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#5f6b73",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 158,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#5f6b73",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 158,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 158,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 158,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 8,
+      "socket": "lampCkL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd080"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 8,
+      "socket": "lampCkR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd080"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 8,
+      "socket": "switchCk",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 9,
+      "socket": "lampBunk",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 11,
+      "socket": "switchBunk",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 9,
+      "socket": "lampHead",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 11,
+      "socket": "switchHead",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 10,
+      "socket": "lampGalley",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 12,
+      "socket": "switchGalley",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 10,
+      "socket": "lampAirlock",
+      "by": "back",
+      "config": {
+        "colour": "#ffd040"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 11,
+      "socket": "lampHallA",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "lampHallB",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 30,
+      "socket": "lampCrossL",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 31,
+      "socket": "lampCrossR",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 36,
+      "socket": "lampL0",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 36,
+      "socket": "lampL1",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 37,
+      "socket": "lampR0",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 37,
+      "socket": "lampR1",
+      "by": "back",
+      "config": {
+        "colour": "#d8ecff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 42,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 43,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 44,
+      "socket": "lampEngA",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 33,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      60,
+      62
+    ],
+    [
+      78,
+      76
+    ],
+    [
+      166,
+      164
+    ],
+    [
+      166,
+      165
+    ],
+    [
+      168,
+      167
+    ],
+    [
+      170,
+      169
+    ],
+    [
+      172,
+      171
+    ],
+    [
+      185,
+      182
+    ],
+    [
+      185,
+      183
+    ],
+    [
+      185,
+      184
+    ]
+  ],
+  "conduit": true
+}
