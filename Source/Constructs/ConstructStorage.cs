@@ -71,6 +71,9 @@ public sealed class CStore
     public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
+    public double OvenSince; // ...when it saw it change (ConstructRender.Now)
+    public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
@@ -127,6 +130,9 @@ public sealed class CStore
         JobMaterial = 0;
         JobFull = 0;
         OnBed = false;
+        OvenSeen = 0;
+        OvenSince = 0;
+        OvenParts = 0;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;
@@ -517,7 +523,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger", "bake"], bw);
         if (ConstructParts.Opt(b, "pieces") is { } pc)
         {
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
@@ -737,6 +743,8 @@ public static class ConstructStorage
             ConstructLaserCutter.Parse(d, lc, file, bw);
         if (ConstructParts.Opt(b, "press") is { } pr)
             ConstructPress.Parse(d, pr, file, slots.Count);
+        if (ConstructParts.Opt(b, "bake") is { } bk)
+            ConstructBakeOven.Parse(d, bk, file, bw);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -755,7 +763,7 @@ public static class ConstructStorage
             d.IsTerminal = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
-        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon && !d.IsPieceRack)
+        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon && !d.IsPieceRack && !d.IsBakeOven)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\", \"bulk\" or \"pieces\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
             throw new ConstructPartException($"{file}: a storage part has \"slots\" or \"bulk\", not both");
@@ -857,7 +865,9 @@ public static class ConstructStorage
         int n = r.U8();
         if (n > CStore.MaxSlots)
             throw new MalformedPacketException($"a store of {n} slots");
+        var (ovenSeen, ovenSince) = (s.OvenSeen, s.OvenSince); // (this peer's own clock for an oven's hood: a send mustn't restart it)
         s.Reset(n);
+        (s.OvenSeen, s.OvenSince) = (ovenSeen, ovenSince);
         for (var k = 0; k < n; k++)
         {
             var def = ReadDef(ref r);
