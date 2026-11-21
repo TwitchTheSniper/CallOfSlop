@@ -256,7 +256,7 @@ public static class WorkOrders
     };
 
     /// <summary>Server: queues an order on a machine, or says why not.</summary>
-    public static string? Queue(ConstructWorld world, Construct c, int part, in WorkOrder o)
+    public static string? Queue(ConstructWorld world, Construct c, int part, in WorkOrder o, bool blanks = true)
     {
         if (Refusal(world, c, part, o) is { } why)
             return why;
@@ -267,6 +267,8 @@ public static class WorkOrders
             add.Key = preset; // (a former's preset: the part by its id, and the key it is cut as, for its material on screens and look lines)
         p.Orders.Add(add);
         world.OrdersChanged(c);
+        if (blanks && p.D is { IsPanelFormer: true, IsLaserCutter: false } && o.Chain == 0)
+            ConstructPanelFormer.AskBlanks(world, c, part, add); // (its blanks, of a linked Extruder: it has no stock of its own; a chained order's blank, or a terminal's, is the chain's)
         return null;
     }
 
@@ -400,11 +402,7 @@ public static class WorkOrders
             return why;
         if (o.IsPiece)
             o.Key = o.Key with { Material = MaterialFor(world, c, part) };
-        if (Queue(world, c, part, o) is { } no)
-            return no;
-        if (c.DefOf(part) is { IsPanelFormer: true, IsLaserCutter: false })
-            ConstructPanelFormer.AskBlanks(world, c, part, o); // (its blanks, of a linked Extruder: it has no stock of its own)
-        return null;
+        return Queue(world, c, part, o);
     }
 
     /// <summary>Touch "orders.cancel": the head order goes (the piece on the die, if any, is cut off as it is).</summary>

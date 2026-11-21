@@ -1279,7 +1279,7 @@ public static class ConstructCrafting
                     var m = net.Machines[i % net.MachineN]; // (its way cached with the net: MachineWay)
                     if ((i < net.MachineN) != net.MachineWay[i % net.MachineN])
                         continue;
-                    var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
+                    var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }, blanks: false); // (its inputs are chained just below: Asked; never asked of a machine that drops it loose)
                     if (why == null)
                     {
                         ConstructLogisticsPlan.Ranked(world, c, m, (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)

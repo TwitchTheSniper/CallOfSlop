@@ -474,7 +474,7 @@ public sealed class ProductionShowcase : IPartGenerator
         private const string CraneCol = "#c99a1a";
 
         /// <summary>
-        /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making steel sheet,
+        /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making the former's blanks,
         /// a conveyor into a Panel Former's Piece in, its bed of two Bed Blocks, the Out Table's Piece out onto a conveyor to a Long Piece Rack; on the orders console,
         /// whose bill gains two preset panels and one of the vehicle kit's lofted hoods.
         /// </summary>
@@ -488,7 +488,7 @@ public sealed class ProductionShowcase : IPartGenerator
                     Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
                 }
             var sheet = On("Extruder", 25.25f, Row3, Flow, paint: Panels);
-            Config(sheet, ("profile", "Solid bar"), ("width", 0.5), ("height", 0.1), ("cutLength", 1.0)); // (sheet: 10 cm is the thinnest a die makes)
+            OrdersOnly(sheet); // (it makes the former's blanks, by order: a Panel Former asks it for one a panel)
             Feed(StockOf("steel", 23.25f, Row3), sheet);
             var former = On("Panel Former", 30.25f, Row3, Flow, paint: Panels);
             Convey(sheet, "Piece out", former, "Piece in", Panels);
@@ -500,7 +500,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var table = Stand("Out Table", SocketAt(bed, "+z"), Flow, bed, "-z");
             var rack = _panelRack = On("Long Piece Rack", 38.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
             Convey(table, "Piece out", rack, "Piece in", Panels);
-            Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
+            Sign(28.75f, Posts3, Panels, "PANELS: a blank in at the white end, a panel out the orange");
             Sign(32.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
             Run(orders, former, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.6f), V(29.25f, 0, -14.6f));
             BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(2)), 2); // a hood
