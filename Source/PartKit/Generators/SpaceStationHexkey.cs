@@ -38,6 +38,9 @@ public sealed partial class SpaceStationParts
     // the showroom: three lanes (their north room row's back line), rooms 9.5 m deep, a 5 m route between the rows; bay walls along each row
     private static readonly double[] LaneZ = [4, 28, 52];
     private const double RoomD = 9.5, PathW = 5, BayX0 = 8, BayX1 = 152;
+
+    // phase 5's shelves: how deep a Hexkey Gondola Bay (L1) and a Hexkey Rack Bay (L0) stand off their spine, with a 4 mm gap
+    private const double GondolaBay = 0.504, RackBay = 1.004;
     private static readonly double[] BayWalls = [8, 20, 32, 44, 56, 68, 78, 82, 92, 104, 116, 128, 140, 152];
 
     private static double X(double px) => px - FW / 2;
@@ -398,12 +401,11 @@ public sealed partial class SpaceStationParts
             for (var g = 0; g < 3; g++)
             {
                 double gx = x0 + 1.2 + g * 4.0;
-                Solid(p, X(gx), HL1, Z(16), X(gx + 1.6), HL1 + 2.1, Z(62), NWhite, Matte);
-                for (var s = 0; s < 4; s++) // shelf edges both sides, birch
-                    foreach (var (f0, f1) in new[] { (gx - 0.012, gx - 0.004), (gx + 1.604, gx + 1.612) })
-                        Detail(p, X(f0), HL1 + 0.35 + s * 0.45, Z(16.05), X(f1), HL1 + 0.39 + s * 0.45, Z(61.95), NBirch, Matte);
+                // the gondola's spine, with a birch canopy over the Hexkey Gondola Bays the store stands either side of it (phase 5: StoreShelfSpots)
+                Solid(p, X(gx + GondolaBay), HL1, Z(16), X(gx + 1.6 - GondolaBay), HL1 + 2.1, Z(62), NWhite, Matte);
+                Detail(p, X(gx) - 0.01, HL1 + 2.1, Z(16) - 0.01, X(gx + 1.6) + 0.01, HL1 + 2.15, Z(62) + 0.01, NBirch, Matte);
                 // the end cap: a low birch table
-                Solid(p, X(gx - 0.2), HL1, Z(62), X(gx + 1.8), HL1 + 0.9, Z(63.2), NBirch, Matte);
+                Solid(p, X(gx - 0.2), HL1, Z(62.004), X(gx + 1.8), HL1 + 0.9, Z(63.2), NBirch, Matte);
             }
             // the aisle's sign, hung over its north end (the department's name comes with the stock)
             Detail(p, X(x0 + 1), HL1 + 3.4, Z(12) - 0.04, X(x0 + 12.2), HL1 + 4.0, Z(12) + 0.04, NPine, Matte);
@@ -437,13 +439,9 @@ public sealed partial class SpaceStationParts
         {
             double rx = 24 + i * 8;
             var p = k.Piece($"L0 Rack {i + 1}", "A self-serve rack of Hexkey Orbital's warehouse: bins six high for 1 m flat-pack boxes, charcoal uprights, birch beams.", NAsh);
-            Solid(p, X(rx), HL0, Z(9), X(rx + 3.2), HL0 + 6.6, Z(61), NAsh, Matte);
-            for (var z = 9.0; z <= 61.01; z += 2) // uprights both faces
-                foreach (var (f0, f1) in new[] { (rx - 0.03, rx - 0.004), (rx + 3.204, rx + 3.23) })
-                    Detail(p, X(f0), HL0, Z(Math.Min(z, 60.92)), X(f1), HL0 + 6.6, Z(Math.Min(z, 60.92) + 0.08), NChar, Matte);
-            for (var s = 1; s < 6; s++) // beams
-                foreach (var (f0, f1) in new[] { (rx - 0.022, rx - 0.008), (rx + 3.208, rx + 3.222) })
-                    Detail(p, X(f0), HL0 + s * 1.1 - 0.06, Z(9.1), X(f1), HL0 + s * 1.1, Z(60.9), NBirch, Matte);
+            // the rack's spine: the Hexkey Rack Bays stand either side of it, three high (phase 5: StoreShelfSpots); a birch beam along its top
+            Solid(p, X(rx + RackBay), HL0, Z(9), X(rx + 3.2 - RackBay), HL0 + 6.6, Z(61), NAsh, Matte);
+            Detail(p, X(rx) - 0.01, HL0 + 6.6, Z(9) - 0.01, X(rx + 3.2) + 0.01, HL0 + 6.66, Z(61) + 0.01, NBirch, Matte);
             // the aisle number on a pine board at its south end
             Detail(p, X(rx + 0.4), HL0 + 6.0, Z(61) + 0.004, X(rx + 2.8), HL0 + 7.2, Z(61) + 0.06, NPine, Matte);
             Letters(p, (i + 1).ToString(), X(rx + 1.6), HL0 + 6.25, Z(61) + 0.06, 0.12, 'z', [0.004, 0.016], NSignWhite, false);
@@ -795,6 +793,87 @@ public sealed partial class SpaceStationParts
             ["anchor"] = "Hexkey L0 Floor 1-1",
             ["origin"] = new List<object?> { anchorOrigin[0], anchorOrigin[1], anchorOrigin[2] },
             ["bays"] = bays,
+            ["shelves"] = HexkeyShelfSpots(),
+            ["pickup"] = HexkeyPickupSpots(),
+            ["trolleys"] = HexkeyTrolleySpots(),
+            ["arches"] = HexkeyArchBoxes(),
+            ["store"] = new PyDict { ["min"] = V3(X(0), HL0 - 1, Z(0)), ["max"] = V3(X(FW), HCap + 2, Z(FD)) },
         };
+    }
+
+    private static List<object?> V3(double x, double y, double z) => [R(x), R(y), R(z)];
+
+    private const string GondolaBayName = "Hexkey Gondola Bay", RackBayName = "Hexkey Rack Bay"; // (ShelfParts)
+
+    private static PyDict Shelf(string part, string zone, string host, double x0, double y0, double z0, double x1, double y1, double z1, string front) => new()
+    {
+        ["part"] = part, ["zone"] = zone, ["host"] = host,
+        ["min"] = V3(x0, y0, z0), ["max"] = V3(x1, y1, z1), ["front"] = front,
+    };
+
+    /// <summary>
+    /// The shelf places the stock filler stands Hexkey's shelves on (phase 5), each one bay, in the order it takes them: the market hall's
+    /// gondolas (small parts, Hexkey Gondola Bays two high), the warehouse racks (parts to 0.9 m, Hexkey Rack Bays three high) and the
+    /// Reduced corner. The places nearest the main street (L1) and the arches (L0) come first, across every aisle, so a little stock spreads
+    /// over the whole hall instead of filling aisle 1.
+    /// </summary>
+    private static List<object?> HexkeyShelfSpots()
+    {
+        var spots = new List<object?>();
+        for (var step = 0; step < 8; step++) // L1: 1 m bays back from each gondola's end cap
+            for (var tier = 0; tier < 2; tier++)
+                for (var a = 0; a < 9; a++)
+                    for (var g = 0; g < 3; g++)
+                    {
+                        double gx = 142 - (a + 1) * 13.2 + 1.2 + g * 4.0, z1 = 61.996 - step * 1.004, z0 = z1 - 1, y = HL1 + 0.008 + tier * 1.004;
+                        spots.Add(Shelf(GondolaBayName, "market", $"Hexkey L1 Aisle {a + 1}", X(gx), y, Z(z0), X(gx + 0.5), y + 1, Z(z1), "-x"));
+                        spots.Add(Shelf(GondolaBayName, "market", $"Hexkey L1 Aisle {a + 1}", X(gx + 1.1), y, Z(z0), X(gx + 1.6), y + 1, Z(z1), "+x"));
+                    }
+        for (var step = 0; step < 6; step++) // L0: 4 m bays back from each rack's south end
+            for (var tier = 0; tier < 3; tier++)
+                for (var i = 0; i < 12; i++)
+                {
+                    double rx = 24 + i * 8, z1 = 60.996 - step * 4.004, z0 = z1 - 4, y = HL0 + 0.008 + tier * 2.004;
+                    spots.Add(Shelf(RackBayName, "warehouse", $"Hexkey L0 Rack {i + 1}", X(rx), y, Z(z0), X(rx + 1), y + 2, Z(z1), "-x"));
+                    spots.Add(Shelf(RackBayName, "warehouse", $"Hexkey L0 Rack {i + 1}", X(rx + 2.2), y, Z(z0), X(rx + 3.2), y + 2, Z(z1), "+x"));
+                }
+        for (var i = 0; i < 6; i++) // the Reduced corner: two rows back to back on its amber floor, one high
+        {
+            double x0 = 126 + i * 4.2;
+            spots.Add(Shelf(RackBayName, "reduced", "Hexkey L0 Reduced Sign", X(x0), HL0 + 0.019, Z(48.496), X(x0 + 4), HL0 + 2.019, Z(49.496), "-z"));
+            spots.Add(Shelf(RackBayName, "reduced", "Hexkey L0 Reduced Sign", X(x0), HL0 + 0.019, Z(49.504), X(x0 + 4), HL0 + 2.019, Z(50.504), "+z"));
+        }
+        return spots;
+    }
+
+    /// <summary>The Big-item pick-up's floor behind its counter: where a piece too big for a rack stands, one of a kind, ready for the physics gun.</summary>
+    private static List<object?> HexkeyPickupSpots()
+    {
+        var spots = new List<object?>();
+        for (var z = 13.0; z <= 33; z += 5)
+            for (var x = 127.0; x <= 155; x += 4)
+                spots.Add(V3(X(x), HL0 + 0.02, Z(z)));
+        return spots;
+    }
+
+    /// <summary>Arrivals' trolley bay: a row of Hexkey Trolleys waiting by the ramp down.</summary>
+    private static List<object?> HexkeyTrolleySpots()
+    {
+        var spots = new List<object?>();
+        for (var i = 0; i < 8; i++) // two rows of four, clear of the stair hole down (x 0.9 to 5.1)
+            spots.Add(V3(X(8.5 + i % 4 * 2.4), HRoof + 0.02, Z(11 + i / 4 * 1.6)));
+        return spots;
+    }
+
+    /// <summary>The eight trade arches' openings (L0Trade Arches): a shopper inside one has their trade done.</summary>
+    private static List<object?> HexkeyArchBoxes()
+    {
+        var boxes = new List<object?>();
+        for (var i = 0; i < 8; i++)
+        {
+            double c = 24 + i * 16 + 4.8;
+            boxes.Add(new PyDict { ["min"] = V3(X(c - 1.3), HL0, Z(69.6)), ["max"] = V3(X(c + 1.3), HL0 + 3, Z(71)) });
+        }
+        return boxes;
     }
 }
