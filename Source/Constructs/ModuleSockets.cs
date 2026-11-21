@@ -378,14 +378,22 @@ public static class ModuleSockets
                     stack[top++] = other;
                 }
                 // A freeform weld (a face point or an off-grid turn of the socket weld) joins its anchor and its welded-on part
-                // with no socket link: the module takes it too, as the split's flood does (ConstructWorld.Flood), or fitting
-                // and taking off cut the module's parts away from what is welded on them.
+                // with no socket link: what hangs on the module (its anchor a module part) is the module's too, or fitting and
+                // taking off cut the module's parts away from what is welded on them. Only outward, anchor to welded-on part:
+                // a module part welded onto something else (a module body freeform-welded to a hull) hangs on that, so the
+                // flood stops there (a fitted module is then welded to more than its socket), never flooding into the ship.
                 for (var j = 0; j < c.JointCount; j++)
                 {
                     ref var jt = ref c.Joints[j];
                     if (!jt.Freeform || jt.Cut)
                         continue;
-                    var other = jt.Hinge == at ? jt.Child : jt.Child == at ? jt.Hinge : -1;
+                    if (jt.Child == at && jt.Hinge != at)
+                    {
+                        if (plate >= 0 && jt.Hinge < n && of[jt.Hinge] != mi)
+                            m.Bridged = true;
+                        continue;
+                    }
+                    var other = jt.Hinge == at ? jt.Child : -1;
                     if (other < 0 || other >= n)
                         continue;
                     if (other == plate)
