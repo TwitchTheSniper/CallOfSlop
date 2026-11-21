@@ -284,6 +284,8 @@ public sealed class PlayerRig
             _tool.Visible = false;
             Gun.Root.Visible = true;
             PoseGun(p, def, gunPose, upper, time);
+            if (size != 1f)
+                ThirdPersonArms.GrowGun(p.Id, grow); // (a small or big shell's gun is drawn under Root's grow: its shots leave that muzzle)
         }
 
         _kit.Pose(p, seated); // (after the arms: a drill arm hides the right one)
