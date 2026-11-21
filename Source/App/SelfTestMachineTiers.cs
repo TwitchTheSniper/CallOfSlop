@@ -99,7 +99,7 @@ public static partial class SelfTest
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
     private static readonly Dictionary<string, (float Low, float High)> TierHeights = new()
     {
-        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Smelter"] = (0.8f, 1.42f), ["Foundry"] = (0.8f, 1.24f), ["Assembler"] = (0.75f, 1.12f),
+        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Smelter"] = (0.8f, 1.42f), ["Foundry"] = (0.8f, 1.24f)
     };
 
     /// <summary>
@@ -147,7 +147,7 @@ public static partial class SelfTest
 
         var report = "";
         var least = 1f;
-        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter", "Foundry", "Assembler"])
+        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter", "Foundry"])
         {
             var shapes = new List<(string Name, bool[] Cells, Vector3 Colour)>();
             var counts = new List<string>();

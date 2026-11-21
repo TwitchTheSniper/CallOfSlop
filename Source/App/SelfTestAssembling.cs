@@ -14,10 +14,10 @@ public static partial class SelfTest
         var names = RecyclingTable.Current;
         want(t.Problem.Length == 0 && t.Recipes.Length >= 450, $"the shipped table (\"{t.Problem}\", {t.Recipes.Length} recipes)");
         want(ConstructParts.Refused.Count == 0, $"refused parts: {string.Join("; ", ConstructParts.Refused.Take(3))}");
-        foreach (var name in (string[])["Assembler", "Workshop Assembler", "Industrial Assembler", "Military Assembler", "Plasma Assembler"])
+        foreach (var name in (string[])["Assembler"]) // (the Assembler Core: its tiers became upgrade modules, Sean 2026-11-21)
         {
             var d = ConstructParts.Need(name);
-            want(d.IsAssembler && d.PhysicsOnly && d.Role == PartRole.Storage && d.PowerDraw > 0 && d.MaxInputs == 1 && d.DataIn is [ConstructGatherer.RunPort] && d.Slots.Length > 0, $"the {name} part ({d.IsAssembler}, {d.PowerDraw} W)");
+            want(d.IsAssembler && d.BlockRole == BlockRole.Core && d.Role == PartRole.Storage && d.PowerDraw > 0 && d.MaxInputs == 1 && d.DataIn is [ConstructGatherer.RunPort] && d.Slots.Length > 0, $"the {name} part ({d.IsAssembler}, {d.PowerDraw} W)");
             want(d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options == t.Choices, $"the {name}'s recipe choice isn't the table");
         }
         // Every input can be had: each material comes from a gatherer, a table or a recipe, each part input is an item with a recipe of its own.
@@ -32,7 +32,9 @@ public static partial class SelfTest
                 want(!p.PhysicsOnly && (t.Recipes.Any(o => o.Output == p) || PressTable.Current.PresetKeyOf(p) != null), $"{r.Name}: {p.Name} can't be fed or built"); // (an Assembler's, or a die's preset: Press phase 5)
             want(r.Batch.All(c => c is >= ' ' and <= '~'), $"{r.Name}'s text");
             if (r.Output.Tier == 1 && (r.Output.IsRefiner || r.Output.IsAssembler || r.Output.IsGatherer))
-                want(r.MinTier == 1, $"{r.Name} is a tier 1 machine that a tier 1 Assembler can't make (minTier {r.MinTier}): survival couldn't start");
+                want(r.Needs == 0 || r.Output.IsAssembler, $"{r.Name} is a tier 1 machine that needs a module ({AsmFit.ModuleWords(r.Needs)}): survival couldn't start");
+            if (r.Output.BlockRole == BlockRole.Tier)
+                want(r.Needs == 0, $"{r.Name} is an upgrade module that needs a module to make ({AsmFit.ModuleWords(r.Needs)}): a bare Assembler couldn't start");
         }
         var engine = t.Recipes.First(r => r.Name == "Engine");
         want(engine.Materials.Length >= 1 && engine.Parts.Length >= 2, $"an Engine draws on several chains ({engine.Batch})");
@@ -64,7 +66,7 @@ public static partial class SelfTest
         }
         want(AssemblingTable.Load("no-such-file.json", ConstructParts.All) is { Problem.Length: > 0, Recipes.Length: 0 }, "a missing file gives no recipes and a reason");
 
-        var file = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Assembling", "Assembler.json"));
+        var file = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Assembler", "Assembler.json"));
         ConstructParts.Parse(file, "good.json");
         (string From, string To, string Want)[] parts =
         [
@@ -91,7 +93,7 @@ public static partial class SelfTest
     {
         (string Line, float[] Across)[] lines =
         [
-            ("Smelter", [0, 3.5f, 4.5f, 6, 8, 10]), ("Sawmill", [0, 3, 4, 5, 7, 9]), ("Foundry", [0, 4, 5, 6.5f, 8, 10]), ("Assembler", [0, 2, 2.5f, 3.5f, 4.5f, 6]),
+            ("Smelter", [0, 3.5f, 4.5f, 6, 8, 10]), ("Sawmill", [0, 3, 4, 5, 7, 9]), ("Foundry", [0, 4, 5, 6.5f, 8, 10]),
         ];
         foreach (var (line, across) in lines)
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
@@ -281,7 +283,7 @@ public static partial class SelfTest
             Fail("assembling: the blueprints didn't all go on the yard");
             return;
         }
-        var asm = PartNamed(bay, "Workshop Assembler");
+        var asm = PartNamed(bay, "Assembler");
         var st = w.StoreOf(bay, asm)!;
         var def = bay.DefOf(asm);
         var edits = new ConstructEdits { Inventory = new SandboxInventories(), InfiniteParts = false };
@@ -384,7 +386,7 @@ public static partial class SelfTest
         if (Made() is { } left)
             w.Remove(left);
 
-        // ---- The tier gate: an Engine asks for tier 2; a tier 1 Assembler refuses it and says so.
+        // ---- The module gate: an Engine needs a Power Coupling and a Coolant Loop; an Assembler with no modules refuses it and says so.
         Run(0.1f);
         var plain = ModFit(w, bay, "Assembler", "bottom", "assembling");
         if (plain >= 0)
@@ -393,17 +395,17 @@ public static partial class SelfTest
             var choice = Array.IndexOf(AssemblingTable.Current.Choices, "Engine");
             ConstructConfig.Set(ref bay.Parts[plain], bay.DefOf(plain), cfg, choice);
             var ps = w.StoreOf(bay, plain)!;
-            Want(w.FeedAssembler(bay, plain, 20, steel) == 0 && ps.Refused == steel, $"a tier 1 Assembler took steel for an Engine (refused {ps.Refused})");
-            var line = ConstructAssembling.Look(bay.DefOf(plain), ps, engine, false, inv, null);
-            Want(line.Contains("needs a tier 2 assembler"), $"the tier gate's look line: \"{line}\"");
+            Want(w.FeedAssembler(bay, plain, 20, steel) == 0 && ps.Refused == steel, $"an Assembler with no modules took steel for an Engine (refused {ps.Refused})");
+            var line = ConstructAssembling.Look(bay.DefOf(plain), ps, engine, ConstructAssembling.FitOf(bay, plain), false, inv, null);
+            Want(line.Contains("needs a Power Coupling and a Coolant Loop on the Core"), $"the module gate's look line: \"{line}\"");
             w.RemovePart(bay, plain);
             bay.Rebuild();
-            asm = PartNamed(bay, "Workshop Assembler");
+            asm = PartNamed(bay, "Assembler");
             steelBin = PartNamed(bay, "Materials Bin");
             shelf = PartNamed(bay, "Parts Shelf");
         }
         else
-            Want(false, "no room for a tier 1 Assembler on the bay");
+            Want(false, "no room for a second Assembler on the bay");
 
         // ---- A refused chute: what the recipe doesn't use stays in the source, and the look line says so.
         w.Withdraw(bay, steelBin, 100000);
@@ -509,7 +511,7 @@ public static partial class SelfTest
         yard.RestoreProps();
     }
 
-    private static bool ConstructAssemblingShort(CStore st, AssembleRecipe r) => ConstructAssembling.StateOf(ConstructParts.Need("Workshop Assembler"), st, r) == AsmState.Short;
+    private static bool ConstructAssemblingShort(CStore st, AssembleRecipe r) => ConstructAssembling.StateOf(ConstructParts.Need("Assembler"), st, r) == AsmState.Short;
 
     /// <summary>
     /// "Assembling network": a real host, a client and a late joiner over the transport, survival rules. The client spawns the
@@ -565,7 +567,7 @@ public static partial class SelfTest
                 Fail($"assembling network: the Assembly Bay didn't spawn (\"{a.SandboxNotice}\")");
                 return;
             }
-            var asm = PartNamed(bay, "Workshop Assembler");
+            var asm = PartNamed(bay, "Assembler");
             var st = w.StoreOf(bay, asm)!;
             var def = bay.DefOf(asm);
             var names = RecyclingTable.Current;

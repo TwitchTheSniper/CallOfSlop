@@ -501,7 +501,7 @@ public static class VehicleRoles
 
     private static readonly Dictionary<string, int> _tiers = new(StringComparer.Ordinal);
 
-    /// <summary>A part's tier: the least Assembler tier its recipe needs (a plate material by its 1 m size); 1 with no recipe.</summary>
+    /// <summary>A part's tier: its recipe's tech tier (the old Assembler tier) (a plate material by its 1 m size); 1 with no recipe.</summary>
     public static int PartTier(string name)
     {
         lock (_tiers)
@@ -509,7 +509,7 @@ public static class VehicleRoles
             if (_tiers.TryGetValue(name, out var t))
                 return t;
             var def = ConstructParts.Find(name) ?? ConstructParts.Find(name + " 1 m");
-            t = def == null ? 1 : AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output == def)?.MinTier ?? 1;
+            t = def == null ? 1 : AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output == def)?.TechTier ?? 1;
             return _tiers[name] = t;
         }
     }

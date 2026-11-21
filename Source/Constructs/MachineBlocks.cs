@@ -13,6 +13,7 @@ public enum BlockRole : byte
     Shared, // a cell any family's machine takes in (the 2 m cube used as masts and walls)
     End, // a cell that closes a bed's far end (the Out Table): any family's machine takes it in, never as bed; nothing floods on past it
     Tier, // a tier piece bolted on a Core's tier slot (design page drawing 21): the Power Coupling (2) to the Plasma Conditioner (5); never a cell
+    Carriage, // an Assembler's Gantry Carriage, welded on an Assembly Bed Block's rail edge: one more part built at once; never a cell
 }
 
 /// <summary>A Core's machine, found at the rebuild (MachineBlocks.Build): the cells joined to it and the bed rectangle they make.</summary>
@@ -32,6 +33,9 @@ public struct CMachineAsm
     public byte OutSide; // the far edge's side in the Core's frame (a direction, ConstructParts.DirVector: 0 +x, 1 -x, 4 +z, 5 -z)
     public byte Tier; // the machine's tier, 1 to 5: the highest n with a tier piece of every tier from 2 to n bolted on its Core (drawing 21)
     public byte TierPieces; // bits by tier (2 to 5) of the tier pieces bolted on its Core, a gap included
+    public byte Overdrive, Buffers; // an Assembler's Overdrive Units and Feed Buffers on its upgrade slots (a tier piece with a "module")
+    public byte Carriages; // an Assembler's Gantry Carriages on its bed's blocks (inside the rectangle), at most MachineBlocks.MaxCarriages
+    public byte Masts; // an Assembler's masts outside its bed: the shortest of its four corner columns, in cells (0: a corner has none)
 }
 
 public sealed partial class Construct
@@ -64,6 +68,8 @@ public static class MachineBlocks
     private const int Mid = GridHalf;
     public const float DefaultCell = 2f; // m: the lattice step (the 2 m grid)
     public const int MaxTier = 5; // the tiers of drawing 21: 1 a bare Core, 2 to 5 by its tier pieces
+    public const int MaxCarriages = 32; // an Assembler's Gantry Carriages (Sean 2026-11-21: one a bed block, at most 32 a machine)
+    public const int MaxStack = 4; // Overdrive Units or Feed Buffers that count on one Assembler
 
     /// <summary>The families named by part files, in load order: an index is stable for one load (never saved or sent).</summary>
     public static readonly List<string> Families = [];
@@ -86,7 +92,7 @@ public static class MachineBlocks
         d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "maxSide", "maxCells"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "module", "maxSide", "maxCells"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -95,8 +101,33 @@ public static class MachineBlocks
             "shared" => BlockRole.Shared,
             "end" => BlockRole.End,
             "tier" => BlockRole.Tier,
-            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared, end or tier, not \"{role}\""),
+            "carriage" => BlockRole.Carriage,
+            _ => throw new ConstructPartException($"{file}: \"machineBlock.role\" is core, block, shared, end, tier or carriage, not \"{role}\""),
         };
+        if (d.BlockRole == BlockRole.Carriage)
+        {
+            // An Assembler's Gantry Carriage: counted on the bed blocks it is welded to (Carriages), never a cell of the lattice.
+            d.BlockFamily = 255;
+            d.BlockCell = DefaultCell;
+            return;
+        }
+        if (d.BlockRole == BlockRole.Tier && ConstructParts.Opt(mb, "module") is { } mod)
+        {
+            // An Assembler's upgrade module that is no tier (the Overdrive Unit, the Feed Buffer): on a Core's tier slot, it stacks.
+            d.BlockModule = ConstructParts.Str(mod, file, "machineBlock.module") switch
+            {
+                "overdrive" => 1,
+                "buffer" => 2,
+                var v => throw new ConstructPartException($"{file}: \"machineBlock.module\" is overdrive or buffer, not \"{v}\""),
+            };
+            if (ConstructParts.Opt(mb, "tier") is not null)
+                throw new ConstructPartException($"{file}: a module says \"machineBlock.module\" or \"machineBlock.tier\", not both");
+            if (!d.Sockets.Any(s => s.Kind == SocketKind.Tier))
+                throw new ConstructPartException($"{file}: a module has a socket of kind \"tier\" (its mount on a Core's upgrade slot)");
+            d.BlockFamily = 255;
+            d.BlockCell = DefaultCell;
+            return;
+        }
         if (d.BlockRole == BlockRole.Tier)
         {
             // A tier piece (drawing 21) goes with every family's Core, on its "tier" socket; its own mount is a "tier" socket too.
@@ -439,6 +470,7 @@ public static class MachineBlocks
         grid.Clear();
         var cell = cd.BlockCell;
         var coreRot = c.Parts[core].Rot;
+        var assembler = Families[asm.Family] == "assembler"; // (its masts stand outside the bed, on its rail sides: Sean 2026-11-21)
         var seeded = cd.BlockSeed; // (no Core: the seed is a bed cell itself, and its blocks lie the same way round as it, so one hold spans them: ConstructPads)
         var unrot = Rot24Inverse(coreRot);
         var coreMid = CoreMid(c, core); // (a Core whose looks stand out of its cell names the cell's middle)
@@ -506,7 +538,9 @@ public static class MachineBlocks
                 if (Math.Abs(x) > maxSide || Math.Abs(z) > maxSide || Math.Abs(y) > 127)
                     continue; // (beyond the Core's reach, its "maxSide" either way: not part of this machine)
                 if (y > 0 && d.BlockRole == BlockRole.Block && cd.IsPanelFormer && !cd.IsLaserCutter)
-                    continue; // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
+                    continue;
+                if (y > 0 && d.BlockRole == BlockRole.Block && assembler)
+                    continue; // (a bed block stacked on an Assembler's bed isn't part of it: its masts stand outside the bed, Masts) // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
                 cellCount++;
@@ -524,19 +558,28 @@ public static class MachineBlocks
         if (seeded)
             grid[Mid * GridSide + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
-            if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
+            if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End && !(assembler && c.Parts[queue[k]].D.BlockRole == BlockRole.Shared))
                 for (var sx = 0; sx < steps[2 * k]; sx++)
                     for (var sz = 0; sz < steps[2 * k + 1]; sz++)
                         if (cx[k] + sx <= maxSide && cz[k] + sz <= maxSide) // (clipped at the Core's own reach, as before the grid grew)
                             grid[(cx[k] + sx + Mid) * GridSide + cz[k] + sz + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
-            if (cy[k] > 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
+            if (assembler && c.Parts[queue[k]].D.BlockRole == BlockRole.Shared && cy[k] >= 0 && Math.Abs(cx[k]) <= maxSide && Math.Abs(cz[k]) <= maxSide)
+            {
+                // An Assembler's mast: a column of shared cells standing on the floor beside its bed (bit 7 clear), counted from the bed's layer.
+                ref var g = ref grid[(cx[k] + Mid) * GridSide + cz[k] + Mid];
+                if ((g & 0x80) == 0)
+                    g = (byte)Math.Min(0x7F, Math.Max(g & 0x7F, cy[k] + 1));
+            }
+            else if (cy[k] > 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
             {
                 ref var g = ref grid[(cx[k] + Mid) * GridSide + cz[k] + Mid];
                 g = (byte)((g & 0x80) | Math.Min(0x7F, Math.Max(g & 0x7F, cy[k])));
             }
         LargestRectangle(grid, sum, ref asm, seeded, maxSide, maxCells);
         FindOut(c, ref asm, queue[..count], cx, cz, steps);
+        if (assembler)
+            AssemblerCounts(c, id, ref asm, queue[..count], cx, cz, grid);
         if (asm.W > 0 && Families[asm.Family] == "press")
             ConstructPress.SwingCheck(c, ref asm, id); // (its shells' swing: a fixed part in the way stops it, and the screen names it)
         // Bed cells outside the rectangle idle; each cell's welded faces to its own machine (for the seam boxes).
@@ -579,6 +622,8 @@ public static class MachineBlocks
             var d = c.Parts[o].D;
             if (d.BlockRole != BlockRole.Tier || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
                 continue;
+            if (d.BlockModule != 0 && Families[asm.Family] != "assembler")
+                continue; // (an Overdrive Unit or Feed Buffer works only an Assembler: on another Core it does nothing: its description says so)
             ref readonly var l = ref c.Links[e >> 1];
             var cs = (e & 1) == 0 ? l.SA : l.SB; // (the Core's own socket of the weld: only its tier slots count)
             var socks = c.Parts[core].D.Sockets;
@@ -586,10 +631,62 @@ public static class MachineBlocks
                 continue;
             c.BlockAsmOf[o] = id;
             c.BlockCellOf[o] = Pack(0, 0, 0);
-            asm.TierPieces |= (byte)(1 << d.BlockTier);
+            if (d.BlockModule == 1)
+                asm.Overdrive = (byte)Math.Min(MaxStack, asm.Overdrive + 1);
+            else if (d.BlockModule == 2)
+                asm.Buffers = (byte)Math.Min(MaxStack, asm.Buffers + 1);
+            else
+                asm.TierPieces |= (byte)(1 << d.BlockTier);
         }
         while (asm.Tier < MaxTier && (asm.TierPieces & 1 << (asm.Tier + 1)) != 0)
             asm.Tier++;
+    }
+
+    /// <summary>
+    /// An Assembler's Gantry Carriages (each welded on a block of its bed rectangle; they join its assembly, at most <see cref="MaxCarriages"/>)
+    /// and its masts: at each of the bed's four corners the tallest column of shared cells just outside it (beside the corner cell, or on its
+    /// diagonal), and the machine's the shortest of the four.
+    /// </summary>
+    private static void AssemblerCounts(Construct c, short id, ref CMachineAsm asm, ReadOnlySpan<ushort> cells, ReadOnlySpan<sbyte> cx, ReadOnlySpan<sbyte> cz, ReadOnlySpan<byte> grid)
+    {
+        asm.Carriages = 0;
+        asm.Masts = 0;
+        if (asm.W == 0)
+            return;
+        int x1 = asm.X0 + asm.W - 1, z1 = asm.Z0 + asm.L - 1;
+        for (var k = 1; k < cells.Length; k++)
+        {
+            var i = cells[k];
+            if (c.Parts[i].D.BlockRole != BlockRole.Block || cx[k] < asm.X0 || cx[k] > x1 || cz[k] < asm.Z0 || cz[k] > z1)
+                continue;
+            for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
+            {
+                var o = c.OtherEnd(e);
+                if (c.Parts[o].D.BlockRole != BlockRole.Carriage || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
+                    continue;
+                if (asm.Carriages >= MaxCarriages)
+                {
+                    Caps.Hit("Gantry Carriages on one Assembler", MaxCarriages, asm.Carriages + 1);
+                    continue;
+                }
+                c.BlockAsmOf[o] = id;
+                c.BlockCellOf[o] = Pack(cx[k], 0, cz[k]);
+                asm.Carriages++;
+            }
+        }
+        asm.Masts = (byte)Math.Min(Math.Min(MastBeside(grid, asm.X0, asm.Z0, -1, -1), MastBeside(grid, x1, asm.Z0, 1, -1)), Math.Min(MastBeside(grid, asm.X0, z1, -1, 1), MastBeside(grid, x1, z1, 1, 1)));
+    }
+
+    /// <summary>The tallest column standing outside the bed at corner cell (x, z), beside it along x or z or on its diagonal (<paramref name="dx"/>, <paramref name="dz"/> outwards).</summary>
+    private static int MastBeside(ReadOnlySpan<byte> grid, int x, int z, int dx, int dz) =>
+        Math.Max(Outside(grid, x + dx, z), Math.Max(Outside(grid, x, z + dz), Outside(grid, x + dx, z + dz)));
+
+    private static int Outside(ReadOnlySpan<byte> grid, int x, int z)
+    {
+        if (x < -Mid || x > Mid || z < -Mid || z > Mid)
+            return 0;
+        var g = grid[(x + Mid) * GridSide + z + Mid];
+        return (g & 0x80) != 0 ? 0 : g & 0x7F;
     }
 
     /// <summary>The tier of the machine part <paramref name="part"/> is in (1 with no tier pieces, or not a block machine).</summary>
@@ -716,6 +813,11 @@ public static class MachineBlocks
             }
             Console.WriteLine($"[blocks] {bp.Name}: {c.PartCount} parts, {c.MachineAsmCount} block machines");
             Console.Write(Report(c));
+            for (var m = 0; m < c.MachineAsmCount; m++)
+                if (ConstructAssembling.FitOf(c, c.MachineAsms[m].Core) is { Limited: true } fit)
+                    foreach (var part in (string[])["Bulkhead Light", "Engine", "Ship Battery Bank", "Leg Pod Housing XL"])
+                        if (ConstructParts.Find(part) is { } pd)
+                            Console.WriteLine($"[blocks]   {part}: {fit.Places(pd)} places, {fit.AtOnce(pd)} at once{(fit.AtOnce(pd) == 0 ? ": " + fit.TooBigWhy(pd) : "")}");
         }
         return bad;
     }
@@ -744,6 +846,8 @@ public static class MachineBlocks
             }
             if (asm.Out != ushort.MaxValue)
                 sb.Append($", out table {asm.OutCells} of {(asm.OutSide is 4 or 5 ? asm.W : asm.L)} cells");
+            if (Families[asm.Family] == "assembler" && ConstructAssembling.FitOf(c, asm.Core) is { Limited: true } fit)
+                sb.Append($", {fit.Carriages} arms ({asm.Carriages} Gantry Carriages), masts {asm.Masts} ({fit.Clear:0} m clear), modules {(asm.TierPieces == 0 ? "none" : AsmFit.ModuleWords(asm.TierPieces))}, {asm.Overdrive} Overdrive, {asm.Buffers} Feed Buffer");
             sb.AppendLine();
         }
         return sb.ToString();
