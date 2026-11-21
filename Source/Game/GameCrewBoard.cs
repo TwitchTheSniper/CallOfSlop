@@ -36,8 +36,8 @@ public sealed partial class Game
         {
             if (!p.Alive || p.CrewSlot >= 0 || !Aboard(p, c.Id))
                 continue;
-            if (!BoardFoe(c, s, p) && !(def is { SurrenderAtOnce: true } && BoardGuest(c, p)))
-                continue; // (only those the crew's rules call hostile: never the owner, the owner's faction or a hired crew's employer)
+            if (!BoardFoe(c, s, p) && !(def is { SurrenderAtOnce: true } && !c.IsStation && BoardGuest(c, p)))
+                continue; // (a station's crew, its staff and shoppers, welcomes guests: only a foe boards it, Hexkey Orbital phase 6) // (only those the crew's rules call hostile: never the owner, the owner's faction or a hired crew's employer)
             boarders++;
             if (first == 255)
                 first = p.Id;
@@ -81,7 +81,7 @@ public sealed partial class Game
         }
         if (defenders == 0)
         {
-            if (c.Owner == 255)
+            if (c.Owner == 255 && !c.IsStation)
                 CrewCapture(c, s, first); // (a player's ship is never taken by killing its crew: it stays its owner's)
             return true;
         }
@@ -102,7 +102,7 @@ public sealed partial class Game
         score[(int)BoardAct.Flee] = def.Board[(int)BoardAct.Flee] * (helm && c.StabCount + c.WheelCount > 0 ? 0.8f : 0);
         score[(int)BoardAct.Abandon] = def.Board[(int)BoardAct.Abandon] * (s.Morale < 0.25f ? 1.5f : 0.05f);
         score[(int)BoardAct.Surrender] = def.Board[(int)BoardAct.Surrender] * (s.Morale < def.SurrenderMorale ? 2.5f : 0);
-        score[(int)BoardAct.Scuttle] = def.Scuttle == ScuttleWhen.Never ? 0
+        score[(int)BoardAct.Scuttle] = def.Scuttle == ScuttleWhen.Never || c.IsStation ? 0 // (a station is never scuttled by its crew)
             : def.Board[(int)BoardAct.Scuttle] * (def.Scuttle == ScuttleWhen.Always || desperation > def.ScuttleDesperation ? 2.2f : 0) * (ScuttlePoint(c, s, def) >= 0 && HasEngineer(s) ? 1 : 0);
         var best = BoardAct.Hold;
         for (var k = 0; k < score.Length; k++)

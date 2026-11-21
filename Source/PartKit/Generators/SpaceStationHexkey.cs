@@ -22,6 +22,9 @@ public sealed partial class SpaceStationParts
 {
     public const string HexkeyName = "Hexkey Orbital";
 
+    /// <summary>The staff's seats and the canteen's benches (phase 6): parts the store's crew sits in (their names: Game/GameStoreLife.cs).</summary>
+    public const string StaffSeat = "Seat", CanteenBench = "Waiting Bench 2 m";
+
     // ---- the Nordic palette
     private const string NWhite = "#eceeea", NBirch = "#d6bf96", NAsh = "#b5b9b7", NDeck = "#8e9290", NFelt = "#9fa4a1", NChar = "#2b2e30",
         NPine = "#3e6b5a", NRoute = "#b8643f", NGlassCol = "#c4d8d5", NPad = "#e4e6e2", NDeal = "#d9b45a", NSignWhite = "#f4f4ef";
@@ -392,6 +395,24 @@ public sealed partial class SpaceStationParts
             Detail(c, X(100), HL2 + 2.7, Z(79.65), X(126), HL2 + 3.3, Z(79.7), NPine, Matte);
             Finish(c);
         }
+
+        // ---- phase 6, the store's people: seats for its Traders staff (behind the planning desks, the canteen's counter and the Big-item
+        // pick-up) and the canteen's benches, where its shoppers sit. Real seats: the station's crew takes them (Game/GameStoreLife.cs).
+        void PeopleSeat(string lvl, double px, double pz, string part, int rot, string tag)
+        {
+            var f = FloorAt(lvl, px, pz);
+            Sock(f, tag, X(px), Lvl(lvl), Z(pz), "+y");
+            k.Hangs.Add(new HangSpec((string)f.D["name"]!, tag, part, "bottom", null, null, null, rot));
+        }
+        foreach (var (px, i) in new[] { 56.0, 68.0, 80.0 }.Select((x, i) => (x, i)))
+            PeopleSeat("L2", px, 94.5, StaffSeat, BuildingParts.R0, $"staffDesk{i + 1}"); // (facing north, over the desks)
+        foreach (var (px, i) in new[] { 106.0, 120.0 }.Select((x, i) => (x, i)))
+            PeopleSeat("L2", px, 78.4, StaffSeat, BuildingParts.RY180, $"staffCafe{i + 1}"); // (behind the counter, facing the benches)
+        foreach (var (pz, i) in new[] { 17.0, 27.0 }.Select((z, i) => (z, i)))
+            PeopleSeat("L0", 125.2, pz, StaffSeat, BuildingParts.RY90, $"staffPick{i + 1}"); // (behind the pick-up counter, facing the warehouse)
+        for (var row = 0; row < 2; row++)
+            for (var b = 0; b < 5; b++)
+                PeopleSeat("L2", 103 + b * 5, 85 + row * 4, CanteenBench, BuildingParts.R0, $"bench{row + 1}{b + 1}");
 
         // ---- L1 market hall: nine department aisles of gondolas with end caps, bargain bins on the main street
         for (var a = 0; a < 9; a++)

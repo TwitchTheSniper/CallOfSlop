@@ -1726,6 +1726,112 @@
       "finish": "painted plating"
     },
     {
+      "part": "Seat",
+      "on": 210,
+      "socket": "staffDesk1",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 210,
+      "socket": "staffDesk2",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 211,
+      "socket": "staffDesk3",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 212,
+      "socket": "staffCafe1",
+      "by": "bottom",
+      "spin": 3
+    },
+    {
+      "part": "Seat",
+      "on": 198,
+      "socket": "staffCafe2",
+      "by": "bottom",
+      "spin": 3
+    },
+    {
+      "part": "Seat",
+      "on": 17,
+      "socket": "staffPick1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Seat",
+      "on": 50,
+      "socket": "staffPick2",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench11",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench12",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench13",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 198,
+      "socket": "bench14",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 198,
+      "socket": "bench15",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench21",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench22",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 212,
+      "socket": "bench23",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 198,
+      "socket": "bench24",
+      "by": "bottom"
+    },
+    {
+      "part": "Waiting Bench 2 m",
+      "on": 198,
+      "socket": "bench25",
+      "by": "bottom"
+    },
+    {
       "part": "Docking Clamp Large",
       "on": 55,
       "socket": "haulerN",

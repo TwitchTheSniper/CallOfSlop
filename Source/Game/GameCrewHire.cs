@@ -170,7 +170,7 @@ public sealed partial class Game
         for (var i = 0; i < Crew.ShipHigh; i++)
         {
             if (Crew.Ships[i] is not { Faction: not 0, Own: false, Prize: false, Tier: CrewTier.Bodied } s || CrewPowers.KindOf(s.Faction) is not { CanHire: true } def
-                || CrewStanding(s.Faction, me.Id) < 20 || s.Foe(me.Id) || Constructs.Get(s.Body) is not { } c)
+                || CrewStanding(s.Faction, me.Id) < 20 || s.Foe(me.Id) || Constructs.Get(s.Body) is not { IsStation: false } c) // (a station's staff and shoppers aren't for hire)
                 continue;
             var d = Vector3.Distance(c.WorldCom, me.Position) - c.Radius;
             if (d > bestD)

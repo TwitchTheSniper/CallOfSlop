@@ -232,6 +232,7 @@ public sealed partial class Game
                 continue;
             if (!_storeFills.TryGetValue(st.Id, out var f))
                 _storeFills[st.Id] = f = new StoreFill();
+            StoreLifeStep(st, m, def, lay); // (its people: GameStoreLife.cs)
             if (ServerTick < f.NextAt)
                 continue;
             f.NextAt = ServerTick + StorePassEvery;

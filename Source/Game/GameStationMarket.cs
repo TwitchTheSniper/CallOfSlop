@@ -435,6 +435,7 @@ public sealed partial class Game
     {
         _storeFills.Clear(); // (a store furnishes its bays again in a new world: GameStoreFill.cs)
         StoreShopReset(); // (...its shelves, baskets and trolleys: GameStoreShop.cs)
+        StoreLifeReset(); // (...its people: GameStoreLife.cs)
         StationMarketsHere.Clear();
         var travel = _landing != null; // (a landing keeps the markets: GameSpaceLanding.cs)
         foreach (var m in _marketByDef)

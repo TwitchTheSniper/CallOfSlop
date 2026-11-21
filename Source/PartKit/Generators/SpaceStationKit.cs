@@ -15,7 +15,7 @@ public sealed partial class SpaceStationParts
     public readonly record struct Room(double X0, double N0, double X1, double N1, string Name, char Door);
 
     /// <summary>A part hung on a piece once the structure is placed: a docking clamp, a docking hatch.</summary>
-    private readonly record struct HangSpec(string Piece, string Sock, string Part, string By, PyDict? Config, string? Paint, string? Finish);
+    private readonly record struct HangSpec(string Piece, string Sock, string Part, string By, PyDict? Config, string? Paint, string? Finish, int Rot = BuildingParts.R0);
 
     private sealed class Kit(string prefix, string section)
     {
