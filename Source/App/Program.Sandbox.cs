@@ -181,6 +181,10 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.MouseSteer, body: h.SeatBody); // (the mouse takes the nose or lets it go: ConstructFlight.ToggleMouseSteer)
             if (Pressed(GameAction.SeatGear) && g.Constructs.Get(h.SeatBody) is { } legged && ConstructDoors.HasGear(legged))
                 g.SandboxSend(CActKind.LandingGear, body: h.SeatBody); // (the landing leg pods out or in: ConstructDoors.ToggleGear)
+            if (Pressed(GameAction.SeatReactor) && g.Constructs.Get(h.SeatBody) is { } powered && h.SeatPart == powered.DriveSeat && ConstructShutdown.HasReactor(powered))
+                g.SandboxSend(CActKind.Reactor, body: h.SeatBody); // (every power plant aboard down or up: ConstructShutdown.ToggleReactor)
+            if (Pressed(GameAction.SeatThrusters) && g.Constructs.Get(h.SeatBody) is { } thrust && h.SeatPart == thrust.DriveSeat && ConstructShutdown.HasThrusters(thrust))
+                g.SandboxSend(CActKind.Thrusters, body: h.SeatBody); // (every thruster aboard down or up: ConstructShutdown.ToggleThrusters)
             return true;
         }
         if (_sbSeatKeys > 0)

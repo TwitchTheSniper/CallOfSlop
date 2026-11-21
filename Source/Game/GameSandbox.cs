@@ -117,6 +117,8 @@ public enum CActKind : byte
     Gantry, // u16 body, u16 part, u8 slot, u8 module index: a Shell Gantry fits that module to its shell (protocol 370; GameShellGantry.cs)
     SeamBreak, // u16 body, u16 part, u16 other part: the attach tool's RMB breaks the seam between the two (protocol 373; ConstructSeams.cs)
     ModControl, // u16 body, u16 part, u8 control (1 eject, 2 lock, 3 gun pull on, 4 off), vec point (body frame): a module socket's controls (protocol 394; ModuleGuide.cs)
+    Reactor, // u16 body (the seat's): the seated player shuts that craft's power plants down or starts them (protocol 417; ConstructShutdown.ToggleReactor)
+    Thrusters, // u16 body (the seat's): ...its thrusters (protocol 417; ConstructShutdown.ToggleThrusters)
 }
 
 /// <summary>
@@ -1452,6 +1454,17 @@ public sealed partial class Game
                     return "not in a seat of that craft";
                 return ConstructDoors.ToggleGear(Constructs, craft);
             }
+            case CActKind.Reactor:
+            case CActKind.Thrusters:
+            {
+                var body = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                if (sh.SeatPart != craft.DriveSeat)
+                    return "only the pilot's seat shuts the ship down";
+                return kind == CActKind.Reactor ? ConstructShutdown.ToggleReactor(Constructs, craft) : ConstructShutdown.ToggleThrusters(Constructs, craft);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1631,6 +1644,8 @@ public sealed partial class Game
             case CActKind.Dampeners:
             case CActKind.MouseSteer:
             case CActKind.LandingGear:
+            case CActKind.Reactor:
+            case CActKind.Thrusters:
                 w.U16(body);
                 break;
             case CActKind.SeatKeys:
@@ -2963,6 +2978,10 @@ public sealed partial class Game
                 dst.Add(new HudLine(SandboxKeys.PilotEject, dim));
             if (ConstructFlight.DampenersOff(car) && !SeatPanelShown) // (the panel's lamp says it)
                 dst.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
+            if (ConstructShutdown.ThrustersOff(car))
+                dst.Add(new HudLine(SandboxKeys.ThrustersOff, orange)); // (shut down from the pilot's seat: ConstructShutdown.cs)
+            if (ConstructShutdown.ReactorOff(car))
+                dst.Add(new HudLine(SandboxKeys.ReactorOff, orange));
             if (ConstructFlight.MouseSteerOff(car) && !SeatPanelShown)
                 dst.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
             if (car.StabCount > 0 && !car.CanDrive)

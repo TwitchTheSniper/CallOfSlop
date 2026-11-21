@@ -164,7 +164,7 @@ public static class ConstructPlant
                 continue; // (a Generator Head: after the plants, below)
             var fed = p.Working && c.PlantFed[k] && (d.PlantFuel != EngineFuel.Fuel || c.FuelLeft > 0);
             var wired = p.InCount > 0;
-            var on = fed && (!wired || p.In >= 0.5f);
+            var on = fed && (!wired || p.In >= 0.5f) && !ConstructShutdown.Off(p); // (shut down from a seat or its panel: it spools down)
             var want = on ? Math.Clamp(need / d.PlantRate, 0, 1) : 0f;
             if (on && wired)
                 want = MathF.Max(want, BankedFire);

@@ -17,7 +17,7 @@ public static class SandboxKeys
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
     /// <summary>Single keys, as the seat controls panel shows them (Game/GameSeatControls.cs).</summary>
-    public static string KForward = "W", KBack = "S", KLeft = "A", KRight = "D", KCrouch = "Left Ctrl", KRollLeft = "Q", KRollRight = "E", KHook = "G", KEject = "L", KRadar = "MMB", KDampeners = "Z", KMouseSteer = "M", KGear = "B";
+    public static string KForward = "W", KBack = "S", KLeft = "A", KRight = "D", KCrouch = "Left Ctrl", KRollLeft = "Q", KRollRight = "E", KHook = "G", KEject = "L", KRadar = "MMB", KDampeners = "Z", KMouseSteer = "M", KGear = "B", KReactor = "P", KThrusters = "I";
 
     /// <summary>The key an input reader's key name stands for (ConstructParts.ReaderKeys).</summary>
     public static string ReaderKey(string name) => name switch
@@ -26,7 +26,7 @@ public static class SandboxKeys
     };
 
     /// <summary>The key lines a seat shows.</summary>
-    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", DampenersOff = "", DampenersHeld = "", MouseSteerOff = "", GearLower = "", GearRaise = "", Gunner = "", GunnerTurrets = "", GetOut = "";
+    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", DampenersOff = "", DampenersHeld = "", ThrustersOff = "", ReactorOff = "", MouseSteerOff = "", GearLower = "", GearRaise = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The pilot's key lines on a rail or in a dock, and an ejection seat's (ConstructCarrier.Hint).</summary>
     public static string EvaDock = "", EvaFly = "", PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
@@ -87,7 +87,7 @@ public static class SandboxKeys
             GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
             GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt",
             GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SeatRollLeft => "Q", GameAction.SeatRollRight => "E", GameAction.SnapSwitch => "K",
-            GameAction.SeatHook => "G", GameAction.SeatEject => "L", GameAction.SeatRadar => "MMB", GameAction.SeatDampeners => "Z", GameAction.SeatMouseSteer => "M", GameAction.SeatGear => "B", _ => "?",
+            GameAction.SeatHook => "G", GameAction.SeatEject => "L", GameAction.SeatRadar => "MMB", GameAction.SeatDampeners => "Z", GameAction.SeatMouseSteer => "M", GameAction.SeatGear => "B", GameAction.SeatReactor => "P", GameAction.SeatThrusters => "I", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -120,6 +120,10 @@ public static class SandboxKeys
         KDampeners = K(GameAction.SeatDampeners);
         KMouseSteer = K(GameAction.SeatMouseSteer);
         KGear = K(GameAction.SeatGear);
+        KReactor = K(GameAction.SeatReactor);
+        KThrusters = K(GameAction.SeatThrusters);
+        ThrustersOff = $"THRUSTERS SHUT DOWN: nothing burns - {KThrusters}: start them";
+        ReactorOff = $"REACTOR SHUT DOWN: running on the batteries - {KReactor}: start it";
         BuildMirror = K(GameAction.BuildMirror);
         BuildLine = K(GameAction.BuildLine);
         BuildReplace = K(GameAction.BuildReplace);
