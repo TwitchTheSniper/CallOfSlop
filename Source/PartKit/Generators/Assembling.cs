@@ -511,9 +511,6 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
         ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
         (null, null, Rec("Construction Shell", 120, 2, m: [("steel", 220), ("copper", 30), ("rubber", 16)], p: [("Circuit Board", 6)])), // (docs/sandbox/design/construction-shell.md)
-        // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
-        (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
-        (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
         // (the in-wall bays, Karl 2026-11-20: frames, inserts, pull-outs, ship systems' wear parts and consumables, the hull airlock;
         // WallBayParts.cs, in the folder's file order of 2026-11-20)
         ("WallBays", "Actuator Spares Rack", null),
@@ -745,6 +742,8 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the Laser Cutter on the block system, Sean 2026-11-21: its Laser Bed Block, its share of the bridge and a head; the Core keeps the Laser Cutter's row)
+        (null, null, Rec("Laser Bed Block", 90, 1, m: [("steel", 480), ("rubber", 60), ("copper", 20)], p: [("Wiring Loom", 1), ("Gear Set", 1)])),
     ];
 
     /// <summary>

@@ -369,13 +369,13 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(plate, "Piece out", split, "Piece in", Cutter);
             var cutter = On("Laser Cutter", 75.25f, line, Flow); // (2 m of conveyor each side: a conveyor shorter than the piece jams the Router, "the conveyor after the junction is full")
             Convey(split, "Piece out", cutter, "Piece in", Cutter);
-            var spare = On("Piece Rack", 72.25f, -18.25f, Flow, "-y.0.0", Cutter);
+            var spare = On("Piece Rack", 66.75f, -18.75f, Flow, "-y.0.0", Cutter); // (west of the cutter's bed)
             var o2 = PortAt(split, "Piece out 2");
             var sIn = PortAt(spare, "Piece in");
             Convey(split, "Piece out 2", spare, "Piece in", Cutter, null, V(o2.X, o2.Y, sIn.Z));
-            var cut = On("Piece Rack", 78.75f, -15.75f, Flow, "-y.0.0", Cutter);
-            Convey(cutter, "Piece out", cut, "Piece in", Cutter);
-            Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; blank in, cut part out", false);
+            var bed = Onto(cutter, "+x", "Laser Bed Block", by: "-x", spin: 0); // (the block system, Sean 2026-11-21: a 1 x 2 bed beside the Core's long side; the cut part lies on it)
+            Onto(bed, "+z", "Laser Bed Block", by: "-z", spin: 0);
+            Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; it lies cut on the bed", false);
 
             var k = 0;
             foreach (var m in new[] { wing, plate, cutter }) // (west to east: no cable crosses another)

@@ -434,7 +434,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear }
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Bridge, Head, Beam } // (Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -725,6 +725,7 @@ public sealed partial class ConstructPartDef
     public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
     public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
+    public bool BlockCoreSeams = true; // ...a Core: a cell's seam boxes on a face welded to it are hidden ("coreSeams": false keeps them)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
     public bool BlockFace; // ...its cells stand in its x-y face, not on its x-z bed ("plane": "face": an Extruder's Die Blocks beside its Core)
     public float ExtRunOut; // a Run-out Table ("runOut": metres): under an Extruder's die (its Core's or a Die Block's out bed, or another table), it takes the longest piece out to its far end
@@ -750,7 +751,8 @@ public sealed partial class ConstructPartDef
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
     public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
-    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
+    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's: one head's on a Core) and the tallest blank its bed takes (m)
+    public int CutBin, CutBinBlock; // ...its offcut bin: its own and each Bed Block's share (ConstructLaserCutterBed.cs)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -1681,7 +1683,8 @@ public static partial class ConstructParts
                 var kind = Str(wk, file, where + ".work") switch
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\" or \"shear\""),
+                    "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"bridge\", \"head\" or \"beam\""),
                 };
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
