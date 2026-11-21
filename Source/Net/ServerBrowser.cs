@@ -702,7 +702,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   CfgKey Shutdown in the unused Blade4's slot (the enum is full), a new setting on every power plant and thruster (ConstructShutdown.cs).
     // 419: the kill frenzy removed (Karl, 2026-11-21): snapshot slow entries lose the frenzy level and class (Snapshot.SlowBytes 20 -> 18),
     //   and the lobby state's frenzy-buffs flag (16) is no longer sent.
-    public const ushort ProtocolVersion = 419;
+    // 420: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
+    //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
+    public const ushort ProtocolVersion = 420;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

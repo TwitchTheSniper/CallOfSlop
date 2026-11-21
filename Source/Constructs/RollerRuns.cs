@@ -242,7 +242,8 @@ public static class RollerRuns
                 }
                 // A Run-out Table: the run is its Extruder's Piece out, so a cut piece rides from the die along the tables onto the run, whole
                 // (ConstructConveyor.HandOff), with no crane or arm between them.
-                if (wantOut && od.ExtRunOut > 0 && ConstructExtruder.TableMachine(c, o) is var ex and >= 0 && PortByte(c.DefOf(ex), "Piece out") is var xp and >= 0)
+                if (wantOut && od.ExtRunOut > 0 && ConstructExtruder.TableMachine(c, o) is var ex and >= 0 && PortByte(c.DefOf(ex), "Piece out") is var xp and >= 0
+                    && !PlayerOut(c, ex)) // (a conveyor a player linked from its Piece out keeps it: the run starts at its own first tile)
                 {
                     (part, port) = (ex, (byte)xp);
                     return true;
@@ -258,6 +259,15 @@ public static class RollerRuns
             }
         }
         return part >= 0;
+    }
+
+    /// <summary>Does a conveyor other than a Roller Tile run leave part <paramref name="part"/> (one a player linked)? ConstructConveyor.Out takes one link.</summary>
+    private static bool PlayerOut(Construct c, int part)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == part && !IsRun(c, k))
+                return true;
+        return false;
     }
 
     /// <summary>A conveyor port's byte by its name (the first is 255, the part itself), or -1.</summary>

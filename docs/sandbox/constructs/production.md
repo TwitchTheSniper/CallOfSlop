@@ -151,7 +151,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   die, so each cut piece is handed off whole (`ConstructConveyor.HandOff`) and rides from the die over the tables and on along the run. Butt
   the run's out end on a Panel Former's or a Laser Cutter's back (their Cores' `-z` socket, on the Piece in) and a sheet goes into the
   former's bin, a blank onto the cutter's bed. Tried headless (2026-11-21): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
-  tiles, into a Panel Former's bin. Not tried: a joined client's view of the ride, a die wider than one table.
+  tiles, into a Panel Former's bin. A conveyor a player linked from the Extruder's Piece out keeps it, and the run then starts at its own first tile. Not tried: a joined client's view of the ride, a die wider than one table.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
   Former's sheet link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`), then, for a Panel
   Former's sheet, strips. The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
