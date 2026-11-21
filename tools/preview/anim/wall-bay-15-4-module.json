@@ -1,6 +1,6 @@
 {
   // In-wall bay (WallBayParts.cs): the cover flips up, then a heavy sled runs out with a coolant module.
-  "blueprint": "Wall Bay 1.5m Module Sled",
+  "blueprint": "blueprints/wall-bays/WallBay15mModule.json",
   "title": "1.5 m bay: module sled",
   "shelf": "In-wall bays 1.5 m",
   "description": "The cover flips up, then a heavy sled runs out 1.45 m with a coolant exchanger module as long as the bay on it: fins, headers, a fan on top, its pipes to the bay's plug.",

@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1.5m Reactor Fuel (fitted)",
+  "description": "The Wall Bay 1.5m Reactor Fuel module fitted in a Wall Bay Socket 1.5m.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket 1.5m",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "Reactor Fuel Insert 1.5m",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 2,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Fuel Rod Drawer 1.5m",
+      "on": 2,
+      "socket": "supply",
+      "by": "hang"
+    },
+    {
+      "part": "Control Rod Cassette 1.5m",
+      "on": 2,
+      "socket": "wear",
+      "by": "hang"
+    }
+  ]
+}

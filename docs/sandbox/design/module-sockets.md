@@ -788,6 +788,8 @@ F fitted the dock's module onto the ship (carry 5 s, weld 48 s, merged), F again
 stand (weld 48 s), and a ship moved 1 m mid-weld stopped the job. Not tried: a joined client's view, a ship in flight at a moving
 station, and a fitter whose reach takes in a socket but not a module on another dock.
 
+**Hide connector and in-wall bays (2026-11-21, Sean, protocol 390).** A Module Socket has a **Hide connector** toggle (`CfgKey.ModHide`, after every older setting): on, the plate and the plug of a module fitted to it aren't drawn (`ModuleSockets.HiddenLook`; the renderer walks them and draws nothing), though they still hold, collide and take hits, so a player can make a clean decorative flush mount. A plate file can leave the setting out with `"moduleSocket": {"hide": false}` (the Wall Bay Socket, which is a whole wall section). The in-wall bays now use the standard: their wall base is a 1x2 Module Socket and each fill a 1x2 module (storage-and-cargo.md "In-wall bays"). Sockets were already placed anywhere on a craft by the welder's socket weld (a plate's back socket onto any socket or any point of a flat face).
+
 **Phase 5 (faction choice and generators): partly built** (builder, 2026-11-20). Each faction file may carry a `"modules"` block
 (9.1: `tags` by the table's tag names, `stats` speed, power, fuel, mass, cost, `needs` accel, powerMargin, minGuns, `pick`), read by
 `ModuleWants.Parse` into `NpcFactionDef.Modules`; Militia, Raiders, Traders, Salvagers and Mercenaries have one (Player Crew and

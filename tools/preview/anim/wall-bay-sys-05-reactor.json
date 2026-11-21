@@ -1,6 +1,6 @@
 {
   // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
-  "blueprint": "Wall Bay 1.5m Reactor Fuel",
+  "blueprint": "blueprints/wall-bays/WallBay15mReactor.json",
   "title": "Reactor fuel and control rods (1.5 m bay)",
   "shelf": "In-wall ship systems",
   "description": "Power. The consumable: twist the handle and the shielded drawer runs out with fuel rods in two rows, their tips green, one red and spent. The part that wears: the control rod cassette, which runs 1.4 m out with six rods between their end plates. The bars over them show its wear and its supply.",

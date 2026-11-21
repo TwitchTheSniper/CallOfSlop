@@ -2,17 +2,16 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Desk",
   "group": "In-wall bays",
-  "description": "An in-wall bay with a desk that flips down from the wall.",
+  "description": "An in-wall bay with a desk that flips down from the wall. A 1x2 module: fit it with F to a Wall Bay Socket.",
   "steps": [
     {
-      "part": "Wall Bay",
-      "spin": 2
+      "part": "Module Plug 1x2"
     },
     {
       "part": "Desk Insert",
       "on": 0,
-      "socket": "insert",
-      "by": "bay"
+      "socket": "tc",
+      "by": "plug"
     },
     {
       "part": "Fold-down Desk",
@@ -20,5 +19,13 @@
       "socket": "desk",
       "by": "hang"
     }
-  ]
+  ],
+  "module": {
+    "w": 1,
+    "l": 2,
+    "primary": "utility",
+    "tags": [
+      "utility"
+    ]
+  }
 }

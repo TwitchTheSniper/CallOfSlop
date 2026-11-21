@@ -1,6 +1,6 @@
 {
   // In-wall ship system (WallBayParts.Systems.cs): twist the handle, the consumable's drawer runs out; then the cassette with the part that wears.
-  "blueprint": "Wall Bay Flight Computer",
+  "blueprint": "blueprints/wall-bays/WallBayComputer.json",
   "title": "Flight computer (0.5 m bay)",
   "shelf": "In-wall ship systems",
   "description": "Computing. The drawer: twist the handle and it runs out with spare memory modules standing in foam and bagged cards on a shelf. The part that wears: the card cage, which runs out with nine cards in their guide and its fan behind them. The bars over them show its wear and its supply.",
