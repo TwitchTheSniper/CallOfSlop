@@ -235,7 +235,7 @@ public sealed partial class Game
             if (gs.Ammo[f.Feed] > 0 || gs.ReloadUntil[f.Feed] > 0)
                 continue;
             gs.ReloadStarted[f.Feed] = now;
-            gs.ReloadUntil[f.Feed] = now + f.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks) * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.Reload);
+            gs.ReloadUntil[f.Feed] = now + f.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks);
         }
     }
 

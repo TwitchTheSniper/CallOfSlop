@@ -920,7 +920,7 @@ zombie, through walls (`Game.MarksZombies`, `TacticalHud.cs`; client side, no ne
 that tier instead, so heat and a 5x bet can't pull a legendary before round 20.
 
 **Balance.** No PvP mode uses builds: they exist in Zombies and the Workbench Range only, where they meet players only
-through friendly fire (ZOMBIES-MODE.md); the Frenzy buffs are untouched. The mystery box bands per trigger pull and DPS
+through friendly fire (ZOMBIES-MODE.md). The mystery box bands per trigger pull and DPS
 were raised for the late tiers (epic 1500 / 3000, legendary 3000 / 8000, wonder 5000 / 12000); the Rail Battery is 1188
 a pull now (six 150-damage Railspikes) and the Minigun 1240 DPS (Hellwheel x1.2). A jetpack-hop stock was considered and
 left out: a jump boost needs the movement state on the wire (it would be a protocol change); the Jetpack Stock speeds

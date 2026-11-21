@@ -325,20 +325,19 @@ public sealed partial class Game
             SetBots(count, skill);
     }
 
-    /// <summary>Host, in the lobby: the other settings (score limit, time limit, auto-start, return to lobby, frenzy buffs).</summary>
-    public void LobbySetOptions(ScoreLimitMode scoreLimit, int matchMinutes, int autoStartSeconds, bool returnToLobby, bool frenzyBuffs)
+    /// <summary>Host, in the lobby: the other settings (score limit, time limit, auto-start, return to lobby).</summary>
+    public void LobbySetOptions(ScoreLimitMode scoreLimit, int matchMinutes, int autoStartSeconds, bool returnToLobby)
     {
         if (!IsServer)
             return;
         var changed = scoreLimit != ScoreLimitMode || Math.Clamp(matchMinutes, 1, 60) != MatchMinutes || autoStartSeconds != AutoStartSeconds
-                      || returnToLobby != ReturnToLobby || frenzyBuffs != FrenzyBuffsEnabled;
+                      || returnToLobby != ReturnToLobby;
         if (!changed)
             return;
         ScoreLimitMode = scoreLimit;
         MatchMinutes = matchMinutes;
         AutoStartSeconds = Math.Clamp(autoStartSeconds, 0, 300);
         ReturnToLobby = returnToLobby;
-        FrenzyBuffsEnabled = frenzyBuffs;
         UpdateScoreLimit();
         MarkLobbyDirty();
     }
@@ -412,7 +411,7 @@ public sealed partial class Game
     private const byte LobbyZFlagSurvival = 4; // (protocol 127; the second Zombies byte's other bits: test kit, dev ammo)
     private const int LobbyZDeathShift = 3; // (protocol 207: survival's death rule in bits 3-4, keep the backpack in bit 5; GameSandboxDeath.cs)
 
-    private const byte LobbyFlagOpen = 1, LobbyFlagForced = 2, LobbyFlagReturn = 4, LobbyFlagTrueRandom = 8, LobbyFlagFrenzy = 16,
+    private const byte LobbyFlagOpen = 1, LobbyFlagForced = 2, LobbyFlagReturn = 4, LobbyFlagTrueRandom = 8, // (16 was the frenzy buffs, removed)
         LobbyFlagDestruction = 32, LobbyFlagVoice = 64, LobbyFlagDeadChat = 128; // (protocol 52)
 
     /// <summary>
@@ -423,7 +422,7 @@ public sealed partial class Game
     public void WriteLobbyState(PacketWriter w)
     {
         var flags = (byte)((InLobby ? LobbyFlagOpen : 0) | (LobbyForced ? LobbyFlagForced : 0) | (ReturnToLobby ? LobbyFlagReturn : 0)
-                           | (TrueRandom ? LobbyFlagTrueRandom : 0) | (FrenzyBuffsEnabled ? LobbyFlagFrenzy : 0)
+                           | (TrueRandom ? LobbyFlagTrueRandom : 0)
                            | (DestructionEnabled ? LobbyFlagDestruction : 0) | (VoiceAllowed ? LobbyFlagVoice : 0) | (DeadChatPrivate ? LobbyFlagDeadChat : 0));
         w.Begin(Msg.LobbyState).U16(LobbyVersion).U8(flags).Str(World.Map.Name).U32(World.Map.ContentHash)
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
@@ -509,7 +508,6 @@ public sealed partial class Game
         LobbyForced = (flags & LobbyFlagForced) != 0;
         ReturnToLobby = (flags & LobbyFlagReturn) != 0;
         TrueRandom = (flags & LobbyFlagTrueRandom) != 0;
-        FrenzyBuffsEnabled = (flags & LobbyFlagFrenzy) != 0;
         DestructionEnabled = (flags & LobbyFlagDestruction) != 0; // (shown in the lobby; the server decides what breaks)
         DeadChatPrivate = (flags & LobbyFlagDeadChat) != 0; // (shown; the server routes the chat)
         BotGearMode = Enum.IsDefined(gear) ? gear : BotGearMode.MatchPlayers; // (shown; the server draws the loadouts)

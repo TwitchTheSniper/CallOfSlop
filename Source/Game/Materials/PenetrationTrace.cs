@@ -351,7 +351,7 @@ public sealed class PenetrationTrace
             var side = Vector3.Normalize(Vector3.Cross(normal, MathF.Abs(normal.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
             var up = Vector3.Cross(normal, side);
             var vel = normal * (metal ? 4f : 1.6f) + side * r1 * 2f + up * r2 * 2f;
-            FrenzyParticles.Spark(at + normal * 0.02f, vel, color, metal ? 0.015f : 0.03f, metal ? 0.25f : 0.45f, metal ? 9f : 2f, metal ? 1.5f : 3f, metal ? 0.035f : 0.01f, metal ? 1f : 0.7f);
+            Sparks.Spark(at + normal * 0.02f, vel, color, metal ? 0.015f : 0.03f, metal ? 0.25f : 0.45f, metal ? 9f : 2f, metal ? 1.5f : 3f, metal ? 0.035f : 0.01f, metal ? 1f : 0.7f);
         }
     }
 }

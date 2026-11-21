@@ -57,7 +57,6 @@ public static partial class SelfTest
         if (z.Downed) l.Add("downed");
         if (!inZombies && z.Slots.Any(s => s != null)) l.Add("zombies slot builds");
         if (p.Streak.Count != 0 || p.Streak.Ready != 0 || p.Streak.Armor != 0) l.Add("streaks");
-        if (p.FrenzyLevel != 0) l.Add("frenzy");
         if (!inZombies && (p.Primary != p.MpPrimary || p.Secondary != p.MpSecondary)) l.Add("loadout not restored");
         return l;
     }
@@ -89,7 +88,6 @@ public static partial class SelfTest
         }
         sp.Streak.Count = 3;
         sp.Streak.Ready = 1;
-        sp.FrenzyLevel = 3;
     }
 
     private static void MsrRun(Map yard, Map tdm, Map zmap)
@@ -163,7 +161,6 @@ public static partial class SelfTest
         // the loadout they chose (restored over a mode's gear by ResetForMatch) and what hangs off it
         "Primary", "Secondary", "Weapon", "PrimaryKit", "SecondaryKit", "Perks", "WantPrimary", "WantSecondary", "WantPrimaryKit", "WantSecondaryKit",
         "WantPerks", "MpPrimary", "MpSecondary", "MpPrimaryKit", "MpSecondaryKit", "Grenade", "Equipment", "WantGrenade", "WantEquipment",
-        "FrenzyBuffsOn",
         // free travel: the planetoid they are away on, on another game (GameTravel.cs); a new match on the host's map doesn't bring them back
         "AwayOn",
         // per life: the spawn sets them again

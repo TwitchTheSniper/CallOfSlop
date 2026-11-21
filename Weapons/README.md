@@ -1,6 +1,6 @@
 # Making weapons for Call of Slop
 
-Every weapon is a single `.json` file in this folder. The 58 weapons that ship with the game (50 guns and 8 launchers) are ordinary weapon files too, sorted into one subfolder per class (`Pistols/`, `SMGs/`, `AssaultRifles/`, ..., `Launchers/`). Open any of them to see a real one. Subfolders are only for tidiness: the game reads every `*.json` under `Weapons/`, however deep. The one exception is `Weapons/Frenzy/`: `classes.json` there holds the kill frenzy's per-class character and buffs (see the main README), not a weapon.
+Every weapon is a single `.json` file in this folder. The 58 weapons that ship with the game (50 guns and 8 launchers) are ordinary weapon files too, sorted into one subfolder per class (`Pistols/`, `SMGs/`, `AssaultRifles/`, ..., `Launchers/`). Open any of them to see a real one. Subfolders are only for tidiness: the game reads every `*.json` under `Weapons/`, however deep.
 
 To add a weapon, drop its file in here (or in a subfolder such as `Weapons/MyPack/`) and restart the game. Nothing needs recompiling. The gun's 3D model and its gunshot, reload and equip sounds are generated from its stats, so a file is all a weapon needs.
 

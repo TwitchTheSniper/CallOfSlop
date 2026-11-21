@@ -5,15 +5,12 @@ using static Brutal.OpenGlApi.OpenGl;
 namespace CallOfSlop;
 
 /// <summary>
-/// Draws the frenzy visuals (<see cref="FrenzyFx"/>): one unit cube instanced per streak (sparks, trails, weapon glows),
-/// each stretched along its own axis in the vertex shader, unlit and additive (glow adds light, never darkens, needs no
-/// sorting), depth-tested but not depth-written. Two passes per frame, each one glDrawArraysInstanced from a streamed
-/// buffer (orphaned each upload, no stall): the world pass (particles + other players' gun glow) and the viewmodel pass
-/// (your gun, camera space). GPU time of both from timestamp queries (<see cref="GpuStampRing"/>), CPU time from
-/// <see cref="FrenzyFx.TakeCpuMs"/>; a "[frenzyfx]" log line every few seconds while anything is drawn.
-/// Any setup failure turns it off cleanly (the tracers still take the class colours).
+/// Draws the spark pool (<see cref="Sparks"/>: welding and cutting sparks, ricochets, launcher motors): one unit cube
+/// instanced per streak, each stretched along its own axis in the vertex shader, unlit and additive (glow adds light,
+/// never darkens, needs no sorting), depth-tested but not depth-written. One glDrawArraysInstanced a frame from a
+/// streamed buffer (orphaned each upload, no stall). Any setup failure turns it off cleanly.
 /// </summary>
-public sealed unsafe class FrenzyFxRenderer
+public sealed unsafe class SparkRenderer
 {
     private const string VertexSrc = """
         #version 410 core
@@ -58,109 +55,25 @@ public sealed unsafe class FrenzyFxRenderer
         }
         """;
 
-    /// <summary>Instances per pass at most: the particle pool plus the per-frame glows of a full lobby.</summary>
-    public const int MaxInstances = FrenzyParticles.Capacity + 256;
-
-    public const double LogInterval = 5;
-
     private bool _ready, _broken;
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _cubeVbo, _instVbo;
     private int _locViewProj, _locCam;
-    private readonly float[] _data = new float[MaxInstances * FrenzyParticles.FloatsPerInstance];
-    private GpuStampRing? _timer;
-    private const int QueryRing = 4, PassWorld = 0, PassView = 1;
-    private bool _framed, _viewDone;
-
-    /// <summary>Averages over a window of frames (the log line, and one the smoke test resets and reads).</summary>
-    public struct Stats
-    {
-        public double Start;
-        public int Frames, GpuSamples;
-        public long WorldInstances, ViewInstances, Draws;
-        public double CpuMs, GpuMs;
-
-        public readonly double AvgWorld => Frames > 0 ? (double)WorldInstances / Frames : 0;
-        public readonly double AvgView => Frames > 0 ? (double)ViewInstances / Frames : 0;
-        public readonly double AvgDraws => Frames > 0 ? (double)Draws / Frames : 0;
-        public readonly double AvgCpuMs => Frames > 0 ? CpuMs / Frames : 0;
-
-        /// <summary>GPU ms per frame (both passes), -1 when the timer gave nothing.</summary>
-        public readonly double AvgGpuMs => GpuSamples > 0 ? GpuMs / GpuSamples : -1;
-    }
-
-    private Stats _log;
-    private double _gpuFrameMs;
-
-    /// <summary>Stats since the last <see cref="ResetWindow"/>.</summary>
-    public Stats Window;
-
-    public void ResetWindow(double now) => Window = new Stats { Start = now };
-
-    /// <summary>Is the renderer up (false: never set up yet, or turned off after a failure)?</summary>
-    public bool Ready => _ready;
+    private readonly float[] _data = new float[Sparks.Capacity * Sparks.FloatsPerInstance];
 
     /// <summary>
-    /// The world pass, after the opaque scene and the tracers, with the world camera set on <paramref name="gfx"/>:
-    /// builds the instances (<see cref="FrenzyFx.BuildWorld"/>) and draws them. Starts this frame's GPU timing.
+    /// Once per frame, after the opaque scene and the tracers, with the world camera set on <paramref name="gfx"/>:
+    /// steps the pool by <paramref name="dt"/> and draws what is alive.
     /// </summary>
-    public void DrawWorld(Renderer gfx, Game game, double now)
+    public void DrawWorld(Renderer gfx, float dt)
     {
-        if (_broken || (!_ready && !Init()))
+        Sparks.Update(dt);
+        if (Sparks.Count == 0 || _broken || (!_ready && !Init()))
             return;
-        _timer?.BeginFrame();
-        _framed = true;
-        _viewDone = false;
-        FrenzyFx.Camera = gfx.CameraPosition;
-        var n = FrenzyFx.BuildWorld(game, now, _data);
-        _log.WorldInstances += n;
-        Window.WorldInstances += n;
+        var n = Sparks.Write(_data, 0, Sparks.Capacity);
         if (n > 0)
             Pass(gfx, gfx.ViewProj, gfx.CameraPosition, n);
-        _timer?.EndPass(PassWorld);
-    }
-
-    /// <summary>
-    /// The viewmodel pass (after the gun is drawn): your gun's glow, in camera space with the viewmodel projection
-    /// <paramref name="vmProj"/>. Ends this frame's timing and stats.
-    /// </summary>
-    public void DrawViewModel(Renderer gfx, WeaponDef def, in Matrix4x4 gunPose, in Matrix4x4 vmProj, double now)
-    {
-        if (!_ready || !_framed || _viewDone)
-            return;
-        _viewDone = true;
-        var n = FrenzyFx.BuildViewModel(def, gunPose, now, _data);
-        _log.ViewInstances += n;
-        Window.ViewInstances += n;
-        if (n > 0)
-            Pass(gfx, Renderer.GpuProjection(vmProj), Vector3.Zero, n); // (the depth convention the gun was drawn in)
-        _timer?.EndPass(PassView);
-    }
-
-    /// <summary>Closes the frame (call once per rendered frame, after both passes or when there was no viewmodel).</summary>
-    public void EndFrame(double now)
-    {
-        if (!_ready || !_framed)
-            return;
-        _framed = false;
-        if (!_viewDone)
-            _timer?.EndPass(PassView); // no viewmodel this frame: an empty pass, so each frame gives one sample
-        _timer?.EndFrame();
-        var cpu = FrenzyFx.TakeCpuMs();
-        _log.CpuMs += cpu;
-        Window.CpuMs += cpu;
-        _log.Frames++;
-        Window.Frames++;
-        if (_log.Start <= 0)
-            _log.Start = now;
-        if (now - _log.Start >= LogInterval)
-        {
-            if (_log.WorldInstances + _log.ViewInstances > 0)
-                Console.WriteLine($"[frenzyfx] {_log.AvgWorld:0} world + {_log.AvgView:0} viewmodel streaks/frame in {_log.AvgDraws:0.0} draw calls, "
-                    + $"{FrenzyParticles.Count} particles live, mode {FrenzyFx.Mode}, CPU {_log.AvgCpuMs:0.000} ms, GPU {(_log.AvgGpuMs >= 0 ? $"{_log.AvgGpuMs:0.000} ms" : "n/a")}");
-            _log = new Stats { Start = now };
-        }
     }
 
     private void Pass(Renderer gfx, in Matrix4x4 viewProj, Vector3 cam, int n)
@@ -173,7 +86,7 @@ public sealed unsafe class FrenzyFxRenderer
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
         Native.glBufferData(GL_ARRAY_BUFFER, _data.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on last frame's copy
         fixed (float* p = _data)
-            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, n * FrenzyParticles.FloatsPerInstance * sizeof(float), p);
+            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, n * Sparks.FloatsPerInstance * sizeof(float), p);
         Enable(GlCapability.Blend);
         BlendFunc(GL_ONE, GL_ONE);
         DepthMask(false);
@@ -182,23 +95,7 @@ public sealed unsafe class FrenzyFxRenderer
         DepthMask(true);
         Renderer.BlendDefault();
         Native.glDisable(GlCapability.Blend);
-        _log.Draws++;
-        Window.Draws++;
         gfx.Rebind();
-    }
-
-    private void OnGpuSample(int pass, double ms)
-    {
-        // Both passes of a frame make one sample (the viewmodel pass is always stamped, empty when there was none).
-        _gpuFrameMs += ms;
-        if (pass == PassView)
-        {
-            _log.GpuMs += _gpuFrameMs;
-            _log.GpuSamples++;
-            Window.GpuMs += _gpuFrameMs;
-            Window.GpuSamples++;
-            _gpuFrameMs = 0;
-        }
     }
 
     private bool Init()
@@ -211,7 +108,7 @@ public sealed unsafe class FrenzyFxRenderer
             Native.glAttachShader(_program, vs);
             Native.glAttachShader(_program, fs);
             Native.glLinkProgram(_program);
-            GlDebug.Label(GL_PROGRAM, _program.Id, "FrenzyFxRenderer");
+            GlDebug.Label(GL_PROGRAM, _program.Id, "SparkRenderer");
             int linked;
             Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -242,26 +139,22 @@ public sealed unsafe class FrenzyFxRenderer
             _instVbo = GenBuffer();
             Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
             Native.glBufferData(GL_ARRAY_BUFFER, _data.Length * sizeof(float), null, GL_STREAM_DRAW);
-            const int stride = FrenzyParticles.FloatsPerInstance * sizeof(float);
+            const int stride = Sparks.FloatsPerInstance * sizeof(float);
             for (uint a = 0; a < 3; a++)
             {
                 Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, stride, (void*)(a * 4 * sizeof(float)));
                 EnableVertexAttribArray(2 + a);
                 Native.glVertexAttribDivisor(2 + a, 1);
             }
-            if (GlGpuStamps.Create(GpuStampRing.QueryCount(2, QueryRing)) is { } stamps)
-                _timer = new GpuStampRing(2, QueryRing, stamps, OnGpuSample);
             var err = GlDebug.Error();
             if (err != 0)
-                Console.WriteLine($"[frenzyfx] GL error 0x{err:X} while setting up (continuing)");
-            FrenzyLooks.Load();
-            Console.WriteLine($"[frenzyfx] renderer ready: {MaxInstances} streaks per pass, looks {FrenzyLooks.Source}, GPU timer {(_timer != null ? "on (timestamps)" : "unavailable")}");
+                Console.WriteLine($"[sparks] GL error 0x{err:X} while setting up (continuing)");
             _ready = true;
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[frenzyfx] disabled, could not set up the renderer: {ex.Message}");
+            Console.WriteLine($"[sparks] disabled, could not set up the renderer: {ex.Message}");
             _broken = true;
             return false;
         }

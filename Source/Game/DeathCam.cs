@@ -424,7 +424,6 @@ public sealed partial class Game
         _deathCamStreaks[kill.Victim] = 0;
         Ragdolls.NoteKill(kill, Brutal.GlfwApi.Glfw.Time); // the victim's body falls the way this kill pushed it (Source/Render/Ragdolls.cs)
         NoteLocalKill(kill); // the killer's "KILLED Ash" notice (KillNotices.cs)
-        NoteFrenzyKill(kill); // the kill-frenzy music's feed (FrenzyFeed.cs)
         ScavengeLocal(kill, Brutal.GlfwApi.Glfw.Time); // Scavenger: your own grenade count (PerksMore.cs)
         if (kill.Victim != LocalId)
             return;

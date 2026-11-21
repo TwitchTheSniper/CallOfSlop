@@ -213,7 +213,6 @@ public sealed partial class Game
                 BlastFx(pos, radius, MathF.Min(1f, 0.55f + def.Damage / 300f), owner, now);
                 Ragdolls.Blast(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def), now); // corpses fly (Source/Render/Ragdolls.cs)
                 PropDebris.Push(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def)); // and loose debris
-                FrenzyFx.OnLauncherBlast(this, shooter, pos, radius, now); // a frenzied launcher's shockwave (FrenzyFx.Launcher.cs)
                 for (var i = 0; i < def.LauncherCluster; i++)
                     _rocketFx.Add((now + RocketFlight.ClusterDelay(seed, i), RocketFlight.ClusterPoint(pos, def.LauncherRadius, seed, i, def.LauncherCluster),
                         radius * RocketFlight.ClusterRadiusMult));
@@ -254,7 +253,7 @@ public sealed partial class Game
             s = s * 1664525u + 1013904223u;
             var a = (s >> 8) / 16777216f * MathF.Tau;
             var vel = new Vector3(MathF.Cos(a) * 6f, -2f - (s & 7), MathF.Sin(a) * 6f);
-            FrenzyParticles.Spark(pos, vel, new Vector3(1f, 0.75f, 0.35f), 0.06f, 1.4f, 4f, 0.8f);
+            Sparks.Spark(pos, vel, new Vector3(1f, 0.75f, 0.35f), 0.06f, 1.4f, 4f, 0.8f);
         }
     }
 
@@ -489,9 +488,9 @@ public sealed partial class Game
             r.PushTrail(r.RenderPos);
             if (r.Def.LauncherProjectile == LauncherProjectile.Rocket && Vector3.DistanceSquared(r.RenderPos, Hud.Camera.Eye) < 150f * 150f)
             {
-                // Motor sparks streaming back (the frenzy effects' instanced particle pool: one draw for all of them).
+                // Motor sparks streaming back (the spark pool: one draw for all of them).
                 var back = -Vector3.Normalize(r.Vel + new Vector3(0, 1e-4f, 0));
-                FrenzyParticles.Spark(r.RenderPos + back * 0.3f, back * 6f + new Vector3(0, 0.5f, 0), new Vector3(1f, 0.6f, 0.2f), 0.05f, 0.18f, 0f, 2f);
+                Sparks.Spark(r.RenderPos + back * 0.3f, back * 6f + new Vector3(0, 0.5f, 0), new Vector3(1f, 0.6f, 0.2f), 0.05f, 0.18f, 0f, 2f);
             }
         }
         if (r.Def.LauncherProjectile == LauncherProjectile.Rocket && now >= r.NextMotorSound)

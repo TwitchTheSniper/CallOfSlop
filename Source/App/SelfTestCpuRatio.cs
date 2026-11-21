@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// CPU comparisons that a noisy CI runner can't fake: "does B cost more than X times A?". Both sides are timed on
 /// this thread's own CPU clock (so time the OS spends running something else doesn't count), interleaved in one loop
 /// (A, B, B, A, A, B...: a slow patch of the machine hits both alike), after a warm-up with identical work, and the
-/// answer is the ratio of each side's quickest run. Every music CPU rule (frenzy, frenzy classes, harder and weird
+/// answer is the ratio of each side's quickest run. Every music CPU rule (harder and weird
 /// tracks) goes through <see cref="CompareCpu"/>. Also <see cref="SteadyAllocBytes"/> for the allocation probes.
 /// <para>
 /// Why the quickest run (2026-10-28, fix/windows-flaky-checks): every run does identical, deterministic work, so a
@@ -20,7 +20,7 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    /// <summary>A summary of every music CPU comparison made in this run (shown in the "Frenzy classes (results)" annotation).</summary>
+    /// <summary>A summary of every music CPU comparison made in this run .</summary>
     private static readonly List<string> CpuRatioNotes = new();
 
     /// <summary>
@@ -80,35 +80,6 @@ public static partial class SelfTest
             {
                 for (var b = 0; b < blocks; b++)
                     r.Render(block);
-            };
-        };
-    }
-
-    /// <summary>
-    /// Frenzy work for <see cref="CompareCpu"/>: a fresh frenzy layer (seed 13) for <paramref name="cls"/> brought up to
-    /// <paramref name="level"/> untimed (200 blocks: the level, the last drop, the tempo), then
-    /// <paramref name="seconds"/> of mixing.
-    /// </summary>
-    private static Func<Action> FrenzyWork(WeaponClass cls, int level, double seconds)
-    {
-        var block = new float[MusicPlayer.BlockFrames * 2];
-        var blocks = Math.Max(1, (int)(seconds * Audio.SampleRate / MusicPlayer.BlockFrames));
-        return () =>
-        {
-            var f = new FrenzyLayer(13) { Class = cls };
-            f.Target = level;
-            for (var b = 0; b < 200; b++)
-            {
-                Array.Clear(block);
-                f.MixInto(block, true);
-            }
-            return () =>
-            {
-                for (var b = 0; b < blocks; b++)
-                {
-                    Array.Clear(block);
-                    f.MixInto(block, true);
-                }
             };
         };
     }

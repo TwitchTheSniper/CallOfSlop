@@ -296,7 +296,7 @@ public static class GunSamples
     /// </summary>
     public const int LoudnessWindow = Sr * 80 / 1000;
 
-    /// <summary>Sample-based shots come out at this times the synthesised shot's RMS (the frenzy calibration measures the result).</summary>
+    /// <summary>Sample-based shots come out at this times the synthesised shot's RMS.</summary>
     public const float LoudnessMatch = 1f;
 
     public const float Ceiling = 0.97f;

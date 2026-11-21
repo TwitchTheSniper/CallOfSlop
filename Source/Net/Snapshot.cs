@@ -36,21 +36,18 @@ public struct SnapSlow : IEquatable<SnapSlow>
     public byte Primary, Secondary;
     public uint PrimaryKit, SecondaryKit;
     public PerkSet Perks;
-    public byte FrenzyLevel; // kill frenzy 0-6 (protocol 26)
-    public byte FrenzyClass; // WeaponClass of the most recent kill (low 7 bits); bit 7: the host's frenzy buffs are on (protocol 26)
 
     // The server compares every player's slow fields with the last ones sent, each snapshot. Without this, Equals is
     // ValueType.Equals(object): it boxes both sides and reads the fields through reflection (about 300 bytes of garbage
     // per player per snapshot, most of a server tick's allocations).
     public readonly bool Equals(SnapSlow o) =>
         Id == o.Id && Kills == o.Kills && Deaths == o.Deaths && Primary == o.Primary && Secondary == o.Secondary
-        && PrimaryKit == o.PrimaryKit && SecondaryKit == o.SecondaryKit && Perks == o.Perks && FrenzyLevel == o.FrenzyLevel
-        && FrenzyClass == o.FrenzyClass;
+        && PrimaryKit == o.PrimaryKit && SecondaryKit == o.SecondaryKit && Perks == o.Perks;
 
     public override readonly bool Equals(object? obj) => obj is SnapSlow o && Equals(o);
 
     public override readonly int GetHashCode() =>
-        HashCode.Combine(HashCode.Combine(Id, Kills, Deaths, Primary, Secondary), PrimaryKit, SecondaryKit, Perks, FrenzyLevel, FrenzyClass);
+        HashCode.Combine(HashCode.Combine(Id, Kills, Deaths, Primary, Secondary), PrimaryKit, SecondaryKit, Perks);
 }
 
 /// <summary>The recipient's own movement at full precision (prediction reconciles against it exactly), plus its slow fields.</summary>
@@ -128,7 +125,7 @@ public struct PlayerMask : IEquatable<PlayerMask>
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
 ///   254 and a ride (+16 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs; the rider's up, 3 x i8, protocol 130),
 ///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs), or 248 and a ride's bytes (noclip in a moving construct's frame, protocol 341);
-///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
+///   slow entries (18 bytes): id, kills, deaths, primary, secondary, kits, perks.
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
 /// <see cref="PacketWriter.Mtu"/>, it's split into parts, each a complete packet (header + whole entries); the
@@ -149,7 +146,7 @@ public static class Snapshot
     public const byte RideNoclipHoldKind = 246; // (protocol 369: as RideNoclipKind, held still in the frame while the server finds a floor inside; ConstructRideInterior.cs)
     public const byte RideNoclipKind = 248; // (protocol 341: a ride's bytes, flying in noclip in a moving construct's frame; NoclipMove.cs)
     public const byte CanopyKind = 249; // (protocol 176: + the Canopy, 250..252, alone: PilotGear.cs)
-    public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
+    public const int SlowBytes = 18; // 16 + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 15; // (the part nibble: 0 to 15; about 200 players with their slow entries fit in 15)
 
@@ -288,12 +285,12 @@ public static class Snapshot
 
     public static void WriteSlow(PacketWriter w, in SnapSlow s) =>
         w.U8(s.Id).U16(s.Kills).U16(s.Deaths).U8(s.Primary).U8(s.Secondary).U32(s.PrimaryKit).U32(s.SecondaryKit)
-            .U8((byte)s.Perks.Movement).U8((byte)s.Perks.Survival).U8((byte)s.Perks.Damage).U8(s.FrenzyLevel).U8(s.FrenzyClass);
+            .U8((byte)s.Perks.Movement).U8((byte)s.Perks.Survival).U8((byte)s.Perks.Damage);
 
     public static SnapSlow ReadSlow(ref PacketReader r) => new()
     {
         Id = r.U8(), Kills = r.U16(), Deaths = r.U16(), Primary = r.U8(), Secondary = r.U8(), PrimaryKit = r.U32(), SecondaryKit = r.U32(),
-        Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()), FrenzyLevel = r.U8(), FrenzyClass = r.U8(),
+        Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()),
     };
 
     public static void WriteHeader(PacketWriter w, in SnapHeader h)

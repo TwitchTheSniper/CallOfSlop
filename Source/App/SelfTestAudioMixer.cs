@@ -110,13 +110,11 @@ public static partial class SelfTest
             var audio = new Audio();
             audio.SyncMix();
             var music = audio.Music;
-            var trims = Enumerable.Range(1, 6).Select(l => music.Frenzy.LevelTrim(l)).ToArray();
-            var wantTrims = Enumerable.Range(1, 6).Select(l => mix.Gain((MixBus)((int)MixBus.Frenzy1 + l - 1))).ToArray();
-            if (music.MenuTrim != mix.Gain(MixBus.MusicMenu) || music.LobbyTrim != mix.Gain(MixBus.MusicLobby) || !trims.SequenceEqual(wantTrims) || music.LimiterCeiling != FrenzyLayer.LimiterCeiling)
-                Fail($"audio mixer identity: music trims menu {music.MenuTrim}, lobby {music.LobbyTrim}, frenzy {string.Join("/", trims)}, limiter {music.LimiterCeiling} (want the default levels' gains and {FrenzyLayer.LimiterCeiling})");
+            if (music.MenuTrim != mix.Gain(MixBus.MusicMenu) || music.LobbyTrim != mix.Gain(MixBus.MusicLobby) || music.LimiterCeiling != MusicPlayer.DefaultLimiterCeiling)
+                Fail($"audio mixer identity: music trims menu {music.MenuTrim}, lobby {music.LobbyTrim}, limiter {music.LimiterCeiling} (want the default levels' gains and {MusicPlayer.DefaultLimiterCeiling})");
             Line($"identity: every gain 10^(default/20) (1 at 0 dB), falloff 5 m/0.8/250 m, crossfade/bass/air equal to the old formulas at 1601 distances x 16 shot kinds, "
                  + $"shot layers unchanged with the default bus gains (own {AudioMix.GainToDb(mix.Gain(MixBus.GunOwn)):+0.0} dB, near {AudioMix.GainToDb(mix.Gain(MixBus.GunOtherNear)):+0.0} dB, far {AudioMix.GainToDb(mix.Gain(MixBus.GunOtherFar)):+0.0} dB), "
-                 + $"music trims {music.MenuTrim:0.##}/{music.LobbyTrim:0.##}/{string.Join("/", trims.Select(t => t.ToString("0.##")))}, limiter {music.LimiterCeiling}: {(mism == 0 ? "OK" : "DIFFERENT")}");
+                 + $"music trims {music.MenuTrim:0.##}/{music.LobbyTrim:0.##}, limiter {music.LimiterCeiling}: {(mism == 0 ? "OK" : "DIFFERENT")}");
             audio.Dispose();
         }
         else
@@ -165,14 +163,12 @@ public static partial class SelfTest
         // The music rows reach the music thread's trims, each its own.
         {
             var audio = new Audio();
-            audio.Mix.SetDb(MixBus.Frenzy5, -6f);
             audio.Mix.SetDb(MixBus.MusicMenu, 3f);
             audio.Mix.SetParam(MixParam.LimiterCeiling, 0.9f);
             audio.SyncMix();
             var mu = audio.Music;
-            if (MathF.Abs(mu.Frenzy.LevelTrim(5) - AudioMix.DbToGain(-6f)) > 1e-6f || mu.Frenzy.LevelTrim(4) != AudioMix.Defaults.Gain(MixBus.Frenzy4) || mu.Frenzy.LevelTrim(6) != AudioMix.Defaults.Gain(MixBus.Frenzy6)
-                || MathF.Abs(mu.MenuTrim - AudioMix.DbToGain(3f)) > 1e-6f || mu.LobbyTrim != AudioMix.Defaults.Gain(MixBus.MusicLobby) || MathF.Abs(mu.LimiterCeiling - 0.9f) > 1e-6f)
-                leaks.Add("music rows: frenzy level 5 / menu / limiter didn't reach only their own trims");
+            if (MathF.Abs(mu.MenuTrim - AudioMix.DbToGain(3f)) > 1e-6f || mu.LobbyTrim != AudioMix.Defaults.Gain(MixBus.MusicLobby) || MathF.Abs(mu.LimiterCeiling - 0.9f) > 1e-6f)
+                leaks.Add("music rows: menu / limiter didn't reach only their own trims");
             audio.Dispose();
         }
         if (leaks.Count > 0)
@@ -387,7 +383,7 @@ public static partial class SelfTest
                     meters.Record(i % AudioMeters.MaxVoices, (MixBus)(i % levels), 0.5f, t, 1f + (i % 3) * 0.1f, first + (i & 1));
                     meters.Begin();
                     meters.AccumulateVoices(t, 0.8f);
-                    meters.AddExternal(MixBus.Frenzy3, 0.2f, 0.01f, toMaster: false);
+                    meters.AddExternal(MixBus.MusicLobby, 0.2f, 0.01f, toMaster: false);
                     meters.End(t, 0.016f);
                     audio.UpdateMeters(t, 0.016f);
                 }
@@ -476,12 +472,10 @@ public static partial class SelfTest
         var audio = new Audio();
         audio.Mix.SetDb(MixBus.MusicMenu, 50f);
         audio.Mix.SetDb(MixBus.MusicLobby, 20f);
-        audio.Mix.SetDb(MixBus.Frenzy6, 50f);
-        audio.Mix.SetDb(MixBus.Frenzy1, -50f);
         audio.SyncMix();
         var mu = audio.Music;
-        if (mu.MenuTrim != g50 || MathF.Abs(mu.LobbyTrim - 10f) > 1e-4f || mu.Frenzy.LevelTrim(6) != g50 || MathF.Abs(mu.Frenzy.LevelTrim(1) - 0.0031623f) > 1e-6f)
-            Fail($"audio mixer range: music trims menu {mu.MenuTrim}, lobby {mu.LobbyTrim}, frenzy 6 {mu.Frenzy.LevelTrim(6)}, frenzy 1 {mu.Frenzy.LevelTrim(1)} (want 316.2, 10, 316.2, 0.0032)");
+        if (mu.MenuTrim != g50 || MathF.Abs(mu.LobbyTrim - 10f) > 1e-4f)
+            Fail($"audio mixer range: music trims menu {mu.MenuTrim}, lobby {mu.LobbyTrim} (want 316.2, 10)");
         audio.Dispose();
 
         // A boosted music bus: louder, every sample finite and under the limiter's safety ceiling; the built-in mix

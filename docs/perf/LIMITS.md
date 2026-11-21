@@ -5,7 +5,7 @@ constants, fixed pools and the narrowing casts found on the wire. Audited on 202
 `ConstructParts.MaxSockets` went from 64 to 255 (ba67442a), because capital ships and a traction city kept hitting them.
 
 Not listed: physics tuning that isn't a capacity (top speeds, accelerations, slopes), and the archived modes (Zombies,
-Frenzy, bots, PvE, the arena modes: `Game/Modes/`, CTF, the casino, grenades, launchers, tactical devices), the vehicle kit (`Source/VehicleKit/`, its own agents) and the self-tests.
+bots, PvE, the arena modes: `Game/Modes/`, CTF, the casino, grenades, launchers, tactical devices), the vehicle kit (`Source/VehicleKit/`, its own agents) and the self-tests.
 
 ## The four classes
 

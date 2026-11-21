@@ -58,7 +58,6 @@ public sealed partial class Game
     {
         Id = p.Id, Kills = p.Kills, Deaths = p.Deaths, Primary = p.Primary, Secondary = p.Secondary,
         PrimaryKit = p.PrimaryKit, SecondaryKit = p.SecondaryKit, Perks = p.Perks,
-        FrenzyLevel = p.FrenzyLevel, FrenzyClass = FrenzyWire(p),
     };
 
     /// <summary>Server, each snapshot tick: works out the shared entries once, then builds and sends each client's packets.</summary>
@@ -328,6 +327,5 @@ public sealed partial class Game
         p.PrimaryKit = s.PrimaryKit;
         p.SecondaryKit = s.SecondaryKit;
         p.Perks = s.Perks;
-        FrenzyFromWire(p, s.FrenzyLevel, s.FrenzyClass); // FrenzyServer.cs
     }
 }

@@ -196,7 +196,7 @@ public sealed partial class Game
         {
             var dir = World.Forward(yaw, pitch);
             var scoped = Flat(target.Position - p.Position) > 8f;
-            var spread = def.HipSpreadRad * (scoped ? def.AdsSpreadMult : 1f) * FrenzyBuffs.ConeMult(p, def, scoped ? 1f : 0f); // the frenzy buffs
+            var spread = def.HipSpreadRad * (scoped ? def.AdsSpreadMult : 1f);
             ServerResolveShot(p, def, p.Eye, dir, spread, ZNext(), ServerTick, now, groups);
             if (!InfiniteAmmoOn(now))
                 b.Ammo = Math.Max(0, b.Ammo - (groups != 0 ? GroupCount(groups) : 1)); // (Infinite Ammo: the magazine stays full); a round per receiver
@@ -227,7 +227,7 @@ public sealed partial class Game
             Yaw = yaw,
             Pitch = Math.Clamp(pitch, -1.5f, 1.5f),
             Weapon = p.Weapon,
-            SpeedPct = (byte)Math.Clamp((int)(FrenzyBuffs.Mobility(p, def) * ZombieMoveMult(p) * 100), 1, 200), // the LMG frenzy buff; Fleetfoot Fizz
+            SpeedPct = (byte)Math.Clamp((int)(def.Mobility * ZombieMoveMult(p) * 100), 1, 200), // Fleetfoot Fizz
         });
     }
 

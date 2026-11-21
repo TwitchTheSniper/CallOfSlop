@@ -31,8 +31,8 @@ public sealed partial class Audio
         _zombieSources = [];
     }
 
-    /// <summary>The meter / cap slot of zombie voice <paramref name="voice"/> (after the effect, footstep and frenzy-layer slots).</summary>
-    private static int ZombieSlot(int voice, bool step) => Voices + StepVoices + FrenzyVoices + (step ? ZombieSounds.VoiceCap : 0) + voice;
+    /// <summary>The meter / cap slot of zombie voice <paramref name="voice"/> (after the effect and footstep slots).</summary>
+    private static int ZombieSlot(int voice, bool step) => Voices + StepVoices + (step ? ZombieSounds.VoiceCap : 0) + voice;
 
     /// <summary>
     /// Plays a zombie sound on its pool voice <paramref name="voice"/> (picked by <see cref="ZombieSounds"/>): variant

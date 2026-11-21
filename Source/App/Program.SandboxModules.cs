@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Module sockets on the client (docs/sandbox/design/module-sockets.md 2.4 "Seen"): a socket's cutting ring at work. While a plate's
 /// hidden <c>ModCut</c> setting says it burns (ModuleCut.cs), its head runs round the well's outline at the surface from where this
-/// peer first saw it, throwing sparks, and the outline it has passed glows orange. Particles only (FrenzyParticles), on bodies within
+/// peer first saw it, throwing sparks, and the outline it has passed glows orange. Particles only (Sparks), on bodies within
 /// <see cref="CutFxRange"/>; a body with no sockets costs one length test a frame. Allocates nothing.
 /// </summary>
 public static unsafe partial class Program
@@ -77,12 +77,12 @@ public static unsafe partial class Program
             for (var k = 0; k < 2; k++)
             {
                 var v = n * (1.5f + (float)_cutFxDice.NextDouble() * 2f) + across * ((float)_cutFxDice.NextDouble() - 0.5f) * 3f + up * ((float)_cutFxDice.NextDouble() - 0.5f) * 3f;
-                FrenzyParticles.Spark(head, v, new Vector3(1f, 0.85f, 0.5f), 0.012f, 0.35f, 9f);
+                Sparks.Spark(head, v, new Vector3(1f, 0.85f, 0.5f), 0.012f, 0.35f, 9f);
             }
-            FrenzyParticles.Spark(head, Vector3.Zero, new Vector3(1f, 1f, 0.9f), 0.05f, 0.08f, 0f, 0f, 0f);
+            Sparks.Spark(head, Vector3.Zero, new Vector3(1f, 1f, 0.9f), 0.05f, 0.08f, 0f, 0f, 0f);
             // The kerf behind it: glowing orange where it has passed (cooling as it goes).
             var back = (float)_cutFxDice.NextDouble() * f;
-            FrenzyParticles.Spark(OutlineAt(top, across, up, hw, hl, (h + back) * 0.25f), Vector3.Zero, new Vector3(1f, 0.45f, 0.1f) * (0.5f + 0.5f * back / MathF.Max(f, 0.01f)), 0.03f, 0.3f, 0f, 0f, 0f);
+            Sparks.Spark(OutlineAt(top, across, up, hw, hl, (h + back) * 0.25f), Vector3.Zero, new Vector3(1f, 0.45f, 0.1f) * (0.5f + 0.5f * back / MathF.Max(f, 0.01f)), 0.03f, 0.3f, 0f, 0f, 0f);
         }
     }
 
@@ -104,16 +104,16 @@ public static unsafe partial class Program
         for (var k = 0; k < (weld ? 2 : 4); k++)
         {
             var v = n * (1f + (float)_cutFxDice.NextDouble() * 2f) + across * ((float)_cutFxDice.NextDouble() - 0.5f) * 3f + up * ((float)_cutFxDice.NextDouble() - 0.5f) * 3f;
-            FrenzyParticles.Spark(head, v, new Vector3(1f, 0.85f, 0.55f), 0.012f, 0.35f, 9f);
+            Sparks.Spark(head, v, new Vector3(1f, 0.85f, 0.55f), 0.012f, 0.35f, 9f);
         }
-        FrenzyParticles.Spark(head, Vector3.Zero, weld ? new Vector3(0.85f, 0.9f, 1f) : new Vector3(1f, 1f, 0.9f), 0.06f, 0.08f, 0f, 0f, 0f);
+        Sparks.Spark(head, Vector3.Zero, weld ? new Vector3(0.85f, 0.9f, 1f) : new Vector3(1f, 1f, 0.9f), 0.06f, 0.08f, 0f, 0f, 0f);
         // The bead (or the kerf) behind the head: hot near it, cooling with distance (a welded bead ends dark: 10 s of cooling).
         for (var k = 0; k < 3; k++)
         {
             var back = (float)_cutFxDice.NextDouble() * f;
             var heat = f > 0.001f ? back / f : 1f;
             var colour = weld ? Vector3.Lerp(new Vector3(0.35f, 0.06f, 0.02f), Vector3.Lerp(new Vector3(1f, 0.5f, 0.12f), new Vector3(1f, 0.95f, 0.8f), heat * heat), heat) : new Vector3(1f, 0.55f, 0.15f) * (0.4f + 0.6f * heat);
-            FrenzyParticles.Spark(OutlineAt(face, across, up, hw, hl, back), Vector3.Zero, colour, 0.025f, 0.3f, 0f, 0f, 0f);
+            Sparks.Spark(OutlineAt(face, across, up, hw, hl, back), Vector3.Zero, colour, 0.025f, 0.3f, 0f, 0f, 0f);
         }
     }
 

@@ -337,7 +337,7 @@ public sealed partial class Ui
             DrawRoomBotsTab(game, s, host);
         if (game.IsTeamMode && ImGui.CollapsingHeader("TEAMS: selection and balance##roomsec"u8))
             DrawRoomTeamsTab(game, s, host);
-        if (ImGui.CollapsingHeader("WORLD: gravity, frenzy buffs, destruction##roomsec"u8))
+        if (ImGui.CollapsingHeader("WORLD: gravity, destruction##roomsec"u8))
             DrawRoomWorldSection(game, s, host);
         if (ImGui.CollapsingHeader("LOBBY AND CHAT: auto-start, between matches, voice##roomsec"u8))
             DrawRoomLobbySection(game, s, host);
@@ -446,7 +446,7 @@ public sealed partial class Ui
         }
         if (host && (limitMode != game.ScoreLimitMode || minutes != game.MatchMinutes))
         {
-            game.LobbySetOptions(limitMode, minutes, game.AutoStartSeconds, game.ReturnToLobby, game.FrenzyBuffsEnabled);
+            game.LobbySetOptions(limitMode, minutes, game.AutoStartSeconds, game.ReturnToLobby);
             s.ScoreLimit = limitMode;
             s.MatchMinutes = minutes;
         }
@@ -695,7 +695,7 @@ public sealed partial class Ui
 
     private static readonly string[] HordeCapLabels = Game.HordeCapChoices.Select(c => c >= Game.MaxZombies ? "No limit (the rounds decide)" : $"{c} zombies").ToArray();
 
-    /// <summary>World section: gravity, frenzy buffs, destruction, the Zombies horde cap.</summary>
+    /// <summary>World section: gravity, destruction, the Zombies horde cap.</summary>
     private void DrawRoomWorldSection(Game game, Settings s, bool host)
     {
         ImGui.SetNextItemWidth(200 * _scale);
@@ -712,13 +712,6 @@ public sealed partial class Ui
         }
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGuiSafe.SetItemTooltip("Every map's gravity times this: players, grenades, rockets, bodies and debris. 50% jumps twice as high and far; 200% half as high. Planets and gravity zones scale too.");
-        var buffs = game.FrenzyBuffsEnabled;
-        ImGui.Checkbox("Frenzy buffs##room"u8, ref buffs);
-        ImGui.SameLine();
-        if (buffs)
-            ImGui.TextColored(Dim, "a kill frenzy (level 3+) buffs guns of the class you last killed with"u8);
-        else
-            ImGui.TextColored(Dim, "kill frenzies are music and effects only"u8);
         var destruction = game.DestructionEnabled;
         ImGui.Checkbox("Destruction##room"u8, ref destruction);
         ImGui.SameLine();
@@ -778,11 +771,6 @@ public sealed partial class Ui
         }
         if (!host)
             return;
-        if (buffs != game.FrenzyBuffsEnabled)
-        {
-            game.LobbySetOptions(game.ScoreLimitMode, game.MatchMinutes, game.AutoStartSeconds, game.ReturnToLobby, buffs);
-            s.FrenzyBuffs = buffs;
-        }
         if (destruction != game.DestructionEnabled)
         {
             game.LobbySetHostRules(destruction, game.VoiceAllowed, game.DeadChatPrivate, game.BotGearMode);
@@ -817,7 +805,7 @@ public sealed partial class Ui
             return;
         if (auto != game.AutoStartSeconds || back != game.ReturnToLobby)
         {
-            game.LobbySetOptions(game.ScoreLimitMode, game.MatchMinutes, auto, back, game.FrenzyBuffsEnabled);
+            game.LobbySetOptions(game.ScoreLimitMode, game.MatchMinutes, auto, back);
             s.AutoStart = auto;
             s.LobbyReturn = back;
         }

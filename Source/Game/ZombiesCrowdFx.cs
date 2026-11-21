@@ -37,7 +37,7 @@ public sealed partial class Game
             var h = HordeCrowd.Hash(seed + (uint)k * 0x9E3779B9u);
             var spread = new Vector3((h & 255) / 255f - 0.5f, (h >> 8 & 255) / 255f * 0.8f, (h >> 16 & 255) / 255f - 0.5f) * 2.2f;
             var shade = 0.35f + (h >> 24) / 255f * 0.25f;
-            FrenzyParticles.Spark(at - dir * 0.15f, -dir * 1.2f + spread, new Vector3(shade, 0.02f, 0.02f), 0.05f, 0.45f, 9f, 2f, 0.02f, 0.95f);
+            Sparks.Spark(at - dir * 0.15f, -dir * 1.2f + spread, new Vector3(shade, 0.02f, 0.02f), 0.05f, 0.45f, 9f, 2f, 0.02f, 0.95f);
         }
     }
 

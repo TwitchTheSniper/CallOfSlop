@@ -38,6 +38,7 @@ public static unsafe partial class Program
 
     private static GlfwWindow _window = null!;
     private static readonly Renderer Gfx = new();
+    private static readonly SparkRenderer _sparks = new(); // Source/Render/Sparks
     private static readonly FoliageRenderer FoliageGfx = new();
     private static readonly PropRenderer PropGfx = new();
     private static readonly MeshRenderer MeshGfx = new();
@@ -760,7 +761,6 @@ public static unsafe partial class Program
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
-            _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.HostHordeCap = _settings.ZombieHordeCap; // host setting (ZombieHorde.cs): the server's cap; clients don't need it
             if (kind != LobbyAction.Join)
             {
@@ -910,10 +910,7 @@ public static unsafe partial class Program
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
             AudioSystem.Music.JukeboxOpen = Ui.MusicPlayerOpen && _session == null; // the main menu's music player takes over (UiMusicPlayer.cs)
-            UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
-            UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
             UpdateModuleCutFx(); // module sockets' cutting rings at work (Program.SandboxModules.cs)
-            UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
             perf.Dispose();
 
             Perf.Gpu?.BeginFrame(); // the perf window's GPU passes (Source/Perf/PerfGpu.cs): nothing while it's closed
@@ -2334,7 +2331,7 @@ public static unsafe partial class Program
         Gfx.SetDepthTest(true);
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);
-        _frenzyFx.DrawWorld(Gfx, _game, now); // frenzy sparks, trails, others' gun glow: one instanced draw (Program.FrenzyFx.cs)
+        _sparks.DrawWorld(Gfx, (float)FrameDt); // welding, cutting and ricochet sparks: one instanced draw (Source/Render/Sparks)
         pass.Dispose();
         DrawParticlesAndPost(now, fb.X, fb.Y);
 
@@ -2347,9 +2344,7 @@ public static unsafe partial class Program
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
             GunModel.AdsCutaway = 0;
-            DrawFrenzyFxViewModel(now); // your gun's frenzy glow (Program.FrenzyFx.cs)
         }
-        _frenzyFx.EndFrame(now);
         pass.Dispose();
 
         // ---- HUD ------------------------------------------------------------

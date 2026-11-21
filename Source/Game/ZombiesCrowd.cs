@@ -687,7 +687,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Server: damage on crowd zombie <paramref name="i"/>: points for the hit, or for the kill exactly as an individual
-    /// (DamageZombie's kill: kills, headshots, frenzy, kill points, drops and power-ups when <paramref name="drops"/>);
+    /// (DamageZombie's kill: kills, headshots, kill points, drops and power-ups when <paramref name="drops"/>);
     /// a dead one leaves the crowd. Returns true if it killed.
     /// </summary>
     private bool CrowdDamage(Player attacker, int i, float amount, bool head, bool explosive, bool drops, double now)
@@ -750,7 +750,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Server: one crowd or mass zombie killed by <paramref name="attacker"/> at <paramref name="at"/>, credited exactly
-    /// as an individual's kill (DamageZombie): the count, kills, headshots, frenzy, kill points (a walker's: the crowd
+    /// as an individual's kill (DamageZombie): the count, kills, headshots, kill points (a walker's: the crowd
     /// holds walkers only), and the drop and power-up rolls when <paramref name="drops"/>.
     /// </summary>
     private void CrowdKillCredit(Player attacker, Vector3 at, bool head, bool explosive, bool drops, double now)
@@ -761,7 +761,6 @@ public sealed partial class Game
         if (head)
             zp.Headshots++;
         attacker.Kills++;
-        FrenzyOnZombieKill(attacker, head, explosive, now);
         var killPoints = head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints;
         EarnPoints(attacker, (int)MathF.Round(killPoints * ZRules.TypeAt(0).PointsMult), now);
         if (drops)

@@ -148,7 +148,7 @@ What the runs showed that they weren't testing. Not chased, except the first (fi
    0.051 x 0.012 ...] share a +Y face plane"). `Source/PartKit/Generators/ExtrusionParts.cs:391`; the three part files regenerated.
 2. `[gl] error (high, id 1281): GL_INVALID_VALUE ... ObjectLabel: unknown buffer object` twice at every start (after `[props] meshes`
    and after `[render] merged meshes ready`), on host and client; the same 0x501 is then reported as their own by `[foliage]`,
-   `[frenzyfx]` and `[terrain]` ("GL error 0x501 while setting up"). Any `--window-shot` on the Proving Ground; `callofslop.log`.
+   `[sparks]` (then `[frenzyfx]`) and `[terrain]` ("GL error 0x501 while setting up"). Any `--window-shot` on the Proving Ground; `callofslop.log`.
    Guess: a debug label set on a buffer name before it is created (the props mesh upload and the merged-mesh renderer).
 3. Pictures from high up show two big blue boxes in front of the camera (the first-person hands drawn at the flying camera).
    `--window-shot ... --at -30,70,-5 --look-at -30,0,-6`, scratch `p1_top.png`, `pic_overview.png`. Guess: the view model in the window

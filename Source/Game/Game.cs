@@ -368,11 +368,11 @@ public sealed partial class Game : IDisposable
     internal float LocalMoveSpeed(WeaponDef def)
     {
         var tool = SandboxOn && Local is { } me && SandboxHands.Hand(me.Id).Tool != ConstructTool.None; // (the attach, link and paint tools, the physics gun: the gun's away)
-        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : FrenzyBuffs.Mobility(Local, def), Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local) * ShellMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+        return Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, tool ? 1f : def.Mobility, Aiming && !tool) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local) * ShellMoveMult(Local); // Lightweight, Stalker; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
     }
 
     /// <summary>The fastest a client's input may ask for: its fastest gun, and full in the Sandbox, where a tool can be out (it isn't tied to the tool, so a switch on its way doesn't pull the player back).</summary>
-    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary)))), false) * ZombieMoveMult(p) * ShellMoveMult(p) * 100), 1, 200);
+    internal byte MaxMoveSpeed(Player p) => (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(SandboxOn ? 1f : 0f, MathF.Max(p.DefFor(p.Primary).Mobility, p.DefFor(p.Secondary).Mobility)), false) * ZombieMoveMult(p) * ShellMoveMult(p) * 100), 1, 200);
 
     private InputCmd SampleLocalInput(uint seq)
     {
@@ -508,7 +508,7 @@ public sealed partial class Game : IDisposable
 
         var alive = Local is { Alive: true };
         Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil && !w.Def.NoAds; // carts and briefcases are hip fire only
-        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / (w.Def.AdsTime * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.AdsTime)) * TacticalAdsMult(now), 0f, 1f); // optics and grips change aim speed (and the DMR frenzy buff); a stun slows it
+        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime * TacticalAdsMult(now), 0f, 1f); // optics and grips change aim speed; a stun slows it
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
         if (alive)
         {
@@ -530,13 +530,12 @@ public sealed partial class Game : IDisposable
             spread *= sprintMult; // sprinting or just stopped (SprintSpread.cs)
             var v = me.Sim.Velocity;
             var moving = MathF.Min(new Vector2(v.X, v.Z).Length() / World.WalkSpeed, 1.5f);
-            spread += moving * 0.014f * (Aiming ? 0.5f : 1f) * FrenzyBuffs.Value(me, def, FrenzyStat.MoveSpread); // the SMG frenzy buff
+            spread += moving * 0.014f * (Aiming ? 0.5f : 1f);
             if (!me.Sim.Grounded)
                 spread += 0.035f;
             spread *= World.SpreadOf(me.Sim.Stance);
         }
         spread += Bloom;
-        spread *= FrenzyBuffs.ConeMult(Local, def, AimT); // the Shotgun and Sniper frenzy buffs (FrenzyBuffs.cs)
         return Math.Clamp(spread, 0f, def.MaxSpreadRad * sprintMult);
     }
 
@@ -635,7 +634,7 @@ public sealed partial class Game : IDisposable
         var seed = _shotSeed++;
 
         // Recoil (the gun's pattern, see Recoil.cs) + bloom
-        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT) * FrenzyBuffs.Value(me, def, FrenzyStat.Recoil) * recoilScale); // Tight Grip; the AR frenzy buff
+        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT) * recoilScale); // Tight Grip
         LookPitch = Math.Clamp(LookPitch + kickPitch, -1.5f, 1.5f);
         LookYaw = World.WrapAngle(LookYaw + kickYaw);
         var kick = def.RecoilDeg * recoilScale * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
@@ -713,7 +712,7 @@ public sealed partial class Game : IDisposable
         if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true } || w.Reserve == 0)
             return; // (Zombies: no reserve left, nothing to reload with)
         w.ReloadStarted = now;
-        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks) * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.Reload); // Overdrive halves it, Sleight of Hand, the LMG frenzy buff
+        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks); // Overdrive halves it, Sleight of Hand
         _burstLeft = 0;
         StopGroupBursts();
         Audio.Reload(w.Def, null);
@@ -750,7 +749,7 @@ public sealed partial class Game : IDisposable
         StopGroupBursts();
         ActiveSlot = slot;
         _burstLeft = 0;
-        EquipUntil = now + Active.Def.EquipTime * FrenzyBuffs.Value(Local, Active.Def, FrenzyStat.EquipTime); // the Pistol frenzy buff
+        EquipUntil = now + Active.Def.EquipTime;
         NextFireTime = Math.Max(NextFireTime, EquipUntil);
         Audio.Equip(Active.Def);
     }
@@ -900,7 +899,6 @@ public sealed partial class Game : IDisposable
         if (def.Sound == SoundStyle.Suppressed)
             width *= 0.6f; // suppressed shots leave faint, thin tracers
         width *= SizeLook(size); // a Bloat Barrel's slug is a fat streak, a Needle's a hairline
-        FrenzyFx.OnTracer(this, shooter, def, from, to, now, ref color, ref width); // a frenzied shooter's class look (Source/Render/FrenzyFx)
         var speed = def.Harpoon ? 80f : TracerSpeed(def.BulletSpeed * def.ChargeV); // a slow round's slug visibly travels (GameBuilder.cs); a harpoon's head flies
         var life = speed > 0 ? 0.25f + Vector3.Distance(from, to) / speed : 0f;
         var bow = speed > 0 ? PowderCharge.Bow(ArcSpeed(def), Vector3.Distance(from, to)) : 0f; // (a Sandbox round's arc, as it fell: GameRoundArc.cs)
@@ -1257,7 +1255,7 @@ public sealed partial class Game : IDisposable
         ServerTickLogic(now); // map events: zones, timers, wires (GameLogic.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         perf.Dispose();
-        AllocProfile.Mark("health, fall, frenzy");
+        AllocProfile.Mark("health, fall");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
@@ -1271,7 +1269,6 @@ public sealed partial class Game : IDisposable
         ServerTickLanding(now); // a landing on another planetoid, everyone aboard: the map changes (GameSpaceLanding.cs)
         KeepTick(); // free travel, a planetoid's game on the host: ships in, ships home, copies, closing (GameTravelPlace.cs)
         perf.Dispose();
-        ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
         ConstructRide.Bodies = Constructs;
@@ -1694,7 +1691,6 @@ public sealed partial class Game : IDisposable
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
         RecordKill(kill);
-        FrenzyOnKill(attacker, victim, killId, head, now); // per-player kill frenzy (FrenzyServer.cs)
         OnModeKill(attacker, victim, killId, now);
         BotNoteKill(attacker, victim, head, killId, now);
         return true;
@@ -1750,8 +1746,8 @@ public sealed partial class Game : IDisposable
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
-        // Weapon limits plus the sprint penalty (SprintSpread.cs); the frenzy buffs can tighten the floor (FrenzyServer.cs).
-        spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def) * FrenzyAllowedConeMult(shooter, def), SprintSpread.ServerMax(def));
+        // Weapon limits plus the sprint penalty (SprintSpread.cs).
+        spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def), SprintSpread.ServerMax(def));
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         // Reused per shot (every trigger pull of every bot: new lists here were most of a bot's garbage).
@@ -2159,7 +2155,7 @@ public sealed partial class Game : IDisposable
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 int count = Math.Min((int)r.U8(), 16);
-                var maxSpeed = MaxMoveSpeed(p); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
+                var maxSpeed = MaxMoveSpeed(p); // (Lightweight lifts a slow pair of guns)
                 Span<InputCmd> cmds = stackalloc InputCmd[count];
                 var read = 0;
                 for (; read < count && r.Has(15); read++)

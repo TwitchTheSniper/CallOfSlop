@@ -68,8 +68,6 @@ public sealed class Settings
     public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
     public float OwnGunVolume = 1f; // your own gunshots, on top of the effects volume (1 = the tuned mix, see Audio.GunMix.cs)
     public MusicChoice MusicChoice = MusicChoice.Mixed; // Settings > Audio > Music style
-    public bool FrenzyMusic = true; // Settings > Audio > Kill frenzy music: hard music fades in during kill sprees (MusicFrenzy.cs)
-    public float FrenzyVolume = 0.8f; // Settings > Audio > Frenzy volume, on top of the music volume
     public bool VSync = true;
 
     /// <summary>Settings > Video "Max FPS" (FrameLimiter.cs): 0 unlimited (the default), else 20-1000. Applies with VSync off.</summary>
@@ -122,14 +120,12 @@ public sealed class Settings
     public VideoLevel FarDetail = VideoLevel.Medium; // big ships: how small a far box may get before it is left out (Low 2.5 pixels, Medium 1, High: never)
     public LightingQuality Lighting = LightingQuality.Full; // lit maps: baked light (Off: the classic light everywhere); Full adds muzzle flashes and blasts (LightGrid.cs)
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
-    public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
     public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
     public int SubtitleSize = Ui.SubtitleSizeDefault; // Settings > Video "Story text size": a percent (UiSubtitles.cs)
     public SubtitleColour SubtitleColour = SubtitleColour.Cream; // Settings > Video "Story text colour"
     public BloodColour BloodColour = BloodColour.Red; // Settings > Video "Blood colour": red or dark
     public GoreMode Gore = GoreMode.Full; // Settings > Video "Gore": meaty gibs from animals and blast kills, blood splats (Source/Props/Gibs.cs)
     public GoreLasting GoreLasting = GoreLasting.Fade; // Settings > Video "Bodies and gore": dead bodies and gibs fade or stay (Ragdolls.Stay, Gibs.Stay; a host's choice holds for the bodies it settles, GameCorpses.cs)
-    public FrenzyGunSoundMode FrenzyGunSound = FrenzyGunSoundMode.Full; // Settings > Audio "Frenzy gun sound": per-class frenzy layers on your gun (Source/Audio/FrenzyGunSound.cs)
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
     public int HeadBob = 100;
@@ -196,7 +192,6 @@ public sealed class Settings
     public bool AutoListServer = true; // hosting: if none of my server lists answers, run one in this game (HostListing)
     public bool RunListServer; // "Run a server list for friends": keep one running in this game while it's open (ListServer)
     public bool UseStun = true; // find my public address for invite codes by asking a public STUN server (Stun.cs)
-    public bool FrenzyBuffs = true; // host setting: per-class gameplay buffs during a kill frenzy (Source/Game/Frenzy/FrenzyBuffs.cs)
     public bool Destruction = true; // host setting: destructible buildings on maps that have them (Source/Game/GameDestruction.cs)
     public string ServerName = ""; // empty: "<name>'s game"
     public string MasterServer = ""; // server lists (master servers), "host[:port], host[:port]...", typed or learned from invites (empty: none)
@@ -500,8 +495,6 @@ public sealed class Settings
                     case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
                     case "own_gun_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.OwnGunVolume = Math.Clamp(f, 0f, 1f); break;
                     case "music_style" when Enum.TryParse<MusicChoice>(v, true, out var mc) && Enum.IsDefined(mc): s.MusicChoice = mc; break;
-                    case "frenzy_music": s.FrenzyMusic = v != "0"; break;
-                    case "frenzy_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FrenzyVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
                     case "max_fps" when int.TryParse(v, NumberStyles.Integer, inv, out var n): s.MaxFps = FrameCap.Clamp(n); break;
                     case "max_fps_menu" when int.TryParse(v, NumberStyles.Integer, inv, out var n): s.MaxFpsMenu = FrameCap.Clamp(n); break;
@@ -539,7 +532,6 @@ public sealed class Settings
                     case "auto_list": s.AutoListServer = v != "0"; break;
                     case "run_list": s.RunListServer = v == "1"; break;
                     case "stun": s.UseStun = v != "0"; break;
-                    case "frenzy_buffs": s.FrenzyBuffs = v == "1"; break;
                     case "destruction": s.Destruction = v != "0"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
                     case "master": s.MasterServer = CleanMasterList(v); break;
@@ -595,14 +587,12 @@ public sealed class Settings
                     case "far_detail" when Enum.TryParse<VideoLevel>(v, out var fd) && Enum.IsDefined(fd): s.FarDetail = fd; break;
                     case "lighting" when Enum.TryParse<LightingQuality>(v, out var lq) && Enum.IsDefined(lq): s.Lighting = lq; break;
                     case "impact_decals" when Enum.TryParse<ImpactDecalQuality>(v, out var iq) && Enum.IsDefined(iq): s.ImpactDecals = iq; break;
-                    case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
                     case "blood_overlay" when Enum.TryParse<BloodMode>(v, true, out var bo) && Enum.IsDefined(bo): s.BloodOverlay = bo; break;
                     case "story_text_size": s.SubtitleSize = Ui.ParseSubtitleSize(v); break;
                     case "story_text_colour" when Enum.TryParse<SubtitleColour>(v, true, out var sc) && Enum.IsDefined(sc): s.SubtitleColour = sc; break;
                     case "blood_colour" when Enum.TryParse<BloodColour>(v, true, out var bc) && Enum.IsDefined(bc): s.BloodColour = bc; break;
                     case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
                     case "gore_lasting" when Enum.TryParse<GoreLasting>(v, true, out var gl) && Enum.IsDefined(gl): s.GoreLasting = gl; break;
-                    case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action is >= 0 and < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code; // the primary (every build reads this line)
@@ -671,8 +661,6 @@ public sealed class Settings
                     $"footstep_volume={FootstepVolume.ToString(inv)}",
                     $"own_gun_volume={OwnGunVolume.ToString(inv)}",
                     $"music_style={MusicChoice}",
-                    $"frenzy_music={(FrenzyMusic ? 1 : 0)}",
-                    $"frenzy_volume={FrenzyVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
                     $"max_fps={MaxFps.ToString(inv)}",
                     $"max_fps_menu={MaxFpsMenu.ToString(inv)}",
@@ -704,7 +692,6 @@ public sealed class Settings
                     $"auto_list={(AutoListServer ? 1 : 0)}",
                     $"run_list={(RunListServer ? 1 : 0)}",
                     $"stun={(UseStun ? 1 : 0)}",
-                    $"frenzy_buffs={(FrenzyBuffs ? 1 : 0)}",
                     $"destruction={(Destruction ? 1 : 0)}",
                     $"server_name={ServerName}",
                     $"master={MasterServer}",
@@ -757,10 +744,8 @@ public sealed class Settings
                     $"far_detail={FarDetail}",
                     $"lighting={Lighting}",
                     $"impact_decals={ImpactDecals}",
-                    $"frenzy_visuals={FrenzyVisuals}",
                     $"gore={Gore}",
                     $"gore_lasting={GoreLasting}",
-                    $"frenzy_gunsound={FrenzyGunSound}",
                     $"blood_overlay={BloodOverlay}",
                     $"story_text_size={SubtitleSize.ToString(CultureInfo.InvariantCulture)}",
                     $"story_text_colour={SubtitleColour}",
