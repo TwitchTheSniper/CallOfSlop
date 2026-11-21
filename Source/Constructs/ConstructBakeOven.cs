@@ -369,8 +369,8 @@ public static class ConstructBakeOven
             else if (why == OvenStall.None && (b.Vel - c.Vel).LengthSquared() > Settled * Settled)
                 why = OvenStall.Moving;
             else if (why == OvenStall.None)
-                why = Unbaking(c.Parts[part], d) ? BakedParts.CanUnbake(b, out _) == null ? OvenStall.None : OvenStall.NotBaked
-                    : BakedParts.CanBake(b) == null ? OvenStall.None : OvenStall.CantBake;
+                why = Unbaking(c.Parts[part], d) ? BakedParts.CanUnbake(b, out _, tell: false) == null ? OvenStall.None : OvenStall.NotBaked
+                    : BakedParts.CanBake(b, tell: false) == null ? OvenStall.None : OvenStall.CantBake;
         }
         return why;
     }

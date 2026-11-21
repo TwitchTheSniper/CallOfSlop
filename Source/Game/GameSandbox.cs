@@ -840,6 +840,7 @@ public sealed partial class Game
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        BakedParts.NoteInUse(Constructs); // (a baked part brought by a blueprint or another world, which no oven here made)
         foreach (var hash in Constructs.Baked)
             if (BakedParts.Find(hash) is { } bd)
             {

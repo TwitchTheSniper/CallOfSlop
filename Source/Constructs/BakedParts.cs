@@ -368,12 +368,12 @@ public static class BakedParts
     }
 
     /// <summary>Why a part can't be baked into a group (null: it can): plain structure only, nothing that works, moves or holds.</summary>
-    public static string? BakeRefusal(ConstructPartDef d)
+    public static string? BakeRefusal(ConstructPartDef d, bool tell = true)
     {
         if (d.ModPart != ModPart.None)
             return "a module socket or plug (plates stay real parts)";
         if (d.Role is not (PartRole.Frame or PartRole.Panel or PartRole.Foundation))
-            return $"it is a {d.Role.ToString().ToLowerInvariant()}, not structure";
+            return tell ? $"it is a {d.Role.ToString().ToLowerInvariant()}, not structure" : No;
         if (d.HasJoint || d.Rotor != null || d.HasRig || d.HasWork || d.HasEngineBoxes || d.HasRouterBoxes || d.UseBoxes.Length > 0 || d.StatusBox >= 0
             || d.Panels.Length > 0 || d.Explosive != null || d.IsEnvelope || d.Breach != BreachKind.None || d.HasSeams || d.HasMiddle)
             return "it works, moves or holds";
@@ -403,7 +403,7 @@ public static class BakedParts
     /// Why body <paramref name="c"/> can't be baked (null: it can): a part that isn't plain structure, a joint, a part off the grid turns,
     /// nothing to bake, or more boxes than one part takes. Module Socket plates are left out of the bake (they stay).
     /// </summary>
-    public static string? CanBake(Construct c)
+    public static string? CanBake(Construct c, bool tell = true)
     {
         var bake = 0;
         var boxes = 0;
@@ -411,25 +411,25 @@ public static class BakedParts
         {
             var d = c.DefOf(i);
             if (!Place(c, i, out _))
-                return $"{Shown(d)} isn't fixed at a grid turn (a joint, or a weld at an angle)";
+                return tell ? $"{Shown(d)} isn't fixed at a grid turn (a joint, or a weld at an angle)" : No;
             if (d.ModPart == ModPart.Socket)
                 continue;
-            if (BakeRefusal(d) is { } why)
-                return $"{Shown(d)} can't be baked: {why}";
+            if (BakeRefusal(d, tell) is { } why)
+                return tell ? $"{Shown(d)} can't be baked: {why}" : No;
             bake++;
             boxes += d.Boxes.Length;
         }
         if (bake < 2)
             return "nothing to bake: weld two or more subparts";
         if (bake > MaxSubparts)
-            return $"over {MaxSubparts} subparts";
+            return tell ? $"over {MaxSubparts} subparts" : No;
         if (boxes > ConstructParts.MaxBoxes)
-            return $"{boxes} boxes, at most {ConstructParts.MaxBoxes} in one baked part";
+            return tell ? $"{boxes} boxes, at most {ConstructParts.MaxBoxes} in one baked part" : No;
         return null;
     }
 
     /// <summary>Why body <paramref name="c"/> can't be un-baked (null: it can): it must hold one baked part, and nothing else but Module Socket plates.</summary>
-    public static string? CanUnbake(Construct c, out int baked)
+    public static string? CanUnbake(Construct c, out int baked, bool tell = true)
     {
         baked = -1;
         for (var i = 0; i < c.PartCount; i++)
@@ -438,7 +438,7 @@ public static class BakedParts
             if (d.ModPart == ModPart.Socket)
                 continue;
             if (!IsBaked(d))
-                return $"{Shown(d)} isn't baked";
+                return tell ? $"{Shown(d)} isn't baked" : No;
             if (baked >= 0)
                 return "more than one baked part: weld them apart";
             baked = i;
@@ -451,6 +451,9 @@ public static class BakedParts
             return "its design isn't known here";
         return null;
     }
+
+    /// <summary>The refusal a check gives when its caller didn't ask why (no string made: the oven's check runs every tenth of a second).</summary>
+    private const string No = "no";
 
     /// <summary>A part's name as a person reads it.</summary>
     public static string Shown(ConstructPartDef d) => IsBaked(d) ? "a baked part" : HullHoles.Shown(d);
@@ -653,6 +656,31 @@ public static class BakedParts
             else
                 Console.WriteLine($"[bake] REFUSED a saved design: {LastRefusal}");
         }
+    }
+
+    /// <summary>
+    /// Keeps in <paramref name="world"/> every design its bodies and Storage Volumes hold, however they came (a blueprint, a world read
+    /// in, a body carried from another world): run before a save and before a joiner's designs go, so neither misses one. Not per tick.
+    /// </summary>
+    public static void NoteInUse(ConstructWorld world)
+    {
+        foreach (var c in world.Bodies)
+            for (var i = 0; i < c.PartCount; i++)
+                Note(world, c.DefOf(i));
+        foreach (var st in world.Stores)
+            if (st?.KindDef is { } kinds)
+                for (var k = 0; k < st.KindN; k++)
+                    if (kinds[k] >= Extrusion.RuntimeBase && Extrusion.Get(kinds[k]) is { } d)
+                        Note(world, d);
+    }
+
+    /// <summary>Keeps one baked part's design in <paramref name="world"/> (ConstructWorld.AddPart).</summary>
+    public static void NoteInUse(ConstructWorld world, ConstructPartDef d) => Note(world, d);
+
+    private static void Note(ConstructWorld world, ConstructPartDef d)
+    {
+        if (d.IsNamedRuntime && IsName(d.Name) && DesignOf(d) is { } design)
+            world.KeepBaked(design.Hash);
     }
 
     /// <summary>The world's designs as text, for its save.</summary>
