@@ -745,6 +745,8 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the block machines' shared 2 m cube, design page drawings 19 to 24: masts for pads, ovens, stations and crane rails)
+        ("Machines", "Mast Block", null), // (a named row: a new part file in Machines is refused until it has its own row here)
         // (the Grow Former, Sean 2026-11-21: one Core and its Former Block in place of the Wheel, Fan and Airframe Formers' twelve parts)
         (null, null, Rec("Grow Former", 180, 1, m: [("steel", 900), ("rubber", 120), ("copper", 40)], p: [("Gear Set", 4), ("Servo Motor", 2), ("Control Unit", 1)])),
         (null, null, Rec("Former Block", 90, 1, m: [("steel", 500), ("rubber", 40)], p: [("Gear Set", 1)])),

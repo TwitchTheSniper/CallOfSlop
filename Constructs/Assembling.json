@@ -2476,6 +2476,7 @@
     {"output": "Round Module Socket 3 m", "materials": {"steel": 120, "concrete": 24}, "seconds": 20.0, "minTier": 2},
     {"output": "Round Module Plug 3 m", "materials": {"steel": 85, "concrete": 17}, "seconds": 14.7, "minTier": 2},
     {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2},
+    {"output": "Mast Block", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Grow Former", "materials": {"steel": 900, "rubber": 120, "copper": 40}, "parts": {"Gear Set": 4, "Servo Motor": 2, "Control Unit": 1}, "seconds": 180},
     {"output": "Former Block", "materials": {"steel": 500, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 90}
   ]
