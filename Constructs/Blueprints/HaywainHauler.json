@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Haywain Hauler",
-  "description": "A medium hauler for the farmers, in a combine harvester's clothes: blocky barn-red cladding, a cream stripe band, a dark chassis. A glass cab room stands out on the nose with a walkway round it; behind it the crew block (bunks, a head, a galley, an airlock over the boarding shaft); then six standard 2 m containers, two across and three along, in a bay open to the sky inside a raised tank coaming, so a dock's crane lifts each one straight out; then the engine box with its exhaust stacks, and a drive pod slung low on each side. Lift jets and legs under it set it down; attitude jets at both ends and on the pods' noses move it about.",
+  "description": "A medium hauler for the farmers, in a combine harvester's clothes: blocky barn-red cladding, a cream stripe band, a dark chassis. A glass cab room stands out on the nose with a walkway round it, a ladder up to each side and an airlock off each, between the cab room and the crew block; then the crew block (bunks, a head, a galley, an airlock over the boarding shaft); then six standard 2 m containers, two across and three along, in a bay open to the sky inside a raised tank coaming, so a dock's crane lifts each one straight out; then the engine box with its exhaust stacks, and a drive pod slung low on each side. Lift jets and legs under it set it down; attitude jets at both ends and on the pods' noses move it about.",
   "steps": [
     {
       "part": "Haywain Keel"
@@ -91,49 +91,67 @@
       "by": "j0"
     },
     {
-      "part": "Haywain Cab Hull Port 1",
+      "part": "Haywain Cab Wall 8",
       "on": 1,
       "socket": "j12",
       "by": "j0"
     },
     {
-      "part": "Haywain Cab Hull Port 2",
+      "part": "Haywain Cab Wall 9",
       "on": 1,
       "socket": "j13",
       "by": "j0"
     },
     {
-      "part": "Haywain Cab Hull Port 4",
+      "part": "Haywain Cab Wall 10",
       "on": 1,
       "socket": "j14",
-      "by": "j1"
+      "by": "j0"
     },
     {
-      "part": "Haywain Cab Hull Stbd 1",
+      "part": "Haywain Cab Hull Port 1",
+      "on": 1,
+      "socket": "j15",
+      "by": "j0"
+    },
+    {
+      "part": "Haywain Cab Hull Port 2",
       "on": 1,
       "socket": "j16",
       "by": "j0"
     },
     {
-      "part": "Haywain Cab Hull Stbd 2",
+      "part": "Haywain Cab Hull Port 4",
       "on": 1,
       "socket": "j17",
-      "by": "j0"
-    },
-    {
-      "part": "Haywain Cab Hull Stbd 4",
-      "on": 1,
-      "socket": "j18",
       "by": "j1"
     },
     {
-      "part": "Haywain Windscreen",
+      "part": "Haywain Cab Hull Stbd 1",
+      "on": 1,
+      "socket": "j19",
+      "by": "j0"
+    },
+    {
+      "part": "Haywain Cab Hull Stbd 2",
       "on": 1,
       "socket": "j20",
       "by": "j0"
     },
     {
-      "part": "Haywain Cab Wall 8",
+      "part": "Haywain Cab Hull Stbd 4",
+      "on": 1,
+      "socket": "j21",
+      "by": "j1"
+    },
+    {
+      "part": "Haywain Windscreen",
+      "on": 1,
+      "socket": "j23",
+      "by": "j0"
+    },
+    {
+      "part": "Haywain Cab Wall 11",
       "on": 2,
       "socket": "j3",
       "by": "j4"
@@ -142,7 +160,7 @@
       "part": "Haywain Cab Ceiling",
       "on": 2,
       "socket": "j4",
-      "by": "j7"
+      "by": "j10"
     },
     {
       "part": "Haywain Roof",
@@ -152,247 +170,247 @@
     },
     {
       "part": "Haywain Roof 4",
-      "on": 17,
-      "socket": "j4",
+      "on": 20,
+      "socket": "j6",
       "by": "j1"
     },
     {
       "part": "Haywain Bay Ceiling",
-      "on": 22,
+      "on": 25,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Hull Port 6",
-      "on": 22,
+      "on": 25,
       "socket": "j7",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Hull Stbd 6",
-      "on": 22,
+      "on": 25,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 1",
-      "on": 23,
-      "socket": "j11",
+      "on": 26,
+      "socket": "j14",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 2",
-      "on": 23,
-      "socket": "j12",
+      "on": 26,
+      "socket": "j15",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Wall 1",
-      "on": 26,
+      "on": 29,
       "socket": "j1",
       "by": "j3"
     },
     {
       "part": "Haywain Bay Wall 2",
-      "on": 26,
+      "on": 29,
       "socket": "j2",
       "by": "j3"
     },
     {
       "part": "Haywain Bay Wall 3",
-      "on": 26,
+      "on": 29,
       "socket": "j3",
       "by": "j3"
     },
     {
       "part": "Haywain Bay Wall 4",
-      "on": 26,
+      "on": 29,
       "socket": "j4",
       "by": "j3"
     },
     {
       "part": "Haywain Bay Hull Port 8",
-      "on": 26,
+      "on": 29,
       "socket": "j6",
       "by": "j1"
     },
     {
       "part": "Haywain Bay Hull Stbd 8",
-      "on": 26,
+      "on": 29,
       "socket": "j8",
       "by": "j1"
     },
     {
       "part": "Haywain Eng Ceiling",
-      "on": 26,
+      "on": 29,
       "socket": "j9",
       "by": "j1"
     },
     {
       "part": "Haywain Roof 6",
-      "on": 26,
+      "on": 29,
       "socket": "j10",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 7",
-      "on": 26,
+      "on": 29,
       "socket": "j11",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 8",
-      "on": 26,
+      "on": 29,
       "socket": "j12",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 9",
-      "on": 26,
+      "on": 29,
       "socket": "j13",
       "by": "j0"
     },
     {
       "part": "Haywain Bay",
-      "on": 27,
+      "on": 30,
       "socket": "j1",
       "by": "j8"
     },
     {
       "part": "Haywain Eng Hull Port 11",
-      "on": 35,
+      "on": 38,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Haywain Eng Hull Stbd 11",
-      "on": 36,
+      "on": 39,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Haywain Eng Hull Port 12",
-      "on": 37,
+      "on": 40,
       "socket": "j3",
       "by": "j2"
     },
     {
       "part": "Haywain Eng Hull Stbd 12",
-      "on": 37,
+      "on": 40,
       "socket": "j5",
       "by": "j2"
     },
     {
       "part": "Haywain Roof 10",
-      "on": 37,
+      "on": 40,
       "socket": "j6",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 11",
-      "on": 37,
+      "on": 40,
       "socket": "j7",
       "by": "j0"
     },
     {
       "part": "Haywain Roof 12",
-      "on": 37,
+      "on": 40,
       "socket": "j8",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Hull Port 7",
-      "on": 39,
+      "on": 42,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Hull Stbd 7",
-      "on": 39,
+      "on": 42,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Haywain Bay Hull Port 9",
-      "on": 41,
+      "on": 44,
       "socket": "j2",
       "by": "j1"
     },
     {
       "part": "Haywain Bay Hull Stbd 9",
-      "on": 41,
+      "on": 44,
       "socket": "j4",
       "by": "j1"
     },
     {
       "part": "Haywain Keel 6",
-      "on": 42,
+      "on": 45,
       "socket": "j0",
       "by": "j0"
     },
     {
       "part": "Haywain Keel 7",
-      "on": 42,
+      "on": 45,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Haywain Keel 8",
-      "on": 42,
+      "on": 45,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Haywain Keel 9",
-      "on": 42,
+      "on": 45,
       "socket": "j3",
       "by": "j0"
     },
     {
       "part": "Haywain Engineering",
-      "on": 42,
+      "on": 45,
       "socket": "j12",
       "by": "j3"
     },
     {
       "part": "Haywain Eng Wall 1",
-      "on": 45,
+      "on": 48,
       "socket": "j1",
       "by": "j1"
     },
     {
       "part": "Haywain Eng Hull Port 10",
-      "on": 47,
+      "on": 50,
       "socket": "j1",
       "by": "j1"
     },
     {
       "part": "Haywain Eng Hull Stbd 10",
-      "on": 47,
+      "on": 50,
       "socket": "j3",
       "by": "j1"
     },
     {
       "part": "Haywain Keel 10",
-      "on": 58,
+      "on": 61,
       "socket": "j0",
       "by": "j0"
     },
     {
       "part": "Haywain Keel 11",
-      "on": 58,
+      "on": 61,
       "socket": "j1",
       "by": "j0"
     },
     {
       "part": "Haywain Keel 12",
-      "on": 58,
+      "on": 61,
       "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Haywain Stern",
-      "on": 58,
+      "on": 61,
       "socket": "j9",
       "by": "j0"
     },
@@ -406,7 +424,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 22,
+      "on": 25,
       "socket": "doorAft",
       "by": "hang",
       "paint": "#e8a317",
@@ -414,7 +432,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 11,
+      "on": 14,
       "socket": "doorBunk",
       "by": "hang",
       "paint": "#e8a317",
@@ -422,7 +440,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 11,
+      "on": 14,
       "socket": "doorHead",
       "by": "hang",
       "paint": "#e8a317",
@@ -430,7 +448,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 12,
+      "on": 15,
       "socket": "doorGalley",
       "by": "hang",
       "paint": "#e8a317",
@@ -438,11 +456,77 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 12,
+      "on": 15,
       "socket": "doorAirlock",
       "by": "hang",
       "paint": "#e8a317",
       "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.25x2 m",
+      "on": 11,
+      "socket": "doorLockInL",
+      "by": "hang",
+      "paint": "#e8a317",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.25x2 m",
+      "on": 9,
+      "socket": "doorLockOutL",
+      "by": "hang",
+      "paint": "#e8a317",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 13,
+      "socket": "lampLockL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd040"
+      }
+    },
+    {
+      "part": "Haywain Cab Ladder",
+      "on": 19,
+      "socket": "ladderL",
+      "by": "top",
+      "paint": "#2e302d",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bulkhead Door 1.25x2 m",
+      "on": 12,
+      "socket": "doorLockInR",
+      "by": "hang",
+      "paint": "#e8a317",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.25x2 m",
+      "on": 10,
+      "socket": "doorLockOutR",
+      "by": "hang",
+      "paint": "#e8a317",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 13,
+      "socket": "lampLockR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd040"
+      }
+    },
+    {
+      "part": "Haywain Cab Ladder",
+      "on": 22,
+      "socket": "ladderR",
+      "by": "top",
+      "paint": "#2e302d",
+      "finish": "painted steel"
     },
     {
       "part": "Flight Couch",
@@ -480,7 +564,7 @@
     },
     {
       "part": "Service Locker",
-      "on": 13,
+      "on": 16,
       "socket": "lockerBunk",
       "by": "wall",
       "paint": "#e2d7b5"
@@ -499,19 +583,19 @@
     },
     {
       "part": "Shower Stall",
-      "on": 22,
+      "on": 25,
       "socket": "shower",
       "by": "wall"
     },
     {
       "part": "Ship Galley Range",
-      "on": 8,
+      "on": 13,
       "socket": "range",
       "by": "back"
     },
     {
       "part": "Galley Coffee Station",
-      "on": 8,
+      "on": 13,
       "socket": "coffee",
       "by": "wall"
     },
@@ -536,13 +620,13 @@
     },
     {
       "part": "Life Support Unit",
-      "on": 22,
+      "on": 25,
       "socket": "lifeSupport",
       "by": "wall"
     },
     {
       "part": "Oxygen Tank",
-      "on": 22,
+      "on": 25,
       "socket": "o2Tank0",
       "by": "wall"
     },
@@ -554,7 +638,7 @@
     },
     {
       "part": "Haywain Boarding Ladder",
-      "on": 88,
+      "on": 99,
       "socket": "ladder",
       "by": "foot",
       "paint": "#2e302d",
@@ -562,7 +646,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 12,
+      "on": 15,
       "socket": "switchHatch",
       "by": "back",
       "config": {
@@ -571,98 +655,98 @@
     },
     {
       "part": "Engineer's Panel",
-      "on": 43,
+      "on": 46,
       "socket": "panel",
       "by": "back"
     },
     {
       "part": "Power Board",
-      "on": 32,
+      "on": 35,
       "socket": "board",
       "by": "back"
     },
     {
       "part": "Haywain Power Plant",
-      "on": 58,
+      "on": 61,
       "socket": "plant",
       "by": "bottom"
     },
     {
       "part": "Battery",
-      "on": 58,
+      "on": 61,
       "socket": "battery0",
       "by": "-y"
     },
     {
       "part": "Battery",
-      "on": 58,
+      "on": 61,
       "socket": "battery1",
       "by": "-y"
     },
     {
       "part": "Battery",
-      "on": 58,
+      "on": 61,
       "socket": "battery2",
       "by": "-y"
     },
     {
       "part": "Space Suit Locker",
-      "on": 59,
+      "on": 62,
       "socket": "suit",
       "by": "wall"
     },
     {
       "part": "Pressure Locker",
-      "on": 59,
+      "on": 62,
       "socket": "locker",
       "by": "wall",
       "paint": "#e2d7b5"
     },
     {
       "part": "MMU Dock",
-      "on": 59,
+      "on": 62,
       "socket": "mmuDock",
       "by": "wall"
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 99,
+      "on": 110,
       "socket": "mmu",
       "by": "mount"
     },
     {
       "part": "Tool Rack",
-      "on": 45,
+      "on": 48,
       "socket": "tools",
       "by": "back"
     },
     {
       "part": "Haywain Drive Pod L",
-      "on": 43,
+      "on": 46,
       "socket": "nacL",
       "by": "hull"
     },
     {
       "part": "Drive Nozzle M",
-      "on": 102,
+      "on": 113,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 102,
+      "on": 113,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 104,
+      "on": 115,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 102,
+      "on": 113,
       "socket": "hatch",
       "by": "hang",
       "spin": 3,
@@ -671,7 +755,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 102,
+      "on": 113,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#2e302d",
@@ -679,7 +763,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 102,
+      "on": 113,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#2e302d",
@@ -687,7 +771,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 102,
+      "on": 113,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#2e302d",
@@ -695,31 +779,31 @@
     },
     {
       "part": "Haywain Drive Pod R",
-      "on": 44,
+      "on": 47,
       "socket": "nacR",
       "by": "hull"
     },
     {
       "part": "Drive Nozzle M",
-      "on": 110,
+      "on": 121,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 110,
+      "on": 121,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 112,
+      "on": 123,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 110,
+      "on": 121,
       "socket": "hatch",
       "by": "hang",
       "paint": "#e2d7b5",
@@ -727,7 +811,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 110,
+      "on": 121,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#2e302d",
@@ -735,7 +819,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 110,
+      "on": 121,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#2e302d",
@@ -743,7 +827,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 110,
+      "on": 121,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#2e302d",
@@ -751,7 +835,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 25,
+      "on": 28,
       "socket": "rcsUpL",
       "by": "base",
       "paint": "#2e302d",
@@ -761,62 +845,6 @@
       "part": "Heavy RCS Thruster",
       "on": 7,
       "socket": "rcsDownL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 17,
-      "socket": "rcsOutL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 65,
-      "socket": "rcsUpL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 65,
-      "socket": "rcsDownL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 65,
-      "socket": "rcsOutL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 65,
-      "socket": "rcsAlongL",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 25,
-      "socket": "rcsUpR",
-      "by": "base",
-      "paint": "#2e302d",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 7,
-      "socket": "rcsDownR",
       "by": "base",
       "paint": "#2e302d",
       "finish": "dirty steel"
@@ -824,14 +852,46 @@
     {
       "part": "Heavy RCS Thruster",
       "on": 20,
-      "socket": "rcsOutR",
+      "socket": "rcsOutL",
       "by": "base",
       "paint": "#2e302d",
       "finish": "dirty steel"
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 65,
+      "on": 68,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 28,
       "socket": "rcsUpR",
       "by": "base",
       "paint": "#2e302d",
@@ -839,7 +899,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 65,
+      "on": 7,
       "socket": "rcsDownR",
       "by": "base",
       "paint": "#2e302d",
@@ -847,7 +907,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 65,
+      "on": 23,
       "socket": "rcsOutR",
       "by": "base",
       "paint": "#2e302d",
@@ -855,7 +915,31 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 65,
+      "on": 68,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 68,
       "socket": "rcsAlongR",
       "by": "base",
       "paint": "#2e302d",
@@ -875,25 +959,25 @@
     },
     {
       "part": "Haywain Lift Jet",
-      "on": 56,
+      "on": 59,
       "socket": "lift2",
       "by": "top"
     },
     {
       "part": "Haywain Lift Jet",
-      "on": 56,
+      "on": 59,
       "socket": "lift3",
       "by": "top"
     },
     {
       "part": "Haywain Lift Jet",
-      "on": 64,
+      "on": 67,
       "socket": "lift4",
       "by": "top"
     },
     {
       "part": "Haywain Lift Jet",
-      "on": 64,
+      "on": 67,
       "socket": "lift5",
       "by": "top"
     },
@@ -905,37 +989,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 138,
+      "on": 149,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 138,
+      "on": 149,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 138,
+      "on": 149,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 138,
+      "on": 149,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 142,
+      "on": 153,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 138,
+      "on": 149,
       "socket": "foot",
       "by": "hang"
     },
@@ -947,127 +1031,127 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 145,
+      "on": 156,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 145,
+      "on": 156,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 145,
+      "on": 156,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 145,
+      "on": 156,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 149,
+      "on": 160,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 145,
+      "on": 156,
       "socket": "foot",
       "by": "hang"
     },
     {
       "part": "Leg Pod Housing S",
-      "on": 64,
+      "on": 67,
       "socket": "leg2",
       "by": "top"
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 152,
+      "on": 163,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 152,
+      "on": 163,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 152,
+      "on": 163,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 152,
+      "on": 163,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 156,
+      "on": 167,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 152,
+      "on": 163,
       "socket": "foot",
       "by": "hang"
     },
     {
       "part": "Leg Pod Housing S",
-      "on": 64,
+      "on": 67,
       "socket": "leg3",
       "by": "top"
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 159,
+      "on": 170,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 159,
+      "on": 170,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 159,
+      "on": 170,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 159,
+      "on": 170,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 163,
+      "on": 174,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 159,
+      "on": 170,
       "socket": "foot",
       "by": "hang"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockL00",
       "by": "foot.0",
       "paint": "#4f9a3e",
@@ -1075,7 +1159,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 166,
+      "on": 177,
       "socket": "hatch",
       "by": "hang",
       "paint": "#4f9a3e",
@@ -1083,7 +1167,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 166,
+      "on": 177,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#4f9a3e",
@@ -1091,25 +1175,25 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 166,
+      "on": 177,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 166,
+      "on": 177,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 166,
+      "on": 177,
       "socket": "slot2",
       "by": "base"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockR00",
       "by": "foot.0",
       "paint": "#c9a83a",
@@ -1117,7 +1201,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 172,
+      "on": 183,
       "socket": "hatch",
       "by": "hang",
       "paint": "#c9a83a",
@@ -1125,7 +1209,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 172,
+      "on": 183,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#c9a83a",
@@ -1133,25 +1217,25 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 172,
+      "on": 183,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 172,
+      "on": 183,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 172,
+      "on": 183,
       "socket": "slot2",
       "by": "base"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockL10",
       "by": "foot.0",
       "paint": "#6e2a2e",
@@ -1159,7 +1243,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 178,
+      "on": 189,
       "socket": "hatch",
       "by": "hang",
       "paint": "#6e2a2e",
@@ -1167,7 +1251,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 178,
+      "on": 189,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#6e2a2e",
@@ -1175,25 +1259,25 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 178,
+      "on": 189,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 178,
+      "on": 189,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 178,
+      "on": 189,
       "socket": "slot2",
       "by": "base"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockR10",
       "by": "foot.0",
       "paint": "#c9a83a",
@@ -1201,7 +1285,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 184,
+      "on": 195,
       "socket": "hatch",
       "by": "hang",
       "paint": "#c9a83a",
@@ -1209,7 +1293,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 184,
+      "on": 195,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#c9a83a",
@@ -1217,25 +1301,25 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 184,
+      "on": 195,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 184,
+      "on": 195,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 184,
+      "on": 195,
       "socket": "slot2",
       "by": "base"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockL20",
       "by": "foot.0",
       "paint": "#4f9a3e",
@@ -1243,7 +1327,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 190,
+      "on": 201,
       "socket": "hatch",
       "by": "hang",
       "paint": "#4f9a3e",
@@ -1251,7 +1335,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 190,
+      "on": 201,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#4f9a3e",
@@ -1259,25 +1343,25 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 190,
+      "on": 201,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 190,
+      "on": 201,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 190,
+      "on": 201,
       "socket": "slot2",
       "by": "base"
     },
     {
       "part": "Standard Container 2m",
-      "on": 42,
+      "on": 45,
       "socket": "lockR20",
       "by": "foot.0",
       "paint": "#5d6a74",
@@ -1285,7 +1369,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 196,
+      "on": 207,
       "socket": "hatch",
       "by": "hang",
       "paint": "#5d6a74",
@@ -1293,7 +1377,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 196,
+      "on": 207,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#5d6a74",
@@ -1301,19 +1385,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 196,
+      "on": 207,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 196,
+      "on": 207,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 196,
+      "on": 207,
       "socket": "slot2",
       "by": "base"
     },
@@ -1355,7 +1439,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 11,
+      "on": 14,
       "socket": "switchBunk",
       "by": "back",
       "config": {
@@ -1373,7 +1457,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 11,
+      "on": 14,
       "socket": "switchHead",
       "by": "back",
       "config": {
@@ -1391,7 +1475,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 12,
+      "on": 15,
       "socket": "switchGalley",
       "by": "back",
       "config": {
@@ -1409,7 +1493,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 11,
+      "on": 14,
       "socket": "lampHallA",
       "by": "back",
       "config": {
@@ -1418,7 +1502,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 12,
+      "on": 15,
       "socket": "lampHallB",
       "by": "back",
       "config": {
@@ -1427,7 +1511,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 27,
+      "on": 30,
       "socket": "lampCrossL",
       "by": "back",
       "config": {
@@ -1436,7 +1520,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 28,
+      "on": 31,
       "socket": "lampCrossR",
       "by": "back",
       "config": {
@@ -1445,7 +1529,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 35,
+      "on": 38,
       "socket": "lampL0",
       "by": "back",
       "config": {
@@ -1454,7 +1538,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 35,
+      "on": 38,
       "socket": "lampL1",
       "by": "back",
       "config": {
@@ -1463,7 +1547,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 35,
+      "on": 38,
       "socket": "lampL2",
       "by": "back",
       "config": {
@@ -1472,7 +1556,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 36,
+      "on": 39,
       "socket": "lampR0",
       "by": "back",
       "config": {
@@ -1481,7 +1565,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 36,
+      "on": 39,
       "socket": "lampR1",
       "by": "back",
       "config": {
@@ -1490,7 +1574,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 36,
+      "on": 39,
       "socket": "lampR2",
       "by": "back",
       "config": {
@@ -1499,7 +1583,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 45,
+      "on": 48,
       "socket": "lampEngL",
       "by": "back",
       "config": {
@@ -1508,7 +1592,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 46,
+      "on": 49,
       "socket": "lampEngR",
       "by": "back",
       "config": {
@@ -1517,7 +1601,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 32,
+      "on": 35,
       "socket": "switchEng",
       "by": "back",
       "config": {
@@ -1527,40 +1611,40 @@
   ],
   "wires": [
     [
-      72,
-      74
+      83,
+      85
     ],
     [
-      90,
-      88
+      101,
+      99
     ],
     [
-      204,
-      202
+      215,
+      213
     ],
     [
-      204,
-      203
+      215,
+      214
     ],
     [
-      206,
-      205
+      217,
+      216
     ],
     [
-      208,
-      207
+      219,
+      218
     ],
     [
-      210,
-      209
+      221,
+      220
     ],
     [
-      224,
-      222
+      235,
+      233
     ],
     [
-      224,
-      223
+      235,
+      234
     ]
   ],
   "conduit": true

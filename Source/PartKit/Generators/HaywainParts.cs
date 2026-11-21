@@ -50,9 +50,16 @@ public sealed class HaywainParts : IPartGenerator
     private const double ECeil = 2.75, ERoof = 3.0; // engineering
     /// <summary>The stations: the cab room's front, its middle and its back (ZCk), the shoulder where the body steps out (ZCab), the
     /// crew block, the bay's ends and middles, engineering, the transom.</summary>
-    private const double Zt = -23.6, ZS1 = -22.0, ZCk = -20.45, ZCab = -20.05, ZNeck = -16.3, ZCabEnd = -11.95, ZEng = 10.45, ZEngMid = 13.8, ZEngEnd = 17.3, Stern = 19.6;
-    private const double ZCkFloor = -23.3; // the cab room's floor, forward
-    private const double ZCkW = -19.925, ZCabW = -12.075, ZEngAW = 17.175; // the cross walls' middles: the cab room's back, the crew block's aft, engineering's aft
+    private const double Zt = -25.6, ZS1 = -24.0, ZCk = -22.45, ZCab = -22.05, ZNeck = -16.3, ZCabEnd = -11.95, ZEng = 10.45, ZEngMid = 13.8, ZEngEnd = 17.3, Stern = 19.6;
+    private const double ZCkFloor = -25.3; // the cab room's floor, forward
+    private const double ZCkW = -21.925, ZCabW = -12.075, ZEngAW = 17.175; // the cross walls' middles: the cab room's back, the crew block's aft, engineering's aft
+    /// <summary>The crew block's front wall (the cross wall's middle): between it and the cab room's back wall, the side airlocks
+    /// (Karl, 2026-11-21: "add airlock on either side so the ladder and platform are actually useful") either side of a passage.</summary>
+    private const double ZCrewW = -19.925;
+    /// <summary>The side airlocks' doorways, inner and outer (along z from LockA, LockW wide, LockH high: the 1.25 x 2 m bulkhead door,
+    /// which slides aft into the wall behind it), and the walkway's top, a step under the sill.</summary>
+    private const double LockA = -21.72, LockW = 1.25, LockHt = 2.0, WalkTop = 0.22, WalkOut = 5.45;
+    private const string LockDoor = "Bulkhead Door 1.25x2 m";
     private const double DoorH = 2.25;
     /// <summary>How far the crew block's fittings sit from the Satchel's (whose cab this copies).</summary>
     private const double D2 = -6.8;
@@ -106,6 +113,10 @@ public sealed class HaywainParts : IPartGenerator
     private const double PadProud = 0.1; // a jet's mount under the flat
     private const double LegProud = 0.16; // a leg pod's mount
     private static double Ground => -0.8 - LegProud - LegPodParts.ReachOf(LegPod);
+    /// <summary>The walkways' ladders: across from the centreline, and their feet, a step over the ground (so they never prop the ship).</summary>
+    private const double LadderX = WalkOut - 0.5;
+    private static double LadderFoot => Ground + 0.15;
+    private const string CabLadder = "Haywain Cab Ladder";
     private const string Rcs = "Heavy RCS Thruster";
     private const double BowRcsZ = -17.0, SternRcsZ = 18.6, RcsPadW = 0.6;
 
@@ -239,6 +250,26 @@ public sealed class HaywainParts : IPartGenerator
         var dz = k % 2 == 1 ? FacetStagger : 0;
         double[] At2(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u < 0.5 ? FacetTrim : -FacetTrim)]); }
         Quad(p, At2(0, 0), At2(0, 1), At2(1, 1), At2(1, 0), color, finish, glass);
+    }
+
+    /// <summary>Part of facet k's skin: u from ua to ub along z, v from va to vb across; only the band's own ends (u 0 and 1) are
+    /// trimmed, so the pieces of one facet meet edge to edge round a hole.</summary>
+    private static void FacetSub(Part p, int k, int s, double za, double zb, double ua, double ub, double va, double vb, string color, string finish = "painted plating")
+    {
+        var dz = k % 2 == 1 ? FacetStagger : 0;
+        double[] At2(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u <= 0 ? FacetTrim : u >= 1 ? -FacetTrim : 0)]); }
+        Quad(p, At2(ua, va), At2(ua, vb), At2(ub, vb), At2(ub, va), color, finish);
+    }
+
+    /// <summary>Facet k's skin from za to zb with a hole from u0 to u1 that runs off one of its edges (v from vLo to vHi, one of them past 0 or 1).</summary>
+    private static void FacetHole(Part p, int k, int s, double za, double zb, double u0, double u1, double vLo, double vHi, string color)
+    {
+        FacetSub(p, k, s, za, zb, 0, u0, 0, 1, color);
+        FacetSub(p, k, s, za, zb, u1, 1, 0, 1, color);
+        if (vLo > 0)
+            FacetSub(p, k, s, za, zb, u0, u1, 0, vLo, color);
+        if (vHi < 1)
+            FacetSub(p, k, s, za, zb, u0, u1, vHi, 1, color);
     }
 
     private const double FacetStagger = 0.006, FacetTrim = 0.0015; // (and each stops 1.5 mm short of its band's ends: a tapering band's plate leans past them)
@@ -691,14 +722,19 @@ public sealed class HaywainParts : IPartGenerator
 
     /// <summary>The stripe band on a band of the upper side (facet 3), along its foot: a wide cream stripe, a dark pinstripe, a thin
     /// cream one (a combine's decal band).</summary>
-    private static void Livery(Part p, int s, double za, double zb)
+    private static void Livery(Part p, int s, double za, double zb, double cutA = 0, double cutB = 0)
     {
         double a = za + (RibAt(za) ? 0.26 : 0.02), b = zb - (RibAt(zb) ? 0.26 : 0.02), len = zb - za;
-        if (b - a < 0.3)
-            return;
-        FStrip(p, 3, s, za, zb, (a - za) / len, (b - za) / len, 0.03, 0.12, 0.024, Armour, "painted plating");
-        FStrip(p, 3, s, za, zb, (a - za) / len, (b - za) / len, 0.14, 0.16, 0.024, Dark, "painted plating");
-        FStrip(p, 3, s, za, zb, (a - za) / len, (b - za) / len, 0.18, 0.205, 0.024, Armour, "painted plating");
+        var runs = cutB > cutA ? new[] { (a, cutA), (cutB, b) } : [(a, b)]; // (stopped either side of a doorway)
+        foreach (var (ra, rb) in runs)
+        {
+            if (rb - ra < 0.3)
+                continue;
+            double u0 = (ra - za) / len, u1 = (rb - za) / len;
+            FStrip(p, 3, s, za, zb, u0, u1, 0.03, 0.12, 0.024, Armour, "painted plating");
+            FStrip(p, 3, s, za, zb, u0, u1, 0.14, 0.16, 0.024, Dark, "painted plating");
+            FStrip(p, 3, s, za, zb, u0, u1, 0.18, 0.205, 0.024, Armour, "painted plating");
+        }
     }
 
     // ---- the keel: the flat underside the whole length, the void under the floors (fuel), the boarding shaft, the jets' and legs' mounts
@@ -911,7 +947,7 @@ public sealed class HaywainParts : IPartGenerator
         WallCol = Wall;
         DadoCol = WallLow;
         var p = Big("Haywain Cab", "The Haywain's cab: the glass cab room standing out on the nose with the flight couches, then the crew's rooms off a short corridor: the bunk room and the head to port, the galley and the airlock over the boarding shaft to starboard.");
-        const double D = 9.5 + D2; // (the Packet's cockpit fittings, moved aft by this much)
+        const double D = 9.5 + D2 - 2.0; // (the Packet's cockpit fittings, moved aft by this much; the cab room went 2 m forward for the airlocks)
         Rect ck = new(Cx - CkHx, ZCkFloor, Cx + CkHx, ZCkW - 0.125), cab = new(Cx - Lw - 0.25, ZCkW - 0.125, Cx + Lw + 0.25, ZCabW - 0.125);
         Floor(p, [ck, cab], 0, Ft, Deck, "rubber matting", BellyHatch);
         Floor(p, [new Rect(cab.X0, ZCkW + 0.125, cab.X1, ZCabW - 0.125)], CCeil, CRoof, Ceil, "painted plating");
@@ -944,10 +980,40 @@ public sealed class HaywainParts : IPartGenerator
         // rooms' cross walls, the aft wall (the whole width: the cross passage behind it reaches the side passages).
         WallRun(p, true, Cx - Lw - 0.25, Cx + Lw + 0.25, ZCkW, Ft, CCeil, Door(Cx - 0.75));
         Solid(p, Cx - CkHx - 0.05, CCeil + 0.004, ZCkW - 0.12, Cx + CkHx + 0.05, CkCeil - 0.004, ZCkW + 0.12, Wall, "painted plating"); // (the cab room is taller: a header over the wall up to its ceiling)
+        // The side airlocks between the cab room and the crew block: each a room off the passage, its inner door in the passage's wall
+        // and its outer door in the crew block's side, through a short lined way to the walkway outside.
+        var lockGap = new Gap(LockA, LockW, 0, LockHt);
         foreach (var s in new[] { -1, 1 })
-            WallRun(p, false, ZCkW + 0.125, ZCabW - 0.125, Cx + s * (Lw + 0.125), Ft, CCeil);
-        WallRun(p, false, ZCkW + 0.125, ZCabW - 0.125, Cx - 0.875, Ft, CCeil, Door(-11.6 + D2), Door(-8.3 + D2));
-        WallRun(p, false, ZCkW + 0.125, ZCabW - 0.125, Cx + 0.875, Ft, CCeil, Door(-12.4 + D2), Door(-7.1 + D2));
+            WallRun(p, false, ZCkW + 0.125, ZCabW - 0.125, Cx + s * (Lw + 0.125), Ft, CCeil, lockGap);
+        foreach (var s in new[] { -1, 1 })
+            WallRun(p, false, ZCkW + 0.125, ZCrewW - 0.125, Cx + s * 0.875, Ft, CCeil, lockGap);
+        WallRun(p, true, Cx - Lw, Cx + Lw, ZCrewW, Ft, CCeil, Door(Cx - 0.75));
+        WallRun(p, false, ZCrewW + 0.125, ZCabW - 0.125, Cx - 0.875, Ft, CCeil, Door(-11.6 + D2), Door(-8.3 + D2));
+        WallRun(p, false, ZCrewW + 0.125, ZCabW - 0.125, Cx + 0.875, Ft, CCeil, Door(-12.4 + D2), Door(-7.1 + D2));
+        foreach (var s in new[] { -1, 1 })
+        {
+            // The cycle lights over each door, both faces: red and green (the game has no pressurised rooms yet: they're the look).
+            foreach (var (x, f) in new[] { (Cx + s * 0.875, -s), (Cx + s * 0.875, s), (Cx + s * (Lw + 0.125), -s) })
+            {
+                var wx = x + f * 0.125;
+                Detail(p, Math.Min(wx, wx + f * 0.015), Ft + LockHt + 0.15, LockA + 0.35, Math.Max(wx, wx + f * 0.015), Ft + LockHt + 0.3, LockA + 0.55, Red, glow: true);
+                Detail(p, Math.Min(wx, wx + f * 0.015), Ft + LockHt + 0.15, LockA + 0.7, Math.Max(wx, wx + f * 0.015), Ft + LockHt + 0.3, LockA + 0.9, "#40e070", glow: true);
+            }
+            // The floor: tread plate, hazard bands at both sills; a grab rail along the forward wall.
+            Detail(p, Cx + s * 1.05, Ft, ZCkW + 0.2, Cx + s * (Lw - 0.05), Ft + 0.012, ZCrewW - 0.2, "#30332e", "tread plate");
+            foreach (var x in new[] { 1.05, Lw - 0.3 })
+                Detail(p, Cx + s * x, Ft + 0.012, LockA + 0.05, Cx + s * (x + 0.25), Ft + 0.016, LockA + LockW - 0.05, Hazard, "hazard paint");
+            Detail(p, Cx + s * 1.3, Ft + 1.0, ZCkW + 0.125, Cx + s * (Lw - 0.3), Ft + 1.05, ZCkW + 0.2, Bare, "steel");
+            foreach (var x in new[] { 1.35, Lw - 0.35 })
+                Detail(p, Cx + s * x - 0.02, Ft + 0.96, ZCkW + 0.125, Cx + s * x + 0.02, Ft + 1.09, ZCkW + 0.21, Frame, "painted steel");
+            // The way out through the void to the hull: a floor level with the deck, cheeks and a head, all lining.
+            double xa = Cx + s * (Lw + 0.25), xb = Cx + s * 4.40;
+            Solid(p, xa, 0, LockA, xb, Ft, LockA + LockW, Deck, "rubber matting");
+            Solid(p, xa, Ft, LockA - 0.15, xb, Ft + LockHt + 0.15, LockA, Wall, "painted plating");
+            Solid(p, xa, Ft, LockA + LockW, xb, Ft + LockHt + 0.15, LockA + LockW + 0.15, Wall, "painted plating");
+            Solid(p, xa, Ft + LockHt, LockA, xb, Ft + LockHt + 0.15, LockA + LockW, Wall, "painted plating");
+            Hidden(p, xa, Ft + LockHt + 0.154, LockA - 0.15, Cx + s * 4.38, CRoof, LockA + LockW + 0.15);
+        }
         WallRun(p, true, Cx - Lw, Cx - 1.0, ZPortW, Ft, CCeil);
         WallRun(p, true, Cx + 1.0, Cx + Lw, ZStbdW, Ft, CCeil);
         WallRun(p, true, Cx - PassOut - SLine, Cx + PassOut + SLine, ZCabW, Ft, CCeil, Door(Cx - 0.75));
@@ -979,11 +1045,38 @@ public sealed class HaywainParts : IPartGenerator
             Facet(p, 3, s, ZCk, ZCab, Skin, "painted plating");
             foreach (var (_, za, zb) in BandsIn(ZCab, ZCabEnd))
             {
-                Band(p, 2, s, za, zb, Frame, 3, plates: false);
-                Band(p, 3, s, za, zb, Skin, 5, plates: false);
-                Livery(p, s, za, zb);
-                Chine(p, 2, s, za, zb, 0.2, 0.08, Armour);
                 Chine(p, 3, s, za, zb, 0.16, 0.08, Frame);
+                if (za != ZCab)
+                {
+                    Band(p, 2, s, za, zb, Frame, 3, plates: false);
+                    Band(p, 3, s, za, zb, Skin, 5, plates: false);
+                    Livery(p, s, za, zb);
+                    Chine(p, 2, s, za, zb, 0.2, 0.08, Armour);
+                    continue;
+                }
+                // The band with the airlock's outer doorway: the skin round it, the stripe and the beam's rail stopped short of it.
+                double len = zb - za, u0 = (LockA - za) / len, u1 = (LockA + LockW - za) / len;
+                var q = At(za);
+                FacetHole(p, 2, s, za, zb, u0, u1, (Ft - q[1].Y) / (q[2].Y - q[1].Y), 2, Frame);
+                FacetHole(p, 3, s, za, zb, u0, u1, -1, (Ft + LockHt - q[2].Y) / (q[3].Y - q[2].Y), Skin);
+                Livery(p, s, za, zb, LockA - 0.3, LockA + LockW + 0.3);
+                Chine(p, 2, s, za, LockA - 0.14, 0.2, 0.08, Armour);
+                Chine(p, 2, s, LockA + LockW + 0.14, zb, 0.2, 0.08, Armour);
+                // The doorway's frame: dark jambs and head standing through the skin's edges, a hazard sill, a cycle lamp and a
+                // stencilled number over it, grab handles either side.
+                double xi = Cx + s * 4.38, xo = Cx + s * 4.58;
+                Detail(p, xi, Ft - 0.02, LockA - 0.12, xo, Ft + LockHt + 0.12, LockA + 0.004, Dark, "painted steel");
+                Detail(p, xi, Ft - 0.02, LockA + LockW - 0.004, xo, Ft + LockHt + 0.12, LockA + LockW + 0.12, Dark, "painted steel");
+                Detail(p, xi, Ft + LockHt - 0.004, LockA + 0.004, xo, Ft + LockHt + 0.12, LockA + LockW - 0.004, Dark, "painted steel");
+                Detail(p, xi, Ft - 0.1, LockA + 0.004, Cx + s * 4.6, Ft + 0.004, LockA + LockW - 0.004, Hazard, "hazard paint");
+                Detail(p, Math.Min(xo, xo + s * 0.06), Ft + LockHt + 0.2, LockA + 0.45, Math.Max(xo, xo + s * 0.06), Ft + LockHt + 0.36, LockA + 0.8, Dark, "painted steel");
+                Detail(p, Math.Min(xo + s * 0.06, xo + s * 0.08), Ft + LockHt + 0.23, LockA + 0.48, Math.Max(xo + s * 0.06, xo + s * 0.08), Ft + LockHt + 0.33, LockA + 0.77, Hazard, glow: true);
+                foreach (var z in new[] { LockA - 0.22, LockA + LockW + 0.22 })
+                {
+                    Detail(p, Math.Min(xo, xo + s * 0.08), Ft + 0.9, z - 0.02, Math.Max(xo, xo + s * 0.08), Ft + 1.7, z + 0.02, Bare, "steel");
+                    foreach (var y in new[] { Ft + 0.95, Ft + 1.65 })
+                        Detail(p, Math.Min(Cx + s * 4.5, xo), y - 0.02, z - 0.025, Math.Max(Cx + s * 4.5, xo), y + 0.02, z + 0.025, Frame, "painted steel");
+                }
             }
             // Square windows in the upper sides: the bunk room and the galley, the head and the airlock.
             foreach (var z in new[] { -12.2 + D2, -10.2 + D2, -8.0 + D2 })
@@ -998,21 +1091,23 @@ public sealed class HaywainParts : IPartGenerator
             Slab(p, 3, s, ZNeck, ZCabEnd, 0.52, 0.88, 0.46, 0.74, 0.05, 0.07, 0.01, Armour, "painted plating");
             for (var m = 0; m < 5; m++)
                 FStrip(p, 3, s, ZNeck, ZCabEnd, 0.56 + m * 0.06, 0.6 + m * 0.06, 0.53, 0.67, 0.08, m == 0 ? Skin : Dark, "painted plating");
-            // The walkway round the cab room: a tread-plate platform on the shoulder's foot each side, a hand rail round it, and a
-            // ladder from its outer corner down to the ground (a combine's cab platform).
-            double w0 = Cx + s * (CkGlass + 0.06), w1 = Cx + s * 4.3, pz0 = ZCk - 1.2, pz1 = ZCk - 0.02;
-            Detail(p, Math.Min(w0, w1), -0.08, pz0, Math.Max(w0, w1), 0.0, pz1, Dark, "tread plate");
-            Detail(p, Math.Min(w0, w1) + 0.02, -0.2, pz0 + 0.02, Math.Max(w0, w1) - 0.02, -0.08, pz0 + 0.12, Hazard, "hazard paint");
-            foreach (var (x, z) in new[] { (w1 - s * 0.03, pz0 + 0.03), (w1 - s * 0.03, pz1 - 0.06), (w0 + s * 0.6, pz0 + 0.03) })
-                Detail(p, x - 0.025, 0.0, z - 0.025, x + 0.025, 1.1, z + 0.025, Hazard, "worn paint");
-            Detail(p, Math.Min(w0 + s * 0.6, w1) - 0.02, 1.08, pz0 + 0.005, Math.Max(w0 + s * 0.6, w1) + 0.02, 1.13, pz0 + 0.055, Hazard, "worn paint");
-            Detail(p, Math.Min(w1, w1 - s * 0.06) - 0.004, 1.08, pz0 + 0.005, Math.Max(w1, w1 - s * 0.06) + 0.004, 1.13, pz1 - 0.035, Hazard, "worn paint");
-            Detail(p, Math.Min(w1, w1 - s * 0.06), 0.55, pz0 + 0.06, Math.Max(w1, w1 - s * 0.06), 0.59, pz1 - 0.08, Hazard, "worn paint");
-            var lx = Cx + s * 3.7;
-            foreach (var dx in new[] { -0.22, 0.22 })
-                Detail(p, lx + dx - 0.025, Ground + 0.3, pz0 - 0.05, lx + dx + 0.025, 0.0, pz0 + 0.0, Frame, "painted steel");
-            for (var y = -0.3; y > Ground + 0.35; y -= 0.3)
-                Detail(p, lx - 0.22, y - 0.02, pz0 - 0.04, lx + 0.22, y + 0.02, pz0 - 0.005, Bare, "tread plate");
+            // The walkway round the cab room: a tread-plate platform at the shoulder's foot each side, running back along the body's
+            // flank to the airlock's outer door, a hand rail round it, and a ladder up to its outer front corner from the ground (a
+            // combine's cab platform). Solid: it is walked on, and the rails keep people on it.
+            double w0 = Cx + s * (CkGlass + 0.06), wo = Cx + s * WalkOut, wi = Cx + s * 4.47, pz0 = ZCk - 1.2, ze = LockA + LockW + 0.45;
+            Solid(p, w0, WalkTop - 0.12, pz0, wo, WalkTop, ZCab - 0.01, Dark, "tread plate");
+            Solid(p, wi, WalkTop - 0.12, ZCab - 0.01, wo, WalkTop, ze, Dark, "tread plate");
+            Detail(p, w0 + s * 0.02, WalkTop - 0.24, pz0 + 0.02, wo - s * 0.02, WalkTop - 0.12, pz0 + 0.12, Hazard, "hazard paint");
+            Detail(p, wo - s * 0.12, WalkTop - 0.24, pz0 + 0.12, wo - s * 0.02, WalkTop - 0.12, ze - 0.02, Hazard, "hazard paint");
+            // Rails: along the front from the glass to the ladder's gap, down the outside from the gap to the aft end, across it.
+            double lgx = Cx + s * (LadderX - 0.45), rx = wo - s * 0.03, top = WalkTop + 1.1;
+            foreach (var (x, z) in new[] { (w0 + s * 0.6, pz0 + 0.03), (lgx, pz0 + 0.03), (rx, pz0 + 0.45), (rx, (pz0 + ze) / 2), (rx, ze - 0.03), (wi + s * 0.1, ze - 0.03) })
+                Solid(p, x - 0.025, WalkTop, z - 0.025, x + 0.025, top, z + 0.025, Hazard, "worn paint");
+            Solid(p, w0 + s * 0.6, top - 0.05, pz0 + 0.005, lgx, top, pz0 + 0.055, Hazard, "worn paint");
+            Solid(p, rx - 0.025, top - 0.05, pz0 + 0.475, rx + 0.025, top, ze - 0.005, Hazard, "worn paint");
+            Solid(p, wi + s * 0.1, top - 0.05, ze - 0.055, rx, top, ze - 0.005, Hazard, "worn paint");
+            Detail(p, rx - 0.02, WalkTop + 0.53, pz0 + 0.47, rx + 0.02, WalkTop + 0.57, ze - 0.05, Hazard, "worn paint");
+            Detail(p, w0 + s * 0.62, WalkTop + 0.53, pz0 + 0.01, lgx, WalkTop + 0.57, pz0 + 0.05, Hazard, "worn paint");
             // Mirrors on arms off the cab room's front corners.
             Detail(p, Math.Min(Cx + s * (CkGlass + 0.06), Cx + s * 2.85), 3.0, Zt + 0.25, Math.Max(Cx + s * (CkGlass + 0.06), Cx + s * 2.85), 3.05, Zt + 0.3, Dark, "painted steel");
             Detail(p, Math.Min(Cx + s * 2.8, Cx + s * 2.88), 2.65, Zt + 0.18, Math.Max(Cx + s * 2.8, Cx + s * 2.88), 3.2, Zt + 0.42, Dark, "painted steel");
@@ -1020,7 +1115,13 @@ public sealed class HaywainParts : IPartGenerator
         Ribs(p, ZCab, ZCabEnd, 2, 3);
         foreach (var (_, za, zb) in BandsIn(ZCab, ZCabEnd))
             foreach (var (ya, yb) in new[] { (0.0, 1.5), (1.5, CRoof) })
-                VoidT(p, za, zb, ya, yb, Lw + 0.25, za == ZCab ? 0.25 : 0.004, zb == ZCabEnd ? 0.25 : 0.004);
+                if (za == ZCab) // (round the airlocks' ways out)
+                {
+                    VoidT(p, za, LockA - 0.154, ya, yb, Lw + 0.25, 0.25, 0);
+                    VoidT(p, LockA + LockW + 0.154, zb, ya, yb, Lw + 0.25, 0, 0.004);
+                }
+                else
+                    VoidT(p, za, zb, ya, yb, Lw + 0.25, 0.004, zb == ZCabEnd ? 0.25 : 0.004);
         // The bow's out jets on the crew block's flanks.
         foreach (var s in new[] { -1, 1 })
             RcsPad(p, "rcsOut" + (s < 0 ? "L" : "R"), FacetX(2, s, BowRcsZ, 0.4), 0.4, BowRcsZ, s < 0 ? "-x" : "+x", 0.28);
@@ -1031,6 +1132,15 @@ public sealed class HaywainParts : IPartGenerator
         DoorSock(p, "doorHead", false, -8.3 + D2, Cx - 0.875, Ft);
         DoorSock(p, "doorGalley", false, -12.4 + D2, Cx + 0.875, Ft);
         DoorSock(p, "doorAirlock", false, -7.1 + D2, Cx + 0.875, Ft);
+        // The side airlocks' doors hang at their doorways' aft ends, so each slides aft into the wall behind it (forward would take it
+        // into the cab room or out through the shoulder); their lamps on the crew block's front wall; the walkways' ladders.
+        foreach (var (s, n) in new[] { (-1, "L"), (1, "R") })
+        {
+            Sock(p, "doorLockIn" + n, Cx + s * 0.875, Ft + 1.0, LockA + LockW, "-z");
+            Sock(p, "doorLockOut" + n, Cx + s * (Lw + 0.125), Ft + 1.0, LockA + LockW, "-z");
+            Sock(p, "lampLock" + n, Cx + s * 2.2, Ft + 2.2, ZCrewW - 0.125, "-z");
+            Sock(p, "ladder" + n, Cx + s * LadderX, WalkTop - 0.06, ZCk - 1.2, "-z"); // (on the walkway's front edge: the ladder hangs by its top)
+        }
         // The cab room's couches and computer, its lamps and their switch on the back wall.
         Sock(p, "pilot", Cx - 0.7, Ft, -23.9 + D, "+y");
         Sock(p, "copilot", Cx + 0.7, Ft, -23.9 + D, "+y");
@@ -1051,8 +1161,8 @@ public sealed class HaywainParts : IPartGenerator
         Sock(p, "lampHead", Cx - Lw, Ft + 2.3, -6.6 + D2, "+x");
         Sock(p, "switchHead", Cx - 1.0, Ft + 1.3, -8.45 + D2, "-x");
         // The galley: the range and the coffee station on the forward wall, the mess table along the outer wall.
-        Sock(p, "range", Cx + 2.5, Ft + 0.45, ZCkW + 0.125, "+z");
-        Sock(p, "coffee", Cx + 1.55, Ft + 0.125, ZCkW + 0.125, "+z");
+        Sock(p, "range", Cx + 2.5, Ft + 0.45, ZCrewW + 0.125, "+z");
+        Sock(p, "coffee", Cx + 1.55, Ft + 0.125, ZCrewW + 0.125, "+z");
         Sock(p, "table", Cx + 2.6, Ft, -11.0 + D2, "+y");
         Sock(p, "lampGalley", Cx + Lw, Ft + 2.2, -11.6 + D2, "-x");
         Sock(p, "switchGalley", Cx + 1.0, Ft + 1.3, -12.55 + D2, "+x");
@@ -1182,9 +1292,9 @@ public sealed class HaywainParts : IPartGenerator
                     foreach (var dz in new[] { -1, 1 })
                     {
                         double x = xc + dx * CastX, z = zc + dz * CastZ;
-                        Solid(p, x - 0.17, Ft, z - 0.17, x + 0.17, Ft + LockH, z + 0.17, Latch, "worn paint");
-                        Detail(p, x - 0.05, Ft + LockH, z - 0.09, x + 0.05, Ft + LockH + 0.015, z + 0.09, Frame, "steel");
-                        p.Sock($"lock{n}{r}{k++}", P(x, Ft + LockH, z), "+y", Medium); // (a container is a medium part)
+                        Solid(p, x - 0.17, Ft, z - 0.17, x + 0.17, Ft + LockHt, z + 0.17, Latch, "worn paint");
+                        Detail(p, x - 0.05, Ft + LockHt, z - 0.09, x + 0.05, Ft + LockHt + 0.015, z + 0.09, Frame, "steel");
+                        p.Sock($"lock{n}{r}{k++}", P(x, Ft + LockHt, z), "+y", Medium); // (a container is a medium part)
                     }
                 foreach (var dx in new[] { -1, 1 })
                     Detail(p, xc + dx * (CtW / 2 + 0.03) - 0.03, Ft, zc - CtL / 2 + 0.2, xc + dx * (CtW / 2 + 0.03) + 0.03, Ft + 0.008, zc + CtL / 2 - 0.2, Hazard, "hazard paint");
@@ -1911,7 +2021,7 @@ public sealed class HaywainParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "A medium hauler for the farmers, in a combine harvester's clothes: blocky barn-red cladding, a cream stripe band, a dark chassis. A glass cab room stands out on the nose with a walkway round it; behind it the crew block (bunks, a head, a galley, an airlock over the boarding shaft); then six standard 2 m containers, two across and three along, in a bay open to the sky inside a raised tank coaming, so a dock's crane lifts each one straight out; then the engine box with its exhaust stacks, and a drive pod slung low on each side. Lift jets and legs under it set it down; attitude jets at both ends and on the pods' noses move it about.", defs, maxSteps: 600);
+        var bp = new BuildingParts.Blueprint(ShipName, "A medium hauler for the farmers, in a combine harvester's clothes: blocky barn-red cladding, a cream stripe band, a dark chassis. A glass cab room stands out on the nose with a walkway round it, a ladder up to each side and an airlock off each, between the cab room and the crew block; then the crew block (bunks, a head, a galley, an airlock over the boarding shaft); then six standard 2 m containers, two across and three along, in a bay open to the sky inside a raised tank coaming, so a dock's crane lifts each one straight out; then the engine box with its exhaust stacks, and a drive pod slung low on each side. Lift jets and legs under it set it down; attitude jets at both ends and on the pods' noses move it about.", defs, maxSteps: 600);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -1922,6 +2032,14 @@ public sealed class HaywainParts : IPartGenerator
             eng = placed["Haywain Engineering"], stern = placed["Haywain Stern"];
         foreach (var d in new[] { "doorCk", "doorAft", "doorBunk", "doorHead", "doorGalley", "doorAirlock" })
             Door(bp, cab, d);
+        // The side airlocks: their doors, lamps and the walkways' ladders.
+        foreach (var n in new[] { "L", "R" })
+        {
+            foreach (var d in new[] { "doorLockIn", "doorLockOut" })
+                Paint(bp, Hang(bp, LockDoor, cab, d + n, "hang"), Orange, "worn paint");
+            Lamp(bp, cab, "lampLock" + n, "#ffd040");
+            Paint(bp, Hang(bp, CabLadder, cab, "ladder" + n, "top"), Frame, "painted steel");
+        }
         // The cockpit: the pilot flies through the flight computer between the couches and the glass (Ship keys, the mouse aims the nose).
         var pilot = Hang(bp, "Flight Couch", cab, "pilot", "bottom");
         Hang(bp, "Flight Couch", cab, "copilot", "bottom");
@@ -2030,6 +2148,7 @@ public sealed class HaywainParts : IPartGenerator
         List<Part> parts =
         [
             .. structure, Nacelle(-1), Nacelle(1),
+            Ladder(CabLadder, Py.Round(WalkTop - LadderFoot, 3), "The ladder up to the Haywain's cab walkway: from a step over the ground to the platform by the cab room, which runs back to the side airlock's outer door. F climbs it.", "top", [0, Py.Round(WalkTop - LadderFoot - 0.06, 3), -0.005], "+z"),
             Ladder("Haywain Boarding Ladder", Py.Round(BoardRise, 3), "The Haywain's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
             BellyHatchPart(), LiftJet(), PowerPlant(), FlightComputer(),
         ];
