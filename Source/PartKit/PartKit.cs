@@ -130,6 +130,7 @@ public static class PartKit
         new Generators.DibberParts(), // (the Dibber, the farmers' vertical lander: likewise)
         new Generators.GrapnelParts(), // (the Grapnel, the Salvagers' salvage tug: likewise)
         new Generators.TugParts(), // (the Docket, the Traders' tug: likewise)
+        new Generators.FolioParts(), // (the Folio, the Traders' shuttle: the first ship on the ship kit, Source/PartKit/ShipKit)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),

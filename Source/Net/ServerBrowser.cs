@@ -704,7 +704,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and the lobby state's frenzy-buffs flag (16) is no longer sent.
     // 420: the Extruder's Sheet profile (gap 3, 2026-11-21): a solid section 1 to 10 cm thick is now a valid key (Extrusion.MinSheetCm),
     //   so an older peer would refuse it; the Extruder's and Line Console's Profile gain a last option, Sheet.
-    public const ushort ProtocolVersion = 420;
+    // 421: the Folio, the Traders' shuttle (Karl, 2026-11-21): a new part folder, Constructs/Parts/Folio, shifts the part ids after it.
+    public const ushort ProtocolVersion = 421;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
