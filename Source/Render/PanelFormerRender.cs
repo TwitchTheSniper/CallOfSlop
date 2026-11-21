@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// What a Panel Former draws across its blocks once Mast Blocks stand on all four of its bed's corners (ConstructPanelFormer.PinDepth:
-/// each level of corner masts gives the pins 2 m more stroke): the deep head, a ring of girders tying the mast tops, a cross girder over
+/// a level of corner masts gives the pins 2 m more stroke): the deep head, a ring of girders tying the mast tops, a cross girder over
 /// each Bed Block row with the oil main along one side and a drop hose down to each row's crossheads; on the inner corner of each corner
 /// mast a long booster cylinder from the crosshead up to the girders, its crosshead collar riding up and down with the pins' stroke while
 /// the machine works; a lamp on each corner, green while it forms. Drawn within <see cref="DrawNear"/>, from the Core's work and the
@@ -32,7 +32,7 @@ public static class PanelFormerRender
                 var d = c.Parts[asm.Core].D;
                 if (!d.IsPanelFormer || d.IsLaserCutter || d.BlockRole != BlockRole.Core)
                     continue;
-                var levels = Math.Min(ConstructPanelFormer.MastLevelsMost, MachineBlocks.CornerColumns(c, asm));
+                var levels = MachineBlocks.CornerColumns(c, asm); // (its masts as they stand, a level past what deepens the stroke too: the head sits on their tops)
                 if (levels == 0)
                     continue; // (no corner masts: the bed's own 2 m stroke, nothing over it)
                 var working = !c.Parts[asm.Core].Broken && world.StoreOf(c, asm.Core) is { } st && ProductionLines.Working(world, c, asm.Core, st, ConstructRender.Now);

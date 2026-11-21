@@ -487,6 +487,8 @@ public static class MachineBlocks
                 }
                 if (Math.Abs(x) > Mid || Math.Abs(z) > Mid || Math.Abs(y) > 127)
                     continue; // (beyond the grid: not part of this machine)
+                if (y > 0 && d.BlockRole == BlockRole.Block && cd.IsPanelFormer && !cd.IsLaserCutter)
+                    continue; // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
                 cellCount++;

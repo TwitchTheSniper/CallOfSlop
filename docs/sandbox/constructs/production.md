@@ -365,9 +365,9 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the pins' travel: 2 m, and 2 m more for each level of **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on
-  their crossheads, socket `top`; the shortest corner column counts, at most 3 levels: 8 m; `ConstructPanelFormer.PinDepth`; the
-  Zero Day's upper hull pieces need one level) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
+  than the pins' travel: 2 m, or 4 m with **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on their crossheads,
+  socket `top`; one level, past the deepest panel HullLoft allows; a Bed Block stacked there is not a mast and idles;
+  `ConstructPanelFormer.PinDepth`; the Zero Day's upper hull pieces need it) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
   per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
   over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
   stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any

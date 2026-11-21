@@ -13,7 +13,7 @@ public static class ConstructPanelFormer
     public const float SheetMaxCm = 10; // an extruded piece this thin or thinner is sheet a former takes off its conveyor
 
     public const float PinTravel = 2; // m: how far a Bed Block's pins rise with no masts, and how much more each level of corner masts adds
-    public const int MastLevelsMost = 3; // levels of Mast Blocks on the bed's corners that deepen the stroke (8 m at most; more stand idle)
+    public const int MastLevelsMost = 1; // levels of Mast Blocks on the bed's corners that deepen the stroke (4 m: past the deepest panel, HullLoft's 80 cm crown and 2 m rake)
 
     /// <summary>
     /// How deep a panel (crown and rake) the bed forms: <see cref="PinTravel"/>, and as much again for each level of Mast Blocks standing on
@@ -96,10 +96,9 @@ public static class ConstructPanelFormer
             var reach = PinDepth(c, asm);
             if (deep > reach + 0.005f)
             {
-                var levels = (int)MathF.Ceiling(deep / PinTravel - 1.0025f); // (the corner mast levels it needs)
-                return levels > MastLevelsMost
+                return deep > PinTravel * (1 + MastLevelsMost) + 0.005f
                     ? $"panel too deep for the pins: {deep:0.##} m of crown and rake, the deepest a bed forms is {PinTravel * (1 + MastLevelsMost):0} m"
-                    : $"panel too deep for the pins: {deep:0.##} m of crown and rake, the pins rise {reach:0} m: stand {(levels == 1 ? "a Mast Block" : $"a column of {levels} Mast Blocks")} on each of the bed's four corners";
+                    : $"panel too deep for the pins: {deep:0.##} m of crown and rake, the pins rise {reach:0} m: stand a Mast Block on each of the bed's four corners for {PinTravel * (1 + MastLevelsMost):0} m";
             }
         }
         if (a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f)
