@@ -14,6 +14,7 @@ public sealed partial class Game
     private Func<byte, string>? _sbNameOf;
     private Func<Construct, byte, string?>? _sbAboard;
     private Func<Construct, byte, bool>? _sbIsFrame;
+    private Action<byte, Construct, int, ushort, bool>? _sbStoreMoved;
 
     /// <summary>Where a living player stands (null: dead or gone), for the contested rule; made once.</summary>
     public Func<byte, Vector3?> SandboxAliveAt => _sbAliveAt ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Position : null;
@@ -28,6 +29,7 @@ public sealed partial class Game
         SandboxHands.NameOf = SandboxNameOf;
         SandboxHands.Aboard = _sbAboard ??= SandboxAboardRefusal;
         SandboxHands.IsFrame = _sbIsFrame ??= SandboxIsFrame;
+        SandboxHands.StoreMoved = _sbStoreMoved ??= StoreShopMoved; // (a store station's shelves: GameStoreShop.cs)
     }
 
     /// <summary>Client and host: is this construct the player's own reference frame (seated in it or standing on it)? The physics gun never takes or freezes it.</summary>

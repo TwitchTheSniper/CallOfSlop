@@ -700,6 +700,7 @@ public sealed partial class Game
         var ng = sd.Goods.Length;
         double value = 0, cost = 0;
         var sold = 0;
+        var (mostTook, mostPart) = (0, ConstructParts.None);
         // its holds: its own Storage Volumes and those of the cargo it carries (the Packet's standard containers)
         var holds = new List<Construct> { c };
         foreach (var b in Constructs.Bodies)
@@ -730,6 +731,8 @@ public sealed partial class Game
                     took += Constructs.TakeHolding(b, i, what, room - took);
             if (took == 0)
                 continue;
+            if (took > mostTook)
+                (mostTook, mostPart) = (took, parts[j].Part);
             m.Stock[ng + j] += took;
             value += took * (double)parts[j].Buy;
             sold += took;
@@ -742,6 +745,7 @@ public sealed partial class Game
                 pw.Earned += value;
             }
             StationsVersion++;
+            StoreDelivered(m.Body, mostPart); // (a store's Spotlight room shows it: GameStoreShop.cs)
             Log($"[haul] construct {c.Id} ({h.Power}) delivered {sold} parts to {where} for {value:0} (value)");
         }
         // What the far station is short of, most needed first.

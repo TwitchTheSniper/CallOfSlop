@@ -19,14 +19,31 @@ public sealed class StoreLayout
         public bool OpenPlusZ;
     }
 
+    /// <summary>A shelf place (phase 5): which shelf part stands there, its zone ("market", "warehouse", "reduced"), the piece it is tied to, its box and its open front.</summary>
+    public sealed class ShelfSpot
+    {
+        public string Part = "", Zone = "", Host = "";
+        public Vector3 Min, Max, Front;
+    }
+
     public string Blueprint = "", Anchor = "";
     public Vector3 Origin;
     public Bay[] Bays = [];
+    public ShelfSpot[] Shelves = [];
+    public Vector3[] Pickup = [], Trolleys = [];
+    public (Vector3 Min, Vector3 Max)[] Arches = [];
+    public Vector3 StoreMin = new(float.MinValue), StoreMax = new(float.MaxValue);
 
     private static Dictionary<string, StoreLayout>? _all;
 
     /// <summary>The layouts by blueprint name (empty when none loaded; a bad file is refused with a reason in the log).</summary>
     public static Dictionary<string, StoreLayout> All => _all ??= Load(Path.Combine(AppFolders.Data, "Constructs", "Stores"));
+
+    private static Vector3 Way(string s) => s switch
+    {
+        "+x" => Vector3.UnitX, "-x" => -Vector3.UnitX, "+y" => Vector3.UnitY, "-y" => -Vector3.UnitY, "-z" => -Vector3.UnitZ,
+        _ => Vector3.UnitZ,
+    };
 
     private static Vector3 V(JsonElement e) => new(e[0].GetSingle(), e[1].GetSingle(), e[2].GetSingle());
 
@@ -55,6 +72,24 @@ public sealed class StoreLayout
                         OpenPlusZ = b.GetProperty("open").GetString() == "+z",
                     })],
                 };
+                if (r.TryGetProperty("shelves", out var sh))
+                    s.Shelves = [.. sh.EnumerateArray().Select(e => new ShelfSpot
+                    {
+                        Part = e.GetProperty("part").GetString() ?? "",
+                        Zone = e.GetProperty("zone").GetString() ?? "",
+                        Host = e.GetProperty("host").GetString() ?? "",
+                        Min = V(e.GetProperty("min")),
+                        Max = V(e.GetProperty("max")),
+                        Front = Way(e.GetProperty("front").GetString() ?? "+z"),
+                    })];
+                if (r.TryGetProperty("pickup", out var pu))
+                    s.Pickup = [.. pu.EnumerateArray().Select(V)];
+                if (r.TryGetProperty("trolleys", out var tr))
+                    s.Trolleys = [.. tr.EnumerateArray().Select(V)];
+                if (r.TryGetProperty("arches", out var ar))
+                    s.Arches = [.. ar.EnumerateArray().Select(e => (V(e.GetProperty("min")), V(e.GetProperty("max"))))];
+                if (r.TryGetProperty("store", out var sb))
+                    (s.StoreMin, s.StoreMax) = (V(sb.GetProperty("min")), V(sb.GetProperty("max")));
                 all[s.Blueprint] = s;
             }
             catch (Exception ex) when (ex is IOException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
@@ -187,6 +222,7 @@ public sealed partial class Game
     /// <summary>Host, once a second from the market step: each store station here furnished from its stock.</summary>
     private void StoreFillTick()
     {
+        StoreShopTick(); // (the pick-up floor, the baskets and the trade arches, every second: GameStoreShop.cs)
         foreach (var m in StationMarketsHere.Values)
         {
             if (m.Def < 0 || m.Def >= StationMarkets.All.Length || Constructs.Get(m.Body) is not { Wreck: false, IsStation: true } st)
@@ -200,6 +236,7 @@ public sealed partial class Game
                 continue;
             f.NextAt = ServerTick + StorePassEvery;
             StoreFillStep(st, m, def, lay, f);
+            StoreShelvesStep(st, m, def, lay, f.StockHash); // (the shelves, the pick-up and the trolleys: GameStoreShop.cs)
         }
     }
 
@@ -326,11 +363,27 @@ public sealed partial class Game
             l.Sort((a, b) => b.Stock != a.Stock ? b.Stock.CompareTo(a.Stock) : a.Part.CompareTo(b.Part));
         // the bays' order: rooms whose key is in, then the department's wall; round again with the next picks while bays are left
         var entries = new List<(StoreRooms.Department Dept, StoreRooms.Room? Room, int Pass)>();
+        // the Spotlight room (phase 5): the first bay shows the last delivery's main part in a room of its job, flagged new; until a delivery,
+        // the Spotlight department's own room
+        var spot = _storeSpotlight.TryGetValue(st.Id, out var sp) && rooms.JobOf.TryGetValue(sp, out var spJob) && byJob.TryGetValue(spJob, out var spList) ? spJob : null;
+        if (spot != null)
+        {
+            var l = byJob[spot];
+            var at = l.FindIndex(x => x.Part == sp);
+            if (at > 0)
+                (l[0], l[at]) = (l[at], l[0]); // (the new part first in its job: the room's slot of that job takes it)
+            foreach (var d in rooms.Departments)
+                foreach (var r in d.Rooms)
+                    if (entries.Count == 0 && r.Slots.Length > 0 && r.Slots.Any(x => x.Job == spot) && byJob.ContainsKey(r.Slots[0].Job))
+                        entries.Add((d, r, 0));
+        }
         for (var pass = 0; pass < 6 && entries.Count < lay.Bays.Length; pass++)
         {
             var before = entries.Count;
             foreach (var d in rooms.Departments)
             {
+                if (spot != null && entries.Count > 0 && d.Name == "Spotlight")
+                    continue; // (its bay shows the delivery)
                 foreach (var r in d.Rooms)
                     if (r.Slots.Length > 0 && byJob.TryGetValue(r.Slots[0].Job, out var key) && key.Count > 0 && (pass == 0 || key.Sum(x => x.Stock) > pass * 4))
                         entries.Add((d, r, pass));

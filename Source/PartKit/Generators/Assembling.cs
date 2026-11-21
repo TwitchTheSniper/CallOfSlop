@@ -912,6 +912,10 @@ public sealed class Assembling : IPartGenerator
         ("Grapnel", "Grapnel Stern", null),
         ("Grapnel", "Grapnel Tank Rack L", null),
         ("Grapnel", "Grapnel Tank Rack R", null),
+        // (Hexkey Orbital's shelves and trolley, phase 5: ShelfParts)
+        (null, null, Rec("Hexkey Gondola Bay", 5, 1, m: [("planks", 4), ("steel", 2)])),
+        (null, null, Rec("Hexkey Rack Bay", 12, 1, m: [("planks", 30), ("steel", 12)])),
+        (null, null, Rec("Hexkey Trolley", 6, 1, m: [("planks", 3), ("steel", 8), ("rubber", 2)])),
     ];
 
     /// <summary>

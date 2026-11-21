@@ -774,5 +774,6 @@ public sealed partial class ConstructEdits
             return;
         world.Remove(body);
         Done.Add($"player {player}: {d.Name} set on the {cd.Name}");
+        StoreMoved?.Invoke(player, shelf, hit.Part, (ushort)d.Id, true);
     }
 }

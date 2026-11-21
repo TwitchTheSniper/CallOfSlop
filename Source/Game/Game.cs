@@ -2137,6 +2137,7 @@ public sealed partial class Game : IDisposable
                         OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
+                        StoreShopForget(gone.Id); // (a store basket doesn't pass to the id's next holder: GameStoreShop.cs)
                         TravelGone(gone.Id); // (free travel: the planetoid they were on hears it: GameTravel.cs)
                         BroadcastRoster();
                     }

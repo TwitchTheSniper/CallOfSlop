@@ -2697,6 +2697,9 @@
     {"output": "Grapnel Roof 9", "materials": {"steel": 257, "concrete": 51}, "seconds": 40.6},
     {"output": "Grapnel Stern", "materials": {"steel": 1800, "rubber": 360}, "seconds": 180.0},
     {"output": "Grapnel Tank Rack L", "materials": {"steel": 600, "rubber": 120}, "seconds": 92.0},
-    {"output": "Grapnel Tank Rack R", "materials": {"steel": 600, "rubber": 120}, "seconds": 92.0}
+    {"output": "Grapnel Tank Rack R", "materials": {"steel": 600, "rubber": 120}, "seconds": 92.0},
+    {"output": "Hexkey Gondola Bay", "materials": {"planks": 4, "steel": 2}, "seconds": 5},
+    {"output": "Hexkey Rack Bay", "materials": {"planks": 30, "steel": 12}, "seconds": 12},
+    {"output": "Hexkey Trolley", "materials": {"planks": 3, "steel": 8, "rubber": 2}, "seconds": 6}
   ]
 }
