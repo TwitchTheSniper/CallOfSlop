@@ -29,6 +29,8 @@ public sealed class HallShowcase : IPartGenerator
         private const string Floor = "#8c8576", Mast = "#4a5058", Rail = "#22262b", Crane = "#f0c21a";
 
         private static readonly Orient Up = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ);
+        private static readonly Orient Toward = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ); // (own +z down the bay, away from the floor's front)
+        private const string Line = "#3d7ab8", Stock = "#c9a24a", Hazard = "#d8a020";
 
         public static Script Build()
         {
@@ -83,6 +85,18 @@ public sealed class HallShowcase : IPartGenerator
             // The Crane Core on the near run's outer (-x) side, its +x onto the rail's -x: its frame's +x across the span.
             var core = Stand("Crane Core", V(NearX - 1, foot + 0.5f, -5), Up, near, "+x");
             Paint(core, Crane);
+            Config(core, ("carryHeight", 1.5));
+            // Under it, a line with no conveyor at all: an Extruder making angles onto its Run-out Table (unwired, so it runs while
+            // its stock lasts), and a Lay-down Pad across the bay. The crane carries each angle from the table to the pad.
+            var ex = Stand("Extruder", V(8.25f, FloorY, -3.25f), Toward, null, "bottom");
+            Paint(ex, Line);
+            Config(ex, ("profile", "L-angle"), ("width", 0.2), ("height", 0.2), ("cutLength", 1.5));
+            Paint(Onto(ex, "outBed", "Run-out Table", "in"), Line);
+            var stock = Stand("Storage Volume", V(5, FloorY, -3), Up, null, "-y");
+            Paint(stock, Stock);
+            Config(stock, ("sizeX", 1.2), ("sizeY", 1.0), ("sizeZ", 1.2), ("atY", 0.35), ("material", "metal"), ("fill", 24));
+            Link("chute", stock, ex, "Chute out", null, Stock);
+            Paint(Stand("Lay-down Pad", V(14.75f, FloorY, -12.25f), Toward, null, "-y.0.0"), Hazard);
         }
     }
 }

@@ -162,6 +162,13 @@
     {"part": "Mast Block", "on": 154, "socket": "top", "by": "bottom", "paint": "#4a5058"},
     {"part": "Mast Block", "on": 155, "socket": "top", "by": "bottom", "paint": "#4a5058"},
     {"part": "Crane Rail Block", "on": 156, "socket": "top", "by": "bottom", "paint": "#22262b"},
-    {"part": "Crane Core", "on": 125, "socket": "-x", "by": "+x", "paint": "#f0c21a"}
+    {"part": "Crane Core", "on": 125, "socket": "-x", "by": "+x", "config": {"carryHeight": 1.5}, "paint": "#f0c21a"},
+    {"part": "Extruder", "on": 16, "socket": "top01", "by": "bottom", "spin": 3, "config": {"profile": "L-angle", "width": 0.2, "height": 0.2, "cutLength": 1.5}, "paint": "#3d7ab8"},
+    {"part": "Run-out Table", "on": 159, "socket": "outBed", "by": "in", "spin": 3, "paint": "#3d7ab8"},
+    {"part": "Storage Volume", "on": 14, "socket": "centre +y", "by": "-y", "config": {"sizeX": 1.2, "sizeY": 1, "sizeZ": 1.2, "atY": 0.35, "material": "metal", "fill": 24}, "paint": "#c9a24a"},
+    {"part": "Lay-down Pad", "on": 79, "socket": "top13", "by": "-y.0.0", "spin": 3, "paint": "#d8a020"}
+  ],
+  "links": [
+    {"type": "chute", "from": 161, "to": 159, "fromPort": "Chute out", "paint": "#c9a24a"}
   ]
 }
