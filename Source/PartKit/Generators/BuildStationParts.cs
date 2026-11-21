@@ -164,7 +164,7 @@ public sealed class BuildStationParts : IPartGenerator
             group: "Production", color: Body);
         const double e = 0.997, h = Plinth, k = 0.12; // (the slab stops 3 mm short of the cell; k: the kerb's width)
         p.Add(Box([-e, 0, -e], [e, h - 0.02, e], MachineLook.Base));
-        p.Add(Box([-e + 0.01, h - 0.024, -e + 0.01], [e - 0.01, h, e - 0.01])!.Update(("finish", "tread plate")));
+        p.Add(Box([-e + 0.01, h - 0.024, -e + 0.01], [e - 0.01, h, e - 0.01], "#2b3036")!.Update(("finish", "tread plate"))); // (a dark floor, a step off the skirt's base: the Core keeps the body colour)
         // The kerb on each outer side: a dark rail with a hazard strip on its top, bolted down, and a sunk amber lamp in the middle.
         foreach (var (face, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {

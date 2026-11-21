@@ -199,8 +199,14 @@ public static class StationRender
         // Two girders across, a walkway grating on one, the drive motor at one end.
         var span = 2 * railZ + RailW + 0.3f;
         var gy = rail + 0.35f + Girder * 0.5f;
+        var ribs = Math.Max(1, (int)(span / 2f)); // (a stiffener every 2 m or so, and a dark cap on each girder: no long plain yellow bar)
         for (var g = -1; g <= 1; g += 2)
+        {
             Box(gfx, bay, new Vector3(x + g * 0.34f, gy, 0), new Vector3(0.26f, Girder, span), Yellow);
+            Box(gfx, bay, new Vector3(x + g * 0.34f, gy + Girder * 0.5f + 0.012f, 0), new Vector3(0.3f, 0.024f, span + 0.004f), Dark); // (the top flange)
+            for (var r = 1; r < ribs; r++)
+                Box(gfx, bay, new Vector3(x + g * 0.34f, gy - 0.02f, -span * 0.5f + span * r / ribs), new Vector3(0.276f, Girder - 0.08f, 0.06f), Dark);
+        }
         Box(gfx, bay, new Vector3(x - 0.62f, gy + Girder * 0.5f - 0.03f, 0), new Vector3(0.5f, 0.04f, span - 0.4f), Dark); // (the walkway)
         Box(gfx, bay, new Vector3(x + 0.62f, rail + 0.55f, railZ - 0.2f), new Vector3(0.36f, 0.36f, 0.5f), Dark); // (the drive motor)
         Box(gfx, bay, new Vector3(x + 0.62f, rail + 0.55f, railZ - 0.47f), new Vector3(0.2f, 0.2f, 0.04f), Steel);
