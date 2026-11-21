@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Picket Gunship",
-  "description": "The Militia's twin-hull gunship: a patrol and escort ship that hauls a little. A glass cockpit and a crew cab forward (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers in a bay open to the sky amidships, engineering aft; a long armoured sponson down each side with an intake in its nose and a leg under each end, an autocannon turret on each sponson's back worked from engineering's gunnery console and one on the cab's roof worked by the copilot, and a drive nacelle on a short pylon off each sponson's tail.",
+  "description": "The Militia's twin-hull gunship: a patrol and escort ship that hauls a little. A glass cockpit and a crew cab forward (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers in a bay open to the sky amidships, engineering aft; a big boxy sponson down each side of Hull Sections in the Militia's dress, black bands round it, a square intake in its nose and a leg under each end, an autocannon turret on each sponson's roof worked from engineering's gunnery console and one on the cab's roof worked by the copilot, and a short drive pod on a stub wing off each sponson's flank.",
   "steps": [
     {
       "part": "Picket Keel"
@@ -380,7 +380,7 @@
       "config": {
         "keys": "Ship",
         "mouseAim": true,
-        "pitchResponse": 150
+        "pitchResponse": 200
       }
     },
     {
@@ -566,6 +566,66 @@
       "by": "aft"
     },
     {
+      "part": "Hull Section (420 f1-6 p militia 1 AD | 0,2 93,2 155,48 161,153 152,252 99,318 0,318 | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400)",
+      "on": 89,
+      "socket": "sec0p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (420 f1-6 s militia 1 AD | 0,2 93,2 155,48 161,153 152,252 99,318 0,318 | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400)",
+      "on": 89,
+      "socket": "sec0s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (690 f1-6 p militia 2 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 89,
+      "socket": "sec1p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (690 f1-6 s militia 2 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 89,
+      "socket": "sec1s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (640 f1-6 p militia 3 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 89,
+      "socket": "sec2p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (640 f1-6 s militia 3 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 89,
+      "socket": "sec2s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (700 f1-6 p militia 4 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 88,
+      "socket": "sec3p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (700 f1-6 s militia 4 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 88,
+      "socket": "sec3s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (660 f1-6 p militia 5 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 88,
+      "socket": "sec4p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (660 f1-6 s militia 5 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 88,
+      "socket": "sec4s",
+      "by": "i4"
+    },
+    {
       "part": "Leg Pod Housing S",
       "on": 89,
       "socket": "leg",
@@ -573,37 +633,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 90,
+      "on": 100,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 90,
+      "on": 100,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 90,
+      "on": 100,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 90,
+      "on": 100,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 94,
+      "on": 104,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 90,
+      "on": 100,
       "socket": "foot",
       "by": "hang"
     },
@@ -615,37 +675,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 97,
+      "on": 107,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 97,
+      "on": 107,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 97,
+      "on": 107,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 97,
+      "on": 107,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 101,
+      "on": 111,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 97,
+      "on": 107,
       "socket": "foot",
       "by": "hang"
     },
@@ -689,19 +749,19 @@
     },
     {
       "part": "Motor Hinge",
-      "on": 108,
+      "on": 118,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day Autocannon",
-      "on": 109,
+      "on": 119,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 110,
+      "on": 120,
       "socket": "top",
       "by": "bottom"
     },
@@ -713,25 +773,25 @@
     },
     {
       "part": "Drive Nozzle M",
-      "on": 112,
+      "on": 122,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 112,
+      "on": 122,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 114,
+      "on": 124,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 112,
+      "on": 122,
       "socket": "hatch",
       "by": "hang",
       "spin": 3,
@@ -740,7 +800,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 112,
+      "on": 122,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#34373b",
@@ -748,7 +808,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 112,
+      "on": 122,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#34373b",
@@ -756,7 +816,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 112,
+      "on": 122,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#34373b",
@@ -770,97 +830,157 @@
     },
     {
       "part": "Picket Sponson R Fore",
-      "on": 120,
+      "on": 130,
       "socket": "fore",
       "by": "aft"
     },
     {
+      "part": "Hull Section (420 f1-6 p militia 1 AD | 0,2 93,2 155,48 161,153 152,252 99,318 0,318 | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400)",
+      "on": 131,
+      "socket": "sec0p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (420 f1-6 s militia 1 AD | 0,2 93,2 155,48 161,153 152,252 99,318 0,318 | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400)",
+      "on": 131,
+      "socket": "sec0s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (690 f1-6 p militia 2 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 131,
+      "socket": "sec1p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (690 f1-6 s militia 2 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 131,
+      "socket": "sec1s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (640 f1-6 p militia 3 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 131,
+      "socket": "sec2p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (640 f1-6 s militia 3 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 131,
+      "socket": "sec2s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (700 f1-6 p militia 4 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 130,
+      "socket": "sec3p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (700 f1-6 s militia 4 D | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 130,
+      "socket": "sec3s",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (660 f1-6 p militia 5 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 130,
+      "socket": "sec4p",
+      "by": "i4"
+    },
+    {
+      "part": "Hull Section (660 f1-6 s militia 5 BD | 0,-80 150,-80 250,-10 260,150 245,300 160,400 0,400 | =)",
+      "on": 130,
+      "socket": "sec4s",
+      "by": "i4"
+    },
+    {
       "part": "Leg Pod Housing S",
-      "on": 121,
+      "on": 131,
       "socket": "leg",
       "by": "top"
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 122,
+      "on": 142,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 122,
+      "on": 142,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 122,
+      "on": 142,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 122,
+      "on": 142,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 126,
+      "on": 146,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 122,
+      "on": 142,
       "socket": "foot",
       "by": "hang"
     },
     {
       "part": "Leg Pod Housing S",
-      "on": 120,
+      "on": 130,
       "socket": "leg",
       "by": "top"
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 129,
+      "on": 149,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 129,
+      "on": 149,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 129,
+      "on": 149,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 129,
+      "on": 149,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 133,
+      "on": 153,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 129,
+      "on": 149,
       "socket": "foot",
       "by": "hang"
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 121,
+      "on": 131,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#34373b",
@@ -868,7 +988,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 121,
+      "on": 131,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#34373b",
@@ -876,7 +996,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 120,
+      "on": 130,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#34373b",
@@ -884,7 +1004,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 120,
+      "on": 130,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#34373b",
@@ -892,55 +1012,55 @@
     },
     {
       "part": "Turret Ring S",
-      "on": 120,
+      "on": 130,
       "socket": "gun",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 140,
+      "on": 160,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day Autocannon",
-      "on": 141,
+      "on": 161,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 142,
+      "on": 162,
       "socket": "top",
       "by": "bottom"
     },
     {
       "part": "Picket Nacelle R",
-      "on": 120,
+      "on": 130,
       "socket": "nac",
       "by": "hull"
     },
     {
       "part": "Drive Nozzle M",
-      "on": 144,
+      "on": 164,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 144,
+      "on": 164,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 146,
+      "on": 166,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 144,
+      "on": 164,
       "socket": "hatch",
       "by": "hang",
       "paint": "#55595d",
@@ -948,7 +1068,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 144,
+      "on": 164,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#34373b",
@@ -956,7 +1076,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 144,
+      "on": 164,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#34373b",
@@ -964,7 +1084,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 144,
+      "on": 164,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#34373b",
@@ -1116,7 +1236,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 170,
+      "on": 190,
       "socket": "hatch",
       "by": "hang",
       "paint": "#5c6644",
@@ -1124,7 +1244,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 170,
+      "on": 190,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#5c6644",
@@ -1132,19 +1252,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 170,
+      "on": 190,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 170,
+      "on": 190,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 170,
+      "on": 190,
       "socket": "slot2",
       "by": "base"
     },
@@ -1158,7 +1278,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 176,
+      "on": 196,
       "socket": "hatch",
       "by": "hang",
       "paint": "#8a7a5a",
@@ -1166,7 +1286,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 176,
+      "on": 196,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#8a7a5a",
@@ -1174,19 +1294,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 176,
+      "on": 196,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 176,
+      "on": 196,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 176,
+      "on": 196,
       "socket": "slot2",
       "by": "base"
     },
@@ -1204,19 +1324,19 @@
     },
     {
       "part": "Motor Hinge",
-      "on": 183,
+      "on": 203,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day Autocannon",
-      "on": 184,
+      "on": 204,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 185,
+      "on": 205,
       "socket": "top",
       "by": "bottom"
     },
@@ -1234,7 +1354,7 @@
     },
     {
       "part": "Turret Module",
-      "on": 187,
+      "on": 207,
       "socket": "module",
       "by": "-x"
     },
@@ -1439,51 +1559,51 @@
     ],
     [
       59,
-      182
+      202
     ],
     [
-      182,
-      185
+      202,
+      205
     ],
     [
-      188,
-      189
-    ],
-    [
-      189,
-      110
-    ],
-    [
-      189,
-      142
-    ],
-    [
-      192,
-      190
-    ],
-    [
-      192,
-      191
-    ],
-    [
-      194,
-      193
-    ],
-    [
-      196,
-      195
-    ],
-    [
-      198,
-      197
-    ],
-    [
-      210,
-      208
-    ],
-    [
-      210,
+      208,
       209
+    ],
+    [
+      209,
+      120
+    ],
+    [
+      209,
+      162
+    ],
+    [
+      212,
+      210
+    ],
+    [
+      212,
+      211
+    ],
+    [
+      214,
+      213
+    ],
+    [
+      216,
+      215
+    ],
+    [
+      218,
+      217
+    ],
+    [
+      230,
+      228
+    ],
+    [
+      230,
+      229
     ]
   ],
   "conduit": true

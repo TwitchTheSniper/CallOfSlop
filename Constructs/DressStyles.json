@@ -24,6 +24,33 @@
           { "kind": "strip", "u": ["lo", { "from": "lo", "frac": 0.2, "cap": 0.25 }], "v": [{ "from": "lo", "off": 0.1 }, { "from": "lo", "off": 0.22 }], "d": 0.031, "color": "blue", "finish": "painted plating" }
         ]
       ]
+    },
+    {
+      "name": "militia",
+      "label": "Militia patrol craft",
+      "_comment": "The Picket gunship's (GunshipParts.cs, Karl's picture): sand-tan and pale grey plates over a dark skin that shows as seams, dark chine rails, a wide orange stripe over the beam.",
+      "palette": { "skin": "#43474b", "skin2": "#a9a8a0", "tan": "#c2aa80", "tan2": "#b39c74", "grey": "#a9a8a0", "armour": "#55595d", "frame": "#26292d", "orange": "#d8642a", "hazard": "#e8b02a" },
+      "panel": { "length": 3.4, "gap": 0.04 },
+      "patterns": [
+        [ { "kind": "slab", "u": ["lo", "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "tan", "finish": "painted plating" } ],
+        [ { "kind": "slab", "u": ["lo", "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "grey", "finish": "painted plating" } ],
+        [
+          { "kind": "slab", "u": ["lo", "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "tan", "finish": "painted plating" },
+          { "kind": "slab", "u": [{ "from": "lo", "frac": 0.2 }, { "from": "hi", "frac": -0.2 }], "v": [{ "from": "lo", "frac": 0.2, "cap": 0.25 }, { "from": "hi", "frac": -0.2, "cap": 0.25 }], "d": [0.07, 0.11], "bevel": 0.03, "color": "grey", "finish": "painted plating" }
+        ],
+        [ { "kind": "slab", "u": ["lo", "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "tan2", "finish": "painted plating" } ],
+        [
+          { "kind": "slab", "u": ["lo", { "from": "mid", "off": -0.03 }], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "tan", "finish": "painted plating" },
+          { "kind": "slab", "u": [{ "from": "mid", "off": 0.03 }, "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "grey", "finish": "painted plating" }
+        ],
+        [
+          { "kind": "slab", "u": ["lo", "hi"], "v": ["lo", "hi"], "d": [0.02, 0.07], "bevel": 0.03, "color": "tan", "finish": "painted plating" },
+          { "kind": "strip", "u": [{ "from": "lo", "frac": 0.1 }, { "from": "lo", "frac": 0.1, "off": 0.25 }], "v": [{ "from": "lo", "frac": 0.15 }, { "from": "lo", "frac": 0.15, "off": 0.06 }], "d": 0.071, "color": "hazard", "finish": "painted plating" }
+        ]
+      ],
+      "trim": { "railW": 0.2, "railH": 0.1, "beamW": 0.24, "beamH": 0.12, "rail": "frame", "beamRail": "frame", "strip": "orange", "stripW": 0.18, "stripOff": 0.06,
+        "vent": "frame", "ventSlat": "armour", "pipe": "#8a5a3a", "bracket": "frame" }
     }
+
   ]
 }

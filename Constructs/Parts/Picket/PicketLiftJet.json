@@ -1,13 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Picket Lift Jet",
-  "description": "A lift jet: 1.4 MN straight down. Four under the Picket's cab and engineering hold it up loaded, from the keel's tanks.",
+  "description": "A lift jet: 1.8 MN straight down. Four under the Picket's cab and engineering hold it up loaded, from the keel's tanks.",
   "group": "Ship",
   "section": "Picket gunship",
   "role": "thruster",
   "tool": "wrench",
   "thruster": {
-    "force": 1350000.0,
+    "force": 1800000.0,
     "spool": 0.6,
     "exhaust": "-y",
     "at": [
@@ -15,7 +15,7 @@
       -1.1025,
       0
     ],
-    "burnRate": 3.375
+    "burnRate": 4.5
   },
   "ports": [
     {

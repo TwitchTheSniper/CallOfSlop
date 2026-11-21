@@ -5,14 +5,15 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The Picket, the Militia's twin-hull gunship (Karl, 2026-11-21: a picture of a twin-hull ship in tan and grey with orange stripes,
 /// "find a home for this ship ... give it to one of the factions"). A medium-small patrol and escort ship that hauls a little: a glass
-/// cockpit and a crew cab forward, two standard containers in a bay open to the sky amidships, engineering aft; a long armoured
-/// sponson down each side with an intake in its blunt nose, an autocannon turret on each sponson's back and one on the cab's roof,
-/// and a drive pod on a short pylon off each sponson's tail.
+/// cockpit and a crew cab forward, two standard containers in a bay open to the sky amidships, engineering aft; a big boxy sponson
+/// down each side, skinned in Hull Sections (production hull pieces, Karl's second note: "using the production system to
+/// like-for-like my design") with a square intake in its blunt nose and black bands round it, an autocannon turret on each sponson's
+/// roof and one on the cab's roof, and a short drive pod on a stub wing off each sponson's flank.
 ///
 /// The centre hull is built as the Satchel courier's is (CourierParts.cs, which this started from): a hull lofted through stations,
 /// the rooms a box of their own inside it, each big part drawn whole and dealt out into welded pieces (floors, wall runs, ceilings,
-/// hull bands), so a hit takes a piece, not a deck. The sponsons are lofts of their own (the same facet helpers, switched with
-/// WithLoft), each a fore and an aft piece. Ship metres: x across (the centreline at Cx), y up from the deck's underside, z along the
+/// hull bands), so a hit takes a piece, not a deck. Each sponson is Hull Sections round a fore and an aft core piece (its bands,
+/// bow and fittings drawn with the same facet helpers, switched to its own loft with WithLoft). Ship metres: x across (the centreline at Cx), y up from the deck's underside, z along the
 /// ship (forward is -z; 0 is the bay's middle); P() moves them by half a cell into a part's frame. The look is the Militia's in
 /// space: sand-tan plating over a pale grey, dark grey bands, an orange stripe, yellow where things move (docs/sandbox/constructs/gunship.md).
 /// </summary>
@@ -78,29 +79,90 @@ public sealed class GunshipParts : IPartGenerator
 
     // ---- flying it: two big nacelles, lift jets and legs under the cab and engineering, attitude jets at both ends.
 
-    /// <summary>The nacelles: middles off the centreline and up, the housing's flat distance, the nose, the tank's ends, the tail.</summary>
-    private const double NacY = 1.5, NacF = 1.4, NacNose = 4.0, NacTank0 = 5.4, NacTank1 = 8.6, NacTail = 14.0;
-    private const double PylonZ = 5.6; // the aft sponson's hardpoint on engineering's flank
-    /// <summary>The nacelle's pylon: its root on the aft sponson's outer flank, along the ship; the nacelle's axis off the centreline.</summary>
-    private const double NacRoot = SpX + 1.9, NacPylonZ = 9.0, NacX = NacRoot + 0.5 + NacF;
+    /// <summary>The nacelles: middles off the centreline and up, the housing's flat distance, the nose, the tank's ends, the tail (short
+    /// pods, as the picture's, on stub wings off the sponsons' outer flanks).</summary>
+    private const double NacY = 1.5, NacF = 1.4, NacNose = 3.2, NacTank0 = 4.0, NacTank1 = 7.0, NacTail = 12.4;
+    private const double PylonZ = 5.6; // the aft sponson's hardpoint on engineering's flank (a black band of the sponson)
+    /// <summary>The nacelle's stub wing: its root on the aft sponson's outer flank at a band, the nacelle's axis off the centreline.</summary>
+    private const double NacRoot = SpX + 2.6 + 0.3, NacPylonZ = PylonZ, NacX = NacRoot + 0.5 + NacF;
 
-    // ---- the sponsons: a long armoured hull down each side (Karl's picture), its axis SpX off the centreline, a half profile about
-    // that axis (as the centre hull's: keel edge, lower chine, beam, upper chine, roof edge), blunt at the bow round an intake and
-    // tucked in at the stern; each cut in two at SpCut (a fore and an aft piece), welded to the cab and to engineering by webs.
-    private const double SpX = 7.0, SpFront = -20.6, SpFull0 = -18.4, SpFull1 = 10.8, SpAft = 12.6, SpCut = -2.0, SpMidY = 1.45;
-    private static readonly (double, double)[] SpSec = [(1.0, -0.8), (1.6, -0.05), (1.75, 1.45), (1.55, 2.85), (0.92, 3.3)];
-    private static (double, double)[] SpScaled(double k) => [.. SpSec.Select(q => (q.Item1 * k, SpMidY + (q.Item2 - SpMidY) * k))];
-    private static readonly Sec[] Spon = [new(SpFront, SpScaled(0.66)), new(-19.6, SpScaled(0.9)), new(SpFull0, SpSec), new(SpFull1, SpSec), new(SpAft, SpScaled(0.8))];
-    private static readonly double[] SpBands = [SpFront, -19.6, SpFull0, -14.2, -10.0, -6.0, SpCut, 2.0, 6.0, SpFull1, SpAft];
-    /// <summary>The dark bands round a sponson (Karl's picture), the gun on each aft sponson's back (inboard of its axis, near engineering's
-    /// gunner), the web to the cab, and the legs under each piece.</summary>
-    private static readonly double[] SpRings = [-17.6, -10.0, -2.6, 2.6, 9.6];
-    private const double GunZ = 5.0, GunIn = 0.45, CabWebZ = -9.0, SpLegFore = -13.0, SpLegAft = 8.0, PadHalf = 0.62, WellHalf = 0.34;
+    // ---- the sponsons (Karl, 2026-11-21: "more in line with the one I sent ... using the production system"): two big boxy hulls, as
+    // tall as the centre hull, skinned in Hull Sections (production hull pieces made from their keys, HullLoft.Section.cs) in the
+    // Militia's dress (Constructs/DressStyles.json "militia"), port and starboard halves round a core piece. A black band stands over
+    // each gap between sections (where the webs to the centre hull and the nacelle's stub wing go in); a tapered nose section carries
+    // the big square intake; each sponson is a fore and an aft core piece, split at SpCut.
+    private const double SpX = 7.4, SpFront = -21.0, SpAft = 12.5, SpCut = -2.0, SpMidY = 1.6;
+    private const string SpStyle = "militia";
+    /// <summary>The sponson's half profile in cm about its axis, keel first: keel centre, keel edge, lower chine, beam, upper side, roof
+    /// edge, roof centre (Hull Section points; facet k runs from point k-1 to k, f1 the keel, f6 the roof).</summary>
+    private static readonly (int H, int Y)[] SpProf = [(0, -80), (150, -80), (250, -10), (260, 150), (245, 300), (160, 400), (0, 400)];
+    private static (int H, int Y)[] SpScale(double kh, double ky) => [.. SpProf.Select(q => ((int)Math.Round(q.H * kh), (int)Math.Round(160 + (q.Y - 160) * ky)))];
+    /// <summary>The blunt bow's profile, round the intake.</summary>
+    private static readonly (int H, int Y)[] SpNoseProf = SpScale(0.62, 0.66);
+    private static (double H, double Y)[] SecOf((int H, int Y)[] q) => [.. q[1..6].Select(v => (v.H / 100.0, v.Y / 100.0))];
+    private static readonly Sec[] Spon = [new(SpFront, SecOf(SpNoseProf)), new(-16.8, SecOf(SpProf)), new(SpAft, SecOf(SpProf))];
+    /// <summary>The black bands (each a gap of BandHalf either side between two sections): behind the nose, the cab's web, the cut
+    /// between the pieces, engineering's web and the nacelle's stub wing.</summary>
+    private static readonly double[] SpBandZ = [-16.5, -9.0, SpCut, PylonZ];
+    private const double BandHalf = 0.3, BandOver = 0.36;
+    private const double CabWebZ = -9.0;
+    /// <summary>The gun on each aft sponson's roof (inboard of its axis, near engineering's gunner), the legs under each piece.</summary>
+    private const double SpGunZ = 4.0, GunIn = 0.85, SpLegFore = -13.0, SpLegAft = 9.0, PadHalf = 0.62, WellHalf = 0.34, SpGunY = 4.18; // (the pad's top is the part's highest face: the ring's socket over the well stands on it)
+    private const double GunZ = 5.0; // engineering's gunner station
     /// <summary>The sponsons' inner skin at the webs' height (where the hardpoints' sockets are), the gun on the cab's roof.</summary>
-    private static double SpIn => Math.Round(SpX - 1.7493, 2);
+    private static double SpIn => SpX - 2.6;
     private const double CabGunZ = -12.2;
+
+    /// <summary>One Hull Section of a sponson: its ends, its profiles at them, its dress salt and extras.</summary>
+    private readonly record struct SpSection(double Z0, double Z1, (int H, int Y)[] A, (int H, int Y)[] B, int Salt, string Extras)
+    {
+        public int L => (int)Math.Round((Z1 - Z0) * 100);
+        public string Key(int side) => new HullLoft.SectionShape(L, 1, 6, side, SpStyle, Salt, Extras, A, B).Key();
+    }
+
+    /// <summary>The sections down a sponson, between its bands.</summary>
+    private static readonly SpSection[] SpSections =
+    [
+        new(SpFront, SpBandZ[0] - BandHalf, SpNoseProf, SpProf, 1, "AD"),
+        new(SpBandZ[0] + BandHalf, SpBandZ[1] - BandHalf, SpProf, SpProf, 2, "BD"),
+        new(SpBandZ[1] + BandHalf, SpBandZ[2] - BandHalf, SpProf, SpProf, 3, "D"),
+        new(SpBandZ[2] + BandHalf, SpBandZ[3] - BandHalf, SpProf, SpProf, 4, "D"),
+        new(SpBandZ[3] + BandHalf, SpAft, SpProf, SpProf, 5, "BD"),
+    ];
+
+    private static readonly Dictionary<string, PyDict> SectionDefs = [];
+
+    /// <summary>A section's part (made by the game's own code from its key, as a running game makes it).</summary>
+    private static PyDict SectionDef(string key)
+    {
+        if (SectionDefs.TryGetValue(key, out var d))
+            return d;
+        var sh = HullLoft.SectionOf(key, out var why) ?? throw new InvalidOperationException($"gunship_parts: {key}: {why}");
+        d = (PyDict)PyJson.Loads(HullLoft.SectionJson(key, sh, out _))!;
+        SectionDefs[key] = d;
+        return d;
+    }
+
+    /// <summary>A section's socket position (its own frame, metres).</summary>
+    private static double[] SectionSock(string key, string name)
+    {
+        foreach (var o in (List<object?>)SectionDef(key)["sockets"]!)
+            if (o is PyDict q && (string)q["name"]! == name)
+                return [.. ((List<object?>)q["at"]!).Select(Convert.ToDouble)];
+        throw new InvalidOperationException($"gunship_parts: {key} has no socket {name}");
+    }
+
+    /// <summary>Where a section's void under facet k starts in from the axis (its i socket's face), and its void's heights.</summary>
+    private static (double Xi, double Ya, double Yb) SectionVoid(SpSection q, int k)
+    {
+        var hIn = new[] { q.A[k - 1].H, q.A[k].H, q.B[k - 1].H, q.B[k].H }.Min() / 100.0;
+        var y0 = new[] { q.A[k - 1].Y, q.A[k].Y, q.B[k - 1].Y, q.B[k].Y }.Min() / 100.0;
+        var y1 = new[] { q.A[k - 1].Y, q.A[k].Y, q.B[k - 1].Y, q.B[k].Y }.Max() / 100.0;
+        return (Math.Max(0, Math.Floor((hIn - 0.36) * 100) / 100), Math.Ceiling(y0 * 100 + 1) / 100, Math.Floor(y1 * 100 - 1) / 100);
+    }
+
     private const int KeelFuel = 7000, NacFuel = 4500; // litres
-    private const double LiftForce = 1350000, JetScale = 1.05, Burn = 2.5;
+    private const double LiftForce = 1800000, JetScale = 1.05, Burn = 2.5;
     private static readonly (double X, double Z)[] LiftAt = [(-1.5, -12.4), (1.5, -12.4), (-1.5, 9.7), (1.5, 9.7)];
     private static readonly (double X, double Z)[] LegAt = []; // (the legs stand under the sponsons: a wide stance)
     private const string LegPod = "S"; // (small pods, as the Packet's)
@@ -1401,129 +1463,140 @@ public sealed class GunshipParts : IPartGenerator
         var n = s < 0 ? "L" : "R";
         var side = s < 0 ? "port" : "starboard";
         var p = new Part($"Picket Sponson {n} {(fore ? "Fore" : "Aft")}", Small, Section, fore
-            ? $"The Picket's {side} sponson, forward: a long armoured hull beside the cab with the intake in its blunt nose, a leg under it and a web across to the cab."
-            : $"The Picket's {side} sponson, aft: beside the bay and engineering, an autocannon turret on its back, a leg under it, a web to engineering and the drive nacelle's pylon on its outer flank.",
-            role: "frame", tool: "welder", material: "steel", color: Skin, group: Group);
+            ? $"The Picket's {side} sponson core, forward: the frame inside the hull sections beside the cab, the big square intake in its blunt nose, black bands over the sections' seams, a leg under it and a web across to the cab."
+            : $"The Picket's {side} sponson core, aft: the frame inside the hull sections beside the bay and engineering, an autocannon turret on its roof, a leg under it, a web to engineering and the nacelle's stub wing on its outer flank.",
+            role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         double x = Cx + s * SpX, z0 = fore ? SpFront : SpCut, z1 = fore ? SpCut : SpAft;
         double gx = Cx + s * (SpX - GunIn);
+        var wellY = SpGunY - ShipWorksParts.TrunkD[0] - 0.03;
         WithLoft(Spon, x, () =>
         {
-            for (var i = 0; i < SpBands.Length - 1; i++)
+            // The core inside each section: an inner box to the keel and roof inside the voids under the keel-edge and roof-edge facets,
+            // a wider one between them inside the side facets' voids (so no box of the core meets a section's), and the sockets the
+            // sections hang on (each half by its facet 4's inside socket).
+            for (var i = 0; i < SpSections.Length; i++)
             {
-                double za = SpBands[i], zb = SpBands[i + 1];
-                if (za < z0 - 1e-6 || zb > z1 + 1e-6)
+                var q = SpSections[i];
+                if (q.Z0 < z0 - 1e-6 || q.Z1 > z1 + 1e-6)
                     continue;
-                Facet(p, 0, 1, za, zb, Armour, "plated steel");
-                Facet(p, 5, 1, za, zb, Skin, "painted plating");
-                foreach (var sd in new[] { -1, 1 })
-                {
-                    for (var k = 1; k <= 4; k++)
-                        Facet(p, k, sd, za, zb, k is 1 or 4 ? Skin2 : Skin, "painted plating");
-                    Chine(p, 1, sd, za, zb, 0.18, 0.08, Frame);
-                    Chine(p, 2, sd, za, zb, 0.22, 0.1, Armour);
-                    Chine(p, 3, sd, za, zb, 0.16, 0.08, Frame);
-                    Chine(p, 4, sd, za, zb, 0.14, 0.07, Armour);
-                }
-                // The inside: hidden boxes out to the skin (the aft piece's round the gun's well), flush where the pieces meet.
-                foreach (var (ya, yb) in new[] { (-0.75, 0.0), (0.0, 1.45), (1.45, 2.8), (2.8, 3.25) })
-                    FillLoft(p, x, za, zb, ya, yb, Math.Abs(za - SpCut) < 1e-6 ? 0 : 0.004, Math.Abs(zb - SpCut) < 1e-6 ? 0 : 0.004,
-                        fore ? null : (gx, GunZ, 3.42 - ShipWorksParts.TrunkD[0] - 0.03));
-            }
-            // The armour panels between the dark bands, the stripe down the outer flank, the bands themselves.
-            var stops = new List<double> { Math.Max(z0, SpFull0) };
-            stops.AddRange(SpRings.Where(r => r > z0 && r < z1));
-            stops.Add(Math.Min(z1, SpFull1));
-            for (var i = 0; i + 1 < stops.Count; i++)
-            {
-                double a = stops[i] + (SpRings.Contains(stops[i]) ? 0.3 : 0.05), b = stops[i + 1] - (SpRings.Contains(stops[i + 1]) ? 0.3 : 0.05);
-                if (Math.Abs(stops[i] - SpCut) < 1e-6) a = SpCut + 0.02;
-                if (Math.Abs(stops[i + 1] - SpCut) < 1e-6) b = SpCut - 0.02;
-                if (b - a < 1.0)
-                    continue;
-                var gun = !fore && a < GunZ + PadHalf + 0.3 && b > GunZ - PadHalf - 0.3;
-                foreach (var sd in new[] { -1, 1 })
-                    for (var k = 1; k <= 4; k++)
-                    {
-                        if (k == 3 && sd == s)
-                            continue; // (the stripe's facet)
-                        if (gun && k == 4 && sd == -s)
-                        {
-                            Plates(p, k, sd, a, GunZ - PadHalf - 0.3, 31 + i);
-                            Plates(p, k, sd, GunZ + PadHalf + 0.3, b, 33 + i);
-                            continue;
-                        }
-                        Plates(p, k, sd, a, b, 30 + i + k);
-                    }
+                var v = Enumerable.Range(0, 7).Select(k => k is >= 2 and <= 5 ? SectionVoid(q, k) : default).ToArray();
+                double xIn = Math.Min(v[2].Xi, v[5].Xi) - 0.005, xWide = Math.Min(v[3].Xi, v[4].Xi); // (to facet 4's void exactly: the sections hang on sockets on that face)
+                double yLo = Math.Max(q.A[0].Y, q.B[0].Y) / 100.0 + 0.05, yHi = Math.Min(q.A[6].Y, q.B[6].Y) / 100.0 - 0.05;
+                double za = q.Z0 + 0.005, zb = q.Z1 - 0.005;
+                var inner = new Rect(x - xIn, za, x + xIn, zb);
+                var gun = !fore && SpGunZ > q.Z0 && SpGunZ < q.Z1;
                 if (gun)
                 {
-                    Plates(p, 5, 1, a, GunZ - PadHalf - 0.3, 37 + i, 0.12, 0.88);
-                    Plates(p, 5, 1, GunZ + PadHalf + 0.3, b, 39 + i, 0.12, 0.88);
+                    Hidden(p, inner.X0, yLo, inner.Z0, inner.X1, wellY, inner.Z1);
+                    foreach (var r in Minus([inner], new Rect(gx - WellHalf, SpGunZ - WellHalf, gx + WellHalf, SpGunZ + WellHalf)))
+                        Hidden(p, r.X0, wellY, r.Z0, r.X1, yHi, r.Z1);
                 }
                 else
-                    Plates(p, 5, 1, a, b, 35 + i, 0.12, 0.88);
-                // The Militia's stripe: orange along the outer flank's upper facet, a yellow pinstripe over it, a gunmetal panel above.
-                FStrip(p, 3, s, a, b, 0, 1, 0.08, 0.3, 0.024, Orange, "painted plating");
-                FStrip(p, 3, s, a, b, 0, 1, 0.33, 0.37, 0.024, Hazard, "painted plating");
-                Slab(p, 3, s, a, b, 0.04, 0.96, 0.45, 0.92, 0.02, 0.08, 0.04, Skin);
+                    Hidden(p, inner.X0, yLo, inner.Z0, inner.X1, yHi, inner.Z1);
+                if (xWide > xIn + 0.05)
+                    foreach (var sd in new[] { -1, 1 })
+                        Hidden(p, sd < 0 ? x - xWide : x + xIn, v[2].Yb + 0.005, za, sd < 0 ? x - xIn : x + xWide, v[5].Ya - 0.005, zb);
+                foreach (var sd in new[] { -1, 1 })
+                {
+                    var at = SectionSock(q.Key(sd), "i4");
+                    Sock(p, $"sec{i}{(sd < 0 ? "p" : "s")}", x + at[0], at[1], q.Z0 + at[2], sd < 0 ? "-x" : "+x");
+                }
             }
-            foreach (var r in SpRings.Where(r => r > z0 + 0.3 && r < z1 - 0.3))
+            // The bands: the gap between two sections filled to its skin, the skin drawn dark in it, and a black band over it that laps
+            // onto both sections' ends.
+            foreach (var bz in SpBandZ)
+            {
+                double ga = Math.Max(bz - BandHalf, z0), gb = Math.Min(bz + BandHalf, z1);
+                if (gb - ga < 0.05)
+                    continue;
+                foreach (var (ya, yb) in new[] { (-0.75, 0.0), (0.0, 1.5), (1.5, 3.0), (3.0, 3.94) })
+                    FillLoft(p, x, ga, gb, ya, yb, Math.Abs(ga - SpCut) < 1e-6 ? 0 : 0.004, Math.Abs(gb - SpCut) < 1e-6 ? 0 : 0.004);
+                double ra = Math.Max(bz - BandOver, z0 + (Math.Abs(z0 - SpCut) < 1e-6 ? 0.004 : 0)), rb = Math.Min(bz + BandOver, z1 - (Math.Abs(z1 - SpCut) < 1e-6 ? 0.004 : 0));
                 for (var k = 0; k <= 5; k++)
                     foreach (var sd in k is 0 or 5 ? [1] : new[] { -1, 1 })
-                        Rib(p, k, sd, r, Armour);
-            // Pitch jets at the far ends (the sponsons reach well past the centre hull: long arms for turning it), on the roof's flat
-            // (clear of its armour panels) and under the keel.
-            var jz = fore ? -16.6 : 11.6;
-            RcsPad(p, "rcsUp", x, At(jz)[4].Y, jz, "+y", fore ? 0.17 : 0.05);
-            RcsPad(p, "rcsDown", x, At(jz)[0].Y, jz, "-y", 0.05);
-            // A leg's mount under the keel's flat.
+                    {
+                        var e = k % 2 == 1 ? FacetStagger : 0; // (neighbours' ends never on one plane)
+                        var (fa, fb) = (Math.Max(ga, bz - BandHalf + 0.008) + e, Math.Min(gb, bz + BandHalf - 0.008) - e);
+                        if (fb - fa > 0.05)
+                        {
+                            double[] Sk(double u, double w) => Sh(OnFacet(k, sd, fa, fb, u, w));
+                            Quad(p, Sk(0, 0), Sk(0, 1), Sk(1, 1), Sk(1, 0), Frame, "dirty steel");
+                        }
+                        Slab(p, k, sd, ra, rb, 0, 1, 0, 1, 0.03, 0.22, 0.05, Dark, "dirty steel");
+                    }
+            }
+            // Pitch jets at the far ends (long arms for turning it), on the roof and under the keel, standing clear of the dress.
+            var jz = fore ? -19.0 : 11.0;
+            RcsPad(p, "rcsUp", x, At(jz)[4].Y, jz, "+y", 0.17);
+            RcsPad(p, "rcsDown", x, At(jz)[0].Y, jz, "-y", 0.12);
             var lz = fore ? SpLegFore : SpLegAft;
             MountPad(p, "leg", x, At(lz)[0].Y, lz, 0.4, LegProud);
             if (fore)
             {
-                // The bow: a flat face round the intake (a dark frame, the dark duct with a fan's hub, grille bars), a sensor slit over it,
-                // running lights (red to port, green to starboard), the hazard chevrons on the chin.
+                // The blunt bow round the big square intake (the picture's): a pale face, a dark frame standing out of it, the duct's
+                // dark mouth with the compressor's grey face and its vanes, a sensor slit and two lamps over it, running lights, chevrons.
                 var q = At(SpFront);
-                Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(x + q[k].H, q[k].Y, SpFront)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(x - q[k].H, q[k].Y, SpFront)))], Skin2, "painted plating");
-                var duct = RingZ(x - H, SpMidY - 0.1 - H, 0.78, 0.7, SpFront - H - 0.004, 8);
-                var lip = RingZ(x - H, SpMidY - 0.1 - H, 0.86, 0.78, SpFront - H - 0.16, 8);
-                Prism(p, duct, lip, Armour, "plated steel");
-                Prism(p, RingZ(x - H, SpMidY - 0.1 - H, 0.66, 0.6, SpFront - H - 0.165, 8), RingZ(x - H, SpMidY - 0.1 - H, 0.66, 0.6, SpFront - H - 0.17, 8), "#15171a", "soot");
-                Prism(p, RingZ(x - H, SpMidY - 0.1 - H, 0.2, 0.2, SpFront - H - 0.175, 8), RingZ(x - H, SpMidY - 0.1 - H, 0.12, 0.12, SpFront - H - 0.3, 8), Bare, "steel");
-                foreach (var dy in new[] { -0.35, 0.0, 0.35 })
-                    Detail(p, x - 0.62, SpMidY - 0.1 + dy - 0.025, SpFront - 0.29, x + 0.62, SpMidY - 0.1 + dy + 0.025, SpFront - 0.25, Frame, "dirty steel");
-                Detail(p, x - 0.35, 2.32, SpFront - 0.03, x + 0.35, 2.45, SpFront - 0.008, "#24384a", "glass");
-                Detail(p, x + s * 0.95 - 0.06, SpMidY - 0.06, SpFront - 0.05, x + s * 0.95 + 0.06, SpMidY + 0.06, SpFront - 0.008, s < 0 ? Red : Green, glow: true);
-                foreach (var dx in new[] { -0.45, 0.0, 0.45 })
-                    Detail(p, x + dx - 0.12, 0.32, SpFront - 0.03, x + dx + 0.12, 0.44, SpFront - 0.008, Hazard, "hazard paint");
-                Hidden(p, x - 0.7, 0.35, SpFront + 0.004, x + 0.7, 2.5, -19.6 - 0.004); // (the bow's chamfer, behind the face)
-                // The web to the cab, its socket where the cab's hardpoint meets it (welded there by the build).
-                Web(p, Cx + s * SpIn, Cx + s * (SpIn + 0.5), CabWebZ, 0.6);
+                double fz = SpFront - 0.004, iy = SpMidY - 0.05;
+                Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(x + q[k].H, q[k].Y, fz)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(x - q[k].H, q[k].Y, fz)))], Skin2, "painted plating");
+                double[][] Rect4(double hw, double hh, double z) => [P(x - hw, iy - hh, z), P(x + hw, iy - hh, z), P(x + hw, iy + hh, z), P(x - hw, iy + hh, z)];
+                foreach (var (o0, o1, i0, i1) in new[] { (1.22, 1.02, 1.04, 0.84) })
+                {
+                    // the frame: four bevelled bars round the mouth, standing 0.3 m out
+                    Prism(p, [P(x - o0, iy - o1, fz - 0.01), P(x + o0, iy - o1, fz - 0.01), P(x + o0, iy - i1, fz - 0.01), P(x - o0, iy - i1, fz - 0.01)],
+                        [P(x - o0 + 0.06, iy - o1 + 0.06, fz - 0.3), P(x + o0 - 0.06, iy - o1 + 0.06, fz - 0.3), P(x + i0, iy - i1, fz - 0.3), P(x - i0, iy - i1, fz - 0.3)], Dark, "plated steel");
+                    Prism(p, [P(x - o0, iy + i1, fz - 0.01), P(x + o0, iy + i1, fz - 0.01), P(x + o0, iy + o1, fz - 0.01), P(x - o0, iy + o1, fz - 0.01)],
+                        [P(x - i0, iy + i1, fz - 0.3), P(x + i0, iy + i1, fz - 0.3), P(x + o0 - 0.06, iy + o1 - 0.06, fz - 0.3), P(x - o0 + 0.06, iy + o1 - 0.06, fz - 0.3)], Dark, "plated steel");
+                    foreach (var sd in new[] { -1, 1 })
+                        Prism(p, [P(x + sd * i0, iy - i1 + 0.004, fz - 0.012), P(x + sd * o0, iy - i1 + 0.004, fz - 0.012), P(x + sd * o0, iy + i1 - 0.004, fz - 0.012), P(x + sd * i0, iy + i1 - 0.004, fz - 0.012)],
+                            [P(x + sd * i0, iy - i1 + 0.004, fz - 0.296), P(x + sd * (o0 - 0.06), iy - i1 + 0.004, fz - 0.296), P(x + sd * (o0 - 0.06), iy + i1 - 0.004, fz - 0.296), P(x + sd * i0, iy + i1 - 0.004, fz - 0.296)], Dark, "plated steel");
+                }
+                Plate(p, Rect4(1.03, 0.83, fz - 0.03), "#15171a", "soot");
+                Detail(p, x - 0.7, iy - 0.58, fz - 0.2, x + 0.7, iy + 0.58, fz - 0.035, Armour2, "steel");
+                foreach (var dx in new[] { -0.45, -0.15, 0.15, 0.45 })
+                    Detail(p, x + dx - 0.03, iy - 0.56, fz - 0.24, x + dx + 0.03, iy + 0.56, fz - 0.2, Frame, "dirty steel");
+                Detail(p, x - 0.12, iy - 0.12, fz - 0.29, x + 0.12, iy + 0.12, fz - 0.24, Bare, "steel");
+                Detail(p, x - 0.55, 2.78, fz - 0.03, x + 0.55, 2.9, fz - 0.008, "#24384a", "glass");
+                foreach (var dx in new[] { -0.75, 0.75 })
+                    Detail(p, x + dx - 0.1, 2.76, fz - 0.05, x + dx + 0.1, 2.92, fz - 0.008, Glow, glow: true);
+                Detail(p, x + s * 1.4 - 0.06, iy - 0.06, fz - 0.05, x + s * 1.25 + 0.06, iy + 0.06, fz - 0.008, s < 0 ? Red : Green, glow: true);
+                foreach (var dx in new[] { -0.6, 0.0, 0.6 })
+                    Detail(p, x + dx - 0.14, 0.2, fz - 0.03, x + dx + 0.14, 0.32, fz - 0.008, Hazard, "hazard paint");
+                // The web to the cab, its socket where the cab's hardpoint meets it (welded there by the build); the cut's socket.
+                Web(p, Cx + s * SpIn, Cx + s * (SpIn + 0.6), CabWebZ, 0.25);
                 Sock(p, "cab", Cx + s * SpIn, NacY, CabWebZ, s < 0 ? "+x" : "-x");
                 Sock(p, "aft", x, SpMidY, SpCut, "+z");
-                // Antennas on its back over the cab (the picture's whips), a beacon.
-                foreach (var (dz, h) in new[] { (-8.2, 1.6), (-7.4, 1.1) })
+                // Antennas on its roof over the cab (the picture's whips), a beacon.
+                foreach (var (dz, h) in new[] { (-12.2, 1.8), (-11.4, 1.2) })
                 {
-                    Detail(p, x - 0.1, 3.296, dz - 0.1, x + 0.1, 3.42, dz + 0.1, Frame, "dirty steel");
-                    Detail(p, x - 0.02, 3.42, dz - 0.02, x + 0.02, 3.42 + h, dz + 0.02, Dark, "painted steel");
+                    Detail(p, x - 0.1, 4.12, dz - 0.1, x + 0.1, 4.22, dz + 0.1, Frame, "dirty steel");
+                    Detail(p, x - 0.02, 4.22, dz - 0.02, x + 0.02, 4.22 + h, dz + 0.02, Dark, "painted steel");
                 }
-                Detail(p, x - 0.06, 3.296, -15.5, x + 0.06, 3.47, -15.3, Red, glow: true); // (its top clear of the armour panel it stands in)
+                Detail(p, x - 0.07, 4.12, -14.1, x + 0.07, 4.3, -13.9, Red, glow: true);
             }
             else
             {
-                // The stern: a dark plate, a tail light; the gun's pad on its back, the webs to engineering and to the nacelle's pylon.
+                // The stern: a dark plate, a tail light; the gun's pad on the roof, the webs to engineering and to the nacelle's stub wing.
                 var q = At(SpAft);
-                Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(x + q[k].H, q[k].Y, SpAft)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(x - q[k].H, q[k].Y, SpAft)))], Frame, "soot");
-                Detail(p, x - 0.15, 1.3, SpAft + 0.008, x + 0.15, 1.6, SpAft + 0.04, Red, glow: true);
-                Hidden(p, x - 0.9, 0.0, SpFull1 + 0.004, x + 0.9, 2.6, SpAft - 0.004);
-                GunPad(p, "gun", gx, 3.42, GunZ, 0.24);
-                Web(p, Cx + s * SpIn, Cx + s * (SpIn + 0.5), PylonZ, 0.6);
+                double tz = SpAft + 0.004;
+                Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(x + q[k].H, q[k].Y, tz)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(x - q[k].H, q[k].Y, tz)))], Frame, "soot");
+                foreach (var dy in new[] { 0.4, 2.6 })
+                    Detail(p, x - 1.2, dy, tz + 0.02, x + 1.2, dy + 0.08, tz + 0.05, Hazard, "hazard paint");
+                Detail(p, x - 0.15, 1.4, tz + 0.02, x + 0.15, 1.7, tz + 0.05, Red, glow: true);
+                GunPad(p, "gun", gx, SpGunY, SpGunZ, 0.12);
+                Web(p, Cx + s * SpIn, Cx + s * (SpIn + 0.6), PylonZ, 0.25);
                 Sock(p, "hull", Cx + s * SpIn, NacY, PylonZ, s < 0 ? "+x" : "-x");
-                Web(p, Cx + s * (SpX + 1.4), Cx + s * NacRoot, NacPylonZ, 0.7);
-                Sock(p, "nac", Cx + s * NacRoot, NacY, NacPylonZ, s < 0 ? "-x" : "+x");
+                // The stub wing: a spar out of the band to the nacelle's root, under a wide wing fairing.
+                double w0 = Cx + s * (SpX + 2.0), w1 = Cx + s * NacRoot;
+                Solid(p, Math.Min(w0, w1), NacY - 0.2, PylonZ - 0.25, Math.Max(w0, w1), NacY + 0.2, PylonZ + 0.25, Frame, "dirty steel");
+                double r0 = Cx + s * (SpX + 2.62), r1 = Cx + s * (NacRoot - 0.004);
+                Prism(p, [P(r0, NacY - 0.22, PylonZ - 1.4), P(r0, NacY + 0.22, PylonZ - 1.4), P(r0, NacY + 0.22, PylonZ + 1.2), P(r0, NacY - 0.22, PylonZ + 1.2)],
+                    [P(r1, NacY - 0.18, PylonZ - 1.0), P(r1, NacY + 0.18, PylonZ - 1.0), P(r1, NacY + 0.18, PylonZ + 1.1), P(r1, NacY - 0.18, PylonZ + 1.1)], Skin, "painted plating");
+                Detail(p, Math.Min(r0, r1) + 0.02, NacY + 0.2, PylonZ - 1.25, Math.Max(r0, r1) - 0.02, NacY + 0.235, PylonZ - 1.05, Orange, "painted plating");
+                Sock(p, "nac", Cx + s * NacRoot, NacY, PylonZ, s < 0 ? "-x" : "+x");
                 Sock(p, "fore", x, SpMidY, SpCut, "-z");
             }
         });
-        return p.Stats(4500, 26000, 40, 12.0); // (light for their size: framed shells round tankage and voids; heavier, the ship turned too slowly on Ship keys)
+        return p.Stats(1500, 16000, 30, 12.0); // (the core only: the hull sections carry their own steel)
     }
 
     // ---- the flying parts: lift jets, the power plant, the flight computer (the Dray's kinds, in the Traders' colours and size)
@@ -1596,7 +1669,7 @@ public sealed class GunshipParts : IPartGenerator
         B(-0.05, 0.751, -0.2, 0.05, 0.767, 0.1, Hazard, Kw(("finish", "hazard paint")), true); // (the arrow, forward)
         B(-0.12, 0.751, -0.2, 0.12, 0.767, -0.12, Hazard, Kw(("finish", "hazard paint")), true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 26000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 45000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
         return p.Stats(300, 600, 8, 3.0);
     }
 
@@ -2000,7 +2073,7 @@ public sealed class GunshipParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "The Militia's twin-hull gunship: a patrol and escort ship that hauls a little. A glass cockpit and a crew cab forward (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers in a bay open to the sky amidships, engineering aft; a long armoured sponson down each side with an intake in its nose and a leg under each end, an autocannon turret on each sponson's back worked from engineering's gunnery console and one on the cab's roof worked by the copilot, and a drive nacelle on a short pylon off each sponson's tail.", defs, maxSteps: 460);
+        var bp = new BuildingParts.Blueprint(ShipName, "The Militia's twin-hull gunship: a patrol and escort ship that hauls a little. A glass cockpit and a crew cab forward (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers in a bay open to the sky amidships, engineering aft; a big boxy sponson down each side of Hull Sections in the Militia's dress, black bands round it, a square intake in its nose and a leg under each end, an autocannon turret on each sponson's roof worked from engineering's gunnery console and one on the cab's roof worked by the copilot, and a short drive pod on a stub wing off each sponson's flank.", defs, maxSteps: 520);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -2016,7 +2089,7 @@ public sealed class GunshipParts : IPartGenerator
         var copilot = Hang(bp, "Flight Couch", cab, "copilot", "bottom");
         var fc = Hang(bp, "Picket Flight Computer", cab, "computer", "bottom");
         var flight = ShipParts.ShipFlight();
-        flight["pitchResponse"] = 150; // (the sponsons' length makes it slow to answer a pitch: a keener loop brings the nose round in time)
+        flight["pitchResponse"] = 200; // (the sponsons' steel and length makes it slow to answer a pitch: a keener loop brings the nose round in time)
         bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         // The bunk room and the head to port.
@@ -2055,6 +2128,10 @@ public sealed class GunshipParts : IPartGenerator
         {
             var aft = Hang(bp, $"Picket Sponson {n} Aft", eng, $"spon{n}", "hull");
             var fore = Hang(bp, $"Picket Sponson {n} Fore", aft, "fore", "aft");
+            // The hull sections round each core: a port and a starboard half a section, each on its facet 4's inside socket.
+            for (var i = 0; i < SpSections.Length; i++)
+                foreach (var sd in new[] { -1, 1 })
+                    bp.Hang(SpSections[i].Key(sd), SpSections[i].Z1 <= SpCut + 1e-6 ? fore : aft, $"sec{i}{(sd < 0 ? "p" : "s")}", "i4");
             LegPodParts.HangPod(bp, LegPod, fore, "leg");
             LegPodParts.HangPod(bp, LegPod, aft, "leg");
             foreach (var piece in new[] { fore, aft })
@@ -2155,6 +2232,9 @@ public sealed class GunshipParts : IPartGenerator
             o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
         BuildingParts.AddPartDefs(o, defs, Out);
+        foreach (var q in SpSections)
+            foreach (var sd in new[] { -1, 1 })
+                defs.TryAdd(q.Key(sd), SectionDef(q.Key(sd)));
         o.File($"{BpOut}/PicketGunship.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
     }
 }
