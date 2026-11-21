@@ -233,7 +233,7 @@ public sealed class GunRig : GunModel.IPartSink
             }
         }
         var shell = (flags & GunModel.EmitFlags.Shell) != 0;
-        var r = Renderable.Box(color, alpha, mode, Material.Grid, (flags & GunModel.EmitFlags.Blend) != 0 ? RenderFlags.Blend : RenderFlags.None);
+        var r = Renderable.Box(color, alpha, mode, GunModel.LookOf(color, mode), (flags & GunModel.EmitFlags.Blend) != 0 ? RenderFlags.Blend : RenderFlags.None);
         r.Shape = (ushort)shape;
         var node = _group.Add("part", local, r);
         if (_slotCount == _slots.Length)
