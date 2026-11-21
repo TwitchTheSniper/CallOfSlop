@@ -1,0 +1,736 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Hatchet Fighter",
+  "description": "The Raiders' wedge fighter: a pilot and a gunner in tandem under a long glass canopy, a twin cannon turret on each wing tip worked by the gunner, two rocket pods the pilot fires straight ahead, and two drives in the engine block at the stern with their engines in the small cabin behind the cockpit. Boarded up a ladder through a hatch in the cabin floor; lift jets and leg pods under the wings and the belly set it down.",
+  "steps": [
+    {
+      "part": "Hatchet Belly"
+    },
+    {
+      "part": "Hatchet Hull Port",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Hull Starboard",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Nose",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Stern",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Bulkhead",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Canopy",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Roof",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Wing Port",
+      "on": 1,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Wing Starboard",
+      "on": 2,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Hatchet Drive",
+      "on": 4,
+      "socket": "driveL",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineL",
+      "by": "front"
+    },
+    {
+      "part": "Hatchet Drive",
+      "on": 4,
+      "socket": "driveR",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineR",
+      "by": "front"
+    },
+    {
+      "part": "Hatchet Lift Jet",
+      "on": 8,
+      "socket": "liftF",
+      "by": "top"
+    },
+    {
+      "part": "Hatchet Lift Jet",
+      "on": 8,
+      "socket": "liftB",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 8,
+      "socket": "leg",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 16,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 16,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 16,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 16,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 20,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 16,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 8,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 8,
+      "socket": "rcsUp",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 8,
+      "socket": "rcsDown",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 8,
+      "socket": "rcsFore",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 8,
+      "socket": "rcsAft",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Hatchet Lift Jet",
+      "on": 9,
+      "socket": "liftF",
+      "by": "top"
+    },
+    {
+      "part": "Hatchet Lift Jet",
+      "on": 9,
+      "socket": "liftB",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 9,
+      "socket": "leg",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 30,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 30,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 30,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 30,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 34,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 30,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 9,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 9,
+      "socket": "rcsUp",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 9,
+      "socket": "rcsDown",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 9,
+      "socket": "rcsFore",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 9,
+      "socket": "rcsAft",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 0,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 42,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 42,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 42,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 42,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 46,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 42,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Housing S",
+      "on": 0,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Leg Pod Canopy Port S",
+      "on": 49,
+      "socket": "canopyL",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Canopy Stbd S",
+      "on": 49,
+      "socket": "canopyR",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Strut S",
+      "on": 49,
+      "socket": "strut",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Carriage S",
+      "on": 49,
+      "socket": "carriage",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Brace S",
+      "on": 53,
+      "socket": "brace",
+      "by": "hang"
+    },
+    {
+      "part": "Leg Pod Foot S",
+      "on": 49,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsDownN",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsUpN",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsOutNL",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsOutNR",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsUpSL",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsUpSR",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsDownSL",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsDownSR",
+      "by": "base",
+      "paint": "#33363b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "pilot",
+      "by": "bottom",
+      "paint": "#3a2a2c",
+      "finish": "fabric"
+    },
+    {
+      "part": "Hatchet Flight Computer",
+      "on": 0,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Turret Module",
+      "on": 0,
+      "socket": "rocketModule",
+      "by": "-y"
+    },
+    {
+      "part": "Rocket Pod Mk2",
+      "on": 8,
+      "socket": "rocket",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 67,
+      "socket": "back",
+      "by": "front",
+      "paint": "#5f646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Rocket Pod Mk2",
+      "on": 9,
+      "socket": "rocket",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 69,
+      "socket": "back",
+      "by": "front",
+      "paint": "#5f646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 0,
+      "socket": "gunConsole",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "gunner",
+      "by": "bottom",
+      "paint": "#3a2a2c",
+      "finish": "fabric"
+    },
+    {
+      "part": "Turret Module",
+      "on": 0,
+      "socket": "gunModule",
+      "by": "-y"
+    },
+    {
+      "part": "Turntable 1x1 Long",
+      "on": 8,
+      "socket": "turret",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 74,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Hatchet Twin Cannon",
+      "on": 75,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 76,
+      "socket": "ammo",
+      "by": "bottom",
+      "paint": "#5f646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Turntable 1x1 Long",
+      "on": 9,
+      "socket": "turret",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 78,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Hatchet Twin Cannon",
+      "on": 79,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 80,
+      "socket": "ammo",
+      "by": "bottom",
+      "paint": "#5f646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Hatchet Belly Hatch",
+      "on": 0,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Hatchet Boarding Ladder",
+      "on": 82,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#33363b",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switchCabin",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 0,
+      "socket": "lockerL",
+      "by": "bottom",
+      "spin": 2
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 0,
+      "socket": "lifeSupport",
+      "by": "bottom",
+      "spin": 2
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 0,
+      "socket": "lockerR",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Ship Battery XS",
+      "on": 0,
+      "socket": "battery",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Hatchet Power Cell",
+      "on": 0,
+      "socket": "power",
+      "by": "bottom"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#ff7060"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#ff7060"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchCabin",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCabinF",
+      "by": "back",
+      "config": {
+        "colour": "#ffb070"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCabinF",
+      "by": "back",
+      "config": {
+        "colour": "#ffb070"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    }
+  ],
+  "wires": [
+    [
+      64,
+      65
+    ],
+    [
+      64,
+      66
+    ],
+    [
+      66,
+      67
+    ],
+    [
+      66,
+      69
+    ],
+    [
+      72,
+      73
+    ],
+    [
+      73,
+      76
+    ],
+    [
+      73,
+      80
+    ],
+    [
+      84,
+      82
+    ],
+    [
+      90,
+      91
+    ],
+    [
+      90,
+      92
+    ],
+    [
+      93,
+      94
+    ],
+    [
+      93,
+      95
+    ],
+    [
+      93,
+      96
+    ],
+    [
+      93,
+      97
+    ]
+  ],
+  "conduit": true
+}

@@ -1,0 +1,322 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hatchet Twin Cannon",
+  "description": "The Hatchet's wing-tip gun: twin 30 mm barrels in a cream mantlet, 480 rounds a minute out to 900 m. Belt-fed from the box on its back.",
+  "group": "Ship",
+  "section": "Hatchet fighter",
+  "role": "gun",
+  "tool": "wrench",
+  "gun": {
+    "damage": 30,
+    "rpm": 480,
+    "spread": 0.5,
+    "range": 900,
+    "mag": 120,
+    "reload": 3.5,
+    "kick": 14,
+    "fx": "cannon",
+    "speed": 950,
+    "soundOf": "Bastille",
+    "muzzle": [
+      0,
+      -0.025,
+      -1.6
+    ]
+  },
+  "centreSockets": false,
+  "mass": 260.0,
+  "health": 900,
+  "armour": 16,
+  "material": "steel",
+  "color": "#e2d8c0",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.26,
+        -0.18,
+        -0.34
+      ],
+      "max": [
+        0.26,
+        0.18,
+        0.36
+      ],
+      "color": "#e2d8c0",
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.26,
+        0.18,
+        -0.34
+      ],
+      "max": [
+        0.26,
+        0.29,
+        0.36
+      ],
+      "color": "#cfc5ad",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.26,
+          0.18,
+          -0.34
+        ],
+        [
+          0.26,
+          0.18,
+          -0.34
+        ],
+        [
+          0.26,
+          0.18,
+          0.36
+        ],
+        [
+          -0.26,
+          0.18,
+          0.36
+        ],
+        [
+          -0.19,
+          0.29,
+          -0.22
+        ],
+        [
+          0.19,
+          0.29,
+          -0.22
+        ],
+        [
+          0.19,
+          0.29,
+          0.3
+        ],
+        [
+          -0.19,
+          0.29,
+          0.3
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.26,
+        -0.18,
+        -0.46
+      ],
+      "max": [
+        0.26,
+        0.1,
+        -0.34
+      ],
+      "color": "#7b8086",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.26,
+          -0.18,
+          -0.34
+        ],
+        [
+          0.26,
+          -0.18,
+          -0.34
+        ],
+        [
+          0.26,
+          0.1,
+          -0.34
+        ],
+        [
+          -0.26,
+          0.1,
+          -0.34
+        ],
+        [
+          -0.2,
+          -0.13,
+          -0.46
+        ],
+        [
+          0.2,
+          -0.13,
+          -0.46
+        ],
+        [
+          0.2,
+          0.06,
+          -0.46
+        ],
+        [
+          -0.2,
+          0.06,
+          -0.46
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.155,
+        -0.08,
+        -0.62
+      ],
+      "max": [
+        -0.045,
+        0.03,
+        -0.46
+      ],
+      "color": "#26282c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.135,
+        -0.06,
+        -1.5
+      ],
+      "max": [
+        -0.065,
+        0.01,
+        -0.62
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.15,
+        -0.075,
+        -1.6
+      ],
+      "max": [
+        -0.05,
+        0.025,
+        -1.48
+      ],
+      "color": "#1c1e21",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.045,
+        -0.08,
+        -0.62
+      ],
+      "max": [
+        0.155,
+        0.03,
+        -0.46
+      ],
+      "color": "#26282c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.065,
+        -0.06,
+        -1.5
+      ],
+      "max": [
+        0.135,
+        0.01,
+        -0.62
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.05,
+        -0.075,
+        -1.6
+      ],
+      "max": [
+        0.15,
+        0.025,
+        -1.48
+      ],
+      "color": "#1c1e21",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.265,
+        -0.04,
+        -0.2
+      ],
+      "max": [
+        0.265,
+        0.02,
+        0.25
+      ],
+      "color": "#9b2733",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        0.12,
+        0.2,
+        0.05
+      ],
+      "max": [
+        0.2,
+        0.27,
+        0.15
+      ],
+      "color": "#ff5040",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.13,
+        0.27,
+        0.06
+      ],
+      "max": [
+        0.19,
+        0.296,
+        0.14
+      ],
+      "color": "#ff6050",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.18,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "ammo",
+      "at": [
+        0.0,
+        0.18,
+        0.2
+      ],
+      "dir": "+y"
+    }
+  ]
+}

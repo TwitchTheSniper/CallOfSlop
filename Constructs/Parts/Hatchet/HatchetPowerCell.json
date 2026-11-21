@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hatchet Power Cell",
+  "description": "The Hatchet's power cell: a squat armoured cell on the cabin floor, 120 kW for the turrets, the air, the flight computer and the lights. No fuel.",
+  "group": "Ship",
+  "section": "Hatchet fighter",
+  "role": "generator",
+  "tool": "welder",
+  "generator": {
+    "rate": 120,
+    "spool": 4,
+    "fuel": "none"
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0.1,
+        0.3
+      ],
+      "face": "+z"
+    }
+  ],
+  "mass": 400.0,
+  "health": 2500,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5f646a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.25,
+        0.9,
+        0.3
+      ],
+      "color": "#5f646a",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.255,
+        0.1,
+        -0.2
+      ],
+      "max": [
+        0.255,
+        0.16,
+        0.2
+      ],
+      "color": "#f08a24",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.2,
+        0.9,
+        -0.24
+      ],
+      "max": [
+        0.2,
+        1.0,
+        0.24
+      ],
+      "color": "#26282c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.16,
+        0.5,
+        -0.3105
+      ],
+      "max": [
+        0.16,
+        0.75,
+        -0.2945
+      ],
+      "color": "#60e0a0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

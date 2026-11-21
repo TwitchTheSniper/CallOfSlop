@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hatchet Belly Hatch",
+  "description": "The Hatchet's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the cabin's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.",
+  "group": "Ship",
+  "section": "Hatchet fighter",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 1.403,
+    "seconds": 3.0,
+    "hang": "hang"
+  },
+  "mass": 300.0,
+  "health": 3000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5f646a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.595,
+        -0.287,
+        -1.27
+      ],
+      "max": [
+        0.595,
+        -0.207,
+        -0.035
+      ],
+      "color": "#5f646a",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.3,
+        -1.12
+      ],
+      "max": [
+        0.495,
+        -0.284,
+        -1.0
+      ],
+      "color": "#e8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.3,
+        -0.84
+      ],
+      "max": [
+        0.495,
+        -0.284,
+        -0.72
+      ],
+      "color": "#e8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.3,
+        -0.56
+      ],
+      "max": [
+        0.495,
+        -0.284,
+        -0.44
+      ],
+      "color": "#e8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.3,
+        -0.28
+      ],
+      "max": [
+        0.495,
+        -0.284,
+        -0.16
+      ],
+      "color": "#e8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.565,
+        -0.205,
+        -1.24
+      ],
+      "max": [
+        -0.465,
+        -0.147,
+        -0.065
+      ],
+      "color": "#33363b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.465,
+        -0.205,
+        -1.24
+      ],
+      "max": [
+        0.565,
+        -0.147,
+        -0.065
+      ],
+      "color": "#33363b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3,
+        -0.207,
+        -0.03
+      ],
+      "max": [
+        0.3,
+        0.115,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        -0.203,
+        -0.028
+      ],
+      "max": [
+        0.28,
+        0.105,
+        -0.004
+      ],
+      "color": "#33363b",
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "ladder",
+      "at": [
+        0.0,
+        -0.207,
+        -0.13
+      ],
+      "dir": "+y"
+    }
+  ]
+}
