@@ -118,6 +118,14 @@ public sealed class HallShowcase : IPartGenerator
                 Paint(Stand("Roller Tile", V(x, FloorY, -19), East, tiles[x / 2, 9], "bottom"), Line);
             Paint(Stand("Turntable Tile", V(11, FloorY, -19), Up, tiles[5, 9], "bottom"), Line);
             Paint(Stand("Roller Tile", V(11, FloorY, -17), Up, tiles[5, 8], "bottom"), Line);
+            // ...and a second way on from the turntable, east into a one-tile pad: a piece going to either pad takes its way there
+            // (a piece with no destination goes each way in turn).
+            Paint(Stand("Roller Tile", V(13, FloorY, -19), East, tiles[6, 9], "bottom"), Line);
+            Paint(Stand("Pad Tile", V(15, FloorY, -19), East, tiles[7, 9], "bottom"), Hazard);
+            // A run with no way on under the span: three tiles down the bay whose pieces wait at its last tile for the crane, which
+            // picks them off the run's end (logi spawn 3 puts Gear Sets on it; the crane takes each one to the pad).
+            foreach (var z in new[] { -9, -11, -13 })
+                Paint(Stand("Roller Tile", V(5, FloorY, z), Toward, tiles[2, -z / 2], "bottom"), Line);
         }
     }
 }

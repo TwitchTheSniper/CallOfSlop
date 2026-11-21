@@ -307,8 +307,9 @@ public static class ConstructLogistics
         {
             m.NodeNet[n] = (short)Root(m, n);
             var d = c.DefOf(m.NodePart[n]);
-            if (d.IsRouter && d.IsConveyorJunction && m.RouterN < LogiMap.MaxRouters)
+            if ((d.IsRouter && d.IsConveyorJunction || d.IsTurntable) && m.RouterN < LogiMap.MaxRouters)
             {
+                // (a Turntable Tile is a Router slot too: a way may pass it, and it sends a piece with a destination its way: TurntableWay)
                 m.RouterOfNode[n] = (sbyte)m.RouterN;
                 m.Routers[m.RouterN++] = (ushort)n;
                 m.Through[n] = true;
@@ -742,6 +743,27 @@ public static class ConstructLogistics
         return true;
     }
 
+    /// <summary>
+    /// Server: the way a Turntable Tile (Router slot <paramref name="s"/>) sends the lead piece of conveyor <paramref name="from"/>: its
+    /// out conveyor toward the piece's destination, never back out the side it came in. -1: no destination or no way (it deals in turn,
+    /// as before); -2: its way is worked out next step (it waits). A turntable only follows a destination; it never gives one.
+    /// </summary>
+    public static int TurntableWay(Construct c, LogiMap m, int s, int from, in CRider r)
+    {
+        if (r.Dest == 0)
+            return -1;
+        var ds = -1;
+        for (var i = 0; i < m.DestN && ds < 0; i++)
+            if (c.Parts[m.NodePart[m.Dests[i]]].Store == r.Dest)
+                ds = i;
+        if (ds < 0 || m.NodeNet[m.Dests[ds]] != m.NodeNet[m.Routers[s]])
+            return -1;
+        if (!Column(c, m, ds))
+            return -2;
+        int o = m.Hop[s * LogiMap.MaxDests + ds];
+        return o == LogiMap.None || !RollerRuns.Passes(c, m.NodePart[m.Routers[s]], from, o) ? -1 : o;
+    }
+
     /// <summary>routerHold: an order's piece that can't get on waits at the Router with its order kept, marked stuck (tried again every 2 s).</summary>
     private static bool Held(Construct c, ref CRider r, LogiReason why, byte flags0, ref bool changed)
     {
@@ -992,8 +1014,8 @@ public static class ConstructLogistics
                 (m.ShowStuck[s], m.ShowStuckDef[s], m.ShowReason[s]) = (stuck[s], stuckDef[s], reason[s]);
                 m.ShowVersion++;
             }
-            if (!server)
-                continue;
+            if (!server || !c.DefOf(m.NodePart[m.Routers[s]]).IsRouter)
+                continue; // (a Turntable Tile has no Alarm or Moving)
             ref var p = ref c.Parts[m.NodePart[m.Routers[s]]];
             var alarm = stuck[s] || m.OffN[s] > 0 ? 1f : 0f;
             float move = moving[m.NodeNet[m.Routers[s]]];

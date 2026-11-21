@@ -12,6 +12,7 @@ public enum LiftPointKind : byte
     PressBay, // a press bay's Piece in with no conveyor: put (a blank it takes, or a kit part for its hopper)
     Former, // a Panel Former's Piece in with no conveyor: put (sheet for its bin)
     Tray, // (phase 5b) a Crafting Terminal's tray: put (a part one of its open orders still waits for)
+    RunEnd, // a Roller Tile run's last tile with no way on (RollerRuns.EndRunAt): pick (the lead piece waiting at its end)
 }
 
 /// <summary>A point in a lifter's reach (server; found every <see cref="ConstructLifters.PointEvery"/> ticks, never per tick).</summary>
@@ -87,6 +88,12 @@ public static partial class ConstructLifters
             case LiftPointKind.Out:
                 at = PartPoint(b, pt.Part, d.IsExtruder ? d.ExtDieAt : d.AsmOutAt + d.AsmOutDir * 0.6f);
                 return true;
+            case LiftPointKind.RunEnd:
+                if (RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0))
+                    return false;
+                b.WorldFrame(b.Parts[pt.Part].Seg, out var rq, out var rt);
+                at = rt + Vector3.Transform(b.RouteNodes[b.Routes[run].Start + 1].Pos, rq); // (the run's last node, over its end tile)
+                return true;
             default:
                 var name = pt.Kind == LiftPointKind.PressBay ? BayPortNames[Math.Min((int)pt.Bay, BayPortNames.Length - 1)] : "Piece in";
                 if (ConveyorPort(d, name) is not { } np)
@@ -149,7 +156,7 @@ public static partial class ConstructLifters
             if (i == self || b.Parts[i].Broken)
                 continue;
             var d = b.DefOf(i);
-            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile)
                 continue;
             if (d.IsPieceRack && ConstructPads.IsMember(b, i))
                 continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
@@ -159,6 +166,14 @@ public static partial class ConstructLifters
                 half = MathF.Max(MathF.Abs(pd.RackHoldMin.X), MathF.Abs(pd.RackHoldMax.X)) + MathF.Max(MathF.Abs(pd.RackHoldMin.Z), MathF.Abs(pd.RackHoldMax.Z)) + pd.RackHoldMax.Y + 0.5f; // (a pad's owner: its whole rectangle, measured from the tile)
             if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
                 continue; // (a big body's far parts; one on a moving segment is tested whole)
+            if (d.IsRollerTile)
+            {
+                // A run's end tile with no way on: its pieces wait there for a crane (the Hall Crane picks from a run's end).
+                var re = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.RunEnd };
+                if (PointAt(b, re, out var ra) && InReach(ld, shoulder, lr, ra, SafeLift, out _))
+                    pts[n++] = re;
+                continue;
+            }
             if (d.IsPieceRack)
             {
                 // A rack or a pad: pick and put. A Crafting Terminal's tray (phase 5b): put only, for its orders. A station's hold: its claims only.
@@ -365,6 +380,8 @@ public static partial class ConstructLifters
                 return true;
             }
         }
+        if (CarryRunEnd(world, c, l, ld, lp, lr, shoulder))
+            return true;
         for (var k = 0; k < l.PointN; k++)
         {
             var pt = l.Points![k];
@@ -389,6 +406,62 @@ public static partial class ConstructLifters
         }
         // (the caller sets the idle reason)
         return false;
+    }
+
+    /// <summary>
+    /// A piece waiting at the end of a Roller Tile run (a run end point): off the run into the hand, to the store its rider was going to
+    /// when that is in reach and takes it, else by the Routers' rule (a want, else storage). True when a carry began.
+    /// </summary>
+    private static bool CarryRunEnd(ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 lp, Quaternion lr, Vector3 shoulder)
+    {
+        for (var j = 0; j < l.PointN; j++)
+        {
+            var k = (j + l.OutTurn) % l.PointN; // (run ends take turns with the outs)
+            var pt = l.Points![k];
+            if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b || RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0)
+                || RollerRuns.WaitingLead(b, run) is not (var lead and >= 0))
+                continue;
+            var rider = b.Conveyed[lead];
+            var d = ConstructParts.Def(rider.Def);
+            if (d == null || !Carries(ld, d))
+                continue;
+            ConstructConveyor.WorldPose(b, run, rider, d, out var from, out var fromRot);
+            if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
+                continue;
+            var asNew = rider.Health == 255 && rider.Paint == 0;
+            var to = DestPoint(world, l, ld, shoulder, lr, d, rider.Dest, out var toAt);
+            if (to < 0)
+                to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out toAt, asNew);
+            if (to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
+                continue;
+            l.OutTurn = k + 1;
+            StartCarry(world, c, l, ld, lp, lr, d, health, paint, from, fromRot, to, toAt);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>The rack, pad or tray point whose store is <paramref name="dest"/> (a rider's destination), when it takes the piece now and is in reach; else -1.</summary>
+    private static int DestPoint(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, ushort dest, out Vector3 at)
+    {
+        at = default;
+        if (dest == 0)
+            return -1;
+        var lift = WristLift(d);
+        for (var k = 0; k < l.PointN; k++)
+        {
+            ref readonly var pt = ref l.Points![k];
+            if (pt.Kind is not (LiftPointKind.Rack or LiftPointKind.Tray) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
+                || b.Parts[pt.Part].Store != dest || world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0
+                || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out var p))
+                continue;
+            p.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+            if (!InReach(ld, shoulder, lr, p, lift, out _))
+                continue;
+            at = p;
+            return k;
+        }
+        return -1;
     }
 
     /// <summary>
