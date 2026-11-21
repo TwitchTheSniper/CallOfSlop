@@ -690,7 +690,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and drop are worked out from its rails on each peer.
     // 411: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
     //   (part files go and come, ids move); CfgKey GrowMakes at the end.
-    public const ushort ProtocolVersion = 411;
+    // 412: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
+    public const ushort ProtocolVersion = 412;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
