@@ -6,8 +6,8 @@
   "section": "Valkyrie IV dropship",
   "role": "frame",
   "tool": "welder",
-  "mass": 192.4,
-  "health": 770,
+  "mass": 191.6,
+  "health": 766,
   "armour": 8,
   "material": "steel",
   "color": "#373e47",
@@ -16,7 +16,7 @@
     {
       "min": [
         -5.25,
-        1.28,
+        1.283,
         -9.78
       ],
       "max": [

@@ -277,6 +277,12 @@
       "by": "t0"
     },
     {
+      "part": "Valkyrie Rear Loading Ramp Steps",
+      "on": 18,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
       "part": "Valkyrie Rear Loading Ramp",
       "on": 14,
       "socket": "t3",
@@ -415,13 +421,13 @@
     {
       "part": "Valkyrie Gear Rear Port",
       "on": 18,
-      "socket": "t1",
+      "socket": "t2",
       "by": "t0"
     },
     {
       "part": "Valkyrie Gear Rear Stbd",
       "on": 18,
-      "socket": "t2",
+      "socket": "t3",
       "by": "t0"
     },
     {
@@ -444,7 +450,7 @@
     },
     {
       "part": "Valkyrie Door Port Troop",
-      "on": 72,
+      "on": 73,
       "socket": "t1",
       "by": "hang"
     },
@@ -456,7 +462,7 @@
     },
     {
       "part": "Valkyrie Door Stbd Troop",
-      "on": 74,
+      "on": 75,
       "socket": "t1",
       "by": "hang"
     },
@@ -468,7 +474,7 @@
     },
     {
       "part": "Valkyrie Door Port Nav",
-      "on": 76,
+      "on": 77,
       "socket": "t1",
       "by": "hang"
     },
@@ -480,7 +486,7 @@
     },
     {
       "part": "Valkyrie Door Port Med",
-      "on": 78,
+      "on": 79,
       "socket": "t1",
       "by": "hang"
     },
@@ -492,7 +498,7 @@
     },
     {
       "part": "Valkyrie Door Port Util",
-      "on": 80,
+      "on": 81,
       "socket": "t1",
       "by": "hang"
     },
@@ -504,7 +510,7 @@
     },
     {
       "part": "Valkyrie Door Port Eng",
-      "on": 82,
+      "on": 83,
       "socket": "t1",
       "by": "hang"
     },
@@ -516,7 +522,7 @@
     },
     {
       "part": "Valkyrie Door Stbd Tac",
-      "on": 84,
+      "on": 85,
       "socket": "t1",
       "by": "hang"
     },
@@ -528,7 +534,7 @@
     },
     {
       "part": "Valkyrie Door Stbd Mech",
-      "on": 86,
+      "on": 87,
       "socket": "t1",
       "by": "hang"
     },
@@ -540,7 +546,7 @@
     },
     {
       "part": "Valkyrie Door Stbd Eng",
-      "on": 88,
+      "on": 89,
       "socket": "t1",
       "by": "hang"
     },
@@ -552,7 +558,7 @@
     },
     {
       "part": "Valkyrie Door Troop Eng",
-      "on": 90,
+      "on": 91,
       "socket": "t1",
       "by": "hang"
     },
@@ -624,7 +630,7 @@
     },
     {
       "part": "Valkyrie Crate 03",
-      "on": 101,
+      "on": 103,
       "socket": "t1",
       "by": "t0"
     },
@@ -654,7 +660,7 @@
     },
     {
       "part": "Valkyrie Crate 08",
-      "on": 107,
+      "on": 108,
       "socket": "t1",
       "by": "t0"
     },
@@ -666,13 +672,13 @@
     },
     {
       "part": "Valkyrie Coolant Stbd",
-      "on": 109,
+      "on": 110,
       "socket": "t1",
       "by": "t0"
     },
     {
       "part": "Valkyrie Gantry Hoist Trolley",
-      "on": 109,
+      "on": 110,
       "socket": "t2",
       "by": "t0"
     },
@@ -756,13 +762,13 @@
     },
     {
       "part": "Valkyrie JumpSeat 02",
-      "on": 72,
+      "on": 73,
       "socket": "t2",
       "by": "t0"
     },
     {
       "part": "Valkyrie JumpSeat 03",
-      "on": 72,
+      "on": 73,
       "socket": "t3",
       "by": "t0"
     },
@@ -809,38 +815,38 @@
       "by": "t0"
     },
     {
+      "part": "Valkyrie Lift Jet Stbd 3",
+      "on": 44,
+      "socket": "t3",
+      "by": "t0"
+    },
+    {
       "part": "Valkyrie Lift Jet Port 3",
-      "on": 133,
-      "socket": "t1",
+      "on": 45,
+      "socket": "t3",
       "by": "t0"
     },
     {
       "part": "Valkyrie Lift Jet Port 2",
-      "on": 134,
-      "socket": "t1",
-      "by": "t0"
-    },
-    {
-      "part": "Valkyrie Lift Jet Stbd 3",
-      "on": 132,
-      "socket": "t1",
-      "by": "t0"
-    },
-    {
-      "part": "Valkyrie Lift Jet Stbd 2",
       "on": 136,
       "socket": "t1",
       "by": "t0"
     },
     {
-      "part": "Valkyrie Lift Jet Port 1",
+      "part": "Valkyrie Lift Jet Stbd 2",
       "on": 135,
       "socket": "t1",
       "by": "t0"
     },
     {
-      "part": "Valkyrie Lift Jet Stbd 1",
+      "part": "Valkyrie Lift Jet Port 1",
       "on": 137,
+      "socket": "t1",
+      "by": "t0"
+    },
+    {
+      "part": "Valkyrie Lift Jet Stbd 1",
+      "on": 138,
       "socket": "t1",
       "by": "t0"
     },
@@ -862,20 +868,20 @@
   ],
   "wires": [
     [
-      122,
-      52
-    ],
-    [
-      140,
-      121
-    ],
-    [
-      140,
-      141
+      123,
+      53
     ],
     [
       141,
-      120
+      122
+    ],
+    [
+      141,
+      142
+    ],
+    [
+      142,
+      121
     ]
   ],
   "conduit": true

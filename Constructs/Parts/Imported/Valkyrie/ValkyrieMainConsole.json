@@ -8,7 +8,7 @@
   "tool": "wrench",
   "logic": {
     "kind": "flightstabilizer",
-    "gyro": 51143042.0
+    "gyro": 50730375.0
   },
   "config": [
     {

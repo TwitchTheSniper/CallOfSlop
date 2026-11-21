@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Valkyrie Rear Loading Ramp Steps",
+  "description": "Part of the Valkyrie IV, from its model's Rear Loading Ramp Steps (Hull Rear Ramp).",
+  "group": "Ship",
+  "section": "Valkyrie IV dropship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 120,
+  "armour": 20,
+  "material": "steel",
+  "color": "#2a2a2a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -1.99,
+        0.03,
+        11.3
+      ],
+      "max": [
+        1.99,
+        0.96,
+        11.8326
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.99,
+        0.03,
+        11.8326
+      ],
+      "max": [
+        1.99,
+        0.64,
+        12.3651
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.99,
+        0.03,
+        12.3651
+      ],
+      "max": [
+        1.99,
+        0.32,
+        12.8977
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.3,
+        0.01,
+        11.35
+      ],
+      "max": [
+        0.3,
+        0.03,
+        11.65
+      ],
+      "color": "#2a2a2a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        0.92,
+        11.35
+      ],
+      "max": [
+        0.02,
+        0.96,
+        11.39
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "t0",
+      "at": [
+        0.0,
+        0.96,
+        11.37
+      ],
+      "dir": "+y"
+    }
+  ]
+}

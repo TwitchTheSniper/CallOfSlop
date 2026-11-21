@@ -264,8 +264,62 @@ public sealed class ImportedShips : IPartGenerator
             Weld(pieces, out var order);
             FittingSockets(pieces);
             Trim(pieces, order.Select(t => t.Part).ToList());
+            Unflush(pieces);
             Write(pieces, order, name);
         }
+
+        /// <summary>
+        /// Drawn boxes that share a face plane with another drawn box (the model's pieces meet flush) flicker: the
+        /// smaller one's face steps back 3 mm (at most a tenth of its thickness). Its collision twin stays as modelled.
+        /// </summary>
+        private static void Unflush(List<Piece> pieces)
+        {
+            var all = pieces.SelectMany(p => p.Boxes.Where(b => !b.Hidden)).ToList(); // (a shaped box is met by its bounds, and only plain boxes move)
+            var moved = 0;
+            for (var pass = 0; pass < 6; pass++)
+            {
+                var n = 0;
+                for (var i = 0; i < all.Count; i++)
+                    for (var j = i + 1; j < all.Count; j++)
+                    {
+                        Bx a = all[i], b = all[j];
+                        if (a.Points != null && b.Points != null)
+                            continue;
+                        for (var k = 0; k < 3; k++)
+                        {
+                            int u = (k + 1) % 3, v = (k + 2) % 3;
+                            if (Math.Min(a.Hi.Get(u), b.Hi.Get(u)) - Math.Max(a.Lo.Get(u), b.Lo.Get(u)) <= 0.001f
+                                || Math.Min(a.Hi.Get(v), b.Hi.Get(v)) - Math.Max(a.Lo.Get(v), b.Lo.Get(v)) <= 0.001f)
+                                continue;
+                            var small = a.Points != null ? b : b.Points != null ? a : Vol(a) <= Vol(b) ? a : b;
+                            var step = MathF.Min(0.003f, (small.Hi.Get(k) - small.Lo.Get(k)) / 10);
+                            foreach (var hi in new[] { true, false })
+                            {
+                                float fa = hi ? a.Hi.Get(k) : a.Lo.Get(k);
+                                foreach (var bhi in new[] { true, false })
+                                {
+                                    var fb = bhi ? b.Hi.Get(k) : b.Lo.Get(k);
+                                    if (MathF.Abs(fa - fb) > 0.0015f)
+                                        continue;
+                                    // Step the small box's own face on that plane back into it.
+                                    var shi = small == a ? hi : bhi;
+                                    if (shi) small.Hi = small.Hi.With(k, small.Hi.Get(k) - step);
+                                    else small.Lo = small.Lo.With(k, small.Lo.Get(k) + step);
+                                    n++;
+                                    goto next;
+                                }
+                            }
+                        }
+                        next:;
+                    }
+                moved += n;
+                if (n == 0)
+                    break;
+            }
+            Console.WriteLine($"imported_ships: {moved} flush faces stepped back");
+        }
+
+        private static float Vol(Bx b) { var e = b.Hi - b.Lo; return e.X * e.Y * e.Z; }
 
         // -- objects
 
@@ -340,6 +394,17 @@ public sealed class ImportedShips : IPartGenerator
             var tr = new Vector3(t.X, t.Y, t.Z); // (already turned; raise its height as its own geometry was)
             var orig = Vector3.Transform(tr, Matrix4x4.Transpose(_turn));
             tr.Y += rigid ? shift : orig.Y > _above ? _by : 0;
+            // "move": an object put somewhere else, in metres in the game's frame (furniture the model left in a doorway).
+            if (_spec.TryGetProperty("move", out var mv) && mv.TryGetProperty(ob.Name, out var d))
+            {
+                var by = new Vector3(d[0].GetSingle(), d[1].GetSingle(), d[2].GetSingle());
+                for (var i = 0; i < ob.Meshes.Count; i++)
+                {
+                    var m = ob.Meshes[i];
+                    ob.Meshes[i] = m with { P = [.. m.P.Select(v => v + by)], Centre = m.Centre + by };
+                }
+                tr += by;
+            }
             ob.World.Translation = tr;
         }
 
@@ -585,10 +650,12 @@ public sealed class ImportedShips : IPartGenerator
             var p = new Piece { Source = ob.Name + "_Steps", Group = ob.Path.Count > 0 ? ob.Path[^1] : ob.Name, Name = ob.Name + " Steps", From = null };
             for (var i = 1; i < n; i++)
             {
-                float za = pivot.Z + sign * run * i / n, zb = pivot.Z + sign * run * (i + 1) / n;
+                float za = pivot.Z + sign * run * (i - 1) / n, zb = pivot.Z + sign * run * i / n; // (the first starts at the hinge, under the deck's edge)
                 var top = pivot.Y * (1 - (float)i / n);
                 p.Boxes.Add(new Bx { Lo = new Vector3(x0, 0.03f, MathF.Min(za, zb)), Hi = new Vector3(x1, top, MathF.Max(za, zb)), Hidden = true });
             }
+            // A part must draw something: a small dark block on the ground under the hinge, which the open ramp hides.
+            p.Boxes.Add(new Bx { Lo = new Vector3(-0.3f, 0.01f, pivot.Z + sign * 0.05f), Hi = new Vector3(0.3f, 0.03f, pivot.Z + sign * 0.35f), Detail = true, Color = "#2a2a2a" });
             return p;
         }
 
@@ -1026,7 +1093,8 @@ public sealed class ImportedShips : IPartGenerator
         private void Roles(Piece p, Part part, double mass)
         {
             var spec = p.Spec;
-            Vector3 lo = p.Boxes.Where(b => !b.Hidden).Select(b => b.Lo).Aggregate(Vector3.Min), hi = p.Boxes.Where(b => !b.Hidden).Select(b => b.Hi).Aggregate(Vector3.Max);
+            var drawn = p.Boxes.Any(b => !b.Hidden) ? p.Boxes.Where(b => !b.Hidden) : p.Boxes; // (steps are hidden only)
+            Vector3 lo = drawn.Select(b => b.Lo).Aggregate(Vector3.Min), hi = drawn.Select(b => b.Hi).Aggregate(Vector3.Max);
             var sp = spec ?? default;
             var kind = spec != null ? sp.GetProperty("role").GetString() : null;
             switch (kind)

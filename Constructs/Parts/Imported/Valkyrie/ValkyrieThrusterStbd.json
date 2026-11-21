@@ -7,9 +7,9 @@
   "role": "thruster",
   "tool": "welder",
   "thruster": {
-    "force": 298334.0,
+    "force": 295927.0,
     "fuel": "electric",
-    "power": 298.0,
+    "power": 296.0,
     "spool": 0.4,
     "exhaust": "+z",
     "at": [

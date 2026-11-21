@@ -18,8 +18,8 @@
     "seconds": 2.5,
     "hang": "hang"
   },
-  "mass": 1905.4,
-  "health": 7622,
+  "mass": 1905.0,
+  "health": 7620,
   "armour": 8,
   "material": "steel",
   "color": "#b59e78",
@@ -606,7 +606,7 @@
         1.825
       ],
       "max": [
-        9.77,
+        9.767,
         2.46,
         3.475
       ],

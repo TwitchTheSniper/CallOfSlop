@@ -14,6 +14,8 @@
   // 0.66 m, so the rooms are 2.5 m and the doors 2.14 m. A rigid object moves whole, by where its middle is.
   "raise": { "above": 2.6, "by": 0.66 },
   "rigid": [ "Ship_Modular_Parts" ],
+  // The model's bench and two crates stood across the starboard troop door (metres, in the game's frame).
+  "move": { "Troop_Storage_Bench": [ 0, 0, 3.8 ], "Cargo_Crate_01": [ 0, 0, -1.25 ], "Cargo_Crate_02": [ 0, 0, -1.25 ] },
   "stretch": [ "Part_Bulkhead_Doors", "Part_Overhead_Gantry", "Part_Landing_Gear" ],
   // Objects split into pieces that break off one at a time: the cell size in metres across the deck.
   "pieces": { "Hull_Lower_Chassis": 4.5, "Hull_Roof_Shell": 5.0 },
