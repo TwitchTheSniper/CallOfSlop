@@ -1,0 +1,451 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Dibber Lander",
+  "description": "The farmers' vertical lander: a squat eight-sided capsule in cream pressed steel with an orange band, a glass cab low on its nose and four legs angled out to broad pads. It drops straight down from a ship in orbit to a field on four lift jets in the skirt under its belly and climbs back the same way. Below, the cockpit (two couches, the flight computer between them, suit lockers) and the belly hatch, which slides down to the ground with the ladder on it; a ladder up to the systems deck (power plant, batteries, life support, room for crates).",
+  "steps": [
+    {
+      "part": "Dibber Belly"
+    },
+    {
+      "part": "Dibber Lower Starboard",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Lower Aft",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Lower Port",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Lower Fore",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Cab",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Leg Fore Port",
+      "on": 0,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Leg Fore Stbd",
+      "on": 0,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Leg Aft Port",
+      "on": 0,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Leg Aft Stbd",
+      "on": 0,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Mid Deck",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Upper Starboard",
+      "on": 10,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Upper Aft",
+      "on": 10,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Upper Port",
+      "on": 10,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Upper Fore",
+      "on": 10,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Roof",
+      "on": 11,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dibber Trim Jet",
+      "on": 6,
+      "socket": "trim",
+      "by": "top"
+    },
+    {
+      "part": "Dibber Trim Jet",
+      "on": 7,
+      "socket": "trim",
+      "by": "top"
+    },
+    {
+      "part": "Dibber Trim Jet",
+      "on": 8,
+      "socket": "trim",
+      "by": "top"
+    },
+    {
+      "part": "Dibber Trim Jet",
+      "on": 9,
+      "socket": "trim",
+      "by": "top"
+    },
+    {
+      "part": "Dibber Belly Jet",
+      "on": 0,
+      "socket": "main",
+      "by": "top"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 1,
+      "socket": "rcsR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 2,
+      "socket": "rcsR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 3,
+      "socket": "rcsR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsOut",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsL",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsR",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 15,
+      "socket": "rcsTop0",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 15,
+      "socket": "rcsTop1",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 15,
+      "socket": "rcsTop2",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 15,
+      "socket": "rcsTop3",
+      "by": "base",
+      "paint": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "pilot",
+      "by": "bottom",
+      "paint": "#7a4a2a",
+      "finish": "fabric"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 0,
+      "socket": "copilot",
+      "by": "bottom",
+      "paint": "#7a4a2a",
+      "finish": "fabric"
+    },
+    {
+      "part": "Dibber Flight Computer",
+      "on": 0,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": false
+      }
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 3,
+      "socket": "suit0",
+      "by": "wall"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 3,
+      "socket": "suit1",
+      "by": "wall"
+    },
+    {
+      "part": "Dibber Belly Hatch",
+      "on": 0,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Dibber Boarding Ladder",
+      "on": 42,
+      "socket": "ladder",
+      "by": "foot",
+      "spin": 3,
+      "paint": "#2e302d",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Dibber Deck Ladder",
+      "on": 0,
+      "socket": "ladderUp",
+      "by": "foot",
+      "spin": 2
+    },
+    {
+      "part": "Dibber Power Plant",
+      "on": 10,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 10,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 10,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 13,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 12,
+      "socket": "o2Tank",
+      "by": "wall"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd890"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd890"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampAft",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switchLights",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 13,
+      "socket": "lampL",
+      "by": "back",
+      "config": {
+        "colour": "#e8f0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 11,
+      "socket": "lampR",
+      "by": "back",
+      "config": {
+        "colour": "#e8f0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 11,
+      "socket": "switchUpper",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      37,
+      39
+    ],
+    [
+      53,
+      50
+    ],
+    [
+      53,
+      51
+    ],
+    [
+      53,
+      52
+    ],
+    [
+      54,
+      42
+    ],
+    [
+      57,
+      55
+    ],
+    [
+      57,
+      56
+    ]
+  ],
+  "conduit": true
+}
