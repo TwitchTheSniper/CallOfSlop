@@ -23,6 +23,7 @@ public static class BuildingWalkCheck
     private const float Comfort = 0.55f; // a body this wide (1.1 m) passes without brushing
     private const float Reach = 1.6f; // a seat, a store or a switch is used from this close (horizontally)
     private const float Margin = 2.5f; // ground round the building
+    private const float Eyes = 1.5f; // a standing body's eyes over its feet, for what it can see to use
     private const float Crouched = 1.15f; // a crouching body's head, a little under World.HeightOf(Stance.Crouch)
 
     private struct Box
@@ -304,11 +305,13 @@ public static class BuildingWalkCheck
         // ConstructRide.ClimbLadder takes a body up and down it; and a body may grab it from anywhere in reach of an end
         // (GrabReach across, 1.2 m up or down, nothing solid between), climbing to the other end.
         var ladders = new List<((int Col, int K) From, (int Col, int K) To)>();
-        bool ClearLine(Vector3 a, Vector3 b)
+        bool ClearLine(Vector3 a, Vector3 b, int skip = int.MinValue)
         {
             var d = b - a;
             foreach (var bb in boxes)
             {
+                if (bb.Part == skip)
+                    continue;
                 float t0 = 0, t1 = 1;
                 for (var ax = 0; ax < 3 && t0 <= t1; ax++)
                 {
@@ -612,25 +615,35 @@ public static class BuildingWalkCheck
         {
             var d = c.DefOf(i);
             var used = d.Role is PartRole.Seat or PartRole.Storage || (d.Role == PartRole.Logic && d.Logic is CLogic.Switch or CLogic.Button);
-            if (!used)
-                continue;
+            if (!used || d.IsContainer)
+                continue; // (a cargo container is lifted in and out by a crane, the Satchel's open bay: nobody aboard need reach it)
             c.ShapeBounds(i, out var pmin, out var pmax);
             c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
             var a = t + Vector3.Transform(pmin, q);
             var b2 = t + Vector3.Transform(pmax, q);
             var mn = Vector3.Min(a, b2);
             var mx = Vector3.Max(a, b2);
-            var ok = Reached(mn, mx);
+            var ok = Reached(mn, mx, i);
             if (!ok)
                 fails.Add($"nobody reaches the {d.Name} at {Spot(c, (mn.X + mx.X) / 2, mn.Y, (mn.Z + mx.Z) / 2)}");
         }
 
-        foreach (var (mn, mx, name) in loreBox)
-            if (!Reached(mn, mx))
+        for (var li = 0; li < loreBox.Count; li++)
+            if (loreBox[li] is var (mn, mx, name) && !Reached(mn, mx, -2 - li))
                 fails.Add($"nobody reaches the lore item {name} at {Spot(c, (mn.X + mx.X) / 2, mn.Y, (mn.Z + mx.Z) / 2)} (Story/Lore)");
 
-        bool Reached(Vector3 mn, Vector3 mx)
+        // (and seen: a clear line from the eyes to the thing's nearest point, so nothing is used through a hull, from the ground
+        // beside it or a roof over it; the thing's own boxes don't count)
+        bool Reached(Vector3 mn, Vector3 mx, int part)
         {
+            bool Seen(Vector3 eye)
+            {
+                var at = Vector3.Clamp(eye, mn, mx);
+                var back = eye - at;
+                if (back.LengthSquared() > 1e-6f)
+                    at += Vector3.Normalize(back) * 0.03f; // (just off its face: what it is mounted on doesn't hide it)
+                return ClearLine(eye, at, part);
+            }
             var ok = false;
             for (var ix = Math.Max(0, (int)((mn.X - Reach - x0) / G)); ix <= Math.Min(nx - 1, (int)((mx.X + Reach - x0) / G)) && !ok; ix++)
                 for (var iz = Math.Max(0, (int)((mn.Z - Reach - z0) / G)); iz <= Math.Min(nz - 1, (int)((mx.Z + Reach - z0) / G)) && !ok; iz++)
@@ -642,7 +655,7 @@ public static class BuildingWalkCheck
                     if (dx * dx + dz * dz > Reach * Reach)
                         continue;
                     foreach (var n in cols[ix * nz + iz])
-                        if (Usable(n) && n.Top > mn.Y - 2.2f && n.Top < mx.Y + 0.3f)
+                        if (Usable(n) && n.Top > mn.Y - 2.2f && n.Top < mx.Y + 0.3f && Seen(new Vector3(x, n.Top + Eyes, z)))
                         {
                             ok = true;
                             break;
