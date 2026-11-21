@@ -813,7 +813,7 @@ public static partial class ConstructRender
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
     private static int WorkPart(Construct c, int i, ConstructPartDef d) =>
-        d.BlockRole == BlockRole.Block ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1)
+        d.BlockRole is BlockRole.Block or BlockRole.End ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1)
         : d.ExtRunOut > 0 ? ConstructExtruder.TableMachine(c, i)
         : i;
 
