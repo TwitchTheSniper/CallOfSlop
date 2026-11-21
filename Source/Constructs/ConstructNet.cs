@@ -39,6 +39,7 @@ public enum CBodyKind : byte
     Lifts, // protocol 287: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
     Thrust, // protocol 319: each thruster's level, for its flame: u16 n, u8 each (ConstructThrust.WriteShown)
     Link, // protocol 328: one body's linked logistics parts as their panels show them (LinkedLogistics.Write)
+    Baked, // protocol 420: one baked part's design: u32 bytes, its text (BakedParts.Write), before any body that names it
 }
 
 /// <summary>
@@ -964,6 +965,9 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Designs:
                 PanelDesigns.Read(ref r, world);
+                break;
+            case CBodyKind.Baked:
+                BakedParts.Read(ref r, world);
                 break;
             case CBodyKind.Extrude:
             {

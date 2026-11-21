@@ -16,8 +16,11 @@ public enum OvenStall : byte
     TooTall, // the group is higher than the raised hood
     TooMany, // more subparts than the bed takes
     Moving, // the group is still moving (it settles first)
-    Done, // baked: lift it off (the bake itself is the design store's: not built yet)
+    Done, // baked (or un-baked): lift it off
     NoPower,
+    CantBake, // Bake: a part on the bed that isn't plain structure, a joint, a weld off the grid, or too many boxes (BakedParts.CanBake)
+    NotBaked, // Un-bake: the group isn't one baked part (BakedParts.CanUnbake)
+    Failed, // the bake or un-bake at the end of the heat was refused (the log says why); the group is as it went in
 }
 
 /// <summary>Where a Bake Oven's cycle is (its store's Blocked byte: on the wire, so every peer draws the hood the same).</summary>
@@ -51,8 +54,9 @@ public sealed partial class ConstructWorld
 /// by BakeOvenRender.cs from the phase byte; nothing new goes on the wire.
 /// </para>
 /// <para>
-/// The bake itself (the group becoming one <c>Baked (#hash)</c> part, the world's design store, un-baking) is a later step: the cycle
-/// runs and ends with "Baked" on the screen, and the group comes out as it went in.
+/// The bake (BakedParts.cs): at the end of the heat, in Bake mode the group becomes a new body of one <c>Baked (#hash)</c> part (its Module
+/// Socket plates stay real parts beside it), its design kept in the world's store; in Un-bake mode a baked part becomes its subparts again.
+/// What can't be baked or un-baked is refused before the hood drops (<see cref="OvenStall.CantBake"/>, <see cref="OvenStall.NotBaked"/>).
 /// </para>
 /// </summary>
 public static class ConstructBakeOven
@@ -189,8 +193,8 @@ public static class ConstructBakeOven
         if (phase == OvenPhase.Open)
         {
             var why = Check(world, c, part, asm, bed, out var group, out var parts);
-            if (why == OvenStall.None && st.Refused == (byte)OvenStall.Done && st.JobAmount == group)
-                why = OvenStall.Done; // (this group is baked: it waits to be lifted off)
+            if (group != 0 && why is not (OvenStall.Several or OvenStall.Empty) && st.Refused is (byte)OvenStall.Done or (byte)OvenStall.Failed && st.JobAmount == group)
+                why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it waits to be lifted off)
             else if (why == OvenStall.None && !powered)
                 why = OvenStall.NoPower;
             if (why != OvenStall.None || held || p.Broken)
@@ -239,6 +243,7 @@ public static class ConstructBakeOven
                 Enter(world, st, OvenPhase.Heat, Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)));
                 break;
             case OvenPhase.Heat:
+                Act(world, c, part, st);
                 Enter(world, st, OvenPhase.Cool, Steps(CoolSeconds));
                 break;
             case OvenPhase.Cool:
@@ -246,11 +251,36 @@ public static class ConstructBakeOven
                 break;
             default:
                 Enter(world, st, OvenPhase.Open, 0);
-                SetStall(world, st, OvenStall.Done); // (JobAmount keeps the group: it isn't baked again until it leaves)
+                SetStall(world, st, st.OvenFailed ? OvenStall.Failed : OvenStall.Done); // (JobAmount keeps the group: it isn't baked again until it leaves)
                 ConstructGatherer.SetBusy(world, st, false);
                 MachineScreens.SetProgress(world, st, 100);
                 break;
         }
+    }
+
+    /// <summary>Un-bake mode is the Core's Mode setting on.</summary>
+    public static bool Unbaking(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.Mode, 0) >= 0.5f;
+
+    /// <summary>The end of the heat: the group on the bed baked into one part, or un-baked into its subparts (BakedParts.cs); JobAmount follows it.</summary>
+    private static void Act(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        st.OvenFailed = false;
+        var unbake = Unbaking(c.Parts[part], c.Parts[part].D);
+        if (world.Get((ushort)st.JobAmount) is not { } group)
+        {
+            st.OvenFailed = true;
+            Console.WriteLine($"[oven] construct {c.Id}: the group on the bed (construct {st.JobAmount}) went while the hood was down");
+            return;
+        }
+        var made = unbake ? BakedParts.Unbake(world, group) : BakedParts.Bake(world, group);
+        if (made == null)
+        {
+            st.OvenFailed = true;
+            Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-bake" : "bake")} of construct {group.Id} REFUSED: {BakedParts.LastRefusal}");
+            return;
+        }
+        st.JobAmount = made.Id; // (the new body is the one that waits to be lifted off)
+        Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-baked" : "baked")} construct {group.Id} into construct {made.Id} ({made.PartCount} parts)");
     }
 
     private static float DropSeconds(in Bed bed, ConstructPartDef d) => MathF.Max(1f, bed.Clear / d.BakeHoodSpeed);
@@ -337,6 +367,9 @@ public static class ConstructBakeOven
                 why = OvenStall.TooMany;
             else if (why == OvenStall.None && (b.Vel - c.Vel).LengthSquared() > Settled * Settled)
                 why = OvenStall.Moving;
+            else if (why == OvenStall.None)
+                why = Unbaking(c.Parts[part], d) ? BakedParts.CanUnbake(b, out _) == null ? OvenStall.None : OvenStall.NotBaked
+                    : BakedParts.CanBake(b) == null ? OvenStall.None : OvenStall.CantBake;
         }
         return why;
     }
@@ -382,7 +415,7 @@ public static class ConstructBakeOven
         return (OvenStall)st.Refused switch
         {
             OvenStall.Empty or OvenStall.Moving => LineState.Starved,
-            OvenStall.Done or OvenStall.Several => LineState.Blocked,
+            OvenStall.Done or OvenStall.Several or OvenStall.Failed => LineState.Blocked,
             OvenStall.None => LineState.Idle,
             _ => LineState.Fault,
         };
@@ -399,7 +432,10 @@ public static class ConstructBakeOven
         OvenStall.TooTall => "Too tall for hood",
         OvenStall.TooMany => "Too many subparts",
         OvenStall.Moving => "Settling",
-        OvenStall.Done => "Baked: lift it off",
+        OvenStall.Done => "Done: lift it off",
+        OvenStall.CantBake => "Can't bake that",
+        OvenStall.NotBaked => "Not a baked part",
+        OvenStall.Failed => "Refused: lift it off",
         OvenStall.NoPower => "No power",
         _ => "Ready",
     };

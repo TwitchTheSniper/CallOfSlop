@@ -457,6 +457,7 @@ public sealed partial class ConstructWorld
         PodReleaseCount = 0;
         PodAuthority = false; // (the pods' first tick in the next world gives any untagged docked shell its tag)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
+        ClearBaked(); // (and its baked designs' list; the shared table keeps them by hash: BakedParts.cs)
         DesignStamp++;
         foreach (var c in Bodies)
             Removed.Add(c.Id);
