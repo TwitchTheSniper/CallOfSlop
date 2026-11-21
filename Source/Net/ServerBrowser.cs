@@ -676,7 +676,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 398: dressed hull sections (Sean, 2026-11-21): "Hull Section (...)" keys travel as run-time parts (HullLoft.Section.cs).
     // 399: the Laser Cutter on the block system (Sean, 2026-11-21): one Laser Cutter Core and Laser Bed Blocks replace the Medium, Large
     //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
-    public const ushort ProtocolVersion = 399;
+    // 400: cut plates fit the largest Laser Cutter bed (Sean, 2026-11-21): a plate key over 32 m, or over 16 m both ways, is refused (HullLoft.StockRefusal), so peers must agree.
+    public const ushort ProtocolVersion = 400;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

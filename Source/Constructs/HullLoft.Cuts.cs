@@ -21,11 +21,12 @@ public static partial class HullLoft
     private const string CutSplit = " | ";
     public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600;
     /// <summary>
-    /// A cut plate's sheet: up to 64 m along (the largest bed of Laser Bed Blocks takes 32 x 16 m) and 32 m across (the Extruder's widest plate), with openings up
-    /// to 32 m a side, so a capital hull's plates, decks and bulkheads come off the line whole (Karl, 2026-11-20: the capital ship). A cut
-    /// panel stays within <see cref="CutMaxCm"/>, the largest Panel Former's panel.
+    /// A cut plate's sheet: what the largest bed of Laser Bed Blocks takes, either way round: 32 m on its longer side (<see cref="MachineBlocks.MaxSide"/>
+    /// blocks of 2 m) and 16 m on its shorter (<see cref="MachineBlocks.MaxCells"/> blocks in all), with openings up to 32 m a side, so a capital
+    /// hull's plates, decks and bulkheads come off the line whole (Karl, 2026-11-20: the capital ship; 64 m until the cutter went onto blocks,
+    /// 2026-11-21). A cut panel stays within <see cref="CutMaxCm"/>, the largest Panel Former's panel.
     /// </summary>
-    public const int CutPlateMaxCm = 6400, CutPlateAcrossCm = 3200, CutPlateOpeningCm = 3200;
+    public const int CutPlateMaxCm = MachineBlocks.MaxSide * 200, CutPlateAcrossCm = CutPlateMaxCm, CutPlateShortCm = MachineBlocks.MaxCells / MachineBlocks.MaxSide * 200, CutPlateOpeningCm = 3200;
     /// <summary>The thickest stock any cutter's bed takes (2 m, under the bridge): no rule of its own, only the bed (the user, 2026-11-13).</summary>
     public const int CutMaxThickMm = 2000;
     /// <summary>An opening this wide both ways or more opens its collision (shots, bodies and players pass) and gets an <c>o</c> socket; a smaller one is drawn and weighed only.</summary>
@@ -209,6 +210,8 @@ public static partial class HullLoft
         var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
         if (k.L < PanelMinCm || k.L > CutPlateMaxCm || across < PanelMinCm || across > CutPlateAcrossCm)
             return k.L > CutPlateMaxCm ? $"cut it to length at the Extruder: a cut piece is at most {CutPlateMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutPlateMaxCm} cm long and {PanelMinCm} to {CutPlateAcrossCm} cm {(OnEdge(k) ? "high" : "wide")}";
+        if (Math.Min(k.L, across) > CutPlateShortCm)
+            return $"too large for any Laser Cutter's bed: {k.L / 100f:0.##} x {across / 100f:0.##} m, the largest takes {CutPlateMaxCm / 100} x {CutPlateShortCm / 100} m";
         return null;
     }
 
