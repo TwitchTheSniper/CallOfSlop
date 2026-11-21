@@ -458,6 +458,7 @@ public static unsafe partial class PostFx
             _lAoCShape = Loc(_aoC, "uShape\0"u8);
             _aoCBlur = Link(QuadVs, AoClassicBlurFs, "PostFx.aoClassicBlur");
             _lAoCBlurTexel = Loc(_aoCBlur, "uTexel\0"u8);
+            _aoBlur.Use(); // (Set writes to the program in use: without this, uDepth went to the last linked one's uTexel, a GL error)
             Set(_aoBlur, "uDepth\0"u8, Unit1); // (the blur reads the AO on unit 0 and the depth beside it)
             _vao = GenVertexArray();
             GlDebug.Label(GL_VERTEX_ARRAY, _vao.Id, "PostFx");
