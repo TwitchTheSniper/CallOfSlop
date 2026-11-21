@@ -417,15 +417,15 @@ public sealed class PressParts : IPartGenerator
         p.Add(MachineLook.D([hsX + 0.004, cab + 0.003, zc - 0.26], [x1 - 0.05, cab + 0.018, zc + 0.26], MachineLook.Base));
         foreach (var wz in new[] { zc - 0.17, zc + 0.11 })
             p.Add(MachineLook.D([hsX + 0.004, cab + 0.018, wz], [x1 - 0.05, cab + 0.075, wz + 0.06], MachineLook.Steel, "steel"));
-        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.004, cab - 0.075, z1 + 0.006], [x1 - 0.06, cab - 0.035, z1 + 0.046], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
-        foreach (var bx in new[] { hsX + 0.004, x1 - 0.1 }) // (the screw's two bearing blocks)
-            p.Add(MachineLook.D([bx, cab - 0.09, z1 + 0.003], [bx + 0.05, cab - 0.02, z1 + 0.05], MachineLook.Base));
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.06, cab + 0.022, zc + 0.2], [x1 - 0.11, cab + 0.062, zc + 0.24], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
+        foreach (var bx in new[] { hsX + 0.008, x1 - 0.108 }) // (the screw's two bearing blocks, in front of the ways)
+            p.Add(MachineLook.D([bx, cab + 0.018, zc + 0.19], [bx + 0.05, cab + 0.08, zc + 0.25], MachineLook.Base));
         // The chuck on the headstock's face, its three jaws, and the spindle nose behind it: they turn while it cuts.
         p.Add(MachineLook.D([hsX - 0.002, ax - 0.09, zc - 0.09], [hsX + 0.03, ax + 0.09, zc + 0.09], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
         p.Add(MachineLook.Work(MachineLook.D([hsX + 0.03, ax - 0.13, zc - 0.13], [hsX + 0.12, ax + 0.13, zc + 0.13], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x"))), "spin", "+x"));
-        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.12, ax + 0.03, zc - 0.022], [hsX + 0.16, ax + 0.11, zc + 0.022], MachineLook.Accent), "spin", "+x"));
-        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.12, ax - 0.11, zc - 0.022], [hsX + 0.16, ax - 0.03, zc + 0.022], MachineLook.Accent), "spin", "+x"));
-        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.12, ax - 0.022, zc + 0.03], [hsX + 0.16, ax + 0.022, zc + 0.11], MachineLook.Accent), "spin", "+x"));
+        // (the jaws are two bars across the chuck's face, each centred on the spindle: a spin box turns about its own middle)
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.12, ax - 0.11, zc - 0.022], [hsX + 0.16, ax + 0.11, zc + 0.022], MachineLook.Accent), "spin", "+x"));
+        p.Add(MachineLook.Work(MachineLook.D([hsX + 0.124, ax - 0.022, zc - 0.07], [hsX + 0.156, ax + 0.022, zc + 0.07], MachineLook.Accent), "spin", "+x"));
         // The carriage: a saddle across the ways, the cross slide, the tool post and its cutter; they feed along the bar while it cuts.
         var cx = x0 + 0.95;
         const double feed = 0.22;
@@ -483,7 +483,7 @@ public sealed class PressParts : IPartGenerator
         var bayCard = Kw(("source", "press.bay"), ("slot", 0), ("at", Py.L(R3(x0 + 1.05), R3(cab + 0.42), Py.Round(z0 - proud, 4))), ("size", Py.L(0.9, 0.4)), ("face", "-z"), ("up", "+y"), ("rows", 5));
         p.Set(("power", LathePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Cuts"), ("group", "Work"), ("tooltip", "The die it cuts from the bar in its bay. It cuts any die from 0.25 m of steel bar.")))),
             ("storage", Kw(
-                ("slots", Tray(tx0, tx1, R3(cab + 0.02), R3(tz0), R3(tz1 - 0.02))),
+                ("slots", Py.L(Kw(("min", Py.L(R3(tx0 + 0.01), R3(cab + 0.02), R3(tz0))), ("max", Py.L(R3(tx1 - 0.01), R3(cab + 0.58), R3(tz1 - 0.015))), ("stack", 12), ("label", "Tray")))), // (one slot the tray's width and 0.56 m up: a 0.5 m die cassette stands in it on edge)
                 ("press", Kw(("lathe", true),
                     ("bays", Py.L(Kw(("socket", "bay1"), ("min", Py.L(R3(bay[0] - 0.24), R3(ax - 0.24), R3(z0 - 0.375))), ("max", Py.L(R3(bay[0] + 0.24), R3(ax + 0.24), R3(z0 + 0.375)))))),
                     ("maxAcross", MaxAcross(Small)), ("speed", LatheSpeed), ("outAt", Py.L(R3((x0 + x1) / 2), R3(y0), R3(z1 + k * 0.2))), ("outDir", "+z"))))),
