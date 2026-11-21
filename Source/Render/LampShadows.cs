@@ -31,7 +31,7 @@ public static unsafe class LampShadows
     /// <summary>The setting (Video: Lamp shadows Low off, Medium, High); <see cref="ForcedOff"/>: --no-lamp-shadows.</summary>
     public static bool On = true, ForcedOff;
 
-    /// <summary>Each face's size in texels and the slots in use (Medium 256 and 8, High 512 and 12).</summary>
+    /// <summary>Each face's size in texels and the slots in use (Medium 256, High 512; every lit lamp has a slot).</summary>
     public static int Size = 256, Slots = 8;
 
     /// <summary>Slots drawn again at most a frame (six depth passes each).</summary>
@@ -322,16 +322,24 @@ public static unsafe class LampShadows
 
     private static void DrawBody(Construct c, Matrix4x4 model, bool self)
     {
-        var (vbo, count) = SunShadows.CasterBoxes(c);
-        if (count == 0)
+        var (vbo, count, shapes, verts) = SunShadows.CasterBoxes(c);
+        if (count == 0 && verts == 0)
             return;
         Native.glUniformMatrix4fv(_lModel, 1, false, &model.M11);
-        Native.glUniform1f(_lSelf, self ? 1f : 0f);
-        Native.glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
-        Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
-        Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, count);
-        LastBoxes += count;
+        if (count > 0)
+        {
+            Native.glUniform1f(_lSelf, self ? 1f : 0f);
+            Native.glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
+            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
+            Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, count);
+            LastBoxes += count;
+        }
+        if (verts > 0)
+        {
+            Native.glUniform1f(_lSelf, 0f); // (the fixture test is for boxes: a shape's corner near the lamp would tear its triangle)
+            SunShadows.DrawShapes(shapes, verts);
+        }
     }
 
     // Face f: axis f / 2, + for even f. The map's u, v are the other two axes (x: y, z; y: z, x; z: x, y) over the distance along
