@@ -200,7 +200,7 @@ public sealed partial class SpaceStationParts : IPartGenerator
             placed[piece] = placed.Count == 0 ? bp.First(piece) : bp.Put(piece, Sub3(origins[piece], origins[order[0]]), 0);
         foreach (var h in kit.Hangs)
         {
-            var step = bp.HangTurned(h.Part, placed[h.Piece], h.Sock, h.By, BuildingParts.R0);
+            var step = bp.HangTurned(h.Part, placed[h.Piece], h.Sock, h.By, h.Rot);
             if (h.Config != null)
                 bp.Steps[step]["config"] = h.Config;
             if (h.Paint != null)

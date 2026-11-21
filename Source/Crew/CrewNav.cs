@@ -405,8 +405,15 @@ public sealed class CrewNav
             case 5: // drops' edges: a surface with a column round it that has nothing a step up or down (fit or not: a wall isn't a drop)
             {
                 var end = Math.Min(g.NodeCount, g.At + EdgesPerTick);
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                var most = (long)(BuildBudgetMs * System.Diagnostics.Stopwatch.Frequency / 1000.0);
                 for (var n = g.At; n < end; n++)
                 {
+                    if ((n & 7) == 7 && System.Diagnostics.Stopwatch.GetTimestamp() - t0 > most)
+                    {
+                        end = n; // (a slice of a big body's many boxes runs long: the rest next tick, Hexkey Orbital phase 6)
+                        break;
+                    }
                     if (g.Flag[n] != 1)
                         continue;
                     var col = g.ColOf[n];

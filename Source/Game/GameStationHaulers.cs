@@ -526,6 +526,11 @@ public sealed partial class Game
         {
             if (ServerTick - run.Since < (long)(h.Wait * World.TickRate))
                 return;
+            if (ServerTick - run.Since < (long)((h.Wait + AshoreMost + OffFor) * World.TickRate) && StoreCrewAshore(c.Id))
+            {
+                HaulSay(run, c, "waits for its crew shopping aboard the store");
+                return; // (its shoppers come back aboard first: GameStoreLife.cs)
+            }
             if (ServerTick - run.Since < (long)((h.Wait + EscortGatherMost) * World.TickRate) && !EscortsGathered(run, c))
             {
                 HaulSay(run, c, "waits for its escorts");
