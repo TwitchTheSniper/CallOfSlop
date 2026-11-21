@@ -45,6 +45,8 @@ public static partial class ProductionLines
             return PressRaw(world, c, part, st);
         if (d.IsRecycler)
             return ConstructRecycler.LineOf(world, c, part, st);
+        if (d.IsBakeOven)
+            return ConstructBakeOven.LineOf(world, c, part, st);
         if (d.IsGatherer)
             return ConstructGatherer.LineOf(world, c, part, st);
         if (!d.IsRefiner)

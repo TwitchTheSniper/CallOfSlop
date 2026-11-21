@@ -875,7 +875,7 @@ public static class ConstructConfig
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,
                 CfgKey.FuseRange => d.Sight == SightKind.Lead,
-                CfgKey.Mode => d.Logic == CLogic.Delay,
+                CfgKey.Mode => d.Logic == CLogic.Delay || d.IsBakeOven, // (a Bake Oven: Bake or Un-bake)
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)

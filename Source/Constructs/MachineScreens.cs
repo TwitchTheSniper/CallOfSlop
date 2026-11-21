@@ -37,7 +37,9 @@ public static class MachineScreens
             card.State = PanelState.Off;
             return;
         }
-        if (d.IsRefiner)
+        if (d.IsBakeOven)
+            ConstructBakeOven.Screen(c, part, st, card);
+        else if (d.IsRefiner)
             Refiner(p, d, st, card);
         else if (d.IsAssembler)
             Assembler(p, d, st, card);
