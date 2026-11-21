@@ -675,6 +675,7 @@ public static partial class ConstructRender
         var workPart = d.HasWork ? WorkPart(c, i, d) : -1; // (a block machine's cell shows its Core's work, a Run-out Table its Extruder's)
         var working = d.CraneRail ? d.HasWork && !p.Broken && ConstructLifters.RailLit(world, c, i, Now) // (a Crane Rail Block's lamp flashes while a bridge passes: drawing 24)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
+        _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         byte routerWay = 0, routerState = 0;
         var routerStuck = false;
@@ -811,10 +812,11 @@ public static partial class ConstructRender
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
     private const int ShearCm = 25;
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
+    private static int _workCore = -1; // the machine whose work the part being drawn shows (its own, or its block machine's Core)
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
     private static int WorkPart(Construct c, int i, ConstructPartDef d) =>
-        d.BlockRole is BlockRole.Block or BlockRole.Shared ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1) // (a shared cell, a Mast Block, shows the work of the machine that took it in)
+        d.BlockRole is BlockRole.Block or BlockRole.Shared or BlockRole.End ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1) // (a shared cell, a Mast Block, or an Out Table shows the work of the machine that took it in)
         : d.ExtRunOut > 0 ? ConstructExtruder.TableMachine(c, i)
         : i;
 
@@ -829,6 +831,15 @@ public static partial class ConstructRender
             case BoxWork.Stroke:
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
+                break;
+            case BoxWork.Press:
+                // A Panel Former's upper platen: up while the pins set, down to press, held, then up (drawing 15; one stroke a cycle).
+                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * ConstructPanelFormer.PressAt(ConstructPanelFormer.Phase(Now))));
+                break;
+            case BoxWork.Pin:
+                // A Bed Block's pin: it rises in a wave to the shape of the panel being formed, read from the order's key (every client alike).
+                if (_workCore >= 0)
+                    model *= Matrix4x4.CreateTranslation(axis * ConstructPanelFormer.PinLift(c, _workCore, centre, box.RigTravel, Now));
                 break;
             case BoxWork.Ram:
                 // An Extruder's ram: it pushes the billet as the piece grows and comes back for the next with each metre (drawing 11).

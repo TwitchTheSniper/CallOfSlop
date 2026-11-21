@@ -434,7 +434,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear }
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -750,6 +750,9 @@ public sealed partial class ConstructPartDef
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
+    public bool IsBakeOven; // a Bake Oven's Core (storage "bake": ConstructBakeOven.cs, design page drawing 19): its bed blocks, corner masts and hood
+    public float BakeBedTop, BakeKwBlock, BakeHoodSpeed, BakePartSeconds; // ...the bed's top (m), each bed block's heat (kW), the hood's speed (m/s), seconds a subpart on 12 blocks
+    public int BakePartsBlock, BakeMaxParts; // ...subparts a bed block takes, and the most any bed takes
     public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
     public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
@@ -1682,7 +1685,8 @@ public static partial class ConstructParts
                 var kind = Str(wk, file, where + ".work") switch
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\" or \"shear\""),
+                    "pin" => BoxWork.Pin, "press" => BoxWork.Press,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\" or \"press\""),
                 };
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
