@@ -559,7 +559,7 @@ public sealed class WedgeFighterParts : IPartGenerator
             Chine(p, 2, s, za, zb, 0.12, 0.06, Rib);
             FStrip(p, 3, s, za, zb, 0.04, 0.96, 0.06, 0.1, 0.016, Orange, "painted plating");
         }
-        foreach (var z in new[] { -4.4, BulkZ - 0.09, 2.0, 3.9 })
+        foreach (var z in new[] { BulkZ - 0.09, 3.9 }) // (two frames, at the bulkhead and the engine block: more read as clutter)
             foreach (var k in new[] { 2, 3 })
                 HullRib(p, k, s, z);
         // The vent behind the canopy (the picture's black grille): a dark recess on the upper facet with slats.
@@ -673,12 +673,9 @@ public sealed class WedgeFighterParts : IPartGenerator
                 Chine(p, 4, s, za, zb, 0.07, 0.04, Rib);
             }
         }
-        foreach (var z in new[] { 2.0, 3.9 })
-        {
-            foreach (var s in new[] { -1, 1 })
-                HullRib(p, 4, s, z);
-            HullRib(p, 5, 1, z);
-        }
+        foreach (var s in new[] { -1, 1 })
+            HullRib(p, 4, s, 3.9);
+        HullRib(p, 5, 1, 3.9);
         // The ceiling and the void over it.
         Solid(p, -(CabW + WallT), CeilY, BulkZ, CabW + WallT, CeilTop, AftZ - 0.004, Ceil, "painted plating");
         Detail(p, -0.2, CeilY - 0.012, BulkZ + 0.3, 0.2, CeilY, AftZ - 0.4, "#fff0d8", glow: true);
@@ -892,14 +889,9 @@ public sealed class WedgeFighterParts : IPartGenerator
             Quad(p, W(xa, WTop(xa) - 0.01, LE(xa)), W(xb, WTop(xb) - 0.01, LE(xb)), W(xb, WBot(xb) + 0.01, LE(xb)), W(xa, WBot(xa) + 0.01, LE(xa)), Rib, "dirty steel");
             Quad(p, W(xa, WTop(xa) - 0.01, TE(xa)), W(xb, WTop(xb) - 0.01, TE(xb)), W(xb, WBot(xb) + 0.01, TE(xb)), W(xa, WBot(xa) + 0.01, TE(xa)), Rib, "dirty steel");
         }
-        // The dark ribs on top: along each band line (chordwise) and along two chord cuts (spanwise), a running light at the leading edge.
-        foreach (var x in WingBands)
-            WingBar(p, s, x, LE(x) + 0.04, x, TE(x) - 0.04, 0.11, 0.05);
-        foreach (var (t, h) in new[] { (Chord[1], 0.056), (Chord[3], 0.056) })
-        {
-            double x0 = 2.0, x1 = TipX - 0.05;
-            WingBar(p, s, x0, LE(x0) + (TE(x0) - LE(x0)) * t, x1, LE(x1) + (TE(x1) - LE(x1)) * t, 0.1, h, 0.008);
-        }
+        // One dark rib on top, where the wing meets the tip pod (Karl, 2026-11-21: a lattice of ribs over the whole wing looked silly;
+        // the panels' paint carries the wing), and a running light at the leading edge.
+        WingBar(p, s, WingBands[^1], LE(WingBands[^1]) + 0.04, WingBands[^1], TE(WingBands[^1]) - 0.04, 0.11, 0.05);
         foreach (var x in new[] { 3.0, 5.0 })
             Detail(p, Math.Min(s * (x - 0.06), s * (x + 0.06)), WingY - 0.03, LE(x) - 0.016, Math.Max(s * (x - 0.06), s * (x + 0.06)), WingY + 0.03, LE(x) - 0.002, Orange, glow: true);
         // The spar boxes (collision): a strip per band from the root block out to the pod.
