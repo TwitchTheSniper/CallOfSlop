@@ -677,7 +677,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and drop are worked out from its rails on each peer.
     // 399: Pad Tiles (Sean, 2026-11-21, drawing 23): Pad Tile and Rack Side part files come (ids move); tiles welded into a pad share
     //   their owner tile's store, worked out from the parts on each peer.
-    public const ushort ProtocolVersion = 399;
+    // 400: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
+    //   an ordinary link the server lays from its tiles.
+    public const ushort ProtocolVersion = 400;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

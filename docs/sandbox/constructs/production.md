@@ -1660,6 +1660,24 @@ at each joint (`"seamSame"`: a part's seams hide on faces welded to its own kind
 holds nothing while it is in a bigger pad; pieces it held from before it joined show again if it is split off. Not yet: the showcases'
 Piece Racks and Lay-down Pads aren't swapped for tiles, and the old rack parts stay until they are.
 
+**Roller Tiles** (drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code `RollerRuns.cs`). A
+Roller Tile is a 2 m bed of powered rollers with its tops at the bed machines' work height (1 m, as an Out Table's), going its +z way.
+Tiles welded together are one **run** (`machineBlock` family `roller`, seeded as Pad Tiles are; all turned one way): the largest full
+rectangle holding the lowest-index tile. A run is one ordinary conveyor link along its middle, as wide as its tiles across (6 tiles,
+12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
+(`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
+conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
+out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
+its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
+or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
+**Piece out**. A conveyor linked into a tile's **Piece in** goes onto its run (`RollerRuns.Passes`). A run an even number of tiles wide
+uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
+(a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
+a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
+to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
+into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
+pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
+
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
 (a rack's or pad's kinds, a machine's pieces at its out and in its tray), and its orders. Click a kind under a pick point, then a put

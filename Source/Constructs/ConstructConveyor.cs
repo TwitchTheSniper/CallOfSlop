@@ -858,10 +858,12 @@ public static class ConstructConveyor
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
             return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
+        var jd = c.DefOf(j);
+        var rollers = jd.IsRollerTile || jd.IsTurntable; // (a run's tile or a turntable: which way on, RollerRuns.Passes)
         Span<byte> outs = stackalloc byte[8];
         var n = 0;
         for (var o = 0; o < c.RouteCount && n < outs.Length; o++)
-            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j && (!rollers || RollerRuns.Passes(c, j, k, o)))
                 outs[n++] = (byte)o;
         for (var t = 0; t < n; t++)
         {
@@ -927,6 +929,8 @@ public static class ConstructConveyor
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
+            if (c.RollersStale && !c.Dirty)
+                RollerRuns.Sync(world, c); // (Roller Tile runs after a rebuild: each run's conveyor as its tiles are)
             if (c.Logi is { OffAny: > 0 })
                 ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
             if (c.ConveyedCount == 0)

@@ -74,6 +74,7 @@ public static class MachineBlocks
     public static void Parse(ConstructPartDef d, JsonElement root, string file)
     {
         d.SeamSame = ConstructParts.Opt(root, "seamSame") is { ValueKind: JsonValueKind.True };
+        d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
         ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed"], $"{file}: \"machineBlock\"");
@@ -101,6 +102,7 @@ public static class MachineBlocks
             if (d.BlockRole != BlockRole.Block)
                 throw new ConstructPartException($"{file}: only a block is a \"machineBlock.seed\" (a family with no Core)");
             d.BlockSeed = true;
+            d.IsRollerTile = Families[d.BlockFamily].Equals("roller", StringComparison.OrdinalIgnoreCase);
         }
         if (ConstructParts.Opt(mb, "origin") is { } origin)
         {
@@ -268,6 +270,7 @@ public static class MachineBlocks
                 Array.Clear(c.BlockJoined); // (a Rack Side's last faces too: SeamSame sets them again)
             }
             ConstructPads.Build(c);
+            RollerRuns.Note(c);
             SeamSame(c);
             return;
         }
@@ -300,6 +303,7 @@ public static class MachineBlocks
             if (c.Parts[i].D.BlockSeed && c.BlockAsmOf[i] < 0 && !c.Parts[i].Broken)
                 Assemble(c, i, queue, cx, cy, cz, steps, sum);
         ConstructPads.Build(c);
+        RollerRuns.Note(c);
         SeamSame(c);
     }
 

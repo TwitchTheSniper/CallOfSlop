@@ -757,6 +757,8 @@ public sealed class Assembling : IPartGenerator
         ("Lifters/HallCranes", "Crane Core", null),
         ("Pads", "Pad Tile", null), // (drawing 23: Piece Racks fold into Pad Tiles)
         ("Pads", "Rack Side", null),
+        ("Pads", "Roller Tile", null), // (drawing 23: a run carries what a conveyor can't)
+        ("Pads", "Turntable Tile", null),
     ];
 
     /// <summary>

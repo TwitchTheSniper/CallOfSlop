@@ -77,6 +77,8 @@ public static class RouteRender
                 ref var r = ref c.Routes[k];
                 if (Concealed(c, r) && !ConstructRender.ShowWires)
                     continue; // (wired in the walls: seen with the linking tool)
+                if (r.Type == RouteType.Conveyor && r.Count == 2 && RollerRuns.IsRun(c, k))
+                    continue; // (a Roller Tile run's conveyor: its tiles' rollers are its bed, RollerRuns.cs)
                 var radius = ConstructRoutes.Radius(r.Type);
                 var a = At(c, k, -1);
                 var dirPrev = Vector3.Zero;
