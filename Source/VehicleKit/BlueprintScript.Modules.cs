@@ -46,8 +46,8 @@ public partial class BlueprintScript
         var bp = ConstructBuild.FindBlueprint(name) ?? throw new VehicleKitException($"no blueprint named \"{name}\"");
         if (bp.Module is not { } mb)
             throw new VehicleKitException($"the {name} blueprint isn't a module design (it has no \"module\" block)");
-        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L)
-            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L)}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
+        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L || plate.Def.ModRound != mb.Round)
+            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L, mb.Round)}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
         if (bp.Uses.Count > 0 || bp.StepWeld.Any(x => x != null) || bp.StepAt.Any(x => x != null))
             throw new VehicleKitException($"the {name} has welds, placed steps or uses: a generator can't build it onto a socket yet");
         var made = new VPart[bp.Steps.Count];
