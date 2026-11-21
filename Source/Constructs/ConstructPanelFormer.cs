@@ -4,13 +4,17 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Panel Former (docs/sandbox/constructs/production.md "The Panel Former"): a machine of the Extruder family that forms named panels
-/// (HullLoft.Panels.cs: a player's <c>Formed Panel (...)</c>, or one of the vehicle kit's <c>Hull Loft (...)</c> parts) from the material in
-/// its bin, by work order only. Its bin is fed by chute or by hand as an Extruder's hopper, and by extruded sheet off a conveyor into its
-/// Piece in, counted in whole. A panel takes a timed stroke; done, it rides out of Piece out on a conveyor, or drops on the out bed.
+/// (HullLoft.Panels.cs: a player's <c>Formed Panel (...)</c>, or one of the vehicle kit's <c>Hull Loft (...)</c> parts) by work order only,
+/// each from one <b>blank</b> (Sean, 2026-11-21): a flat extruded sheet of the panel's material and thickness, at least the panel's flat size
+/// (its crown and rake unrolled) and at most <see cref="OverMost"/> over it each way (<see cref="BlankFits"/>). It has no stock: a blank comes
+/// in by conveyor (or a Loader Arm) through Piece in and lies on its bed (<see cref="CStore.JobAmount"/>: the blank's units, its material in
+/// <see cref="CStore.JobMaterial"/>, <see cref="CStore.OnBed"/> on the wire), as a Laser Cutter's does. A panel takes a timed stroke; done,
+/// it rides out of Piece out on a conveyor, or drops on the bed, and the trim goes into its offcut bin (the store's own bulk; a chute empties it).
 /// </summary>
 public static class ConstructPanelFormer
 {
-    public const float SheetMaxCm = 10; // an extruded piece this thin or thinner is sheet a former takes off its conveyor
+    public const float OverMost = 1.25f; // a blank fits a panel up to this much over its flat size, each way (the trim is the offcut)
+    public const int BlankMinCm = 1, BlankMaxCm = 10; // a blank's thickness, whole cm (the Extruder's Sheet profile: Extrusion.IsSheet)
 
     public const float PinTravel = 2; // m: how far a Bed Block's pins rise, the deepest panel (crown and rake) a bed forms
     public const float SetSeconds = 4, PressSeconds = 8; // a stroke on the block bed: the pins set, then the upper platen presses
@@ -139,12 +143,8 @@ public static class ConstructPanelFormer
         var mat = HullLoft.FormedMaterial(o.Name);
         if (mat == 0 || ExtrusionTable.Current.Find(mat) == null)
             return $"the {d.Name} has no material for that panel";
-        if (HullLoft.FormedUnits(panel, mat) > d.BulkCapacity)
-            return $"that panel takes {HullLoft.FormedUnits(panel, mat)} {RecyclingTable.Current.NameOf(mat)}: more than the {d.Name}'s bin holds ({d.BulkCapacity})";
         if (c.Parts[part].Orders is { Count: >= WorkOrders.MaxOrders })
             return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
-        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != mat)
-            return $"the {d.Name} is fed {RecyclingTable.Current.NameOf(st.Material)}: a panel in {RecyclingTable.Current.NameOf(mat)} is another line";
         return null;
     }
 
@@ -187,6 +187,12 @@ public static class ConstructPanelFormer
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (st.OnBed != st.JobAmount > 0)
+        {
+            st.OnBed = st.JobAmount > 0; // (after a load: the saved job says a blank lies on the bed; the wire carries OnBed)
+            st.Version++;
+            world.StoreDirty.Add(st.Handle);
+        }
         var held = ConstructExtruder.RunHeld(c, part);
         ConstructGatherer.SetHeld(world, st, held);
         if (held || p.Broken)
@@ -196,8 +202,7 @@ public static class ConstructPanelFormer
         }
         if (!WorkOrders.HeadOf(p, out var head))
         {
-            st.JobAmount = 0; // (a cancelled head's stroke is given up; what it took is not given back)
-            st.JobTicks = 0;
+            st.JobTicks = 0; // (a blank on the bed stays there for the next order it fits)
             Idle(world, st, ExtrudeStall.NoOrders);
             return;
         }
@@ -206,12 +211,6 @@ public static class ConstructPanelFormer
             Idle(world, st, ExtrudeStall.BadShape);
             return;
         }
-        if (!ConstructRecycler.Powered(world, c, part))
-        {
-            Idle(world, st, ExtrudeStall.NoPower);
-            return;
-        }
-        var mat = head.Key.Material;
         if (st.JobAmount == 0 && !BedFits(c, part, panel))
         {
             Idle(world, st, ExtrudeStall.OrderTooLong); // (no bed, no Out Table, or the panel is bigger than the bed: the look line says which)
@@ -219,22 +218,13 @@ public static class ConstructPanelFormer
         }
         if (st.JobAmount == 0)
         {
-            // A new panel: its whole cost up front, so a stroke never starves half way.
-            if (st.Amount > 0 && st.Material != mat)
-            {
-                Idle(world, st, ExtrudeStall.OrderMaterial);
-                return;
-            }
-            var units = HullLoft.FormedUnits(panel, mat);
-            if (st.Amount < units)
-            {
-                Idle(world, st, ExtrudeStall.NoMaterial);
-                return;
-            }
-            world.Withdraw(c, part, units);
-            st.JobAmount = units;
-            st.JobTicks = 0;
-            st.JobMaterial = mat;
+            Idle(world, st, ExtrudeStall.NoMaterial); // (waiting for its blank on Piece in: Lacks names it)
+            return;
+        }
+        if (!ConstructRecycler.Powered(world, c, part))
+        {
+            Idle(world, st, ExtrudeStall.NoPower); // (the blank stays on the bed, the stroke where it stopped)
+            return;
         }
         var need = (int)(Seconds(d, panel) / MathF.Max(0.05f, d.ExtSpeed) * World.TickRate);
         if (st.JobTicks < need)
@@ -251,7 +241,15 @@ public static class ConstructPanelFormer
             ConstructGatherer.SetBusy(world, st, true);
             return;
         }
-        // Done: out by the conveyor, or onto the out bed as a loose part.
+        // Done. The trim first: what the blank held over the panel goes into the offcut bin whole, or the panel waits on the bed.
+        var mat = st.JobMaterial;
+        var trim = Math.Max(0, st.JobAmount - HullLoft.FormedUnits(panel, mat));
+        if (!BinTakes(c, part, st, mat, trim))
+        {
+            Idle(world, st, ExtrudeStall.OffcutFull);
+            return;
+        }
+        // Out by the conveyor, or onto the bed as a loose part.
         if (ConstructConveyor.Out(c, part) is var conveyor and >= 0)
         {
             if (!ConstructConveyor.PutMade(world, c, conveyor, panel, 1, out var stall))
@@ -286,13 +284,23 @@ public static class ConstructPanelFormer
             body.Vel = c.PointVel(at);
             ConstructCrafting.MadeLoose(world, c, part, panel); // (nothing carries it on: a terminal's order for it counts it here)
         }
+        if (trim > 0)
+            world.Deposit(c, part, trim, mat);
         st.JobAmount = 0;
+        st.OnBed = false;
         st.JobTicks = 0;
         st.Progress = 0;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
         WorkOrders.Made(world, c, p.Orders);
         ProductionLines.Made(world, c, part, 1);
         ConstructExtruder.SetStall(world, st, ExtrudeStall.None);
+        ConstructGatherer.SetBusy(world, st, false);
     }
+
+    /// <summary>Would the offcut bin take <paramref name="n"/> units of <paramref name="mat"/> now (empty, or holding that material, with room)?</summary>
+    private static bool BinTakes(Construct c, int part, CStore st, byte mat, int n) =>
+        n == 0 || (st.Amount == 0 || st.Material == mat) && st.Amount + n <= ConstructStorage.Capacity(c, part);
 
     private static void Idle(ConstructWorld world, CStore st, ExtrudeStall why)
     {
@@ -300,36 +308,171 @@ public static class ConstructPanelFormer
         ConstructExtruder.SetStall(world, st, why);
     }
 
+    // ---- Blanks (Sean, 2026-11-21: "a blank sheet approximately sized for what it's trying to bend or form") --------------------
+
+    /// <summary>A panel's flat size: its length and width unrolled (m), the blank's thickness (whole cm) and its material.</summary>
+    public readonly record struct Flat(float Length, float Width, int ThickCm, byte Material);
+
+    private static readonly Dictionary<string, Flat> _flats = new(StringComparer.Ordinal);
+
     /// <summary>
-    /// Server: a piece at the end of a conveyor into a former's Piece in. Extruded sheet (a section no thicker than <see cref="SheetMaxCm"/>)
-    /// is counted into the bin at what it holds; anything else, another material than the bin's or more than its room waits on the conveyor.
+    /// The flat size of a formed part (read once a name and kept: what the step, the conveyor and the screens read with no allocation). A
+    /// preset or designer panel: its surface measured along its length and across its width (the longest of three lines each way), its
+    /// thickness its key's mm to the nearest cm (at least 1). A kit's loft, which has no key shape: its two longest sides, and the thickness
+    /// its mass gives over that area. False: not a formed part, or its material has no Extrusion row.
+    /// </summary>
+    public static bool FlatOf(ConstructPartDef panel, out Flat f)
+    {
+        if (_flats.TryGetValue(panel.Name, out f))
+            return f.Material != 0;
+        f = MeasureFlat(panel);
+        _flats[panel.Name] = f;
+        return f.Material != 0;
+    }
+
+    private static Flat MeasureFlat(ConstructPartDef panel)
+    {
+        if (!HullLoft.IsFormedName(panel.Name) || HullLoft.IsCutName(panel.Name))
+            return default;
+        var mat = HullLoft.FormedMaterial(panel.Name);
+        if (mat == 0 || ExtrusionTable.Current.Find(mat) is not { } row)
+            return default;
+        if (HullLoft.PanelOf(panel.Name) is { } sh)
+        {
+            HullLoft.PanelFlat(sh, out var along, out var across);
+            return new Flat(along, across, Math.Clamp((int)MathF.Round(sh.Mm / 10f, MidpointRounding.AwayFromZero), BlankMinCm, BlankMaxCm), mat);
+        }
+        Sides(panel, out var a, out var b);
+        var volume = panel.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) / MathF.Max(1, row.UnitsPerM3);
+        var cm = (int)MathF.Round(volume / MathF.Max(0.01f, a * b) * 100);
+        return new Flat(a, b, Math.Clamp(cm, BlankMinCm, BlankMaxCm), mat);
+    }
+
+    private static int Step(float m) => Math.Clamp((int)MathF.Ceiling(m * 100 / Extrusion.StepCm - 0.01f) * Extrusion.StepCm, Extrusion.MinSectionCm, Extrusion.MaxLengthCm);
+
+    /// <summary>
+    /// The blank a panel's order asks an Extruder for: a solid sheet (the Extruder's Sheet profile), its width across the panel's flat width,
+    /// its length along the flat length, each the next 5 cm step up, the panel's thickness and material. Default when it has no flat size.
+    /// </summary>
+    public static ExtrusionKey BlankFor(ConstructPartDef panel)
+    {
+        if (!FlatOf(panel, out var f))
+            return default;
+        return new ExtrusionKey(ulong.MaxValue, (ushort)Math.Min(Step(f.Width), Extrusion.MaxSectionCm), (ushort)f.ThickCm, (ushort)Step(f.Length), f.Material, false, ExShape.Section);
+    }
+
+    /// <summary>Is this piece a blank for this panel? A solid sheet of its material and thickness, its two sides each from the flat size to <see cref="OverMost"/> over it (either way round).</summary>
+    public static bool BlankFits(ConstructPartDef piece, ConstructPartDef panel)
+    {
+        if (!piece.IsExtrusion || piece.ExKey is not { Shape: ExShape.Section, Mask: ulong.MaxValue } k || !FlatOf(panel, out var f))
+            return false;
+        if (k.Material != f.Material || k.H != f.ThickCm)
+            return false;
+        return Side(k.W, f.Width) && Side(k.L, f.Length) || Side(k.L, f.Width) && Side(k.W, f.Length);
+    }
+
+    // (a side fits from the flat size, less half a cm of rounding, to 25% over it or the next 5 cm step, whichever is more: a 20 cm panel takes a 25 cm sheet)
+    private static bool Side(int cm, float m) => cm >= m * 100 - 0.5f && cm <= MathF.Max(m * 100 * OverMost, Step(m)) + 0.5f;
+
+    /// <summary>The first open order in the former's queue whose panel this blank fits, or -1 (not only the head's: the blank that comes first is formed first).</summary>
+    private static int OrderFor(Construct c, int part, ConstructPartDef piece)
+    {
+        if (!piece.IsExtrusion || c.Parts[part].Orders is not { Bill: false, Count: > 0 } q)
+            return -1;
+        for (var k = 0; k < q.Count; k++)
+            if (q.Items[k].Left > 0 && q.Items[k].Name is { } n && ConstructParts.Find(n) is { } panel && BlankFits(piece, panel) && BedFits(c, part, panel))
+                return k;
+        return -1;
+    }
+
+    /// <summary>Server: does this former want this piece now (its bed empty, the piece a blank for one of its orders)? A Router or an arm sends it one then.</summary>
+    public static bool Wants(ConstructWorld world, Construct c, int part, ConstructPartDef piece) =>
+        world.StoreOf(c, part) is { JobAmount: 0 } && OrderFor(c, part, piece) >= 0;
+
+    /// <summary>
+    /// Server: a piece at the end of a conveyor into a former's Piece in (or set in by a Loader Arm). Only a blank for one of its orders is
+    /// taken, and only onto an empty bed: its order goes to the head, and the blank lies on the bed whole. Anything else waits on the conveyor.
     /// </summary>
     public static bool TakeFromConveyor(ConstructWorld world, Construct c, int part, ConstructPartDef piece)
     {
-        var d = c.DefOf(part);
-        if (!piece.IsExtrusion || piece.ExKey.Shape != ExShape.Section || Math.Min(piece.ExKey.W, piece.ExKey.H) > SheetMaxCm || world.StoreOf(c, part) is not { } st)
+        if (world.StoreOf(c, part) is not { JobAmount: 0 } st || OrderFor(c, part, piece) is not (var at and >= 0))
             return false;
-        var mat = piece.ExKey.Material;
-        var units = Math.Max(1, (int)MathF.Round(piece.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat))));
-        if (st.Amount > 0 && st.Material != mat || st.Amount + units > d.BulkCapacity)
-            return false;
-        return world.Deposit(c, part, units, mat) > 0;
+        if (at > 0)
+        {
+            // Its order goes to the head (the bed is empty: nothing is under way), so the blank is formed to the order it fits.
+            var q = c.Parts[part].Orders!;
+            var mine = q.Items[at];
+            Array.Copy(q.Items, 0, q.Items, 1, at);
+            q.Items[0] = mine;
+            world.OrdersChanged(c);
+        }
+        st.JobAmount = Math.Max(1, (int)MathF.Round(piece.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(piece.ExKey.Material))));
+        st.JobMaterial = piece.ExKey.Material;
+        st.OnBed = true;
+        st.JobTicks = 0;
+        st.Progress = 0;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+        return true;
     }
 
-    /// <summary>What its look line and screen say it lacks: "needs 96 steel for its panel, holds 40".</summary>
+    /// <summary>
+    /// Server: the head order is going (Cancel, Clear) with a blank on the bed and no stroke done: the blank is sheared up into the offcut bin
+    /// (as much as it has room for), so it is never formed to an order it wasn't taken for.
+    /// </summary>
+    public static void GiveBack(ConstructWorld world, Construct c, int part)
+    {
+        if (world.StoreOf(c, part) is not { JobAmount: > 0 } st)
+            return;
+        var mat = st.JobMaterial;
+        var room = st.Amount == 0 || st.Material == mat ? Math.Max(0, ConstructStorage.Capacity(c, part) - st.Amount) : 0;
+        if (room > 0)
+            world.Deposit(c, part, Math.Min(room, st.JobAmount), mat);
+        st.JobAmount = 0;
+        st.OnBed = false;
+        st.JobTicks = 0;
+        st.Progress = 0;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+        ConstructGatherer.SetBusy(world, st, false);
+    }
+
+    /// <summary>
+    /// Server: orders queued at the former itself (its Queue button) ask a linked Extruder for their blanks, as a machine order (the blank
+    /// rides plainly and the former takes it for the order it fits). The maker, or null: none on its network makes that sheet.
+    /// </summary>
+    public static string? AskBlanks(ConstructWorld world, Construct c, int part, in WorkOrder o)
+    {
+        if (o.Name == null || ConstructParts.Find(o.Name) is not { } panel || BlankFor(panel) is not { W: > 0 } key)
+            return null;
+        var order = new WorkOrder { Key = key, Part = ConstructParts.None, Count = o.Count };
+        var net = ConstructCrafting.NetOf(world, c, part);
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            if (m != part && ConstructLogisticsPlan.IsSheetExtruder(c.DefOf(m)) && WorkOrders.Queue(world, c, m, order) == null)
+                return c.DefOf(m).Name;
+        }
+        return null;
+    }
+
+    /// <summary>The head order's blank, for the screen and the look line: "1.6 x 1.55 m steel blank, 2 cm". Allocates (the text).</summary>
+    public static string BlankText(ConstructPartDef panel) =>
+        FlatOf(panel, out var f) ? $"{f.Length:0.##} x {f.Width:0.##} m {RecyclingTable.Current.NameOf(f.Material)} blank, {f.ThickCm} cm" : "a blank";
+
+    /// <summary>What its look line and screen say it lacks: "needs a 1.6 x 1.55 m steel blank, 2 cm (up to 25% over), on Piece in".</summary>
     public static string Lacks(Construct c, int part, CStore st)
     {
         if (!WorkOrders.HeadOf(c.Parts[part], out var head) || head.Name == null || ConstructParts.Find(head.Name) is not { } panel)
-            return "needs sheet";
-        var names = RecyclingTable.Current;
-        return $"needs {HullLoft.FormedUnits(panel, head.Key.Material)} {names.NameOf(head.Key.Material)} sheet for its panel, holds {st.Amount}";
+            return "needs its blank";
+        var how = c.RoutesInto(part, RouteType.Conveyor) > 0 ? "" : ": only a conveyor or an arm into its Piece in brings it (a hand can't load the bed)";
+        return $"needs a {BlankText(panel)} (up to {(OverMost - 1) * 100:0}% over each way) on Piece in{how}";
     }
-
-    /// <summary>A part file's <c>storage.panel</c> block: <c>{speed, at, maxWidth, maxLength, blockPower}</c> on a bin (what feeds it).</summary>
+    /// <summary>A part file's <c>storage.panel</c> block: <c>{speed, at, maxWidth, maxLength, blockPower}</c> on a bin: its offcut (no stock: a blank a panel, ConstructPanelFormer.TakeFromConveyor).</summary>
     public static void Parse(ConstructPartDef d, System.Text.Json.JsonElement b, string file, string bw)
     {
         if (b.ValueKind != System.Text.Json.JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsExtruder)
-            throw new ConstructPartException($"{file}: storage \"panel\" is an object (speed, at, maxWidth, maxLength) on a bin: what feeds it");
+            throw new ConstructPartException($"{file}: storage \"panel\" is an object (speed, at, maxWidth, maxLength) on a bin: its offcut");
         ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxLength", "blockPower"], $"{bw}.panel");
         if (ConstructParts.Opt(b, "blockPower") is { } bp)
         {
@@ -439,6 +582,45 @@ public static class ConstructPanelFormer
         if (ph > 0.9f)
             rise *= 1 - Smooth((ph - 0.9f) / 0.1f);
         return Math.Clamp(height, 0, most) * rise;
+    }
+
+    private static readonly byte _quarter = QuarterTurn();
+
+    private static byte QuarterTurn()
+    {
+        for (byte q = 0; q < Rot24.Count; q++)
+            if (Vector3.Distance(Rot24.Apply(q, Vector3.UnitZ), Vector3.UnitX) < 1e-3f && Vector3.Distance(Rot24.Apply(q, Vector3.UnitY), Vector3.UnitY) < 1e-3f)
+                return q;
+        return 0;
+    }
+
+    /// <summary>
+    /// What lies on a former's bed (its look, drawn only): the blank, flat on the pins at rest, until the drawn stroke's pins have set; then
+    /// the head order's panel, over the risen pins, until the platen lifts again. Its def, its turn and its origin in the Core's frame, laid
+    /// with its length along the bed and centred on it. Allocates only the first time a blank's key is seen (Extrusion.Def keeps it).
+    /// </summary>
+    public static bool BedLook(Construct c, int part, CStore st, double now, out ConstructPartDef what, out byte rot, out Vector3 at)
+    {
+        (what, rot, at) = (null!, 0, default);
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (!st.OnBed || d.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0 || !WorkOrders.HeadOf(p, out var head)
+            || head.Name == null || ConstructParts.Find(head.Name) is not { } panel)
+            return false;
+        var ph = Phase(now);
+        var formed = st.Busy && ph >= SetSeconds / CycleSeconds * 0.8f && ph < 0.92f; // (the wave is nearly up: the sheet lies bent over it)
+        var def = formed ? panel : Extrusion.Def(BlankFor(panel));
+        if (def == null)
+            return false;
+        what = def;
+        rot = asm.OutSide is 0 or 1 ? _quarter : (byte)0; // (its length along the bed: z, or x on a bed that runs along x)
+        var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var mid = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, d.ExtDieAt.Y, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell);
+        var foot = (def.BoundsMin + def.BoundsMax) * 0.5f;
+        foot.Y = def.BoundsMin.Y;
+        var lift = formed ? 0.12f + 0.006f : 0.004f; // (over the pins' tops: a formed panel rides on the risen wave, PinLift's 12 cm base)
+        at = mid + new Vector3(0, lift, 0) - Rot24.Apply(rot, foot);
+        return true;
     }
 
     private static readonly byte[] _back = BackTurns();

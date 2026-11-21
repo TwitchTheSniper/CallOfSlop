@@ -400,10 +400,11 @@ public static class WorkOrders
             return why;
         if (o.IsPiece)
             o.Key = o.Key with { Material = MaterialFor(world, c, part) };
-        else if (o.IsPanel && !c.DefOf(part).IsLaserCutter && world.StoreOf(c, part) is { Amount: > 0 } fed && fed.Material != o.Key.Material
-            && ConstructPanelFormer.FromSettings(c, part, o.Count, RecyclingTable.Current.NameOf(fed.Material), out var inStock) == null)
-            o = inStock; // (a preset in what its bin holds)
-        return Queue(world, c, part, o);
+        if (Queue(world, c, part, o) is { } no)
+            return no;
+        if (c.DefOf(part) is { IsPanelFormer: true, IsLaserCutter: false })
+            ConstructPanelFormer.AskBlanks(world, c, part, o); // (its blanks, of a linked Extruder: it has no stock of its own)
+        return null;
     }
 
     /// <summary>Touch "orders.cancel": the head order goes (the piece on the die, if any, is cut off as it is).</summary>
@@ -413,6 +414,8 @@ public static class WorkOrders
             return "no orders to cancel";
         if (c.DefOf(part).IsLaserCutter)
             ConstructLaserCutter.GiveBack(world, c, part); // (the head's blank leaves the bed, so it is never cut to the next order)
+        else if (c.DefOf(part).IsPanelFormer)
+            ConstructPanelFormer.GiveBack(world, c, part); // (...and a former's is sheared into its offcut bin)
         q.RemoveAt(0);
         world.OrdersChanged(c);
         return null;
@@ -425,6 +428,8 @@ public static class WorkOrders
             return "no queue: it works its own settings";
         if (c.DefOf(part).IsLaserCutter)
             ConstructLaserCutter.GiveBack(world, c, part);
+        else if (c.DefOf(part).IsPanelFormer)
+            ConstructPanelFormer.GiveBack(world, c, part);
         c.Parts[part].Orders = null;
         world.OrdersChanged(c);
         return null;
@@ -1239,7 +1244,7 @@ public static class ConstructBill
             {
                 var pd = ConstructParts.Find(o.Name!);
                 var how = pd == null ? "not a part this build makes" : ConstructPanelFormer.TierFor(pd) is { } tier
-                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, {(ConstructParts.Find(tier) is { } fd ? ConstructPanelFormer.Seconds(fd, pd) : 0):0} s"
+                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, blank {(ConstructPanelFormer.BlankFor(pd) is { W: > 0 } bk ? Extrusion.Name(bk) : "none")}, {(ConstructParts.Find(tier) is { } fd ? ConstructPanelFormer.Seconds(fd, pd) : 0):0} s"
                     : "no recipe: too large for any Panel Former";
                 if (pd == null || ConstructPanelFormer.TierFor(pd) == null)
                 {

@@ -952,7 +952,7 @@ public static partial class ConstructExtruder
             {
                 ExtrudeStall.NoPower => " - no power: needs a charged battery",
                 ExtrudeStall.NoMaterial => " - " + ConstructPanelFormer.Lacks(c, part, st),
-                ExtrudeStall.OrderMaterial => $" - needs {(c.Parts[part].Orders is { Count: > 0 } pq ? RecyclingTable.Current.NameOf(pq.Head.Key.Material) : "another material")} for its order, holds {RecyclingTable.Current.NameOf(st.Material)}",
+                ExtrudeStall.OffcutFull => $" - offcut bin full{(st.Amount > 0 ? $" of {RecyclingTable.Current.NameOf(st.Material)}" : "")}: empty it by chute from its Offcut port",
                 ExtrudeStall.BadShape => " - not a panel: nothing makes its order (Cancel it)",
                 ExtrudeStall.Blocked => " - blocked: no room on its out bed",
                 ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the panel - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
@@ -1001,8 +1001,13 @@ public static partial class ConstructExtruder
         {
             if (d.IsLaserCutter)
                 ConstructLaserCutter.Look(c, part, st, sb);
-            else if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
-                sb.Append(", ").Append(ph.Name);
+            else
+            {
+                sb.Append(" offcut");
+                if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
+                    sb.Append(", ").Append(ph.Name);
+                sb.Append(st.OnBed ? ", blank on the bed" : ", bed empty");
+            }
             if (!d.IsLaserCutter && d.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var pasm))
                 sb.Append(", ").Append(MachineBlocks.Describe(c, pasm)); // (its bed: "bed 3 x 2 (6.0 x 4.0 m), 1 idle")
             sb.Append(Status(c, part, st));

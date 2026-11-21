@@ -471,8 +471,8 @@ public static class ConstructCrafting
             }
             if (md.IsPanelFormer)
             {
-                // A Panel Former: each preset at its own size and the world's shared designs, in what it is fed (steel when empty).
-                var sheet = fed ? names.NameOf(st!.Material) : "steel";
+                // A Panel Former: each preset at its own size and the world's shared designs, in steel (it has no stock: a blank a panel).
+                var sheet = "steel";
                 void Panel(string name, string label)
                 {
                     var what = ConstructPanelFormer.Order(name, 1);
@@ -483,14 +483,11 @@ public static class ConstructCrafting
                         row.Name = label;
                     if (row.Make == 1)
                         return;
-                    var units = HullLoft.FormedUnits(pd, what.Key.Material);
                     row.Machine = m;
-                    row.Make = (byte)(fed && st!.Amount >= units ? 1 : Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3);
-                    row.Missing = row.Make == 1 ? "" : $"needs {units} {names.NameOf(what.Key.Material)} sheet in the {md.Name}{(fed ? $", holds {st!.Amount}" : "")}";
-                    if (row.Make != 1 && !md.IsLaserCutter && ConstructLogisticsPlan.TooWideRow(c, net, pd, what.Key.Material, m) is { } wide)
-                    {
-                        row.Missing = row.Missing + " - " + wide; // (warned before the order, not only after; it stays orderable: sheet fed by hand works at any width)
-                    }
+                    row.Make = (byte)(Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3); // (its blank is made of that material by an Extruder)
+                    row.Missing = $"needs a {ConstructPanelFormer.BlankText(pd)}";
+                    if (ConstructLogisticsPlan.TooWideRow(c, net, pd, what.Key.Material, m) is { } wide)
+                        row.Missing = row.Missing + " - " + wide; // (warned before the order, not only after)
                 }
                 for (var k = 0; k < HullLoft.PanelPresets.Length; k++)
                     Panel(HullLoft.PanelKey(HullLoft.PanelDefault(k, sheet)), "");

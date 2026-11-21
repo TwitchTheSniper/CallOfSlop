@@ -47,6 +47,8 @@ public static class MachineScreens
         {
             if (d.IsLaserCutter)
                 Cutter(c, part, st, card);
+            else if (d.IsPanelFormer)
+                Former(c, part, d, st, card);
             else
                 Extruder(c, part, d, st, card);
         }
@@ -204,6 +206,50 @@ public static class MachineScreens
             WorkOrders.FillQueue(p, card, 3);
         else
             card.Add(3, "No orders: a designer, a terminal or a bill");
+        card.Bar = st.Busy ? st.Progress / 100f : -1;
+    }
+
+    /// <summary>
+    /// A Panel Former's screen (ConstructPanelFormer.cs): its state, the blank its head order needs (or that it lies on the bed), the offcut
+    /// bin, the preset its Queue orders, then the queue. The blank's line allocates only when the head order changes (the card's text is kept).
+    /// </summary>
+    private static void Former(Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)
+    {
+        ref var p = ref c.Parts[part];
+        if (st.Held)
+            Say(card, PanelState.Idle, "Held off");
+        else
+            switch ((ExtrudeStall)st.Refused)
+            {
+                case ExtrudeStall.NoPower: Say(card, PanelState.Fault, "No power"); break;
+                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, "Needs its blank"); break;
+                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, "Not a panel"); break;
+                case ExtrudeStall.OffcutFull: Say(card, PanelState.Wants, "Offcut bin full"); break;
+                case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too narrow"); break;
+                case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
+                case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
+                case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
+                case ExtrudeStall.OrderTooLong: Say(card, PanelState.Refused, d.BlockRole == BlockRole.Core ? "Bed can't take it" : "Too large"); break;
+                default: Say(card, st.Busy ? PanelState.Working : PanelState.Idle, st.Busy ? "Forming" : "Waiting"); break;
+            }
+        if (st.OnBed)
+            card.Add(1, "Blank on the bed");
+        else if (WorkOrders.HeadOf(p, out var head) && head.Name != null && ConstructParts.Find(head.Name) is { } panel && ConstructPanelFormer.FlatOf(panel, out var f))
+            card.Add(1, "Blank ").AddFixed(1, f.Length, 2).Add(1, " x ").AddFixed(1, f.Width, 2).Add(1, " m, ").Add(1, f.ThickCm).Add(1, " cm"); // (the flat size: up to 25% over takes it)
+        else
+            card.Add(1, "Bed empty");
+        Amount(card, 2, "Offcut ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+        var from = 3;
+        if (d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
+        {
+            card.Add(from, "Preset ").Add(from, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]); // (what its Queue orders; the Preset button picks it)
+            from++;
+        }
+        if (p.Orders != null)
+            WorkOrders.FillQueue(p, card, from);
+        else
+            card.Add(from, "No orders: Queue, or a bill");
         card.Bar = st.Busy ? st.Progress / 100f : -1;
     }
 

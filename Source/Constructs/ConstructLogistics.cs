@@ -508,7 +508,10 @@ public static class ConstructLogistics
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker) is var link and > 0 ? link // (its chained order's blank)
                 : maker >= 0 && OlderAsked(c, maker, d, uint.MaxValue) ? (ushort)0 // (a terminal ordered this panel from that machine: never the cutter's)
                 : ConstructLaserCutter.Wants(world, c, t, d) && world.StoreOf(c, t) is { } bed && Riding(c, bed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (its head order's blank, one riding at a time)
-        if (c.DefOf(t) is { IsAssembler: true } or { IsPanelFormer: true } or { IsPress: true, IsLathe: false })
+        if (c.DefOf(t).IsPanelFormer)
+            return ConstructLogisticsPlan.WantAt(world, c, t, d, maker) is var flink and > 0 ? flink // (its chained order's blank)
+                : ConstructPanelFormer.Wants(world, c, t, d) && world.StoreOf(c, t) is { } fbed && Riding(c, fbed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (a blank for an order queued at it, one riding at a time)
+        if (c.DefOf(t) is { IsAssembler: true } or { IsPress: true, IsLathe: false })
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)
             return 0;
@@ -649,6 +652,7 @@ public static class ConstructLogistics
         if (c.DefOf(part) is { IsPieceRack: false } md)
             return md.IsLaserCutter ? (ConstructLaserCutter.Wants(world, c, part, d) ? LogiReason.None : LogiReason.Closed) // (a cutter: while it still wants this blank)
                 : (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None
+                : md.IsPanelFormer && r.Tag == ConstructLaserCutter.BedTag && ConstructPanelFormer.Wants(world, c, part, d) ? LogiReason.None // (a former: while it still wants this blank)
                 : md.IsAssembler && world.UsedByQueue(c, part, d.Id) ? LogiReason.None // (its order closed but another queued there uses it: delivered, never set down loose)
                 : LogiReason.Closed; // (a machine's input waits at its door)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && r.Tag != 0 && m.DestPick[ds] && ConstructLifters.PadOrderOpen(world, c, part, r.Tag, d))
