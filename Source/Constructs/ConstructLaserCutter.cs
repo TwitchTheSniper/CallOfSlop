@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// cut takes away comes back as offcut: counted in tenths of a unit (<see cref="CStore.InAmount"/>, of <see cref="CStore.InMaterial"/>), whole
 /// units handed into its bin (the store's own bulk) as they add up; a chute empties the bin. A full bin, or one of another material, stalls it.
 /// </summary>
-public static class ConstructLaserCutter
+public static partial class ConstructLaserCutter
 {
     /// <summary>The energy a metre of cut takes per mm of thickness, kJ (the design's estimate: 3 s a metre through 20 mm on the 2.4 kW cutter).</summary>
     public const float KjPerMetreMm = 0.36f;
@@ -27,6 +27,10 @@ public static class ConstructLaserCutter
         public byte Material;
         public int OffTenths; // the offcut, tenths of a unit of Material (the blank's mass less the cut part's)
         public float Longest, Next, Least; // the blank's bounds, sorted (m)
+        public Vector2[]? Path; // the head's path over the blank (m: along, across), read once for the look (ConstructLaserCutterBed.cs)
+        public float PathLength;
+        public ConstructPartDef? BlankDef; // ...and the blank drawn on its bed, as it lies there (a turn for each way the bed runs)
+        public byte BlankRotAlong = 255, BlankRotAcross = 255;
     }
 
     private static readonly Dictionary<string, Job?> Jobs = new(StringComparer.Ordinal);
@@ -60,21 +64,56 @@ public static class ConstructLaserCutter
         return j;
     }
 
-    /// <summary>Seconds a cut takes on a cutter: 2 s to set up, then the energy of the cut (edge by thickness) over the machine's power.</summary>
-    public static float Seconds(Job j, ConstructPartDef cutter) => 2 + KjPerMetreMm * j.EdgeM * j.Mm / MathF.Max(0.1f, cutter.CutKw);
+    /// <summary>Seconds a cut takes with <paramref name="heads"/> heads of <paramref name="cutter"/>'s: 2 s to set up, then the energy of the cut (edge by thickness) over their power.</summary>
+    public static float Seconds(Job j, ConstructPartDef cutter, int heads) => 2 + KjPerMetreMm * j.EdgeM * j.Mm / MathF.Max(0.1f, cutter.CutKw * Math.Max(1, heads));
 
-    /// <summary>Does a cutter's bed take this job's blank? Its longest side within the bed's length, the next within its width, the least within its height.</summary>
-    public static bool Fits(ConstructPartDef cutter, Job j) =>
-        j.Longest <= cutter.ExtWheelMax.Y + 0.005f && j.Next <= cutter.ExtWheelMax.X + 0.005f && j.Least <= cutter.CutMaxHeight + 0.005f;
+    /// <summary>Seconds a cut takes on this cutter: its bridge's heads, one per row of Bed Blocks across (ConstructLaserCutterBed.cs).</summary>
+    public static float Seconds(Job j, Construct c, int part) => Seconds(j, c.Parts[part].D, Heads(c, part));
 
-    /// <summary>The smallest Laser Cutter whose bed takes a job's blank, by name, or null.</summary>
-    public static string? TierFor(Job j)
+    /// <summary>Does a bed <paramref name="bed"/> (m, either way round) take this job's blank? Its longest side within the bed's longer side, the next within its shorter, the least within the bridge's clearance.</summary>
+    public static bool Fits(ConstructPartDef cutter, Vector2 bed, Job j) =>
+        j.Longest <= MathF.Max(bed.X, bed.Y) + 0.005f && j.Next <= MathF.Min(bed.X, bed.Y) + 0.005f && j.Least <= cutter.CutMaxHeight + 0.005f;
+
+    /// <summary>Does this cutter's bed, as its Bed Blocks lie now, take this job's blank?</summary>
+    public static bool Fits(Construct c, int part, Job j) => Fits(c.Parts[part].D, BedOf(c, part), j);
+
+    /// <summary>Why this cutter's bed doesn't take this job's blank ("needs a 4 x 3 bed, this one is 3 x 2"), or null when it does.</summary>
+    public static string? Misfit(Construct c, int part, Job j)
     {
-        ConstructPartDef? best = null;
-        foreach (var d in ConstructParts.All)
-            if (d.IsLaserCutter && Fits(d, j) && (best == null || d.ExtWheelMax.Y < best.ExtWheelMax.Y))
-                best = d;
-        return best?.Name;
+        var d = c.Parts[part].D;
+        if (j.Least > d.CutMaxHeight + 0.005f)
+            return $"too tall for the bed: {j.Least:0.##} m, the bridge clears {d.CutMaxHeight:0.##} m";
+        if (Fits(c, part, j))
+            return null;
+        var (w, l) = BedNeeded(j, d.BlockCell);
+        var has = MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0 ? $"this one is {Math.Max(asm.W, asm.L)} x {Math.Min(asm.W, asm.L)}" : "this one has no bed: weld Laser Bed Blocks beside it";
+        return l > MachineBlocks.MaxSide || w * l > MachineBlocks.MaxCells ? $"too large for any bed: {j.Longest:0.##} x {j.Next:0.##} m (a bed is at most {MachineBlocks.MaxSide} blocks a side and {MachineBlocks.MaxCells} in all)"
+            : $"needs a {l} x {w} bed ({l * d.BlockCell:0.#} x {w * d.BlockCell:0.#} m), {has}";
+    }
+
+    /// <summary>The fewest Bed Blocks along and across that take a job's blank (cells of <paramref name="cell"/> m).</summary>
+    public static (int Across, int Along) BedNeeded(Job j, float cell) =>
+        (Math.Max(1, (int)MathF.Ceiling(j.Next / cell - 0.0025f)), Math.Max(1, (int)MathF.Ceiling(j.Longest / cell - 0.0025f)));
+
+    /// <summary>What a bill or a planner says of the bed a job needs: "a 4 x 3 bed".</summary>
+    public static string BedText(Job j)
+    {
+        var cell = MachineBlocks.DefaultCell;
+        var (w, l) = BedNeeded(j, cell);
+        return j.Least > MaxHeight + 0.005f ? $"no bed: {j.Least:0.##} m tall, a bridge clears {MaxHeight:0.##} m"
+            : l > MachineBlocks.MaxSide || w * l > MachineBlocks.MaxCells ? $"no bed: {j.Longest:0.##} x {j.Next:0.##} m is past any bed's {MachineBlocks.MaxSide} blocks a side and {MachineBlocks.MaxCells} in all" : $"a {l} x {w} bed";
+    }
+
+    /// <summary>The bridge's clearance over every Laser Cutter's bed (m), from the catalogue's cutter.</summary>
+    private static float MaxHeight
+    {
+        get
+        {
+            foreach (var d in ConstructParts.All)
+                if (d.IsLaserCutter)
+                    return d.CutMaxHeight;
+            return 2;
+        }
     }
 
     /// <summary>Server: will this cutter take an order? Null, or why not.</summary>
@@ -88,10 +127,8 @@ public static class ConstructLaserCutter
             return HullLoft.IsFormedName(o.Name) ? "nothing to cut: a Panel Former's order" : $"not a cut part: the {d.Name} cuts nothing called \"{o.Name}\"";
         if (JobOf(o.Name) is not { } j)
             return HullLoft.CutRefusal(o.Name) is { Length: > 0 } why ? why : "its blank is no part this build makes";
-        if (!Fits(d, j))
-            return j.Least > d.CutMaxHeight + 0.005f
-                ? $"too tall for the bed: {j.Least:0.##} m, the {d.Name} takes {d.CutMaxHeight:0.##} m"
-                : $"too large for this cutter: {j.Longest:0.##} x {j.Next:0.##} m, the {d.Name} takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
+        if (Misfit(c, part, j) is { } misfit)
+            return misfit;
         if (c.Parts[part].Orders is { Count: >= WorkOrders.MaxOrders })
             return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
         return null;
@@ -135,7 +172,7 @@ public static class ConstructLaserCutter
             Idle(world, st, ExtrudeStall.NoPower); // (the blank stays on the bed, the stroke where it stopped)
             return;
         }
-        var need = (int)(Seconds(j, d) * World.TickRate);
+        var need = (int)(Seconds(j, c, part) * World.TickRate);
         if (st.JobTicks < need)
         {
             st.JobTicks += ConstructExtruder.Every;
@@ -155,13 +192,14 @@ public static class ConstructLaserCutter
         var oldUnit = oldMat != 0 && oldMat != j.Material && st.InAmount >= 5 ? 1 : 0; // (tenths of another material round to the nearest unit)
         var tenths = (oldMat == j.Material ? st.InAmount : 0) + j.OffTenths;
         var units = tenths / 10;
-        if (!BinTakes(d, st.Amount, st.Material, oldMat, oldUnit)
-            || !BinTakes(d, st.Amount + oldUnit, oldUnit > 0 ? oldMat : st.Material, j.Material, units))
+        var bin = BinOf(c, part);
+        if (!BinTakes(bin, st.Amount, st.Material, oldMat, oldUnit)
+            || !BinTakes(bin, st.Amount + oldUnit, oldUnit > 0 ? oldMat : st.Material, j.Material, units))
         {
             Idle(world, st, ExtrudeStall.OffcutFull);
             return;
         }
-        if (ConstructConveyor.Out(c, part) is var conveyor and >= 0)
+        if (OutConveyor(c, part) is var conveyor and >= 0)
         {
             if (!ConstructConveyor.PutMade(world, c, conveyor, made, 1, out var stall))
             {
@@ -174,7 +212,7 @@ public static class ConstructLaserCutter
             c.WorldFrame(p.Seg, out var q, out var t);
             var turn = q * Rot24.Quat(p.Rot);
             var size = made.BoundsMax - made.BoundsMin;
-            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(d.ExtDieAt + new Vector3(0, size.Y * 0.5f + 0.05f, 0), turn); // (its middle over the out bed)
+            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(OutAt(c, part, size.Y), turn); // (its middle over the Out Table, or over the bed)
             if (ConstructEdits.DropLoose(world, made, at, turn) is not { } body)
             {
                 Idle(world, st, ExtrudeStall.Blocked);
@@ -203,8 +241,8 @@ public static class ConstructLaserCutter
     }
 
     /// <summary>Would the offcut bin, holding <paramref name="amount"/> of <paramref name="held"/>, take <paramref name="n"/> units of <paramref name="mat"/>?</summary>
-    private static bool BinTakes(ConstructPartDef d, int amount, byte held, byte mat, int n) =>
-        n == 0 || (amount == 0 || held == mat) && amount + n <= d.BulkCapacity;
+    private static bool BinTakes(int bin, int amount, byte held, byte mat, int n) =>
+        n == 0 || (amount == 0 || held == mat) && amount + n <= bin;
 
     private static void Idle(ConstructWorld world, CStore st, ExtrudeStall why)
     {
@@ -226,7 +264,7 @@ public static class ConstructLaserCutter
             c.WorldFrame(p.Seg, out var q, out var t);
             var turn = q * Rot24.Quat(p.Rot);
             var size = blank.BoundsMax - blank.BoundsMin;
-            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(p.D.ExtDieAt + new Vector3(0, size.Y * 0.5f + 0.05f, 0), turn);
+            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(OutAt(c, part, size.Y), turn);
             if (ConstructEdits.DropLoose(world, blank, at, turn) is { } body)
             {
                 body.Owner = c.Owner;
@@ -338,7 +376,14 @@ public static class ConstructLaserCutter
     public static void Look(Construct c, int part, CStore st, StringBuilder sb)
     {
         var names = RecyclingTable.Current;
-        sb.Append(" offcut");
+        sb.Append(" offcut, ");
+        if (MachineBlocks.TryOf(c, part, out var asm))
+            sb.Append(MachineBlocks.Describe(c, asm));
+        else
+            sb.Append("no bed: weld Laser Bed Blocks beside it");
+        var heads = Heads(c, part);
+        if (heads > 0)
+            sb.Append(", ").Append(heads).Append(heads == 1 ? " head" : " heads");
         if (st.InAmount > 0)
             sb.Append(" (+0.").Append(st.InAmount).Append(' ').Append(names.NameOf(st.InMaterial)).Append(')');
         if (WorkOrders.HeadOf(c.Parts[part], out var h) && h.Name != null)
@@ -349,12 +394,16 @@ public static class ConstructLaserCutter
         }
     }
 
-    /// <summary>A part file's <c>storage.cut</c> block: <c>{kw, at, maxWidth, maxLength, maxHeight}</c> on a bin (its offcut).</summary>
+    /// <summary>
+    /// A part file's <c>storage.cut</c> block: <c>{kw, at, maxWidth, maxLength, maxHeight, bin, binBlock}</c> on a bin (its offcut). On a Laser
+    /// Cutter Core: kw is one head's, the bed's size comes from its Bed Blocks (maxWidth and maxLength cap it), maxHeight is the clearance under
+    /// the bridge, and the offcut bin holds bin plus binBlock for each block in the bed (the bulk's capacity is its most).
+    /// </summary>
     public static void Parse(ConstructPartDef d, System.Text.Json.JsonElement b, string file, string bw)
     {
         if (b.ValueKind != System.Text.Json.JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsExtruder)
             throw new ConstructPartException($"{file}: storage \"cut\" is an object (kw, at, maxWidth, maxLength, maxHeight) on a bin: its offcut");
-        ConstructParts.Known(b, ["kw", "at", "maxWidth", "maxLength", "maxHeight"], $"{bw}.cut");
+        ConstructParts.Known(b, ["kw", "at", "maxWidth", "maxLength", "maxHeight", "bin", "binBlock"], $"{bw}.cut");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: a Laser Cutter's offcut bin takes \"{ConstructStorage.Any}\" material");
         d.CutKw = ConstructParts.Num(ConstructParts.Need(b, "kw", $"{bw}.cut"), file, "storage.cut.kw");
@@ -368,6 +417,10 @@ public static class ConstructLaserCutter
         ConstructParts.Range(l, w, HullLoft.CutPlateMaxCm / 100f, file, "storage.cut.maxLength"); // (the Capital Laser Cutter's 64 m bed)
         ConstructParts.Range(d.CutMaxHeight, 0.05f, 16, file, "storage.cut.maxHeight");
         d.ExtWheelMax = new Vector2(w, l);
+        d.CutBin = ConstructParts.Opt(b, "bin") is { } bin ? (int)ConstructParts.Num(bin, file, "storage.cut.bin") : d.BulkCapacity;
+        d.CutBinBlock = ConstructParts.Opt(b, "binBlock") is { } bb ? (int)ConstructParts.Num(bb, file, "storage.cut.binBlock") : 0;
+        if (d.CutBin < 1 || d.CutBinBlock < 0 || d.CutBin + d.CutBinBlock * MachineBlocks.MaxCells > d.BulkCapacity)
+            throw new ConstructPartException($"{file}: storage.cut's bin ({d.CutBin}) and binBlock ({d.CutBinBlock}) a block for {MachineBlocks.MaxCells} blocks fit in its bulk's capacity ({d.BulkCapacity})");
         d.ExtWheelStart = new Vector2(0.2f, 0.2f);
         d.ExtDieSocket = -1;
         d.IsExtruder = d.IsWheelFormer = d.IsPanelFormer = d.IsLaserCutter = true;

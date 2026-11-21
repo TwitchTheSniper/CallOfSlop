@@ -1272,10 +1272,10 @@ public static class ConstructBill
                     sb.AppendLine($"  {o.Count,4} x {o.Name}  (no part this build cuts)");
                     continue;
                 }
-                var tier = ConstructLaserCutter.TierFor(j);
-                var cutter = tier != null ? ConstructParts.Find(tier) : null;
-                var secs = cutter != null ? $"{ConstructLaserCutter.Seconds(j, cutter):0.#} s" : "no cutter's bed takes it";
-                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({tier ?? "no Laser Cutter"}; blank {j.Blank}; {secs}; offcut {j.OffTenths / 10f:0.#} {RecyclingTable.Current.NameOf(j.Material)})");
+                var bed = ConstructLaserCutter.BedText(j);
+                var cutter = ConstructParts.All.FirstOrDefault(x => x.IsLaserCutter);
+                var secs = cutter != null ? $"{ConstructLaserCutter.Seconds(j, cutter, ConstructLaserCutter.BedNeeded(j, cutter.BlockCell).Across):0.#} s on it" : "no Laser Cutter";
+                sb.AppendLine($"  {o.Count,4} x {o.Name}  (Laser Cutter, {bed}; blank {j.Blank}; {secs}; offcut {j.OffTenths / 10f:0.#} {RecyclingTable.Current.NameOf(j.Material)})");
             }
         }
         if (bill.Kits.Count > 0)

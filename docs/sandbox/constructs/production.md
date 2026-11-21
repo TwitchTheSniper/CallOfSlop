@@ -415,10 +415,25 @@ It cuts a cut key (`Cut Panel (PANEL | CUTS)` or `Cut Plate (BLANK | CUTS)`, `Hu
 flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutter.cs`; parts from `--gen-parts laser_cutter_parts`
 (`LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`), recipes by the Assembling rule, Production > Extrusion beside the formers.
 
-| Machine | Bed (longest x next x tallest) | Cutting power | Offcut bin |
-| --- | --- | --- | --- |
-| Laser Cutter | 2.5 x 1.8 x 0.6 m | 2.4 kW | 200 |
-| Medium Laser Cutter (tier 2 Assembler) | 6 x 4.5 x 2 m | 9.6 kW | 1,200 |
+**On the block system** (design page drawing 16, `MachineBlocks.cs`, like the Extruder): a **Laser Cutter Core** (the source cabinet,
+chiller, offcut bin and fume extractor, 1 x 2 m) with **Laser Bed Blocks** (2 x 2 m, recipe 480 steel, 60 rubber, 20 copper, a Wiring Loom
+and a Gear Set) welded beside it. The bed is the largest full rectangle of blocks touching the Core (`MachineBlocks`, up to 16 x 16); there
+are no size classes. Code: `ConstructLaserCutterBed.cs`.
+
+- **The bed sets the blank.** A blank fits when its longest and next sides fit the bed either way round (less 0.25 m margin), and it is
+  at most 2 m tall. A miss says what bed it needs: "needs a 2 x 3 bed (4.0 x 6.0 m), this one is 1 x 2" (`Misfit`, `BedNeeded`); the
+  Panel Designer, the recipe picker and a bill's line show the same.
+- **Heads.** One bridge runs along the bed on the rails of its outer blocks and carries one head per block across it, each of the Core's
+  2.4 kW: a wider bed cuts faster (`Heads`, the time law's power is `kw x heads`) and draws `PowerDraw x heads`.
+- **The offcut bin** holds 200 plus 100 for each block in the bed (`BinOf`).
+- A Core with no bed cuts nothing: "no bed: weld Laser Bed Blocks beside it".
+- **Out Table.** An Out Table welded on the bed's far side (the side away from the Core, its -z face against the bed) is the cutter's
+  Piece out: a conveyor off it takes the cut parts (`ConstructConveyor.Out`, `MachineBlocks.OutTable`). With none, a cut part lies on the
+  bed. The Production Showcase lays one.
+- **Look**: seams hide the rails, skirts and bridge where blocks are welded (`seam`, `seamFill`), so one bridge spans the whole bed and
+  rails show on its outer edges only (the Core says `"coreSeams": false`, so only a weld to another bed block hides a block's seam: the rails beside the Core and beside the Out Table stay). While it cuts, the bridge and its
+  heads follow the cut's outline over the blank lying on the bed (`LookPose`, the path from `HullLoft.CutOutline`), the beam glows and
+  sparks fly where it meets the plate. Ports use `MachineLook.Port`. Body `#a8365e`.
 
 - **Orders only.** A cut key is a named order; the cutter refuses anything else ("nothing to cut: a Panel Former's order", "too large for
   this cutter", "too tall for the bed", the key's own rule broken). Every other machine refuses a cut key: "a cut part is a Laser Cutter's
@@ -434,8 +449,6 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
   sent); whole units go into its bin as they add up, which a chute empties from its **Offcut** port (chutes can't feed it). Tenths of
   another material round to the nearest unit first. A full bin, or one holding another material, stalls it (`ExtrudeStall.OffcutFull`,
   "offcut bin full"), the cut part waiting on the bed. A cut costs power and time, never material.
-- **Look**: a slatted bed under a gantry, the head's carriage running along the gantry and the beam's line glowing while it cuts, a fume
-  duct, the offcut hopper on the right of the out end, the control board on the left. Body `#a8365e`.
 - **Where orders come from** (phase 4): the Panel Designer's **Cut-outs** (openings and cut corners on the panel's sliders, up to six;
   a refused cut turns the readout red and holds ORDER), saved as a cut design and ORDERed like a panel; a Crafting Terminal's list (each
   linked cutter's cut designs: now with the blank in stock or on the bed, through a chain when a linked machine makes it); a blueprint's bill

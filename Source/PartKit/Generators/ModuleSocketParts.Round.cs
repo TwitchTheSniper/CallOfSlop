@@ -151,6 +151,7 @@ public sealed partial class ModuleSocketParts
         RoundPlate(p, d, Back, PlateTop);
         double c = (d - 1) * 0.5, r = d * 0.5;
         var l = c + (r - 0.27) * Math.Sqrt(0.5);
+        Controls(p, (double z, out double x) => x = c + Math.Sqrt(Math.Max(0, r * r - (z - c) * (z - c))) - 0.004); // (on the side's circle, a little in)
         p.Add(Mid(Box([l - 0.03, PlateTop - Drawn - 0.01, c - (l - c) - 0.03], [l + 0.03, PlateTop + 0.003, c - (l - c) + 0.03], LampC, detail: true))); // the lamp (+x -z): the last box
         RoundBackSockets(p, d, Back, "-y");
         p.Sock("bc", [c, Back, c], "-y", Small); // (the back's middle, so a plate goes centred on a Small mount)

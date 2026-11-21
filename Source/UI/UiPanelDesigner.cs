@@ -826,14 +826,15 @@ public sealed partial class Ui
         var seen = 0;
         for (var i = 0; i < net.MachineN && _pdCutFits.Count < 4; i++)
         {
-            var d = c.DefOf(net.Machines[i]);
+            var m = net.Machines[i];
+            var d = c.DefOf(m);
             if (!d.IsLaserCutter)
                 continue;
             seen++;
-            var ok = ConstructLaserCutter.Fits(d, job);
+            var ok = ConstructLaserCutter.Fits(c, m, job);
             _pdCutFitOk.Add(ok);
-            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, d):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
-                : job.Least > d.CutMaxHeight + 0.005f ? $"{d.Name} {seen}: too tall for its bed: {job.Least:0.##} m" : $"{d.Name} {seen}: too large for its bed: {job.Longest:0.##} x {job.Next:0.##} m");
+            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, c, m):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
+                : $"{d.Name} {seen}: {ConstructLaserCutter.Misfit(c, m, job)}");
         }
     }
 
@@ -1056,7 +1057,7 @@ public sealed partial class Ui
                 {
                     ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, HullLoft.CutPlateMaxCm, "%d cm"u8);
                     if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to the Capital Laser Cutter's 64 m bed."u8);
+                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to 64 m; a Laser Cutter's bed takes up to 32 m."u8);
                     ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, HullLoft.CutPlateAcrossCm, "%d cm"u8);
                     ImGui.SliderInt("Section height"u8, ref plateH, PlateMinH, Math.Min(PlateMaxH, 160), "%d cm"u8);
                     if (ImGui.IsItemHovered())

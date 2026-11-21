@@ -237,6 +237,7 @@ public enum CfgKey : byte
     ModCut, // Module Socket: its cutting ring's job, seconds while it burns its well, 0 idle (not on the panel; ModuleCut.cs)
     ModWeld, // Module Socket: a Module Fitter's job on it, seconds: welding a module on (positive) or cutting its seam (negative), 0 idle (not on the panel; ConstructModuleFitters.cs)
     ModHide, // Module Socket: on, the plate and a fitted module's plug aren't drawn (a clean flush mount; ModuleSockets.HiddenLook)
+    ModLock, // Module Socket: on, its module can't be ejected, pulled off by the physics gun or taken off by hand (its slider on the frame; a Module Fitter still cuts it free: ModuleGuide.cs)
     GrowMakes, // Grow Former: what its own settings make (0 wheel, 1 prop, 2 wing; an order makes what it asks: ConstructGrowFormer.cs)
     COUNT,
 }
@@ -804,7 +805,7 @@ public static class ConstructConfig
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
         CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
-        CfgKey.ModKeyed => "toggle",
+        CfgKey.ModKeyed or CfgKey.ModLock => "toggle",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
@@ -887,6 +888,7 @@ public static class ConstructConfig
                 CfgKey.ModCut => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ModWeld => d.ModPart == ModPart.Socket,
                 CfgKey.ModHide => d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide,
+                CfgKey.ModLock => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.GrowMakes => d.IsGrowFormer,

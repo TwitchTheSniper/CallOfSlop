@@ -677,6 +677,11 @@ public static partial class ConstructRender
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
+        var laserTip = Vector3.Zero;
+        _laserOn = working && d.BlockRole == BlockRole.Block && c.Parts[workPart].D.IsLaserCutter
+            && ConstructLaserCutter.LookPose(c, i, workPart, Now, out _laserBridge, out _laserHead, out _laserActive, out laserTip); // (a Laser Cutter's bridge and heads follow the cut's outline)
+        if (_laserOn && _laserActive && Fx.On)
+            LaserSparks(gfx, c, Vector3.Transform(laserTip, seg * body) + (gfx.Relative ? gfx.Origin : Vector3.Zero), Vector3.TransformNormal(Vector3.UnitY, seg * body));
         byte routerWay = 0, routerState = 0;
         var routerStuck = false;
         var routerFence = 0f;
@@ -698,6 +703,8 @@ public static partial class ConstructRender
                 continue;
             if (box.SeamHidden(seams))
                 continue; // (a block machine's skirt or cap on a face welded to its own machine, or a fill where none is: MachineBlocks.cs)
+            if (box.Work == BoxWork.Beam && !(_laserOn && _laserActive))
+                continue; // (a Laser Cutter's beam: only under the head that is cutting)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
@@ -766,7 +773,7 @@ public static partial class ConstructRender
                 gfx.Draw(model, !p.Broken && (p.Out >= 0.5f) == (box.Shows == 1) ? box.Color : box.Color * (0.18f * shade), opacity, mode: 2, shape: box.Shape); // (a switch's state lamp: lit in its colour while on, or while off, dark otherwise)
             else if (box.Way != 0 && routerOn && (routerStuck ? MathF.Sin((float)Now * MathF.Tau * 3f) > 0 : routerWay == box.Way))
                 gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
-            else if (box.Work == BoxWork.Glow && working)
+            else if (box.Work is BoxWork.Glow or BoxWork.Beam && working)
                 gfx.Draw(model, WorkHot * (0.85f + 0.15f * MathF.Sin((float)Now * 5f + i)), opacity, mode: 2, shape: box.Shape); // (a hot die, bright while the machine runs; its own dull colour otherwise)
             else if (box.Glow)
                 gfx.Draw(model, box.Color * shade, opacity, mode: 2, shape: box.Shape); // (a box that always glows, "glow" in the part file)
@@ -780,8 +787,25 @@ public static partial class ConstructRender
                 gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape, surface: Surfaces.Code(ConstructFinish.BoxRow(in box, p.Paint, p.Finish), wear)); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
+        if (d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } bedStore && ConstructLaserCutter.BlankOnBed(c, i, bedStore, out var blank, out var blankRot, out var blankAt))
+            drawn += DrawBlank(gfx, blank, blankRot, blankAt, in p, seg * body, shade, opacity); // (a Laser Cutter's blank lying on its bed while it is cut)
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
+        return drawn;
+    }
+
+    /// <summary>A part lying on a machine (a Laser Cutter's blank): its drawn boxes, turned by <paramref name="rot"/>, its origin at <paramref name="at"/> in the machine's frame.</summary>
+    private static int DrawBlank(Renderer gfx, ConstructPartDef d, byte rot, Vector3 at, in CPart p, in Matrix4x4 onBody, float shade, float opacity)
+    {
+        var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * onBody;
+        var drawn = 0;
+        foreach (ref readonly var box in d.Boxes.AsSpan())
+        {
+            if (box.Hidden)
+                continue;
+            gfx.Draw(box.Model(rot, at + Rot24.Apply(rot, box.Center)) * frame, box.Color * shade, opacity, mode: 0, shape: box.Shape);
+            drawn++;
+        }
         return drawn;
     }
 
@@ -815,6 +839,23 @@ public static partial class ConstructRender
     private const int ShearCm = 25;
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
     private static float _hubRise; // a Grow Former's hub raised on its slide (m), for the part being drawn: its "slide" boxes and riding chuck
+    private static bool _laserOn, _laserActive; // a Laser Bed Block being drawn: its bridge and head move, its head the one cutting
+    private static Vector3 _laserBridge, _laserHead; // ...how far (body frame)
+
+    /// <summary>Sparks off the sheet under a Laser Cutter's cutting head, and a thin wisp of fume.</summary>
+    private static void LaserSparks(Renderer gfx, Construct c, Vector3 at, Vector3 up)
+    {
+        for (var k = Fx.Share(40f * _fxDt); k > 0; k--)
+        {
+            var a = Random.Shared.NextSingle() * MathF.Tau;
+            var side = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));
+            var other = Vector3.Cross(up, side);
+            var dir = up * (0.3f + 0.5f * Random.Shared.NextSingle()) + (side * MathF.Cos(a) + other * MathF.Sin(a)) * (0.6f + Random.Shared.NextSingle());
+            Fx.Emit(FxKind.Spark, at, c.Vel + dir * (2f + 4f * Random.Shared.NextSingle()), 0.012f + 0.012f * Random.Shared.NextSingle(), 0.12f + 0.25f * Random.Shared.NextSingle());
+        }
+        for (var k = Fx.Share(3f * _fxDt); k > 0; k--)
+            Fx.Emit(FxKind.Smoke, at + up * 0.05f, c.Vel + up * 0.6f, 0.08f, 0.9f);
+    }
     private static int _workCore = -1; // the machine whose work the part being drawn shows (its own, or its block machine's Core)
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
@@ -852,6 +893,12 @@ public static partial class ConstructRender
                 // The shear over the die: down and up as a new piece starts, the moment after a cut (its first 25 cm).
                 if (_pieceCm is > 0 and < ShearCm)
                     model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * MathF.Sin(MathF.PI * _pieceCm / ShearCm)));
+                break;
+            case BoxWork.Bridge when _laserOn:
+                model *= Matrix4x4.CreateTranslation(_laserBridge); // (a Laser Cutter's bridge, along the bed: ConstructLaserCutterBed.cs)
+                break;
+            case BoxWork.Head or BoxWork.Beam when _laserOn:
+                model *= Matrix4x4.CreateTranslation(_laserBridge + _laserHead); // (a head rides the bridge, and along it)
                 break;
             case BoxWork.Smoke when Fx.On:
                 var size = MathF.Max(0.12f, MathF.Min(box.Half.X, box.Half.Z) * 1.6f);

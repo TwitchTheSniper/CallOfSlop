@@ -992,7 +992,7 @@ public static partial class ConstructExtruder
         var d = p.D;
         var names = RecyclingTable.Current;
         var product = ProductOf(c, part);
-        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity);
+        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.BulkCapacity);
         if (st.Amount > 0)
             sb.Append(' ').Append(names.NameOf(st.Material));
         if (d.IsPanelFormer)
