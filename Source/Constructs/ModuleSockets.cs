@@ -377,6 +377,33 @@ public static class ModuleSockets
                     of[other] = (short)mi;
                     stack[top++] = other;
                 }
+                // A freeform weld (a face point or an off-grid turn of the socket weld) joins its anchor and its welded-on part
+                // with no socket link: the module takes it too, as the split's flood does (ConstructWorld.Flood), or fitting
+                // and taking off cut the module's parts away from what is welded on them.
+                for (var j = 0; j < c.JointCount; j++)
+                {
+                    ref var jt = ref c.Joints[j];
+                    if (!jt.Freeform || jt.Cut)
+                        continue;
+                    var other = jt.Hinge == at ? jt.Child : jt.Child == at ? jt.Hinge : -1;
+                    if (other < 0 || other >= n)
+                        continue;
+                    if (other == plate)
+                    {
+                        m.Bridged = true;
+                        continue;
+                    }
+                    if (of[other] >= 0)
+                    {
+                        if (of[other] != mi)
+                            m.Bridged = true;
+                        continue;
+                    }
+                    if (plate >= 0 && c.DefOf(other).ModPart == ModPart.Plug)
+                        m.Bridged = true;
+                    of[other] = (short)mi;
+                    stack[top++] = other;
+                }
             }
             if (m.Tags == 0 && m.Parts > 1)
                 m.Tags = 1 << (int)ModTag.Utility;
