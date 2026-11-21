@@ -710,7 +710,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   it; "Baked (#hash)" keys travel as named run-time parts (BakedParts.cs); OvenStall gains CantBake, NotBaked and Failed at its end.
     // 423: the Panel Former takes one blank a panel (Sean, 2026-11-21): no stock bin, hopper or chute in; its bin is offcut with an Offcut
     //   chute port (a new port on the Core); its "Too wide: make strips" setting slot is gone (settings ride CBody by slot).
-    public const ushort ProtocolVersion = 423;
+    // 424: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
+    //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
+    public const ushort ProtocolVersion = 424;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
