@@ -26,7 +26,7 @@ public enum AsmState : byte
 /// </summary>
 public readonly struct AsmFit
 {
-    public const float CoreSide = 1.5f; // m: what a bare Core builds on its own deck, a side
+    public const float CoreSide = 2f; // m: what a bare Core builds on its own deck, a side (an Assembly Bed Block, so survival can start a bed)
     public const float SlackM = 0.02f; // m: a part this much over a cell's side still fits it
 
     public readonly bool Limited; // a block Assembler (false: Free)

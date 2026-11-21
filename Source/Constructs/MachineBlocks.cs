@@ -622,6 +622,8 @@ public static class MachineBlocks
             var d = c.Parts[o].D;
             if (d.BlockRole != BlockRole.Tier || c.Parts[o].Broken || c.BlockAsmOf[o] >= 0)
                 continue;
+            if (d.BlockModule != 0 && Families[asm.Family] != "assembler")
+                continue; // (an Overdrive Unit or Feed Buffer works only an Assembler: on another Core it does nothing: its description says so)
             ref readonly var l = ref c.Links[e >> 1];
             var cs = (e & 1) == 0 ? l.SA : l.SB; // (the Core's own socket of the weld: only its tier slots count)
             var socks = c.Parts[core].D.Sockets;

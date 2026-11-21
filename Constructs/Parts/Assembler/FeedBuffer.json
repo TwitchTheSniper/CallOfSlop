@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Feed Buffer",
-  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most).",
+  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most). It does nothing on another machine.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",

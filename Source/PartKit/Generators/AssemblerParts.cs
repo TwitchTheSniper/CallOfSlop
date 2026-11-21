@@ -242,7 +242,7 @@ public sealed class AssemblerParts : IPartGenerator
     private static Part Overdrive()
     {
         var p = Module("Overdrive Unit", "overdrive",
-            "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler builds twice as fast and draws 1.8 times the power, for each one fitted (4 count at most).",
+            "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler builds twice as fast and draws 1.8 times the power, for each one fitted (4 count at most). It does nothing on another machine.",
             "#8a2a22");
         p.Add(L([-0.16, 0.04, -0.27], [0.16, 0.36, -0.022], "#8a2a22", paintable: true));
         p.Add(MachineLook.Work(L([-0.12, 0.08, -0.29], [0.12, 0.32, -0.27], MachineLook.Steel, "steel", shape: Cyl("-z", 16)), "spin", "-z")); // (the flywheel in its window)
@@ -257,7 +257,7 @@ public sealed class AssemblerParts : IPartGenerator
     private static Part Buffer()
     {
         var p = Module("Feed Buffer", "buffer",
-            "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most).",
+            "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most). It does nothing on another machine.",
             "#5a6470");
         p.Add(L([-0.17, 0.04, -0.28], [0.17, 0.44, -0.022], "#5a6470", paintable: true));
         p.Add(L([-0.05, 0.1, -0.296], [0.05, 0.36, -0.28], "#8fc5d9"));

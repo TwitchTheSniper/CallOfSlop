@@ -12,6 +12,7 @@ public sealed class AssembleRecipe
     public (ConstructPartDef Part, int Count)[] Parts = [];
     public float Seconds = 1;
     public int MinTier = 1;
+    public int TechTier = 1; // how advanced the part is (the old Assembler tier, "techTier"): faction vehicles and loot tables read it; the Assembler gates by Needs
     public byte Needs; // the upgrade modules an Assembler needs on its Core to build it: bits by MachineBlocks.TierPieceNames (2 Power Coupling to 5 Plasma Conditioner)
     public string Tool = ""; // the tool block it will need in the Core's Tool Bay ("thruster", "tailor"; Assembler PR 3), "" none
     public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
@@ -185,7 +186,7 @@ public sealed class AssemblingTable
         if (e.ValueKind != JsonValueKind.Object)
             throw new FormatException($"{at} is an object (output, materials, parts, seconds)");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier" or "machine" or "needs" or "tool"))
+            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier" or "machine" or "needs" or "tool" or "techTier"))
                 throw new FormatException($"{at}: unknown key \"{p.Name}\"");
         var output = e.TryGetProperty("output", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString()! : throw new FormatException($"{at} needs \"output\" (a part's name)");
         if (!byName.TryGetValue(output, out var def))
@@ -241,6 +242,8 @@ public sealed class AssemblingTable
             : throw new FormatException($"{at}: \"seconds\" is a number from {MinSeconds} to {MaxSeconds}");
         if (e.TryGetProperty("minTier", out var t))
             r.MinTier = Whole(t, "minTier", 1, ConstructParts.MaxTier, at);
+        if (e.TryGetProperty("techTier", out var tt))
+            r.TechTier = Whole(tt, "techTier", 1, ConstructParts.MaxTier, at);
         if (e.TryGetProperty("needs", out var nd))
         {
             // The Assembler's upgrade modules it takes (docs/sandbox/constructs/production.md "Assembling"): "needs": ["Power Coupling", "Servo Rack"].

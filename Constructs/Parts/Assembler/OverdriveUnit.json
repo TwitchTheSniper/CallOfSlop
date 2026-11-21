@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Overdrive Unit",
-  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler builds twice as fast and draws 1.8 times the power, for each one fitted (4 count at most).",
+  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler builds twice as fast and draws 1.8 times the power, for each one fitted (4 count at most). It does nothing on another machine.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",

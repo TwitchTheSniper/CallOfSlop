@@ -32,7 +32,7 @@ public static partial class SelfTest
                 want(!p.PhysicsOnly && (t.Recipes.Any(o => o.Output == p) || PressTable.Current.PresetKeyOf(p) != null), $"{r.Name}: {p.Name} can't be fed or built"); // (an Assembler's, or a die's preset: Press phase 5)
             want(r.Batch.All(c => c is >= ' ' and <= '~'), $"{r.Name}'s text");
             if (r.Output.Tier == 1 && (r.Output.IsRefiner || r.Output.IsAssembler || r.Output.IsGatherer))
-                want(r.MinTier == 1, $"{r.Name} is a tier 1 machine that a tier 1 Assembler can't make (minTier {r.MinTier}): survival couldn't start");
+                want(r.Needs == 0 || r.Output.IsAssembler, $"{r.Name} is a tier 1 machine that needs a module ({AsmFit.ModuleWords(r.Needs)}): survival couldn't start");
             if (r.Output.BlockRole == BlockRole.Tier)
                 want(r.Needs == 0, $"{r.Name} is an upgrade module that needs a module to make ({AsmFit.ModuleWords(r.Needs)}): a bare Assembler couldn't start");
         }

@@ -1160,7 +1160,11 @@ public sealed class Assembling : IPartGenerator
         for (var k = 0; k < recipes.Count; k++)
         {
             var r = recipes[k];
+            // The old tier stays as "techTier": how advanced the part is, which vehicles and loot tables read (the Assembler gates by modules).
+            var tech = r.Has("minTier") ? Int(r["minTier"]) : 1;
             r.Remove("minTier");
+            if (tech > 1)
+                r["techTier"] = tech;
             var output = (string)r["output"]!;
             var needs = new HashSet<string>(StringComparer.Ordinal);
             if (!NeedsNothing.Contains(output))
