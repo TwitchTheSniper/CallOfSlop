@@ -163,6 +163,13 @@ public static class MachineBlocks
     }
 
     /// <summary>
+    /// What a link from part <paramref name="part"/> counts as leaving: an end cell's (an Out Table's) Core, so a conveyor off a machine's
+    /// Out Table is that machine's Piece out for the logistics and the orders; any other part itself.
+    /// </summary>
+    public static int Owner(Construct c, int part) =>
+        (uint)part < (uint)c.PartCount && c.Parts[part].D.BlockRole == BlockRole.End && AsmOf(c, part) is var a and >= 0 ? c.MachineAsms[a].Core : part;
+
+    /// <summary>
     /// The machine's Out Table (an "end" cell just past its bed's far edge, the side away from the Core), or -1: of several side by side,
     /// the first with a conveyor on its Piece out, else the first. <see cref="CMachineAsm.OutCells"/> says how much of the edge they cover.
     /// </summary>
@@ -174,9 +181,12 @@ public static class MachineBlocks
         {
             var id = AsmOf(c, asm.Core);
             if (ConstructConveyor.Out(c, asm.Out) < 0)
-                for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
-                    if (c.BlockAsmOf[i] == id && c.Parts[i].D.BlockRole == BlockRole.End && ConstructConveyor.Out(c, i) >= 0)
-                        return i;
+                for (var k = 0; k < c.RouteCount; k++) // (the links, not the parts: bounded by what is laid, as Out is)
+                {
+                    ref readonly var r = ref c.Routes[k];
+                    if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.From < c.PartCount && r.From < c.BlockAsmOf.Length && c.BlockAsmOf[r.From] == id && c.Parts[r.From].D.BlockRole == BlockRole.End)
+                        return r.From;
+                }
         }
         return asm.Out;
     }
@@ -306,6 +316,15 @@ public static class MachineBlocks
                     continue;
                 if (c.BlockAsmOf[o] >= 0)
                     continue; // (in this machine already, or another Core's; a broken cell idles until it is mended)
+                if (d.BlockRole == BlockRole.End)
+                {
+                    // An Out Table belongs to the machine on its in side (its -z face, where its rollers come from), whatever was built
+                    // first: in a line of former, table and cutter, the cutter's bed on the table's far side doesn't take it.
+                    ref readonly var lk = ref c.Links[e >> 1];
+                    var os = (e & 1) == 0 ? lk.SB : lk.SA; // (the table's own socket of the weld)
+                    if (os >= d.Sockets.Length || d.Sockets[os].Dir != 5)
+                        continue;
+                }
                 if (cellCount >= MaxCells)
                 {
                     asm.Capped = true;
