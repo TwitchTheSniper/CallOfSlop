@@ -270,10 +270,7 @@ public static partial class ConstructLifters
         {
             if (world.StoreOf(sc, own[p]) is not { } st)
                 continue;
-            var key = (uint)sc.Id << 16 | own[p];
-            if (Array.IndexOf(world.PadSeen, key, 0, seen) >= 0 || seen >= world.PadSeen.Length)
-                continue;
-            world.PadSeen[seen++] = key;
+            // (not marked seen yet: a Loader Arm serving it too counts what the crane can't lift, below; marked after for the claims)
             for (var q = 0; q < j.KindN; q++)
                 if (ConstructParts.Get(j.KindDef[q]) is { } kd && kd.Mass <= liftKg)
                     _ownHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
@@ -312,12 +309,20 @@ public static partial class ConstructLifters
                         continue;
                     if (seen < world.PadSeen.Length)
                         world.PadSeen[seen++] = key;
+                    var ownPad = pt.Body == sc.Id && own[..ownN].Contains((ushort)pt.Part); // (the station's crane counted what it lifts there)
                     for (var q = 0; q < j.KindN; q++)
-                        _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
+                        if (!ownPad || ConstructParts.Get(j.KindDef[q]) is not { } hd || hd.Mass > liftKg)
+                            _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
                 }
                 if (any && serving < MaxServing)
                     (ServeDef[serving], ServeShoulder[serving], ServeRot[serving], serving) = (ld, shoulder, lr, serving + 1);
             }
+        }
+        for (var p = 0; p < ownN; p++)
+        {
+            var key = (uint)sc.Id << 16 | own[p];
+            if (Array.IndexOf(world.PadSeen, key, 0, seen) < 0 && seen < world.PadSeen.Length)
+                world.PadSeen[seen++] = key; // (the station's own pick pads: their pieces are claimed for the build too)
         }
         world.PadSeenN = seen;
         if (serving == 0 || j.Plan is not { } plan || plan.At.Length != j.PartOf.Length)

@@ -511,8 +511,8 @@ public static class MachineBlocks
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
                 cz[count] = (sbyte)z;
-                steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, GridHalf);
-                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(spanAlong), 1, GridHalf);
+                steps[2 * count] = (byte)Math.Clamp((int)MathF.Round(span.X), 1, maxSide);
+                steps[2 * count + 1] = (byte)Math.Clamp((int)MathF.Round(spanAlong), 1, maxSide);
                 queue[count++] = (ushort)o;
             }
         }
@@ -525,7 +525,7 @@ public static class MachineBlocks
             if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
                 for (var sx = 0; sx < steps[2 * k]; sx++)
                     for (var sz = 0; sz < steps[2 * k + 1]; sz++)
-                        if (cx[k] + sx <= Mid && cz[k] + sz <= Mid)
+                        if (cx[k] + sx <= maxSide && cz[k] + sz <= maxSide) // (clipped at the Core's own reach, as before the grid grew)
                             grid[(cx[k] + sx + Mid) * GridSide + cz[k] + sz + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
             if (cy[k] > 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
