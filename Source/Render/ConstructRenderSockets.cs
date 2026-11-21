@@ -54,12 +54,19 @@ public static partial class ConstructRender
         var face = c.ToWorld(at);
         if (Vector3.Distance(face, eye) > SocketRange)
             return;
-        var hide = ModuleSockets.HiddenLook(c, s.Plate);
-        // The lock's knob (not on a Wall Bay Socket, which has no side controls).
+        var hide = ModuleSockets.HideSet(c, s.Plate);
+        // The lock's knob (not on a Wall Bay Socket, which has no side controls); with the plate not drawn (a dug socket's module
+        // fills its frame), its eject button too, so it is still there to press.
         if (!hide && !d.ModNoHide)
         {
             var locked = ModuleSockets.Locked(c, s.Plate);
             Freeform.PartWorld(c, s.Plate, out var pp, out var pq);
+            if (s.Seat > 0 && s.Module >= 0)
+            {
+                var bt = ModuleSockets.ControlAt(d, ModuleSockets.EjectZ);
+                gfx.Draw(Matrix4x4.CreateScale(0.014f, 0.068f, 0.068f) * Matrix4x4.CreateFromQuaternion(pq) * Matrix4x4.CreateTranslation(pp + Vector3.Transform(bt + new Vector3(0.003f, 0, 0), pq)), new Vector3(0.17f, 0.18f, 0.2f));
+                gfx.Draw(Matrix4x4.CreateScale(0.012f, 0.044f, 0.044f) * Matrix4x4.CreateFromQuaternion(pq) * Matrix4x4.CreateTranslation(pp + Vector3.Transform(bt + new Vector3(0.014f, 0, 0), pq)), new Vector3(0.78f, 0.22f, 0.18f));
+            }
             var k = ModuleSockets.ControlAt(d, locked ? ModuleSockets.LockZ1 - 0.035f : ModuleSockets.LockZ0 + 0.035f) + new Vector3(0.016f, 0, 0);
             var m = Matrix4x4.CreateScale(0.022f, 0.026f, 0.05f) * Matrix4x4.CreateFromQuaternion(pq) * Matrix4x4.CreateTranslation(pp + Vector3.Transform(k, pq));
             gfx.Draw(m, locked ? LockOn : LockOff);

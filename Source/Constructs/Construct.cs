@@ -308,6 +308,8 @@ public sealed partial class Construct
     public int ModCatchPlate = -1;
     public float ModCatch;
     public long ModCatchLook;
+    public ushort ModSkipShip; // server: the socket a gun just pulled this module out of, which won't catch it again until it has been carried out of the pull's range (ModuleGuide.FindSocket)
+    public int ModSkipPlate = -1;
     public bool Asleep;
     public int SleepTicks;
     /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>

@@ -265,14 +265,35 @@ public static class ModuleSockets
         ref var p = ref c.Parts[i];
         var d = p.D;
         if (d.ModPart == ModPart.Socket)
-            return !d.ModStand && !d.ModNoHide && ConstructConfig.Get(p, d, CfgKey.ModHide, 0) >= 0.5f;
+            return HideSet(c, i) || DugFitted(c, i);
         if (d.ModPart != ModPart.Plug || c.ModuleOf is not { } of || i >= of.Length || of[i] is var m && (m < 0 || m >= c.Modules.Length))
             return false;
         var s = c.Modules[m].Socket;
         if (c.Modules[m].Plug != i || s < 0 || s >= c.ModSockets.Length || c.ModSockets[s].Plate >= c.PartCount)
             return false;
         var plate = c.ModSockets[s].Plate;
-        return c.Parts[plate].D.ModPart == ModPart.Socket && HiddenLook(c, plate);
+        return c.Parts[plate].D.ModPart == ModPart.Socket && HideSet(c, plate);
+    }
+
+    /// <summary>Has the player hidden plate <paramref name="i"/>'s connector (its Hide connector setting)?</summary>
+    public static bool HideSet(Construct c, int i)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        return d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide && ConstructConfig.Get(p, d, CfgKey.ModHide, 0) >= 0.5f;
+    }
+
+    /// <summary>
+    /// Is plate <paramref name="i"/> a Flush or Well socket with its module fitted? Its module seats on the well's floor and fills the frame,
+    /// so the plate isn't drawn (its side controls are: ConstructRender.Sockets) and nothing of it is judged in the module's way.
+    /// </summary>
+    public static bool DugFitted(Construct c, int i)
+    {
+        var socks = c.ModSockets;
+        for (var k = 0; k < socks.Length; k++)
+            if (socks[k].Plate == i)
+                return socks[k].Seat > 0 && socks[k].Module >= 0;
+        return false;
     }
 
     public static string TagName(ModTag t) => ModuleSocketTable.TagNames[(int)t];

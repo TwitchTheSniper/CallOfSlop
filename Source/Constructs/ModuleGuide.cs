@@ -91,11 +91,12 @@ public static class ModuleGuide
     public static void Start(ConstructWorld world, Construct ship, ModuleFitters.PartRef plate, Construct body, Kind kind, byte player, float d = 0)
     {
         var wg = ByWorld.GetOrCreateValue(world);
+        wg.Guides.RemoveAll(x => x.Body == body.Id); // (an ejected module drawn back in: one guide a body)
         if (ship.Dirty)
             ship.Rebuild();
         var si = plate.Find(ship) ? ModuleSockets.SocketOfPlate(ship, plate.Part) : -1;
         var goal = si >= 0 ? ship.ModSockets[si].Seat + EjectClear : EjectClear;
-        wg.Guides.Add(new Guide { Ship = ship.Id, Body = body.Id, Plate = plate, Kind = kind, D = d, Goal = goal, Player = player, At = body.ToWorld(body.Com) });
+        wg.Guides.Add(new Guide { Ship = ship.Id, Body = body.Id, Plate = plate, Kind = kind, D = d, Goal = goal, Player = player, At = body.ToWorld(body.Com), Want = kind == Kind.Pull }); // (a pull's first step moves it out: the player's tick that unseated it set no Want)
         body.GrabbedBy = Holder;
         body.GrabBoost = 1f;
         body.GrabLocal = body.Com;
@@ -213,6 +214,8 @@ public static class ModuleGuide
                     var eye = wg.Pulls[g.Player].Eye;
                     var yaw = wg.Pulls[g.Player].Yaw;
                     EndPull(wg, g);
+                    body.ModSkipShip = ship.Id; // (pulled off on purpose: its own socket doesn't catch it straight back)
+                    body.ModSkipPlate = g.Plate.Part;
                     if (hands.HandOver(world, g.Player, eye, yaw, body) is { } no)
                     {
                         hands.Notices.Add((g.Player, $"the module came off, but the gun couldn't hold it: {no}"));
@@ -365,7 +368,7 @@ public static class ModuleGuide
         var bestDist = pull;
         foreach (var o in world.Bodies)
         {
-            if (o == c || o.GrabbedBy != 255 || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || o.Anchored || o.Pinned || o.NudgeBy != 255
+            if (o == c || o.GrabbedBy != 255 && !Takeable(world, o) || o.Driver != 255 || o.CarriedBy != 0 || o.HeldBy != 0 || o.Anchored || o.Pinned || o.NudgeBy != 255
                 || Vector3.Distance(o.ToWorld(o.Com), face) > o.Radius + pull)
                 continue;
             var plug = ConstructEdits.RootPlug(o);
@@ -623,6 +626,12 @@ public static class ModuleGuide
         var plugAt = held.ToWorld(pat);
         var best = CatchRange;
         var mi = ModuleSockets.ModuleOfPart(held, plug);
+        if (held.ModSkipShip != 0 && (world.Get(held.ModSkipShip) is not { } skip || (uint)held.ModSkipPlate >= (uint)skip.PartCount
+            || Vector3.Distance(skip.SegToWorld(skip.Parts[held.ModSkipPlate].Seg, skip.Parts[held.ModSkipPlate].Pos), plugAt) > CatchRange + 0.25f))
+        {
+            held.ModSkipShip = 0; // (carried clear of the socket it came out of: that one may catch it again)
+            held.ModSkipPlate = -1;
+        }
         foreach (var c in world.Bodies)
         {
             if (c == held || c.ModSockets.Length == 0 || Vector3.Distance(c.ToWorld(c.Com), plugAt) > c.Radius + CatchRange)
@@ -630,7 +639,8 @@ public static class ModuleGuide
             for (var si = 0; si < c.ModSockets.Length; si++)
             {
                 var s = c.ModSockets[si];
-                if (s.Stand || s.Module >= 0 || s.InTheWay >= 0 || !ModuleSockets.Matches(s, pd) || !c.Rigid(c.Parts[s.Plate].Seg))
+                if (s.Stand || s.Module >= 0 || s.InTheWay >= 0 || !ModuleSockets.Matches(s, pd) || !c.Rigid(c.Parts[s.Plate].Seg)
+                    || c.Id == held.ModSkipShip && s.Plate == held.ModSkipPlate)
                     continue;
                 ModuleSockets.PlateRest(c, s.Plate, out _, out var faceAt, out _);
                 var dist = Vector3.Distance(c.ToWorld(faceAt), plugAt);

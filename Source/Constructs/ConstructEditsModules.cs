@@ -302,7 +302,7 @@ public sealed partial class ConstructEdits
             Done.Add($"player {player}: a Module Fitter fits module construct {best.Id} onto socket part {s.Plate} of construct {c.Id}");
             return null;
         }
-        if (SocketWeld.Overlap(world, Query, best, c, pos, rot, Feet(world)) is { } blocked)
+        if (SocketWeld.Overlap(world, Query, best, c, pos, rot, Feet(world), s.Seat > 0 ? s.Plate : -1) is { } blocked)
             return blocked;
         var from = best.Id;
         var parts = best.PartCount;
