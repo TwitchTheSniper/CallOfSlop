@@ -71,6 +71,8 @@ public sealed class CStore
     public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
+    public double OvenSince; // ...when it saw it change (ConstructRender.Now)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
@@ -127,6 +129,8 @@ public sealed class CStore
         JobMaterial = 0;
         JobFull = 0;
         OnBed = false;
+        OvenSeen = 0;
+        OvenSince = 0;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;

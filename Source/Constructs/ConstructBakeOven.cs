@@ -339,7 +339,7 @@ public static class ConstructBakeOven
         return why;
     }
 
-    /// <summary>The crush box while the hood comes down (from its underside a body's height down), the burn box under a closed hood.</summary>
+    /// <summary>The crush box under the skirts' foot while they come down (a body's height deep), the burn box under a closed hood.</summary>
     private static void AddHazards(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, OvenPhase phase, CStore st)
     {
         if (world.Hazards.Count >= 64 || phase is not (OvenPhase.Drop or OvenPhase.Heat or OvenPhase.Cool))
@@ -358,7 +358,7 @@ public static class ConstructBakeOven
             world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = MathF.Max(bed.Top, under - 1.9f) }, Max = max with { Y = under }, Damage = CrushDamage });
         }
         else
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = max with { Y = bed.Top + 0.3f }, Damage = BurnDamage * Every }); // (a closed hood is 2 cm over the bed: whoever is in it is lying under it)
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = max, Damage = BurnDamage * Every }); // (the skirts are down: whoever is under the hood is shut in with the bake)
     }
 
     // ---- What every peer shows: its line state, its screen ---------------------------------------------------------------------
