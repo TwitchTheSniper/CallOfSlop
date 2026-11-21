@@ -26,7 +26,7 @@ public enum ExtrudeStall : byte
 }
 
 /// <summary>
-/// The Extruder and the Wheel Former (docs/sandbox/CONSTRUCTS.md, "Extrusion", "The Wheel Former"). An Extruder is a bin with
+/// The Extruder and the Grow Former (docs/sandbox/CONSTRUCTS.md, "Extrusion", "The Grow Former"). An Extruder is a bin with
 /// a die: while it runs, the piece on its die grows out of the die's face at the part's speed, using material by volume. The
 /// piece is a part of the machine's own construct, linked to its die socket, so it rides with the machine, counts in its mass
 /// and is solid, and everything about it is found from that link (nothing to keep in step when parts are renumbered, split or
