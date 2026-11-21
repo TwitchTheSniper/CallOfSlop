@@ -299,6 +299,8 @@ public static unsafe partial class Program
             return ConstructConduit.Cli(args); // how a pre-built's wires were laid as conduit along its walls (ConstructConduit.cs)
         if (args.Any(a => a.Equals("--route-ends", StringComparison.OrdinalIgnoreCase)))
             return RouteEndsProbe.Cli(args); // how auto-routed links leave and arrive at their ports: turns and short legs by the ends (RouteEndsProbe.cs)
+        if (args.Any(a => a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)))
+            return HullLoft.DressCli([.. args.SkipWhile(a => !a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a plain skin's dress plan, its subparts and the built dress (HullLoft.Dress.cs)
         if (args.Any(a => a.Equals("--bake-check", StringComparison.OrdinalIgnoreCase)))
             return BakeCheck.Cli(args); // bakes a group headless and checks the round trip: boxes, meshes, the design's wire and save copies, un-baking (BakedParts.cs)
         if (args.Any(a => a.Equals("--hull-section", StringComparison.OrdinalIgnoreCase)))

@@ -37,7 +37,7 @@ public static partial class LifterProbe
         var list = AssemblingTable.Current.ByMachine[asm.AsmMachine];
         var recipe = "";
         for (var k = 0; k < list.Length; k++)
-            if (list[k].CountOf(gear.Id) > 0 && list[k].MinTier <= asm.Tier)
+            if (list[k].CountOf(gear.Id) > 0 && list[k].MinTier <= asm.Tier && list[k].Needs == 0) // (a bare Assembler Core: no upgrade modules)
             {
                 ConstructConfig.Put(ref am.Parts[0], asm, CfgKey.Recipe, k + 1);
                 world.StructureDirty.Add(am.Id);
