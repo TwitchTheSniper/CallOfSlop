@@ -190,6 +190,7 @@ public sealed partial class Game
         var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
         _hauls.Add(r);
         Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
+        EscortsAdopt(r); // (a lost hauler's escorts first)
         for (var k = EscortsOf(r); k < h.Escorts; k++)
             if (EscortOut(r, c, k) == null)
                 break;
@@ -227,7 +228,7 @@ public sealed partial class Game
                 known |= run.Ship == c.Id;
             if (known)
                 continue;
-            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate });
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
     }
@@ -261,7 +262,11 @@ public sealed partial class Game
             Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
         }
         if (_haulAdopt)
+        {
             HaulAdopt(routes.Length);
+            foreach (var run in _hauls)
+                EscortsAdopt(run); // (a loaded world's escorts with its haulers, before any is replaced)
+        }
         for (var i = _hauls.Count - 1; i >= 0; i--)
             if (Constructs.Get(_hauls[i].Ship) is not { Wreck: false, PartCount: > 0 })
             {
@@ -302,12 +307,35 @@ public sealed partial class Game
                 if (run.Stage == HaulStage.Moored && ServerTick >= run.EscortNext && EscortsOf(run) < routes[run.Route].Escorts)
                 {
                     run.EscortNext = ServerTick + 60 * World.TickRate;
-                    EscortOut(run, c, EscortsOf(run));
+                    EscortsAdopt(run);
+                    if (EscortsOf(run) < routes[run.Route].Escorts)
+                        EscortOut(run, c, EscortsOf(run));
                 }
             }
         foreach (var e in _escorts)
             if (Constructs.Get(e.Ship) is { } c)
                 EscortStep(s, e, c);
+    }
+
+    /// <summary>Escorts on <paramref name="run"/>'s route with no hauler (theirs was lost, or a loaded world's) join it, up to the route's count.</summary>
+    private void EscortsAdopt(HaulRun run)
+    {
+        var most = StationMarkets.Haulers[run.Route].Escorts;
+        foreach (var e in _escorts)
+        {
+            if (EscortsOf(run) >= most)
+                return;
+            if (e.Route != run.Route || e.Hauler == run.Ship)
+                continue;
+            var has = false;
+            foreach (var r in _hauls)
+                has |= r.Ship == e.Hauler;
+            if (has)
+                continue;
+            e.Hauler = run.Ship;
+            e.RetryAt = 0;
+            Log($"[haul] construct {e.Ship} now escorts hauler {run.Ship}");
+        }
     }
 
     /// <summary>How many escorts fly with <paramref name="run"/>'s hauler now.</summary>

@@ -429,6 +429,7 @@ public sealed partial class Game
         if (!travel)
             _marketByDef = [];
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
+        _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)
         _haulAdopt = true;
         _haulNext = [];
         _stationsBuilt = false;
