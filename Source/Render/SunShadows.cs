@@ -91,31 +91,7 @@ public static unsafe class SunShadows
         var sun = Lighting.Current.SunDir;
         if (!On || ForcedOff || _broken || world == null || world.Bodies.Count == 0 || sun.Y < 0.03f || CameraFeeds.InPass)
             return;
-        // The nearest bodies whose sphere reaches the square (a ship 40 m off still shades the ground at your feet).
-        var n = 0;
-        foreach (var c in world.Bodies)
-        {
-            if (c.PartCount == 0 || (ConstructRender.AwayOnly != 0 ? c.Id != ConstructRender.AwayOnly : c.SpaceAway != 0)) // (as ConstructRender draws them)
-                continue;
-            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            var d2 = Vector3.DistanceSquared(pos, cam);
-            var r = Reach * 1.5f + c.Radius;
-            if (d2 > r * r)
-                continue;
-            var k = n;
-            if (n == MaxBodies)
-            {
-                k = 0;
-                for (var i = 1; i < n; i++)
-                    if (Picks[i].Dist2 > Picks[k].Dist2)
-                        k = i;
-                if (Picks[k].Dist2 <= d2)
-                    continue;
-            }
-            else
-                n++;
-            Picks[k] = new Pick { Body = c, Dist2 = d2 };
-        }
+        var n = PickNear(world, cam, Reach, alpha, blendTicks);
         if (n == 0 || !Init())
         {
             Clear(n);
@@ -159,23 +135,9 @@ public static unsafe class SunShadows
         Native.glClear(GL_DEPTH_BUFFER_BIT); // (the game's clear depth: the far end either way)
         _prog.Use();
         Native.glBindVertexArray(_vao);
-        for (var k = 0; k < n; k++)
-        {
-            var c = Picks[k].Body;
-            var cast = CasterOf(c);
-            if (cast.Count == 0)
-                continue;
-            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
-            var mvp = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos - centre) * lightClip;
-            Native.glUniformMatrix4fv(_lMvp, 1, false, &mvp.M11);
-            Native.glBindBuffer(GL_ARRAY_BUFFER, cast.Vbo);
-            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
-            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
-            Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, cast.Count);
-            LastBodies++;
-            LastBoxes += cast.Count;
-        }
+        int bodies = 0, boxes = 0;
+        DrawPicked(n, lightClip, centre, alpha, blendTicks, ref bodies, ref boxes);
+        (LastBodies, LastBoxes) = (bodies, boxes);
         Native.glBindVertexArray(default);
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
         Native.glColorMask(true, true, true, true);
@@ -194,6 +156,75 @@ public static unsafe class SunShadows
         Live = LastBodies > 0;
         Clear(n);
     }
+
+    /// <summary>
+    /// Fills <see cref="Picks"/> with the nearest bodies (at most <see cref="MaxBodies"/>) whose sphere comes within 1.5 x
+    /// <paramref name="reach"/> of <paramref name="cam"/>, as ConstructRender draws them; returns how many. <see cref="RoomShade"/> shares it.
+    /// </summary>
+    internal static int PickNear(ConstructWorld world, Vector3 cam, float reach, float alpha, bool blendTicks)
+    {
+        // The nearest bodies whose sphere reaches the square (a ship 40 m off still shades the ground at your feet).
+        var n = 0;
+        foreach (var c in world.Bodies)
+        {
+            if (c.PartCount == 0 || (ConstructRender.AwayOnly != 0 ? c.Id != ConstructRender.AwayOnly : c.SpaceAway != 0)) // (as ConstructRender draws them)
+                continue;
+            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+            var d2 = Vector3.DistanceSquared(pos, cam);
+            var r = reach * 1.5f + c.Radius;
+            if (d2 > r * r)
+                continue;
+            var k = n;
+            if (n == MaxBodies)
+            {
+                k = 0;
+                for (var i = 1; i < n; i++)
+                    if (Picks[i].Dist2 > Picks[k].Dist2)
+                        k = i;
+                if (Picks[k].Dist2 <= d2)
+                    continue;
+            }
+            else
+                n++;
+            Picks[k] = new Pick { Body = c, Dist2 = d2 };
+        }
+        return n;
+    }
+
+    /// <summary>Draws the picked bodies' boxes into the bound depth target with <paramref name="lightClip"/> (positions less <paramref name="centre"/>); the depth program and arrays must be bound.</summary>
+    internal static void DrawPicked(int n, Matrix4x4 lightClip, Vector3 centre, float alpha, bool blendTicks, ref int bodies, ref int boxes)
+    {
+        for (var k = 0; k < n; k++)
+        {
+            var c = Picks[k].Body;
+            var cast = CasterOf(c);
+            if (cast.Count == 0)
+                continue;
+            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+            var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            var mvp = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos - centre) * lightClip;
+            Native.glUniformMatrix4fv(_lMvp, 1, false, &mvp.M11);
+            Native.glBindBuffer(GL_ARRAY_BUFFER, cast.Vbo);
+            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
+            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
+            Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, cast.Count);
+            bodies++;
+            boxes += cast.Count;
+        }
+    }
+
+    /// <summary>Binds the depth program and its arrays (<see cref="RoomShade"/>'s passes); false when it can't be made.</summary>
+    internal static bool BindDepthProgram()
+    {
+        if (!InitProgram())
+            return false;
+        _prog.Use();
+        Native.glBindVertexArray(_vao);
+        return true;
+    }
+
+    /// <summary>Lets go of the picked bodies (no references kept past the frame).</summary>
+    internal static void ClearPicks(int n) => Clear(n);
 
     /// <summary>Turns the map off for the passes after the world (the gun, menus): the next <see cref="Render"/> turns it on again.</summary>
     public static void EndWorld() => Live = false;
@@ -219,10 +250,41 @@ public static unsafe class SunShadows
         void main() { FragColor = vec4(1.0); }
         """;
 
+    private static bool _progReady, _progBroken;
+
     private static bool Init()
     {
         if (_ready || _broken)
             return _ready && Resize();
+        if (!InitProgram())
+        {
+            _broken = true;
+            return false;
+        }
+        try
+        {
+            GlFramebuffer fb;
+            Native.glGenFramebuffers(1, &fb);
+            _fbo = fb;
+            _ready = true;
+            if (!Resize())
+                return false;
+            Console.WriteLine($"[shadows] sun shadows ready: {Size} x {Size}, {Reach * 2:0} m square, texture unit {Unit}");
+        }
+        catch (Exception ex)
+        {
+            _broken = true;
+            _ready = false;
+            Console.WriteLine($"[shadows] sun shadows off: {ex.Message}");
+        }
+        return _ready;
+    }
+
+    /// <summary>The depth program and the unit cube's arrays, shared by the sun's map and <see cref="RoomShade"/>'s.</summary>
+    private static bool InitProgram()
+    {
+        if (_progReady || _progBroken)
+            return _progReady;
         try
         {
             var v = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(Vs)).Compile();
@@ -266,22 +328,14 @@ public static unsafe class SunShadows
             Native.glBindVertexArray(default);
             Native.glBindBuffer(GL_ARRAY_BUFFER, default);
             GlDebug.Label(GL_VERTEX_ARRAY, _vao.Id, "SunShadows");
-
-            GlFramebuffer fb;
-            Native.glGenFramebuffers(1, &fb);
-            _fbo = fb;
-            _ready = true;
-            if (!Resize())
-                return false;
-            Console.WriteLine($"[shadows] sun shadows ready: {Size} x {Size}, {Reach * 2:0} m square, texture unit {Unit}");
+            _progReady = true;
         }
         catch (Exception ex)
         {
-            _broken = true;
-            _ready = false;
-            Console.WriteLine($"[shadows] sun shadows off: {ex.Message}");
+            _progBroken = true;
+            Console.WriteLine($"[shadows] the depth program failed: {ex.Message}");
         }
-        return _ready;
+        return _progReady;
     }
 
     /// <summary>The depth map at <see cref="Size"/> (made again when the setting changes).</summary>

@@ -1029,6 +1029,8 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Ships and vehicles near you cast the sun's shadow on the ground, buildings and each other. Low: off. Medium: soft edges. High: sharper detail, a little slower."u8);
             ImGui.SliderFloat("Key light"u8, ref s.KeyLight, 0.7f, 1.6f, "%.2fx"u8);
             ImGui.TextColored(Dim, "How strong the sun is against the sky's light: higher gives harder light and deeper shade."u8);
+            ImGui.Checkbox("Dark interiors"u8, ref s.DarkInteriors);
+            ImGui.TextColored(Dim, "Rooms shut inside ships and vehicles get no daylight: dark but for their own lamps. A little slower."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

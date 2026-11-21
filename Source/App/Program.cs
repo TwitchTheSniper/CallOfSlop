@@ -447,6 +447,8 @@ public static unsafe partial class Program
             LightGrid.ContrastForcedOff = true; // each material's own roughness whatever the Video setting (a before picture of material contrast)
         if (args.Any(a => a.Equals("--no-sun-shadows", StringComparison.OrdinalIgnoreCase)))
             SunShadows.ForcedOff = true; // no ship shadows from the sun whatever the Video setting (a before picture)
+        if (args.Any(a => a.Equals("--no-dark-interiors", StringComparison.OrdinalIgnoreCase)))
+            RoomShade.ForcedOff = true; // ship rooms keep the sky's light whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
             PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
@@ -1167,10 +1169,14 @@ public static unsafe partial class Program
         if (_game is not { } g || !Matrix4x4.Invert(Gfx.View, out var inv))
         {
             SunShadows.EndWorld();
+            RoomShade.EndWorld();
             return;
         }
         using (Perf.Measure(PerfArea.ConstructDraw))
+        {
             SunShadows.Render(Gfx, g.Constructs, Gfx.CameraPosition, -new Vector3(inv.M31, inv.M32, inv.M33), g.TickAlpha, g.IsServer);
+            RoomShade.Render(Gfx, g.Constructs, Gfx.CameraPosition, g.TickAlpha, g.IsServer); // shut rooms in ships lose the sky's light (Source/Render/RoomShade.cs)
+        }
     }
 
     private static void DrawArena()
