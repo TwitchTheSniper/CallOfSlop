@@ -56,6 +56,10 @@ The farmers' medium hauler in a combine harvester's clothes: a glass cab room st
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.
 
+## [The Picket gunship](constructs/gunship.md), 3 KB
+
+The Militia's twin-hull gunship: the courier's centre hull between two long armoured sponsons, three autocannon turrets, two standard containers, drive nacelles off the sponsons' tails; runs the Militia's supply line from Glacier Watch.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

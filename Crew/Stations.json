@@ -43,7 +43,11 @@
     { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Cinder Fuel Depot", "to": "Caledon Highport", "goods": ["hydrogen", "helium"], "back": ["metal"], "wait": 30, "needs": true,
       "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
     { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Slopolis Exchange", "goods": ["copper ore", "gold ore"], "back": ["circuits"], "wait": 30, "needs": true,
-      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } }
+      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
+    // The Militia's own supply run (Karl, 2026-11-21: the twin-hull gunship given to the Militia): Glacier Watch's steel to the Highport, iron ore and
+    // fuel back for its refinery; a Picket gunship carries it in its two containers, and a second Picket rides escort.
+    { "power": "Militia", "ship": "Picket Gunship", "count": 1, "from": "Glacier Watch", "to": "Caledon Highport", "goods": ["steel"], "back": ["iron ore", "hydrogen"], "wait": 30, "needs": true,
+      "escort": { "ship": "Picket Gunship", "count": 1, "gap": 150 } }
   ],
   "stations": [
     {

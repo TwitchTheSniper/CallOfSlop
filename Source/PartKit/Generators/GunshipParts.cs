@@ -1506,7 +1506,7 @@ public sealed class GunshipParts : IPartGenerator
                     Detail(p, x - 0.1, 3.296, dz - 0.1, x + 0.1, 3.42, dz + 0.1, Frame, "dirty steel");
                     Detail(p, x - 0.02, 3.42, dz - 0.02, x + 0.02, 3.42 + h, dz + 0.02, Dark, "painted steel");
                 }
-                Detail(p, x - 0.06, 3.296, -15.5, x + 0.06, 3.4, -15.3, Red, glow: true);
+                Detail(p, x - 0.06, 3.296, -15.5, x + 0.06, 3.47, -15.3, Red, glow: true); // (its top clear of the armour panel it stands in)
             }
             else
             {
