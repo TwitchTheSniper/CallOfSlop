@@ -672,7 +672,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 394: the Mast Block (Sean, 2026-11-21): a new part file (Machines/MastBlock, the block machines' shared 2 m cube) shifts part ids.
     // 395: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
     //   and drop are worked out from its rails on each peer.
-    public const ushort ProtocolVersion = 395;
+    // 396: Pad Tiles (Sean, 2026-11-21, drawing 23): Pad Tile and Rack Side part files come (ids move); tiles welded into a pad share
+    //   their owner tile's store, worked out from the parts on each peer.
+    public const ushort ProtocolVersion = 396;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
