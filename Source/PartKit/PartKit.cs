@@ -52,14 +52,14 @@ public static class PartKit
         new Generators.OutTableParts(), // (the Out Table: the bed machines' far end, MachineBlocks role "end")
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
         new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)
-        new Generators.BanditParts(),
+        new Generators.ScrapParts(),
         new Generators.MediaParts(),
         new Generators.AmmoParts(),
         new Generators.ShellParts(),
         new Generators.PilotParts(),
-        new Generators.CallCentreParts(),
+        new Generators.SignalParts(),
         new Generators.OfficeParts(),
-        new Generators.BritishParts(),
+        new Generators.StreetParts(),
         new Generators.DoorParts(),
         new Generators.StationParts(),
         new Generators.ShelfParts(),

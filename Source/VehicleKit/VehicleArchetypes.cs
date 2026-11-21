@@ -13,7 +13,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
 {
     /// <summary>
     /// Phase 9a (docs/vehiclekit/BODY-STYLES.md, section 19): the archetype's own body plans for the shapes it takes (null: the recipe's), so each faction's car has its
-    /// own outline: a Bandit muscle car cut down to a pickup, Highland's two-seat coupe under a long bonnet, IT's long tail deck, British's short hatch, Scam's long estate.
+    /// own outline: a Raider muscle car cut down to a pickup, IT's long tail deck, Mercenary's short hatch, Salvager's long estate.
     /// </summary>
     public BodyPattern[]? Bodies { get; init; }
 
@@ -117,21 +117,21 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
     public static readonly BodyArchetype[] All =
     [
         // Muscle cars by era: long hoods, low wide cabs, a fastback roof.
-        new("early fastback", "muscle", "an early long-hood fastback: a long flat bonnet, a low wide cab, the roof running down to the tail", Car, [("Highland", 2), ("Bandit", 0.5)],
+        new("early fastback", "muscle", "an early long-hood fastback: a long flat bonnet, a low wide cab, the roof running down to the tail", Car, [("Raider", 0.5)],
             r => r with
             {
                 Languages = [(Fastback, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('g', 2), ('r', 1)], Ride = (2.5, 1, 0.2),
                 CabTallMin = 1.56f, CabTallMax = 1.62f, BeltMin = 0.92f, BeltMax = 0.98f, RakeMin = 0.2f, RakeMax = 0.24f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
                 HoodReach = 0.15f, HoodHalfMin = 0.6f, HoodHalfMax = 0.64f, HoodCrownMin = 0.17f, HoodCrownMax = 0.19f, CabBackMin = 0.6f, CabBackMax = 0.85f,
             }) { Bodies = [new(1, Boot(2.5f, 2.75f))] }, // (phase 9a: a two-seat coupe, the long bonnet the most of it)
-        new("coke bottle", "muscle", "a late-sixties coke-bottle: a hip over the wheels, a pinched waist, a semi-fastback roof", Car, [("Bandit", 2)],
+        new("coke bottle", "muscle", "a late-sixties coke-bottle: a hip over the wheels, a pinched waist, a semi-fastback roof", Car, [("Raider", 2)],
             r => r with
             {
                 Languages = [(Coke, 1)], Mix = 0, Cabs = [("enclosed", 2), ("caged", 0.5)], Noses = [('g', 1.5), ('f', 1)], Ride = (2, 1, 0.5),
                 CabTallMin = 1.58f, CabTallMax = 1.66f, BeltMin = 0.96f, BeltMax = 1.02f, RakeMin = 0.16f, RakeMax = 0.22f, CabHalfMin = 0.9f, CabHalfMax = 0.94f,
                 HoodReach = 0.1f, HoodHalfMin = 0.58f, HoodHalfMax = 0.62f, HoodCrownMin = 0.18f, HoodCrownMax = 0.22f, CabBackMin = 0.3f, CabBackMax = 0.55f,
             }) { Bodies = [new(1.5, GunBay, Bed(1.5f, 2f)), new(1, Boot(2.25f, 2.75f))] }, // (phase 9a: cut down to a pickup more often than not: the gun behind the cab, an open bed, fuel in the open)
-        new("seventies wedge", "muscle", "a seventies boxy wedge: slab sides, a flat formal roof, an upright grille", Car, [("Bandit", 1.5), ("Scam", 0.5)],
+        new("seventies wedge", "muscle", "a seventies boxy wedge: slab sides, a flat formal roof, an upright grille", Car, [("Raider", 1.5), ("Salvager", 0.5)],
             r => r with
             {
                 Languages = [(Wedge, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Cabs = [("enclosed", 2), ("armoured", 0.5)], Noses = [('f', 2), ('w', 1)], Ride = (1.5, 1, 0.5),
@@ -147,14 +147,14 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 CabHalfMin = 0.94f, CabHalfMax = 0.95f, HoodHalfMin = 0.62f, HoodHalfMax = 0.64f, HoodCrownMin = 0.16f, HoodCrownMax = 0.17f, CabBackMin = 0.7f, CabBackMax = 0.9f,
             }) { Bodies = [new(1, Boot(2.5f, 3f))] }, // (phase 9a: a long tail deck behind two seats)
         // European car lines: a compact hatch and an estate.
-        new("compact hatch", "european car", "a European compact hatch: a short bonnet, a tall glasshouse, an upright tail", Car, [("British", 2), ("Scam", 1)],
+        new("compact hatch", "european car", "a European compact hatch: a short bonnet, a tall glasshouse, an upright tail", Car, [("Mercenary", 2), ("Salvager", 1)],
             r => r with
             {
                 Languages = [(Hatch, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('r', 1.5), ('f', 1)], Ride = (1, 1.5, 0.3),
                 CabTallMin = 1.72f, CabTallMax = 1.8f, BeltMin = 0.9f, BeltMax = 0.94f, RakeMin = 0.18f, RakeMax = 0.24f, CabHalfMin = 0.88f, CabHalfMax = 0.91f,
                 HoodReach = -0.08f, HoodHalfMin = 0.52f, HoodHalfMax = 0.56f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, CabBackMin = 0, CabBackMax = 0,
             }) { Bodies = [new(1, Boot(2.25f, 2.75f))] }, // (phase 9a: two seats, the recipe's boot (a fixed short one left no room for the gun and the tank clear of the axles on some plans))
-        new("estate", "european car", "a European estate: square shoulders, a long level roof, upright at the back", Car, [("Scam", 1.5), ("British", 1)],
+        new("estate", "european car", "a European estate: square shoulders, a long level roof, upright at the back", Car, [("Salvager", 1.5), ("Mercenary", 1)],
             r => r with
             {
                 Languages = [(Estate, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('f', 1.5), ('g', 1)], Ride = (1, 1.5, 0.3),
@@ -162,21 +162,21 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 HoodReach = 0, HoodHalfMin = 0.54f, HoodHalfMax = 0.58f, CabBackMin = 0, CabBackMax = 0,
             }) { Bodies = [new(1, Row, Boot(2.75f, 3f))] }, // (phase 9a: four doors and the longest roof)
         // A European minibus on the War Bus: a merged cab, upright and glazed.
-        new("minibus", "european van", "a European minibus: a merged cab under one domed roof, upright and glazed", Bus, [("Scam", 1.5)],
+        new("minibus", "european van", "a European minibus: a merged cab under one domed roof, upright and glazed", Bus, [("Salvager", 1.5)],
             r => r with
             {
                 Languages = [(Minibus, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 0.95f, TallMax = 1.05f, Cabs = [("merged", 2), ("cab-over", 1)], Noses = [('r', 1)],
                 Brows = [(1.25f, 1), (1f, 1)], Tails = [(1f, 1), (0.75f, 1)], CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.45f, Uppers = [("none", 1)], Cage = 0, Ride = (1, 1.5, 0.2),
             }),
         // European trucks: a flat-fronted cab-over ahead of a box body or a curtain-sider, one height end to end.
-        new("rigid box", "european truck", "a European rigid truck: a flat-fronted cab-over ahead of a crisp box body", Rigid, [("IT", 1.5), ("Scam", 0.5)],
+        new("rigid box", "european truck", "a European rigid truck: a flat-fronted cab-over ahead of a crisp box body", Rigid, [("IT", 1.5), ("Salvager", 0.5)],
             r => r with
             {
                 Languages = [(BoxBody, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Scales = [(BodyScale.Heavy, 1.5), (BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.15f,
                 Brows = [(1f, 1)], Tails = [(0.75f, 1), (1f, 1)], Cabs = [("cab-over", 1)], CapsuleRakeMin = 0.12f, CapsuleRakeMax = 0.22f, Uppers = [("none", 1)], Cage = 0, Ride = (0.5, 2, 0.2),
                 CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6, CabLanguage = CabOver,
             }),
-        new("curtain-sider", "european truck", "a European curtain-sider: a flat-fronted cab-over ahead of a bowed curtain between rails", Rigid, [("British", 1.5), ("Highland", 0.4)],
+        new("curtain-sider", "european truck", "a European curtain-sider: a flat-fronted cab-over ahead of a bowed curtain between rails", Rigid, [("Mercenary", 1.5)],
             r => r with
             {
                 Languages = [(Curtain, 1)], Mix = 0, Scales = [(BodyScale.Heavy, 1.5), (BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.2f,
@@ -184,14 +184,14 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 CabTallMin = 1.8f, CabTallMax = 1.9f, DoorRear = 0.6, CabLanguage = CabOver,
             }),
         // Phase 8b (section 18). Sci-fi open-top 4x4 gun buggies: a caged tub low between wheels on arms, the gun on a ring behind the cage.
-        new("gun buggy", "buggy", "a sci-fi open-top 4x4 gun buggy: a caged tub, chunky wheels thrown out on arms, a gun on a ring behind the cage", Buggy, [("IT", 2), ("Scam", 1)],
+        new("gun buggy", "buggy", "a sci-fi open-top 4x4 gun buggy: a caged tub, chunky wheels thrown out on arms, a gun on a ring behind the cage", Buggy, [("IT", 2), ("Salvager", 1)],
             r => r with
             {
                 Languages = [(Tub, 1)], Mix = 0, Cabs = [("caged", 1)], Noses = [('w', 2), ('r', 1)], Ride = (3, 1, 0),
                 CabTallMin = 1.58f, CabTallMax = 1.64f, BeltMin = 0.86f, BeltMax = 0.92f, RakeMin = 0.22f, RakeMax = 0.24f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
                 HoodReach = -0.05f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.14f, HoodCrownMax = 0.16f,
             }),
-        new("scrap buggy", "buggy", "a scrap-built dune buggy: a slab tub under a roll cage, a short flat bonnet, high on long travel", Buggy, [("Bandit", 2)],
+        new("scrap buggy", "buggy", "a scrap-built dune buggy: a slab tub under a roll cage, a short flat bonnet, high on long travel", Buggy, [("Raider", 2)],
             r => r with
             {
                 Languages = [(Tub, 1)], Mix = 0, FacetsMin = 0, FacetsMax = 0, Cabs = [("caged", 1)], Noses = [('f', 2), ('g', 1)], Ride = (1, 2, 0),
@@ -199,7 +199,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 HoodReach = -0.08f, HoodHalfMin = 0.54f, HoodHalfMax = 0.6f,
             }),
         // Monster trucks: a short tall pickup on stilts over huge wheels (the gear is the recipe's: ShapeGrammar's MonsterGears).
-        new("monster truck", "monster truck", "a monster truck: a short tall pickup cab and bed, high on stilts over four huge wheels", Monster, [("Bandit", 2), ("Highland", 1.5)],
+        new("monster truck", "monster truck", "a monster truck: a short tall pickup cab and bed, high on stilts over four huge wheels", Monster, [("Raider", 2)],
             r => r with
             {
                 Languages = [(Pickup, 1)], Mix = 0, Cabs = [("enclosed", 2), ("caged", 0.5)], Noses = [('g', 1.5), ('f', 1)], Ride = (0, 0, 1),
@@ -207,27 +207,27 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 HoodReach = 0.05f, HoodHalfMin = 0.58f, HoodHalfMax = 0.64f,
             }),
         // Fantasy: a war wagon under a hooped top (its faction's plates and spikes on it), an ornate carriage with a bowed body.
-        new("war wagon", "fantasy", "a war wagon: a room under a tall hooped top on low sides, a hard short cab ahead", Wagon, [("Bandit", 2)],
+        new("war wagon", "fantasy", "a war wagon: a room under a tall hooped top on low sides, a hard short cab ahead", Wagon, [("Raider", 2)],
             r => r with
             {
                 Languages = [(Hoop, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.08f, FlareShare = 0.3f,
                 Brows = [(1.25f, 1), (1f, 1)], Tails = [(1.25f, 1), (1f, 1)], Cabs = [("caged", 1), ("armoured", 1)], Uppers = [("none", 1)], Ride = (0.5, 2, 0.5),
             }),
-        new("carriage", "fantasy", "an ornate carriage: a room bowed out at the waist under a crowned top, a coachman's cab ahead", Wagon, [("British", 2), ("Highland", 1)],
+        new("carriage", "fantasy", "an ornate carriage: a room bowed out at the waist under a crowned top, a coachman's cab ahead", Wagon, [("Mercenary", 2)],
             r => r with
             {
                 Languages = [(Carriage, 1)], Mix = 0, Scales = [(BodyScale.Standard, 1)], TallMin = 1.0f, TallMax = 1.1f, FlareShare = 0.3f,
                 Brows = [(1.5f, 1), (1.25f, 1)], Tails = [(1.5f, 1), (1.25f, 1)], Cabs = [("enclosed", 1), ("caged", 0.5)], Uppers = [("none", 1)], Ride = (0.5, 2, 0.3), DoorRear = 0.5,
             }),
         // One-off concept vehicles: a bubble-canopy car, a single-seat streamliner.
-        new("bubble car", "concept", "a bubble-canopy concept car: round from sill to dome, a cab-forward capsule, a short tail", Concept, [("IT", 2), ("Scam", 1)],
+        new("bubble car", "concept", "a bubble-canopy concept car: round from sill to dome, a cab-forward capsule, a short tail", Concept, [("IT", 2), ("Salvager", 1)],
             r => r with
             {
                 Languages = [(Bubble, 1)], Mix = 0, Cabs = [("cab-over", 2), ("enclosed", 1)], Noses = [('r', 2), ('w', 1)], Ride = (2, 1, 0),
                 CabTallMin = 1.58f, CabTallMax = 1.66f, BeltMin = 0.84f, BeltMax = 0.9f, RakeMin = 0.24f, RakeMax = 0.24f, CapsuleRakeMin = 0.6f, CapsuleRakeMax = 0.7f,
                 CabHalfMin = 0.9f, CabHalfMax = 0.94f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, CabBackMin = 0.5f, CabBackMax = 0.7f,
             }),
-        new("streamliner", "concept", "a single-seat streamliner: a low teardrop, a long bonnet, the canopy running down into the tail", Concept, [("Highland", 1.5), ("British", 1.5)],
+        new("streamliner", "concept", "a single-seat streamliner: a low teardrop, a long bonnet, the canopy running down into the tail", Concept, [("Mercenary", 1.5)],
             r => r with
             {
                 Languages = [(Streamliner, 1)], Mix = 0, Cabs = [("enclosed", 1)], Noses = [('r', 2), ('w', 1)], Ride = (3, 1, 0),
@@ -235,7 +235,7 @@ public sealed record BodyArchetype(string Name, string Family, string Words, str
                 HoodReach = 0.15f, HoodHalfMin = 0.56f, HoodHalfMax = 0.6f, HoodCrownMin = 0.16f, HoodCrownMax = 0.18f, CabBackMin = 0.8f, CabBackMax = 0.95f,
             }),
         // A giant truck: the giant scale class over the faction's own languages (the class does the work: wider, taller, longer).
-        new("giant hauler", "giant truck", "a giant truck: a land train's room at the giant scale class, a tall cab ahead", GiantTruck, [("Highland", 1), ("IT", 1), ("Bandit", 1)],
+        new("giant hauler", "giant truck", "a giant truck: a land train's room at the giant scale class, a tall cab ahead", GiantTruck, [("IT", 1), ("Raider", 1)],
             r => r with { Scales = [(BodyScale.Giant, 1)], Uppers = [("none", 1)], Balcony = 0, Ride = (0.2, 2, 0) }),
     ];
 

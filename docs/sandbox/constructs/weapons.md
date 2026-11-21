@@ -248,7 +248,7 @@ One number for how hard a round leaves, 25% to 300% of the standard load (`Sourc
 | Recoil | x the velocity. |
 | Range | Damage range x the velocity; a mounted gun's longest flight x the velocity above 100%; a shell's reach x the velocity squared. |
 
-So at 25% a rifle round leaves at 88 m/s and falls 1.6 m in 40 m, at 100% it is 350 m/s and 160 m, and at 300% from a long barrel it is 1,050 m/s. The look line on a gun and the workbench show the speed, how far it flies before it has dropped a metre, and the recoil. Rounds are still resolved at once (a shell flies for real); a round under 95% of 320 m/s is drawn travelling, on its arc (`Tracer.Bow`). Everything that aims uses the real speed: a mounted gun's `RoundV` (the gunner's lead, the landing cross, sentries, bandits) and a shell's `Speed`. It isn't wired to a logic port: a gun's one input is its trigger.
+So at 25% a rifle round leaves at 88 m/s and falls 1.6 m in 40 m, at 100% it is 350 m/s and 160 m, and at 300% from a long barrel it is 1,050 m/s. The look line on a gun and the workbench show the speed, how far it flies before it has dropped a metre, and the recoil. Rounds are still resolved at once (a shell flies for real); a round under 95% of 320 m/s is drawn travelling, on its arc (`Tracer.Bow`). Everything that aims uses the real speed: a mounted gun's `RoundV` (the gunner's lead, the landing cross, sentries, raiders) and a shell's `Speed`. It isn't wired to a logic port: a gun's one input is its trigger.
 
 ### Rounds that dig
 

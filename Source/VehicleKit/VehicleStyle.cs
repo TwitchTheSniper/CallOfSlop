@@ -127,6 +127,14 @@ public sealed class FactionStyle
 {
     public required string Name { get; init; }
 
+    /// <summary>
+    /// The name the style's dice are forked with (a vehicle's stem, its convoys, roles and family names): its name unless it says otherwise. The styles renamed for
+    /// the factions that fly them (2026-11-21: Raider, Mercenary, Salvager) keep their old salt, so every committed vehicle keeps its shape and only its name changed.
+    /// </summary>
+    public string DiceName { get => _diceName ?? Name; init => _diceName = value; }
+
+    private readonly string? _diceName;
+
     /// <summary>The group its blueprints show under in the inventory's Blueprints tab.</summary>
     public required string Group { get; init; }
 

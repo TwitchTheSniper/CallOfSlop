@@ -20,8 +20,8 @@ keeps what floats can't hold (PLANETS.md "Origin").
 | Dev (Slopstar) | Planetoid (`Maps/Dev`) | 10 km, 18 | temperate hills, two mountains | Ministry of Slop: the penal colony | where the story starts; data centre 1 |
 | Dev | Bluestone (`Maps/Dev`) | 3 km, 9 | blue-grey, one big mountain | none | the first trip out |
 | Dev | Redrock | 4 km, 9 | red desert: mesa country in the north, the Gash (a 5 km canyon), the Steps, a dune sea | a Ministry mining concession | a practice landing before the first jump |
-| Frostreach | Cinder | 20 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
-| Frostreach | Glacier | 32 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 36 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
+| Frostreach | Cinder | 20 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Salvagers: the Call Floor | data centre on the night side |
+| Frostreach | Glacier | 32 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 36 km crevasse), the Mirror (a frozen lake), the Shelves | IT: the Server Farm | data centre at the bottom of the Rent |
 | Frostreach | Caledon | 24 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
 | Frostreach | Mille | 4 km, 8 | hollow: a golden crust stepped in layers, 254 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
 | Frostreach (moonlet of Mille) | Crumb | 2.4 km, 1.5 | a grey lump of rubble pocked with craters; the sky's edge only 2.8 km up (`"sky"` in make_worlds.py) | none | the Magpie start wakes over it (docs/story/STARTS.md): iron, stone and sand, the ores a tier 1 drill works |
@@ -85,7 +85,7 @@ the survey post stands.
 
 | Faction | Home | World | Buildings |
 | --- | --- | --- | --- |
-| The Call Centre | The Call Floor | Cinder | two huts facing each other, the manager's house, a control post, a store, a mast |
+| The Salvager | The Call Floor | Cinder | two huts facing each other, the manager's house, a control post, a store, a mast |
 | The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
 | Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
 

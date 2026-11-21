@@ -30,7 +30,7 @@ public static class VehicleDiversity
     /// <summary><c>--no-sections</c>: the distance without the front term and identity without the section, as both were before 2026-11-07.</summary>
     public static bool SectionsOn = true;
 
-    /// <summary>Two seeds closer than this read as the same vehicle to a person looking at them (set from a look at Bandit and IT sweeps).</summary>
+    /// <summary>Two seeds closer than this read as the same vehicle to a person looking at them (set from a look at Raider and IT sweeps).</summary>
     public const float Alike = 0.08f;
 
     public sealed record Features(
