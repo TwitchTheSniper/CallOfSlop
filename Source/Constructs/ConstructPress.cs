@@ -333,7 +333,7 @@ public static class ConstructPress
             if (td.IsRouter || td.IsAssembler || td.IsPress && !td.IsLathe)
                 return true;
             if (td.IsPieceRack)
-                return kind == null || world.StoreOf(c, to) is not { } rs || ConstructConveyor.RackCheck(c, to, rs, kind) is not (2 or 3);
+                return kind == null || world.StoreOf(c, ConstructPads.Owner(c, to)) is not { } rs || ConstructConveyor.RackCheck(c, ConstructPads.Owner(c, to), rs, kind) is not (2 or 3);
             if (!td.IsConveyorJunction)
                 return false;
             // A Join: on along its one conveyor out; a Splitter (more than one) is no way on.

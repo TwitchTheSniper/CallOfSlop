@@ -61,11 +61,18 @@ public static class StockTargets
             Add(CfgKey.FeedPriority, CfgType.Choice, "Order priority", 0, 2, 1, "Its orders' class: High orders take shared parts and machines first, then the oldest order.", PriorityNames);
     }
 
-    public static int Keep(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StoreKeep, 0);
+    // A pad of Pad Tiles keeps one store, its owner tile's, so the owner's settings are the pad's (a member tile's are not read).
+    private static float Own(Construct c, int part, CfgKey key, float or)
+    {
+        var o = ConstructPads.Owner(c, part);
+        return ConstructConfig.Get(c.Parts[o], c.DefOf(o), key, or);
+    }
 
-    public static int Priority(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StorePriority, 3);
+    public static int Keep(Construct c, int part) => (int)Own(c, part, CfgKey.StoreKeep, 0);
 
-    public static int Takes(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StoreTakes, TakesAnything);
+    public static int Priority(Construct c, int part) => (int)Own(c, part, CfgKey.StorePriority, 3);
+
+    public static int Takes(Construct c, int part) => (int)Own(c, part, CfgKey.StoreTakes, TakesAnything);
 
     public static int Spill(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.RouterSpill, SpillAuto);
 

@@ -24,7 +24,7 @@ public static class ConstructPads
     public const int PerTile = 500; // pieces a tile adds to its rectangle's count
     public const float BaseStack = 1f, PerMast = 2f; // m of stack with no mast, and for each Mast Block on the tallest column
 
-    private static readonly Dictionary<(ushort Def, sbyte Dx, sbyte Dz, byte W, byte L, byte Cols), ConstructPartDef> _defs = [];
+    private static readonly Dictionary<(ConstructPartDef Def, sbyte Dx, sbyte Dz, byte W, byte L, byte Cols), ConstructPartDef> _defs = [];
     private static readonly Lock _gate = new();
 
     /// <summary>The part whose store part <paramref name="part"/> uses: its pad's owner tile, else itself.</summary>
@@ -69,36 +69,40 @@ public static class ConstructPads
         }
         Array.Fill(c.PadOwner, ushort.MaxValue);
         Array.Clear(c.PadDefs);
-        for (var a = 0; a < c.MachineAsmCount; a++)
+        // One pass over the parts (a tile's assembly is BlockAsmOf): each tile in its owner's rectangle points to it and the rectangle's def.
+        for (var i = 0; i < n; i++)
         {
+            var a = c.BlockAsmOf[i];
+            if (a < 0 || !c.Parts[i].D.BlockSeed)
+                continue;
             ref readonly var asm = ref c.MachineAsms[a];
             var owner = asm.Core;
             var od = c.Parts[owner].D;
-            if (!od.BlockSeed || asm.W == 0 || !od.IsPieceRack)
+            if (asm.W == 0 || !od.IsPieceRack || c.Parts[i].Def != c.Parts[owner].Def)
                 continue;
-            var cols = 0;
-            for (var x = asm.X0; x < asm.X0 + asm.W; x++)
-                for (var z = asm.Z0; z < asm.Z0 + asm.L; z++)
-                    cols = Math.Max(cols, MachineBlocks.ColumnAt(c, asm, x, z));
-            var unrot = MachineBlocks.Rot24Inverse(c.Parts[owner].Rot);
-            for (var i = 0; i < n; i++)
-            {
-                if (c.BlockAsmOf[i] != a || c.Parts[i].Def != c.Parts[owner].Def)
-                    continue;
-                var rel = Rot24.Apply(unrot, c.Parts[i].Pos - c.Parts[owner].Pos) / od.BlockCell;
-                int tx = (int)MathF.Round(rel.X), tz = (int)MathF.Round(rel.Z);
-                if (tx < asm.X0 || tx >= asm.X0 + asm.W || tz < asm.Z0 || tz >= asm.Z0 + asm.L)
-                    continue; // (an idle tile: a pad of its own)
-                c.PadOwner[i] = (ushort)owner;
-                c.PadDefs[i] = Derived(od, asm.X0 - tx, asm.Z0 - tz, asm.W, asm.L, cols);
-            }
+            var rel = Rot24.Apply(MachineBlocks.Rot24Inverse(c.Parts[owner].Rot), c.Parts[i].Pos - c.Parts[owner].Pos) / od.BlockCell;
+            int tx = (int)MathF.Round(rel.X), tz = (int)MathF.Round(rel.Z);
+            if (tx < asm.X0 || tx >= asm.X0 + asm.W || tz < asm.Z0 || tz >= asm.Z0 + asm.L)
+                continue; // (an idle tile: a pad of its own)
+            c.PadOwner[i] = (ushort)owner;
+            c.PadDefs[i] = Derived(od, asm.X0 - tx, asm.Z0 - tz, asm.W, asm.L, Columns(c, asm));
         }
+    }
+
+    /// <summary>The tallest column of masts stood on an assembly's rectangle.</summary>
+    private static int Columns(Construct c, in CMachineAsm asm)
+    {
+        var cols = 0;
+        for (var x = asm.X0; x < asm.X0 + asm.W; x++)
+            for (var z = asm.Z0; z < asm.Z0 + asm.L; z++)
+                cols = Math.Max(cols, MachineBlocks.ColumnAt(c, asm, x, z));
+        return cols;
     }
 
     /// <summary>The tile def <paramref name="tile"/> as the hold of a W by L rectangle whose first cell is (dx, dz) tiles from it, its stack raised by its masts.</summary>
     private static ConstructPartDef Derived(ConstructPartDef tile, int dx, int dz, int w, int l, int cols)
     {
-        var key = ((ushort)tile.Id, (sbyte)dx, (sbyte)dz, (byte)w, (byte)l, (byte)Math.Min(cols, 255));
+        var key = (tile, (sbyte)dx, (sbyte)dz, (byte)w, (byte)l, (byte)Math.Min(cols, 255));
         lock (_gate)
         {
             if (_defs.TryGetValue(key, out var d))

@@ -464,7 +464,7 @@ public static partial class ProductionLines
         card.Add(line++, "Racks").Dim(line - 1);
         for (var k = 0; k < rackN && line < rows; k++, line++)
         {
-            var rk = racks[k];
+            var rk = ConstructPads.Owner(c, racks[k]); // (a conveyor into a Pad Tile: its pad)
             var rd = ConstructPads.RackDef(c, rk);
             card.Field(line, rd.Name, nameW, false, 0).Add(line, ' ');
             if (world.StoreOf(c, rk) is { } st)

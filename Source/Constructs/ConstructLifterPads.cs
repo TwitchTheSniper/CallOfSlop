@@ -40,10 +40,43 @@ public static partial class ConstructLifters
                 continue;
             }
             for (var i = 0; i < c.PartCount && taken < PadTakesAStep; i++)
-                if (c.DefOf(i).IsLayDownPad && !c.Parts[i].Broken && !ConstructPads.IsMember(c, i)) // (a pad of tiles: its owner's hold spans them all)
-                    taken += PadTakeIn(world, c, i, PadTakesAStep - taken);
+                if (c.DefOf(i).IsLayDownPad && !c.Parts[i].Broken)
+                {
+                    if (!ConstructPads.IsMember(c, i)) // (a pad of tiles: its owner's hold spans them all)
+                        taken += PadTakeIn(world, c, i, PadTakesAStep - taken);
+                    else if (world.StoreOf(c, i) is { ItemCount: > 0 } own)
+                        JoinOwner(world, c, i, own);
+                }
         }
         LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+    }
+
+    /// <summary>
+    /// A tile that held pieces of its own (a pad of its own until another was welded beside it, or its owner mended) gives them to
+    /// the pad's owner: its store is no longer read. What the owner's hold has no room for stays counted, unplaced, as in a rack made smaller.
+    /// </summary>
+    private static void JoinOwner(ConstructWorld world, Construct c, int part, CStore own)
+    {
+        if (world.StoreOf(c, ConstructPads.Owner(c, part)) is not { } to || to == own)
+            return;
+        for (var k = own.KindN - 1; k >= 0; k--)
+        {
+            var def = own.KindDef![k];
+            var at = to.KindIndex(def);
+            if (at < 0 && to.KindN >= CStore.MaxKinds)
+                continue; // (no kind left in the owner: it stays where it was)
+            var n = Math.Min(own.KindCount![k], CStore.MaxPerKind - (at < 0 ? 0 : to.KindCount![at]));
+            if (n <= 0)
+                continue;
+            own.AddKind(def, -n);
+            to.AddKind(def, n);
+        }
+        own.SlabN = own.SlabSum = 0;
+        to.SlabN = 0; // (packed again from the kinds: ConstructRackPack.Ensure)
+        world.ChangedForTool(own);
+        world.ChangedForTool(to);
+        world.LoadChanged = true;
+        c.Wake();
     }
 
     public const string LoadedWhy = "holds something: empty it first (a pad keeps kinds and counts, not what is in them)";

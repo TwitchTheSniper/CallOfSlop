@@ -100,6 +100,7 @@ public sealed class CStore
     public RackSlab[]? Slabs; // a Piece Rack: its columns of pieces along its length, in place order (ConstructRackPack.cs; made the first time one goes in)
     public byte[]? SlabLanes; // ...each column's stacks: how many high, MaxLanes a column
     public int SlabN, SlabSum; // ...columns, and the pieces in them (not ItemCount: the places are worked out again)
+    public int PackedFor; // ...the hold size they were packed for (ConstructRackPack.Shape; 0: unknown, as a client reads them)
 
     public void Reset(int slots)
     {
@@ -133,7 +134,7 @@ public sealed class CStore
         PullMaterial = false;
         PullWaiting = PullSeconds = 0;
         KindN = ItemCount = 0;
-        SlabN = SlabSum = 0;
+        SlabN = SlabSum = PackedFor = 0;
         ItemSpace = ItemKg = 0;
         Version++;
     }
@@ -964,6 +965,7 @@ public static class ConstructStorage
         if ((more & 32) != 0)
         {
             ConstructRackPack.Read(ref r, s);
+            s.PackedFor = 0; // (the writer's columns, packed for the hold as the writer has it)
             if (s.SlabSum != s.ItemCount)
                 throw new MalformedPacketException($"a rack of {s.ItemCount} pieces placed {s.SlabSum}");
         }

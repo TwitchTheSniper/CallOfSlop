@@ -157,6 +157,7 @@ public sealed partial class ConstructWorld
     /// <summary>A piece into a Piece Rack, if it takes it: in the place packing gives it. Server.</summary>
     public bool RackPut(Construct c, int part, ConstructPartDef d, bool ordered = false)
     {
+        part = ConstructPads.Owner(c, part); // (a Pad Tile in a bigger pad: into the pad, its owner tile's store)
         if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d, ordered) != 0)
             return false;
         ConstructRackPack.Place(ConstructPads.RackDef(c, part), st, d, false, out _, out _);
@@ -244,8 +245,8 @@ public static class ConstructConveyor
     public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d, bool ordered = false)
     {
         var rd = ConstructPads.RackDef(c, part);
-        if (!rd.IsPieceRack)
-            return 1;
+        if (!rd.IsPieceRack || ConstructPads.IsMember(c, part))
+            return 1; // (a Pad Tile in a bigger pad holds nothing itself: its pad is its owner tile's, ConstructPads.Owner)
         if (d.Role == PartRole.Storage && !rd.IsBuildStation && !rd.IsLayDownPad && !(ordered && rd.IsCraftTerminal)) // (lifters phase 7: a Lay-down Pad takes a store part as the hold does: a def, new and empty; a loaded loose one is refused at its take-in, ConstructLifters.TakeInWhy) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
