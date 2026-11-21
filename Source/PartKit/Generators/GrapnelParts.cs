@@ -4,8 +4,8 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The Grapnel, the Salvagers' salvage tug (Karl, 2026-11-21: his picture of a salvage ship, "add this ship to the salvage ships"):
-/// a boxy hull in salvage yellow and worn cream, a glass cockpit at the front over a flat yellow chin carrying two claw arms and a
-/// cutter, dark ring frames round the hull and a dark belt along its beam, a rack of four banded tanks on each flank, antennas, a dish
+/// a boxy hull in salvage yellow and worn cream, a glass cockpit at the front over a flat yellow chin with three tool mounts
+/// (Karl, 2026-11-21: the claws and the cutter came off, the mounts take tools through the sockets), dark ring frames round the hull and a dark belt along its beam, a rack of four banded tanks on each flank, antennas, a dish
 /// and a radome on the roof, four legs. About 30 m long: the cockpit and a crew cab forward, a hold amidships with two standard 2 m
 /// containers for sorted salvage (filled from the passages down its sides), then engineering, whose two hull drives bolt to the
 /// stern bulkhead with their engines inside.
@@ -28,7 +28,7 @@ public sealed class GrapnelParts : IPartGenerator
     private const double T = 0.04; // a drawn plate's thickness
 
     // The paint (Karl's picture): salvage yellow on the chin, the cockpit's hood, the shoulders and the panels' inserts; worn cream on
-    // the upper sides, pale grey below and on the roof, dark ring frames and a dark belt along the beam, grey claws, orange marks.
+    // the upper sides, pale grey below and on the roof, dark ring frames and a dark belt along the beam, orange marks.
     private const string Skin = "#d8d3c2", Skin2 = "#b9b8b0", Armour = "#d9a12b", Armour2 = "#c48b22", Bare = "#9a9d9f", Frame = "#2f3134",
         Dark = "#232528", Hazard = "#f0b81c", Orange = "#e2702a", Red = "#c0392b", Glow = "#ffe0a0", Glass = "#8fb4c4", Link = "#0f7bd8",
         Paper = "#e6e2d6", Green = "#2f9a52",
@@ -1187,13 +1187,14 @@ public sealed class GrapnelParts : IPartGenerator
         return p.Stats(14000, 30000, 30, 15.0);
     }
 
-    // ---- the bow and the stern: the chin with the claws and the cutter; the transom with the drives, their bulkhead, the stern's jets
+    // ---- the bow and the stern: the chin with its tool mounts; the transom with the drives, their bulkhead, the stern's jets
 
-    /// <summary>The bow: the chin's flat yellow face up to the beam with the windscreen over it, and on a heavy chin block under the
-    /// cockpit the salvage gear of Karl's picture: two claw arms that take hold of a wreck, and a cutting wheel on a boom between them.</summary>
+    /// <summary>The bow: the chin's flat yellow face up to the beam with the windscreen over it, and on the face three tool mounts:
+    /// bare hardpoints whose sockets take whatever a crew welds on (an arm on a hinge, a grab, a cutter), through the game's own
+    /// sockets (Karl, 2026-11-21: the claws and the cutter came off; the mounts are for the socket system).</summary>
     private static Part Bow()
     {
-        var p = Big("Grapnel Bow", "The Grapnel's bow: the chin's flat face under the windscreen, and on a heavy chin block the salvage gear: two claw arms that take hold of a wreck and a cutting wheel on a boom between them.", color: Armour);
+        var p = Big("Grapnel Bow", "The Grapnel's bow: the chin's flat face under the windscreen, with three tool mounts on it: hardpoints that take whatever a crew welds on (an arm on a hinge, a grab, a cutter).", color: Armour);
         var q = At(Zt);
         const double fz = Zt - 0.012; // (the face's plane, in front of the facets' ends)
         double[] F(int k, int sd) => P(Cx + sd * q[k].H, q[k].Y, fz);
@@ -1215,51 +1216,20 @@ public sealed class GrapnelParts : IPartGenerator
             var x = -1.75 + i * 0.7;
             Detail(p, Cx + x - 0.15, 0.82, Zt - 0.05, Cx + x + 0.15, 0.92, Zt - 0.036, i % 2 == 0 ? Hazard : Dark, "hazard paint");
         }
-        // The chin block: a chamfered box out in front of the face under the windscreen, in darker yellow.
-        double[][] Blk(double z, double hx, double y0, double y1, double c) =>
-            [P(Cx - hx + c, y0, z), P(Cx + hx - c, y0, z), P(Cx + hx, y0 + c, z), P(Cx + hx, y1 - c, z), P(Cx + hx - c, y1, z), P(Cx - hx + c, y1, z), P(Cx - hx, y1 - c, z), P(Cx - hx, y0 + c, z)];
-        const double cz = Zt - 1.0; // (the block's front)
-        Prism(p, Blk(Zt - 0.04, 2.6, -0.5, 0.7, 0.18), Blk(cz, 2.3, -0.35, 0.55, 0.14), Armour2, "plated steel");
-        Hidden(p, Cx - 2.2, -0.3, cz + 0.05, Cx + 2.2, 0.5, Zt - 0.05);
         Hidden(p, Cx - 2.0, 0.0, Zt - 0.05, Cx + 2.0, 1.9, -16.954); // (back to the cockpit's dash: what a body meets at the glass)
-        // A second pair of pitch jets on the chin block, as far forward as they go (the claws make a heavy nose).
-        foreach (var sd in new[] { -1, 1 })
+        // The tool mounts: a square hardpoint each side and one in the middle, standing out from the chin's face, a hazard frame round
+        // each and a socket on its face (any part welds on there, as on any other socket).
+        foreach (var (n, x) in new[] { ("mountL", -1.6), ("mountC", 0.0), ("mountR", 1.6) })
         {
-            RcsPad(p, "rcsUp2" + (sd < 0 ? "L" : "R"), Cx + sd * 1.9, 0.63, Zt - 0.5, "+y", 0.06);
-            RcsPad(p, "rcsDown2" + (sd < 0 ? "L" : "R"), Cx + sd * 1.0, -0.43, Zt - 0.5, "-y", 0.05);
+            const double my = 0.25, mf = Zt - 0.25, hw = 0.35;
+            Solid(p, Cx + x - hw, my - hw, mf, Cx + x + hw, my + hw, Zt - 0.034, Frame, "dirty steel");
+            foreach (var (x0, y0, x1, y1) in new[] { (-hw - 0.055, -hw - 0.055, hw + 0.055, -hw - 0.004), (-hw - 0.055, hw + 0.004, hw + 0.055, hw + 0.055), (-hw - 0.055, -hw - 0.004, -hw - 0.004, hw + 0.004), (hw + 0.004, -hw - 0.004, hw + 0.055, hw + 0.004) })
+                Detail(p, Cx + x + x0, my + y0, Zt - 0.12, Cx + x + x1, my + y1, Zt - 0.036, Hazard, "hazard paint");
+            foreach (var (dx, dy) in new[] { (-0.24, -0.24), (0.24, -0.24), (-0.24, 0.24), (0.24, 0.24) })
+                Detail(p, Cx + x + dx - 0.04, my + dy - 0.04, mf - 0.03, Cx + x + dx + 0.04, my + dy + 0.04, mf, "#9a9c98", "steel"); // (its bolts)
+            Sock(p, n, Cx + x, my, mf, "-z");
         }
-        // A ram between two prisms' ends: a square bar w by h from a to b (ship metres).
-        void Bar(double[] a, double[] b, double w, double h, string col, string fin)
-        {
-            double[][] Sq(double[] c) => [P(c[0] - w, c[1] - h, c[2]), P(c[0] + w, c[1] - h, c[2]), P(c[0] + w, c[1] + h, c[2]), P(c[0] - w, c[1] + h, c[2])];
-            Prism(p, Sq(a), Sq(b), col, fin);
-        }
-        // The claws: a shoulder drum under each side of the block, a heavy upper arm down and forward, a forearm, and two curved jaws.
-        foreach (var sd in new[] { -1, 1 })
-        {
-            var x = Cx + sd * 1.6;
-            double ez = cz - 1.2, wz = cz - 2.15, wx = x - sd * 0.2;
-            Prism(p, RingAx([x, -0.12, cz - 0.1], 0, 0.4, x - 0.34, 12, Sh), RingAx([x, -0.12, cz - 0.1], 0, 0.4, x + 0.34, 12, Sh), Frame, "dirty steel");
-            Bar([x, -0.12, cz - 0.2], [x, -0.62, ez], 0.24, 0.24, Bare, "painted steel");
-            Prism(p, RingAx([x, -0.62, ez], 0, 0.3, x - 0.29, 12, Sh), RingAx([x, -0.62, ez], 0, 0.3, x + 0.29, 12, Sh), Frame, "dirty steel"); // (the elbow)
-            Bar([x, -0.62, ez - 0.05], [wx, -0.42, wz], 0.2, 0.2, Bare, "painted steel");
-            Bar([x, 0.12, cz - 0.4], [x, -0.36, ez + 0.2], 0.07, 0.07, "#c9ccce", "steel"); // (its ram, over the arm)
-            Detail(p, wx - 0.3, -0.75, wz - 0.35, wx + 0.3, -0.1, wz + 0.05, Frame, "dirty steel"); // (the wrist)
-            Bar([wx, -0.25, wz - 0.35], [wx - sd * 0.5, -0.1, wz - 0.95], 0.11, 0.12, Hazard, "worn paint");
-            Bar([wx - sd * 0.5, -0.1, wz - 0.94], [wx - sd * 0.8, -0.3, wz - 1.3], 0.09, 0.1, Hazard, "worn paint");
-            Bar([wx, -0.6, wz - 0.35], [wx + sd * 0.15, -1.0, wz - 0.9], 0.11, 0.12, Hazard, "worn paint");
-            Bar([wx + sd * 0.15, -1.0, wz - 0.89], [wx - sd * 0.25, -1.05, wz - 1.25], 0.09, 0.1, Hazard, "worn paint");
-        }
-        // The cutter: a boom from the block's middle, a fork and the cutting wheel, a hood over its top, a hot orange rim.
-        Bar([Cx, -0.1, cz - 0.02], [Cx, -0.35, cz - 1.7], 0.14, 0.14, Bare, "painted steel");
-        foreach (var sd in new[] { -1, 1 })
-            Detail(p, Cx + sd * 0.1 - 0.025, -0.48, cz - 2.2, Cx + sd * 0.1 + 0.025, -0.22, cz - 1.65, Frame, "dirty steel");
-        double[] hub = [Cx, -0.4, cz - 2.1];
-        Prism(p, RingAx(hub, 0, 0.62, Cx - 0.03, 16, Sh), RingAx(hub, 0, 0.62, Cx + 0.03, 16, Sh), "#b8bcbf", "steel");
-        Prism(p, RingAx(hub, 0, 0.65, Cx - 0.012, 16, Sh), RingAx(hub, 0, 0.65, Cx + 0.012, 16, Sh), Orange, "steel", glow: true);
-        Prism(p, RingAx(hub, 0, 0.14, Cx - 0.07, 8, Sh), RingAx(hub, 0, 0.14, Cx + 0.07, 8, Sh), Dark, "dirty steel");
-        Detail(p, Cx - 0.09, 0.27, cz - 2.6, Cx + 0.09, 0.35, cz - 1.6, Hazard, "hazard paint");
-        return p.Stats(3000, 12000, 40, 10.0);
+        return p.Stats(2200, 12000, 40, 10.0);
     }
 
     private static Part SternPart()
@@ -1419,7 +1389,7 @@ public sealed class GrapnelParts : IPartGenerator
         return p.Stats(2400, 3500, 25, 10.0);
     }
 
-    /// <summary>The flight computer: a flight stabilizer with a tug's gyro (the Packet's: the claws and the tank racks give it a heavy nose and long flanks) in a console between the couches and the dash.</summary>
+    /// <summary>The flight computer: a flight stabilizer with a tug's gyro (the Packet's: the tank racks give it long flanks) in a console between the couches and the dash.</summary>
     private static Part FlightComputer()
     {
         const string console = "#22262b";
@@ -1826,7 +1796,7 @@ public sealed class GrapnelParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "The Salvagers' salvage tug (Karl's picture): a boxy yellow hull with a glass cockpit over a chin carrying two claw arms and a cutting wheel, a crew cab behind it (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers for sorted salvage in a bay open to the sky, four banded tanks on each flank, and engineering, whose two hull drives bolt to the stern with their engines inside. Lift jets and four legs set it down; attitude jets at both ends move it about.", defs, maxSteps: 400);
+        var bp = new BuildingParts.Blueprint(ShipName, "The Salvagers' salvage tug (Karl's picture): a boxy yellow hull with a glass cockpit over a chin with three tool mounts (sockets for whatever arm or grab a crew welds on), a crew cab behind it (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers for sorted salvage in a bay open to the sky, four banded tanks on each flank, and engineering, whose two hull drives bolt to the stern with their engines inside. Lift jets and four legs set it down; attitude jets at both ends move it about.", defs, maxSteps: 400);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -1842,7 +1812,7 @@ public sealed class GrapnelParts : IPartGenerator
         Hang(bp, "Flight Couch", cab, "copilot", "bottom");
         var fc = Hang(bp, "Grapnel Flight Computer", cab, "computer", "bottom");
         var flight = ShipParts.ShipFlight();
-        flight["strength"] = 150; // (the claws hang a heavy nose out in front: at the usual strength it comes round too slowly)
+        flight["strength"] = 150; // (a long hull on small jets: at the usual strength it comes round too slowly)
         bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         // The bunk room and the head to port.
@@ -1887,8 +1857,6 @@ public sealed class GrapnelParts : IPartGenerator
         {
             Paint(bp, Hang(bp, Rcs, roof, $"rcsUp{n}", "base"), Frame, "dirty steel");
             Paint(bp, Hang(bp, Rcs, keel, $"rcsDown{n}", "base"), Frame, "dirty steel");
-            Paint(bp, Hang(bp, Rcs, placed["Grapnel Bow"], $"rcsUp2{n}", "base"), Frame, "dirty steel");
-            Paint(bp, Hang(bp, Rcs, placed["Grapnel Bow"], $"rcsDown2{n}", "base"), Frame, "dirty steel");
             Paint(bp, Hang(bp, Rcs, cab, $"rcsOut{n}", "base"), Frame, "dirty steel");
             foreach (var d in new[] { "Up", "Down", "Up2", "Down2", "Out", "Along" })
                 Paint(bp, Hang(bp, Rcs, stern, $"rcs{d}{n}", "base"), Frame, "dirty steel");

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Grapnel Salvage Tug",
-  "description": "The Salvagers' salvage tug (Karl's picture): a boxy yellow hull with a glass cockpit over a chin carrying two claw arms and a cutting wheel, a crew cab behind it (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers for sorted salvage in a bay open to the sky, four banded tanks on each flank, and engineering, whose two hull drives bolt to the stern with their engines inside. Lift jets and four legs set it down; attitude jets at both ends move it about.",
+  "description": "The Salvagers' salvage tug (Karl's picture): a boxy yellow hull with a glass cockpit over a chin with three tool mounts (sockets for whatever arm or grab a crew welds on), a crew cab behind it (bunks, a head, a galley, an airlock over the boarding shaft), two standard 2 m containers for sorted salvage in a bay open to the sky, four banded tanks on each flank, and engineering, whose two hull drives bolt to the stern with their engines inside. Lift jets and four legs set it down; attitude jets at both ends move it about.",
   "steps": [
     {
       "part": "Grapnel Keel"
@@ -631,22 +631,6 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 24,
-      "socket": "rcsUp2L",
-      "by": "base",
-      "paint": "#2f3134",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 24,
-      "socket": "rcsDown2L",
-      "by": "base",
-      "paint": "#2f3134",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
       "on": 17,
       "socket": "rcsOutL",
       "by": "base",
@@ -713,22 +697,6 @@
       "part": "Heavy RCS Thruster",
       "on": 6,
       "socket": "rcsDownR",
-      "by": "base",
-      "paint": "#2f3134",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 24,
-      "socket": "rcsUp2R",
-      "by": "base",
-      "paint": "#2f3134",
-      "finish": "dirty steel"
-    },
-    {
-      "part": "Heavy RCS Thruster",
-      "on": 24,
-      "socket": "rcsDown2R",
       "by": "base",
       "paint": "#2f3134",
       "finish": "dirty steel"
@@ -821,37 +789,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 124,
+      "on": 120,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 124,
+      "on": 120,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 124,
+      "on": 120,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 124,
+      "on": 120,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 128,
+      "on": 124,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 124,
+      "on": 120,
       "socket": "foot",
       "by": "hang"
     },
@@ -863,37 +831,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 131,
+      "on": 127,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 131,
+      "on": 127,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 131,
+      "on": 127,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 131,
+      "on": 127,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 135,
+      "on": 131,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 131,
+      "on": 127,
       "socket": "foot",
       "by": "hang"
     },
@@ -905,37 +873,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 138,
+      "on": 134,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 138,
+      "on": 134,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 138,
+      "on": 134,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 138,
+      "on": 134,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 142,
+      "on": 138,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 138,
+      "on": 134,
       "socket": "foot",
       "by": "hang"
     },
@@ -947,37 +915,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 145,
+      "on": 141,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 145,
+      "on": 141,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 145,
+      "on": 141,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 145,
+      "on": 141,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 149,
+      "on": 145,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 145,
+      "on": 141,
       "socket": "foot",
       "by": "hang"
     },
@@ -991,7 +959,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 152,
+      "on": 148,
       "socket": "hatch",
       "by": "hang",
       "paint": "#8a4a2a",
@@ -999,7 +967,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 152,
+      "on": 148,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#8a4a2a",
@@ -1007,19 +975,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 152,
+      "on": 148,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 152,
+      "on": 148,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 152,
+      "on": 148,
       "socket": "slot2",
       "by": "base"
     },
@@ -1033,7 +1001,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 158,
+      "on": 154,
       "socket": "hatch",
       "by": "hang",
       "paint": "#5f6b73",
@@ -1041,7 +1009,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 158,
+      "on": 154,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#5f6b73",
@@ -1049,19 +1017,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 158,
+      "on": 154,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 158,
+      "on": 154,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 158,
+      "on": 154,
       "socket": "slot2",
       "by": "base"
     },
@@ -1274,8 +1242,16 @@
       76
     ],
     [
-      166,
-      164
+      162,
+      160
+    ],
+    [
+      162,
+      161
+    ],
+    [
+      164,
+      163
     ],
     [
       166,
@@ -1286,24 +1262,16 @@
       167
     ],
     [
-      170,
-      169
+      181,
+      178
     ],
     [
-      172,
-      171
+      181,
+      179
     ],
     [
-      185,
-      182
-    ],
-    [
-      185,
-      183
-    ],
-    [
-      185,
-      184
+      181,
+      180
     ]
   ],
   "conduit": true
