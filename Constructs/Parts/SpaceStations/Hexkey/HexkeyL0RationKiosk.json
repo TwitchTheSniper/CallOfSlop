@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Ration Kiosk",
+  "description": "The ration kiosk after the trade arches: a birch counter, a menu board.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 6096.0,
+  "health": 11315,
+  "armour": 40,
+  "material": "steel",
+  "color": "#d6bf96",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -8.125,
+        -2.125,
+        0.875
+      ],
+      "max": [
+        7.875,
+        -1.025,
+        1.875
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -8.125,
+        -2.125,
+        -1.925
+      ],
+      "max": [
+        7.875,
+        0.275,
+        -1.325
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -6.125,
+        0.475,
+        -1.329
+      ],
+      "max": [
+        5.875,
+        1.275,
+        -1.285
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -2.125,
+        1.375
+      ],
+      "dir": "-y"
+    }
+  ]
+}

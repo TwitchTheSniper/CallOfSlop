@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Satchel Cab Wall 2",
+  "description": "A wall of the Satchel's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Satchel courier",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 317.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cdcac0",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.625,
+        0.125,
+        -13.125
+      ],
+      "max": [
+        -3.375,
+        2.625,
+        -5.525
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.637,
+        0.128,
+        -13.075
+      ],
+      "max": [
+        -3.363,
+        0.875,
+        -5.575
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampBunk",
+      "at": [
+        -3.375,
+        2.325,
+        -11.025
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "toilet",
+      "at": [
+        -3.375,
+        0.25,
+        -8.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "basin",
+      "at": [
+        -3.375,
+        0.25,
+        -7.275
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampHead",
+      "at": [
+        -3.375,
+        2.425,
+        -6.725
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -3.505,
+        0.125,
+        -10.925
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -3.505,
+        1.375,
+        -13.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.375,
+        1.375,
+        -8.805
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -3.505,
+        1.375,
+        -5.525
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -3.505,
+        2.625,
+        -9.325
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -3.625,
+        0.755,
+        -12.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -3.625,
+        0.755,
+        -9.245
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -3.625,
+        0.755,
+        -6.445
+      ],
+      "dir": "-x"
+    }
+  ]
+}

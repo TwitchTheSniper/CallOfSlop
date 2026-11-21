@@ -278,6 +278,8 @@ public static partial class ConstructRender
             if (c.ModActive >= 0)
                 EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             gfx.Relative = true;
+            if (level == 1 && !CameraFeeds.InPass)
+                PostFx.OfferContact(c, body, Vector3.DistanceSquared(pos, cam)); // (its shadow on the ground under it, after the opaque world: PostFx.Contact.cs)
             if (level == 2)
             {
                 n += DrawLod(gfx, c, body);

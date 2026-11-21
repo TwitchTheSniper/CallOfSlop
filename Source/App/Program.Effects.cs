@@ -11,9 +11,14 @@ public static unsafe partial class Program
     private static void ApplyVideoLevels()
     {
         LightGrid.SurfaceLevel = (float)_settings.Materials;
+        LightGrid.Bevels = _settings.EdgeBevels && !LightGrid.BevelsForcedOff;
+        LightGrid.Contrast = _settings.MaterialContrast && !LightGrid.ContrastForcedOff;
         Fx.Level = _settings.Particles;
         Fx.On = !_smokeNoFx;
         (PostFx.Level, PostFx.BloomOn, PostFx.HazeOn, PostFx.AoOn) = (_settings.PostEffects, _settings.Bloom, _settings.HeatHaze, _settings.AmbientOcclusion);
+        (PostFx.AoStrength, PostFx.AoRadius, PostFx.AoClassic) = (_settings.AoStrength, _settings.AoRadius, _settings.AoClassic);
+        (SunShadows.On, SunShadows.Size, SunShadows.KeyLight) = (_settings.SunShadows > VideoLevel.Low, _settings.SunShadows == VideoLevel.High ? 4096 : 2048, _settings.KeyLight);
+        PostFx.ContactOn = _settings.ContactShadows; // (any Post effects level: one small pass per near body)
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
         ConstructRender.OcclusionSetting = _settings.HiddenCulling;
         ConstructRender.ChunkLodSetting = _settings.FarDetail != VideoLevel.High;

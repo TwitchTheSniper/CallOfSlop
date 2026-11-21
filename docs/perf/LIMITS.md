@@ -598,10 +598,10 @@ where it has one. Line numbers are those of this audit.
 | Data sanity | `MaxStars` | `Space/SpaceSkyView.cs:59` | `Galaxy.MaxSystems - 1` | - | Kept |
 | Data sanity | `MaxLine` | `Story/ItDesk.cs:13` | `96` | - | Kept |
 | Data sanity | `MaxLines` | `Story/ItDesk.cs:13` | `6` | - | Kept |
-| Data sanity | `MaxScams` | `Story/ScamDesk.cs:14` | `200` | - | Kept |
-| Data sanity | `MaxAdverts` | `Story/ScamDesk.cs:14` | `64` | - | Kept |
-| Data sanity | `MaxLabel` | `Story/ScamDesk.cs:17` | `28` | - | Kept |
-| Data sanity | `MaxPopup` | `Story/ScamDesk.cs:17` | `16` | - | Kept |
+| Data sanity | `MaxScams` | `Story/SalvagerDesk.cs:14` | `200` | - | Kept |
+| Data sanity | `MaxAdverts` | `Story/SalvagerDesk.cs:14` | `64` | - | Kept |
+| Data sanity | `MaxLabel` | `Story/SalvagerDesk.cs:17` | `28` | - | Kept |
+| Data sanity | `MaxPopup` | `Story/SalvagerDesk.cs:17` | `16` | - | Kept |
 | Data sanity | `MaxKnown` | `Story/StoryAgents.cs:79` | `32` | - | Kept |
 | Data sanity | `MaxSteps` | `Story/StoryAgents.cs:79` | `16` | - | Kept |
 | Data sanity | `MaxNodes` | `Story/StoryAgents.cs:79` | `40` | - | Kept |

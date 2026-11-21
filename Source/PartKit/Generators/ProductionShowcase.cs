@@ -388,7 +388,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var cut = On("Piece Rack", 75.25f, -22.75f, Flow, "-y.0.0", Cutter);
             var cIn = PortAt(cut, "Piece in");
             Convey(table, "Piece out", cut, "Piece in", Cutter, null, V(tOut.X, tOut.Y, cIn.Z));
-            Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; blank in, cut part out", false);
+            Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: press Start on the orders console, then order", false);
 
             var k = 0;
             foreach (var m in new[] { wing, plate, cutter }) // (west to east: no cable crosses another)

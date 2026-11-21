@@ -69,7 +69,7 @@ public sealed record VehicleRole(string Name, string Purpose)
     /// <summary>-1 slow and heavy (more axles) to 1 fast and light (one axle).</summary>
     public double Fast { get; init; }
 
-    /// <summary>Loot tier at tier 1 (a tier adds one, to 4): 1 and 2 the style's own table, 3 and 4 its richer ones ("bandit 3").</summary>
+    /// <summary>Loot tier at tier 1 (a tier adds one, to 4): 1 and 2 the style's own table, 3 and 4 its richer ones ("raider 3").</summary>
     public int LootBase { get; init; } = 1;
 
     /// <summary>Extra chests it tries to stand in its room.</summary>
@@ -339,8 +339,8 @@ public sealed record RoleFit(int Seats, int Guns, GunClass Best, float Speed, fl
 
 /// <summary>
 /// Roles and tiers (kit 4; docs/vehiclekit/VEHICLEKIT.md, "Roles and tiers"): the roles, the tiers' effect, which roles each style fields and how often, the shape a
-/// role picks, the measure a built vehicle is held to, and the role's equipment pass. The threat ladder: a tier is how hard a place is within a faction (a Bandit tier 4
-/// is a warlord's truck, still a Bandit's), so it scales part quality, armour, guns, size and loot and nudges weights; identity holds at every tier.
+/// role picks, the measure a built vehicle is held to, and the role's equipment pass. The threat ladder: a tier is how hard a place is within a faction (a Raider tier 4
+/// is a warlord's truck, still a Raider's), so it scales part quality, armour, guns, size and loot and nudges weights; identity holds at every tier.
 /// </summary>
 public static class VehicleRoles
 {
@@ -435,11 +435,10 @@ public static class VehicleRoles
     /// </summary>
     public static readonly Dictionary<string, Dictionary<string, double>> Fielded = new(StringComparer.Ordinal)
     {
-        ["Bandit"] = new() { ["scout"] = 3, ["raider"] = 4, ["gun platform"] = 2, ["carrier"] = 1, ["tanker"] = 2, ["recovery"] = 1, ["command"] = 0.5, ["boss"] = 0.3 },
+        ["Raider"] = new() { ["scout"] = 3, ["raider"] = 4, ["gun platform"] = 2, ["carrier"] = 1, ["tanker"] = 2, ["recovery"] = 1, ["command"] = 0.5, ["boss"] = 0.3 },
         ["IT"] = new() { ["scout"] = 2, ["raider"] = 1, ["gun platform"] = 1, ["carrier"] = 3, ["tanker"] = 1, ["recovery"] = 2, ["command"] = 2, ["boss"] = 0.3 },
-        ["Scam"] = new() { ["scout"] = 3, ["raider"] = 2, ["gun platform"] = 1, ["carrier"] = 2, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 1.5, ["boss"] = 0.3 },
-        ["Highland"] = new() { ["scout"] = 2, ["raider"] = 4, ["gun platform"] = 2, ["carrier"] = 2, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 1, ["boss"] = 0.4 },
-        ["British"] = new() { ["scout"] = 1, ["raider"] = 1, ["gun platform"] = 1, ["carrier"] = 4, ["tanker"] = 1, ["recovery"] = 2, ["command"] = 2, ["boss"] = 0.3 },
+        ["Salvager"] = new() { ["scout"] = 3, ["raider"] = 2, ["gun platform"] = 1, ["carrier"] = 2, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 1.5, ["boss"] = 0.3 },
+        ["Mercenary"] = new() { ["scout"] = 1, ["raider"] = 1, ["gun platform"] = 1, ["carrier"] = 4, ["tanker"] = 1, ["recovery"] = 2, ["command"] = 2, ["boss"] = 0.3 },
         ["Militia"] = new() { ["scout"] = 2, ["raider"] = 2, ["gun platform"] = 3, ["carrier"] = 3, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 2, ["boss"] = 0.4 },
     };
 
@@ -451,7 +450,7 @@ public static class VehicleRoles
     public static VehicleRole PickRole(FactionStyle st, int seed)
     {
         var table = FieldedBy(st).Where(kv => kv.Value > 0 && Find(kv.Key) != null).ToList();
-        var d = Dice.Of(seed).Fork("role pick " + st.Name);
+        var d = Dice.Of(seed).Fork("role pick " + st.DiceName);
         var roll = d.Next() * table.Sum(kv => kv.Value);
         foreach (var (name, w) in table)
             if ((roll -= w) < 0)
@@ -522,7 +521,7 @@ public static class VehicleRoles
     /// <summary>A plate material's armour (its 1 m plate's), for <see cref="RoleAsk.Weigh"/>.</summary>
     public static float PlateArmour(string material) => ConstructParts.Find(material + " 1 m")?.Armour ?? ConstructParts.Find(material)?.Armour ?? 6;
 
-    /// <summary>A style's loot table at a loot tier: "bandit 3" when Constructs/Loot.json has it, else the next lower one there, else the style's own.</summary>
+    /// <summary>A style's loot table at a loot tier: "raider 3" when Constructs/Loot.json has it, else the next lower one there, else the style's own.</summary>
     public static string LootTable(string table, int tier)
     {
         for (var t = tier; t >= 3; t--)
@@ -537,7 +536,7 @@ public static class VehicleRoles
 
     /// <summary>
     /// The cheap top speed estimate (m/s): the engine's peak power at 60 % through the drive line against rolling resistance (0.03) and drag (Cd 0.9 over the
-    /// frontal box). It runs nothing and knows no gearing: it ranks vehicles, the drive check measures them (a Bandit Technical estimates about 37, drives 24 in 6 s).
+    /// frontal box). It runs nothing and knows no gearing: it ranks vehicles, the drive check measures them (a Raider Technical estimates about 37, drives 24 in 6 s).
     /// </summary>
     public static float Speed(float powerW, float massKg, float frontalM2)
     {
@@ -973,7 +972,7 @@ public static class VehicleRolesCli
     }
 
     /// <summary>
-    /// <c>--role "Bandit Raider" --tier 2 [--seeds N] [--from S] [--seed-list A,B] [--check] [--sliced]</c>: each seed's shape, fit, identity and what the role pass placed, then the hit
+    /// <c>--role "Raider Raider" --tier 2 [--seeds N] [--from S] [--seed-list A,B] [--check] [--sliced]</c>: each seed's shape, fit, identity and what the role pass placed, then the hit
     /// rate; the first seed is made again (the same text), with <c>--sliced</c> as the dynamic spawn makes it (the same hash), and <c>--check</c> runs the full check on each
     /// (seconds a seed). Exit code: how many missed, failed or differed.
     /// </summary>
@@ -982,7 +981,7 @@ public static class VehicleRolesCli
         var (st, role) = Parse(text);
         if (st == null || role == null)
         {
-            Console.WriteLine($"--role \"{text}\": a style and a role, \"Bandit raider\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
+            Console.WriteLine($"--role \"{text}\": a style and a role, \"Raider raider\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
             return 1;
         }
         var tier = int.TryParse(Flag(args, "--tier"), out var t) ? Math.Clamp(t, 1, VehicleRoles.MaxTier) : 2;
@@ -1101,7 +1100,7 @@ public static class VehicleRolesCli
         var tiers = int.TryParse(Flag(args, "--tier"), out var one) ? [Math.Clamp(one, 1, VehicleRoles.MaxTier)] : Enumerable.Range(1, VehicleRoles.MaxTier).ToArray();
         var raw = args.Any(a => a.Equals("--raw", StringComparison.OrdinalIgnoreCase));
         Problems();
-        Make(Styles.Bandit, VehicleRoles.All[0], 2, 1); // (a throwaway: the JIT's first generation isn't counted)
+        Make(Styles.Raider, VehicleRoles.All[0], 2, 1); // (a throwaway: the JIT's first generation isn't counted)
         var rows = new List<(string Style, string Role, int Tier, List<Outcome> O)>();
         Console.WriteLine($"role report: {seeds.Count} seed(s) a cell ({seeds.FirstOrDefault()} to {seeds.LastOrDefault()}), kit {VehicleKitVersion.Force?.ToString() ?? VehicleKitVersion.Current.ToString()}, generation only");
         foreach (var st in Styles.All.Where(s => styleOnly == null || s.Name.Equals(styleOnly, StringComparison.OrdinalIgnoreCase)))

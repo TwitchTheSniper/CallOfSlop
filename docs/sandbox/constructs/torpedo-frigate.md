@@ -1,9 +1,9 @@
-# The Zero Day torpedo frigate (the IT Department's warship)
+# The Zero Day torpedo frigate (IT's warship)
 
 Karl (2026-11-15): a state-of-the-art faction torpedo frigate, sleeker and bigger than the Halberd (since removed), with countermeasures,
 a torpedo bay on each side, a railgun and a drive the width of the ship; faceted corners and stepped armour like his
 reference picture (the MORN 251 cutaway), decks running the length of the ship, and doors and fittings you'd expect on a
-spaceship. The faction is the IT Department, known for powerful, state-of-the-art ships: pale skin, dark armour slabs,
+spaceship. The faction is IT, known for powerful, state-of-the-art ships: pale skin, dark armour slabs,
 link-blue light strips, server racks aboard. It is an enemy ship, but it builds and previews like any other.
 
 Generator: `Source/PartKit/Generators/TorpedoFrigateParts.cs` (`--gen-parts torpedo_frigate_parts`), which writes

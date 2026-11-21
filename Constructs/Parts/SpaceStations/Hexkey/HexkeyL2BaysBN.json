@@ -1,0 +1,1356 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L2 Bays BN",
+  "description": "The room-set bays of Hexkey Orbital's showroom: white walls 12 m apart, each bay a room furnished from the store's stock.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 22503.6,
+  "health": 31004,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -72.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -72.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -72.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -72.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -60.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -60.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -60.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -60.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -48.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -48.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -48.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -48.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -36.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -36.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -36.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -36.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -24.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -24.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -24.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -24.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -12.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -12.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.225,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        -2.025,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.235,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        -2.015,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        1.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        1.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        11.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        11.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        11.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        11.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        23.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        23.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        23.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        23.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        35.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        35.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        35.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        35.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        47.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        47.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        47.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        47.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        59.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        59.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        59.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        59.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        71.775,
+        -3.125,
+        -5.025
+      ],
+      "max": [
+        71.975,
+        2.575,
+        4.375
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        71.765,
+        -3.125,
+        4.375
+      ],
+      "max": [
+        71.985,
+        2.575,
+        4.391
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -72.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -60.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -67.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -64.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -71.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -71.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -71.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -71.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -60.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -48.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -55.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -52.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -59.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -59.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -59.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -59.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -48.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -36.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -43.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -40.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -47.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -47.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -47.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -47.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -36.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -24.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -31.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -28.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -35.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -35.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -35.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -35.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -24.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -12.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -19.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -16.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -23.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -23.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -23.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -23.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.021,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        -2.229,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -8.325,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        -5.925,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.625,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        -11.525,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -11.825,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        -11.125,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        11.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        8.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        2.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        2.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        11.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        23.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        16.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        19.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        12.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        12.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        12.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        12.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        23.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        35.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        28.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        31.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        24.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        24.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        24.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        24.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        35.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        47.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        40.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        43.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        36.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        36.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        36.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        36.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        47.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        59.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        52.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        55.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        48.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        48.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        48.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        48.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        59.979,
+        0.075,
+        -5.021
+      ],
+      "max": [
+        71.771,
+        0.195,
+        4.371
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        64.675,
+        -0.005,
+        -0.425
+      ],
+      "max": [
+        67.075,
+        0.071,
+        -0.225
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        60.375,
+        -3.114,
+        3.725
+      ],
+      "max": [
+        60.475,
+        -1.825,
+        3.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        60.175,
+        -1.825,
+        3.745
+      ],
+      "max": [
+        60.875,
+        -1.375,
+        3.805
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -60.125,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -48.125,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -24.125,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -2.125,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        23.875,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        35.875,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        59.875,
+        -3.125,
+        -0.325
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        -60.125,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        -60.125,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j9",
+      "at": [
+        -48.125,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j10",
+      "at": [
+        -48.125,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j11",
+      "at": [
+        -24.125,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j12",
+      "at": [
+        -24.125,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j13",
+      "at": [
+        -2.125,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j14",
+      "at": [
+        -2.125,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j15",
+      "at": [
+        23.875,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j16",
+      "at": [
+        23.875,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j17",
+      "at": [
+        35.875,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j18",
+      "at": [
+        35.875,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j19",
+      "at": [
+        59.875,
+        2.575,
+        -1.075
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j20",
+      "at": [
+        59.875,
+        2.575,
+        3.625
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j21",
+      "at": [
+        -60.125,
+        -0.275,
+        -5.025
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -22,6 +22,9 @@ public static class RadarHud
     private static int _headKey = int.MinValue, _lockKey = int.MinValue;
     private static string _headLine = "", _keyLine = "", _lockLine = "", _lockTag = "";
 
+    /// <summary>How far above the screen's bottom the scope must stay (pixels): the seat controls panel's top, set by it each frame (UiSeatPanel.cs).</summary>
+    public static float ClearBelow;
+
     public static void Draw(Game game, float scale, int bind)
     {
         game.RadarUpdate(game.Local is { Alive: true } me ? me : null);
@@ -46,7 +49,7 @@ public static class RadarHud
 
         // ---- The scope ----
         var r = 92f * scale;
-        var centre = new float2(org.X + area.X - 24f * scale - r, org.Y + area.Y - 180f * scale - r);
+        var centre = new float2(org.X + area.X - 24f * scale - r, org.Y + area.Y - MathF.Max(180f * scale, ClearBelow) - r);
         ImDrawListExtensions.AddCircleFilled(dl, in centre, r, new ImColor8(8, 20, 14, 170), 48);
         ImDrawListExtensions.AddCircle(dl, in centre, r, Hud.Colour(Scope, 0.8f), 48, 1.5f * scale);
         ImDrawListExtensions.AddCircle(dl, in centre, r * 2f / 3f, Hud.Colour(Scope, 0.25f), 40, 1f * scale);

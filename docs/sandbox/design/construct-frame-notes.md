@@ -57,7 +57,7 @@ their frame changed or lapsed; then a lift on a moving deck, and a plate made in
   lift or turntable move with it); the spawn pass looks only at the bodies made this tick (`ConstructWorld.Fresh`, capped), skips
   sleepers and loaded bodies, and rebuilds only with a moving construct near; a body made in the air takes the rider's whole
   frame (2 m), one on the ground only 0.3 m; a climb onto a moving lift goes with it.
-- [x] a joined client under xvfb (host drives the Bandit Flatbed Fort 1 at 20 m/s, `bringon` sets the client on its turntable,
+- [x] a joined client under xvfb (host drives the Raider Flatbed Fort 1 at 20 m/s, `bringon` sets the client on its turntable,
   then its bed): the client rides body 41 throughout, carried by the turntable (segment 5) then the bed (0), its own velocity 0
   and the frame's 16-21 m/s; a jump stays in the frame; a part dropped beside it on the host leaves at 19.7 m/s (the truck's 20).
   New window verbs: `bringon PART` (host), `dropmotion`; `me` prints the own and frame velocity and the carrying segment.

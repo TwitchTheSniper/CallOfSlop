@@ -261,7 +261,7 @@ notice is a rule nobody can keep.
 Each faction keeps a small outpost beyond the colony (docs/archive/story/OUTPOSTS.md). The Ministry's two are in its style above;
 the other three factions' styles start here, at outpost size: one room, and the thing outside that says whose it is.
 
-| | Clan MacSlop: drystone and tin | The IT Department: beige steel | The Call Centre: portacabins |
+| | Clan MacSlop: drystone and tin | The IT Department: beige steel | The Salvager: portacabins |
 | --- | --- | --- | --- |
 | **Material** | Walls and pad stone `#8a8072`, finish `stone`; never concrete-grey | Steel walls `#c8c2ae` (every computer it ever owned), `painted steel` | Corrugated walls `#7a2f6e`, `gloss paint` |
 | **Roof** | A tin ridge, `#6e3324`, `rusty paint` | Flat, a grey steel lid `#5a5f63` | A single tin slope in the walls' purple |
@@ -276,7 +276,7 @@ the other three factions' styles start here, at outpost size: one room, and the 
 | **Ministry Sentry Post** | Two men on foot need a hard place to stand: a pillbox, sandbags across half the forecourt, the patrol's way out through the other half, the flag to walk back to. | A squat block behind a low wall |
 | **Clan MacSlop Bothy** | A shelter for whoever is passing: one stone room under a tin ridge, a door that doesn't lock, a bunk. The clan's own touches are all outside. | A cottage, a flag, casks |
 | **IT Field Cabinet** | Keeping a rack dry and running, and being found by the engineer sent to reboot it: a blind steel box with the rack in the middle, the mast and the dish on the pad beside it. | A box and a mast |
-| **Call Centre Relay** | Being heard: the mast is the tall thing, the loudhailer faces the colony, the cabin watches the road. | A cabin and a mast, loud |
+| **Salvager Relay** | Being heard: the mast is the tall thing, the loudhailer faces the colony, the cabin watches the road. | A cabin and a mast, loud |
 
 What stands over each outpost is what reads at 50 m in the snow, and the dressing parts (a phone mast, a dish, a prize
 wheel) are a vehicle's size, under a metre: so each outpost has a structure of its own on its pad. `LatticeMast` stands
@@ -298,5 +298,5 @@ on the ice. The Ministry Quarry Works (a hand-made blueprint) has the same flood
   streaks and dirt at the foot: docs/render/MATERIALS.md "Detail textures"). Interior floors can take `terrazzo`, `lino` or
   `ceramic tiles`.
 - The windows have no glass, as every building piece's.
-- The settlements of the Call Centre, the IT Department and Clan MacSlop share four unpainted blueprints: their styles are
+- The settlements of the Salvagers, IT and Clan MacSlop share four unpainted blueprints: their styles are
   above now ("Out on the ice"); their homes still want buildings in them.

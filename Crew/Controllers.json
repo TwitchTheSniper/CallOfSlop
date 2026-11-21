@@ -29,12 +29,12 @@
     },
     "Raiders": {
       "start": 2500, "income": 10, "ships": 6, "groups": 2, "places": 1,
-      "fleet": { "raider": ["Bandit Buggy 1", "Bandit Technical 1"] },
+      "fleet": { "raider": ["Raider Buggy 1", "Raider Technical 1"] },
       "missions": { "raid": { "ships": 2 } }
     },
     "Militia": {
       "start": 3500, "income": 25, "ships": 6, "groups": 2, "places": 1,
-      "fleet": { "warship": ["British Technical 2", "British Gun Wagon 1"] },
+      "fleet": { "warship": ["Mercenary Technical 2", "Mercenary Gun Wagon 1"] },
       "missions": { "defend": { "ships": 2 } }
     }
   }

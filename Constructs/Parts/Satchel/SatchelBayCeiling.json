@@ -1,0 +1,274 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Satchel Bay Ceiling",
+  "description": "The ceiling of the Satchel's bay.",
+  "group": "Ship",
+  "section": "Satchel courier",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 900.0,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#b4b6b2",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -4.125,
+        2.475,
+        -5.275
+      ],
+      "max": [
+        3.875,
+        2.725,
+        -3.775
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.125,
+        2.475,
+        -3.775
+      ],
+      "max": [
+        -3.125,
+        2.725,
+        3.525
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.875,
+        2.475,
+        -3.775
+      ],
+      "max": [
+        3.875,
+        2.725,
+        3.525
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.125,
+        2.45,
+        -4.625
+      ],
+      "max": [
+        2.875,
+        2.475,
+        -4.425
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -3.725,
+        2.45,
+        -3.275
+      ],
+      "max": [
+        -3.525,
+        2.475,
+        3.025
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        3.275,
+        2.45,
+        -3.275
+      ],
+      "max": [
+        3.475,
+        2.475,
+        3.025
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -4.001,
+        2.335,
+        -3.763
+      ],
+      "max": [
+        -3.129,
+        2.471,
+        -3.623
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.001,
+        2.335,
+        -0.113
+      ],
+      "max": [
+        -3.129,
+        2.471,
+        0.027
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.879,
+        2.335,
+        -3.763
+      ],
+      "max": [
+        3.751,
+        2.471,
+        -3.623
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.879,
+        2.335,
+        -0.113
+      ],
+      "max": [
+        3.751,
+        2.471,
+        0.027
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -2.505,
+        2.555,
+        -5.275
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        2.595,
+        -3.775
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.125,
+        2.595,
+        3.395
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -3.125,
+        2.595,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.875,
+        2.595,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -4.125,
+        2.595,
+        -4.525
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -4.125,
+        2.595,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        3.875,
+        2.595,
+        -4.525
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j8",
+      "at": [
+        3.875,
+        2.595,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j9",
+      "at": [
+        -3.625,
+        2.675,
+        3.525
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j10",
+      "at": [
+        -0.125,
+        2.725,
+        -4.525
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j11",
+      "at": [
+        -3.285,
+        2.725,
+        -0.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

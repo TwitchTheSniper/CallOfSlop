@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L2 Canteen Counter",
+  "description": "The Hexkey Canteen's counter: birch and white, a coffee bar at its end, a window over the pads.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 4095.0,
+  "health": 8914,
+  "armour": 40,
+  "material": "steel",
+  "color": "#d6bf96",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -13.125,
+        -2.125,
+        -0.525
+      ],
+      "max": [
+        12.875,
+        -1.075,
+        0.475
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -13.135,
+        -1.075,
+        -0.535
+      ],
+      "max": [
+        12.885,
+        -1.035,
+        0.485
+      ],
+      "color": "#eceeea",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -13.125,
+        0.575,
+        -0.475
+      ],
+      "max": [
+        12.875,
+        1.175,
+        -0.425
+      ],
+      "color": "#3e6b5a",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -5.625,
+        -2.125,
+        -0.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        7.375,
+        -2.125,
+        -0.025
+      ],
+      "dir": "-y"
+    }
+  ]
+}

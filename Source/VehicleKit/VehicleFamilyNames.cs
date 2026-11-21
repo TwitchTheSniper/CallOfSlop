@@ -30,7 +30,7 @@ public static class VehicleFamilyNames
 
     public static readonly Dictionary<string, FamilyNameSet> ByStyle = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Bandit"] = new(
+        ["Raider"] = new(
             ["Rustbucket", "Scrapjaw", "Gutrunner", "Dustdevil", "Junkhammer", "Boneshaker", "Roadrash", "Sandgrinder", "Tetanus Express", "Rattletrap", "Gristle", "Big Mutha", "Chopshop", "Wrecker", "Grinder"],
             ["Mk1", "Mk2", "Mk3"],
             ["Old Mother Rust", "The Iron Widow", "King of the Scrapheap", "The Doom Wagon", "The Last Ride", "Big Mutha's Revenge"],
@@ -40,17 +40,12 @@ public static class VehicleFamilyNames
             ["", "Plus", "Pro"],
             ["The Counting House", "Cash on Delivery", "The Long Haul", "Net Thirty", "The Bottom Line"],
             new() { [VehicleFamilies.UpArmoured] = "Hardened", [VehicleFamilies.GunTruck] = "Escort", [VehicleFamilies.TankerConversion] = "Bulk Tanker" }),
-        ["Scam"] = new( // (the Salvagers: Crew/Factions/Salvagers.json)
+        ["Salvager"] = new( // (the Salvagers: Crew/Factions/Salvagers.json)
             ["Scrapper", "Picker", "Breaker", "Stripper", "Magpie", "Tinker", "Rag and Bone", "Wrecker", "Chopper", "Gleaner", "Totter"],
             ["", "Gold", "Platinum"],
             ["The Boneyard", "Finders Keepers", "Salvage Rights", "The Last Wreck", "Spare Parts"],
             new() { [VehicleFamilies.UpArmoured] = "Plated", [VehicleFamilies.GunTruck] = "Claim Jumper", [VehicleFamilies.TankerConversion] = "Sump" }),
-        ["Highland"] = new( // (the Traders' second style)
-            ["Glen Rover", "Ben Crawler", "Loch Runner", "Heather Hopper", "Bothy Bus", "Strath Hauler", "Corrie Climber", "Firth Flyer", "Moor Raider", "Croft Wagon", "Munro Bagger", "Drover"],
-            ["", "II", "Mor"],
-            ["The Pack Train", "Auld Reekie", "The Big Yin", "Last Orders", "Wee Beastie"],
-            new() { [VehicleFamilies.UpArmoured] = "Targe", [VehicleFamilies.GunTruck] = "Outrider", [VehicleFamilies.TankerConversion] = "Bowser" }),
-        ["British"] = new( // (the Mercenaries: Crew/Factions/Mercenaries.json)
+        ["Mercenary"] = new( // (the Mercenaries: Crew/Factions/Mercenaries.json)
             ["Wellington", "Marlborough", "Brigadier", "Bulldog", "Drizzle", "Pennyworth", "Sovereign", "Windsor", "Rainmaker", "Contractor", "Stiff Upper", "Freelancer", "Hireling"],
             ["Mk I", "Mk II", "Mk III"],
             ["The Paymaster", "The Last Bus Home", "No Questions Asked", "Danger Money", "Mind the Gap"],

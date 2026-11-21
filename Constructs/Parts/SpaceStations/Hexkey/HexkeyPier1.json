@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey Pier 1",
+  "description": "Hexkey Orbital's freight pier: a white deck with a charcoal kerb, ships berthed along both sides.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 51030.0,
+  "health": 65236,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -14.125,
+        -0.725,
+        -10.123
+      ],
+      "max": [
+        12.875,
+        -0.125,
+        10.873
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -14.123,
+        -0.129,
+        -10.125
+      ],
+      "max": [
+        12.873,
+        -0.113,
+        10.877
+      ],
+      "color": "#8e9290",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -14.125,
+        -0.114,
+        -10.123
+      ],
+      "max": [
+        12.875,
+        0.125,
+        -9.825
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -14.125,
+        -0.114,
+        10.575
+      ],
+      "max": [
+        12.875,
+        0.125,
+        10.875
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        12.575,
+        -0.114,
+        -0.425
+      ],
+      "max": [
+        12.875,
+        0.175,
+        1.175
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "haulerN",
+      "at": [
+        9.875,
+        -0.125,
+        -9.525
+      ],
+      "dir": "+y",
+      "class": "large"
+    },
+    {
+      "name": "haulerS",
+      "at": [
+        9.875,
+        -0.125,
+        10.275
+      ],
+      "dir": "+y",
+      "class": "large"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -14.125,
+        -0.425,
+        -2.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -14.125,
+        -0.425,
+        8.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        12.875,
+        -0.425,
+        0.375
+      ],
+      "dir": "+x"
+    }
+  ]
+}

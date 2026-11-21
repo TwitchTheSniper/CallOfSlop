@@ -266,7 +266,7 @@ public sealed class ControlParts : IPartGenerator
     }
 
     /// <summary>
-    /// A painted sign board (buildings.md "Signs"): a flat board in its paint (Ministry green unless painted) whose words are
+    /// A painted sign board (buildings.md "Signs"): a flat board in its paint (dark green unless painted) whose words are
     /// signwritten on it, centred and as big as the board takes: one row holds the whole line, made narrower to fit, never wrapped.
     /// Hung by its back on a wall's face socket, a fascia's front or a canopy's sign socket.
     /// </summary>

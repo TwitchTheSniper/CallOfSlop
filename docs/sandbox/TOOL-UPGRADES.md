@@ -29,7 +29,7 @@ Mk 5 at tier 4 with gold, levite and Field Coils. Factions teach the top ones (`
 - Ministry of Slop, Contractor: **Heavy Lifting Permit** (Lift Coil Mk 4 and Mk 5).
 - IT Department, Registered: **Remote Access** (Tractor Emitter, Beam Lens Mk 5).
 - Clan MacSlop, Friend of the Clan: **The Caber Arm** (Kinetic Coil).
-- The Call Centre, Valued Customer: **Productivity Drive** (Drill Motor Mk 4, Fitter Servo Mk 4).
+- The Salvager, Valued Customer: **Productivity Drive** (Drill Motor Mk 4, Fitter Servo Mk 4).
 
 **Seeing them.** The Tab inventory's **Upgrades** tab lists every stat: what the player has now, its Mk, and the next
 module and what it gives. A loose module's look line says what it gives and "F: fit to your tools", or why it can't be

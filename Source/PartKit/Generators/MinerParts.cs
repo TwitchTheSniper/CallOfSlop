@@ -2020,7 +2020,7 @@ public sealed class MinerParts : IPartGenerator
         var pilot = bp.Hang("Flight Couch", uf, "pilot", "bottom");
         bp.Hang("Flight Couch", uf, "copilot", "bottom");
         var fc = bp.Hang("Magpie Flight Computer", uf, "module", "bottom");
-        bp.Steps[fc]["config"] = ShipParts.ShipFlight();
+        bp.Steps[fc]["config"] = ShipParts.ShipFlight(pitchDamping: 200);
         bp.Wires.Add((pilot, fc));
         Paint(bp, bp.Hang("Magpie Locker", uf, "bridgeLocker", "wall"), Yellow2, "worn paint");
         Paint(bp, bp.Hang("Magpie Cargo Rack", uf, "shelf", "wall"), "#6b6f5a", "worn paint");

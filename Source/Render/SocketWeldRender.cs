@@ -37,8 +37,75 @@ public static class SocketWeldRender
     public static Vector3 SeamMin, SeamMax;
     public static bool SeamOk;
 
+    /// <summary>
+    /// The bodies the overlay was worked out on, with their poses then. The input runs before the frame's ticks, so a body
+    /// moving fast (a ship in orbit) is drawn a frame's travel on from where its markers were found: each point is carried
+    /// with its body to where the body is drawn (<see cref="Game.DrawnPose"/>). <see cref="OnBody"/> holds the ghost, the
+    /// axis ring, the point weld's target and the tether's end; <see cref="FromBody"/> the point weld's origin and the
+    /// tether's start; a marker its own body.
+    /// </summary>
+    private struct Stamp
+    {
+        public ushort Body;
+        public Vector3 Pos, To;
+        public Quaternion Rot, Turn;
+    }
+
+    private static readonly Stamp[] _stamps = new Stamp[SocketWeld.MaxBodies + 4];
+    private static int _stampCount;
+    private static Stamp _pullOn; // (the streak's body: it lasts a timed weld's seconds)
+    public static ushort OnBody, FromBody;
+
+    /// <summary>The input: <paramref name="c"/>'s pose now, which the points just worked out on it were taken in.</summary>
+    public static void Follow(Construct? c)
+    {
+        if (c == null)
+            return;
+        var k = 0;
+        while (k < _stampCount && _stamps[k].Body != c.Id)
+            k++;
+        if (k == _stamps.Length)
+            return; // (full: drawn where it was found)
+        if (k == _stampCount)
+            _stampCount++;
+        _stamps[k] = new Stamp { Body = c.Id, Pos = c.Pos, Rot = c.Rot };
+    }
+
+    /// <summary>The input: every marker's body stamped.</summary>
+    public static void FollowMarkers(ConstructWorld world)
+    {
+        ushort last = 0;
+        for (var k = 0; k < MarkerCount; k++)
+            if (Markers[k].Body != last)
+                Follow(world.Get(last = Markers[k].Body));
+    }
+
+    private static void Drawn(Game game, ref Stamp s)
+    {
+        if (s.Body != 0 && game.Constructs.Get(s.Body) is { } c)
+        {
+            game.DrawnPose(c, out s.To, out var rot);
+            s.Turn = Quaternion.Normalize(rot * Quaternion.Conjugate(s.Rot));
+        }
+        else
+            (s.To, s.Turn) = (s.Pos, Quaternion.Identity);
+    }
+
+    private static int StampOf(ushort body)
+    {
+        for (var k = 0; k < _stampCount; k++)
+            if (_stamps[k].Body == body)
+                return k;
+        return -1;
+    }
+
+    private static Vector3 At(int k, Vector3 p) => k < 0 ? p : _stamps[k].To + Vector3.Transform(p - _stamps[k].Pos, _stamps[k].Turn);
+    private static Vector3 Dir(int k, Vector3 d) => k < 0 ? d : Vector3.Transform(d, _stamps[k].Turn);
+
     public static void Clear()
     {
+        _stampCount = 0;
+        OnBody = FromBody = 0;
         SeamBody = null;
         MarkerCount = 0;
         PointOn = TargetOn = TetherOn = false;
@@ -50,6 +117,8 @@ public static class SocketWeldRender
     /// <summary>The weld was sent: a streak from the piece to where it goes, for <paramref name="hold"/> seconds (a timed weld's time) and the fade.</summary>
     public static void Pull(Vector3 from, Vector3 to, float hold)
     {
+        var k = StampOf(OnBody);
+        _pullOn = k >= 0 ? _stamps[k] : default;
         _pullA = from;
         _pullB = to;
         _pullFor = hold + PullFade;
@@ -67,9 +136,13 @@ public static class SocketWeldRender
         _ => new Vector3(0.35f, 0.75f, 1f),
     };
 
-    public static void Draw(Renderer gfx, double now)
+    public static void Draw(Renderer gfx, Game game, double now)
     {
         MarkersDrawn = 0;
+        for (var k = 0; k < _stampCount; k++)
+            Drawn(game, ref _stamps[k]);
+        var on = StampOf(OnBody);
+        var from = StampOf(FromBody);
         var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
         if (SeamBody is { } sb)
         {
@@ -87,19 +160,22 @@ public static class SocketWeldRender
         for (var k = 0; k < MarkerCount; k++)
         {
             ref var m = ref Markers[k];
+            var mk = StampOf(m.Body);
+            var mAt = At(mk, m.At);
+            var mDir = Dir(mk, m.Dir);
             var hot = k == Hot;
             var col = hot && m.State != WeldMarkerState.Selected ? new Vector3(1f, 1f, 1f) : Colour(m.State);
             var a = m.Fade * (hot || m.State == WeldMarkerState.Selected ? 0.95f : 0.6f);
             var size = (hot ? 0.07f : 0.045f) * m.Size;
-            var at = m.At + m.Dir * 0.02f;
+            var at = mAt + mDir * 0.02f;
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(at), col, a, mode: 2);
-            Bar(gfx, at, at + m.Dir * (hot ? 0.16f : 0.11f) * m.Size, size * 0.35f, col, a);
+            Bar(gfx, at, at + mDir * (hot ? 0.16f : 0.11f) * m.Size, size * 0.35f, col, a);
             MarkersDrawn++;
         }
         if (PointOn)
-            PointMarker(gfx, PointAt, PointDir, new Vector3(1f, 0.6f, 0.15f));
+            PointMarker(gfx, At(from, PointAt), Dir(from, PointDir), new Vector3(1f, 0.6f, 0.15f));
         if (TargetOn)
-            PointMarker(gfx, TargetAt, TargetDir, new Vector3(0.3f, 1f, 0.45f));
+            PointMarker(gfx, At(on, TargetAt), Dir(on, TargetDir), new Vector3(0.3f, 1f, 0.45f));
         if (_pullFor > 0)
         {
             if (_pullEnd < 0)
@@ -108,14 +184,18 @@ public static class SocketWeldRender
             if (left <= 0)
                 _pullFor = 0;
             else
-                Bar(gfx, _pullA, _pullB, 0.03f, new Vector3(0.45f, 0.75f, 1f), 0.8f * MathF.Min(1f, left / PullFade));
+            {
+                Drawn(game, ref _pullOn);
+                Bar(gfx, PullAt(_pullA), PullAt(_pullB), 0.03f, new Vector3(0.45f, 0.75f, 1f), 0.8f * MathF.Min(1f, left / PullFade));
+            }
         }
         if (Ghost is not { } c)
             return;
-        var body = Matrix4x4.CreateFromQuaternion(GhostRot) * Matrix4x4.CreateTranslation(GhostPos);
+        var ghostRot = on < 0 ? GhostRot : Quaternion.Normalize(_stamps[on].Turn * GhostRot);
+        var body = Matrix4x4.CreateFromQuaternion(ghostRot) * Matrix4x4.CreateTranslation(At(on, GhostPos));
         var tint = Valid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
         if (TetherOn)
-            Bar(gfx, TetherA, TetherB, 0.012f, tint, 0.45f);
+            Bar(gfx, At(from, TetherA), At(on, TetherB), 0.012f, tint, 0.45f);
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
@@ -134,19 +214,23 @@ public static class SocketWeldRender
         if (!Spinning || Axis.LengthSquared() < 0.5f)
             return;
         // The ring of ticks about the socket axis, and the angle's mark.
-        var y = Vector3.Cross(Axis, AxisRef);
+        var axisAt = At(on, AxisAt);
+        var axisRef = Dir(on, AxisRef);
+        var y = Vector3.Cross(Dir(on, Axis), axisRef);
         const float r = 0.32f;
         for (var k = 0; k < 24; k++)
         {
             var th = k * MathF.PI / 12f;
-            var dirK = AxisRef * MathF.Cos(th) + y * MathF.Sin(th);
+            var dirK = axisRef * MathF.Cos(th) + y * MathF.Sin(th);
             var big = k % 6 == 0;
-            Bar(gfx, AxisAt + dirK * r, AxisAt + dirK * (r + (big ? 0.07f : 0.035f)), big ? 0.012f : 0.007f, new Vector3(0.9f, 0.9f, 0.95f), big ? 0.85f : 0.5f);
+            Bar(gfx, axisAt + dirK * r, axisAt + dirK * (r + (big ? 0.07f : 0.035f)), big ? 0.012f : 0.007f, new Vector3(0.9f, 0.9f, 0.95f), big ? 0.85f : 0.5f);
         }
         var ta = Angle * MathF.PI / 180f;
-        var mark = AxisRef * MathF.Cos(ta) + y * MathF.Sin(ta);
-        Bar(gfx, AxisAt, AxisAt + mark * (r + 0.1f), 0.014f, tint, 0.9f);
+        var mark = axisRef * MathF.Cos(ta) + y * MathF.Sin(ta);
+        Bar(gfx, axisAt, axisAt + mark * (r + 0.1f), 0.014f, tint, 0.9f);
     }
+
+    private static Vector3 PullAt(Vector3 p) => _pullOn.Body == 0 ? p : _pullOn.To + Vector3.Transform(p - _pullOn.Pos, _pullOn.Turn);
 
     /// <summary>A point weld's point: a dot on the face, a short arrow along its normal and a small cross on the face.</summary>
     private static void PointMarker(Renderer gfx, Vector3 at, Vector3 n, Vector3 col)

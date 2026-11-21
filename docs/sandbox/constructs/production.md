@@ -220,7 +220,7 @@ Choices made (the developer may change them): depth as the diameter; the `wheels
 
 The user's "complex parts made in the world, not in menus". A **Press** stamps parts out of extruded pieces; it sits beside the Extruder and the Wheel Former, and the [Assembler](#assembling) stays for everything no die covers yet. Code: `Source/Constructs/ConstructPress.cs`, `ConstructPressTable.cs` (`Constructs/Pressing.json`); the parts, the table and the Press Line blueprint come from the part kit's `--gen-parts press_parts`.
 
-- **Modular by size.** Press, Die Lathe and die each come in the four size classes, and a die fits a press of its own class (socket kind `pressdie`, the class of the socket). The Small press is 1.75 m wide with 2 bays and takes pieces to 0.45 m across; Medium, Large and Capital have 3 bays and take 1.8, 7.2 and 28.8 m, at speed x2, x4 and x8. Length sets count, so the player builds the smallest system for the job.
+- **Modular by size.** Since the block-system rework the Press is one Core and its Press Blocks ([the clamshell](#the-clamshell-block-system-2026-11-21)): its width, daylight and speed come from the blocks. Dies have no size classes (Press part 2, 2026-11-21): one die a family fits a press of any size, and one Die Lathe cuts them all. The table below is the old classed presses', kept for history.
 
   | Machine | Bays | Across | Stroke speed | Power |
   | --- | --- | --- | --- | --- |
@@ -250,8 +250,8 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 
   The rest of the Assembler's list stays with the Assembler. **Substitutions:** the game has no plastic or aluminium, so plastic is laminate and aluminium is bronze; a strip, sheet or copper wire is a plate or a 10 cm round (`Extrusion.MinSectionCm`). Laminate and bronze got rows in `Extrusion.json`.
 - **Tiers.** Material sets the tier only where the game has a part per tier. Housings do, since they are new. Bracket, Gear Set, Piston Set, Button, Circuit Board and Cylinder have one part each, so those rows take the materials that suit and give that part.
-- **Dies.** Parts in `Constructs/Parts/Press/Dies`, `"pressDie": "Button"`, first socket the mount. Small and Medium are items (on a Die Rack or a shelf, in hands); Large and Capital are physics-only. Starter set, free with a survival start (`SurvivalStart.json`): Button, Bracket, Gear. All the rest come from a Die Lathe, not the Assembler.
-- **The Die Lathe** (`"press": {"lathe": true}`) is the press's code with one bay and no slot: a setting chooses the die (`"config": {"recipe": "Board Die"}`). It takes a solid bar: metal or steel for a starter, steel otherwise, at least the die's own size across (0.25, 1, 4, 8 m), and a stroke uses that length, so a 1 m block cuts four Small dies. A lathe cuts dies of its own size class ("Wrong size of lathe").
+- **Dies.** Parts in `Constructs/Parts/Press/Dies`, `"pressDie": "Button"`, first socket the mount. One die a family, a 0.5 m cassette (lower and upper shoe on four guide posts, the family's coloured punch on top, grab handles, a label plate): an item, on a Die Rack or a shelf, or in hands. The press scales the stamping to the blank, so Housing's and Cylinder's four class dies became one each, and the Medium, Large and Capital dies and the Medium Die Rack went (Press part 2). Starter set, free with a survival start (`SurvivalStart.json`): Button, Bracket, Gear. All the rest come from a Die Lathe, not the Assembler.
+- **The Die Lathe** (`"press": {"lathe": true}`) is the press's code with one bay and no slot: a setting chooses the die (`"config": {"recipe": "Board Die"}`). There is one (Press part 2; the Medium, Large and Capital lathes went): a bench lathe on a cabinet, 1.75 x 1.5 x 1.25 m, with a headstock and chuck, two ways, a carriage and tool post, a tailstock and a lead screw. It takes a solid steel bar at least 0.25 m across in its bay at the back (the shared port look) and any die is a 0.25 m cut, so a 1 m bar cuts four dies; the die lands in the tray at the front. While it cuts, the chuck and the lead screw turn and the carriage feeds along the ways.
 - **Refusals.** A piece is turned away at the bay and stays where it is. The panel and the look line say why (`BayRefuse`: no die, wrong material, section, size, no room for its length, wrong die size, bulk). It rides in `CStore.Blocked` (reason x 4 + bay, 3 for the die slot) and clears after 5 s or when a die goes in.
 - **Performance.** `ConstructPress.Step` at 10 Hz looks only at constructs with `HasPress`; a bay's mouth is a `Near` query only while the bay is empty. Nothing allocates but the bodies it makes.
 - **Wire (protocol 144).** No new message. Parts and links carry what is in it, `CBodyKind.Extrude` a shorter piece; the stall is `Refused`, the refusal `Blocked`.
@@ -385,8 +385,8 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   `ToConsole` and a console's Send deal them to its Panel Formers; a blueprint's bill line is
   `{"step": n, "panel": "Formed Panel (hood 160x150 c14 r18 t20 steel)", "count": 2}` (`BlueprintScript.BillPanel`). `--bill NAME` prints
   them under "Formed panels" with the smallest former that takes each, its cost and seconds. Ten vehicles, kinds without a recipe before
-  and after: Swing Arm Buggy 0, 0; Bandit Plane 7 8, 8; Highland Monster Truck 2 8, 4; IT Technical 5 9, 5; British Wagon 2 18, 4;
-  Highland Flatbed Fort 9 18, 6; IT Helicopter 8 3, 3; Highland Giant Truck 5 38, 12; IT War Bus 1 33, 4; Titan Walker Fitted 0, 0.
+  and after: Swing Arm Buggy 0, 0; Raider Plane 7 8, 8; Monster Truck 2 8, 4; IT Technical 5 9, 5; Mercenary Wagon 2 18, 4;
+  Flatbed Fort 9 18, 6; IT Helicopter 8 3, 3; Giant Truck 5 38, 12; IT War Bus 1 33, 4; Titan Walker Fitted 0, 0.
   What is left: the weapon builder's gun parts and the flight surfaces and rotors.
 - **Wire (protocol 253) and saves.** A named order's shape byte is 255 (`WorkOrders.NamedShape`): then its material, count, made and
   the name as text (a save: count, made, name). A panel in a Full, a rack's kinds or a conveyor's riders goes as a lofted part does
@@ -434,6 +434,11 @@ are no size classes. Code: `ConstructLaserCutterBed.cs`.
   2.4 kW: a wider bed cuts faster (`Heads`, the time law's power is `kw x heads`) and draws `PowerDraw x heads`.
 - **The offcut bin** holds 200 plus 100 for each block in the bed (`BinOf`).
 - A Core with no bed cuts nothing: "no bed: weld Laser Bed Blocks beside it".
+- **The largest plate** is what the largest bed takes either way round: 32 m on one side and 16 m on the other (`MachineBlocks.MaxSide`
+  and `MaxCells` blocks of 2 m; `HullLoft.CutPlateMaxCm`, `CutPlateShortCm`). A larger plate key is refused, and the Panel Designer's
+  sliders stop there.
+- **In the Production Showcase** the cutter's Run is wired to the orders console: press Start there before ordering a cut (its look line
+  says it is held off).
 - **Out Table.** An Out Table welded on the bed's far side (the side away from the Core, its -z face against the bed) is the cutter's
   Piece out: a conveyor off it takes the cut parts (`ConstructConveyor.Out`, `MachineBlocks.OutTable`). With none, a cut part lies on the
   bed. The Production Showcase lays one.
@@ -479,7 +484,7 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 ## Machine tiers
 
-Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
 (Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
 
@@ -1464,7 +1469,7 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   full until what it holds is fitted". After Release early or Cancel, parts already riding still land in the hold.
   The fit from the parts alone compares a part's sides with the bay's, longest first. Costing is budgeted by time (1 ms a tick) and a
   step is never split: of the shipped blueprints a 64 m bay doesn't refuse from their parts, the longest slices were 4.7 ms (IT War
-  Bus 1, 212 steps), 4.1 ms (Highland Giant Truck 5, 228 steps, the largest that fits) and 3.0 ms (Production Showcase, 442 steps)
+  Bus 1, 212 steps), 4.1 ms (a Giant Truck, 228 steps, the largest that fits) and 3.0 ms (Production Showcase, 442 steps)
   (`station costtop`).
   Measured on the 2-core box (window tool, `station` verbs): the Buggy from Start to drivable 77 s; the station's step while building
   19 ms over 2,075 ticks, 48 KB in all (orders and fits; nothing in an idle tick: the step isn't entered); server tick p99 0.98 ms and

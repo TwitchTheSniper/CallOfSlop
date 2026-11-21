@@ -35,7 +35,7 @@ public sealed partial class Ui
 
     private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   VALUE A UNIT";
 
-    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxGoods], Buys = new bool[StationMarkets.MaxGoods], Sells = new bool[StationMarkets.MaxGoods], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "" };
+    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxListed], Buys = new bool[StationMarkets.MaxListed], Sells = new bool[StationMarkets.MaxListed], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "" };
 
     private void CmdStationRead(Game g, Construct c, double now)
     {
@@ -61,7 +61,7 @@ public sealed partial class Ui
         k.Trade = k.Trades ? "TRADES WITH YOU" : "WON'T TRADE WITH YOU";
         k.Tab = me == null || power == 0 ? "" : g.TabUnlimited ? "UNLIMITED (CREATIVE)" : string.Create(inv, $"THEY OWE YOU {g.TabOf(me.Id, power):N0}");
         var goods = StationMarkets.All[m.Def].Goods;
-        for (var i = 0; i < goods.Length && i < m.Stock.Length; i++)
+        for (var i = 0; i < goods.Length && i < m.Stock.Length && k.GoodCount < k.Goods.Length; i++)
         {
             var name = RecyclingTable.Current.NameOf(goods[i].Material).ToUpperInvariant();
             var full = goods[i].Buy > 0 && m.Stock[i] >= goods[i].Most;
