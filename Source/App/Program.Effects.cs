@@ -16,6 +16,7 @@ public static unsafe partial class Program
         Fx.Level = _settings.Particles;
         Fx.On = !_smokeNoFx;
         (PostFx.Level, PostFx.BloomOn, PostFx.HazeOn, PostFx.AoOn) = (_settings.PostEffects, _settings.Bloom, _settings.HeatHaze, _settings.AmbientOcclusion);
+        (PostFx.AoStrength, PostFx.AoRadius) = (_settings.AoStrength, _settings.AoRadius);
         PostFx.ContactOn = _settings.ContactShadows; // (any Post effects level: one small pass per near body)
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
         ConstructRender.OcclusionSetting = _settings.HiddenCulling;

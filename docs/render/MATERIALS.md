@@ -173,8 +173,12 @@ back buffer is resolved once into a texture, and everything works from that at s
   share), tracers (`BlendGlowing`), particles (their alpha). `Renderer.BlendDefault` leaves alpha alone, so all other blending must use
   it. It goes back to 1 after the pass. With no alpha in the back buffer it falls back to the brightest pixels.
 - **Heat haze** (`PostFx.AddHaze`, 32 a frame): small quads in one instanced draw that read the copy a little off to the side.
-- **Ambient occlusion** (High): the depth buffer resolved, 8 samples at half size, a small blur, multiplied in before the effects. It is off
-  by itself, with a log line, if the driver can't resolve depth.
+- **Ambient occlusion** (High): the depth buffer resolved, 12 samples at half size over a disc of the Video setting's Shade reach
+  (`ao_radius`, 0.8 m), darkened by Shade strength (`ao_strength`, 1x), multiplied in before the effects. The normal comes from the
+  full-size depth, each axis taking the neighbour nearer in depth (no halo where a box meets the sky); samples carry an angle bias, so
+  flat or faceted ground doesn't shade itself; the blur is a 3x3 that skips other surfaces by depth (Karl, 2026-11-21, phase 4 of the
+  ship looks; before it, 8 samples with derivative normals greyed all flat ground). It is off by itself, with a log line, if the driver
+  can't resolve depth. `--window-shot ... --post High --ao-strength N --ao-radius M` draws a picture with it.
 - **Contact shadows** (Karl, 2026-11-21, from the Ship Render Bench): Settings > Video > Contact shadows, on by default and at any
   Post effects level (`contact_shadows`; `--no-contact` forces it off for a before picture). `PostFx.Contact.cs`: ConstructRender.Draw
   offers each body it draws in full (`PostFx.OfferContact`, the 8 nearest kept); after ambient occlusion each one's footprint (a 64x64
