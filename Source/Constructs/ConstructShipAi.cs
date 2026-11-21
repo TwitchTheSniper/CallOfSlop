@@ -463,7 +463,7 @@ public sealed partial class ShipAi
         var eye = ConstructWeapons.SeatEye(c, seat);
         var speed = 0f;
         for (var k = 0; k < c.GunCount; k++)
-            if (c.Guns[k].Seat == seat && c.Guns[k].Def != null)
+            if (Fires(c, k, seat, fixedGuns) && c.Guns[k].Def != null)
                 speed = MathF.Max(speed, c.Guns[k].RoundV > 0 ? c.Guns[k].RoundV : c.Guns[k].Speed);
         var at = Lead(c, eye, t, speed);
         var look = GravityFrames.Angles(c.WorldCom, at - eye);
@@ -472,7 +472,7 @@ public sealed partial class ShipAi
         for (var k = 0; k < c.GunCount && !fire; k++)
         {
             ref var g = ref c.Guns[k];
-            if (g.Seat != seat || g.Def == null || g.Part >= c.PartCount || c.Parts[g.Part].Broken || dist > g.MaxRange * 1.2f)
+            if (!Fires(c, k, seat, fixedGuns) || g.Def == null || g.Part >= c.PartCount || c.Parts[g.Part].Broken || dist > g.MaxRange * 1.2f)
                 continue;
             ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out var fwd);
             var to = Lead(c, muzzle, t, g.RoundV > 0 ? g.RoundV : g.Speed) - muzzle;
@@ -490,6 +490,30 @@ public sealed partial class ShipAi
                 GunnerShots++;
         }
         return (look, fire);
+    }
+
+    /// <summary>
+    /// Gun <paramref name="k"/> is the seat's: its gunner's (a turret module's or a bare gun's seat), or for the helm (<paramref name="helm"/>) one its
+    /// fire key fires through an Input Reader (the Hood Gun Buggy's: its driver fires it, CGun.KeySeat).
+    /// </summary>
+    private static bool Fires(Construct c, int k, int seat, bool helm)
+    {
+        ref var g = ref c.Guns[k];
+        return g.Seat == seat || helm && g.Seat < 0 && (g.KeySeat == seat || g.KeySeat == -2 && c.DriveSeat == seat);
+    }
+
+    /// <summary>The helm's guns all point the way the body does (none on a turntable or a hinge): it aims them by turning the body.</summary>
+    private bool FixedGunsOnly(Construct c)
+    {
+        var any = false;
+        for (var k = 0; k < c.GunCount; k++)
+            if (Fires(c, k, _pilot, true) && c.Guns[k].Def != null)
+            {
+                if (c.Guns[k].AimJoints > 0)
+                    return false;
+                any = true;
+            }
+        return any;
     }
 
     /// <summary>The point to aim at from <paramref name="from"/>: ahead of the target by its rounds' time of flight (not at all for a round that steers or a speed of 0).</summary>

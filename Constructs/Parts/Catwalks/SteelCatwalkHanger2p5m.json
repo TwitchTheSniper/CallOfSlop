@@ -1,0 +1,382 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Catwalk Hanger 2.5 m",
+  "description": "A ceiling mount for a catwalk: a crossbar under its channels on two rods, the deck hanging 2.5 m under the ceiling.",
+  "group": "Building",
+  "section": "Stairs and access",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "centreSockets": false,
+  "mass": 50.0,
+  "health": 275,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a8088",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.105,
+        -0.035
+      ],
+      "max": [
+        1.7,
+        -0.025,
+        0.035
+      ],
+      "color": "#7a8088",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.195,
+        -0.1205,
+        -0.03
+      ],
+      "max": [
+        1.695,
+        -0.1045,
+        0.03
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.152,
+        -0.105,
+        -0.012
+      ],
+      "max": [
+        -0.128,
+        2.605,
+        0.012
+      ],
+      "color": "#a4aab0",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.164,
+        -0.145,
+        -0.024
+      ],
+      "max": [
+        -0.116,
+        -0.119,
+        0.024
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.16,
+        1.725,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        1.945,
+        0.02
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.164,
+        2.505,
+        -0.03
+      ],
+      "max": [
+        -0.116,
+        2.601,
+        0.03
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.23,
+        2.605,
+        -0.09
+      ],
+      "max": [
+        -0.05,
+        2.625,
+        0.09
+      ],
+      "color": "#7a8088",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.212,
+        2.591,
+        -0.072
+      ],
+      "max": [
+        -0.188,
+        2.603,
+        -0.048
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.092,
+        2.591,
+        -0.072
+      ],
+      "max": [
+        -0.068,
+        2.603,
+        -0.048
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.212,
+        2.591,
+        0.048
+      ],
+      "max": [
+        -0.188,
+        2.603,
+        0.072
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.092,
+        2.591,
+        0.048
+      ],
+      "max": [
+        -0.068,
+        2.603,
+        0.072
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.158,
+        1.125,
+        -0.018
+      ],
+      "max": [
+        -0.122,
+        1.275,
+        0.018
+      ],
+      "color": "#d8b62a",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.628,
+        -0.105,
+        -0.012
+      ],
+      "max": [
+        1.652,
+        2.605,
+        0.012
+      ],
+      "color": "#a4aab0",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.616,
+        -0.145,
+        -0.024
+      ],
+      "max": [
+        1.664,
+        -0.119,
+        0.024
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.62,
+        1.725,
+        -0.02
+      ],
+      "max": [
+        1.66,
+        1.945,
+        0.02
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.616,
+        2.505,
+        -0.03
+      ],
+      "max": [
+        1.664,
+        2.601,
+        0.03
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.55,
+        2.605,
+        -0.09
+      ],
+      "max": [
+        1.73,
+        2.625,
+        0.09
+      ],
+      "color": "#7a8088",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.568,
+        2.591,
+        -0.072
+      ],
+      "max": [
+        1.592,
+        2.603,
+        -0.048
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.688,
+        2.591,
+        -0.072
+      ],
+      "max": [
+        1.712,
+        2.603,
+        -0.048
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.568,
+        2.591,
+        0.048
+      ],
+      "max": [
+        1.592,
+        2.603,
+        0.072
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.688,
+        2.591,
+        0.048
+      ],
+      "max": [
+        1.712,
+        2.603,
+        0.072
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.622,
+        1.125,
+        -0.018
+      ],
+      "max": [
+        1.658,
+        1.275,
+        0.018
+      ],
+      "color": "#d8b62a",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "deckL",
+      "at": [
+        -0.06,
+        -0.025,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "deckR",
+      "at": [
+        1.56,
+        -0.025,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "ceilL",
+      "at": [
+        -0.14,
+        2.625,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "ceilR",
+      "at": [
+        1.64,
+        2.625,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

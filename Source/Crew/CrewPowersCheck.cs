@@ -96,7 +96,7 @@ public static class CrewPowersCheck
             var cheapest = ctl.Cheapest(p);
             Console.WriteLine($"  {name}: start {ctl.Powers[p].Stock:0}, cheapest ship {cheapest:0}; bills: {string.Join(", ", ctl.Blueprints.Select((b, i) => (b, i)).Where(x => ctl.Rules.PlanOf(p).Fleet.Any(f => f.Contains(x.b.Name))).Select(x => $"{x.b.Name} {ctl.Bills[x.i].Units:0} units, {ctl.Bills[x.i].Seconds:0} s ({ctl.Bills[x.i].Parts} parts)"))}");
         }
-        // Each crew fights the nearest crewed body of a power its power fights, within its kind's sight.
+        // Each crew fights the nearest crewed body (someone aboard still alive) of a power its power fights, within its kind's sight.
         crew.FixedFor = (Construct c, CrewShip cs, out ShipAiTarget t) =>
         {
             t = default;
@@ -104,7 +104,7 @@ public static class CrewPowersCheck
             var best = sight * sight;
             Construct? to = null;
             for (var i = 0; i < crew.ShipHigh; i++)
-                if (crew.Ships[i] is { } o && o != cs && o.Faction != 0 && rel.Fights(cs.Faction, o.Faction) && w.Get(o.Body) is { Wreck: false } oc
+                if (crew.Ships[i] is { } o && o != cs && o.Faction != 0 && rel.Fights(cs.Faction, o.Faction) && crew.Alive(o) > 0 && w.Get(o.Body) is { Wreck: false } oc
                     && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) is var d2 && d2 < best)
                     (best, to) = (d2, oc);
             if (to == null)
@@ -139,7 +139,7 @@ public static class CrewPowersCheck
                 w.Step(q, World.TickDt);
             }
             foreach (var e in crew.Events)
-                if (e.StartsWith("fleet: group", StringComparison.Ordinal) && e.Contains("formed", StringComparison.Ordinal) || e.StartsWith("powers:", StringComparison.Ordinal))
+                if (e.StartsWith("fleet: group", StringComparison.Ordinal) && (e.Contains("formed", StringComparison.Ordinal) || e.Contains("route's point", StringComparison.Ordinal)) || e.StartsWith("powers:", StringComparison.Ordinal))
                     Console.WriteLine($"  {t / World.TickRate,3} s [crew] {e}");
             crew.Events.Clear();
             foreach (var l in ctl.Log)
@@ -192,7 +192,13 @@ public static class CrewPowersCheck
                 }
             }
             if (t % (20 * World.TickRate) == 20 * World.TickRate - 1)
+            {
                 Console.Write($"  {(t + 1) / World.TickRate,3} s:\n{ctl.Text(crew)}");
+                // Each crewed body: where it is, how fast, its order and hull (where a loop stalls: a convoy that never arrives, a raid that never catches it).
+                for (var i = 0; i < crew.ShipHigh; i++)
+                    if (crew.Ships[i] is { } s && w.Get(s.Body) is { } c)
+                        Console.WriteLine($"    {CrewPowers.Of(s.Faction)?.Name ?? "-",-9} {c.Id,3} at ({c.WorldCom.X:0}, {c.WorldCom.Z:0}) {c.Vel.Length():0.0} m/s, group {s.Group}, order {s.Order.Kind}, hull {CrewWorld.HullOf(c):0}{(c.Wreck ? ", WRECK" : "")}; {s.Ai?.State ?? "asleep"}, shots {s.Ai?.Shots ?? 0}");
+            }
         }
         Console.Write(ctl.Text(crew));
         thinkMs.Sort();
