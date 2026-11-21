@@ -25,6 +25,7 @@ public static class ModuleGuide
 {
     public const byte Holder = 254; // GrabbedBy while a guide holds a module (no player has this id)
     public const int MemAttach = 1, MemEject = 2, MemLockHigh = 4; // a plate's Mem bits: its wires' last levels
+    public const int MemSeen = 8; // the levels were read once since the body was made or loaded (Mem isn't saved: a wire high at a load is no rise)
     public const float EjectSpeed = 0.5f; // m/s out of a well
     public const float EjectClear = 0.35f; // m: an ejected module stops this far past the frame's face...
     public const float HoverSeconds = 8f; // ...and is held there this long for a physics gun to take
@@ -200,7 +201,9 @@ public static class ModuleGuide
                 if (g.D <= 0)
                 {
                     g.D = 0;
-                    if (s.Module < 0 && hands.FitBody(world, g.Player, ship, si, body, plug) is { } why)
+                    if (s.Module >= 0)
+                        Let(body, ship); // (another module took the socket while it slid back: it is let go there)
+                    else if (hands.FitBody(world, g.Player, ship, si, body, plug) is { } why)
                     {
                         Console.WriteLine($"[modules] construct {ship.Id}: module {body.Id} couldn't seat again: {why}");
                         Let(body, ship);
@@ -331,10 +334,12 @@ public static class ModuleGuide
                         p.Mem = 0;
                     continue;
                 }
-                var now = (attach >= 0.5f ? MemAttach : 0) | (eject >= 0.5f ? MemEject : 0) | (lck >= 0.5f ? MemLockHigh : 0);
+                var now = (attach >= 0.5f ? MemAttach : 0) | (eject >= 0.5f ? MemEject : 0) | (lck >= 0.5f ? MemLockHigh : 0) | MemSeen;
                 if (now == was)
                     continue;
                 p.Mem = now;
+                if ((was & MemSeen) == 0)
+                    continue; // (the first read since a load or a new wire: levels, no rise)
                 var rise = now & ~was;
                 string? why = null;
                 if ((rise & MemEject) != 0 && s.Module >= 0)
@@ -600,6 +605,16 @@ public static class ModuleGuide
     }
 
     private static float Ease(float t) => t * t * (3 - 2 * t);
+
+    /// <summary>A caught module let go by its gun: the socket's pull ends and it has contacts with that ship again.</summary>
+    public static void Uncatch(Construct held)
+    {
+        if (held.GrabbedBy != Holder && held.HeldNear == held.ModCatchShip)
+            held.HeldNear = 0;
+        held.ModCatchShip = 0;
+        held.ModCatchPlate = -1;
+        held.ModCatch = 0;
+    }
 
     private static void Uncatch(Construct held, Construct? ship)
     {

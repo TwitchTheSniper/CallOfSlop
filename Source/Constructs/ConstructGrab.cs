@@ -877,6 +877,8 @@ public sealed partial class ConstructEdits
     /// <summary>Let go: it keeps the speed it had (pr02: as before pr01; a flick throws it).</summary>
     private static void LetGo(Construct c)
     {
+        if (c.ModCatchShip != 0)
+            ModuleGuide.Uncatch(c); // (let go while a socket drew it in: it touches that ship again, or it would fall through its deck)
         c.GrabbedBy = 255;
         c.GrabBoost = 1f;
         c.Wake();

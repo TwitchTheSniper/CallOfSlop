@@ -421,6 +421,15 @@ public static class ModuleSockets
             s.Behind = s.Style switch { ModStyle.Proud => 0, ModStyle.Through => Thickness(d) + s.Depth, _ => MathF.Max(s.Depth, Thickness(d) + 0.02f) };
             s.Seat = s.Style is ModStyle.Flush or ModStyle.Opening ? s.Behind : 0;
             s.Height = s.Style switch { ModStyle.Flush => FlushStand, ModStyle.Proud => s.Above, _ => s.Above };
+            if (d.ModNoHide && s.Style is ModStyle.Flush or ModStyle.Opening)
+            {
+                // A Wall Bay Socket is a wall section whose bay is built: its plate is the bay's back, the well stands over its face and
+                // nothing is dug behind it (the rule before dug wells, kept for the shipped bays).
+                if (above <= 0 && s.Style == ModStyle.Opening)
+                    s.Above = 0;
+                s.Behind = s.Seat = 0;
+                s.Height = s.Style == ModStyle.Flush ? s.Depth + FlushStand : s.Depth + s.Above;
+            }
             Room(c, i, s.Height, out s.RoomMin, out s.RoomMax, s.Style == ModStyle.Proud ? ModuleSocketTable.Current.Side : ModuleCut.WellSide, s.Behind);
             sockets.Add(s);
         }

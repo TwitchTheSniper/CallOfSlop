@@ -179,6 +179,15 @@ public static class ModuleCut
             linerB = face - n * (thick + s.Depth);
             return;
         }
+        if (s.Seat <= 0)
+        {
+            // A built bay's well (a Wall Bay Socket: ModuleSockets.Build): over the plate's face, from just over the surface down to the face.
+            mouth = face + n * (s.Depth + OverSurface);
+            len = s.Depth + OverSurface - OverPlate;
+            linerA = face + n * (s.Depth + LinerOverSurface);
+            linerB = face + n * LinerOverPlate;
+            return;
+        }
         // A well (flush, Well): dug into what the plate is welded to, from inside the frame down to the floor, Seat behind the face (the
         // plate on the surface, Sean 2026-11-21); lined from the plate's back.
         var back = ModuleSockets.Thickness(c.DefOf(s.Plate));
