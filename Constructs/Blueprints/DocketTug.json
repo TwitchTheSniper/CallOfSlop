@@ -551,10 +551,10 @@
       "finish": "worn paint"
     },
     {
-      "part": "Heavy RCS Thruster",
+      "part": "Docket Retro Jet",
       "on": 82,
       "socket": "rcsFore",
-      "by": "base",
+      "by": "top",
       "paint": "#3b3f44",
       "finish": "dirty steel"
     },
@@ -600,10 +600,10 @@
       "finish": "worn paint"
     },
     {
-      "part": "Heavy RCS Thruster",
+      "part": "Docket Retro Jet",
       "on": 89,
       "socket": "rcsFore",
-      "by": "base",
+      "by": "top",
       "paint": "#3b3f44",
       "finish": "dirty steel"
     },
@@ -648,10 +648,10 @@
       "finish": "worn paint"
     },
     {
-      "part": "Heavy RCS Thruster",
+      "part": "Docket Retro Jet",
       "on": 96,
       "socket": "rcsFore",
-      "by": "base",
+      "by": "top",
       "paint": "#3b3f44",
       "finish": "dirty steel"
     },
@@ -696,10 +696,10 @@
       "finish": "worn paint"
     },
     {
-      "part": "Heavy RCS Thruster",
+      "part": "Docket Retro Jet",
       "on": 103,
       "socket": "rcsFore",
-      "by": "base",
+      "by": "top",
       "paint": "#3b3f44",
       "finish": "dirty steel"
     },

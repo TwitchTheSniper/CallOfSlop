@@ -102,6 +102,7 @@ public sealed class TugParts : IPartGenerator
     private const double NacNose = PylonZ - 5.2, NacTank0 = PylonZ - 3.8, NacTank1 = PylonZ + 3.0, NacTail = PylonZ + 8.4;
     private const int KeelFuel = 9000, NacFuel = 5000; // litres
     private const double LiftForce = 1700000, JetScale = 1.05, Burn = 2.5;
+    private const double RetroForce = 600000, RetroScale = 0.7;
     private static readonly (double X, double Z)[] LiftAt = [(-2.25, -11.1), (2.25, -11.1), (-2.25, -0.5), (2.25, -0.5)];
     private static readonly (double X, double Z)[] LegAt = [(-2.2, -14.4), (2.2, -14.4), (-2.4, -3.0), (2.4, -3.0)];
     private static readonly double[] EndLegX = [-1.0, 1.0];
@@ -1422,7 +1423,7 @@ public sealed class TugParts : IPartGenerator
             double z = (z0 + z1) / 2;
             RcsPad(p, "rcsUp" + n, Cx + s * 0.8, TT, z, "+y", 0.06);
             RcsPad(p, "rcsDown" + n, Cx + s * 0.3, KeelY, z0 + 0.6, "-y", 0.05);
-            RcsPad(p, "rcsOut" + n, Cx + s * TW, 0.2, z, s < 0 ? "-x" : "+x", 0.06);
+            RcsPad(p, "rcsOut" + n, Cx + s * TW, 0.5, z, s < 0 ? "-x" : "+x", 0.06);
             RcsPad(p, "rcsAlong" + n, Cx + s * 0.75, 0.0, z1, "+z", 0.06);
         }
         for (var i = 0; i < EndLegX.Length; i++)
@@ -1432,10 +1433,14 @@ public sealed class TugParts : IPartGenerator
 
     // ---- the flying parts: lift jets, the power plant, the flight computer (the Dray's kinds, in the Traders' colours and size)
 
-    private static Part LiftJet()
+    private static Part LiftJet() => Jet("Docket Lift Jet", LiftForce, JetScale, $"A lift jet: {LiftForce / 1e6:0.0} MN straight down. Four under the Docket's head hold it up, string and all, from the keel's tanks.");
+
+    /// <summary>The retro jets in the nacelles' noses: a tug brakes its tow (and holds itself up pointing down) on them.</summary>
+    private static Part RetroJet() => Jet("Docket Retro Jet", RetroForce, RetroScale, $"A retro jet: {RetroForce / 1e6:0.0} MN out of a nacelle's nose. Four of them brake the Docket and its string.");
+
+    private static Part Jet(string name, double force, double k, string desc)
     {
-        const double k = JetScale;
-        var p = new Part("Docket Lift Jet", Small, Section, $"A lift jet: {LiftForce / 1e6:0.0} MN straight down. Four under the Docket's head hold it up, string and all, from the keel's tanks.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        var p = new Part(name, Small, Section, desc, role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
         double[] R(double r, double y, int i, int n = 8)
         {
             var an = Math.PI / n + i * 2 * Math.PI / n;
@@ -1451,7 +1456,7 @@ public sealed class TugParts : IPartGenerator
         p.Add(Box([-0.45 * k, -0.45 * k, -0.45 * k], [0.45 * k, 0, 0.45 * k], hidden: true));
         p.Add(Box([-0.4 * k, -1.05 * k, -0.4 * k], [0.4 * k, -0.45 * k, 0.4 * k], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
-        p.Set(("thruster", Kw(("force", LiftForce), ("spool", 0.6), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * k, 4), 0)), ("burnRate", Py.Round(LiftForce / 1e6 * Burn, 4)))),
+        p.Set(("thruster", Kw(("force", force), ("spool", 0.6), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * k, 4), 0)), ("burnRate", Py.Round(force / 1e6 * Burn, 4)))),
             ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * k, 4), Py.Round(-0.2 * k, 4), 0], "+x", "fuel"))));
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * k, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * k, 4)), ("length", Py.Round(2.8 * k, 4)), ("kind", "Rocket")))));
         return p.Stats(1000, 4000, 25, 6.0);
@@ -1948,7 +1953,8 @@ public sealed class TugParts : IPartGenerator
                 Hang(bp, "Drive Nozzle M", nac, "drive", "mount");
                 Hang(bp, "Fuel Pump M", Hang(bp, "Drive Core M", nac, "core", "front"), "back", "front");
                 Paint(bp, Works.HangHatch(bp, nac, s), Armour, "worn paint");
-                foreach (var j in new[] { "rcsFore", u == 0 ? "rcsUp" : "rcsDown" })
+                Paint(bp, Hang(bp, "Docket Retro Jet", nac, "rcsFore", "top"), Frame, "dirty steel");
+                foreach (var j in new[] { u == 0 ? "rcsUp" : "rcsDown" })
                     Paint(bp, Hang(bp, Rcs, nac, j, "base"), Frame, "dirty steel");
             }
         // The attitude jets: the bow's up, down and out, the string end's every way.
@@ -2017,7 +2023,7 @@ public sealed class TugParts : IPartGenerator
             .. structure, Nacelle(-1, 0), Nacelle(-1, 1), Nacelle(1, 0), Nacelle(1, 1),
             Ladder("Docket Boarding Ladder", Py.Round(BoardRise, 3), "The Docket's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
             Ladder("Docket Wheelhouse Ladder", Py.Round(WFl - Ft, 3), "The Docket's wheelhouse ladder: from engineering's deck up through the opening in its ceiling to the wheelhouse. F climbs it.", "foot", [0, 0, -0.1], "-y"),
-            BellyHatchPart(), LiftJet(), PowerPlant(), FlightComputer(),
+            BellyHatchPart(), LiftJet(), RetroJet(), PowerPlant(), FlightComputer(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
