@@ -303,6 +303,7 @@
       "on": 42,
       "socket": "ladder",
       "by": "foot",
+      "spin": 3,
       "paint": "#2e302d",
       "finish": "painted steel"
     },
@@ -311,7 +312,7 @@
       "on": 0,
       "socket": "ladderUp",
       "by": "foot",
-      "spin": 1
+      "spin": 2
     },
     {
       "part": "Dibber Power Plant",

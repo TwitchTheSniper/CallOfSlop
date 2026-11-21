@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Dibber, the farmers' vertical lander (Karl, 2026-11-21: a picture of a squat tapered lander on four jointed legs, "add this lander
 /// to the space faction"; he picked the farmers). A small craft that drops straight down from a ship in orbit to a field and back:
 /// an eight-sided capsule standing on end, wider at the shoulder over its belly than at its roof, a glass cab poking out low on the
-/// nose, four lift jets in a skirt under the belly and four fixed legs at the diagonals, angled out over a knee to broad pads.
+/// nose, one lift jet in a skirt under the belly, a trim jet under each of four fixed legs at the diagonals, angled out over a knee to broad pads.
 ///
 /// Two decks inside a separate room shell (an upright octagon inside the tapering skin): the cockpit and the boarding hatch below
 /// (two couches, the flight computer between them, two suit lockers, a belly hatch that slides down to the ground with its ladder on
@@ -64,15 +64,14 @@ public sealed class DibberParts : IPartGenerator
     private const double Ground = -1.5; // the pads' soles
     private const double HatchBottom = -0.012, HatchTop = HatchBottom + 0.08;
     private static double HatchTravel => Math.Min(HatchBottom - Ground - 0.005, Mid0 - 0.03 - Ft);
-    private const double LadderZ = HatchZ1 - 0.03;
+    private const double LadderZ = HatchZ0 + 0.1; // (the boarding ladder's socket on the hatch: its back to the shaft's fore edge, off its top forward onto the deck)
     private static double BoardRise => Ft - (HatchTop - HatchTravel);
 
-    // Flying it: four lift jets in the skirt under the belly round the middle, RCS pads high on the four flat faces.
+    // Flying it: one big jet in the skirt under the middle of the belly, a small trim jet under each leg's thigh (the flight computer tips it on those), RCS pads on the lower flat faces and four up the roof.
     private const double MainForce = 440000, MainScale = 1.15, TrimForce = 80000, TrimScale = 0.55, Burn = 2.5, TrimR = 2.95, TrimY = 0.4;
     private const string MainJet = "Dibber Belly Jet", TrimJet = "Dibber Trim Jet";
     private const int BellyFuel = 1800, ShareFuel = 75; // litres: the belly, and each piece that carries jets (a jet burns from the tank it is on)
     private const double RcsYFore = 2.55, RcsY = 1.8, RcsPadW = 0.56; // (the fore pad over the cab, the others level with the centre of mass)
-    private static readonly bool LowRcs = Environment.GetEnvironmentVariable("DIBBER_LOWRCS") == "1";
 
     // The legs: in the radial plane of each diagonal, the hip on the belly's chamfer, the knee out and up, the ankle over the pad.
     private const double HipR = 2.45, HipY = 0.22, KneeR = 3.45, KneeY = 0.85, AnkleR = 4.25, AnkleY = -1.12, PadR = 4.3;
@@ -426,9 +425,6 @@ public sealed class DibberParts : IPartGenerator
         Tube(a + 0.07, -0.42, a + 0.07, -0.5, Hazard, "hazard paint");
         Tube(a, -0.56, a + 0.06, -0.64, Frame, "soot");
         Sock(p, "main", 0, 0, SkirtZ, "-y");
-        // Low RCS pads on the flat faces under the shoulder, a jet out of each: with the high ones they push sideways without tipping it.
-        if (LowRcs)
-            RcsPads(_ => p, _ => 0.04, 0.24, "rcsLow", false);
         // The hatch hangs on the shaft's aft wall.
         Sock(p, "boarding", 0, Ft - 0.125, HatchZ1, "-z");
         p.Set(("fuelTank", Kw(("capacity", BellyFuel))));
@@ -792,7 +788,7 @@ public sealed class DibberParts : IPartGenerator
         B(-0.05, 0.701, -0.2, 0.05, 0.717, 0.1, Hazard, Kw(("finish", "hazard paint")), true);
         B(-0.12, 0.701, -0.2, 0.12, 0.717, -0.12, Hazard, Kw(("finish", "hazard paint")), true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 8000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 2000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z")); // (a light gyro: the mix drops any turn row under a twentieth of the strongest, so a gyro over 20x the jets' pitch and roll levers (170 kN m) switches those off and it leans for good)
         return p.Stats(200, 600, 8, 3.0);
     }
 
@@ -836,7 +832,7 @@ public sealed class DibberParts : IPartGenerator
         B(-0.3, HatchTop, HatchZ1 - 0.03, 0.3, Ft - 0.01, HatchZ1, null, null, hidden: true);
         B(-0.28, HatchTop + 0.004, HatchZ1 - 0.028, 0.28, Ft - 0.02, HatchZ1 - 0.004, Frame, "painted steel");
         p.Sock("hang", [0, 0, 0], "+z");
-        p.Sock("ladder", L(0, HatchTop, LadderZ - 0.1), "+y");
+        p.Sock("ladder", L(0, HatchTop, LadderZ), "+y");
         p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", Py.Round(HatchTravel, 3)), ("seconds", 3.5), ("hang", "hang"))));
         return p.Stats(300, 3000, 25, 5.0);
     }
@@ -978,9 +974,6 @@ public sealed class DibberParts : IPartGenerator
         foreach (var q in lower)
             foreach (var r in new[] { "rcsOut", "rcsL", "rcsR" })
                 Paint(bp, bp.Hang("RCS Thruster", st[(string)q.D["name"]!], r, "base"), Frame, "dirty steel");
-        if (LowRcs)
-            for (var i = 0; i < 4; i++)
-                Paint(bp, bp.Hang("RCS Thruster", belly, $"rcsLow{i * 2}Out", "base"), Frame, "dirty steel");
         for (var i = 0; i < 4; i++)
             Paint(bp, bp.Hang("RCS Thruster", st["Dibber Roof"], $"rcsTop{i}", "base"), Frame, "dirty steel");
         // The cockpit: two couches and the flight computer between them.
@@ -996,8 +989,8 @@ public sealed class DibberParts : IPartGenerator
         foreach (var n in new[] { "suit0", "suit1" })
             bp.Hang(EvaParts.LockerName, On(lower, n), n, "wall");
         var hatch = bp.Hang(HatchName, belly, "boarding", "hang");
-        Paint(bp, bp.Hang("Dibber Boarding Ladder", hatch, "ladder", "foot"), Frame, "painted steel");
-        bp.HangTurned("Dibber Deck Ladder", belly, "ladderUp", "foot", BuildingParts.RY90);
+        Paint(bp, bp.HangTurned("Dibber Boarding Ladder", hatch, "ladder", "foot", BuildingParts.RY180), Frame, "painted steel");
+        bp.HangTurned("Dibber Deck Ladder", belly, "ladderUp", "foot", BuildingParts.RY270); // (its back to the hole's inboard edge: off its top onto the deck inboard)
         // The systems deck.
         bp.Hang("Dibber Power Plant", mid, "plant", "bottom");
         bp.Hang("Battery", mid, "battery0", "-y");
@@ -1036,10 +1029,10 @@ public sealed class DibberParts : IPartGenerator
         var cab = Cab();
         var legs = new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) }.Select(t => Leg(t.Item1, t.Item2)).ToList();
         // The cockpit's floor sockets, on the belly.
-        Sock(belly, "pilot", -0.8, Ft, -1.1, "+y");
-        Sock(belly, "copilot", 0.8, Ft, -1.1, "+y");
-        Sock(belly, "computer", 0, Ft, -1.3, "+y");
-        Sock(belly, "ladderUp", 1.55, Ft, 0, "+y");
+        Sock(belly, "pilot", -0.5, Ft, -1.0, "+y");
+        Sock(belly, "copilot", 0.5, Ft, -1.0, "+y");
+        Sock(belly, "computer", 0, Ft, -1.88, "+y");
+        Sock(belly, "ladderUp", 1.02, Ft, 0, "+y");
         var structure = new List<Part> { belly };
         structure.AddRange(lower);
         structure.Add(mid);
