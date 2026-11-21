@@ -1313,6 +1313,9 @@ public static partial class ConstructParts
         "robot charging cradle" => "Robot Shell Dock", // (rebuilt as a shell dock, 2026-11-17)
         "medium flight panel" => "Medium Flight Control Panel",
         "large flight panel" => "Large Flight Control Panel",
+        "wheel former" or "medium wheel former" or "large wheel former" or "capital wheel former"
+            or "fan former" or "medium fan former" or "large fan former" or "capital fan former"
+            or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };
