@@ -1009,6 +1009,14 @@ public sealed partial class Ui
                     ImGui.Checkbox("Ambient occlusion##post"u8, ref s.AmbientOcclusion);
                     if (s.AmbientOcclusion)
                     {
+                        var aoStyle = s.AoClassic ? 0 : 1;
+                        ImGui.Text("Ambient occlusion style"u8);
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("Classic##aostyle"u8, ref aoStyle, 0))
+                            s.AoClassic = true;
+                        ImGui.SameLine();
+                        if (ImGui.RadioButton("Clean##aostyle"u8, ref aoStyle, 1))
+                            s.AoClassic = false;
                         ImGui.SliderFloat("Shade strength##ao"u8, ref s.AoStrength, 0.25f, 2f, "%.2fx"u8);
                         ImGui.SliderFloat("Shade reach##ao"u8, ref s.AoRadius, 0.3f, 2.5f, "%.1f m"u8);
                     }

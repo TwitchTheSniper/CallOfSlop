@@ -27,6 +27,9 @@ public static unsafe partial class PostFx
     /// <summary>The ambient occlusion's reach in metres and its darkness (1 the default), from the Video settings.</summary>
     public static float AoRadius = 0.8f, AoStrength = 1f;
 
+    /// <summary>Video > Ambient occlusion style: Classic (the grainy one before phase 4, cheaper) or Clean.</summary>
+    public static bool AoClassic = true;
+
     public static bool Bloom => Level >= VideoLevel.Medium && BloomOn;
 
     public static bool Haze => Level >= VideoLevel.Medium && HazeOn;
@@ -246,6 +249,78 @@ public static unsafe partial class PostFx
         }
         """;
 
+    // Classic ambient occlusion (Video > Ambient occlusion style, Karl 2026-11-21: he liked its grain): the AO before phase 4, 8 samples
+    // with screen-derivative normals and a plain 4-tap blur, about half the work of the clean one. Flat ground takes a fine grain from it.
+    private const string AoClassicFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uDepth;
+        uniform vec4 uProj;    // M33, M43, 1 / M11, 1 / M22
+        uniform vec2 uTexel;
+        uniform vec4 uShape;   // radius (m), strength
+        out vec4 FragColor;
+        float Linear(vec2 uv)
+        {
+        #if REVZ
+            float nd = texture(uDepth, uv).r; // (reversed depth: 0..1 is already clip depth, uProj the reversed matrix's)
+        #else
+            float nd = texture(uDepth, uv).r * 2.0 - 1.0;
+        #endif
+            return uProj.y / (nd + uProj.x);
+        }
+        vec3 View(vec2 uv)
+        {
+            float l = Linear(uv);
+            return vec3((uv * 2.0 - 1.0) * uProj.zw * l, -l);
+        }
+        void main()
+        {
+            float d0 = texture(uDepth, vUv).r;
+        #if REVZ
+            if (d0 <= 1e-9)
+        #else
+            if (d0 >= 0.99999)
+        #endif
+            {
+                FragColor = vec4(1.0);
+                return;
+            }
+            vec3 p = View(vUv);
+            vec3 n = normalize(cross(dFdx(p), dFdy(p)));
+            float a0 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2832;
+            float radius = uShape.x;
+            float screen = radius / (uProj.z * max(-p.z, 0.3)) * 0.5;
+            float occ = 0.0;
+            for (int i = 0; i < 8; i++)
+            {
+                float t = (float(i) + 0.5) / 8.0;
+                float a = a0 + t * 18.85;
+                vec2 uv = vUv + vec2(cos(a), sin(a)) * vec2(screen, screen * uTexel.y / uTexel.x) * t;
+                vec3 v = View(uv) - p;
+                float d2 = dot(v, v);
+                float c = max(dot(v, n) - 0.02 * -p.z * 0.05, 0.0) / (d2 + 0.02);
+                occ += c * max(0.0, 1.0 - d2 / (radius * radius * 1.4));
+            }
+            float ao = clamp(1.0 - occ * radius * 0.28 * uShape.y, 0.0, 1.0);
+            FragColor = vec4(ao, ao, ao, 1.0);
+        }
+        """;
+
+    private const string AoClassicBlurFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uTex;
+        uniform vec2 uTexel;
+        out vec4 FragColor;
+        void main()
+        {
+            vec2 d = uTexel;
+            float s = texture(uTex, vUv + vec2(-d.x, -d.y)).r + texture(uTex, vUv + vec2(d.x, -d.y)).r
+                    + texture(uTex, vUv + vec2(-d.x, d.y)).r + texture(uTex, vUv + d).r;
+            FragColor = vec4(vec3(s * 0.25), 1.0);
+        }
+        """;
+
     private sealed class Target
     {
         public GlFramebuffer Fbo;
@@ -256,8 +331,8 @@ public static unsafe partial class PostFx
     private static bool _ready, _broken, _aoBroken, _alpha, _copied;
     private static int _w, _h;
     private static GlVertexArray _vao;
-    private static GlProgram _extract, _blur, _copy, _haze, _ao, _aoBlur;
-    private static int _lExtractTexel, _lExtractMarked, _lBlurStep, _lCopyMix, _lCopyGain, _lHazeVp, _lHazeRight, _lHazeUp, _lHazeData, _lHazeTexel, _lHazeTime, _lAoProj, _lAoTexel, _lAoShape, _lAoBlurTexel, _lAoBlurProj;
+    private static GlProgram _extract, _blur, _copy, _haze, _ao, _aoBlur, _aoC, _aoCBlur;
+    private static int _lExtractTexel, _lExtractMarked, _lBlurStep, _lCopyMix, _lCopyGain, _lHazeVp, _lHazeRight, _lHazeUp, _lHazeData, _lHazeTexel, _lHazeTime, _lAoProj, _lAoTexel, _lAoShape, _lAoBlurTexel, _lAoBlurProj, _lAoCProj, _lAoCTexel, _lAoCShape, _lAoCBlurTexel;
     private static readonly Target Scene = new(), Half = new(), Quarter = new(), Quarter2 = new(), Eighth = new(), Eighth2 = new(), AoA = new(), AoB = new();
     private static uint _depthTex;
     private static bool _depthFloat;
@@ -373,6 +448,12 @@ public static unsafe partial class PostFx
             _aoBlur = Link(QuadVs, AoBlurFs, "PostFx.aoBlur");
             _lAoBlurTexel = Loc(_aoBlur, "uTexel\0"u8);
             _lAoBlurProj = Loc(_aoBlur, "uProj\0"u8);
+            _aoC = Link(QuadVs, AoClassicFs, "PostFx.aoClassic");
+            _lAoCProj = Loc(_aoC, "uProj\0"u8);
+            _lAoCTexel = Loc(_aoC, "uTexel\0"u8);
+            _lAoCShape = Loc(_aoC, "uShape\0"u8);
+            _aoCBlur = Link(QuadVs, AoClassicBlurFs, "PostFx.aoClassicBlur");
+            _lAoCBlurTexel = Loc(_aoCBlur, "uTexel\0"u8);
             Set(_aoBlur, "uDepth\0"u8, Unit1); // (the blur reads the AO on unit 0 and the depth beside it)
             _vao = GenVertexArray();
             GlDebug.Label(GL_VERTEX_ARRAY, _vao.Id, "PostFx");
@@ -489,18 +570,34 @@ public static unsafe partial class PostFx
             return;
         }
         Begin();
-        _ao.Use();
-        Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
-        Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
-        Native.glUniform4f(_lAoShape, AoRadius, AoStrength, 1f / w, 1f / h);
-        Bind(Unit0, _depthTex);
-        Pass(AoA);
-        _aoBlur.Use();
-        Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
-        Native.glUniform4f(_lAoBlurProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
-        Bind(Unit0, AoA.Tex);
-        Bind(Unit1, _depthTex);
-        Pass(AoB);
+        if (AoClassic)
+        {
+            _aoC.Use();
+            Native.glUniform4f(_lAoCProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Native.glUniform2f(_lAoCTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoCShape, AoRadius, AoStrength, 0f, 0f);
+            Bind(Unit0, _depthTex);
+            Pass(AoA);
+            _aoCBlur.Use();
+            Native.glUniform2f(_lAoCBlurTexel, 1f / AoA.W, 1f / AoA.H);
+            Bind(Unit0, AoA.Tex);
+            Pass(AoB);
+        }
+        else
+        {
+            _ao.Use();
+            Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoShape, AoRadius, AoStrength, 1f / w, 1f / h);
+            Bind(Unit0, _depthTex);
+            Pass(AoA);
+            _aoBlur.Use();
+            Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoBlurProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Bind(Unit0, AoA.Tex);
+            Bind(Unit1, _depthTex);
+            Pass(AoB);
+        }
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
         Viewport(0, 0, w, h);
         Native.glEnable(GlCapability.Blend);
