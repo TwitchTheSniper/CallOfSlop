@@ -208,9 +208,13 @@ public static class ConstructBores
             return false;
         Freeform.PartWorld(body, part, out var pos, out var rot);
         var iq = Quaternion.Conjugate(rot);
-        var up = Across(dir, out _);
+        // The square's sides along the part's own axes (a plain box is cut along them: a tunnel turned in its face would cut its
+        // bounding square instead, up to 1.4 times as wide), its up the axis of the face that isn't the way in.
+        var ld = Vector3.Transform(dir, iq);
+        var a = MathF.Abs(ld.X) >= MathF.Abs(ld.Y) && MathF.Abs(ld.X) >= MathF.Abs(ld.Z) ? 0 : MathF.Abs(ld.Y) >= MathF.Abs(ld.Z) ? 1 : 2;
+        var lup = a == 1 ? Vector3.UnitZ : Vector3.UnitY;
         var half = calibre * HoleScale;
-        var local = HullHoles.Hole.Of(Vector3.Transform(at - dir * HoleBefore - pos, iq), Vector3.Transform(dir, iq), Vector3.Transform(up, iq), half, half, depth + HoleBefore);
+        var local = HullHoles.Hole.Of(Vector3.Transform(at - dir * HoleBefore - pos, iq), ld, lup, half, half, depth + HoleBefore);
         world.HolesWaiting.Add((body.Id, part, p.Pos, local));
         return true;
     }
@@ -286,7 +290,7 @@ public static class ConstructBores
         // A second ray just outside the hole's edge: the server may have cut the holes (Cut) before this PC marks them, and the middle
         // ray then goes clean through. Whichever meets a part first is the one, its point taken back onto the middle line.
         Across(d, out var right);
-        var aside = right * (radius * HoleScale * 1.35f + 0.01f);
+        var aside = right * (radius * HoleScale * 1.5f + 0.01f); // (past the square's corner whichever way it is turned)
         for (var k = 0; k < MaxParts && left > 0; k++)
         {
             var mid = world.Raycast(pos, d, left, out var hit);
@@ -375,11 +379,12 @@ public sealed partial class ConstructWorld
 
     /// <summary>
     /// Does mark <paramref name="k"/> (live, on <paramref name="c"/>) sit on a hole its part was cut with (<see cref="ConstructBores.Cut"/>)?
-    /// Then it is drawn as a ring round the opening, not over it. <paramref name="facing"/>: how square the hole meets the face (1: straight on).
+    /// Then it is drawn as a frame round the opening, not over it: <paramref name="across"/> and <paramref name="up"/> are the opening's
+    /// half sides on the face (the tunnel's square met by the face, so stretched where it goes in slanting), in the part's segment frame.
     /// </summary>
-    public bool BoreMarkHoled(int k, Construct c, out float facing)
+    public bool BoreMarkHoled(int k, Construct c, out Vector3 across, out Vector3 up)
     {
-        facing = 1f;
+        across = up = default;
         ref var m = ref BoreMarks[k];
         ref var p = ref c.Parts[m.Part];
         var d = c.DefOf(m.Part);
@@ -391,15 +396,21 @@ public sealed partial class ConstructWorld
         foreach (var h in HullHoles.HolesOf(d))
         {
             var dir = h.Dir;
-            var up = h.Up;
+            var hu = h.Up;
             var rel = local - h.Origin;
             var along = Vector3.Dot(rel, dir);
             if (along < -0.06f || along > h.Depth + 0.06f)
                 continue;
             var slack = 0.02f + m.Radius * 0.5f;
-            if (MathF.Abs(Vector3.Dot(rel, up)) > h.HalfH + slack || MathF.Abs(Vector3.Dot(rel, Vector3.Cross(dir, up))) > h.HalfW + slack)
+            var ha = Vector3.Cross(dir, hu);
+            if (MathF.Abs(Vector3.Dot(rel, hu)) > h.HalfH + slack || MathF.Abs(Vector3.Dot(rel, ha)) > h.HalfW + slack)
                 continue;
-            facing = MathF.Max(0.4f, MathF.Abs(Vector3.Dot(n, dir)));
+            // Each side projected along the way in onto the face (n . dir kept from 0.4: a grazing hole isn't drawn metres long).
+            var nd = Vector3.Dot(n, dir);
+            nd = nd < 0 ? MathF.Min(nd, -0.4f) : MathF.Max(nd, 0.4f);
+            var pr = Rot24.Quat(p.Rot);
+            across = Vector3.Transform((ha - dir * (Vector3.Dot(n, ha) / nd)) * h.HalfW, pr);
+            up = Vector3.Transform((hu - dir * (Vector3.Dot(n, hu) / nd)) * h.HalfH, pr);
             return true;
         }
         return false;
