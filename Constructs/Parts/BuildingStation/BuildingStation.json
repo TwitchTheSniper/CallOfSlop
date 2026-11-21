@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Building Station",
-  "description": "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay and stack Mast Blocks on its corners for height. Pick a blueprint on its screen. Needs power.",
+  "description": "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay, up to 32 x 32 of them, and stack Mast Blocks on its corners for height. Its crane also picks pieces up to 14 t off a Lay-down Pad under its runway, just past the bay. Pick a blueprint on its screen. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",
@@ -100,6 +100,7 @@
       "count": 400,
       "crafting": true,
       "station": true,
+      "lift": 14000,
       "hold": [
         [
           -0.95,
@@ -175,7 +176,9 @@
       0,
       0.125,
       0
-    ]
+    ],
+    "maxSide": 32,
+    "maxCells": 512
   },
   "boxes": [
     {
