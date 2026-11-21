@@ -673,9 +673,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 395: the Bake Oven on the block system (Sean, 2026-11-21): new part files (BakeOven: Bake Oven, Oven Bed Block) shift part ids.
     // 396: the Out Table (Sean, 2026-11-21): a new part file (Production/OutTable, the bed machines' far end) shifts part ids.
     // 397: the Panel Former on the block system (Sean, 2026-11-21): a new part file (PanelFormer/BedBlock) and the Medium Panel Former gone shift part ids.
-    // 398: the Laser Cutter on the block system (Sean, 2026-11-21): one Laser Cutter Core and Laser Bed Blocks replace the Medium, Large
+    // 398: dressed hull sections (Sean, 2026-11-21): "Hull Section (...)" keys travel as run-time parts (HullLoft.Section.cs).
+    // 399: the Laser Cutter on the block system (Sean, 2026-11-21): one Laser Cutter Core and Laser Bed Blocks replace the Medium, Large
     //   and Capital Laser Cutters (part files go and come, ids move); the bed, the heads and the bin are read from the blocks on each peer.
-    public const ushort ProtocolVersion = 398;
+    public const ushort ProtocolVersion = 399;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
