@@ -50,7 +50,7 @@ public enum BayRefuse : byte
 /// die slot: a setting picks what it cuts. Server at 10 Hz, looking only at constructs that have one; the bays' panels read the same
 /// parts on either side. Nothing allocates but the bodies it makes.
 /// </summary>
-public static class ConstructPress
+public static partial class ConstructPress
 {
     public const int Every = 6; // ticks between steps (10 Hz)
     private const int Milli = 1000;
@@ -445,13 +445,12 @@ public static class ConstructPress
     {
         pattern = null;
         preset = null;
-        var press = c.Parts[part].D;
         if (c.Parts[part].Orders is { Bill: false } q)
         {
             // A press with a queue works its head order only (Press phase 4): its pattern, and a bay takes only its blank.
             if (q.Count == 0 || Pressed.SpecOf(q.Head) is not { } spec || !ReferenceEquals(spec.Die, die) || (key with { Growing = false }) != spec.Blank)
                 return BayRefuse.Order;
-            if (Pressed.Across(spec.Blank) > press.PressMaxCm)
+            if (!Fits(c, part, spec.Blank))
                 return BayRefuse.Size;
             (pattern, preset) = (spec.Pattern, spec.Preset);
             return BayRefuse.None;
@@ -461,7 +460,7 @@ public static class ConstructPress
             return BayRefuse.Section;
         if (Array.IndexOf(die.Materials, key.Material) < 0)
             return BayRefuse.Material;
-        if (Pressed.Across(key) > press.PressMaxCm)
+        if (!Fits(c, part, key))
             return BayRefuse.Size;
         pattern = PatternOf(die, c, part, key, out preset);
         if (pattern == null)
@@ -521,8 +520,8 @@ public static class ConstructPress
         if (!world.CreativeRecycling)
         {
             ConstructGatherer.SetBusy(world, st, true);
-            st.JobTicks += d.RefineWork;
-            if (st.JobTicks < SizedTicks(die, blank) * Milli)
+            st.JobTicks += WorkOf(c, part);
+            if (st.JobTicks < SizedTicks(die, blank) * Bites(c, part, blank) * Milli) // (a blank longer than the bed goes in bites)
                 return false;
             st.JobTicks = 0;
         }
@@ -1128,9 +1127,7 @@ public static class ConstructPress
     };
 
     /// <summary>A sized die's reason: a piece too wide names this press's class, so the player knows to take it to a bigger one.</summary>
-    private static string SizedWhy(BayRefuse why, ConstructPartDef press) => why == BayRefuse.Size ? PressWide[Math.Clamp(Pressed.PressClass(press.PressMaxCm), 0, PressWide.Length - 1)] : WhyText(why);
-
-    private static readonly string[] PressWide = ["too wide: Medium Press", "too wide: Large Press", "too wide: Capital Press", "too wide for any press"];
+    private static string SizedWhy(BayRefuse why, Construct c, int part) => why == BayRefuse.Size ? TooBig(c, part) : WhyText(why);
 
     /// <summary>The same on a bay's card, which is narrow (12 characters on a Medium Press): its range line beside it says how wide.</summary>
     private static string SizedWhyShort(BayRefuse why) => why == BayRefuse.Size ? "too wide" : WhyText(why);
@@ -1304,7 +1301,7 @@ public static class ConstructPress
             Choice(card, 1, names.NameOf(die.Materials[m]), m + 1);
         for (var b = 0; b < die.Blanks.Length && b < 2; b++) // (two at most, as a row's card: a "+" after two would run off a Small Press's card)
             Choice(card, 2, SectionName(die.Blanks[b]), b + 1);
-        card.AddShort(3, die.AcrossMin / 100f).Add(3, '-').AddShort(3, Math.Min(die.AcrossMax, d.PressMaxCm) / 100f).Add(3, " m");
+        card.AddShort(3, die.AcrossMin / 100f).Add(3, '-').AddShort(3, Math.Min(die.AcrossMax, MaxCm(c, part)) / 100f).Add(3, " m");
         if (refused != BayRefuse.None)
         {
             card.State = PanelState.Refused;
@@ -1459,6 +1456,8 @@ public static class ConstructPress
         var state = d.IsLathe ? row == null ? "nothing chosen" : "cuts " + row.Output.Name : die < 0 ? "no die" : c.Parts[die].D.Name;
         if (st.Items > 0)
             state += $", tray {st.Items}";
+        if (!d.IsLathe && SizeText(c, part) is { Length: > 0 } size)
+            state += ", " + size; // (a Press Core: its bed, daylight and speed from its blocks)
         if (ConstructConveyor.Out(c, part) >= 0)
             state += ", what it makes leaves on its Piece out conveyor";
         string? problem = p.Broken ? "wrecked"
@@ -1468,14 +1467,14 @@ public static class ConstructPress
             {
                 PressStall.None => null,
                 PressStall.Bay2Short when sized != null && KitWanted(sized, c, part, out var need, out _) is { } kit => $"needs {need} {kit.What} in bay 2, holds {KitHeld(st, kit)}",
-                PressStall.Wants when sized != null => $"needs a blank in a bay: {SectionName(sized.Blanks[0]).ToLowerInvariant()}{(sized.Blanks.Length > 1 ? " or another" : "")}, {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across",
+                PressStall.Wants when sized != null => $"needs a blank in a bay: {SectionName(sized.Blanks[0]).ToLowerInvariant()}{(sized.Blanks.Length > 1 ? " or another" : "")}, {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, MaxCm(c, part)) / 100f:0.00} m across",
                 PressStall.Wants when row != null => "needs " + Wants(row, c, part),
                 var s => StallText(s).ToLowerInvariant(),
             };
         var why = RefusedAt(st, out var bay);
         if (why != BayRefuse.None && sized != null && bay != 3)
-            problem = $"bay {bay + 1}: {SizedWhy(why, d)}" + (why == BayRefuse.Bounds
-                ? $", the {sized.Family} Die takes {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across, {sized.LengthMin / 100f:0.00} to {sized.LengthMax / 100f:0.00} m long, {sized.AspectMin:0.##} to {sized.AspectMax:0.##} times as long"
+            problem = $"bay {bay + 1}: {SizedWhy(why, c, part)}" + (why == BayRefuse.Bounds
+                ? $", the {sized.Family} Die takes {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, MaxCm(c, part)) / 100f:0.00} m across, {sized.LengthMin / 100f:0.00} to {sized.LengthMax / 100f:0.00} m long, {sized.AspectMin:0.##} to {sized.AspectMax:0.##} times as long"
                 : "");
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");

@@ -29,8 +29,9 @@ public sealed class PressParts : IPartGenerator
     private const string BodyC = "#4d5a66", Trim = "#39424b", Dark = "#23272c", Gold = "#c8a13a", Bed = "#2f363d";
     private const string Blue = "#2f5f8f", LatheBlue = "#2a6878"; // the Press family's body colours (look.md, "Machine look")
 
-    // (class, bays, speed, W, kg, health)
-    private static readonly (Cls C, int Bays, int Speed, int Power, int Mass, int Health)[] Presses =
+    // The Die Lathes, one per class until dies lose their classes (Press part 2): (class, bays, speed, W, kg, health). The Press itself is one
+    // Press Core and any number of Press Blocks (PressCore, PressBlock; design page drawings 17 and 17b).
+    private static readonly (Cls C, int Bays, int Speed, int Power, int Mass, int Health)[] Lathes =
     [
         (Small, 2, 1, 900, 520, 800),
         (Medium, 3, 2, 3600, 18000, 6000),
@@ -204,36 +205,94 @@ public sealed class PressParts : IPartGenerator
             Kw(("min", Py.L(R3(mid + gap), y, z0)), ("max", Py.L(R3(x1 - gap), R3(y + (z1 - z0)), z1)), ("stack", 12), ("label", "Tray")));
     }
 
-    private static Part Press((Cls C, int Bays, int Speed, int Power, int Mass, int Health) row)
+    // ---- The Press on the block system (design page drawings 17 and 17b; ConstructPressBlocks.cs) -------------------------------
+    // A Press Core, a 2 m cube (the die slot, the screen, the bays: bay 1 for the blank, bay 2 the kit hopper), and one Press Block, a
+    // 2 m cube, welded beside it and to each other: blocks on the Core's layer make the bed, blocks stacked on the bed's two long edges its
+    // walls. The machine reads its daylight, width, bites and speed from them at each rebuild.
+    private const int CoreCells = 8; // the Core: 8 Small cells a side, 2 m
+    private const int CorePower = 900, CoreMass = 900, CoreHealth = 1200;
+    private const int BlockMass = 4000, BlockHealth = 2500;
+
+    private static PyDict BlockKey(string role, double[]? origin = null) => origin is null
+        ? Kw(("family", "press"), ("role", role))
+        : Kw(("family", "press"), ("role", role), ("origin", Py.L(origin[0], origin[1], origin[2])));
+
+    private static Part PressCore()
     {
-        var (c, bays, speed, power, mass, health) = row;
+        var c = Small;
         var k = c.Cell;
-        int nx = 7, ny = 8, nz = 6;
-        var p = new Part(NameOf(c, "Press"), c, Section, $"Stamps parts out of extruded pieces. {bays} bays and a die slot: the die sets what it makes. Set pieces in the bays with the physics gun or by chute. Needs power.",
+        const int n = CoreCells;
+        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces. Alone it takes blanks up to 0.45 m across; weld Press Blocks beside it for a bed (its width the widest blank), stack blocks on the bed's long edges for walls (1.6 m of daylight, 2 m more a block), and it works faster with every block. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
             role: "storage", group: "Production", color: Blue);
-        var f = PressBody(p, nx, ny, nz, bays, true);
-        BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(3, "+x", "-x", "+y", "-y"));
+        var f = PressBody(p, n, n, n, 2, true);
+        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"));
+        var mid = (f.X0 + f.X1) / 2;
+        var my = (f.Y0 + f.Y1) / 2;
+        var zm = (f.Z0 + f.Z1) / 2;
+        p.Sock("+x", [R3(f.X1), R3(my), R3(zm)], "+x"); // (the first Press Block of its bed: beside it, on its layer)
+        p.Sock("-x", [R3(f.X0), R3(my), R3(zm)], "-x");
         for (var i = 0; i < f.Centres.Count; i++)
             p.Sock($"bay{i + 1}", [f.Centres[i], f.Y, f.Z0], "-z", kind: "die");
-        var mid = (f.X0 + f.X1) / 2;
-        var zm = (f.Z0 + f.Z1) / 2;
         p.Sock("dieslot", [mid, f.Base, zm], "+y", kind: "pressdie");
-        p.Stats(mass, health, c.Armour, c != Small ? null : 4);
+        p.Stats(CoreMass, CoreHealth, c.Armour, 4);
         var bayList = f.Centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5))))).ToList();
-        var width = Min(k * 3.2, (f.X1 - f.X0 - k) / bays - k * 0.1);
+        var width = Min(k * 3.2, (f.X1 - f.X0 - k) / 2 - k * 0.1);
         var tz0 = R3(zm + k * 1.3);
         var tz1 = R3(f.Z1 - k * 0.55);
-        p.Set(("power", power), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
+        p.Set(("power", CorePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
                 ("tooltip", "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them.")))),
             ("storage", Kw(
                 ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), tz0, tz1)),
                 ("press", Kw(("bays", bayList),
                     ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
-                    ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
+                    ("maxAcross", MaxAcross(c)), ("speed", 1), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
+            ("machineBlock", BlockKey("core", [R3(mid), R3(my), R3(zm)])),
             ("panels", Panels(p, f, width, pattern: true)));
         p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
+
+    /// <summary>
+    /// A Press Block: one 2 m cube of a press's bed or wall. Its bolted rims, skirt and hazard edge on a side are drawn only while no block
+    /// of the same press is welded there (MachineBlocks: "seam"), so a bed reads as one plate with a hazard edge round it, and a wall as one.
+    /// </summary>
+    private static Part PressBlock()
+    {
+        var p = new Part("Press Block", Small, Section,
+            "Weld it beside a Press Core, or beside or on another Press Block: blocks on the Core's layer make the bed (2 m a block, the widest blank it takes), blocks stacked on the bed's two long edges make the walls (the tallest). The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
+            group: "Production", color: Blue);
+        const double e = 0.997, t = 0.06; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; the rims make the cell)
+        p.Add(Box([-e, 0.003, -e], [e, 1.997 - 0.04, e]));
+        p.Add(Box([-e, 1.997 - 0.04, -e], [e, 1.997, e], Bed)!.Update(("paintable", false), ("finish", "tread plate"))); // (the bed's top: the dark working tone)
+        foreach (var (side, lo, hi) in new[]
+        {
+            ("+x", new[] { 1 - t, 0, -1 + t }, new[] { 1.0, 2, 1 - t }), ("-x", new[] { -1.0, 0, -1 + t }, new[] { -1 + t, 2, 1 - t }),
+            ("+z", new[] { -1 + t, 0, 1 - t }, new[] { 1 - t, 2, 1.0 }), ("-z", new[] { -1 + t, 0, -1.0 }, new[] { 1 - t, 2, -1 + t }),
+        })
+        {
+            // Each side's frame (its corner posts are the two neighbours' frames meeting) and, at its top edge, the hazard band round the bed.
+            p.Add(Seam(MachineLook.D(lo, hi, MachineLook.Base)!, side));
+            var axis = side[1] == 'x' ? 0 : 2;
+            var sign = side[0] == '+' ? 1 : -1;
+            double[] hl = [-1 + t + 0.004, 1.84, -1 + t + 0.004], hh = [1 - t - 0.004, 1.94, 1 - t - 0.004];
+            hl[axis] = sign > 0 ? 0.996 : -1.008;
+            hh[axis] = sign > 0 ? 1.008 : -0.996; // (into the frame, so no face of it lies on the frame's)
+            p.Add(Seam(MachineLook.D(hl, hh, MachineLook.Accent, "hazard paint")!, side));
+        }
+        foreach (var (x, z) in new[] { (-1.0, -1.0), (1 - t, -1.0), (-1.0, 1 - t), (1 - t, 1 - t) })
+            p.Add(MachineLook.D([x, 0, z], [x + t, 2, z + t], MachineLook.Base)); // (the corner posts)
+        p.Sock("+x", [1, 1, 0], "+x");
+        p.Sock("-x", [-1, 1, 0], "-x");
+        p.Sock("+z", [0, 1, 1], "+z");
+        p.Sock("-z", [0, 1, -1], "-z");
+        p.Sock("top", [0, 2, 0], "+y");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(BlockMass, BlockHealth, 8, 20);
+        p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false));
+        return p;
+    }
+
+    private static PyDict Seam(PyDict box, string face) => box.Update(("seam", face));
 
     private static Part Lathe((Cls C, int Bays, int Speed, int Power, int Mass, int Health) row)
     {
@@ -1016,11 +1075,10 @@ public sealed class PressParts : IPartGenerator
     public void Make(PartOutput o)
     {
         var parts = new List<(string, Part)>();
-        foreach (var r in Presses)
-        {
-            parts.Add(("", Press(r)));
+        parts.Add(("", PressCore()));
+        parts.Add(("", PressBlock()));
+        foreach (var r in Lathes)
             parts.Add(("", Lathe(r)));
-        }
         foreach (var (family, classes, _, _, colour) in Families)
             foreach (var c in classes)
                 parts.Add(("Dies", Die(family, c, colour)));

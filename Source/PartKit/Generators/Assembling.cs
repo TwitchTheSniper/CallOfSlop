@@ -736,6 +736,8 @@ public sealed class Assembling : IPartGenerator
         ("Packet", "Packet Stern", null),
         // (the Extruder on the block system, Sean 2026-11-21: its Die Block; the Core keeps the Extruder's row and the Run-out Table its own)
         (null, null, Rec("Die Block", 120, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)])),
+        // (the Press on the block system, Sean 2026-11-21: its Press Block, a 2 m cube of the bed or a wall; the Core keeps the Press's row)
+        (null, null, Rec("Press Block", 60, 1, m: [("steel", 400), ("concrete", 200)], p: [("Gear Set", 1)])),
     ];
 
     /// <summary>

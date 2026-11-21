@@ -201,8 +201,8 @@ public static class WorkOrders
         if (!ReferenceEquals(die, spec.Die))
             return $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die";
         var across = Pressed.Across(spec.Blank);
-        if (across > d.PressMaxCm)
-            return $"a {Pressed.ClassWord(Pressed.PressClass(across))} Press's order: the blank is {across / 100f:0.00} m across";
+        if (!ConstructPress.Fits(c, part, spec.Blank))
+            return $"the blank is {across / 100f:0.00} m across and {Math.Max(spec.Blank.W, spec.Blank.H) / 100f:0.00} m wide, {ConstructPress.TooBig(c, part)}";
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
         return null;
@@ -1248,14 +1248,14 @@ public static class ConstructBill
         }
         if (bill.Pressed.Count > 0)
         {
-            // Pressed parts by key (Press phase 4): die and pattern, the press class, the blank (counted under Extruded) and the kit.
+            // Pressed parts by key (Press phase 4): die and pattern, the walls a press needs, the blank (counted under Extruded) and the kit.
             sb.AppendLine($" Pressed: {bill.Pressed.Count} kinds, {bill.Pressed.Sum(o => o.Count)} parts (a Press)");
             foreach (var o in bill.Pressed)
             {
                 var spec = Pressed.SpecOf(o.Name!)!;
                 var across = Pressed.Across(spec.Blank);
                 var kit = spec.Pattern.Bay2 is { } a && Pressed.Bay2For(spec.Pattern, spec.Blank) is var n and > 0 ? $", bay 2: {n} {a.What}" : "";
-                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({spec.Die.Family} Die, {spec.Pattern.Label}; a {Pressed.ClassWord(Pressed.PressClass(across))} Press; blank {Pressed.BlankText(spec.Blank)}{kit}; {Pressed.Seconds(spec.Die, spec.Blank, Math.Max(0, Pressed.PressClass(across))):0.#} s)");
+                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({spec.Die.Family} Die, {spec.Pattern.Label}; {ConstructPress.NeedText(across)}; blank {Pressed.BlankText(spec.Blank)}{kit}; {Pressed.Seconds(spec.Die, spec.Blank, 0):0.#} s at speed 1)");
             }
         }
         if (bill.Cut.Count > 0)
