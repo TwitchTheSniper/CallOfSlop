@@ -183,24 +183,9 @@ public sealed class MachineTiers : IPartGenerator
             Refine = ("foundry", 200, B([-0.375, 0.725, -0.395], [-0.055, 0.88, -0.155])),
             Gated = new() { [1] = "Bronze needs tier 2 and circuits tier 3.", [2] = "Circuits need tier 3." },
         };
-        Line Assembler(string file, string name, string description, string? machine, List<PyDict> sockets) => new()
-        {
-            File = file, Name = name, Section = "Assemblers", Mass = 150, Health = 500, Armour = 6, Power = 1500, Attach = 6.0,
-            Sockets = sockets,
-            Ports = ChutePorts(L(0.5, 0.25, -0.3), "+x", L(0.5, 0.25, 0.3), "+x"),
-            Slots = [(B([-0.455, 0.035, 0.015], [-0.01, 0.56, 0.48]), 12, "tray"), (B([0.01, 0.035, 0.015], [0.455, 0.56, 0.48]), 12, "tray")],
-            Description = description,
-            Assemble = (200, B([-0.435, 0.035, -0.435], [0.435, 0.32, -0.065]), [0, 0.03, 0.5], "+z", machine),
-            Config = [new PyDict { ["key"] = "recipe", ["label"] = "Recipe", ["group"] = "Production", ["tooltip"] = "What it builds." }],
-        };
-        var asmSockets = BigSockets(0.25, -0.25);
-        // Assemblers of a family (AssemblingTable.Machines): the same machine, with their own recipes.
         return
         [
-            drill, saw, sawmill, smelter, foundry,
-            Assembler("Assembling/Assembler", "Assembler", "Builds a recipe set with the configure tool. Needs power.", null, asmSockets),
-            Assembler("Assembling/ThrusterAssembler", "Thruster Assembler", "Builds jets, rockets, boosters and repulsors from their components: set a recipe with the configure tool. Needs power.", "thruster", asmSockets),
-            Assembler("Assembling/Tailor", "Tailor", "Sews lift cells from cloth: set a recipe with the configure tool. Needs power.", "tailor", asmSockets),
+            drill, saw, sawmill, smelter, foundry, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts)
         ];
     }
 

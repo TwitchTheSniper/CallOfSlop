@@ -15,6 +15,110 @@ public enum AsmState : byte
     Untaught, // a story faction hasn't taught its owner this part yet (AsmBlock.Untaught)
     NoOrders, // it has a queue of work orders, empty: it waits for the next (WorkOrders.cs)
     Pressed, // (dead since Press phase 5b dropped the marker rows: nothing sets it; kept while MachineScreens.cs, another session's, names it)
+    NeedsModule, // the recipe needs an upgrade module the Core hasn't got (AssembleRecipe.Needs)
+    TooBig, // the part doesn't fit the bed or its clear height (AsmFit.Places)
+}
+
+/// <summary>
+/// What an Assembler on the block system can take on (MachineBlocks, family "assembler"; docs/sandbox/constructs/production.md
+/// "Assembling"): the upgrade modules on its Core, its Gantry Carriages and its bed. Worked out from the parts on either side, never sent.
+/// <see cref="Free"/> is a machine with no limits (a part that isn't an Assembler Core: a self-test's).
+/// </summary>
+public readonly struct AsmFit
+{
+    public const float CoreSide = 2f; // m: what a bare Core builds on its own deck, a side (an Assembly Bed Block, so survival can start a bed)
+    public const float SlackM = 0.02f; // m: a part this much over a cell's side still fits it
+
+    public readonly bool Limited; // a block Assembler (false: Free)
+    public readonly byte Modules; // the modules' bits (MachineBlocks.TierPieceNames: 2 Power Coupling to 5 Plasma Conditioner)
+    public readonly byte Overdrive, Buffers; // Overdrive Units, Feed Buffers
+    public readonly byte Carriages; // its arms: the Core's own and one a Gantry Carriage on its bed
+    public readonly byte W, L; // its bed in cells (0: a bare Core)
+    public readonly float Cell; // a cell's side (m)
+    public readonly float Clear; // the clear height over the bed (m)
+
+    public AsmFit(byte modules, byte overdrive, byte buffers, byte carriages, byte w, byte l, float cell, float clear)
+    {
+        Limited = true;
+        Modules = modules;
+        Overdrive = overdrive;
+        Buffers = buffers;
+        Carriages = carriages;
+        W = w;
+        L = l;
+        Cell = cell;
+        Clear = clear;
+    }
+
+    public static AsmFit Free => default;
+
+    /// <summary>The build speed: x2 an Overdrive Unit.</summary>
+    public int Speed => Limited ? 1 << Overdrive : 1;
+
+    /// <summary>The draw for each working arm: x1.8 an Overdrive Unit.</summary>
+    public float DrawScale => Limited ? MathF.Pow(1.8f, Overdrive) : 1f;
+
+    /// <summary>The batches its hopper holds a carriage: x2 a Feed Buffer.</summary>
+    public int BatchScale => Limited ? Carriages << Buffers : 1;
+
+    /// <summary>The modules a recipe needs that this one hasn't got (bits), 0 when it has them all.</summary>
+    public byte Missing(AssembleRecipe r) => Limited ? (byte)(r.Needs & ~Modules) : (byte)0;
+
+    /// <summary>A part's plan footprint in cells, its sides rounded up (either way round), and whether it stands under the clear height.</summary>
+    public void Footprint(ConstructPartDef d, out int fx, out int fz, out bool tall)
+    {
+        var size = d.BoundsMax - d.BoundsMin;
+        fx = Math.Max(1, (int)MathF.Ceiling((size.X - SlackM) / Cell));
+        fz = Math.Max(1, (int)MathF.Ceiling((size.Z - SlackM) / Cell));
+        tall = size.Y > Clear + SlackM;
+    }
+
+    /// <summary>How many of a part the bed packs side by side (its places): 0 when it doesn't fit. A bare Core has one place, for a part up to 1.5 m a side.</summary>
+    public int Places(ConstructPartDef d) => Places(d, out _);
+
+    public int Places(ConstructPartDef d, out bool turned)
+    {
+        turned = false;
+        if (!Limited)
+            return 1;
+        var size = d.BoundsMax - d.BoundsMin;
+        if (W == 0)
+            return MathF.Max(size.X, MathF.Max(size.Y, size.Z)) <= CoreSide + SlackM ? 1 : 0;
+        Footprint(d, out var fx, out var fz, out var tall);
+        if (tall)
+            return 0;
+        int a = W / fx * (L / fz), b = W / fz * (L / fx);
+        turned = b > a;
+        return Math.Max(a, b);
+    }
+
+    /// <summary>Parts it builds at once: the smaller of its arms and the places (0: it can't build it).</summary>
+    public int AtOnce(ConstructPartDef d) => Limited ? Math.Min(Carriages, Places(d)) : 1;
+
+    /// <summary>Why a part doesn't fit, for the look line and the screen ("needs a 2 x 3 bed, this one is 2 x 2").</summary>
+    public string TooBigWhy(ConstructPartDef d)
+    {
+        var size = d.BoundsMax - d.BoundsMin;
+        if (W == 0)
+            return $"needs a bed ({size.X:0.0} x {size.Z:0.0} x {size.Y:0.0} m, a bare Core builds up to {CoreSide:0.0} m): weld Assembly Bed Blocks to it";
+        Footprint(d, out var fx, out var fz, out var tall);
+        if (tall)
+        {
+            var masts = (int)MathF.Ceiling((size.Y - SlackM) / Cell);
+            return $"needs {masts * Cell:0} m clear, this one has {Clear:0} m: stack {masts} Mast Block{(masts == 1 ? "" : "s")} on each mast column";
+        }
+        return $"needs a {Math.Min(fx, fz)} x {Math.Max(fx, fz)} bed, this one is {Math.Min(W, L)} x {Math.Max(W, L)}";
+    }
+
+    /// <summary>The modules a recipe needs and this one lacks, as words: "a Servo Rack and a Power Coupling".</summary>
+    public static string ModuleWords(byte bits)
+    {
+        var s = "";
+        for (var k = 2; k <= MachineBlocks.MaxTier; k++)
+            if ((bits & 1 << k) != 0)
+                s += (s.Length > 0 ? " and a " : "a ") + MachineBlocks.TierPieceNames[k];
+        return s;
+    }
 }
 
 /// <summary>Why a finished batch can't leave an Assembler (<see cref="CStore.Blocked"/>).</summary>
@@ -51,6 +155,37 @@ public static class ConstructAssembling
 {
     private const int Milli = 1000;
     private const int RetrySteps = 5; // how often a blocked output looks again (10 Hz steps)
+
+    /// <summary>An Assembler's limits as it stands (<see cref="AsmFit"/>): an Assembler Core's machine, else none.</summary>
+    public static AsmFit FitOf(Construct? c, int part)
+    {
+        if (c == null || (uint)part >= (uint)c.PartCount)
+            return AsmFit.Free;
+        var d = c.Parts[part].D;
+        if (d.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm) || MachineBlocks.Families[asm.Family] != "assembler")
+            return AsmFit.Free; // (a Panel Former is an Assembler too: its own rules, ConstructPanelFormer)
+        var carriages = (byte)Math.Min(MachineBlocks.MaxCarriages, 1 + asm.Carriages); // (the Core's own arm, and one a Gantry Carriage)
+        var clear = d.BlockCell * Math.Max(1, (int)asm.Masts); // (2 m a mast block by the shortest corner column, 2 m with none: the Building Station's rule)
+        return new AsmFit(asm.TierPieces, asm.Overdrive, asm.Buffers, carriages, asm.W, asm.L, d.BlockCell, clear);
+    }
+
+    /// <summary>Would this Assembler build the recipe as it stands: its modules and its bed (inputs aside)?</summary>
+    public static bool Takes(Construct c, int part, AssembleRecipe r)
+    {
+        var f = FitOf(c, part);
+        return f.Missing(r) == 0 && f.AtOnce(r.Output) > 0;
+    }
+
+    /// <summary>What an Assembler Core draws while it builds (W): its own draw for each working arm, x1.8 an Overdrive Unit.</summary>
+    public static float PowerOf(Construct c, int part)
+    {
+        var d = c.Parts[part].D;
+        var f = FitOf(c, part);
+        if (!f.Limited)
+            return d.PowerDraw;
+        var r = RecipeOf(AssemblingTable.Current, c.Parts[part], d);
+        return d.PowerDraw * Math.Max(1, r == null ? 1 : f.AtOnce(r.Output)) * f.DrawScale;
+    }
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
@@ -117,7 +252,8 @@ public static class ConstructAssembling
             SetBlocked(world, st, AsmBlock.None);
         var held = ConstructGatherer.HeldOff(c, part);
         ConstructGatherer.SetHeld(world, st, held);
-        var state = StateOf(d, st, recipe);
+        var fit = FitOf(c, part);
+        var state = StateOf(d, st, recipe, fit);
         if (state is not (AsmState.Ready or AsmState.Blocked))
         {
             st.JobTicks = 0;
@@ -136,24 +272,42 @@ public static class ConstructAssembling
             if (++st.JobMaterial >= RetrySteps)
             {
                 st.JobMaterial = 0;
-                Finish(world, query, c, part, st, recipe!);
+                Finish(world, query, c, part, st, recipe!, 0);
             }
             return;
         }
         if (world.CreativeRecycling)
         {
             ConstructGatherer.SetBusy(world, st, false);
-            Finish(world, query, c, part, st, recipe!);
+            Wave(world, query, c, part, st, recipe!, fit);
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
-        st.JobTicks += d.RefineWork;
+        st.JobTicks += d.RefineWork * fit.Speed; // (x2 an Overdrive Unit)
         var need = recipe!.Ticks * Milli;
         MachineScreens.SetProgress(world, st, Math.Min(99, (int)((long)st.JobTicks * 100 / need)));
         if (st.JobTicks < need)
             return;
         st.JobTicks -= need; // (what is left over carries into the next batch)
-        Finish(world, query, c, part, st, recipe);
+        Wave(world, query, c, part, st, recipe, fit);
+    }
+
+    /// <summary>
+    /// A wave is done: each arm that had its batch in builds one part, at its own place on the bed (one recipe at a time: every carriage
+    /// builds the head order's part). A wave stops at the first part that can't leave, which waits with its inputs.
+    /// </summary>
+    private static void Wave(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, AssembleRecipe recipe, in AsmFit fit)
+    {
+        var n = Math.Max(1, fit.AtOnce(recipe.Output));
+        for (var k = 0; k < n; k++)
+        {
+            if (k > 0 && (MissingOf(st, recipe, out _, out _) || OutputOf(c.Parts[part].D, st, recipe) == AsmOut.TrayFull))
+                return; // (the hopper held fewer batches than arms: the rest wait for the next wave)
+            if (k > 0 && c.Parts[part].Orders is { Bill: false } q && (q.Count == 0 || q.Head.Part != recipe.Output.Id))
+                return; // (the order is filled: the next one's recipe starts afresh)
+            if (!Finish(world, query, c, part, st, recipe, k))
+                return;
+        }
     }
 
     private static void SetBlocked(ConstructWorld world, CStore st, AsmBlock why)
@@ -165,8 +319,8 @@ public static class ConstructAssembling
         world.StoreDirty.Add(st.Handle);
     }
 
-    /// <summary>A batch is done: its output leaves, then its inputs go. A body that can't leave keeps them and waits.</summary>
-    private static void Finish(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, AssembleRecipe recipe)
+    /// <summary>A batch is done: its output leaves, then its inputs go. A body that can't leave keeps them and waits (false).</summary>
+    private static bool Finish(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, AssembleRecipe recipe, int place)
     {
         var d = c.Parts[part].D;
         var dest = OutputOf(d, st, recipe);
@@ -179,11 +333,11 @@ public static class ConstructAssembling
             if (!rode && !(full == ExtrudeStall.ConveyorSmall && dest != AsmOut.Body))
             {
                 SetBlocked(world, st, full switch { ExtrudeStall.ConveyorSmall => AsmBlock.ConveyorSmall, ExtrudeStall.ConveyorCut => AsmBlock.ConveyorCut, _ => AsmBlock.ConveyorFull });
-                return;
+                return false;
             }
         }
         if (!rode && dest == AsmOut.TrayFull)
-            return; // (creative, or a chute took less than the state saw: it waits)
+            return false; // (creative, or a chute took less than the state saw: it waits)
         if (rode)
         {
             // (on its way to a rack)
@@ -192,11 +346,11 @@ public static class ConstructAssembling
         {
             for (var n = 0; n < recipe.Count; n++)
             {
-                var why = Leave(world, query, c, part, recipe.Output);
+                var why = Leave(world, query, c, part, recipe.Output, place);
                 if (why == AsmBlock.None)
                     continue;
                 SetBlocked(world, st, why);
-                return;
+                return false;
             }
         }
         else
@@ -211,15 +365,21 @@ public static class ConstructAssembling
             world.AddInputPart(st, p.Id, -count);
         if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part == recipe.Output.Id)
             WorkOrders.Made(world, c, q, recipe.Count); // (its head order: at its count the next order's recipe starts)
+        return true;
     }
 
-    /// <summary>A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None.</summary>
-    internal static AsmBlock Leave(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def)
+    /// <summary>
+    /// A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None. An Assembler with a bed
+    /// sets it on the bed instead, at the place its arm built it (<paramref name="place"/>, or the next free one), for a crane or an arm to lift off.
+    /// </summary>
+    internal static AsmBlock Leave(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def, int place = 0)
     {
         if (!world.HasRoom())
             return AsmBlock.WorldFull;
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (FitOf(c, part) is { Limited: true, W: > 0 } fit && MachineBlocks.TryOf(c, part, out var asm))
+            return LeaveOnBed(world, query, c, part, def, place, fit, asm);
         c.WorldFrame(p.Seg, out var q, out var t);
         var at = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, d.AsmOutAt), q);
         var dir = Vector3.Transform(Rot24.Apply(p.Rot, d.AsmOutDir), q) with { Y = 0 };
@@ -248,6 +408,49 @@ public static class ConstructAssembling
         return AsmBlock.OutputBlocked;
     }
 
+    /// <summary>A body set down on an Assembler's bed, at a place of the packing (<see cref="AsmFit.Places"/>): the first free one from <paramref name="place"/>.</summary>
+    private static AsmBlock LeaveOnBed(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def, int place, in AsmFit fit, in CMachineAsm asm)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        var places = fit.Places(def, out var turned);
+        if (places == 0)
+            return AsmBlock.OutputBlocked;
+        fit.Footprint(def, out var fx, out var fz, out _);
+        if (turned)
+            (fx, fz) = (fz, fx);
+        var across = Math.Max(1, fit.W / fx);
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var coreQ = q * Rot24.Quat(p.Rot);
+        var mid = (def.BoundsMin + def.BoundsMax) * 0.5f;
+        var half = (def.BoundsMax - def.BoundsMin) * 0.5f;
+        var rot = turned ? coreQ * Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2) : coreQ;
+        var bedTop = d.BlockOrigin is { } org ? org.Y : 0f; // (the Core's cell middle is the bed layer's: its top is as far over it as the foot is under)
+        var feet = world.PlayerSpots.AsSpan(0, world.PlayerSpotCount);
+        for (var k = 0; k < places; k++)
+        {
+            var at = (place + k) % places;
+            int i = at % across, j = at / across;
+            // The place's middle in the Core's cell frame (a cell's middle at whole cells), over the bed's top.
+            var x = (asm.X0 - 0.5f + (i + 0.5f) * fx) * fit.Cell;
+            var z = (asm.Z0 - 0.5f + (j + 0.5f) * fz) * fit.Cell;
+            var local = (d.BlockOrigin ?? Vector3.Zero) + new Vector3(x, bedTop + 0.03f, z);
+            var spot = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, local), q);
+            var up = Vector3.Transform(Vector3.UnitY, coreQ);
+            var centre = spot + up * half.Y;
+            var fp = new FreePlacement { Pos = centre - Vector3.Transform(mid, rot), Rot = rot };
+            if (ConstructPlace.Fits(world, query, def, fp, feet) != null)
+                continue;
+            if (ConstructBuild.PlaceNew(world, def, fp) is not { } made)
+                return AsmBlock.WorldFull;
+            made.Owner = c.Owner;
+            made.Wake();
+            world.Events.Add($"construct {c.Id}: a {d.Name} built a {def.Name} on its bed (construct {made.Id})");
+            return AsmBlock.None;
+        }
+        return AsmBlock.OutputBlocked;
+    }
+
     /// <summary>Where a recipe's output goes as the tray stands.</summary>
     public static AsmOut OutputOf(ConstructPartDef d, CStore st, AssembleRecipe r) => OutputOf(d, st, r.Output, r.Count);
 
@@ -270,21 +473,31 @@ public static class ConstructAssembling
     }
 
     /// <summary>How much of a material the input takes for a recipe (the buffer's limit).</summary>
-    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, byte material) => r.UnitsOf(material) * d.AsmBatches - st.MixOf(material);
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, byte material) => RoomFor(d, st, r, material, AsmFit.Free);
+
+    /// <summary>The same on a block Assembler: its batches a carriage (x2 a Feed Buffer).</summary>
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, byte material, in AsmFit fit) =>
+        Math.Min(ConstructStorage.MaxBulk, r.UnitsOf(material) * d.AsmBatches * fit.BatchScale) - st.MixOf(material);
 
     /// <summary>How many of a part the input takes for a recipe.</summary>
-    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part)
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part) => RoomFor(d, st, r, part, AsmFit.Free);
+
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part, in AsmFit fit)
     {
         var k = st.KindIndex(part);
-        return r.CountOf(part) * d.AsmBatches - (k < 0 ? 0 : st.KindCount![k]);
+        return Math.Min(ConstructStorage.MaxBulk, r.CountOf(part) * d.AsmBatches * fit.BatchScale) - (k < 0 ? 0 : st.KindCount![k]);
     }
 
     /// <summary>Where a machine stands with what it holds.</summary>
     /// <summary>The same for a machine as it stands: a queue of work orders run dry waits for orders (<see cref="AsmState.NoOrders"/>).</summary>
-    public static AsmState StateOf(in CPart p, ConstructPartDef d, CStore st, AssembleRecipe? r) =>
-        r == null && p.Orders is { Bill: false } ? AsmState.NoOrders : StateOf(d, st, r);
+    public static AsmState StateOf(in CPart p, ConstructPartDef d, CStore st, AssembleRecipe? r) => StateOf(p, d, st, r, AsmFit.Free);
 
-    public static AsmState StateOf(ConstructPartDef d, CStore st, AssembleRecipe? r)
+    public static AsmState StateOf(in CPart p, ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit) =>
+        r == null && p.Orders is { Bill: false } ? AsmState.NoOrders : StateOf(d, st, r, fit);
+
+    public static AsmState StateOf(ConstructPartDef d, CStore st, AssembleRecipe? r) => StateOf(d, st, r, AsmFit.Free);
+
+    public static AsmState StateOf(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit)
     {
         if (r == null)
             return AsmState.NoRecipe;
@@ -292,6 +505,10 @@ public static class ConstructAssembling
             return AsmState.Untaught;
         if (r.MinTier > d.Tier)
             return AsmState.TierLow;
+        if (fit.Missing(r) != 0)
+            return AsmState.NeedsModule;
+        if (fit.AtOnce(r.Output) == 0)
+            return AsmState.TooBig;
         if (st.Blocked != 0)
             return AsmState.Blocked;
         if (MissingOf(st, r, out _, out _))
@@ -337,15 +554,19 @@ public static class ConstructAssembling
     /// <summary>Who teaches a part, as words for the look line (the game sets it from the faction table, which every PC has): null when it can't say.</summary>
     public static Func<string, string?>? TaughtBy;
 
-    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, bool queued = false)
+    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, bool queued = false) => Status(d, st, r, AsmFit.Free, queued);
+
+    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool queued = false)
     {
         var names = RecyclingTable.Current;
         var doing = st.Held ? Program.HeldLook
-            : st.Busy && st.Blocked == 0 ? ", building"
-            : (queued && r == null ? AsmState.NoOrders : StateOf(d, st, r)) switch
+            : st.Busy && st.Blocked == 0 ? Building(fit, r)
+            : (queued && r == null ? AsmState.NoOrders : StateOf(d, st, r, fit)) switch
             {
                 AsmState.NoRecipe => " - no recipe set: Recipe on its screen picks one",
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
+                AsmState.NeedsModule => $" - the {r!.Name} needs {AsmFit.ModuleWords(fit.Missing(r))} on the Core",
+                AsmState.TooBig => $" - the {r!.Name} {fit.TooBigWhy(r.Output)}",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
@@ -356,6 +577,16 @@ public static class ConstructAssembling
         if (st.RefusedPart != ConstructParts.None && ConstructParts.Get(st.RefusedPart) is { } rp)
             return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r, queued)}";
         return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r, queued)}" : doing;
+    }
+
+    /// <summary>", building", or on a block Assembler how many at once and what limits it: ", building 4 at once: fit more carriages (16 places)".</summary>
+    private static string Building(in AsmFit fit, AssembleRecipe? r)
+    {
+        if (!fit.Limited || r == null)
+            return ", building";
+        var places = fit.Places(r.Output);
+        var n = Math.Min(fit.Carriages, places);
+        return n <= 1 && places <= 1 ? ", building" : n < places ? $", building {n} at once: fit more carriages ({places} places)" : $", building {n} at once";
     }
 
     private static string RefusedWhy(AssembleRecipe? r, bool queued) => r == null ? queued ? "no order needs it" : "pick a recipe first" : $"takes {r.Batch}";
@@ -381,11 +612,14 @@ public static class ConstructAssembling
     };
 
     /// <summary>The whole look line: its recipe, what it holds, what it is doing, what F would do.</summary>
-    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false)
+    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false) =>
+        Look(d, st, r, AsmFit.Free, near, inv, held, queued);
+
+    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false)
     {
         var names = RecyclingTable.Current;
         var tip = TipMaterial(inv, d, st, r);
-        var feeds = held != null && r != null && r.MinTier <= d.Tier && RoomFor(d, st, r, held.Id) > 0;
+        var feeds = held != null && r != null && r.MinTier <= d.Tier && RoomFor(d, st, r, held.Id, fit) > 0;
         var item = TopItem(st);
         var act = !near ? ""
             : feeds ? $" - {SandboxKeys.Use}: put it in"
@@ -397,7 +631,7 @@ public static class ConstructAssembling
         var holds = st.MixN == 0 && st.KindN == 0 ? "" : $"in {Holds(st)}";
         var tray = st.Items > 0 ? $"tray {st.Items}" : "";
         var state = holds.Length > 0 && tray.Length > 0 ? $"{holds}, {tray}" : holds + tray;
-        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r, queued)}{act}";
+        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r, fit, queued)}{act}";
     }
 
     /// <summary>The first part in the tray, or null.</summary>
@@ -503,12 +737,12 @@ public sealed partial class ConstructWorld
             return 0;
         var d = c.DefOf(part);
         var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
-        if (r == null || r.MinTier > d.Tier || r.UnitsOf(material) == 0)
+        if (r == null || r.MinTier > d.Tier || r.UnitsOf(material) == 0 || !ConstructAssembling.Takes(c, part, r))
         {
             NoteRefused(st, material);
             return 0;
         }
-        var n = Math.Min(amount, ConstructAssembling.RoomFor(d, st, r, material));
+        var n = Math.Min(amount, ConstructAssembling.RoomFor(d, st, r, material, ConstructAssembling.FitOf(c, part)));
         if (n <= 0)
             return 0;
         AddInput(st, material, n);
@@ -522,12 +756,12 @@ public sealed partial class ConstructWorld
             return false;
         var d = c.DefOf(part);
         var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
-        if (r == null || r.MinTier > d.Tier || r.CountOf(item.Id) == 0)
+        if (r == null || r.MinTier > d.Tier || r.CountOf(item.Id) == 0 || !ConstructAssembling.Takes(c, part, r))
         {
             NoteRefusedPart(st, item.Id);
             return false;
         }
-        if (ConstructAssembling.RoomFor(d, st, r, item.Id) <= 0)
+        if (ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part)) <= 0)
             return false;
         AddInputPart(st, item.Id, 1);
         return true;
@@ -546,7 +780,7 @@ public sealed partial class ConstructWorld
         var table = AssemblingTable.Current;
         for (var k = 1; k < q.Count; k++)
             if (!q.Items[k].IsPiece && table.Of(q.Items[k].Part) is { } r && r.Machine == d.AsmMachine && r.MinTier <= d.Tier && r.CountOf(item.Id) > 0
-                && ConstructAssembling.RoomFor(d, st, r, item.Id) > 0)
+                && ConstructAssembling.Takes(c, part, r) && ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part)) > 0)
             {
                 AddInputPart(st, item.Id, 1);
                 return true;
@@ -576,6 +810,6 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st)
             return false;
         var d = c.DefOf(part);
-        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.RoomFor(d, st, r, item) > 0;
+        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.Takes(c, part, r) && ConstructAssembling.RoomFor(d, st, r, item, ConstructAssembling.FitOf(c, part)) > 0;
     }
 }

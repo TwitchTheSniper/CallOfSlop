@@ -130,6 +130,12 @@ public sealed class MachineMastParts : IPartGenerator
         p.Sock("-x", [-e, 1, 0], "-x");
         p.Sock("+z", [0, 1, e], "+z");
         p.Sock("-z", [0, 1, -e], "-z");
+        // Low on each face, at an Assembly Bed Block's side sockets: a mast stands on the floor beside an Assembler's bed, outside it (AssemblerParts).
+        var low = AssemblerParts.BedTop / 2;
+        p.Sock("+x.low", [e, low, 0], "+x");
+        p.Sock("-x.low", [-e, low, 0], "-x");
+        p.Sock("+z.low", [0, low, e], "+z");
+        p.Sock("-z.low", [0, low, -e], "-z");
         p.Stats(900, 2400, 8, 12);
         p.Set(("machineBlock", SharedKey()), ("centreSockets", false), ("collider", "boxes"));
         return p;
