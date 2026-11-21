@@ -163,6 +163,8 @@ public static partial class ConstructRender
             return -1;
         if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
+        if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
+            return -1; // (an Opening socket's frame, or the plug on one: walked, DrawPart leaves its middle out)
         if (p.D.ShellBody)
             return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
@@ -204,6 +206,8 @@ public static partial class ConstructRender
                 h = Mix(h, i); // (a lamp set blinking is walked)
             else if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
                 h = Mix(h, ~i); // (a hidden socket connector is walked, drawing nothing)
+            else if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
+                h = Mix(h, i * 7919L + 3); // (a frame is walked, its middle left out)
         }
         return h;
     }

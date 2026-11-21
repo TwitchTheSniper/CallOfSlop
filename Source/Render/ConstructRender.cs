@@ -682,11 +682,14 @@ public static partial class ConstructRender
         var hideSlots = offSlots | fitted;
         var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : 0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
+        var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
+            if (frame && box.Middle)
+                continue;
             if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
                 continue;
             if (box.Seam != 0 && (seams >> (box.Seam - 1) & 1) != 0)

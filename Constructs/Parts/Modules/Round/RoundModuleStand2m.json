@@ -72,9 +72,28 @@
       ],
       "color": "#2b2f34",
       "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.87,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        0.3,
+        -0.37
+      ],
+      "max": [
+        1.37,
+        0.335,
+        1.37
+      ],
+      "color": "#2b2f34",
+      "detail": true,
       "shape": "cylinder",
       "segments": 32,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -89,9 +108,28 @@
       ],
       "color": "#3d444c",
       "detail": true,
+      "shape": "tube",
+      "segments": 32,
+      "inner": 0.8878,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        0.335,
+        -0.37
+      ],
+      "max": [
+        1.37,
+        0.401,
+        1.37
+      ],
+      "color": "#3d444c",
+      "detail": true,
       "shape": "cylinder",
       "segments": 32,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -126,7 +164,8 @@
       "detail": true,
       "shape": "cylinder",
       "segments": 32,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -472,7 +511,8 @@
       "shape": "tube",
       "segments": 32,
       "inner": 0.9581,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -490,7 +530,8 @@
       "shape": "tube",
       "segments": 16,
       "inner": 0.6,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -504,7 +545,8 @@
         0.0338
       ],
       "color": "#2b2f34",
-      "detail": true
+      "detail": true,
+      "middle": true
     },
     {
       "min": [

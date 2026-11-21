@@ -664,7 +664,7 @@ public static partial class Program
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
                 return true;
-            case "modsock" when arg.StartsWith("style ", StringComparison.OrdinalIgnoreCase): // host: "modsock style N [DEPTH]": every Module Socket set to style N (0 proud, 1 flush, 2 opening), as the configure tool sets it
+            case "modsock" when arg.StartsWith("style ", StringComparison.OrdinalIgnoreCase): // host: "modsock style N [DEPTH]": every Module Socket set to style N (0 proud, 1 flush, 2 well, 3 opening: the frame that punches through), as the configure tool sets it
             {
                 var w = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var style = w.Length > 1 ? int.Parse(w[1], System.Globalization.CultureInfo.InvariantCulture) : 0;
@@ -738,7 +738,7 @@ public static partial class Program
                     if (mb.Dirty)
                         mb.Rebuild();
                     foreach (var ms in mb.ModSockets)
-                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
+                        WsSay($"modsock: body {mb.Id} socket part {ms.Plate} {ModuleSocketTable.SizeText(ms.W, ms.L, ms.Round)} {ms.Kind} {ms.Style}{(ms.Keyed ? " keyed" : "")}{(ms.Stand ? " stand" : "")} above {ms.Above:0.##}: module {ms.Module}, in the way {ms.InTheWay}{(ms.WrongKind ? ", wrong kind" : "")}; depth {ms.Depth:0.##}, behind {ms.Behind:0.##}, room {ms.RoomMin} to {ms.RoomMax}, cut {ConstructConfig.Get(mb.Parts[ms.Plate], mb.DefOf(ms.Plate), CfgKey.ModCut, 0):0.#} s; look \"{ModuleSockets.LookText(mb, ms.Plate)}\"");
                     if (mb.ModSockets.Length > 0)
                         for (var rk = 0; rk < mb.RouteCount; rk++)
                             if (mb.Routes[rk].Type is RouteType.Pipe or RouteType.Feed or RouteType.Chute)

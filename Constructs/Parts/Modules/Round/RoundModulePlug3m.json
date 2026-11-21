@@ -157,9 +157,28 @@
       ],
       "color": "#c9a21c",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9164,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.488,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.42,
+        2.37
+      ],
+      "color": "#c9a21c",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -174,9 +193,28 @@
       ],
       "color": "#5a6168",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9547,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.42,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.4,
+        2.37
+      ],
+      "color": "#5a6168",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -1200,6 +1238,46 @@
         2.0,
         -0.4,
         1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "r.0",
+      "at": [
+        1.992,
+        -0.4,
+        1.992
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "r.1",
+      "at": [
+        0.008,
+        -0.4,
+        1.992
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "r.2",
+      "at": [
+        0.008,
+        -0.4,
+        0.008
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "r.3",
+      "at": [
+        1.992,
+        -0.4,
+        0.008
       ],
       "dir": "+y",
       "class": "small"

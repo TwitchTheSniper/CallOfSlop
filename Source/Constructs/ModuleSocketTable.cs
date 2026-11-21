@@ -16,7 +16,8 @@ public enum ModStyle : byte
 {
     Proud, // the plate sits on the hull and the module stands out
     Flush, // the plate at the foot of a well, the module's face level with the hull
-    Opening, // the plate at the foot of a well cut through the hull, the module below and above the surface
+    Opening, // the plate at the foot of a well cut through the hull, the module below and above the surface (shown as "Well")
+    Through, // the plate a frame with a hole in its middle, punching through what it is welded to (Depth behind its back), the module reaching back into the hole (shown as "Opening")
 }
 
 /// <summary>What a module is, read from its parts ("tags", the wire's order: a bit each in <see cref="ModuleTags"/>).</summary>
@@ -71,8 +72,8 @@ public sealed class ModuleSocketTable
 
     public static readonly string[] KindNames = ["generic", "engine", "reactor", "turret"];
     public static readonly string[] KindLabels = ["Any module", "Engine", "Reactor", "Turret"];
-    public static readonly string[] StyleNames = ["proud", "flush", "opening"];
-    public static readonly string[] StyleLabels = ["Proud", "Flush", "Opening"];
+    public static readonly string[] StyleNames = ["proud", "flush", "opening", "through"];
+    public static readonly string[] StyleLabels = ["Proud", "Flush", "Well", "Opening"]; // ("opening" in files is the Well; "through" the see-through Opening, Sean 2026-11-21)
     public static readonly string[] TagNames = ["engine", "reactor", "turret", "turret-bay", "missile", "armour", "harvest", "cargo", "power-store", "sensor", "life-support", "utility"];
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "ModuleSockets.json");

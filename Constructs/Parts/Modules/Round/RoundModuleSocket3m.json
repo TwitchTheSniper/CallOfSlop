@@ -157,9 +157,28 @@
       ],
       "color": "#2b2f34",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9133,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.5,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.465,
+        2.37
+      ],
+      "color": "#2b2f34",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -174,9 +193,28 @@
       ],
       "color": "#3d444c",
       "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9257,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.465,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.399,
+        2.37
+      ],
+      "color": "#3d444c",
+      "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -211,7 +249,8 @@
       "detail": true,
       "shape": "cylinder",
       "segments": 40,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -693,7 +732,8 @@
       "shape": "tube",
       "segments": 40,
       "inner": 0.9738,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -711,7 +751,8 @@
       "shape": "tube",
       "segments": 16,
       "inner": 0.6,
-      "front": "+y"
+      "front": "+y",
+      "middle": true
     },
     {
       "min": [
@@ -725,7 +766,8 @@
         0.1803
       ],
       "color": "#2b2f34",
-      "detail": true
+      "detail": true,
+      "middle": true
     },
     {
       "min": [
@@ -752,7 +794,8 @@
         0.1603
       ],
       "color": "#39465a",
-      "detail": true
+      "detail": true,
+      "middle": true
     }
   ],
   "sockets": [

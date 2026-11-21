@@ -314,6 +314,9 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>"use": true: this box is what a hand works (a lever's handle, a button's cap): the aim glow covers these and not the whole part (<see cref="ConstructPartDef.UseBoxes"/>).</summary>
     public bool Use { get; init; }
 
+    /// <summary>"middle": true: a Module Socket's or Plug's box inside its frame, left undrawn while the part is a frame (an Opening socket, or a plug on one: <see cref="ModuleSockets.FrameLook"/>).</summary>
+    public bool Middle { get; init; }
+
     /// <summary>"work": how a detail box shows its machine working (<see cref="BoxWork"/>; docs/sandbox/constructs/look.md "Machine look"): only while the machine runs, drawn only, nothing on the server.</summary>
     public BoxWork Work { get; init; }
     /// <summary>"axis": the axis a "spin" box turns about or a "stroke" box slides along (a direction, 0..5); its travel is <see cref="RigTravel"/>.</summary>
@@ -602,6 +605,7 @@ public sealed partial class ConstructPartDef
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
     public bool HasWork; // a box that shows the machine working ("work" on a box)
+    public bool HasMiddle; // a box marked "middle" (a module plate or plug that can be drawn as a frame: ModuleSockets.FrameLook)
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
     public (Vector3 At, Vector3 Colour)[] Lamps = [];
@@ -1569,7 +1573,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "middle"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1638,7 +1642,7 @@ public static partial class ConstructParts
             if (roll && !detail)
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
             var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
-            made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True } };
+            made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True }, Middle = Opt(b, "middle") is { ValueKind: JsonValueKind.True } };
             if (Opt(b, "status") is { ValueKind: JsonValueKind.True })
                 made = detail && glass == 0 ? made with { Status = true } : throw new ConstructPartException($"{file}: {where}: only an opaque detail box can be a \"status\" lamp");
             if (Opt(b, "finish") is { } boxFinish)
@@ -1682,6 +1686,7 @@ public static partial class ConstructParts
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
         d.HasSeams = list.Any(x => x.Seam != 0);
+        d.HasMiddle = d.Boxes.Any(x => x.Middle);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
