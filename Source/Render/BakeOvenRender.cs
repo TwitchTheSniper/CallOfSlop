@@ -110,9 +110,9 @@ public static class BakeOvenRender
                     {
                         var kx = Math.Clamp(X(k) - half, ax + ins + 0.06f, bx - ins - 0.06f);
                         if (open0)
-                            Box(gfx, frame, new Vector3(kx - 0.04f, yf + 0.15f, az + ins - 0.03f), new Vector3(kx + 0.04f, sy1 - 0.02f, az + ins - 0.003f), HoodDark);
+                            Box(gfx, frame, new Vector3(kx - 0.07f, yf + 0.15f, az + ins - 0.06f), new Vector3(kx + 0.07f, sy1 - 0.02f, az + ins - 0.003f), HoodDark);
                         if (open1)
-                            Box(gfx, frame, new Vector3(kx - 0.04f, yf + 0.15f, bz - ins + 0.003f), new Vector3(kx + 0.04f, sy1 - 0.02f, bz - ins + 0.03f), HoodDark);
+                            Box(gfx, frame, new Vector3(kx - 0.07f, yf + 0.15f, bz - ins + 0.003f), new Vector3(kx + 0.07f, sy1 - 0.02f, bz - ins + 0.06f), HoodDark);
                     }
                     // Two belts round each skirt, a third and two thirds up (the panels' joins), so a closed hood isn't a plain wall.
                     for (var belt = 1; belt <= 2; belt++)
@@ -121,11 +121,25 @@ public static class BakeOvenRender
                         if (sy1 - yf < 0.6f)
                             break;
                         if (open0)
-                            Box(gfx, frame, new Vector3(ax + ins, by - 0.04f, az + ins - 0.02f), new Vector3(bx - ins, by + 0.04f, az + ins - 0.004f), HoodDark);
+                            Box(gfx, frame, new Vector3(ax + ins, by - 0.06f, az + ins - 0.04f), new Vector3(bx - ins, by + 0.06f, az + ins - 0.004f), Dark);
                         if (open1)
-                            Box(gfx, frame, new Vector3(ax + ins, by - 0.04f, bz - ins + 0.004f), new Vector3(bx - ins, by + 0.04f, bz - ins + 0.02f), HoodDark);
-                        Box(gfx, frame, new Vector3(ax + ins - 0.02f, by - 0.04f, az + ins), new Vector3(ax + ins - 0.004f, by + 0.04f, bz - ins), HoodDark);
-                        Box(gfx, frame, new Vector3(bx - ins + 0.004f, by - 0.04f, az + ins), new Vector3(bx - ins + 0.02f, by + 0.04f, bz - ins), HoodDark);
+                            Box(gfx, frame, new Vector3(ax + ins, by - 0.06f, bz - ins + 0.004f), new Vector3(bx - ins, by + 0.06f, bz - ins + 0.04f), Dark);
+                        Box(gfx, frame, new Vector3(ax + ins - 0.04f, by - 0.06f, az + ins), new Vector3(ax + ins - 0.004f, by + 0.06f, bz - ins), Dark);
+                        Box(gfx, frame, new Vector3(bx - ins + 0.004f, by - 0.06f, az + ins), new Vector3(bx - ins + 0.04f, by + 0.06f, bz - ins), Dark);
+                    }
+                    // Angle iron up the section's corners (dark, bolted), and vertical ribs on its x ends at each cell edge along z.
+                    for (var e = 0; e < 2; e++)
+                    {
+                        var fx = e == 0 ? ax + ins : bx - ins; // the end skirt's outer face
+                        var outS = e == 0 ? -1f : 1f;
+                        var ex0 = MathF.Min(fx, fx + outS * 0.07f) + (e == 0 ? 0 : 0.003f);
+                        var ex1 = MathF.Max(fx, fx + outS * 0.07f) - (e == 0 ? 0.003f : 0);
+                        if (open0)
+                            Box(gfx, frame, new Vector3(ex0, yf + 0.15f, az + ins - 0.002f), new Vector3(ex1, sy1 - 0.02f, az + ins + 0.16f), Dark);
+                        if (open1)
+                            Box(gfx, frame, new Vector3(ex0, yf + 0.15f, bz - ins - 0.16f), new Vector3(ex1, sy1 - 0.02f, bz - ins + 0.002f), Dark);
+                        var midZ = Z(z);
+                        Box(gfx, frame, new Vector3(ex0 + 0.005f * outS, yf + 0.15f, midZ - 0.06f), new Vector3(ex1 + 0.005f * outS, sy1 - 0.02f, midZ + 0.06f), HoodDark);
                     }
                     // Hazard stripes round the skirts' foot, and the seam glow under them while it bakes.
                     Stripes(gfx, frame, ax + ins, bx - ins, yf + 0.01f, az + ins - 0.007f, true, open0);

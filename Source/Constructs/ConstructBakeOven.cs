@@ -60,7 +60,7 @@ public static class ConstructBakeOven
     private const int Every = World.TickRate / 10; // a step is 0.1 s
     public const float HoodThick = 0.5f; // m: the hood's own height, taken off the masts' (drawing 19)
     private const float CoolSeconds = 3f;
-    private const int CrushDamage = 2000, BurnDamage = 1; // per tick: the hood landing on someone, and the heat inside a closed hood (60 a second)
+    private const int CrushDamage = 2000, BurnDamage = 1; // per 60 Hz game tick (GameMachineHazards reads the list every tick): the skirts landing on someone, and the heat inside a closed hood (60 a second)
     private const float Settled = 0.05f; // m/s: a group moving slower than this has settled on the bed
 
     /// <summary>The <c>"bake"</c> block of a Core's <c>"storage"</c>.</summary>
@@ -202,7 +202,7 @@ public static class ConstructBakeOven
             }
             // Start: the hood comes down.
             st.JobAmount = group;
-            st.JobMaterial = (byte)Math.Min(255, parts);
+            st.OvenParts = parts; // (not JobMaterial: a save reads that byte as a material)
             st.JobFull = Steps(DropSeconds(bed, d)) + Steps(HeatSeconds(d, parts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d));
             Enter(world, st, OvenPhase.Drop, Steps(DropSeconds(bed, d)));
             ConstructGatherer.SetBusy(world, st, true);
@@ -219,11 +219,13 @@ public static class ConstructBakeOven
         SetStall(world, st, OvenStall.None);
         ConstructGatherer.SetBusy(world, st, true);
         AddHazards(world, c, part, asm, bed, phase, st);
+        if (st.JobFull == 0) // (loaded mid-cycle: the total isn't saved, so count it again from here)
+            st.JobFull = Steps(DropSeconds(bed, d)) + Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d));
         if (--st.JobTicks > 0)
         {
             var left = st.JobTicks + phase switch
             {
-                OvenPhase.Drop => Steps(HeatSeconds(d, st.JobMaterial, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d)),
+                OvenPhase.Drop => Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d)),
                 OvenPhase.Heat => Steps(CoolSeconds) + Steps(DropSeconds(bed, d)),
                 OvenPhase.Cool => Steps(DropSeconds(bed, d)),
                 _ => 0,
@@ -234,7 +236,7 @@ public static class ConstructBakeOven
         switch (phase)
         {
             case OvenPhase.Drop:
-                Enter(world, st, OvenPhase.Heat, Steps(HeatSeconds(d, st.JobMaterial, bed.Blocks)));
+                Enter(world, st, OvenPhase.Heat, Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)));
                 break;
             case OvenPhase.Heat:
                 Enter(world, st, OvenPhase.Cool, Steps(CoolSeconds));
@@ -342,7 +344,7 @@ public static class ConstructBakeOven
     /// <summary>The crush box under the skirts' foot while they come down (a body's height deep), the burn box under a closed hood.</summary>
     private static void AddHazards(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, OvenPhase phase, CStore st)
     {
-        if (world.Hazards.Count >= 64 || phase is not (OvenPhase.Drop or OvenPhase.Heat or OvenPhase.Cool))
+        if (world.Hazards.Count > 60 || phase is not (OvenPhase.Drop or OvenPhase.Heat or OvenPhase.Cool))
             return;
         if (!Matrix4x4.Invert(CoreFrame(c, part), out var toCore))
             return;
@@ -355,10 +357,16 @@ public static class ConstructBakeOven
         {
             var steps = Steps(DropSeconds(bed, d));
             var under = bed.Raised - bed.Clear * HoodDown(phase, 1f - st.JobTicks / (float)steps);
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = MathF.Max(bed.Top, under - 1.9f) }, Max = max with { Y = under }, Damage = CrushDamage });
+            // Only under the skirts: a band round the bed's edge (the roof stays up; whoever is inside is shut in, not crushed).
+            var lo = MathF.Max(bed.Top, under - 1.9f);
+            const float band = 0.45f;
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = lo }, Max = new Vector3(max.X, under, min.Z + band), Damage = CrushDamage });
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(min.X, lo, max.Z - band), Max = max with { Y = under }, Damage = CrushDamage });
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = lo }, Max = new Vector3(min.X + band, under, max.Z), Damage = CrushDamage });
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(max.X - band, lo, min.Z), Max = max with { Y = under }, Damage = CrushDamage });
         }
         else
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = max, Damage = BurnDamage * Every }); // (the skirts are down: whoever is under the hood is shut in with the bake)
+            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = max, Damage = BurnDamage }); // (the skirts are down: whoever is under the hood is shut in with the bake)
     }
 
     // ---- What every peer shows: its line state, its screen ---------------------------------------------------------------------

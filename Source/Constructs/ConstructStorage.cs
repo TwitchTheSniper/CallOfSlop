@@ -73,6 +73,7 @@ public sealed class CStore
     public byte JobMaterial;
     public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
+    public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
@@ -131,6 +132,7 @@ public sealed class CStore
         OnBed = false;
         OvenSeen = 0;
         OvenSince = 0;
+        OvenParts = 0;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;
@@ -863,7 +865,9 @@ public static class ConstructStorage
         int n = r.U8();
         if (n > CStore.MaxSlots)
             throw new MalformedPacketException($"a store of {n} slots");
+        var (ovenSeen, ovenSince) = (s.OvenSeen, s.OvenSince); // (this peer's own clock for an oven's hood: a send mustn't restart it)
         s.Reset(n);
+        (s.OvenSeen, s.OvenSince) = (ovenSeen, ovenSince);
         for (var k = 0; k < n; k++)
         {
             var def = ReadDef(ref r);

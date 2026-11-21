@@ -125,8 +125,8 @@ public sealed class BakeOvenParts : IPartGenerator
         const double sx0 = -e - 0.032;
         p.Add(L([sx0, 0.3, -0.42], [-e + 0.004, 0.62, 0.42], MachineLook.Ink));
         p.Add(L([sx0 - 0.012, 0.32, -0.4], [sx0 + 0.002, 0.6, 0.4], MachineLook.Accent));
-        void Bar(double z0, double z1, double y0, double y1) => p.Add(L([sx0 - 0.026, y0, z0], [sx0 - 0.01, y1, z1], MachineLook.Ink));
-        // H (its strokes read from the aisle, so the word runs from +z to -z)
+        void Bar(double z0, double z1, double y0, double y1) => p.Add(L([sx0 - 0.026, y0, -z1], [sx0 - 0.01, y1, -z0], MachineLook.Ink)); // (mirrored: facing -x, the aisle's right is +z)
+        // H (laid out +z to -z, then mirrored by Bar, so the word reads left to right from the aisle)
         Bar(0.24, 0.28, 0.37, 0.55); Bar(0.12, 0.16, 0.37, 0.55); Bar(0.16, 0.24, 0.445, 0.475);
         // O
         Bar(0.02, 0.06, 0.37, 0.55); Bar(-0.1, -0.06, 0.37, 0.55); Bar(-0.06, 0.02, 0.37, 0.4); Bar(-0.06, 0.02, 0.52, 0.55);
