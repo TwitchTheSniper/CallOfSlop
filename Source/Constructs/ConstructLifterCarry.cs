@@ -81,6 +81,7 @@ public static partial class ConstructLifters
         switch (pt.Kind)
         {
             case LiftPointKind.Rack:
+                d = ConstructPads.RackDef(b, pt.Part); // (a pad of tiles: its whole rectangle's middle)
                 at = PartPoint(b, pt.Part, new Vector3((d.RackHoldMin.X + d.RackHoldMax.X) * 0.5f, d.RackHoldMin.Y, (d.RackHoldMin.Z + d.RackHoldMax.Z) * 0.5f));
                 return true;
             case LiftPointKind.Out:
@@ -98,7 +99,7 @@ public static partial class ConstructLifters
     /// <summary>The rack or pad point nearest a shoulder that the wrist reaches with both lifts: over its hold, on a grid every half metre.</summary>
     private static bool RackSpot(Construct b, int part, LifterDef ld, Vector3 shoulder, Quaternion rot, float lift, float lift2, out Vector3 at)
     {
-        var d = b.DefOf(part);
+        var d = ConstructPads.RackDef(b, part);
         var lo = d.RackHoldMin;
         var hi = d.RackHoldMax;
         var nx = Math.Clamp((int)MathF.Ceiling((hi.X - lo.X) / 0.5f), 1, 32);
@@ -150,8 +151,12 @@ public static partial class ConstructLifters
             var d = b.DefOf(i);
             if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
                 continue;
+            if (d.IsPieceRack && ConstructPads.IsMember(b, i))
+                continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
             ref readonly var p = ref b.Parts[i];
             var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
+            if (d.IsPieceRack && ConstructPads.RackDef(b, i) is var pd && !ReferenceEquals(pd, d))
+                half = MathF.Max(MathF.Abs(pd.RackHoldMin.X), MathF.Abs(pd.RackHoldMax.X)) + MathF.Max(MathF.Abs(pd.RackHoldMin.Z), MathF.Abs(pd.RackHoldMax.Z)) + pd.RackHoldMax.Y + 0.5f; // (a pad's owner: its whole rectangle, measured from the tile)
             if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
                 continue; // (a big body's far parts; one on a moving segment is tested whole)
             if (d.IsPieceRack)

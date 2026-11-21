@@ -1,0 +1,907 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turntable Tile",
+  "description": "A 2 m tile that turns a piece onto a crossing run: butt Roller Tile runs on its sides; a piece from one goes on to the others in turn, turned to their way. It is the junction for pieces too wide for a Splitter or a Join.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 300.0,
+  "health": 800,
+  "armour": 5,
+  "material": "steel",
+  "color": "#35556b",
+  "attachSeconds": 6,
+  "ports": [
+    {
+      "name": "In -z",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        0,
+        0.94,
+        -0.997
+      ],
+      "face": "-z",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "Out -z",
+      "type": "conveyor",
+      "dir": "out",
+      "at": [
+        0,
+        0.94,
+        -0.997
+      ],
+      "face": "-z",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "In +z",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        0,
+        0.94,
+        0.997
+      ],
+      "face": "+z",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "Out +z",
+      "type": "conveyor",
+      "dir": "out",
+      "at": [
+        0,
+        0.94,
+        0.997
+      ],
+      "face": "+z",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "In -x",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        -0.997,
+        0.94,
+        0
+      ],
+      "face": "-x",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "Out -x",
+      "type": "conveyor",
+      "dir": "out",
+      "at": [
+        -0.997,
+        0.94,
+        0
+      ],
+      "face": "-x",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "In +x",
+      "type": "conveyor",
+      "dir": "in",
+      "at": [
+        0.997,
+        0.94,
+        0
+      ],
+      "face": "+x",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "name": "Out +x",
+      "type": "conveyor",
+      "dir": "out",
+      "at": [
+        0.997,
+        0.94,
+        0
+      ],
+      "face": "+x",
+      "opening": [
+        2.0,
+        2.0
+      ]
+    }
+  ],
+  "turntable": true,
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.997,
+        0.003,
+        -0.997
+      ],
+      "max": [
+        0.997,
+        0.95,
+        0.997
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.993,
+        0.003,
+        -0.993
+      ],
+      "max": [
+        0.993,
+        0.8,
+        0.993
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.893,
+        0.8,
+        -0.967
+      ],
+      "max": [
+        0.893,
+        0.814,
+        0.967
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "tread plate"
+    },
+    {
+      "min": [
+        0.997,
+        0.56,
+        -0.937
+      ],
+      "max": [
+        1.009,
+        0.7,
+        0.937
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        1.009,
+        0.6138,
+        -0.25
+      ],
+      "max": [
+        1.021,
+        0.6462,
+        0.0
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        1.009,
+        0.585,
+        0.0
+      ],
+      "max": [
+        1.021,
+        0.675,
+        0.085
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        1.009,
+        0.6003,
+        0.085
+      ],
+      "max": [
+        1.021,
+        0.6597,
+        0.17
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        1.009,
+        0.6156,
+        0.17
+      ],
+      "max": [
+        1.021,
+        0.6444,
+        0.25
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.997,
+        0.003,
+        -0.993
+      ],
+      "max": [
+        1.011,
+        0.13,
+        0.993
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        -0.87
+      ],
+      "max": [
+        1.009,
+        0.925,
+        -0.83
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        -0.53
+      ],
+      "max": [
+        1.009,
+        0.925,
+        -0.49
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        -0.19
+      ],
+      "max": [
+        1.009,
+        0.925,
+        -0.15
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        0.15
+      ],
+      "max": [
+        1.009,
+        0.925,
+        0.19
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        0.49
+      ],
+      "max": [
+        1.009,
+        0.925,
+        0.53
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        0.993,
+        0.885,
+        0.83
+      ],
+      "max": [
+        1.009,
+        0.925,
+        0.87
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "+x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.56,
+        -0.937
+      ],
+      "max": [
+        -0.997,
+        0.7,
+        0.937
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.021,
+        0.6138,
+        -0.25
+      ],
+      "max": [
+        -1.009,
+        0.6462,
+        0.0
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.021,
+        0.585,
+        0.0
+      ],
+      "max": [
+        -1.009,
+        0.675,
+        0.085
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.021,
+        0.6003,
+        0.085
+      ],
+      "max": [
+        -1.009,
+        0.6597,
+        0.17
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.021,
+        0.6156,
+        0.17
+      ],
+      "max": [
+        -1.009,
+        0.6444,
+        0.25
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.011,
+        0.003,
+        -0.993
+      ],
+      "max": [
+        -0.997,
+        0.13,
+        0.993
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        -0.87
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        -0.83
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        -0.53
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        -0.49
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        -0.19
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        -0.15
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        0.15
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        0.19
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        0.49
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        0.53
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -1.009,
+        0.885,
+        0.83
+      ],
+      "max": [
+        -0.993,
+        0.925,
+        0.87
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "seam": "-x"
+    },
+    {
+      "min": [
+        -0.993,
+        0.003,
+        0.997
+      ],
+      "max": [
+        0.993,
+        0.13,
+        1.011
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "+z"
+    },
+    {
+      "min": [
+        -0.977,
+        0.7,
+        0.997
+      ],
+      "max": [
+        0.977,
+        0.78,
+        1.009
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint",
+      "seam": "+z"
+    },
+    {
+      "min": [
+        -0.993,
+        0.003,
+        -1.011
+      ],
+      "max": [
+        0.993,
+        0.13,
+        -0.997
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false,
+      "seam": "-z"
+    },
+    {
+      "min": [
+        -0.977,
+        0.7,
+        -1.009
+      ],
+      "max": [
+        0.977,
+        0.78,
+        -0.997
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint",
+      "seam": "-z"
+    },
+    {
+      "min": [
+        -0.98,
+        0.814,
+        -0.98
+      ],
+      "max": [
+        0.98,
+        0.85,
+        0.98
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 32,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.96,
+        0.85,
+        -0.96
+      ],
+      "max": [
+        0.96,
+        0.88,
+        0.96
+      ],
+      "color": "#35556b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 32,
+      "front": "+y",
+      "paintable": false,
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.63,
+        0.88,
+        -0.728
+      ],
+      "max": [
+        -0.27,
+        0.996,
+        0.728
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.18,
+        0.88,
+        -0.84
+      ],
+      "max": [
+        0.18,
+        0.996,
+        0.84
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        0.27,
+        0.88,
+        -0.728
+      ],
+      "max": [
+        0.63,
+        0.996,
+        0.728
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel",
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.06,
+        0.992,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        1.006,
+        0.06
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false,
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.5,
+        0.74,
+        -1.013
+      ],
+      "max": [
+        0.5,
+        0.778,
+        -1.001
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false,
+      "seam": "-z"
+    },
+    {
+      "min": [
+        -0.5,
+        0.74,
+        0.993
+      ],
+      "max": [
+        0.5,
+        0.778,
+        1.005
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false,
+      "seam": "+z"
+    },
+    {
+      "min": [
+        -1.009,
+        0.74,
+        -0.5
+      ],
+      "max": [
+        -0.997,
+        0.78,
+        0.5
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false,
+      "seam": "-x"
+    },
+    {
+      "min": [
+        0.997,
+        0.74,
+        -0.5
+      ],
+      "max": [
+        1.009,
+        0.78,
+        0.5
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false,
+      "seam": "+x"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.5,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.5,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-z low",
+      "at": [
+        0.0,
+        0.1,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z low",
+      "at": [
+        0.0,
+        0.1,
+        1.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x low",
+      "at": [
+        1.0,
+        0.1,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x low",
+      "at": [
+        -1.0,
+        0.1,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

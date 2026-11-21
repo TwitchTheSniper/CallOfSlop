@@ -7,7 +7,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The survival opening on this machine (docs/story/OPENING.md; the server's side is Game/GameSandboxOpening.cs): the
-/// placeholder card for the crash landing, the camera of someone waking in the colony's cell block, the black and the
+/// black card before waking, the camera of someone waking in the colony's cell block, the black and the
 /// words over the screen, and the one key that works meanwhile (jump: skip). The beat comes from the server.
 /// </summary>
 public static partial class Program
@@ -47,7 +47,7 @@ public static partial class Program
         {
             case OpeningStage.Out:
             {
-                // The placeholder card: on their back in the cell block, under the black.
+                // The black card: on their back in the cell block, under the black.
                 eye = feet + u * OpeningLieEye;
                 fwd = u;
                 up = Upright(fwd, u); // (square to the up: its fallback)
@@ -124,16 +124,19 @@ public static partial class Program
         var tint = Ui.SubtitleTint;
         if (g.OpeningCaption.Length > 0)
         {
+            // Wrapped to 80% of the screen's width, and smaller (down to the subtitle size) if it would take more than three lines.
             var a = (byte)(Math.Clamp(MathF.Min(t / 0.6f, (length - t) / 0.5f), 0, 1) * 230);
-            var size = ImGui.CalcTextSize(g.OpeningCaption) * (big / ImGui.GetFontSize());
-            var at = new float2((screen.X - size.X) * 0.5f, screen.Y * 0.42f);
-            dl.AddText(font, big, at, new ImColor8((byte)(tint.X * 235), (byte)(tint.Y * 235), (byte)(tint.Z * 235), a), g.OpeningCaption);
-            if (stage == OpeningStage.Out)
+            var maxW = screen.X * 0.8f;
+            var lines = OpeningFit(g.OpeningCaption, maxW, big, small, out var px);
+            var k = px / ImGui.GetFontSize();
+            var lineH = ImGui.GetFontSize() * k * 1.35f;
+            var y = screen.Y * 0.42f - (lines.Count - 1) * lineH * 0.5f;
+            var col = new ImColor8((byte)(tint.X * 235), (byte)(tint.Y * 235), (byte)(tint.Z * 235), a);
+            foreach (var line in lines)
             {
-                // (a placeholder until the crash-landing scene is made again: Karl, 2026-11-12)
-                const string tag = "[ placeholder: crash landing ]";
-                var ts = ImGui.CalcTextSize(tag) * (small / ImGui.GetFontSize());
-                dl.AddText(font, small, new float2((screen.X - ts.X) * 0.5f, screen.Y * 0.42f - ts.Y - 14 * Ui.Scale), new ImColor8(150, 150, 150, a), tag);
+                var w = ImGui.CalcTextSize(line).X * k;
+                dl.AddText(font, px, new float2((screen.X - w) * 0.5f, y), col, line);
+                y += lineH;
             }
         }
         if (g.OpeningSubtitle.Length > 0 && g.OpeningNow - g.OpeningSubtitleAt < 3.2)
@@ -146,5 +149,51 @@ public static partial class Program
         var hint = $"{SandboxKeys.JumpKey}: {Game.OpeningSkipHint}";
         var hs = ImGui.CalcTextSize(hint);
         dl.AddText(new float2(screen.X - hs.X - 18 * Ui.Scale, screen.Y - hs.Y - 14 * Ui.Scale), new ImColor8(200, 200, 200, 150), hint);
+    }
+
+    private static readonly List<string> OpeningLines = new();
+    private static string _openingFitText = "";
+    private static float _openingFitWidth = -1, _openingFitPx;
+
+    /// <summary>The caption's lines and size: <paramref name="big"/>, stepped down to <paramref name="small"/> while it takes more than
+    /// three lines of <paramref name="maxW"/> pixels. Kept while the text and width stay the same (no allocation on a steady frame).</summary>
+    private static List<string> OpeningFit(string text, float maxW, float big, float small, out float px)
+    {
+        if (ReferenceEquals(text, _openingFitText) && maxW == _openingFitWidth)
+        {
+            px = _openingFitPx;
+            return OpeningLines;
+        }
+        px = big;
+        OpeningWrap(text, maxW / (px / ImGui.GetFontSize()));
+        while (OpeningLines.Count > 3 && px > small)
+        {
+            px = MathF.Max(small, px - 2f);
+            OpeningWrap(text, maxW / (px / ImGui.GetFontSize()));
+        }
+        _openingFitText = text;
+        _openingFitWidth = maxW;
+        _openingFitPx = px;
+        return OpeningLines;
+    }
+
+    /// <summary>Breaks <paramref name="text"/> at spaces into <see cref="OpeningLines"/>, each no wider than <paramref name="width"/> at the font's own size.</summary>
+    private static void OpeningWrap(string text, float width)
+    {
+        OpeningLines.Clear();
+        var line = "";
+        foreach (var word in text.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var tryLine = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && ImGui.CalcTextSize(tryLine).X > width)
+            {
+                OpeningLines.Add(line);
+                line = word;
+            }
+            else
+                line = tryLine;
+        }
+        if (line.Length > 0)
+            OpeningLines.Add(line);
     }
 }

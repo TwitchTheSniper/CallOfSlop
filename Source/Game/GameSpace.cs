@@ -59,6 +59,9 @@ public sealed partial class Game
             return;
         var edge = SpaceEdge;
         (pg.OrbitMu, pg.OrbitFrom) = Space != null && edge > 0 ? (Space.Bubble.BodyInfo.Mu, edge) : (0, 0);
+        // The game's frame turns with the body's ground (the bubble is fixed to it), so a free fall in it also feels that
+        // turn: its spin in game axes, the same at any time (the axis is fixed to the ground).
+        pg.OrbitSpin = pg.OrbitMu > 0 && Space is { } sp && sp.Bubble.PoseAt(sp.Now) is var pose ? pose.Rot.InverseRotate(pose.Spin).ToVector3() : System.Numerics.Vector3.Zero;
     }
 
     /// <summary>

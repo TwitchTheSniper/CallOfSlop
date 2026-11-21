@@ -51,6 +51,14 @@ public static class ConstructRackPack
         return lanes > 0 && layers > 0 && lenMm <= (int)(w.Z * 1000 + 0.5f) && s.Z > 0;
     }
 
+    /// <summary>The hold's size as a key (never 0): columns packed for one size are packed again for another.</summary>
+    public static int Shape(ConstructPartDef rd)
+    {
+        Hold(rd, out var lo, out var hi);
+        var w = hi - lo;
+        return HashCode.Combine((int)(w.X * 1000 + 0.5f), (int)(w.Y * 1000 + 0.5f), (int)(w.Z * 1000 + 0.5f)) | 1;
+    }
+
     private static int HoldMm(ConstructPartDef rd)
     {
         Hold(rd, out var lo, out var hi);
@@ -60,8 +68,10 @@ public static class ConstructRackPack
     /// <summary>The columns fit the kinds (a loaded save, a copy, an old client's store): else they are packed again from the kinds, in order.</summary>
     public static void Ensure(ConstructPartDef rd, CStore st)
     {
-        if (st.SlabSum == st.ItemCount && (st.ItemCount == 0 || st.SlabN > 0))
+        var shape = Shape(rd);
+        if (st.SlabSum == st.ItemCount && (st.ItemCount == 0 || st.SlabN > 0) && (st.PackedFor == 0 || st.PackedFor == shape))
             return;
+        st.PackedFor = shape; // (a Pad Tile's pad grown, shrunk or given another owner: the columns are packed again for its hold)
         st.SlabN = st.SlabSum = 0;
         for (var k = 0; k < st.KindN; k++)
             if (ConstructParts.Get(st.KindDef![k]) is { } d)
@@ -80,6 +90,13 @@ public static class ConstructRackPack
         slab = lane = -1;
         if (!Fit(rd, d, out var lanes, out var layers, out var lenMm))
             return 3;
+        if (!dryRun)
+        {
+            var shape = Shape(rd);
+            if (st.PackedFor != 0 && st.PackedFor != shape)
+                Ensure(rd, st); // (columns packed for another hold size: packed again first)
+            st.PackedFor = shape;
+        }
         // A column of its kind with room: its lowest stack.
         for (var s = 0; s < st.SlabN; s++)
         {
