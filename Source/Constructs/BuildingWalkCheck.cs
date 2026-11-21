@@ -23,6 +23,7 @@ public static class BuildingWalkCheck
     private const float Comfort = 0.55f; // a body this wide (1.1 m) passes without brushing
     private const float Reach = 1.6f; // a seat, a store or a switch is used from this close (horizontally)
     private const float Margin = 2.5f; // ground round the building
+    private const float Crouched = 1.15f; // a crouching body's head, a little under World.HeightOf(Stance.Crouch)
 
     private struct Box
     {
@@ -327,7 +328,9 @@ public static class BuildingWalkCheck
             }
             return true;
         }
-        void Grabs((int, int) to, (int, int) here, Vector3 end)
+        // (crouchOut: the end's landing is a door's leaf carrying the ladder under a low keel, the Satchel's or the Hatchet's belly
+        // hatch: a body that climbed down crouches out from under the hull to the open ground the grab reaches, World.HeightOf(Crouch))
+        void Grabs((int, int) to, (int, int) here, Vector3 end, bool crouchOut = false)
         {
             var reachAcross = ConstructRide.GrabReach + World.PlayerRadius;
             var n = (int)MathF.Ceiling(reachAcross / G);
@@ -346,8 +349,11 @@ public static class BuildingWalkCheck
                             && ClearLine(new Vector3(px, cols[col][k].Top + 1.0f, pz), end + new Vector3(0, 1.0f, 0)))
                         {
                             ladders.Add(((col, k), to));
-                            if (cols[col][k].Top < cols[here.Item1][here.Item2].Top - World.StepHeight)
+                            var top = cols[here.Item1][here.Item2].Top;
+                            if (top - cols[col][k].Top > World.StepHeight)
                                 ladders.Add((here, (col, k))); // (and off the end's landing, a drop the walk's steps don't take: the Dray's belly hatch stops a step and more up)
+                            else if (crouchOut && ClearLine(new Vector3(px, cols[col][k].Top + Crouched, pz), new Vector3(end.X, top + Crouched, end.Z)))
+                                ladders.Add((here, (col, k)));
                         }
                 }
         }
@@ -387,7 +393,7 @@ public static class BuildingWalkCheck
             {
                 ladders.Add((f, u));
                 ladders.Add((u, f));
-                Grabs(u, f, footAt);
+                Grabs(u, f, footAt, ConstructDoor.EventDoor(c, i) is var leaf and >= 0 && leaf != i);
                 Grabs(f, u, topAt);
             }
             else
@@ -447,7 +453,9 @@ public static class BuildingWalkCheck
                         if (!n.Fit || n.Part < 0 || n.Reach == 3 || MathF.Abs(n.Top - hc.Y) > ShaftSpan)
                             continue;
                         var shaftTop = new Vector3(hc.X, n.Top + 0.5f, hc.Z);
-                        if (ClearLine(hc + new Vector3(0, MathF.Sign(n.Top - hc.Y) * 0.1f, 0), shaftTop) && ClearLine(new Vector3(px, n.Top + 0.5f, pz), shaftTop))
+                        // (a hatch flush in the floor it is on, a landing pad's, has no shaft: the craft sits on that floor)
+                        var flush = MathF.Abs(n.Top - hc.Y) < 0.5f;
+                        if ((flush || ClearLine(hc + new Vector3(0, MathF.Sign(n.Top - hc.Y) * 0.1f, 0), shaftTop)) && ClearLine(new Vector3(px, n.Top + 0.5f, pz), shaftTop))
                         {
                             n.Reach = 3;
                             fwd.Enqueue((col, k));

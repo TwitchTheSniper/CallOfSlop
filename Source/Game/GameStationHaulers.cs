@@ -41,7 +41,8 @@ public sealed partial class Game
     {
         public ushort Ship, Hauler; // (Hauler 0: its hauler was lost; it waits for the route's next)
         public int Route;
-        public long RetryAt;
+        public long RetryAt, DockSince;
+        public bool NoBerth; // the station had no berth for it this stop: it waits off instead
         public string Last = "";
     }
 
@@ -429,6 +430,36 @@ public sealed partial class Game
         var docking = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 } stb && hauler.SpaceAway == 0
             && (hauler.MooredTo == st || Vector3.DistanceSquared(stb.WorldCom, hauler.WorldCom) < HaulDockFrom * HaulDockFrom);
         var resting = hauler.SpaceAway == 0 && NavOf(hauler.Id) is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting or NavPhase.Short } ho && ho.Body == s.Bubble.Body; // (on a circle, or waiting there for a trip in reach)
+        // With its hauler moored, it docks too where the station has a berth it fits (Karl, 2026-11-21: "make sure NPC frigates can dock and
+        // supply the stations"; Caledon Highport's frigate collar, Hexkey Orbital's pier), and waits off the station only where there is none.
+        if (docking && hauler.MooredTo == st && c.SpaceAway == 0 && !e.NoBerth)
+        {
+            if (c.MooredTo == st)
+                return; // (moored beside it)
+            if (o is { Kind: NavKind.Dock } && o.Target == st && ServerTick - e.DockSince < HaulDockMost * World.TickRate)
+                return; // (on its way in)
+            if (c.Dirty)
+                c.Rebuild();
+            why = NavApply(s, c, NavKind.Dock, 0, Vec3d.Zero, 0, 255, h.Power + " escort", null, out _, st);
+            if (why == null)
+            {
+                e.DockSince = ServerTick;
+                e.RetryAt = ServerTick + 10 * World.TickRate;
+                line = $"docks at {d.Name} beside hauler {hauler.Id}";
+                if (line != e.Last)
+                {
+                    e.Last = line;
+                    Log($"[haul] escort {c.Id} {line}");
+                }
+                return;
+            }
+            e.NoBerth = true;
+            Log($"[haul] escort {c.Id} can't dock at {d.Name} ({why}): it waits off");
+        }
+        if (!docking)
+            e.NoBerth = false; // (a berth is looked for again at the next stop)
+        if (c.MooredTo != 0 && !(docking && hauler.MooredTo == st))
+            StationCastOff(c); // (its hauler has cast off: so does it)
         if ((docking || resting) && c.SpaceAway == 0 && GravityFrames.Point is { } gp && Constructs.Get(docking ? st : hauler.Id) is { } sb)
         {
             // While the hauler docks (or rests on a circle), off the station (or it) on a circle of its own a kilometre under or over its (under when the station
@@ -640,13 +671,147 @@ public sealed partial class Game
             bought[k] += n;
             cost += paid;
         }
+        if (h.Parts)
+        {
+            var (pv, pc) = HaulParts(run, c, h, def, m, pw, cost, where);
+            value += pv;
+            cost += pc;
+        }
         if (cost > 0 && pw != null)
         {
             pw.Stock -= cost;
             pw.Spent += cost;
-            Log($"[haul] construct {c.Id} ({h.Power}) bought {StationGoodsText(m, bought)} at {where} for {cost:0} (value)");
+            Log($"[haul] construct {c.Id} ({h.Power}) bought {(StationGoodsText(m, bought) is { Length: > 0 } t ? t : "parts")} at {where} for {cost:0} (value)");
         }
         else if (value <= 0)
             Log($"[haul] construct {c.Id} ({h.Power}) traded nothing at {where}");
+    }
+
+    /// <summary>
+    /// Host: a parts hauler at its station (route "parts": a store's supply, Karl 2026-11-21: "make sure NPC frigates can dock and supply the
+    /// stations"): it sells the station every part its stores hold that the station buys, up to the station's room for it, then loads into its
+    /// Storage Volumes the parts this station sells that the far one is short of (under its want), most needed first, up to the shortfall and
+    /// what its power can afford. The value it earned (already in its power's books) and what the load cost (for the caller to book).
+    /// </summary>
+    private (double Value, double Cost) HaulParts(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket m, PowerControllers.Power? pw, double spent, string where)
+    {
+        var sd = StationMarkets.All[def];
+        var parts = sd.Parts;
+        var ng = sd.Goods.Length;
+        double value = 0, cost = 0;
+        var sold = 0;
+        // its holds: its own Storage Volumes and those of the cargo it carries (the Packet's standard containers)
+        var holds = new List<Construct> { c };
+        foreach (var b in Constructs.Bodies)
+            if (b.CarriedBy == c.Id && !b.Wreck)
+                holds.Add(b);
+        // their stores and volumes, found once a stop (not once per part kind or unit)
+        var stores = new List<(Construct B, int P)>();
+        var vols = new List<(Construct B, int P)>();
+        foreach (var b in holds)
+            for (var i = 0; i < b.PartCount; i++)
+            {
+                if (Constructs.StoreOf(b, i) is not null)
+                    stores.Add((b, i));
+                if (b.DefOf(i).IsVolumeStore)
+                    vols.Add((b, i));
+            }
+        for (var j = 0; j < parts.Length; j++)
+        {
+            if (parts[j].Buy <= 0 || ng + j >= m.Stock.Length)
+                continue;
+            var room = Math.Max(0, parts[j].Most - m.Stock[ng + j]);
+            if (room <= 0)
+                continue;
+            var what = new CHolding(true, parts[j].Part, 0);
+            var took = 0;
+            foreach (var (b, i) in stores)
+                if (took < room)
+                    took += Constructs.TakeHolding(b, i, what, room - took);
+            if (took == 0)
+                continue;
+            m.Stock[ng + j] += took;
+            value += took * (double)parts[j].Buy;
+            sold += took;
+        }
+        if (sold > 0)
+        {
+            if (pw is { Fallen: false })
+            {
+                pw.Stock += value;
+                pw.Earned += value;
+            }
+            StationsVersion++;
+            Log($"[haul] construct {c.Id} ({h.Power}) delivered {sold} parts to {where} for {value:0} (value)");
+        }
+        // What the far station is short of, most needed first.
+        var far = run.AtTo ? h.From : h.To;
+        var fd = StationMarkets.All[far];
+        var fm = MarketOfDef(far);
+        var fng = fd.Goods.Length;
+        Span<int> pick = stackalloc int[parts.Length];
+        Span<float> need = stackalloc float[parts.Length];
+        Span<int> short_ = stackalloc int[parts.Length];
+        var np = 0;
+        for (var j = 0; j < parts.Length; j++)
+        {
+            if (parts[j].Sell <= 0 || ng + j >= m.Stock.Length || m.Stock[ng + j] <= 0)
+                continue;
+            var fj = Array.FindIndex(fd.Parts, x => x.Part == parts[j].Part);
+            if (fj < 0 || fd.Parts[fj].Buy <= 0 || fng + fj >= fm.Stock.Length)
+                continue;
+            var gap = fd.Parts[fj].Target - fm.Stock[fng + fj];
+            if (gap <= 0)
+                continue;
+            pick[np] = j;
+            short_[np] = gap;
+            need[np++] = gap / (float)fd.Parts[fj].Target;
+        }
+        for (var i = 1; i < np; i++)
+            for (var k = i; k > 0 && need[k] > need[k - 1]; k--)
+            {
+                (need[k], need[k - 1]) = (need[k - 1], need[k]);
+                (pick[k], pick[k - 1]) = (pick[k - 1], pick[k]);
+                (short_[k], short_[k - 1]) = (short_[k - 1], short_[k]);
+            }
+        int loaded = 0, vi = 0;
+        string? refusal = null;
+        for (var i = 0; i < np; i++)
+        {
+            var j = pick[i];
+            if (ConstructParts.Def(parts[j].Part) is not { } pd)
+                continue;
+            var n = Math.Min(short_[i], m.Stock[ng + j]);
+            for (var u = 0; u < n; u++)
+            {
+                if (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell)
+                    break;
+                var put = false;
+                for (var t = 0; t < vols.Count && !put; t++)
+                {
+                    var (b, p) = vols[(vi + t) % vols.Count]; // (from the volume that took the last one)
+                    if (Constructs.PutPart(b, p, pd) is { } why)
+                        refusal ??= why;
+                    else
+                    {
+                        put = true;
+                        vi = (vi + t) % vols.Count;
+                    }
+                }
+                if (!put)
+                    break;
+                m.Stock[ng + j]--;
+                cost += parts[j].Sell;
+                loaded++;
+            }
+        }
+        if (loaded > 0)
+        {
+            StationsVersion++;
+            Log($"[haul] construct {c.Id} ({h.Power}) loaded {loaded} parts at {where} for {StationMarkets.All[far].Name}");
+        }
+        else if (np > 0)
+            HaulSay(run, c, $"loads no parts at {where}: {refusal ?? "its power can't afford them, or it has no Storage Volume"}");
+        return (value, cost);
     }
 }

@@ -4,11 +4,104 @@
   "description": "A standard 3 m cargo container: three 3x3x3 m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
   "group": "Storage",
   "section": "Cargo containers",
-  "role": "frame",
+  "role": "storage",
   "tool": "welder",
   "sizeClass": "medium",
   "finish": "painted plating",
   "collider": "boxes",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "volume": true
+    }
+  },
+  "container": true,
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 3.2,
+      "step": 0.1,
+      "default": 3.2,
+      "tooltip": "The hold's size across the container."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 3.19,
+      "step": 0.1,
+      "default": 3.19,
+      "tooltip": "The hold's height."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 9.28,
+      "step": 0.1,
+      "default": 9.28,
+      "tooltip": "The hold's length."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -1.75,
+      "max": 1.75,
+      "step": 0.05,
+      "default": 0.0,
+      "tooltip": "Where the hold's middle is (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -3.5,
+      "max": 0.0,
+      "step": 0.05,
+      "default": -1.75,
+      "tooltip": "Where the hold's middle is (y: under the roof)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -4.75,
+      "max": 4.75,
+      "step": 0.05,
+      "default": 0.0,
+      "tooltip": "Where the hold's middle is (z)."
+    },
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "The bulk it holds. Creative worlds only."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full the hold is."
+    }
+  ],
   "mass": 3938.0,
   "health": 9850,
   "armour": 14,

@@ -988,7 +988,13 @@ public sealed partial class Ui
 
             ImGui.Spacing();
             VideoLevelRow("Materials"u8, "materials", ref s.Materials);
-            ImGui.TextColored(Dim, "Parts and props: Low is the plain look. Medium adds metal, wood, rubber and glass that catch the sun and the sky, worn edges and rust on hurt parts. High adds fine surface detail up close."u8);
+            if (s.Materials > VideoLevel.Low)
+            {
+                ImGui.Checkbox("Edge bevels##mat"u8, ref s.EdgeBevels);
+                ImGui.SameLine();
+                ImGui.Checkbox("Material contrast##mat"u8, ref s.MaterialContrast);
+            }
+            ImGui.TextColored(Dim, "Parts and props: Low is the plain look. Medium adds metal, wood, rubber and glass that catch the sun and the sky, worn edges and rust on hurt parts. High adds fine surface detail up close. Edge bevels give every part's edges a thin highlight, so panels stand apart. Material contrast gives paint a satin sheen and dark frames and rubber a rougher, flatter finish."u8);
             VideoLevelRow("Particles"u8, "particles", ref s.Particles);
             ImGui.TextColored(Dim, "Flames, smoke, sparks, dust and blasts: how many at once."u8);
             VideoLevelRow("Post effects"u8, "post", ref s.PostEffects);
@@ -1001,9 +1007,16 @@ public sealed partial class Ui
                 {
                     ImGui.SameLine();
                     ImGui.Checkbox("Ambient occlusion##post"u8, ref s.AmbientOcclusion);
+                    if (s.AmbientOcclusion)
+                    {
+                        ImGui.SliderFloat("Shade strength##ao"u8, ref s.AoStrength, 0.25f, 2f, "%.2fx"u8);
+                        ImGui.SliderFloat("Shade reach##ao"u8, ref s.AoRadius, 0.3f, 2.5f, "%.1f m"u8);
+                    }
                 }
             }
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
+            ImGui.Checkbox("Contact shadows##post"u8, ref s.ContactShadows);
+            ImGui.TextColored(Dim, "A soft shadow on the ground under ships and vehicles, darker the closer they sit."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

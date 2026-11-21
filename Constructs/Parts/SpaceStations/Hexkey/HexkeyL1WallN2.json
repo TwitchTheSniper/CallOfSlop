@@ -1,0 +1,160 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L1 Wall N2",
+  "description": "An outer wall of Hexkey Orbital: white panels, a long window band, thin charcoal mullions.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 4864.5,
+  "health": 9837,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -11.125,
+        -2.125,
+        -0.125
+      ],
+      "max": [
+        11.875,
+        2.575,
+        0.175
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -11.075,
+        -0.525,
+        -0.152
+      ],
+      "max": [
+        11.825,
+        1.875,
+        -0.131
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -11.075,
+        -0.525,
+        0.181
+      ],
+      "max": [
+        11.825,
+        1.875,
+        0.197
+      ],
+      "color": "#c4d8d5",
+      "detail": true,
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -10.205,
+        -0.575,
+        -0.172
+      ],
+      "max": [
+        -10.045,
+        1.925,
+        -0.154
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.205,
+        -0.575,
+        -0.172
+      ],
+      "max": [
+        -4.045,
+        1.925,
+        -0.154
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.795,
+        -0.575,
+        -0.172
+      ],
+      "max": [
+        1.955,
+        1.925,
+        -0.154
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.795,
+        -0.575,
+        -0.172
+      ],
+      "max": [
+        7.955,
+        1.925,
+        -0.154
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        0.375,
+        -2.125,
+        0.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.375,
+        2.575,
+        0.025
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -11.125,
+        0.225,
+        0.025
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        11.875,
+        0.225,
+        0.025
+      ],
+      "dir": "+x"
+    }
+  ]
+}
