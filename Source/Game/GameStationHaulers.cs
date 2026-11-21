@@ -700,6 +700,11 @@ public sealed partial class Game
         var ng = sd.Goods.Length;
         double value = 0, cost = 0;
         var sold = 0;
+        // its holds: its own Storage Volumes and those of the cargo it carries (the Packet's standard containers)
+        var holds = new List<Construct> { c };
+        foreach (var b in Constructs.Bodies)
+            if (b.CarriedBy == c.Id && !b.Wreck)
+                holds.Add(b);
         for (var j = 0; j < parts.Length; j++)
         {
             if (parts[j].Buy <= 0 || ng + j >= m.Stock.Length)
@@ -709,9 +714,10 @@ public sealed partial class Game
                 continue;
             var what = new CHolding(true, parts[j].Part, 0);
             var took = 0;
-            for (var i = 0; i < c.PartCount && took < room; i++)
-                if (Constructs.StoreOf(c, i) is not null)
-                    took += Constructs.TakeHolding(c, i, what, room - took);
+            foreach (var b in holds)
+                for (var i = 0; i < b.PartCount && took < room; i++)
+                    if (Constructs.StoreOf(b, i) is not null)
+                        took += Constructs.TakeHolding(b, i, what, room - took);
             if (took == 0)
                 continue;
             m.Stock[ng + j] += took;
@@ -771,14 +777,15 @@ public sealed partial class Game
                 if (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell)
                     break;
                 var put = false;
-                for (var p = 0; p < c.PartCount && !put; p++)
-                    if (c.DefOf(p).IsVolumeStore)
-                    {
-                        if (Constructs.PutPart(c, p, pd) is { } why)
-                            refusal ??= why;
-                        else
-                            put = true;
-                    }
+                foreach (var b in holds)
+                    for (var p = 0; p < b.PartCount && !put; p++)
+                        if (b.DefOf(p).IsVolumeStore)
+                        {
+                            if (Constructs.PutPart(b, p, pd) is { } why)
+                                refusal ??= why;
+                            else
+                                put = true;
+                        }
                 if (!put)
                     break;
                 m.Stock[ng + j]--;

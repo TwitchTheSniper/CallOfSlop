@@ -45,8 +45,8 @@
     { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Slopolis Exchange", "goods": ["copper ore", "gold ore"], "back": ["circuits"], "wait": 30, "needs": true,
       "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
     // Hexkey Orbital's supply (Karl, 2026-11-21): furniture from the flat-pack works at Slopolis Exchange, in the ship's Storage Volumes, by what
-    // the store is short of ("parts": true), and hydrogen back. Docks at the store's freight pier (Magpie and Zero Day berths).
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Slopolis Exchange", "to": "Hexkey Orbital", "goods": [], "back": [], "wait": 30, "parts": true,
+    // the store is short of ("parts": true), in the Packet Spine Freighter's standard containers (Karl, 2026-11-21: the new Traders ship as the placeholder).
+    { "power": "Traders", "ship": "Packet Spine Freighter", "count": 1, "from": "Slopolis Exchange", "to": "Hexkey Orbital", "goods": [], "back": [], "wait": 30, "parts": true,
       "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } }
   ],
   "stations": [
