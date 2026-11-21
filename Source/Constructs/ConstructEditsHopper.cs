@@ -26,7 +26,7 @@ public sealed partial class ConstructEdits
         int n;
         if (d.IsRefiner)
             n = world.Feed(c, part, hp.Amount, hp.Material);
-        else if (d.IsAssembler || d.IsPress || !ConstructStorage.BinTakes(d, hp.Material) || st.KindN > 0)
+        else if (d.IsAssembler || d.IsPress || d.IsPanelFormer || !ConstructStorage.BinTakes(d, hp.Material) || st.KindN > 0)
             return null;
         else if (st.Amount > 0 && st.Material != hp.Material)
             return $"the {d.Name} holds {names.NameOf(st.Material)}: the hopper's {what} goes in a bin of its own";

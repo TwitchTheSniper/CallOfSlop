@@ -152,8 +152,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   table's end, up to 192 m (`growLength`, `Extrusion.MaxLengthCm`). A table's top is level with the machine's foot, so a block machine stands on
   Foundations and its tables on the ground in front. The step walks the tables only within 1 m of the plain cap.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
-  Former's sheet link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`), then, for a Panel
-  Former's sheet, strips. The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
+  Former's blank link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`). The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
 - **Sizes.** 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass` and `MaxPartHealth`
   (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
@@ -367,7 +366,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 - **The machine** (design page drawing 15; `storage.panel`: `speed`, `at`, `maxWidth`, `maxLength`, `blockPower`, on an `any` bin;
   `IsPanelFormer`, a member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the
   Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`): a **Panel Former** Core (2 m wide: screen and queue,
-  Orders, power, the sheet hopper, Piece in and its in rollers; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
+  Orders, power, Piece in and its in rollers, the offcut bin with its Offcut chute port; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
   a pin field, an upper pin platen, corner posts, their own hydraulics; 900 W each while forming) welded on its far side and to each
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
@@ -382,18 +381,28 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
   wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
   work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
-- **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
-  **Piece in**: an arriving extruded section no thicker than 10 cm (a Sheet is 1 to 10 cm) is taken whole and counted into the bin at
-  what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
-  the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
+- **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
+  profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
+  comes from the panel's **flat size**: the surface unrolled (`HullLoft.PanelFlat`, three lines each way), its thickness in whole cm
+  (`round(mm / 10)`, 1 to 10); a kit loft's from its two longest sides and its mass by area (`ConstructPanelFormer.FlatOf`, cached per
+  def). `BlankFor(panel)` is the blank asked for: each side the flat size rounded up to 5 cm, in the panel's material. A blank fits
+  (`BlankFits`) when its material and thickness are the panel's and each side is from the flat size up to 25% over (`OverMost`, or the
+  next 5 cm step), either way round. An arriving blank that fits a queued order moves that order to the head and lies on the bed
+  (`TakeFromConveyor`; `JobAmount` its units, `OnBed`, both on the wire and saved); anything else waits on the conveyor. Done, the
+  trim (the blank's units less the panel's, `HullLoft.FormedUnits`) goes whole into the **offcut bin** (one material: "offcut bin
+  full", empty it by chute from its Offcut port); Cancel or Clear puts a blank on the bed back into the bin whole (`GiveBack`). The
+  look line and screen name the blank needed: "needs a 1.71 x 0.47 m steel blank, 2 cm (up to 25% over each way) on Piece in"
+  (`Lacks`, `BlankText`). Drawn: the blank lies flat on the bed, and the panel over the pins late in the stroke (`BedLook`).
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
-  ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size, in what its bin holds (steel when
-  empty), Order count times; the Preset button opens the recipe picker on its presets (below). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
-  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"), more
-  than its bin holds, another material than its bin's ("another line"), a full queue. An Extruder or an Assembler refuses a panel ("a
-  Panel Former's order"). Starved says what it lacks: "needs 26 steel sheet for its panel, holds 10".
+  ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size in steel, Order count times; the
+  Preset button opens the recipe picker on its presets (below). An order queued at the former itself (its Queue, a bill's Send) asks a
+  linked Sheet Extruder for its blanks (`AskBlanks`: those with a conveyor way to the former first); a chained order (a terminal, the
+  designer) asks the blank through the planner (`ConstructLogisticsPlan.FormerInputs`), which refuses a blank wider than any linked
+  Extruder's die ("Too wide", with the Die Blocks or Run-out Tables it needs). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
+  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"),
+  a full queue. An Extruder or an Assembler refuses a panel ("a Panel Former's order").
 - **Forming is a timed stroke**: 12 s on the block machine; the finished panel then rides out of the Out Table's **Piece out** on a
-  conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut), or with none linked drops on the middle of the bed as
+  conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut; a conveyor out shorter than the panel says so), or with none linked drops on the middle of the bed as
   a loose part, laid along it. Panel keys run up to 32 m (`HullLoft.PanelMaxCm`); a panel over 6 m gets more facets (16 along, 12 across
   at most).
 - **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every `Hull Loft (` and `Formed Panel (` step in `Bill.Panels`;
@@ -1031,10 +1040,10 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
   stamp and flags (an older phase 2 block loads as one level).
 - **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
-  into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
-  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
-  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
-  on the network takes it, phase 5: the link waits and says what would make it, Die Blocks on an Extruder whose most section takes it (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 303) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  into the bay that takes them). A Panel Former's order now chains too: each panel asks **one blank** (`ConstructPanelFormer.BlankFor`, 2026-11-21: a Sheet the
+  panel's flat size rounded up to 5 cm, at its thickness), less a blank lying on the bed for the head order; when no Extruder on the
+  network takes it, the link waits and says what would make it, Die Blocks on an Extruder whose most section takes it, or Run-out Tables
+  (`TooWideText`; the old "Too wide: make strips" setting is gone, protocol 423); a blank that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -1711,8 +1720,13 @@ CLEAR on its sides), festoon loops along the girder and hazard stripes on the ho
 a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The classed cranes stay (the Medium for the Dray's hold;
 the Large and Capital keep their Assembler rows, which saved recipe numbers count). The **Hall Bay** blueprint (`HallShowcase.cs`) is
 a 24 x 20 m floor with a 16 m Hall Crane on two runs over three-mast columns, an Extruder with no conveyor and a 3 x 4 pad of Pad
-Tiles: the crane carries each angle from the Run-out Table to the pad. Not yet: a hall crane doesn't yet skip a machine bed that the
-machine's own crane serves (no machine has its own crane yet).
+Tiles: the crane carries each angle from the Run-out Table to the pad. A crane (or an arm) also picks from the end of a Roller Tile
+run that has no way on (`LiftPointKind.RunEnd`, `RollerRuns.EndRunAt`: the run ends at its own last tile's Run end and no conveyor
+leaves that tile's Piece out): the lead piece waiting there comes off the run into the hand and goes to the store it was riding to
+when that is in reach and takes it, else by the Routers' rule (a want, else storage); the run's look line says "waiting at the run's
+end for a crane or an arm". Hand orders don't pick from a run's end. Hall Bay has such a run: three tiles down the bay under the
+span (`logi spawn 3 Roller Tile@<tile>` puts Gear Sets on it; `logi runs` lists each run and whether its end is a pick point). Not
+yet: a hall crane doesn't yet skip a machine bed that the machine's own crane serves (no machine has its own crane yet).
 
 **Pad Tiles** (design page drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code
 `ConstructPads.cs`). A Pad Tile is a 2 m deck with no Core (`machineBlock` family `pad`, `"seed": true`). Tiles welded side by side are
@@ -1743,9 +1757,14 @@ or at its last tile's **Run end**, where pieces wait at the end for a crane, or 
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
 a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
-to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
-into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
-pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
+to the new run's way (its disc turns while a piece crosses). A turntable sends a piece that has a destination (a store, a tray
+or a machine's input it was given by a Router or its maker's order) the way to it, as a Router does: it is a Router slot on the
+logistics map (`LogiMap.Routers`, so a way may pass through it, and it counts towards `MaxRouters`), and `ConstructLogistics.TurntableWay`
+reads its next hop, never back out the side the piece came in; while that way is full the piece waits. It only follows a destination:
+a piece with none, or with no way from here, goes each way in turn as before, and a turntable never sets a piece off the line, holds
+it stuck or has an Alarm. Hall Bay has a line: a Pad Tile, two tiles, a turntable, then one tile north into the big pad and one
+tile east into a one-tile pad (`logi spawn 3` sends three Gear Sets along it; `logi dest Pad Tile@<tile>` gives every rider that
+pad as its destination). Not yet: a run doesn't carry a person along.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds

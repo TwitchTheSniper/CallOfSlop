@@ -24,10 +24,14 @@ namespace CallOfSlop;
 /// With <see cref="OuterFog"/>: where the fade starts in each direction (<see cref="Map.OuterFogStarts"/>); the fade
 /// then runs over OuterFog's end minus start. Null: the start radius OuterFog.z in every direction.
 /// </param>
+/// <param name="Up">
+/// Which way is up for the hemisphere ambient (sky light from above, ground bounce from below). Zero: world +Y. On a
+/// planetoid in a star system it is away from the ground's centre at the camera (SkySettings.Light).
+/// </param>
 public readonly record struct LightSetup(
     Vector3 SunDir, Vector3 SunColor, Vector3 AmbSky, Vector3 AmbGround, float FogMax,
     bool SkyFog, Vector3 Zenith, Vector3 Horizon, Vector3 Ground, Vector3 HazeDir, Vector4 Haze, Vector4 OuterFog = default,
-    float[]? OuterStarts = null);
+    float[]? OuterStarts = null, Vector3 Up = default);
 
 /// <summary>
 /// The scene's one light setup, shared by every renderer so boxes, terrain, foliage, props and meshes are lit the
@@ -91,6 +95,7 @@ public static unsafe class Lighting
         uniform vec3 uSunColor;   // colour * strength
         uniform vec3 uAmbSky;
         uniform vec3 uAmbGround;
+        uniform vec3 uUp;         // up for the ambient's sky and ground halves (world +Y but on a planetoid: LightSetup.Up)
         uniform float uSkyTint;
         uniform float uFogMax;
         uniform vec3 uCam;
@@ -111,7 +116,7 @@ public static unsafe class Lighting
             // Lean the sky light towards the sky's hue (not its brightness, so dark skies don't darken everything).
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
-            vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5);
+            vec3 amb = mix(uAmbGround, sky, dot(n, uUp) * 0.5 + 0.5);
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0);
             return albedo * (amb + sunColor * diff);
         }
@@ -121,7 +126,7 @@ public static unsafe class Lighting
         {
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
-            vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * ambK;
+            vec3 amb = mix(uAmbGround, sky, dot(n, uUp) * 0.5 + 0.5) * ambK;
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0);
             return albedo * (amb + sunColor * diff);
         }
@@ -370,7 +375,7 @@ public static unsafe class Lighting
             gLitAmb = b.w;
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
-            vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
+            vec3 amb = mix(uAmbGround, sky, dot(n, uUp) * 0.5 + 0.5) * b.w;
             float sunVis = min(c.r * (255.0 / 252.0), 1.0) * shade; // (its low two bits are flags: LightBaker.WriteFlags; shade: the ships' shadows)
             gSunVis = sunVis;
             gLitDir = b.xyz;
@@ -488,6 +493,8 @@ public static unsafe class Lighting
         Native.glUniform3f(Loc(program, "uSunColor\0"u8), l.SunColor.X, l.SunColor.Y, l.SunColor.Z);
         Native.glUniform3f(Loc(program, "uAmbSky\0"u8), l.AmbSky.X, l.AmbSky.Y, l.AmbSky.Z);
         Native.glUniform3f(Loc(program, "uAmbGround\0"u8), l.AmbGround.X, l.AmbGround.Y, l.AmbGround.Z);
+        var up = l.Up == default ? Vector3.UnitY : l.Up;
+        Native.glUniform3f(Loc(program, "uUp\0"u8), up.X, up.Y, up.Z);
         Native.glUniform1f(Loc(program, "uSkyTint\0"u8), SkyTint);
         Native.glUniform1f(Loc(program, "uFogMax\0"u8), l.FogMax);
         Native.glUniform1f(Loc(program, "uSkyFog\0"u8), l.SkyFog ? 1f : 0f);
@@ -511,7 +518,7 @@ public static unsafe class Lighting
 
     /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree); the array uOuterR is apart.</summary>
     public static readonly string[] UniformNames =
-        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog", "uLitA", "uLitB", "uLitC", "uSunShadow"];
+        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uUp", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog", "uLitA", "uLitB", "uLitC", "uSunShadow"];
 
     /// <summary>
     /// C# mirror of <see cref="Glsl"/>'s SkyGradient under <paramref name="l"/> (the self-test checks horizons with it).

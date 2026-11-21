@@ -282,6 +282,34 @@ public static partial class HullLoft
     /// <summary>The panel's surface height (m) at <paramref name="s"/> along (0 to 1) and <paramref name="x"/> across (-1 to 1): what a Bed Block's pins rise to.</summary>
     public static float PanelLift(in PanelShape p, float s, float x) => PanelPoint(p, Math.Clamp(s, 0, 1), Math.Clamp(x, -1, 1)).Y;
 
+    /// <summary>
+    /// A panel's flat size (m): its surface measured along its length and across its width, each the longest of three lines over it (its
+    /// edges and its middle), so a crown, a rake or a fold is unrolled. What a Panel Former's blank must cover (ConstructPanelFormer.FlatOf).
+    /// </summary>
+    public static void PanelFlat(in PanelShape p, out float along, out float across)
+    {
+        const int n = 48;
+        along = across = 0;
+        for (var line = 0; line < 3; line++)
+        {
+            float a = 0, b = 0;
+            var x = line - 1f; // (-1, 0, 1 across)
+            var s = line * 0.5f; // (0, 0.5, 1 along)
+            var pa = PanelPoint(p, 0, x);
+            var pb = PanelPoint(p, s, -1);
+            for (var k = 1; k <= n; k++)
+            {
+                var qa = PanelPoint(p, k / (float)n, x);
+                var qb = PanelPoint(p, s, -1 + 2f * k / n);
+                a += Vector3.Distance(pa, qa);
+                b += Vector3.Distance(pb, qb);
+                (pa, pb) = (qa, qb);
+            }
+            along = MathF.Max(along, a);
+            across = MathF.Max(across, b);
+        }
+    }
+
     /// <summary>A fold's arc along the sheet (metres from its back edge), its radius and its signed angle (radians).</summary>
     private static void BendSpan(in PanelShape p, out float u0, out float u1, out float rad, out float a)
     {

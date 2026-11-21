@@ -89,7 +89,9 @@ public static unsafe class SunShadows
         if ((_frame & 255) == 0)
             DropOld();
         var sun = Lighting.Current.SunDir;
-        if (!On || ForcedOff || _broken || world == null || world.Bodies.Count == 0 || sun.Y < 0.03f || CameraFeeds.InPass)
+        // (no key light: night, or the star behind the ground or eclipsed; any direction otherwise, since the star lights a ship
+        // in orbit from below too and a planetoid's "up" isn't world +Y)
+        if (!On || ForcedOff || _broken || world == null || world.Bodies.Count == 0 || Lighting.Current.SunColor.LengthSquared() < 1e-6f || CameraFeeds.InPass)
             return;
         var n = PickNear(world, cam, Reach, alpha, blendTicks);
         if (n == 0 || !Init())

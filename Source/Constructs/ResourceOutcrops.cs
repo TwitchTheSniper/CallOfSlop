@@ -17,7 +17,7 @@ public sealed partial class ResourceField
     private const float Sink = 0.18f; // a rock's share of its height in the ground
 
     /// <summary>Adds the rocks of every underground deposit near the camera to the drawn list.</summary>
-    private void AddOutcrops(Vector3 cam)
+    private void AddOutcrops(Vector3 cam, List<FoliageInstance> into)
     {
         var left = MaxDrawnOutcrops;
         for (var di = 0; di < _deposits.Count && left > 0; di++)
@@ -27,11 +27,11 @@ public sealed partial class ResourceField
             var r = d.Rx * 1.25f;
             if (kind.Surface || kind.OutcropSpacing <= 0 || MathF.Abs(d.X - cam.X) > DrawRadius + r || MathF.Abs(d.Z - cam.Z) > DrawRadius + r)
                 continue;
-            AddStreak(di, d, kind, ref left);
+            AddStreak(di, d, kind, ref left, into);
         }
     }
 
-    private void AddStreak(int di, in Deposit d, ResourceKind kind, ref int left)
+    private void AddStreak(int di, in Deposit d, ResourceKind kind, ref int left, List<FoliageInstance> into)
     {
         var spots = (int)(d.Rx * 2 * StreakEnd / kind.OutcropSpacing);
         var wobble = d.Rz * 0.35f;
@@ -63,13 +63,13 @@ public sealed partial class ResourceField
                     var spot = SphereSpot(d.Face, x, z, size);
                     if (NearSpawn(spot))
                         continue; // (a planetoid's spawns are its settlement: no rocks in the yard)
-                    _drawn.Add(new FoliageInstance(FoliageType.Outcrop, spot, size, yaw, rand, kind.OutcropTint * shade));
+                    into.Add(new FoliageInstance(FoliageType.Outcrop, spot, size, yaw, rand, kind.OutcropTint * shade));
                     left--;
                     continue;
                 }
                 if (_blocked.Contains(TreeKey(Lattice(x), Lattice(z))))
                     continue;
-                _drawn.Add(new FoliageInstance(FoliageType.Outcrop, new Vector3(x, _map.GroundHeight(x, z) - size * Sink, z), size, yaw, rand, kind.OutcropTint * shade));
+                into.Add(new FoliageInstance(FoliageType.Outcrop, new Vector3(x, _map.GroundHeight(x, z) - size * Sink, z), size, yaw, rand, kind.OutcropTint * shade));
                 left--;
             }
         }

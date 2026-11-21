@@ -2294,8 +2294,8 @@ public static partial class ConstructRoutes
             return false;
         var fd = cf.DefOf(from);
         var td = ct.DefOf(to);
-        if (td.IsTerminal)
-            return false; // (a chute into a terminal is how it reads the network: nothing goes in)
+        if (td.IsTerminal || td.IsPanelFormer)
+            return false; // (a chute into a terminal is how it reads the network: nothing goes in; a Panel Former's or a Laser Cutter's bin is its offcut, out only)
         if (td.IsCraftTerminal)
             return ConstructCrafting.ChuteInto(world, cf, from, ct, to); // (only what its orders claimed in the source: ConstructCrafting.cs)
         if (td.IsAssembler)

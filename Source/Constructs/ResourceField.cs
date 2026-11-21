@@ -169,8 +169,9 @@ public sealed partial class ResourceField
     private readonly Dictionary<uint, int> _spots = new(); // a drill spot's units taken so far (server; SpotKey)
     private readonly PriorityQueue<uint, long> _regrow = new(); // felled trees by the tick they grow back (server)
     private long _clock; // ticks gathered so far this match (server)
-    private readonly List<FoliageInstance> _drawn = new();
+    private List<FoliageInstance> _drawn = new();
     private Vector3 _drawnAt = new(float.MaxValue);
+    private int _drawGen; // goes up when a felled or regrown tree changes what is drawn: a list built before it is thrown away
 
     /// <summary>Goes up whenever the drawn trees change (the renderer rebuilds only then).</summary>
     public int DrawVersion { get; private set; }
@@ -399,8 +400,8 @@ public sealed partial class ResourceField
 
     private void Redraw()
     {
-        _drawnAt = new Vector3(float.MaxValue);
-        DrawVersion++;
+        _drawnAt = new Vector3(float.MaxValue); // (the next DrawAround, or the renderer's next build, draws it again)
+        _drawGen++;
     }
 
     /// <summary>Server: the regrowth's clock. Regrown trees come out of <see cref="NextRegrown"/>.</summary>
@@ -530,21 +531,38 @@ public sealed partial class ResourceField
         }
     }
 
-    /// <summary>Keeps the drawn list around the camera. Rebuilds only after a real move or a felled tree.</summary>
+    /// <summary>Keeps the drawn list around the camera. Rebuilds only after a real move or a felled tree (here, at once: checks and tools).</summary>
     public void DrawAround(Vector3 cam)
     {
-        if (Vector3.DistanceSquared(cam, _drawnAt) < DrawMove * DrawMove)
+        if (!WantsDraw(cam))
             return;
+        FillDrawn(cam, _drawn);
         _drawnAt = cam;
-        _drawn.Clear();
+        DrawVersion++;
+    }
+
+    /// <summary>Whether the drawn list is due again for a camera here (it moved <see cref="DrawMove"/>, or a tree fell or grew).</summary>
+    public bool WantsDraw(Vector3 cam) => Vector3.DistanceSquared(cam, _drawnAt) >= DrawMove * DrawMove;
+
+    /// <summary>The felled trees' count of changes, taken when a build off the main thread starts (<see cref="TakeDrawn"/>).</summary>
+    public int DrawGen => _drawGen;
+
+    /// <summary>
+    /// The trees and outcrops round <paramref name="cam"/> into <paramref name="into"/>, changing nothing here: safe off the main
+    /// thread (the renderer's foliage build, FoliageRenderer.cs; Karl's F9, 2026-11-21: 9-11 ms on the main thread three times a
+    /// second in a Zero Day's orbit over Caledon, each 150 m the camera went).
+    /// </summary>
+    public void FillDrawn(Vector3 cam, List<FoliageInstance> into)
+    {
+        into.Clear();
         if (_planet != null)
         {
-            AddSphereOutcrops(cam);
-            DrawVersion++;
+            AddSphereOutcrops(cam, into);
             return;
         }
-        foreach (var d in _deposits)
+        for (var di = 0; di < _deposits.Count; di++) // (by index: a server tick may write a deposit's Left meanwhile)
         {
+            var d = _deposits[di];
             if (!_table.Kinds[d.Kind].Surface)
                 continue;
             var r = d.Rx * 1.25f;
@@ -552,28 +570,42 @@ public sealed partial class ResourceField
                 continue;
             for (var iz = Lattice(d.Z - r); iz <= Lattice(d.Z + r); iz++)
                 for (var ix = Lattice(d.X - r); ix <= Lattice(d.X + r); ix++)
-                    AddDrawn(ix, iz, d);
+                    AddDrawn(ix, iz, d, into);
         }
-        AddOutcrops(cam);
-        DrawVersion++;
+        AddOutcrops(cam, into);
     }
 
-    private void AddDrawn(int ix, int iz, in Deposit d)
+    /// <summary>
+    /// A list <see cref="FillDrawn"/> made for <paramref name="cam"/> becomes the drawn one, unless a tree fell or grew since
+    /// <paramref name="gen"/> was read (null then: build again). Gives back the list it replaces, to fill next time.
+    /// </summary>
+    public List<FoliageInstance>? TakeDrawn(Vector3 cam, int gen, List<FoliageInstance> built)
     {
-        if (_drawn.Count >= MaxDrawnTrees * 2 || !TreeAt(ix, iz, out var x, out var z, out var h) || Strength(d, x, z) <= EdgeThin)
+        if (gen != _drawGen)
+            return null;
+        var old = _drawn;
+        _drawn = built;
+        _drawnAt = cam;
+        DrawVersion++;
+        return old;
+    }
+
+    private void AddDrawn(int ix, int iz, in Deposit d, List<FoliageInstance> into)
+    {
+        if (into.Count >= MaxDrawnTrees * 2 || !TreeAt(ix, iz, out var x, out var z, out var h) || Strength(d, x, z) <= EdgeThin)
             return;
         var pine = Unit(ref h) < 0.45f;
         var height = TreeHeight(Unit(ref h));
         var tint = 0.85f + 0.3f * Unit(ref h);
         if (_felled.ContainsKey(TreeKey(ix, iz)))
         {
-            _drawn.Add(new FoliageInstance(FoliageType.Stump, new Vector3(x, _map.GroundHeight(x, z), z), height, Unit(ref h), Unit(ref h), Bark * tint));
+            into.Add(new FoliageInstance(FoliageType.Stump, new Vector3(x, _map.GroundHeight(x, z), z), height, Unit(ref h), Unit(ref h), Bark * tint));
             return;
         }
         var colour = (pine ? new Vector3(0.20f, 0.33f, 0.20f) : new Vector3(0.30f, 0.43f, 0.20f)) * tint;
         var at = new Vector3(x, _map.GroundHeight(x, z), z);
-        _drawn.Add(new FoliageInstance(pine ? FoliageType.Pine : FoliageType.Tree, at, height, Unit(ref h), Unit(ref h), colour));
-        _drawn.Add(new FoliageInstance(FoliageType.Trunk, at, height, Unit(ref h), Unit(ref h), Bark * tint));
+        into.Add(new FoliageInstance(pine ? FoliageType.Pine : FoliageType.Tree, at, height, Unit(ref h), Unit(ref h), colour));
+        into.Add(new FoliageInstance(FoliageType.Trunk, at, height, Unit(ref h), Unit(ref h), Bark * tint));
     }
 
     private static uint Hash(string s)

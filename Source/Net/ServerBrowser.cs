@@ -708,9 +708,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   whether it takes its part off a pick pad (u8) and, when it does, where the hook takes it (CmVec, the bay's frame).
     // 422: the Bake Oven's bake (Sean, 2026-11-21): CBodyKind.Baked carries a baked part's design (u32 bytes, its text) before any body that names
     //   it; "Baked (#hash)" keys travel as named run-time parts (BakedParts.cs); OvenStall gains CantBake, NotBaked and Failed at its end.
-    // 423: hull dress (Sean, 2026-11-21, option B): run-time part kinds Hull Dress (...) and plain skins (Hull Section style -),
+    // 423: the Panel Former takes one blank a panel (Sean, 2026-11-21): no stock bin, hopper or chute in; its bin is offcut with an Offcut
+    //   chute port (a new port on the Core); its "Too wide: make strips" setting slot is gone (settings ride CBody by slot).
+    // 424: hull dress (Sean, 2026-11-21, option B): run-time part kinds Hull Dress (...) and plain skins (Hull Section style -),
     //   the Building Station's Dress job ("Dress skins") and its settings dressStyle/dressSalt/dressExtras in the unused BayWidth/Depth/Height slots.
-    public const ushort ProtocolVersion = 423;
+    public const ushort ProtocolVersion = 424;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
