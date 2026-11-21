@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Run-out Table",
-  "description": "Fit it under an Extruder's die (its Core or a Die Block), or on another table: its pieces run out to the far end, up to 192 m. Its top is level with the machine's foot.",
+  "description": "Fit it under an Extruder's die (its Core or a Die Block), or on another table: its pieces run out to the far end, up to 192 m. Its top is level with the machine's foot. Butt a Roller Tile on the last table's far end and each cut piece rides on along the run.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",
@@ -247,6 +247,15 @@
       ],
       "dir": "+z",
       "kind": "runOut"
+    },
+    {
+      "name": "roller",
+      "at": [
+        0.0,
+        -0.204,
+        8.0
+      ],
+      "dir": "+z"
     }
   ]
 }

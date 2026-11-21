@@ -628,7 +628,7 @@ public sealed class ExtrusionParts : IPartGenerator
     private static Part RunOutTable()
     {
         var p = new Part("Run-out Table", Small, Section,
-            $"Fit it under an Extruder's die (its Core or a Die Block), or on another table: its pieces run out to the far end, up to 192 m. Its top is level with the machine's foot.",
+            $"Fit it under an Extruder's die (its Core or a Die Block), or on another table: its pieces run out to the far end, up to 192 m. Its top is level with the machine's foot. Butt a Roller Tile on the last table's far end and each cut piece rides on along the run.",
             group: "Production", color: Red);
         const double hx = 0.996, top = -0.004, len = TableLength, h = TableDepth;
         p.Add(Box([-hx, -h, 0.004], [hx, top - h * 0.3, len]));
@@ -643,6 +643,8 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(MachineLook.D([hx, top - h * 0.25, 0.1], [hx + 0.004, top - h * 0.05, len - 0.1], MachineLook.Out));
         p.Sock("in", [0, 0, 0.004], "-z", kind: "runOut");
         p.Sock("out", [0, 0, len], "+z", kind: "runOut");
+        // A Roller Tile butted on its far end, its rollers' tops level with this table's: the run takes the machine's piece on (RollerRuns.Butted).
+        p.Sock("roller", [0, top - PieceRackParts.TableSock, len], "+z"); // (a Roller Tile's "-z table")
         p.Stats(900, 450, 6, 10);
         p.Set(("runOut", len), ("centreSockets", false), ("collider", "boxes"));
         return p;

@@ -13,7 +13,7 @@ public sealed partial class Construct
 /// are) and the largest full rectangle holding it, all turned one way. The run is one conveyor along its middle from its -z end to its
 /// +z end, as wide as its tiles across (<see cref="MaxAcross"/> at most), laid by the server as an ordinary conveyor link, so riders,
 /// saves and the wire are a conveyor's. It starts at what is butted on its in end (an Out Table, its machine's out table; a
-/// Turntable Tile; any part with a Piece out there) or at its own first tile, and ends at what is butted on its out end (a machine's
+/// Turntable Tile; a Run-out Table, its Extruder's Piece out; any part with a Piece out there) or at its own first tile, and ends at what is butted on its out end (a machine's
 /// or a pad's Piece in, a Turntable Tile) or at its last tile, where pieces wait for a crane or go on along a conveyor linked from the
 /// tile's Piece out. A conveyor linked into a tile's Piece in goes onto its run. A Turntable Tile passes a piece from the run that ends
 /// in it onto the others that start at it, in turn, never back the way it came.
@@ -239,6 +239,13 @@ public static class RollerRuns
                         (part, port) = (table, (byte)tp);
                         return true;
                     }
+                }
+                // A Run-out Table: the run is its Extruder's Piece out, so a cut piece rides from the die along the tables onto the run, whole
+                // (ConstructConveyor.HandOff), with no crane or arm between them.
+                if (wantOut && od.ExtRunOut > 0 && ConstructExtruder.TableMachine(c, o) is var ex and >= 0 && PortByte(c.DefOf(ex), "Piece out") is var xp and >= 0)
+                {
+                    (part, port) = (ex, (byte)xp);
+                    return true;
                 }
                 foreach (var np in od.NamedPorts)
                 {
