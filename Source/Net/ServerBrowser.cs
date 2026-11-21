@@ -672,9 +672,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 394: the Mast Block (Sean, 2026-11-21): a new part file (Machines/MastBlock, the block machines' shared 2 m cube) shifts part ids.
     // 395: the Bake Oven on the block system (Sean, 2026-11-21): new part files (BakeOven: Bake Oven, Oven Bed Block) shift part ids.
     // 396: the Out Table (Sean, 2026-11-21): a new part file (Production/OutTable, the bed machines' far end) shifts part ids.
-    // 397: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
+    // 397: the Panel Former on the block system (Sean, 2026-11-21): a new part file (PanelFormer/BedBlock) and the Medium Panel Former gone shift part ids.
+    // 398: the Building Station on the block system (Sean, 2026-11-21): a Core, Bay Blocks and masts replace its bay settings (a new part
     //   file shifts ids); a station's record carries its fitting arms (each arm's carry: its part, its target and its length).
-    public const ushort ProtocolVersion = 397;
+    public const ushort ProtocolVersion = 398;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

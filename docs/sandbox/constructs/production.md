@@ -345,18 +345,19 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   presets) prints the key, facets, boxes, sockets, mass, cost, the former that takes it, a hash of its geometry and the time its first
   make took, and makes it a second time as a running game does (a first part, then its facets in slices), which must give the same part;
   output in `callofslop.log`.
-- **The machines** (`storage.panel`: `speed`, `at` the out bed's middle, `maxWidth`, `maxLength`, on an `any` bin; `IsPanelFormer`, a
-  member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the Extruder's):
-
-  | Machine | Largest panel (its bounds' longest side x the next) | Speed | Bin | Power |
-  | --- | --- | --- | --- | --- |
-  | Panel Former | 2.5 x 1.8 m | x1 | 600 | 900 W |
-  | Medium Panel Former | 6 x 4.5 m (every part the vehicle kit lofts) | x2 | 4,000 | 3.6 kW |
-
-  The look ([Machine look](look.md#machine-look)): a wide flat bed with a dark bridge over its middle; a roller bank at the white in end
-  (the rollers turn), a bare steel forming head with a hazard edge under the bridge (it strokes), the out bed with an orange band and
-  arrow, a hopper tower on its right for loose stock, the control board on its left (screen, lamp, Queue, Cancel, Clear, Preset, Up,
-  Down), body `#5d7f3c`. Recipes are the Assembling generator's.
+- **The machine** (design page drawing 15; `storage.panel`: `speed`, `at`, `maxWidth`, `maxLength`, `blockPower`, on an `any` bin;
+  `IsPanelFormer`, a member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the
+  Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`): a **Panel Former** Core (2 m wide: screen and queue,
+  Orders, power, the sheet hopper, Piece in and its in rollers; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
+  a pin field, an upper pin platen, corner posts, their own hydraulics; 900 W each while forming) welded on its far side and to each
+  other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
+  machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
+  all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
+  than the pins' 2 m travel (`ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). One stroke is 4 s set and 8 s press at any
+  size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: one platen, posts at its corners, an
+  oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
+  wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
+  work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
   **Piece in**: an arriving extruded section no thicker than 10 cm (the thinnest a die makes) is taken whole and counted into the bin at
   what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
@@ -364,12 +365,13 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
   ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size, in what its bin holds (steel when
   empty), Order count times; the Preset button opens the recipe picker on its presets (below). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
-  catalogue part or a name nothing makes), "panel too large for this former: 3.98 x 2.98 m, the Panel Former takes 2.5 x 1.8 m", more
+  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"), more
   than its bin holds, another material than its bin's ("another line"), a full queue. An Extruder or an Assembler refuses a panel ("a
   Panel Former's order"). Starved says what it lacks: "needs 26 steel sheet for its panel, holds 10".
-- **Forming is a timed stroke** this phase: 4 s and 2 s a square metre of the panel's largest face, over the machine's speed; the
-  finished panel then rides out of **Piece out** on a conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut),
-  or with none linked drops on the out bed as a loose part. The panel is not drawn bending on the bed yet.
+- **Forming is a timed stroke**: 12 s on the block machine; the finished panel then rides out of the Out Table's **Piece out** on a
+  conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut), or with none linked drops on the middle of the bed as
+  a loose part, laid along it. Panel keys run up to 32 m (`HullLoft.PanelMaxCm`); a panel over 6 m gets more facets (16 along, 12 across
+  at most).
 - **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every `Hull Loft (` and `Formed Panel (` step in `Bill.Panels`;
   `ToConsole` and a console's Send deal them to its Panel Formers; a blueprint's bill line is
   `{"step": n, "panel": "Formed Panel (hood 160x150 c14 r18 t20 steel)", "count": 2}` (`BlueprintScript.BillPanel`). `--bill NAME` prints
