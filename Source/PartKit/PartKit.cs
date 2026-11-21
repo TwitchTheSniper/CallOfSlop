@@ -128,7 +128,6 @@ public static class PartKit
         new Generators.MachineTiers(),
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
-        new Generators.FactoryShowcase(), // (the connected factory and its Works Runabout: also last)
         new Generators.SubmoduleShowcase(),
         new Generators.LinkedLogisticsShowcase(), // (linked logistics: a works, a yard and a hauler) // (sub-blueprints: a pod, a skiff that uses it twice, a yard of two stations and an arm)
     ];

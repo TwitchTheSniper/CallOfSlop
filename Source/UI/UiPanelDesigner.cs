@@ -626,10 +626,11 @@ public sealed partial class Ui
             if (!d.IsPanelFormer || d.IsLaserCutter) // (a cutter forms nothing: phase 4 lists it for cut designs)
                 continue;
             _pdFormers++;
-            if (d.ExtWheelMax.Y > maxL)
-                _pdBig = $"the {d.Name} takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
-            maxL = MathF.Max(maxL, d.ExtWheelMax.Y);
-            maxW = MathF.Max(maxW, d.ExtWheelMax.X);
+            ConstructPanelFormer.Bed(c, net.Machines[i], out var bedL, out var bedW, out _, out _); // (a Core's bed as its blocks make it now)
+            if (bedL > maxL)
+                _pdBig = $"the {d.Name} takes {bedL:0.##} x {bedW:0.##} m";
+            maxL = MathF.Max(maxL, bedL);
+            maxW = MathF.Max(maxW, bedW);
             if (world.StoreOf(c, net.Machines[i]) is { Amount: > 0 } st && !_pdMats.Contains(st.Material) && ExtrusionTable.Current.Find(st.Material) != null)
             {
                 _pdMats.Add(st.Material);
@@ -741,6 +742,8 @@ public sealed partial class Ui
                 ConstructPanelFormer.Sides(bd, out var a, out var b);
                 why = $"too large ({a:0.##} x {b:0.##} m): takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
             }
+            else if (ConstructPanelFormer.BedRefusal(c, m, bd) is { } bed)
+                why = bed;
             else if (HullLoft.FormedUnits(bd, _pdMat) > d.BulkCapacity)
                 why = $"needs {HullLoft.FormedUnits(bd, _pdMat)} sheet: its bin holds {d.BulkCapacity}";
             else if (world.StoreOf(c, m) is { Amount: > 0 } st && st.Material != _pdMat)

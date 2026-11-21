@@ -471,7 +471,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         /// <summary>
         /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making steel sheet,
-        /// a conveyor into a Panel Former's Piece in, the former's Piece out onto a conveyor to a Long Piece Rack; on the orders console,
+        /// a conveyor into a Panel Former's Piece in, its bed of two Bed Blocks, the Out Table's Piece out onto a conveyor to a Long Piece Rack; on the orders console,
         /// whose bill gains two preset panels and one of the vehicle kit's lofted hoods.
         /// </summary>
         private void PanelLine(VPart orders)
@@ -488,8 +488,14 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("steel", 23.25f, Row3), sheet);
             var former = On("Panel Former", 30.25f, Row3, Flow, paint: Panels);
             Convey(sheet, "Piece out", former, "Piece in", Panels);
-            var rack = _panelRack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
-            Convey(former, "Piece out", rack, "Piece in", Panels);
+            // Its bed: two Bed Blocks on from its front (a 4 x 2 m bed), an Out Table on the bed's far end (MachineBlocks.cs, drawing 15).
+            var bed = former;
+            for (var k = 0; k < 2; k++)
+                bed = Stand("Bed Block", SocketAt(bed, "+z"), Flow, bed, "-z");
+            Paint(bed, Panels);
+            var table = Stand("Out Table", SocketAt(bed, "+z"), Flow, bed, "-z");
+            var rack = _panelRack = On("Long Piece Rack", 38.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
+            Convey(table, "Piece out", rack, "Piece in", Panels);
             Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
             Sign(32.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
             Run(orders, former, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.6f), V(29.25f, 0, -14.6f));
@@ -497,7 +503,6 @@ public sealed class ProductionShowcase : IPartGenerator
             BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(3)), 2); // a fender
             BillPanel(orders, "Hull Loft (hoodg UOV2WyWjXYXYVd ~7O07WW7Gn5v1014)", 1); // one of the vehicle kit's lofted hoods (an IT truck's)
             Stripe(27.25f, Row3, true);
-            Stripe(33.25f, Row3, true);
         }
 
         private VPart? _panelRack;
@@ -516,9 +521,9 @@ public sealed class ProductionShowcase : IPartGenerator
                     Paint(t, j == TilesZ ? Aisle : Floor);
                     Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
                 }
-            var desk = On("Panel Designer", 51.25f, -19.25f, Front, "-y.0.0");
+            var desk = On("Panel Designer", 53.25f, -19.25f, Front, "-y.0.0");
             Link("data", orders, desk, null, "Orders", Control, true, null,
-                new[] { V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.4f), V(33.75f, 0, -14.4f), V(40.75f, 0, -14.4f), V(47.75f, 0, -14.4f), V(50.6f, 0, -14.4f), V(50.6f, 0, -16.6f) }
+                new[] { V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.4f), V(33.75f, 0, -14.4f), V(40.75f, 0, -14.4f), V(47.75f, 0, -14.4f), V(52.6f, 0, -14.4f), V(52.6f, 0, -16.6f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
             var from = PortAt(_panelRack!, "Piece out");
             var to = PortAt(desk, "Piece in");
