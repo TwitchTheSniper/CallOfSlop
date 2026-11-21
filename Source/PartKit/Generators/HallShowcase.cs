@@ -96,7 +96,19 @@ public sealed class HallShowcase : IPartGenerator
             Paint(stock, Stock);
             Config(stock, ("sizeX", 1.2), ("sizeY", 1.0), ("sizeZ", 1.2), ("atY", 0.35), ("material", "metal"), ("fill", 24));
             Link("chute", stock, ex, "Chute out", null, Stock);
-            Paint(Stand("Lay-down Pad", V(14.75f, FloorY, -12.25f), Toward, null, "-y.0.0"), Hazard);
+            // The pad the crane lands them on (drawing 23): Pad Tiles welded 3 by 4 into one store, a Mast Block on each corner tile
+            // (the stack 3 m high), Rack Sides along its far edge.
+            var pad = new VPart[3, 4];
+            for (var j = 0; j < 4; j++)
+                for (var i = 0; i < 3; i++)
+                {
+                    var t = pad[i, j] = Stand("Pad Tile", V(11 + 2 * i, FloorY, -9 - 2 * j), Up, tiles[5 + i, 4 + j], "bottom");
+                    Paint(t, Hazard);
+                    if (i is 0 or 2 && j is 0 or 3)
+                        Paint(Stand("Mast Block", V(11 + 2 * i, FloorY + 0.2f, -9 - 2 * j), Up, t, "bottom"), Mast);
+                    if (i == 2)
+                        Paint(Stand("Rack Side", V(16, FloorY + 0.1f, -9 - 2 * j), Up, t, "in"), Hazard);
+                }
         }
     }
 }

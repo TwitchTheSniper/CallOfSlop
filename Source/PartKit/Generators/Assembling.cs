@@ -750,6 +750,8 @@ public sealed class Assembling : IPartGenerator
         // (the Hall Crane, design page drawing 24: its rail blocks and its bridge's Core)
         ("Lifters/HallCranes", "Crane Rail Block", null),
         ("Lifters/HallCranes", "Crane Core", null),
+        ("Pads", "Pad Tile", null), // (drawing 23: Piece Racks fold into Pad Tiles)
+        ("Pads", "Rack Side", null),
     ];
 
     /// <summary>

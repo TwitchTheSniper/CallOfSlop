@@ -40,7 +40,7 @@ public static partial class ConstructLifters
                 continue;
             }
             for (var i = 0; i < c.PartCount && taken < PadTakesAStep; i++)
-                if (c.DefOf(i).IsLayDownPad && !c.Parts[i].Broken)
+                if (c.DefOf(i).IsLayDownPad && !c.Parts[i].Broken && !ConstructPads.IsMember(c, i)) // (a pad of tiles: its owner's hold spans them all)
                     taken += PadTakeIn(world, c, i, PadTakesAStep - taken);
         }
         LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
@@ -52,7 +52,7 @@ public static partial class ConstructLifters
     /// <summary>Why pad <paramref name="part"/> doesn't take body <paramref name="lo"/> in now (a fixed text), or null when it does. Allocates nothing.</summary>
     public static string? TakeInWhy(ConstructWorld world, Construct c, int part, CStore st, Vector3 pp, Quaternion inv, float reach, Construct lo)
     {
-        var d = c.DefOf(part);
+        var d = ConstructPads.RackDef(c, part); // (a Pad Tile: the whole pad's hold, seen from it)
         // The hands' rule for a loose part (Construct.Loose: one whole part, not a seat, a foundation or a core, not anchored), and
         // nobody has it: not held by a station, grabbed, carried, nudged (the Nudge tool placing it), frozen by the physics gun or driven.
         if (!lo.Loose || lo == c)
@@ -90,6 +90,7 @@ public static partial class ConstructLifters
     {
         if (part >= c.PartCount || !c.DefOf(part).IsLayDownPad || world.StoreOf(c, part) is not { } st)
             return null;
+        part = ConstructPads.Owner(c, part);
         Freeform.PartWorld(c, part, out var pp, out var pr);
         var inv = Quaternion.Conjugate(pr);
         var reach = c.Radius + Vector3.Distance(c.Pos, pp) + 2f;

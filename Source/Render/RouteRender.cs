@@ -501,7 +501,7 @@ public static class RouteRender
             int part = c.PieceRacks[k];
             if (part >= c.PartCount || world.StoreOf(c, part) is not { ItemCount: > 0 } st)
                 continue;
-            var rd = c.DefOf(part);
+            var rd = ConstructPads.RackDef(c, part); // (a pad's owner tile draws the whole pad's pieces)
             ConstructRackPack.Ensure(rd, st);
             ref var p = ref c.Parts[part];
             var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];

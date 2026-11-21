@@ -2490,6 +2490,8 @@
     {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2},
     {"output": "Mast Block", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Crane Rail Block", "materials": {"steel": 280, "concrete": 56}, "seconds": 44.0},
-    {"output": "Crane Core", "materials": {"steel": 440}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 68.0, "minTier": 3}
+    {"output": "Crane Core", "materials": {"steel": 440}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 68.0, "minTier": 3},
+    {"output": "Pad Tile", "materials": {"steel": 32, "rubber": 6}, "seconds": 6.8},
+    {"output": "Rack Side", "materials": {"steel": 8, "concrete": 2}, "seconds": 3.2}
   ]
 }

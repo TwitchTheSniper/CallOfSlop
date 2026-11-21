@@ -1481,17 +1481,18 @@ public sealed partial class ConstructWorld
                         hit.Glass = false;
                     }
                 }
-                if (look && p.D.IsPieceRack && p.Store != 0 && StoreOf(c, i) is { ItemCount: > 0 } rst)
+                if (look && p.D.IsPieceRack && p.Store != 0 && StoreOf(c, ConstructPads.Owner(c, i)) is { ItemCount: > 0 } rst) // (a Pad Tile: its pad's store, the owner tile's)
                 {
                     // A Piece Rack (a look only): its stacks where they are packed, else its hold's box (its frame is open: a ray meets the pieces, not the bars).
-                    ConstructRackPack.Ensure(p.D, rst);
+                    var prd = ConstructPads.RackDef(c, i); // (a Pad Tile: its pad's hold seen from this tile)
+                    ConstructRackPack.Ensure(prd, rst);
                     var back = Quaternion.Conjugate(Rot24.Quat(p.Rot));
                     var pl = Vector3.Transform(lo - p.Pos, back);
                     var pd = Vector3.Transform(ld, back);
                     var was = best;
                     if (hit.Body == c && hit.Part == i && found)
                         best = partBest; // (its bars were hit first: look past them)
-                    if (ConstructRackPack.Ray(p.D, rst, pl, pd, ref best, out var rs, out var rl) || ConstructRackPack.HoldRay(p.D, pl, pd, ref best))
+                    if (ConstructRackPack.Ray(prd, rst, pl, pd, ref best, out var rs, out var rl) || ConstructRackPack.HoldRay(prd, pl, pd, ref best))
                     {
                         found = true;
                         hit.Body = c;

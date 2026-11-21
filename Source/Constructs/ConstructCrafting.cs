@@ -311,7 +311,7 @@ public static class ConstructCrafting
         var sd = c.DefOf(part);
         if (sd.IsPieceRack)
         {
-            ConstructRackPack.Ensure(sd, st);
+            ConstructRackPack.Ensure(ConstructPads.RackDef(c, part), st);
             return ConstructRackPack.LastOf(st, (ushort)d.Id, out var slab, out var lane) && world.RackTakeAt(c, part, slab, lane) != null;
         }
         if (sd.IsVolumeStore)

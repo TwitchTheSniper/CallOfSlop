@@ -351,7 +351,7 @@ public static unsafe partial class Program
         WorldLinkRender.HandOf ??= HoseHandOf;
         HoseLook(g, me, aimed, hit, aimed && hit.Distance <= ConstructBuild.UseReach);
         // Physical storage (decision 18): a storage part, or a part stored in one, under the crosshair.
-        var storage = aimed ? g.Constructs.StoreOf(hit.Body, hit.Part) : null;
+        var storage = aimed ? g.Constructs.StoreOf(hit.Body, ConstructPads.Owner(hit.Body, hit.Part)) : null;
         var storeNear = aimed && hit.Distance <= ConstructBuild.UseReach;
         var slotted = storage != null && storeNear && ConstructParts.Get(h.Held) is { } carried && StorageSlots(g, hit, storage, carried, eye, dir);
         if (storage != null)
@@ -1141,7 +1141,7 @@ public static unsafe partial class Program
         if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
             return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
-            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null) is var rl && StockTargets.Look(hit.Body, hit.Part) is { Length: > 0 } kl ? rl + " - " + kl : rl;
+            return _sbStoreText = ConstructConveyor.Look(ConstructPads.RackDef(hit.Body, hit.Part), st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null) is var rl && StockTargets.Look(hit.Body, hit.Part) is { Length: > 0 } kl ? rl + " - " + kl : rl;
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
