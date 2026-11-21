@@ -165,7 +165,7 @@ public static class ModuleCut
 
     /// <summary>
     /// The tunnel a socket's cut burns, from its mouth along -<paramref name="n"/> for <paramref name="len"/>, and its liner's two ends (the mouth's
-    /// first). A well (flush, Well): from just over the surface, <c>Depth</c> over the plate's face, down to just over the face. An Opening
+    /// first). A well (flush, Well): from inside the plate's frame back to the well's floor, <c>Seat</c> behind its face. An Opening
     /// (<see cref="ModStyle.Through"/>): from inside the plate back through what it is welded to, <c>Depth</c> behind its back, lined from its back.
     /// </summary>
     public static void Tunnel(Construct c, in CModSocket s, Vector3 face, Vector3 n, out Vector3 mouth, out float len, out Vector3 linerA, out Vector3 linerB)
@@ -179,10 +179,13 @@ public static class ModuleCut
             linerB = face - n * (thick + s.Depth);
             return;
         }
-        mouth = face + n * (s.Depth + OverSurface);
-        len = s.Depth + OverSurface - OverPlate;
-        linerA = face + n * (s.Depth + LinerOverSurface);
-        linerB = face + n * LinerOverPlate;
+        // A well (flush, Well): dug into what the plate is welded to, from inside the frame down to the floor, Seat behind the face (the
+        // plate on the surface, Sean 2026-11-21); lined from the plate's back.
+        var back = ModuleSockets.Thickness(c.DefOf(s.Plate));
+        mouth = face - n * OverPlate;
+        len = s.Seat - OverPlate;
+        linerA = face - n * (back + LinerOverPlate);
+        linerB = face - n * s.Seat;
     }
 
     /// <summary>The plate's frame in the world: its face's middle, its normal (out of the face), its across (x) and its up (z, the long side).</summary>

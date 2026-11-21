@@ -65,7 +65,7 @@ public static unsafe partial class Program
         var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitY), c.Rot));
         var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitX), c.Rot));
         var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitZ), c.Rot));
-        var top = c.ToWorld(at) + n * (s.Style == ModStyle.Through ? 0.01f : s.Depth + 0.01f); // (an Opening's ring runs round its frame's face)
+        var top = c.ToWorld(at) + n * 0.01f; // (every dug style: the ring runs round its frame's face)
         float hw = s.W * 0.5f + ModuleCut.Margin * 0.5f, hl = s.L * 0.5f + ModuleCut.Margin * 0.5f;
         // The ring has heads at each corner: each runs a quarter of the outline.
         for (var h = 0; h < 4; h++)

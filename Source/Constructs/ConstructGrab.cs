@@ -657,9 +657,11 @@ public sealed partial class ConstructEdits
     /// to the ground (a foundation, a pinned construct), not one someone else holds, not too heavy (survival's cap is much
     /// lower), not a contested enemy construct in survival. A frozen one can be taken (it unfreezes).
     /// </summary>
-    public string? GrabRefusal(Construct c, byte player)
+    public string? GrabRefusal(Construct c, byte player, ConstructWorld? world = null)
     {
-        if (c.GrabbedBy != 255 && c.GrabbedBy != player || c.NudgeBy != 255)
+        if (c.GrabbedBy == ModuleGuide.Holder && world != null && !ModuleGuide.Takeable(world, c))
+            return "its socket is moving it";
+        if (c.GrabbedBy != 255 && c.GrabbedBy != player && c.GrabbedBy != ModuleGuide.Holder || c.NudgeBy != 255)
             return "someone else is holding it";
         if (AboardWhy(c, player) is { } aboard)
             return aboard;
@@ -711,7 +713,7 @@ public sealed partial class ConstructEdits
             return "the beam missed it";
         if (FrameWhy(c, player) is { } frame)
             return frame;
-        if (GrabRefusal(c, player) is { } why)
+        if (GrabRefusal(c, player, world) is { } why)
             return why;
         var at = c.ToWorld(local);
         var dist = Vector3.Distance(eye, at);

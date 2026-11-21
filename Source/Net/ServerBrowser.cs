@@ -669,7 +669,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Extruders, the Die Frames, the Die Extensions and the classed tables (part files go and come, ids move); the die is read from the blocks on each peer.
     // 392: round module sockets (Sean, 2026-11-21): new part files (Modules/Round: Round Module Socket, Plug and Stand 1-3 m) shift part ids.
     // 393: the see-through Opening socket style (Sean, 2026-11-21): ModStyle Through at the end of the Style choice; plugs gain rim sockets.
-    public const ushort ProtocolVersion = 393;
+    // 394: CActKind.ModControl (a module socket's eject button, lock slider and the physics gun's pull on a fitted module), CfgKey.ModLock, and a plate's Attach, Eject and Lock in, Attached and Locked out (module sockets, Sean 2026-11-21)
+    public const ushort ProtocolVersion = 394;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
