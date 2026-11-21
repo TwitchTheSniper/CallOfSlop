@@ -1778,7 +1778,7 @@ public sealed class CourierParts : IPartGenerator
         var pilot = Hang(bp, "Flight Couch", cab, "pilot", "bottom");
         Hang(bp, "Flight Couch", cab, "copilot", "bottom");
         var fc = Hang(bp, "Satchel Flight Computer", cab, "computer", "bottom");
-        bp.Steps[fc]["config"] = ShipParts.ShipFlight();
+        bp.Steps[fc]["config"] = ShipParts.ShipFlight(pitchDamping: 200);
         bp.Wires.Add((pilot, fc));
         // The bunk room and the head to port.
         Hang(bp, "Bunk", cab, "bunk0", "bottom");
