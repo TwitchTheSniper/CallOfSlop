@@ -64,6 +64,10 @@ The Traders' small fast courier: two standard containers side by side in a bay o
 
 The Traders' tug: a stubby head (push bow, crew cab, a raised glass wheelhouse, four stacked drive nacelles) towing an open truss string of three cells, each taking one standard container on twist locks for a dock crane.
 
+## [The Grapnel salvage tug](constructs/grapnel.md), 3 KB
+
+The Salvagers' salvage tug from Karl's picture: boxy yellow hull, glass cockpit, three tool mounts (sockets) on the chin, tank racks on the flanks, two hull drives on the stern; the Satchel's cab and container bay.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,
