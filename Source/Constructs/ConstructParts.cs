@@ -434,7 +434,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Slide }
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Slide } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Slide: a Grow Former's hub carriage, raised by HubRise)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -1691,8 +1691,9 @@ public static partial class ConstructParts
             {
                 var kind = Str(wk, file, where + ".work") switch
                 {
-                    "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear, "slide" => BoxWork.Slide,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\" or \"slide\""),
+                    "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
+                    "pin" => BoxWork.Pin, "press" => BoxWork.Press, "slide" => BoxWork.Slide,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\" or \"slide\""),
                 };
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");

@@ -1239,7 +1239,7 @@ public static class ConstructBill
             {
                 var pd = ConstructParts.Find(o.Name!);
                 var how = pd == null ? "not a part this build makes" : ConstructPanelFormer.TierFor(pd) is { } tier
-                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, {ConstructPanelFormer.Seconds(pd):0} s"
+                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, {(ConstructParts.Find(tier) is { } fd ? ConstructPanelFormer.Seconds(fd, pd) : 0):0} s"
                     : "no recipe: too large for any Panel Former";
                 if (pd == null || ConstructPanelFormer.TierFor(pd) == null)
                 {
