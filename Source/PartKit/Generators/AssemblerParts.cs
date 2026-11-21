@@ -393,9 +393,34 @@ public sealed class AssemblerParts : IPartGenerator
     }
 
     /// <summary>The Block Rack: the Die Rack at 2 m bays (one rack piece, PressParts.Rack), two bays of a tool block each, on the medium lattice.</summary>
-    private static Part BlockRack() => PressParts.Rack(Medium, 5, 3, 3, "Block Rack",
-        "Holds an Assembler's tool blocks (Thruster Jig Block, Sewing Table Block) and press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into an Assembler Core brings the tool block its recipe needs and takes the old one back; a chute into a press brings it a die.",
-        bays: 2, label: "Tools and dies", folder: Section);
+    private static Part BlockRack()
+    {
+        var p = PressParts.Rack(Medium, 5, 3, 3, "Block Rack",
+            "Holds an Assembler's tool blocks (Thruster Jig Block, Sewing Table Block) and press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into an Assembler Core brings the tool block its recipe needs and takes the old one back; a chute into a press brings it a die.",
+            bays: 2, label: "Tools and dies", folder: Section);
+        // Its dressing (the rack's own geometry: Medium cells, 5 x 3 x 3, posts 0.14 m, a 0.12 m board; PressParts.Rack): top rails between the
+        // posts, a steel plate on each bay's floor with hazard edges and four locating pins, a bay number plate and lifting eyes.
+        const double x0 = -0.5, x1 = 4.5, y1 = 2.5, z0 = -0.5, z1 = 2.5, floor = -0.38, post = 0.14;
+        const double bay = (x1 - x0 - 3 * post) / 2;
+        foreach (var z in new[] { z0 + 0.03, z1 - 0.11 })
+            p.Add(L([x0 + 0.02, y1 - 0.2, z], [x1 - 0.02, y1 - 0.08, z + 0.08], MachineLook.Accent));
+        for (var b = 0; b < 2; b++)
+        {
+            var bx = x0 + post + b * (bay + post);
+            p.Add(L([bx + 0.05, floor, z0 + 0.05], [bx + bay - 0.05, floor + 0.014, z1 - 0.05], MachineLook.Steel, "tread plate"));
+            foreach (var z in new[] { z0 + 0.05, z1 - 0.17 })
+                MachineLook.Hazard(p, [bx + 0.05, floor + 0.014, z], [bx + bay - 0.05, floor + 0.026, z + 0.12]);
+            foreach (var (dx, dz) in new[] { (0.3, 0.3), (bay - 0.3, 0.3), (0.3, 2.7), (bay - 0.3, 2.7) })
+                p.Add(L([bx + dx - 0.03, floor + 0.014, z0 + dz - 0.03], [bx + dx + 0.03, floor + 0.09, z0 + dz + 0.03], MachineLook.Steel, "steel", shape: Cyl("+y", 8))); // (a locating pin)
+            var mid = bx + bay / 2;
+            p.Add(L([mid - 0.18, y1 - 0.19, z1 - 0.034], [mid + 0.18, y1 - 0.09, z1 - 0.02], MachineLook.In)); // (the bay's number plate)
+            p.Add(L([mid - 0.04 - (b == 0 ? 0 : 0.05), y1 - 0.17, z1 - 0.02], [mid + 0.04 + (b == 0 ? 0 : 0.05), y1 - 0.11, z1 - 0.008], MachineLook.Ink)); // (its figure)
+        }
+        foreach (var x in new[] { x0 + 0.07, x1 - 0.07 })
+            foreach (var z in new[] { z0 + 0.07, z1 - 0.07 })
+                p.Add(L([x - 0.05, y1, z - 0.02], [x + 0.05, y1 + 0.08, z + 0.02], MachineLook.Steel, "steel")); // (a lifting eye on a post's top)
+        return p;
+    }
 
     public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock()), ("", Carriage()), ("", Overdrive()), ("", Buffer()), ("", ThrusterJig()), ("", SewingTable()), ("", BlockRack())]);
 }
