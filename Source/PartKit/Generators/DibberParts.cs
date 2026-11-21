@@ -788,7 +788,7 @@ public sealed class DibberParts : IPartGenerator
         B(-0.05, 0.701, -0.2, 0.05, 0.717, 0.1, Hazard, Kw(("finish", "hazard paint")), true);
         B(-0.12, 0.701, -0.2, 0.12, 0.717, -0.12, Hazard, Kw(("finish", "hazard paint")), true);
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 2000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z")); // (a light gyro: the mix drops any turn row under a twentieth of the strongest, so a gyro over 20x the jets' pitch and roll levers (170 kN m) switches those off and it leans for good)
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 2000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z")); // (a light gyro for a light craft: its jets turn it)
         return p.Stats(200, 600, 8, 3.0);
     }
 

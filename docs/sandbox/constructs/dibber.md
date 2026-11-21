@@ -38,8 +38,8 @@ Two decks in a separate room shell (an upright octagon inside the tapering skin:
   quarter, leg and the roof.
 - Ship keys, mouse aim off (a lander flies upright over its belly jet; with aim on, it nosed down and never came back level in the
   flight check's look test).
-- The flight computer's gyro is light (2 MN m): `ConstructFlight.Solve` drops any turn row under a twentieth of the strongest, and a
-  gyro over 20x the jets' pitch and roll levers (170 kN m) switched those off, so it leaned 8 degrees for good in the hover.
+- The flight computer's gyro is light (2 MN m); its jets do the turning. (A gyro of 8-14 MN m made it lean 8 degrees for good in the
+  hover until main's fix of 2026-11-21 (207986af), which stops a yaw-only gyro switching off the pitch and roll rows.)
 - `--flight-check Constructs/Blueprints/DibberLander.json`: flies, hover tilt 0, forward 14 m.
 
 ## Not done
