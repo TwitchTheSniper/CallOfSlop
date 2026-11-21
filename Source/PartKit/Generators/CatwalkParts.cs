@@ -88,13 +88,13 @@ public sealed class CatwalkParts : IPartGenerator
     {
         double[] At(double u, double v, double y) => alongX ? [u, y, v] : [v, y, u];
         if (alongX)
-            Look(p, from, Top - 0.004, s0, to, Top + 0.004, s1, Yellow, "hazard paint");
+            Look(p, from, Top - 0.008, s0, to, Top + 0.008, s1, Yellow, "hazard paint");
         else
-            Look(p, s0, Top - 0.004, from, s1, Top + 0.004, to, Yellow, "hazard paint");
+            Look(p, s0, Top - 0.008, from, s1, Top + 0.008, to, Yellow, "hazard paint");
         for (var u = from + 0.02; u + 0.1 <= to - 0.01; u += 0.1)
         {
             double[][] Slash(double y) => [At(u, s0 + 0.004, y), At(u + 0.04, s0 + 0.004, y), At(u + 0.09, s1 - 0.004, y), At(u + 0.05, s1 - 0.004, y)];
-            Prism(p, Slash(Top + 0.003), Slash(Top + 0.008), Black, "hazard paint");
+            Prism(p, Slash(Top + 0.01), Slash(Top + 0.015), Black, "hazard paint");
         }
     }
 

@@ -27,6 +27,10 @@ and `Constructs/Blueprints/Roamer.json`. Change the generator, never its output.
   (Karl: the deck floor whole beyond it, a 1 m landing to the galley's wall). It says `"collider": "boxes"`: as a hull round its
   stringers it filled the flight and nobody got past the first step. Its foot is 0.05 m under the deck before the opening
   (`StairLead`): on a flight this steep, a head that steps up near the opening's fore edge meets it.
+- **Catwalks in its style** (Sean, 2026-11-21): the stair has a `head` socket (+z, on a header angle under its top tread) that
+  takes any open end of a Steel Catwalk (`CatwalkParts`, Constructs/Parts/Catwalks: runs of 1.5, 3 and 6 m, a Corner, Tee, Cross and
+  End, and a Leg that stands a deck 3 m over a floor, level with the stair's head). The same slats, striped nosings, slim channels
+  and rails on posts (a knee rail added); hidden guards along the rails keep a walker on the deck.
 - **In the game** (Karl, 2026-11-20, "add to game"): its pieces have Assembling recipes like the Rust Bucket's; it is spawned from
   the Blueprints tab (no start uses it).
 - **Checks** (2026-11-20): `--check-vehicle` 0 coplanar faces between parts, both drives' works at 100%; `--selftest-only "No
