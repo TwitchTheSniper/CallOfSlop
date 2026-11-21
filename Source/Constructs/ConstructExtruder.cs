@@ -994,7 +994,7 @@ public static partial class ConstructExtruder
         var d = p.D;
         var names = RecyclingTable.Current;
         var product = ProductOf(c, part);
-        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.BulkCapacity);
+        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(ConstructStorage.Capacity(c, part));
         if (st.Amount > 0)
             sb.Append(' ').Append(names.NameOf(st.Material));
         if (d.IsPanelFormer)
@@ -1015,6 +1015,8 @@ public static partial class ConstructExtruder
                 sb.Append($", bed {gw:0.#} x {gl:0.#} m, masts {gm:0.#} m");
                 if (MachineBlocks.TryOf(c, part, out var gasm) && gasm.Idle > 0)
                     sb.Append($" ({gasm.Idle} blocks idle: not in its rectangle)");
+                if (MachineBlocks.TryOf(c, part, out var tasm))
+                    sb.Append(", ").Append(MachineBlocks.TierText(tasm)); // (its tier pieces, drawing 21: "tier 3 Industrial (bolt a Servo Rack on for tier 4)")
             }
             var gs = d.IsGrowFormer ? GrowShape(c, part) : d.IsAirframeFormer ? ExShape.Wing : d.IsFanFormer ? ExShape.Fan : ExShape.Wheel;
             if (gs == ExShape.Fan)
@@ -1130,7 +1132,7 @@ public static class ConstructExtruderParts
         const System.Text.Json.JsonValueKind Obj = System.Text.Json.JsonValueKind.Object;
         if (b.ValueKind != Obj || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsExtruder)
             throw new ConstructPartException($"{file}: storage \"wheel\" is an object (speed, at, maxWidth, maxDiameter, startWidth, startDiameter, pushForce) on a bin: what feeds it");
-        ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce", "fan", "airframe", "grow", "fanMax", "fanStart", "wingMax", "wingStart", "bedTop", "blockPush", "blockPower"], $"{bw}.wheel");
+        ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce", "fan", "airframe", "grow", "fanMax", "fanStart", "wingMax", "wingStart", "bedTop", "blockPush", "blockPower", "bin", "binBlock"], $"{bw}.wheel");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: a Grow Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
         var fan = ConstructParts.Opt(b, "fan") is { ValueKind: System.Text.Json.JsonValueKind.True };
@@ -1182,6 +1184,11 @@ public static class ConstructExtruderParts
                 d.ExtBlockPower = ConstructParts.Num(gw, file, "storage.wheel.blockPower");
             if (d.BlockRole != BlockRole.Core)
                 throw new ConstructPartException($"{file}: a Grow Former is a block machine's Core (\"machineBlock\": role core)");
+            // Its bin: its own share and each bed block's, times its tier's capacity (drawing 22), up to its bulk's capacity (a bin's most).
+            d.GrowBin = ConstructParts.Opt(b, "bin") is { } gb ? (int)ConstructParts.Num(gb, file, "storage.wheel.bin") : d.BulkCapacity;
+            d.GrowBinBlock = ConstructParts.Opt(b, "binBlock") is { } gbb ? (int)ConstructParts.Num(gbb, file, "storage.wheel.binBlock") : 0;
+            if (d.GrowBin < 1 || d.GrowBinBlock < 0 || d.GrowBin > d.BulkCapacity)
+                throw new ConstructPartException($"{file}: storage.wheel's bin ({d.GrowBin}) is 1 to its bulk's capacity ({d.BulkCapacity}), and its binBlock ({d.GrowBinBlock}) 0 or more");
         }
         d.DataIn = fan || air ? [ConstructGatherer.RunPort, ConstructExtruder.CutName] : [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName];
     }

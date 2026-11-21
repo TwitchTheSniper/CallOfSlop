@@ -1,0 +1,533 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Servo Rack",
+  "description": "A tier piece: bolt it on a machine Core's tier slot, with a Power Coupling and a Coolant Loop, for tier 4 (Military). Its machine works eight times as fast as tier 1, holds eight times as much and draws 5.6 times the power.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 70.0,
+  "health": 420,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4b5436",
+  "attachSeconds": 8,
+  "machineBlock": {
+    "role": "tier",
+    "tier": 4
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.19,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.19,
+        0.5,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.19,
+        0.003,
+        -0.022
+      ],
+      "max": [
+        0.19,
+        0.497,
+        -0.003
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.171,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.171,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.18,
+        0.003,
+        -0.28
+      ],
+      "max": [
+        0.18,
+        0.05,
+        -0.022
+      ],
+      "color": "#3e4530",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.05,
+        -0.27
+      ],
+      "max": [
+        -0.14,
+        0.47,
+        -0.03
+      ],
+      "color": "#4b5436",
+      "detail": true
+    },
+    {
+      "min": [
+        0.14,
+        0.05,
+        -0.27
+      ],
+      "max": [
+        0.18,
+        0.47,
+        -0.03
+      ],
+      "color": "#4b5436",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.105,
+        0.05,
+        -0.18
+      ],
+      "max": [
+        -0.045,
+        0.3,
+        -0.12
+      ],
+      "color": "#59603f",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.111,
+        0.28,
+        -0.186
+      ],
+      "max": [
+        -0.039,
+        0.3,
+        -0.114
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.088,
+        0.3,
+        -0.163
+      ],
+      "max": [
+        -0.062,
+        0.39,
+        -0.137
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "+y",
+      "travel": 0.05
+    },
+    {
+      "min": [
+        -0.03,
+        0.05,
+        -0.18
+      ],
+      "max": [
+        0.03,
+        0.3,
+        -0.12
+      ],
+      "color": "#59603f",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.036,
+        0.28,
+        -0.186
+      ],
+      "max": [
+        0.036,
+        0.3,
+        -0.114
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.013,
+        0.3,
+        -0.163
+      ],
+      "max": [
+        0.013,
+        0.39,
+        -0.137
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "+y",
+      "travel": 0.05
+    },
+    {
+      "min": [
+        0.045,
+        0.05,
+        -0.18
+      ],
+      "max": [
+        0.105,
+        0.3,
+        -0.12
+      ],
+      "color": "#59603f",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.039,
+        0.28,
+        -0.186
+      ],
+      "max": [
+        0.111,
+        0.3,
+        -0.114
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.062,
+        0.3,
+        -0.163
+      ],
+      "max": [
+        0.088,
+        0.39,
+        -0.137
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel",
+      "work": "stroke",
+      "axis": "+y",
+      "travel": 0.05
+    },
+    {
+      "min": [
+        -0.13,
+        0.39,
+        -0.2
+      ],
+      "max": [
+        0.13,
+        0.43,
+        -0.1
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false,
+      "work": "stroke",
+      "axis": "+y",
+      "travel": 0.05
+    },
+    {
+      "min": [
+        -0.06,
+        0.08,
+        -0.3
+      ],
+      "max": [
+        0.06,
+        0.2,
+        -0.18
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "-z",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.04,
+        0.1,
+        -0.3
+      ],
+      "max": [
+        0.04,
+        0.18,
+        -0.288
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "work": "spin",
+      "axis": "-z"
+    },
+    {
+      "min": [
+        -0.17,
+        0.1,
+        -0.29
+      ],
+      "max": [
+        -0.15,
+        0.44,
+        -0.27
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.145,
+        0.38,
+        -0.29
+      ],
+      "max": [
+        0.175,
+        0.44,
+        -0.268
+      ],
+      "color": "#ff3020",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.14,
+        0.43,
+        -0.28
+      ],
+      "max": [
+        0.14,
+        0.49,
+        -0.24
+      ],
+      "color": "#3e4530",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.13,
+        0.432,
+        -0.294
+      ],
+      "max": [
+        0.13,
+        0.488,
+        -0.276
+      ],
+      "color": "#15171a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.089,
+        0.446,
+        -0.308
+      ],
+      "max": [
+        -0.061,
+        0.474,
+        -0.294
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.039,
+        0.446,
+        -0.308
+      ],
+      "max": [
+        -0.011,
+        0.474,
+        -0.294
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.011,
+        0.446,
+        -0.308
+      ],
+      "max": [
+        0.039,
+        0.474,
+        -0.294
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.061,
+        0.446,
+        -0.308
+      ],
+      "max": [
+        0.089,
+        0.474,
+        -0.294
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+z",
+      "kind": "tier"
+    }
+  ]
+}

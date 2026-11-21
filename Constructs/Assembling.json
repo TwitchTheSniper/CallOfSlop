@@ -2700,6 +2700,10 @@
     {"output": "Grapnel Tank Rack R", "materials": {"steel": 600, "rubber": 120}, "seconds": 92.0},
     {"output": "Hexkey Gondola Bay", "materials": {"planks": 4, "steel": 2}, "seconds": 5},
     {"output": "Hexkey Rack Bay", "materials": {"planks": 30, "steel": 12}, "seconds": 12},
-    {"output": "Hexkey Trolley", "materials": {"planks": 3, "steel": 8, "rubber": 2}, "seconds": 6}
+    {"output": "Hexkey Trolley", "materials": {"planks": 3, "steel": 8, "rubber": 2}, "seconds": 6},
+    {"output": "Power Coupling", "materials": {"steel": 30, "copper": 40, "rubber": 6}, "parts": {"Wiring Loom": 2}, "seconds": 40},
+    {"output": "Coolant Loop", "materials": {"steel": 50, "copper": 20, "rubber": 10}, "parts": {"Gear Set": 1, "Wiring Loom": 1}, "seconds": 60},
+    {"output": "Servo Rack", "materials": {"steel": 70, "copper": 20}, "parts": {"Servo Motor": 3, "Control Unit": 1}, "seconds": 90},
+    {"output": "Plasma Conditioner", "materials": {"steel": 50, "copper": 60, "gold": 6}, "parts": {"Control Unit": 2, "Wiring Loom": 2}, "seconds": 140}
   ]
 }

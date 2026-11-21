@@ -916,6 +916,11 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Hexkey Gondola Bay", 5, 1, m: [("planks", 4), ("steel", 2)])),
         (null, null, Rec("Hexkey Rack Bay", 12, 1, m: [("planks", 30), ("steel", 12)])),
         (null, null, Rec("Hexkey Trolley", 6, 1, m: [("planks", 3), ("steel", 8), ("rubber", 2)])),
+        // (the block machines' tier pieces, design page drawing 21: MachineTierParts; Sean 2026-11-21)
+        (null, null, Rec("Power Coupling", 40, 1, m: [("steel", 30), ("copper", 40), ("rubber", 6)], p: [("Wiring Loom", 2)])),
+        (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
+        (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Control Unit", 1)])),
+        (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
     ];
 
     /// <summary>

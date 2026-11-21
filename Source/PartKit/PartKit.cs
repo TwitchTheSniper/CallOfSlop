@@ -85,6 +85,7 @@ public static class PartKit
         new Generators.PressParts(),
         new Generators.ExtrusionParts(),
         new Generators.MachineMastParts(), // (the block machines' shared cells: the Mast Block)
+        new Generators.MachineTierParts(), // (the block machines' tier pieces, drawing 21: the Power Coupling to the Plasma Conditioner)
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
