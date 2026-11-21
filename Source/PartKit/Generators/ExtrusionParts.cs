@@ -522,7 +522,7 @@ public sealed class ExtrusionParts : IPartGenerator
         // ---- The back: the hopper's port, its rim and arrow, a gauge and the maker's plate ----
         MachineLook.Port(p, [0, 1.3, -e], 2, -1, 0.2, 0.13, true);
         p.Set(("ports", Py.L(Kw(("name", "Chute in"), ("type", "chute"), ("at", Py.L(0, 1.3, -e)), ("face", "-z")))));
-        p.Add(L([-0.5, 0.78, -e - 0.014], [0.5, 0.86, -e], MachineLook.In));
+        p.Add(L([-0.5, 0.97, -e - 0.014], [0.5, 1.04, -e], MachineLook.In)); // (over the tier pieces' beacons)
         MachineLook.Arrow(p, 2, -e - 0.014, -1, 1, -1, 0, 1.72, 0.18, 0.18, MachineLook.In);
         p.Add(L([0.52, 1.1, -e - 0.036], [0.72, 1.3, -e], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
         p.Add(L([0.6, 1.18, -e - 0.048], [0.64, 1.27, -e - 0.032], MachineLook.Ink));

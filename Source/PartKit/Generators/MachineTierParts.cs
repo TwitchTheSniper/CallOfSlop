@@ -36,6 +36,10 @@ public sealed class MachineTierParts : IPartGenerator
         p.Add(L([-W, 0.003, -0.022], [W, H - 0.003, -0.003], MachineLook.Base));
         foreach (var (x, y) in new[] { (-W + 0.035, 0.035), (W - 0.035, 0.035), (-W + 0.035, H - 0.035), (W - 0.035, H - 0.035) })
             p.Add(L([x - 0.016, y - 0.016, -0.04], [x + 0.016, y + 0.016, -0.022], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "-z"))));
+        // The tier beacon: a mast up the back corner, taller a tier (the pieces step up in height across the slots), its lamp in the tier's light colour, lit while its machine works.
+        var top = H + 0.05 * (tier - 1);
+        p.Add(L([-0.175, H - 0.06, -0.075], [-0.145, top, -0.045], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.Work(L([-0.2, top, -0.1], [-0.12, top + 0.07, -0.02], pal["light"]), "glow"));
         p.Sock("mount", [0, MountY, 0], "+z", kind: "tier");
         p.Stats(mass, health, 6, 8);
         p.Set(("machineBlock", Kw(("role", "tier"), ("tier", tier))), ("centreSockets", false), ("collider", "boxes"));
@@ -46,12 +50,12 @@ public sealed class MachineTierParts : IPartGenerator
     private static void TierPlate(Part p, int tier, double y, double z)
     {
         var pal = Pal(tier);
-        double half = 0.03 + 0.025 * tier;
-        p.Add(L([-half, y - 0.028, z - 0.014], [half, y + 0.028, z + 0.004], MachineLook.Ink));
+        double half = 0.035 + 0.03 * tier;
+        p.Add(L([-half, y - 0.034, z - 0.014], [half, y + 0.034, z + 0.004], MachineLook.Ink));
         for (var k = 0; k < tier; k++)
         {
-            var x = (k - (tier - 1) / 2.0) * 0.05;
-            p.Add(L([x - 0.014, y - 0.014, z - 0.028], [x + 0.014, y + 0.014, z - 0.014], pal["accent"]));
+            var x = (k - (tier - 1) / 2.0) * 0.06;
+            p.Add(MachineLook.Work(L([x - 0.021, y - 0.021, z - 0.03], [x + 0.021, y + 0.021, z - 0.014], pal["accent"]), "glow")); // (big enough to count from across a bay; lit while its machine works)
         }
     }
 
@@ -75,7 +79,7 @@ public sealed class MachineTierParts : IPartGenerator
         foreach (var x in new[] { -0.07, 0.07 })
         {
             p.Add(L([x - 0.03, 0.396, -0.17], [x + 0.03, 0.43, -0.09], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+y"))));
-            p.Add(L([x - 0.018, 0.43, -0.2], [x + 0.018, 0.47, -0.06], Copper, "copper"));
+            p.Add(L([x - 0.03, 0.43, -0.21], [x + 0.03, 0.48, -0.05], Copper, "copper"));
         }
         // The cable gland on the face, its lamp ring round it (it glows while the machine works), and the hazard band over it.
         p.Add(L([-0.07, 0.11, -0.3], [0.07, 0.25, -0.236], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
@@ -103,7 +107,7 @@ public sealed class MachineTierParts : IPartGenerator
         p.Add(L([-0.182, 0.07, -0.19], [-0.148, 0.16, -0.11], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "-x"))));
         p.Add(MachineLook.Work(L([-0.05, 0.08, -0.262], [0.05, 0.14, -0.24], "#35d0ff"), "glow"));
         // The radiator: a dark block, fins across its face, a vent on its top that steams while the machine works.
-        p.Add(L([-0.17, 0.22, -0.21], [0.17, 0.46, -0.024], MachineLook.Base));
+        p.Add(L([-0.17, 0.22, -0.21], [0.17, 0.46, -0.024], pal["body"], paintable: true)); // (Industrial grey: only its pipes are blue)
         foreach (var y in new[] { 0.25, 0.29, 0.33, 0.37, 0.41 })
             p.Add(L([-0.16, y - 0.008, -0.222], [0.16, y + 0.008, -0.21], pal["frame"]));
         p.Add(L([-0.08, 0.46, -0.16], [0.08, 0.485, -0.07], pal["frame"]));

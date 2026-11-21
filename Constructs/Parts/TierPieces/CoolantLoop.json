@@ -125,6 +125,38 @@
     },
     {
       "min": [
+        -0.175,
+        0.44,
+        -0.075
+      ],
+      "max": [
+        -0.145,
+        0.6,
+        -0.045
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.6,
+        -0.1
+      ],
+      "max": [
+        -0.12,
+        0.67,
+        -0.02
+      ],
+      "color": "#ffae20",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
         -0.15,
         0.03,
         -0.25
@@ -205,9 +237,8 @@
         0.46,
         -0.024
       ],
-      "color": "#22262b",
-      "detail": true,
-      "paintable": false
+      "color": "#8f918d",
+      "detail": true
     },
     {
       "min": [
@@ -401,13 +432,13 @@
     },
     {
       "min": [
-        -0.105,
-        0.332,
+        -0.125,
+        0.326,
         -0.25
       ],
       "max": [
-        0.105,
-        0.388,
+        0.125,
+        0.394,
         -0.232
       ],
       "color": "#15171a",
@@ -416,48 +447,51 @@
     },
     {
       "min": [
-        -0.064,
-        0.346,
-        -0.264
+        -0.081,
+        0.339,
+        -0.266
       ],
       "max": [
-        -0.036,
-        0.374,
+        -0.039,
+        0.381,
         -0.25
       ],
       "color": "#f0c21a",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "work": "glow"
     },
     {
       "min": [
-        -0.014,
-        0.346,
-        -0.264
+        -0.021,
+        0.339,
+        -0.266
       ],
       "max": [
-        0.014,
-        0.374,
+        0.021,
+        0.381,
         -0.25
       ],
       "color": "#f0c21a",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "work": "glow"
     },
     {
       "min": [
-        0.036,
-        0.346,
-        -0.264
+        0.039,
+        0.339,
+        -0.266
       ],
       "max": [
-        0.064,
-        0.374,
+        0.081,
+        0.381,
         -0.25
       ],
       "color": "#f0c21a",
       "detail": true,
-      "paintable": false
+      "paintable": false,
+      "work": "glow"
     }
   ],
   "sockets": [
