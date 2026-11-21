@@ -1,0 +1,308 @@
+<title>Imported ships</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+/* Layout: a hangar bay. The ship fills the screen; one control rail on the left (a sheet at the bottom on a phone). */
+:root {
+  --bg: #e4e7ea; --sky: #d3d9de; --panel: #f6f7f8; --fg: #1d2329; --muted: #5d6873; --line: #c5ccd3;
+  --accent: #c8641e; --accent-fg: #ffffff; --chip: #e9edf0; --pick: #ffb347;
+  --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif; --body: "Inter", "Segoe UI", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15191d; --sky: #1c2227; --panel: #20262c; --fg: #e3e8ec; --muted: #94a0aa; --line: #343d45;
+  --accent: #e07a30; --accent-fg: #15191d; --chip: #2a3138; --pick: #ffb347; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15191d; --sky: #1c2227; --panel: #20262c; --fg: #e3e8ec; --muted: #94a0aa; --line: #343d45;
+  --accent: #e07a30; --accent-fg: #15191d; --chip: #2a3138; --pick: #ffb347; color-scheme: dark }
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); overflow: hidden; }
+.app { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+  padding-block: 18px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; min-width: 0; }
+#view { position: relative; min-width: 0; min-height: 0; }
+#view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+h1 { font-family: var(--display); font-weight: 600; font-size: 1.45rem; margin: 0; text-wrap: balance; }
+.eyebrow { font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+.desc { color: var(--muted); font-size: 0.85rem; line-height: 1.45; margin: 6px 0 0; }
+select { width: 100%; font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stats div { display: flex; flex-direction: column; gap: 2px; font-family: var(--mono); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.stats span { font-family: var(--body); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+section { display: flex; flex-direction: column; gap: 8px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+button { font: inherit; font-size: 0.82rem; padding: 7px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); cursor: pointer; text-align: left; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.ctl { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; font-size: 0.85rem; }
+.ctl button { min-width: 92px; text-align: center; }
+.row { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+.row input[type=range] { flex: 1; accent-color: var(--accent); }
+.row output { font-family: var(--mono); font-size: 0.8rem; min-width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.views { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.views button { background: var(--panel); padding: 5px 9px; font-size: 0.75rem; }
+#picked { position: absolute; left: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; max-width: calc(100% - 24px); }
+#picked b { font-family: var(--display); font-weight: 600; }
+#picked small { display: block; color: var(--muted); margin-top: 2px; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 0.9rem; }
+.note { font-size: 0.75rem; color: var(--muted); line-height: 1.4; margin: 0; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 55% 45%; }
+  #view { grid-row: 1; } aside { grid-row: 2; border-right: 0; border-top: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+</style>
+
+<div class="app">
+  <aside>
+    <div>
+      <p class="eyebrow">Imported ships</p>
+      <h1 id="name">Loading</h1>
+      <p class="desc" id="desc"></p>
+    </div>
+    <select id="ship" aria-label="Ship" hidden></select>
+    <div class="stats" id="stats"></div>
+    <section aria-label="Show">
+      <p class="eyebrow">Show</p>
+      <div class="seg" id="modes">
+        <button data-m="whole" class="on">Whole ship</button>
+        <button data-m="cutaway">Cutaway</button>
+        <button data-m="hull">Hull only</button>
+        <button data-m="parts">Fittings only</button>
+        <button data-m="exploded">Exploded</button>
+        <button data-m="kit">Parts kit</button>
+      </div>
+    </section>
+    <section aria-label="Moving parts" id="controls">
+      <p class="eyebrow">Moving parts</p>
+    </section>
+    <section aria-label="Look">
+      <p class="eyebrow">Look</p>
+      <div class="ctl"><span>Canopy glass</span><button id="tGlass" class="on" aria-pressed="true">Shown</button></div>
+      <div class="ctl"><span>Edges</span><button id="tEdges" aria-pressed="false">Off</button></div>
+      <div class="row"><label for="cut">Cut at</label><input type="range" id="cut" min="0" max="1000" value="1000"><output id="cutv">off</output></div>
+    </section>
+    <p class="note">Built from the game's own part files and blueprint, so this is the ship as it is in game. Doors move by the game's door data. Drag to turn, scroll or pinch to zoom, and click a part to name it.</p>
+  </aside>
+  <div id="view">
+    <div id="loading">Loading the ship</div>
+    <div class="views">
+      <button data-v="iso">Iso</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button><button data-v="back">Stern</button>
+    </div>
+    <div id="picked" hidden></div>
+  </div>
+</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const view = $("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio)); renderer.localClippingEnabled = true; renderer.outputColorSpace = THREE.SRGBColorSpace;
+view.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdfe8f0, 0x3a3228, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2), fill = new THREE.DirectionalLight(0xffffff, 0.6); scene.add(sun, fill);
+const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 1000);
+const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = !reduce;
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6), clips = [cutPlane];
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(view);
+function sky() { scene.background = new THREE.Color(css("--sky") || "#d3d9de"); }
+sky(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sky);
+new MutationObserver(sky).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+let M = null, parts = [], grid = null, centre = new THREE.Vector3(), radius = 10, mode = "whole", glassOn = true, edgesOn = false, picked = -1, ctls = [];
+const solidMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: clips });
+const glassMat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.35, roughness: 0.1, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: clips });
+const edgeMat = new THREE.LineBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.45, clippingPlanes: clips });
+
+// One mesh pair (solid, glass) a part, in the model's frame; a part on a door's track rides that track's pose.
+function load(model) {
+  for (const p of parts) { scene.remove(p.outer); p.outer.traverse(o => o.geometry && o.geometry.dispose()); }
+  if (grid) scene.remove(grid);
+  M = model; parts = []; picked = -1; $("picked").hidden = true;
+  const p16 = new Int16Array(b64(M.pos).buffer), n8 = new Int8Array(b64(M.nrm).buffer), look = new Uint16Array(b64(M.look).buffer);
+  const track = M.track ? b64(M.track) : null, tmp = new THREE.Color();
+  M.parts.forEach(([name, first, count], i) => {
+    const outer = new THREE.Group(), pose = new THREE.Group(); outer.add(pose);
+    for (const glassSide of [false, true]) {
+      const idx = []; for (let t = first; t < first + count; t++) if ((M.looks[look[t]][1] > 0) === glassSide) idx.push(t);
+      if (!idx.length) continue;
+      const pos = new Float32Array(idx.length * 9), nrm = new Float32Array(idx.length * 9), col = new Float32Array(idx.length * 9);
+      idx.forEach((t, k) => {
+        const L = M.looks[look[t]]; tmp.set(L[0]); if (L[2]) tmp.multiplyScalar(1.6);
+        for (let j = 0; j < 9; j++) { pos[k * 9 + j] = p16[t * 9 + j] / M.scale; nrm[k * 9 + j] = n8[t * 9 + j] / 127; }
+        for (let v = 0; v < 3; v++) col.set([tmp.r, tmp.g, tmp.b], k * 9 + v * 3);
+      });
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("normal", new THREE.BufferAttribute(nrm, 3)); g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+      g.computeBoundingBox();
+      const mesh = new THREE.Mesh(g, glassSide ? glassMat : solidMat); mesh.userData.part = i; mesh.userData.glass = glassSide; pose.add(mesh);
+    }
+    const box = new THREE.Box3(); pose.children.forEach(m => box.union(m.geometry.boundingBox));
+    const [group, kind] = M.origin[i] || ["", "part"];
+    parts.push({ name, group, kind, outer, pose, box, mid: box.getCenter(new THREE.Vector3()), track: track ? track[first] : 0, edges: null, at: new THREE.Vector3(), to: new THREE.Vector3() });
+    scene.add(outer);
+  });
+  const all = new THREE.Box3(new THREE.Vector3(...M.min), new THREE.Vector3(...M.max));
+  all.getCenter(centre); radius = all.getSize(new THREE.Vector3()).length() / 2;
+  grid = new THREE.GridHelper(Math.ceil(radius * 3), Math.ceil(radius * 3), 0x888888, 0x888888); grid.material.transparent = true; grid.material.opacity = 0.25;
+  grid.position.set(centre.x, M.min[1] - 0.002, centre.z); scene.add(grid);
+  sun.position.set(-0.6, 1, -0.4).multiplyScalar(radius * 4); fill.position.set(0.8, 0.3, 0.9).multiplyScalar(radius * 4);
+  camera.near = radius / 300; camera.far = radius * 40; camera.updateProjectionMatrix();
+  kitLayout();
+  $("name").textContent = M.name; $("desc").textContent = M.description || "";
+  const sz = [0, 1, 2].map(a => M.max[a] - M.min[a]);
+  $("stats").innerHTML = `<div><span>Length m</span>${sz[2].toFixed(1)}</div><div><span>Span m</span>${sz[0].toFixed(1)}</div><div><span>Height m</span>${sz[1].toFixed(1)}</div>` +
+    `<div><span>Mass t</span>${(M.mass / 1000).toFixed(1)}</div><div><span>Parts</span>${M.parts.length}</div><div><span>Doors</span>${M.anim ? M.anim.tracks.length : 0}</div>`;
+  buildControls(); setEdges(edgesOn); setMode(mode, true); setView("iso"); $("loading").hidden = true;
+}
+
+// Each control (a ramp, the VTOL pods, the doors) moves its tracks between shut and open on its own.
+function buildControls() {
+  const box = $("controls"); box.querySelectorAll(".ctl").forEach(e => e.remove()); ctls = [];
+  for (const c of M.controls || []) {
+    const row = document.createElement("div"); row.className = "ctl";
+    const label = document.createElement("span"); label.textContent = c.label;
+    const b = document.createElement("button"); row.append(label, b); box.append(row);
+    const ctl = { ...c, u: c.start ? 1 : 0, target: c.start ? 1 : 0, button: b };
+    const paint = () => { b.textContent = ctl.target ? c.open : c.shut; b.classList.toggle("on", !!ctl.target); b.setAttribute("aria-pressed", String(!!ctl.target)); };
+    b.onclick = () => { ctl.target = 1 - ctl.target; if (reduce) ctl.u = ctl.target; paint(); };
+    paint(); ctls.push(ctl);
+  }
+  box.hidden = !ctls.length;
+}
+const qa = new THREE.Quaternion(), qb = new THREE.Quaternion();
+function poseTracks() {
+  if (!M || !M.anim) return;
+  const S = M.anim.seconds || 1, at = new Map();
+  for (const c of ctls) for (const k of c.tracks) at.set(k, c.u);
+  for (const p of parts) {
+    if (!p.track) continue;
+    if (mode === "kit") { p.pose.position.set(0, 0, 0); p.pose.quaternion.identity(); continue; }
+    const fr = M.anim.tracks[p.track - 1].frames, n = fr.length - 1, x = n * Math.min(1, (at.get(p.track) ?? 0) * S / S), i = Math.min(n - 1, Math.floor(x)), u = x - i, a = fr[i], b = fr[i + 1] || a;
+    p.pose.position.set(a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u);
+    qa.set(a[3], a[4], a[5], a[6]); qb.set(b[3], b[4], b[5], b[6]); p.pose.quaternion.slerpQuaternions(qa, qb, u);
+  }
+}
+
+// Where each part goes in each view: exploded pushes the fittings out and lifts the roof; the kit lays every part out by its model group.
+let kit = new Map(), kitBox = new THREE.Box3();
+function kitLayout() {
+  kit = new Map();
+  const groups = [...new Set(parts.map(p => p.group))].sort((a, b) => (a.startsWith("Hull") || a.includes("Hull Structure") ? 0 : 1) - (b.startsWith("Hull") || b.includes("Hull Structure") ? 0 : 1) || a.localeCompare(b));
+  const gap = 0.6; let z = 0, x = 0, depth = 0;
+  const sizes = parts.map(p => p.box.getSize(new THREE.Vector3()));
+  const rowW = Math.max(...sizes.map(v => v.x), Math.sqrt(sizes.reduce((t, v) => t + (v.x + gap) * (v.z + gap), 0)) * 1.25); // (about square)
+  for (const g of groups) {
+    const ps = parts.filter(p => p.group === g).sort((a, b) => b.box.getSize(new THREE.Vector3()).x - a.box.getSize(new THREE.Vector3()).x);
+    for (const p of ps) {
+      const s = p.box.getSize(new THREE.Vector3());
+      if (x > 0 && x + s.x > rowW) { z += depth + gap; x = 0; depth = 0; }
+      kit.set(p, new THREE.Vector3(x + s.x / 2 - rowW / 2 - p.mid.x, -p.box.min.y, z + s.z / 2 - p.mid.z));
+      x += s.x + gap; depth = Math.max(depth, s.z);
+    }
+  }
+  z += depth;
+  kitBox = new THREE.Box3();
+  for (const [p, v] of kit) { v.z -= z / 2; kitBox.union(p.box.clone().translate(v)); }
+}
+function placeOf(p) {
+  if (mode === "kit") return kit.get(p);
+  if (mode !== "exploded") return new THREE.Vector3();
+  const d = new THREE.Vector3(p.mid.x - centre.x, 0, p.mid.z - centre.z);
+  if (p.kind === "roof") return new THREE.Vector3(d.x * 0.15, 4.5, d.z * 0.15);
+  if (p.kind === "hull") return new THREE.Vector3(d.x * 0.35, 0, d.z * 0.12);
+  return new THREE.Vector3(d.x * 0.15, 2.2 + (p.mid.y - M.min[1]) * 0.4, d.z * 0.15);
+}
+function shown(p) {
+  if (mode === "cutaway") return p.kind !== "roof";
+  if (mode === "hull") return p.kind !== "part";
+  if (mode === "parts") return p.kind === "part";
+  return true;
+}
+function setMode(m, now) {
+  mode = m; document.querySelectorAll("#modes button").forEach(b => { b.classList.toggle("on", b.dataset.m === m); b.setAttribute("aria-pressed", String(b.dataset.m === m)); });
+  for (const p of parts) { p.outer.visible = shown(p); p.to.copy(placeOf(p)); if (now || reduce) { p.at.copy(p.to); p.outer.position.copy(p.at); } }
+  grid.visible = m !== "kit";
+  if (!now) frame();
+}
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.m));
+
+function setEdges(on) {
+  edgesOn = on; $("tEdges").textContent = on ? "On" : "Off"; $("tEdges").classList.toggle("on", on); $("tEdges").setAttribute("aria-pressed", String(on));
+  for (const p of parts) {
+    if (on && !p.edges) { p.edges = []; for (const m of p.pose.children.filter(c => c.isMesh && !c.userData.glass)) { const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), edgeMat); p.pose.add(e); p.edges.push(e); } }
+    if (p.edges) p.edges.forEach(e => e.visible = on);
+  }
+}
+$("tEdges").onclick = () => setEdges(!edgesOn);
+$("tGlass").onclick = () => { glassOn = !glassOn; glassMat.visible = glassOn; $("tGlass").textContent = glassOn ? "Shown" : "Hidden"; $("tGlass").classList.toggle("on", glassOn); $("tGlass").setAttribute("aria-pressed", String(glassOn)); };
+$("cut").oninput = () => {
+  const f = $("cut").value / 1000, y = M.min[1] + f * (M.max[1] - M.min[1]);
+  cutPlane.constant = f >= 1 ? 1e6 : y; $("cutv").textContent = f >= 1 ? "off" : `${y.toFixed(2)} m`;
+};
+
+const views = { iso: [-1, 0.75, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], front: [0, 0.15, -1], back: [0.2, 0.25, 1] }; // (the bow is -z)
+let lastView = "iso";
+function setView(v) {
+  lastView = v;
+  const c = mode === "kit" ? kitBox.getCenter(new THREE.Vector3()) : centre, r = mode === "kit" ? kitBox.getSize(new THREE.Vector3()).length() / 2 : radius;
+  const d = new THREE.Vector3(...(mode === "kit" && v === "iso" ? [-0.3, 1, 0.7] : views[v])).normalize().multiplyScalar(r * (mode === "kit" ? 1.5 : 2.4)); camera.position.copy(c).add(d); controls.target.copy(c); controls.update();
+}
+function frame() { setView(lastView); }
+document.querySelectorAll(".views button").forEach(b => b.onclick = () => setView(b.dataset.v));
+
+// Picking: click a part to name it (and its model group); click empty space to clear.
+const ray = new THREE.Raycaster(); let down = null;
+renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1), camera);
+  const hits = ray.intersectObjects(parts.filter(p => p.outer.visible).map(p => p.outer), true).filter(h => h.object.isMesh && (glassOn || !h.object.userData.glass) && cutPlane.distanceToPoint(h.point) >= 0);
+  const i = hits.length ? hits[0].object.userData.part : -1;
+  if (picked >= 0) highlight(picked, false);
+  picked = i === picked ? -1 : i;
+  if (picked >= 0) { highlight(picked, true); const p = parts[picked]; $("picked").innerHTML = `<b></b><small></small>`; $("picked").querySelector("b").textContent = p.name; $("picked").querySelector("small").textContent = `${p.group}${p.track ? " (moves)" : ""}`; }
+  $("picked").hidden = picked < 0;
+});
+const pickMat = new THREE.MeshStandardMaterial({ color: 0xffb347, emissive: 0x6b3a00, roughness: 0.6, side: THREE.DoubleSide, clippingPlanes: clips });
+function highlight(i, on) { parts[i].pose.children.forEach(m => { if (m.isMesh && !m.userData.glass) m.material = on ? pickMat : solidMat; }); }
+
+let last = performance.now();
+function tick(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  for (const c of ctls) if (c.u !== c.target) { const step = dt / Math.max(0.5, (M.anim && M.anim.seconds) || 2); c.u = c.target > c.u ? Math.min(c.target, c.u + step) : Math.max(c.target, c.u - step); }
+  poseTracks();
+  for (const p of parts) if (!p.at.equals(p.to)) { p.at.lerp(p.to, Math.min(1, dt * 5)); if (p.at.distanceToSquared(p.to) < 1e-6) p.at.copy(p.to); p.outer.position.copy(p.at); }
+  controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick);
+}
+
+async function start() {
+  try {
+    const list = await (await fetch("models/index.json")).json();
+    const sel = $("ship"); sel.hidden = list.length < 2;
+    for (const s of list) { const o = document.createElement("option"); o.value = s.file; o.textContent = s.name; sel.append(o); }
+    const pick = list.find(s => "#" + s.id === location.hash) || list[0];
+    sel.value = pick.file;
+    const open = async file => { $("loading").hidden = false; load(await (await fetch(file)).json()); const s = list.find(x => x.file === file); if (s) history.replaceState(null, "", "#" + s.id); };
+    sel.onchange = () => open(sel.value);
+    await open(pick.file);
+  } catch (err) {
+    $("loading").textContent = "The ship didn't load. Reload the page to try again.";
+    console.error(err);
+  }
+  requestAnimationFrame(tick);
+}
+start();
+</script>

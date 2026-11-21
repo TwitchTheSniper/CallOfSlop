@@ -50,5 +50,15 @@
     { "id": "vtol", "part": "Bakelite Switch", "by": "back", "on": "Wall_Stbd_Troop", "face": "+x", "z": 2.4, "config": { "startOn": false } },
     { "id": "relay", "part": "OR Gate", "by": "-x", "on": "Wall_Port_Troop", "face": "-x", "z": 3.2, "y": 2.2 }
   ],
-  "wires": [ [ "vtol", "VTOL_Pod_Starboard" ], [ "vtol", "relay" ], [ "relay", "VTOL_Pod_Port" ] ]
+  "wires": [ [ "vtol", "VTOL_Pod_Starboard" ], [ "vtol", "relay" ], [ "relay", "VTOL_Pod_Port" ] ],
+  // The Imported ships gallery (--imported-gallery): what the cutaway hides, what counts as hull, and the buttons that work doors.
+  "gallery": {
+    "roof": [ "Hull_Roof_Shell" ],
+    "hull": [ "Hull_*", "Ship_Hull_Structure" ],
+    "controls": [
+      { "label": "Ramp", "match": "Rear_Loading_Ramp", "shut": "Closed", "open": "Open" },
+      { "label": "VTOL pods", "match": "VTOL_Pod_*", "shut": "Cruise", "open": "Landing" },
+      { "label": "Doors", "match": "Bulkhead_Door_*", "shut": "Shut", "open": "Open" }
+    ]
+  }
 }

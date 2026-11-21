@@ -22,6 +22,8 @@ public static partial class ConstructPreview
             return Shot(shotOf, args);
         if (Flag(args, "--anim-gallery") is { } animDir)
             return AnimGallery(animDir);
+        if (Flag(args, "--imported-gallery") is { } importedDir)
+            return ImportedGallery(importedDir);
         if (Flag(args, "--preview-gallery") is { } galleryDir)
             return Gallery(galleryDir, Flag(args, "--only"), Flag(args, "--group") ?? "Ship");
         var what = Flag(args, "--preview-construct") ?? "";
