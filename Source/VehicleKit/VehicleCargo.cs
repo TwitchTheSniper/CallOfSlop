@@ -43,10 +43,7 @@ public static class VehicleCargoTables
 
     public static readonly Dictionary<string, (double Ammo, double Spares)> ByStyle = new()
     {
-        ["Raider"] = (1, 1.3),
         ["IT"] = (0.8, 0.8),
-        ["Salvager"] = (0.8, 0.9),
-        ["Mercenary"] = (1, 1.1),
     };
 
     /// <summary>A tier's factor on every amount: 0.7 at tier 1, 1 at tier 2, then 0.3 a tier more.</summary>
@@ -860,7 +857,7 @@ public static class VehicleCargoCli
             var role = st == null ? null : VehicleRoles.Find(what[(st.Name.Length + 1)..]);
             if (st == null || role == null)
             {
-                Console.WriteLine($"--cargo \"{what}\": a style and a role (\"Raider raider\"), or all");
+                Console.WriteLine($"--cargo \"{what}\": a style and a role (\"IT carrier\"), or all");
                 return 1;
             }
             cells.Add((st, role));

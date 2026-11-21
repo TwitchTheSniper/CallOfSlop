@@ -1,19 +1,20 @@
 # Old factions, part 2 (2026-11-21)
 
 Karl asked (2026-11-21) for the last of the old story factions to go: Scam, British, Scottish (Highland), Ministry of Slop, Bandit
-and Highland, with their parts, vehicles and references. The current factions (Traders, Mercenaries, Raiders, Militia, Salvagers,
-Player Crew, Test Hostile) keep their ground vehicles.
+and Highland, with their parts, vehicles and references. The crew factions (Traders, Mercenaries, Raiders, Militia, Salvagers,
+Player Crew, Test Hostile) stay; Twitch's faction system runs them on ships.
 
-- **Styles renamed for the factions that fly them:** Bandit is `Raider` (the Raiders), British is `Mercenary` (the Mercenaries),
-  Scam is `Salvager` (the Salvagers). Blueprint names and files follow ("Raider Buggy 1", `RaiderBuggy1.json`), as do the
-  Blueprints tab groups, loot tables (`raider`, `mercenary`, `salvager` and their tiers 3 and 4), interior palettes and every
-  per-style table in the vehicle kit. `FactionStyle.DiceName` keeps each renamed style's old name as its dice salt, so every
-  committed vehicle kept its shape: regenerated, 153 of 192 are byte-identical but for the names, and the 39 Salvager ones changed
-  only their paint (the grey-and-teal look is now weathered grey, olive and rust brown with hazard yellow and orange).
+- **Bandit, British and Scam vehicles gone** (PR 434 first renamed them Raider, Mercenary and Salvager; Karl: remove them, not
+  rename them). The three styles, their 141 blueprints, their per-style tables in the vehicle kit (signature, body language,
+  chassis, wear, roles, cargo, family names, context, the archetypes only they built), loot tables, interior palettes and the 15
+  armoury recipes no other style used are deleted. The Raiders, Mercenaries and Salvagers name no style now (`"styles": []`, as
+  Player Crew). Only IT ships vehicles (51 blueprints with Militia's ore-loop pair); its parts and gear come from
+  `Styles.Base` (the old Bandit lists, never generated itself). Militia's loot table is `militia` (the old `raider` table). The
+  controllers' placeholder fleets (Crew/Controllers.json) for the Raiders and Militia use IT vehicles, as do the crew checks
+  that spawned Raider helicopters and convoys. The Double Decker, Monster Truck and Wagon generators stay, shipped by no style.
 - **Highland style gone:** its 50 blueprints, its slots, signature, body language, chassis, wear, family names, loot tables and
   palette row. The Traders fly IT alone. Its hull-loft kinds (clinker trim, timber stakes, timber lining, ports) stay in
-  `HullLoft` unused. The vehicle armoury lost its Highland rows, and the Mercenary and Salvager guns with old-faction joke names
-  were renamed (Flak in a Teapot is the Sky Clause, Pyramid Scheme the Scrap Pile, and so on).
+  `HullLoft` unused. The vehicle armoury lost its Highland rows.
 - **The Scammers gone:** the Computer's two advert buttons, `GameSandboxScams`, `ScamDesk`, `Story/Office/Scammers.json`, the
   inbox lines in chat and IT's malware fax. The Computer still emails IT.
 - **Parts moved, not removed** (their Parts tab categories were already by function and didn't change): the Bandit set is the

@@ -4,28 +4,23 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Raider, It, Salvager, Mercenary, Militia];
+    public static IReadOnlyList<FactionStyle> All => [It, Militia];
 
-    /// <summary>A style's dice name by its name (<see cref="FactionStyle.DiceName"/>); a name no style has is its own.</summary>
-    public static string DiceNameOf(string name) => All.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))?.DiceName ?? name;
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Raider, It, Salvager, Mercenary];
+    public static IReadOnlyList<FactionStyle> Shipped => [It];
 
-    /// <summary>Raider: rust and bare metal, nothing matches, spikes, war paint and trophies (the Raiders fly it: Crew/Factions/Raiders.json).</summary>
-    public static readonly FactionStyle Raider = new()
+    /// <summary>
+    /// The parts and running gear every style starts from (never generated itself): a style copies these and changes what is its own.
+    /// (It was the Bandits' style until the old factions went, 2026-11-21.)
+    /// </summary>
+    private static readonly FactionStyle Base = new()
     {
-        Name = "Raider",
-        DiceName = "Bandit", // (its name before 2026-11-21: the committed vehicles keep their shapes)
-        Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Raider",
-        Palette = new()
-        {
-            ["rust"] = ["#7a4326", "#8c5230", "#6b3a22", "#94603a", "#5e3320"],
-            ["body"] = ["#8a8d8f", "#6f7477", "#a39a84", "#7a4326", "#5f6a55", "#8c5230"], // (bare metal, primer, old paint)
-            ["frame"] = ["#3a3330", "#46392f", "#2f2c2a"],
-            ["war"] = ["#a81c14", "#d8cdb0", "#c8a018", "#17181a"],
-        },
+        Name = "Base",
+        Group = "Base",
+        Palette = [],
+        Weapons = [],
+        Limits = [],
         Parts = new()
         {
             ["wheel"] = ["Off-Road Wheel"],
@@ -89,22 +84,6 @@ public static class Styles
             new("crawler", "Heavy Swing Arm", "Spiked Wheel", "Heavy Trailing Arm", "Spiked Wheel"),
             new("monster", "Heavy Pogo Strut", "Monster Wheel", "Heavy Pogo Strut", "Monster Wheel"), // (phase 8b: the Monster Truck's only gear; ShapeGrammar.SpecialGears)
         ],
-        // The weapon slot: guns by their parts, in the builder's text. A name twice is twice as likely.
-        Weapons =
-        [
-            new("Scrap MG", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Scrap MG", "Workhorse Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag,action:Full-Auto Sear}"),
-            new("Scrap MG", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Firebreather", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
-            new("Whaler", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
-        ],
-        Seeds = new() // (kit 5's, 2026-11-07, again after body styles phases 2 and 3: the most different passing seeds of a 10-seed sweep; the Technical and Tanker Rig keep their seed numbers, made by the grammar since phase 9b; the Fuel Trailer keeps its generator's)
-        {
-            ["Buggy"] = [1, 3, 4], ["Monster Truck"] = [1, 2, 8], ["Wagon"] = [1, 5, 6], ["Giant Truck"] = [1, 6, 2], ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
-            ["Drone"] = [1, 12, 5], ["Plane"] = [1, 2, 7], ["Helicopter"] = [1, 2, 10], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
-        },
-        LootTable = "raider",
-        Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
     };
 
     /// <summary>
@@ -126,7 +105,7 @@ public static class Styles
             ["frame"] = ["#3b3f44"],
             ["war"] = ["#f2c400", "#0f7bd8", "#e6e2d6", "#c0392b"],            // (lanyard yellow, link blue, paper, the red of a failed build)
         },
-        Parts = new(Raider.Parts)
+        Parts = new(Base.Parts)
         {
             ["engine"] = ["Engine", "V8 Engine"],
             ["wall"] = ["Sheet Steel", "Plate Steel"],
@@ -154,8 +133,8 @@ public static class Styles
             ["layout stationery cupboard"] = ["fax", "computer", "crates", "shelf"],
             ["layout break room"] = ["bench", "computer", "fax", "crates"],
         },
-        LightGear = Raider.LightGear,
-        HeavyGear = Raider.HeavyGear,
+        LightGear = Base.LightGear,
+        HeavyGear = Base.HeavyGear,
         // The weapon slot: named for the trade.
         Weapons =
         [
@@ -175,124 +154,6 @@ public static class Styles
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
     };
 
-    /// <summary>
-    /// Salvager: worn grey haulers in olive and rust brown, picked out in hazard yellow and orange (the Salvagers fly it: Crew/Factions/Salvagers.json);
-    /// hubcaps, cones and loudhailers where raiders hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of crates and shelves
-    /// round the water cooler. They strip other people's batteries, so that is what they carry (Constructs/Loot.json "salvager"). Guns are named for
-    /// the salvage trade.
-    /// </summary>
-    public static readonly FactionStyle Salvager = new()
-    {
-        Name = "Salvager",
-        DiceName = "Scam", // (its name before 2026-11-21: the committed vehicles keep their shapes)
-        Extra = ["Car", "Buggy", "Concept", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Salvager",
-        Palette = new()
-        {
-            ["rust"] = ["#9aa0a6", "#8a9096", "#b0b4b8", "#7d8a92"],            // (the panels: weathered greys)
-            ["body"] = ["#6b6f5e", "#8c5a2e", "#6b6f5e", "#d8d2c0"],            // (olive drab, rust brown, primer)
-            ["frame"] = ["#2a2c30"],
-            ["war"] = ["#e0b81c", "#d9822b", "#2b2b2b", "#d8d2c0"],             // (hazard yellow, salvage orange, black, primer)
-        },
-        Parts = new(It.Parts)
-        {
-            ["engine"] = ["Engine", "V8 Engine", "Engine"],
-            ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
-            ["fender"] = ["Arch Fender", "Wide Arch Fender"], // (phase 9a: as before: slim arches alone made two committed Technicals read as a box from above)
-            ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/Signals)
-            ["trophy"] = ["Hubcap Plate", "Loudhailer", "Traffic Cone", "Hubcap Plate", "Loudhailer"],
-            ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer"],                                       // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Traffic Cone", "Loudhailer", "Hubcap Plate"],                                   // (on open beds and porches)
-            ["cooler"] = ["Water Cooler"],
-            ["layout"] = ["scrap store", "scrap store", "office", "break room"],
-            ["layout scrap store"] = ["crates", "crates", "shelf", "cooler"],
-            ["layout office"] = ["computer", "crates", "rack", "shelf"],
-            ["layout break room"] = ["cooler", "bench", "crates", "shelf"],
-        },
-        LightGear = Raider.LightGear,
-        HeavyGear = Raider.HeavyGear,
-        Weapons =
-        [
-            new("Scrapper", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Strip Down", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Write-Off", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Scrapper", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
-        ],
-        // (--sweep-vehicle's most different passing seeds)
-        Seeds = new()
-        {
-            ["Technical"] = [1, 13, 16, 17, 21], ["Buggy"] = [1, 5, 6], ["Concept"] = [1, 8, 6], ["Car"] = [1, 4, 3], ["Box Truck"] = [1, 6, 9], ["War Bus"] = [1, 4, 6], ["Flatbed Fort"] = [1, 9, 6],
-            ["Gun Wagon"] = [1, 6, 5], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
-            ["Drone"] = [4, 7, 10], ["Plane"] = [5, 10, 12], ["Helicopter"] = [6, 9, 12], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
-        },
-        LootTable = "salvager",
-        Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 1, ["slits"] = 0 },
-    };
-
-    /// <summary>
-    /// Mercenary: red and dark green, mostly understated (the Mercenaries fly it: Crew/Factions/Mercenaries.json). Red on the panels with the odd
-    /// dark green, cream or grey; dark green, cream and navy on the hoods; war paint in blue, red, white and yellow. Loudhailers and dishes on the
-    /// roofs, jerry cans, traffic cones and garden gnomes where raiders hang skulls, iron spikes down the flanks, and rooms of benches, shelves and
-    /// crates. Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>). Guns are named for the contract.
-    /// </summary>
-    public static readonly FactionStyle Mercenary = new()
-    {
-        Name = "Mercenary",
-        DiceName = "British", // (its name before 2026-11-21: the committed vehicles keep their shapes)
-        Group = "Mercenary",
-        Palette = new()
-        {
-            ["rust"] = ["#c8102e", "#b5121b", "#c8102e", "#be0f2a", "#c8102e", "#b5121b", "#1f4a32", "#e8dfc8", "#7d8186"], // (the panels: red, mostly; a dark green, cream, grey)
-            ["body"] = ["#004225", "#e8dfc8", "#1d2b4f", "#004225"],                                // (dark green, cream, navy)
-            ["frame"] = ["#1b1c1e", "#2b2a28"],
-            ["war"] = ["#012169", "#c8102e", "#f2f0e8", "#f2c400"],                                // (blue, red, white, yellow)
-        },
-        Parts = new(Raider.Parts)
-        {
-            ["engine"] = ["Engine", "Engine", "V8 Engine"],
-            ["wall"] = ["Sheet Steel", "Plate Steel", "Plate Steel"],
-            ["deck"] = ["Plate Steel", "Tread Plate"],
-            ["bed"] = ["Plate Steel", "Tread Plate", "Wood Planks"],
-            ["sheet"] = ["Sheet Steel", "Plate Steel", "Plate Steel"],
-            ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
-            ["hood"] = ["Long Hood", "Snub Hood", "Long Hood", "Bull Hood"],
-            ["nose"] = ["Slat Grille", "Bar Grille", "Slat Grille", "none"],
-            ["fender"] = ["Arch Fender"], // (phase 9a: a bus's slim wheel arches)
-            ["cab"] = ["Windscreen Frame", "Tin Roof Cab", "Chop Top Cab", "Roll Bar"],
-            ["heavyCab"] = ["Tin Roof Cab", "Cab Over Shell", "Chop Top Cab"],
-            ["spike"] = ["Long Iron Spike", "Iron Spike", "Long Iron Spike"],
-            ["trophy"] = [HullLoft.JerryCan, "Traffic Cone", "Garden Gnome", HullLoft.JerryCan, "Traffic Cone"],
-            ["mast"] = ["Loudhailer", "Satellite Dish", "Loudhailer"],                                         // (on the roofs: Vehicle.Kit)
-            ["gear"] = [HullLoft.JerryCan, "Traffic Cone", HullLoft.JerryCan, "Garden Gnome"],                 // (on open beds and porches)
-            ["layout"] = ["mess", "armoury", "store", "bunkroom"],
-            ["layout mess"] = ["bench", "bench", "crates", "shelf"],
-            ["layout armoury"] = ["shelf", "shelf", "crates", "crates"],
-            ["layout store"] = ["crates", "shelf", "crates", "bench"],
-            ["layout bunkroom"] = ["bunk", "bunk", "shelf", "crates"],
-        },
-        LightGear = Raider.LightGear,
-        HeavyGear = Raider.HeavyGear,
-        // The weapon slot: named for the contract.
-        Weapons =
-        [
-            new("Hazard Pay", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Hazard Pay", "Workhorse Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag,action:Full-Auto Sear}"),
-            new("Retainer", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
-            new("Severance", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Scorched Earth", "Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,action:Flame Valve}", Box: null),
-        ],
-        Extra = ["Double Decker", "Car", "Wagon", "Concept", "Drone", "Plane", "Helicopter"],
-        // (--sweep-vehicle's most different passing seeds in this style's dice)
-        Seeds = new()
-        {
-            ["Technical"] = [2, 14, 4, 5, 18], ["Wagon"] = [1, 2, 7], ["Concept"] = [1, 7, 8], ["Car"] = [2, 4, 3], ["Box Truck"] = [1, 9, 8], ["War Bus"] = [1, 3, 5], ["Flatbed Fort"] = [1, 5, 7],
-            ["Gun Wagon"] = [1, 4, 5], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 4, 9],
-            ["Drone"] = [2, 4, 11], ["Plane"] = [1, 3, 8], ["Helicopter"] = [2, 5, 9], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
-        },
-        LootTable = "mercenary",
-        Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 0.8, ["slits"] = 0.1 },
-    };
-
     /// <summary>A second look over the same shapes, to prove a style swaps without touching a generator: run <c>--gen-vehicle "Militia Box Truck" --out DIR</c>. Nothing of it ships.</summary>
     public static readonly FactionStyle Militia = new()
     {
@@ -305,7 +166,7 @@ public static class Styles
             ["frame"] = ["#26282a"],
             ["war"] = ["#c8c4b0"],
         },
-        Parts = new(Raider.Parts)
+        Parts = new(Base.Parts)
         {
             ["wheel"] = ["Off-Road Wheel"],
             ["engine"] = ["V8 Engine"],
@@ -317,10 +178,10 @@ public static class Styles
             ["fender"] = ["Wide Arch Fender"], // (phase 9a: always armoured over the wheels, never bare)
             ["trophy"] = [HullLoft.JerryCan], // (jerry cans where raiders hang skulls and hubcaps: HullLoft.Trim.cs)
         },
-        LightGear = Raider.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
-        HeavyGear = Raider.HeavyGear,
+        LightGear = Base.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
+        HeavyGear = Base.HeavyGear,
         Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag}")],
-        LootTable = "raider",
+        LootTable = "militia",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
         Seeds = new() { ["Ore Hauler"] = [1] }, // (the factory kit's ore loop spawns seed 1; the shape's other seeds were never committed)
         Committed = ["Ore Hauler", "Excavator"], // (it ships no vehicles, but the factory kit's ore loop spawns these by name: --gen-vehicles compares them)

@@ -126,7 +126,7 @@ public sealed class VehicleSpawner(Game game)
     public int Pending => _queue.Count + (_job != null || _place != null ? 1 : 0);
 
     /// <summary>
-    /// Asks for a faction vehicle: <paramref name="style"/> and <paramref name="shape"/> by name ("Raider", "Box Truck"),
+    /// Asks for a faction vehicle: <paramref name="style"/> and <paramref name="shape"/> by name ("IT", "Box Truck"),
     /// <paramref name="seed"/> null for one the server picks. It stands on the ground at <paramref name="ground"/> facing
     /// <paramref name="yaw"/>, or in front of player <paramref name="frontOf"/> as they are when it is ready.
     /// <paramref name="done"/> hears how it went, on the tick. Returns why it was refused, or null: queued.

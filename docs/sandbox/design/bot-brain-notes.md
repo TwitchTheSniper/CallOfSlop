@@ -70,7 +70,7 @@ Verified (2026-11-16): `--crew-convoy "Raider Gun Wagon 1,Raider Buggy 1,Raider 
 60 s, followers 14 m off their places on average (the two behind the stopped one steer round it and catch up), 518 shots at the target;
 the second's driver shot, its gunner takes the wheel 2 s later; everyone aboard shot, it stops (0.0 m/s). Crew cost 39 us a tick, worst
 4.1 ms once (driving, at 17 s: not seen again; taken for JIT), 0 bytes. `--crew-scale 5000` on Raider Buggy 1: 92 us a tick, worst 0.86 ms,
-0 bytes. A window run (`crewconvoy Raider 3`): three generated vehicles crewed, eight bodies in seats, the convoy drives and fires.
+0 bytes. A window run (`crewconvoy IT 3`): three generated vehicles crewed, eight bodies in seats, the convoy drives and fires.
 
 Unverified: walkers through the Driving Module (the same keys); a convoy's own gunners hit their own convoy (no friends yet: phase 3).
 

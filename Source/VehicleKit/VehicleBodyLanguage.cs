@@ -330,32 +330,6 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
 
     public static readonly Dictionary<string, BodyStyleRule> ByStyle = new(StringComparer.Ordinal)
     {
-        // (each station after the first: a new language half the time; tall and short, hard ledges over the wheels)
-        ["Raider"] = new([(BodyLanguage.Slab, 2), (BodyLanguage.Ledge, 1.5), (BodyLanguage.Armour, 0.5)], Mix: 0.5)
-            {
-                Scales = [(BodyScale.Standard, 2), (BodyScale.Heavy, 1.5)], TallMin = 0.92f, TallMax = 1.25f, FlareShare = 1f, LineAmount = 1.2f, RunMin = 1, RunMax = 2, Contrast = "body", Ride = (0.8, 1, 1.4), DoorRear = 0.25,
-                // (phase 3: open cabs in roll cages first, slabs of armour, upright screens, flat and grilled noses)
-                Cabs = [("caged", 2.5), ("enclosed", 1), ("armoured", 1), ("crew", 0.7), ("cab-over", 0.4)], Noses = [('f', 1.5), ('w', 1), ('g', 2)],
-                // (phase 4: welded plates and cage bars, cobbled bay by bay; a bare side now and then)
-                Trims = [("p", 2), ("pc", 2), ("c", 1)], TrimMix = true, TrimShare = 0.7,
-                // (phase 5: a welded cage for a room half the time: the faction's own space (welded boxes on the flanks are data, left at 0: they washed out its trim))
-                Cage = 0.6, CageKind = 'w', Uppers = [("none", 1)], UpperShareMin = 0.3f, UpperShareMax = 0.6f, BulwarkMin = 1.05f, BulwarkMax = 1.2f, Pods = [('w', 0)],
-                // (phase 7a: bare hull, ribs and weld beads, bare bulbs; cluttered with drums, crates and spare ammo)
-                Lining = 'r', Window = 's', WindowChance = 0.5, LiningInset = 0, Clutter = 0.9f, Props = ["Fuel Drum", "Ammo Crate", "Crate Stack", "Small Fuel Tank", "Ammo Box"], Fill = 1f, Gear = 2,
-                // (phase 6: a welded grating balcony now and then; lopsided most of all: welded boxes and the plates down one flank; caged rooms its signature, 0.6)
-                Balcony = 0.35, BalconyKind = 'w', Asym = 0.7, AsymAmount = 0.9f, AsymPod = 0.6, AsymTrim = 0.9f,
-                CabTallMin = 1.56f, CabTallMax = 1.7f, RakeMin = 0.02f, RakeMax = 0.1f, HoodCrownMin = 0.16f, HoodCrownMax = 0.2f, HoodHalfMin = 0.56f, HoodHalfMax = 0.62f, BeltMin = 1.04f, BeltMax = 1.12f, CabHalfMin = 0.86f, CabHalfMax = 0.9f,
-                // (phase 9a: the cab family: a chopped enclosed cab, a roll cage, a slab-armoured cab; upright screens, flat and grilled noses whatever the archetype)
-                CabStyles =
-                [
-                    CabStyle.Of("chop top", 2, r => r with { RakeMin = 0.02f, RakeMax = 0.05f, Noses = [('g', 2), ('f', 1)] }, r => r with { CabTallMin = 1.56f, CabTallMax = 1.6f, BeltMin = 1.08f, BeltMax = 1.12f },
-                        r => r with { Cabs = [("enclosed", 2), ("armoured", 0.6), ("crew", 0.5)], CabLanguage = BodyLanguage.Slab }),
-                    CabStyle.Of("roll cage", 2, r => r with { RakeMin = 0.04f, RakeMax = 0.1f, Noses = [('f', 2), ('g', 1)] }, r => r with { CabTallMin = 1.6f, CabTallMax = 1.7f, BeltMin = 1.04f, BeltMax = 1.08f },
-                        r => r with { Cabs = [("caged", 3), ("crew", 0.3), ("enclosed", 0.3)], CabLanguage = BodyLanguage.Ledge }),
-                    CabStyle.Of("scrap plate", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, Noses = [('f', 2), ('w', 1)] }, null, // (the faction's own proportions: a 1.56-1.64 m slab cab with its belt at 1.1-1.14 m left 8 of 14 of the driver's rays on the cab)
-                        r => r with { Cabs = [("armoured", 2), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Slab }),
-                ],
-            },
         // (low and wide, flat-faceted: little height, a glacis brow)
         ["Militia"] = new([(BodyLanguage.Armour, 1)])
             {
@@ -402,54 +376,6 @@ public sealed record BodyStyleRule((BodyLanguage L, double W)[] Languages, int F
                         r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Pod }),
                     CabStyle.Of("pod", 1.5, r => r with { RakeMin = 0.22f, RakeMax = 0.26f, CapsuleRakeMin = 0.65f, CapsuleRakeMax = 0.8f, Noses = [('r', 1)] }, r => r with { BeltMin = 0.9f, BeltMax = 0.94f },
                         r => r with { Cabs = [("cab-over", 2), ("merged", 1), ("enclosed", 0.3)] }),
-                ],
-            },
-        // (a portacabin on a chassis: boxy, square ends, tall)
-        ["Salvager"] = new([(BodyLanguage.Cabin, 2), (BodyLanguage.Van, 1)])
-            {
-                Scales = [(BodyScale.Standard, 2.5), (BodyScale.Heavy, 0.7)], TallMin = 0.95f, TallMax = 1.2f, FlareShare = 0.5f, DoorRear = 0.35, Brows = [(1f, 3), (1.25f, 1)], Tails = [(1f, 3), (0.75f, 1)],
-                // (boxy enclosed and crew cabs, upright screens, flat noses)
-                Cabs = [("enclosed", 2), ("crew", 1.2), ("cab-over", 0.8)], Noses = [('f', 2), ('g', 1)],
-                // (phase 4: signboards down the sides, one over the cab)
-                Trims = [("g", 1)], TrimShare = 0.8, Decos = [('S', 0.9)],
-                // (phase 5: a portacabin stacked on the portacabin; kiosks are data, left at 0: they washed out its signboards)
-                Uppers = [("none", 1.5), ("saloon", 1.5)], UpperShareMin = 0.5f, UpperShareMax = 1f, UpperTallMin = 2.1f, UpperTallMax = 2.25f, UpperNarrow = 0.97f, Pods = [('k', 0)], PodMax = 2,
-                // (phase 7a: showy panels, a gold rail and pink neon, inset; phones, headsets and signs about)
-                Lining = 's', Window = 'b', WindowChance = 0.85, LiningInset = 0.75, Clutter = 0.6f, Props = ["Hubcap Plate", "Traffic Cone", "Loudhailer", "Water Cooler"], Fill = 0.8f, Gear = 1,
-                // (phase 6: a showy balcony with a sign band at every door it fits, deep; kiosks down one side when lopsided)
-                Balcony = 1, BalconyKind = 'g', BalconyLenMin = 1.3f, BalconyDepthMin = 0.95f, BalconyDepthMax = 1.1f, Asym = 0.4, AsymAmount = 0.7f, AsymPod = 0.7,
-                CabTallMin = 1.8f, CabTallMax = 1.95f, RakeMin = 0.03f, RakeMax = 0.08f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.42f, HoodCrownMin = 0.2f, HoodCrownMax = 0.24f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.92f, CabHalfMax = 0.95f,
-                // (phase 9a: the cab family: a tall upright box, or a flat-faced kiosk cab-over; flat noses)
-                CabStyles =
-                [
-                    CabStyle.Of("box", 2, r => r with { RakeMin = 0.02f, RakeMax = 0.05f, Noses = [('f', 1)] }, r => r with { CabTallMin = 1.86f, CabTallMax = 1.95f, BeltMin = 1.0f, BeltMax = 1.04f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
-                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Cabin }),
-                    CabStyle.Of("kiosk", 1, r => r with { RakeMin = 0.02f, RakeMax = 0.06f, CapsuleRakeMin = 0.3f, CapsuleRakeMax = 0.36f, Noses = [('f', 2), ('g', 1)] }, r => r with { CabTallMin = 1.84f, CabTallMax = 1.92f, CabHalfMin = 0.93f, CabHalfMax = 0.95f },
-                        r => r with { Cabs = [("cab-over", 2), ("enclosed", 0.5)], CabLanguage = BodyLanguage.Cabin }),
-                ],
-            },
-        // (tall, upright buses: the heavy class first, the door kerbside)
-        ["Mercenary"] = new([(BodyLanguage.Bus, 2.5), (BodyLanguage.Coach, 1.5)], 8, 12)
-            {
-                Scales = [(BodyScale.Heavy, 2), (BodyScale.Standard, 1)], TallMin = 1f, TallMax = 1.28f, FlareShare = 0.7f, DoorLeft = 0.2, Ride = (1, 1.5, 0.3), DoorRear = 0.35, // (phase 9a: a rear platform now and then, its balcony across the back)
-                // (the bus front: the cab inside the body; capsules; rounded and grilled noses on the rest)
-                Cabs = [("merged", 2), ("cab-over", 1.2), ("enclosed", 0.8), ("crew", 0.5)], Noses = [('r', 2), ('g', 1)],
-                // (phase 4: the two-tone livery band and its chrome strips, a lit destination board over a bus front)
-                Trims = [("l", 1)], Decos = [('D', 0.9)],
-                // (phase 5: the double deck: an upper saloon flush with the walls, over most of the room)
-                Uppers = [("saloon", 5), ("none", 0.5)], UpperShareMin = 0.9f, UpperShareMax = 1f, UpperTallMin = 2.06f, UpperTallMax = 2.16f, UpperNarrow = 1f,
-                // (phase 7a: moquette under a dado, cream panelling over it, following the bus's curves; dome lamps; a teapot, a gnome, a flag)
-                Lining = 'u', Window = 't', WindowChance = 0.95, LiningInset = 0.2, Clutter = 0.35f, Props = ["Garden Gnome", "Traffic Cone", "Loudhailer"], Fill = 0.8f, Gear = 1,
-                // (phase 6: a wrought-rail platform at every door it fits; even)
-                Balcony = 1, BalconyKind = 'r', BalconyRailMin = 1.0f, BalconyRailMax = 1.1f, Asym = 0.05, AsymAmount = 0.3f,
-                CabTallMin = 1.72f, CabTallMax = 1.86f, RakeMin = 0.1f, RakeMax = 0.18f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.38f, BeltMin = 0.94f, BeltMax = 1.0f,
-                // (phase 9a: the cab family: an upright bus front, or a town cab in the coach's lines; rounded noses)
-                CabStyles =
-                [
-                    CabStyle.Of("bus front", 2, r => r with { RakeMin = 0.1f, RakeMax = 0.14f, CapsuleRakeMin = 0.2f, CapsuleRakeMax = 0.3f, Noses = [('r', 1)] }, r => r with { CabTallMin = 1.76f, CabTallMax = 1.86f, BeltMin = 0.94f, BeltMax = 0.98f },
-                        r => r with { Cabs = [("merged", 2), ("cab-over", 1), ("enclosed", 0.3)] }),
-                    CabStyle.Of("town cab", 1, r => r with { RakeMin = 0.1f, RakeMax = 0.16f, Noses = [('r', 2), ('g', 1)] }, r => r with { CabTallMin = 1.74f, CabTallMax = 1.84f, BeltMin = 0.94f, BeltMax = 1.0f },
-                        r => r with { Cabs = [("enclosed", 2), ("crew", 1)], CabLanguage = BodyLanguage.Coach }),
                 ],
             },
     };
