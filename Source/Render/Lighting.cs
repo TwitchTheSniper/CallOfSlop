@@ -141,8 +141,8 @@ public static unsafe class Lighting
             vec4 uProbeA;    // mode 2: light rgb, flicker share
             vec4 uProbeB;    // mode 2: light direction (view space), ambient
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
-            vec4 uDynPos[12]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
-            vec4 uDynCol[12]; // colour * intensity
+            vec4 uDynPos[32]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
+            vec4 uDynCol[32]; // colour * intensity
             vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom; z: edge bevels on; w: material contrast on
             mat4 uShadowVP;  // world less uShadowC to the sun shadow map's u, v and stored depth (SunShadows.cs)
             vec4 uShadowC;   // xyz: the map's centre; w: the normal offset (m)
@@ -151,7 +151,7 @@ public static unsafe class Lighting
             mat4 uRoomVP[8]; // world less uRoomC to each dark-interiors map's u, v and stored depth (RoomShade.cs; the size is RoomShade.Layers)
             vec4 uRoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
             vec4 uRoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
-            vec4 uLampRows[36]; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
+            vec4 uLampRows[96]; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
             vec4 uLampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / the maps' distance range; w: the normal offset a metre out (m)
             vec4 uLampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
         };

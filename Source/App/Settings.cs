@@ -114,7 +114,7 @@ public sealed class Settings
     public bool MaterialContrast = true; // Materials Medium and High: paint a satin 0.6 roughness, dark framing and rubber rough (Surfaces.cs)
     public VideoLevel SunShadows = VideoLevel.Medium; // ships and vehicles shade the sun: Low off, Medium a 2048 map, High 4096 (SunShadows.cs)
     public float KeyLight = 1f; // the sun's (key light's) strength, 0.7-1.6x (SunShadows.KeyLight)
-    public VideoLevel LampShadows = VideoLevel.Medium; // walls keep lamps' light in: Low off, Medium every lit lamp at 256, High at 512 (LampShadows.cs)
+    public VideoLevel LampShadows = VideoLevel.Medium; // walls keep lamps' light in: Low off, Medium every lit lamp at 256, High at 384 (LampShadows.cs)
     public bool DarkInteriors = true; // rooms shut inside ships and vehicles lose the sky's light: dark but for their lamps (RoomShade.cs)
     public bool ContactShadows = true; // at any Post effects level: a soft shadow on the ground under ships and vehicles (PostFx.Contact.cs)
     public bool EdgeBevels = true; // Materials Medium and High: every box edge drawn as a thin chamfer that catches the light (Surfaces.cs)
