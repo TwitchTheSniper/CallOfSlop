@@ -423,8 +423,11 @@ are no size classes. Code: `ConstructLaserCutterBed.cs`.
   2.4 kW: a wider bed cuts faster (`Heads`, the time law's power is `kw x heads`) and draws `PowerDraw x heads`.
 - **The offcut bin** holds 200 plus 100 for each block in the bed (`BinOf`).
 - A Core with no bed cuts nothing: "no bed: weld Laser Bed Blocks beside it".
+- **Out Table.** An Out Table welded on the bed's far side (the side away from the Core, its -z face against the bed) is the cutter's
+  Piece out: a conveyor off it takes the cut parts (`ConstructConveyor.Out`, `MachineBlocks.OutTable`). With none, a cut part lies on the
+  bed. Both showcases lay one.
 - **Look**: seams hide the rails, skirts and bridge where blocks are welded (`seam`, `seamFill`), so one bridge spans the whole bed and
-  rails show on its outer edges only (the Core says `"coreSeams": false`, so the rail beside it stays). While it cuts, the bridge and its
+  rails show on its outer edges only (the Core says `"coreSeams": false`, so only a weld to another bed block hides a block's seam: the rails beside the Core and beside the Out Table stay). While it cuts, the bridge and its
   heads follow the cut's outline over the blank lying on the bed (`LookPose`, the path from `HullLoft.CutOutline`), the beam glows and
   sparks fly where it meets the plate. Ports use `MachineLook.Port`. Body `#a8365e`.
 
