@@ -255,6 +255,7 @@ public static unsafe class LightGrid
         var bake = Enabled ? map.LightBake : null;
         if (!Init())
             return;
+        SunShadows.EndWorld(); // (camera space: the world's shadow map means nothing here, and an unlit map's probe is mode 0)
         FillProbe(ref _block, bake, eye, view, time);
         Send();
     }

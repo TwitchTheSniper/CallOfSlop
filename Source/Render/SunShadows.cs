@@ -95,7 +95,7 @@ public static unsafe class SunShadows
         var n = 0;
         foreach (var c in world.Bodies)
         {
-            if (c.PartCount == 0 || c.SpaceAway != 0)
+            if (c.PartCount == 0 || (ConstructRender.AwayOnly != 0 ? c.Id != ConstructRender.AwayOnly : c.SpaceAway != 0)) // (as ConstructRender draws them)
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var d2 = Vector3.DistanceSquared(pos, cam);
@@ -190,6 +190,7 @@ public static unsafe class SunShadows
         Native.glActiveTexture(GL_TEXTURE0 + Unit);
         Native.glBindTexture(GL_TEXTURE_2D, _tex);
         Native.glActiveTexture(GL_TEXTURE0);
+        gfx.Rebind(); // (the box renderer's program and arrays: its unbatched draws trust them)
         Live = LastBodies > 0;
         Clear(n);
     }

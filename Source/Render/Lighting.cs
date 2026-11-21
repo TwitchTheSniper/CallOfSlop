@@ -221,7 +221,7 @@ public static unsafe class Lighting
             vec3 s = (uShadowVP * vec4(p - uShadowC.xyz + n * uShadowC.w, 1.0)).xyz;
             vec2 e = abs(s.xy - 0.5) * 2.0;
             float edge = max(e.x, e.y);
-            if (edge >= 1.0)
+            if (edge >= 1.0 || s.z <= 0.0 || s.z >= 1.0) // (outside the map's square or its depth: nothing there was drawn)
                 return 1.0;
             const vec2 taps[12] = vec2[12](vec2(-0.326, -0.406), vec2(-0.840, -0.074), vec2(-0.696, 0.457), vec2(-0.203, 0.621),
                 vec2(0.962, -0.195), vec2(0.473, -0.480), vec2(0.519, 0.767), vec2(0.185, -0.893), vec2(0.507, 0.064),
