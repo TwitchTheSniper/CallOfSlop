@@ -559,6 +559,11 @@ public static class Keybinds
     public static List<GameAction> Migrate(int[] binds, int fromVersion)
     {
         var moved = new List<GameAction>();
+        // A removed action's keys go free in every file, whatever its version: hidden from the controls menu, it would
+        // still clash with a key a player binds (ClashAt) and block a later default (FreeFor).
+        for (var i = 0; i < binds.Length; i++)
+            if (Removed(ActionAt(i)))
+                binds[i] = Unbound;
         // Every binding added after the file's version that sits on its new default is unbound first (and checked like a
         // move at its own version), so an action added later can't hold a key while an earlier version's carry asks
         // whether that key is free (a v12 file's rebound inventory key K and v15's SnapSwitch on K).
