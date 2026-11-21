@@ -1,5 +1,7 @@
 # Aircraft in the vehicle kit
 
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+
 The user (2026-11-10): the vehicle kit should generate small aircraft at run time: planes, drones, helicopters and more. Their users are AI factions
 (spawned like ground vehicles, crewed by bots) and loot and capture (players find, steal and fly them). The player's own generator stays creative only.
 The goal is the tools and systems that make aircraft at run time, not a few hand-made ones. Flight design: the project doc `claude/flight.md`, code guide:

@@ -197,21 +197,23 @@ so a session spawning a couple of hundred, or a tool over every style, used to r
 - `--bench-parts [N] [--no-sweep] [--net K]` checks it: N generated vehicles built and taken out offline, then a host and a client over RakNet (120 ms, 3% loss) with both
   limits lowered so slots are taken again, each client copy compared by part names, and a vehicle kept throughout.
 
-## The Wheel Former
+## The Grow Former
 
-An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub, in place, fed with material the same way, and a Cut signal parts the finished wheel off. Code: `ConstructExtruder.GrowWheel`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels` rows of `Constructs/Extrusion.json`; the parts come from `tools/constructs/extrusion_parts.py` (`storage.wheel`). Self-test: the Extruder sections.
+One block machine (design page drawing 22; Sean, 2026-11-21) in place of the twelve Wheel, Fan and Airframe Former parts: a **Grow Former** Core (2 x 2 x 2 m) grows a wheel, a prop or a wing on its hub, fed as an [Extruder](#extrusion) is, and a Cut signal parts the piece off. Code: `ConstructGrowFormer.cs` (sizes, bed, hub) beside `ConstructExtruder.GrowWheel` and `GrowWhole`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels`, `fans` and `wings` rows of `Constructs/Extrusion.json`; the parts come from the part kit (`Source/PartKit/Generators/ExtrusionParts.cs`: `GrowFormerCore`, `FormerBlock`; `storage.wheel` with `"grow": true`). Self-test: the Extruder sections, "Press stock", "Display screens".
 
-- **Run modes.** **Width** builds along the axle, **Depth** builds the diameter (depth reads as how far the wheel stands out from its hub: both radii together, so a mode's step adds 5 cm to the diameter). The **Run mode** setting picks one; a wire into the **Mode** input decides instead (on: Depth). Each may be changed at any time; the wheel keeps what it has. The inputs are **Run**, **Cut** and **Mode**. The output wire is the wheel's size in the running mode, in metres, so a Compare wired from it to Run or Cut stops a wheel at a size. A wheel at a limit says so on the look line and waits. The first wheel is paid for in one go, so it fits in a bin.
-- **Limits.**
+- **Makes.** The **Makes** setting (`growMakes`: Wheel, Prop, Wing) picks what its own settings make and what its Queue button asks; a work order makes what it asks whatever the setting (`GrowShape`: the piece on the hub, else the head order, else the setting). The Wheel settings are the old Wheel Former's (Run mode, width, height), the Prop ones the Fan Former's, the Wing ones the Airframe Former's ([flight.md](flight.md)).
+- **Blocks decide the size** (`ConstructExtruder.Sizes`, read from the assembly `MachineBlocks` finds at the rebuild). **Former Blocks** (2 x 2 x 0.3 m, welded on the floor in front of and beside the Core) are its bed; **Mast Blocks** stacked on the Core are the column its hub rides up. With a bed W across and L along and masts M high (m):
 
-  | Machine | Widest | Biggest across | First wheel | Speed | Bin | Power |
-  | --- | --- | --- | --- | --- | --- | --- |
-  | Wheel Former (Small) | 1.5 m | 3 m | 0.1 x 0.4 m | 0.1 m/s | 400 | 900 W |
-  | Medium Wheel Former | 6 m | 12 m | 0.5 x 2 m | 0.2 m/s | 2,000 | 3.6 kW |
-  | Large Wheel Former | 12 m | 24 m | 1 x 4 m | 0.4 m/s | 8,000 | 14.4 kW |
-  | Capital Wheel Former | 20 m | 48 m | 2 x 8 m | 0.8 m/s | 32,000 | 57.6 kW |
+  | Piece | Biggest |
+  | --- | --- |
+  | Wheel | width at most L; diameter at most W and M + 2 (32 x 20 m at most) |
+  | Prop | diameter at most 2W and 2M + 2 (64 m at most) |
+  | Wing | chord at most W; span at most L, or out over Run-out Tables at the bed's far end (32 x 192 m at most) |
 
-  Each hub stands high enough for its biggest wheel over the machine's own floor. A wheel that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
+  A Core alone is a 1-cell bed. Sizes snap to 5 cm and never fall under the first piece (0.1 x 0.4 m wheel, 0.5 m prop, 0.3 x 0.5 m wing). An order too big for the blocks is refused naming the blocks to add (`GrowFix`: "weld Former Blocks for a bed 3 across and 2 along", "stack 2 Mast Blocks on the Core").
+- **Speed and power** go with the bed: the file's 0.1 m/s times the square root of a quarter of its blocks (a 4-block bed is the old Small former's; a wing's span 2.5 times that); push 1500 N and draw 225 W for the Core and each block. The bin holds 13,200.
+- **The hub slide.** A wheel or a prop starts with its hub raised so its rim clears the bed by 0.1 m at the size it will grow to (`HubAt`), so the piece never moves once started; the carriage and chuck boxes (`"work": "slide"`, and the spinning chuck's `rigTravel`) ride up by the same rise, which the renderer reads from the piece's place (`HubRise`), so nothing new goes on the wire. A wing isn't raised: it grows along the bed.
+- A piece that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
 - **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). **Growing**, it is the hidden boxes too (`ColliderBoxes`): a growing wheel is a new def every 5 cm, and a cylinder's convex hull made for each cost 6 ms and 60 KB inside the body's collider rebuild (2026-11-11). It is physics-only: the socket weld puts it on a suspension's axle.
 
 Choices made (the developer may change them): depth as the diameter; the `wheels` rows; the limits above; the machines' size; a wheel as one solid material (no rim and tyre of two); no Interact to cut (a Button wired to Cut does it).
@@ -1665,6 +1667,57 @@ on a small floor), and a Crane Bridge bolted to the outer side of one run by its
 the rails, down its hook's drop; everything an arm does it does in that box. Its look line, screen and Alarm say when it is off its
 rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes.
 
+**The Hall Crane** (design page drawing 24, Sean 2026-11-21; parts from `LifterParts.cs`, `Constructs/Parts/Lifters/HallCranes`) is a
+Bridge Crane on the block rules, for moving pieces between machines, pads and roller runs; it comes on top of a machine's own crane,
+never in its place. A **Crane Rail Block** (2 x 1 x 2 m, `craneRail`) is 2 m of runway girder for the top of a Mast Block column: blocks
+in line end to end make a run, as sections do. A **Crane Core** (2 m cabinet, lifter `bridge` with `"hall": true`) bolts beside a run
+by its +x socket (the rail's foot at its middle height). Its numbers come from its rails at each walk (`ConstructCraneRails.HallWalk`):
+the span is the gap to the nearest parallel run across at the same height, at most 32 m (`HallSpan`); the reach across stops 1 m short
+of each rail; the lift is 20 t plus 5 t a rail block in both runs; the hook drops to the lowest Mast Block foot under the rails (the
+floor); the largest piece is the span less 2 m across and the shared run long. Every other fixed part under the span must stay under
+the hook's highest point (1.6 m under the rails' top): the tallest one that doesn't stops the crane, named on its look line and
+screen ("the Extruder stands up into the bridge's way"). More Cores on the same rails make more bridges, each with its own queue.
+Drawn from the hook's place as the classed crane is, at a 2 m scale, with a cab hung under the girders near the near rail (KEEP
+CLEAR on its sides), festoon loops along the girder and hazard stripes on the hook block; each rail block's amber lamp flashes while
+a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The classed cranes stay (the Medium for the Dray's hold;
+the Large and Capital keep their Assembler rows, which saved recipe numbers count). The **Hall Bay** blueprint (`HallShowcase.cs`) is
+a 24 x 20 m floor with a 16 m Hall Crane on two runs over three-mast columns, an Extruder with no conveyor and a 3 x 4 pad of Pad
+Tiles: the crane carries each angle from the Run-out Table to the pad. Not yet: a hall crane doesn't yet skip a machine bed that the
+machine's own crane serves (no machine has its own crane yet).
+
+**Pad Tiles** (design page drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code
+`ConstructPads.cs`). A Pad Tile is a 2 m deck with no Core (`machineBlock` family `pad`, `"seed": true`). Tiles welded side by side are
+one pad: `MachineBlocks.Build` floods each weld from its lowest-index tile (the seed, the owner) and takes the largest full rectangle
+holding it, at most 16 x 16 and 128 tiles; tiles turned differently from the owner, or outside the rectangle, are pads of their own.
+The owner's store is the pad's: `ConstructPads.Owner` sends a conveyor's end, F, Shift+F, the physics gun, the look ray and the
+logistics map's node to it, and `ConstructPads.RackDef` gives every tile the rectangle's hold seen from that tile (500 pieces a tile,
+capped at `CStore.MaxPerKind`), so packing, drawing and lifters read the same places from any tile. Lists of stores (racks, lifter
+points, stock targets, the dock's fill) skip the other tiles. The stack is 1 m with no mast, and 2 m more for each Mast Block on the
+tallest column stood on the rectangle; the hold sits inside the kerb and the corner posts, but a mast in the middle of a pad stands in
+its hold. The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
+them only on its open edges. A **Rack Side** is drawn only: a 2 m fence of bars welded to a tile's side; sides end to end show one post
+at each joint (`"seamSame"`: a part's seams hide on faces welded to its own kind, `MachineBlocks.SeamSame`). A tile's own store
+holds nothing while it is in a bigger pad; pieces it held from before it joined show again if it is split off. Not yet: the showcases'
+Piece Racks and Lay-down Pads aren't swapped for tiles, and the old rack parts stay until they are.
+
+**Roller Tiles** (drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code `RollerRuns.cs`). A
+Roller Tile is a 2 m bed of powered rollers with its tops at the bed machines' work height (1 m, as an Out Table's), going its +z way.
+Tiles welded together are one **run** (`machineBlock` family `roller`, seeded as Pad Tiles are; all turned one way): the largest full
+rectangle holding the lowest-index tile. A run is one ordinary conveyor link along its middle, as wide as its tiles across (6 tiles,
+12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
+(`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
+conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
+out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
+its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
+or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
+**Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
+uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
+(a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
+a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
+to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
+into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
+pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
+
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
 (a rack's or pad's kinds, a machine's pieces at its out and in its tray), and its orders. Click a kind under a pick point, then a put
@@ -1750,7 +1803,7 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   the refiners reached Running; the switch off gave No power on all seven machines on both peers and on gave them back; 40 brackets in the
   rack, none loose; bay 2 takes an L-angle. Host ticks over the whole bill: worst 15.9 to 20.7 ms (a few one-offs in its first 6 s, the
   JIT), p99 0.8 to 1.3 ms, 58 MB allocated (both peers), no generation-1 collection; the bill again, warm: worst 4.8 to 6.6 ms, p99
-  0.9 to 1.9 ms, no collection. Before the fix the Wheel Former's growing wheel made a convex hull for each 5 cm (see [Wheel Former](#the-wheel-former)):
+  0.9 to 1.9 ms, no collection. Before the fix the Wheel Former's growing wheel made a convex hull for each 5 cm (see [Grow Former](#the-grow-former)):
   ticks of 8 to 83 ms twice a second, 199 MB and a generation-1 collection.
 
 ## Factory Showcase

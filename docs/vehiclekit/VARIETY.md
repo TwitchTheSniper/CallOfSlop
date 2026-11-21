@@ -1,5 +1,7 @@
 # Vehicle kit: shape grammar, variety and identity
 
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+
 Kit 2's shape grammar, kit 3's layered variety, identity and weak points. Part of the vehicle kit guide: index in VEHICLEKIT.md.
 
 ## Shape grammar

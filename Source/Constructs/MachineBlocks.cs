@@ -75,9 +75,11 @@ public static class MachineBlocks
     /// <summary>The <c>"machineBlock"</c> key of a part file: <c>{"family": "press", "role": "core"|"block"|"shared", "cell": 2}</c>.</summary>
     public static void Parse(ConstructPartDef d, JsonElement root, string file)
     {
+        d.SeamSame = ConstructParts.Opt(root, "seamSame") is { ValueKind: JsonValueKind.True };
+        d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "coreSeams"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -96,10 +98,18 @@ public static class MachineBlocks
         d.BlockCell = ConstructParts.Opt(mb, "cell") is { } cell ? ConstructParts.Num(cell, file, "machineBlock.cell") : DefaultCell;
         if (d.BlockCell is < 0.5f or > 8f)
             throw new ConstructPartException($"{file}: \"machineBlock.cell\" is 0.5 to 8 m, not {d.BlockCell}");
+        if (ConstructParts.Opt(mb, "seed") is { ValueKind: JsonValueKind.True })
+        {
+            // A family with no Core (Pad Tiles, drawing 23): each weld of its blocks is one assembly seeded from its lowest-index block.
+            if (d.BlockRole != BlockRole.Block)
+                throw new ConstructPartException($"{file}: only a block is a \"machineBlock.seed\" (a family with no Core)");
+            d.BlockSeed = true;
+            d.IsRollerTile = Families[d.BlockFamily].Equals("roller", StringComparison.OrdinalIgnoreCase);
+        }
         if (ConstructParts.Opt(mb, "origin") is { } origin)
         {
-            if (d.BlockRole != BlockRole.Core)
-                throw new ConstructPartException($"{file}: only a Core gives \"machineBlock.origin\" (its own cell's middle)");
+            if (d.BlockRole != BlockRole.Core && !d.BlockSeed)
+                throw new ConstructPartException($"{file}: only a Core or a seed block gives \"machineBlock.origin\" (its own cell's middle)");
             d.BlockOrigin = ConstructParts.Vec(origin, file, "machineBlock.origin");
         }
         if (ConstructParts.Opt(mb, "coreSeams") is { } cs)
@@ -180,6 +190,9 @@ public static class MachineBlocks
         var v = c.BlockColumns[asm.Grid + (x + Mid) * GridSide + z + Mid];
         return (v & 0x80) == 0 ? -1 : v & 0x7F;
     }
+
+    /// <summary>The cells stacked on the Core's own cell (a Grow Former's masts, drawing 22): 0 with none.</summary>
+    public static int CoreColumn(Construct c, in CMachineAsm asm) => c.BlockColumns[asm.Grid + Mid * GridSide + Mid] & 0x7F;
 
     /// <summary>The lowest column among the bed rectangle's four corners (masts): 0 when any has none.</summary>
     public static int CornerColumns(Construct c, in CMachineAsm asm)
@@ -278,15 +291,18 @@ public static class MachineBlocks
         c.MachineAsmCount = 0;
         var cores = 0;
         foreach (var i in c.Specials)
-            if (c.Parts[i].D.BlockRole == BlockRole.Core)
-                cores++;
+            if (c.Parts[i].D.BlockRole == BlockRole.Core || c.Parts[i].D.BlockSeed)
+                cores++; // (a seed block may start an assembly too: at most one each)
         if (cores == 0)
         {
-            if (wasAny)
+            if (wasAny || c.BlockJoined.Length > 0)
             {
                 Array.Fill(c.BlockAsmOf, (short)-1);
-                Array.Clear(c.BlockJoined);
+                Array.Clear(c.BlockJoined); // (a Rack Side's last faces too: SeamSame sets them again)
             }
+            ConstructPads.Build(c);
+            RollerRuns.Note(c);
+            SeamSame(c);
             return;
         }
         var n = c.PartCount;
@@ -313,6 +329,45 @@ public static class MachineBlocks
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockRole == BlockRole.Core && c.BlockAsmOf[i] < 0)
                 Assemble(c, i, queue, cx, cy, cz, steps, sum);
+        // Seeded families after the Cores (a Mast Block a Core took stays the Core's), each from its lowest-index block: the specials
+        // are in index order, so the first block of a weld met is its seed, and the rest join its flood.
+        foreach (var i in c.Specials)
+            if (c.Parts[i].D.BlockSeed && c.BlockAsmOf[i] < 0 && !c.Parts[i].Broken)
+                Assemble(c, i, queue, cx, cy, cz, steps, sum);
+        ConstructPads.Build(c);
+        RollerRuns.Note(c);
+        SeamSame(c);
+    }
+
+    /// <summary>Parts that seam with their own kind (<c>"seamSame"</c>: Rack Sides in a row show one end post): their faces welded to a part of the same def.</summary>
+    private static void SeamSame(Construct c)
+    {
+        var n = c.PartCount;
+        for (var i = 0; i < n; i++)
+        {
+            var d = c.Parts[i].D;
+            if (!d.SeamSame)
+                continue;
+            if (c.BlockAsmOf.Length < n)
+            {
+                var old = c.BlockAsmOf.Length;
+                Array.Resize(ref c.BlockAsmOf, Math.Max(n, old * 2));
+                Array.Resize(ref c.BlockJoined, c.BlockAsmOf.Length);
+                Array.Fill(c.BlockAsmOf, (short)-1, old, c.BlockAsmOf.Length - old);
+            }
+            byte mask = 0;
+            for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
+            {
+                var o = c.OtherEnd(e);
+                if (c.Parts[o].Def != c.Parts[i].Def)
+                    continue;
+                ref readonly var l = ref c.Links[e >> 1];
+                var s = (e & 1) == 0 ? l.SA : l.SB;
+                if (s < d.Sockets.Length)
+                    mask |= (byte)(1 << d.Sockets[s].Dir);
+            }
+            c.BlockJoined[i] = mask;
+        }
     }
 
     private static void Assemble(Construct c, int core, Span<ushort> queue, Span<sbyte> cx, Span<sbyte> cy, Span<sbyte> cz, Span<byte> steps, Span<short> sum)
@@ -325,6 +380,7 @@ public static class MachineBlocks
         grid.Clear();
         var cell = cd.BlockCell;
         var coreRot = c.Parts[core].Rot;
+        var seeded = cd.BlockSeed; // (no Core: the seed is a bed cell itself, and its blocks lie the same way round as it, so one hold spans them: ConstructPads)
         var unrot = Rot24Inverse(coreRot);
         var coreMid = CoreMid(c, core); // (a Core whose looks stand out of its cell names the cell's middle)
         c.BlockAsmOf[core] = id;
@@ -342,7 +398,7 @@ public static class MachineBlocks
             {
                 var o = c.OtherEnd(e);
                 var d = c.Parts[o].D;
-                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared or BlockRole.End) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
+                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared or BlockRole.End) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || seeded && d.BlockRole == BlockRole.Block && c.Parts[o].Rot != coreRot || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
                     continue;
                 if (c.BlockAsmOf[o] >= 0)
                     continue; // (in this machine already, or another Core's; a broken cell idles until it is mended)
@@ -401,7 +457,9 @@ public static class MachineBlocks
             }
         }
         asm.Cells = (short)cellCount;
-        // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column.
+        // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column. A seed is a bed cell itself.
+        if (seeded)
+            grid[Mid * GridSide + Mid] |= 0x80;
         for (var k = 1; k < count; k++)
             if (cy[k] == 0 && c.Parts[queue[k]].D.BlockRole != BlockRole.End)
                 for (var sx = 0; sx < steps[2 * k]; sx++)
@@ -414,7 +472,7 @@ public static class MachineBlocks
                 ref var g = ref grid[(cx[k] + Mid) * GridSide + cz[k] + Mid];
                 g = (byte)((g & 0x80) | Math.Min(0x7F, Math.Max(g & 0x7F, cy[k])));
             }
-        LargestRectangle(grid, sum, ref asm);
+        LargestRectangle(grid, sum, ref asm, seeded);
         FindOut(c, ref asm, queue[..count], cx, cz, steps);
         if (asm.W > 0 && Families[asm.Family] == "press")
             ConstructPress.SwingCheck(c, ref asm, id); // (its shells' swing: a fixed part in the way stops it, and the screen names it)
@@ -444,7 +502,7 @@ public static class MachineBlocks
     }
 
     /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most MaxSide a side and MaxCells in all; of equals, the one nearest the Core.</summary>
-    private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm)
+    private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded)
     {
         const int S = GridSide + 1;
         for (var x = 0; x <= GridSide; x++)
@@ -466,7 +524,7 @@ public static class MachineBlocks
                         int x1 = x0 + w, z1 = z0 + l;
                         if (sum[x1 * S + z1] - sum[x0 * S + z1] - sum[x1 * S + z0] + sum[x0 * S + z0] != area)
                             break; // (a gap: a longer one has it too)
-                        if (area < best || !Touches(x0, z0, w, l))
+                        if (area < best || !(seeded ? Holds(x0, z0, w, l) : Touches(x0, z0, w, l)))
                             continue; // (the machine is the rectangle that holds a cell welded to its Core: a stray patch elsewhere idles)
                         var near = Math.Abs(x0 + w / 2 - Mid) + Math.Abs(z0 + l / 2 - Mid);
                         if (area > best || near < bestNear)
@@ -486,6 +544,9 @@ public static class MachineBlocks
         bool In(int x, int z) => x >= x0 && x < x0 + w && z >= z0 && z < z0 + l;
         return In(Mid + 1, Mid) || In(Mid - 1, Mid) || In(Mid, Mid + 1) || In(Mid, Mid - 1);
     }
+
+    /// <summary>Does the rectangle of grid cells from (x0, z0), w by l, hold the seed's own cell (the grid's middle)?</summary>
+    private static bool Holds(int x0, int z0, int w, int l) => Mid >= x0 && Mid < x0 + w && Mid >= z0 && Mid < z0 + l;
 
     /// <summary>The corner of part <paramref name="part"/>'s bounds lowest in x and z of the Core's frame (<paramref name="unrot"/> turns into it), in the body frame.</summary>
     private static Vector3 Corner(Construct c, int part, byte unrot)
@@ -528,7 +589,7 @@ public static class MachineBlocks
         return inv;
     }
 
-    private static byte Rot24Inverse(byte r) => _inverse[r % Rot24.Count];
+    internal static byte Rot24Inverse(byte r) => _inverse[r % Rot24.Count];
 
     // ---- A dev check: --machine-blocks BLUEPRINT -------------------------------------------------------------------------------
 

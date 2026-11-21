@@ -301,8 +301,8 @@ public static partial class SelfTest
                 w.RemovePart(line, PartNamed(line, "Battery"));
                 line.Rebuild();
             });
-            // An Extruder's die and a Wheel Former's hub: the same trap, with no power and no Cut wire.
-            foreach (var name in (string[])["Extruder", "Wheel Former"])
+            // An Extruder's die and a Grow Former's hub: the same trap, with no power and no Cut wire.
+            foreach (var name in (string[])["Extruder", "Grow Former"])
             {
                 Clear();
                 w.Remove(line);

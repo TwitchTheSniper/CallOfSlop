@@ -51,8 +51,8 @@ public static partial class SelfTest
         var extruder = ConstructParts.Need("Extruder");
         var block = ConstructParts.Need("Die Block");
         want(extruder.IsExtruder && extruder.IsBin && extruder.PhysicsOnly && extruder.MaxInputs == 2 && extruder.HasOutput && extruder.PowerDraw > 0 && extruder.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName], "the Extruder part");
-        var former = ConstructParts.Need("Wheel Former");
-        want(former.IsExtruder && former.IsWheelFormer && former.MaxInputs == 3 && former.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName], "the Wheel Former part");
+        var former = ConstructParts.Need("Grow Former");
+        want(former.IsExtruder && former.IsWheelFormer && former.MaxInputs == 3 && former.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName], "the Grow Former part");
         want(ConstructParts.Find("Cut-off Saw") == null && ConstructParts.Find("Large Cut-off Saw") == null, "the saws are still parts");
         want(block.BlockRole == BlockRole.Block && block.BlockFamily == extruder.BlockFamily && extruder.BlockRole == BlockRole.Core && block.BlockFace, "the Die Block");
         want(!ConstructParts.All.Any(d => d.IsExtrusion), "a piece is listed among the part files");

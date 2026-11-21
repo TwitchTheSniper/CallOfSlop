@@ -107,13 +107,8 @@ public static class VehicleIdentity
 
     // ---- The styles' signatures ------------------------------------------------------------------------------------------
 
-    private static readonly string[] RaiderDress = ["Iron Spike", "Long Iron Spike", "Skull Trophy", "Horned Skull", "Hubcap Plate"];
     private static readonly string[] ItMasts = ["Satellite Dish", "Wi-Fi Mast", "Router Antenna"];
     private static readonly string[] ItGear = ["Network Switch", "Office Plant", "Desk Fan", "Server Rack", "Computer", "Fax Machine"];
-    private static readonly string[] SalvagerMasts = ["Phone Mast", "Loudhailer"];
-    private static readonly string[] SalvagerGear = ["Hubcap Plate", "Traffic Cone", "Water Cooler"];
-    private static readonly string[] MercenaryMasts = ["Loudhailer", "Satellite Dish", "Long Iron Spike"];
-    private static readonly string[] MercenaryGear = [HullLoft.JerryCan, "Traffic Cone", "Garden Gnome"];
 
     private static readonly WeakPointRule Tyres = new("tyres", PartPick.ByRole("tyres"), MinSides: 2, MinBearings: 4, Min: 2, When: "");
     private static readonly WeakPointRule Fuel = new("fuel", PartPick.ByRole("fuel"), MinSides: 2, MinBearings: 2, When: ""); // (a trailer's barrel too)
@@ -135,29 +130,6 @@ public static class VehicleIdentity
     /// </summary>
     public static readonly Dictionary<string, StyleSignature> Signatures = new(StringComparer.Ordinal)
     {
-        // Rust and bare metal, spikes and skulls, the drum stands in the open, nothing covers the tyres, the driver sits in the open (VEHICLEKIT.md, "The Raider style").
-        ["Raider"] = new()
-        {
-            Marks =
-            [
-                new("fuel in the open", PartPick.ByRole("fuel"), Open: 2),
-                new("spikes or trophies", PartPick.Of(RaiderDress)),
-            ],
-            Parts = Merge(W(1, RaiderDress), W(1, "Fuel Drum", "Ram Plow", "Mesh Guard Cage", "Slit Cab", "trim plates", "trim cage"), W(0.5, "Bull Bar", "Roll Cage", "Chop Top Cab", "Wood Planks", "Mesh Grate", "Spiked Wheel")),
-            Modules = new()
-            {
-                ["cab"] = new() { ["caged"] = 1, ["armoured"] = 1, ["enclosed"] = 0.5, ["cab-over"] = 0.3, ["crew"] = 0.8, ["merged"] = 0.3 },
-                ["nose"] = new() { ["ram"] = 1, ["plated hood"] = 1, ["long hood"] = 0.6, ["short hood"] = 0.6 },
-                ["flank"] = new() { ["panniers"] = 1, ["loaded"] = 1, ["bare"] = 0.5 },
-            },
-            WeakPoints =
-            [
-                new("fuel drum", PartPick.ByRole("fuel"), When: ""),
-                Tyres,
-                new("open driver", PartPick.ByRole("driver"), MinSides: 2, MinBearings: 2, When: "light"),
-                new("ammo crate", PartPick.ByRole("ammo"), MinSides: 1, MinBearings: 1, When: "light", Optional: true), // (a technical's loose crate blows; a room's magazine is meant to be safe)
-            ],
-        },
         // Masts and dishes on the roofs and the cab, monitors, switches and reels on the beds, racks, computers and fax machines in the rooms (VEHICLEKIT.md, "The IT style").
         ["IT"] = new()
         {
@@ -174,40 +146,6 @@ public static class VehicleIdentity
                 ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.5, ["loaded"] = 0.3 },
             },
             WeakPoints = [new("antenna", PartPick.Of(ItMasts), MinSides: 2, MinBearings: 2), Tyres, Fuel],
-        },
-        // Phone masts and loudhailers, hubcaps and cones, crates round the water cooler (VEHICLEKIT.md, "The Salvager style").
-        ["Salvager"] = new()
-        {
-            Marks =
-            [
-                new("phone mast or loudhailer", PartPick.Of(SalvagerMasts)),
-                new("salvage gear", PartPick.Of(SalvagerGear)),
-            ],
-            Parts = Merge(W(1, SalvagerMasts), W(1, SalvagerGear), W(1, "trim signboards", "deco roof sign"), W(0.5, "Server Rack", "Computer", "Slat Grille")),
-            Modules = new()
-            {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 1, ["caged"] = 0.3, ["crew"] = 0.8, ["merged"] = 1 },
-                ["nose"] = new() { ["short hood"] = 1, ["long hood"] = 0.8, ["flat"] = 1, ["ram"] = 0.2 },
-                ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.6, ["loaded"] = 0.4 },
-            },
-            WeakPoints = [new("antenna", PartPick.Of(SalvagerMasts), MinSides: 2, MinBearings: 2), Tyres, Fuel],
-        },
-        // Loudhailers, dishes and long spikes, jerry cans, cones and gnomes (VEHICLEKIT.md, "The Mercenary style").
-        ["Mercenary"] = new()
-        {
-            Marks =
-            [
-                new("loudhailers, dishes or spikes", PartPick.Of(MercenaryMasts)),
-                new("cans, cones or gnomes", PartPick.Of(MercenaryGear)),
-            ],
-            Parts = Merge(W(1, MercenaryMasts), W(1, MercenaryGear), W(1, "trim livery", "deco destination board"), W(0.5, "Slat Grille", "Tin Roof Cab", "Windscreen Frame")),
-            Modules = new()
-            {
-                ["cab"] = new() { ["enclosed"] = 1, ["cab-over"] = 0.8, ["caged"] = 0.2, ["crew"] = 0.8, ["merged"] = 0.8 },
-                ["nose"] = new() { ["long hood"] = 1, ["short hood"] = 0.8, ["flat"] = 0.8, ["ram"] = 0.2 },
-                ["flank"] = new() { ["bare"] = 1, ["panniers"] = 0.6, ["loaded"] = 0.3 },
-            },
-            WeakPoints = [new("mast", PartPick.Of("Loudhailer", "Satellite Dish"), MinSides: 2, MinBearings: 2, Optional: true), Tyres, Fuel],
         },
     };
 

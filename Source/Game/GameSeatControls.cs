@@ -8,6 +8,7 @@ public struct SeatRow
     public string Key1, Key2; // its keys ("" for none: a heading, or a device that is on while you sit)
     public string State; // ON, OFF, DOWN, IN USE...; a heading's: what the section is linked to
     public byte Tone; // the state's colour: 0 dim, 1 on (cyan), 2 off or a warning (amber)
+    public byte Light; // an on/off setting's lamp (Karl, 2026-11-21: a light, not ON and OFF): 0 none, 1 lit, 2 dark
 }
 
 /// <summary>What the seat controls panel shows: the seat, how many links leave it, and its rows by section.</summary>
@@ -34,6 +35,9 @@ public sealed partial class Game
 
     /// <summary>Set by the UI each frame it draws the seat controls panel: the HUD's lines then leave out the keys the panel lists.</summary>
     public bool SeatPanelShown;
+
+    /// <summary>The craft's lines (speed, thrust, orbit, the gun, what won't go) while the panel shows: SandboxHud writes them here, not in the centre box, and the panel's STATUS section shows them (Karl, 2026-11-21).</summary>
+    public readonly List<HudLine> SeatStatus = new(16);
 
     /// <summary>The panel for this PC's player's seat, or null when they don't sit in one (or fly a drone: its own lines say how).</summary>
     public SeatPanel? SeatControls()
@@ -89,9 +93,9 @@ public sealed partial class Game
                     Row(SandboxKeys.KRollLeft, SandboxKeys.KRollRight, "roll");
                     Row(SandboxKeys.Sprint, SandboxKeys.KCrouch, "up, down");
                     if (ConstructFlight.HasDampeners(c))
-                        Row(SandboxKeys.KDampeners, "", "inertia dampeners", ConstructFlight.DampenersOff(c) ? "OFF" : "ON", ConstructFlight.DampenersOff(c) ? (byte)2 : (byte)1);
+                        Lamp(SandboxKeys.KDampeners, "inertia dampeners", !ConstructFlight.DampenersOff(c));
                     if (ConstructFlight.HasMouseSteer(c))
-                        Row(SandboxKeys.KMouseSteer, "", "mouse steering", mouse ? "ON" : "OFF", mouse ? (byte)1 : (byte)2);
+                        Lamp(SandboxKeys.KMouseSteer, "mouse steering", mouse);
                     break;
                 }
                 case FlightPattern.Plane:
@@ -121,7 +125,7 @@ public sealed partial class Game
             var shifts = gears is { Trans: TransKind.Manual or TransKind.Sequential } && gears.Settings.Length > 1 && c.Parts[c.Transmission].InCount == 0;
             Head("DRIVING", c.Engine >= 0 && c.Engine < c.PartCount ? LogicText.Name(c, c.Engine) : "");
             if (c.Electrical && c.CanDrive && !c.EngineRunning)
-                Row(SandboxKeys.KForward, "", "start", "ENGINE OFF", 2);
+                Lamp(SandboxKeys.KForward, "start the engine", false);
             Row(SandboxKeys.KForward, SandboxKeys.KBack, "drive, reverse");
             Row(SandboxKeys.KLeft, SandboxKeys.KRight, "steer");
             Row(SandboxKeys.JumpKey, "", "brake");
@@ -169,7 +173,10 @@ public sealed partial class Game
             }
             var what = first < 0 ? "fire (no gun linked)" : guns > 1 ? $"fire {Short(LogicText.Name(c, first))} x{guns}" : $"fire {Short(LogicText.Name(c, first))}";
             var inUse = tm.Of > 1 && c.Parts[tm.Part].Out != 0;
-            Row(SandboxKeys.Fire, "", what, tm.Of > 1 ? inUse ? "IN USE" : $"{tm.Slot + 1}/{tm.Of}" : "", inUse ? (byte)1 : (byte)0);
+            if (tm.Of > 1)
+                Lamp(SandboxKeys.Fire, what, inUse); // (lit: the turret Aim has picked)
+            else
+                Row(SandboxKeys.Fire, "", what);
         }
         if (!weapons)
             for (var g = 0; g < c.GunCount; g++)
@@ -197,7 +204,7 @@ public sealed partial class Game
             if (hintKind > 0)
                 Row(SandboxKeys.KHook, "", hintKind == 1 ? "undock" : hintKind == 2 ? "launch" : "hook to the rail");
             if (gear > 0)
-                Row(SandboxKeys.KGear, "", "landing legs", gear == 2 ? "DOWN" : "UP", gear == 2 ? (byte)1 : (byte)0);
+                Lamp(SandboxKeys.KGear, "landing legs down", gear == 2);
             if (eject)
                 Row(SandboxKeys.KEject, "", "eject");
         }
@@ -377,6 +384,13 @@ public sealed partial class Game
     {
         if (_seatPanel.Count < SeatPanel.MaxRows)
             _seatPanel.Rows[_seatPanel.Count++] = new SeatRow { Text = text, Key1 = Cap(key1), Key2 = Cap(key2), State = state, Tone = tone };
+    }
+
+    /// <summary>An on/off setting's row: its key, what it is, and a lamp lit while it is on.</summary>
+    private void Lamp(string key, string text, bool on)
+    {
+        if (_seatPanel.Count < SeatPanel.MaxRows)
+            _seatPanel.Rows[_seatPanel.Count++] = new SeatRow { Text = text, Key1 = Cap(key), Key2 = "", State = "", Light = on ? (byte)1 : (byte)2 };
     }
 
     /// <summary>A key's name on its keycap: short and in capitals ("Left Shift" is SHIFT).</summary>

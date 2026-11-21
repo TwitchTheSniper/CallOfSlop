@@ -189,10 +189,7 @@ public static class VehicleContext
     /// <summary>By style name (additive: Karl's styles are untouched).</summary>
     public static readonly Dictionary<string, ContextStyle> ByStyle = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Raider"] = new() { Strength = 1.2 }, // (scavengers: they build from whatever is lying about)
         ["IT"] = new() { Strength = 0.7, Near = 100 }, // (procurement buys what the catalogue has)
-        ["Salvager"] = new() { Strength = 0.7, Near = 100 },
-        ["Mercenary"] = new() { Strength = 0.6, GroundRoles = ["rust"], Near = 90 }, // (the bus stays red unless something near the ground is listed)
     };
 
     public static ContextStyle Of(FactionStyle st) => ByStyle.GetValueOrDefault(st.Name) ?? Default;

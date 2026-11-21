@@ -25,10 +25,22 @@ public sealed partial class Ui
         var s = _scale;
         const float headH = 19f, rowH = 17f;
         var h = 48f;
+        var status = game.SeatStatus;
+        var arc = game.Local is { } me ? game.ArtilleryHudLine(me) : null; // (a shell gun in the seat: where it lands, GameSandboxShells.cs)
+        var arcRows = arc is { Length: > 0 } ? 1 : 0;
+        var w = 300 * s;
+        if (arcRows > 0)
+            w = MathF.Max(w, SpWidth(arc!, 11f * s));
+        if (status.Count + arcRows > 0)
+        {
+            h += headH + 4 + (status.Count + arcRows) * rowH;
+            for (var k = 0; k < status.Count; k++)
+                w = MathF.Max(w, SpWidth(status[k].Text, 11f * s)); // (the panel widens to its longest line, up to half the screen)
+            w = MathF.Min(w, MathF.Max(300 * s, size.X * 0.5f));
+        }
         for (var k = 0; k < sp.Count; k++)
             h += sp.Rows[k].Heading ? headH + (k > 0 ? 4 : 0) : rowH;
         h = (h + 8) * s;
-        var w = 300 * s;
         var p1 = new float2(pos.X + size.X - 20 * s, pos.Y + size.Y - 30 * s);
         var p0 = p1 - new float2(w, h);
         RadarHud.ClearBelow = 30 * s + h + 44 * s; // (the scope's line of text under it clears the plate too)
@@ -42,6 +54,28 @@ public sealed partial class Ui
         CmdLine(dl, p0 + new float2(10 * s, 40 * s), new float2(p1.X - 10 * s, p0.Y + 40 * s), CmdDim, 0.5f);
 
         var y = p0.Y + 46 * s;
+
+        // STATUS: the craft's lines that were the centre box's (speed and charge, thrust, the orbit, the gun, what won't go).
+        if (status.Count + arcRows > 0)
+        {
+            CmdText(dl, new float2(p0.X + 12 * s, y + 3 * s), 10.5f, CmdCyan, 0.95f, "STATUS", 0, false);
+            CmdLine(dl, new float2(p0.X + 12 * s, y + headH * s - 2 * s), new float2(p1.X - 12 * s, y + headH * s - 2 * s), CmdDim, 0.35f);
+            y += headH * s;
+            for (var k = 0; k < status.Count; k++)
+            {
+                var c = status[k].Color;
+                var col = c.X > 0.85f && c.Y < 0.5f ? CmdRed : c.X > 0.85f && c.Y < 0.85f ? CmdAmber : c.Y > 0.8f && c.X < 0.6f ? CmdGreen : c.W < 0.9f || c.X < 0.8f ? CmdDim : CmdWhite;
+                CmdText(dl, new float2(p0.X + 14 * s, y + 2 * s), 11f, col, 0.92f, status[k].Text, 0, false);
+                y += rowH * s;
+            }
+            if (arcRows > 0)
+            {
+                CmdText(dl, new float2(p0.X + 14 * s, y + 2 * s), 11f, CmdAmber, 0.92f, arc!, 0, false);
+                y += rowH * s;
+            }
+            y += 4 * s;
+        }
+
         var keyX = p0.X + 14 * s;
         var textX = p0.X + 112 * s;
         for (var k = 0; k < sp.Count; k++)
@@ -70,7 +104,30 @@ public sealed partial class Ui
             CmdText(dl, new float2(textX, y + 2 * s), 11f, CmdWhite, 0.9f, r.Text, 0, false);
             if (r.State.Length > 0)
                 CmdText(dl, new float2(p1.X - 12 * s, y + 2.5f * s), 10f, col, 0.95f, r.State, 2, false);
+            if (r.Light > 0)
+                SpLamp(dl, new float2(p1.X - 18 * s, y + 8 * s), r.Light == 1);
             y += rowH * s;
+        }
+    }
+
+    /// <summary>The room a status line takes on the plate: its width with margins either side (Hud.TextWidth runs a few per cent short of
+    /// what the small text draws at, so a little over).</summary>
+    private float SpWidth(string text, float size) => Hud.TextWidth(text, size) * 1.08f + 30 * _scale;
+
+    /// <summary>An on/off setting's lamp: lit green with a glow while on, a dark lens with a faint rim while off.</summary>
+    private void SpLamp(ImDrawListPtr dl, float2 c, bool on)
+    {
+        var s = _scale;
+        if (on)
+        {
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 8 * s, Hud.Colour(CmdGreen, 0.16f), 20);
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 4.5f * s, Hud.Colour(CmdGreen, 0.95f), 16);
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 2f * s, Hud.Colour(CmdWhite, 0.8f), 12);
+        }
+        else
+        {
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 4.5f * s, Hud.Colour(CmdBack, 0.95f), 16);
+            ImDrawListExtensions.AddCircle(dl, in c, 4.5f * s, Hud.Colour(CmdDim, 0.7f), 16, s);
         }
     }
 

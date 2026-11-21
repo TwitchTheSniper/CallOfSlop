@@ -238,7 +238,7 @@ public static class LinkDocks
         for (var i = 0; i < ship.PartCount; i++)
         {
             var sd = ship.DefOf(i);
-            if (sd.Role != PartRole.Storage || sd.IsCraftTerminal || ship.Parts[i].Broken || world.StoreOf(ship, i) is not { } st)
+            if (sd.Role != PartRole.Storage || sd.IsCraftTerminal || ship.Parts[i].Broken || ConstructPads.IsMember(ship, i) || world.StoreOf(ship, i) is not { } st)
                 continue;
             if (sd.IsVolumeStore)
             {
@@ -250,7 +250,7 @@ public static class LinkDocks
             else if (sd.IsPieceRack)
             {
                 room += 1;
-                used += ConstructRackPack.Fill(sd, st);
+                used += ConstructRackPack.Fill(ConstructPads.RackDef(ship, i), st);
             }
         }
         return room > 0 ? Math.Clamp(used / room, 0, 1) : 1;
