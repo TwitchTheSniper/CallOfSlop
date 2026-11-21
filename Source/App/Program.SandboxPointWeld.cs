@@ -115,6 +115,8 @@ public static partial class Program
             // The origin's marker (orange), where it is now.
             mover.WorldFrame(0, out var q, out var t);
             SocketWeldRender.PointOn = true;
+            SocketWeldRender.FromBody = mover.Id;
+            SocketWeldRender.Follow(mover);
             SocketWeldRender.PointAt = t + Vector3.Transform(flow.SourceAt, q);
             SocketWeldRender.PointDir = Vector3.Transform(ConstructParts.DirVector(flow.SourceDir), q);
         }
@@ -135,6 +137,8 @@ public static partial class Program
                 }
                 body.WorldFrame(0, out var q, out var t);
                 SocketWeldRender.PointOn = true;
+                SocketWeldRender.FromBody = body.Id;
+                SocketWeldRender.Follow(body);
                 SocketWeldRender.PointAt = t + Vector3.Transform(src.At, q);
                 SocketWeldRender.PointDir = Vector3.Transform(ConstructParts.DirVector(src.Dir), q);
                 var why = WeldPieceWhy(g, body);
@@ -220,6 +224,10 @@ public static partial class Program
         if (!SocketWeld.Pose(mover, src, target, w, angle, out _, out _, out var pos, out var rot))
             return false;
         SocketWeldRender.TargetOn = true;
+        SocketWeldRender.OnBody = target.Id;
+        SocketWeldRender.FromBody = mover.Id;
+        SocketWeldRender.Follow(target);
+        SocketWeldRender.Follow(mover);
         if (SocketWeld.TargetFrame(target, w0, out var tAt0, out var tDir0))
         {
             target.WorldFrame(target.Parts[w0.Part].Seg, out var q0, out var t0);
