@@ -2,17 +2,16 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Bay Jump Seat",
   "group": "In-wall bays",
-  "description": "An in-wall bay with a jump seat that flips down and a helmet locker over it.",
+  "description": "An in-wall bay with a jump seat that flips down and a helmet locker over it. A 1x2 module: fit it with F to a Wall Bay Socket.",
   "steps": [
     {
-      "part": "Wall Bay",
-      "spin": 2
+      "part": "Module Plug 1x2"
     },
     {
       "part": "Jump Seat Insert",
       "on": 0,
-      "socket": "insert",
-      "by": "bay"
+      "socket": "tc",
+      "by": "plug"
     },
     {
       "part": "Jump Seat",
@@ -26,5 +25,13 @@
       "socket": "helmet",
       "by": "hang"
     }
-  ]
+  ],
+  "module": {
+    "w": 1,
+    "l": 2,
+    "primary": "utility",
+    "tags": [
+      "utility"
+    ]
+  }
 }

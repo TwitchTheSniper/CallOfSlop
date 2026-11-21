@@ -156,13 +156,14 @@ public sealed class PlayerRig
     /// which keep per-player state). <paramref name="legsOnly"/>: the local player's own legs in first person (no torso,
     /// head, gun, arms, health bar or pelvis box; drawn <see cref="FirstPersonBack"/> behind the feet).
     /// </summary>
-    public void Pose(Player p, double time, bool legsOnly = false)
+    public void Pose(Player p, double time, bool legsOnly = false, bool standIn = false)
     {
         BodyBloodRender.Reset(); // marks are placed below for a living body (Source/Render/BodyBloodRender.cs)
         var body = PlayerRender.BodyFrame(p); // (a planet: standing on its curve; Sandbox: seated in the seat's frame)
         _frame.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
         var size = p.Alive ? ShellFrames.ScaleOf(p) : 1f; // (a robot shell's frame: the Mining Shell is drawn 1.5x about its feet)
-        Root.SetLocalMatrix(size == 1f ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-body.Translation) * Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(body.Translation));
+        var grow = size == 1f ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-body.Translation) * Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(body.Translation);
+        Root.SetLocalMatrix(grow); // (the nodes below grow with it; the tool and pack draw at their own frames, so they take it below)
         var color = p.Color;
         var legUniform = BodyModel.UniformOf(p);
         if (color != _color || legUniform != _legUniform || p.InShell != _pelvisShell)
@@ -186,7 +187,7 @@ public sealed class PlayerRig
         Pelvis.Visible = p.Alive;
         _pelvisBox.Visible = !legsOnly;
         _gear.Visible = p.Alive && !legsOnly;
-        _health.Visible = _gear.Visible && !Program.TalkHidesBar(p.Id) && !HideBars; // (your own, over your head in the talk camera's shot: not wanted)
+        _health.Visible = _gear.Visible && !standIn && !Program.TalkHidesBar(p.Id) && !HideBars; // (a robot shell nobody wears: no bar) // (your own, over your head in the talk camera's shot: not wanted)
         var stance = p.Alive && !legsOnly ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;
@@ -234,7 +235,25 @@ public sealed class PlayerRig
         if (_packDraw.Mmu)
             _packDraw.MmuFrame = EvaRender.OnBack(p) * upper;
         _packDraw.Time = time;
-        if (p.RenderLadder && !seated)
+        if (size != 1f)
+        {
+            // A Custom draw is in the world, not under Root's matrix: a shell's backpack and MMU grow about its feet with the body.
+            _packDraw.Frame *= grow;
+            _packDraw.BodyFrame *= grow;
+            _packDraw.MmuFrame *= grow;
+        }
+        if (standIn)
+        {
+            // A robot shell nobody wears (Game.DrawStandingShells): its hands out and empty, as a worn one with nothing in them.
+            _tool.Visible = false;
+            Gun.Root.Visible = false;
+            var side = 0.38f + ThirdPersonArms.ShellSpread(p);
+            var turn = ThirdPersonArms.RotationOf(upper);
+            ThirdPersonArms.PoseHands(p, new HandTarget(Vector3.Transform(new Vector3(side, 0.8f, 0.02f), upper), turn, HandShape.Flat),
+                new HandTarget(Vector3.Transform(new Vector3(-side, 0.8f, 0.02f), upper), turn, HandShape.Flat), upper);
+            PoseArms(upper);
+        }
+        else if (p.RenderLadder && !seated)
         {
             // On a ladder: both hands on its rungs, nothing in them (LadderAnim.cs).
             _tool.Visible = false;
@@ -254,6 +273,8 @@ public sealed class PlayerRig
         }
         else if (ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame))
         {
+            if (size != 1f)
+                ToolRender.Grow(p.Id, ref _toolDraw.Frame, grow); // (a small or big shell's tool in its hand, where its scaled arm reaches: user, 2026-11-20)
             _tool.Visible = true;
             Gun.Root.Visible = false;
             PoseArms(upper);
@@ -263,6 +284,8 @@ public sealed class PlayerRig
             _tool.Visible = false;
             Gun.Root.Visible = true;
             PoseGun(p, def, gunPose, upper, time);
+            if (size != 1f)
+                ThirdPersonArms.GrowGun(p.Id, grow); // (a small or big shell's gun is drawn under Root's grow: its shots leave that muzzle)
         }
 
         _kit.Pose(p, seated); // (after the arms: a drill arm hides the right one)

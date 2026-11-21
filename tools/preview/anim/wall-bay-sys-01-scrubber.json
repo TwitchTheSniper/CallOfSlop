@@ -1,6 +1,6 @@
 {
   // In-wall bay (WallBayParts.cs): a CO2 scrubber; twist the handle, its tray of canisters runs out; then its fan, the part that wears.
-  "blueprint": "Wall Bay 1m CO2 Scrubber",
+  "blueprint": "blueprints/wall-bays/WallBay1mScrubber.json",
   "title": "CO2 scrubber (1 m bay)",
   "shelf": "In-wall ship systems",
   "description": "Life support. The consumable: twist the handle and the tray runs out 0.92 m with eight absorbent canisters, a spent one with a red band, fresh ones green, swapped from the consumables rack. The part that wears: the fan, whose grille is the panel under the tray; it runs out on its own tray to be swapped. The manifold and duct behind, a CO2 gauge over it.",

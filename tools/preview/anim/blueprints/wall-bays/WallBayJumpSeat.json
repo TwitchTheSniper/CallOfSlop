@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay Jump Seat (fitted)",
+  "description": "The Wall Bay Jump Seat module fitted in a Wall Bay Socket.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "Jump Seat Insert",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Jump Seat",
+      "on": 2,
+      "socket": "seat",
+      "by": "hang"
+    },
+    {
+      "part": "Helmet Locker Door",
+      "on": 2,
+      "socket": "helmet",
+      "by": "hang"
+    }
+  ]
+}

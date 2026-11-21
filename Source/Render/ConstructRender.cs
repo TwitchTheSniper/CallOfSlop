@@ -241,6 +241,7 @@ public static partial class ConstructRender
         LogicDisplays.Sample(world, Now);
         GlassCount = 0;
         LastBatchBoxes = LastBatchWalked = 0;
+        ShellRigsBegin();
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
         PanelRender.Begin();
@@ -512,6 +513,8 @@ public static partial class ConstructRender
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
         ref var p = ref c.Parts[i];
         var d = p.D;
+        if (d.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
+            return 0; // (a socket connector set hidden: Hide connector, ModuleSockets.HiddenLook)
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
         var mergeScale = 0f;
         var mergeOrigin = Vector3.Zero;
@@ -531,6 +534,8 @@ public static partial class ConstructRender
         }
         else if ((c.DoorMovingCount | c.DoorHeldCount) > 0 && c.MovingDoorOf(i) is var door and >= 0)
             seg = ConstructDoors.DrawPose(c, door); // (an event door on its way, or a held one open: ConstructDoors.cs)
+        if (d.ShellBody && QueueShellRig(gfx, world, c, i, seg, body, opacity))
+            return 0; // (a robot shell nobody wears: drawn as a worn one, Game.DrawStandingShells)
         // A raycast wheel: down its suspension, turning, steering.
         var wheel = Matrix4x4.Identity;
         var spinAxis = Vector3.UnitX;
@@ -675,6 +680,7 @@ public static partial class ConstructRender
         var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
         var fitted = d.ShellBody ? ShellFittedLooks.FittedMask(in p, d) : 0; // (a slot with a module that isn't its frame's own: drawn from the module's part, ShellFittedLooks)
         var hideSlots = offSlots | fitted;
+        var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : 0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
@@ -683,6 +689,8 @@ public static partial class ConstructRender
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
             if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
                 continue;
+            if (box.Seam != 0 && (seams >> (box.Seam - 1) & 1) != 0)
+                continue; // (a block machine's skirt or cap on a face welded to its own machine: MachineBlocks.cs)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {

@@ -16,6 +16,7 @@ public sealed partial class ConstructPartDef
     public ModPart ModPart; // "moduleSocket" / "modulePlug": ModuleSockets.cs
     public byte ModW, ModL; // the footprint, whole metres, W <= L: W along the part's x, L along its z, the face's normal its y
     public bool ModStand; // "moduleSocket": {"stand": true}: a Module Stand (a module on it is stored: nothing couples)
+    public bool ModNoHide; // "moduleSocket": {"hide": false}: no Hide connector setting (a plate that is a whole wall section: the Wall Bay Socket)
     public float ModStandAbove; // "moduleSocket": {"stand": true, "above": m}: a stand's room height when its own part roofs it (a container's cradle); 0: the table's default
     public int ModSocket = -1; // its Module socket's index (the plate's face, +y; the plug's, -y)
     public byte ModData; // its data pass-through ports, "Data 1".."Data n" both ways (2 at 1x1 and 1xN, 4 from 2x2; a stand none): ModuleSockets.PassWires
@@ -87,7 +88,7 @@ public static class ModuleSockets
             throw new ConstructPartException($"{file}: a part is a Module Socket or a Module Plug, not both");
         var e = (plate ?? plug)!.Value;
         var key = plate != null ? "moduleSocket" : "modulePlug";
-        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above"] : ["w", "l"], $"{file}, {key}");
+        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above", "hide"] : ["w", "l"], $"{file}, {key}");
         var w = (int)ConstructParts.Num(ConstructParts.Need(e, "w", $"{file}, {key}"), file, key + ".w");
         var l = (int)ConstructParts.Num(ConstructParts.Need(e, "l", $"{file}, {key}"), file, key + ".l");
         if (!ModuleSocketTable.ValidSize(w, l))
@@ -96,6 +97,7 @@ public static class ModuleSockets
         d.ModW = (byte)w;
         d.ModL = (byte)l;
         d.ModStand = plate != null && ConstructParts.Opt(e, "stand") is { ValueKind: JsonValueKind.True };
+        d.ModNoHide = plate != null && ConstructParts.Opt(e, "hide") is { ValueKind: JsonValueKind.False };
         if (ConstructParts.Opt(e, "above") is { } ab)
         {
             if (!d.ModStand)
@@ -161,6 +163,9 @@ public static class ModuleSockets
         if (d.ModPart == ModPart.Socket) // (a stand too: a fitter sets a module down on one by a weld)
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModWeld), Id = CfgKey.ModWeld, Type = CfgType.Number, Hidden = true, Min = -100000, Max = 100000, Default = 0, Unit = "s",
                 Label = "Weld", Group = "Module socket", Tooltip = "Not on the panel." });
+        if (d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide) // (Sean, 2026-11-21: decorative flush mounts; after every older setting, so saved slots keep)
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModHide), Id = CfgKey.ModHide, Type = CfgType.Toggle, Label = "Hide connector", Group = "Module socket",
+                Tooltip = "On: the plate and a fitted module's plug aren't drawn (they still hold, collide and take hits), for a clean flush mount." });
         if (d.ModPart == ModPart.Plug)
         {
             var opts = new string[1 + (int)ModTag.COUNT];
@@ -171,6 +176,26 @@ public static class ModuleSockets
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModPrimary), Id = CfgKey.ModPrimary, Type = CfgType.Choice, Options = opts, Label = "Primary", Group = "Module",
                 Tooltip = "What this module counts as for a restricted socket (Auto: the tag with the most mass behind it). It must be one of its tags." });
         }
+    }
+
+    /// <summary>
+    /// Is part <paramref name="i"/> a socket's connector the player has hidden (Sean, 2026-11-21: "the socket connections appear
+    /// invisible ... nice, decorative, flush mount sockets")? A plate with Hide connector on, or the plug of a module fitted to one.
+    /// Render only: it still holds, collides and takes hits. Cheap (no allocation): the renderer asks it of every part.
+    /// </summary>
+    public static bool HiddenLook(Construct c, int i)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        if (d.ModPart == ModPart.Socket)
+            return !d.ModStand && !d.ModNoHide && ConstructConfig.Get(p, d, CfgKey.ModHide, 0) >= 0.5f;
+        if (d.ModPart != ModPart.Plug || c.ModuleOf is not { } of || i >= of.Length || of[i] is var m && (m < 0 || m >= c.Modules.Length))
+            return false;
+        var s = c.Modules[m].Socket;
+        if (c.Modules[m].Plug != i || s < 0 || s >= c.ModSockets.Length || c.ModSockets[s].Plate >= c.PartCount)
+            return false;
+        var plate = c.ModSockets[s].Plate;
+        return c.Parts[plate].D.ModPart == ModPart.Socket && HiddenLook(c, plate);
     }
 
     public static string TagName(ModTag t) => ModuleSocketTable.TagNames[(int)t];
@@ -374,6 +399,41 @@ public static class ModuleSockets
                     }
                     if (plate >= 0 && of[other] < 0 && c.DefOf(other).ModPart == ModPart.Plug)
                         m.Bridged = true; // (welded to another module's plug past its face)
+                    of[other] = (short)mi;
+                    stack[top++] = other;
+                }
+                // A freeform weld (a face point or an off-grid turn of the socket weld) joins its anchor and its welded-on part
+                // with no socket link: what hangs on the module (its anchor a module part) is the module's too, or fitting and
+                // taking off cut the module's parts away from what is welded on them. Only outward, anchor to welded-on part:
+                // a module part welded onto something else (a module body freeform-welded to a hull) hangs on that, so the
+                // flood stops there (a fitted module is then welded to more than its socket), never flooding into the ship.
+                for (var j = 0; j < c.JointCount; j++)
+                {
+                    ref var jt = ref c.Joints[j];
+                    if (!jt.Freeform || jt.Cut)
+                        continue;
+                    if (jt.Child == at && jt.Hinge != at)
+                    {
+                        if (plate >= 0 && jt.Hinge < n && of[jt.Hinge] != mi)
+                            m.Bridged = true;
+                        continue;
+                    }
+                    var other = jt.Hinge == at ? jt.Child : -1;
+                    if (other < 0 || other >= n)
+                        continue;
+                    if (other == plate)
+                    {
+                        m.Bridged = true;
+                        continue;
+                    }
+                    if (of[other] >= 0)
+                    {
+                        if (of[other] != mi)
+                            m.Bridged = true;
+                        continue;
+                    }
+                    if (plate >= 0 && c.DefOf(other).ModPart == ModPart.Plug)
+                        m.Bridged = true;
                     of[other] = (short)mi;
                     stack[top++] = other;
                 }

@@ -1,6 +1,6 @@
 {
   // In-wall bay (WallBayParts.cs): deep shelves, two loads deep, run out of the wall.
-  "blueprint": "Wall Bay 1m Rack",
+  "blueprint": "blueprints/wall-bays/WallBay1mRack.json",
   "title": "1 m bay: deep shelves",
   "shelf": "In-wall bays 1 m",
   "description": "The rack runs out 0.96 m, two loads deep, reached from both sides.",

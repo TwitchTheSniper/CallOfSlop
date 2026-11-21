@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roamer Partition 8",
+  "description": "A partition of the Roamer's rooms, with its doorways.",
+  "group": "Ship",
+  "section": "Roamer",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 400.0,
+  "health": 1200,
+  "armour": 15,
+  "material": "steel",
+  "color": "#cbbd98",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        6.0,
+        3.125,
+        11.75
+      ],
+      "max": [
+        8.375,
+        5.875,
+        12.0
+      ],
+      "color": "#cbbd98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        6.0,
+        3.129,
+        11.733
+      ],
+      "max": [
+        8.375,
+        4.025,
+        11.745
+      ],
+      "color": "#7a5434",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        6.0,
+        3.129,
+        12.005
+      ],
+      "max": [
+        8.375,
+        4.025,
+        12.017
+      ],
+      "color": "#7a5434",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "table",
+      "at": [
+        7.025,
+        3.5,
+        12.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "lampGalley",
+      "at": [
+        7.875,
+        5.425,
+        12.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        7.185,
+        3.125,
+        11.815
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        8.375,
+        4.495,
+        11.815
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        7.185,
+        5.875,
+        11.815
+      ],
+      "dir": "+y"
+    }
+  ]
+}
