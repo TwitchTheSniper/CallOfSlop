@@ -671,9 +671,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 393: the see-through Opening socket style (Sean, 2026-11-21): ModStyle Through at the end of the Style choice; plugs gain rim sockets.
     // 394: the Mast Block (Sean, 2026-11-21): a new part file (Machines/MastBlock, the block machines' shared 2 m cube) shifts part ids.
     // 395: the Bake Oven on the block system (Sean, 2026-11-21): new part files (BakeOven: Bake Oven, Oven Bed Block) shift part ids.
-    // 396: the Press on the block system as a clamshell (Sean, 2026-11-21): the Medium, Large and Capital Press go (part ids shift), the
+    // 396: the Out Table (Sean, 2026-11-21): a new part file (Production/OutTable, the bed machines' far end) shifts part ids.
+    // 397: the Press on the block system as a clamshell (Sean, 2026-11-21): the Medium, Large and Capital Press go (part ids shift), the
     //      Press Core's sockets change and the Press Block comes; PressStall gains SwingBlocked (it rides the press's store bytes).
-    public const ushort ProtocolVersion = 396;
+    public const ushort ProtocolVersion = 397;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
