@@ -201,12 +201,12 @@ public sealed class NetPlan
                         break;
                     }
                     case PlanNode.Store when world.StoreOf(c, part) is { } st:
-                        ConstructRackPack.Ensure(d, st);
-                        NodeFill[i] = Math.Clamp(ConstructRackPack.Fill(d, st), 0, 1);
+                        ConstructRackPack.Ensure(ConstructPads.RackDef(c, part), st);
+                        NodeFill[i] = Math.Clamp(ConstructRackPack.Fill(ConstructPads.RackDef(c, part), st), 0, 1);
                         Mix((uint)(NodeFill[i] * 40));
                         if (StockTargets.Keep(c, part) is var keep and > 0)
                         {
-                            NodeKeep[i] = KeepMark(d, st, keep);
+                            NodeKeep[i] = KeepMark(ConstructPads.RackDef(c, part), st, keep);
                             Mix((uint)(NodeKeep[i] * 40) << 8);
                         }
                         break;

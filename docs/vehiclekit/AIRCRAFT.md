@@ -1,5 +1,7 @@
 # Aircraft in the vehicle kit
 
+> The Raider, Salvager and Mercenary styles (once Bandit, Scam and British) and their 141 vehicles were removed on 2026-11-21 (docs/removals-notes.md). Only IT ships vehicles now, and Militia makes the ore loop's two. Where this page names the removed styles, it records measurements taken while they existed.
+
 The user (2026-11-10): the vehicle kit should generate small aircraft at run time: planes, drones, helicopters and more. Their users are AI factions
 (spawned like ground vehicles, crewed by bots) and loot and capture (players find, steal and fly them). The player's own generator stays creative only.
 The goal is the tools and systems that make aircraft at run time, not a few hand-made ones. Flight design: the project doc `claude/flight.md`, code guide:
@@ -9,9 +11,9 @@ docs/sandbox/CONSTRUCTS.md ("Air and lift", "Flight control", "Jets, rockets and
 
 What a player sees now, and how to get it:
 
-- **Shipped seeds.** Every shipped style (Bandit, IT, Highland, Scam, British) names "Drone", "Plane" and "Helicopter" in its `Extra` list, with three seeds
+- **Shipped seeds.** Every shipped style (Raider, IT, Salvager, Mercenary) names "Drone", "Plane" and "Helicopter" in its `Extra` list, with three seeds
   each in its `Seeds` (`Styles.cs`; a different three per style, all passing a 12-seed sweep): 45 committed blueprints in `Constructs/Blueprints`
-  (`BanditDrone1.json` ...), made by `--gen-vehicle "<Style> <Shape>" --out Constructs/Blueprints` and covered by `--gen-vehicles`. Their files carry the style's
+  (`RaiderDrone1.json` ...), made by `--gen-vehicle "<Style> <Shape>" --out Constructs/Blueprints` and covered by `--gen-vehicles`. Their files carry the style's
   group, so they sit with the faction's vehicles in the blueprint catalogue (Tab, Blueprints). A committed seed skips the flight gate when made again (it passed
   it when written); every other seed is flown first. Militia ships no files, as for its ground vehicles.
 - **Creative spawn** (the parts menu, Blueprints tab, "Faction vehicles: new seed" on): an aircraft tile follows **"An aircraft tile makes one"**:
@@ -33,10 +35,10 @@ What a player sees now, and how to get it:
   landed or parked aircraft is entered like any vehicle.
 
 Tried by hand (a throwaway host + client probe over RakNet with 80 ms lag and 2 % loss, Proving Ground): the client's catalogue lists 327 blueprints, 45 of
-them aircraft; a client's "on the ground" Bandit Helicopter stood 7.5 m ahead, level (0.1 degrees); the client sat in it, Sprint climbed 18.6 m in 3 s after
+them aircraft; a client's "on the ground" Raider Helicopter stood 7.5 m ahead, level (0.1 degrees); the client sat in it, Sprint climbed 18.6 m in 3 s after
 the wind-up, W moved it 4 m, its copy within 0.5 m; a client's "flying, piloted" IT Helicopter launched 35 m up with a pilot, the copy within 1.4 m; a faction
-scout (a Highland Drone) through the role; two pilots cost 2.5 us a tick and allocated nothing; the client boarded the piloted helicopter in the air through
-its seat (pilot let go, the captor climbed 11.7 m on Sprint); a Bandit convoy got a helicopter escort; ten more requests filled the cap of 8 and the rest
+scout (a Drone) through the role; two pilots cost 2.5 us a tick and allocated nothing; the client boarded the piloted helicopter in the air through
+its seat (pilot let go, the captor climbed 11.7 m on Sprint); a Raider convoy got a helicopter escort; ten more requests filled the cap of 8 and the rest
 were refused. Not tried: a piloted plane spawned from the menu (only through `--bench-aircraft`), a drone flown from a Remote Console in the game, a client
 capturing a drone, round worlds.
 
@@ -75,13 +77,13 @@ What the kit itself lacked, and phase 1 added:
 
 Not missing, so not built: no new parts were needed for a quadcopter. `VehicleVariety` now takes a vehicle with no wheels (a wheelbase and track of 0).
 
-Measured (`--sweep-vehicle "Bandit Drone" --seeds 30`: 30 of 30 pass, 18 parts on average, about 1 s a generation with its flight check; `"IT Drone"` 12 of 12):
+Measured (`--sweep-vehicle "Raider Drone" --seeds 30`: 30 of 30 pass, 18 parts on average, about 1 s a generation with its flight check; `"IT Drone"` 12 of 12):
 climbs of 8 to 11 m in the 2 s, hover drift under 0.5 m, lift 1.4 to 2.2 times the weight. Gaps found for later phases are under "Next steps".
 
 ## The Drone generator
 
 `Generators/Drone.cs`, shape "Drone", registered in `VehicleRegistry.Extras`; every shipped style names it (see "In the game"), and any style can
-make it by name: `--gen-vehicle "Bandit Drone" --seed 7 --out /tmp/d`, `--sweep-vehicle "Bandit Drone" --seeds 20`. Every seed is made at run time and gated by
+make it by name: `--gen-vehicle "Raider Drone" --seed 7 --out /tmp/d`, `--sweep-vehicle "Raider Drone" --seeds 20`. Every seed is made at run time and gated by
 the flight check, as a spawned ground vehicle is by the drive check. Two families by the seed:
 
 - **Scout** (a fifth): a Drone Frame, four Drone Rotors under its arms, maybe two Drone Pushers, a Drone Battery, a Drone Receiver, a Flight Stabilizer, maybe a camera. About 33 kg.
@@ -98,7 +100,7 @@ the flight check, as a spawned ground vehicle is by the drive check. Two familie
 
 ## The Plane generator (phases 2 and 3)
 
-`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Bandit Plane" --seed 3`, `--sweep-vehicle "Bandit Plane" --seeds 30`.
+`Generators/Plane.cs`, shape "Plane", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Raider Plane" --seed 3`, `--sweep-vehicle "Raider Plane" --seeds 30`.
 The Light Plane's wiring on a cockpit Frame Block and a beam spine: a seat into a Flight Stabilizer on Plane keys, its `throttle` into the prop, `pitch` into the
 elevators, `yaw` into the rudder, `left aileron` and `right aileron` into the outer panels' ailerons, `flaps` into flaps on the inner panels (half the seeds).
 From the seed:
@@ -127,14 +129,14 @@ up for 4 s (at least 5 m climbed), then set where it is with Ctrl held 0.6 s (th
 its height may wander 8 m and its heading 8 degrees, with at most 12 degrees of bank; then D for 3 s turns it at least 10 degrees right; never past 75 degrees of
 tilt. The autopilot is engaged as its panel would (`apMode`, `targetAlt`, `autopilot` settings): the hook bot pilots will use.
 
-**State (phase 3, 2026-11-10): `--sweep-vehicle "Bandit Plane" --seeds 60` passes 60 of 60, `"IT Plane"` 60 of 60.** The three phase-2 refusals were all
+**State (phase 3, 2026-11-10): `--sweep-vehicle "Raider Plane" --seeds 60` passes 60 of 60, `"IT Plane"` 60 of 60.** The three phase-2 refusals were all
 twin-jets on **fabric** wings: some 70 kg lighter for the same 24 kN, they climbed 1.7 m/s through the cruise throttle and the altitude hold rocked 10-17 m. A
 jet's wings are now metal (a fabric pick becomes a Wing Segment; no other seed changes). The jets still hang under the second panels; with metal wings the hold
 keeps within 8 m, so the thrust line was not the cause. Not verified: flying one by hand in the game, planes on a round world or in wind, and how long the fuel lasts.
 
 ## The Helicopter generator (phase 3)
 
-`Generators/Helicopter.cs`, shape "Helicopter", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Bandit Helicopter" --seed 7`, `--sweep-vehicle "Bandit Helicopter" --seeds 30`.
+`Generators/Helicopter.cs`, shape "Helicopter", in `VehicleRegistry.Extras` (seeds ship per style: "In the game"): `--gen-vehicle "Raider Helicopter" --seed 7`, `--sweep-vehicle "Raider Helicopter" --seeds 30`.
 The Small Helicopter's wiring: a Turbine stood on end, a T Gearbox on it and a Helicopter Rotor on top; the gearbox's branch shaft to a Right-Angle Gearbox on a
 short mast at the tail's end and a Tail Rotor on it (`torqueMix` 1, `reverse` by its side); a Flight Stabilizer on Rotorcraft keys wired `lift` to the
 collective, `pitch` and `roll` to the cyclic, `yaw` to the tail rotor. A 2 m keel with the seat on its front (an open seat, or a cab of two frame blocks), a fuel
@@ -152,10 +154,10 @@ a cross beam under the mast, posts and two 2 m skids. About 800-890 kg; lift 1.3
 
 **Changes to the flight check** (`VehicleFlightCheck.Run`, rotorcraft): it waits, seated and hands off, up to 10 s (`SpoolTicks`) for every helicopter
 rotor to reach nine tenths of its rated speed before the climb (its blades take some 4 s to wind up; drones' rotors don't count, so the drone check is
-unchanged: Bandit Drone 30 of 30). A craft with a big helicopter rotor may hang up to 14 degrees in the hover (`MaxHeliHoverTilt`; drones keep 8). A hover
+unchanged: Raider Drone 30 of 30). A craft with a big helicopter rotor may hang up to 14 degrees in the hover (`MaxHeliHoverTilt`; drones keep 8). A hover
 refusal now says the pitch and roll and the speed.
 
-**State: `"Bandit Helicopter"` 30 of 30, `"IT Helicopter"` 30 of 30**, about 1.4 s a generation with the check (three builds). Seed 7: climbed 12 m in 2 s,
+**State: `"Raider Helicopter"` 30 of 30, `"IT Helicopter"` 30 of 30**, about 1.4 s a generation with the check (three builds). Seed 7: climbed 12 m in 2 s,
 hover drift 0.3 m, hang 10 degrees at 2 m/s, 3 m forward on W, worst tilt 15. Not verified: flying one by hand, forward flight beyond 1.5 s, autorotation,
 the fuel's endurance.
 
@@ -166,7 +168,7 @@ Code: `Source/VehicleKit/AircraftPilot.cs` (`AircraftAutopilot`, `AircraftPilot`
 
 - **Ground spawn** works through the real runtime path: `Game.SandboxSpawnAircraft(style, shape, seed, over, 0, yaw)` (or `VehicleSpawn.Request` by shape) makes
   the seed in the generation thread's slices, gates it with the flight check (a refusal rerolls) and sets it down. Measured in a running offline Sandbox game on
-  Proving Ground: Bandit Drone, Plane and Helicopter 7 all generated (no reroll, no fallback; the plane in 26 ticks, longest slice 16.6 ms on the busy box) and
+  Proving Ground: Raider Drone, Plane and Helicopter 7 all generated (no reroll, no fallback; the plane in 26 ticks, longest slice 16.6 ms on the busy box) and
   stood level (the tail-dragger plane at 6 degrees).
 - **Air spawn**: `SandboxSpawnAircraft(..., height, yaw, order, radius)` sets it down, then in the same tick moves it straight up `height` m
   (`SandboxSpawnMove`) and `AircraftAutopilot.Launch`es it: every rotor and prop at its rated speed, the engine running at 95 % of its top rpm with a turbine fully

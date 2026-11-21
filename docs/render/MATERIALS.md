@@ -45,6 +45,19 @@ already has, with no textures:
   box at random; a box's own edges show through the edge wear. Painted steel has no seams (a faint orange peel instead).
 - A part's health comes in the fraction of the row's code (`Surfaces.Code`): rust and scorch grow from noise as it falls.
 
+- **Material contrast** (Karl, 2026-11-21, the bench's roughness per material): Settings > Video > Material contrast (on by default,
+  Medium and High; `--no-contrast` forces it off). Non-metals with a roughness from 0.3 to 0.58 (painted steel 0.38, painted plating 0.4,
+  hazard paint 0.45...) draw at a satin 0.6; anything dark (albedo luminance under 0.14, easing out by 0.22) at 0.86 or rougher, so
+  frames, rubber and soot read flat beside the paint. Gloss paint, tiles, chrome and glass keep their own. Glass already takes a
+  grazing-angle sheen in `ConstructRender.DrawGlass`. `uSurfQ.w` carries the switch.
+- **Held guns** (Karl, 2026-11-21): a gun's boxes (first person through `GunRig`, and `GunModel`'s own draws) take a shared material
+  by colour (`GunModel.LookOf`: dark parts steel, browns wood, strong colours plastic, the rest painted steel), so bevels, material
+  contrast and the metal's sheen show on them at Medium and High. Unlit and textured parts keep the grid row.
+- **Edge bevels** (Karl, 2026-11-21, from the Ship Render Bench artifact RC5DA1XgTZ5PJUhMb8HBoB): Settings > Video > Edge bevels (on by
+  default, Medium and High only; `--no-bevels` forces it off for a before picture). A band along each face edge takes a 45-degree chamfer's
+  normal (2 cm, or 1.2 pixels where wider, at most half the face) and its albedo goes up 20%, so every box edge catches a sliver of light.
+  It is the box's own edge distance (as the edge wear), so it costs a few multiplies and needs no mesh change. `uSurfQ.z` carries the switch.
+
 Low skips all of this (`uSurfQ.x`, in `LitFrame`) and draws what the game always drew. High adds a second noise octave and tilts the
 normal by the pattern (a detail texture's bumps are drawn on Medium too). Terrain, buildings and map boxes aren't in it.
 
@@ -163,8 +176,21 @@ back buffer is resolved once into a texture, and everything works from that at s
   share), tracers (`BlendGlowing`), particles (their alpha). `Renderer.BlendDefault` leaves alpha alone, so all other blending must use
   it. It goes back to 1 after the pass. With no alpha in the back buffer it falls back to the brightest pixels.
 - **Heat haze** (`PostFx.AddHaze`, 32 a frame): small quads in one instanced draw that read the copy a little off to the side.
-- **Ambient occlusion** (High): the depth buffer resolved, 8 samples at half size, a small blur, multiplied in before the effects. It is off
-  by itself, with a log line, if the driver can't resolve depth.
+- **Ambient occlusion** (High): the depth buffer resolved, 12 samples at half size over a disc of the Video setting's Shade reach
+  (`ao_radius`, 0.8 m), darkened by Shade strength (`ao_strength`, 1x), multiplied in before the effects. The normal comes from the
+  full-size depth, each axis taking the neighbour nearer in depth (no halo where a box meets the sky); samples carry an angle bias, so
+  flat or faceted ground doesn't shade itself; the blur is a 3x3 that skips other surfaces by depth (Karl, 2026-11-21, phase 4 of the
+  ship looks; before it, 8 samples with derivative normals greyed all flat ground). It is off by itself, with a log line, if the driver
+  can't resolve depth. `--window-shot ... --post High --ao-strength N --ao-radius M` draws a picture with it.
+  **Style** (`ao_classic`, Karl 2026-11-21: he liked the old grain): Classic, the default, is the AO from before phase 4 (8 samples,
+  derivative normals, a plain 4-tap blur: about half the work, and flat ground takes a fine grain); Clean is the one above. Both take
+  the strength and reach sliders; `--ao-clean` picks Clean for a window shot.
+- **Contact shadows** (Karl, 2026-11-21, from the Ship Render Bench): Settings > Video > Contact shadows, on by default and at any
+  Post effects level (`contact_shadows`; `--no-contact` forces it off for a before picture). `PostFx.Contact.cs`: ConstructRender.Draw
+  offers each body it draws in full (`PostFx.OfferContact`, the 8 nearest kept); after ambient occlusion each one's footprint (a 64x64
+  RG32F texture made once per rebuild from its boxes in its own frame: r the blurred cover, g the lowest bottom over the cell) is read
+  under a scissor round its box on screen, every pixel's depth taken back to the body's frame, and the ground darkened by cover, fading
+  out by 3 m below the hull. Multiplied in rgb only, like the AO, so the bloom's mark stays. Shares the AO's depth copy when both run.
 
 `PerfGpuPass`: Ambient occlusion, Particles, Bloom and heat haze are their own lines in the F9 window; `--gl-bench` has `particles` and `post`.
 

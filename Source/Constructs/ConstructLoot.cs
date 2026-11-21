@@ -15,7 +15,7 @@ public sealed class LootTable
 }
 
 /// <summary>
-/// Loot that rolls when a blueprint is spawned (docs/sandbox/CONSTRUCTS.md, "Loot"). A blueprint names containers and a table ("loot": [{"step": n, "table": "bandit"}]);
+/// Loot that rolls when a blueprint is spawned (docs/sandbox/CONSTRUCTS.md, "Loot"). A blueprint names containers and a table ("loot": [{"step": n, "table": "raider"}]);
 /// <see cref="ConstructBuild.BuildOnGround"/> fills them, on the server only, into the containers' ordinary slots. From then on it is stored parts like
 /// any others: taken by hand, shot out with the container, saved with the world. Nothing rolls again, and a load doesn't roll.
 /// </summary>

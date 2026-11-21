@@ -509,11 +509,6 @@ lines against a track that works; a large gap in one band is the thing to look a
 10% (measured: 0.46-0.53 either side). This probe doesn't check drop-to-drop correlation or the frenzy. Send the
 user a WAV only if they ask.
 
-## Pipe tunes
-
-The Clan MacSlop's bagpipe tunes (`MusicPipes.cs`, its own renderer) were removed with the Pipe Box (2026-11-17,
-docs/removals-notes.md). The music CPU baseline is the sequencer's alone again.
-
 ## Giving Sandbox music
 
 Not built, and whether to is a user decision. The code shows what would have to change (the design around it is inferred):

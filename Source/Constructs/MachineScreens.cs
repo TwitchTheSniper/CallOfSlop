@@ -251,9 +251,9 @@ public static class MachineScreens
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
             {
                 var l = from++;
-                if (d.IsFanFormer)
+                if (od.ExKey.Shape == ExShape.Fan)
                     card.Add(l, "Prop ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
-                else if (d.IsAirframeFormer)
+                else if (od.ExKey.Shape == ExShape.Wing)
                     card.Add(l, "Span ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");
                 else if (wheel)
                     card.Add(l, "Wheel ").AddFixed(l, od.ExKey.W / 100f, 2).Add(l, " x ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
@@ -266,9 +266,9 @@ public static class MachineScreens
         }
         if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
             card.Add(1, "Preset ").Add(1, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]);
-        else if (d.IsFanFormer)
+        else if (ConstructExtruder.FanSet(p, d))
             card.Add(1, (int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0) is var fk && fk >= 0 && fk < ExtrusionTable.Current.FanKinds.Length ? ExtrusionTable.Current.FanKinds[fk].Label : "Fan"); // (what it makes: its Recipe button's pick)
-        else if (d.IsAirframeFormer)
+        else if (ConstructExtruder.WingSet(p, d))
             card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");
         else if (wheel)
             card.Add(1, ConstructExtruder.ByDepth(p, d) ? "Depth mode" : "Width mode");
@@ -280,7 +280,12 @@ public static class MachineScreens
         {
             if (wheel)
             {
-                card.AddFixed(3, on.ExKey.W / 100f, 2).Add(3, " x ").AddFixed(3, on.ExKey.H / 100f, 2).Add(3, " m");
+                if (on.ExKey.Shape == ExShape.Fan)
+                    card.Add(3, "Across ").AddFixed(3, on.ExKey.H / 100f, 2).Add(3, " m");
+                else if (on.ExKey.Shape == ExShape.Wing)
+                    card.AddFixed(3, on.ExKey.W / 100f, 2).Add(3, " x ").AddFixed(3, on.ExKey.L / 100f, 2).Add(3, " m");
+                else
+                    card.AddFixed(3, on.ExKey.W / 100f, 2).Add(3, " x ").AddFixed(3, on.ExKey.H / 100f, 2).Add(3, " m");
                 card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
             }
             else

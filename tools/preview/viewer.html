@@ -412,7 +412,11 @@ else {
   const say = text => { document.getElementById("name").textContent = text; };
   const opt = (parent, value, text) => { const o = document.createElement("option"); o.value = value; o.textContent = text; parent.appendChild(o); return o; };
   const group = (parent, label) => { const g = document.createElement("optgroup"); g.label = label; parent.appendChild(g); return g; };
-  const load = async e => { if (!cache.has(e.file)) { say("Loading " + e.name + "..."); cache.set(e.file, await (await fetch(e.file)).json()); } return cache.get(e.file); };
+  // An entry with a "key" is one model in a file of several (the gallery's models/parts/SECTION.json); the file is fetched once.
+  const load = async e => {
+    if (!cache.has(e.file)) { say("Loading " + e.name + "..."); cache.set(e.file, fetch(e.file).then(r => { if (!r.ok) throw new Error(e.file + ": " + r.status); return r.json(); })); }
+    try { const m = await cache.get(e.file); return e.key ? m[e.key] : m; } catch (err) { cache.delete(e.file); throw err; }
+  };
   try {
     const idx = await (await fetch("models/index.json")).json();
     if (idx.groups) await shelves(idx);

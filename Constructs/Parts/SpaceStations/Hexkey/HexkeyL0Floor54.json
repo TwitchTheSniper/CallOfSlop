@@ -1,0 +1,150 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Floor 5-4",
+  "description": "A floor of Hexkey Orbital, the Traders' flat-pack store: a white slab, its floor laid on top.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 49680.0,
+  "health": 63616,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -12.125,
+        -4.725,
+        -12.125
+      ],
+      "max": [
+        10.875,
+        -4.125,
+        11.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.121,
+        -4.129,
+        -12.121
+      ],
+      "max": [
+        10.871,
+        -4.113,
+        11.871
+      ],
+      "color": "#8e9290",
+      "detail": true,
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -12.125,
+        -4.119,
+        1.875
+      ],
+      "max": [
+        10.875,
+        -4.103,
+        2.025
+      ],
+      "color": "#2b2e30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.925,
+        3.455,
+        -2.205
+      ],
+      "max": [
+        -1.325,
+        3.563,
+        -2.045
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        9.075,
+        3.455,
+        -2.205
+      ],
+      "max": [
+        10.675,
+        3.563,
+        -2.045
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "grav54",
+      "at": [
+        -0.625,
+        -4.125,
+        -0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -12.125,
+        -4.425,
+        -0.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.625,
+        -4.425,
+        -12.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        10.875,
+        -4.425,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.625,
+        -4.125,
+        11.725
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -9.125,
+        -4.125,
+        -4.625
+      ],
+      "dir": "+y"
+    }
+  ]
+}

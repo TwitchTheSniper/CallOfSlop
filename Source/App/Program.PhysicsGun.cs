@@ -192,7 +192,7 @@ public static partial class Program
         ConstructPartDef? piece = null;
         if (hit.RiderPlus1 > 0 && hit.RiderPlus1 <= c.ConveyedCount)
             piece = ConstructParts.Get(c.Conveyed[hit.RiderPlus1 - 1].Def);
-        else if (g.Constructs.StoreOf(c, hit.Part) is { } st && hit.RackPlus1 <= st.SlabN)
+        else if (g.Constructs.StoreOf(c, ConstructPads.Owner(c, hit.Part)) is { } st && hit.RackPlus1 <= st.SlabN)
             piece = ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def);
         if (piece == null)
             return false;

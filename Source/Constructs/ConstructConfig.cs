@@ -238,6 +238,7 @@ public enum CfgKey : byte
     ModWeld, // Module Socket: a Module Fitter's job on it, seconds: welding a module on (positive) or cutting its seam (negative), 0 idle (not on the panel; ConstructModuleFitters.cs)
     ModHide, // Module Socket: on, the plate and a fitted module's plug aren't drawn (a clean flush mount; ModuleSockets.HiddenLook)
     ModLock, // Module Socket: on, its module can't be ejected, pulled off by the physics gun or taken off by hand (its slider on the frame; a Module Fitter still cuts it free: ModuleGuide.cs)
+    GrowMakes, // Grow Former: what its own settings make (0 wheel, 1 prop, 2 wing; an order makes what it asks: ConstructGrowFormer.cs)
     COUNT,
 }
 
@@ -796,7 +797,7 @@ public static class ConstructConfig
     {
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised or CfgKey.Walls => "toggle",
         CfgKey.Profile => "choice",
-        CfgKey.RunMode or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
+        CfgKey.RunMode or CfgKey.GrowMakes or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
         CfgKey.SteerKind => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         >= CfgKey.ShellWear0 and <= CfgKey.ShellWear3 => "mask",
@@ -890,6 +891,7 @@ public static class ConstructConfig
                 CfgKey.ModLock => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
+                CfgKey.GrowMakes => d.IsGrowFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
                 CfgKey.SteerKind => d.Diff == DiffKind.Steering,

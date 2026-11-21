@@ -17,7 +17,7 @@ public sealed class ItDesk
 
     /// <summary>
     /// Every page the desk can print, by id (a fax keeps its page in a byte): the story's pages first, then the replies,
-    /// then the malware notice (so a save made before the rest came keeps its page), then the pages' alternatives and the notices.
+    /// then the pages' alternatives and the notices.
     /// </summary>
     public string[][] All = [];
 
@@ -34,11 +34,6 @@ public sealed class ItDesk
     public (string On, int Page)[] Notices = [];
 
     public string Sent = "", NoFax = "";
-
-    /// <summary>What IT faxes when one of its computers has been hooked by the scammers' adverts (<see cref="ScamDesk"/>); -1: nothing.</summary>
-    public int MalwarePage = -1;
-
-    public string[]? Malware => MalwarePage >= 0 ? All[MalwarePage] : null;
 
     /// <summary>The story's pages.</summary>
     public int StepCount => Steps.Length;
@@ -179,7 +174,7 @@ public sealed class ItDesk
             var root = doc.RootElement;
             var desk = new ItDesk();
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "about" or "from" or "first" or "every" or "pages" or "replyIn" or "replies" or "sent" or "noFax" or "malware" or "notices"))
+                if (p.Name is not ("format" or "about" or "from" or "first" or "every" or "pages" or "replyIn" or "replies" or "sent" or "noFax" or "notices"))
                     throw new StoryException($"{where}: unknown key \"{p.Name}\"");
             if (root.TryGetProperty("from", out var from))
                 desk.From = Text(from, $"{where}: from");
@@ -219,8 +214,6 @@ public sealed class ItDesk
                 var words = r.TryGetProperty("if", out var w) ? w.EnumerateArray().Select(x => Text(x, $"{where}: replies[{i}].if")).ToArray() : [];
                 return (words, replyIds[i]);
             }).ToArray();
-            if (root.TryGetProperty("malware", out var malware))
-                desk.MalwarePage = Add(malware, $"{where}: malware", null);
             desk.Steps = pages.Select((p, i) =>
             {
                 var alts = new List<(int Id, int Weight)>();

@@ -60,7 +60,7 @@ place. The cursor on Extruder 1 is the line's pick (Next), which Down doesn't mo
 
 ## 3. A joined client's steps
 
-Settled with two processes: the client walked (`hold MoveForward 3`: 30 m), pressed Down on the Line Console (scrolled), sat in a Bandit
+Settled with two processes: the client walked (`hold MoveForward 3`: 30 m), pressed Down on the Line Console (scrolled), sat in a Raider
 Buggy 1's Seat (`seated True`) and held MoveForward 4 s: the buggy went 37 m, the host's copy at the same place, as offline. **No game fault.**
 The tool's four:
 

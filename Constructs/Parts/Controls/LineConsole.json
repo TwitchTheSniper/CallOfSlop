@@ -66,7 +66,7 @@
         "Wheel"
       ],
       "default": 0,
-      "tooltip": "What Add puts on the bill: an Extruder's piece or a Wheel Former's wheel."
+      "tooltip": "What Add puts on the bill: an Extruder's piece or a Grow Former's wheel."
     },
     {
       "key": "profile",

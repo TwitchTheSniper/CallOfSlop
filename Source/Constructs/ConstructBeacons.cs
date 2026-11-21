@@ -241,7 +241,7 @@ public sealed class RackStore : INetworkStore
     {
         if (world.StoreOf(c, part) is not { } st || st.KindIndex(d.Id) < 0)
             return false;
-        ConstructRackPack.Ensure(c.DefOf(part), st);
+        ConstructRackPack.Ensure(ConstructPads.RackDef(c, part), st);
         return ConstructRackPack.LastOf(st, d.Id, out var slab, out var lane) && world.RackTakeAt(c, part, slab, lane) != null;
     }
 

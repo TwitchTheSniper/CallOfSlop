@@ -118,6 +118,14 @@ public static unsafe partial class Program
         _settings.ShowFps = false;
         if (args.SkipWhile(a => !a.Equals("--materials", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } mat && Enum.TryParse<VideoLevel>(mat, true, out var mq) && Enum.IsDefined(mq))
             _settings.Materials = mq; // (--materials Low|Medium|High: the Video setting the picture is drawn with)
+        if (args.SkipWhile(a => !a.Equals("--post", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } post && Enum.TryParse<VideoLevel>(post, true, out var pq) && Enum.IsDefined(pq))
+            _settings.PostEffects = pq; // (--post Low|Medium|High: the Post effects setting; --ao-strength N, --ao-radius M with High)
+        if (args.SkipWhile(a => !a.Equals("--ao-strength", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } aoS && float.TryParse(aoS, System.Globalization.CultureInfo.InvariantCulture, out var aoSv))
+            _settings.AoStrength = aoSv;
+        if (args.SkipWhile(a => !a.Equals("--ao-radius", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } aoR && float.TryParse(aoR, System.Globalization.CultureInfo.InvariantCulture, out var aoRv))
+            _settings.AoRadius = aoRv;
+        if (args.Any(a => a.Equals("--ao-clean", StringComparison.OrdinalIgnoreCase)))
+            _settings.AoClassic = false; // (the clean ambient occlusion; Classic is the default)
         WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }

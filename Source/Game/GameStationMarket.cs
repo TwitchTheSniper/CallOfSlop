@@ -23,8 +23,14 @@ public readonly record struct StationGood(byte Material, float Buy, float Sell, 
     public int Target => Want > 0 ? Want : Math.Max(1, Most / 2);
 }
 
-/// <summary>A part a station trades (a construct part by id): what it pays and asks for one (by default its value, <see cref="TradeValues.Part"/>, times the file's "partBuy" and "partSell").</summary>
-public readonly record struct StationPart(ushort Part, float Buy, float Sell, int Stock, int Most);
+/// <summary>
+/// A part a station trades (a construct part by id): what it pays and asks for one (by default its value, <see cref="TradeValues.Part"/>, times the
+/// file's "partBuy" and "partSell"), and its needs as a good's: how many it uses and makes an hour, and the stock it wants (0: half its most).
+/// </summary>
+public readonly record struct StationPart(ushort Part, float Buy, float Sell, int Stock, int Most, float Use = 0, float Make = 0, int Want = 0)
+{
+    public int Target => Want > 0 ? Want : Math.Max(1, Most / 2);
+}
 
 /// <summary>
 /// What goods and parts are worth (Karl, 2026-11-20: no currency; parts are physical and carry a value). A material's value is the file's
@@ -81,6 +87,7 @@ public sealed class StationHaulerDef
     public byte[] Goods = [], Back = []; // materials loaded at From, and at To for the run home
     public float Wait = 30; // seconds moored at each end
     public bool Needs; // also loads any good its far station is short of that this one sells, most needed first (phase 3)
+    public bool Parts; // also carries parts in its Storage Volumes: sells the station what it buys, loads what the far one is short of (a store's stock)
     public string Escort = ""; // the blueprint of its escorts (phase 3: convoys): "" none
     public int Escorts; // how many fly with each hauler
     public float EscortGap = 150; // m they hold clear of it (and three times that off a station while it docks)
@@ -90,7 +97,10 @@ public sealed class StationHaulerDef
 public static class StationMarkets
 {
     public const string Format = "call-of-slop-stations/1";
-    public const int MaxGoods = 32;
+    public const int MaxGoods = 200; // (goods and parts: one byte on the wire, Msg.Stations; a store's stock is long)
+
+    /// <summary>The most lines a station's card lists (UI/UiCommandStation.cs): a store's long stock is on its shelves, not all on the card.</summary>
+    public const int MaxListed = 32;
 
     private static StationDef[]? _all;
     private static float _margin = 0.25f;
@@ -190,7 +200,9 @@ public static class StationMarkets
                         var most = Math.Clamp(g.TryGetProperty("most", out var mo) ? mo.GetInt32() : 20, 0, 9999);
                         parts.Add(new StationPart((ushort)pd.Id, Math.Clamp(g.TryGetProperty("buy", out var pb) ? pb.GetSingle() : value * partBuy, 0, 1_000_000),
                             Math.Clamp(g.TryGetProperty("sell", out var pse) ? pse.GetSingle() : value * partSell, 0, 1_000_000),
-                            Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most));
+                            Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most,
+                            Math.Clamp(g.TryGetProperty("uses", out var us) ? us.GetSingle() : 0, 0, 100_000), Math.Clamp(g.TryGetProperty("makes", out var mk) ? mk.GetSingle() : 0, 0, 100_000),
+                            Math.Clamp(g.TryGetProperty("want", out var wa) ? wa.GetInt32() : 0, 0, most)));
                     }
                 if (goods.Count + parts.Count > MaxGoods)
                     throw new FormatException($"{d.Name}: at most {MaxGoods} goods and parts");
@@ -225,6 +237,7 @@ public static class StationMarkets
                         Count = Math.Clamp(h.TryGetProperty("count", out var cn) ? cn.GetInt32() : 1, 0, 8),
                         Wait = Math.Clamp(h.TryGetProperty("wait", out var wt) ? wt.GetSingle() : 30f, 5f, 600f),
                         Needs = h.TryGetProperty("needs", out var nd) && nd.GetBoolean(),
+                        Parts = h.TryGetProperty("parts", out var hp) && hp.GetBoolean(),
                     };
                     if (h.TryGetProperty("escort", out var es))
                     {
@@ -356,20 +369,22 @@ public sealed partial class Game
         for (var d = 0; d < StationMarkets.All.Length; d++)
         {
             var goods = StationMarkets.All[d].Goods;
+            var parts = StationMarkets.All[d].Parts;
             var m = MarketOfDef(d);
-            if (m.Frac.Length != goods.Length)
-                m.Frac = new double[goods.Length];
-            for (var k = 0; k < goods.Length; k++)
+            if (m.Frac.Length != goods.Length + parts.Length)
+                m.Frac = new double[goods.Length + parts.Length];
+            for (var k = 0; k < goods.Length + parts.Length; k++)
             {
-                if (goods[k].Use == 0 && goods[k].Make == 0)
+                var (use, make, most) = k < goods.Length ? (goods[k].Use, goods[k].Make, goods[k].Most) : (parts[k - goods.Length].Use, parts[k - goods.Length].Make, parts[k - goods.Length].Most);
+                if (use == 0 && make == 0)
                     continue;
-                m.Frac[k] += (goods[k].Make - goods[k].Use) / 60.0;
+                m.Frac[k] += (make - use) / 60.0;
                 var whole = (int)Math.Truncate(m.Frac[k]);
                 if (whole == 0)
                     continue;
                 m.Frac[k] -= whole;
                 var was = m.Stock[k];
-                m.Stock[k] = Math.Clamp(m.Stock[k] + whole, 0, goods[k].Most);
+                m.Stock[k] = Math.Clamp(m.Stock[k] + whole, 0, most);
                 if (m.Stock[k] != was && m.Body != 0)
                     StationsVersion++;
             }
@@ -418,6 +433,7 @@ public sealed partial class Game
     /// <summary>Both sides, a new world (OpeningReset): the markets leave this world's bodies; a new game (not a landing) starts them and the haulers again.</summary>
     private void StationsReset()
     {
+        _storeFills.Clear(); // (a store furnishes its bays again in a new world: GameStoreFill.cs)
         StationMarketsHere.Clear();
         var travel = _landing != null; // (a landing keeps the markets: GameSpaceLanding.cs)
         foreach (var m in _marketByDef)
@@ -447,6 +463,7 @@ public sealed partial class Game
         foreach (var c in Constructs.Bodies)
             if (c.IsStation && !c.Wreck)
                 StationMarketOf(c);
+        StoreFillTick(); // (a store's showroom furnished from its stock: GameStoreFill.cs)
         foreach (var m in StationMarketsHere.Values)
         {
             var was = m.Moored.Count;

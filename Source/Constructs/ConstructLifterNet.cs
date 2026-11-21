@@ -377,6 +377,7 @@ public static partial class ConstructLifters
     /// </summary>
     public static ushort PadWant(ConstructWorld world, Construct b, int pad, ConstructPartDef d)
     {
+        pad = ConstructPads.Owner(b, pad); // (a tile of a bigger pad: the pad is its owner's point)
         if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0 || pad >= b.PartCount || !b.DefOf(pad).IsLayDownPad || world.StoreOf(b, pad) is not { } ps)
             return 0;
         int si = 0, t = -1;
@@ -416,6 +417,7 @@ public static partial class ConstructLifters
     /// </summary>
     public static void PadArrived(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
     {
+        pad = ConstructPads.Owner(b, pad);
         if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0 || !b.DefOf(pad).IsLayDownPad)
             return;
         for (var pass = tag == 0 ? 1 : 0; pass < 2; pass++)
@@ -442,8 +444,8 @@ public static partial class ConstructLifters
         if (world.LiftBodies.Count == 0 || via < 0 || via >= sc.RouteCount)
             return -1;
         for (var i = 0; i < sc.PartCount; i++)
-            if (sc.DefOf(i).IsLayDownPad && !sc.Parts[i].Broken && world.StoreOf(sc, i) is { } st && ConstructConveyor.RackCheck(sc, i, st, d) == 0
-                && WayReaches(sc, via, i) && ServesPad(world, sc, t, sc.Id, i))
+            if (sc.DefOf(i).IsLayDownPad && !sc.Parts[i].Broken && world.StoreOf(sc, ConstructPads.Owner(sc, i)) is { } st && ConstructConveyor.RackCheck(sc, ConstructPads.Owner(sc, i), st, d) == 0
+                && WayReaches(sc, via, i) && ServesPad(world, sc, t, sc.Id, ConstructPads.Owner(sc, i)))
                 return i;
         return -1;
     }

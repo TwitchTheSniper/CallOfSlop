@@ -57,40 +57,50 @@ public static class FormerPresets
     public static string? Line(ConstructPartDef? d) =>
         KeyOf(d) is { } k ? $"the {d!.Name} is formed: {Maker(k)} cuts it as a {Extrusion.Label(k)} of {RecyclingTable.Current.NameOf(k.Material)}" : null;
 
-    private static string Maker(in ExtrusionKey k) => k.Shape == ExShape.Fan ? "a Fan Former" : "an Airframe Former";
+    private static string Maker(in ExtrusionKey k) => "a Grow Former";
 
     /// <summary>The smallest former of the key's kind whose limits take it, or null.</summary>
     public static ConstructPartDef? SmallestFormer(in ExtrusionKey k)
     {
         ConstructPartDef? best = null;
+        var bestMost = 0f;
         foreach (var d in ConstructParts.All)
         {
             if (!(k.Shape == ExShape.Fan ? d.IsFanFormer : d.IsAirframeFormer) || Fits(d, k) != null)
                 continue;
-            if (best == null || d.ExtWheelMax.Y < best.ExtWheelMax.Y)
-                best = d;
+            ConstructExtruder.Sizes(null, -1, d, k.Shape, out _, out var most);
+            if (best == null)
+                (best, bestMost) = (d, most.Y);
+            else if (most.Y < bestMost)
+                (best, bestMost) = (d, most.Y);
         }
         return best;
     }
 
-    /// <summary>Does this former's machine take the key's size? Null, or why not.</summary>
-    public static string? Fits(ConstructPartDef d, in ExtrusionKey k)
+    /// <summary>Does this former's machine take the key's size? Null, or why not. (A Grow Former: the most it makes with every block.)</summary>
+    public static string? Fits(ConstructPartDef d, in ExtrusionKey k) => Fits(null, -1, d, k);
+
+    /// <summary>Does former <paramref name="part"/> take the key's size as its blocks stand now (with no construct, its kind's most)? Null, or why not.</summary>
+    public static string? Fits(Construct? c, int part, ConstructPartDef d, in ExtrusionKey k)
     {
         int Cm(float m) => (int)MathF.Round(m * 100);
+        ConstructExtruder.Sizes(c, part, d, k.Shape == ExShape.Fan ? ExShape.Fan : ExShape.Wing, out var first, out var size);
+        var now = c != null && d.IsGrowFormer;
+        var who = now ? "this Grow Former now" : $"the {d.Name}";
         if (k.Shape == ExShape.Fan)
         {
-            var most = Math.Min(Extrusion.MaxFanCm, Cm(d.ExtWheelMax.Y));
+            var most = Math.Min(Extrusion.MaxFanCm, Cm(size.Y));
             if (k.H > most)
-                return $"a prop {k.H / 100f:0.##} m across is beyond the {d.Name} ({most / 100f:0.##} m)";
-            if (k.H < Cm(d.ExtWheelStart.Y))
-                return $"a prop {k.H / 100f:0.##} m across is smaller than the {d.Name}'s first ({d.ExtWheelStart.Y:0.##} m)";
+                return $"a prop {k.H / 100f:0.##} m across is beyond {who} ({most / 100f:0.##} m){(now ? ": " + ConstructExtruder.GrowFix(c!, part, ExShape.Fan, 0, k.H / 100f) : "")}";
+            if (k.H < Cm(first.Y))
+                return $"a prop {k.H / 100f:0.##} m across is smaller than the {d.Name}'s first ({first.Y:0.##} m)";
             return null;
         }
-        var span = Math.Min(Extrusion.MaxLengthCm, Cm(d.ExtWheelMax.Y));
-        if (k.W > Cm(d.ExtWheelMax.X) || k.L > span)
-            return $"a {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span is beyond the {d.Name} ({d.ExtWheelMax.X:0.##} m chord, {span / 100f:0.##} m span)";
-        if (k.W < Cm(d.ExtWheelStart.X) || k.L < Cm(d.ExtWheelStart.Y))
-            return $"a {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span is smaller than the {d.Name}'s first ({d.ExtWheelStart.X:0.##} x {d.ExtWheelStart.Y:0.##} m)";
+        var span = Math.Min(Extrusion.MaxLengthCm, Cm(size.Y));
+        if (k.W > Cm(size.X) || k.L > span)
+            return $"a {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span is beyond {who} ({size.X:0.##} m chord, {span / 100f:0.##} m span){(now ? ": " + ConstructExtruder.GrowFix(c!, part, ExShape.Wing, k.W / 100f, k.L / 100f) : "")}";
+        if (k.W < Cm(first.X) || k.L < Cm(first.Y))
+            return $"a {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span is smaller than the {d.Name}'s first ({first.X:0.##} x {first.Y:0.##} m)";
         return null;
     }
 

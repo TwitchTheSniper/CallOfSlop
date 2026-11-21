@@ -56,7 +56,7 @@ public static class VehicleRegistry
         s => new Generators.TankerRig(s),
     ];
 
-    /// <summary>Shapes a style ships only when it names them in <see cref="FactionStyle.Extra"/> (the British style's Double Decker); any style can still run one by name.</summary>
+    /// <summary>Shapes a style ships only when it names them in <see cref="FactionStyle.Extra"/> (the Mercenary style's Double Decker); any style can still run one by name.</summary>
     public static readonly Func<FactionStyle, IVehicleGenerator>[] Extras =
     [
         s => new Generators.DoubleDecker(s),

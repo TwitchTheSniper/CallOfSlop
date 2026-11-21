@@ -137,6 +137,15 @@ public static class ConstructLogistics
 
     private static int NodeFor(Construct c, LogiMap m, int part)
     {
+        var own = ConstructPads.Owner(c, part);
+        if (own != part)
+        {
+            // (a conveyor into any tile of a pad: the pad is one node, its owner tile's, ConstructPads.cs)
+            var on = NodeFor(c, m, own);
+            if (on >= 0)
+                m.NodeOf[part] = (short)on;
+            return on;
+        }
         if (m.NodeOf[part] >= 0)
             return m.NodeOf[part];
         if (MachineBlocks.Owner(c, part) is var owner && owner != part)
@@ -606,7 +615,7 @@ public static class ConstructLogistics
             int rack = m.NodePart[m.Dests[ds]];
             if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) != 0 || !StockTargets.Accepts(world, c, rack, st, d))
                 continue; // (its Takes filter holds for overflow too; a store always takes what it keeps)
-            if (st.ItemCount + Riding(c, st.Handle, 0, LogiFlags.Storage, LogiFlags.None) >= c.DefOf(rack).RackCount)
+            if (st.ItemCount + Riding(c, st.Handle, 0, LogiFlags.Storage, LogiFlags.None) >= ConstructPads.RackDef(c, rack).RackCount)
                 continue;
             if (WayFrom(c, m, s, ds, d) != LogiReason.None || m.ViaLift[s * LogiMap.MaxDests + ds])
                 continue; // (no way, or only by a lifter, which carries no overflow store to store)
