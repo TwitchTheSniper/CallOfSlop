@@ -988,7 +988,13 @@ public sealed partial class Ui
 
             ImGui.Spacing();
             VideoLevelRow("Materials"u8, "materials", ref s.Materials);
-            ImGui.TextColored(Dim, "Parts and props: Low is the plain look. Medium adds metal, wood, rubber and glass that catch the sun and the sky, worn edges and rust on hurt parts. High adds fine surface detail up close."u8);
+            if (s.Materials > VideoLevel.Low)
+            {
+                ImGui.Checkbox("Edge bevels##mat"u8, ref s.EdgeBevels);
+                ImGui.SameLine();
+                ImGui.Checkbox("Material contrast##mat"u8, ref s.MaterialContrast);
+            }
+            ImGui.TextColored(Dim, "Parts and props: Low is the plain look. Medium adds metal, wood, rubber and glass that catch the sun and the sky, worn edges and rust on hurt parts. High adds fine surface detail up close. Edge bevels give every part's edges a thin highlight, so panels stand apart. Material contrast gives paint a satin sheen and dark frames and rubber a rougher, flatter finish."u8);
             VideoLevelRow("Particles"u8, "particles", ref s.Particles);
             ImGui.TextColored(Dim, "Flames, smoke, sparks, dust and blasts: how many at once."u8);
             VideoLevelRow("Post effects"u8, "post", ref s.PostEffects);

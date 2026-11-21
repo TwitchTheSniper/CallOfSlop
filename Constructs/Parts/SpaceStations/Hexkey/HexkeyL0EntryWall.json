@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Entry Wall",
+  "description": "A partition of Hexkey Orbital: white, with charcoal-framed doorways.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 5890.5,
+  "health": 11069,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -0.225,
+        -4.125,
+        -12.925
+      ],
+      "max": [
+        -0.025,
+        3.575,
+        12.575
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -4.125,
+        -12.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -4.125,
+        0.725
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -0.125,
+        3.575,
+        -12.025
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        3.575,
+        -2.675
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        -0.275,
+        12.575
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -0.025,
+        -3.575,
+        -12.825
+      ],
+      "dir": "+x"
+    }
+  ]
+}

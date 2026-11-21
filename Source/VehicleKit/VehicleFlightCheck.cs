@@ -97,6 +97,7 @@ public static class VehicleFlightCheck
         var q = new SelfTest.DriveWorld();
         Fly(w, q, place, c, 0, SettleTicks, ref r);
         var rest = Tilt(c);
+        var restCom = Up(c);
         r = r with { RestTilt = rest, WorstTilt = 0 };
         var plane = c.StabCount > 0 && ConstructFlight.KeysOf(c, c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D) == FlightPattern.Plane;
         var restMost = plane ? MaxPlaneRestTilt : MaxRestTilt;
@@ -145,6 +146,12 @@ public static class VehicleFlightCheck
         if (ConstructFlight.KeysOf(c, c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D) == FlightPattern.Ship && ConstructConfig.Get(c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D, CfgKey.MouseAim, 0) >= 0.5f)
         {
             // Ship keys: the nose follows the look. Looked 70 degrees down (straight ahead as it was), it should point down past 55 in six seconds (a heavy ship on small jets comes round slowly), then back level.
+            // Taken up first until it can't touch the ground pointing down: from the low hover a long bow met the ground short of 55
+            // degrees (the Packet Spine Freighter at 53, the Docket tug), which said nothing about its jets.
+            var clear = restCom + c.Radius + 1;
+            for (var t = 0; t < ShipClimbTicks && Up(c) < clear; t += 30)
+                Fly(w, q, place, c, Buttons.Sprint, 30, ref r);
+            Fly(w, q, place, c, 0, HoverTicks, ref r);
             ref var sp = ref c.Parts[seat];
             sp.AimYaw = MathF.Atan2(fwd.X, -fwd.Z);
             sp.AimPitch = -70 * MathF.PI / 180;
@@ -161,6 +168,9 @@ public static class VehicleFlightCheck
 
     /// <summary>Ship keys: how long the nose has to come round to a look (each way).</summary>
     public const int ShipTurnTicks = 6 * World.TickRate;
+
+    /// <summary>Ship keys: the most it climbs before the turn, to be clear of the ground by its own size.</summary>
+    public const int ShipClimbTicks = 20 * World.TickRate;
 
     /// <summary>The stabilizer's nose above level, degrees.</summary>
     private static float Pitch(Construct c) => MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI;
