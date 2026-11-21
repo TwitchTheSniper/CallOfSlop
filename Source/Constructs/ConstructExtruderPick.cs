@@ -97,8 +97,6 @@ public static class ExtruderPicks
                 return "a sheet's width goes in 5 cm steps from 0.1 m";
             if (pick.H < Extrusion.MinSheetCm || pick.H > Extrusion.SheetMaxCm)
                 return $"a sheet is {Extrusion.MinSheetCm} to {Extrusion.SheetMaxCm} cm thick";
-            if (pick.W <= pick.H)
-                return "a sheet is wider than it is thick";
             if (pick.W > dw || pick.H > dh)
                 return $"the die makes at most {dw / 100f:0.##} x {dh / 100f:0.##} m: {ConstructExtruder.WideFix(d, pick.W, pick.H)}";
             return null;

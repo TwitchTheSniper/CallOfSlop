@@ -210,6 +210,7 @@ public static class Extrusion
     public static int PipeProfile => Presets.Length + 2;
 
     /// <summary>The Sheet choice, after the three foils (a saved Profile is its index, so it went on the end): a solid section, Width across, its Wall setting the thickness.</summary>
+    /// <remarks>The Profile list holds three foils (ExtrusionParts.Profiles): a fourth airfoil row would need its option after Sheet, and every lookup checks Sheet before the foils.</remarks>
     public static int SheetProfile => Presets.Length + 6;
 
     /// <summary>A sheet: a solid section no thicker than <see cref="SheetMaxCm"/> (H) and wider than it is thick. Below <see cref="MinSectionCm"/> only a sheet is valid.</summary>

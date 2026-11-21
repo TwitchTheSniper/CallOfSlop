@@ -1056,8 +1056,9 @@ public static partial class ConstructExtruder
             else
                 sb.Append(", ").Append(Extrusion.Label(new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, 0, true, shape, wall)));
             sb.Append(Status(c, part, st));
-            if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
-                sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die{(die.X < MostSection(d).X - 0.001f || die.Y < MostSection(d).Y - 0.001f ? ": " + WideFix(d, (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Width, 0) * 100), (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Height, 0) * 100)) : "")}");
+            var setH = (int)ConstructConfig.Get(p, d, CfgKey.Profile, 0) == Extrusion.SheetProfile ? h / 100f : ConstructConfig.Get(p, d, CfgKey.Height, 0); // (a Sheet doesn't read Height)
+            if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || setH > die.Y + 0.001f)
+                sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die{(die.X < MostSection(d).X - 0.001f || die.Y < MostSection(d).Y - 0.001f ? ": " + WideFix(d, (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Width, 0) * 100), (int)MathF.Round(setH * 100)) : "")}");
         }
         if (near)
         {
