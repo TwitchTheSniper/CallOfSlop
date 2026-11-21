@@ -1,0 +1,344 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docket Cab Wall 5",
+  "description": "A wall of the Docket's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Docket tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cdcac0",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.625,
+        0.125,
+        -15.375
+      ],
+      "max": [
+        0.875,
+        2.625,
+        -14.775
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.625,
+        2.375,
+        -14.775
+      ],
+      "max": [
+        0.875,
+        2.625,
+        -13.275
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.613,
+        0.128,
+        -15.325
+      ],
+      "max": [
+        0.887,
+        0.875,
+        -14.825
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.605,
+        0.127,
+        -14.845
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -14.778
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.605,
+        0.127,
+        -13.272
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -13.205
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.605,
+        2.378,
+        -14.775
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -13.275
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.625,
+        0.125,
+        -13.275
+      ],
+      "max": [
+        0.875,
+        2.625,
+        -9.225
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.625,
+        2.375,
+        -9.225
+      ],
+      "max": [
+        0.875,
+        2.625,
+        -7.725
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.613,
+        0.128,
+        -13.225
+      ],
+      "max": [
+        0.887,
+        0.875,
+        -9.275
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.605,
+        0.127,
+        -9.295
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -9.228
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.605,
+        0.127,
+        -7.722
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -7.655
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.605,
+        2.378,
+        -9.225
+      ],
+      "max": [
+        0.895,
+        2.445,
+        -7.725
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.625,
+        0.125,
+        -7.725
+      ],
+      "max": [
+        0.875,
+        2.625,
+        -7.525
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.613,
+        0.128,
+        -7.675
+      ],
+      "max": [
+        0.887,
+        0.875,
+        -7.575
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.875,
+        2.525,
+        -8.525
+      ],
+      "max": [
+        0.89,
+        2.675,
+        -8.225
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.61,
+        2.525,
+        -8.525
+      ],
+      "max": [
+        0.625,
+        2.675,
+        -8.225
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorGalley",
+      "at": [
+        0.75,
+        1.25,
+        -14.775
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "doorAirlock",
+      "at": [
+        0.75,
+        1.25,
+        -9.225
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "switchGalley",
+      "at": [
+        0.875,
+        1.425,
+        -14.925
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "switchHatch",
+      "at": [
+        0.875,
+        1.575,
+        -9.345
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampHallB",
+      "at": [
+        0.625,
+        2.425,
+        -10.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.755,
+        0.125,
+        -11.975
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.755,
+        1.375,
+        -15.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        1.375,
+        -11.725
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.755,
+        1.375,
+        -7.525
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.755,
+        2.625,
+        -11.245
+      ],
+      "dir": "+y"
+    }
+  ]
+}
