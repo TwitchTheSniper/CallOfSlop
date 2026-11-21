@@ -397,7 +397,7 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private Presses PressHall(Assembly asm, Refined r)
         {
-            const float lineZ = -27.25f, pressZ = -21.75f;
+            const float lineZ = -27.25f, pressZ = -21.25f; // (a Press Core is 2 m deep: its out face where the old 1.5 m press's was)
             var blank = On("Extruder", 56.25f, lineZ, Flow, paint: PressBlue);
             ChuteVia(_steelB!, blank, -29.75f);
             var routers = new List<VPart>();
@@ -415,7 +415,7 @@ public sealed class FactoryShowcase : IPartGenerator
             for (var k = 0; k < 6; k++)
             {
                 var at = FromRest(Live.Parts[routers[k].Index].Pos);
-                var p = presses[k] = On("Press", at.X + 1.5f, pressZ, Back, "-y.0.0", PressBlue);
+                var p = presses[k] = On("Press", at.X + 1.625f, pressZ, Back, "-y.0.0", PressBlue); // (its out where the old press's was: the Core is 0.25 m wider)
                 if (dies[k] is { } die)
                     Onto(p, "dieslot", die, "mount");
                 Convey(routers[k], "Piece out 3", p, "Piece in", PressBlue);
@@ -459,7 +459,7 @@ public sealed class FactoryShowcase : IPartGenerator
             // Copper: its own Extruder and the Cable press, the coils by chute to Assembler A (a Servo Motor's).
             var copperEx = On("Extruder", 44.25f, -18.25f, Back, paint: Copper);
             ChuteVia(r.Copper, copperEx, -13.45f);
-            var cable = On("Press", 44.75f, -21.25f, Back, "-y.0.0", Copper);
+            var cable = On("Press", 44.75f, -20.75f, Back, "-y.0.0", Copper);
             Onto(cable, "dieslot", "Cable Die", "mount");
             Convey(copperEx, "Piece out", cable, "Piece in", Copper);
             _cable = cable;

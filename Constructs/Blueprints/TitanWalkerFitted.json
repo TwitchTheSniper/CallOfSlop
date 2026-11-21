@@ -3551,7 +3551,7 @@
     {"part": "Chest", "on": 621, "socket": "t8_0", "by": "bottom"},
     {"part": "Crate Stack", "on": 559, "socket": "t31_16", "by": "foot00"},
     {"part": "Fuel Drum", "on": 559, "socket": "t23_23", "by": "-y"},
-    {"part": "Press", "on": 581, "socket": "t15_16", "by": "-y.0.0"},
+    {"part": "Press", "on": 581, "socket": "t15_23", "by": "-y.0.0"},
     {"part": "Die Lathe", "on": 581, "socket": "t24_7", "by": "-y.0.0"},
     {"part": "Die Rack", "on": 581, "socket": "t23_23", "by": "-y.0.0"},
     {"part": "Tool Rack", "on": 581, "socket": "t7_15", "by": "bottom"},

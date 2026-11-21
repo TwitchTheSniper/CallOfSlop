@@ -277,7 +277,7 @@ public static class ConstructPower
                     continue; // (a pump on power draws only while a valve is open on it)
                 if (d.IsJumpDrive ? (p.State & 1) != 0 // (a jump drive: while it charges)
                     : d.Role == PartRole.Joint ? JointMoving(c, i) : machine || !d.IsSignal || p.Out >= 0.5f || p.Out <= -0.5f) // (a working machine draws whatever its output says: an Extruder's is a length, a monitored machine's Data out is no on or off)
-                    watts += d.ExtBlockPower > 0 ? ConstructExtruder.PowerOf(c, i) : d.PowerDraw; // (an Extruder Core: and each Die Block in its die)
+                    watts += d.ExtBlockPower > 0 ? ConstructExtruder.PowerOf(c, i) : d is { IsPress: true, BlockRole: BlockRole.Core } ? ConstructPress.PowerOf(c, i) : d.PowerDraw; // (an Extruder Core: and each Die Block in its die; a Press Core: each of its cells)
             }
             watts += c.MotorWork / MotorEfficiency;
             watts += c.ModCutWatts; // (module sockets' cutting rings while they burn a well: ModuleCut.cs)

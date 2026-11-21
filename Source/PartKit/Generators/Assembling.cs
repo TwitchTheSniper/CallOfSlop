@@ -735,7 +735,8 @@ public sealed class Assembling : IPartGenerator
         ("Packet", "Packet Spine Hull Stbd 9", null),
         ("Packet", "Packet Stern", null),
         // (the Extruder on the block system, Sean 2026-11-21: its Die Block; the Core keeps the Extruder's row and the Run-out Table its own)
-        (null, null, Rec("Die Block", 120, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)])),        // (round module sockets, Sean 2026-11-21: plates, plugs and stands 1-3 m across for nacelles and pods)
+        (null, null, Rec("Die Block", 120, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)])),
+        // (round module sockets, Sean 2026-11-21: plates, plugs and stands 1-3 m across for nacelles and pods)
         ("Modules/Round", "Round Module Socket 1 m", null),
         ("Modules/Round", "Round Module Plug 1 m", null),
         ("Modules/Round", "Round Module Stand 1 m", null),
@@ -745,6 +746,8 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the Press on the block system, Sean 2026-11-21: its Press Block, a 2 m cube of the bed or a wall; the Core keeps the Press's row)
+        (null, null, Rec("Press Block", 60, 1, m: [("steel", 400), ("concrete", 200)], p: [("Gear Set", 1)])),
     ];
 
     /// <summary>
