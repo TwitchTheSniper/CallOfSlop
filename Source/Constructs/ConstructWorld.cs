@@ -1110,7 +1110,7 @@ public sealed partial class ConstructWorld
         }
         if (ConstructBreakUp.Sheds(c) && ConstructBreakUp.Scrappable(c, part))
         {
-            // Off a capital-sized body, or a medium one past its first wreck pieces, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
+            // Off a capital-sized body, or a medium one, a small part goes as scrap drawn only (a body each would be hundreds in a battle): ConstructBreakUp.cs.
             Events.Add($"construct {c.Id}: {d.Name} shot to scrap");
             c.PartBounds(part, out var smn, out var smx);
             var sc = t + Vector3.Transform((smn + smx) * 0.5f, q);
@@ -1139,7 +1139,6 @@ public sealed partial class ConstructWorld
             piece.Parts[0] = debris;
             piece.PartCount = 1;
             piece.Wreck = true;
-            c.WreckShed++;
             piece.Owner = c.Owner;
             piece.Damaged = true;
             piece.Rebuild();
