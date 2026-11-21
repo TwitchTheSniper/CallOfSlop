@@ -435,7 +435,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's)
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge, Slide } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's; Slide: a Grow Former's hub carriage, raised by HubRise)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -619,6 +619,7 @@ public sealed partial class ConstructPartDef
     public bool HasWork; // a box that shows the machine working ("work" on a box)
     public bool WorkGlowOnly; // ...and every such box only glows (nothing moves or smokes out of its bounds: the renderer may cull it off screen)
     public bool HasPieceWork; // a box that moves by the machine's piece ("ram", "shear": an Extruder's)
+    public bool HasHubSlide; // a box that rides a Grow Former's hub slide ("slide", or a "spin" with a "travel": ConstructGrowFormer.HubRise)
     public bool HasMiddle; // a box marked "middle" (a module plate or plug that can be drawn as a frame: ModuleSockets.FrameLook)
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
@@ -764,6 +765,10 @@ public sealed partial class ConstructPartDef
     public int CutBin, CutBinBlock; // ...its offcut bin: its own and each Bed Block's share (ConstructLaserCutterBed.cs)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
+    public bool IsGrowFormer; // the Grow Former Core (storage.wheel.grow; also IsWheelFormer, IsFanFormer and IsAirframeFormer: ConstructGrowFormer.cs): wheels, props or wings by its Makes setting or its order, sized by its Former Blocks and Mast Blocks
+    public float ExtFanMax, ExtFanStart; // ...its biggest and first prop across (m), with every block
+    public Vector2 ExtWingMax, ExtWingStart; // ...its widest and first wing (chord, span; m), with every block and table
+    public float GrowBedTop; // ...its Former Blocks' top over its foot (m): a wheel's or a prop's hub rides up its slide to clear it
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is
     public bool IsOrdnance; // a modular bomb or missile off an Ordnance Bench (OrdnanceDesign.cs): its Name is its key, its id this machine's own
@@ -1319,6 +1324,9 @@ public static partial class ConstructParts
         "robot charging cradle" => "Robot Shell Dock", // (rebuilt as a shell dock, 2026-11-17)
         "medium flight panel" => "Medium Flight Control Panel",
         "large flight panel" => "Large Flight Control Panel",
+        "wheel former" or "medium wheel former" or "large wheel former" or "capital wheel former"
+            or "fan former" or "medium fan former" or "large fan former" or "capital fan former"
+            or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };
@@ -1692,9 +1700,9 @@ public static partial class ConstructParts
                 var kind = Str(wk, file, where + ".work") switch
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
-                    "pin" => BoxWork.Pin, "press" => BoxWork.Press,
+                    "pin" => BoxWork.Pin, "press" => BoxWork.Press, "slide" => BoxWork.Slide,
                     "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam, "hinge" => BoxWork.Hinge,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\" or \"hinge\""),
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\", \"hinge\" or \"slide\""),
                 };
                 if (kind == BoxWork.Hinge && (Opt(b, "pivot") is null || Opt(b, "axis") is null || Opt(b, "travel") is null))
                     throw new ConstructPartException($"{file}: {where}: a \"hinge\" box names its \"pivot\" (a point on the hinge line), the \"axis\" it swings open toward and its \"travel\" (degrees open)");
@@ -1722,6 +1730,7 @@ public static partial class ConstructParts
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
         d.WorkGlowOnly = d.HasWork && list.All(x => x.Work is BoxWork.None or BoxWork.Glow);
         d.HasPieceWork = list.Any(x => x.Work is BoxWork.Ram or BoxWork.Shear);
+        d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
         d.HasSeams = list.Any(x => x.Seam != 0);

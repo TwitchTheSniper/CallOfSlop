@@ -120,6 +120,10 @@ The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that ha
 
 Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings, tanks, the Frame Beam and others) left the Assembler's recipe list. An Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. A blueprint whose Assembler names one of those parts still loads, with its recipe set to None.
 
+### Wheel, Fan and Airframe Formers in a saved world (2026-11-21)
+
+The twelve Wheel, Fan and Airframe Formers are now one machine, the **Grow Former**. A saved world loads each old former as a Grow Former. Its size now comes from blocks: weld **Former Blocks** on the floor in front of it and stack **Mast Blocks** on it, then set **Makes** (Wheel, Prop or Wing) with the configure tool. An Assembler that was set to a recipe may show a different one after this update: pick its recipe again.
+
 ### Panel Formers and wide panels in a saved world (2026-11-13)
 
 A Panel Former no longer splits a panel wider than your Extruders make into strips by itself. An order for one now waits and says which bigger Extruder, or Die Frames on the one you have, would make it. To keep the old behaviour, open the Panel Former with the configure tool and turn on **Too wide: make strips** (in its Logistics settings).

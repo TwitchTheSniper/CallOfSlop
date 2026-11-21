@@ -127,7 +127,7 @@ public static partial class ConstructParts
             list.Add(new NamedPort { Name = "Ammo out", Type = RouteType.Feed, Out = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
         }
         // An Extruder and a Wheel Former put pieces out onto a conveyor: below the die, at its own die's bottom edge, facing out of the output face.
-        if (d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer && !(d.IsPanelFormer && d.BlockRole == BlockRole.Core) && !list.Any(x => x.Type == RouteType.Conveyor && x.Out)) // (a bed Core's Piece out is its Out Table's: MachineBlocks.OutTable)
+        if (d.IsExtruder && (d.IsGrowFormer || !d.IsFanFormer && !d.IsAirframeFormer) && !(d.IsPanelFormer && d.BlockRole == BlockRole.Core) && !list.Any(x => x.Type == RouteType.Conveyor && x.Out)) // (a bed Core's Piece out is its Out Table's: MachineBlocks.OutTable)
         {
             var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : d.BlockRole == BlockRole.Core ? Vector2.Min(ConstructExtruder.MostSection(d), new Vector2(d.BlockCell)) : ConstructExtruder.MostSection(d); // (an Extruder Core's conveyor takes a block's die at most: a wider die's pieces go on Run-out Tables)
             if (d.IsPanelFormer)

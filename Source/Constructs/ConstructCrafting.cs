@@ -534,9 +534,12 @@ public static class ConstructCrafting
                     }
                 }
             }
-            else if (md.IsWheelFormer)
-                Piece(new ExtrusionKey(0, (ushort)MathF.Round(md.ExtWheelStart.X * 100), (ushort)MathF.Round(md.ExtWheelStart.Y * 100), 0, mat, false, ExShape.Wheel));
-            else
+            if (ConstructExtruder.Can(md, ExShape.Wheel))
+            {
+                ConstructExtruder.Sizes(null, -1, md, ExShape.Wheel, out var w0, out _); // (a Grow Former makes wheels too)
+                Piece(new ExtrusionKey(0, (ushort)MathF.Round(w0.X * 100), (ushort)MathF.Round(w0.Y * 100), 0, mat, false, ExShape.Wheel));
+            }
+            else if (!WorkOrders.IsWholeFormer(md))
                 foreach (var p in StdProfiles)
                     foreach (var s in StdSizes)
                         foreach (var l in StdLengths)
@@ -717,7 +720,7 @@ public static class ConstructCrafting
                 // (formers' work orders: a catalogue wing or rotor that is a Fan or Airframe Former's preset, at a former it fits)
                 if (FormerPresets.KeyOf(part) is { } fk)
                     for (var i = 0; i < net.MachineN; i++)
-                        if (c.DefOf(net.Machines[i]) is var fd && WorkOrders.IsWholeFormer(fd) && (fk.Shape == ExShape.Fan) == fd.IsFanFormer && FormerPresets.Fits(fd, fk) == null)
+                        if (c.DefOf(net.Machines[i]) is var fd && WorkOrders.IsWholeFormer(fd) && ConstructExtruder.Can(fd, fk.Shape) && FormerPresets.Fits(c, net.Machines[i], fd, fk) == null)
                             return fd.Name;
                 return null;
             }
