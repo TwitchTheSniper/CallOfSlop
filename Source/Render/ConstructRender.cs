@@ -676,6 +676,7 @@ public static partial class ConstructRender
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
         var workPart = d.HasWork ? WorkPart(c, i, d) : -1; // (a block machine's cell shows its Core's work, a Run-out Table its Extruder's)
         var working = d.CraneRail ? d.HasWork && !p.Broken && ConstructLifters.RailLit(world, c, i, Now) // (a Crane Rail Block's lamp flashes while a bridge passes: drawing 24)
+            : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)

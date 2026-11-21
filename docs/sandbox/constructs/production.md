@@ -1679,10 +1679,44 @@ the hook's highest point (1.6 m under the rails' top): the tallest one that does
 screen ("the Extruder stands up into the bridge's way"). More Cores on the same rails make more bridges, each with its own queue.
 Drawn from the hook's place as the classed crane is, at a 2 m scale, with a cab hung under the girders near the near rail (KEEP
 CLEAR on its sides), festoon loops along the girder and hazard stripes on the hook block; each rail block's amber lamp flashes while
-a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The Large and Capital classed cranes are gone; the Medium
-one stays for the Dray's hold. The **Hall Bay** blueprint (`HallShowcase.cs`) is a 24 x 20 m floor with a 16 m Hall Crane on two
-runs over three-mast columns, an Extruder with no conveyor and a Lay-down Pad: the crane carries each angle from the Run-out Table to
-the pad. Not yet: a hall crane doesn't yet skip a machine bed that the machine's own crane serves (no machine has its own crane yet).
+a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The classed cranes stay (the Medium for the Dray's hold;
+the Large and Capital keep their Assembler rows, which saved recipe numbers count). The **Hall Bay** blueprint (`HallShowcase.cs`) is
+a 24 x 20 m floor with a 16 m Hall Crane on two runs over three-mast columns, an Extruder with no conveyor and a 3 x 4 pad of Pad
+Tiles: the crane carries each angle from the Run-out Table to the pad. Not yet: a hall crane doesn't yet skip a machine bed that the
+machine's own crane serves (no machine has its own crane yet).
+
+**Pad Tiles** (design page drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code
+`ConstructPads.cs`). A Pad Tile is a 2 m deck with no Core (`machineBlock` family `pad`, `"seed": true`). Tiles welded side by side are
+one pad: `MachineBlocks.Build` floods each weld from its lowest-index tile (the seed, the owner) and takes the largest full rectangle
+holding it, at most 16 x 16 and 128 tiles; tiles turned differently from the owner, or outside the rectangle, are pads of their own.
+The owner's store is the pad's: `ConstructPads.Owner` sends a conveyor's end, F, Shift+F, the physics gun, the look ray and the
+logistics map's node to it, and `ConstructPads.RackDef` gives every tile the rectangle's hold seen from that tile (500 pieces a tile,
+capped at `CStore.MaxPerKind`), so packing, drawing and lifters read the same places from any tile. Lists of stores (racks, lifter
+points, stock targets, the dock's fill) skip the other tiles. The stack is 1 m with no mast, and 2 m more for each Mast Block on the
+tallest column stood on the rectangle; the hold sits inside the kerb and the corner posts, but a mast in the middle of a pad stands in
+its hold. The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
+them only on its open edges. A **Rack Side** is drawn only: a 2 m fence of bars welded to a tile's side; sides end to end show one post
+at each joint (`"seamSame"`: a part's seams hide on faces welded to its own kind, `MachineBlocks.SeamSame`). A tile's own store
+holds nothing while it is in a bigger pad; pieces it held from before it joined show again if it is split off. Not yet: the showcases'
+Piece Racks and Lay-down Pads aren't swapped for tiles, and the old rack parts stay until they are.
+
+**Roller Tiles** (drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code `RollerRuns.cs`). A
+Roller Tile is a 2 m bed of powered rollers with its tops at the bed machines' work height (1 m, as an Out Table's), going its +z way.
+Tiles welded together are one **run** (`machineBlock` family `roller`, seeded as Pad Tiles are; all turned one way): the largest full
+rectangle holding the lowest-index tile. A run is one ordinary conveyor link along its middle, as wide as its tiles across (6 tiles,
+12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
+(`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
+conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
+out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
+its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
+or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
+**Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
+uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
+(a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
+a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
+to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
+into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
+pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds

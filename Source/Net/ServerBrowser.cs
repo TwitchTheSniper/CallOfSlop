@@ -690,8 +690,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and drop are worked out from its rails on each peer.
     // 411: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
     //   (part files go and come, ids move); CfgKey GrowMakes at the end.
-    // 412: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
-    public const ushort ProtocolVersion = 412;
+    // 412: Pad Tiles (Sean, 2026-11-21, drawing 23): Pad Tile and Rack Side part files come (ids move); tiles welded into a pad share
+    //   their owner tile's store, worked out from the parts on each peer.
+    // 413: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
+    //   an ordinary link the server lays from its tiles.
+    // 414: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
+    public const ushort ProtocolVersion = 414;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

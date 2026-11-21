@@ -17,6 +17,7 @@ public sealed partial class ConstructEdits
         var d = c!.DefOf(part);
         if (!d.IsPieceRack)
             return "that isn't a Piece Rack";
+        part = ConstructPads.Owner(c, part); // (a Pad Tile: its pad, the owner tile's store)
         var st = world.StoreOf(c, part)!;
         if (!world.RackPick(c, part, st, eye, look, out var slab, out _))
             return "the rack is empty";
@@ -79,7 +80,7 @@ public sealed partial class ConstructEdits
             return defended;
         if (world.StoreOf(c, part) is not { ItemCount: > 0 } st)
             return "the rack is empty";
-        var rd = c.DefOf(part);
+        var rd = ConstructPads.RackDef(c, part);
         ConstructRackPack.Ensure(rd, st);
         ref var p = ref c.Parts[part];
         c.WorldFrame(p.Seg, out var q, out var t);

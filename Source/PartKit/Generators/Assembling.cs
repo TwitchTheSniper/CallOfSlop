@@ -846,6 +846,10 @@ public sealed class Assembling : IPartGenerator
         // (the Grow Former, Sean 2026-11-21: one Core and its Former Block in place of the Wheel, Fan and Airframe Formers' twelve parts)
         (null, null, Rec("Grow Former", 180, 1, m: [("steel", 900), ("rubber", 120), ("copper", 40)], p: [("Gear Set", 4), ("Servo Motor", 2), ("Control Unit", 1)])),
         (null, null, Rec("Former Block", 90, 1, m: [("steel", 500), ("rubber", 40)], p: [("Gear Set", 1)])),
+        ("Pads", "Pad Tile", null), // (drawing 23: Piece Racks fold into Pad Tiles)
+        ("Pads", "Rack Side", null),
+        ("Pads", "Roller Tile", null), // (drawing 23: a run carries what a conveyor can't)
+        ("Pads", "Turntable Tile", null),
         // (the Docket, the Traders' tug, Karl 2026-11-21: TugParts; in the folder's file order of 2026-11-21)
         ("Docket", "Docket Belly Hatch", null),
         ("Docket", "Docket Boarding Ladder", null),

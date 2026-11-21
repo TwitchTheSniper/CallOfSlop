@@ -66,7 +66,7 @@ public sealed partial class ConstructWorld
         slab = lane = -1;
         if (st.KindN == 0)
             return false;
-        var rd = c.DefOf(part);
+        var rd = ConstructPads.RackDef(c, part);
         ConstructRackPack.Ensure(rd, st);
         if (look != Vector3.Zero && ConstructConveyor.RackAimed(c, part, st, eye, look, out slab, out lane))
             return true;
@@ -96,7 +96,7 @@ public sealed partial class ConstructWorld
     public static void RackBeside(Construct c, int part, ConstructPartDef d, Vector3 eye, int k, out Vector3 at, out Quaternion turn)
     {
         ref var p = ref c.Parts[part];
-        var rd = c.DefOf(part);
+        var rd = ConstructPads.RackDef(c, part);
         c.WorldFrame(p.Seg, out var q, out var t);
         var r = Rot24.Quat(p.Rot);
         turn = q * r;
@@ -117,7 +117,7 @@ public sealed partial class ConstructWorld
     public static void RackPieceAt(Construct c, int part, CStore st, int slab, int lane, out Vector3 at, out Quaternion turn)
     {
         ref var p = ref c.Parts[part];
-        var rd = c.DefOf(part);
+        var rd = ConstructPads.RackDef(c, part);
         var d = ConstructParts.Def(st.Slabs![slab].Def);
         int n = st.SlabLanes![slab * ConstructRackPack.MaxLanes + lane];
         var o = ConstructRackPack.Origin(rd, st.Slabs[slab], d, lane, Math.Max(0, n - 1)) + (d.BoundsMin + d.BoundsMax) * 0.5f;
@@ -132,7 +132,7 @@ public sealed partial class ConstructWorld
     {
         if (StoreOf(c, part) is not { } st || ConstructParts.Get(def) is not { } d)
             return 0;
-        ConstructRackPack.Ensure(c.DefOf(part), st);
+        ConstructRackPack.Ensure(ConstructPads.RackDef(c, part), st);
         var n = 0;
         while (n < most && ConstructRackPack.LastOf(st, def, out var slab, out var lane))
         {
@@ -157,9 +157,10 @@ public sealed partial class ConstructWorld
     /// <summary>A piece into a Piece Rack, if it takes it: in the place packing gives it. Server.</summary>
     public bool RackPut(Construct c, int part, ConstructPartDef d, bool ordered = false)
     {
+        part = ConstructPads.Owner(c, part); // (a Pad Tile in a bigger pad: into the pad, its owner tile's store)
         if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d, ordered) != 0)
             return false;
-        ConstructRackPack.Place(c.DefOf(part), st, d, false, out _, out _);
+        ConstructRackPack.Place(ConstructPads.RackDef(c, part), st, d, false, out _, out _);
         st.AddKind(d.Id, 1);
         LoadChanged = true;
         Changed(st);
@@ -243,9 +244,9 @@ public static class ConstructConveyor
     /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big for it, 4 full (no text: the step asks every time the lead piece waits; <see cref="RackRefusal"/> says it).</summary>
     public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d, bool ordered = false)
     {
-        var rd = c.DefOf(part);
-        if (!rd.IsPieceRack)
-            return 1;
+        var rd = ConstructPads.RackDef(c, part);
+        if (!rd.IsPieceRack || ConstructPads.IsMember(c, part))
+            return 1; // (a Pad Tile in a bigger pad holds nothing itself: its pad is its owner tile's, ConstructPads.Owner)
         if (d.Role == PartRole.Storage && !rd.IsBuildStation && !rd.IsLayDownPad && !(ordered && rd.IsCraftTerminal)) // (lifters phase 7: a Lay-down Pad takes a store part as the hold does: a def, new and empty; a loaded loose one is refused at its take-in, ConstructLifters.TakeInWhy) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
@@ -265,7 +266,7 @@ public static class ConstructConveyor
                 return "a rack takes pieces, not stores";
             case 3:
             {
-                ConstructRackPack.Hold(c.DefOf(part), out var lo, out var hi);
+                ConstructRackPack.Hold(ConstructPads.RackDef(c, part), out var lo, out var hi);
                 return d.BoundsMax.Z - d.BoundsMin.Z > hi.Z - lo.Z ? "piece too long for this rack" : "piece too big across for this rack";
             }
             case 4:
@@ -336,8 +337,8 @@ public static class ConstructConveyor
                     Array.Resize(ref c.ToolRacks, Math.Max(4, c.ToolRackCount * 2));
                 c.ToolRacks[c.ToolRackCount++] = (ushort)i;
             }
-            if (!c.Parts[i].D.IsPieceRack)
-                continue;
+            if (!c.Parts[i].D.IsPieceRack || ConstructPads.IsMember(c, i))
+                continue; // (a Pad Tile in a bigger pad: its owner tile stands for the pad, ConstructPads.cs)
             if (c.PieceRacks.Length == c.PieceRackCount)
                 Array.Resize(ref c.PieceRacks, Math.Max(4, c.PieceRackCount * 2));
             c.PieceRacks[c.PieceRackCount++] = (ushort)i;
@@ -360,7 +361,7 @@ public static class ConstructConveyor
     {
         IntoRack(c, part, eye, look, out var o, out var dir);
         var near = 6f;
-        return ConstructRackPack.Ray(c.DefOf(part), st, o, dir, ref near, out slab, out lane);
+        return ConstructRackPack.Ray(ConstructPads.RackDef(c, part), st, o, dir, ref near, out slab, out lane);
     }
 
     // ---- Taking a piece off a conveyor (F, the physics gun) --------------------------------------------------------
@@ -461,14 +462,14 @@ public static class ConstructConveyor
                 continue;
             if (c.Conveyed[i].At < Length(c, route) - 0.02f || ConstructParts.Get(c.Conveyed[i].Def) is not { } d)
                 return 0;
-            var to = c.Routes[route].To;
+            var to = ConstructPads.Owner(c, c.Routes[route].To); // (a conveyor into any tile of a pad ends at its owner's store)
             if (to >= c.PartCount)
                 return 1;
             var td = c.DefOf(to);
             if (td.IsPieceRack && world.StoreOf(c, to) is { } st)
             {
                 var why = RackCheck(c, to, st, d);
-                ConstructRackPack.Hold(td, out var lo, out var hi);
+                ConstructRackPack.Hold(ConstructPads.RackDef(c, to), out var lo, out var hi);
                 return why == 3 && d.BoundsMax.Z - d.BoundsMin.Z > hi.Z - lo.Z ? 5 : why is >= 2 and <= 4 ? why : 0;
             }
             if (td.IsRouter && ((LogiFlags)c.Conveyed[i].Flags & LogiFlags.Stuck) != 0)
@@ -857,11 +858,15 @@ public static class ConstructConveyor
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
             return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
+        var jd = c.DefOf(j);
+        var rollers = jd.IsRollerTile || jd.IsTurntable; // (a run's tile or a turntable: which way on, RollerRuns.Passes)
         Span<byte> outs = stackalloc byte[8];
         var n = 0;
         for (var o = 0; o < c.RouteCount && n < outs.Length; o++)
-            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j && (!rollers || RollerRuns.Passes(c, j, k, o)))
                 outs[n++] = (byte)o;
+        if (n < outs.Length && jd.IsRollerTile && !RollerRuns.IsRunPort(jd, c.Routes[k].ToPort) && RollerRuns.RunOf(c, j) is var run and >= 0)
+            outs[n++] = (byte)run; // (a link into any tile's Piece in: onto its run, at the run's start)
         for (var t = 0; t < n; t++)
         {
             var pick = (c.Routes[k].Cursor + t) % n;
@@ -926,6 +931,8 @@ public static class ConstructConveyor
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
+            if (c.RollersStale && !c.Dirty)
+                RollerRuns.Sync(world, c); // (Roller Tile runs after a rebuild: each run's conveyor as its tiles are)
             if (c.Logi is { OffAny: > 0 })
                 ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
             if (c.ConveyedCount == 0)
@@ -1055,7 +1062,7 @@ public static class ConstructConveyor
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
     private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
     {
-        var to = c.Routes[route].To;
+        var to = ConstructPads.Owner(c, c.Routes[route].To); // (a conveyor into any tile of a pad puts into its owner's store)
         if (to >= c.PartCount)
             return false;
         var td = c.DefOf(to);

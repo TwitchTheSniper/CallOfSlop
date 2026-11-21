@@ -45,6 +45,27 @@ public sealed class PointGravity : IGravityField
     public float OrbitFrom;
 
     /// <summary>
+    /// The body's spin in game axes (rad/s), set with <see cref="OrbitMu"/>: the game's frame turns with the ground under the
+    /// bubble, so a free fall in it is felt with the turn's pulls (<see cref="FrameTurnPull"/>), as the ships' flights, which
+    /// step in the inertial frame, have them by nature. Zero: none.
+    /// </summary>
+    public Vector3 OrbitSpin;
+
+    /// <summary>
+    /// The pulls a body falling free in the turning game frame feels besides gravity (Karl, 2026-11-21: someone who flew 200 m
+    /// off a ship in orbit with the dampeners off drifted kilometres from it over minutes, out of its orbit's plane): Coriolis,
+    /// -2 w x v (0.08 m/s2 at 480 m/s of orbit on a 21-hour day), and the centrifugal pull, -w x (w x r) about the centre.
+    /// Without them a spacewalker's orbit and the ship's (stepped in the inertial frame) part by kilometres in minutes.
+    /// </summary>
+    public Vector3 FrameTurnPull(Vector3 position, Vector3 velocity)
+    {
+        var w = OrbitSpin;
+        if (w == Vector3.Zero)
+            return Vector3.Zero;
+        return -2f * Vector3.Cross(w, velocity) - Vector3.Cross(w, Vector3.Cross(w, position - Center));
+    }
+
+    /// <summary>
     /// A free player's pull past the bubble's edge: the body's GM over the distance squared, as the ships there feel it
     /// (SpaceShips), with no gravity setting, so someone who steps off a ship in orbit falls round with it. False inside.
     /// </summary>

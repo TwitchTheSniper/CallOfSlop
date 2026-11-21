@@ -61,11 +61,18 @@ public static class StockTargets
             Add(CfgKey.FeedPriority, CfgType.Choice, "Order priority", 0, 2, 1, "Its orders' class: High orders take shared parts and machines first, then the oldest order.", PriorityNames);
     }
 
-    public static int Keep(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StoreKeep, 0);
+    // A pad of Pad Tiles keeps one store, its owner tile's, so the owner's settings are the pad's (a member tile's are not read).
+    private static float Own(Construct c, int part, CfgKey key, float or)
+    {
+        var o = ConstructPads.Owner(c, part);
+        return ConstructConfig.Get(c.Parts[o], c.DefOf(o), key, or);
+    }
 
-    public static int Priority(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StorePriority, 3);
+    public static int Keep(Construct c, int part) => (int)Own(c, part, CfgKey.StoreKeep, 0);
 
-    public static int Takes(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StoreTakes, TakesAnything);
+    public static int Priority(Construct c, int part) => (int)Own(c, part, CfgKey.StorePriority, 3);
+
+    public static int Takes(Construct c, int part) => (int)Own(c, part, CfgKey.StoreTakes, TakesAnything);
 
     public static int Spill(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.RouterSpill, SpillAuto);
 
@@ -136,7 +143,7 @@ public static class StockTargets
             var riding = Riding(c, st.Handle, t.Kind, out var ridingAll);
             if (keep <= 0 || have + riding > Low(keep))
                 continue;
-            var room = c.DefOf(part).RackCount - st.ItemCount - ridingAll;
+            var room = ConstructPads.RackDef(c, part).RackCount - st.ItemCount - ridingAll;
             var want = Math.Min(keep - have - riding, room);
             if (want <= 0 || ConstructConveyor.RackCheck(c, part, st, d) != 0 && have == 0 && st.ItemCount > 0)
                 continue;
@@ -183,7 +190,7 @@ public static class StockTargets
         foreach (var c in world.Bodies)
             for (var p = 0; p < c.PartCount; p++)
             {
-                if (!c.Parts[p].D.IsPieceRack || c.Parts[p].D.IsCraftTerminal || c.Parts[p].Store == 0 || Keep(c, p) <= 0)
+                if (!c.Parts[p].D.IsPieceRack || c.Parts[p].D.IsCraftTerminal || c.Parts[p].Store == 0 || ConstructPads.IsMember(c, p) || Keep(c, p) <= 0)
                     continue;
                 var handle = c.Parts[p].Store;
                 if (Has(world, c.Id, handle) || world.StoreOf(c, p) is not { KindN: > 0 } st)

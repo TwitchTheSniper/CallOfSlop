@@ -197,8 +197,11 @@ public static class ConstructCrafting
             }
             else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores && !ConstructLifters.LiftOnly(c, seen[q]))
             {
+                var sq = ConstructPads.Owner(c, seen[q]); // (a Pad Tile: its pad, the owner tile's store; listed once)
+                if (Array.IndexOf(net.Stores, sq, 0, net.StoreN) >= 0)
+                    continue;
                 net.Via[net.StoreN] = RouteTo(c, seen[q], t);
-                net.Stores[net.StoreN++] = seen[q];
+                net.Stores[net.StoreN++] = sq;
             }
         }
     }
@@ -312,7 +315,7 @@ public static class ConstructCrafting
         var sd = c.DefOf(part);
         if (sd.IsPieceRack)
         {
-            ConstructRackPack.Ensure(sd, st);
+            ConstructRackPack.Ensure(ConstructPads.RackDef(c, part), st);
             return ConstructRackPack.LastOf(st, (ushort)d.Id, out var slab, out var lane) && world.RackTakeAt(c, part, slab, lane) != null;
         }
         if (sd.IsVolumeStore)

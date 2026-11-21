@@ -18,11 +18,20 @@ public static partial class Program
             g.TryMelee(now);
     }
 
-    /// <summary>What the movement keys mean in flight: Crouch is held for down, not toggled, and nothing is left toggled on landing.</summary>
+    /// <summary>What the movement keys mean in flight (noclip, or a worn MMU in vacuum): Crouch is held for down, not toggled, and nothing is left toggled on landing.</summary>
     private static Buttons NoclipButtons(Game g, Buttons b)
     {
-        if (g.Local is not { Sim.Noclip: true })
+        if (g.Local is not { Sim.Noclip: true } && !g.MmuSteering)
             return b;
+        if (g.MmuSteering && _mouseCaptured && !SpectateOn)
+        {
+            // A worn MMU flies as noclip does (Karl, 2026-11-21): Jump is up and Crouch is down, both held. The walker's
+            // crouch toggle left the pack burning down after a tap, and Jump while "crouched" only stood them up, so the
+            // up and down jets seemed to fire the wrong way or not at all.
+            _holdJumpUntilRelease = false;
+            if (Down(GameAction.Jump))
+                b |= Buttons.Jump;
+        }
         _crouchToggle = _proneToggle = false;
         _stanceKeyAt = -1;
         b &= ~(Buttons.Crouch | Buttons.Prone);
