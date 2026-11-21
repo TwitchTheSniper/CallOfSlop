@@ -2478,6 +2478,15 @@
     {"output": "Packet Spine Hull Stbd 8", "materials": {"steel": 202, "concrete": 40}, "seconds": 32.4},
     {"output": "Packet Spine Hull Stbd 9", "materials": {"steel": 202, "concrete": 40}, "seconds": 32.4},
     {"output": "Packet Stern", "materials": {"steel": 1200, "concrete": 240}, "seconds": 180.0},
-    {"output": "Die Block", "materials": {"steel": 600, "rubber": 150}, "parts": {"Gear Set": 2, "Wiring Loom": 2}, "seconds": 120}
+    {"output": "Die Block", "materials": {"steel": 600, "rubber": 150}, "parts": {"Gear Set": 2, "Wiring Loom": 2}, "seconds": 120},
+    {"output": "Round Module Socket 1 m", "materials": {"steel": 13, "concrete": 3}, "seconds": 4.0, "minTier": 2},
+    {"output": "Round Module Plug 1 m", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.4, "minTier": 2},
+    {"output": "Round Module Stand 1 m", "materials": {"steel": 17, "concrete": 3}, "seconds": 4.6, "minTier": 2},
+    {"output": "Round Module Socket 2 m", "materials": {"steel": 53, "concrete": 11}, "seconds": 10.0, "minTier": 2},
+    {"output": "Round Module Plug 2 m", "materials": {"steel": 38, "concrete": 8}, "seconds": 7.6, "minTier": 2},
+    {"output": "Round Module Stand 2 m", "materials": {"steel": 69, "concrete": 14}, "seconds": 12.4, "minTier": 2},
+    {"output": "Round Module Socket 3 m", "materials": {"steel": 120, "concrete": 24}, "seconds": 20.0, "minTier": 2},
+    {"output": "Round Module Plug 3 m", "materials": {"steel": 85, "concrete": 17}, "seconds": 14.7, "minTier": 2},
+    {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2}
   ]
 }

@@ -163,6 +163,22 @@ Every plug has a **lifting lug** at each corner (and every 6 m of edge on big pl
 grip lugs, and the physics gun's beam attaches at the plug's middle, so any module, however odd, can be carried the same
 way. Lugs are detail plus a small solid each; they stand inside the footprint, so they never leave the room.
 
+### 2.7 Round sockets
+
+(Sean, 2026-11-21: round variants for round hulls such as engine nacelles and pods.) **Round Module Socket**, **Round Module Plug**
+and **Round Module Stand**, 1, 2 and 3 m across (`Constructs/Parts/Modules/Round`, generator `ModuleSocketParts.Round.cs`, the
+`module_sockets` kit). They are the same standard as the square ones with `"round": true` on `moduleSocket` / `modulePlug` (W = L =
+the diameter): the module socket in the middle, the plug 15 mm over the plate's drawn face, the same settings (kind, style, depth,
+room above, keyed, Hide connector), the same pass-through ports at the square table's places pulled in to three quarters of the way
+from the middle, and the same names for the back and top sockets, kept only where the cell lies inside the disc. A round plate takes
+only a round plug of its diameter (`ModuleSockets.Matches`, `SizeRefusal`: "sizes and shapes match exactly"), at any turn unless
+keyed; a round module's blueprint block says `"round": true`, and faction choice fits only round designs to round sockets
+(`ModuleSlot.Round`, `ModuleCandidate.Round`). Look: a dark base flange, the hazard ring with four index ticks and a bolt circle,
+a seal gasket and centre boss under the plug, the keying notch on the -x -z side; the plug a disc with a bolted ledge carrying the
+four lifting lugs outside its top, so a part as wide as the top stands between them; the stand a plate on a pedestal with four ribs.
+Collision is three hidden boxes per disc (a square and a cross inside the circle). Rating, room and the flush or opening well still go
+by the square footprint: the well a round socket cuts is square (`HullHoles` cuts rectangles; a round hole is later).
+
 ## 3. Fitting checks: clearance and collision
 
 ### 3.1 The socket's column (at placing and at every rebuild)

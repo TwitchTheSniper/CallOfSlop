@@ -15,6 +15,7 @@ public sealed partial class ConstructPartDef
 {
     public ModPart ModPart; // "moduleSocket" / "modulePlug": ModuleSockets.cs
     public byte ModW, ModL; // the footprint, whole metres, W <= L: W along the part's x, L along its z, the face's normal its y
+    public bool ModRound; // "round": true: a round plate or plug, W the diameter (W == L): takes only a round one of its diameter (module-sockets.md 2.7)
     public bool ModStand; // "moduleSocket": {"stand": true}: a Module Stand (a module on it is stored: nothing couples)
     public bool ModNoHide; // "moduleSocket": {"hide": false}: no Hide connector setting (a plate that is a whole wall section: the Wall Bay Socket)
     public float ModStandAbove; // "moduleSocket": {"stand": true, "above": m}: a stand's room height when its own part roofs it (a container's cradle); 0: the table's default
@@ -27,6 +28,7 @@ public struct CModSocket
 {
     public ushort Plate; // the plate part
     public byte W, L;
+    public bool Round; // a round plate: takes only a round plug of its diameter W
     public ModKind Kind;
     public ModStyle Style;
     public bool Keyed, Stand;
@@ -88,7 +90,7 @@ public static class ModuleSockets
             throw new ConstructPartException($"{file}: a part is a Module Socket or a Module Plug, not both");
         var e = (plate ?? plug)!.Value;
         var key = plate != null ? "moduleSocket" : "modulePlug";
-        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above", "hide"] : ["w", "l"], $"{file}, {key}");
+        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above", "hide", "round"] : ["w", "l", "round"], $"{file}, {key}");
         var w = (int)ConstructParts.Num(ConstructParts.Need(e, "w", $"{file}, {key}"), file, key + ".w");
         var l = (int)ConstructParts.Num(ConstructParts.Need(e, "l", $"{file}, {key}"), file, key + ".l");
         if (!ModuleSocketTable.ValidSize(w, l))
@@ -96,6 +98,9 @@ public static class ModuleSockets
         d.ModPart = plate != null ? ModPart.Socket : ModPart.Plug;
         d.ModW = (byte)w;
         d.ModL = (byte)l;
+        d.ModRound = ConstructParts.Opt(e, "round") is { ValueKind: JsonValueKind.True };
+        if (d.ModRound && w != l)
+            throw new ConstructPartException($"{file}: a round \"{key}\" is as wide as it is long (its diameter): {w} x {l}");
         d.ModStand = plate != null && ConstructParts.Opt(e, "stand") is { ValueKind: JsonValueKind.True };
         d.ModNoHide = plate != null && ConstructParts.Opt(e, "hide") is { ValueKind: JsonValueKind.False };
         if (ConstructParts.Opt(e, "above") is { } ab)
@@ -309,7 +314,7 @@ public static class ModuleSockets
             ref var p = ref c.Parts[i];
             var s = new CModSocket
             {
-                Plate = (ushort)i, W = d.ModW, L = d.ModL, Stand = d.ModStand, Module = -1, InTheWay = -1,
+                Plate = (ushort)i, W = d.ModW, L = d.ModL, Round = d.ModRound, Stand = d.ModStand, Module = -1, InTheWay = -1,
                 Kind = d.ModStand ? ModKind.Generic : (ModKind)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ModKind, 0), 0, ModuleSocketTable.KindNames.Length - 1),
                 Style = d.ModStand ? ModStyle.Proud : (ModStyle)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ModStyle, 0), 0, ModuleSocketTable.StyleNames.Length - 1),
                 Keyed = !d.ModStand && ConstructConfig.Get(p, d, CfgKey.ModKeyed, 0) > 0.5f,
@@ -785,13 +790,16 @@ public static class ModuleSockets
         return plate.ModW == plate.ModL || MathF.Abs(dot) > 0.9f;
     }
 
+    /// <summary>Does plug def <paramref name="plug"/> match socket <paramref name="s"/>'s size and shape (round or square)?</summary>
+    public static bool Matches(in CModSocket s, ConstructPartDef plug) => plug.ModW == s.W && plug.ModL == s.L && plug.ModRound == s.Round;
+
     /// <summary>A plug of this size and the plate's: null when they match, else why not.</summary>
     public static string? SizeRefusal(ConstructPartDef plate, ConstructPartDef plug)
     {
         if (plate.ModPart != ModPart.Socket || plug.ModPart != ModPart.Plug)
             return "a Module Plug goes on a Module Socket's face";
-        if (plate.ModW != plug.ModW || plate.ModL != plug.ModL)
-            return $"that's a {ModuleSocketTable.SizeText(plate.ModW, plate.ModL)} socket and a {ModuleSocketTable.SizeText(plug.ModW, plug.ModL)} module: sizes match exactly (an adapter module takes a smaller one)";
+        if (plate.ModW != plug.ModW || plate.ModL != plug.ModL || plate.ModRound != plug.ModRound)
+            return $"that's a {ModuleSocketTable.SizeText(plate.ModW, plate.ModL, plate.ModRound)} socket and a {ModuleSocketTable.SizeText(plug.ModW, plug.ModL, plug.ModRound)} module: sizes and shapes match exactly (an adapter module takes a smaller one)";
         return null;
     }
 
@@ -824,15 +832,15 @@ public static class ModuleSockets
             return "that module is welded to more than its plug's face";
         var t = ModuleSocketTable.Current;
         if (m.Mass > t.MassRating(s.W, s.L))
-            return $"the module weighs {m.Mass / 1000f:0.#} t: a {ModuleSocketTable.SizeText(s.W, s.L)} socket holds {t.MassRating(s.W, s.L) / 1000f:0.#} t";
+            return $"the module weighs {m.Mass / 1000f:0.#} t: a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} socket holds {t.MassRating(s.W, s.L) / 1000f:0.#} t";
         if (m.Thrust > t.ThrustRating(s.W, s.L))
-            return $"the module pushes {m.Thrust / 1000f:0} kN: a {ModuleSocketTable.SizeText(s.W, s.L)} socket takes {t.ThrustRating(s.W, s.L) / 1000f:0} kN";
+            return $"the module pushes {m.Thrust / 1000f:0} kN: a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} socket takes {t.ThrustRating(s.W, s.L) / 1000f:0} kN";
         if (KindTag(s.Kind) is { } want && m.Primary != want)
             return $"this socket takes {TagName(want)} modules only: this one is {TagName(m.Primary)} ({TagsText(m.Tags)})";
         if (byHand && !creative)
         {
             if (!t.HandSize(s.W, s.L))
-                return $"a {ModuleSocketTable.SizeText(s.W, s.L)} module is fitted by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
+                return $"a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module is fitted by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
             if (m.Mass > lift)
                 return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {lift / 1000f:0.#} t (a Module Fitter lifts more)";
         }
@@ -959,7 +967,7 @@ public static class ModuleSockets
         if (d.ModPart == ModPart.Socket && SocketOfPlate(c, part) is var si and >= 0)
         {
             var s = c.ModSockets[si];
-            var size = ModuleSocketTable.SizeText(s.W, s.L);
+            var size = ModuleSocketTable.SizeText(s.W, s.L, s.Round);
             if (ModuleFitters.LookText(c, part) is { } fitting)
                 return $"{size} {(s.Stand ? "stand" : "socket")}: {fitting}";
             if (s.Stand)
@@ -988,7 +996,7 @@ public static class ModuleSockets
     {
         var m = c.Modules[mi];
         var d = c.DefOf(m.Plug);
-        return $"{ModuleSocketTable.SizeText(d.ModW, d.ModL)} module";
+        return $"{ModuleSocketTable.SizeText(d.ModW, d.ModL, d.ModRound)} module";
     }
 
     public static string StatsText(in CModule m)

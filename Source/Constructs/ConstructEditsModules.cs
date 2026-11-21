@@ -38,11 +38,11 @@ public sealed partial class ConstructEdits
             if (o.Dirty)
                 o.Rebuild();
             foreach (var m in o.Modules)
-                if (m.Socket < 0 && o.DefOf(m.Plug).ModW == s.W && o.DefOf(m.Plug).ModL == s.L && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
+                if (m.Socket < 0 && ModuleSockets.Matches(s, o.DefOf(m.Plug)) && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
                     (best, bestDist) = (o, Vector3.Distance(o.ToWorld(o.Com), wface));
         }
         if (best == null)
-            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L)} module within 30 m";
+            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module within 30 m";
         best.SocketAt(best.Modules[0].Plug, best.DefOf(best.Modules[0].Plug).ModSocket, out var pat, out _);
         best.Pos += wface + wdir * 0.6f - best.ToWorld(pat);
         best.PrevPos = best.Pos;
@@ -112,7 +112,7 @@ public sealed partial class ConstructEdits
         {
             var t = ModuleSocketTable.Current;
             if (!t.HandSize(s.W, s.L))
-                return $"a {ModuleSocketTable.SizeText(s.W, s.L)} module is taken off by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
+                return $"a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module is taken off by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
             if (m.Mass > LiftOf(player, false))
                 return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {LiftOf(player, false) / 1000f:0.#} t (a Module Fitter lifts more)";
         }
@@ -179,7 +179,7 @@ public sealed partial class ConstructEdits
             if (!m.OnStand || c.Parts[m.Plug].Broken)
                 continue;
             var pd = c.DefOf(m.Plug);
-            if (pd.ModW != s.W || pd.ModL != s.L)
+            if (!ModuleSockets.Matches(s, pd))
                 continue;
             c.SocketAt(m.Plug, pd.ModSocket, out var pat, out _);
             var dist = Vector3.Distance(c.ToWorld(pat), wface);
@@ -197,7 +197,7 @@ public sealed partial class ConstructEdits
                 if (m.Socket >= 0 || o.Parts[m.Plug].Seg != 0 || o.Parts[m.Plug].Broken)
                     continue;
                 var pd = o.DefOf(m.Plug);
-                if (pd.ModW != s.W || pd.ModL != s.L)
+                if (!ModuleSockets.Matches(s, pd))
                     continue;
                 o.SocketAt(m.Plug, pd.ModSocket, out var pat, out _);
                 var dist = Vector3.Distance(o.ToWorld(pat), wface);
@@ -206,7 +206,7 @@ public sealed partial class ConstructEdits
             }
         }
         if (best == null)
-            return $"bring a {ModuleSocketTable.SizeText(s.W, s.L)} module within {pull:0.#} m of the socket first (the physics gun carries it)";
+            return $"bring a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module within {pull:0.#} m of the socket first (the physics gun carries it)";
         // By hand when it may (Creative, or in the hand's size, lift and pull), else by a Module Fitter aboard.
         var bestMass = ModuleSockets.ModuleOfPart(best, bestPlug) is var bmi and >= 0 ? best.Modules[bmi].Mass : 0f;
         var byFitter = fitterReach > 0 && (bestDist > hand || !ModuleSocketTable.Current.HandSize(s.W, s.L) || bestMass > LiftOf(player, false));

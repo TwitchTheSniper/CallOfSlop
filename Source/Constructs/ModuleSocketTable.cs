@@ -110,6 +110,9 @@ public sealed class ModuleSocketTable
 
     public static string SizeText(int w, int l) => $"{w}x{l}";
 
+    /// <summary>A size as players read it: "2x3", or "round 2 m" for a round plate or plug (W its diameter).</summary>
+    public static string SizeText(int w, int l, bool round) => round ? $"round {w} m" : $"{w}x{l}";
+
     public static bool TryParseSize(string s, out int w, out int l)
     {
         w = l = 0;
