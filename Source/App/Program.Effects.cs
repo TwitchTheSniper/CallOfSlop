@@ -20,7 +20,7 @@ public static unsafe partial class Program
         (PostFx.AoStrength, PostFx.AoRadius, PostFx.AoClassic) = (_settings.AoStrength, _settings.AoRadius, _settings.AoClassic);
         (SunShadows.On, SunShadows.Size, SunShadows.KeyLight) = (_settings.SunShadows > VideoLevel.Low, _settings.SunShadows == VideoLevel.High ? 4096 : 2048, _settings.KeyLight);
         RoomShade.On = _settings.DarkInteriors;
-        (LampShadows.On, LampShadows.Size, LampShadows.Slots) = (_settings.LampShadows > VideoLevel.Low, _settings.LampShadows == VideoLevel.High ? 512 : 256, LightGrid.MaxDynamic); // (every lit lamp: an unshadowed one shone through walls, and which ones depended on where you stood)
+        (LampShadows.On, LampShadows.Size, LampShadows.Slots) = (_settings.LampShadows > VideoLevel.Low, _settings.LampShadows == VideoLevel.High ? 384 : 256, LightGrid.MaxDynamic); // (every lit lamp: an unshadowed one shone through walls, and which ones depended on where you stood)
         PostFx.ContactOn = _settings.ContactShadows; // (any Post effects level: one small pass per near body)
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
         ConstructRender.OcclusionSetting = _settings.HiddenCulling;

@@ -133,9 +133,9 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   (+1; `LightGrid.SetDynamicSlot`), the slot's turn is `uLampRows` (three rows a slot) and `uLampQ`/`uLampP` hold the bias, the
   range and the soft step. `LampShadow(i, p, n)` in `Lighting.Glsl` (four filtered compares) scales that light in modes 1 and 5.
   The faces are kept until the body is rebuilt, a door on it starts or settles (`Construct.DoorPoseStamp`), a near body moves
-  against it or the lamp changes slot; at most three slots are drawn a frame. A box holding the lamp's point, or a small box
+  against it or the lamp changes slot; at most four slots are drawn a frame. A box holding the lamp's point, or a small box
   within 16 cm of it, casts nothing (its own fixture). Lamps on moving segments stay unshadowed. Settings > Video > Lamp shadows
-  (Low off, Medium faces of 256, High 512; every lit lamp gets a slot, since an unshadowed one shone through walls and which
+  (Low off, Medium faces of 256, High 384; every lit lamp gets a slot, since an unshadowed one shone through walls and which
   ones did changed with where you stood); `--no-lamp-shadows`.
 - **Doors in the casters**: `SunShadows`' per-body box list (shared by the sun, the dark interiors and the lamps) is made again when
   a door starts moving or settles, with a moving door left out, so an open door lets the sun, the sky and lamps through.
@@ -143,6 +143,12 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   triangles (a second list per body, `SunShadows.DrawShapes`), not as the box it fills: a sloped plate's box is a solid block
   round it, which hid its own face from the sky and the sun (Karl 2026-11-21: the Zero Day's sides went black outside, the dark
   interiors taking them for a shut room, and its ceiling's sloped plates threw hard wedges across the room's lamp light).
+- **Which lamps light** (`ConstructLamps.AddLights`, Karl 2026-11-21: a Zero Day room went dark at one end or the other by where
+  you stood). A frame takes up to `LightGrid.MaxDynamic` (32) dynamic lights. The lamps within reach of the eye are taken
+  nearest first, twice that many as candidates, then put in order by distance with a lamp the eye can't see (a construct ray
+  from the eye, at the bodies' tick pose) counting `HiddenPenalty` (8 m) farther: the room you stand in first, the deck below
+  and the rooms beside last. Rays are kept per lamp for 12 frames, at most 8 a frame, nearest first (60 lamps' rays a frame cost
+  3 ms on the cloud box).
 - **Light strips light the room** (`ConstructLamps.StripLamps`, Karl 2026-11-21: a bright ceiling bar lit nothing round it). A part's
   pale, flat, downward glowing boxes (thin in y, at least 0.12 m2 and 0.6 m long) are a row of lamps, one every 1.8 m, 20 cm under
   the strip, lit unless the body's power is off.
