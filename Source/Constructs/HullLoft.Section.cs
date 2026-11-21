@@ -158,7 +158,7 @@ public static partial class HullLoft
             Console.WriteLine($"note: the key as written is {sh.Key()}");
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         SectionJson(name, sh, out var c);
-        if (Parse(name) is not { } d)
+        if (ConstructParts.Find(name) is not { } d) // (by the door saves and blueprints use)
         {
             Console.WriteLine("refused: the part loader refused it (callofslop.log has the REFUSED line)");
             return 1;
