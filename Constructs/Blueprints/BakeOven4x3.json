@@ -1,0 +1,154 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Bake Oven 4 x 3",
+  "description": "A Bake Oven: its Core, a 4 x 3 bed of Oven Bed Blocks and three Mast Blocks on each corner (5.5 m under the raised hood). Set a welded group on the middle cells from above.",
+  "steps": [
+    {
+      "part": "Bake Oven"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 4,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Mast Block",
+      "on": 5,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 13,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 14,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 11,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 16,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 17,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 6,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 19,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 20,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 12,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 22,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Mast Block",
+      "on": 23,
+      "socket": "top",
+      "by": "bottom"
+    }
+  ]
+}
