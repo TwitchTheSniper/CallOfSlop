@@ -14,7 +14,7 @@ section, finishes, lamps, detail, the authoring fields, a detail budget, and the
 ## [How a building should look](constructs/buildings.md), 9 KB
 
 Read before authoring a building: what every building needs (the job gives the shape, an outline that reads at 50 m, a
-marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold-war fittings, the colony's street.
+marked way in), then each faction's style. Brutalism: concrete, cold-war fittings.
 
 ## [The rust bucket](constructs/ship.md), 3 KB
 

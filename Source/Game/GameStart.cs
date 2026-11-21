@@ -1,8 +1,8 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Which start this world plays (docs/story/STARTS.md; StoryStarts.cs). The server's alone: the host's choice (the Story
-/// page) for a fresh world, the save's for a saved one, StoryStarts.Legacy (no opening) for a world saved before starts.
+/// Which start this world plays (docs/story/STARTS.md; StoryStarts.cs). The server's alone: the host's choice (the menus'
+/// Start row) for a fresh world, the save's for a saved one, StoryStarts.Legacy (no opening) for a world saved before starts.
 /// Clients don't need it: the opening's beats and lines come from the server.
 /// </summary>
 public sealed partial class Game
@@ -36,21 +36,4 @@ public sealed partial class Game
 
     /// <summary>Server, taking a save: the start's id (always written since 2026-11-17: "" is a world from before starts).</summary>
     private string StartCapture() => PlayedStart.Id;
-
-    /// <summary>Server, as a player wakes for the first time: the start's standing with its faction, when it sets one.</summary>
-    private void StartStanding(Player p)
-    {
-        var start = PlayedStart;
-        if (start.Standing == 0 || start.Faction.Length == 0 || Story is not { } s)
-            return;
-        var who = StoryEntityOf(p);
-        var f = s.Factions.Find(start.Faction);
-        if (who < 0 || f < 0)
-        {
-            Log($"[start] {p.Name}: no standing with {start.Faction} ({(f < 0 ? "no such faction" : "not in the story yet")})");
-            return;
-        }
-        if (s.Factions.StartStanding(f, who, start.Standing))
-            Log($"[start] {p.Name}: {start.Faction} standing {start.Standing} ({start.Name})");
-    }
 }

@@ -1642,8 +1642,6 @@ public sealed partial class Game : IDisposable
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.EntrenchedMult));
-        if (_bodyCount > 0 && attacker != victim && (attacker.Team == SbPeopleTeam || victim.Team == SbPeopleTeam))
-            amount = StoryMoodDamage(attacker, victim, amount); // (a story person's rage, panic...: GameStoryMoods.cs)
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
@@ -1655,13 +1653,7 @@ public sealed partial class Game : IDisposable
         victim.Health -= amount;
         var hitPart = victim.InShell ? shellPart : BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
-        {
-            if (victim.Team == SbPeopleTeam)
-            {
-                StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
-            }
             return false;
-        }
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
         {
             // Saved: 1 HP and a shield that blocks the next few bullet hits (Health.cs).
@@ -1725,8 +1717,6 @@ public sealed partial class Game : IDisposable
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
-        if (SandboxOn && StoryStockGun(shooter, def))
-            return; // a story world's person has no gun until they build one (GameStoryArms.cs)
         if (def.IsLauncher)
         {
             ServerLauncherShot(shooter, def, origin, dir, spread, seed, now); // rockets and grenades fly for real (GameLaunchers.cs)
@@ -2442,27 +2432,6 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.ShellPod when !IsServer && r.Has(5):
                 ReadShellPod(ref r); // a shell pod's fold or unfold (GameShellPod.cs)
-                break;
-            case (byte)Msg.StandIn when !IsServer:
-                ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
-                break;
-            case (byte)Msg.Fragments when !IsServer:
-                ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)
-                break;
-            case (byte)Msg.TalkInvite when !IsServer && r.Has(3):
-                ReadTalkInvite(r.U8(), r.U8(), r.U8()); // another player's talk to join, or the joined talk is over (GameStoryTalkJoin.cs)
-                break;
-            case (byte)Msg.StoryPaths when !IsServer:
-                ReadStoryPaths(ref r); // the Logbook's Paths (GameStoryPaths.cs)
-                break;
-            case (byte)Msg.Jobs:
-                OnJobsPacket(sender, ref r); // faction jobs (GameStoryJobs.cs)
-                break;
-            case (byte)Msg.TalkChoices when !IsServer:
-                ReadTalkChoices(ref r); // a storylet's answers in the talk panel (GameStoryStorylets.cs)
-                break;
-            case (byte)Msg.TalkTopics when !IsServer:
-                ReadTalkTopics(ref r); // what the person will talk about, in the talk panel (GameStoryTopics.cs)
                 break;
             case (byte)Msg.Factions:
                 ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)

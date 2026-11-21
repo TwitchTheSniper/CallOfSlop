@@ -2,7 +2,6 @@
   // The Magpie start's opening (Story/Starts/Magpie.json, docs/story/STARTS.md "A ship start"): no colony, no cast, no wreck;
   // the Magpie Mining Ship is built over Caledon and everyone wakes aboard, standing in its frame (GameSpaceStart.cs).
   "format": "call-of-slop-opening/1",
-  "cast": "",
   "warden": "",
   "wreck": "",
   "ship": "Magpie Mining Ship", // the blueprint everyone wakes aboard (Source/PartKit/Generators/MinerParts.cs)

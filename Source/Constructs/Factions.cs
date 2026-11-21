@@ -69,12 +69,12 @@ public sealed class FactionTable
     public readonly sbyte[] StoryStanding = new sbyte[Max * MaxStory];
 
     /// <summary>
-    /// What each story faction teaches (docs/archive/story/STORY.md "Technologies"), a line each ("Remote Control (Registered): Remote
+    /// What each story faction teaches (the removed story (docs/removals-notes.md)), a line each ("Remote Control (Registered): Remote
     /// Transmitter, ..."), and per player faction the ones it has learnt, a bit each (<see cref="StoryLearnt"/>[id * MaxStory + f]).
     /// </summary>
     public string[][] StoryTech = [];
 
-    /// <summary>Who teaches a part, from <see cref="StoryTech"/>: "the Ministry of Slop teaches it (The Antimatter Bomb, at Crown Servant)", or null.</summary>
+    /// <summary>Who teaches a part, from <see cref="StoryTech"/>: "the Militia teaches it (its technology, at a standing)", or null.</summary>
     public string? TeacherOf(string part)
     {
         for (var f = 0; f < StoryTech.Length && f < StoryNames.Length; f++)

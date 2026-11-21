@@ -1,8 +1,8 @@
-# The story's worlds
+# The worlds
 
 Five planets in one star system, Frostreach (Karl, 2026-11-15; the storyline's five systems, one faction home in each,
-are archived with it: Cinder, Caledon and Mille moved into Frostreach, docs/space/GALAXY.md). The Dev system stays for tests. A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
-its system file. Together they are the game's map: the rust bucket and the Survival tutorial start over or on Glacier
+went with it: Cinder, Caledon and Mille moved into Frostreach, docs/space/GALAXY.md). The Dev system stays for tests. A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
+its system file. Together they are the game's map: the starts wake over or on a world
 (docs/story/STARTS.md), and one saved world holds every world the group lands on. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
 
@@ -15,83 +15,62 @@ world is at most 4 km), Redrock (the Dev system's) not at all. Surface gravity i
 the moons' orbits in `Systems/Frostreach.json` are four times as far. Past 16 km a float steps by 2-4 mm, so the physics
 keeps what floats can't hold (PLANETS.md "Origin").
 
-| System | World | Radius, gravity | Ground | Faction home | Why go |
+| System | World | Radius, gravity | Ground | Kept site | Why go |
 | --- | --- | --- | --- | --- | --- |
-| Dev (Slopstar) | Planetoid (`Maps/Dev`) | 10 km, 18 | temperate hills, two mountains | Ministry of Slop: the penal colony | where the story starts; data centre 1 |
+| Dev (Slopstar) | Planetoid (`Maps/Dev`) | 10 km, 18 | temperate hills, two mountains | none | tests |
 | Dev | Bluestone (`Maps/Dev`) | 3 km, 9 | blue-grey, one big mountain | none | the first trip out |
-| Dev | Redrock | 4 km, 9 | red desert: mesa country in the north, the Gash (a 5 km canyon), the Steps, a dune sea | a Ministry mining concession | a practice landing before the first jump |
-| Frostreach | Cinder | 20 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Salvagers: the Call Floor | data centre on the night side |
-| Frostreach | Glacier | 32 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 36 km crevasse), the Mirror (a frozen lake), the Shelves | IT: the Server Farm | data centre at the bottom of the Rent |
-| Frostreach | Caledon | 24 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
-| Frostreach | Mille | 4 km, 8 | hollow: a golden crust stepped in layers, 254 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
+| Dev | Redrock | 4 km, 9 | red desert: mesa country in the north, the Gash (a 5 km canyon), the Steps, a dune sea | a mesa top | a practice landing |
+| Frostreach | Cinder | 20 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | a crater's floor | ore; a deep crater on the night side |
+| Frostreach | Glacier | 32 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 36 km crevasse), the Mirror (a frozen lake), the Shelves | the Mirror | the bottom of the Rent |
+| Frostreach | Caledon | 24 km, 11 | bens with snow on top, long glens, heather slopes, bog | the Glen's floor | a shelf under Ben Slop |
+| Frostreach | Mille | 4 km, 8 | hollow: a golden crust stepped in layers, 254 m thick, round a glowing cavity | a terrace | inside the cavity |
 | Frostreach (moonlet of Mille) | Crumb | 2.4 km, 1.5 | a grey lump of rubble pocked with craters; the sky's edge only 2.8 km up (`"sky"` in make_worlds.py) | none | the Magpie start wakes over it (docs/story/STARTS.md): iron, stone and sand, the ores a tier 1 drill works |
 | Frostreach (moon of Glacier) | Slopolis | 14 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
 
 ## Places kept flat
 
-Each world has three level places, flattened after everything else, so later work (a settlement's blueprint, a data
-centre) has ground to stand on. Latitude 90 is the +Y pole and longitude 0 faces +Z (PLANETS.md). The home and the
-data centre's site each have a 4 m survey post (yellow for the home, blue for the data centre) and nothing else.
+Each world has three level places, flattened after everything else, so later work (a settlement, a station's ground
+base) has ground to stand on. They were the old factions' homes and the story's data centres, which went with the story
+(2026-11-21, docs/removals-notes.md). Latitude 90 is the +Y pole and longitude 0 faces +Z (PLANETS.md). The first and
+second site each have a 4 m survey post (yellow and blue) and nothing else.
 
-| World | Landing ground (spawns) | Faction home | Data centre's site |
+| World | Landing ground (spawns) | First site | Second site |
 | --- | --- | --- | --- |
 | Redrock | the pole, 70 m, height 14 | 55, 60: a mesa top, 90 m | 8, 190: a ledge in the Gash, 70 m, 236 m down |
-| Cinder | the pole (on the twilight line), height 10 | 12, 130: the Call Floor, a crater's floor 420 m across, 150 m down | -10, 50: the floor of a deep crater on the night side, 70 m |
+| Cinder | the pole (on the twilight line), height 10 | 12, 130: a crater's floor 420 m across, 150 m down | -10, 50: the floor of a deep crater on the night side, 70 m |
 | Glacier | the pole, height 20 | -10, 320: the Mirror, 700 m of flat ice | 15, 170: the bottom of the Rent, 80 m, 318 m down |
-| Caledon | the pole, height 30 | 30, 150: the Glen's floor, 160 m | 60, 152: a shelf at 640 m under Ben Slop, 70 m |
+| Caledon | the pole, height 30 | 30, 150: a glen's floor, 160 m | 60, 152: a shelf at 640 m under Ben Slop, 70 m |
 | Mille | the pole, height 9 | 55, 300: a terrace, 90 m | 70, 40: the Proving Bowl, where the crust is thinnest (about 150 m): the site itself is inside, under the bowl |
-
-The story's data centres stand on the data sites of Cinder, Glacier, Caledon and Mille (the first is by the penal colony
-on Glacier, the story's home, so Glacier has two; Redrock's site is spare): `Story/Fragments/Fragments.json` names each world and the place, and the
-host builds the Sealed Data Centre there the first time a story game plays the world (docs/archive/story/FRAGMENTS.md "On
-another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
 Glacier has a cold storm outdoors (`"storm": true`, set in make_worlds.py): driven snow, a whiteout down to about
 45 m at its height, frost and wind, gone under a roof and above 700 m (Maps/README.md "Storm"). Under it is a polar
-dusk (`"dusk": 0.85`): dark and blue, with the colony's lamps throwing orange pools. Made ground on Glacier is dark
-cinder with snow blown over it (the surface's `stone` and `dusting`), so the colony's bench isn't the blue of the ice.
+dusk (`"dusk": 0.85`): dark and blue, with lamps throwing orange pools. Made ground on Glacier is dark
+cinder with snow blown over it (the surface's `stone` and `dusting`), so a levelled bench isn't the blue of the ice.
 
 ### Glacier's ground
 
-Glacier was mostly gentle snow: walking out from the colony there was nothing to steer by for kilometres. Its rough
+Glacier was mostly gentle snow: walking out from the pole there was nothing to steer by for kilometres. Its rough
 country (made in make_worlds.py's `glacier_terrain`, Karl 2026-11-13: "real terrain") is in two parts:
 
-- **Near the colony**, each a short walk out and none reaching within 700 m of the pole: **the Spine**, a ridge 110 m
+- **Near the pole**, each a short walk out and none reaching within 700 m of the pole: **the Spine**, a ridge 110 m
   high and 2.6 km long about 1.2 km out along longitude 285 (west of the pole), with passes in its crest and an **ice
-  cave** opening on its colony side (82.21, 282); **the Rucks**, a field of pressure ridges 5 to 9 m high about 1.5 km
+  cave** opening on its pole side (82.21, 282); **the Rucks**, a field of pressure ridges 5 to 9 m high about 1.5 km
   out along longitude 210; **the Teeth**, a crevasse field 900 m across about 1.4 km out along longitude 150, cracks up
   to 24 m deep with routes between them.
-- **Over the whole world**, by a seeded draw that keeps clear of the colony, the spaceport and both sites: nine more
+- **Over the whole world**, by a seeded draw that keeps clear of the pole, the old spaceport's ground and both sites: nine more
   ice ridges (50 to 150 m) with a cave under each of the six tallest, twelve crevasse fields, seven pressure-ridge
   fields, and sastrugi (wind drifts half a metre high) on all the open snow from about 830 m out from the pole.
   Patches of bare blue ice (the surface's `ice`, `icePatches`, `iceScale`: colour only) lie on gentle ground everywhere.
 
-Kept as it was: the ground within 700 m of the pole (the colony, its bench, the quarry, the stations, the colony's data
-centre), the Ministry Spaceport's ground about 2 km out along longitude 90 (only the sastrugi reach it: it grades a
+Kept as it was: the ground within 700 m of the pole (where the penal colony stood), the old spaceport's ground about 2 km out along longitude 90 (only the sastrugi reach it: it grades a
 bench anyway) and the two sites (flattened last). A world saved before this keeps its builds there; one standing out
 on the open snow may find the ground a quarter of a metre higher or lower, and one where a ridge or a crack now is will
 float or sink. Caves are dug only into fresh worlds.
 
 ### Settlements
 
-A faction's file (`Story/Factions/*.json`) may hold a `"settlement"`: the planetoid's `map`, a `lat` and `lon` (its home
-site above) and up to 12 `buildings`, each a `blueprint` so many metres `east` and `north` of the place (60 m at most)
-turned by `yaw` degrees. The host builds them the first time a story game plays that world (`Game.SettlementsHere`,
-`Source/Game/GameStorySettlements.cs`), each upright on the ground under its spot, and the story's Thing for the
-settlement notes it, so a building pulled down since isn't built again. Each building is the faction's own (its Claims):
-wrecking or stripping one is a deed against the faction. On a later visit a building is found again by where it stands
-(an anchored construct within 6 m of its spot) and claimed again. Keep buildings 8 m or more from the place itself, where
-the survey post stands.
-
-| Faction | Home | World | Buildings |
-| --- | --- | --- | --- |
-| The Salvager | The Call Floor | Cinder | two huts facing each other, the manager's house, a control post, a store, a mast |
-| The IT Department | The Server Farm | Glacier | the office, a smart depot and a beacon depot, a hut, a lookout |
-| Clan MacSlop | The Glen | Caledon | the chief's hall and two houses, the smithy (a foundry), a lookout, the gate |
-
-The Ministry's home was the penal colony on Glacier, near the pole (removed 2026-11-17 with its tutorial: the ground kept
-for it stays as it is). Nobody lives in the settlements yet:
-the factions' people are still met by radio and in their vehicles.
+No faction has a settlement on a world yet: the old factions' settlements (the Call Floor, the Server Farm, the Glen)
+went with the story (2026-11-21, docs/removals-notes.md). The sites above keep their flat ground for the next ones.
 
 Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--check-planetoid` prints it): the day
 side is centred there, the night side on longitude 40, and the twilight line runs through both poles and longitudes
