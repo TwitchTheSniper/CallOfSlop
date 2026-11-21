@@ -1335,19 +1335,7 @@
     {"output": "Large Generator Head", "materials": {"steel": 260}, "parts": {"Copper Coil": 20}, "seconds": 41.0, "minTier": 2},
     {"output": "Medium Generator Head", "materials": {"steel": 112}, "parts": {"Copper Coil": 11}, "seconds": 18.8, "minTier": 2},
     {"output": "Small Generator Head", "materials": {"steel": 48}, "parts": {"Copper Coil": 5}, "seconds": 9.2, "minTier": 2},
-    {"output": "Airframe Former", "materials": {"steel": 104, "rubber": 21}, "seconds": 17.6},
-    {"output": "Capital Airframe Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
-    {"output": "Capital Fan Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
-    {"output": "Capital Wheel Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Extruder", "materials": {"steel": 300, "rubber": 60}, "seconds": 47.0},
-    {"output": "Fan Former", "materials": {"steel": 104, "rubber": 21}, "seconds": 17.6},
-    {"output": "Large Airframe Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 3},
-    {"output": "Large Fan Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 3},
-    {"output": "Large Wheel Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 3},
-    {"output": "Medium Airframe Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 542.0, "minTier": 2},
-    {"output": "Medium Fan Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 542.0, "minTier": 2},
-    {"output": "Medium Wheel Former", "materials": {"steel": 2000, "rubber": 500}, "seconds": 542.0, "minTier": 2},
-    {"output": "Wheel Former", "materials": {"steel": 104, "rubber": 21}, "seconds": 17.6},
     {"output": "Ore Bunker 2 m", "materials": {"concrete": 392, "steel": 98}, "seconds": 71.1},
     {"output": "Ore Bunker 3 m", "materials": {"concrete": 1010, "steel": 252}, "seconds": 180.0},
     {"output": "Ore Bunker 4 m", "materials": {"concrete": 1232, "steel": 308}, "seconds": 180.0},
@@ -2487,6 +2475,8 @@
     {"output": "Round Module Stand 2 m", "materials": {"steel": 69, "concrete": 14}, "seconds": 12.4, "minTier": 2},
     {"output": "Round Module Socket 3 m", "materials": {"steel": 120, "concrete": 24}, "seconds": 20.0, "minTier": 2},
     {"output": "Round Module Plug 3 m", "materials": {"steel": 85, "concrete": 17}, "seconds": 14.7, "minTier": 2},
-    {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2}
+    {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2},
+    {"output": "Grow Former", "materials": {"steel": 900, "rubber": 120, "copper": 40}, "parts": {"Gear Set": 4, "Servo Motor": 2, "Control Unit": 1}, "seconds": 180},
+    {"output": "Former Block", "materials": {"steel": 500, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 90}
   ]
 }

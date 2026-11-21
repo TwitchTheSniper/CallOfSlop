@@ -443,7 +443,7 @@ public sealed class ControlParts : IPartGenerator
                     ("tooltip", "Stops the line when it has made this many pieces since Start (its Made output). 0: it never stops by itself.")),
                 D(("key", "linePick"), ("label", "Machine"), ("group", "General"), ("min", 0), ("max", 31), ("step", 1), ("default", 0), ("hidden", true), ("tooltip", "Which machine its buttons work on.")),
                 D(("key", "linePage"), ("label", "Page"), ("group", "General"), ("options", Py.L("Line", "Bill")), ("default", 0), ("hidden", true), ("tooltip", "The line or the bill on its screen.")),
-                D(("key", "orderKind"), ("label", "Kind"), ("group", "Bill line"), ("options", Py.L("Piece", "Wheel")), ("default", 0), ("tooltip", "What Add puts on the bill: an Extruder's piece or a Wheel Former's wheel.")),
+                D(("key", "orderKind"), ("label", "Kind"), ("group", "Bill line"), ("options", Py.L("Piece", "Wheel")), ("default", 0), ("tooltip", "What Add puts on the bill: an Extruder's piece or a Grow Former's wheel.")),
                 D(("key", "profile"), ("label", "Profile"), ("group", "Bill line"), ("options", ExtrusionParts.Profiles()), ("default", 4), ("tooltip", "A piece's section. Round and Pipe take their diameter from Width; Custom needs a machine's cell grid.")),
                 D(("key", "width"), ("label", "Width"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 32), ("step", 0.05), ("default", 0.25), ("tooltip", "Across a piece's section, or a wheel's width.")),
                 D(("key", "height"), ("label", "Height"), ("group", "Bill line"), ("unit", "m"), ("min", 0.1), ("max", 48), ("step", 0.05), ("default", 0.25), ("tooltip", "Up a piece's section, or a wheel's diameter.")),

@@ -167,9 +167,9 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(exS, "Piece out", spurRack, "Piece in", Spur, new Vector2(0.1f, 0.1f));
             Sign(39.75f, Posts2, Spur, "Too narrow on purpose: aim the linking tool, wheel to widen");
 
-            // ---- 6. The wheel line: a Wheel Former, a conveyor, a Piece Rack. ----------------------------------------------------
-            var former = On("Wheel Former", 52.25f, Row1, Flow, paint: Wheels);
-            Config(former, ("width", 0.25), ("height", 0.6));
+            // ---- 6. The wheel line: a Grow Former on its own cell (a 2 m bed), a conveyor, a Piece Rack. --------------------------
+            var former = On("Grow Former", 52.75f, Row1, Flow, paint: Wheels); // (half a metre east of the old Wheel Former: the Core is 2 m deep)
+            Config(former, ("growMakes", "Wheel"), ("width", 0.25), ("height", 0.6));
             Feed(StockOf("rubber", 52.25f, -7.25f), former);
             var wheelRack = On("Piece Rack", 56.25f, -4.25f, Flow, "-y.0.0", Wheels);
             Convey(former, "Piece out", wheelRack, "Piece in", Wheels);
@@ -221,7 +221,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Stripe(36.75f, Row1, true);
             Stripe(29.75f, -7.75f, false);
             Stripe(39.75f, Row2, true);
-            Stripe(53.75f, Row1, true);
+            Stripe(54.75f, Row1, true); // (past the Grow Former's face)
 
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
@@ -357,9 +357,12 @@ public sealed class ProductionShowcase : IPartGenerator
                     Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
                 }
 
-            var wing = On("Airframe Former", 57.75f, -17.75f, Flow, paint: Wheels);
+            var wing = On("Grow Former", 57.75f, -17.75f, Flow, paint: Wheels);
+            Config(wing, ("growMakes", "Wing"));
+            var bed = Onto(wing, "+z", "Former Block", "-z"); // (a 2 x 2 m bed in front of its hub: wings to 2 m of chord and 2 m of span)
+            Paint(bed, Wheels);
             Feed(StockOf("steel", 55.75f, -17.75f), wing);
-            Sign(56.75f, -15.25f, Wheels, "AIRFRAME FORMER: order a wing; it grows east, then drops", false);
+            Sign(56.75f, -15.25f, Wheels, "GROW FORMER: order a wing; it grows east, then drops", false);
 
             const float line = -16.25f;
             var plate = On("Extruder", 68.25f, line, Flow, paint: Cutter);

@@ -535,7 +535,8 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private (VPart Station, VPart RouterS, VPart Wheel, VPart Rack) StationLine(Refined r, Assembly asm, Presses ph, Panels pn)
         {
-            var wheel = On("Wheel Former", 64.75f, Row2, Flow, paint: Wheels);
+            var wheel = On("Grow Former", 64.75f, Row2, Flow, paint: Wheels);
+            Config(wheel, ("growMakes", "Wheel"));
             ChuteVia(r.Rubber, wheel, -7.9f);
             var j1 = On("Conveyor Join", 68.75f, -10.75f, Flow, "-y.0.0", Wheels);
             Convey(wheel, "Piece out", j1, "Piece in", Wheels, Small);
@@ -665,7 +666,8 @@ public sealed class FactoryShowcase : IPartGenerator
         private VPart WingCorner(Refined r)
         {
             On("Lay-down Pad", 103.75f, -10.75f, Front, "-y.0.0", Hazard); // (1.5 m east of the bay's edge: its west posts clear of the Runabout's way out north, look review 3)
-            var former = On("Airframe Former", 108.75f, -6.75f, Toward, paint: Wheels); // (its die over the pad's east end: the wing grows west over the pad)
+            var former = On("Grow Former", 108.75f, -6.75f, Toward, paint: Wheels);
+            Config(former, ("growMakes", "Wing")); // (its die over the pad's east end: the wing grows west over the pad)
             ChuteVia(r.Steel, former, -13.95f); // (along the main floor's back edge, off the walkway)
             On("Military Loader Arm", 103.75f, -14.75f, Front, "-y.0.0");
             Sign(107.25f, Posts1, Wheels, "WING FORMER");

@@ -515,7 +515,7 @@ public static class WorkOrders
             if (TakesOrders(c.DefOf(list[k])))
                 list[takers++] = list[k];
         if (takers == 0)
-            return "no machine on this line takes orders: wire the console's output to an Extruder's, a Wheel Former's, an Assembler's or a Press's Run";
+            return "no machine on this line takes orders: wire the console's output to an Extruder's, a Grow Former's, an Assembler's or a Press's Run";
         var cursor = DealCursor % takers;
         string? first = null;
         int sent = 0, kept = 0;
@@ -1177,7 +1177,7 @@ public static class ConstructBill
             return (step, new WorkOrder { Part = (ushort)d.Id, Count = (ushort)count });
         }
         if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel or ExShape.Fan or ExShape.Wing))
-            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel, Fan or Airframe Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
+            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Grow Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
         return (step, new WorkOrder { Key = key, Part = ConstructParts.None, Count = (ushort)count });
     }
 
@@ -1301,7 +1301,7 @@ public static class ConstructBill
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({(fa.Shape == ExShape.Fan ? "Fan Former" : "Airframe Former")}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({"Grow Former"}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }

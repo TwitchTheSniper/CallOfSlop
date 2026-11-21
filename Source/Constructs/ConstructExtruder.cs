@@ -1127,7 +1127,7 @@ public static class ConstructExtruderParts
             throw new ConstructPartException($"{file}: storage \"wheel\" is an object (speed, at, maxWidth, maxDiameter, startWidth, startDiameter, pushForce) on a bin: what feeds it");
         ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce", "fan", "airframe", "grow", "fanMax", "fanStart", "wingMax", "wingStart", "bedTop", "blockPush", "blockPower"], $"{bw}.wheel");
         if (d.BulkMaterial != ConstructStorage.Any)
-            throw new ConstructPartException($"{file}: a Wheel Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
+            throw new ConstructPartException($"{file}: a Grow Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
         var fan = ConstructParts.Opt(b, "fan") is { ValueKind: System.Text.Json.JsonValueKind.True };
         var air = ConstructParts.Opt(b, "airframe") is { ValueKind: System.Text.Json.JsonValueKind.True }; // (its widest is a chord and its first and biggest across a span)
         float Size(string key, float min, float max)
