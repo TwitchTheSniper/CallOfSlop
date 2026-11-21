@@ -465,7 +465,14 @@ public static class WorkOrders
                 wall = (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), 1, Math.Min(Extrusion.MaxWallCm, Math.Max(1, (w - Extrusion.MinBoreCm) / 2)));
         }
         var len = Cm(ConstructConfig.Get(p, d, CfgKey.CutLength, 1));
-        o = new WorkOrder { Key = new ExtrusionKey(mask, (ushort)Math.Max(w, Extrusion.MinSectionCm), (ushort)Math.Max(h, Extrusion.MinSectionCm), (ushort)len, material, false, shape, wall), Part = ConstructParts.None, Count = count };
+        var least = Extrusion.MinSectionCm;
+        if (profile == Extrusion.SheetProfile)
+        {
+            mask = ulong.MaxValue;
+            h = Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), Extrusion.MinSheetCm, Extrusion.SheetMaxCm); // (a Sheet's thickness: the Wall setting, whole cm)
+            least = Extrusion.MinSheetCm;
+        }
+        o = new WorkOrder { Key = new ExtrusionKey(mask, (ushort)Math.Max(w, Extrusion.MinSectionCm), (ushort)Math.Max(h, least), (ushort)len, material, false, shape, wall), Part = ConstructParts.None, Count = count };
         return null;
     }
 
