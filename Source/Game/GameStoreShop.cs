@@ -14,7 +14,7 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     /// <summary>A part a shopper took and hasn't paid for: which store, which part, its price.</summary>
-    private readonly record struct BasketLine(ushort Station, ushort Part, float Price);
+    private readonly record struct BasketLine(ushort Station, ushort Part, float Price, ushort Body = 0, int Slot = -1); // (Body, Slot: a pick-up piece and the place it came from)
 
     private sealed class ShopState
     {
@@ -72,7 +72,10 @@ public sealed partial class Game
         if (lay.Shelves.Length == 0 || !StoreFrame(st, lay, out var aPos, out var aRot))
             return;
         if (!_shops.TryGetValue(st.Id, out var sh))
+        {
             _shops[st.Id] = sh = new ShopState { Seed = st.Id * 7919 };
+            StoreClearOld(st, def, lay, aPos, aRot); // (a loaded world's shelves, trolleys and pick-up pieces: set out again, tracked)
+        }
         if (ConstructParts.Find(GondolaBayName) is not { } gondola || ConstructParts.Find(RackBayName) is not { } rack || gondola.Slots.Length == 0 || rack.Slots.Length == 0)
         {
             if (!sh.Warned)
@@ -409,12 +412,16 @@ public sealed partial class Game
             var inside = here.X >= lay.StoreMin.X && here.X <= lay.StoreMax.X && here.Y >= lay.StoreMin.Y && here.Y <= lay.StoreMax.Y && here.Z >= lay.StoreMin.Z && here.Z <= lay.StoreMax.Z;
             if (!p.Alive)
             {
+                StoreLeftBehind(p, st, m, lay, aPos, aRot, basket);
                 StoreBasketLost(p, st, basket); // (what they carried is lost with them: no way out with it)
                 continue;
             }
             if (inside)
                 _shopperIn[pid] = here;
-            if (StoreThroughArch(lay, was, here))
+            var arch = StoreThroughArch(lay, was, here);
+            if ((arch || !inside) && StoreLeftBehind(p, st, m, lay, aPos, aRot, basket) && basket.Count == 0)
+                continue;
+            if (arch)
                 StoreSettle(p, st, m, basket, walkedOut: false);
             else if (!inside && !StoreSettle(p, st, m, basket, walkedOut: true))
                 StoreTurnBack(p, st, lay, aPos, aRot, basket);
@@ -509,6 +516,8 @@ public sealed partial class Game
         p.Teleport(at);
         p.Sim.Velocity = st.MovePointVel(at);
         ConstructRide.End(ref p.Sim, null, st, 0, Vector3.Zero, frame: true); // (the station's own frame, as a person rides it)
+        for (var i = 0; i < Player.HistorySize; i++)
+            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw }; // (lag compensation doesn't rewind them outside)
         _shopperAt[p.Id] = lastIn;
         Log($"[store] {p.Name} turned back into {StationName(st)} at {lastIn:0.0} (layout)");
     }
@@ -570,7 +579,7 @@ public sealed partial class Game
                 continue;
             var part = sh.PickPart[s];
             (sh.PickBody[s], sh.PickPart[s]) = (0, ConstructParts.None);
-            var j = Array.FindIndex(def.Parts, x => x.Part == part);
+            var j = StorePartIndex(def, part);
             if (j < 0)
                 continue;
             if (def.Goods.Length + j < m.Stock.Length)
@@ -582,9 +591,104 @@ public sealed partial class Game
                 continue;
             }
             var basket = _baskets.TryGetValue(who, out var b) ? b : _baskets[who] = [];
-            basket.Add(new BasketLine(st.Id, part, def.Parts[j].Sell));
+            basket.Add(new BasketLine(st.Id, part, def.Parts[j].Sell, body?.Id ?? 0, s));
             SandboxHands.Notices.Add((who, $"{ConstructParts.Def(part)?.Name}: {MathF.Ceiling(def.Parts[j].Sell):0} at the trade arches. Basket: {StoreBasketText(basket, st.Id)}."));
         }
+    }
+
+    private static int StorePartIndex(StationDef def, ushort part)
+    {
+        for (var j = 0; j < def.Parts.Length; j++)
+            if (def.Parts[j].Part == part)
+                return j;
+        return -1;
+    }
+
+    /// <summary>
+    /// Is a loose body inside the store's box? Lenient by a tick of the station's travel either way (a loose body and the station it rides are
+    /// stepped a tick apart, so in orbit their world places differ by the station's speed over a tick).
+    /// </summary>
+    private static bool StoreHolds(Construct st, StoreLayout lay, Vector3 aPos, byte aRot, Construct b)
+    {
+        var tick = st.Vel / World.TickRate;
+        for (var k = -1; k <= 1; k++)
+        {
+            var q = LayoutOf(aPos, aRot, lay, st.ToLocal(b.Pos + tick * k));
+            if (q.X >= lay.StoreMin.X && q.X <= lay.StoreMax.X && q.Y >= lay.StoreMin.Y && q.Y <= lay.StoreMax.Y && q.Z >= lay.StoreMin.Z && q.Z <= lay.StoreMax.Z)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Host, at an arch, on leaving or on a death: a pick-up piece in a shopper's basket that still lies in the store (moved with the physics gun
+    /// and let go) is the store's again, off the basket and back in its stock. True when a line went.
+    /// </summary>
+    private bool StoreLeftBehind(Player p, Construct st, StationMarket m, StoreLayout lay, Vector3 aPos, byte aRot, List<BasketLine> basket)
+    {
+        if (StationMarkets.All[m.Def] is not { } def || !_shops.TryGetValue(st.Id, out var sh))
+            return false;
+        var any = false;
+        for (var k = basket.Count - 1; k >= 0; k--)
+        {
+            var x = basket[k];
+            if (x.Station != st.Id || x.Body == 0 || Constructs.Get(x.Body) is not { Wreck: false } b || b.GrabbedBy == p.Id && p.Alive || !StoreHolds(st, lay, aPos, aRot, b))
+                continue;
+            basket.RemoveAt(k);
+            any = true;
+            if (StorePartIndex(def, x.Part) is var j and >= 0 && def.Goods.Length + j < m.Stock.Length)
+                m.Stock[def.Goods.Length + j]++;
+            StationsVersion++;
+            if (x.Slot >= 0 && x.Slot < sh.PickBody.Length && Constructs.Get(sh.PickBody[x.Slot]) == null)
+                (sh.PickBody[x.Slot], sh.PickPart[x.Slot]) = (b.Id, x.Part); // (the store's again where it lies)
+            else
+                Constructs.Remove(b); // (its place has a new one: back to the stock room)
+            SandboxHands.Notices.Add((p.Id, $"{ConstructParts.Def(x.Part)?.Name} left in the store: off your basket."));
+            Log($"[store] {p.Name} left a {ConstructParts.Def(x.Part)?.Name} in {StationName(st)}: off the basket, back in stock");
+        }
+        return any;
+    }
+
+    /// <summary>
+    /// Host, the first pass at a store in this run (a loaded world): the shelves, trolleys and pick-up pieces a saved world kept are taken away,
+    /// to be set out again and tracked (the shop's own state isn't saved). Shelves only hold shown stock, so nothing is lost.
+    /// </summary>
+    private void StoreClearOld(Construct st, StationDef def, StoreLayout lay, Vector3 aPos, byte aRot)
+    {
+        var gondola = ConstructParts.Find(GondolaBayName);
+        var rack = ConstructParts.Find(RackBayName);
+        var trolley = ConstructParts.Find(TrolleyName);
+        int shelves = 0, loose = 0;
+        for (var i = st.PartCount - 1; i >= 0; i--)
+            if (st.DefOf(i) is var d && d != null && (d == gondola || d == rack))
+            {
+                StoreEmptyShelf(st, i);
+                Constructs.RemovePart(st, i);
+                shelves++;
+            }
+        if (shelves > 0)
+            st.Rebuild();
+        for (var n = Constructs.Bodies.Count - 1; n >= 0; n--)
+        {
+            var b = Constructs.Bodies[n];
+            if (b == st || b.Wreck || b.Owner != 255 || b.PartCount != 1 || b.DefOf(0) is not { } bd)
+                continue;
+            if (bd != trolley && StorePartIndex(def, (ushort)bd.Id) < 0 || !StoreHolds(st, lay, aPos, aRot, b))
+                continue;
+            Constructs.Remove(b);
+            loose++;
+        }
+        if (shelves + loose > 0)
+            Log($"[store] {def.Name}: {shelves} shelves and {loose} trolleys and pick-up pieces from the saved world taken away, to be set out again");
+    }
+
+    /// <summary>Host: a player who left the game: their basket, if any, goes with them (written off, logged), so their id's next holder starts clean.</summary>
+    private void StoreShopForget(byte player)
+    {
+        if (_baskets.Remove(player, out var basket) && basket.Count > 0)
+            Log($"[store] {NameOf(player)} left the game with {basket.Count} unpaid part(s) in a store basket: written off");
+        _shopperAt.Remove(player);
+        _shopperIn.Remove(player);
     }
 
     private byte StoreNearestShopper(Vector3 at, float within)
