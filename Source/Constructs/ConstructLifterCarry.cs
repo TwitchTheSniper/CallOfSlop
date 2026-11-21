@@ -321,6 +321,17 @@ public static partial class ConstructLifters
             return false; // (the caller sets the idle reason)
         }
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
+        // A run's end takes its turn with the outs: tried first when it comes before every out from where the turn stands (else an
+        // Extruder's every angle would keep a run's pieces waiting for good).
+        var runFirst = false;
+        for (var j = 0; j < l.PointN; j++)
+            if (l.Points![(j + l.OutTurn) % l.PointN].Kind is LiftPointKind.Out or LiftPointKind.RunEnd)
+            {
+                runFirst = l.Points[(j + l.OutTurn) % l.PointN].Kind == LiftPointKind.RunEnd;
+                break;
+            }
+        if (runFirst && CarryRunEnd(world, c, l, ld, lp, lr, shoulder))
+            return true;
         for (var j = 0; j < l.PointN; j++)
         {
             var k = (j + l.OutTurn) % l.PointN; // (the outs take turns: lifters phase 7, a press's brackets waited behind an Extruder's every angle)
@@ -380,7 +391,7 @@ public static partial class ConstructLifters
                 return true;
             }
         }
-        if (CarryRunEnd(world, c, l, ld, lp, lr, shoulder))
+        if (!runFirst && CarryRunEnd(world, c, l, ld, lp, lr, shoulder))
             return true;
         for (var k = 0; k < l.PointN; k++)
         {
