@@ -33,6 +33,9 @@ public static class ExtruderPicks
     /// <summary>The thickest wall a Pipe of <paramref name="across"/> cm takes (it leaves a bore of <see cref="Extrusion.MinBoreCm"/>).</summary>
     public static int MaxWallCm(int across) => Math.Max(1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
 
+    /// <summary>The thickest Sheet a die <paramref name="dieH"/> cm tall makes, cm.</summary>
+    public static int SheetMaxCm(int dieH) => Math.Clamp(dieH, Extrusion.MinSheetCm, Extrusion.SheetMaxCm);
+
     /// <summary>The machine's settings as a pick (sizes held to the die): what the picker opens on.</summary>
     public static ExtruderPick Current(Construct c, int part)
     {
@@ -42,7 +45,9 @@ public static class ExtruderPicks
         var profile = (int)ConstructConfig.Get(p, d, CfgKey.Profile, 0);
         static int Cm(float m) => (int)MathF.Floor(m * 20 + 0.001f) * 5;
         var w = Math.Clamp(Cm(ConstructConfig.Get(p, d, CfgKey.Width, 0.25f)), Extrusion.MinSectionCm, dw);
-        var h = Math.Clamp(Cm(ConstructConfig.Get(p, d, CfgKey.Height, 0.25f)), Extrusion.MinSectionCm, dh);
+        var h = profile == Extrusion.SheetProfile ? Math.Min(SheetMaxCm(dh), (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100))
+            : Math.Clamp(Cm(ConstructConfig.Get(p, d, CfgKey.Height, 0.25f)), Extrusion.MinSectionCm, dh);
+        h = Math.Max(h, Extrusion.MinSheetCm);
         var wall = (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100);
         var custom = (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskA, 0) | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskB, 0) << 16
             | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskD, 0) << 48;
@@ -56,6 +61,8 @@ public static class ExtruderPicks
             return ConstructExtruder.RoundMaskOf(profile, pick.W / 100f, pick.Wall / 100f);
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
+        if (profile == Extrusion.SheetProfile)
+            return ulong.MaxValue;
         var foil = profile - Extrusion.AirfoilProfile(0);
         if (foil >= 0 && foil < ExtrusionTable.Current.Airfoils.Length)
             return ExtrusionTable.Current.Airfoils[foil].Mask;
@@ -79,11 +86,23 @@ public static class ExtruderPicks
             return $"the {d.Name} has no such profile";
         var shape = Extrusion.ShapeOf(pick.Profile);
         var foil = pick.Profile - Extrusion.AirfoilProfile(0);
-        if (foil >= 0 && shape == ExShape.Section && foil >= ExtrusionTable.Current.Airfoils.Length)
+        if (foil >= 0 && shape == ExShape.Section && foil >= ExtrusionTable.Current.Airfoils.Length && pick.Profile != Extrusion.SheetProfile)
             return $"the {d.Name} has no such profile";
         var (dw, dh) = DieCm(c, part);
         if (shape != ExShape.Section)
             dw = dh = Math.Min(dw, dh);
+        if (pick.Profile == Extrusion.SheetProfile)
+        {
+            if (pick.W % 5 != 0 || pick.W < Extrusion.MinSectionCm)
+                return "a sheet's width goes in 5 cm steps from 0.1 m";
+            if (pick.H < Extrusion.MinSheetCm || pick.H > Extrusion.SheetMaxCm)
+                return $"a sheet is {Extrusion.MinSheetCm} to {Extrusion.SheetMaxCm} cm thick";
+            if (pick.W <= pick.H)
+                return "a sheet is wider than it is thick";
+            if (pick.W > dw || pick.H > dh)
+                return $"the die makes at most {dw / 100f:0.##} x {dh / 100f:0.##} m: {ConstructExtruder.WideFix(d, pick.W, pick.H)}";
+            return null;
+        }
         if (pick.W % 5 != 0 || pick.H % 5 != 0 || pick.W < Extrusion.MinSectionCm || pick.H < Extrusion.MinSectionCm)
             return "sizes go in 5 cm steps from 0.1 m";
         if (pick.W > dw || shape == ExShape.Section && pick.H > dh)
@@ -107,9 +126,13 @@ public static class ExtruderPicks
         var shape = Extrusion.ShapeOf(pick.Profile);
         Put(ref p, CfgKey.Profile, pick.Profile);
         Put(ref p, CfgKey.Width, pick.W / 100f);
-        Put(ref p, CfgKey.Height, (shape == ExShape.Section ? pick.H : pick.W) / 100f);
+        var sheet = pick.Profile == Extrusion.SheetProfile;
+        if (!sheet)
+            Put(ref p, CfgKey.Height, (shape == ExShape.Section ? pick.H : pick.W) / 100f);
         if (shape == ExShape.Pipe)
             Put(ref p, CfgKey.Wall, pick.Wall / 100f);
+        if (sheet)
+            Put(ref p, CfgKey.Wall, pick.H / 100f); // (a Sheet's thickness is its Wall setting: whole cm, which Height's 5 cm step can't hold)
         if (pick.Profile == Extrusion.Presets.Length)
         {
             Put(ref p, CfgKey.MaskA, (ushort)pick.Mask);
