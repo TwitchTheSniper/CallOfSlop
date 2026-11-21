@@ -1,6 +1,6 @@
 {
   // In-wall bay (WallBayParts.cs): the cover flips up, then a sled runs out with a long power cell.
-  "blueprint": "Wall Bay 1m Component Sled",
+  "blueprint": "blueprints/wall-bays/WallBay1mComponent.json",
   "title": "1 m bay: long component sled",
   "shelf": "In-wall bays 1 m",
   "description": "The cover flips up, then the sled runs out 0.95 m with a long power cell on it, cooling fins down its sides.",

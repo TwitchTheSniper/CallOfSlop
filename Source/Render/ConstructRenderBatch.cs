@@ -161,6 +161,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
+        if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
+            return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
         if (p.D.ShellBody)
             return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
@@ -200,6 +202,8 @@ public static partial class ConstructRender
             h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0)); // (a shell's fitted modules: walked once one is)
             if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
                 h = Mix(h, i); // (a lamp set blinking is walked)
+            else if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
+                h = Mix(h, ~i); // (a hidden socket connector is walked, drawing nothing)
         }
         return h;
     }

@@ -2412,6 +2412,9 @@
     {"output": "Roamer Upper Port Fore", "materials": {"steel": 320, "concrete": 64}, "seconds": 50.0},
     {"output": "Roamer Upper Stbd Aft", "materials": {"steel": 320, "concrete": 64}, "seconds": 50.0},
     {"output": "Roamer Upper Stbd Fore", "materials": {"steel": 320, "concrete": 64}, "seconds": 50.0},
-    {"output": "Roamer Upper Stern", "materials": {"steel": 220, "concrete": 44}, "seconds": 35.0}
+    {"output": "Roamer Upper Stern", "materials": {"steel": 220, "concrete": 44}, "seconds": 35.0},
+    {"output": "Wall Bay Socket", "materials": {"steel": 32, "concrete": 6}, "seconds": 6.8},
+    {"output": "Wall Bay Socket 1m", "materials": {"steel": 44, "concrete": 9}, "seconds": 8.6},
+    {"output": "Wall Bay Socket 1.5m", "materials": {"steel": 56, "concrete": 11}, "seconds": 10.4}
   ]
 }

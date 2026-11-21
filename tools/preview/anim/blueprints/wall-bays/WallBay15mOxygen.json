@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wall Bay 1.5m O2 Generator (fitted)",
+  "description": "The Wall Bay 1.5m O2 Generator module fitted in a Wall Bay Socket 1.5m.",
+  "steps": [
+    {
+      "part": "Wall Bay Socket 1.5m",
+      "spin": 7
+    },
+    {
+      "part": "Module Plug 1x2",
+      "on": 0,
+      "socket": "module",
+      "by": "module",
+      "spin": 3
+    },
+    {
+      "part": "O2 Generator Insert 1.5m",
+      "on": 1,
+      "socket": "tc",
+      "by": "plug"
+    },
+    {
+      "part": "Twist Latch",
+      "on": 2,
+      "socket": "latch",
+      "by": "hang"
+    },
+    {
+      "part": "Candle Breech 1.5m",
+      "on": 2,
+      "socket": "breech",
+      "by": "hang"
+    },
+    {
+      "part": "Candle Drawer 1.5m",
+      "on": 2,
+      "socket": "spares",
+      "by": "hang"
+    }
+  ]
+}

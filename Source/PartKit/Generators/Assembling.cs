@@ -663,6 +663,10 @@ public sealed class Assembling : IPartGenerator
         ("Roamer", "Roamer Upper Stbd Aft", null),
         ("Roamer", "Roamer Upper Stbd Fore", null),
         ("Roamer", "Roamer Upper Stern", null),
+        // (in-wall bays on the module socket standard, Sean 2026-11-21: the wall base is a 1x2 Module Socket; WallBayParts.cs)
+        ("WallBays", "Wall Bay Socket", null),
+        ("WallBays", "Wall Bay Socket 1m", null),
+        ("WallBays", "Wall Bay Socket 1.5m", null),
     ];
 
     /// <summary>

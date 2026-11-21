@@ -663,7 +663,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   changes: the host decides, and more guns send the Bore events every PC already marks).
     // 389: barter and tabs, no credits (Karl, 2026-11-20; Game/GameTabs.cs): Msg.Credits became Msg.Tabs (u8 unlimited, u8 n, each u8 power, u64);
     //   station markets list parts after their goods (Msg.Stations' stock runs over both); FactionOp.StationSellPart (u16 ship, u8 good) at its end.
-    public const ushort ProtocolVersion = 389;
+    // 390: in-wall bays on the module socket standard (Sean, 2026-11-21): CfgKey ModHide at the end (a Module Socket's Hide connector);
+    //   new part files (Wall Bay Socket, three depths) shift part ids.
+    public const ushort ProtocolVersion = 390;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
