@@ -36,7 +36,7 @@ public sealed partial class Audio
         _engineSources = [];
     }
 
-    private static int EngineSlot(int voice) => Voices + StepVoices + FrenzyVoices + ZombieSounds.VoiceCap + ZombieSounds.StepCap + CrowdRoar.Voices + voice;
+    private static int EngineSlot(int voice) => Voices + StepVoices + ZombieSounds.VoiceCap + ZombieSounds.StepCap + CrowdRoar.Voices + voice;
 
     /// <summary>Engine voice <paramref name="voice"/>: started looping if it isn't sounding or its variant changed, else moved and faded.</summary>
     public void EngineLoopAt(int voice, int variant, Vector3 position, float gain, float pitch, float scale)

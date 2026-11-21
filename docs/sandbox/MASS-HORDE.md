@@ -240,7 +240,7 @@ Board item `dev-mass-points-mp01`. `Source/Game/ZombiesCrowd.cs`, `Source/Game/H
 - **Shots.** A ray that hits no individual goes on into the crowd: the nearest crowd capsule (a particle) or mass zombie
   on it takes the gun's damage at that distance (head above 1.5 m, with the head multiplier). The damage is applied per
   trigger pull (`CrowdShotApply`), so a shotgun's pellets add up on one zombie, and rounded as `DamageZombie` rounds it.
-  A hit pays hit points; a kill is credited exactly as an individual's (kills, headshots, frenzy, kill or headshot kill
+  A hit pays hit points; a kill is credited exactly as an individual's (kills, headshots, kill or headshot kill
   points times the walker's points multiplier, drop and power-up rolls). Insta-Kill and Double Points apply.
 - **Mass zombies for shots.** A mass cell is only a count, so the server stands its zombies at fixed spots: zombie
   number k of the cell (its slot, 0 to count - 1) is a capsule at a hash of the cell and the slot, kept off the cell's

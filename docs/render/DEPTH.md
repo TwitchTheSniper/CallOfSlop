@@ -32,7 +32,7 @@ Mainframe's hull seen from above (Karl, 2026-11-20).
   for reversed depth (the far plane is z >= 0). A CPU matrix built outside the renderer for those planes goes through
   `Renderer.GpuProjection` first.
 - Code that binds "the screen" again inside the frame binds `Renderer.MainFbo`, not 0.
-- A projection that skips `SetCamera` (the scope lens, the frenzy glow on the first-person gun) goes through
+- A projection that skips `SetCamera` (the scope lens) goes through
   `Renderer.GpuProjection` itself, or it fails the depth test against what `SetCamera` drew.
 
 ## Measured (cloud, llvmpipe, Mainframe on Proving Ground, 1280x720)

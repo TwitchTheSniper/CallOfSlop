@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// The Audio mixer debug window (F8, rebindable in Settings > Controls; or Settings > Audio > Open audio mixer): a
 /// level slider in dB with mute and reset for every sound category (<see cref="MixBus"/>), the gun mix's distance shape
 /// (<see cref="MixParam"/>), live per-category meters with voice counts and the master estimate with a clip light,
-/// test sounds (your shot, an enemy's at 5/30/80 m, an explosion, steps, hit sounds, a frenzy level preview), and
+/// test sounds (your shot, an enemy's at 5/30/80 m, an explosion, steps, hit sounds), and
 /// Save / Load / Revert / Save as / Copy to clipboard (<see cref="AudioMix"/>). Works in the lobby and live in a match
 /// (offline or online: it only changes what you hear). Everything it draws per frame is allocation-free; closed, it
 /// costs one bool check (the meters are off).
@@ -24,9 +24,6 @@ public sealed partial class Ui
     private int _mixPreset;
     private int _mixTestWeapon = -1; // -1: your current weapon
     private float _mixTestAngle = 45f;
-    private int _mixFrenzyLevel = 6;
-    private float _mixFrenzySeconds = 20f;
-    private double _mixFrenzyUntil = -1;
     private bool _mixWasOpen;
     private double _mixLastNow = double.NaN;
     private int _mixBind = Keybinds.Unbound;
@@ -42,9 +39,6 @@ public sealed partial class Ui
     // Up to +12 dBFS: with level rows up to +50 dB the estimate can go well over full scale (the clip light and the red
     // peak show it), and the extra room shows how far over it is.
     private const float MeterMinDb = -60f, MeterMaxDb = 12f;
-
-    /// <summary>The frenzy level the mixer is previewing (0-6), or -1 when it isn't.</summary>
-    public int FrenzyPreviewLevel(double now) => AudioMixerOpen && now < _mixFrenzyUntil ? _mixFrenzyLevel : -1;
 
     private void MixMessage(string text, double now)
     {
@@ -63,7 +57,6 @@ public sealed partial class Ui
         {
             if (_mixWasOpen)
             {
-                _mixFrenzyUntil = -1; // closing the window ends a preview
                 audio.SetMetering(false);
                 _mixWasOpen = false;
             }
@@ -202,8 +195,8 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("An estimate from each voice's gain and its sound's envelope (the effects are mixed by OpenAL) plus the music's measured output: the peak is the sum of every voice's peak, an upper bound. CLIP lights for 1.5 s when it passes full scale."u8);
         var music = audio.Music;
-        var minGain = music.FrenzyLimiterMinGain;
-        ImGuiSafe.TextColored(Dim, $"Music limiter (frenzy): ceiling {music.LimiterCeiling:0.000} ({Db(music.LimiterCeiling):0.0} dBFS), deepest gain reduction {Db(minGain):0.0} dB; level-6 headroom target {FrenzyLayer.Level6Headroom:0.00}x the SFX reference; frenzy level {music.Frenzy.Level}");
+        var minGain = music.LimiterMinGain;
+        ImGuiSafe.TextColored(Dim, $"Music limiter: ceiling {music.LimiterCeiling:0.000} ({Db(music.LimiterCeiling):0.0} dBFS), deepest gain reduction {Db(minGain):0.0} dB");
         if (!audio.Enabled)
             ImGui.TextColored(Red, "No audio device: the mix can be edited and saved, but nothing plays."u8);
         else if (!audio.EfxEnabled)
@@ -274,24 +267,6 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.Button("Friendly hit"u8))
             audio.Effect(Sfx.FriendlyHit, 0.4f);
-
-        ImGui.SetNextItemWidth(140 * _scale);
-        ImGui.SliderInt("Frenzy level"u8, ref _mixFrenzyLevel, 0, FrenzyMeter.MaxLevel);
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(140 * _scale);
-        ImGui.SliderFloat("for##frenzysecs"u8, ref _mixFrenzySeconds, 5f, 60f, "%.0f s"u8);
-        ImGui.SameLine();
-        if (now < _mixFrenzyUntil)
-        {
-            if (ImGui.Button("Stop preview"u8))
-                _mixFrenzyUntil = -1;
-            ImGui.SameLine();
-            ImGuiSafe.TextColored(Orange, $"previewing level {_mixFrenzyLevel}: {_mixFrenzyUntil - now:0} s left (music level {audio.Music.Frenzy.Level})");
-        }
-        else if (ImGui.Button("Preview frenzy"u8))
-            _mixFrenzyUntil = now + _mixFrenzySeconds;
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("Forces the kill-frenzy music (and your gun's frenzy layer) to this level for a while, in the lobby too. It moves up and down on the bar lines like the real thing."u8);
     }
 
     private void DrawMixLevels(AudioMix mix, AudioMeters m)
@@ -449,7 +424,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, $"distant layer {mix.FarMix(30f) * 100:0}% @30 m, {mix.FarMix(60f) * 100:0}% @60 m");
                 break;
             case MixParam.LimiterCeiling:
-                ImGuiSafe.TextColored(Dim, $"{Db(mix.LimiterCeiling):0.0} dBFS (min gain {audio.Music.FrenzyLimiterMinGain:0.00})");
+                ImGuiSafe.TextColored(Dim, $"{Db(mix.LimiterCeiling):0.0} dBFS (min gain {audio.Music.LimiterMinGain:0.00})");
                 break;
         }
     }

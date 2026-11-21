@@ -13,7 +13,6 @@ public enum MixBus : byte
     GunOtherNear,
     GunOtherFar,
     GunOtherSuppressed,
-    GunFrenzyLayer,
     GunMechanism,
     LauncherOwn,
     LauncherOther,
@@ -47,12 +46,6 @@ public enum MixBus : byte
     Voice,
     MusicMenu,
     MusicLobby,
-    Frenzy1,
-    Frenzy2,
-    Frenzy3,
-    Frenzy4,
-    Frenzy5,
-    Frenzy6,
     Media,
     Speech, // the story people's murmured talk (Sfx.Babble)
     Weather, // the cold storm's wind (Audio.Storm.cs)
@@ -129,7 +122,6 @@ public static class AudioMixDefaults
         L("gun.other_near", "Guns", "Other players' guns (near layer)", "Another player's shot up close; crossfades into the distant layer with distance.", db: 14.1f),
         L("gun.other_far", "Guns", "Distant gunfire layer / tail", "The distant layer of other players' shots (the far report and rolling echo).", db: 10f),
         L("gun.other_suppressed", "Guns", "Other players' suppressed guns", "Another player's suppressed shot (it has no distant layer)."),
-        L("gun.frenzy_layer", "Guns", "Frenzy gun-sound layer", "The per-class frenzy layers on your own gun during a kill spree (Settings > Audio > Frenzy gun sound)."),
         L("gun.mechanism", "Guns", "Reload / equip / dry fire", "Reloads (yours and others'), weapon equip and the empty click."),
         L("launcher.own", "Launchers", "Own launcher", "Your own rocket and grenade launcher shots."),
         L("launcher.other", "Launchers", "Other players' launchers + rocket motor", "Other players' launches and a rocket's motor along its flight."),
@@ -162,13 +154,7 @@ public static class AudioMixDefaults
         L("notify", "UI & notifications", "Notifications", "Level up, respawn, streak ready, mode events (flags, hills, ready-up, zombie rounds and pick-ups). The game has no announcer voice."),
         L("voice", "Voice chat", "Voice chat", "Other players' voices (on top of Settings > Audio > Voice volume)."),
         L("music.menu", "Music", "Menu music", "The main menu's music."),
-        L("music.lobby", "Music", "Lobby music", "Music in a session between matches (warmup, ready-up, results, map vote). A live match has no music of its own: in a match the only music is the kill frenzy (rows below)."),
-        L("frenzy.1", "Music", "Kill frenzy level 1", "Drums and bass behind a closed filter."),
-        L("frenzy.2", "Music", "Kill frenzy level 2", "The full beat."),
-        L("frenzy.3", "Music", "Kill frenzy level 3", "Leads, pads and chants come in."),
-        L("frenzy.4", "Music", "Kill frenzy level 4", "Full volume, the last drop."),
-        L("frenzy.5", "Music", "Kill frenzy level 5 (FRENZY)", "As loud as the menu music."),
-        L("frenzy.6", "Music", "Kill frenzy level 6 (MAX FRENZY)", "As loud as the gunfire (then the music limiter)."),
+        L("music.lobby", "Music", "Lobby music", "Music in a session between matches (warmup, ready-up, results, map vote)."),
         L("media", "Music", "Video Screens and Music Players", "What they play, on top of each part's Volume and Settings > Audio > Screens volume."),
         L("speech", "People", "People talking (murmur)", "The murmured syllables the story's people make as they say a line (on top of Settings > Audio > Effects volume)."),
         L("weather", "World", "Storm wind", "The cold storm's wind and blowing snow outdoors, duller under a roof (on top of Settings > Audio > Effects volume)."),
@@ -183,7 +169,7 @@ public static class AudioMixDefaults
         P("dist.air_floor", "Air absorption floor", 0.12f, 0f, 1f, "%.2f", "The lowest the high shelf goes (gain)."),
         P("dist.far_start_m", "Near/distant crossfade start", 25f, 0f, 150f, "%.0f m", "Other players' shots start handing over to the distant layer here."),
         P("dist.far_end_m", "Near/distant crossfade end", 90f, 10f, 300f, "%.0f m", "Fully the distant layer from here (kept at least 5 m past the start)."),
-        P("music.limiter_ceiling", "Music limiter ceiling (frenzy)", 0.96f, 0.5f, 0.985f, "%.3f", "The music bus limiter's ceiling while the kill frenzy plays (sample level; its safety clipper never passes 0.985)."),
+        P("music.limiter_ceiling", "Music limiter ceiling", 0.96f, 0.5f, 0.985f, "%.3f", "The music bus limiter's ceiling while the menu or lobby music is boosted above 0 dB (sample level; its safety clipper never passes 0.985)."),
     ];
 
     /// <summary>The row of a level.</summary>

@@ -15,16 +15,13 @@ already work. Whether it sounds good is for the user to judge ("Ask the user" ne
 | --- | --- | --- |
 | No session (main menu and its pages) | `Menu` | Menu playlist |
 | In a session, phase `Lobby`, `Warmup`, `Countdown` or `Ended` | `Lobby` | Lobby playlist |
-| In a session, phase `Playing` | `Off` | Silence, plus the kill-frenzy layer if the local player is on a streak |
+| In a session, phase `Playing` | `Off` | Silence |
 
 **Sandbox has no music of its own.** `MoodFor` looks only at the phase, and no mode module has a music hook. A live
-Sandbox world is phase `Playing` and its module is `Endless`, so it is silent for as long as it runs. Kill frenzy
-doesn't play there either: the server (`FrenzyAddKill`) and the client (`Program.Frenzy.cs`) both skip kills when the
-mode's `ArenaExtras` is false, as `SandboxModule` sets it. Zombies kills (worth 0.4 of a kill) and the arena modes
-still feed it. See "Giving Sandbox music" below; that work has not been done.
+Sandbox world is phase `Playing` and its module is `Endless`, so it is silent for as long as it runs. (The kill-frenzy layer that once played over matches was removed on 2026-11-21.) See "Giving Sandbox music" below; that work has not been done.
 
 Now-playing text shows on the main menu (`Lobby.cs`). Settings: `music_volume` (default 0.50), `music_style`
-(`Mixed` or `HardbassOnly`), `frenzy_music`, `frenzy_volume` (0.80).
+(`Mixed` or `HardbassOnly`).
 
 ## The tracks
 
@@ -36,7 +33,6 @@ Now-playing text shows on the main menu (`Lobby.cs`). Settings: `music_volume` (
 | Classic hardbass | 7 | `MusicTracks.cs` | Clipped kick, bouncy off-beat bass, chants, four lead sounds |
 | Harder hardbass | 5 | `MusicTracksHarder.cs`, `MusicRendererHarder.cs` | `HardbassFlavor.Harder`: layered gabber kick, 9 saws, sirens, pitch riser, crowd |
 | Weird hardbass | 5 | `MusicTracksWeird.cs`, `MusicWeird.cs`, `MusicRenderer.Weird.cs`, `MusicWeirdVoices.cs` | `MusicTrack.Weird`: 7/8 and 5/4, tempo games, swerves, microtones, accordion, chip, toys |
-| Kill frenzy | not tracks | `MusicFrenzy*.cs`, `MusicRenderer.Frenzy.cs`, `.Tempo.cs`, `.FrenzyClass.cs`, `FrenzyStyles.cs`, `FrenzyStyleRig.cs`, `Weapons/Frenzy/classes.json` | A hardbass track's drops, looped, built up by level, restyled per weapon class |
 
 The hardbass sound: four-on-the-floor kick, bass only on the off-beats, a sidechain that pumps the bass harder than the
 leads, shouted HEY/OI/HA/YAH, everything driven into a clipper and limiter. `MusicStyle.Hardbass` is one style; harder
@@ -142,11 +138,8 @@ Nothing enforces "break only": `d`, `l` or `m` on another section changes the te
    there makes the static initialisers depend on each other (the comment at the top of each file says so).
 2. **Add the constructor call.** That is the only code a track needs. `MusicTracks.For` picks it up by `Set` and
    `Style`, the playlists follow, and "Hardbass only" follows `Style`. There is no list to register in.
-3. **Know what follows by itself.** A hardbass track with steady drops joins the frenzy pools too (`FrenzyLayer`), so
-   its drop loops during matches and goes through every weapon class's styling. Pools sort by family and BPM: `Fast` is
-   160+, `Slow` is 158 or less.
-4. **Stay inside the limits** below. CI runs "Music" on every push, so a track outside them turns `main` red.
-5. **Measure it** with the probe. You can build the `new MusicTrack(...)` inside the probe itself and iterate without
+3. **Stay inside the limits** below. CI runs "Music" on every push, so a track outside them turns `main` red.
+4. **Measure it** with the probe. You can build the `new MusicTrack(...)` inside the probe itself and iterate without
    rebuilding the game.
 6. **Add a row to the table in README "Music"**, and ask the user to listen.
 
@@ -207,68 +200,23 @@ to a note starting from silence; the others glide, and `BendTime` is unused.
 ## Render path
 
 ```
-game thread: SetMood, Volume, Frenzy.Target/Class/Shot (Volatile writes, once a frame)
+game thread: SetMood, Volume (Volatile writes, once a frame)
 "Music" thread: StreamLoop -> Fill -> Mix -> MixBlock (1024-frame blocks)
-  UpdateDirector -> decks (2 MusicRenderers) + FrenzyLayer (its own MusicRenderer) -> volume -> limiter -> short PCM -> OpenAL
+  UpdateDirector -> decks (2 MusicRenderers) -> volume -> limiter -> short PCM -> OpenAL
 ```
 
 - **Live, not pre-rendered.** `MusicRenderer.Render` synthesises in real time. The `Music` thread runs above normal
   priority, polls every 10 ms and refills `StreamBuffers` (4) of `StreamFrames` (2,048): 186 ms queued, which is the
-  latency of fades, volume and frenzy changes. An underrun restarts the source.
+  latency of fades and volume changes. An underrun restarts the source.
 - **Blocks.** `Render` cuts blocks at sixteenth boundaries, up to `MaxChunk` (1,024). Each voice renders a whole block in
   turn with its state in locals. Notes change only between blocks, so nothing lands inside a sixteenth.
 - **Crossfades.** Two decks. `StartNext` crossfades over 3 s when a track has under 3 s left, on a mood change, or when
   Hardbass only comes on. From silence it fades in over 1.2 s; `Off` fades out over 1.5 s. Decks are never looped: a
   track plays once and hands over.
 - **Playlists.** `MusicPlaylist`: every track once per round, reshuffled, never the same track twice running.
-- **Frenzy loops.** `LoopDrops` jumps from a drop's end back to its start on the bar line, with voices and reverb still
-  ringing. `EnterBar` restarts the section, so each loop hits a crash and sub drop. Tempo changes alter the length of a
-  sixteenth, not the pitch (`MusicRenderer.Tempo.cs`); kick, bass, echo and screech wah follow.
 - **Seeds.** `MusicTrack.Seed` fixes the melodies, so a track keeps its identity. The play seed passed to `Load` varies
   only fills, ghost hats and noise. Output is deterministic for (track, seed, start bar), and a reused renderer matches
   a new one. In the game `MusicPlayer` seeds from `Environment.TickCount`, so order and fills differ per launch.
-
-### Frenzy levels
-
-`FrenzyLayer` plays a track at `FirstDropBar`, or at `LastDropBar` from level 4. Changes land on bar lines: up at once
-with half a bar of crossfade, down one level every two bars or longer. Dying, or the setting off, fades out over 2 s.
-
-| Level | Gain | Low-pass | Leads, pads, chants | Gunfire duck | Tempo |
-| --- | --- | --- | --- | --- | --- |
-| 1 | 0.5 | 380 Hz | off, not rendered | 0.3 | track |
-| 2 | 0.72 | 9 kHz | off | 0.3 | track |
-| 3 | 0.86 | open | on | 0.3 | track |
-| 4 | 1 | open | on, jumps to the last drop | 0.3 | track |
-| 5 | 1.33 | open | on | 0.15 | class `level5` |
-| 6 | about 7.4 | open | on, crash and roar on arrival | 0 | class `level6` |
-
-Tempo boosts shrink above 160 BPM, to 40% of the boost from 208 BPM (`BoostShare`). `BusLevel` 0.75 and the frenzy
-volume multiply all of this.
-
-Class styles are data, in the `"music"` section of each class in `Weapons/Frenzy/classes.json`:
-
-| Class | Style | Pool | Tempo 5 / 6 | Trim |
-| --- | --- | --- | --- | --- |
-| Pistol | Western outlaw | classic | 1.10 / 1.20 | 0.96 |
-| SMG | Chiptune breakcore | fast | 1.12 / 1.25 | 1.10 |
-| Assault Rifle | Classic hardbass (the track as it is) | any | 1.10 / 1.20 | none |
-| DMR | Marching drums and brass | any | 1.08 / 1.16 | 0.97 |
-| Sniper | Cinematic braam | slow | 1.08 / 1.16 | 0.93 |
-| Shotgun | Gabber stomp | harder | 1.10 / 1.22 | 0.72 |
-| LMG | Industrial grind | any | 1.08 / 1.18 | 0.80 |
-| Special | Glitch weird | weird | 1.12 / 1.24 | 1.04 |
-| Launcher | Artillery barrage | harder | 1.08 / 1.18 | 0.80 |
-
-Layer patterns: `.` rest or note off, `-` hold, `x` hit or root, `X` accent, `g` ghost, `r` two hits in the sixteenth,
-`0`-`9` scale degrees above the bar's chord, `z` a random degree. At most 6 layers, 4 chord notes, 256 pattern
-characters. Voices are the `FrenzyVoice` enum; each layer has `octave`, `level`, `from` (the frenzy level it joins at),
-`reverb`, `chord`. Fx: `drive`, `crushBits`, `crushHold`, `stutter` (`.sS`), `slapMs`, `slapFeedback`, `slapMix`.
-`stems.lead` is never 0: 0 means "skip the leads". A bad section is logged as `[frenzy] music:` and that class falls
-back to plain. `trim` keeps level 6 loud enough, and each class had its value measured from CI (ca252a13); changing a
-class's layers or fx means re-measuring it.
-
-The weird pool has one track: only Drunk Duck Breakdown has steady drops (`WeirdTimeline.SteadyDrops`), because the
-frenzy loops drops on bars of a fixed length.
 
 ## Mixing
 
@@ -280,9 +228,9 @@ The chain, in order:
    back over 0.45 of a beat.
 3. Sum, DC blocker, then `Tanh(x * 0.9)` for older styles, or `Tanh(x * _masterGain) * 1.05` then `MasterLimiter` for
    hardbass (weird voices and the tape deck go in just before the limiter).
-4. Deck gain (fades) times `MenuTrim` or `LobbyTrim`; the frenzy layer adds in.
+4. Deck gain (fades) times `MenuTrim` or `LobbyTrim`.
 5. Music volume **squared**, so the default 0.50 is 0.25 linear.
-6. The music-bus limiter, only while the frenzy plays or a trim boosts above 0 dB. So at default settings menu and
+6. The music-bus limiter, only while a trim boosts above 0 dB. So at default settings menu and
    lobby output is bit-for-bit what it was without the limiter.
 7. Hard clamp to 16-bit, then OpenAL, where the listener gain (master volume) applies.
 
@@ -298,15 +246,15 @@ The chain, in order:
 Hardbass gains were last staged at 4d3c496a: `_gKick` 0.95 to 0.72, `_gBass` 0.45 to 0.55, leads up, master 1.5 to 1.6.
 
 **F8 mixer** (`AudioMix*.cs`, `Audio.Mixer.cs`, `UiAudioMixer.cs`; also Settings > Audio > Open audio mixer). Rows
-`music.menu`, `music.lobby`, `frenzy.1` to `frenzy.6`, and `music.limiter_ceiling`. All are at 0 dB or factory in the
-baked `SeabMix2` mix, -50 to +50 dB. "Preview frenzy" plays a level anywhere. It meters the music (measured, not
+`music.menu`, `music.lobby` and `music.limiter_ceiling`. All are at 0 dB or factory in the
+baked `SeabMix2` mix, -50 to +50 dB. It meters the music (measured, not
 estimated) and shows the limiter's deepest gain reduction. `AudioMixDefaults` is the one table of defaults; keys are JSON
 names and must never be renamed. A new `MixBus` goes anywhere before `COUNT`, and needs a row at the same position in
 `Entries`.
 
 ### Loudness targets
 
-These are what the self-tests hold (`SelfTestMusic.cs`, `SelfTestHardbassHarder.cs`, `SelfTestFrenzy.cs`). There is no
+These are what the self-tests hold (`SelfTestMusic.cs`, `SelfTestHardbassHarder.cs`). There is no
 LUFS target; everything is RMS on the float output, stereo samples together.
 
 | What | Target |
@@ -316,15 +264,12 @@ LUFS target; everything is RMS on the float output, stereo samples together.
 | Hardbass groove | Kick under 0.1 of its peak at the next 8th; bass under 0.1 at the next kick |
 | Harder | Drop within 0.8-1.25x the classic hardbass average; kick heavier (1.05x) |
 | Distinct tracks | Drop-to-drop correlation under 0.5 for every pair |
-| Frenzy pool | Median drop within 10% of `DropRms` 0.50 (the code comment gives 0.47-0.54) |
-| Level 6 | At default sliders, 1.05-1.6x the measured gunfire-and-explosion RMS (`SfxReferenceRms` 0.46) before the limiter; level 4 stays under it |
 
 Measured for reference: hardbass drops 0.44-0.53, peak 0.97-0.985, limiter down to 0.74-0.90; older tracks' drops
 0.34-0.56 with peak 0.91-0.95. The two lowest drops, Polka 0.45 and Lullaby 0.46, are the weird tracks with a weird lead.
 
 **Avoiding clipping.** On a hardbass track, turn `Master` down first if the limiter dips under about 0.7 or the drop goes
-above 0.56. Don't lift a single gain to fix a weak drop: the clipper eats it. Level 6 depends on `DropRms`, so a batch
-of louder tracks shifts frenzy loudness too.
+above 0.56. Don't lift a single gain to fix a weak drop: the clipper eats it.
 
 ## Limits
 
@@ -334,8 +279,6 @@ of louder tracks shifts frenzy loudness too.
 | --- | --- | --- | --- |
 | Any whole track, and all tracks on average | absolute | 75 ms per second of audio | "Music" |
 | A harder track's drop | Heaviest drop among tracks neither harder nor weird | 1.5x | "Music" |
-| Frenzy level 4 and 6, classic | Heaviest hardbass drop | 1.5x, level 6 at most 1.25x level 4, level 1 at most level 4 | "Frenzy music" |
-| Each class, level 4 and 6 | Heaviest hardbass drop | 1.5x | "Frenzy classes" |
 | Boosted music | The same music at 0 dB | 1.5x | "Audio mixer" |
 
 Ratios come from `CompareCpu` (`SelfTestCpuRatio.cs`): both sides on this thread's CPU clock, interleaved, after a
@@ -343,14 +286,12 @@ warm-up, each side's quickest run, 1.5 s from `FirstDropBar`. Don't use a median
 1.38x and 1.07x for one commit that way. Measured whole-track cost: 6-16 ms/s; the heaviest are the weird
 tracks and Babushka Bunker Buster. About 1% of a core on a PC (README).
 
-Two gaps: the check that held weird tracks to 1.5x went with the "Weird hardbass" section on 2026-11-03, so only the
-75 ms/s cap covers them; and every frenzy ratio is against the heaviest track, so a heavier track loosens those checks
-(inferred). Compare by hand. During a crossfade two decks render, and the frenzy adds a third renderer if a deck is
-still fading out.
+A gap: the check that held weird tracks to 1.5x went with the "Weird hardbass" section on 2026-11-03, so only the
+75 ms/s cap covers them. Compare by hand. During a crossfade two decks render.
 
 **Allocation.** Zero, in `Load` as well as `Render`: `Load` runs on the music thread. No LINQ, `new`, closures, boxing
-or `string` work there (`Enum.IsDefined` boxes; the `Class` setter avoids it). Buffers are made in constructors; arrays
-are sized for the worst case. "Music", "Frenzy classes" and "Audio mixer" measure it.
+or `string` work there (`Enum.IsDefined` boxes). Buffers are made in constructors; arrays
+are sized for the worst case. "Music" and "Audio mixer" measure it.
 
 **Denormals.** Filter and feedback state is zeroed below 1e-15; float maths on denormals is very slow. Every new
 recursive filter needs the same.
@@ -360,9 +301,9 @@ means adding it to `Reset()`.
 
 **Tests only when asked (user, 2026-11-03).** Add no self-tests, and don't run the suite as a matter of course. A build must
 pass, you try the change by hand in a throwaway run (the probe), and you report what you didn't verify. The sections
-above exist and CI runs them, so you still need to meet them. "Weird hardbass" and "Frenzy tempo" were deleted on
-2026-11-03: nothing automated checks weird timelines or frenzy tempo now. If the user asks, the command is
-`--selftest-only "Music, Frenzy music, Frenzy classes, Audio mixer"`.
+above exist and CI runs them, so you still need to meet them. "Weird hardbass" was deleted on
+2026-11-03: nothing automated checks weird timelines now. If the user asks, the command is
+`--selftest-only "Music, Audio mixer"`.
 
 ## Inspecting a track without ears
 
@@ -429,7 +370,6 @@ static void Report(MusicTrack t, uint seed, string? wav)
     }
     Console.WriteLine($"  tail rms {Rms(s, At(t, t.TotalBars), s.Length):0.0000}, last 1024 frames {Rms(s, s.Length - Block * 2, s.Length):0.0000}");
     Console.WriteLine("  drop spectrum, dB:" + Bands(s, At(t, t.FirstDropBar), Sr * 6));
-    Seam(t);
     if (wav != null)
         Wav(wav, s);
 }
@@ -467,22 +407,6 @@ static string Bands(float[] s, int from, int samples)
     return string.Concat(e.Select((v, b) => $" {(b == 0 ? 0 : edges[b - 1]):0}+ {10 * Math.Log10(v / (samples / 2) + 1e-12):0}"));
 }
 
-// Tracks don't loop; the frenzy's drops do. Compares the bar before the loop point with the bar after it.
-static void Seam(MusicTrack t)
-{
-    if (t.Style != MusicStyle.Hardbass || t.Timeline is { SteadyDrops: false })
-        return; // the frenzy never plays these
-    var r = new MusicRenderer();
-    r.Load(t, 1, MusicRenderer.LastDropBar(t));
-    r.LoopDrops = true;
-    var bars = t.Sections.Reverse().First(x => x.Part == MusicPart.Drop).Bars;
-    var s = new float[(int)(r.FramesPerBar * (bars + 1)) * 2];
-    for (var i = 0; i < s.Length; i += Block * 2)
-        r.Render(s.AsSpan(i, Math.Min(Block * 2, s.Length - i)));
-    int seam = (int)(r.FramesPerBar * bars) * 2, bar = (int)r.FramesPerBar * 2;
-    Console.WriteLine($"  loop seam: rms {Rms(s, seam - bar, seam):0.000} before, {Rms(s, seam, seam + bar):0.000} after");
-}
-
 static void Wav(string path, float[] s)
 {
     using var f = new BinaryWriter(File.Create(path));
@@ -505,8 +429,7 @@ dotnet bin/Release/net10.0/musicprobe.dll "Tracksuit Tactical" out.wav     # one
 Reading it: run all tracks and compare your track against neighbours of the same family, in the same run (the ms/s
 figure is one wall-clock pass, and a lone run reads high while the JIT warms up, so only comparisons mean anything). Check the targets above. A section's RMS shows the
 arrangement: intro 0.3, build 0.46, drop 0.5, break 0.2, outro 0.4 is a normal hardbass shape. Compare spectrum
-lines against a track that works; a large gap in one band is the thing to look at. Seam RMS should stay within about
-10% (measured: 0.46-0.53 either side). This probe doesn't check drop-to-drop correlation or the frenzy. Send the
+lines against a track that works; a large gap in one band is the thing to look at. This probe doesn't check drop-to-drop correlation. Send the
 user a WAV only if they ask.
 
 ## Giving Sandbox music
@@ -517,7 +440,6 @@ Not built, and whether to is a user decision. The code shows what would have to 
   `UpdateDirector` and `StartNext` assume two sets (`mood == Menu ? Menu : Lobby`).
 - `MixBlock` picks the trim with `deck.Set == Menu ? MenuTrim : LobbyTrim`, and `MeterDeck` has two sets. A third set needs
   a trim, a meter and a `MixBus` row (`music.sandbox`, say).
-- `Frenzy.MixInto` is allowed only in mood `Off`. Decide whether frenzy plays over Sandbox music, or at all there.
 - The "Music" section asserts `MoodFor` and the mood changes, and "Audio mixer" asserts the defaults table.
 - Every track is 140+ BPM with hard drops. Background music for hours of building likely needs a calmer, sparser style:
   a new `MusicStyle` case in `ConfigureStyle` and `LeadRhythms`. Beware: `ConfigureStyle`'s `default:` is Darksynth, and
@@ -535,13 +457,11 @@ Not built, and whether to is a user decision. The code shows what would have to 
   `*Rhythms` array, or another draw, rewrites the melody of every track using it. Rhythms are exactly 32 characters.
   Changing a `Seed` rewrites that one track.
 - **Fix a problem in the shared voice only if every track should change.** Otherwise add a field, default it to off.
-- **New per-tempo sound** must follow `RetimeVoices`, or it drifts when the frenzy speeds up. `FramesToNextBar` assumes 16
-  sixteenths, which is why the frenzy needs steady drops.
 - **Set a voice's fields, then `Configure()`.** Coefficients are computed there, and `ApplyLead` mid-track must be
   followed by `_lead.Configure()`. `ResetHarder` and `ApplyLead` clear what a previous track set.
 - **A weird swerve restores what it changed** on leaving (`WeirdTiming`). `DrunkStep` changes lead vibrato; `LofiStep`
   changes pad cutoff.
-- **Threads.** `MusicPlayer` and `FrenzyLayer` setters use `Volatile`. Don't call into a renderer from the game thread.
+- **Threads.** `MusicPlayer` setters use `Volatile`. Don't call into a renderer from the game thread.
 - **Open:** menu and lobby music can click once as a trim crosses 0 dB and the limiter switches on.
 
 ### What went wrong before
@@ -553,17 +473,11 @@ Not built, and whether to is a user decision. The code shows what would have to 
 | 4d3c496a | Intro kick too loud: a driven kick is loud at any velocity | Muffling needs a level cut too (`_kickLevel`) |
 | 20f85f3c | Harder tracks too loud at `Master` 1.5 | Denser mix, lower `Master` |
 | 3c551155 | Reverb reset used LINQ and allocated on the music thread; voices kept state between tracks | Plain loops in `Load`; reset everything |
-| 3099635e, 14359391 | Frenzy classes over the CPU rule; Launcher's braam went to a power chord and synths to half rate | Thin a sound rather than raise the limit |
-| ca252a13 | Level 6 per class needed trims from real measurements, not guesses (0.72-1.1) | Re-measure after changing a style |
 | 2587dd13 | Mixer trims were capped at 4x, and boosts past that needed a limiter, not a hard clip | Boosted music runs the limiter |
-| b0c57df2 and others | `SfxReferenceRms` went 0.55, 0.48, 0.44, 0.46 as gunshots changed | Gun or explosion changes can move level 6's calibration |
 
 ### Weird hardbass history
 
-Added 2026-10-21 on `feature/hardbass-weird` (7360bfde), then merged with the harder tracks and the first frenzy
-layer. Its own section checked the odd meters, swerves, toys and cost; that section was deleted 2026-11-03 with 129 others.
-Because the frenzy loops drops of fixed length, four of the five can't play there, and the class Special ("Glitch
-weird") has only Drunk Duck Breakdown to pick.
+Added 2026-10-21 on `feature/hardbass-weird` (7360bfde), then merged with the harder tracks. Its own section checked the odd meters, swerves, toys and cost; that section was deleted 2026-11-03 with 129 others.
 
 ## Ask the user
 
@@ -575,16 +489,14 @@ An agent can't judge these. Say so in your report instead of claiming them.
 - Is the build's tension and the drop's hit satisfying?
 - Is a weird swerve funny rather than broken? Out-of-tune parts are meant to sound wrong, and only an ear tells how wrong.
 - Are level changes and crossfades smooth, with no clicks?
-- Is the frenzy too loud against guns on real speakers?
 
 ## Checklist
 
 1. Read the section for your kind of change; check the target file's style against neighbours.
 2. For a track: pick an unused BPM and key (README table), 4 or 8 chords, a form with builds and drops, a new `Seed`.
 3. Use hooks and off-by-default fields; existing tracks stay unchanged.
-4. No allocation in `Load` or `Render`; denormal guards; new state in `Reset()`; tempo-bound sound in `RetimeVoices`.
+4. No allocation in `Load` or `Render`; denormal guards; new state in `Reset()`.
 5. `dotnet build -c Release --no-restore` passes.
-6. Run the probe on all tracks: limits and loudness targets met, cost near its neighbours, seam fine. Compare before and after for tracks you didn't mean to change.
-7. Hardbass with steady drops: remember it joins the frenzy pools.
-8. Update the README "Music" table. Add no tests unless the user asks.
+6. Run the probe on all tracks: limits and loudness targets met, cost near its neighbours. Compare before and after for tracks you didn't mean to change.
+7. Update the README "Music" table. Add no tests unless the user asks.
 9. In your report, list what you measured and what you couldn't check, and ask the user to listen.

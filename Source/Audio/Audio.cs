@@ -159,7 +159,7 @@ public sealed partial class Audio : IDisposable
     /// <summary>Footsteps, jumps and landings (on top of the effects volume).</summary>
     public float FootstepVolume = 1f;
 
-    /// <summary>Settings > Audio "Own gun volume": your own gunshots (and their frenzy layers), on top of the effects volume.</summary>
+    /// <summary>Settings > Audio "Own gun volume": your own gunshots, on top of the effects volume.</summary>
     public float OwnGunVolume = 1f;
 
     /// <summary>Your own footsteps are this much quieter than someone else's at your feet.</summary>
@@ -211,7 +211,6 @@ public sealed partial class Audio : IDisposable
             for (var i = 0; i < (int)Sfx.COUNT; i++)
                 _sfx[i] = pcm.Effects[i].Select(Upload).ToArray();
             _steps = pcm.Steps.Select(Upload).ToArray();
-            InitFrenzyGun(pcm); // Audio.FrenzyGun.cs: per-class frenzy layers on your own gun
             BuildEnvelopes(); // Audio.Mixer.cs: the mixer window's meters
             BufferCount = pcm.Count;
             BufferBytes = pcm.Bytes;
@@ -498,8 +497,6 @@ public sealed partial class Audio : IDisposable
         pitch *= kitPitch;
         gain *= kitGain;
         var nearGain = plan.Near * gain * (position == null ? OwnGunVolume : 1f);
-        if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
-            nearGain = FrenzyOwnShot(w, nearGain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
         _voiceHf = mv.HfTrim;
         if (plan.Near > 0f)
             Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff, plan.NearBus, plan.NearBusGain * extraGain);
@@ -703,7 +700,6 @@ public sealed partial class Audio : IDisposable
                 s.Stop();
             Al.DeleteSources(set);
         }
-        DisposeFrenzyGun();
         DisposeEfx();
         DisposeZombieSources();
         DisposeCrowdSources();

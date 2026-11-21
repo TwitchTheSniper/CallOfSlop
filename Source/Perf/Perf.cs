@@ -42,7 +42,7 @@ public enum PerfArea : byte
     NetSend, //     snapshots and the per-tick sends
     ClientTick, //   a client's prediction ticks (and their input sends)
     Visuals, //   per-frame state: interpolation, render states, feedback, sounds
-    Audio, // voice chat, music state, the frenzy sound and visuals
+    Audio, // voice chat, music state
     Render, // the 3D scene (the CPU side of every pass; GPU time is in PerfGpu)
     Buildings, //   buildings and the map's boxes, movers
     City, //   a planetoid's city (CityRenderer.cs)
@@ -55,7 +55,7 @@ public enum PerfArea : byte
     Bodies, //   players (and your own legs)
     Entities, //   grenades, streaks, launchers, zombies, map logic, co-op soldiers
     ConstructDraw, //   Sandbox: the constructs, the physics gun's beams, part ambience and engine sounds (Program.Sandbox.cs DrawSandbox)
-    Effects, //   tracers, blasts, smoke, objectives, frenzy sparks
+    Effects, //   tracers, blasts, smoke, objectives, sparks
     Particles, //   the particle pool's step and draw (Source/Render/Fx)
     PostFx, //   bloom, heat haze, ambient occlusion (Source/Render/Fx/PostFx.cs)
     ViewModel, //   your gun
@@ -110,7 +110,7 @@ public static class Perf
         "Events", "Input", "Game update", "Net receive", "Server ticks", "Match and mode", "Zombies", "Horde", "Co-op",
         "Sandbox tick", "Constructs", "Links, power, logic", "Links, ropes, hoses", "Power", "Routed links", "Weapons", "Logic blocks", "Doors, launchers, release", "Construct physics", "Machines, production", "Spawns, pilots, debris", "Colony, duties", "Story",
         "Projectiles", "Props, logic, destruction", "Space, travel", "Terrain streaming", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
-        "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
+        "Frame state, sounds", "Audio, voice", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
         "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
         "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",

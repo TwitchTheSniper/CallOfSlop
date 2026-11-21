@@ -18,6 +18,12 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Audio
 {
+    /// <summary>
+    /// The gain <see cref="Shot"/> plays your own (unsuppressed) gun at (OpenAL's per-source cap: your gun is the loudest
+    /// thing you hear; another player's is <see cref="OtherShotGain"/> of it up close), and a frag grenade's explosion.
+    /// </summary>
+    public const float OwnShotGain = 1f, FragExplosionGain = 1f;
+
     /// <summary>Another player's shot up close, relative to the same shot as your own (about -7.5 dB: yours is at your ear).</summary>
     public const float OtherShotGain = 0.42f;
 

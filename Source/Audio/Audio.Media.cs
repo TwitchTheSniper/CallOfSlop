@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// <para>
 /// The music CPU rule (at most 1.5x the baseline): a game track renders on this thread with a <see cref="MusicRenderer"/> of its own, so one render
 /// is one baseline. There is only ever one, the nearest, and it holds while the music thread is rendering anything (the lobby's
-/// decks, the kill frenzy): two renders at a time would be 2x.
+/// decks): two renders at a time would be 2x.
 /// </para>
 /// </summary>
 public sealed partial class Audio
@@ -396,7 +396,7 @@ public sealed partial class Audio
     private void MediaRender(Span<float> mono)
     {
         var want = Volatile.Read(ref _mediaWant);
-        var held = want != null && (Music.ActiveDecks > 0 || Music.Frenzy.Active);
+        var held = want != null && Music.ActiveDecks > 0;
         Volatile.Write(ref _mediaTrackHeld, held ? 1 : 0);
         if (want == null || held || Volatile.Read(ref _mediaTrackPaused) != 0)
         {

@@ -1062,18 +1062,6 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Bullet holes left on walls and floors: High keeps 1024, Medium 512, Low 128 (each player at most 64; the oldest fade out)."u8);
 
             ImGui.Spacing();
-            ImGui.Text("Frenzy visuals"u8);
-            var frenzyFx = (int)s.FrenzyVisuals;
-            for (var i = 0; i <= (int)FrenzyVisualMode.Off; i++)
-            {
-                if (i > 0)
-                    ImGui.SameLine();
-                if (ImGui.RadioButton($"{(FrenzyVisualMode)i}##frenzyfx", ref frenzyFx, i))
-                    s.FrenzyVisuals = (FrenzyVisualMode)frenzyFx;
-            }
-            ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
-
-            ImGui.Spacing();
             ImGui.Text("Blood overlay"u8);
             var blood = (int)s.BloodOverlay;
             for (var i = 0; i <= (int)BloodMode.Off; i++)
@@ -1167,33 +1155,12 @@ public sealed partial class Ui
             ImGui.RadioButton("Hardbass only"u8, ref musicStyle, (int)MusicChoice.HardbassOnly);
             s.MusicChoice = (MusicChoice)musicStyle;
             audio.Music.HardbassOnly = s.MusicChoice == MusicChoice.HardbassOnly;
-            if (ImGui.Checkbox("Kill frenzy music"u8, ref s.FrenzyMusic))
-                audio.Music.Frenzy.Enabled = s.FrenzyMusic;
-            if (ImGui.IsItemHovered())
-                ImGui.SetItemTooltip("During a match: hard music fades in as you chain kills, gets harder the more and the faster you kill, and fades out when the killing stops. A long spree reaches FRENZY (louder than the menu music) and MAX FRENZY (as loud as the gunfire)."u8);
-            if (s.FrenzyMusic)
-            {
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(w * 0.5f);
-                if (ImGui.SliderFloat("Frenzy volume"u8, ref s.FrenzyVolume, 0f, 1f, "%.2f"u8))
-                    audio.Music.Frenzy.Volume = s.FrenzyVolume;
-            }
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Effects volume"u8, ref s.EffectsVolume, 0f, 1f, "%.2f"u8))
                 audio.EffectsVolume = s.EffectsVolume;
             ImGui.SameLine();
             if (ImGui.Button("Test##fx"u8))
                 audio.Effect(Sfx.Headshot, 0.8f);
-            ImGui.Text("Frenzy gun sound"u8);
-            var frenzyGun = (int)s.FrenzyGunSound;
-            for (var i = 0; i <= (int)FrenzyGunSoundMode.Off; i++)
-            {
-                ImGui.SameLine();
-                if (ImGui.RadioButton($"{(FrenzyGunSoundMode)i}##frenzygun", ref frenzyGun, i))
-                    s.FrenzyGunSound = (FrenzyGunSoundMode)frenzyGun;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetItemTooltip("On a kill spree your own gun takes on the character of your frenzy class (the weapon of your last kill): extra punch, a class sound (pistol twang, SMG buzz, sniper whip crack, shotgun double boom...), more echo and width the higher the frenzy. Subtle keeps it lighter; Off leaves your gun as it is."u8);
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Own gun volume"u8, ref s.OwnGunVolume, 0f, 1f, "%.2f"u8))
                 audio.OwnGunVolume = s.OwnGunVolume;

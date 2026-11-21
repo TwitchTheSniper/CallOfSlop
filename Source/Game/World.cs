@@ -701,7 +701,7 @@ public struct Snap
 
 /// <summary>
 /// Marks a <see cref="Player"/> field that belongs to one match and one mode (a tool's worth of Sandbox, a Zombies build,
-/// a streak, a frenzy): <see cref="Player.ResetForMatch"/> puts every marked field back to its starting value at every
+/// a streak): <see cref="Player.ResetForMatch"/> puts every marked field back to its starting value at every
 /// match start and mode switch. The "Mode switch reset" self-test checks by reflection that every marked field is reset
 /// and that no field is left unclassified (see <c>SelfTest.MsrPersistent</c>): a new mutable Player field is either marked
 /// here or listed there with a reason.
@@ -773,13 +773,6 @@ public sealed class Player
     public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
     public byte ShieldCharges; // Last Stand: bullet hits the shield still blocks (server-owned, replicated in the snapshot)
     public bool Regenerating; // health is coming back right now (server-owned, replicated in the snapshot)
-    [MatchState]
-    public byte FrenzyLevel; // kill frenzy 0-6 (server-owned, replicated in the snapshot's slow fields; Source/Game/Frenzy/FrenzyServer.cs)
-    [MatchState]
-    public WeaponClass FrenzyClass; // the class of the weapon that got this player's most recent kill (server-owned, replicated)
-    public bool FrenzyBuffsOn; // the host's "Frenzy buffs" setting, replicated with FrenzyClass (Source/Game/Frenzy/FrenzyBuffs.cs)
-    [MatchState]
-    public FrenzyMeterCore? FrenzyHeat; // server only: this player's heat model (FrenzyServer.cs)
     public double ShieldFlashTime = -100; // client: when the shield last blocked a hit (the shimmer)
 
     // Loadout and the weapon in hand (replicated so others see and hear the right gun)
@@ -887,9 +880,6 @@ public sealed class Player
         SbHome = default;
         SbDeadAt = SbBlockedSince = -1;
         GunLevel = 0;
-        FrenzyLevel = 0;
-        FrenzyClass = default;
-        FrenzyHeat = null;
         BuiltPrimary = BuiltSecondary = null;
         BuiltExtra[0] = BuiltExtra[1] = null;
         ExtraSlots = false;

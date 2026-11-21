@@ -5,17 +5,15 @@ internal enum JukeboxKind : byte
 {
     Stop,
     Track,
-    Frenzy,
 }
 
 /// <summary>One request from the music player. Made on a click, never per frame; the newest one wins.</summary>
-internal sealed record JukeboxRequest(int Seq, JukeboxKind Kind, MusicTrack? Track, int StartBar, bool Crossfade, bool SamePlay, WeaponClass Class);
+internal sealed record JukeboxRequest(int Seq, JukeboxKind Kind, MusicTrack? Track, int StartBar, bool Crossfade, bool SamePlay);
 
 /// <summary>
 /// The main menu's music player (Source/UI/UiMusicPlayer.cs) on the mixing thread. While the page is open it takes the
 /// decks over from the moods: the menu's own music fades out, a picked track plays on a deck through the same renderer,
-/// menu or lobby level, music volume and limiter as in the game, and a frenzy entry plays through the real
-/// <see cref="FrenzyLayer"/> at the level picked. A seek loads the track again at a bar (the renderer can only start
+/// menu or lobby level, music volume and limiter as in the game. A seek loads the track again at a bar (the renderer can only start
 /// on a bar line). Leaving the page crossfades back into the menu playlist. With the page closed this costs one read per
 /// block and the mix is unchanged. Everything here is allocation-free but the request itself.
 /// </summary>
@@ -61,18 +59,15 @@ public sealed partial class MusicPlayer
 
     /// <summary>Plays a track from a bar. <paramref name="samePlay"/> keeps this play's fills (a seek).</summary>
     public void JukeboxPlay(MusicTrack track, int startBar = 0, bool crossfade = false, bool samePlay = false) =>
-        JukeboxPost(JukeboxKind.Track, track, startBar, crossfade, samePlay, default);
-
-    /// <summary>Starts a frenzy class's style, on a set track or (null) from the class's pool; the level comes through <see cref="FrenzyLayer.Target"/>.</summary>
-    public void JukeboxFrenzy(WeaponClass cls, MusicTrack? track) => JukeboxPost(JukeboxKind.Frenzy, track, 0, false, false, cls);
+        JukeboxPost(JukeboxKind.Track, track, startBar, crossfade, samePlay);
 
     /// <summary>Silence, with the page still open.</summary>
-    public void JukeboxStop() => JukeboxPost(JukeboxKind.Stop, null, 0, false, false, default);
+    public void JukeboxStop() => JukeboxPost(JukeboxKind.Stop, null, 0, false, false);
 
-    private void JukeboxPost(JukeboxKind kind, MusicTrack? track, int bar, bool crossfade, bool samePlay, WeaponClass cls)
+    private void JukeboxPost(JukeboxKind kind, MusicTrack? track, int bar, bool crossfade, bool samePlay)
     {
         var seq = ++_jbPosted;
-        Volatile.Write(ref _jbPending, new JukeboxRequest(seq, kind, track, bar, crossfade, samePlay, cls));
+        Volatile.Write(ref _jbPending, new JukeboxRequest(seq, kind, track, bar, crossfade, samePlay));
     }
 
     // ---- Mixing thread ---------------------------------------------------------------------------
@@ -114,7 +109,6 @@ public sealed partial class MusicPlayer
         Volatile.Write(ref _jbNearEnd, 0);
         if (_jbGain <= 0f)
             JukeboxCut();
-        Frenzy.TestTrack = null;
         _lead = null;
         _appliedMood = -1;
         _appliedHardbassOnly = Volatile.Read(ref _hardbassOnly);
@@ -129,7 +123,6 @@ public sealed partial class MusicPlayer
             d.Gain = 0;
         }
         _lead = null;
-        Frenzy.Cut();
     }
 
     private bool JukeboxApply(JukeboxRequest r)
@@ -142,16 +135,6 @@ public sealed partial class MusicPlayer
                 FadeOut(d, JukeboxFadeSeconds);
             _lead = null;
             _jbTrackOn = false;
-            Frenzy.FadeOutIn(JukeboxFadeSeconds);
-            if (r.Kind == JukeboxKind.Frenzy)
-            {
-                Frenzy.TestTrack = r.Track;
-                Frenzy.Class = r.Class;
-            }
-            else
-            {
-                Frenzy.Target = 0; // (the game's next frame says so too, but a slow frame would restart the layer once this fade ends)
-            }
             return true;
         }
 
@@ -163,8 +146,6 @@ public sealed partial class MusicPlayer
                     FadeOut(d, JukeboxFadeSeconds);
             return false;
         }
-        Frenzy.FadeOutIn(JukeboxFadeSeconds);
-        Frenzy.Target = 0;
         var fade = r.Crossfade ? CrossfadeSeconds : JukeboxFadeSeconds;
         var free = FreeDeck();
         foreach (var d in _decks)

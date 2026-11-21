@@ -99,7 +99,6 @@ public sealed partial class MusicRenderer
         _var = new MusicRng(track.Seed ^ (seed * 0x9E3779B9u) ^ 0x5bd1e995u);
         _samplesPerStep = Sr * 60.0 / track.Bpm / 4.0;
         _toNextStep = 0;
-        ResetTempo(); // the frenzy's tempo changes (MusicRenderer.Tempo.cs)
         _step = Math.Clamp(startBar, 0, track.TotalBars) * 16;
         _rendered = 0;
         _drops = 0;
@@ -115,7 +114,6 @@ public sealed partial class MusicRenderer
         _dcInL = _dcInR = _dcOutL = _dcOutR = 0;
 
         ConfigureStyle();
-        CaptureTempoBase();
         _kick.Reset();
         _snare.Reset();
         _hat.Reset();
@@ -524,7 +522,7 @@ public sealed partial class MusicRenderer
                 _lead.Resonance = 0.88f;
                 _lead.BandPass = true;
                 _lead.FilterLfo = 1.1f;
-                _lead.FilterLfoHz = EffBpm / 60f * 2f; // wah in 8ths (at the frenzy's tempo, MusicRenderer.Tempo.cs)
+                _lead.FilterLfoHz = _track.Bpm / 60f * 2f; // wah in 8ths
                 _lead.Vibrato = 0.5f;
                 _lead.VibratoHz = 7f;
                 _lead.BendSemis = -4f;
@@ -824,10 +822,8 @@ public sealed partial class MusicRenderer
             WeirdMeter(); // odd meters (MusicRenderer.Weird.cs)
         var bar = _step >> 4;
         var s = _step & 15;
-        if (s == 0 && (_jumpBar >= 0 || LoopDrops))
-            bar = Retarget(bar); // the frenzy layer's bar-synced jumps and drop loops (MusicFrenzy.cs)
         if (_wd)
-            WeirdTiming(bar, s); // this 16th's length, pitch and section effects (after any jump)
+            WeirdTiming(bar, s); // this 16th's length, pitch and section effects 
         _step++;
         if (bar >= _track.TotalBars)
         {
@@ -1132,16 +1128,11 @@ public sealed partial class MusicRenderer
     {
         var frames = stereo.Length / 2;
         var i = 0;
-        StepLogCount = 0;
         while (i < frames)
         {
             if (_toNextStep <= 0)
             {
-                if (_tempoRamp > 0)
-                    TempoStep(); // a frenzy tempo glide (MusicRenderer.Tempo.cs)
                 OnStep();
-                if (StepLogOn)
-                    LogStep(i); // the frenzy's class styles (MusicRenderer.FrenzyClass.cs)
                 _toNextStep += _samplesPerStep;
             }
             var n = Math.Min(Math.Min(frames - i, MaxChunk), Math.Max(1, (int)Math.Ceiling(_toNextStep)));
@@ -1181,22 +1172,12 @@ public sealed partial class MusicRenderer
         _snare.Render(snare, ref _noise);
         _hat.Render(hat, ref _noise);
         _bass.Render(bass);
-        if (StemLead > 0f)
-        {
-            _lead.Render(leadL, leadR);
-            _pad.Render(padL, padR);
-            _arp.Render(arpL, arpR);
-        }
-        else
-        {
-            MuteLeads(n); // the frenzy layer's lower levels: no leads, and no CPU spent on them
-        }
+        _lead.Render(leadL, leadR);
+        _pad.Render(padL, padR);
+        _arp.Render(arpL, arpR);
         _fx.Render(fxL, fxR, ref _noise);
         _rev.Render(rev);
-        if (StemLead > 0f)
-            _vox.Render(vox, ref _noise);
-        else
-            vox.Clear();
+        _vox.Render(vox, ref _noise);
         if (_harder != null)
             RenderSweeps(vox);
         if (_wd)
@@ -1205,8 +1186,6 @@ public sealed partial class MusicRenderer
         // Levels, then the delay and reverb sends.
         float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
         float leadDelay = _leadDelay, leadVerb = _leadVerb, gVox = _gVox;
-        if (StemDrums != 1f || StemBass != 1f || StemLead != 1f)
-            ApplyStems(ref gKick, ref gSnare, ref gHat, ref gBass, ref gLead, ref gPad, ref gArp, ref gVox);
         for (var i = 0; i < n; i++)
         {
             var vx = vox[i] *= gVox;
@@ -1268,7 +1247,7 @@ public sealed partial class MusicRenderer
     /// </summary>
     private void MixHardbass(Span<float> stereo, int n)
     {
-        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev * StemBass, master = _masterGain;
+        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev, master = _masterGain;
         for (var i = 0; i < n; i++)
         {
             var dk = _bDuck[i];

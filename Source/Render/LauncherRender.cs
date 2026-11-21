@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// Draws launcher projectiles: a rocket (body, nose in the launcher's accent colour, fins), a grenade or a sticky charge,
 /// each turned along its flight; then, in the blended pass, the motor's flame and the smoke trail (a dozen puffs from
 /// the trail points, growing and fading with age). A handful of boxes per projectile and only a few are ever in the air,
-/// so they use the per-box draws like the streak machines; the motor sparks go through the frenzy particle pool's one
-/// instanced draw. Called from Program.Render.
+/// so they use the per-box draws like the streak machines; the motor sparks go through the spark pool's one
+/// instanced draw (Source/Render/Sparks). Called from Program.Render.
 /// </summary>
 public static class LauncherRender
 {

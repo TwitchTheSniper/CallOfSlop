@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 
 namespace CallOfSlop;
 
-// Focused runs: "--selftest-only "Save folder, Frenzy"" runs only the named sections (comma-separated, any case; a whole
+// Focused runs: "--selftest-only "Save folder, Mods"" runs only the named sections (comma-separated, any case; a whole
 // section name picks that one, otherwise every section starting with the text). Unknown names fail and list the valid
 // ones; "--selftest-list" prints them. A section that uses an earlier one's results names it (Section(name, body,
 // "Earlier")) and a filtered run brings it along; every other section passes run alone (checked one by one when the
@@ -282,7 +282,7 @@ public static partial class SelfTest
         "Map select", "Map objectives", "Weapon select", "Loadout navigation", "Death cam", "Ready-up", "Team Deathmatch",
         "King of the Hill", "Capture the Flag", "Gun Game", "Mode state and matches", "Mode modules", "Test Range",
         "Score scaling", "Pre-match lobby", "Return to lobby", "Two-process lobby", "Team balance",
-        "Attachments", "Optics", "Sniper scopes", "Frenzy music", "Frenzy classes", "Frenzy gun sound",
+        "Attachments", "Optics", "Sniper scopes",
         // the arena bots and their nav checks over every map
         "Bots", "Nav determinism", "Nav edge walks", "Bot stuck watch", "Bots and foliage",
         // Zombies and Co-op
@@ -528,8 +528,6 @@ public static partial class SelfTest
         Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
         Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
         Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
-        Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
-        Section("Frenzy classes", CheckFrenzyClasses); // SelfTestFrenzyClasses.cs: per-weapon-class frenzy music styles
         Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
         Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
         Section("Audio mixer", CheckAudioMixer); // SelfTestAudioMixer.cs: defaults table, the baked SeabMix2 levels, identity with no audio_mix.json, old saves moving untouched levels to the new defaults, JSON round trip / unknown keys / clamping, slider isolation, mute, F8 migration, no allocations closed or metering
@@ -548,7 +546,6 @@ public static partial class SelfTest
         Section("Decals", CheckDecals); // SelfTestDecals.cs: decal files, atlas, Decal/DecalScatter baking, impact pool rules, costs, the Decal Test map
         Section("Decal surfaces", CheckDecalSurfaces); // SelfTestDecalSurfaces.cs: the surface and object decal set (loads, surfaces, bold detail, paint cost) and the Decal Surfaces map
         Section("Pack decals", CheckPackDecals); // SelfTestPackDecals.cs: pack-local decals (Maps/<Pack>/Decals), shadowing, scope, atlas budget
-        Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
         Section("Bots and foliage", CheckBotFoliage); // SelfTestBotFoliage.cs: no seeing through foliage (by stance), blind fire at estimates, timeouts, walls, corn, costs
         Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
         Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations

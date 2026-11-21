@@ -134,7 +134,7 @@ public sealed class AudioMix
     public float DistanceHf(float distance) =>
         Math.Clamp(MathF.Exp(-MathF.Max(0f, distance - 8f) * _param[(int)MixParam.AirAbsorption] / 55f), MathF.Min(1f, _param[(int)MixParam.AirFloor]), 1f);
 
-    /// <summary>The music limiter's ceiling while the frenzy plays.</summary>
+    /// <summary>The music limiter's ceiling.</summary>
     public float LimiterCeiling => _param[(int)MixParam.LimiterCeiling];
 
     // ---- Whole mix -------------------------------------------------------------------------

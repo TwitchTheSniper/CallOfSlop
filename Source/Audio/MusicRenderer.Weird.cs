@@ -90,7 +90,7 @@ public sealed partial class MusicRenderer
     }
 
     /// <summary>
-    /// The 16th about to play (after the meter and any frenzy jump): its length from the timeline, the pitch sag,
+    /// The 16th about to play (after the meter): its length from the timeline, the pitch sag,
     /// section changes, the tape-deck settings and the chant pitch.
     /// </summary>
     private void WeirdTiming(int bar, int s)
@@ -100,7 +100,7 @@ public sealed partial class MusicRenderer
             _repeatBar = -1; // a jump (or the load point): no beat comes round again here
         _wPrevBar = bar;
         _wv = bar == _repeatBar ? s + 4 : s;
-        _samplesPerStep = tl.StepSeconds(bar, _wv) * Sr / _tempo; // the frenzy's tempo (MusicRenderer.Tempo.cs)
+        _samplesPerStep = tl.StepSeconds(bar, _wv) * Sr;
         _pitchMul = tl.Pitch(bar, _wv);
 
         var code = tl.Code(bar);

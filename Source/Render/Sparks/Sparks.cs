@@ -3,14 +3,13 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The frenzy sparks, embers, ring bursts and tracer glow trails: purely cosmetic, spawned on each PC from the tracers it
-/// already draws (nothing extra is sent). A fixed pool (<see cref="Capacity"/>, the oldest recycled when full), plain
-/// arrays, no allocation after start-up. Each particle is a streak: a box stretched along its velocity (sparks) or along
-/// a fixed axis (trails), packed by <see cref="Write"/> for the one instanced draw in <see cref="FrenzyFxRenderer"/>.
+/// Sparks, embers and glow trails: purely cosmetic, spawned on each PC from what it already draws
+/// (nothing extra is sent). A fixed pool (<see cref="Capacity"/>, the oldest recycled when full), plain
+/// arrays, no allocation after start-up. Each particle is a streak: a box stretched along its velocity (sparks), packed by <see cref="Write"/> for the one instanced draw in <see cref="SparkRenderer"/>.
 /// </summary>
-public static class FrenzyParticles
+public static class Sparks
 {
-    /// <summary>Most particles alive at once (level 6, 16 players firing LMGs stays under it; see the self-test).</summary>
+    /// <summary>Most particles alive at once.</summary>
     public const int Capacity = 2048;
 
     /// <summary>Floats per instance: centre + width (4), axis (full length vector) + alpha (4), colour + unused (4).</summary>
@@ -18,9 +17,8 @@ public static class FrenzyParticles
 
     private struct P
     {
-        public Vector3 Pos, Vel, Axis, Color;
+        public Vector3 Pos, Vel, Color;
         public float Width, Stretch, Age, Life, Gravity, Drag, Alpha;
-        public bool Fixed;
     }
 
     private static readonly P[] Pool = new P[Capacity];
@@ -50,7 +48,6 @@ public static class FrenzyParticles
         ref var p = ref Next();
         p.Pos = pos;
         p.Vel = vel;
-        p.Axis = default;
         p.Color = color;
         p.Width = width;
         p.Stretch = stretch;
@@ -59,25 +56,6 @@ public static class FrenzyParticles
         p.Gravity = gravity;
         p.Drag = drag;
         p.Alpha = alpha;
-        p.Fixed = false;
-    }
-
-    /// <summary>A still glow streak from <paramref name="from"/> to <paramref name="to"/> that fades over <paramref name="life"/> seconds (tracer trails).</summary>
-    public static void Trail(Vector3 from, Vector3 to, Vector3 color, float width, float life, float alpha)
-    {
-        ref var p = ref Next();
-        p.Pos = (from + to) * 0.5f;
-        p.Vel = default;
-        p.Axis = to - from;
-        p.Color = color;
-        p.Width = width;
-        p.Stretch = 0;
-        p.Age = 0;
-        p.Life = MathF.Max(life, 0.02f);
-        p.Gravity = 0;
-        p.Drag = 0;
-        p.Alpha = alpha;
-        p.Fixed = true;
     }
 
     /// <summary>Ages and moves every particle by <paramref name="dt"/> seconds; dead ones are dropped (swap-remove).</summary>
@@ -94,22 +72,19 @@ public static class FrenzyParticles
                 Pool[i] = Pool[--_count];
                 continue;
             }
-            if (!p.Fixed)
-            {
-                if (GravityFrames.Curved)
-                    p.Vel -= GravityFrames.UpAt(p.Pos) * (p.Gravity * dt); // a planet: sparks fall towards its centre
-                else
-                    p.Vel.Y -= p.Gravity * dt;
-                p.Vel *= MathF.Max(0f, 1f - p.Drag * dt);
-                p.Pos += p.Vel * dt;
-            }
+            if (GravityFrames.Curved)
+                p.Vel -= GravityFrames.UpAt(p.Pos) * (p.Gravity * dt); // a planet: sparks fall towards its centre
+            else
+                p.Vel.Y -= p.Gravity * dt;
+            p.Vel *= MathF.Max(0f, 1f - p.Drag * dt);
+            p.Pos += p.Vel * dt;
             i++;
         }
     }
 
     /// <summary>
     /// Packs up to <paramref name="max"/> live particles into <paramref name="dst"/> from instance <paramref name="start"/>
-    /// on; returns how many were written. Sparks fade linearly, trails ease out (bright, then a long tail).
+    /// on; returns how many were written. Sparks fade linearly.
     /// </summary>
     public static int Write(float[] dst, int start, int max)
     {
@@ -119,8 +94,8 @@ public static class FrenzyParticles
         {
             ref readonly var p = ref Pool[i];
             var t = p.Age / p.Life;
-            var fade = p.Fixed ? (1f - t) * (1f - t) : 1f - t;
-            var axis = p.Fixed ? p.Axis : p.Vel * p.Stretch;
+            var fade = 1f - t;
+            var axis = p.Vel * p.Stretch;
             dst[o] = p.Pos.X;
             dst[o + 1] = p.Pos.Y;
             dst[o + 2] = p.Pos.Z;
@@ -135,26 +110,5 @@ public static class FrenzyParticles
             dst[o + 11] = 0f;
         }
         return n;
-    }
-
-    /// <summary>Writes one instance (glow boxes drawn every frame: weapon auras, the viewmodel glow). Returns the next index.</summary>
-    public static int Put(float[] dst, int index, Vector3 center, Vector3 axis, float width, Vector3 color, float alpha)
-    {
-        if ((index + 1) * FloatsPerInstance > dst.Length || alpha <= 0.002f)
-            return index;
-        var o = index * FloatsPerInstance;
-        dst[o] = center.X;
-        dst[o + 1] = center.Y;
-        dst[o + 2] = center.Z;
-        dst[o + 3] = width;
-        dst[o + 4] = axis.X;
-        dst[o + 5] = axis.Y;
-        dst[o + 6] = axis.Z;
-        dst[o + 7] = alpha;
-        dst[o + 8] = color.X;
-        dst[o + 9] = color.Y;
-        dst[o + 10] = color.Z;
-        dst[o + 11] = 0f;
-        return index + 1;
     }
 }

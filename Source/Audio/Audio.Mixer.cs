@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// that bus's level from <see cref="Mix"/>. OpenAL caps a voice at its AL_MAX_GAIN (1 by default, after distance), so
 /// the voice's cap is set to the bus gain too: a bus at +6 dB plays exactly twice as loud as before, capped sounds
 /// included, and at 0 dB nothing is touched (the cap is never set). A muted bus doesn't start voices at all.
-/// The music's levels (menu, lobby, frenzy levels 1-6, the limiter ceiling) go to the music thread when the mix changes.
+/// The music's levels (menu, lobby, the limiter ceiling) go to the music thread when the mix changes.
 /// While the window is open <see cref="Meters"/> records each voice's start (bus, gain after the mix and distance, the
 /// buffer's envelope) and estimates per-bus peak/RMS from it; closed, nothing is recorded.
 /// </summary>
@@ -37,9 +37,6 @@ public sealed partial class Audio
 
     /// <summary>The voice slot of footstep voice <paramref name="i"/> (effect voices are 0..47) for the meters and caps.</summary>
     private static int StepSlot(int i) => Voices + i;
-
-    /// <summary>The voice slot of frenzy-layer voice <paramref name="i"/>.</summary>
-    private static int FrenzySlot(int i) => Voices + StepVoices + i;
 
     /// <summary>Where the listener looks (for the mixer's test sounds).</summary>
     public Vector3 ListenerForward => _listenerForward;
@@ -179,8 +176,6 @@ public sealed partial class Audio
         _mixRevision = Mix.Revision;
         Music.MenuTrim = Mix.Gain(MixBus.MusicMenu);
         Music.LobbyTrim = Mix.Gain(MixBus.MusicLobby);
-        for (var l = 1; l <= 6; l++)
-            Music.Frenzy.SetLevelTrim(l, Mix.Gain((MixBus)((int)MixBus.Frenzy1 + l - 1)));
         Music.LimiterCeiling = Mix.LimiterCeiling;
     }
 
@@ -207,12 +202,9 @@ public sealed partial class Audio
         Meters.Begin();
         Meters.AccumulateVoices(now, ListenerGain);
         var music = Music.Volume * Music.Volume * ListenerGain; // the music volume's squared curve, then the listener
-        var (menuPeak, menuMs, lobbyPeak, lobbyMs, frenzyPeak, frenzyMs, outPeak, outMs) = Music.TakeMeters();
+        var (menuPeak, menuMs, lobbyPeak, lobbyMs, outPeak, outMs) = Music.TakeMeters();
         Meters.AddExternal(MixBus.MusicMenu, menuPeak * music, menuMs * music * music, toMaster: false);
         Meters.AddExternal(MixBus.MusicLobby, lobbyPeak * music, lobbyMs * music * music, toMaster: false);
-        var level = Music.Frenzy.Level;
-        if (level >= 1)
-            Meters.AddExternal((MixBus)((int)MixBus.Frenzy1 + Math.Min(level, 6) - 1), frenzyPeak * music, frenzyMs * music * music, toMaster: false);
         Meters.AddMusicOutput(outPeak * ListenerGain, outMs * ListenerGain * ListenerGain);
         var talkers = 0;
         var lg = ListenerGain;
@@ -261,7 +253,7 @@ public sealed class AudioMeters
     /// <summary>Samples per envelope block (about 11.6 ms).</summary>
     public const int Block = 512;
 
-    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 10 frenzy-layer voices, 16 zombie voices, crowds, engines, 11 building voices, 6 machine hums (and a little spare).</summary>
+    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 16 zombie voices, crowds, engines, 11 building voices, 6 machine hums (and a little spare).</summary>
     public const int MaxVoices = 128;
 
     private const int Buses = (int)MixBus.COUNT;

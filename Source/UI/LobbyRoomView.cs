@@ -98,7 +98,7 @@ public sealed class LobbyRoomView
         h = Mix(h, World.Map.Name.GetHashCode());
         h = Mix(h, game.GravityPercent | (game.MatchMinutes << 8) | ((int)game.BotSkill << 16) | ((int)game.BotGearMode << 20) | ((int)game.ScoreLimitMode << 24));
         h = Mix(h, game.WantedBots | (game.AutoStartSeconds << 8) | ((game.DestructionEnabled ? 1 : 0) << 24) | ((game.VoiceAllowed ? 1 : 0) << 25)
-                   | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27) | ((game.FrenzyBuffsEnabled ? 1 : 0) << 28));
+                   | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27));
         h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8) | ((game.SandboxSurvivalOption ? 1 : 0) << 9) | game.SandboxDeathByte << 10);
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
@@ -195,7 +195,7 @@ public sealed class LobbyRoomView
         var destruction = map.Destruction == null ? "no destructible buildings on this map"
             : !Game.DestructionAllowedIn(game.Mode) ? "buildings stay whole in this mode"
             : game.DestructionEnabled ? "destruction on" : "destruction off";
-        RulesLine = $"Frenzy buffs {(game.FrenzyBuffsEnabled ? "on" : "off")}, {destruction}, voice chat {(game.VoiceAllowed ? "allowed" : "off")}, "
+        RulesLine = $"{char.ToUpperInvariant(destruction[0])}{destruction[1..]}, voice chat {(game.VoiceAllowed ? "allowed" : "off")}, "
                     + $"{(game.DeadChatPrivate ? "dead players' chat reaches only the dead" : "dead players' chat reaches everyone")}"
                     + (game.WantedBots > 0 ? $", bot gear: {BotGear.Name(game.BotGearMode)}" : "");
         BotsLine = game.WantedBots > 0 ? $"{game.BotCount} bot{(game.BotCount == 1 ? "" : "s")} ({game.BotSkill}) fill the empty places" : "No bots";

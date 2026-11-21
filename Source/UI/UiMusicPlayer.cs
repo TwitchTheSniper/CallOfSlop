@@ -5,15 +5,12 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Main menu > MUSIC PLAYER: every piece of music in the game (<see cref="MusicCatalogue"/>), to pick and listen to. It
-/// runs through the game's own music thread and renderers (Music.Jukebox.cs), so it sounds as the game does. A frenzy
-/// line plays the real frenzy layer at a level picked here; levels change on the bar line, as in a match. A track seeks
+/// runs through the game's own music thread and renderers (Music.Jukebox.cs), so it sounds as the game does. A track seeks
 /// by bars (the renderer starts on a bar line). Only the music volume is saved. No allocation per frame while it plays:
 /// the rows are made once, the list again only when the filter changes, and <c>$"..."</c> into ImGui uses its frame arena.
 /// </summary>
 public sealed partial class Ui
 {
-    private const int MpFrenzyStartLevel = 4;
-
     private MusicEntry[] _mpAll = [];
     private int[] _mpShown = [];
     private int _mpShownCount;
@@ -23,15 +20,11 @@ public sealed partial class Ui
     private bool _mpOn; // it plays (or is paused)
     private bool _mpLoop, _mpShuffle, _mpScroll, _mpVolumeTouched, _mpSeeking;
     private float _mpSeekTo;
-    private int _mpLevel = MpFrenzyStartLevel, _mpPick;
     private readonly List<int> _mpHistory = [], _mpBag = [];
     private readonly Random _mpRng = new();
 
     /// <summary>The music player's page is on screen (the game hands it the music thread).</summary>
     public bool MusicPlayerOpen => _page == Page.Music;
-
-    /// <summary>The frenzy level the player asks for, -1 when it isn't playing a frenzy line.</summary>
-    public int MusicPlayerFrenzyLevel => MusicPlayerOpen && _mpOn && _mpCur >= 0 && _mpAll[_mpCur].IsFrenzy ? _mpLevel : -1;
 
     private void OpenMusicPlayer(Audio audio)
     {
@@ -82,26 +75,18 @@ public sealed partial class Ui
         _mpOn = true;
         _mpScroll = true;
         music.JukeboxPaused = false;
-        var e = _mpAll[line];
-        if (e.Track is { } track)
-        {
-            music.JukeboxPlay(track, 0, crossfade);
-            return;
-        }
-        _mpPick = 0;
-        music.JukeboxFrenzy(e.Class, null);
+        music.JukeboxPlay(_mpAll[line].Track, 0, crossfade);
     }
 
     /// <summary>The line after (or before) the current one in the list as filtered, or a shuffled pick. -1 = none.</summary>
-    private int MpStep(int direction, bool tracksOnly)
+    private int MpStep(int direction)
     {
         if (_mpShuffle && direction > 0)
         {
             if (_mpBag.Count == 0)
             {
                 for (var i = 0; i < _mpShownCount; i++)
-                    if (!tracksOnly || !_mpAll[_mpShown[i]].IsFrenzy)
-                        _mpBag.Add(_mpShown[i]);
+                    _mpBag.Add(_mpShown[i]);
                 for (var i = _mpBag.Count - 1; i > 0; i--)
                 {
                     var j = _mpRng.Next(i + 1);
@@ -121,25 +106,20 @@ public sealed partial class Ui
         var at = Array.IndexOf(_mpShown, _mpCur, 0, _mpShownCount);
         if (at < 0)
             at = direction > 0 ? -1 : 0; // the current line is filtered out: from the top
-        for (var n = 0; n < _mpShownCount; n++)
-        {
-            at = (at + direction + _mpShownCount) % _mpShownCount;
-            if (!tracksOnly || !_mpAll[_mpShown[at]].IsFrenzy)
-                return _mpShown[at];
-        }
-        return -1;
+        at = (at + direction + _mpShownCount) % _mpShownCount;
+        return _mpShown[at];
     }
 
     private void MpNext(MusicPlayer music)
     {
-        var line = MpStep(1, tracksOnly: false);
+        var line = MpStep(1);
         if (line >= 0)
             MpPlay(music, line);
     }
 
     private void MpPrevious(MusicPlayer music)
     {
-        if (_mpOn && _mpCur >= 0 && _mpAll[_mpCur].Track != null && music.JukeboxPosition > 3)
+        if (_mpOn && _mpCur >= 0 && music.JukeboxPosition > 3)
         {
             MpPlay(music, _mpCur, remember: false); // back to the top first, as players do
             return;
@@ -151,17 +131,17 @@ public sealed partial class Ui
             MpPlay(music, back, remember: false);
             return;
         }
-        var line = MpStep(-1, tracksOnly: false);
+        var line = MpStep(-1);
         if (line >= 0)
             MpPlay(music, line, remember: false);
     }
 
-    /// <summary>A track is ending: loop it, or crossfade into the next one, as the game's playlists do. A frenzy line never ends.</summary>
+    /// <summary>A track is ending: loop it, or crossfade into the next one, as the game's playlists do.</summary>
     private void MpAdvance(MusicPlayer music)
     {
-        if (!_mpOn || _mpCur < 0 || _mpAll[_mpCur].IsFrenzy || music.JukeboxBusy || !music.JukeboxNearEnd)
+        if (!_mpOn || _mpCur < 0 || music.JukeboxBusy || !music.JukeboxNearEnd)
             return;
-        var line = _mpLoop ? _mpCur : MpStep(1, tracksOnly: true);
+        var line = _mpLoop ? _mpCur : MpStep(1);
         if (line >= 0)
             MpPlay(music, line, crossfade: true);
     }
@@ -251,10 +231,9 @@ public sealed partial class Ui
     private void MpTransport(Settings s, MusicPlayer music)
     {
         var e = _mpCur >= 0 ? _mpAll[_mpCur] : null;
-        var frenzy = _mpOn && e is { IsFrenzy: true };
         var track = _mpOn ? e?.Track : null;
         var paused = music.JukeboxPaused;
-        var rendering = _mpOn && (music.JukeboxBusy || (frenzy && music.Frenzy.TrackName == null));
+        var rendering = _mpOn && music.JukeboxBusy;
 
         // ---- What's playing ---------------------------------------------------------------------
         ImGui.Spacing();
@@ -264,12 +243,10 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, e != null ? "Stopped."u8 : "Pick a track to play it."u8);
         else if (rendering)
             ImGui.TextColored(Orange, "Rendering..."u8);
-        else if (frenzy)
-            ImGuiSafe.TextColored(paused ? Dim : Green, $"{(paused ? "Paused" : "Now playing")}: {e!.Name} - {music.Frenzy.StyleName}, on {music.Frenzy.TrackName} at {music.Frenzy.Bpm:0} BPM");
         else
             ImGuiSafe.TextColored(paused ? Dim : Green, $"{(paused ? "Paused" : "Now playing")}: {e!.Name} - {e.Style}, {e.Bpm} BPM, {e.Key}");
 
-        MpProgress(music, track, frenzy, rendering);
+        MpProgress(music, track, rendering);
 
         // ---- Buttons --------------------------------------------------------------------------------
         var size = new float2(92 * _scale, 42 * _scale);
@@ -312,59 +289,18 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("The game's music volume: the same slider as Settings > Audio."u8);
 
-        // ---- Frenzy: the level and the track -----------------------------------------------------------
-        if (frenzy)
-        {
-            ImGui.Text("Frenzy level"u8);
-            for (var i = 1; i <= FrenzyMeter.MaxLevel; i++)
-            {
-                ImGui.SameLine();
-                if (ImGui.RadioButton(i == 6 ? "6 MAX##mpl"u8 : i == 5 ? "5 FRENZY##mpl"u8 : i == 4 ? "4##mpl"u8 : i == 3 ? "3##mpl"u8 : i == 2 ? "2##mpl"u8 : "1##mpl"u8, _mpLevel == i))
-                    _mpLevel = i;
-            }
-            if (ImGui.IsItemHovered())
-                ImGui.SetItemTooltip("Level 6 is as loud as the gunfire it plays over in a match."u8);
-            ImGui.SameLine(0, 24 * _scale);
-            ImGui.Text("Track"u8);
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(250 * _scale);
-            var pool = e!.Pool;
-            if (ImGui.BeginCombo("##mpfrenzytrack"u8, _mpPick > 0 ? pool[_mpPick - 1].Name : "Any of this class"))
-            {
-                if (ImGui.Selectable("Any of this class"u8, _mpPick == 0) && _mpPick != 0)
-                {
-                    _mpPick = 0;
-                    music.JukeboxFrenzy(e.Class, null);
-                }
-                for (var i = 0; i < pool.Length; i++)
-                    if (ImGui.Selectable(pool[i].Name, _mpPick == i + 1) && _mpPick != i + 1)
-                    {
-                        _mpPick = i + 1;
-                        music.JukeboxFrenzy(e.Class, pool[i]);
-                    }
-                ImGui.EndCombo();
-            }
-        }
-        else
-        {
-            ImGui.TextColored(Dim, "Click a line to play it; drag the bar to seek. The next track crossfades in, as in the game."u8);
-        }
+        ImGui.TextColored(Dim, "Click a line to play it; drag the bar to seek. The next track crossfades in, as in the game."u8);
 
         ImGui.Spacing();
         if (BigButton("BACK"))
             CloseMusicPlayer(s);
     }
 
-    /// <summary>The progress bar: drag it to seek (on release, to the bar line under the mouse). A frenzy has no end, so it shows the level.</summary>
-    private void MpProgress(MusicPlayer music, MusicTrack? track, bool frenzy, bool rendering)
+    /// <summary>The progress bar: drag it to seek (on release, to the bar line under the mouse).</summary>
+    private void MpProgress(MusicPlayer music, MusicTrack? track, bool rendering)
     {
         var pos = ImGui.GetCursorScreenPos();
         var size = new float2(ImGui.GetContentRegionAvail().X, 24 * _scale);
-        if (frenzy)
-        {
-            ImGui.ProgressBar(music.Frenzy.Level / (float)FrenzyMeter.MaxLevel, size, $"Level {music.Frenzy.Level} of {FrenzyMeter.MaxLevel} - loops until you stop it");
-            return;
-        }
         if (track == null)
         {
             ImGui.ProgressBar(0f, size, ""u8);

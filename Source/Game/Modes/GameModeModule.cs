@@ -83,7 +83,7 @@ public abstract class GameModeModule
 
     /// <summary>
     /// The arena shooter's layer over the fight: the session and key block, the health number, score, level, stance and
-    /// perk lines, the full ammo panel, XP on the screen and the kill frenzy (false: Sandbox's plain HUD, UiSandboxHud.cs).
+    /// perk lines, the full ammo panel, XP on the screen (false: Sandbox's plain HUD, UiSandboxHud.cs).
     /// </summary>
     public virtual bool ArenaExtras => true;
 

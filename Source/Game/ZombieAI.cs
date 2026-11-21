@@ -1057,7 +1057,6 @@ public sealed partial class Game
         if (head)
             zp.Headshots++;
         attacker.Kills++;
-        FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
         var killPoints = melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints; // Marksman Malt
         EarnPoints(attacker, (int)MathF.Round(killPoints * z.Kind.PointsMult) + (z.Slug ? ZRules.Limbs.SlugKillPoints : 0), now); // (more for a brute: ZombieTypes.cs; a slug's optional bonus: ZombieSlug.cs)
         RollDrop(z.Position, ZRound, now, PerkMult(zp, static d => d.PartDrops)); // Salvage Stout

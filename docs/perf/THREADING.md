@@ -29,7 +29,7 @@ One pass per frame, in this order (the F9 areas, `Source/Perf/Perf.cs`, are in b
 | `Glfw.PollEvents`, Steam callbacks | Events | GLFW requires this on the thread that made the window (always on macOS) |
 | Local input, or the lobby room | Input | `UpdateLocalPlayer` writes `Game.LookYaw/HeldButtons` |
 | `Game.Update` | Game | Net receive (`Net.Poll` and every handler), the frame's weapon and effect state, then **0-8 fixed 60 Hz ticks** (`ServerTickStep` on a host, `ClientTickStep` on a client), then interpolation and render states (Visuals) |
-| Voice, part watch, server lists, Steam lobby, music mood, frenzy | Audio | music *mixing* is on its own thread (1.2) |
+| Voice, part watch, server lists, Steam lobby, music mood | Audio | music *mixing* is on its own thread (1.2) |
 | `Render(now)` | Render (+ 13 sub-areas) | every GL call: culling, instance buffer fills, uploads, draws; thumbnails pumped here |
 | ImGui | Ui (+ 6 sub-areas) | new frame, HUD windows, menus, F9, ImGui's GL draw, gun thumbnails |
 | `SwapBuffers`, frame limiter | Swap, Limiter | vsync or GPU wait; the Max FPS wait |
@@ -49,7 +49,7 @@ then snapshots and the per-tick sends (NetSend).
 | --- | --- | --- |
 | Crowd per-frame passes: horizon, cells, flow, agents (`CrowdAgents`), particle instances (`CrowdInstances`) | `Source/Game/Horde/CrowdJobs.cs` | fixed pool of up to 8 stripes (ProcessorCount - 1 above 2 cores), stripe k always on worker k, no allocation, `CrowdJobs.Serial` for the determinism check |
 | Music mixing and streaming | `Source/Audio/Music.cs` | own thread (`Music`, above normal priority) |
-| Gun samples, frenzy gun sound, mixer renders | `Audio.cs`, `GunSamples.cs`, `FrenzyGunSound.cs`, `Audio.Mixer.cs` | `Parallel.For` at start-up or on change |
+| Gun samples, mixer renders | `Audio.cs`, `GunSamples.cs`, `Audio.Mixer.cs` | `Parallel.For` at start-up or on change |
 | Map loading and validation, map bakes | `Maps.cs` (`Parallel.ForEach`, at most 8), `MapBake.cs` | at launch and on bake |
 | Nav graph bake/cache read and cache write | `BotNav.cs` (`Task.Run`) | the read, never the live build |
 | Destruction graph | `MapDestruction.cs` | `Task.Run` at map start |
@@ -182,7 +182,7 @@ The log lines are what stages 3, 5 and 6 are judged on.
 | Projectiles, hitscan, penetration | 0.01-0.05 ms | Could, but `PenetrationTrace` has statics | Not worth it |
 | Snapshots (NetSend) | microseconds per client | Per-client encode is independent | Not worth it below about 16 clients |
 | ImGui | 0.12 ms median | No: ImGui's context is single-threaded and its draw is GL | Stays |
-| Voice, music mood, frenzy | small; mixing is already threaded | | Stays |
+| Voice, music mood | small; mixing is already threaded | | Stays |
 | **The whole host sim on its own thread** | the tick: 0.2-0.9 ms of CPU a tick in heavy scenes; its spikes (p99 1-2.8 ms, max 5-7 ms on the cloud box, up to 8 catch-up ticks in one frame after a hitch) land on frames | Yes, with a large audit (1.3, 4, 5) | **Stage 6, last, only if stage 0 shows the sim limiting real host frames** |
 
 ## 4. Constraints

@@ -112,7 +112,7 @@ public static partial class SelfTest
             Fail("a person joining during the match landed in a lobby (or didn't get in)");
 
         // The lobby state packet: round trip and size.
-        server.LobbySetOptions(ScoreLimitMode.Fixed, 15, 20, true, false);
+        server.LobbySetOptions(ScoreLimitMode.Fixed, 15, 20, true);
         var versionBefore = server.LobbyVersion;
         server.LobbySetHostRules(destruction: false, voice: false, deadChatPrivate: true, BotGearMode.Starter); // the lobby's World / Lobby and chat / Bots sections (protocol 52)
         var rulesDirty = server.LobbyVersion != versionBefore;
@@ -121,7 +121,7 @@ public static partial class SelfTest
         var r = new PacketReader(w.Span[1..]);
         a.ReadLobbyState(ref r);
         Line($"lobby state: {w.Length} bytes for {server.Players.Count} players; read back {a.MatchMinutes} min, auto {a.AutoStartSeconds} s, return {a.ReturnToLobby}, {a.ScoreLimitMode}");
-        if (a.MatchMinutes != 15 || a.AutoStartSeconds != 20 || !a.ReturnToLobby || a.ScoreLimitMode != ScoreLimitMode.Fixed || a.FrenzyBuffsEnabled)
+        if (a.MatchMinutes != 15 || a.AutoStartSeconds != 20 || !a.ReturnToLobby || a.ScoreLimitMode != ScoreLimitMode.Fixed)
             Fail("the lobby state didn't round-trip");
         Line($"lobby host rules: changed the version {rulesDirty}; read back destruction {a.DestructionEnabled}, voice {a.VoiceAllowed}, dead chat private {a.DeadChatPrivate}, bot gear {a.BotGearMode}");
         if (!rulesDirty || a.DestructionEnabled || a.VoiceAllowed || !a.DeadChatPrivate || a.BotGearMode != BotGearMode.Starter)

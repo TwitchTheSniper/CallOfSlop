@@ -121,7 +121,7 @@ public sealed partial class Game
             return null;
         if (a.InMag <= 0)
         {
-            var reload = def.Reload * StreakReloadMult(p, now) * Perks.ReloadMult(p.Perks) * FrenzyBuffs.Value(p, def, FrenzyStat.Reload);
+            var reload = def.Reload * StreakReloadMult(p, now) * Perks.ReloadMult(p.Perks);
             if (now - a.LastShot < reload * 0.75)
                 return null; // the magazine is empty and it can't have been reloaded yet
             a.InMag = def.Mag;

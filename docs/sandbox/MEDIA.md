@@ -81,8 +81,8 @@ A Music Player's picture takes the mouse too. Its buttons are panel buttons, and
 every frame, faded by OpenAL's inverse distance from `near` to `hear` like any other sound (the last 20% of `hear` is faded to nothing as well, so a page going doesn't cut off a sound still heard), and pass through the Media mixer bus, the part's Volume and Settings > Audio > Screens volume.
 CEF's audio handler takes the sound away from the speakers, so there is no second copy from the browser. Settings > Audio > Play other players' videos, off, hides links started by anyone else on this PC.
 
-**The game's own tracks** use the same voice path with one `MusicRenderer` on the sound thread (the menu's music player's tracks: no frenzy lines, they need a match). The music CPU rule is at most 1.5x the baseline, and one more render would be 2x, so there is only ever one, the nearest, and it holds silently (the panel
-keeps its line) while the music thread renders the lobby's decks or the kill frenzy. A Sandbox world in play has neither, so a track plays as one baseline render. A track starts on a bar line, so peers agree to the bar, not the sample.
+**The game's own tracks** use the same voice path with one `MusicRenderer` on the sound thread (the menu's music player's tracks). The music CPU rule is at most 1.5x the baseline, and one more render would be 2x, so there is only ever one, the nearest, and it holds silently (the panel
+keeps its line) while the music thread renders the lobby's decks. A Sandbox world in play has neither, so a track plays as one baseline render. A track starts on a bar line, so peers agree to the bar, not the sample.
 
 CefSharp's offscreen settings start with `--mute-audio`, so the helper calls `EnableAudio()`: without it no output exists, nothing is audible, and the handler is never asked. CEF only captures what is audible: while a page is muted the audio handler isn't even asked (tried on stock CEF: nothing until `muted` went false, then sound within moments). So the page unmutes the player and sets its volume whenever it reports, once a second, and clears CEF's own mute once.
 

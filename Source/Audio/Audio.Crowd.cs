@@ -37,7 +37,7 @@ public sealed partial class Audio
     }
 
     /// <summary>The meter / cap slot of crowd roar voice <paramref name="voice"/> (after the zombie voices and steps).</summary>
-    private static int CrowdSlot(int voice) => Voices + StepVoices + FrenzyVoices + ZombieSounds.VoiceCap + ZombieSounds.StepCap + voice;
+    private static int CrowdSlot(int voice) => Voices + StepVoices + ZombieSounds.VoiceCap + ZombieSounds.StepCap + voice;
 
     /// <summary>
     /// Roar voice <paramref name="voice"/> at <paramref name="position"/> with <paramref name="gain"/> (before distance

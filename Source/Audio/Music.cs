@@ -101,23 +101,22 @@ public sealed partial class MusicPlayer : IDisposable
         _lobby = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby), _seed * 31u + 7u);
         _menuHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Menu, hardbassOnly: true), _seed * 17u + 3u);
         _lobbyHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby, hardbassOnly: true), _seed * 13u + 5u);
-        Frenzy = new FrenzyLayer(_seed * 29u + 1u);
-        _frenzyLimiter.Configure();
+        _limiter.Configure();
     }
 
-    /// <summary>The in-match kill-frenzy layer (MusicFrenzy.cs); it only plays while the mood is Off (a live match).</summary>
-    public readonly FrenzyLayer Frenzy;
+    /// <summary>The music limiter's default ceiling (sample level).</summary>
+    public const float DefaultLimiterCeiling = 0.96f;
 
-    // The frenzy's levels 5 and 6 push the bus past full scale at loud settings: a limiter after the music volume, on
-    // while the frenzy plays (the menu and lobby music never reach it and stay bit-for-bit as before).
-    private readonly MasterLimiter _frenzyLimiter = new() { Ceiling = FrenzyLayer.LimiterCeiling };
+    // A limiter after the music volume, on while the mixer boosts the menu or lobby music (with the built-in mix the
+    // music never reaches it and stays bit-for-bit as rendered).
+    private readonly MasterLimiter _limiter = new() { Ceiling = DefaultLimiterCeiling };
     private bool _limiting;
 
-    /// <summary>The music limiter ran on the last block (the frenzy plays, or the mixer boosts the menu/lobby music).</summary>
+    /// <summary>The music limiter ran on the last block (the mixer boosts the menu/lobby music).</summary>
     public bool Limiting => _limiting;
 
-    /// <summary>The lowest gain the frenzy limiter has applied since the frenzy started (1 = never limited).</summary>
-    public float FrenzyLimiterMinGain => _frenzyLimiter.MinGain;
+    /// <summary>The lowest gain the music limiter has applied since it last started (1 = never limited).</summary>
+    public float LimiterMinGain => _limiter.MinGain;
 
     /// <summary>
     /// Settings > Audio > Music style: true plays only the hardbass tracks. Switching it on while another style plays
@@ -186,7 +185,6 @@ public sealed partial class MusicPlayer : IDisposable
         if (JukeboxHeld(output))
             return; // the main menu's music player is paused: nothing renders (Music.Jukebox.cs)
         _meter = MeterEnabled; // the mixer window is open (Audio.Mixer.cs)
-        Frenzy.Metering = _meter;
         if (_meter)
             MeterBegin();
         var frames = output.Length / 2;
@@ -227,8 +225,6 @@ public sealed partial class MusicPlayer : IDisposable
             }
         }
 
-        Frenzy.MixInto(output, Volatile.Read(ref _mood) == (int)MusicMood.Off || Frenzy.Preview); // the kill-frenzy layer (MusicFrenzy.cs); the mixer can preview it anywhere
-
         // Music volume with a perceptual (squared) curve, ramped per block so slider moves don't click.
         var v = Volume;
         var target = v * v;
@@ -245,14 +241,14 @@ public sealed partial class MusicPlayer : IDisposable
         // The limiter also runs while the mixer boosts the menu or lobby music (up to +50 dB): the boosted bus is held
         // under the ceiling by the limiter and its soft clipper instead of hard-clipping at full scale in Fill. With the
         // built-in mix (0 dB) the menu and lobby music never reach it and stay bit-for-bit as before.
-        if (Frenzy.Active || boosted)
+        if (boosted)
         {
             if (!_limiting)
             {
-                _frenzyLimiter.Reset(); // starts from silence: the frenzy fades in from 0
+                _limiter.Reset();
                 _limiting = true;
             }
-            _frenzyLimiter.Process(output);
+            _limiter.Process(output);
         }
         else
         {
@@ -290,14 +286,14 @@ public sealed partial class MusicPlayer : IDisposable
         set => Volatile.Write(ref _lobbyTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, AudioMixDefaults.MaxLevelGain) : 1f);
     }
 
-    /// <summary>The frenzy limiter's ceiling (the mixer's "Music limiter ceiling"; default <see cref="FrenzyLayer.LimiterCeiling"/>).</summary>
+    /// <summary>The music limiter's ceiling (the mixer's "Music limiter ceiling"; default <see cref="DefaultLimiterCeiling"/>).</summary>
     public float LimiterCeiling
     {
-        get => _frenzyLimiter.Ceiling;
-        set => _frenzyLimiter.Ceiling = float.IsFinite(value) ? Math.Clamp(value, 0.1f, MasterLimiter.SafetyCeiling) : FrenzyLayer.LimiterCeiling;
+        get => _limiter.Ceiling;
+        set => _limiter.Ceiling = float.IsFinite(value) ? Math.Clamp(value, 0.1f, MasterLimiter.SafetyCeiling) : DefaultLimiterCeiling;
     }
 
-    /// <summary>The mixer window is open: measure the decks, the frenzy and the output (else nothing extra is done).</summary>
+    /// <summary>The mixer window is open: measure the decks and the output (else nothing extra is done).</summary>
     public volatile bool MeterEnabled;
 
     private void MeterDeck(Span<float> buf, float peakGain, float meanGain, bool menu)
@@ -358,8 +354,8 @@ public sealed partial class MusicPlayer : IDisposable
     /// The music's latest levels (before the music volume, except the output which is after it and the limiter):
     /// slowly falling peaks and the latest block's mean squares. Read on the UI thread; benign races (floats).
     /// </summary>
-    public (float MenuPeak, float MenuMs, float LobbyPeak, float LobbyMs, float FrenzyPeak, float FrenzyMs, float OutPeak, float OutMs) TakeMeters() =>
-        (_pMenuPeak, _pMenuMs, _pLobbyPeak, _pLobbyMs, Frenzy.MeterPeak, Frenzy.MeterMs, _mOutPeak, _mOutMs);
+    public (float MenuPeak, float MenuMs, float LobbyPeak, float LobbyMs, float OutPeak, float OutMs) TakeMeters() =>
+        (_pMenuPeak, _pMenuMs, _pLobbyPeak, _pLobbyMs, _mOutPeak, _mOutMs);
 
     private void UpdateDirector()
     {
