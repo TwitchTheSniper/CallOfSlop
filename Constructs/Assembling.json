@@ -2490,6 +2490,7 @@
     {"output": "Round Module Stand 3 m", "materials": {"steel": 156, "concrete": 31}, "seconds": 25.3, "minTier": 2},
     {"output": "Mast Block", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Bake Oven", "materials": {"steel": 900, "copper": 120, "rubber": 60}, "parts": {"Circuit Board": 2, "Wiring Loom": 2}, "seconds": 150, "minTier": 2},
-    {"output": "Oven Bed Block", "materials": {"steel": 700, "copper": 80}, "parts": {"Wiring Loom": 1}, "seconds": 90}
+    {"output": "Oven Bed Block", "materials": {"steel": 700, "copper": 80}, "parts": {"Wiring Loom": 1}, "seconds": 90},
+    {"output": "Out Table", "materials": {"steel": 160, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 60}
   ]
 }
