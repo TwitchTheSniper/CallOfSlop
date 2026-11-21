@@ -816,6 +816,10 @@ public sealed class Assembling : IPartGenerator
         ("Satchel", "Satchel Roof 8", null),
         ("Satchel", "Satchel Roof 9", null),
         ("Satchel", "Satchel Stern", null),
+        // (Hexkey Orbital's shelves and trolley, phase 5: ShelfParts)
+        (null, null, Rec("Hexkey Gondola Bay", 5, 1, m: [("planks", 4), ("steel", 2)])),
+        (null, null, Rec("Hexkey Rack Bay", 12, 1, m: [("planks", 30), ("steel", 12)])),
+        (null, null, Rec("Hexkey Trolley", 6, 1, m: [("planks", 3), ("steel", 8), ("rubber", 2)])),
     ];
 
     /// <summary>

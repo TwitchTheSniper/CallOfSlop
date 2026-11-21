@@ -820,6 +820,12 @@ public sealed partial class ConstructEdits
 
     // ---- Physical storage (decision 18; ConstructStorage.cs) --------------------------------------------------------
 
+    /// <summary>
+    /// Server: a player set a part into a storage part's slot (put) or took one out, by hand or by the physics gun's release: (player, the body, the
+    /// storage part, the stored part's def, put). The game's store stations keep their shoppers' baskets by it (GameStoreShop.cs).
+    /// </summary>
+    public Action<byte, Construct, int, ushort, bool>? StoreMoved;
+
     private string? Storage(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, out Construct? c)
     {
         ref var h = ref Hands[player];
@@ -853,6 +859,7 @@ public sealed partial class ConstructEdits
         h.Held = ConstructParts.None;
         h.Edit = EditKind.None;
         Done.Add($"player {player}: stored {def.Name} in slot {slot} of the {c!.DefOf(part).Name} (construct {c.Id})");
+        StoreMoved?.Invoke(player, c, part, (ushort)def.Id, true);
         return null;
     }
 
@@ -872,6 +879,7 @@ public sealed partial class ConstructEdits
             return "that slot is empty (someone took it)";
         Give(world, player, def, eye);
         Done.Add($"player {player}: took {def.Name} from slot {slot} of the {c!.DefOf(part).Name} (construct {c.Id})");
+        StoreMoved?.Invoke(player, c, part, (ushort)def.Id, false);
         return null;
     }
 

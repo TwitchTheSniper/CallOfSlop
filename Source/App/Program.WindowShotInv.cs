@@ -26,6 +26,58 @@ public static unsafe partial class Program
         string Named(ushort id) => ConstructParts.Get(id) is { } d ? $"{d.Name} [{PartRef.Shown(d)}]{(d.RuntimeMade ? " (run-time)" : "")}" : id == ConstructParts.None ? "nothing" : $"UNKNOWN {id}";
         switch (sub)
         {
+            case "shopat" when g.IsServer:
+            {
+                // "inv shopat PART X,Y,Z" (host): every player stood at a point in part PART's frame (a store's floor piece), riding its body.
+                var bits = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var q = bits.Length >= 2 ? bits[^1].Split(',') : [];
+                if (bits.Length < 2 || q.Length != 3 || WsFind(g, string.Join(' ', bits[..^1])) is not ({ } c, var part) || part < 0)
+                {
+                    WsFail($"inv shopat: PART X,Y,Z (\"{rest}\")");
+                    return true;
+                }
+                var local = new System.Numerics.Vector3(float.Parse(q[0], System.Globalization.CultureInfo.InvariantCulture), float.Parse(q[1], System.Globalization.CultureInfo.InvariantCulture), float.Parse(q[2], System.Globalization.CultureInfo.InvariantCulture));
+                c.WorldFrame(c.Parts[part].Seg, out var fq, out var ft);
+                var at = ft + System.Numerics.Vector3.Transform(c.Parts[part].Pos + System.Numerics.Vector3.Transform(local, Rot24.Quat(c.Parts[part].Rot)), fq);
+                foreach (var pl in g.Players.Values)
+                    if (pl.Id < Game.MaxPeople)
+                    {
+                        pl.Teleport(at);
+                        ConstructRide.Join(ref pl.Sim, c, c.Parts[part].Seg, ConstructRide.UpFor(c, GravityFrames.UpAt(at)), System.Numerics.Vector3.Zero);
+                        pl.Sim.Grounded = true;
+                    }
+                WsSay($"inv shopat: players to {local:0.0} in {c.DefOf(part).Name}'s frame");
+                return true;
+            }
+            case "shoptake" when g.IsServer:
+            {
+                // "inv shoptake NAME" (host): the host's player takes one NAME off a store station's shelf by the real hand edit, from in front of it.
+                var d = ConstructParts.Find(rest);
+                if (d == null && rest != "any")
+                {
+                    WsFail($"inv shoptake: no part \"{rest}\" (or any)");
+                    return true;
+                }
+                foreach (var c in g.Constructs.Bodies)
+                {
+                    if (!c.IsStation)
+                        continue;
+                    for (var i = 0; i < c.PartCount; i++)
+                        if (g.Constructs.StoreOf(c, i) is { } st && c.DefOf(i).Name.StartsWith("Hexkey", StringComparison.Ordinal))
+                            for (var k = 0; k < st.SlotCount; k++)
+                                if (d == null ? st.Def[k] != ConstructParts.None : st.Def[k] == d.Id)
+                                {
+                                    d ??= ConstructParts.Get(st.Def[k])!;
+                                    c.WorldFrame(c.Parts[i].Seg, out var fq, out var ft);
+                                    c.PartBounds(i, out var mn, out var mx);
+                                    var eye = ft + System.Numerics.Vector3.Transform((mn + mx) * 0.5f + Rot24.Apply(c.Parts[i].Rot, new System.Numerics.Vector3(0, 0, 1.2f)), fq);
+                                    WsSay($"inv shoptake: {d.Name} off the {c.DefOf(i).Name}#{i}: {hands.TakeStored(g.Constructs, me.Id, eye, c.Id, i, k) ?? "taken"}");
+                                    return true;
+                                }
+                }
+                WsSay($"inv shoptake: no {d?.Name ?? "part"} on a store's shelf");
+                return true;
+            }
             case "hold" when g.IsServer:
             case "give" when g.IsServer:
             {
