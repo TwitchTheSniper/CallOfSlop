@@ -171,8 +171,8 @@ public static class StationRender
         var dur = MathF.Max(1f, j.ArmTicks[a] / (float)World.TickRate);
         var u = (float)(now - j.ArmStart[a]) / dur;
         Vector3 at;
-        if (!building || j.ArmTicks[a] == 0 && u < 1)
-            at = j.ArmLast[a] with { Y = MathF.Min(up, j.ArmLast[a].Y + 0.02f) }; // (idle: where it was, the hook rising clear)
+        if (!building || j.ArmTicks[a] == 0)
+            at = j.ArmLast[a] with { Y = MathF.Min(up, j.ArmLast[a].Y + 0.02f) }; // (idle: where it was, the hook rising clear; an arm that never carried stays parked, not at its empty target, the bay's middle, where every idle bridge used to stack)
         else if (u < 0.2f)
             at = Vector3.Lerp(j.ArmFrom[a], hold with { Y = up }, Ease(u / 0.2f));
         else if (u < 0.3f)
