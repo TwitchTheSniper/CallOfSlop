@@ -258,7 +258,7 @@ public static class CrewFleetCheck
     private static bool Convoy(int seconds)
     {
         Console.WriteLine("fleet convoy: four Militia ground vehicles as a convoy under an admiral; sent off at 5 s; a hostile Zero Day near at 45 s");
-        var names = new[] { "IT Gun Wagon 1", "IT Buggy 1", "IT Car 1", "IT Box Truck 1" };
+        var names = new[] { "IT Gun Wagon 1", "IT Buggy 1", "IT Buggy 3", "IT Buggy 6" };
         var place = VehicleDriveCheck.Place(1);
         var w = new ConstructWorld();
         var q = new SelfTest.DriveWorld();
