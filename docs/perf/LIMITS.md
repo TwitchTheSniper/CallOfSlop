@@ -471,8 +471,6 @@ where it has one. Line numbers are those of this audit.
 | Cost budget | `SpawnCrowdPerTick` | `Game/GameSandboxSpawns.cs:97` | `10000` | - | Kept |
 | Cost budget | `QueueMax` | `Game/GameSandboxVehicles.cs:32` | `8` | - | Kept |
 | Cost budget | `SpaceShipCapacity` | `Game/GameSpace.cs:23` | `256` | - | Kept |
-| Cost budget | `StoryThinksPerTick` | `Game/GameStory.cs:122` | `4` | - | Kept |
-| Cost budget | `StoryBodiesMax` | `Game/GameStoryBodies.cs:24` | `8` | - | Kept |
 | Cost budget | `DigOpsPerPacket` | `Game/GameTerrainDig.cs:23` | `64` | - | Kept |
 | Cost budget | `BoxCapacity` | `Game/LobbyChat.cs:46` | `MaxLength + 1` | - | Kept |
 | Cost budget | `MaxBoxes` | `Game/Materials/PenetrationTrace.cs:19` | `12` | - | Kept |
@@ -511,7 +509,6 @@ where it has one. Line numbers are those of this audit.
 | Cost budget | `RowMax` | `UI/RadialMenu.cs:97` | `7` | - | Kept |
 | Cost budget | `MaxPaste` | `UI/SafeClipboard.cs:27` | `4096` | - | Kept |
 | Cost budget | `RecentMax` | `UI/SandboxPaintWheel.cs:28` | `8` | - | Kept |
-| Cost budget | `StoryGraphMax` | `UI/UiStory.cs:27` | `400` | - | Kept |
 | Data sanity | `MaxVolumes` | `Constructs/ConstructFluid.cs:55` | `32` | Tank Volumes a construct (a sanity check when fitted, was 4: each is sealed at a rebuild, nothing is sized by it | **Raised 4 to 32**: only checked when fitted; each is sealed at a rebuild |
 | Data sanity | `MaxPerConstruct` | `Constructs/ConstructFreeform.cs:18` | `192` | freeform welds a construct (they share Construct.MaxJoints with the joints: a segment is a byte, so 255 in all; was 64, this leaves 63 fo... | **Raised 64 to 192**: shares the 255 segments with moving joints, which already bounded the cost |
 | Data sanity | `MaxRuntimeName` | `Constructs/ConstructParts.cs:803` | `128` | a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a... | **New, 128**: a run-time (`"stage"`) part's name, i.e. the Ordnance Rack keys. Names are length-prefixed in saves (i32) and never sent in fixed fields; packet text is 255 bytes. Extrusion and ordnance keys never went through this check |
@@ -596,37 +593,6 @@ where it has one. Line numbers are those of this audit.
 | Data sanity | `MaxBodies` | `Space/SpaceSkyView.cs:45` | `8` | - | Kept |
 | Data sanity | `MaxShips` | `Space/SpaceSkyView.cs:45` | `16` | - | Kept |
 | Data sanity | `MaxStars` | `Space/SpaceSkyView.cs:59` | `Galaxy.MaxSystems - 1` | - | Kept |
-| Data sanity | `MaxLine` | `Story/ItDesk.cs:13` | `96` | - | Kept |
-| Data sanity | `MaxLines` | `Story/ItDesk.cs:13` | `6` | - | Kept |
-| Data sanity | `MaxScams` | `Story/SalvagerDesk.cs:14` | `200` | - | Kept |
-| Data sanity | `MaxAdverts` | `Story/SalvagerDesk.cs:14` | `64` | - | Kept |
-| Data sanity | `MaxLabel` | `Story/SalvagerDesk.cs:17` | `28` | - | Kept |
-| Data sanity | `MaxPopup` | `Story/SalvagerDesk.cs:17` | `16` | - | Kept |
-| Data sanity | `MaxKnown` | `Story/StoryAgents.cs:79` | `32` | - | Kept |
-| Data sanity | `MaxSteps` | `Story/StoryAgents.cs:79` | `16` | - | Kept |
-| Data sanity | `MaxNodes` | `Story/StoryAgents.cs:79` | `40` | - | Kept |
-| Data sanity | `MaxRests` | `Story/StoryAgents.cs:79` | `8` | - | Kept |
-| Data sanity | `PickMax` | `Story/StoryAgents.cs:133` | `12` | - | Kept |
-| Data sanity | `MaxAired` | `Story/StoryAgents.cs:170` | `64` | - | Kept |
-| Data sanity | `Cap` | `Story/StoryChronicle.cs:40` | `20_000` | - | Kept |
-| Data sanity | `MaxDirections` | `Story/StoryDrama.cs:78` | `8` | people nudged for one story at most | Kept |
-| Data sanity | `MaxCandidates` | `Story/StoryDrama.cs:78` | `1024` | people nudged for one story at most | Kept |
-| Data sanity | `MaxExpansions` | `Story/StoryHtn.cs:12` | `400` | - | Kept |
-| Data sanity | `MaxRules` | `Story/StoryLines.cs:35` | `2000` | a line fits the chat (120) with a name in front | Kept |
-| Data sanity | `MaxLines` | `Story/StoryLines.cs:35` | `24` | a line fits the chat (120) with a name in front | Kept |
-| Data sanity | `MaxLength` | `Story/StoryLines.cs:35` | `110` | a line fits the chat (120) with a name in front | Kept |
-| Data sanity | `MaxParams` | `Story/StoryPeopleRules.cs:138` | `4` | - | Kept |
-| Data sanity | `MaxSteps` | `Story/StoryPeopleRules.cs:138` | `8` | - | Kept |
-| Data sanity | `MaxStates` | `Story/StoryPlaces.cs:28` | `64` | - | Kept |
-| Data sanity | `MaxRecent` | `Story/StoryPlaces.cs:28` | `4` | - | Kept |
-| Data sanity | `MaxPlays` | `Story/StoryPlays.cs:42` | `200` | - | Kept |
-| Data sanity | `MaxBeats` | `Story/StoryPlays.cs:42` | `16` | - | Kept |
-| Data sanity | `MaxRunning` | `Story/StoryPlays.cs:248` | `4` | - | Kept |
-| Data sanity | `MaxLeads` | `Story/StoryPlays.cs:248` | `16` | - | Kept |
-| Data sanity | `MaxVars` | `Story/StoryRules.cs:100` | `8` | - | Kept |
-| Data sanity | `MaxStages` | `Story/StoryRules.cs:100` | `8` | - | Kept |
-| Data sanity | `MaxText` | `Story/StoryTalk.cs:58` | `118` | a filled line is cut to this (the chat holds 120 | Kept |
-| Data sanity | `MaxEntities` | `Story/StoryWorld.cs:43` | `100_000` | - | Kept |
 | Data sanity | `MaxSize` | `Updates/UpdateManifest.cs:40` | `1536L * 1024 * 1024` | - | Kept |
 | Data sanity | `MaxPerSlot` | `Weapons/Attachments.cs:115` | `(1 << SlotBits) - 1` | - | Kept |
 | Data sanity | `MaxOverrides` | `Weapons/WeaponTweaks.cs:124` | `1200` | - | Kept |
@@ -689,8 +655,6 @@ where it has one. Line numbers are those of this audit.
 | Pool size | `MaxInstances` | `Render/StreamedTerrainRenderer.cs:41` | `4096` | - | Kept |
 | Pool size | `MaxPending` | `Render/StreamedTerrainRenderer.cs:44` | `64` | - | Kept |
 | Pool size | `MaxDepth` | `Space/StarSystem.cs:129` | `8` | - | Kept |
-| Pool size | `MaxPages` | `Story/ItDesk.cs:13` | `200` | - | Kept |
-| Pool size | `MaxDepth` | `Story/StoryHtn.cs:12` | `12` | - | Kept |
 | Pool size | `MaxHits` | `UI/BloodOverlay.cs:25` | `8` | - | Kept |
 | Pool size | `MaxInstances` | `UI/BloodOverlay.cs:28` | `4 + BaseCount + MaxHits` | - | Kept |
 | Pool size | `MaxEntries` | `UI/TextCache.cs:17` | `2048` | - | Kept |

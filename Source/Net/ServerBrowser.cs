@@ -345,8 +345,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 199: the survival opening (GameSandboxOpening.cs, docs/story/OPENING.md): Msg.Opening (server -> one client, the beat) at the end of Msg, CActKind.OpeningSkip at the end of its enum.
     // 200: player factions' colours, tags, ranks, asks to join and stances (GameSandboxFactions.cs): Msg.Factions carries them and the story factions' standing; new FactionOps at the end of the enum.
     // 201: the warden's induction (GameTutorial.cs, docs/sandbox/TUTORIAL.md): Msg.Tutorial at the end of Msg.
-    // 202: story factions' technologies (GameStoryTech.cs, docs/archive/story/STORY.md "Technologies"): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
-    // 203: faction jobs (GameStoryJobs.cs, docs/archive/story/STORY.md "Jobs"): Msg.Jobs at the end of Msg (the jobs window to one client; a take or a drop from it).
+    // 202: story factions' technologies (GameStoryTech.cs, the removed story (docs/removals-notes.md)): Msg.Factions carries each story faction's learnt technologies (a u8 after each standing) and its technology lines after the names; AsmBlock.Untaught (3) in an Assembler's blocked byte.
+    // 203: faction jobs (GameStoryJobs.cs, the removed story (docs/removals-notes.md)): Msg.Jobs at the end of Msg (the jobs window to one client; a take or a drop from it).
     // 204: body styles phase 2 (docs/vehiclekit/BODY-STYLES.md): a lofted bay's key may reach 2 m of half width and 4 m of height, and the part a key names changed (its feet 12 cm in from its ends, its wall rows toned by height, a door bay's ends closed out to a wider section), so both ends must make the same part from it.
     // 205: body styles phase 3 (docs/vehiclekit/BODY-STYLES.md, section 9): lofted cabs, hoods and window panes named by their keys ("Hull Loft (cab...", "(hood...", "(pane..."; HullLoft.Cabs.cs) go on the wire as a lofted bay does; a 204 peer makes stand-ins of them.
     // 206: body styles phase 4 (docs/vehiclekit/BODY-STYLES.md, section 10): a faction's trim and fittings named by their keys ("Hull Loft (trim...", "(deco..."; HullLoft.Trim.cs) go on the wire as a lofted bay does, and the parts some phase-3 keys name changed (a capsule's side panes, a pane's shorter seal, a cage's ridge bar), so both ends must make the same part; a 205 peer makes stand-ins of the new ones.
@@ -365,24 +365,24 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 219: body styles phase 6 (docs/vehiclekit/BODY-STYLES.md, section 12): balconies are named by their keys ("Hull Loft (balc..."; HullLoft.Balcony.cs) and go on the wire as a pod does; a 218 peer makes stand-ins of them.
     // 220: body styles phase 7a (docs/vehiclekit/BODY-STYLES.md, section 13): lofted bays' keys may carry a lining word (a faction's interior lining, HullLoft.Lining.cs); both ends must make the same part, so a 219 peer makes stand-ins of lined bays.
     // 221: body styles phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): a lined bay's lining word may carry a window letter (its walls cut, panes on "win" sockets; HullLoft.Lining.cs), so a 220 peer makes stand-ins of glazed bays.
-    // 222: storylets (docs/archive/story/STORY.md "Storylets"): Msg.TalkChoices at the end of Msg (a storylet's answers in a player's talk panel), and TalkAsk.Choose + n in CActKind.Talk's byte (the answer picked).
+    // 222: storylets (the removed story (docs/removals-notes.md)): Msg.TalkChoices at the end of Msg (a storylet's answers in a player's talk panel), and TalkAsk.Choose + n in CActKind.Talk's byte (the answer picked).
     // 223: body styles phase 7c (docs/vehiclekit/BODY-STYLES.md, section 15): upper storeys' and open decks' bays take a lining word (an open top's followed), closed ends are lined, and lined cabs of every kind draw a dash or console and a steering wheel, so a 222 peer makes other parts from the same keys.
     // 224: walker legs (docs/sandbox/GIANTS.md): role leg (12 part files in Constructs/Parts/Walkers, so part ids after them shift), a leg's drive port takes a Driving Module's link; the feet are posed on each peer, nothing new on the wire.
     // 225: walker legs phase 2 (docs/sandbox/GIANTS.md): leg parts gain a "drive" socket, an "Oil in" pipe port and a "Drive in" shaft port (socket and port indices on legs shift), and a leg works only when fed; a 224 peer would link and power them differently.
     // 226: event doors (ConstructDoors.cs, docs/sandbox/CONSTRUCTS.md "Event doors"): CBodyKind.Door ((u16 body, u16 part, u8 flags) each) at the end of CBodyKind, CfgKey.DoorOpen and DoorLocked at the end of CfgKey, and a door part's three data ports.
     // 227: CActKind.Blueprint's index is two bytes (281 shipped blueprints: those past 255 spawned the wrong one or none)
-    // 228: story fragments (docs/archive/story/FRAGMENTS.md): Msg.Fragments at the end of Msg, CLogic.Cipher at the end of CLogic (the Data Centre Terminal, a new part file in Constructs/Parts/Office, so part ids after it shift).
+    // 228: story fragments (the removed story (docs/removals-notes.md)): Msg.Fragments at the end of Msg, CLogic.Cipher at the end of CLogic (the Data Centre Terminal, a new part file in Constructs/Parts/Office, so part ids after it shift).
     // 229: walker feet on the wire (ConstructNetWalk.cs, docs/sandbox/GIANTS.md "Walker feet on clients"): a pose's asleep byte gains bit 1, and a walker's pose carries its gait state and the feet that moved (plus a few in turn) after the rotors; a client no longer finds its own footholds.
     // 230: CActKind.Aircraft at the end of CActKind (docs/vehiclekit/AIRCRAFT.md "In the game"): a creative aircraft spawned flying with a bot pilot, by shape or by air role.
     // 231: dug ground's shape from the same ops (docs/sandbox/TERRAIN-DIGGING.md "Smooth tops"): a crater is open upwards and thin roofs fall in (TerrainEdits.CraterTop), a dug border column makes the cells beside it dug cells, and tops slope over steps up to 4 m (GroundTops.Near/Far, Middle). No message changed.
-    // 232: the Logbook's Paths (docs/archive/story/STORY.md "Paths"): Msg.StoryPaths at the end of Msg. Joining a talk (docs/archive/story/STORY.md "Talking to people"): Msg.TalkInvite after it, TalkAsk.Join.
+    // 232: the Logbook's Paths (the removed story (docs/removals-notes.md)): Msg.StoryPaths at the end of Msg. Joining a talk (the removed story (docs/removals-notes.md)): Msg.TalkInvite after it, TalkAsk.Join.
     // 233: STAND-IN: Msg.StandIn at the end of Msg (Source/StandIns: the story's placeholder craft, until the vehicle and ship redo).
     // 234: Msg.Shot carries a kinds byte after the end count (Game.ShotKindBuildOnly): a hit on a build only gets its own hit-marker colour.
     // 235: mains lamps (logic "mains", docs/sandbox/INTERIORS.md phase 11) are left out of a pose's signals: every peer lights them from the circuit (ConstructLamps.Lit).
     // 236: the first Ministry duty (docs/story/DUTIES.md): Msg.Quarry at the end of Msg, CActKind.QuarrySkip at the end of CActKind; stand-in craft gain a Duty purpose (host only).
     // 237: the talk panel's topics: TalkAsk.Place, Self and Advice (6-8) and TalkAsk.Choose moves up to 9.
     // 238: dug ground's shape from the same ops again: a roof thinner than 6 m falls in with a scoop or a crater (TerrainEdits.MinRoof), and side-by-side tops always share their corner height (GroundTops). No message changed.
-    // 239: talk topics per person (docs/archive/story/STORY.md "Topics"): Msg.TalkTopics at the end of Msg, TalkAsk.Topic (13) in CActKind.Talk followed by a u16 (the topic's index).
+    // 239: talk topics per person (the removed story (docs/removals-notes.md)): Msg.TalkTopics at the end of Msg, TalkAsk.Topic (13) in CActKind.Talk followed by a u16 (the topic's index).
     // 240: STAND-IN: Msg.StandIn gains a vec from and a 3-byte tint (the ambient traffic's legs, ships and stations: Source/StandIns/GameTraffic.cs).
     // 241: a walker's pose block's flags byte gains bit 8, the plant and the bank hold it below its set speed (Construct.WalkPowerHeld; ConstructNetWalk.cs).
     // 242: CActKind.MakeEngine (at the end of CActKind): creative "Make an engine", the Engine Kit's request (kW, tier, layout, boost, size, fit, seed) built in front of the player (GameSandboxEngines.cs).
@@ -695,8 +695,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 413: Roller Tiles (Sean, 2026-11-21, drawing 23): Roller Tile and Turntable Tile part files come (ids move); a run's conveyor is
     //   an ordinary link the server lays from its tiles.
     // 414: the Grapnel Salvage Tug (Karl, 2026-11-21): its 61 part files come in a new folder, Constructs/Parts/Grapnel (ids move).
-    // 415: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
-    public const ushort ProtocolVersion = 415;
+    // 415: the story engine removed (Karl, 2026-11-21): Msg.Jobs, TalkChoices, Fragments, StoryPaths, TalkInvite, StandIn and TalkTopics are Removed slots, CActKind.Talk unread, the Ministry uniforms gone (uniform indices shift), the Data Centre Terminal part gone (part ids shift).
+    // 416: the Docket tug's 56 parts (Constructs/Parts/Docket, Karl 2026-11-21): a new part folder shifts the ids after it.
+    public const ushort ProtocolVersion = 416;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

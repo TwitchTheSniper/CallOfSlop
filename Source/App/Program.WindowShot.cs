@@ -134,7 +134,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "oven" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action) || WsHeldKnown(action) || WsBoreKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "oven" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsScriptKnown(action) || WsPlayKnown(action) || WsHeldKnown(action) || WsBoreKnown(action);
 
     private static void WsSay(string s)
     {
@@ -378,11 +378,11 @@ public static unsafe partial class Program
     /// <summary>
     /// Before a verb that presses the game's keys: the mouse held again, as a player's click into their window holds it. Two windows (host and
     /// join) take the focus from each other, and a window that loses it lets the mouse go (Program.cs, OnFocus); the game reads no tool, use or
-    /// panel key while the mouse is free (SandboxInput), so a press then did nothing and said nothing. Not while a menu or a talk has the mouse.
+    /// panel key while the mouse is free (SandboxInput), so a press then did nothing and said nothing. Not while a menu has the mouse.
     /// </summary>
     private static void WsGrabMouse()
     {
-        if (_mouseCaptured || MenusOpen || _talkTo != 255)
+        if (_mouseCaptured || MenusOpen)
             return;
         SetMouseCaptured(true);
         WsSay(_mouseCaptured ? "mouse: held again (the window had lost the focus to another)" : "mouse: can't be held (a screen has it)");
@@ -563,8 +563,8 @@ public static unsafe partial class Program
         WsSay($"> {action}");
         if (WsNavVerb(g, me, verb, arg))
             return;
-        if (WsTalkVerb(g, me, verb, arg))
-            return; // (talking to the story's people: Program.WindowShotTalk.cs)
+        if (WsScriptVerb(g, me, verb, arg))
+            return; // (secs, hold, seat, where, heard: Program.WindowShotScript.cs)
         if (WsTourVerb(g, me, verb, arg))
             return; // (the tour's actions: Program.WindowShotTour.cs)
         if (WsInvVerb(g, me, verb, arg))
@@ -986,7 +986,7 @@ public static unsafe partial class Program
                 WsWaitTicks(30); // (on their feet, in the ship's frame, before F)
                 return;
             }
-            case "person": // "person NAME X,UP,Z": the eye that far from a story person's body along the world's x, up and z, looking at their chest
+            case "person": // "person NAME X,UP,Z": the eye that far from a person's body (a player or a crew member) along the world's x, up and z, looking at their chest
             {
                 var cut = arg.LastIndexOf(' ');
                 var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
@@ -2273,7 +2273,7 @@ public static unsafe partial class Program
     private static void WindowShotKeys(bool[] down)
     {
         WindowShotHold(down); // (a key held over frames: Program.WindowShotCuts.cs)
-        WsTalkHold(down); // (keys held for real seconds, a pilot's: Program.WindowShotTalk.cs)
+        WsScriptHold(down); // (keys held for real seconds, a pilot's: Program.WindowShotScript.cs)
         if (_wsPress is { } a)
         {
             down[(int)a] = true;

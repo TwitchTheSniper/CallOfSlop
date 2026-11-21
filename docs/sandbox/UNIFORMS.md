@@ -1,7 +1,9 @@
 # Uniforms
 
-Faction uniforms for people's bodies (Karl, 2026-11-12: Ministry of Slop clothing, Cold War style, by rank). Cosmetic
-only: a uniform changes how a body is drawn, never its hit boxes.
+Uniforms for people's bodies. Cosmetic only: a uniform changes how a body is drawn, never its hit boxes. The only one
+now is the Space Suit (docs/sandbox/EVA.md), drawn over whatever a player wears while they have one on. The Ministry of
+Slop's uniforms (2026-11-12, issued by story standing) went with the story and its factions (2026-11-21,
+docs/removals-notes.md).
 
 - **Data:** `Cosmetics/uniforms.json` (`call-of-slop-uniforms/1`), loaded by `Source/Cosmetics/Uniforms.cs`. A uniform's
   number on the wire is its place in the file: add new ones at the end, never reorder.
@@ -13,32 +15,10 @@ only: a uniform changes how a body is drawn, never its hit boxes.
 - **Frames:** torso boxes are in the standing torso's frame (centre 0, x +-0.4 at the shoulders, y +-0.25, -z the front:
   the chest's face at z -0.21, the coat body's at -0.215, the back at +0.21; the shoulder box's top at y 0.275). Crouch
   and prone scale them with the torso. The no-coplanar-faces rule applies: 2 to 5 mm between faces that touch.
-- **Who wears what** (`Source/Game/GameUniforms.cs`, host, once a second in the story's tick): a story person (a bot)
-  wears the first uniform whose `wornBy` starts their name ("Warden ", "Officer ", "Riot Officer "). A player in a story world
-  (`--story`; the penal colony start that made one was removed 2026-11-17) is issued the uniform whose `tiers` holds their standing tier with its
-  `faction`, unless they picked **Own Clothes** (`LookAxis.Uniform` on the APPEARANCE screen). A memo goes out under the
-  faction's voice when one is issued or withdrawn. Plain Sandbox worlds have a story too (everyone an Inmate there), so
-  players get nothing outside the opening's worlds.
+- **Who wears what:** a player in a space suit (`Uniforms.SpaceSuit`). The APPEARANCE screen's uniform choice is hidden.
 - **Wire:** the roster carries one byte a player (bots too) after the look; the look itself is 4 bytes (the fourth is
   the uniform choice). Protocol 257.
 - **Drawing:** `BodyModel.UniformOf(p)` (null in a robot shell), `ColorsFor`, `LegsFor`, `ArmsFor`; `BodyModel.Build`
   takes the uniform. The rig, the immediate path, ragdolls and gibs all go through these.
 
-## The Ministry of Slop's (2026-11-12)
-
-| Uniform | Who | Look |
-| --- | --- | --- |
-| Ministry Issue Boiler Suit | Inmate | mustard drab suit, zip, stencilled number patch, MINISTRY PROPERTY on the back, watch cap |
-| High-Visibility Boiler Suit | Person of Interest | orange suit with reflective bands, "for your own visibility" |
-| Trusty's Boiler Suit and Flat Cap | Trusty | the suit with a red brassard, a leather belt, a pencil, tweed flat cap |
-| Ministry Contractor's Donkey Jacket | Contractor | navy donkey jacket, PVC yoke, brass contractor badge, white hard hat |
-| Crown Servant's Overcoat and Bowler | Crown Servant | charcoal Chesterfield, velvet collar, white shirt and maroon tie, crest pin, bowler |
-| Colony Officer's Greatcoat | "Officer " | grey-blue double-breasted greatcoat, Sam Browne strap, one pip, crest badge, fur ushanka |
-| Colony Sergeant's Greatcoat | "Sergeant " | the officer's coat with two chevrons on each shoulder and a ribbon |
-| Warden's Greatcoat | "Warden " | black greatcoat, astrakhan collar with red tabs, gold epaulettes with two pips, ribbons, peaked cap with a red band |
-| Riot Officer's Kit | "Riot Officer " | black padded coat, chest and back plates, numbered, steel helmet with visor |
-| Foreman's Donkey Jacket | "Foreman " | donkey jacket with an orange hi-vis yoke, yellow hard hat with a lamp |
-| Senior Civil Service Suit | "Permanent Secretary ", "Licensing Officer " | navy suit, tie, watch chain, bowler |
-
-Enemy of the State is issued nothing. Ideas left: uniforms for the other factions (IT Department, Clan MacSlop, the
-call centre), rank insignia that follow the player's own faction ranks.
+Ideas left: uniforms for the crew powers, rank insignia that follow the player's own faction ranks.

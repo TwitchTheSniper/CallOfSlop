@@ -53,8 +53,8 @@ Karl says otherwise.
 - **No currency: barter and a tab (Karl, 2026-11-20,** replacing "currency is in"). Goods and parts are physical and carry a value; an uneven
   trade leaves a tab the power owes you, spendable only with that power, wiped by war or the power's fall (`Game/GameTabs.cs`). NPCs have needs and wants.
 - **NPC factions are kinds,** such as traders and mercenaries, details not fixed. The story's factions (IT Department, Clan
-  MacSlop, the scammers, the Ministry of Slop) are archived with the story; the player faction system (F2) stays.
-- **NPCs are streamlined into assets;** the storylets stay archived.
+  MacSlop, the scammers, the Ministry of Slop) were removed with the story; the player faction system (F2) stays.
+- **NPCs are streamlined into assets;** the storylets were removed.
 - **Robot shells come early.**
 - **Nothing happens while the game isn't running,** and nothing saves a player whose tank is empty, for now.
 - **Ships are built through TwitchTheSniper's production system** (machines, recipes, ship building). It is work in
@@ -87,28 +87,18 @@ are procedural, the vehicle terrain table, and urgent cargo.
   metal to repair. `Source/Game/GameSandboxBreakdowns.cs`, numbers in `Constructs/Breakdowns.json`, and
   docs/sandbox/constructs/ship.md "Breakdowns".
 
-## What was archived (2026-11-14)
+## What was archived (2026-11-14), then removed (2026-11-21)
 
-Recoverable, not deleted:
+The story layer was switched off on 2026-11-14 and removed on 2026-11-21 at Karl's word (docs/removals-notes.md): the
+story engine (people, factions' standing from the story, storylets, drama, jobs, errands, objectives, lore items, talk,
+the logbook and the data centres), the plot and its ending, the story's factions (IT Department, Clan MacSlop, the
+scammers, the Ministry of Slop, the Bandits, the Highlanders) with their vehicles, settlements and uniforms, and their
+docs. The menus' STORY page and HOST STORY CO-OP went earlier, with the arena modes' LOADOUTS, the Zombies workbench
+preview and the arena level bar. The penal colony, its buildings, quarry, depot, spaceport, labour gangs and the
+warden's induction were removed on 2026-11-17.
 
-- **The story layer.** `Game.StoryOn` (GameStory.cs) is false, so no story engine runs in play: no story people or their
-  bodies, factions' standing and technologies, storylets (the colony career, the break-out, the ending), drama, jobs,
-  errands, objectives, lore items, or the factions' settlements on other worlds. The code and the `Story/` data stay where
-  they are. `--story` on the command line turns it back on for one run (the story's own tools, `--traffic-check` and
-  `--outpost-check`, turn it on by themselves); setting `StoryOn` to true brings it back for good.
-- **The main plot and the ending.** The five sealed data centres are not built (`FragmentSitesBuild`), and the ending's
-  storylets never run. The storyline, the engine's guide and the plot's docs moved to `docs/archive/story`
-  (STORYLINE.md, STORY.md, FRAGMENTS.md, BREAKOUT.md, OBJECTIVES.md, OUTPOSTS.md, PATHS.md).
-- **The menus' story entries.** The STORY page and HOST STORY CO-OP are gone; so are the arena modes' LOADOUTS, the Zombies
-  workbench preview and the arena level bar on the main menu (the code behind them stays). The placeholder Castaway start
-  is in `docs/archive/story/starts`.
-
-What stays live: the opening's card and wake (docs/story/OPENING.md). The penal colony, its buildings, quarry, depot,
-spaceport, labour gangs and the warden's induction were removed (2026-11-17); a world from before starts loads with its
-colony as plain constructs and plays no opening.
-
-A world saved while the story was on keeps loading, and its story is kept: the Story section is read as bytes and written
-back unread on every save (`GameStory.StoryRead`), so `--story` later finds it whole. A world saved with a start that is gone (the archived Castaway, the
-penal colony) plays the On the ground start.
+What stays: the opening's card and wake (docs/story/OPENING.md) and the starts (docs/story/STARTS.md). A world saved
+before the removal loads without its story; one saved with a start that is gone (Castaway, the penal colony) plays the
+On the ground start. Old saves don't matter while developing (Karl, 2026-11-15).
 
 **Faction politics (decided, agreed by Karl 2026-11-17).** NPC factions are kinds; powers (the factions that act) are made from kinds, up to 16. Relations between powers and with players run from blood enemies who never make peace to wanting to merge, moved by events and fading over time, with pacts (ceasefire, non-aggression, alliance, trade, tribute, vassalage). A planet belongs to the power with majority control, key sites weighted by how rare they are there. Admirals coordinate groups of captains, combat or civilian. Design: `docs/sandbox/design/faction-controllers.md`.

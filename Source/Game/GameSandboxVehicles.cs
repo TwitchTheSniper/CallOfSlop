@@ -792,11 +792,8 @@ public sealed partial class Game
             return;
         }
         Constructs.Events.Add($"player {who} spawned {name} as construct {c.Id} (faction vehicle)");
-        if (Players.TryGetValue(who, out var p))
-        {
+        if (Players.ContainsKey(who))
             SandboxHands.Notices.Add((who, $"{name} is ready"));
-            StoryFound(p, c, name); // (GameStory.cs)
-        }
     }
 
     /// <summary>

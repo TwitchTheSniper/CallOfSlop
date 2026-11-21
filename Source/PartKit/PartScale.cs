@@ -115,6 +115,8 @@ public sealed class Part
             throw new InvalidOperationException($"{name}: {Boxes.Count} boxes, {Sockets.Count} sockets");
         // (A ship's main drive over jetMost needs an engine behind its bell; a part file can't tell a main drive from a lift jet, so
         // --check-vehicle reports one with no engine: ship-works.md 15.3, rule 6.)
+        if (PartChunky.On)
+            PartChunky.Grow(Boxes); // raised ribs and chunkier greebles on the ships (before the coplanar pass, which settles what they touch)
         PartZFight.Resolve(Boxes, Sockets); // no two drawn faces on one plane (CLAUDE.md, "No coplanar faces")
         var d = new PyDict(D)
         {

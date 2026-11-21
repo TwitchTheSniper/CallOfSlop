@@ -1,7 +1,6 @@
 using System.Numerics;
 using System.Text.Json;
 using Brutal.RakNetApi;
-using CallOfSlop.Story;
 
 namespace CallOfSlop;
 
@@ -76,10 +75,6 @@ public sealed partial class Game
     public double OpeningSubtitleAt { get; private set; }
     public static string OpeningSkipHint => OpeningScript.Current.Skip;
 
-    /// <summary>The warden's body (the cast's warden), or null.</summary>
-    public Player? OpeningWarden() =>
-        Story is { } s && OpScript.Warden.Length > 0 && s.World.Find(OpScript.Warden) is var e and >= 0 ? StoryBodyOf(e) : null;
-
     /// <summary>Is this player in the opening now (server)?</summary>
     public bool OpeningHas(byte id) => _op[id].Stage != OpeningStage.None;
 
@@ -95,12 +90,9 @@ public sealed partial class Game
         _opHolds.Clear();
         StationsReset(); // (stations' markets and haulers: GameStationMarket.cs)
         BreakdownReset(); // (GameSandboxBreakdowns.cs)
-        FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
-        LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
-        _storyMiddleOf = null; // (the people's middle, worked out again)
-        _start = null; // (the story start, worked out again on this match's map: GameStoryStart.cs)
+        _start = null; // (the start, worked out again on this match's map: GameStart.cs)
     }
 
     /// <summary>
@@ -141,8 +133,6 @@ public sealed partial class Game
             _opCrash = wreck.WorldCom;
             Constructs.Events.Add($"opening: the wreck ({script.Wreck}) as construct {wreck.Id}");
         }
-        if (script.Cast.Length > 0 && Story is { } s && StoryData.People.Cast(script.Cast) is { } cast)
-            Log($"[opening] the {cast.Name} cast: {s.Agents.AddCast(cast, StoryPlace(), scripted: false)} people");
         Log($"[opening] everyone wakes at {from.X:0},{from.Z:0}; the crash site at {_opCrash.X:0},{_opCrash.Z:0}");
         return from;
     }
@@ -250,9 +240,8 @@ public sealed partial class Game
             var line = beat.Lines[run.Line++];
             if (line.Group && OpeningGroupSize(run.Group) < 2)
                 continue; // (a line for friends found together)
-            var speaker = OpeningWarden(); // (every line is the warden's since the placeholder: with no warden, a plain line)
-            var name = speaker?.Name ?? OpScript.Warden;
-            OpeningSay(p, speaker, name, line.Text, now);
+            var name = OpScript.Warden; // (a line's speaker by name, or a plain line)
+            OpeningSay(p, null, name, line.Text, now);
             OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpScript.Beat(run.Stage).Caption, name.Length > 0 ? $"{name}: {line.Text}" : line.Text);
         }
     }
@@ -299,7 +288,6 @@ public sealed partial class Game
         OpeningSend(p, OpeningStage.None, 0, 0, default, "", "");
         Log($"[opening] {p.Name}: {(skipped ? "skipped" : "awake")}");
         SandboxTellKit(p);
-        StartStanding(p); // (the start's standing with its faction, when it sets one: GameStoryStart.cs)
     }
 
     /// <summary>Server: the player pressed skip (<see cref="CActKind.OpeningSkip"/>).</summary>
@@ -411,7 +399,6 @@ public sealed partial class Game
         _opOn = true;
         _opCrash = o.Crash;
         _opMiddle = _opGate = _opWake = o.Crash;
-        _storyMiddleOf = null;
         if (OpScript.Ship.Length > 0) // (a ship start keeps its ship: late friends wake aboard it, GameSpaceStart.cs)
             _opShip = Constructs.Get(o.Colony) != null ? o.Colony : (ushort)0;
     }
@@ -440,7 +427,7 @@ public sealed class OpeningScript
         public Line[] Lines = [];
     }
 
-    public string Cast = "", Warden = "", Wreck = "", Skip = "skip the opening";
+    public string Warden = "", Wreck = "", Skip = "skip the opening";
     public float CrashFrom = 70, CrashTo = 140;
     public string Ship = ""; // a ship start: the blueprint everyone wakes aboard, in orbit (GameSpaceStart.cs)
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
@@ -471,7 +458,6 @@ public sealed class OpeningScript
             var root = doc.RootElement;
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
-            t.Cast = Text(root, "cast", t.Cast);
             t.Warden = Text(root, "warden", t.Warden);
             t.Wreck = Text(root, "wreck", t.Wreck);
             t.Skip = Text(root, "skip", t.Skip);

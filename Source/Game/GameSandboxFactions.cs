@@ -51,8 +51,8 @@ public sealed partial class Game
 
     private int _factionSent = -1;
 
-    /// <summary>A person (not a bot or one of the story's people), who may be in a faction.</summary>
-    public static bool FactionPerson(Player p) => p.Bot == null && p.Team is not (SbFriendlyTeam or SbHostileTeam or SbPeopleTeam);
+    /// <summary>A person (not a bot), who may be in a faction.</summary>
+    public static bool FactionPerson(Player p) => p.Bot == null && p.Team is not (SbFriendlyTeam or SbHostileTeam);
 
     /// <summary>A member's name by owner byte: the player if here, else the name kept for them.</summary>
     public string FactionMemberName(byte owner) =>
@@ -95,7 +95,6 @@ public sealed partial class Game
                 t.Open[id] = false;
                 t.Version++;
                 FactionTell(me, $"You founded {name}. Pick its colour and tag and invite people from the faction window.");
-                StoryFactionFounded(p, name); // (the story hears of a new outfit: GameStoryFactions.cs)
                 SandboxHands.Done.Add($"player {me} founded faction {id} \"{name}\"");
                 return null;
             }
@@ -322,8 +321,6 @@ public sealed partial class Game
                     > 0 => $"{t.Names[mine]} offers {t.Names[other]} an alliance: accept it in the faction window.",
                     _ => $"{t.Names[mine]} is neutral toward {t.Names[other]} now.",
                 });
-                if (now != was)
-                    StoryFactionRelation(t.Names[mine], t.Names[other], now, p); // (GameStoryFactions.cs)
                 return null;
             }
             case FactionOp.Pact:

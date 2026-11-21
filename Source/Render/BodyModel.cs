@@ -432,22 +432,17 @@ public static class BodyModel
             head.Add(Beard, hs, c, onJaw: true);
     }
 
-    /// <summary>
-    /// The head's pose as they talk (<see cref="TalkMouth"/>): the jaw drop for <paramref name="head"/> and the head node's
-    /// matrix (a small nod with the words) for a stance. Shut and still: just the stance's place.
-    /// </summary>
+    /// <summary>The head's pose for a stance: the jaw shut and the head node at the stance's place (the talking jaw went with the story, 2026-11-21).</summary>
     public static Matrix4x4 TalkPose(BodyParts head, int stance, byte id)
     {
-        head.Jaw = TalkMouth.Open[id] * TalkMouth.JawDrop * Stances[stance].HeadScale.Y;
+        head.Jaw = 0;
         return TalkHead(stance, id);
     }
 
-    /// <summary>The head node's matrix for a stance as they talk (the hat goes on it).</summary>
+    /// <summary>The head node's matrix for a stance (the hat goes on it).</summary>
     public static Matrix4x4 TalkHead(int stance, byte id)
     {
-        var at = Matrix4x4.CreateTranslation(Stances[stance].HeadAt);
-        var open = TalkMouth.Open[id];
-        return open > 0 ? Matrix4x4.CreateRotationX(open * TalkMouth.Nod) * at : at;
+        return Matrix4x4.CreateTranslation(Stances[stance].HeadAt);
     }
 
     /// <summary>How many headwear parts <see cref="Build"/> adds for a variant, with or without a hat (the hat's own boxes not counted).</summary>
