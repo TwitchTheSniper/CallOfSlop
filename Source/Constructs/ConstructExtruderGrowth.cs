@@ -188,4 +188,48 @@ public static partial class ConstructExtruder
             return $"lay {with} under its die, end to end (to {MostLength(d):0.#} m with them)";
         return Bigger(w, h, l) is { } b && b != d ? BuildText(b, true) : $"no Extruder makes a piece that long (at most {Extrusion.MaxLengthCm / 100} m)";
     }
+
+    // ---- What the renderer reads (drawing 11's animations: drawn only, nothing on the server or the wire) ------------------------
+
+    /// <summary>The length (cm) of the piece on this Extruder's die, 0 for none: its rams and shear move by it. Walks the Core's own links only.</summary>
+    public static int PieceCm(Construct c, int core)
+    {
+        var sock = c.Parts[core].D.ExtDieSocket;
+        for (var e = c.FirstLink(core); e >= 0; e = c.NextLink(e))
+        {
+            ref readonly var l = ref c.Links[e >> 1];
+            if (((e & 1) == 0 ? l.SA : l.SB) == sock && c.OtherEnd(e) is var o and >= 0 && o < c.PartCount && c.Parts[o].D is { IsExtrusion: true } pd)
+                return pd.ExKey.L;
+        }
+        return 0;
+    }
+
+    /// <summary>The Extruder Core whose die a Run-out Table serves (walked back along each table's "in" end), or -1: its rollers turn while it works.</summary>
+    public static int TableMachine(Construct c, int table)
+    {
+        var at = table;
+        for (var hop = 0; hop < 64; hop++)
+        {
+            var next = -1;
+            var socks = c.Parts[at].D.Sockets;
+            for (var e = c.FirstLink(at); e >= 0 && next < 0; e = c.NextLink(e))
+            {
+                ref readonly var l = ref c.Links[e >> 1];
+                var s = (e & 1) == 0 ? l.SA : l.SB;
+                if (s < socks.Length && socks[s].Kind == SocketKind.RunOut && socks[s].Name == "in")
+                    next = c.OtherEnd(e);
+            }
+            if (next < 0 || next >= c.PartCount)
+                return -1;
+            var nd = c.Parts[next].D;
+            if (nd.IsExtruder)
+                return next;
+            if (nd.BlockRole == BlockRole.Block)
+                return MachineBlocks.TryOf(c, next, out var asm) ? asm.Core : -1;
+            if (nd.ExtRunOut <= 0)
+                return -1;
+            at = next;
+        }
+        return -1;
+    }
 }

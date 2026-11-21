@@ -329,8 +329,16 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     public byte Way { get; init; }
     /// <summary>"fence": true: a Conveyor Router's diverter, drawn turned about the deck's middle toward the way its last piece went.</summary>
     public bool Fence { get; init; }
-    /// <summary>"seam": a direction: a block machine's skirt, kerb or cap on that face, not drawn while a cell of its own machine is welded there (<see cref="Construct.BlockJoined"/>); 0: none, else the direction + 1.</summary>
+    /// <summary>
+    /// "seam": a direction or a list of them: a block machine's skirt, kerb or cap on those faces, not drawn while a cell of its own machine is
+    /// welded on any of them (<see cref="Construct.BlockJoined"/>; a corner tie rod names its two faces). "seamFill": the other way round, drawn
+    /// only while a cell is welded on one of its faces (what fills a corner's notch between two welded blocks). A mask of faces by direction
+    /// (bit 7: a fill); 0: none.
+    /// </summary>
     public byte Seam { get; init; }
+
+    /// <summary>Is this box hidden on a block machine's cell whose welded faces are <paramref name="joined"/>?</summary>
+    public bool SeamHidden(byte joined) => Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
     /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
     public byte Shows { get; init; }
 
@@ -421,9 +429,12 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// <summary>
 /// How a detail box shows its machine working ("work" in the file), while the machine runs and never otherwise: <see cref="Spin"/> turns about its
 /// "axis" through its own centre, <see cref="Stroke"/> slides "travel" metres along its "axis" and back (a ram), <see cref="Glow"/> is drawn unlit and
-/// bright (a hot die), <see cref="Smoke"/> puffs from its top (a stack). Drawn from the store as this peer has it (ConstructRender): nothing on the server or the wire.
+/// bright (a hot die), <see cref="Smoke"/> puffs from its top (a stack). <see cref="Ram"/> (an Extruder's) slides "travel" along its "axis" as
+/// the machine's piece grows and comes back with each metre (a new billet); <see cref="Shear"/> (over an Extruder's die) drops "travel" and
+/// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
+/// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke }
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear }
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -605,6 +616,7 @@ public sealed partial class ConstructPartDef
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
     public bool HasWork; // a box that shows the machine working ("work" on a box)
+    public bool HasPieceWork; // a box that moves by the machine's piece ("ram", "shear": an Extruder's)
     public bool HasMiddle; // a box marked "middle" (a module plate or plug that can be drawn as a frame: ModuleSockets.FrameLook)
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
@@ -1573,7 +1585,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "middle"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "middle"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1651,8 +1663,16 @@ public static partial class ConstructParts
                 made = detail && Num(wayBox, file, where + ".way") is >= 1 and <= 3 and var wn ? made with { Way = (byte)wn } : throw new ConstructPartException($"{file}: {where}.way is 1, 2 or 3 on a detail box");
             if (Opt(b, "fence") is { ValueKind: JsonValueKind.True })
                 made = detail ? made with { Fence = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"fence\"");
-            if (Opt(b, "seam") is { } seamBox)
-                made = detail ? made with { Seam = (byte)(DirOf(Str(seamBox, file, where + ".seam"), file, where + ".seam") + 1) } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"seam\" (hidden where a block machine's cell is welded on that face)");
+            foreach (var (key, fill) in new[] { ("seam", false), ("seamFill", true) })
+                if (Opt(b, key) is { } seamBox)
+                {
+                    if (!detail || made.Seam != 0)
+                        throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"seam\" or a \"seamFill\", and not both (drawn by whether a block machine's cell is welded on its faces)");
+                    byte mask = 0;
+                    foreach (var f in seamBox.ValueKind == JsonValueKind.Array ? seamBox.EnumerateArray().ToArray() : [seamBox])
+                        mask |= (byte)(1 << DirOf(Str(f, file, $"{where}.{key}"), file, $"{where}.{key}"));
+                    made = made with { Seam = (byte)(mask | (fill ? 0x80 : 0)) };
+                }
             if (Opt(b, "shows") is { } showsBox)
                 made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
                     : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
@@ -1660,8 +1680,8 @@ public static partial class ConstructParts
             {
                 var kind = Str(wk, file, where + ".work") switch
                 {
-                    "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\" or \"smoke\""),
+                    "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\" or \"shear\""),
                 };
                 if (!detail || glass != 0)
                     throw new ConstructPartException($"{file}: {where}: only an opaque detail box can show \"work\" (a moving box adds no collision)");
@@ -1683,6 +1703,7 @@ public static partial class ConstructParts
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
+        d.HasPieceWork = list.Any(x => x.Work is BoxWork.Ram or BoxWork.Shear);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
         d.HasSeams = list.Any(x => x.Seam != 0);

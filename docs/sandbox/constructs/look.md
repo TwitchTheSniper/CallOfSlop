@@ -112,7 +112,11 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    with a big bare hub; the console a desk. A new machine picks a shape no other has.
 2. **Work is visible and moves, and stops when the machine stops.** A detail box may carry `"work"`: `"spin"` (about
    `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
-   its own dull colour at rest: a die) or `"smoke"` (puffs from its top). Drawn only while `ProductionLines.Working` says
+   its own dull colour at rest: a die), `"smoke"` (puffs from its top), `"ram"` (an Extruder's: `"travel"` along `"axis"` by
+   the piece on its die, back each metre) or `"shear"` (over an Extruder's die: down and up as a new piece starts). A block
+   machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
+   face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is).
+   Drawn only while `ProductionLines.Working` says
    the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
    the bin's fill are the game's own.
 3. **Flow reads one way.** The in side has a white band and arrow, the out side an orange band and arrow, and every port
@@ -151,6 +155,12 @@ the wall or on a stand from the floor, a rim in the side's colour, 2.6 cm clear 
 Press's or Die Lathe's Piece in a steel feed table in the bay's mouth, its Piece out a run-off lip. The loader's own ports
 seat themselves: the implicit Power in slides from the middle of the bounds' face onto the nearest drawn face
 (`PortMounts.Seat`), and a data link ends on the body when the part's middle is in the air (`ConstructRoutes.DataSeat`).
+
+**One port look on every machine** (Sean 2026-11-21): a block machine's chute, pipe or conveyor port is drawn with
+`MachineLook.Port`: a dark collar standing proud of the body on a bolted flange, a band round it in the side's colour (white
+in, orange out) and the shared mouth at its top. The declared port's point stays on the body's face (a link leaves the surface
+straight out, through the collar), and the spout stops 3 cm short of it. The Extruder Core's chute is the first (on its back, under
+the hopper's arrow); each machine's rework PR moves its ports onto it.
 
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is

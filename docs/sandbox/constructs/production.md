@@ -130,9 +130,14 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   `ConstructExtruderGrowth.cs`). One 2 x 2 m cell of die, 4 m deep (its die tile, container slice, heater and ram). Weld the first to the Core's
   `+x` socket, beside it and flush with its die face, and more beside, above or below that one. The die is the largest full rectangle of blocks that
   holds one welded to the Core, at most 16 x 16 blocks (32 m, `Extrusion.MaxSectionCm`) and 128 blocks; blocks outside it idle, and a block turned off
-  the Core's lattice isn't part of the machine. The section is centred on the die (`ConstructExtruder.Reach`). Each block in the die adds 6 kN of push
+  the Core's lattice isn't part of the machine. The section is centred across the die and runs 2 cm over its foot onto the Run-out Tables, or with none at the Core's own die's foot, where its conveyor takes it (`ConstructExtruder.PieceY`; Sean 2026-11-21: the piece comes out at the bottom, onto the Run-out Tables). Each block in the die adds 6 kN of push
   (`blockPush`) and 900 W of draw (`blockPower`), so the speed is the same at any size and throughput grows with the die's area. A block's flanges on a
-  side are seam boxes, not drawn while a block of the same machine is welded there, so a bank reads as one die plate in one frame. Each block keeps its
+  side are seam boxes, not drawn while a block of the same machine is welded there, so a bank reads as one die plate in one frame (looks pass, Sean
+  2026-11-21, design drawings 10, 11 and 14): a tie rod and its nuts in each corner only at the machine's corners (`"seam"` naming both faces; a
+  `"seamFill"` fills the corner's notch where a block is welded), sides and top sunk into panels between ribs (a `"seamFill"` closes a panel where a block is welded), oil lines down its right side, heater bands on its outer sides and top, a shear across
+  the bottom row, a hazard edge at its foot, and a bank of rams behind (`"work": "ram"`) that slide in as the piece grows and come back each metre. The
+  Core's own shear (`"work": "shear"`) drops as each new piece starts; its fume stack smokes and its feed screw turns; a Run-out Table's rollers turn
+  while the Extruder it serves works (`ConstructExtruder.TableMachine`). A block's work boxes show its Core's work. Each block keeps its
   own collision and health: a broken one leaves the die at the next rebuild. A piece off a block's die still hands off to the Core's `Piece out`
   conveyor (a conveyor takes at most 2 m, so a wide die's pieces go on Run-out Tables, pads or the crane).
 - **Run-out Tables** (`"runOut": 8`): one roller bed, 2 m wide and 8 m long, on the Core's or any block's `outBed` socket (kind `runOut`: nothing else

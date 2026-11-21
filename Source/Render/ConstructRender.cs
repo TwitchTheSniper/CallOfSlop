@@ -672,7 +672,9 @@ public static partial class ConstructRender
         var railShown = !d.IsRail || c.RailShowsCarriage(i);
         var leafMoves = d.IsRail || d.Role == PartRole.Joint && d.JointType == JointType.Swivel;
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
-        var working = d.HasWork && !p.Broken && world.StoreOf(c, i) is { } workStore && ProductionLines.Working(world, c, i, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
+        var workPart = d.HasWork ? WorkPart(c, i, d) : -1; // (a block machine's cell shows its Core's work, a Run-out Table its Extruder's)
+        var working = workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
+        _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         byte routerWay = 0, routerState = 0;
         var routerStuck = false;
         var routerFence = 0f;
@@ -680,7 +682,7 @@ public static partial class ConstructRender
         var offSlots = d.ShellBody && world.GantryJobCount > 0 ? ConstructGantry.OffSlots(world, c.Id, ConstructConveyor.Clock) : 0; // (a module a Shell Gantry's arm has off: its boxes aren't drawn)
         var fitted = d.ShellBody ? ShellFittedLooks.FittedMask(in p, d) : 0; // (a slot with a module that isn't its frame's own: drawn from the module's part, ShellFittedLooks)
         var hideSlots = offSlots | fitted;
-        var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : 0;
+        var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
         for (var b = 0; b < d.Boxes.Length; b++)
@@ -692,8 +694,8 @@ public static partial class ConstructRender
                 continue;
             if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
                 continue;
-            if (box.Seam != 0 && (seams >> (box.Seam - 1) & 1) != 0)
-                continue; // (a block machine's skirt or cap on a face welded to its own machine: MachineBlocks.cs)
+            if (box.SeamHidden(seams))
+                continue; // (a block machine's skirt or cap on a face welded to its own machine, or a fill where none is: MachineBlocks.cs)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
@@ -806,6 +808,15 @@ public static partial class ConstructRender
     private static readonly Vector3 RouterOrder = new(1f, 0.5f, 0.1f), RouterStore = new(0.95f, 0.95f, 0.9f), RouterStuck = new(1f, 0.12f, 0.08f);
 
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
+    private const int ShearCm = 25;
+    private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
+
+    /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
+    private static int WorkPart(Construct c, int i, ConstructPartDef d) =>
+        d.BlockRole == BlockRole.Block ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1)
+        : d.ExtRunOut > 0 ? ConstructExtruder.TableMachine(c, i)
+        : i;
+
     private static void WorkMove(Renderer gfx, Construct c, in CPartBox box, in CPart p, Vector3 centre, in Matrix4x4 onBody, ref Matrix4x4 model)
     {
         var axis = Rot24.Apply(p.Rot, ConstructParts.DirVector(box.WorkAxis));
@@ -817,6 +828,15 @@ public static partial class ConstructRender
             case BoxWork.Stroke:
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
+                break;
+            case BoxWork.Ram:
+                // An Extruder's ram: it pushes the billet as the piece grows and comes back for the next with each metre (drawing 11).
+                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (_pieceCm % 100 / 100f)));
+                break;
+            case BoxWork.Shear:
+                // The shear over the die: down and up as a new piece starts, the moment after a cut (its first 25 cm).
+                if (_pieceCm is > 0 and < ShearCm)
+                    model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * MathF.Sin(MathF.PI * _pieceCm / ShearCm)));
                 break;
             case BoxWork.Smoke when Fx.On:
                 var size = MathF.Max(0.12f, MathF.Min(box.Half.X, box.Half.Z) * 1.6f);
