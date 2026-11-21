@@ -745,6 +745,8 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the Building Station on the block system, Sean 2026-11-21: its Bay Block; the Core keeps the Building Station's row)
+        (null, null, Rec("Bay Block", 40, 1, m: [("steel", 420), ("rubber", 20)], p: [("Wiring Loom", 1)])),
     ];
 
     /// <summary>

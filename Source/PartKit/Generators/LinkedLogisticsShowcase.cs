@@ -46,13 +46,18 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
         // takes; at the works one set to Sub-jobs Linked, which takes them over the link.
         steps.Add("{ \"part\": \"Foundation\", \"on\": 3, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 15
         steps.Add("{ \"part\": \"Foundation\", \"on\": 15, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 16
-        steps.Add($"{{ \"part\": \"Building Station\", \"on\": 16, \"socket\": \"top00\", \"by\": \"-y.0.0\", \"config\": {{ \"bayWidth\": 4, \"bayDepth\": 3, \"bayHeight\": 3, \"subJobs\": {(yard ? 1 : 2)} }} }}"); // 17
+        steps.Add($"{{ \"part\": \"Building Station\", \"on\": 16, \"socket\": \"top00\", \"by\": \"-y.0.0\", \"config\": {{ \"subJobs\": {(yard ? 1 : 2)} }} }}"); // 17
         // Four Battery Packs (80 MJ) on the outer of two Foundations off the row's -x side by the Cargo Dock (6 m from the clamp: a landing hauler's feet clear them): the clamp charges a held ship from it (20 kW),
         // so an electric hauler comes back full enough for its next leg.
         steps.Add("{ \"part\": \"Foundation\", \"on\": 3, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 18
         steps.Add("{ \"part\": \"Foundation\", \"on\": 18, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 19
         foreach (var (on, socket) in new[] { (19, "top10"), (19, "top30"), (19, "top13"), (19, "top33") })
             steps.Add($"{{ \"part\": \"Battery Pack\", \"on\": {on}, \"socket\": \"{socket}\", \"by\": \"-y\" }}"); // 20 to 23 (half a metre apart: their trims don't meet)
+        // The station's bay (drawing 18): four Bay Blocks beside its Core, 4 x 4 m and, with no masts, 2 m high.
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 17, \"socket\": \"+x.1\", \"by\": \"-x\" }"); // 24
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 17, \"socket\": \"+x.2\", \"by\": \"-x\" }"); // 25
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 24, \"socket\": \"+x\", \"by\": \"-x\" }"); // 26
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 25, \"socket\": \"+x\", \"by\": \"-x\" }"); // 27
         var links = yard
             ? "{ \"type\": \"chute\", \"from\": 7, \"fromPort\": \"Chute out\", \"to\": 13, \"toPort\": \"Chute in\" }"
             : "{ \"type\": \"chute\", \"from\": 13, \"fromPort\": \"Chute out\", \"to\": 7, \"toPort\": \"Chute in\" }";
