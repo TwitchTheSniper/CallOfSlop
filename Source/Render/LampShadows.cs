@@ -31,11 +31,11 @@ public static unsafe class LampShadows
     /// <summary>The setting (Video: Lamp shadows Low off, Medium, High); <see cref="ForcedOff"/>: --no-lamp-shadows.</summary>
     public static bool On = true, ForcedOff;
 
-    /// <summary>Each face's size in texels and the slots in use (Medium 256, High 512; every lit lamp has a slot).</summary>
+    /// <summary>Each face's size in texels and the slots in use (Medium 256, High 384; every lit lamp has a slot: 32 of them, 24 or 54 MB).</summary>
     public static int Size = 256, Slots = 8;
 
     /// <summary>Slots drawn again at most a frame (six depth passes each).</summary>
-    public static int Budget = 3;
+    public static int Budget = 4;
 
     /// <summary>How far the maps hold distances (m): past <see cref="ConstructLamps.DarkRange"/>, so a lamp's range can change without drawing again.</summary>
     public const float Store = 16f;

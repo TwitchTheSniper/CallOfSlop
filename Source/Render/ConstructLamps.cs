@@ -27,8 +27,19 @@ public static class ConstructLamps
     /// <summary>How dark the scene is, 0 (day, or under a roof, where a lamp a metre from a wall would burn it white: the plain reach and range) to 1 (set each frame by the storm's glue, Program.Storm.cs).</summary>
     public static float Dark;
 
-    private const int Most = LightGrid.MaxDynamic + 1;
-    private static readonly float[] BestD = new float[Most];
+    // (twice the lights as candidates: the nearest are then put in order by whether the eye sees them, Seen)
+    private const int Most = LightGrid.MaxDynamic * 2 + 1;
+
+    /// <summary>
+    /// How much farther a lamp counts when a wall, a floor or a deck stands between it and the eye (m). Karl, 2026-11-21: a Zero
+    /// Day room went dark at one end or the other by where you stood, its deck and the one under it holding 30 to 60 lamps in reach
+    /// and only the nearest lit; the lamps of the room you are in now come first, and a lamp behind a wall still beats a far one in
+    /// the room (its light may come round a door).
+    /// </summary>
+    public const float HiddenPenalty = 8f;
+
+    private static readonly float[] BestD = new float[Most], BestKey = new float[Most];
+    private static readonly int[] Order = new int[Most];
     private static readonly Vector3[] BestPos = new Vector3[Most], BestCol = new Vector3[Most];
     // (who each kept lamp is, for its shadow: LampShadows.cs; sub -1: on a moving segment, unshadowed)
     private static readonly Construct?[] BestBody = new Construct?[Most];
@@ -45,7 +56,7 @@ public static class ConstructLamps
         LastLit = LastNear = 0;
         if (free <= 0)
             return;
-        var keep = Math.Min(free + 1, Most);
+        var keep = Math.Min(free * 2 + 1, Most);
         var n = 0;
         var dark = Math.Clamp(Dark, 0f, 1f);
         float reach = Reach + (DarkReach - Reach) * dark, range = Range + (DarkRange - Range) * dark, strength = Strength + (DarkStrength - Strength) * dark;
@@ -83,12 +94,28 @@ public static class ConstructLamps
             }
         }
         LastNear = n;
-        var lit = Math.Min(n, free);
-        for (var k = 0; k < lit; k++)
+        var cand = Math.Min(n, keep);
+        _frame++;
+        var rays = 0;
+        // The candidates in order of distance, a lamp the eye can't see counting HiddenPenalty farther (insertion sort: few, mostly in order).
+        for (var k = 0; k < cand; k++)
         {
+            BestKey[k] = BestD[k] + (SeenCached(world, eye, k, ref rays) ? 0f : HiddenPenalty);
+            var at = k;
+            while (at > 0 && BestKey[Order[at - 1]] > BestKey[k])
+            {
+                Order[at] = Order[at - 1];
+                at--;
+            }
+            Order[at] = k;
+        }
+        var lit = Math.Min(cand, free);
+        for (var j = 0; j < lit; j++)
+        {
+            var k = Order[j];
             var fade = Math.Clamp((reach - BestD[k]) / 3f, 0f, 1f);
-            if (n > free)
-                fade *= Math.Clamp((BestD[free] - BestD[k]) / 1.5f, 0f, 1f); // (the next one left out: a lamp handing over dims rather than pops)
+            if (cand > free)
+                fade *= Math.Clamp((BestKey[Order[free]] - BestKey[k]) / 1.5f, 0f, 1f); // (the next one left out: a lamp handing over dims rather than pops)
             if (fade > 0.01f)
             {
                 var light = LightGrid.MaxDynamic - LightGrid.DynamicFree;
@@ -100,6 +127,57 @@ public static class ConstructLamps
         }
         for (var k = 0; k < Most; k++)
             BestBody[k] = null; // (no references kept past the frame)
+    }
+
+    /// <summary>Rays a frame for <see cref="Seen"/>, nearest lamps first, and how many frames an answer is kept.</summary>
+    private const int RaysPerFrame = 8, SeenKeep = 12;
+
+    private struct SeenEntry
+    {
+        public int Body, Part, Sub, Frame;
+        public bool Seen;
+    }
+
+    private static readonly SeenEntry[] SeenCache = new SeenEntry[256]; // (open slots keyed by lamp; a clash takes the slot)
+    private static int _frame;
+
+    /// <summary>
+    /// <see cref="Seen"/> kept a few frames per lamp: a ship deck has 60 lamps in reach, and a ray each a frame cost 3 ms on the
+    /// cloud box. A lamp not tested yet counts as seen (by distance alone, as before) until its ray comes round.
+    /// </summary>
+    private static bool SeenCached(ConstructWorld world, Vector3 eye, int k, ref int rays)
+    {
+        if (BestSub[k] < 0 || BestBody[k] is not { } c)
+            return true;
+        var slot = (int)((uint)(c.Id * 73856093 ^ BestPart[k] * 19349663 ^ BestSub[k] * 83492791) % (uint)SeenCache.Length);
+        ref var e = ref SeenCache[slot];
+        var mine = e.Frame != 0 && e.Body == c.Id && e.Part == BestPart[k] && e.Sub == BestSub[k];
+        if (mine && _frame - e.Frame < SeenKeep)
+            return e.Seen;
+        if (rays >= RaysPerFrame)
+            return !mine || e.Seen;
+        rays++;
+        e = new SeenEntry { Body = c.Id, Part = BestPart[k], Sub = BestSub[k], Frame = _frame, Seen = Seen(world, eye, k) };
+        return e.Seen;
+    }
+
+    /// <summary>
+    /// Whether the eye sees candidate <paramref name="k"/>: a ray from the eye to the lamp through the construct world, which holds
+    /// the bodies at their tick pose, so both ends are moved there from the pose the lamp's body is drawn at (a ship at speed is
+    /// metres from its tick pose between ticks). A lamp on a moving segment, or within 0.6 m, counts as seen; glass doesn't hide one.
+    /// </summary>
+    private static bool Seen(ConstructWorld world, Vector3 eye, int k)
+    {
+        if (BestSub[k] < 0 || BestBody[k] is not { } c)
+            return true;
+        var inv = Quaternion.Conjugate(BestRot[k]);
+        var from = c.Pos + Vector3.Transform(Vector3.Transform(eye - BestBodyPos[k], inv), c.Rot);
+        var to = c.Pos + Vector3.Transform(BestLocal[k], c.Rot);
+        var dir = to - from;
+        var d = dir.Length();
+        if (d < 0.6f)
+            return true;
+        return !world.Raycast(from, dir / d, d - 0.35f, out var hit) || hit.Glass; // (0.35 m short: the lamp's own fitting)
     }
 
     /// <summary>Lamp <paramref name="sub"/> at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
