@@ -401,7 +401,7 @@ public sealed class VehicleGenJob
         var kitMs = 0.0;
         try
         {
-            if (VehicleRegistry.Find("IT Technical") is { } g && g.Seeds.Count > 0)
+            if (VehicleRegistry.Find("Militia Technical") is { } g && g.Seeds.Count > 0)
             {
                 var v = VehicleRegistry.Make(g, g.Seeds[0]);
                 var text = v.Text();
@@ -412,7 +412,7 @@ public sealed class VehicleGenJob
                 if (BriefsOn)
                     _ = VehicleBriefMake.ForGenerated(v, text, "Technical"); // (the behaviour brief's rays and the drive check it builds for: compiled before the first spawn)
             }
-            if (VehicleRegistry.Find("IT Box Truck") is { } grammar)
+            if (VehicleRegistry.Find("Militia Box Truck") is { } grammar)
                 ShapeGrammar.PlanOnly(grammar, 1); // (the shape grammar's planner: a plan, nothing built)
             kitMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
             var engine = Stopwatch.GetTimestamp();
@@ -585,11 +585,11 @@ public static class VehicleSpawnKit
     /// <summary>Seeds the server picks, and rerolls, are in 1..<see cref="MaxSeed"/> (committed seeds are small: they never need to avoid them).</summary>
     public const int MaxSeed = 999_999;
 
-    /// <summary>A generator by its style's and shape's names ("IT", "Box Truck"); any style, extras included.</summary>
+    /// <summary>A generator by its style's and shape's names ("Militia", "Box Truck"); any style, extras included.</summary>
     public static IVehicleGenerator? Find(string style, string shape) =>
         style.Length == 0 || shape.Length == 0 ? null : VehicleRegistry.Find($"{style} {shape}");
 
-    /// <summary>A generator's style and shape names, from a seed's blueprint name ("IT Box Truck 7"): false for anything else.</summary>
+    /// <summary>A generator's style and shape names, from a seed's blueprint name ("Militia Box Truck 7"): false for anything else.</summary>
     public static bool FromBlueprintName(string name, out IVehicleGenerator? g, out int seed)
     {
         g = null;

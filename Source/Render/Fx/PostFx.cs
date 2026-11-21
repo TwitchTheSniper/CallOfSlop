@@ -30,6 +30,10 @@ public static unsafe partial class PostFx
     /// <summary>Video > Ambient occlusion style: Classic (the grainy one before phase 4, cheaper) or Clean.</summary>
     public static bool AoClassic = true;
 
+    /// <summary>Classic AO's reach for each metre of the Shade reach slider: its old fixed 0.7 m at the default 0.8 (Karl 2026-11-21:
+    /// the default sliders give exactly the old picture).</summary>
+    private const float ClassicReach = 0.7f / 0.8f;
+
     public static bool Bloom => Level >= VideoLevel.Medium && BloomOn;
 
     public static bool Haze => Level >= VideoLevel.Medium && HazeOn;
@@ -575,7 +579,7 @@ public static unsafe partial class PostFx
             _aoC.Use();
             Native.glUniform4f(_lAoCProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
             Native.glUniform2f(_lAoCTexel, 1f / AoA.W, 1f / AoA.H);
-            Native.glUniform4f(_lAoCShape, AoRadius, AoStrength, 0f, 0f);
+            Native.glUniform4f(_lAoCShape, AoRadius * ClassicReach, AoStrength, 0f, 0f); // (the old shader's 0.7 m at the default slider)
             Bind(Unit0, _depthTex);
             Pass(AoA);
             _aoCBlur.Use();

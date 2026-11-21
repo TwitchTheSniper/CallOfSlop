@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docket Cab Wall 7",
+  "description": "A wall of the Docket's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Docket tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cdcac0",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        -11.85
+      ],
+      "max": [
+        3.125,
+        2.625,
+        -11.6
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.925,
+        0.128,
+        -11.862
+      ],
+      "max": [
+        3.075,
+        0.875,
+        -11.588
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        1.995,
+        0.125,
+        -11.725
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.125,
+        1.375,
+        -11.725
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        1.375,
+        -11.725
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        1.995,
+        2.625,
+        -11.725
+      ],
+      "dir": "+y"
+    }
+  ]
+}

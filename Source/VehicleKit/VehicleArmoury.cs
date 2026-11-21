@@ -260,7 +260,7 @@ public static class VehicleArmouryCli
         var shapes = shapeOnly != null ? [shapeOnly] : (string[])["Box Truck", "War Bus", "Flatbed Fort", "Gun Wagon", "Scrap Tanker"];
         try
         {
-            VehicleDiversity.Generate(VehicleRegistry.Find("IT Box Truck")!, 100); // (one throwaway, so the first seed timed doesn't carry the JIT)
+            VehicleDiversity.Generate(VehicleRegistry.Find("Militia Box Truck")!, 100); // (one throwaway, so the first seed timed doesn't carry the JIT)
         }
         catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
         {

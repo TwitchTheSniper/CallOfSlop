@@ -1,0 +1,305 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docket Tow Yoke",
+  "description": "The Docket's tow yoke: the heavy coupling pinned to the transom that grips the string's first cell, two red hydraulic jaws on a king pin. Shot off, the string drifts free.",
+  "group": "Ship",
+  "section": "Docket tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2500.0,
+  "health": 20000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3b3f44",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.125,
+        -0.125,
+        -0.095
+      ],
+      "max": [
+        0.875,
+        0.725,
+        1.375
+      ],
+      "color": "#3b3f44",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3342,
+        0.725,
+        0.42
+      ],
+      "max": [
+        0.0842,
+        1.075,
+        0.86
+      ],
+      "color": "#8e9296",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.0842,
+          0.725,
+          0.708
+        ],
+        [
+          0.0043,
+          0.725,
+          0.818
+        ],
+        [
+          -0.125,
+          0.725,
+          0.86
+        ],
+        [
+          -0.2543,
+          0.725,
+          0.818
+        ],
+        [
+          -0.3342,
+          0.725,
+          0.708
+        ],
+        [
+          -0.3342,
+          0.725,
+          0.572
+        ],
+        [
+          -0.2543,
+          0.725,
+          0.462
+        ],
+        [
+          -0.125,
+          0.725,
+          0.42
+        ],
+        [
+          0.0043,
+          0.725,
+          0.462
+        ],
+        [
+          0.0842,
+          0.725,
+          0.572
+        ],
+        [
+          0.0842,
+          1.075,
+          0.708
+        ],
+        [
+          0.0043,
+          1.075,
+          0.818
+        ],
+        [
+          -0.125,
+          1.075,
+          0.86
+        ],
+        [
+          -0.2543,
+          1.075,
+          0.818
+        ],
+        [
+          -0.3342,
+          1.075,
+          0.708
+        ],
+        [
+          -0.3342,
+          1.075,
+          0.572
+        ],
+        [
+          -0.2543,
+          1.075,
+          0.462
+        ],
+        [
+          -0.125,
+          1.075,
+          0.42
+        ],
+        [
+          0.0043,
+          1.075,
+          0.462
+        ],
+        [
+          0.0842,
+          1.075,
+          0.572
+        ]
+      ],
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.975,
+        0.729,
+        0.105
+      ],
+      "max": [
+        -0.375,
+        1.145,
+        1.175
+      ],
+      "color": "#c4362b",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -1.105,
+        0.825,
+        0.255
+      ],
+      "max": [
+        -0.985,
+        1.025,
+        1.025
+      ],
+      "color": "#8e9296",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.141,
+        -0.025,
+        0.005
+      ],
+      "max": [
+        -1.129,
+        0.625,
+        1.275
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.755,
+        0.075,
+        -0.091
+      ],
+      "max": [
+        -0.695,
+        0.675,
+        -0.035
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.125,
+        0.729,
+        0.105
+      ],
+      "max": [
+        0.725,
+        1.145,
+        1.175
+      ],
+      "color": "#c4362b",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        0.735,
+        0.825,
+        0.255
+      ],
+      "max": [
+        0.855,
+        1.025,
+        1.025
+      ],
+      "color": "#8e9296",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.879,
+        -0.025,
+        0.005
+      ],
+      "max": [
+        0.891,
+        0.625,
+        1.275
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.445,
+        0.075,
+        -0.091
+      ],
+      "max": [
+        0.505,
+        0.675,
+        -0.035
+      ],
+      "color": "#c0392b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -1.025,
+        -0.525,
+        0.005
+      ],
+      "max": [
+        0.775,
+        -0.125,
+        1.275
+      ],
+      "color": "#34383d",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        0.295,
+        -0.095
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        0.625,
+        1.375
+      ],
+      "dir": "+z"
+    }
+  ]
+}

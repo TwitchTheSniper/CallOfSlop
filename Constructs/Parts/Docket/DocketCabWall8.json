@@ -1,0 +1,262 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docket Cab Wall 8",
+  "description": "A wall of the Docket's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Docket tug",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#cdcac0",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.685,
+        0.125,
+        -7.525
+      ],
+      "max": [
+        -0.875,
+        2.625,
+        -7.275
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.875,
+        2.375,
+        -7.525
+      ],
+      "max": [
+        0.625,
+        2.625,
+        -7.275
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.635,
+        0.128,
+        -7.537
+      ],
+      "max": [
+        -0.925,
+        0.875,
+        -7.263
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.945,
+        0.127,
+        -7.545
+      ],
+      "max": [
+        -0.878,
+        2.445,
+        -7.255
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.628,
+        0.127,
+        -7.545
+      ],
+      "max": [
+        0.695,
+        2.445,
+        -7.255
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.875,
+        2.378,
+        -7.545
+      ],
+      "max": [
+        0.625,
+        2.445,
+        -7.255
+      ],
+      "color": "#f2c400",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.625,
+        0.125,
+        -7.525
+      ],
+      "max": [
+        3.435,
+        2.625,
+        -7.275
+      ],
+      "color": "#cdcac0",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.675,
+        0.128,
+        -7.537
+      ],
+      "max": [
+        3.385,
+        0.875,
+        -7.263
+      ],
+      "color": "#2a64a8",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorAft",
+      "at": [
+        -0.875,
+        1.25,
+        -7.4
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "shower",
+      "at": [
+        -2.825,
+        0.25,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "lifeSupport",
+      "at": [
+        2.725,
+        0.25,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "o2Tank0",
+      "at": [
+        1.875,
+        0.25,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "board",
+      "at": [
+        -1.925,
+        1.025,
+        -7.275
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "switchEng",
+      "at": [
+        0.775,
+        1.425,
+        -7.275
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -3.505,
+        1.375,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.255,
+        1.375,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -1.005,
+        1.375,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.755,
+        1.375,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -3.655,
+        0.755,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        3.405,
+        0.755,
+        -7.525
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -3.655,
+        1.825,
+        -7.275
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j7",
+      "at": [
+        3.405,
+        1.825,
+        -7.275
+      ],
+      "dir": "+z"
+    }
+  ]
+}

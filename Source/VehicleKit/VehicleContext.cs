@@ -189,7 +189,6 @@ public static class VehicleContext
     /// <summary>By style name (additive: Karl's styles are untouched).</summary>
     public static readonly Dictionary<string, ContextStyle> ByStyle = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["IT"] = new() { Strength = 0.7, Near = 100 }, // (procurement buys what the catalogue has)
     };
 
     public static ContextStyle Of(FactionStyle st) => ByStyle.GetValueOrDefault(st.Name) ?? Default;

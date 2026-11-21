@@ -251,13 +251,13 @@ A plan (in `Crew/Controllers.json` "kinds", or a power file's "plan"):
 
 ```json
 "Traders": { "start": 4000, "income": 30, "ships": 8, "groups": 3, "places": 2,
-             "fleet": { "cargo": ["IT Box Truck 1"], "escort": ["IT Technical 2"] },
+             "fleet": { "cargo": ["4x4 Truck"], "escort": ["Hood Gun Buggy"] },
              "missions": { "convoy": { "cargo": 1, "escorts": 2 } },
              "placeList": [ { "name": "Rime depot", "world": "Glacier", "at": [100, 0, -400] } ] }
 ```
 
 Roles are cargo, escort, raider and warship; missions convoy, raid, defend and patrol. A kind with no plan has no economy (fields and trades
-nothing). Bills today: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Raider Buggy 1 373, Raider Technical 1 371, Mercenary
+nothing; since the generated faction vehicles went, 2026-11-21, the placeholders are the hand-built 4x4 Truck for cargo and the Hood Gun Buggy for every armed role). Bills then: IT Box Truck 1 516 units (109 parts), IT Technical 2 403, Raider Buggy 1 373, Raider Technical 1 371, Mercenary
 Technical 2 393, Mercenary Gun Wagon 1 479.
 
 ### Saves and network

@@ -5,8 +5,6 @@
   "palettes": [
     {"style": "default", "wall": ["#7d8388"], "floor": "deck plate", "floorColour": "#6c7176", "crewFloor": "rubber matting", "serviceFloor": "grating",
      "frame": "#4a4f55", "trim": "#3e4349", "accent": "#5b6d7e", "hazard": "#d9b23a", "wear": 0.5, "lamp": "#ffe2a8"},
-    {"style": "IT", "wall": ["#d6dbde"], "floor": "rubber matting", "floorColour": "#3c4044", "crewFloor": "rubber matting", "serviceFloor": "painted grating",
-     "frame": "#8a9399", "trim": "#1f7f86", "accent": "#2f8fd0", "hazard": "#e8c21c", "wear": 0.12, "lamp": "#e6f0ff"},
     {"style": "Militia", "wall": ["#6f7a5e"], "floor": "deck plate", "floorColour": "#5a5e52", "crewFloor": "rubber matting", "serviceFloor": "grating",
      "frame": "#3d4433", "trim": "#2f3528", "accent": "#55603f", "hazard": "#d9b23a", "wear": 0.35, "lamp": "#f4f0e0"}
   ],
