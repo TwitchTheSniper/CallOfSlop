@@ -731,6 +731,8 @@ public sealed partial class ConstructPartDef
     public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
+    public byte BlockMaxSide = MachineBlocks.MaxSide; // ...a Core: its bed's longest side in cells ("maxSide", up to MachineBlocks.GridHalf: the Building Station's 60 m bay)
+    public short BlockMaxCells = MachineBlocks.MaxCells; // ...a Core: the cells its machine takes in, masts included ("maxCells", up to MachineBlocks.MaxCellsAny)
     public Vector3? BlockOrigin; // ...a Core's own cell's middle in its frame ("origin"; else its bounds' middle): the lattice the cells sit on
     public bool SeamSame; // "seamSame": its seam boxes hide on faces welded to a part of its own kind, no machine needed (a Rack Side's end posts: MachineBlocks.SeamSame)
     public bool IsTurntable; // "turntable": a junction of Roller Tile runs (RollerRuns.cs); a piece from one run goes on to another, turned to its way
@@ -747,6 +749,7 @@ public sealed partial class ConstructPartDef
     public bool HasSeams; // its "seam" boxes (a block machine's: MachineBlocks.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
+    public float StationLiftKg; // a Building Station ("storage.pieces.lift"): the heaviest piece its crane picks off a pick pad of its own (0: none; ConstructStation.PadPick)
     public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)

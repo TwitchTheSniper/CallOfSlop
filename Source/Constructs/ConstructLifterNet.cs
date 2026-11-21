@@ -306,8 +306,12 @@ public static partial class ConstructLifters
     /// <summary>Does a station's hold refuse this kind for its size (it goes to a pick pad instead)?</summary>
     public static bool TooBigForHold(Construct sc, int t, CStore tray, ConstructPartDef d) => ConstructConveyor.RackCheck(sc, t, tray, d) == 3;
 
-    /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of an arm that can fit for station <paramref name="t"/> now?</summary>
-    private static bool ServesPad(ConstructWorld world, Construct sc, int t, ushort padBody, int pad)
+    /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of the station's own crane, or of an arm that can fit for station <paramref name="t"/> now?</summary>
+    private static bool ServesPad(ConstructWorld world, Construct sc, int t, ushort padBody, int pad) =>
+        padBody == sc.Id && ConstructStation.IsOwnPad(sc, t, pad) || ArmServes(world, sc, t, padBody, pad); // (a pick pad under the station's own crane: ConstructStationPads.cs)
+
+    /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of a lifter arm that can fit for station <paramref name="t"/> now?</summary>
+    private static bool ArmServes(ConstructWorld world, Construct sc, int t, ushort padBody, int pad)
     {
         ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
@@ -441,11 +445,12 @@ public static partial class ConstructLifters
     /// </summary>
     public static int PickPadFor(ConstructWorld world, Construct sc, int t, ConstructPartDef d, int via)
     {
-        if (world.LiftBodies.Count == 0 || via < 0 || via >= sc.RouteCount)
+        if (world.LiftBodies.Count == 0 && !ConstructStation.HasOwnPad(sc, t) || via < 0 || via >= sc.RouteCount)
             return -1;
         for (var i = 0; i < sc.PartCount; i++)
             if (sc.DefOf(i).IsLayDownPad && !sc.Parts[i].Broken && world.StoreOf(sc, ConstructPads.Owner(sc, i)) is { } st && ConstructConveyor.RackCheck(sc, ConstructPads.Owner(sc, i), st, d) == 0
-                && WayReaches(sc, via, i) && ServesPad(world, sc, t, sc.Id, ConstructPads.Owner(sc, i)))
+                && WayReaches(sc, via, i) && ServesPad(world, sc, t, sc.Id, ConstructPads.Owner(sc, i))
+                && (d.Mass <= ConstructStation.LiftKg(sc, t) || !ConstructStation.IsOwnPad(sc, t, ConstructPads.Owner(sc, i)) || ArmServes(world, sc, t, sc.Id, ConstructPads.Owner(sc, i))))
                 return i;
         return -1;
     }
@@ -487,7 +492,7 @@ public static partial class ConstructLifters
     public static void PadClaims(ConstructWorld world, Construct sc, int t, CStore tray, StationJob j)
     {
         var want = 0;
-        if (j.State == StationState.Building && world.PadBodies.Count > 0 && world.LiftBodies.Count > 0 && j.KindN <= ClaimLeft.Length)
+        if (j.State == StationState.Building && (world.PadBodies.Count > 0 && world.LiftBodies.Count > 0 || ConstructStation.HasOwnPad(sc, t)) && j.KindN <= ClaimLeft.Length)
         {
             for (var q = 0; q < j.KindN; q++)
                 ClaimLeft[q] = PickPadHolds(world, sc, t, j.KindDef[q]); // (worked out once for all kinds: PadCounts)

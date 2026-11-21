@@ -704,9 +704,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   and the lobby state's frenzy-buffs flag (16) is no longer sent.
     // 420: the Extruder's Sheet profile (gap 3, 2026-11-21): a solid section 1 to 10 cm thick is now a valid key (Extrusion.MinSheetCm),
     //   so an older peer would refuse it; the Extruder's and Line Console's Profile gain a last option, Sheet.
-    // 421: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
+    // 421: a Building Station's own pick pads (Sean 2026-11-21, the Zero Day works): each carrying arm in CBodyKind.Station's arms says
+    //   whether it takes its part off a pick pad (u8) and, when it does, where the hook takes it (CmVec, the bay's frame).
+    // 422: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
     //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
-    public const ushort ProtocolVersion = 421;
+    public const ushort ProtocolVersion = 422;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
