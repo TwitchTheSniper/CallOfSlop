@@ -15,7 +15,18 @@ public static class ConstructPanelFormer
 {
     public const float OverMost = 1.25f; // a blank fits a panel up to this much over its flat size, each way (the trim is the offcut)
 
-    public const float PinTravel = 2; // m: how far a Bed Block's pins rise, the deepest panel (crown and rake) a bed forms
+    public const float PinTravel = 2; // m: how far a Bed Block's pins rise with no masts, and how much more each level of corner masts adds
+    public const int MastLevelsMost = 1; // levels of Mast Blocks on the bed's corners that deepen the stroke (4 m: past the deepest panel, HullLoft's 80 cm crown and 2 m rake)
+
+    /// <summary>
+    /// How deep a panel (crown and rake) the bed forms: <see cref="PinTravel"/>, and as much again for each level of Mast Blocks standing on
+    /// all four of the bed's corner cells (the shortest corner column counts, as an oven's masts do), up to <see cref="MastLevelsMost"/>.
+    /// </summary>
+    public static float PinDepth(Construct c, in CMachineAsm asm) => PinTravel * (1 + Math.Min(MastLevelsMost, MachineBlocks.CornerColumns(c, asm)));
+
+    /// <summary>A panel's depth: the shortest of its bounds' three sides.</summary>
+    public static float Depth(ConstructPartDef panel) =>
+        MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, MathF.Min(panel.BoundsMax.Y - panel.BoundsMin.Y, panel.BoundsMax.Z - panel.BoundsMin.Z));
     public const float SetSeconds = 4, PressSeconds = 8; // a stroke on the block bed: the pins set, then the upper platen presses
 
     /// <summary>
@@ -60,8 +71,7 @@ public static class ConstructPanelFormer
         {
             if (along <= 0 || !MachineBlocks.TryOf(c, part, out var asm) || asm.Out == ushort.MaxValue || asm.OutCells < nAcross)
                 return false;
-            var deep = MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, MathF.Min(panel.BoundsMax.Y - panel.BoundsMin.Y, panel.BoundsMax.Z - panel.BoundsMin.Z));
-            if (deep > PinTravel + 0.005f)
+            if (Depth(panel) > PinDepth(c, asm) + 0.005f)
                 return false;
         }
         return a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f;
@@ -85,9 +95,14 @@ public static class ConstructPanelFormer
                 return asm.Out == ushort.MaxValue
                     ? "no Out Table: weld one on the bed's far end, across from it"
                     : $"its Out Tables cover {asm.OutCells} of the bed's {nAcross} blocks across: weld more beside them";
-            var deep = MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, MathF.Min(panel.BoundsMax.Y - panel.BoundsMin.Y, panel.BoundsMax.Z - panel.BoundsMin.Z));
-            if (deep > PinTravel + 0.005f)
-                return $"panel too deep for the pins: {deep:0.##} m of crown and rake, the pins rise {PinTravel:0} m";
+            var deep = Depth(panel);
+            var reach = PinDepth(c, asm);
+            if (deep > reach + 0.005f)
+            {
+                return deep > PinTravel * (1 + MastLevelsMost) + 0.005f
+                    ? $"panel too deep for the pins: {deep:0.##} m of crown and rake, the deepest a bed forms is {PinTravel * (1 + MastLevelsMost):0} m"
+                    : $"panel too deep for the pins: {deep:0.##} m of crown and rake, the pins rise {reach:0} m: stand a Mast Block on each of the bed's four corners for {PinTravel * (1 + MastLevelsMost):0} m";
+            }
         }
         if (a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f)
             return null;

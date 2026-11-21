@@ -217,10 +217,11 @@ public sealed class PanelFormerParts : IPartGenerator
             p.Add(Seam(MachineLook.Work(MachineLook.D(mn, mx, MachineLook.Accent, "hazard paint"), "press", "-y", PressTravel), side)); // (crush: it never stops for anyone on the bed)
         }
         // The ram: a cylinder on the crosshead, its gland under it, the rod down to the platen.
-        p.Add(L([-0.22, H - 0.004, -0.22], [0.22, H + 0.52, 0.22], MachineLook.Base, shape: Cyl("+y", 16)));
-        p.Add(L([-0.25, H + 0.52, -0.25], [0.25, H + 0.58, 0.25], MachineLook.Steel, "steel", shape: Cyl("+y", 16)));
+        // (Under a Mast Block, which stands on the crosshead to deepen the stroke, the cylinder's head is the mast's: not drawn.)
+        p.Add(Seam(L([-0.22, H - 0.004, -0.22], [0.22, H + 0.52, 0.22], MachineLook.Base, shape: Cyl("+y", 16)), "+y"));
+        p.Add(Seam(L([-0.25, H + 0.52, -0.25], [0.25, H + 0.58, 0.25], MachineLook.Steel, "steel", shape: Cyl("+y", 16)), "+y"));
         foreach (var (x, z) in new[] { (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2) })
-            p.Add(L([x - 0.018, H + 0.58, z - 0.018], [x + 0.018, H + 0.61, z + 0.018], MachineLook.Base)); // (its head's bolts)
+            p.Add(Seam(L([x - 0.018, H + 0.58, z - 0.018], [x + 0.018, H + 0.61, z + 0.018], MachineLook.Base), "+y")); // (its head's bolts)
         p.Add(L([-0.14, PlatenHi + 0.006, -0.14], [0.14, Head + 0.004, 0.14], MachineLook.Base, shape: Cyl("+y", 14)));
         p.Add(MachineLook.Work(L([-0.09, PlatenHi - 0.005, -0.09], [0.09, PlatenHi + 1.05, 0.09], MachineLook.Steel, "steel", shape: Cyl("+y", 12)), "press", "-y", PressTravel));
         p.Add(L([0.3, H - 0.004, -0.04], [0.85, H + 0.06, 0.04], MachineLook.Steel, "steel")); // (its oil line along the crosshead)
@@ -278,6 +279,7 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Sock("+z", [0, 0.5, 1], "+z");
         p.Sock("-z", [0, 0.5, -1], "-z");
         p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 3.2, 0], "+y"); // (a Mast Block on each of the bed's corners: 2 m more stroke a level, ConstructPanelFormer.PinDepth)
         p.Stats(5200, 2600, 8, 20);
         p.Set(("machineBlock", Kw(("family", "panel"), ("role", "block"))), ("centreSockets", false), ("collider", "boxes"));
         return p;
