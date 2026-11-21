@@ -453,10 +453,12 @@ public static class ConstructAssembling
 
     private const int ArmDamage = 1; // per 60 Hz game tick in a working place (60 a second): its arm swinging and its weld (GameMachineHazards)
     private static int _family = -2;
+    private const int MostHazards = 60;
 
     /// <summary>
-    /// Server, 10 Hz (from ConstructBakeOven.Step, after it clears the list): a hazard box over each place an Assembler with a bed is building
-    /// on, from the bed's top to 1.9 m over it. Machines never stop for people: the kerb's stripes are the warning. Allocates nothing.
+    /// Server, 10 Hz (from ConstructBakeOven.Step, after the ovens' boxes): a hazard box over the bed of each Assembler building on one, from
+    /// the bed's top to 1.9 m over it (its arms reach any place: a part goes to the first free one). Machines never stop for people: the kerb's
+    /// stripes are the warning. At most <see cref="MostHazards"/> in the shared list. Allocates nothing.
     /// </summary>
     public static void AddHazards(ConstructWorld world)
     {
@@ -465,38 +467,23 @@ public static class ConstructAssembling
         if (_family < 0)
             return;
         var bodies = world.Bodies;
-        var now = ConstructConveyor.Clock;
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
             for (var a = 0; a < c.MachineAsmCount; a++)
             {
                 ref readonly var asm = ref c.MachineAsms[a];
-                if (asm.Family != _family || asm.W == 0 || asm.Core >= c.PartCount || world.Hazards.Count > 60)
+                if (asm.Family != _family || asm.W == 0 || asm.Core >= c.PartCount || world.Hazards.Count >= MostHazards)
                     continue;
                 ref readonly var p = ref c.Parts[asm.Core];
-                if (p.Broken || p.D.BlockRole != BlockRole.Core || world.StoreOf(c, asm.Core) is not { } st || !ProductionLines.Working(world, c, asm.Core, st, now))
+                if (p.Broken || p.D.BlockRole != BlockRole.Core || world.StoreOf(c, asm.Core) is not { } st || !st.Busy || st.Held || st.Blocked != 0
+                    || !ConstructRecycler.Powered(world, c, asm.Core) || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(c, asm.Core), out var toCore))
                     continue;
-                if (RecipeOf(AssemblingTable.Current, p, p.D) is not { } r)
-                    continue;
-                var fit = FitOf(c, asm.Core);
-                var places = fit.Places(r.Output, out var turned);
-                var n = Math.Min(fit.AtOnce(r.Output), Math.Min(places, 16));
-                if (n == 0 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(c, asm.Core), out var toCore))
-                    continue;
-                fit.Footprint(r.Output, out var fx, out var fz, out _);
-                if (turned)
-                    (fx, fz) = (fz, fx);
-                var across = Math.Max(1, asm.W / fx);
                 var o = p.D.BlockOrigin ?? Vector3.Zero;
+                var cell = p.D.BlockCell;
                 var bedTop = o.Y * 2f;
-                for (var k = 0; k < n; k++)
-                {
-                    int i = k % across, j = k / across;
-                    var x = o.X + (asm.X0 - 0.5f + i * fx) * fit.Cell;
-                    var z = o.Z + (asm.Z0 - 0.5f + j * fz) * fit.Cell;
-                    world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(x, bedTop, z), Max = new Vector3(x + fx * fit.Cell, bedTop + 1.9f, z + fz * fit.Cell), Damage = ArmDamage });
-                }
+                var min = new Vector3(o.X + (asm.X0 - 0.5f) * cell, bedTop, o.Z + (asm.Z0 - 0.5f) * cell);
+                world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = min + new Vector3(asm.W * cell, 1.9f, asm.L * cell), Damage = ArmDamage });
             }
         }
     }

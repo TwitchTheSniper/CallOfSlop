@@ -152,7 +152,7 @@ public sealed class AssemblerParts : IPartGenerator
         foreach (var z in new[] { 0.44, 0.6, 0.76 })
         {
             p.Add(L([-0.86, 0.78, z - 0.02], [-0.78, 0.8, z + 0.02], MachineLook.Steel, "steel")); // (a hook)
-            p.Add(L([-0.84, 0.62, z - 0.05], [-0.76, 0.76, z + 0.05], z < 0.5 ? MachineLook.Hot : MachineLook.Accent, shape: Cyl("+y", 8))); // (a spare head)
+            p.Add(L([-0.86, 0.64, z - 0.05], [-0.78, 0.78, z + 0.05], z < 0.5 ? MachineLook.Hot : MachineLook.Accent, shape: Cyl("+y", 8))); // (a spare head)
         }
         p.Add(L([-0.44, BedTop + 0.016, 0.08], [-0.06, BedTop + 0.024, 0.32], MachineLook.Ink)); // (the drip tray under the vice)
         // Lifting eyes on the cabinet's top corners.

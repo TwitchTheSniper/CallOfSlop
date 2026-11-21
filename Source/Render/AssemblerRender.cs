@@ -19,7 +19,7 @@ public static class AssemblerRender
     public const int MostDrawn = 16; // places drawn filling in (box by box); others show the part finished
     private const int MostBoxes = 400; // boxes of one part drawn filling in
     private static readonly Vector3 Yellow = new(0.94f, 0.76f, 0.1f), Dark = new(0.133f, 0.149f, 0.169f), Steel = new(0.6f, 0.63f, 0.66f),
-        Brown = new(0.42f, 0.29f, 0.21f), Cable = new(0.08f, 0.09f, 0.1f), Hot = new(1f, 0.62f, 0.25f), Lamp = new(0.35f, 1f, 0.4f), Amber = new(1f, 0.62f, 0.12f);
+        Base = new(0.133f, 0.149f, 0.169f), Body = new(0.42f, 0.29f, 0.21f), Cable = new(0.08f, 0.09f, 0.1f), Hot = new(1f, 0.62f, 0.25f), Hazard = new(0.12f, 0.12f, 0.12f), Lamp = new(0.35f, 1f, 0.4f), Amber = new(1f, 0.62f, 0.12f);
     private const float RailH = 0.36f, RailW = 0.24f;
 
     public static void Draw(Renderer gfx, ConstructWorld world)
@@ -73,7 +73,7 @@ public static class AssemblerRender
                 var at = e == 0 ? ra + 0.15f : rb - 0.15f;
                 var lo = Pt(alongX, at - 0.13f, 0.004f, side - 0.13f);
                 var hi = Pt(alongX, at + 0.13f, railY - 0.004f, side + 0.13f);
-                Box(gfx, frame, lo, hi, Brown); // (the leg)
+                Box(gfx, frame, lo, hi, Base); // (the leg)
                 Box(gfx, frame, Pt(alongX, at - 0.2f, 0.004f, side - 0.2f), Pt(alongX, at + 0.2f, 0.05f, side + 0.2f), Dark); // (its foot plate)
                 var lampOn = working ? MathF.Sin((float)now * MathF.Tau * 0.8f + s * 2 + e) > -0.4f : waiting;
                 var colour = working ? Lamp : Amber;
@@ -89,7 +89,14 @@ public static class AssemblerRender
         var turned = false;
         var places = def == null ? 0 : fit.Places(def, out turned);
         var atOnce = def == null ? 0 : fit.AtOnce(def);
-        var progress = working ? st.Progress / 100f : 0f;
+        // The job runs on between the progress byte's sends (about once a second) at its known rate: the recipe's seconds over the Overdrive speed.
+        if (st.Progress != st.DrawnProgress)
+        {
+            st.DrawnProgress = st.Progress;
+            st.DrawnAt = now;
+        }
+        var rate = recipe is { Seconds: > 0 } rr ? fit.Speed / rr.Seconds : 0f;
+        var progress = working ? MathF.Min(MathF.Min(1f, st.Progress / 100f + 0.15f), st.Progress / 100f + (float)(now - st.DrawnAt) * rate) : 0f; // (never more than a send's worth ahead)
         int fx = 1, fz = 1;
         if (def != null && places > 0)
         {
@@ -119,7 +126,7 @@ public static class AssemblerRender
                 var sz = Lerp(o.Z + half * 0.6f, pz, u);
                 var trench = alongX ? new Vector3(sx, bedTop, z0 + 0.25f) : new Vector3(x0 + 0.25f, bedTop, sz);
                 Box(gfx, frame, trench + new Vector3(-0.22f, 0.006f, -0.16f), trench + new Vector3(0.22f, 0.2f, 0.16f), Yellow);
-                Box(gfx, frame, trench + new Vector3(-0.18f, 0.2f, -0.12f), trench + new Vector3(0.18f, 0.3f, 0.12f), Brown); // (its kit tote)
+                Box(gfx, frame, trench + new Vector3(-0.18f, 0.2f, -0.12f), trench + new Vector3(0.18f, 0.3f, 0.12f), Body); // (its kit tote)
             }
             // The part filling in from its base, and the arm over it.
             var grown = progress < 0.14f ? 0f : Math.Clamp((progress - 0.14f) / 0.76f, 0f, 1f);
@@ -146,8 +153,8 @@ public static class AssemblerRender
     private static void Rail(Renderer gfx, Matrix4x4 frame, bool alongX, float a, float b, float side, float y)
     {
         const float fl = 0.05f, web = 0.06f;
-        Box(gfx, frame, Pt(alongX, a, y, side - RailW * 0.5f), Pt(alongX, b, y + fl, side + RailW * 0.5f), Brown);
-        Box(gfx, frame, Pt(alongX, a, y + RailH - fl, side - RailW * 0.5f), Pt(alongX, b, y + RailH, side + RailW * 0.5f), Brown);
+        Box(gfx, frame, Pt(alongX, a, y, side - RailW * 0.5f), Pt(alongX, b, y + fl, side + RailW * 0.5f), Base);
+        Box(gfx, frame, Pt(alongX, a, y + RailH - fl, side - RailW * 0.5f), Pt(alongX, b, y + RailH, side + RailW * 0.5f), Steel); // (the running top)
         Box(gfx, frame, Pt(alongX, a + 0.004f, y + fl, side - web * 0.5f), Pt(alongX, b - 0.004f, y + RailH - fl, side + web * 0.5f), Dark);
         Box(gfx, frame, Pt(alongX, a + 0.004f, y + RailH - 0.004f, side - RailW * 0.5f + 0.004f), Pt(alongX, b - 0.004f, y + RailH + 0.012f, side - RailW * 0.5f + 0.05f), Yellow);
     }
@@ -162,6 +169,8 @@ public static class AssemblerRender
         {
             var s = e == 0 ? sa : sb;
             Box(gfx, frame, Pt(alongX, at - 0.3f, y, s - 0.16f), Pt(alongX, at + 0.3f, y + 0.22f, s + 0.16f), Dark); // (an end truck on the rail)
+            var inward = e == 0 ? 1f : -1f;
+            Box(gfx, frame, Pt(alongX, at - 0.164f, y + 0.1f, s + inward * 0.16f), Pt(alongX, at + 0.164f, y + 0.36f, s + inward * 0.36f), Hazard); // (hazard paint on the bridge's end)
         }
         Box(gfx, frame, Pt(alongX, at + 0.164f, y + 0.12f, sa + 0.2f), Pt(alongX, at + 0.22f, y + 0.2f, sb - 0.2f), Cable); // (the cable chain)
     }
@@ -173,7 +182,13 @@ public static class AssemblerRender
     private static void Arm(Renderer gfx, Matrix4x4 frame, Vector3 place, Vector2 footprint, float top, float railY, double now, bool welding)
     {
         var y = railY + RailH + 0.01f;
-        Box(gfx, frame, place + new Vector3(-0.3f, y - place.Y + 0.4f, -0.3f), place + new Vector3(0.3f, y - place.Y + 0.62f, 0.3f), Brown); // (the trolley)
+        Box(gfx, frame, place + new Vector3(-0.3f, y - place.Y + 0.4f, -0.3f), place + new Vector3(0.3f, y - place.Y + 0.62f, 0.3f), Body); // (the trolley, in the Core's colour)
+        for (var e = -1; e <= 1; e += 2)
+        {
+            Box(gfx, frame, place + new Vector3(-0.304f, y - place.Y + 0.42f, e * 0.3f - 0.03f * e), place + new Vector3(0.304f, y - place.Y + 0.5f, e * 0.3f + 0.004f * e), Yellow); // (a hazard band at each end)
+            Box(gfx, frame, place + new Vector3(e * 0.31f - 0.03f, y - place.Y + 0.4f, -0.2f), place + new Vector3(e * 0.31f + 0.03f, y - place.Y + 0.5f, -0.1f), Steel); // (wheel caps)
+            Box(gfx, frame, place + new Vector3(e * 0.31f - 0.03f, y - place.Y + 0.4f, 0.1f), place + new Vector3(e * 0.31f + 0.03f, y - place.Y + 0.5f, 0.2f), Steel);
+        }
         var baseY = railY + 0.06f; // (the arm's base hangs under the bridge)
         Box(gfx, frame, place + new Vector3(-0.07f, baseY - place.Y, -0.07f), place + new Vector3(0.07f, y - place.Y + 0.4f, 0.07f), Dark); // (the hoist's drop)
         var turn = (float)(now * 0.9);
@@ -190,7 +205,8 @@ public static class AssemblerRender
         Beam(gfx, frame, shoulder, mid, 0.1f, Yellow);
         Beam(gfx, frame, mid, tool + new Vector3(0, 0.1f, 0), 0.08f, Yellow);
         Box(gfx, frame, mid - new Vector3(0.07f), mid + new Vector3(0.07f), Dark); // (the elbow)
-        Box(gfx, frame, tool + new Vector3(-0.05f, 0.02f, -0.05f), tool + new Vector3(0.05f, 0.14f, 0.05f), Dark); // (the wrist)
+        Box(gfx, frame, tool + new Vector3(-0.06f, 0.1f, -0.06f), tool + new Vector3(0.06f, 0.16f, 0.06f), Yellow); // (the wrist's collar)
+        Box(gfx, frame, tool + new Vector3(-0.045f, 0.02f, -0.045f), tool + new Vector3(0.045f, 0.1f, 0.045f), Steel); // (the tool head)
         var flare = welding && MathF.Sin((float)now * 23f) > -0.2f;
         gfx.Draw(Scale(tool + new Vector3(-0.03f, -0.04f, -0.03f), tool + new Vector3(0.03f, 0.02f, 0.03f)) * frame, flare ? Hot : Hot * 0.25f, mode: flare ? 2 : 0);
         if (flare)
