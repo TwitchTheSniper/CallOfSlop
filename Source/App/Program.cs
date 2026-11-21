@@ -451,6 +451,8 @@ public static unsafe partial class Program
             SunShadows.ForcedOff = true; // no ship shadows from the sun whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-dark-interiors", StringComparison.OrdinalIgnoreCase)))
             RoomShade.ForcedOff = true; // ship rooms keep the sky's light whatever the Video setting (a before picture)
+        if (args.Any(a => a.Equals("--no-lamp-shadows", StringComparison.OrdinalIgnoreCase)))
+            LampShadows.ForcedOff = true; // lamps shine through walls whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
             PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))
@@ -1172,12 +1174,14 @@ public static unsafe partial class Program
         {
             SunShadows.EndWorld();
             RoomShade.EndWorld();
+            LampShadows.EndWorld();
             return;
         }
         using (Perf.Measure(PerfArea.ConstructDraw))
         {
             SunShadows.Render(Gfx, g.Constructs, Gfx.CameraPosition, -new Vector3(inv.M31, inv.M32, inv.M33), g.TickAlpha, g.IsServer);
             RoomShade.Render(Gfx, g.Constructs, Gfx.CameraPosition, g.TickAlpha, g.IsServer); // shut rooms in ships lose the sky's light (Source/Render/RoomShade.cs)
+            LampShadows.Render(Gfx, g.Constructs, g.TickAlpha, g.IsServer); // walls keep the frame's lamps' light in (Source/Render/LampShadows.cs)
         }
     }
 

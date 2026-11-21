@@ -1023,6 +1023,8 @@ public sealed partial class Ui
                 }
             }
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
+            if (s.PostEffects > VideoLevel.Low && s.Bloom)
+                ImGui.SliderFloat("Bloom strength##post"u8, ref s.BloomStrength, 0.2f, 2f, "%.2fx"u8);
             ImGui.Checkbox("Contact shadows##post"u8, ref s.ContactShadows);
             ImGui.TextColored(Dim, "A soft shadow on the ground under ships and vehicles, darker the closer they sit."u8);
             VideoLevelRow("Sun shadows"u8, "sunshadows", ref s.SunShadows);
@@ -1031,6 +1033,8 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "How strong the sun is against the sky's light: higher gives harder light and deeper shade."u8);
             ImGui.Checkbox("Dark interiors"u8, ref s.DarkInteriors);
             ImGui.TextColored(Dim, "Rooms shut inside ships and vehicles get no daylight: dark but for their own lamps. A little slower."u8);
+            VideoLevelRow("Lamp shadows"u8, "lampshadows", ref s.LampShadows);
+            ImGui.TextColored(Dim, "Walls, floors and shut doors keep a lamp's light in its own room. Low: off. Medium: the 8 nearest lamps. High: 12, with sharper edges."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

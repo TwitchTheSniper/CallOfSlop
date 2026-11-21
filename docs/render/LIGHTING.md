@@ -124,8 +124,23 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   diagonal of a cube, each a 48 m square round the camera. `RoomShade(p, n)` in `Lighting.Glsl` gives the share of those
   directions in front of the surface (weighted by facing) that see past every box: it scales the ambient in every mode (and so
   `gLitAmb`: the rim light and sky reflections), down to 3% in a shut room; the share towards the sun scales the sun when the
-  sun's own map is off. The gun's pass reads it at the eye. Lamps (dynamic lights) are not shaded by it. Block fields `uRoomVP[8]`,
+  sun's own map is off. The gun's pass reads it at the eye. Lamps (dynamic lights) are not shaded by it: their own shadows are below. Block fields `uRoomVP[8]`,
   `uRoomC`, `uRoomQ` after `uKeyQ`. Settings > Video > Dark interiors; `--no-dark-interiors`.
+- **Lamp shadows** (`LampShadows.cs`, Karl 2026-11-21: lamps lit the room beyond their wall). Each lamp `ConstructLamps` lights
+  (the nearest few) is offered a slot; a slot holds six depth faces round the lamp (a 2D array of 16-bit depth on texture unit 22,
+  `uLampShadow`, six layers a slot), drawn from its own body's boxes and any body near it, in the body's own frame, holding the
+  distance from the lamp over 16 m (one minus that with reversed depth). The light's colour alpha in the block names its slot
+  (+1; `LightGrid.SetDynamicSlot`), the slot's turn is `uLampRows` (three rows a slot) and `uLampQ`/`uLampP` hold the bias, the
+  range and the soft step. `LampShadow(i, p, n)` in `Lighting.Glsl` (four filtered compares) scales that light in modes 1 and 5.
+  The faces are kept until the body is rebuilt, a door on it starts or settles (`Construct.DoorPoseStamp`), a near body moves
+  against it or the lamp changes slot; at most three slots are drawn a frame. A box holding the lamp's point, or a small box
+  within 16 cm of it, casts nothing (its own fixture). Lamps on moving segments stay unshadowed. Settings > Video > Lamp shadows
+  (Low off, Medium 8 lamps at 256, High 12 at 512); `--no-lamp-shadows`.
+- **Doors in the casters**: `SunShadows`' per-body box list (shared by the sun, the dark interiors and the lamps) is made again when
+  a door starts moving or settles, with a moving door left out, so an open door lets the sun, the sky and lamps through.
+- **Light strips light the room** (`ConstructLamps.StripLamps`, Karl 2026-11-21: a bright ceiling bar lit nothing round it). A part's
+  pale, flat, downward glowing boxes (thin in y, at least 0.12 m2 and 0.6 m long) are a row of lamps, one every 1.8 m, 20 cm under
+  the strip, lit unless the body's power is off.
 - `LitGrid(p, n)` reads the grid for a surface (C# twin: `LightBake.SampleSurface`): a little over half a cell along the
   normal, with the GPU's own trilinear filtering, unless the 8 cells round that point are a mixed block (one texel
   fetch of the low corner's flags). Then it filters them itself, leaving out cells inside boxes, cells behind the
