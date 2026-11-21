@@ -153,7 +153,7 @@ public static unsafe class SurfaceDetail
     private static Rgba Grime(float u, float v) =>
         new(Contrast(Fbm(u, v, 20, 2, 4, 61), 1.8f), Fbm(u, v, 10, 10, 3, 62), Contrast(Fbm(u, v, 3, 3, 4, 63), 1.4f), Fbm(u, v, 48, 48, 2, 64));
 
-    // Board-marked concrete, the Ministry's: 24 boards up a repeat (15 cm on a 3.6 m tile) in form panels 1.2 m square (three
+    // Board-marked concrete: 24 boards up a repeat (15 cm on a 3.6 m tile) in form panels 1.2 m square (three
     // across, eight boards up), their joints lined up: a fine ridge where two boards met, a stronger line where two panels did,
     // the wood's grain printed in, tie holes on a 60 cm grid and a few small blowholes.
     private static Rgba Board(float u, float v, float px)

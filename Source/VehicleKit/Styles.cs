@@ -4,17 +4,21 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Scam, British, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Raider, It, Salvager, Mercenary, Militia];
+
+    /// <summary>A style's dice name by its name (<see cref="FactionStyle.DiceName"/>); a name no style has is its own.</summary>
+    public static string DiceNameOf(string name) => All.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase))?.DiceName ?? name;
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland, Scam, British];
+    public static IReadOnlyList<FactionStyle> Shipped => [Raider, It, Salvager, Mercenary];
 
-    /// <summary>Bandits: rust and bare metal, nothing matches, spikes, war paint and trophies.</summary>
-    public static readonly FactionStyle Bandit = new()
+    /// <summary>Raider: rust and bare metal, nothing matches, spikes, war paint and trophies (the Raiders fly it: Crew/Factions/Raiders.json).</summary>
+    public static readonly FactionStyle Raider = new()
     {
-        Name = "Bandit",
+        Name = "Raider",
+        DiceName = "Bandit", // (its name before 2026-11-21: the committed vehicles keep their shapes)
         Extra = ["Car", "Buggy", "Monster Truck", "Wagon", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Bandit",
+        Group = "Raider",
         Palette = new()
         {
             ["rust"] = ["#7a4326", "#8c5230", "#6b3a22", "#94603a", "#5e3320"],
@@ -99,13 +103,13 @@ public static class Styles
             ["Buggy"] = [1, 3, 4], ["Monster Truck"] = [1, 2, 8], ["Wagon"] = [1, 5, 6], ["Giant Truck"] = [1, 6, 2], ["Car"] = [1, 7, 5], ["Box Truck"] = [1, 4, 2], ["War Bus"] = [1, 6, 10], ["Flatbed Fort"] = [1, 7, 9], ["Gun Wagon"] = [1, 8, 2], ["Scrap Tanker"] = [1, 10, 5],
             ["Drone"] = [1, 12, 5], ["Plane"] = [1, 2, 7], ["Helicopter"] = [1, 2, 10], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
-        LootTable = "bandit",
+        LootTable = "raider",
         Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
     };
 
     /// <summary>
     /// IT: office kit on wheels, and the first style everything is tried with (the Traders fly it: Crew/Factions/Traders.json). Beige
-    /// cases, carpet grey and corporate blue, a hazard stripe of lanyard yellow; dishes, switches, plants and fans where bandits hang
+    /// cases, carpet grey and corporate blue, a hazard stripe of lanyard yellow; dishes, switches, plants and fans where raiders hang
     /// skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms, neat plates. It is
     /// the tech style: what it carries and drops is electronics (Constructs/Loot.json "it"). (The IT Department's joke pieces, the
     /// CRT monitor, the cable reel and the plaque, went with the old factions, 2026-11-17.)
@@ -122,7 +126,7 @@ public static class Styles
             ["frame"] = ["#3b3f44"],
             ["war"] = ["#f2c400", "#0f7bd8", "#e6e2d6", "#c0392b"],            // (lanyard yellow, link blue, paper, the red of a failed build)
         },
-        Parts = new(Bandit.Parts)
+        Parts = new(Raider.Parts)
         {
             ["engine"] = ["Engine", "V8 Engine"],
             ["wall"] = ["Sheet Steel", "Plate Steel"],
@@ -150,8 +154,8 @@ public static class Styles
             ["layout stationery cupboard"] = ["fax", "computer", "crates", "shelf"],
             ["layout break room"] = ["bench", "computer", "fax", "crates"],
         },
-        LightGear = Bandit.LightGear,
-        HeavyGear = Bandit.HeavyGear,
+        LightGear = Raider.LightGear,
+        HeavyGear = Raider.HeavyGear,
         // The weapon slot: named for the trade.
         Weapons =
         [
@@ -172,30 +176,30 @@ public static class Styles
     };
 
     /// <summary>
-    /// Scam: grey and teal haulers dressed in loudhailers and phone masts (the Salvagers fly it: Crew/Factions/Salvagers.json). Cubicle grey
-    /// and corporate teal, with yellow, hot pink and green where bandits use war paint; hubcaps, cones and loudhailers where bandits hang
-    /// skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of crates and shelves round the water cooler. They run on
-    /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the salvage trade. (The
-    /// scam call centre's pieces, the phones, headsets, signs, prize wheel and cubicles, went with the old factions, 2026-11-17.)
+    /// Salvager: worn grey haulers in olive and rust brown, picked out in hazard yellow and orange (the Salvagers fly it: Crew/Factions/Salvagers.json);
+    /// hubcaps, cones and loudhailers where raiders hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of crates and shelves
+    /// round the water cooler. They strip other people's batteries, so that is what they carry (Constructs/Loot.json "salvager"). Guns are named for
+    /// the salvage trade.
     /// </summary>
-    public static readonly FactionStyle Scam = new()
+    public static readonly FactionStyle Salvager = new()
     {
-        Name = "Scam",
+        Name = "Salvager",
+        DiceName = "Scam", // (its name before 2026-11-21: the committed vehicles keep their shapes)
         Extra = ["Car", "Buggy", "Concept", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Scam",
+        Group = "Salvager",
         Palette = new()
         {
-            ["rust"] = ["#9aa0a6", "#8a9096", "#b0b4b8", "#7d8a92"],            // (the panels: cubicle fabric greys)
-            ["body"] = ["#1a8c8c", "#14706f", "#1a8c8c", "#f2f2ee"],            // (corporate teal, a brochure's white)
+            ["rust"] = ["#9aa0a6", "#8a9096", "#b0b4b8", "#7d8a92"],            // (the panels: weathered greys)
+            ["body"] = ["#6b6f5e", "#8c5a2e", "#6b6f5e", "#d8d2c0"],            // (olive drab, rust brown, primer)
             ["frame"] = ["#2a2c30"],
-            ["war"] = ["#ffd400", "#ff3d8b", "#21c45a", "#f2f2ee"],             // (WINNER yellow, hot pink, dollar green)
+            ["war"] = ["#e0b81c", "#d9822b", "#2b2b2b", "#d8d2c0"],             // (hazard yellow, salvage orange, black, primer)
         },
         Parts = new(It.Parts)
         {
             ["engine"] = ["Engine", "V8 Engine", "Engine"],
             ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
             ["fender"] = ["Arch Fender", "Wide Arch Fender"], // (phase 9a: as before: slim arches alone made two committed Technicals read as a box from above)
-            ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/CallCentre)
+            ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/Signals)
             ["trophy"] = ["Hubcap Plate", "Loudhailer", "Traffic Cone", "Hubcap Plate", "Loudhailer"],
             ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer"],                                       // (on the roofs: Vehicle.Kit)
             ["gear"] = ["Traffic Cone", "Loudhailer", "Hubcap Plate"],                                   // (on open beds and porches)
@@ -205,8 +209,8 @@ public static class Styles
             ["layout office"] = ["computer", "crates", "rack", "shelf"],
             ["layout break room"] = ["cooler", "bench", "crates", "shelf"],
         },
-        LightGear = Bandit.LightGear,
-        HeavyGear = Bandit.HeavyGear,
+        LightGear = Raider.LightGear,
+        HeavyGear = Raider.HeavyGear,
         Weapons =
         [
             new("Scrapper", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
@@ -221,90 +225,29 @@ public static class Styles
             ["Gun Wagon"] = [1, 6, 5], ["Scrap Tanker"] = [1, 6, 2], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
             ["Drone"] = [4, 7, 10], ["Plane"] = [5, 10, 12], ["Helicopter"] = [6, 9, 12], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
-        LootTable = "scam",
+        LootTable = "salvager",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 1, ["slits"] = 0 },
     };
 
     /// <summary>
-    /// Highland: long-bonneted haulers in tartan reds and hunting greens (the Traders fly it beside IT: Crew/Factions/Traders.json). Blue and
-    /// white on the hoods, war paint in red and yellow; dishes and phone masts on the roofs, cones and gnomes where bandits hang skulls,
-    /// iron spikes down the flanks, and rooms of bunks, crates and shelves. Plates a little crooked (well loved, not neglected). Guns are
-    /// named for the haul. (The Clan MacSlop's dressing, its Pipe Box and pipe tunes, went with the old factions, 2026-11-17.)
+    /// Mercenary: red and dark green, mostly understated (the Mercenaries fly it: Crew/Factions/Mercenaries.json). Red on the panels with the odd
+    /// dark green, cream or grey; dark green, cream and navy on the hoods; war paint in blue, red, white and yellow. Loudhailers and dishes on the
+    /// roofs, jerry cans, traffic cones and garden gnomes where raiders hang skulls, iron spikes down the flanks, and rooms of benches, shelves and
+    /// crates. Plates neat but not new. Only this style builds the Double Decker (<see cref="FactionStyle.Extra"/>). Guns are named for the contract.
     /// </summary>
-    public static readonly FactionStyle Highland = new()
+    public static readonly FactionStyle Mercenary = new()
     {
-        Name = "Highland",
-        Extra = ["Car", "Monster Truck", "Wagon", "Concept", "Giant Truck", "Drone", "Plane", "Helicopter"], // (phase 8a: its archetypes' cars; 8b: buggies, monster trucks, wagons, concepts, giants)
-        Group = "Highland",
+        Name = "Mercenary",
+        DiceName = "British", // (its name before 2026-11-21: the committed vehicles keep their shapes)
+        Group = "Mercenary",
         Palette = new()
         {
-            ["rust"] = ["#7b1e22", "#1f4a2e", "#23395d", "#5b4a2f", "#8c2a2a", "#2b5a3a"], // (the panels: clan tartan reds, hunting green, navy, tweed)
-            ["body"] = ["#005eb8", "#0b4f9c", "#e8e4d8", "#005eb8"],                     // (blue and white)
-            ["frame"] = ["#2a2622", "#33302b"],
-            ["war"] = ["#c8102e", "#f2c400", "#e8e4d8", "#1b1714"],                      // (red, yellow, white, black)
-        },
-        Parts = new(Bandit.Parts)
-        {
-            ["engine"] = ["Engine", "V8 Engine", "V8 Engine"],
-            ["wall"] = ["Sheet Steel", "Plate Steel", "Tread Plate", "Plate Steel"],
-            ["deck"] = ["Plate Steel", "Tread Plate", "Wood Planks"],
-            ["bed"] = ["Wood Planks", "Plate Steel", "Tread Plate"],
-            ["hood"] = ["Long Hood", "Bull Hood", "Snub Hood", "Long Hood"],
-            ["nose"] = ["Bull Bar", "Bar Grille", "Ram Plow", "none"],
-            ["fender"] = ["Wide Arch Fender"], // (phase 9a: a long bonnet's broad flowing wings)
-            ["cab"] = ["Roll Cage", "Tin Roof Cab", "Chop Top Cab", "Windscreen Frame", "Roll Bar"],
-            ["spike"] = ["Iron Spike", "Iron Spike", "Long Iron Spike"],
-            ["trophy"] = ["Traffic Cone", "Garden Gnome", "Satellite Dish", "Traffic Cone"],
-            ["mast"] = ["Satellite Dish", "Phone Mast", "Satellite Dish"],                               // (on the roofs: Vehicle.Kit)
-            ["gear"] = ["Traffic Cone", "Garden Gnome", "Network Switch"],                               // (on open beds and porches)
-            ["layout"] = ["bunkhouse", "store", "mess hall", "kit room"],
-            ["layout bunkhouse"] = ["bunk", "bunk", "shelf", "crates"],
-            ["layout store"] = ["crates", "crates", "shelf", "bench"],
-            ["layout mess hall"] = ["bench", "bench", "crates", "shelf"],
-            ["layout kit room"] = ["workbench", "shelf", "crates", "crates"],
-        },
-        LightGear = Bandit.LightGear,
-        HeavyGear = Bandit.HeavyGear,
-        // The weapon slot: named for the haul.
-        Weapons =
-        [
-            new("Long Haul", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
-            new("Small Print", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
-            new("Express Delivery", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Express Delivery", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
-            new("Hook and Line", "Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,action:Harpoon Trigger}"),
-        ],
-        // (--sweep-vehicle's most different passing seeds in this style's dice)
-        Seeds = new()
-        {
-            ["Technical"] = [1, 14, 10, 11, 5], ["Monster Truck"] = [1, 3, 2], ["Wagon"] = [2, 3, 7], ["Concept"] = [1, 2, 4], ["Giant Truck"] = [1, 8, 5], ["Car"] = [1, 2, 5], ["Box Truck"] = [1, 3, 7], ["War Bus"] = [1, 7, 6], ["Flatbed Fort"] = [1, 8, 9],
-            ["Gun Wagon"] = [1, 6, 2], ["Scrap Tanker"] = [1, 2, 7], ["Tanker Rig"] = [1, 13], ["Fuel Trailer"] = [1, 2],
-            ["Drone"] = [2, 6, 9], ["Plane"] = [4, 8, 11], ["Helicopter"] = [4, 7, 11], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
-        },
-        LootTable = "highland",
-        Limits = new() { ["crookedPlates"] = 3, ["tiltDegrees"] = 3, ["thirdSeat"] = 0.7, ["slits"] = 0.2 },
-    };
-
-    /// <summary>
-    /// British: bus red and racing green, mostly understated (the Mercenaries fly it: Crew/Factions/Mercenaries.json). Bus red on the
-    /// panels with the odd racing green, cream or rain-washed grey; racing green, cream and navy on the hoods; war paint in blue, red,
-    /// white and yellow. Loudhailers and dishes on the roofs, jerry cans, traffic cones and garden gnomes where bandits hang skulls, iron
-    /// spikes down the flanks, and rooms of benches, shelves and crates. Plates neat but not new. Only this style builds the Double Decker
-    /// (<see cref="FactionStyle.Extra"/>). Guns are named for the contract. (The Ministry of Slop's dressing, the flags, beacons, brollies,
-    /// teapots, queue posts, pillar boxes, phone boxes and the tea urn, went with the old factions, 2026-11-17.)
-    /// </summary>
-    public static readonly FactionStyle British = new()
-    {
-        Name = "British",
-        Group = "British",
-        Palette = new()
-        {
-            ["rust"] = ["#c8102e", "#b5121b", "#c8102e", "#be0f2a", "#c8102e", "#b5121b", "#1f4a32", "#e8dfc8", "#7d8186"], // (the panels: bus red, mostly; a racing green, cream, the grey of a wet Tuesday)
-            ["body"] = ["#004225", "#e8dfc8", "#1d2b4f", "#004225"],                                // (racing green, cream, navy)
+            ["rust"] = ["#c8102e", "#b5121b", "#c8102e", "#be0f2a", "#c8102e", "#b5121b", "#1f4a32", "#e8dfc8", "#7d8186"], // (the panels: red, mostly; a dark green, cream, grey)
+            ["body"] = ["#004225", "#e8dfc8", "#1d2b4f", "#004225"],                                // (dark green, cream, navy)
             ["frame"] = ["#1b1c1e", "#2b2a28"],
             ["war"] = ["#012169", "#c8102e", "#f2f0e8", "#f2c400"],                                // (blue, red, white, yellow)
         },
-        Parts = new(Bandit.Parts)
+        Parts = new(Raider.Parts)
         {
             ["engine"] = ["Engine", "Engine", "V8 Engine"],
             ["wall"] = ["Sheet Steel", "Plate Steel", "Plate Steel"],
@@ -327,8 +270,8 @@ public static class Styles
             ["layout store"] = ["crates", "shelf", "crates", "bench"],
             ["layout bunkroom"] = ["bunk", "bunk", "shelf", "crates"],
         },
-        LightGear = Bandit.LightGear,
-        HeavyGear = Bandit.HeavyGear,
+        LightGear = Raider.LightGear,
+        HeavyGear = Raider.HeavyGear,
         // The weapon slot: named for the contract.
         Weapons =
         [
@@ -346,7 +289,7 @@ public static class Styles
             ["Gun Wagon"] = [1, 4, 5], ["Scrap Tanker"] = [1, 8, 2], ["Tanker Rig"] = [1, 19], ["Fuel Trailer"] = [1, 3], ["Double Decker"] = [1, 4, 9],
             ["Drone"] = [2, 4, 11], ["Plane"] = [1, 3, 8], ["Helicopter"] = [2, 5, 9], // (aircraft, docs/vehiclekit/AIRCRAFT.md "In the game": passing seeds of a 12-seed sweep, a different three per style)
         },
-        LootTable = "british",
+        LootTable = "mercenary",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 0.8, ["slits"] = 0.1 },
     };
 
@@ -362,7 +305,7 @@ public static class Styles
             ["frame"] = ["#26282a"],
             ["war"] = ["#c8c4b0"],
         },
-        Parts = new(Bandit.Parts)
+        Parts = new(Raider.Parts)
         {
             ["wheel"] = ["Off-Road Wheel"],
             ["engine"] = ["V8 Engine"],
@@ -370,14 +313,14 @@ public static class Styles
             ["bed"] = ["Plate Steel", "Tread Plate"],
             ["sheet"] = ["Plate Steel"],
             ["wall"] = ["Plate Steel"],
-            ["spike"] = ["none"], // (body styles phase 4: nothing hung down the sides, where bandits hang spikes)
+            ["spike"] = ["none"], // (body styles phase 4: nothing hung down the sides, where raiders hang spikes)
             ["fender"] = ["Wide Arch Fender"], // (phase 9a: always armoured over the wheels, never bare)
-            ["trophy"] = [HullLoft.JerryCan], // (jerry cans where bandits hang skulls and hubcaps: HullLoft.Trim.cs)
+            ["trophy"] = [HullLoft.JerryCan], // (jerry cans where raiders hang skulls and hubcaps: HullLoft.Trim.cs)
         },
-        LightGear = Bandit.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
-        HeavyGear = Bandit.HeavyGear,
+        LightGear = Raider.LightGear, // (a style needs gear recipes since PickGear: without them nothing of Militia's generated)
+        HeavyGear = Raider.HeavyGear,
         Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag}")],
-        LootTable = "bandit",
+        LootTable = "raider",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
         Seeds = new() { ["Ore Hauler"] = [1] }, // (the factory kit's ore loop spawns seed 1; the shape's other seeds were never committed)
         Committed = ["Ore Hauler", "Excavator"], // (it ships no vehicles, but the factory kit's ore loop spawns these by name: --gen-vehicles compares them)

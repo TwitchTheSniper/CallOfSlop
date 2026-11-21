@@ -234,6 +234,7 @@ public sealed partial class Ui : IDisposable
         if (!arena)
         {
             DrawShellPanel(game, pos, size); // a worn-in robot shell's parts, bottom left (UiShellPanel.cs)
+            DrawSeatPanel(game, pos, size); // the seat's controls by area, bottom right while seated (UiSeatPanel.cs)
             DrawVitalsPanel(game, pos, size); // a person's health and air, bottom left, in place of the health bar (UiVitalsPanel.cs)
             DrawShellWear(game); // a worn robot shell's glitches, static and brown-outs (UiShellWear.cs)
             DrawShellLink(game); // the robot shell chair's helmet coming down, black and its lamps (UiShellLink.cs)
@@ -298,7 +299,7 @@ public sealed partial class Ui : IDisposable
 
         // ---- Bottom-right: weapon + ammo ---------------------------------------------------
         var w = game.Active;
-        ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 40 * _scale), ImGuiCond.Always, new float2(1, 1));
+        ImGui.SetNextWindowPos(new float2(_seatPanelLeft > 0 ? _seatPanelLeft - 12 * _scale : pos.X + size.X - pad, pos.Y + size.Y - pad - 40 * _scale), ImGuiCond.Always, new float2(1, 1)); // (seated: beside the seat controls panel, UiSeatPanel.cs)
         if (ImGui.Begin("##ammo"u8, Overlay))
         {
             if (!arena)

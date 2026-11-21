@@ -385,8 +385,8 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   `ToConsole` and a console's Send deal them to its Panel Formers; a blueprint's bill line is
   `{"step": n, "panel": "Formed Panel (hood 160x150 c14 r18 t20 steel)", "count": 2}` (`BlueprintScript.BillPanel`). `--bill NAME` prints
   them under "Formed panels" with the smallest former that takes each, its cost and seconds. Ten vehicles, kinds without a recipe before
-  and after: Swing Arm Buggy 0, 0; Bandit Plane 7 8, 8; Highland Monster Truck 2 8, 4; IT Technical 5 9, 5; British Wagon 2 18, 4;
-  Highland Flatbed Fort 9 18, 6; IT Helicopter 8 3, 3; Highland Giant Truck 5 38, 12; IT War Bus 1 33, 4; Titan Walker Fitted 0, 0.
+  and after: Swing Arm Buggy 0, 0; Raider Plane 7 8, 8; Monster Truck 2 8, 4; IT Technical 5 9, 5; Mercenary Wagon 2 18, 4;
+  Flatbed Fort 9 18, 6; IT Helicopter 8 3, 3; Giant Truck 5 38, 12; IT War Bus 1 33, 4; Titan Walker Fitted 0, 0.
   What is left: the weapon builder's gun parts and the flight surfaces and rotors.
 - **Wire (protocol 253) and saves.** A named order's shape byte is 255 (`WorkOrders.NamedShape`): then its material, count, made and
   the name as text (a save: count, made, name). A panel in a Full, a rack's kinds or a conveyor's riders goes as a lofted part does
@@ -484,7 +484,7 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 ## Machine tiers
 
-Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
 (Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
 
@@ -1469,7 +1469,7 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   full until what it holds is fitted". After Release early or Cancel, parts already riding still land in the hold.
   The fit from the parts alone compares a part's sides with the bay's, longest first. Costing is budgeted by time (1 ms a tick) and a
   step is never split: of the shipped blueprints a 64 m bay doesn't refuse from their parts, the longest slices were 4.7 ms (IT War
-  Bus 1, 212 steps), 4.1 ms (Highland Giant Truck 5, 228 steps, the largest that fits) and 3.0 ms (Production Showcase, 442 steps)
+  Bus 1, 212 steps), 4.1 ms (a Giant Truck, 228 steps, the largest that fits) and 3.0 ms (Production Showcase, 442 steps)
   (`station costtop`).
   Measured on the 2-core box (window tool, `station` verbs): the Buggy from Start to drivable 77 s; the station's step while building
   19 ms over 2,075 ticks, 48 KB in all (orders and fits; nothing in an idle tick: the step isn't entered); server tick p99 0.98 ms and

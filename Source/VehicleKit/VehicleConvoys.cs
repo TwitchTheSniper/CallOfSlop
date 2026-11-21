@@ -43,7 +43,7 @@ public static class VehicleConvoys
     public static ConvoyPlan Plan(FactionStyle st, int count, int tier, int seed, IReadOnlyList<string>? mix = null)
     {
         tier = Math.Clamp(tier, 1, VehicleRoles.MaxTier);
-        var d = Dice.Of(seed).Fork("convoy " + st.Name);
+        var d = Dice.Of(seed).Fork("convoy " + st.DiceName);
         var fielded = VehicleRoles.FieldedBy(st);
         bool Fields(string role) => VehicleRoles.Find(role) is { } r && VehicleRoles.ShapesFor(st, r).Count > 0;
         string Weighted(IEnumerable<(string Role, double W)> list, Dice dd)
@@ -217,7 +217,7 @@ public static class VehicleFamiliesCli
                     (st, role) = (s, VehicleRoles.Find(text[(prefix.Length + 1)..]));
         if (st == null || role == null)
         {
-            Console.WriteLine($"--family \"{text}\": a style and a role, \"Bandit raider\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
+            Console.WriteLine($"--family \"{text}\": a style and a role, \"Raider raider\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
             return 1;
         }
         var seed = int.TryParse(Flag(args, "--seed"), out var sd) ? Math.Max(1, sd) : 1;

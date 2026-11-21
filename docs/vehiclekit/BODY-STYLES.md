@@ -33,7 +33,7 @@ History: sections 3 and 6 ("The part", "Salvage").
 A **language** (`BodyLanguage`, `Source/VehicleKit/VehicleBodyLanguage.cs`) is a named section shape with its height range, brow and tail rake, and its low
 and narrow variants: the nine base languages are slab, ledge, pod, van, bus, coach, boat, cabin and armour, and the archetypes add their own
 (`VehicleArchetypes.cs`). Each style's row (`BodyStyleRule.ByStyle`) weighs its languages, sets its facets (smooth styles 8 to 12 a side, faceted ones as written),
-and whether it mixes languages along a vehicle (Bandit: cobbled from wrecks). The language is rolled on the body layer's own fork (`BodyLook.Roll`), so nothing else
+and whether it mixes languages along a vehicle (Raider: cobbled from wrecks). The language is rolled on the body layer's own fork (`BodyLook.Roll`), so nothing else
 of a seed moves. A **scale class** (`BodyScale`: compact, standard, heavy, giant) holds the size limits (half width, height, bay lengths, overhang, ride bands),
 and a **roofline** (`Roofline`: plain, stepped, crowned, sagged, raked, sloped, kick-up, tapered, sheer, and the archetypes' fastback, wedge and level) bends the
 height and width along the room. The style's row also sets height, overhang share, brow and tail lengths, door sides and paint runs (`PaintRuns`: a room is
@@ -64,7 +64,7 @@ archetype by `Vehicle.UseArchetype`). `VehicleChecks.View` looks from the seated
 ### Faction exterior: trim and fittings
 
 `HullLoft.Trim.cs` and `Vehicle.Trim.cs`. A **trim** is cut for one side of one lofted bay from the bay's own sections and stands on its waist socket, placed
-last: Bandit plates and cage bars, Militia slats and bins, IT fairings, Scam signboards, Highland clinker planks, British livery. A **fitting** is a single
+last: Raider plates and cage bars, Militia slats and bins, IT fairings, Salvager signboards clinker planks, Mercenary livery. A **fitting** is a single
 piece sized from the cab or hood: a roof sign, a destination board, a radome, a mascot, a chrome grille, a roof basket, Militia's jerry cans. Both go on with
 `clear: true` and are refused when they would draw into anything (`DrawnClash`). The style row's `Trims`, `TrimMix`, `TrimShare` and `Decos` choose them; the
 sets are the faction's sub-styles. `--no-trim` leaves them out. History: section 10 (and 19, "Fenders, rear doors, Militia", for Militia's current sets).
@@ -83,7 +83,7 @@ archetype may name its own body plans (`BodyArchetype.Bodies`). Militia builds n
 
 - **Linings** (`HullLoft.Lining.cs`): a ground-floor bay's key takes a last word `i` (kind, mode, window), and the bay draws the lining itself, so a room has no
   more parts. Modes: `f` follows the hull's rows, or an inset lining with upright walls and a flat ceiling where that stays within 12 cm of the hull. Each
-  faction has its kind (Bandit's bare ribs and weld beads, Militia olive panels, IT pale panels, Scam purple and gold, Highland planks, British moquette and
+  faction has its kind (Raider's bare ribs and weld beads, Militia olive panels, IT pale panels, Salvager purple and gold planks, Mercenary moquette and
   panelling). Upper saloons and open decks are lined, closed ends too (`FollowEnd`); caged rooms, pods and balconies are not. History: sections 13 ("The lining")
   and 15.
 - **Furnishing** (`Vehicle.Rooms.cs`: `Interior`, `Furnish`, `OnFurniture`; `Vehicle.Spaces.cs`: `FurnishUpper`): role gear first (ammo containers, bunks,
@@ -109,29 +109,29 @@ front term and `VehicleIdentity`'s section term. "Measuring it again" below list
 
 ## 5. Open questions for the user
 
-**Answered (the user, 2026-11-07):** 1. smooth for IT, British and future high-tech (8 to 12 facets a side), flat-faceted for Bandit and Militia (3 to 6); 2. Bandits
+**Answered (the user, 2026-11-07):** 1. smooth for IT, Mercenary and future high-tech (8 to 12 facets a side), flat-faceted for Raider and Militia (3 to 6); 2. Raiders
 mix their shapes per bay, other styles keep one per vehicle; 3. rooms may be non-rectangular inside (later); 4. cabs may merge into the body for some styles (later);
 5. kit 5 becomes the default and every committed faction vehicle is made again by it; 6. a salvaged bay is the shaped section itself, buildable on players' own
-vehicles; 7 to 9: new spaces, no room size limit, Bandit paint by rows (later); 10. the front profile joins diversity and identity at a moderate weight. The
+vehicles; 7 to 9: new spaces, no room size limit, Raider paint by rows (later); 10. the front profile joins diversity and identity at a moderate weight. The
 questions as they were asked:
 
-1. **How far toward smooth?** The prototype's sections are 3 to 6 facets a side (visibly faceted, like the parts around them). Should IT, British and high-tech bodies
+1. **How far toward smooth?** The prototype's sections are 3 to 6 facets a side (visibly faceted, like the parts around them). Should IT, Mercenary and high-tech bodies
    be smoother (8 to 12 facets: costs boxes and drawing) or stay faceted to match the rest of the game?
-2. **Which styles get which language?** The table in D is a first guess: is the Call Centre a site cabin? Is Highland boat-like? Should Bandits mix languages on one
+2. **Which styles get which language?** The table in D is a first guess: is the Salvagers a site cabin? Should Raiders mix languages on one
    vehicle (one side a ledge, patched slabs), or keep one per vehicle?
 3. **May rooms be non-rectangular inside?** Tapered or wedge rooms mean furniture against sloped walls and a narrower aisle; kick-ups mean a step inside. Yes, or
    keep the inside a 2 m box and shape only the outside?
 4. **Cabs: inside the body or separate?** The silhouette rules say a cab is its own mass. Lofting the cab in the body's language could merge them (a bus front, a
-   capsule): is that allowed for some styles (British bus, IT), or must every cab stand apart?
+   capsule): is that allowed for some styles (Mercenary bus, IT), or must every cab stand apart?
 5. **Kit 5 for every new seed, and regenerate the committed ones?** Continuity isn't required; regenerating changes all 123 committed files (they stay kit 1 today).
    Or keep the committed seeds as they are and make kit 5 current only for new and dynamic seeds?
 6. **Run-time parts in players' hands.** A salvaged lofted bay is a part no file has: should players be able to build with it (it goes in the inventory under its
    key, as an Ordnance Rack's shape does), or should salvage break it into steel?
 7. **Which new spaces matter most?** Crew cab, caged room, split rooms, raised deck, low-slung hull, tower, side pods, double deck: which three first?
 8. **Proportions: how big may a room get?** Width up to 2.6 m changes how vehicles sit on roads and in convoys; height over 2.5 m changes stability. Limits?
-9. **Paint.** Should Bandit wear keep turning most panels one colour (it hides the shapes), or should rust follow rows and edges so the form reads?
+9. **Paint.** Should Raider wear keep turning most panels one colour (it hides the shapes), or should rust follow rows and edges so the form reads?
 10. **The metric.** Should the front profile join the diversity distance with its own weight (say 0.15, taken from parts), and should "reads as its style" include the
-    section (a pod on a Bandit truck would then lose identity)?
+    section (a pod on a Raider truck would then lose identity)?
 
 ## 8. Adding an archetype as data
 
@@ -163,16 +163,16 @@ and five recipe shapes, run once on the merge base and once on the branch.
 --body-report all --seeds 4              # kit 5, current (and coplanar pairs inside lofted bays)
 --diversity-style IT --seeds 6 --no-sections   # the old distance and identity, to compare
 --sweep-vehicle "IT War Bus" --seeds 6 --kit 5
---vehicle-shots "Bandit War Bus 2" --kit 5 --language cabin   (xvfb)
+--vehicle-shots "Raider War Bus 2" --kit 5 --language cabin   (xvfb)
 --vehicle-shots "IT War Bus 2" --roofline crowned --scale heavy   (xvfb; phase 2: one line, one class)
 --body-report all --seeds 6 --no-trim    # phase 4: without the faction trim and fittings (the room exteriors matrix, relief by band)
 --body-report all --seeds 6 --no-spaces  # phase 5: without cages, storeys and pods (or --no-cages, --no-uppers, --no-pods)
---sweep-vehicle "British Double Decker" --seeds 10   # phase 5: the grammar's double deck
+--sweep-vehicle "Mercenary Double Decker" --seeds 10   # phase 5: the grammar's double deck
 --body-report all --seeds 6 --no-balconies   # phase 6: without balconies (or --no-asym: no lopsided vehicles)
 --body-report all --seeds 6 --no-archetypes  # phase 8a: the styles' own bodies, without archetypes
 --sweep-vehicle "IT Box Truck" --seeds 6 --archetype "rigid box"   # phase 8a: one archetype on every seed that can take it
---sweep-vehicle "Bandit Car" --seeds 8   # phase 8a part 2: the car body
---sweep-vehicle "Bandit Monster Truck" --seeds 8   # phase 8b: a new shape (Buggy, Monster Truck, Wagon, Concept, Giant Truck)
+--sweep-vehicle "Raider Car" --seeds 8   # phase 8a part 2: the car body
+--sweep-vehicle "Raider Monster Truck" --seeds 8   # phase 8b: a new shape (Buggy, Monster Truck, Wagon, Concept, Giant Truck)
 --body-report all --seeds 6 --no-interiors   # phase 7a: without linings, dashes, role gear and props (and phase 7b's windows, phase 7c's ends, storeys, consoles and wheels)
 --body-report all --seeds 4 --no-cab-styles   # phase 9a: without the factions' cab sub-styles
 --armoury-report --seeds 6 --check   # phase 9b: the full check over the five recipe shapes in every style

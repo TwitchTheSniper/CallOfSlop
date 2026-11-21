@@ -60,7 +60,7 @@ Mass and health are the same on both (the blank's metal). Revs on a crank of the
 | Large `pipe80 720x720x1200` | 1 plain | 11200 kg, 965097 hp | 16000 kW, 109135 N m | 16000 kW, 109135 N m | 300, 1400, 2000 |
 | Large `pipe80 720x720x1920` | 1.6 long | 17920 kg, 1544156 hp | 16000 kW, 174616 N m | 25600 kW, 279385 N m | 188, 875, 1250 |
 
-The built engine agrees: a kit Bandit Car's Small B6 (six catalogue cylinders, two Small Carburettors), its cylinders swapped for
+The built engine agrees: a kit Raider Car's Small B6 (six catalogue cylinders, two Small Carburettors), its cylinders swapped for
 `pipe10 45x45x120` (`--speed-test`, main / branch): 240 / 240 kW, 733 / 733 N m (the carburettors now feed 62.5%: starved by power);
 with carburettors pressed to `hollow 55x55x25`: 240 / **384 kW, 1173 N m** (6 x 64 kW; 458 N m x 1.6^2), 3693 rpm at the limiter in
 top gear on both, 22.3 m/s (grip).
@@ -89,8 +89,8 @@ top gear on both, 22.3 m/s (grip).
 No built sample has a starved bank. Planning cost: main 2,640 plans in 4.4 ms (warm request 15 ms); branch about 7,400 in 18 to 27 ms
 (request 42 to 49 ms), yielding every 1,024 plans as before.
 
-`--speed-test` of two shipped generators with the kit's engine (`--gen-vehicle NAME --seed 1 --engine-tier T --top-speed V`): Bandit
-Car 1 tier 3 (1819 kg, 529 kW, 22.2 m/s, grip) and tier 5 (1694 kg, 596 kW, 24.8 m/s, grip); Bandit Box Truck 1 tier 3 (2745 kg, 529
+`--speed-test` of two shipped generators with the kit's engine (`--gen-vehicle NAME --seed 1 --engine-tier T --top-speed V`): Raider
+Car 1 tier 3 (1819 kg, 529 kW, 22.2 m/s, grip) and tier 5 (1694 kg, 596 kW, 24.8 m/s, grip); Raider Box Truck 1 tier 3 (2745 kg, 529
 kW, 22.2 m/s) and tier 5 (2726 kg, 611 kW, 22.2 m/s): **identical on main and the branch**, since a vehicle's request keeps the Small
 limiter. `--gen-vehicles`: 238, all identical to the committed files; nothing to regenerate.
 

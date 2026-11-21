@@ -90,10 +90,10 @@ design plandrag 20,0.5 35,0.5; design plandrag 0.5,20 0.5,30; design plan; desig
   (the cylinder thicker than plain: 74 to 51 kW each, as the notes' section 5 says). Health: the key's piece reads 1113 hp on this build
   (`--press-part ... pipe15 60x60x105`), the notes' main figure, so nothing is held down on load. **Misfire not read**: the blueprint has
   no tank, and "no fuel" comes before the starved or misfire text.
-- **`--speed-test`** on two shipped generators' vehicles with the kit's tier-5 engine (`--gen-vehicle "Bandit Car" --seed 1 --engine-tier 5
-  --top-speed 33`, `"Bandit Box Truck" ... --top-speed 30`): `1694 kg, 596 kW, top 24.8 m/s, grip` and `2726 kg, 611 kW, 22.2 m/s,
+- **`--speed-test`** on two shipped generators' vehicles with the kit's tier-5 engine (`--gen-vehicle "Raider Car" --seed 1 --engine-tier 5
+  --top-speed 33`, `"Raider Box Truck" ... --top-speed 30`): `1694 kg, 596 kW, top 24.8 m/s, grip` and `2726 kg, 611 kW, 22.2 m/s,
   power against drag`: the notes' figures.
-- **A bored engine running in a window: not verified.** The Bandit Car above (V6 596 kW, pressed `pipe` cylinders) spawned
+- **A bored engine running in a window: not verified.** The Raider Car above (V6 596 kW, pressed `pipe` cylinders) spawned
   (`--blueprint "VT Bored Car"`): `engines: 0 V6 596 kW, frugal ... fault None; running False`. Getting a driver into its Seat failed
   three ways (`near Seat 1.5; aim Seat; use`, `aim Seat; use`, `from Seat 0,0.6,1.2; use`; `seat NAME` finds only the colony's buildings),
   so `key MoveForward` never reached the engine: `running False, rpm now 0` throughout. A window-tool gap, not a game fault as far as seen.

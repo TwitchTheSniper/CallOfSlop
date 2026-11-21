@@ -64,4 +64,4 @@ the shared 2-core box: this branch changes no ray or gathering code. `--gen-vehi
 ## Not done
 
 - No crew act works the arm: a crew can drive it (the seat is the drive seat) but not dig.
-- No shipped style other than Militia builds it (any style can by name: `--gen-vehicle "Bandit Excavator"`).
+- No shipped style other than Militia builds it (any style can by name: `--gen-vehicle "Raider Excavator"`).
