@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Bag-up Tables",
+  "description": "Bag-up tables after the trade arches: birch tops where shoppers tie their loads down.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 1620.0,
+  "health": 5944,
+  "armour": 40,
+  "material": "steel",
+  "color": "#d6bf96",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -28.125,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        -26.125,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -17.125,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        -15.125,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -6.125,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        -4.125,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.875,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        6.875,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        15.875,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        17.875,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        26.875,
+        -0.125,
+        -1.125
+      ],
+      "max": [
+        28.875,
+        0.775,
+        -0.125
+      ],
+      "color": "#d6bf96",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -27.125,
+        -0.125,
+        -0.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -5.125,
+        -0.125,
+        -0.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        16.875,
+        -0.125,
+        -0.625
+      ],
+      "dir": "-y"
+    }
+  ]
+}

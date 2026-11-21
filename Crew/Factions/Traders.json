@@ -3,8 +3,7 @@
   "name": "Traders",
   "about": "Haulers and merchants: they run from a fight and only fight back when cornered.",
   "styles": [
-    "IT",
-    "Highland"
+    "IT"
   ],
   "modules": {
     "tags": {

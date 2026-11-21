@@ -1,0 +1,285 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L1 Floor 2-4",
+  "description": "A floor of Hexkey Orbital, the Traders' flat-pack store: a white slab, its floor laid on top.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 24840.0,
+  "health": 33808,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -11.125,
+        -2.425,
+        -12.125
+      ],
+      "max": [
+        11.875,
+        -2.125,
+        11.875
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -11.121,
+        -2.129,
+        -12.121
+      ],
+      "max": [
+        11.871,
+        -2.113,
+        11.871
+      ],
+      "color": "#9fa4a1",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.925,
+        2.455,
+        -7.205
+      ],
+      "max": [
+        -1.325,
+        2.563,
+        -7.045
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        9.075,
+        2.455,
+        -7.205
+      ],
+      "max": [
+        10.675,
+        2.563,
+        -7.045
+      ],
+      "color": "#ffd8a0",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -11.125,
+        -2.119,
+        -7.2
+      ],
+      "max": [
+        11.875,
+        -2.103,
+        -7.05
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.755,
+        -2.1095,
+        -7.375
+      ],
+      "max": [
+        5.995,
+        -2.0935,
+        -6.875
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        6.105,
+        -2.1095,
+        -7.625
+      ],
+      "max": [
+        6.345,
+        -2.0935,
+        -6.625
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        6.455,
+        -2.1095,
+        -7.875
+      ],
+      "max": [
+        6.695,
+        -2.0935,
+        -6.375
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -2.245,
+        -2.1095,
+        -7.375
+      ],
+      "max": [
+        -2.005,
+        -2.0935,
+        -6.875
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.895,
+        -2.1095,
+        -7.625
+      ],
+      "max": [
+        -1.655,
+        -2.0935,
+        -6.625
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.545,
+        -2.1095,
+        -7.875
+      ],
+      "max": [
+        -1.305,
+        -2.0935,
+        -6.375
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -10.245,
+        -2.1095,
+        -7.375
+      ],
+      "max": [
+        -10.005,
+        -2.0935,
+        -6.875
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.895,
+        -2.1095,
+        -7.625
+      ],
+      "max": [
+        -9.655,
+        -2.0935,
+        -6.625
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -9.545,
+        -2.1095,
+        -7.875
+      ],
+      "max": [
+        -9.305,
+        -2.0935,
+        -6.375
+      ],
+      "color": "#b8643f",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -11.125,
+        -2.275,
+        -3.675
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.375,
+        -2.275,
+        -12.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        11.875,
+        -2.275,
+        -0.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.375,
+        -2.425,
+        11.725
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.375,
+        -2.125,
+        11.725
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -2.125,
+        -2.125,
+        -3.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

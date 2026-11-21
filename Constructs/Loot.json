@@ -25,7 +25,7 @@
         {"part": "Wiring Loom", "weight": 5, "count": [1, 3]}
       ]
     },
-    "bandit": {
+    "raider": {
       "maxTier": 2,
       "rarities": ["common", "uncommon"],
       "rolls": [1, 3],
@@ -112,29 +112,7 @@
         {"part": "Server Rack", "weight": 2, "count": [1, 1]}
       ]
     },
-    "highland": {
-      "maxTier": 2,
-      "rarities": ["common", "uncommon"],
-      "rolls": [1, 3],
-      "empty": 0.15,
-      "items": [
-        {"part": "Gear Set", "weight": 8, "count": [1, 3]},
-        {"part": "Bearing", "weight": 6, "count": [1, 3]},
-        {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
-        {"part": "Piston Set", "weight": 3, "count": [1, 1]},
-        {"part": "Small Fuel Tank", "weight": 4, "count": [1, 1]},
-        {"part": "Lamp", "weight": 3, "count": [1, 2]},
-        {"part": "Ammo Box", "weight": 8, "count": [1, 2]},
-        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
-        {"part": "Farmhand Pump Receiver", "weight": 4, "count": [1, 1]},
-        {"part": "Courier Carbine Receiver", "weight": 3, "count": [1, 1]},
-        {"part": "Stub Barrel", "weight": 4, "count": [1, 2]},
-        {"part": "Box Magazine", "weight": 4, "count": [1, 2]},
-        {"part": "Flash Hider", "weight": 2, "count": [1, 1]},
-        {"part": "Wire Stock", "weight": 3, "count": [1, 1]}
-      ]
-    },
-    "british": {
+    "mercenary": {
       "maxTier": 2,
       "rarities": ["common", "uncommon"],
       "rolls": [1, 3],
@@ -155,7 +133,7 @@
         {"part": "Flash Hider", "weight": 2, "count": [1, 1]}
       ]
     },
-    "scam": {
+    "salvager": {
       "maxTier": 3,
       "rarities": ["common", "uncommon"],
       "rolls": [1, 3],
@@ -175,7 +153,7 @@
         {"part": "Red Dot", "weight": 2, "count": [1, 1]}
       ]
     },
-    "bandit 3": {
+    "raider 3": {
       "maxTier": 3,
       "rarities": ["common", "uncommon", "rare"],
       "rolls": [2, 4],
@@ -215,7 +193,7 @@
         {"part": "AND Gate", "weight": 2, "count": [1, 2]}
       ]
     },
-    "bandit 4": {
+    "raider 4": {
       "maxTier": 4,
       "rarities": ["common", "uncommon", "rare", "epic"],
       "rolls": [3, 5],
@@ -337,71 +315,7 @@
         {"part": "Jetpack", "weight": 1, "count": [1, 1]}
       ]
     },
-    "highland 3": {
-      "maxTier": 3,
-      "rarities": ["common", "uncommon", "rare"],
-      "rolls": [2, 4],
-      "empty": 0.05,
-      "items": [
-        {"part": "Gear Set", "weight": 8, "count": [1, 3]},
-        {"part": "Bearing", "weight": 6, "count": [1, 3]},
-        {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
-        {"part": "Piston Set", "weight": 3, "count": [1, 1]},
-        {"part": "Small Fuel Tank", "weight": 4, "count": [1, 1]},
-        {"part": "Lamp", "weight": 3, "count": [1, 2]},
-        {"part": "Ammo Box", "weight": 8, "count": [1, 2]},
-        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
-        {"part": "Farmhand Pump Receiver", "weight": 4, "count": [1, 1]},
-        {"part": "Courier Carbine Receiver", "weight": 3, "count": [1, 1]},
-        {"part": "Stub Barrel", "weight": 4, "count": [1, 2]},
-        {"part": "Box Magazine", "weight": 4, "count": [1, 2]},
-        {"part": "Flash Hider", "weight": 2, "count": [1, 1]},
-        {"part": "Wire Stock", "weight": 3, "count": [1, 1]},
-        {"part": "Circuit Board", "weight": 5, "count": [1, 3]},
-        {"part": "Control Unit", "weight": 4, "count": [1, 2]},
-        {"part": "Field Coil", "weight": 3, "count": [1, 2]},
-        {"part": "Battery", "weight": 3, "count": [1, 1]},
-        {"part": "Proximity Sensor", "weight": 2, "count": [1, 1]},
-        {"part": "Radio Homer", "weight": 1, "count": [1, 1]},
-        {"part": "AND Gate", "weight": 2, "count": [1, 2]}
-      ]
-    },
-    "highland 4": {
-      "maxTier": 4,
-      "rarities": ["common", "uncommon", "rare", "epic"],
-      "rolls": [3, 5],
-      "empty": 0,
-      "items": [
-        {"part": "Gear Set", "weight": 8, "count": [1, 3]},
-        {"part": "Bearing", "weight": 6, "count": [1, 3]},
-        {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
-        {"part": "Piston Set", "weight": 3, "count": [1, 1]},
-        {"part": "Small Fuel Tank", "weight": 4, "count": [1, 1]},
-        {"part": "Lamp", "weight": 3, "count": [1, 2]},
-        {"part": "Ammo Box", "weight": 8, "count": [1, 2]},
-        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
-        {"part": "Farmhand Pump Receiver", "weight": 4, "count": [1, 1]},
-        {"part": "Courier Carbine Receiver", "weight": 3, "count": [1, 1]},
-        {"part": "Stub Barrel", "weight": 4, "count": [1, 2]},
-        {"part": "Box Magazine", "weight": 4, "count": [1, 2]},
-        {"part": "Flash Hider", "weight": 2, "count": [1, 1]},
-        {"part": "Wire Stock", "weight": 3, "count": [1, 1]},
-        {"part": "Circuit Board", "weight": 5, "count": [1, 3]},
-        {"part": "Control Unit", "weight": 4, "count": [1, 2]},
-        {"part": "Field Coil", "weight": 3, "count": [1, 2]},
-        {"part": "Battery", "weight": 3, "count": [1, 1]},
-        {"part": "Proximity Sensor", "weight": 2, "count": [1, 1]},
-        {"part": "Radio Homer", "weight": 1, "count": [1, 1]},
-        {"part": "AND Gate", "weight": 2, "count": [1, 2]},
-        {"part": "GPS Unit", "weight": 3, "count": [1, 1]},
-        {"part": "Seeker Head", "weight": 2, "count": [1, 1]},
-        {"part": "Heat Seeker", "weight": 1, "count": [1, 1]},
-        {"part": "Gimbal Mount", "weight": 2, "count": [1, 1]},
-        {"part": "Levite Core", "weight": 1, "count": [1, 1]},
-        {"part": "Jetpack", "weight": 1, "count": [1, 1]}
-      ]
-    },
-    "british 3": {
+    "mercenary 3": {
       "maxTier": 3,
       "rarities": ["common", "uncommon", "rare"],
       "rolls": [2, 4],
@@ -429,7 +343,7 @@
         {"part": "AND Gate", "weight": 2, "count": [1, 2]}
       ]
     },
-    "british 4": {
+    "mercenary 4": {
       "maxTier": 4,
       "rarities": ["common", "uncommon", "rare", "epic"],
       "rolls": [3, 5],
@@ -463,7 +377,7 @@
         {"part": "Jetpack", "weight": 1, "count": [1, 1]}
       ]
     },
-    "scam 3": {
+    "salvager 3": {
       "maxTier": 3,
       "rarities": ["common", "uncommon", "rare"],
       "rolls": [2, 4],
@@ -488,7 +402,7 @@
         {"part": "AND Gate", "weight": 2, "count": [1, 2]}
       ]
     },
-    "scam 4": {
+    "salvager 4": {
       "maxTier": 4,
       "rarities": ["common", "uncommon", "rare", "epic"],
       "rolls": [3, 5],

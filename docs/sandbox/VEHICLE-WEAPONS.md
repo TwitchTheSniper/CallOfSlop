@@ -74,7 +74,7 @@ started): **4x4 shells are over the 8 ms tick** and the gunsmith still offers th
 its gun the gunsmith's for a mount rated as a 0.8 to 16 t vehicle's at tier 1 to 4, or a quarter of the time one of the style's own. It is in
 `VehicleRegistry.Everywhere` (every shipped style ships seeds 1 and 2; roles and convoys never draw it), so creative gets a tile per style and "New seed" makes another.
 Checked as a towed thing (its build, faces, how it stands); a 1 m base plate with an outrigger plate on each side (without them heavy guns tipped it 8 to 17 degrees).
-`--sweep-vehicle` Bandit and Highland Turret: 8 of 8 seeds pass each. Its blueprint files (10, seeds 1 and 2 of five styles) come with the next regeneration of `Constructs/Blueprints`.
+`--sweep-vehicle` Raider Turret: 8 of 8 seeds pass each. Its blueprint files (10, seeds 1 and 2 of five styles) come with the next regeneration of `Constructs/Blueprints`.
 
 ## Phase 3 (2026-11-10): landing ticks, missile launchers
 
@@ -131,8 +131,8 @@ the gunsmith's draw for every vehicle; roles don't pick by tag yet, so "by role"
 - `--gen-vehicles` after these: 139 of 193 committed vehicles differ (regenerate after merge), none fail.
 - **Spawn safety** (VEHICLEKIT.md, "Dynamic spawn"): a late slice is dropped but the game never runs beside the kit's thread; the gunsmith's test fits run in the warm-up.
 - **Seeds that failed** (`--sweep-vehicle --seeds 20`, each 19 of 20): a lofted bay refused for a hidden box 9.95 mm thick (the loft's own test was 9.9 mm, the loader's 10 mm on
-  the rounded numbers: `HullLoft.Builder.Thin` now drops boxes and facets under it); Highland War Bus 16, two 1 m panniers on bays under a metre whose faceted shells met
-  (the overlap test now uses the drawn bounds, `Vehicle.PannierClear`): passes. Bandit Box Truck 3 still fails the driver's view: its armoured chop-top cab, with or without
+  the rounded numbers: `HullLoft.Builder.Thin` now drops boxes and facets under it); a War Bus, two 1 m panniers on bays under a metre whose faceted shells met
+  (the overlap test now uses the drawn bounds, `Vehicle.PannierClear`): passes. Raider Box Truck 3 still fails the driver's view: its armoured chop-top cab, with or without
   the gunsmith (body styles' to fix).
 - **Generation time** (step 5, done on perf/kit-gen, VEHICLEKIT.md "Generation time"): `Put`'s scan was the cost, and not its tries: every try out of reach wrote
   the refusal's text, with a pass over every part's boxes for its blocker, though only a refusal reads it. `Put` now passes over parts and sockets too far to matter, asks

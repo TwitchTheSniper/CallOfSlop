@@ -21,13 +21,17 @@
     { "part": "Logistics Dispatcher", "on": 1, "socket": "top30", "by": "-y" },
     { "part": "Foundation", "on": 3, "socket": "x+0", "by": "x-0", "paint": "#8c8576" },
     { "part": "Foundation", "on": 15, "socket": "x+0", "by": "x-0", "paint": "#8c8576" },
-    { "part": "Building Station", "on": 16, "socket": "top00", "by": "-y.0.0", "config": { "bayWidth": 4, "bayDepth": 3, "bayHeight": 3, "subJobs": 2 } },
+    { "part": "Building Station", "on": 16, "socket": "top00", "by": "-y.0.0", "config": { "subJobs": 2 } },
     { "part": "Foundation", "on": 3, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
     { "part": "Foundation", "on": 18, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
     { "part": "Battery Pack", "on": 19, "socket": "top10", "by": "-y" },
     { "part": "Battery Pack", "on": 19, "socket": "top30", "by": "-y" },
     { "part": "Battery Pack", "on": 19, "socket": "top13", "by": "-y" },
-    { "part": "Battery Pack", "on": 19, "socket": "top33", "by": "-y" }
+    { "part": "Battery Pack", "on": 19, "socket": "top33", "by": "-y" },
+    { "part": "Bay Block", "on": 17, "socket": "+x.1", "by": "-x" },
+    { "part": "Bay Block", "on": 17, "socket": "+x.2", "by": "-x" },
+    { "part": "Bay Block", "on": 24, "socket": "+x", "by": "-x" },
+    { "part": "Bay Block", "on": 25, "socket": "+x", "by": "-x" }
   ],
   "links": [
     { "type": "chute", "from": 13, "fromPort": "Chute out", "to": 7, "toPort": "Chute in" }

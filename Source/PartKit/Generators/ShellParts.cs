@@ -4,7 +4,7 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The robot shells: Constructs/Parts/Shells (the Robot Shell and the Shell Control Chair that wakes you in one). Was
-/// tools/constructs/shell_parts.py. (The Depot Lander and Ministry Courier blueprints went with the penal colony, 2026-11-17.)
+/// tools/constructs/shell_parts.py.
 /// </summary>
 public sealed class ShellParts : IPartGenerator
 {

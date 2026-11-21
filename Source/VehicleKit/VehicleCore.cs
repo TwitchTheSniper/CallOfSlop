@@ -592,7 +592,7 @@ public partial class BlueprintScript
     /// <summary>The loot tables its containers fill from, one a container.</summary>
     public IEnumerable<string> LootTables => _loot.Select(l => l.Table);
 
-    /// <summary>Every loot container's table passed through <paramref name="map"/> (kit 4's loot tiers: "bandit" to "bandit 3"); a table the file doesn't have is refused.</summary>
+    /// <summary>Every loot container's table passed through <paramref name="map"/> (kit 4's loot tiers: "raider" to "raider 3"); a table the file doesn't have is refused.</summary>
     public void RetableLoot(Func<string, string> map)
     {
         for (var i = 0; i < _loot.Count; i++)

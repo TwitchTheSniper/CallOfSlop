@@ -20,6 +20,7 @@ public sealed partial class Ui
     {
         var sys = s.System;
         var m = ImGui.GetMousePos();
+        CmdPlaceLabels(g, now);
         for (var k = 0; k < _cmdCraftCount; k++)
         {
             ref var cr = ref _cmdCraft[k];
@@ -109,15 +110,16 @@ public sealed partial class Ui
             }
             else if (hover)
                 CmdBrackets(dl, cr.At, half + 4 * _scale, CmdCyan, 0.8f * fade, 1f);
-            // Its name on a leader line.
+            // Its name on a leader line, let down below any label placed before it (CmdPlaceLabels).
             var off = half + 8 * _scale;
-            CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale), colour, 0.6f * fade);
-            CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale), cr.At + new float2(off + 30 * _scale, off + 10 * _scale), colour, 0.6f * fade);
-            CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale), picked ? 13.5f : 12, colour, fade, CmdName(c));
+            var dy = _cmdLabelDy[k];
+            CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale + dy), colour, 0.6f * fade);
+            CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale + dy), cr.At + new float2(off + 30 * _scale, off + 10 * _scale + dy), colour, 0.6f * fade);
+            CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale + dy), picked ? 13.5f : 12, colour, fade, CmdName(c));
             if (c.IsStation)
-                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, CmdStation, 0.85f * fade, CmdBerthLine(g, c, now));
+                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale + dy), 10, CmdStation, 0.85f * fade, CmdBerthLine(g, c, now));
             else if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
-                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
+                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale + dy), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
         }
 
         // The player, when they aren't aboard something on the map.
@@ -134,6 +136,76 @@ public sealed partial class Ui
                     CmdText(dl, at + new float2(9 * _scale, -16 * _scale), 10.5f, CmdGreen, 0.9f * fade, "YOU");
                 }
             }
+        }
+    }
+
+    private readonly float[] _cmdLabelDy = new float[128];
+    private readonly int[] _cmdLabelOrder = new int[128];
+    private readonly float4[] _cmdLabelBox = new float4[128]; // min x, min y, max x, max y
+
+    /// <summary>
+    /// Where each craft's label goes this frame, so that ships bunched together (a group at a station) don't print
+    /// over each other: labels are placed the picked one first, then from the top of the screen down, and each one
+    /// that would cover a placed label is let down below it on a longer leader line. Fills <see cref="_cmdLabelDy"/>;
+    /// no allocation (the texts are the cached ones the marks draw).
+    /// </summary>
+    private void CmdPlaceLabels(Game g, double now)
+    {
+        var n = 0;
+        for (var k = 0; k < _cmdCraftCount; k++)
+        {
+            _cmdLabelDy[k] = 0;
+            ref var cr = ref _cmdCraft[k];
+            if (!CmdOn(cr.At, cr.Px + 40) || g.Constructs.Get(cr.Id) is null)
+                continue;
+            // Picked first, then by height on the screen (insertion sort: at most 128).
+            var key = cr.Id == _cmdSel ? float.NegativeInfinity : cr.At.Y;
+            var i = n++;
+            while (i > 0 && (_cmdCraft[_cmdLabelOrder[i - 1]].Id == _cmdSel ? float.NegativeInfinity : _cmdCraft[_cmdLabelOrder[i - 1]].At.Y) > key)
+            {
+                _cmdLabelOrder[i] = _cmdLabelOrder[i - 1];
+                i--;
+            }
+            _cmdLabelOrder[i] = k;
+        }
+
+        var gap = 3 * _scale;
+        for (var j = 0; j < n; j++)
+        {
+            var k = _cmdLabelOrder[j];
+            ref var cr = ref _cmdCraft[k];
+            var c = g.Constructs.Get(cr.Id)!;
+            var picked = cr.Id == _cmdSel;
+            var off = MathF.Max(13 * _scale, cr.Px * 1.08f) + 8 * _scale;
+            var w = Hud.TextWidth(CmdName(c), (picked ? 13.5f : 12) * _scale);
+            var h = (picked ? 15f : 14f) * _scale;
+            var second = c.IsStation ? CmdBerthLine(g, c, now) : CommandCrewsOn ? CmdCrewTag(g, c.Id, out _) : null;
+            if (second != null)
+            {
+                w = MathF.Max(w, Hud.TextWidth(second, 10 * _scale));
+                h = (picked ? 32f : 30f) * _scale;
+            }
+            var x0 = cr.At.X + off + 30 * _scale;
+            var y0 = cr.At.Y + off + 3 * _scale;
+            var x1 = cr.At.X + off + 36 * _scale + w;
+            var dy = 0f;
+            for (var tries = 0; tries < 24; tries++)
+            {
+                var moved = false;
+                for (var b = 0; b < j; b++)
+                {
+                    ref var box = ref _cmdLabelBox[b];
+                    if (x0 < box.Z && x1 > box.X && y0 + dy < box.W && y0 + dy + h > box.Y)
+                    {
+                        dy = box.W + gap - y0;
+                        moved = true;
+                    }
+                }
+                if (!moved)
+                    break;
+            }
+            _cmdLabelDy[k] = dy;
+            _cmdLabelBox[j] = new float4(x0, y0 + dy, x1, y0 + dy + h);
         }
     }
 

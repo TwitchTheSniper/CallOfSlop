@@ -199,37 +199,32 @@ public static class LayerTables
     public static readonly Dictionary<string, ChassisRange> Chassis = new(StringComparer.Ordinal)
     {
         // Scrap built: anything under anything, long and short, the odd dead axle.
-        ["Bandit"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.5f, FrontAxles = [(-1.675f, 3), (-1.925f, 1), (-0.925f, 1)], FrontWings = [(0.5f, 2), (0.75f, 1)],
+        ["Raider"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.5f, FrontAxles = [(-1.675f, 3), (-1.925f, 1), (-0.925f, 1)], FrontWings = [(0.5f, 2), (0.75f, 1)],
             Single = 4, Tag = 1.5, Pusher = 0.8, Tandem = 1.2, Mix = 0.75, WheelSwap = 0.45, SpringSwap = 0.35, Rigid = 0.4 },
         // Fleet vans: matched corners, a forward cab now and then, an extra axle only on the long ones.
         ["IT"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.25f, FrontAxles = [(-1.675f, 4), (-1.925f, 1), (-0.925f, 1.5)], FrontWings = [(0.5f, 3), (0.75f, 1)],
             Single = 5, Tag = 1.5, Pusher = 0.4, Tandem = 0.8, Mix = 0.4, WheelSwap = 0.1, SpringSwap = 0.25, Rigid = 0 },
-        ["Scam"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.25f, FrontAxles = [(-1.675f, 4), (-1.925f, 1), (-0.925f, 1)], FrontWings = [(0.5f, 3), (0.75f, 1)],
+        ["Salvager"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.25f, FrontAxles = [(-1.675f, 4), (-1.925f, 1), (-0.925f, 1)], FrontWings = [(0.5f, 3), (0.75f, 1)],
             Single = 5, Tag = 1, Pusher = 0.4, Tandem = 0.8, Mix = 0.4, WheelSwap = 0.15, SpringSwap = 0.2, Rigid = 0.1 },
-        // Farm and hill: wide fronts, short wheelbases, tandems for the mud.
-        ["Highland"] = DefaultChassis with { InsetMin = 1f, InsetMax = 2.25f, FrontAxles = [(-1.675f, 3), (-1.925f, 1)], FrontWings = [(0.5f, 2), (0.75f, 1)],
-            Single = 4, Tag = 1, Pusher = 0.4, Tandem = 1.5, Mix = 0.5, WheelSwap = 0.25, SpringSwap = 0.3, Rigid = 0.2 },
         // Buses: long overhangs, axles set back under the driver, tag axles.
-        ["British"] = DefaultChassis with { InsetMin = 1.25f, InsetMax = 2.5f, FrontAxles = [(-1.675f, 3), (-0.925f, 2)], FrontWings = [(0.5f, 3), (0.75f, 1)],
+        ["Mercenary"] = DefaultChassis with { InsetMin = 1.25f, InsetMax = 2.5f, FrontAxles = [(-1.675f, 3), (-0.925f, 2)], FrontWings = [(0.5f, 3), (0.75f, 1)],
             Single = 4, Tag = 1.5, Pusher = 0.3, Tandem = 0.6, Mix = 0.35, WheelSwap = 0.1, SpringSwap = 0.25, Rigid = 0.1 },
     };
 
     public static readonly Dictionary<string, BodyRange> Body = new(StringComparer.Ordinal)
     {
-        ["Bandit"] = new() { LengthBias = 0, Tall = 3, Low = 2, Narrow = 2, StepChance = 0.55, Rake = 0.3 },
+        ["Raider"] = new() { LengthBias = 0, Tall = 3, Low = 2, Narrow = 2, StepChance = 0.55, Rake = 0.3 },
         ["IT"] = new() { LengthBias = 0.15, Tall = 3, Low = 2, Narrow = 0.5, StepChance = 0.4, Rake = 0.25 },      // (tidy: low, not narrow; raked like a coach)
-        ["Scam"] = new() { LengthBias = 0.1, Tall = 3, Low = 2, Narrow = 1, StepChance = 0.4, Rake = 0.2 },
-        ["Highland"] = new() { LengthBias = 0.1, Tall = 3, Low = 2, Narrow = 1, StepChance = 0.45, Rake = 0.2 },
-        ["British"] = new() { LengthBias = 0.2, Tall = 3.5, Low = 1.5, Narrow = 1, StepChance = 0.45, Rake = 0.25 },
+        ["Salvager"] = new() { LengthBias = 0.1, Tall = 3, Low = 2, Narrow = 1, StepChance = 0.4, Rake = 0.2 },
+        ["Mercenary"] = new() { LengthBias = 0.2, Tall = 3.5, Low = 1.5, Narrow = 1, StepChance = 0.45, Rake = 0.25 },
     };
 
     public static readonly Dictionary<string, WearProfile> Wear = new(StringComparer.Ordinal)
     {
-        ["Bandit"] = new() { Rust = 0.45, Dirt = 0.35, Scorch = 0.6, PatchesMin = 2, PatchesMax = 5, Missing = 0.12, AgeMin = 0.6, AgeMax = 1.3 },
+        ["Raider"] = new() { Rust = 0.45, Dirt = 0.35, Scorch = 0.6, PatchesMin = 2, PatchesMax = 5, Missing = 0.12, AgeMin = 0.6, AgeMax = 1.3 },
         ["IT"] = new() { Rust = 0.03, Dirt = 0.1, Scorch = 0.1, PatchesMin = 0, PatchesMax = 1, Missing = 0, AgeMin = 0.2, AgeMax = 0.8 },
-        ["Scam"] = new() { Rust = 0.08, Dirt = 0.2, Scorch = 0.15, PatchesMin = 0, PatchesMax = 1, Missing = 0.02, AgeMin = 0.3, AgeMax = 1 },
-        ["Highland"] = new() { Rust = 0.12, Dirt = 0.35, Scorch = 0.1, PatchesMin = 1, PatchesMax = 3, Missing = 0.03, AgeMin = 0.5, AgeMax = 1.1 }, // (well loved: mud and mended, not neglected)
-        ["British"] = new() { Rust = 0.1, Dirt = 0.2, Scorch = 0.05, PatchesMin = 0, PatchesMax = 2, Missing = 0.02, AgeMin = 0.3, AgeMax = 1 },
+        ["Salvager"] = new() { Rust = 0.08, Dirt = 0.2, Scorch = 0.15, PatchesMin = 0, PatchesMax = 1, Missing = 0.02, AgeMin = 0.3, AgeMax = 1 },
+        ["Mercenary"] = new() { Rust = 0.1, Dirt = 0.2, Scorch = 0.05, PatchesMin = 0, PatchesMax = 2, Missing = 0.02, AgeMin = 0.3, AgeMax = 1 },
     };
 
     public static ChassisRange ChassisOf(FactionStyle st) => Chassis.GetValueOrDefault(st.Name) ?? DefaultChassis;

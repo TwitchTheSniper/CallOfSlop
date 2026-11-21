@@ -972,6 +972,11 @@ public static class ConstructConfig
             var slot = Array.FindIndex(d.Config, e => e.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase));
             if (slot < 0 && d.Logic is CLogic.Display or CLogic.Instrument && p.Name.ToLowerInvariant() is "decimals" or "unit")
                 continue; // bar gauges and Graph Screens lost their numbers: a player's older blueprint still loads
+            if (slot < 0 && d.IsBuildStation && p.Name.ToLowerInvariant() is "baywidth" or "baydepth" or "bayheight")
+            {
+                Console.WriteLine($"[blueprint] {where}: the {d.Name}'s \"{p.Name}\" is dropped (the bay is Bay Blocks and masts now, 2026-11-21)");
+                continue; // (an older blueprint with a sized bay still loads)
+            }
             if (slot < 0)
                 throw new ConstructPartException($"{where}: a {d.Name} has no setting \"{p.Name}\" (it has: {(d.Config.Length == 0 ? "none" : string.Join(", ", d.Config.Select(e => e.Key)))})");
             var e = d.Config[slot];

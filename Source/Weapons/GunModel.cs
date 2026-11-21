@@ -495,6 +495,28 @@ public static class GunModel
     private static Renderer _g = null!;
     private static Matrix4x4 _pose;
 
+    private static int _steel = -1, _wood, _plastic, _painted;
+
+    /// <summary>
+    /// The shared material a gun part is drawn with, by its colour (Karl, 2026-11-21: the held gun takes the ships' look, so edge bevels,
+    /// material contrast and the metal's sheen show on it at Materials Medium and High): dark parts are steel, browns wood, strong
+    /// colours plastic, the rest painted steel. Unlit and textured parts keep the old grid row. Low draws it all as before.
+    /// </summary>
+    public static Material LookOf(Vector3 c, int mode)
+    {
+        if (mode != 0) // (by colour and mode only: a part fading in the aim cutaway keeps its material, as the scene graph's rig does)
+            return Material.Grid;
+        if (_steel < 0)
+            (_steel, _wood, _plastic, _painted) = (Surfaces.Id("steel"), Surfaces.Id("wood"), Surfaces.Id("plastic"), Surfaces.Id("painted steel"));
+        float hi = MathF.Max(c.X, MathF.Max(c.Y, c.Z)), lo = MathF.Min(c.X, MathF.Min(c.Y, c.Z));
+        var sat = hi > 1e-4f ? (hi - lo) / hi : 0f;
+        var row = c.X > c.Y * 1.12f && c.Y > c.Z * 1.08f && sat > 0.3f && hi < 0.75f ? _wood
+            : hi < 0.22f ? _steel
+            : sat > 0.45f ? _plastic
+            : _painted;
+        return row >= Surfaces.FirstShaded ? (Material)row : Material.Grid;
+    }
+
     private static void Box(float sx, float sy, float sz, float x, float y, float z, Vector3 c, float rotX = 0, float rotZ = 0, int mode = 0, float alpha = 1f)
     {
         var m = Matrix4x4.CreateScale(sx, sy, sz);
@@ -520,7 +542,7 @@ public static class GunModel
                 return;
             m *= Matrix4x4.CreateTranslation(MagOffset);
         }
-        _g.Draw(m * _pose, c, alpha, mode);
+        _g.Draw(m * _pose, c, alpha, mode, LookOf(c, mode));
     }
 
     private static void Record(in Matrix4x4 m, bool clear)
@@ -773,7 +795,7 @@ public static class GunModel
             }
             if (blend)
                 _g.SetBlend(true);
-            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode, Material.Grid, pt.Shape);
+            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode, LookOf(pt.Color, pt.Mode), pt.Shape);
             if (blend)
                 _g.SetBlend(false);
         }

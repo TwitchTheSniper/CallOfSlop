@@ -57,7 +57,7 @@ public static class CrewCheck
         }
         var ok = seconds <= 0 || Fight(shipBp, targetBp, shipName, targetName, range, seconds, still);
         if (scale > 0)
-            ok &= Scale(scale, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1");
+            ok &= Scale(scale, Arg("--crew-scale-ship") ?? "Raider Helicopter 1");
         return ok ? 0 : 1;
     }
 

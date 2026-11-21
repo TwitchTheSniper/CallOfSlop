@@ -6,7 +6,7 @@ Kit 4's roles and tiers, families and convoys, cargo and spares. Part of the veh
 
 Kit 3 makes a faction's vehicle by its shape: ask for a Box Truck and you get a box truck, whatever it is for. **Kit 4** (`VehicleKitVersion.Roles`, `VehicleRoles.cs`) adds what a
 vehicle is *for*: a **role**, stated in needs the built vehicle is measured against, while the style still decides how it looks; and a **tier**, the threat ladder's rung within the
-faction (zombies 1, bandits 2, military 3, high tech 4 as a place's danger; a Bandit tier 4 is a warlord's truck, still a Bandit's). Harder places hold harder enemies and better
+faction (zombies 1, raiders 2, military 3, high tech 4 as a place's danger; a Raider tier 4 is a warlord's truck, still a Raider's). Harder places hold harder enemies and better
 loot, and players salvage what survives.
 
 **Which kit.** Only a vehicle asked for by role is kit 4. Every request by shape, every committed seed and every tool run without a role is kit 3 (or kit 1) exactly as before, so
@@ -27,11 +27,11 @@ which is how the numbers below compare the two.
 | boss | the largest: most guns and armour, the best loot; rare | War Bus 3, Flatbed Fort 1, Double Decker 1 | 3+ guns, armour 11.5+, 8.5 m+, a room | long, gun beds and decks, armour |
 
 A role names only the shapes that can meet it: the Box Truck was a scout in the first draft, and measured 20 to 25 m/s against a Technical's 25 to 34, so no grammar shape is a
-scout. A style fields only the shapes it builds (the British style's Double Decker is an extra the others don't ship).
+scout. A style fields only the shapes it builds (the Mercenary style's Double Decker is an extra the others don't ship).
 
 **The measure** (`Vehicle.MeasureRole`, `RoleFit`): seats (every seat part), guns (turrets) and the heaviest gun's class (`VehicleRoles.ClassOf`, by the receiver's bore and action:
 carbines and pump guns light, full-auto rifles medium, harpoons and flame guns heavy), the **estimated top speed** (the engine's peak power, 60 % of it at the wheels, against
-rolling resistance 0.03 and drag Cd 0.9 over the frontal box: it ranks vehicles and runs nothing; a Bandit Technical estimates 31 and drives 24 in the check's 6 s), mass, the
+rolling resistance 0.03 and drag Cd 0.9 over the frontal box: it ranks vehicles and runs nothing; a Raider Technical estimates 31 and drives 24 in the check's 6 s), mass, the
 **armour rating** (the mean armour of the body's panels by area: sheet steel 6, hull bays 8, tread plate 10, plate steel 20, armour plate 40), loot (containers that roll
 from a table plus loose cargo pieces) and its table's tier, the length, fuel carried, and whether it has a room, an open deck (a bed or a porch), a tow hitch, a winch, its fuel
 in the open (the identity score's fuel weak point, there and hittable) and how many signals (the style's `mast` parts, else its trophies).
@@ -39,12 +39,12 @@ in the open (the identity score's fuel weak point, there and hittable) and how m
 **Tiers** (`RoleAsk`) move the needs and lean the choices:
 
 - guns: a fighting role (raider, gun platform, boss) may carry one more from tier 3, rolls one more at tier 4 where its shape has room (a lean, not a need: a Technical carries one; needing it failed 41 of 144 tier 4 vehicles), and needs at least a medium gun from tier 3; an armoured fighting
-  role (the boss) wants a heavy one at tier 4. At tier 1 nothing heavier than medium (no harpoon, no flame gun). A style with no heavy gun (IT, the Call Centre, Militia)
+  role (the boss) wants a heavy one at tier 4. At tier 1 nothing heavier than medium (no harpoon, no flame gun). A style with no heavy gun (IT, the Salvagers, Militia)
   fields its heaviest. Guns weigh by class and rarity: a rarer receiver (the Whaler, the Firebreather, Militia's battle rifle) is likelier from tier 3, less likely at tier 1.
 - armour: the needs rise half a point a tier (a whole point failed 18 of 144 at tier 4: appliqué and plates reach 12 to 14); the plates lean further to armour (+0.15 a tier).
 - size: segment lengths lean longer, 0.15 a tier.
 - loot: the role's loot tier is its base plus the tier less one (scout, raider, gun platform, carrier and recovery 1, tanker 2, command and boss 3), to 4; tiers 1 and 2 roll
-  the style's own table, 3 and 4 its richer ones (`"bandit 3"`, `"bandit 4"` in `Constructs/Loot.json`: two to five rolls, rarely empty, circuit boards, control units,
+  the style's own table, 3 and 4 its richer ones (`"raider 3"`, `"raider 4"` in `Constructs/Loot.json`: two to five rolls, rarely empty, circuit boards, control units,
   seekers, a jetpack). A tier 4 vehicle also tries one more chest.
 - part quality: running gear and the light cab weigh by the tier of their recipe (`FactionStyle.Weigh`): among a style's own engines a tier 1 Technical leans to the Engine,
   a tier 4 one to the V8. Heavy vehicles' slots list one engine in every style, so for them the tier shows in armour, guns, size and loot.
@@ -73,7 +73,7 @@ then fewest marks missing, then identity. A kit-1 shape (the Technical, the Tank
 role's part weights, the marks and the role pass, measured, and if it misses it is tried again from seeds derived from the asked one (`VehicleSpawnKit.Reroll`); the
 seed that made it is in its name. A vehicle that still misses its role is kept and says so ("role missed (...)"): the spawn wants a vehicle, and the miss is reported.
 
-**What it carries.** The name gets the role: "Bandit Box Truck 7 [raider, tier 2]" (never a committed seed's). The kit line: `// kit 4; role raider, tier 2, shape Box Truck,
+**What it carries.** The name gets the role: "Raider Box Truck 7 [raider, tier 2]" (never a committed seed's). The kit line: `// kit 4; role raider, tier 2, shape Box Truck,
 role met, role plans 2, fit seats 3, guns 2 (medium), est. top speed 23 m/s, 2.4 t, armour 10.3, loot 1 (tier 2), 8.4 m, fuel 60 l, tow hitch, room, deck; seeds chassis 7
 body 7 kit 7 wear 7, chassis ..., body room+gun bed, ...`; `Vehicle.Role`, `Vehicle.Fit` and `Vehicle.KitNotes` hold the same; the description starts "A raider (tier 2).";
 the spawn's "generated" line carries the notes (`VehicleGenJob.RoleNotes`).
@@ -81,8 +81,8 @@ the spawn's "generated" line carries the notes (`VehicleGenJob.RoleNotes`).
 **The API.**
 
 ```csharp
-game.VehicleSpawn.Request("Bandit", "raider", tier: 3, seed: null, ground, yaw, owner: 255, frontOf: 255, done: ...);
-game.VehicleSpawn.Request("Highland", role: null, tier: 1, seed: 42, ground, yaw); // null: a role the style fields, by its weights
+game.VehicleSpawn.Request("Raider", "raider", tier: 3, seed: null, ground, yaw, owner: 255, frontOf: 255, done: ...);
+game.VehicleSpawn.Request("Raider", role: null, tier: 1, seed: 42, ground, yaw); // null: a role the style fields, by its weights
 ```
 
 The server picks the shape from the role and the seed (`VehicleRoles.ShapeFor`: the same seed always picks the same), then makes it as any dynamic spawn (sliced, rerolled,
@@ -93,19 +93,18 @@ unchanged. Nothing is on the wire: only the server generates.
 
 | Style | scout | raider | gun platform | carrier | tanker | recovery | command | boss |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Bandit | 3 | 4 | 2 | 1 | 2 | 1 | 0.5 | 0.3 |
+| Raider | 3 | 4 | 2 | 1 | 2 | 1 | 0.5 | 0.3 |
 | IT | 2 | 1 | 1 | 3 | 1 | 2 | 2 | 0.3 |
-| Call Centre (Scam) | 3 | 2 | 1 | 2 | 1 | 1 | 1.5 | 0.3 |
-| Highland | 2 | 4 | 2 | 2 | 1 | 1 | 1 | 0.4 |
-| British | 1 | 1 | 1 | 4 | 1 | 2 | 2 | 0.3 |
+| Salvager | 3 | 2 | 1 | 2 | 1 | 1 | 1.5 | 0.3 |
+| Mercenary | 1 | 1 | 1 | 4 | 1 | 2 | 2 | 0.3 |
 | Militia | 2 | 2 | 3 | 3 | 1 | 1 | 2 | 0.4 |
 
-**Commands.** `--role "Bandit raider" --tier 2 [--seeds N] [--check] [--sliced]`: each seed's vehicle, how it met the role, its identity and what the role pass placed, the hit
+**Commands.** `--role "Raider raider" --tier 2 [--seeds N] [--check] [--sliced]`: each seed's vehicle, how it met the role, its identity and what the role pass placed, the hit
 rate and commonest misses; the first seed is made again and must write the same text, with `--sliced` once more as the dynamic spawn makes it (2.5 ms slices on the kit's
 thread), whose hash must match; `--check` runs the full check on each. `--kit-report --roles [--seeds N] [--style S] [--role R] [--tier N] [--raw]`: every style, role and
 tier (default 3 seeds a cell): a line a cell, then a table (met, failed, identity, every mark, plans, cost, shapes) and the same by role, by tier and by style.
 
-**Measured** (2026-11-07, `--kit-report --roles --seeds 3`: every style (Bandit, IT, Highland, Call Centre, British, Militia) x every role x tiers 1 to 4, seeds 1 to 3,
+**Measured** (2026-11-07, `--kit-report --roles --seeds 3`: every style (Raider, IT, Salvager, Mercenary, Militia) x every role x tiers 1 to 4, seeds 1 to 3,
 576 vehicles, generation only; the 2-core box shared with other agents, load 6 to 12, so times are rough. Kit 3 is the same run with `--kit 3`: the same shapes and
 seeds made without the role, measured against it):
 
@@ -124,18 +123,18 @@ seeds made without the role, measured against it):
 
 Kit 3's misses are what the roles are for: no winch, no chest on a tanker, no signals, too little armour, a single gun on a gun deck. Kit 3's 24 failures are kit-1
 Technical seeds with nowhere to stand a part; kit 4 tries a derived seed. Kit 4 re-planned 305 plans for a role over the 576 (about half a plan more a vehicle), which is its
-cost; the slowest are the armoured War Buses, whose appliqué tests every part's bounds per plate. By style kit 4 met 79 % (Call Centre) to 91 % (Highland); identity held at
-every tier (0.92 Militia, its derived signature, to 0.99 British), and every vehicle that generated carried every mark.
+cost; the slowest are the armoured War Buses, whose appliqué tests every part's bounds per plate. By style kit 4 met 79 % (Salvager) to 91 %; identity held at
+every tier (0.92 Militia, its derived signature, to 0.99 Mercenary), and every vehicle that generated carried every mark.
 
 What is left over: armour is the hard need. A room's area is its hull bays (armour 8), and appliqué covers at most half their sides (plates a metre apart, so no two share
 a face), so a War Bus tops out near 13 to 14 and the tier 4 needs (carrier and command 12, boss 12.5) miss about one in eight. A heavy vehicle's engine is the style's only
 heavy engine, so a tier shows on it in armour, guns, size and loot, not part quality. The speed is an estimate, not a drive.
 
-**Checked** (the full check, `--role ... --check`: drive, turn, guns, coplanar faces, rooms): Bandit, IT, Highland and British, every role, tier 3, seed 5: 32 of 32 passed.
+**Checked** (the full check, `--role ... --check`: drive, turn, guns, coplanar faces, rooms): Raider, IT and Mercenary, every role, tier 3, seed 5: 32 of 32 passed.
 Earlier samples found two things now fixed: Armour Plate in a style's decks (the style's own plate materials only now) and a tier 1 Militia Technical under the check's
 stability (a kit-1 shape's role vehicle is held to its check's stability now), and one not the roles' doing: the Network Switch hood trophy z-fight (IT Box Truck 2), fixed on
 main by the dressing fix. A role seed made twice writes the same text, and made as the dynamic spawn makes it (`--sliced`) the same hash; the dynamic kit-3 seeds tried
-(Bandit Box Truck 1000, IT War Bus 77, Highland Flatbed Fort 55, Call Centre Gun Wagon 12, British Scrap Tanker 40, Militia Box Truck 5, Bandit Technical 30) write the
+(Raider Box Truck 1000, IT War Bus 77 Flatbed Fort 55, Salvager Gun Wagon 12, Mercenary Scrap Tanker 40, Militia Box Truck 5, Raider Technical 30) write the
 same files as before kit 4, byte for byte.
 
 ## Families and convoys
@@ -145,7 +144,7 @@ Kit 4 makes one vehicle for a role. **Families** make model lines of them, and *
 makes the same text as before (`--gen-vehicles`: all 123 identical; `--kit-report --roles --raw` for every IT role, tier and two seeds: the same numbers as main).
 
 **A model** (`VehicleModel`) is a small record: style, role, the family's base tier, seed, mark (1 to 3), variant, paint scheme, layer overrides and a named flag. The same
-model always makes the same vehicle, so its key is all a world, a log or a convoy needs to spawn it again: `Bandit/raider/2/282030/mk2/scheme 292943/wear 419532`
+model always makes the same vehicle, so its key is all a world, a log or a convoy needs to spawn it again: `Raider/raider/2/282030/mk2/scheme 292943/wear 419532`
 (`VehicleModel.Key`, `TryParse`; `VehicleSpawner.RequestModel` spawns one). Every family vehicle's kit line starts `model KEY`, and the spawn's "generated" line carries it.
 
 **Marks.** A family is a style, a role, a base tier and a seed. The seed picks the shape (`VehicleRoles.ShapeFor`, so every mark is the same shape) and the layers. Mk1 is
@@ -168,20 +167,19 @@ the Tanker Rig) has no layers: its variants change only what the pass adds, and 
 it): its own name, a tier up, the best loot (loot tier 4), one more chest and one more mark (the style's masts, else its trophies, on the marks pass's spots).
 
 **Names** (`VehicleFamilyNames.ByStyle`, by style name; Karl may edit them, and a changed list renames families without making any vehicle differently): each style has its
-model names, how its marks read and its uniques' names, all ASCII. Bandit "Rustbucket Mk2", "Old Mother Rust"; IT "Model T-1000 Helpdesk", "Patch Tuesday SP2",
-"Cloud Migration Enterprise", "The Mainframe"; the Call Centre "Hot Lead Gold", "Lucky Draw Platinum"; Highland "Glen Rover", "Bothy Bus II", "Bothy Bus Mor", "The Big Yin";
-British "Wellington Mk II", "Windsor Mk III", "Her Majesty's Displeasure"; a style not named (Militia) gets `Default` ("Patriot Mk1"). Each variant has a style word: Bandit
-"Plated", "Gunrig", "Guzzler"; IT "Hardened", "Pen Test", "Data Lake"; British "Ironclad", "Gunboat", "Bowser". A vehicle is named "Bandit Rustbucket Mk2 [raider, tier 3]",
+model names, how its marks read and its uniques' names, all ASCII. Raider "Rustbucket Mk2", "Old Mother Rust"; IT "Model T-1000 Helpdesk", "Patch Tuesday SP2",
+"Cloud Migration Enterprise", "The Mainframe"; the Salvagers "Hot Lead Gold", "Lucky Draw Platinum";
+Mercenary "Wellington Mk II", "Windsor Mk III", "Her Majesty's Displeasure"; a style not named (Militia) gets `Default` ("Patriot Mk1"). Each variant has a style word: Raider
+"Plated", "Gunrig", "Guzzler"; IT "Hardened", "Pen Test", "Data Lake"; Mercenary "Ironclad", "Gunboat", "Bowser". A vehicle is named "Raider Rustbucket Mk2 [raider, tier 3]",
 never a committed seed's name.
 
 **Measured** (`--family "STYLE ROLE" --seed 5 --tier 2 --check`, 2026-11-07, the 2-core box at load 3 to 9; distances as `--diversity` measures them):
 
 | Family | Shape | Mk1 to Mk2 / Mk3 | up-armoured / gun truck / tanker / named | within the family (worst) | to two other families (least) | full check |
 | --- | --- | --- | --- | --- | --- | --- |
-| Highland raider 5 | Box Truck | 0.007 / 0.015 | 0.081 / 0.074 / 0.014 / 0.003 | 0.049 (0.112) | 0.375 (0.344) | 9 of 9 |
 | IT carrier 5 | War Bus | 0.014 / 0.018 | 0.105 / 0.069 / 0.011 / 0.004 | 0.055 (0.115) | 0.220 (0.171) | 9 of 9 |
-| British command 5 | Box Truck | 0.008 / 0.016 | 0.052 / 0.067 / 0.017 / 0.003 | 0.040 (0.083) | 0.229 (0.204) | 9 of 9 |
-| Bandit raider 7 | Gun Wagon | 0.017 / 0.030 | 0.044 / 0.045 / 0.021 / 0.014 | 0.039 (0.075) | 0.305 (0.273) | 9 of 9 |
+| Mercenary command 5 | Box Truck | 0.008 / 0.016 | 0.052 / 0.067 / 0.017 / 0.003 | 0.040 (0.083) | 0.229 (0.204) | 9 of 9 |
+| Raider raider 7 | Gun Wagon | 0.017 / 0.030 | 0.044 / 0.045 / 0.021 / 0.014 | 0.039 (0.075) | 0.305 (0.273) | 9 of 9 |
 
 The marks read as one vehicle (under 0.08) and the variants as close kin; every other family of the role is three to seven times further away. What a mark changes
 that the distance doesn't count: paint, loot, plate materials (none: the frame's), and the guns' classes.
@@ -206,7 +204,7 @@ dynamic spawn (sliced, rerolled, falling back to a committed seed of its shape).
 `VehicleConvoys.Gap` (5 m) behind the last tail in its lane (`Vehicle.ExtentZ`, the generated vehicle's own reach ahead of and behind its origin; a committed stand-in's from its
 shape's usual), on the ground, heading the convoy's way. **Caps:** a convoy's members have their own cap (`ConvoyQueueMax`, 6, beside the 8 single requests, which they don't
 count against), one convoy at a time on the server (`ConvoysAtOnce`), so a player has at most one; a request beyond it is refused with "a convoy is on its way already". One log
-line per convoy, when its last member is down: `[vehicles] Bandit convoy 3: 4 vehicles, column, tier 2, 3 families, scheme 292943: 4 of 4 down in 7.2 s: leader Bandit Roadrash
+line per convoy, when its last member is down: `[vehicles] Raider convoy 3: 4 vehicles, column, tier 2, 3 families, scheme 292943: 4 of 4 down in 7.2 s: leader Raider Roadrash
 Mk1 [command, tier 3] as 21 (KEY); escort ...; scheme body #6f7477+#5f6a55, ...`. The members' own "generated" and "set down" lines come as before.
 
 **The parts menu.** With "Faction vehicles: new seed" on, the Blueprints tab has "A faction tile makes": *its shape* (as before), *by role* (a role, any by default, and a tier:
@@ -214,12 +212,12 @@ the tile's style, by role, `CActKind.FactionVehicle`, protocol 191) or *a convoy
 22 m ahead and to one side, heading across their view, the rest in a line behind it, so the whole convoy is seen side on. The host's "Roles and convoys" (on by default; off: requests
 by role, model and convoy are refused and the tiles make their shape, as before kit 4) sits beside "Server generates them" (off: every member is a committed seed of its shape).
 
-**Checked.** `--convoy STYLE --seed 11 --count 6 --tier 3` for IT, British, Highland and the Call Centre and `--convoy Bandit --seed 3` generate every member, the leader twice
-to the same text. The full check passed every member of the table's four families (36 of 36) and 4 of the 5 of Bandit convoy 3; its leader (a tier 3 command
+**Checked.** `--convoy STYLE --seed 11 --count 6 --tier 3` for IT, Mercenary and the Salvagers and `--convoy Raider --seed 3` generate every member, the leader twice
+to the same text. The full check passed every member of the table's four families (36 of 36) and 4 of the 5 of Raider convoy 3; its leader (a tier 3 command
 Box Truck, plan 1) stood 10.5 degrees off level and didn't drive: its chassis mixed Heavy Pogo Struts in front (they hang the wheel 1.375 m under the mount) with Heavy
 Suspension behind, so it stood nose up on its tail rails. Fixed in the chassis (2026-11-07, "Things that caught the vehicles so far"): the leader now has its own rear on a
 level front and passes the full check (71 m in 6 s, 1.7 degrees worst tilt); the other 39 members of eight convoys tried came out byte for byte the same. In game (an offline host on
-Construct Yard and a client over RakNet at 80 ms and 2 % loss, the client asking by the wire): Bandit convoy 3 (4 vehicles, column) down in 7.2 s and IT convoy 11 (6, wedge)
+Construct Yard and a client over RakNet at 80 ms and 2 % loss, the client asking by the wire): Raider convoy 3 (4 vehicles, column) down in 7.2 s and IT convoy 11 (6, wedge)
 in 20.2 s, spaced and laned as planned, the client with the same parts on every body, and every member's text hash the one `--convoy` prints for it (made in slices as the spawn makes it); the worst ticks were the first slice of a generation (21 to 33 ms, the same for a single role
 spawn on this box) and one 52 ms join with a garbage collection in it.
 
@@ -256,8 +254,8 @@ How much, at tier 2 (`VehicleCargoTables.ByRole`, keyed by role; a fraction is t
 | boss | 3 | 3 | 1 | 2 | 1 | 3 | 2 | 2 | 2 | 1 |
 
 A tier scales every amount (0.7 at tier 1, 1 at 2, then 0.3 a tier more), and a style its ammo and its spares (`VehicleCargoTables.ByStyle`, additive: `Styles.cs` is
-untouched): the Bandits carry 1.3 times the spares (they scavenge everything), the IT Department 0.8 of both (it travels light), the Call Centre 0.8 and 0.9, Highland 1.1
-times the ammo, the British 1.1 times the spares; a style not named (Militia) 1 and 1. A vehicle carries at most 18 loose pieces, of at most 12 % of its own mass.
+untouched): the Raiders carry 1.3 times the spares (they scavenge everything), IT 0.8 of both (it travels light), the Salvagers 0.8 and 0.9 1.1
+times the ammo, the Mercenary 1.1 times the spares; a style not named (Militia) 1 and 1. A vehicle carries at most 18 loose pieces, of at most 12 % of its own mass.
 `Constructs/Loot.json` is untouched: the spares come from the vehicle's own parts, not a table, and a role's loot still rolls as before.
 
 **Stowed as a crew would** (the order when room runs short: Ammo Boxes, magazines, crates, fuel, wheels, a gun's parts, springs, plates, beams):
@@ -294,15 +292,15 @@ with other agents):
 | identity | | every vehicle's score the same |
 | drive check | 283 plans, 4 refused | 283 plans, 4 refused (the same); the throttle pulse 0.07 m shorter on average (-0.7 to +1.1), at least 2.0 m on every vehicle (the gate is 1 m) |
 | generation, warm | 650 ms a vehicle | 713 ms (the cargo pass 17 ms a plan, worst 65) |
-| carries something | | 181 of 192 (Militia and Call Centre scouts and Militia raiders, Technicals with no deck and nothing rolled) |
-| full check (`--role ... --tier 3 --seed-list 5 --check`, Bandit, IT, Highland, British x every role) | | 32 of 32 passed |
+| carries something | | 181 of 192 (Militia and Salvager scouts and Militia raiders, Technicals with no deck and nothing rolled) |
+| full check (`--role ... --tier 3 --seed-list 5 --check`, Raider, IT, Mercenary x every role) | | 32 of 32 passed |
 
 Pieces and loose mass a vehicle by role: scout 1.9 (19 kg), raider 6.0 (61 kg), gun platform 15.7 (147 kg), carrier 13.7 (70 kg), tanker 6.9 (92 kg), recovery 11.3
 (111 kg), command 16.1 (68 kg), boss 21.5 (91 kg); 82 kg a vehicle, 3.5 % of its mass. Over the 192, in slots / loose: ammo 402 / 269, magazines 64 / 542, gun parts
 14 / 515, fuel 10 / 141, springs 1 / 57, and wheels 61, plates 86, beams 69 all loose. Left behind for want of deck room (a room-only War Bus or Box Truck has no open
 deck, a Gun Wagon's hutch is small, and nothing stands in a gun's line of fire): beams 81 times, plates 68 and armour plates 44, wheels 124, fuel tanks and drums 91,
-crates 43. The first seed of a role made as the dynamic spawn makes it (`--role "Highland tanker" --tier 2 --sliced`) gave the same hash as made directly; a convoy
-(`--convoy Bandit --seed 3`) made every member and its leader twice to the same text; a brief with its cargo saved and read back the same (`--brief`, 1,460 bytes).
+crates 43. The first seed of a role made as the dynamic spawn makes it (`--role "Raider tanker" --tier 2 --sliced`) gave the same hash as made directly; a convoy
+(`--convoy Raider --seed 3`) made every member and its leader twice to the same text; a brief with its cargo saved and read back the same (`--brief`, 1,460 bytes).
 
 A probe (a throwaway command, not kept) built role vehicles from their text in a world of their own, as a spawn does: the stowed items were in their slots beside the
 rolled loot; a destroyed Chest and a destroyed Crate Stack spilled their pieces (3 and 5); a destroyed Cargo Volume let its 11 and 18 carried pieces go; a loose Ammo Box held 300 rounds, and bolted to the vehicle's

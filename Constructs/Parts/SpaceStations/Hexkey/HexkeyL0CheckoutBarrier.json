@@ -1,0 +1,236 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hexkey L0 Checkout Barrier",
+  "description": "The low white barrier before the trade arches: the only way out is through an arch.",
+  "group": "Station",
+  "section": "Hexkey Orbital",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 3643.2,
+  "health": 8372,
+  "armour": 40,
+  "material": "steel",
+  "color": "#eceeea",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -69.025,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        -64.025,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -60.625,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        -48.025,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -44.625,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        -32.025,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -28.625,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        -16.025,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -12.625,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        -0.025,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.375,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        15.975,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        19.375,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        31.975,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        35.375,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        47.975,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        51.375,
+        -1.125,
+        0.075
+      ],
+      "max": [
+        68.575,
+        -0.025,
+        0.275
+      ],
+      "color": "#eceeea",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -68.575,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -54.325,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -38.325,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -6.325,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        9.675,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        41.125,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        59.975,
+        -1.125,
+        0.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j7",
+      "at": [
+        68.575,
+        -0.575,
+        0.175
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j8",
+      "at": [
+        -69.025,
+        -0.575,
+        0.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j9",
+      "at": [
+        -64.025,
+        -0.575,
+        0.175
+      ],
+      "dir": "+x"
+    }
+  ]
+}

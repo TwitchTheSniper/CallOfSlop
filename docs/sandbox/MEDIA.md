@@ -101,11 +101,6 @@ The hops log to `callofslop.log`, each on a 5 s throttle while something plays; 
 | 6 | Same line, `OpenAL (hop 6)` | `Playing`, gain above 0 | The source is stopped or silent |
 | 7 | `[media] level voice 0 (hop 7)` | Every factor above 0 | That factor is the zero |
 
-## Pipe Boxes
-
-The Clan MacSlop's Pipe Box (a Music Player that struck up bagpipe tunes when its construct was driven) was removed with
-the old factions (2026-11-17, docs/removals-notes.md).
-
 ## Browser Screens
 
 Browser Screen, Medium and Large are a real Chromium tab on a part. Address bar, Back, Forward, Reload and Close are on the configure panel. Hands work as on a video, and Enter on the picture gives the page the keyboard until Esc (or the crosshair leaves): the game's keys are off meanwhile. It shares the 4 pages, its sound takes the same path, and speakers work. Windows only.

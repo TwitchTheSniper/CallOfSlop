@@ -460,7 +460,7 @@ public sealed partial class Game
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
-        SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
+        SandboxPressCrush(now); // (the clamshell Press's swing and slam: GameSandboxPress.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         AllocProfile.Mark("sandbox: spawns, pilots, debris");
         var perf = Perf.Measure(PerfArea.SandboxWorld);
@@ -1769,8 +1769,6 @@ public sealed partial class Game
     /// <summary>Client (or the host itself): a finger on a panel's button. The server checks it as the configure tool's.</summary>
     public void SandboxPanelTouch(ushort body, int part, int panel, int region)
     {
-        if (Constructs.Get(body) is { } tc && part < tc.PartCount && tc.Parts[part].D.Office == OfficeKind.Computer)
-            OfficeParts.Clicked(tc, part, region); // (an advert: this screen shows the scam: GameSandboxScams.cs)
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.PanelTouch).U16(body).U16((ushort)part).U8((byte)panel).U8((byte)region);
         if (IsServer)
@@ -2917,30 +2915,34 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        SeatStatus.Clear();
         ShellHud(me, lines, orange, dim); // (wearing a robot shell: GameRobotShell.cs)
         if (SandboxEvaHud(me, in h, lines, white, dim, orange, red))
             return; // (strapped into an MMU dock: GameSandboxEva.cs)
         if (h.Seated && SandboxRemoteHud(me, in h, lines, white, dim, red))
             return;
+        var dst = h.Seated && SeatPanelShown ? SeatStatus : lines; // (seated: the craft's lines go into the seat controls panel, UI/UiSeatPanel.cs)
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
-            lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
-            lines.Add(new HudLine(ConstructModules.TurretsOf(gunship, h.SeatPart) > 1 ? SandboxKeys.GunnerTurrets : SandboxKeys.Gunner, dim));
+            dst.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
+            if (!SeatPanelShown) // (the seat controls panel lists the keys: UI/UiSeatPanel.cs)
+                dst.Add(new HudLine(ConstructModules.TurretsOf(gunship, h.SeatPart) > 1 ? SandboxKeys.GunnerTurrets : SandboxKeys.Gunner, dim));
             return;
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
         {
             if (ConstructModules.Problem(ride, h.SeatPart) is { } seatWhy)
-                lines.Add(new HudLine($"Won't go: {seatWhy}", red));
+                dst.Add(new HudLine($"Won't go: {seatWhy}", red));
             else
-                lines.Add(new HudLine("Passenger", white));
-            lines.Add(new HudLine(SandboxKeys.GetOut, dim));
+                dst.Add(new HudLine("Passenger", white));
+            if (!SeatPanelShown)
+                dst.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;
         }
         if (me.Sim.Canopy == PilotGear.OpenChute || me.Sim.Canopy == PilotGear.OpenGlider)
-            lines.Add(new HudLine(me.Sim.Canopy == PilotGear.OpenGlider ? SandboxKeys.PilotGlide : SandboxKeys.PilotCut, dim));
+            dst.Add(new HudLine(me.Sim.Canopy == PilotGear.OpenGlider ? SandboxKeys.PilotGlide : SandboxKeys.PilotCut, dim));
         else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0 && !Eva.Vacuum(me.Position))
-            lines.Add(new HudLine((me.Sim.Gear & PilotGear.Glider) != 0 ? SandboxKeys.PilotOpenGlider : SandboxKeys.PilotOpenChute, white));
+            dst.Add(new HudLine((me.Sim.Gear & PilotGear.Glider) != 0 ? SandboxKeys.PilotOpenGlider : SandboxKeys.PilotOpenChute, white));
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
             var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.DriveFwd, car.Rot))) * 3.6f);
@@ -2962,49 +2964,59 @@ public sealed partial class Game
                                 + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
                                 + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "")
                                 + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
-            lines.Add(new HudLine(_sbDrive.Text, white));
+            dst.Add(new HudLine(_sbDrive.Text, white));
             if (car.ThrusterCount > 0 || car.PlantCount > 0 || car.SurfaceCount > 0 || car.RotorCount > 0)
             {
                 if (_sbFlight.Stale(ConstructThrustHud.Key(car)))
                     _sbFlight.Text = ConstructThrustHud.Line(car);
-                lines.Add(new HudLine(_sbFlight.Text, white));
+                dst.Add(new HudLine(_sbFlight.Text, white));
                 if ((car.SpaceAway != 0 ? SpaceAwayLine(car) : SpaceOrbitLine(car)) is { } orbit)
-                    lines.Add(new HudLine(orbit, green)); // (on a planetoid in a star system: GameSpaceLaunch.cs; in another system: GameSpaceJump.cs)
+                    dst.Add(new HudLine(orbit, green)); // (on a planetoid in a star system: GameSpaceLaunch.cs; in another system: GameSpaceJump.cs)
             }
             if (SpaceJumpLine(car) is { } jump)
             {
-                lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
+                dst.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
-            if (ConstructDoors.GearState(car) is var gear and > 0)
-                lines.Add(new HudLine(gear == 2 ? SandboxKeys.GearRaise : SandboxKeys.GearLower, dim)); // (the landing leg pods: ConstructDoors.ToggleGear)
+            if (ConstructDoors.GearState(car) is var gear and > 0 && !SeatPanelShown)
+                dst.Add(new HudLine(gear == 2 ? SandboxKeys.GearRaise : SandboxKeys.GearLower, dim)); // (the landing leg pods: ConstructDoors.ToggleGear)
             if (car.GunCount > 0)
             {
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
-                lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
+                dst.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
             }
-            if (ConstructCarrier.Hint(Constructs, car) is { } pilotKey)
-                lines.Add(new HudLine(pilotKey, white));
-            if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject)
-                lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
-            if (ConstructFlight.DampenersOff(car))
-                lines.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
-            if (ConstructFlight.MouseSteerOff(car))
-                lines.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
+            if (!SeatPanelShown && ConstructCarrier.Hint(Constructs, car) is { } pilotKey)
+                dst.Add(new HudLine(pilotKey, white));
+            if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject && !SeatPanelShown)
+                dst.Add(new HudLine(SandboxKeys.PilotEject, dim));
+            if (ConstructFlight.DampenersOff(car) && !SeatPanelShown) // (the panel's lamp says it)
+                dst.Add(ConstructFlight.AutopilotOn(car) || car.NavThrottle >= 0 || car.CrewAims ? new HudLine(SandboxKeys.DampenersHeld, dim) : new HudLine(SandboxKeys.DampenersOff, orange)); // (ConstructFlight.Coasts)
+            if (ConstructFlight.MouseSteerOff(car) && !SeatPanelShown)
+                dst.Add(new HudLine(SandboxKeys.MouseSteerOff, orange)); // (the mouse looks round; the nose holds, A and D turn it)
             if (car.StabCount > 0 && !car.CanDrive)
-                lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            {
+                if (!SeatPanelShown)
+                    dst.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
+            }
             else if (car.CanDrive && car.StarterFailed)
-                lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
+                dst.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
             {
                 if (car.Note != DriveNote.None)
-                    lines.Add(new HudLine(ConstructDrive.NoteText(car.Note), car.Note is DriveNote.Shifting or DriveNote.Spooling ? dim : orange));
+                    dst.Add(new HudLine(ConstructDrive.NoteText(car.Note), car.Note is DriveNote.Shifting or DriveNote.Spooling ? dim : orange));
                 var shifts = gears is { Trans: TransKind.Manual or TransKind.Sequential } && gears.Settings.Length > 1 && car.Parts[car.Transmission].InCount == 0;
-                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? SandboxKeys.DriveStart : shifts ? SandboxKeys.DriveShift : SandboxKeys.Drive, dim));
+                if (!SeatPanelShown)
+                    dst.Add(new HudLine(car.Electrical && !car.EngineRunning ? SandboxKeys.DriveStart : shifts ? SandboxKeys.DriveShift : SandboxKeys.Drive, dim));
             }
             else if (car.HasHubMotor)
-                lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+            {
+                if (!car.Electrical || !SeatPanelShown)
+                    dst.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+            }
             else if (car.ThrusterCount > 0 || car.RotorCount > 0)
-                lines.Add(new HudLine(SandboxKeys.Fly, dim));
+            {
+                if (!SeatPanelShown)
+                    dst.Add(new HudLine(SandboxKeys.Fly, dim));
+            }
             else if (car.LegCount > 0)
             {
                 // A walker (docs/sandbox/GIANTS.md): what stops it, else its keys.
@@ -3012,7 +3024,7 @@ public sealed partial class Game
                 if (why.Length > 0 && _sbProblem.Stale(why.GetHashCode()))
                     _sbProblem.Text = $"Won't walk: {why}";
                 if (why.Length > 0)
-                    lines.Add(new HudLine(_sbProblem.Text, red));
+                    dst.Add(new HudLine(_sbProblem.Text, red));
                 else
                 {
                     // (the speed setting and what it walks at: ConstructWalkProfile.cs; held below it by the power, in orange)
@@ -3020,14 +3032,14 @@ public sealed partial class Game
                     var top = (int)MathF.Round(car.WalkTop * 10);
                     if (_sbWalk.Stale(pct * 10_000_000L + top * 2L + (car.WalkPowerHeld ? 1 : 0)))
                         _sbWalk.Text = $"Walk {pct}%: {top / 10f:0.0} m/s top{(car.WalkPowerHeld ? ", all the power can feed" : "")}. Move keys, turn; roll keys strafe; Sprint and Crouch raise and lower";
-                    lines.Add(new HudLine(_sbWalk.Text, car.WalkPowerHeld ? orange : dim));
+                    dst.Add(new HudLine(_sbWalk.Text, car.WalkPowerHeld ? orange : dim));
                 }
             }
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))
                     _sbProblem.Text = $"Won't go: {car.DriveProblem}";
-                lines.Add(new HudLine(_sbProblem.Text, red));
+                dst.Add(new HudLine(_sbProblem.Text, red));
             }
             return;
         }

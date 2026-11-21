@@ -8,9 +8,9 @@ namespace CallOfSlop;
 /// in from the skin's inner face by <see cref="LineGap"/> or more, its own pieces end short of each other, and it is drawn only (a player stands against the bay's
 /// hidden slabs, which reach further in than a following lining). Modes: <c>f</c> follows the hull's own rows (sloped walls, curved roofs, ledges), <c>i</c> is an
 /// inset lining, upright walls and a flat ceiling standing in from a sloped or curved hull (a bay where that would stand more than 12 cm off the hull, or under 2.05 m,
-/// follows instead). Kinds: <c>r</c> bare hull with ribs and weld beads (Bandit), <c>m</c> orderly olive panels with a rack rail (Militia), <c>c</c> clean pale panels
-/// (IT), <c>s</c> showy panels with a gold rail and neon (Scam), <c>t</c> timber planking (Highland), <c>u</c> upholstered moquette under a dado and panelling over
-/// it (British). Each kind hangs its own lamp from the ceiling (a glowing fitting: drawn bright and unlit, as a lit lamp is). A door bay's doorway side stays bare
+/// follows instead). Kinds: <c>r</c> bare hull with ribs and weld beads (Raider), <c>m</c> orderly olive panels with a rack rail (Militia), <c>c</c> clean pale panels
+/// (IT), <c>s</c> showy panels with a gold rail and neon (Salvager), <c>t</c> timber planking (no style uses it since 2026-11-21), <c>u</c> upholstered moquette under a dado and panelling over
+/// it (Mercenary). Each kind hangs its own lamp from the ceiling (a glowing fitting: drawn bright and unlit, as a lit lamp is). A door bay's doorway side stays bare
 /// below the cant, an upper floor's ceiling isn't lined (its hatch), and a bay's closed ends aren't (7b).
 /// </summary>
 public static partial class HullLoft
@@ -18,8 +18,8 @@ public static partial class HullLoft
     public const string LiningKinds = "rmcstu";
 
     /// <summary>
-    /// Phase 7b: a lined bay's windows, a fourth letter on its lining word: <c>s</c> a slit (Bandit, Militia), <c>p</c> a port (Highland), <c>b</c> a wide band (IT,
-    /// Scam), <c>t</c> a tall bus window (British). Cut in each side wall but the doorway's (<see cref="WindowOf"/>), glazed by a pane part on the bay's
+    /// Phase 7b: a lined bay's windows, a fourth letter on its lining word: <c>s</c> a slit (Raider, Militia), <c>p</c> a port (no style uses it since 2026-11-21), <c>b</c> a wide band (IT,
+    /// Salvager), <c>t</c> a tall bus window (Mercenary). Cut in each side wall but the doorway's (<see cref="WindowOf"/>), glazed by a pane part on the bay's
     /// <c>win-x</c>/<c>win+x</c> socket (<see cref="RoomPanesOf"/>), so glass counts as closed and a shot breaks the pane, not the bay.
     /// </summary>
     public const string WindowKinds = "spbt";
@@ -430,7 +430,7 @@ public static partial class HullLoft
     /// <summary>Where a bay's ribs stand along it: one at the middle, two (at a quarter and three quarters) on a bay over 0.9 m.</summary>
     private static float[] RibsAt(float z0, float z1, float length) => length > 0.9f ? [z0 + (z1 - z0) * 0.25f, z0 + (z1 - z0) * 0.75f] : [(z0 + z1) / 2];
 
-    /// <summary>Bandit ribs: a frame following the whole section across the bay (one a bay, two on a bay over 0.9 m), 6 cm deep, standing in from the skin.</summary>
+    /// <summary>Raider ribs: a frame following the whole section across the bay (one a bay, two on a bay over 0.9 m), 6 cm deep, standing in from the skin.</summary>
     private static void Ribs(Builder p, Shape sh, Section a, Section b, float z0, float z1, bool flatRoof)
     {
         foreach (var zc in RibsAt(z0, z1, sh.Length))
@@ -471,7 +471,7 @@ public static partial class HullLoft
         y -= T / 2 + LineGap + LookOf(kind).Thick + 0.002f + slope;
         if (y < 2.0f)
             return; // (a low roof: no lamp in a player's way)
-        Lamp(p, kind, new Vector3(x, y, z0 + (z1 - z0) * (kind == 'r' && sh.Length <= 0.9f ? 0.2f : 0.5f))); // (a short Bandit bay's rib is at its middle)
+        Lamp(p, kind, new Vector3(x, y, z0 + (z1 - z0) * (kind == 'r' && sh.Length <= 0.9f ? 0.2f : 0.5f))); // (a short Raider bay's rib is at its middle)
     }
 
     /// <summary>A faction's lamp hanging from a ceiling whose underside is at <paramref name="at"/>'s height.</summary>

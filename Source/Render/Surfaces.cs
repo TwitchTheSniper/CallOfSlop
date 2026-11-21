@@ -212,6 +212,16 @@ public static class Surfaces
             vec3 albedo = mix(rb.rgb, base, rb.a);
             float rough = ra.x;
             float metal = ra.y;
+            if (uSurfQ.w > 0.5)
+            {
+                // Material contrast (Settings > Video, the Ship Render Bench's roughness per material): paint, plating and other
+                // non-metals between 0.3 and 0.58 go to a satin 0.6 (gloss paint, tiles and glass stay glossy), and dark framing,
+                // rubber and soot go rough, so a hull's paint, its frames and its bare metal answer the light differently.
+                if (metal < 0.3 && rough >= 0.3 && rough < 0.58)
+                    rough = 0.6;
+                float lum = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+                rough = mix(max(rough, 0.86), rough, smoothstep(0.14, 0.22, lum));
+            }
             vec3 toEye = uCam - p;
             float dist = length(toEye);
             vec3 v = toEye / max(dist, 1e-3);
@@ -341,6 +351,24 @@ public static class Surfaces
                     rough = mix(rough, 0.95, rust);
                 }
             }
+            if (uSurfQ.z > 0.5 && size.x > 0.0)
+            {
+                // Edge bevels (Settings > Video, the Ship Render Bench's micro-bevels): a band along each edge of the face takes the
+                // normal of a 45-degree chamfer, so a thin sliver of light or shade runs along every box edge and panels read apart.
+                // The band is 2 cm, or 1.2 pixels where that is wider, so it still reads from far off; never more than half the face.
+                // Its edge is spread over the pixel (as the edge wear), so nothing sparkles. The face's u and v in the world come from
+                // the derivatives' frame, as the pattern bumps' do, so it holds on a moving part and far from the map's middle.
+                vec2 fwv = max(abs(dx) + abs(dy), vec2(1e-5));
+                vec2 ed = hs - abs(uv);
+                vec2 bw = min(max(vec2(0.02), 1.2 * fwv), hs * 0.5);
+                vec2 be = clamp((bw - ed) / fwv + 0.5, 0.0, 1.0);
+                vec3 b2 = cross(dpy, n), b1 = cross(n, dpx);
+                vec3 bu = b2 * dx.x + b1 * dy.x, bv = b2 * dx.y + b1 * dy.y;
+                bu *= inversesqrt(max(dot(bu, bu), 1e-24));
+                bv *= inversesqrt(max(dot(bv, bv), 1e-24));
+                nn = normalize(nn + bu * (sign(uv.x) * be.x) + bv * (sign(uv.y) * be.y));
+                albedo *= 1.0 + 0.2 * max(be.x, be.y); // (the glint: a lit chamfer is a little brighter than the face)
+            }
             vec3 diffuse = albedo * (1.0 - metal * 0.92);
             vec3 col = ApplyLightAt(diffuse, nn, 0.0, p);
             float amb = gLitAmb;
@@ -359,7 +387,7 @@ public static class Surfaces
             float norm = (power + 8.0) * 0.04;
             vec3 h = normalize(uSunDir + v);
             float nl = max(dot(nn, uSunDir), 0.0);
-            col += uSunColor * gSunVis * fres * pow(max(dot(nn, h), 0.0), power) * norm * nl;
+            col += uSunColor * (uKeyQ.x > 0.0 ? uKeyQ.x : 1.0) * gSunVis * fres * pow(max(dot(nn, h), 0.0), power) * norm * nl;
             if (uLitMode.x > 0.5 && dot(gLitDir, gLitDir) > 0.01)
             {
                 vec3 ld = normalize(gLitDir);

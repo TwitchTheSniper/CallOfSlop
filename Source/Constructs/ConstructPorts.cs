@@ -141,7 +141,7 @@ public static partial class ConstructParts
             for (var b = 0; b < d.PressBays.Length; b++)
             {
                 var s = d.Sockets[d.PressBays[b].Socket];
-                var open = Math.Max(0.1f, d.PressMaxCm / 100f);
+                var open = d.BlockRole == BlockRole.Core ? d.BlockCell : Math.Max(0.1f, d.PressMaxCm / 100f); // (a Press Core's bay takes what its walls take: up to its own cell across)
                 list.Add(new NamedPort { Name = b == 0 ? "Piece in" : $"Piece in {b + 1}", Type = RouteType.Conveyor, In = true, At = s.At - new Vector3(0, 0.11f, 0), Face = s.Dir, Opening = new Vector2(open, open), Implicit = true });
             }
         // And a Piece out after them (so the bays' port bytes stay as they were), where a stroke's body leaves (outAt, facing outDir) at the

@@ -19,7 +19,7 @@ public static unsafe partial class Program
     private static int InteriorWalk(string[] args)
     {
         string? Flag(string f) => args.SkipWhile(a => !a.Equals(f, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal));
-        var file = args.SkipWhile(a => !a.Equals("--interior-walk", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } fa && !fa.StartsWith("--", StringComparison.Ordinal) ? fa : Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalkerFitted.json");
+        var file = args.SkipWhile(a => !a.Equals("--interior-walk", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } fa && !fa.StartsWith("--", StringComparison.Ordinal) ? fa : Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalker.json");
         var ofName = Flag("--of") ?? Path.Combine(VehicleRegistry.RepoBlueprints(), "TitanWalker.json");
         var seed = int.TryParse(Flag("--seed"), out var sd) ? sd : 1;
         var walkSeconds = float.TryParse(Flag("--walk"), System.Globalization.CultureInfo.InvariantCulture, out var ws) ? ws : 0f;

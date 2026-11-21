@@ -1,0 +1,209 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dibber Power Plant",
+  "description": "The Dibber's power plant: a squat stack of cells in a cage on the systems deck, 150 kW for the lights, the air and the flight computer. No fuel.",
+  "group": "Ship",
+  "section": "Dibber lander",
+  "role": "generator",
+  "tool": "welder",
+  "generator": {
+    "rate": 150,
+    "spool": 5,
+    "fuel": "none"
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0.08,
+        0.45
+      ],
+      "face": "+z"
+    }
+  ],
+  "mass": 900.0,
+  "health": 2500,
+  "armour": 20,
+  "material": "steel",
+  "color": "#474b4f",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.55,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        0.55,
+        0.15,
+        0.45
+      ],
+      "color": "#2e302d",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.48,
+        0.15,
+        -0.38
+      ],
+      "max": [
+        0.48,
+        1.25,
+        0.38
+      ],
+      "color": "#d4c7a3",
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.49,
+        0.35,
+        -0.39
+      ],
+      "max": [
+        0.49,
+        0.4,
+        0.39
+      ],
+      "color": "#5a5f63",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.49,
+        0.65,
+        -0.39
+      ],
+      "max": [
+        0.49,
+        0.7,
+        0.39
+      ],
+      "color": "#d8692a",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.49,
+        0.95,
+        -0.39
+      ],
+      "max": [
+        0.49,
+        1.0,
+        0.39
+      ],
+      "color": "#5a5f63",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.3,
+        1.25,
+        -0.2
+      ],
+      "max": [
+        0.3,
+        1.33,
+        0.2
+      ],
+      "color": "#5a5f63",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.55,
+        0.15,
+        -0.45
+      ],
+      "max": [
+        -0.49,
+        1.4,
+        -0.39
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.49,
+        0.15,
+        -0.45
+      ],
+      "max": [
+        0.55,
+        1.4,
+        -0.39
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.55,
+        0.15,
+        0.39
+      ],
+      "max": [
+        -0.49,
+        1.4,
+        0.45
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.49,
+        0.15,
+        0.39
+      ],
+      "max": [
+        0.55,
+        1.4,
+        0.45
+      ],
+      "color": "#2e302d",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.7,
+        0.381
+      ],
+      "max": [
+        0.2,
+        0.998,
+        0.395
+      ],
+      "color": "#80d0ff",
+      "detail": true,
+      "finish": "glass"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

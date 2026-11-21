@@ -221,7 +221,7 @@ public sealed partial class Vehicle
             try
             {
                 // (asked for right over that socket, within 12 cm: a socket lower down, a base's say, is further off than that by the piece's height; the
-                // British Box Truck 2's flag stood on an Ammo Container's foot socket, in its foot)
+                // Mercenary Box Truck 2's flag stood on an Ammo Container's foot socket, in its foot)
                 return Put(part, new Vector3(on.X, top + size.Y / 2, on.Z), Orient.Upright, 0.12f, f, onTop: true);
             }
             catch (VehicleKitException)

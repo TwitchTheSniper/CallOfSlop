@@ -14,7 +14,7 @@ namespace CallOfSlop;
 /// <b>Ambient occlusion</b> (High only; <see cref="ApplyAo"/>, before the effects) reads a resolved depth buffer at half size, 8 samples.
 /// Low costs nothing: no pass runs and nothing is made. The 4.1 and 4.6 paths share all of this.
 /// </summary>
-public static unsafe class PostFx
+public static unsafe partial class PostFx
 {
     public const int MaxHaze = 32;
     private const int Unit0 = 17, Unit1 = 18; // (0-16 are taken: VideoFeeds.Unit, SurfaceGpu.Unit)
@@ -23,6 +23,12 @@ public static unsafe class PostFx
     public static VideoLevel Level = VideoLevel.Low;
 
     public static bool BloomOn = true, HazeOn = true, AoOn = true;
+
+    /// <summary>The ambient occlusion's reach in metres and its darkness (1 the default), from the Video settings.</summary>
+    public static float AoRadius = 0.8f, AoStrength = 1f;
+
+    /// <summary>Video > Ambient occlusion style: Classic (the grainy one before phase 4, cheaper) or Clean.</summary>
+    public static bool AoClassic = true;
 
     public static bool Bloom => Level >= VideoLevel.Medium && BloomOn;
 
@@ -144,12 +150,114 @@ public static unsafe class PostFx
         }
         """;
 
+    // Ambient occlusion (docs/render/MATERIALS.md "Post effects"): at half size, 12 samples in a spiral over a disc of uRadius metres,
+    // each weighed by how far above the surface it is. The normal comes from the full-size depth, taking on each axis the neighbour
+    // nearer in depth, so a box's edge against the sky or a far wall gets its own face's normal and no halo. The blur after it is a
+    // 3x3 that skips samples from another surface (by depth), so shade stays in its corner.
     private const string AoFs = """
         #version 410 core
         in vec2 vUv;
         uniform sampler2D uDepth;
         uniform vec4 uProj;    // M33, M43, 1 / M11, 1 / M22
+        uniform vec2 uTexel;   // the AO target's texel
+        uniform vec4 uShape;   // radius (m), strength, the depth texel x, y
+        out vec4 FragColor;
+        float Linear(vec2 uv)
+        {
+        #if REVZ
+            float nd = texture(uDepth, uv).r; // (reversed depth: 0..1 is already clip depth, uProj the reversed matrix's)
+        #else
+            float nd = texture(uDepth, uv).r * 2.0 - 1.0;
+        #endif
+            return uProj.y / (nd + uProj.x);
+        }
+        vec3 View(vec2 uv)
+        {
+            float l = Linear(uv);
+            return vec3((uv * 2.0 - 1.0) * uProj.zw * l, -l);
+        }
+        vec3 Nearer(vec3 p, vec3 a, vec3 b) { return abs(a.z - p.z) < abs(b.z - p.z) ? a - p : p - b; }
+        void main()
+        {
+            float d0 = texture(uDepth, vUv).r;
+        #if REVZ
+            if (d0 <= 1e-9)
+        #else
+            if (d0 >= 0.99999)
+        #endif
+            {
+                FragColor = vec4(1.0);
+                return;
+            }
+            vec3 p = View(vUv);
+            vec2 dt = uShape.zw;
+            vec3 ex = Nearer(p, View(vUv + vec2(dt.x, 0.0)), View(vUv - vec2(dt.x, 0.0)));
+            vec3 ey = Nearer(p, View(vUv + vec2(0.0, dt.y)), View(vUv - vec2(0.0, dt.y)));
+            vec3 n = normalize(cross(ex, ey));
+            float a0 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2832;
+            float radius = uShape.x;
+            float screen = radius / (uProj.z * max(-p.z, 0.3)) * 0.5;
+            screen = min(screen, 0.25); // (up close: no wider than a quarter of the window)
+            vec3 pn = p + n * (0.002 * -p.z); // (off the surface a little, so a flat face doesn't shade itself)
+            float occ = 0.0;
+            const int Taps = 12;
+            for (int i = 0; i < Taps; i++)
+            {
+                float t = (float(i) + 0.5) / float(Taps);
+                float a = a0 + t * 23.0;
+                vec2 uv = vUv + vec2(cos(a), sin(a)) * vec2(screen, screen * uTexel.y / uTexel.x) * sqrt(t);
+                vec3 v = View(uv) - pn;
+                float d2 = dot(v, v);
+                float c = max(dot(v, n) * inversesqrt(d2 + 1e-4) - 0.15, 0.0) * 1.18; // (an angle bias: a sample barely above a faceted or rounded-off surface counts for nothing)
+                occ += c * max(0.0, 1.0 - d2 / (radius * radius));
+            }
+            float ao = clamp(1.0 - occ / float(Taps) * 2.4 * uShape.y, 0.0, 1.0);
+            FragColor = vec4(ao, ao, ao, 1.0);
+        }
+        """;
+
+    private const string AoBlurFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uTex;
+        uniform sampler2D uDepth;
         uniform vec2 uTexel;
+        uniform vec4 uProj;
+        out vec4 FragColor;
+        float Linear(vec2 uv)
+        {
+        #if REVZ
+            float nd = texture(uDepth, uv).r;
+        #else
+            float nd = texture(uDepth, uv).r * 2.0 - 1.0;
+        #endif
+            return uProj.y / (nd + uProj.x);
+        }
+        void main()
+        {
+            float l0 = Linear(vUv);
+            float s = 0.0, w = 0.0;
+            for (int y = -1; y <= 1; y++)
+                for (int x = -1; x <= 1; x++)
+                {
+                    vec2 uv = vUv + vec2(x, y) * uTexel;
+                    float k = max(0.0, 1.0 - abs(Linear(uv) - l0) / (0.05 * l0 + 0.05));
+                    s += texture(uTex, uv).r * k;
+                    w += k;
+                }
+            FragColor = vec4(vec3(s / max(w, 1e-4)), 1.0);
+        }
+        """;
+
+    // Classic ambient occlusion (Video > Ambient occlusion style, Karl 2026-11-21: he liked its grain): the AO before phase 4, 8 samples
+    // with screen-derivative normals and a plain 4-tap blur, about half the work of the clean one. Flat ground takes a fine grain from it.
+    private const string AoClassicFs = """
+        #version 410 core
+        in vec2 vUv;
+        uniform sampler2D uDepth;
+        uniform vec4 uProj;    // M33, M43, 1 / M11, 1 / M22
+        uniform vec2 uTexel;
+        uniform vec4 uShape;   // radius (m), strength
         out vec4 FragColor;
         float Linear(vec2 uv)
         {
@@ -180,7 +288,7 @@ public static unsafe class PostFx
             vec3 p = View(vUv);
             vec3 n = normalize(cross(dFdx(p), dFdy(p)));
             float a0 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2832;
-            const float radius = 0.7;
+            float radius = uShape.x;
             float screen = radius / (uProj.z * max(-p.z, 0.3)) * 0.5;
             float occ = 0.0;
             for (int i = 0; i < 8; i++)
@@ -193,12 +301,12 @@ public static unsafe class PostFx
                 float c = max(dot(v, n) - 0.02 * -p.z * 0.05, 0.0) / (d2 + 0.02);
                 occ += c * max(0.0, 1.0 - d2 / (radius * radius * 1.4));
             }
-            float ao = clamp(1.0 - occ * radius * 0.28, 0.0, 1.0);
+            float ao = clamp(1.0 - occ * radius * 0.28 * uShape.y, 0.0, 1.0);
             FragColor = vec4(ao, ao, ao, 1.0);
         }
         """;
 
-    private const string AoBlurFs = """
+    private const string AoClassicBlurFs = """
         #version 410 core
         in vec2 vUv;
         uniform sampler2D uTex;
@@ -223,8 +331,8 @@ public static unsafe class PostFx
     private static bool _ready, _broken, _aoBroken, _alpha, _copied;
     private static int _w, _h;
     private static GlVertexArray _vao;
-    private static GlProgram _extract, _blur, _copy, _haze, _ao, _aoBlur;
-    private static int _lExtractTexel, _lExtractMarked, _lBlurStep, _lCopyMix, _lCopyGain, _lHazeVp, _lHazeRight, _lHazeUp, _lHazeData, _lHazeTexel, _lHazeTime, _lAoProj, _lAoTexel, _lAoBlurTexel;
+    private static GlProgram _extract, _blur, _copy, _haze, _ao, _aoBlur, _aoC, _aoCBlur;
+    private static int _lExtractTexel, _lExtractMarked, _lBlurStep, _lCopyMix, _lCopyGain, _lHazeVp, _lHazeRight, _lHazeUp, _lHazeData, _lHazeTexel, _lHazeTime, _lAoProj, _lAoTexel, _lAoShape, _lAoBlurTexel, _lAoBlurProj, _lAoCProj, _lAoCTexel, _lAoCShape, _lAoCBlurTexel;
     private static readonly Target Scene = new(), Half = new(), Quarter = new(), Quarter2 = new(), Eighth = new(), Eighth2 = new(), AoA = new(), AoB = new();
     private static uint _depthTex;
     private static bool _depthFloat;
@@ -336,8 +444,17 @@ public static unsafe class PostFx
             _ao = Link(QuadVs, AoFs, "PostFx.ao");
             _lAoProj = Loc(_ao, "uProj\0"u8);
             _lAoTexel = Loc(_ao, "uTexel\0"u8);
+            _lAoShape = Loc(_ao, "uShape\0"u8);
             _aoBlur = Link(QuadVs, AoBlurFs, "PostFx.aoBlur");
             _lAoBlurTexel = Loc(_aoBlur, "uTexel\0"u8);
+            _lAoBlurProj = Loc(_aoBlur, "uProj\0"u8);
+            _aoC = Link(QuadVs, AoClassicFs, "PostFx.aoClassic");
+            _lAoCProj = Loc(_aoC, "uProj\0"u8);
+            _lAoCTexel = Loc(_aoC, "uTexel\0"u8);
+            _lAoCShape = Loc(_aoC, "uShape\0"u8);
+            _aoCBlur = Link(QuadVs, AoClassicBlurFs, "PostFx.aoClassicBlur");
+            _lAoCBlurTexel = Loc(_aoCBlur, "uTexel\0"u8);
+            Set(_aoBlur, "uDepth\0"u8, Unit1); // (the blur reads the AO on unit 0 and the depth beside it)
             _vao = GenVertexArray();
             GlDebug.Label(GL_VERTEX_ARRAY, _vao.Id, "PostFx");
             int alpha = 0;
@@ -441,9 +558,63 @@ public static unsafe class PostFx
     /// <summary>Ambient occlusion over what is drawn so far (the opaque world): before the blended effects, so smoke and flames aren't darkened.</summary>
     public static void ApplyAo(Renderer gfx, int w, int h, in Matrix4x4 proj)
     {
+        _depthFresh = false;
         if (!Ao || _aoBroken || !Init())
             return;
         Resize(w, h);
+        if (!(_depthFresh = CopyDepth(w, h)))
+        {
+            Console.WriteLine("[postfx] ambient occlusion off: the depth buffer could not be read");
+            _aoBroken = true;
+            End(gfx, w, h);
+            return;
+        }
+        Begin();
+        if (AoClassic)
+        {
+            _aoC.Use();
+            Native.glUniform4f(_lAoCProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Native.glUniform2f(_lAoCTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoCShape, AoRadius, AoStrength, 0f, 0f);
+            Bind(Unit0, _depthTex);
+            Pass(AoA);
+            _aoCBlur.Use();
+            Native.glUniform2f(_lAoCBlurTexel, 1f / AoA.W, 1f / AoA.H);
+            Bind(Unit0, AoA.Tex);
+            Pass(AoB);
+        }
+        else
+        {
+            _ao.Use();
+            Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoShape, AoRadius, AoStrength, 1f / w, 1f / h);
+            Bind(Unit0, _depthTex);
+            Pass(AoA);
+            _aoBlur.Use();
+            Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
+            Native.glUniform4f(_lAoBlurProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
+            Bind(Unit0, AoA.Tex);
+            Bind(Unit1, _depthTex);
+            Pass(AoB);
+        }
+        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
+        Viewport(0, 0, w, h);
+        Native.glEnable(GlCapability.Blend);
+        Native.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+        Native.glColorMask(true, true, true, false);
+        _copy.Use();
+        Native.glUniform1f(_lCopyMix, 0f);
+        Native.glUniform1f(_lCopyGain, 1f);
+        Bind(Unit0, AoB.Tex);
+        Bind(Unit1, AoB.Tex);
+        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
+        End(gfx, w, h);
+    }
+
+    /// <summary>The depth drawn so far copied into <c>_depthTex</c> (made at this size and format on first use): ambient occlusion and contact shadows read it. False when the blit failed.</summary>
+    private static bool CopyDepth(int w, int h)
+    {
         var floatDepth = Renderer.SceneTargetOn; // (the scene target's depth is 32-bit float: a depth blit wants the same format)
         if (_depthTex != 0 && _depthFloat != floatDepth)
         {
@@ -481,36 +652,7 @@ public static unsafe class PostFx
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, Renderer.MainFbo);
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _depthFbo);
         Native.glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-        var err = GlDebug.Error();
-        if (err != 0)
-        {
-            Console.WriteLine($"[postfx] ambient occlusion off: the depth buffer could not be read (GL error 0x{err:X})");
-            _aoBroken = true;
-            End(gfx, w, h);
-            return;
-        }
-        Begin();
-        _ao.Use();
-        Native.glUniform4f(_lAoProj, proj.M33, proj.M43, 1f / proj.M11, 1f / proj.M22);
-        Native.glUniform2f(_lAoTexel, 1f / AoA.W, 1f / AoA.H);
-        Bind(Unit0, _depthTex);
-        Pass(AoA);
-        _aoBlur.Use();
-        Native.glUniform2f(_lAoBlurTexel, 1f / AoA.W, 1f / AoA.H);
-        Bind(Unit0, AoA.Tex);
-        Pass(AoB);
-        Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, Renderer.MainFbo);
-        Viewport(0, 0, w, h);
-        Native.glEnable(GlCapability.Blend);
-        Native.glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-        Native.glColorMask(true, true, true, false);
-        _copy.Use();
-        Native.glUniform1f(_lCopyMix, 0f);
-        Native.glUniform1f(_lCopyGain, 1f);
-        Bind(Unit0, AoB.Tex);
-        Bind(Unit1, AoB.Tex);
-        Native.glDrawArrays(GL_TRIANGLES, 0, 3);
-        End(gfx, w, h);
+        return GlDebug.Error() == 0;
     }
 
     /// <summary>Haze and bloom over the frame so far (after the effects, before the first-person gun and the HUD).</summary>
