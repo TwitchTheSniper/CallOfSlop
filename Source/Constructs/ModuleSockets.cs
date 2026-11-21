@@ -607,6 +607,59 @@ public static class ModuleSockets
         return -1;
     }
 
+    /// <summary>Why a module can't go on a plate welded on freeform off the 90-degree grid.</summary>
+    public const string OffGrid = "this socket is welded on turned off the craft's grid: weld it on square (a multiple of 90 degrees) to fit a module";
+
+    /// <summary>
+    /// The frame plate <paramref name="plate"/>'s numbers are in, as a turn and an origin of the body's rest frame: none for a plate
+    /// on the body or on a plain joint's segment; a freeform weld's rest pose for one welded on freeform (a face point or an
+    /// off-grid spin of the socket weld, as a player's own socket usually is). False when that weld is off the 90-degree grid,
+    /// where a module's turn can't be square to both the plate and the body.
+    /// </summary>
+    public static bool PlateFrame(Construct c, int plate, out byte turn, out Vector3 origin)
+    {
+        turn = 0;
+        origin = default;
+        var seg = c.Parts[plate].Seg;
+        if (seg == 0 || c.FrameOf(seg) == 0)
+            return true;
+        c.RestPose(seg, out var q, out origin);
+        turn = Rot24.Nearest(q, out var match);
+        return match >= 0.999f;
+    }
+
+    /// <summary>Plate <paramref name="plate"/>'s turn and its Module socket's face (place and facing) in the body's rest frame; false off the grid (<see cref="PlateFrame"/>).</summary>
+    public static bool PlateRest(Construct c, int plate, out byte rot, out Vector3 faceAt, out byte faceDir)
+    {
+        var d = c.DefOf(plate);
+        c.SocketAt(plate, d.ModSocket, out faceAt, out faceDir);
+        rot = c.Parts[plate].Rot;
+        if (!PlateFrame(c, plate, out var turn, out var origin))
+            return false;
+        if (turn != 0 || origin != Vector3.Zero)
+        {
+            faceAt = origin + Rot24.Apply(turn, faceAt);
+            faceDir = Rot24.ApplyDir(turn, faceDir);
+            rot = Rot24.Compose(turn, rot);
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// A module merged onto plate <paramref name="plate"/> by a plan made in the body's rest frame (turn and offset): onto a plate
+    /// welded on freeform, the plan goes into that weld's frame and segment, so the module rides the weld with its plate.
+    /// </summary>
+    public static void PlanOnPlate(Construct c, int plate, ref JoinPlan plan)
+    {
+        var seg = c.Parts[plate].Seg;
+        if (seg == 0 || c.FrameOf(seg) == 0 || !PlateFrame(c, plate, out var turn, out var origin))
+            return;
+        var back = SubBlueprints.Inverse(turn);
+        plan.Turn = Rot24.Compose(back, plan.Turn);
+        plan.Offset = ConstructWorld.Quantise(Rot24.Apply(back, plan.Offset - origin));
+        plan.Seg = seg;
+    }
+
     /// <summary>A box of segment <paramref name="seg"/>'s frame as an axis-aligned box of the body's rest frame (a freeform weld turns it; RestPose).</summary>
     public static void RestAabb(Construct c, int seg, ref Vector3 centre, ref Vector3 half)
     {
@@ -789,13 +842,13 @@ public static class ModuleSockets
         if (match < 0.999f)
             return "it isn't square to the socket";
         var plugRot = Rot24.Compose(bodyTurn, mover.Parts[m.Plug].Rot);
-        if (!TurnFits(plateDef, ship.Parts[s.Plate].Rot, plugDef, plugRot, s.Keyed))
+        if (!PlateRest(ship, s.Plate, out var plateRot, out var faceAt, out var plateDir))
+            return OffGrid;
+        if (!TurnFits(plateDef, plateRot, plugDef, plugRot, s.Keyed))
             return s.Keyed ? "a keyed socket takes its module one way round only: turn it (the notched corners together)" : "turn it: the module's long side goes along the socket's";
         // Inside the room: every part of the module, in the ship's frame.
         var rel = Vector3.Transform(moverPos - ship.Pos, inv);
         Vector3 lo = s.RoomMin - new Vector3(0.006f), hi = s.RoomMax + new Vector3(0.006f);
-        var plateDir = Rot24.ApplyDir(ship.Parts[s.Plate].Rot, plateDef.Sockets[plateDef.ModSocket].Dir);
-        ship.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out _);
         int axis = plateDir >> 1;
         var sign = (plateDir & 1) == 0 ? 1f : -1f;
         var top = 0f; // (the module's highest point over the plate's face: a flush module's face)
