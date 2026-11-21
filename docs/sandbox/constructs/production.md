@@ -151,6 +151,14 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   fits), the next on the last one's far end; lay them side by side under a wide die. The longest piece is the Core's 16 m, or out to the farthest
   table's end, up to 192 m (`growLength`, `Extrusion.MaxLengthCm`). A table's top is level with the machine's foot, so a block machine stands on
   Foundations and its tables on the ground in front. The step walks the tables only within 1 m of the plain cap.
+  **Inline into a roller run** (Sean 2026-11-21: extruders feed the formers along the conveying system, no arm or crane). A Roller Tile's
+  `-z table` socket welds on a table's far-end `roller` socket with the rollers' tops level with the table's (the tile's foot 1 m under the
+  table's top: in a line, the Extruder stands so its tables are at the 1 m work height, on a 0.7 m plinth over the floor the tiles stand on).
+  A run butted on a Run-out Table is its Extruder's `Piece out` (`RollerRuns.Butted`, `ConstructExtruder.TableMachine`): the link starts at the
+  die, so each cut piece is handed off whole (`ConstructConveyor.HandOff`) and rides from the die over the tables and on along the run. Butt
+  the run's out end on a Panel Former's or a Laser Cutter's back (their Cores' `-z` socket, on the Piece in) and the
+  Panel Former takes it as the blank of the order it fits (one blank a panel), a cutter onto its bed. Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
+  tiles, into a Panel Former's bin. A conveyor a player linked from the Extruder's Piece out keeps it, and the run then starts at its own first tile. Not tried: a joined client's view of the ride, a die wider than one table.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
   Former's blank link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`). The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
 - **Sizes.** 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass` and `MaxPartHealth`
@@ -1746,7 +1754,7 @@ rectangle holding the lowest-index tile. A run is one ordinary conveyor link alo
 12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
-out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
+out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
 its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
 or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
 **Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide

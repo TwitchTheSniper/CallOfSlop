@@ -52,8 +52,8 @@ public static unsafe class SunShadows
 
     private sealed class Caster
     {
-        public GlBuffer Vbo;
-        public int Count, Stamp = -1, Parts = -1, Doors = -1, Used;
+        public GlBuffer Vbo, Shapes;
+        public int Count, ShapeVerts, Stamp = -1, Parts = -1, Doors = -1, Used;
         public float Radius;
     }
 
@@ -67,11 +67,12 @@ public static unsafe class SunShadows
     private static readonly List<int> Gone = new();
     private static readonly Pick[] Picks = new Pick[MaxBodies];
     private static float[] _boxes = new float[6 * 256];
+    private static float[] _shapes = new float[6 * 1024];
     private static bool _ready, _broken;
     private static int _frame, _size;
     private static GlProgram _prog;
     private static int _lMvp;
-    private static GlVertexArray _vao;
+    private static GlVertexArray _vao, _shapeVao;
     private static GlBuffer _cube, _cubeIdx;
     private static GlFramebuffer _fbo;
     private static uint _tex;
@@ -210,6 +211,7 @@ public static unsafe class SunShadows
             Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
             Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
             Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, cast.Count);
+            DrawShapes(cast.Shapes, cast.ShapeVerts);
             bodies++;
             boxes += cast.Count;
         }
@@ -339,6 +341,12 @@ public static unsafe class SunShadows
             Native.glBindVertexArray(default);
             Native.glBindBuffer(GL_ARRAY_BUFFER, default);
             GlDebug.Label(GL_VERTEX_ARRAY, _vao.Id, "SunShadows");
+            _shapeVao = GenVertexArray(); // (shaped boxes' triangles: DrawShapes points its three attributes at a body's list, no divisors)
+            Native.glBindVertexArray(_shapeVao);
+            EnableVertexAttribArray(0);
+            EnableVertexAttribArray(1);
+            EnableVertexAttribArray(2);
+            Native.glBindVertexArray(default);
             _progReady = true;
         }
         catch (Exception ex)
@@ -390,11 +398,32 @@ public static unsafe class SunShadows
     /// whenever a door starts moving or settles (<see cref="Construct.DoorPoseStamp"/>): a settled door's parts sit at its pose
     /// (shut or open), and a moving door is left out, so an open door lets the sun, the sky and lamps through.
     /// </summary>
-    internal static (GlBuffer Vbo, int Count) CasterBoxes(Construct c)
+    internal static (GlBuffer Vbo, int Count, GlBuffer Shapes, int ShapeVerts) CasterBoxes(Construct c)
     {
         var k = CasterOf(c);
-        return (k.Vbo, k.Count);
+        return (k.Vbo, k.Count, k.Shapes, k.ShapeVerts);
     }
+
+    /// <summary>
+    /// Draws a body's shaped boxes as their own triangles (<see cref="CasterOf"/>) with whichever depth program is in use: each
+    /// vertex comes in as the caster's centre with no half size, so <c>iCentre + aPos * iHalf</c> is the point itself. Leaves the
+    /// unit cube's arrays bound again (the caller sets the body's matrix first).
+    /// </summary>
+    internal static void DrawShapes(GlBuffer vbo, int verts)
+    {
+        if (verts == 0)
+            return;
+        Native.glBindVertexArray(_shapeVao);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no corner)
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
+        Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no half size)
+        Native.glDrawArrays(GL_TRIANGLES, 0, verts);
+        Native.glBindVertexArray(_vao);
+    }
+
+    /// <summary>A shaped box smaller than this (its largest half size, m) still casts as its box: a bolt's or a knob's shadow doesn't show the difference.</summary>
+    private const float ShapeMinHalf = 0.12f;
 
     private static Caster CasterOf(Construct c)
     {
@@ -411,6 +440,7 @@ public static unsafe class SunShadows
         k.Parts = c.PartCount;
         k.Doors = c.DoorPoseStamp;
         var n = 0;
+        var sv = 0;
         var doors = c.DoorMovingCount > 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -421,6 +451,24 @@ public static unsafe class SunShadows
             {
                 if (b.Hidden || b.Glass > 0f)
                     continue;
+                if (b.Shape != 0 && MathF.Max(b.Half.X, MathF.Max(b.Half.Y, b.Half.Z)) >= ShapeMinHalf && PartShapes.Mesh(b.Shape) is { Length: > 0 } mesh)
+                {
+                    // A shape (a sloped hull plate, a wedge, a cylinder) casts as itself, not as the box it fills: a sloped plate's
+                    // box is a solid block round it, which hid the plate's own face from the sky and the sun (Karl, 2026-11-21: the
+                    // Zero Day's sides went black outside, the dark interiors taking them for a shut room).
+                    var verts = mesh.Length / PartShapes.FloatsPerVertex;
+                    if ((sv + verts) * 6 > _shapes.Length)
+                        Array.Resize(ref _shapes, Math.Max(_shapes.Length * 2, (sv + verts) * 6));
+                    for (var v = 0; v < verts; v++)
+                    {
+                        var m = v * PartShapes.FloatsPerVertex;
+                        var at = part.Pos + Rot24.Apply(part.Rot, b.ShapePoint(new Vector3(mesh[m], mesh[m + 1], mesh[m + 2])));
+                        var so = (sv + v) * 6;
+                        (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
+                    }
+                    sv += verts;
+                    continue;
+                }
                 if ((n + 1) * 6 > _boxes.Length)
                     Array.Resize(ref _boxes, _boxes.Length * 2); // (grows to the biggest body once)
                 var centre = part.Pos + Rot24.Apply(part.Rot, b.Center);
@@ -434,6 +482,19 @@ public static unsafe class SunShadows
         Native.glBindBuffer(GL_ARRAY_BUFFER, k.Vbo);
         fixed (float* p = _boxes)
             Native.glBufferData(GL_ARRAY_BUFFER, Math.Max(n, 1) * 24, p, GL_STATIC_DRAW);
+        k.ShapeVerts = sv;
+        if (sv > 0)
+        {
+            if (k.Shapes.Id == 0)
+            {
+                k.Shapes = GenBuffer();
+                Native.glBindBuffer(GL_ARRAY_BUFFER, k.Shapes);
+                GlDebug.Label(GL_BUFFER, k.Shapes.Id, "SunShadows.shapes");
+            }
+            Native.glBindBuffer(GL_ARRAY_BUFFER, k.Shapes);
+            fixed (float* p = _shapes)
+                Native.glBufferData(GL_ARRAY_BUFFER, sv * 24, p, GL_STATIC_DRAW);
+        }
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
         return k;
     }
@@ -446,6 +507,11 @@ public static unsafe class SunShadows
             {
                 var b = k.Vbo;
                 Native.glDeleteBuffers(1, &b);
+                if (k.Shapes.Id != 0)
+                {
+                    var sb = k.Shapes;
+                    Native.glDeleteBuffers(1, &sb);
+                }
                 Gone.Add(id);
             }
         foreach (var id in Gone)

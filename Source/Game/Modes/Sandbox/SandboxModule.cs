@@ -132,7 +132,7 @@ public sealed class SandboxModule : GameModeModule
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg) // (protocol 137: a free joint held on its own, GrabLocal in its frame)
                     .U8(ConstructGrab.BoostByte(h.GrabSeg == 0 && game.Constructs.Get(h.GrabBody) is { } held ? held.GrabBoost : 1f)); // (protocol 375: the flight boost)
-            w.U16(h.PullShip); // (protocol 424: the physics gun's pull on a fitted module, for its beam and the module's shake)
+            w.U16(h.PullShip); // (protocol 425: the physics gun's pull on a fitted module, for its beam and the module's shake)
             if (h.PullShip != 0)
                 w.U16(h.PullPlate).U16(h.PullBody).CmVec(h.PullLocal).U8(h.PullShake);
             var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)

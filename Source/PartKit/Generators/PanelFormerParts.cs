@@ -69,6 +69,7 @@ public sealed class PanelFormerParts : IPartGenerator
         var bulk = Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(R(-E + wall + 0.005), R(cab + 0.005), R(-E + wall + 0.005))), ("max", Py.L(R(E - wall - 0.005), R(H - 0.005), R(hz1 - wall - 0.005))));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+z", [0, 0.5, 1], "+z"); // (the first Bed Block: the bed runs on from its front)
+        p.Sock("-z", [0, 0.5, -1], "-z"); // (a Roller Tile's run butted on its Piece in: RollerRuns.Butted)
         p.Stats(2400, 2200, 6, 10);
         p.Set(("power", CorePower), ("storage", Kw(("bulk", bulk),
                 ("panel", Kw(("speed", 1), ("at", Py.L(0, WorkY, 0)), ("maxWidth", 32), ("maxLength", 32), ("blockPower", BlockPower))))),
