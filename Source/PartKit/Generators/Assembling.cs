@@ -747,6 +747,9 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Stand 3 m", null),
         // (the block machines' shared 2 m cube, design page drawings 19 to 24: masts for pads, ovens, stations and crane rails)
         ("Machines", "Mast Block", null), // (a named row: a new part file in Machines is refused until it has its own row here)
+        // (the Hall Crane, design page drawing 24: its rail blocks and its bridge's Core)
+        ("Lifters/HallCranes", "Crane Rail Block", null),
+        ("Lifters/HallCranes", "Crane Core", null),
     ];
 
     /// <summary>
