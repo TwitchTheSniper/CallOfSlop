@@ -132,6 +132,29 @@ public sealed class AssemblerParts : IPartGenerator
         p.Add(L([-E - 0.026, 1.75, -0.74], [-E - 0.012, 1.81, -0.18], MachineLook.Ink));
         p.Add(MachineLook.Work(L([-0.8, top + 0.04, back + 0.1], [0.8, top + 0.08, back + 0.2], MachineLook.Steel, "steel"), "stroke", "+z", 0.04)); // (the sorter's shaker tray)
         MachineLook.Hazard(p, [-E - 0.012, H - 0.06, back], [-E, H - 0.02, front]);
+        // The power cabinet on +x under the chute out: a breaker panel (four labelled breakers, two gauges) and a fan grille.
+        p.Add(L([E - 0.002, 0.5, -0.42], [E + 0.016, 1.0, -0.06], MachineLook.Base));
+        for (var k = 0; k < 4; k++)
+        {
+            var z = -0.36 + k * 0.08;
+            p.Add(L([E + 0.016, 0.56, z], [E + 0.04, 0.66, z + 0.05], k == 0 ? MachineLook.Hot : MachineLook.Ink)); // (a breaker, the main red)
+            p.Add(L([E + 0.016, 0.68, z], [E + 0.022, 0.7, z + 0.05], MachineLook.In)); // (its label)
+        }
+        foreach (var z in new[] { -0.32, -0.16 })
+        {
+            p.Add(L([E + 0.016, 0.78, z - 0.06], [E + 0.03, 0.9, z + 0.06], MachineLook.Steel, "steel", shape: Cyl("+x", 12))); // (a gauge's bezel)
+            p.Add(L([E + 0.03, 0.8, z - 0.045], [E + 0.034, 0.88, z + 0.045], MachineLook.In, shape: Cyl("+x", 12))); // (its face)
+        }
+        p.Add(L([E - 0.002, 1.38, -0.88], [E + 0.012, 1.58, -0.64], MachineLook.Ink)); // (the fan grille's frame)
+        p.Add(MachineLook.Work(L([E + 0.012, 1.4, -0.86], [E + 0.02, 1.56, -0.66], MachineLook.Steel, "steel", shape: Cyl("+x", 12)), "spin", "+x")); // (its fan, turning at work)
+        // A tool rack on the deck's -x edge with three spare heads, and a drip tray under the vice.
+        p.Add(L([-0.95, BedTop + 0.016, 0.34], [-0.86, 0.95, 0.86], MachineLook.Base));
+        foreach (var z in new[] { 0.44, 0.6, 0.76 })
+        {
+            p.Add(L([-0.86, 0.78, z - 0.02], [-0.78, 0.8, z + 0.02], MachineLook.Steel, "steel")); // (a hook)
+            p.Add(L([-0.84, 0.62, z - 0.05], [-0.76, 0.76, z + 0.05], z < 0.5 ? MachineLook.Hot : MachineLook.Accent, shape: Cyl("+y", 8))); // (a spare head)
+        }
+        p.Add(L([-0.44, BedTop + 0.016, 0.08], [-0.06, BedTop + 0.024, 0.32], MachineLook.Ink)); // (the drip tray under the vice)
         // Lifting eyes on the cabinet's top corners.
         foreach (var x in new[] { -0.85, 0.85 })
             p.Add(L([x - 0.05, H, -0.96], [x + 0.05, H + 0.08, -0.93], MachineLook.Steel, "steel"));
@@ -183,6 +206,11 @@ public sealed class AssemblerParts : IPartGenerator
         p.Add(MachineLook.Work(L([-0.4, t + 0.012, -0.4], [0.4, t + 0.026, 0.4], "#7b848c", "steel"), "glow")); // (the lift platen: lit while its machine builds)
         foreach (var (x, z) in new[] { (0.93, 0.93), (-0.93, 0.93), (0.93, -0.93), (-0.93, -0.93) })
             p.Add(L([x - 0.025, t + 0.012, z - 0.025], [x + 0.025, t + 0.03, z + 0.025], MachineLook.Base, shape: Cyl("+y", 6)));
+        // A bolt row round the platen, and the cable trench along its -x edge (one trench down the bed's length).
+        foreach (var a in new[] { -0.3, -0.1, 0.1, 0.3 })
+            foreach (var (bx, bz) in new[] { (a, -0.44), (a, 0.44), (-0.44, a), (0.44, a) })
+                p.Add(L([bx - 0.015, t + 0.012, bz - 0.015], [bx + 0.015, t + 0.024, bz + 0.015], MachineLook.Steel, "steel", shape: Cyl("+y", 6)));
+        p.Add(L([-0.86, t + 0.014, -E + 0.03], [-0.62, t + 0.018, E - 0.03], MachineLook.Ink)); // (the trench's grating: a dark strip on the table)
         // The gantry rail on the +x edge, where a carriage stands.
         p.Add(L([0.74, t + 0.012, -0.98], [0.9, t + 0.05, 0.98], MachineLook.Accent));
         p.Sock("+x", [1, OriginY, 0], "+x");

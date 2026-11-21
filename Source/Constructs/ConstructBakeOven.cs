@@ -165,6 +165,7 @@ public static class ConstructBakeOven
             return;
         world.OvenTicks = 0;
         world.Hazards.Clear();
+        ConstructAssembling.AddHazards(world); // (Assemblers' working places: the arms strike and the weld burns)
         var bodies = world.Bodies;
         for (var ci = 0; ci < bodies.Count; ci++)
         {

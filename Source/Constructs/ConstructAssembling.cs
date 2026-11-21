@@ -451,6 +451,56 @@ public static class ConstructAssembling
         return AsmBlock.OutputBlocked;
     }
 
+    private const int ArmDamage = 1; // per 60 Hz game tick in a working place (60 a second): its arm swinging and its weld (GameMachineHazards)
+    private static int _family = -2;
+
+    /// <summary>
+    /// Server, 10 Hz (from ConstructBakeOven.Step, after it clears the list): a hazard box over each place an Assembler with a bed is building
+    /// on, from the bed's top to 1.9 m over it. Machines never stop for people: the kerb's stripes are the warning. Allocates nothing.
+    /// </summary>
+    public static void AddHazards(ConstructWorld world)
+    {
+        if (_family == -2)
+            _family = MachineBlocks.Families.IndexOf("assembler");
+        if (_family < 0)
+            return;
+        var bodies = world.Bodies;
+        var now = ConstructConveyor.Clock;
+        for (var ci = 0; ci < bodies.Count; ci++)
+        {
+            var c = bodies[ci];
+            for (var a = 0; a < c.MachineAsmCount; a++)
+            {
+                ref readonly var asm = ref c.MachineAsms[a];
+                if (asm.Family != _family || asm.W == 0 || asm.Core >= c.PartCount || world.Hazards.Count > 60)
+                    continue;
+                ref readonly var p = ref c.Parts[asm.Core];
+                if (p.Broken || p.D.BlockRole != BlockRole.Core || world.StoreOf(c, asm.Core) is not { } st || !ProductionLines.Working(world, c, asm.Core, st, now))
+                    continue;
+                if (RecipeOf(AssemblingTable.Current, p, p.D) is not { } r)
+                    continue;
+                var fit = FitOf(c, asm.Core);
+                var places = fit.Places(r.Output, out var turned);
+                var n = Math.Min(fit.AtOnce(r.Output), Math.Min(places, 16));
+                if (n == 0 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(c, asm.Core), out var toCore))
+                    continue;
+                fit.Footprint(r.Output, out var fx, out var fz, out _);
+                if (turned)
+                    (fx, fz) = (fz, fx);
+                var across = Math.Max(1, asm.W / fx);
+                var o = p.D.BlockOrigin ?? Vector3.Zero;
+                var bedTop = o.Y * 2f;
+                for (var k = 0; k < n; k++)
+                {
+                    int i = k % across, j = k / across;
+                    var x = o.X + (asm.X0 - 0.5f + i * fx) * fit.Cell;
+                    var z = o.Z + (asm.Z0 - 0.5f + j * fz) * fit.Cell;
+                    world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(x, bedTop, z), Max = new Vector3(x + fx * fit.Cell, bedTop + 1.9f, z + fz * fit.Cell), Damage = ArmDamage });
+                }
+            }
+        }
+    }
+
     /// <summary>Where a recipe's output goes as the tray stands.</summary>
     public static AsmOut OutputOf(ConstructPartDef d, CStore st, AssembleRecipe r) => OutputOf(d, st, r.Output, r.Count);
 
