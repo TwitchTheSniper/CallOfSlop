@@ -157,6 +157,8 @@ public static class ConstructPanelFormer
         var mat = HullLoft.FormedMaterial(o.Name);
         if (mat == 0 || ExtrusionTable.Current.Find(mat) == null)
             return $"the {d.Name} has no material for that panel";
+        if (FlatOf(panel, out var flat) && (Math.Min(flat.Width, flat.Length) * 100 > Extrusion.MaxSectionCm || Math.Max(flat.Width, flat.Length) * 100 > Extrusion.MaxLengthCm))
+            return $"no blank that large: the panel lies flat at {flat.Length:0.##} x {flat.Width:0.##} m, a sheet is {Extrusion.MaxSectionCm / 100} m wide at most";
         if (c.Parts[part].Orders is { Count: >= WorkOrders.MaxOrders })
             return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
         return null;
@@ -216,7 +218,13 @@ public static class ConstructPanelFormer
         }
         if (!WorkOrders.HeadOf(p, out var head))
         {
-            st.JobTicks = 0; // (a blank on the bed stays there for the next order it fits)
+            // (a blank whose order went another way, a terminal's cancel or the planner's drop: sheared into the offcut bin)
+            if (st.JobAmount > 0 && !GiveBack(world, c, part))
+            {
+                Idle(world, st, ExtrudeStall.OffcutFull);
+                return;
+            }
+            st.JobTicks = 0;
             Idle(world, st, ExtrudeStall.NoOrders);
             return;
         }
@@ -224,6 +232,16 @@ public static class ConstructPanelFormer
         {
             Idle(world, st, ExtrudeStall.BadShape);
             return;
+        }
+        if (st.JobAmount > 0 && st.JobTicks == 0 && !BlankServes(st, panel))
+        {
+            // The head isn't the order this blank was taken for (its order was cancelled at a terminal, or dropped by the planner, which
+            // don't go through Cancel): never form it from the wrong blank. Into the offcut bin, and the head asks its own.
+            if (!GiveBack(world, c, part))
+            {
+                Idle(world, st, ExtrudeStall.OffcutFull);
+                return;
+            }
         }
         if (st.JobAmount == 0 && !BedFits(c, part, panel))
         {
@@ -372,7 +390,9 @@ public static class ConstructPanelFormer
     {
         if (!FlatOf(panel, out var f))
             return default;
-        return new ExtrusionKey(ulong.MaxValue, (ushort)Math.Min(Step(f.Width), Extrusion.MaxSectionCm), (ushort)f.ThickCm, (ushort)Step(f.Length), f.Material, false, ExShape.Section);
+        // (the narrower side across the die, the longer one along the run: the smallest die that makes it)
+        float across = MathF.Min(f.Width, f.Length), along = MathF.Max(f.Width, f.Length);
+        return new ExtrusionKey(ulong.MaxValue, (ushort)Math.Min(Step(across), Extrusion.MaxSectionCm), (ushort)f.ThickCm, (ushort)Step(along), f.Material, false, ExShape.Section);
     }
 
     /// <summary>Is this piece a blank for this panel? A solid sheet of its material and thickness, its two sides each from the flat size to <see cref="OverMost"/> over it (either way round).</summary>
@@ -399,6 +419,32 @@ public static class ConstructPanelFormer
         return -1;
     }
 
+    /// <summary>Does any queued order's panel take this blank (bed or no bed)? A piece no order takes is never waited for.</summary>
+    private static bool AnyOrderTakes(Construct c, int part, ConstructPartDef piece)
+    {
+        if (c.Parts[part].Orders is not { Count: > 0 } q)
+            return false;
+        for (var k = 0; k < q.Count; k++)
+            if (q.Items[k].Left > 0 && q.Items[k].Name is { } n && ConstructParts.Find(n) is { } panel && BlankFits(piece, panel))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Server: a piece at Piece in that no order takes (its order cancelled after the Extruder was asked, or an older world's sheet) is
+    /// sheared into the offcut bin, so it never blocks the line; it waits only while the bin can't take it.
+    /// </summary>
+    private static bool Scrap(ConstructWorld world, Construct c, int part, CStore st, ConstructPartDef piece)
+    {
+        var mat = piece.ExKey.Material;
+        var units = Math.Max(1, (int)MathF.Round(piece.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat))));
+        if (!BinTakes(c, part, st, mat, units))
+            return false;
+        world.Deposit(c, part, units, mat);
+        Console.WriteLine($"[former] {c.DefOf(part).Name} #{part}: no order takes {piece.Name}: sheared into the offcut bin ({units} units)");
+        return true;
+    }
+
     /// <summary>Server: does this former want this piece now (its bed empty, the piece a blank for one of its orders)? A Router or an arm sends it one then.</summary>
     public static bool Wants(ConstructWorld world, Construct c, int part, ConstructPartDef piece) =>
         world.StoreOf(c, part) is { JobAmount: 0 } && OrderFor(c, part, piece) >= 0;
@@ -407,9 +453,13 @@ public static class ConstructPanelFormer
     /// Server: a piece at the end of a conveyor into a former's Piece in (or set in by a Loader Arm). Only a blank for one of its orders is
     /// taken, and only onto an empty bed: its order goes to the head, and the blank lies on the bed whole. Anything else waits on the conveyor.
     /// </summary>
-    public static bool TakeFromConveyor(ConstructWorld world, Construct c, int part, ConstructPartDef piece)
+    public static bool TakeFromConveyor(ConstructWorld world, Construct c, int part, ConstructPartDef piece, bool scrap = false)
     {
-        if (world.StoreOf(c, part) is not { JobAmount: 0 } st || OrderFor(c, part, piece) is not (var at and >= 0))
+        if (world.StoreOf(c, part) is not { } st)
+            return false;
+        if (scrap && piece.IsExtrusion && !AnyOrderTakes(c, part, piece))
+            return Scrap(world, c, part, st, piece);
+        if (st.JobAmount != 0 || OrderFor(c, part, piece) is not (var at and >= 0))
             return false;
         if (at > 0)
         {
@@ -434,14 +484,14 @@ public static class ConstructPanelFormer
     /// Server: the head order is going (Cancel, Clear) with a blank on the bed and no stroke done: the blank is sheared up into the offcut bin
     /// (as much as it has room for), so it is never formed to an order it wasn't taken for.
     /// </summary>
-    public static void GiveBack(ConstructWorld world, Construct c, int part)
+    public static bool GiveBack(ConstructWorld world, Construct c, int part)
     {
         if (world.StoreOf(c, part) is not { JobAmount: > 0 } st)
-            return;
+            return true;
         var mat = st.JobMaterial;
-        var room = st.Amount == 0 || st.Material == mat ? Math.Max(0, ConstructStorage.Capacity(c, part) - st.Amount) : 0;
-        if (room > 0)
-            world.Deposit(c, part, Math.Min(room, st.JobAmount), mat);
+        if (!BinTakes(c, part, st, mat, st.JobAmount))
+            return false; // (the bin is full or holds another material: the blank stays on the bed, the look line says "offcut bin full")
+        world.Deposit(c, part, st.JobAmount, mat);
         st.JobAmount = 0;
         st.OnBed = false;
         st.JobTicks = 0;
@@ -449,6 +499,16 @@ public static class ConstructPanelFormer
         st.Version++;
         world.StoreDirty.Add(st.Handle);
         ConstructGatherer.SetBusy(world, st, false);
+        return true;
+    }
+
+    /// <summary>Could the blank on the bed (its units and material) be the blank for this panel: its material, from the panel's units to what a blank 25% over each way holds?</summary>
+    private static bool BlankServes(CStore st, ConstructPartDef panel)
+    {
+        if (!FlatOf(panel, out var f) || f.Material != st.JobMaterial)
+            return false;
+        var units = HullLoft.FormedUnits(panel, f.Material);
+        return st.JobAmount * 1.1f + 1 >= units && st.JobAmount <= units * OverMost * OverMost * 1.15f + 2; // (rounding either way: a blank's units round, a panel's go up; a blank holds more than the curved panel, its flat sheet in 5 cm steps)
     }
 
     /// <summary>
