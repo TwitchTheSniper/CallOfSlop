@@ -172,7 +172,7 @@ public static partial class SelfTest
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         if (allocated != 0)
             Fail($"Baked lighting: the per-frame light block allocated {allocated} bytes over 2000 frames");
-        LightGrid.Fill(ref block, b, 1.0, 9, dynPos, dynCol);
+        LightGrid.Fill(ref block, b, 1.0, LightGrid.MaxDynamic + 3, dynPos, dynCol); // (more than the cap: it keeps the cap; was 9, from when the cap was 4)
         if (block.Mode.X != 1f || block.Mode.W != LightGrid.MaxDynamic)
             Fail($"Baked lighting: the world block is mode {block.Mode.X} with {block.Mode.W} dynamic lights (want 1 and at most {LightGrid.MaxDynamic})");
         Line($"per frame: light block and eye probe, 0 bytes over 2000 frames; dynamic lights capped at {LightGrid.MaxDynamic}");

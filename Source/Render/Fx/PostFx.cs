@@ -24,6 +24,9 @@ public static unsafe partial class PostFx
 
     public static bool BloomOn = true, HazeOn = true, AoOn = true;
 
+    /// <summary>Video: Bloom strength (0.2-2x) over the glow's own gain (Karl, 2026-11-21: the glow round screens and light strips was too strong; the gains were 0.8 and 0.55).</summary>
+    public static float BloomStrength = 1f;
+
     /// <summary>The ambient occlusion's reach in metres and its darkness (1 the default), from the Video settings.</summary>
     public static float AoRadius = 0.8f, AoStrength = 1f;
 
@@ -753,7 +756,7 @@ public static unsafe partial class PostFx
         Native.glColorMask(true, true, true, false);
         _copy.Use();
         Native.glUniform1f(_lCopyMix, high ? 1f : 0f);
-        Native.glUniform1f(_lCopyGain, high ? 0.55f : 0.8f);
+        Native.glUniform1f(_lCopyGain, (high ? 0.32f : 0.45f) * Math.Clamp(BloomStrength, 0.2f, 2f));
         Bind(Unit0, Quarter2.Tex);
         Bind(Unit1, Eighth2.Tex);
         Native.glDrawArrays(GL_TRIANGLES, 0, 3);

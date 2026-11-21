@@ -146,11 +146,15 @@ public static unsafe class Lighting
             mat4 uRoomVP[8]; // world less uRoomC to each dark-interiors map's u, v and stored depth (RoomShade.cs; the size is RoomShade.Layers)
             vec4 uRoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
             vec4 uRoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
+            vec4 uLampRows[36]; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
+            vec4 uLampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / the maps' distance range; w: the normal offset a metre out (m)
+            vec4 uLampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
         uniform sampler2D uSunShadow; // the sun shadow map's depth (SunShadows.cs; read only while uShadowQ.x is 1)
         uniform sampler2DArrayShadow uRoomShade; // the dark interiors' eight depth maps, compared in hardware (RoomShade.cs; read only while uRoomQ.x is 1)
+        uniform sampler2DArrayShadow uLampShadow; // the lamps' cube faces, six layers a slot, compared in hardware (LampShadows.cs; read only while uLampQ.x is 1)
         uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
         float gSunVis = 1.0;     // ...how much of the sun it let through (materials: the sun's highlight)
@@ -291,6 +295,34 @@ public static unsafe class Lighting
             amb = mix(uRoomQ.y, 1.0, open);
         }
 
+        // How much of dynamic light i reaches world point p facing n past the walls round it (LampShadows.cs): 1 for a light with
+        // no slot (its colour's alpha is the slot + 1) or while the maps are off. The point, nudged along its normal by more the
+        // farther it is, is turned into the lamp body's frame and looked up on the cube face its biggest axis names, four soft taps.
+        float LampShadow(int i, vec3 p, vec3 n)
+        {
+            int slot = int(uDynCol[i].a + 0.5) - 1;
+            if (slot < 0 || uLampQ.x < 0.5)
+                return 1.0;
+            vec3 w = p - uDynPos[i].xyz;
+            w += n * (0.01 + length(w) * uLampQ.w);
+            vec3 v = vec3(dot(uLampRows[slot * 3].xyz, w), dot(uLampRows[slot * 3 + 1].xyz, w), dot(uLampRows[slot * 3 + 2].xyz, w));
+            vec3 a = abs(v);
+            int face;
+            vec2 uv;
+            float ma;
+            if (a.x >= a.y && a.x >= a.z) { face = v.x >= 0.0 ? 0 : 1; uv = v.yz; ma = a.x; }
+            else if (a.y >= a.z) { face = v.y >= 0.0 ? 2 : 3; uv = v.zx; ma = a.y; }
+            else { face = v.z >= 0.0 ? 4 : 5; uv = v.xy; ma = a.z; }
+            uv = uv / max(ma, 1e-4) * (0.925926 * 0.5) + 0.5; // (LampShadows.Guard)
+            float d = min(length(v) * uLampQ.z, 1.0);
+            float r = (uLampP.y > 0.5 ? 1.0 - d : d) - uLampQ.y;
+            float layer = float(slot * 6 + face);
+            float t = uLampP.x * 0.75;
+            float lit = texture(uLampShadow, vec4(uv + vec2(-t, -t), layer, r)) + texture(uLampShadow, vec4(uv + vec2(t, -t), layer, r))
+                      + texture(uLampShadow, vec4(uv + vec2(-t, t), layer, r)) + texture(uLampShadow, vec4(uv + vec2(t, t), layer, r));
+            return lit * 0.25;
+        }
+
         // ApplyLight plus the baked light at world position p (mode 0: ApplyLight, with the sun shadows and the key light).
         vec3 ApplyLightAt(vec3 albedo, vec3 n, float wrap, vec3 p)
         {
@@ -314,7 +346,8 @@ public static unsafe class Lighting
                     float d = length(l);
                     float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
                     float f = (1.0 - q * q) * (1.0 - q * q);
-                    dl += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
+                    if (f > 0.0)
+                        dl += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0) * LampShadow(i, p, n);
                 }
                 // A soft knee (2026-11-14): a lamp's pool stays strong, but a wall or a roof a metre or two from a lamp is no
                 // longer burnt white (ConstructLamps' strengths are set for it: a brightest channel of 1 comes out 0.69, 2 comes out 1.05).
@@ -352,7 +385,8 @@ public static unsafe class Lighting
                 float d = length(l);
                 float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
                 float f = (1.0 - q * q) * (1.0 - q * q);
-                lit += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
+                if (f > 0.0)
+                    lit += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0) * LampShadow(i, p, n);
             }
             if (uLitMode.x > 2.5) // (--light-debug's pictures: the grid's light alone, or its sky and sun visibility)
                 return uLitMode.x < 3.5 ? lit + vec3(0.02) : vec3(b.w * 0.6 + sunVis * 0.4, b.w * 0.6 + sunVis * 0.4, b.w * 0.6);

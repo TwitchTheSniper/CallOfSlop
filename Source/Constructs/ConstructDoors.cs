@@ -317,7 +317,10 @@ public static class ConstructDoors
         ref var dr = ref c.Doors[k];
         ref var p = ref c.Parts[dr.Part];
         if ((p.State & Moving) == 0)
+        {
             c.DoorMovingCount++;
+            c.DoorPoseStamp++;
+        }
         p.State = (byte)(Moving | (open ? Target : 0));
         dr.StartF = from;
         dr.StartAt = ConstructRender.Now;
@@ -703,6 +706,7 @@ public static class ConstructDoors
         }
         if ((p.State & Moving) != 0)
             c.DoorMovingCount--;
+        c.DoorPoseStamp++;
         p.State = 0;
         p.Count = 0;
         dr.StartF = open ? 1 : 0;

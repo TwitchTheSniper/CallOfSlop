@@ -53,7 +53,7 @@ public static unsafe class SunShadows
     private sealed class Caster
     {
         public GlBuffer Vbo;
-        public int Count, Stamp = -1, Parts = -1, Used;
+        public int Count, Stamp = -1, Parts = -1, Doors = -1, Used;
         public float Radius;
     }
 
@@ -223,6 +223,15 @@ public static unsafe class SunShadows
         return true;
     }
 
+    /// <summary>The unit cube's arrays with the caster attributes (<see cref="LampShadows"/>' own program draws with them); false when they can't be made.</summary>
+    internal static bool BindCubeArrays()
+    {
+        if (!InitProgram())
+            return false;
+        Native.glBindVertexArray(_vao);
+        return true;
+    }
+
     /// <summary>Lets go of the picked bodies (no references kept past the frame).</summary>
     internal static void ClearPicks(int n) => Clear(n);
 
@@ -374,7 +383,17 @@ public static unsafe class SunShadows
         return true;
     }
 
-    /// <summary>The body's boxes at rest in its own frame (axis-aligned there: parts turn in quarter turns), made again on a rebuild.</summary>
+    /// <summary>
+    /// The body's boxes at rest in its own frame (axis-aligned there: parts turn in quarter turns), made again on a rebuild and
+    /// whenever a door starts moving or settles (<see cref="Construct.DoorPoseStamp"/>): a settled door's parts sit at its pose
+    /// (shut or open), and a moving door is left out, so an open door lets the sun, the sky and lamps through.
+    /// </summary>
+    internal static (GlBuffer Vbo, int Count) CasterBoxes(Construct c)
+    {
+        var k = CasterOf(c);
+        return (k.Vbo, k.Count);
+    }
+
     private static Caster CasterOf(Construct c)
     {
         if (!Casters.TryGetValue(c.Id, out var k))
@@ -384,14 +403,18 @@ public static unsafe class SunShadows
             GlDebug.Label(GL_BUFFER, k.Vbo.Id, "SunShadows.caster");
         }
         k.Used = _frame;
-        if (k.Stamp == c.RebuildStamp && k.Parts == c.PartCount)
+        if (k.Stamp == c.RebuildStamp && k.Parts == c.PartCount && k.Doors == c.DoorPoseStamp)
             return k;
         k.Stamp = c.RebuildStamp;
         k.Parts = c.PartCount;
+        k.Doors = c.DoorPoseStamp;
         var n = 0;
+        var doors = c.DoorMovingCount > 0;
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var part = ref c.Parts[i];
+            if (doors && c.MovingDoorOf(i) is var dk and >= 0 && ConstructDoors.IsMoving(c, c.Doors[dk].Part))
+                continue; // (a door on its way: out until it settles, when its parts are at the new pose)
             foreach (var b in c.DefOf(i).Boxes)
             {
                 if (b.Hidden || b.Glass > 0f)

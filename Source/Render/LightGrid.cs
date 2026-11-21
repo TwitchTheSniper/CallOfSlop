@@ -48,6 +48,13 @@ public static unsafe class LightGrid
         private Matrix4x4 _first;
     }
 
+    /// <summary>The lamp shadows' turns (LampShadows.cs), three rows a slot, one vec4 each, as the std140 array lays them out.</summary>
+    [System.Runtime.CompilerServices.InlineArray(LampShadows.MaxSlots * 3)]
+    public struct LampRowArray
+    {
+        private Vector4 _first;
+    }
+
     /// <summary>The block's dynamic lights, one vec4 each, as the std140 array lays them out.</summary>
     [System.Runtime.CompilerServices.InlineArray(MaxDynamic)]
     public struct DynArray
@@ -87,6 +94,9 @@ public static unsafe class LightGrid
         public RoomArray RoomVP;  // world (less RoomC) to each dark-interiors map's u, v and stored depth (RoomShade.cs)
         public Vector4 RoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
         public Vector4 RoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
+        public LampRowArray LampRows; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs)
+        public Vector4 LampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / LampShadows.Store; w: the normal offset a metre out (m)
+        public Vector4 LampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
     }
 
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
@@ -102,7 +112,7 @@ public static unsafe class LightGrid
     public static bool MarkGlow;
 
     private static float _lastMark;
-    private static bool _shadowSent, _roomSent;
+    private static bool _shadowSent, _roomSent, _lampSent;
 
     private static FrameBlock _block;
     private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
@@ -135,6 +145,7 @@ public static unsafe class LightGrid
         SetSampler(program, "uLitC\0"u8, UnitC);
         SetSampler(program, "uSunShadow\0"u8, SunShadows.Unit);
         SetSampler(program, "uRoomShade\0"u8, RoomShade.Unit);
+        SetSampler(program, "uLampShadow\0"u8, LampShadows.Unit);
     }
 
     private static void SetSampler(GlProgram program, ReadOnlySpan<byte> nameZ, int unit)
@@ -240,6 +251,13 @@ public static unsafe class LightGrid
         _dynCount++;
     }
 
+    /// <summary>Dynamic light <paramref name="light"/> is shadowed by lamp shadow slot <paramref name="slot"/> (LampShadows.cs: its colour's alpha, slot + 1; 0 none).</summary>
+    public static void SetDynamicSlot(int light, int slot)
+    {
+        if ((uint)light < (uint)_dynCount)
+            DynCol[light].W = slot + 1;
+    }
+
     // ---- Passes ---------------------------------------------------------------------------------------------------
 
     /// <summary>
@@ -266,6 +284,7 @@ public static unsafe class LightGrid
         var bake = Enabled ? map.LightBake : null;
         if (!Init())
             return;
+        LampShadows.EndWorld(); // (the gun's probe pass lights no lamps itself)
         SunShadows.EndWorld(); // (camera space: the world's shadow map means nothing here, and an unlit map's probe is mode 0)
         RoomShade.BeginProbe(); // (the dark interiors' maps are read at the eye: the gun is as dark as the room)
         FillProbe(ref _block, bake, eye, view, time);
@@ -277,7 +296,8 @@ public static unsafe class LightGrid
     {
         SunShadows.EndWorld();
         RoomShade.EndWorld();
-        if (!_ready || (_lastMode == 0f && _lastMark == 0f && !_shadowSent && !_roomSent))
+        LampShadows.EndWorld();
+        if (!_ready || (_lastMode == 0f && _lastMark == 0f && !_shadowSent && !_roomSent && !_lampSent))
             return;
         _block.Mode = Vector4.Zero;
         MarkGlow = false;
@@ -327,6 +347,16 @@ public static unsafe class LightGrid
         else
             _block.RoomQ = Vector4.Zero;
         _roomSent = _block.RoomQ.X > 0f;
+        if (LampShadows.Live && _block.Mode.X is < 1.5f or > 2.5f)
+        {
+            for (var i = 0; i < LampShadows.MaxSlots * 3; i++)
+                _block.LampRows[i] = LampShadows.Rows[i];
+            _block.LampQ = new Vector4(1f, LampShadows.SignedBias, 1f / LampShadows.Store, LampShadows.NormalPerMetre);
+            _block.LampP = new Vector4(LampShadows.TexelUv, RenderCaps.ReversedDepth ? 1f : 0f, 0f, 0f);
+        }
+        else
+            _block.LampQ = Vector4.Zero;
+        _lampSent = _block.LampQ.X > 0f;
         Native.glBindBuffer(GL_UNIFORM_BUFFER, _ubo);
         fixed (FrameBlock* p = &_block)
             Native.glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(FrameBlock), p);
