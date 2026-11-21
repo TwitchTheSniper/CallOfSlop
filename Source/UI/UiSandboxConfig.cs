@@ -767,6 +767,8 @@ public sealed partial class Ui
             return ConstructExtruder.RoundMaskOf(profile, _cfVals[d.CfgSlot[(int)CfgKey.Width]], _cfVals[d.CfgSlot[(int)CfgKey.Wall]]);
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
+        if (profile == Extrusion.SheetProfile)
+            return ulong.MaxValue;
         ulong Word(CfgKey k) => (ulong)(ushort)_cfVals[d.CfgSlot[(int)k]];
         return Word(CfgKey.MaskA) | Word(CfgKey.MaskB) << 16 | Word(CfgKey.MaskC) << 32 | Word(CfgKey.MaskD) << 48;
     }
