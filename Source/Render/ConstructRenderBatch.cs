@@ -247,7 +247,8 @@ public static partial class ConstructRender
         ref var p = ref c.Parts[i];
         var d = p.D;
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
-            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody)
+            || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
+            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _)) // (a Press's shell swings out past its welded cell)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
         var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)

@@ -125,6 +125,7 @@ public static partial class ConstructPress
         var cell = c.Parts[core].D.BlockCell;
         var mid = MachineBlocks.CoreMid(c, core);
         const float Margin = 0.03f;
+        var frame = c.FrameOf(c.Parts[core].Seg);
         for (var side = 0; side < 2; side++)
         {
             int sgn = side == 0 ? -1 : 1, edge = side == 0 ? asm.Z0 : asm.Z0 + asm.L - 1;
@@ -139,7 +140,8 @@ public static partial class ConstructPress
             var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + h, sgn > 0 ? face + h : face - Margin);
             for (var j = 0; j < c.PartCount; j++)
             {
-                if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0)
+                if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0
+                    || c.FrameOf(c.Parts[j].Seg) != frame) // (bounds compare within one frame: a freeform weld's part sits in its own)
                     continue;
                 c.PartBounds(j, out var mn, out var mx);
                 var a = Vector3.Transform(mn - mid, un);

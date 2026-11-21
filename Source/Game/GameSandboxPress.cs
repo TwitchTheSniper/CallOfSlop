@@ -69,8 +69,7 @@ public sealed partial class Game
                 continue;
             _pressStruckAt[p.Id] = now;
             var away = Vector3.Transform(Rot24.Apply(rot, new Vector3(0, 0, side)), c.Rot);
-            p.Sim.Velocity += away * 7f + new Vector3(0, 4f, 0);
-            p.Sim.Grounded = false;
+            Knock(p, away * 7f + new Vector3(0, 4f, 0)); // (the client hears of it for its prediction; mantling and noclip ignore it)
             Constructs.Events.Add($"player {p.Id} struck by a press shell on construct {c.Id}");
             DamagePlayer(p, p, PressStrikeDamage, false, SuicideKillId, now, DamageKind.Melee);
         }
