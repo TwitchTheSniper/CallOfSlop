@@ -60,6 +60,9 @@ The farmers' small vertical lander: an eight-sided capsule on end on four jointe
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.
 
+## [The Grapnel salvage tug](constructs/grapnel.md), 3 KB
+
+The Salvagers' salvage tug from Karl's picture: boxy yellow hull, glass cockpit, three tool mounts (sockets) on the chin, tank racks on the flanks, two hull drives on the stern; the Satchel's cab and container bay.
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,
