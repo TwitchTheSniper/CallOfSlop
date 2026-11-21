@@ -447,6 +447,7 @@ public sealed partial class Construct
     public string StationTitle = ""; // a station's own name when it isn't its pieces' (a second Highport built as Glacier Watch: Game.StationName); saved as a setting key (WorldSaveBodies.StationKey)
     public sbyte HaulRoute = -1; // a station hauler's route (Crew/Stations.json "haulers"; -1: none), saved so a loaded world's haulers go on (WorldSaveBodies.HaulKey)
     public bool HaulAtTo; // the hauler's leg: bound for its route's second station
+    public bool HaulEscort; // it is one of its route's escorts, not a hauler (phase 3: convoys)
     public bool IsStation; // built of space station pieces (part group "Station": docs/sandbox/constructs/station.md): the command view shows it as a station
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)

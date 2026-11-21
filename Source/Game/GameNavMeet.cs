@@ -76,7 +76,12 @@ public sealed partial class Game
         var rot = t.SpaceAway != 0 ? AwayRot : s.Bubble.PoseAt(time).Rot; // (the other's pose is in its own frame's axes)
         // Its side (the other's X), the one it comes from, chosen once so it doesn't swap sides as it passes.
         var side = rot.Rotate(Vec3d.From(Vector3.Transform(Vector3.UnitX, t.Rot)));
-        if (o.MeetSide == 0)
+        if (o.MeetAbove)
+        {
+            side = rot.Rotate(Vec3d.From(Vector3.Transform(Vector3.UnitY, t.Rot)));
+            o.MeetSide = 1;
+        }
+        else if (o.MeetSide == 0)
             o.MeetSide = (sbyte)(Vec3d.Dot(r, side) < 0 ? -1 : 1);
         var hold = c.Radius + t.Radius + o.Radius;
         var to = side * (o.MeetSide * hold);

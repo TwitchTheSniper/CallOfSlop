@@ -80,6 +80,10 @@ public sealed class StationHaulerDef
     public int From, To, Count = 1; // (stations by index in StationMarkets.All)
     public byte[] Goods = [], Back = []; // materials loaded at From, and at To for the run home
     public float Wait = 30; // seconds moored at each end
+    public bool Needs; // also loads any good its far station is short of that this one sells, most needed first (phase 3)
+    public string Escort = ""; // the blueprint of its escorts (phase 3: convoys): "" none
+    public int Escorts; // how many fly with each hauler
+    public float EscortGap = 150; // m they hold clear of it (and three times that off a station while it docks)
 }
 
 /// <summary>The stations' markets (Crew/Stations.json). A bad file is refused with a reason in the log, and no station has a market.</summary>
@@ -220,7 +224,16 @@ public static class StationMarkets
                         To = At("to"),
                         Count = Math.Clamp(h.TryGetProperty("count", out var cn) ? cn.GetInt32() : 1, 0, 8),
                         Wait = Math.Clamp(h.TryGetProperty("wait", out var wt) ? wt.GetSingle() : 30f, 5f, 600f),
+                        Needs = h.TryGetProperty("needs", out var nd) && nd.GetBoolean(),
                     };
+                    if (h.TryGetProperty("escort", out var es))
+                    {
+                        d.Escort = es.GetProperty("ship").GetString() ?? "";
+                        d.Escorts = Math.Clamp(es.TryGetProperty("count", out var ec) ? ec.GetInt32() : 1, 0, 4);
+                        d.EscortGap = Math.Clamp(es.TryGetProperty("gap", out var eg) ? eg.GetSingle() : 150f, Game.NavMeetGapLeast, Game.NavMeetGapMost / 3);
+                        if (d.Escort.Length == 0)
+                            throw new FormatException("haulers: an \"escort\" names no \"ship\"");
+                    }
                     if (d.From == d.To)
                         throw new FormatException("haulers: \"from\" and \"to\" are the same station");
                     d.Goods = Mats("goods", list[d.From]);
