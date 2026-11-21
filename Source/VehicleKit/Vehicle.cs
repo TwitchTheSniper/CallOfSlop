@@ -61,22 +61,18 @@ public sealed partial class Vehicle : BlueprintScript
     {
         Style = style;
         Seed = seed;
-        _stem = Salted(style, name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'));
+        _stem = name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
         Dice = Dice.Of(seed).Fork(_stem); // (one seed number never means one recipe across shapes)
         Group = style.Group;
         TakeContext(); // (a spawn context, while one is being made in: VehicleContext.cs)
     }
-
-    /// <summary>A stem that starts with a renamed style's name forks with its old one, so its vehicles keep their shapes (<see cref="FactionStyle.DiceName"/>).</summary>
-    private static string Salted(FactionStyle style, string stem) =>
-        style.DiceName != style.Name && stem.StartsWith(style.Name + " ", StringComparison.Ordinal) ? style.DiceName + stem[style.Name.Length..] : stem;
 
     /// <summary>A vehicle whose name isn't "Name seed" (kit 3's overridden layers add to it): its dice still come from the generator's name.</summary>
     public Vehicle(string name, string stem, FactionStyle style, int seed) : base(name)
     {
         Style = style;
         Seed = seed;
-        _stem = Salted(style, stem);
+        _stem = stem;
         Dice = Dice.Of(seed).Fork(_stem);
         Group = style.Group;
         TakeContext();
@@ -582,7 +578,7 @@ public sealed partial class Vehicle : BlueprintScript
             cls = GunClass.Medium; // (a 1x1 table on a pedestal beam as wide as it would share its four sides: a 2x2 overhangs it)
         var name = cls switch
         {
-            GunClass.Light => Style.Name is "Mercenary" && Dice.Fork("turntable " + Turrets.Count).Chance(0.5) ? "Turntable 1x1 Medium" : "Turntable 1x1 Long",
+            GunClass.Light => "Turntable 1x1 Long",
             GunClass.Medium => "Turntable 2x2 Medium",
             _ => "Turntable",
         };

@@ -16,7 +16,7 @@ public static partial class SelfTest
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         var names = args.SkipWhile(a => !a.Equals("--bench-vehicle-guns", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal)).ToList();
         if (names.Count == 0)
-            names = ["MercenaryFlatbedFort7", "ITBoxTruck3", "RaiderBoxTruck4", "ITWarBus10", "SalvagerFlatbedFort6", "RaiderTankerRig10", "ITTankerRig20", "MercenaryDoubleDecker9"];
+            names = ["ITBoxTruck3", "ITWarBus10", "ITTankerRig20", "ITFlatbedFort2"];
         var salvo = int.TryParse(Arg("--shells"), out var ns) ? Math.Clamp(ns, 1, 64) : 4;
         var merge = int.TryParse(Arg("--merge"), out var nm) ? Math.Clamp(nm, 1, 6) : 0; // (shells as an N x N Howitzer's, whatever the guns are)
         var gap = float.TryParse(Arg("--gap"), System.Globalization.CultureInfo.InvariantCulture, out var ng) ? Math.Clamp(ng, 10f, 200f) : 30f; // (metres between vehicles: 100 keeps a 4x4 shell's 46 m blast off the neighbours)

@@ -435,10 +435,7 @@ public static class VehicleRoles
     /// </summary>
     public static readonly Dictionary<string, Dictionary<string, double>> Fielded = new(StringComparer.Ordinal)
     {
-        ["Raider"] = new() { ["scout"] = 3, ["raider"] = 4, ["gun platform"] = 2, ["carrier"] = 1, ["tanker"] = 2, ["recovery"] = 1, ["command"] = 0.5, ["boss"] = 0.3 },
         ["IT"] = new() { ["scout"] = 2, ["raider"] = 1, ["gun platform"] = 1, ["carrier"] = 3, ["tanker"] = 1, ["recovery"] = 2, ["command"] = 2, ["boss"] = 0.3 },
-        ["Salvager"] = new() { ["scout"] = 3, ["raider"] = 2, ["gun platform"] = 1, ["carrier"] = 2, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 1.5, ["boss"] = 0.3 },
-        ["Mercenary"] = new() { ["scout"] = 1, ["raider"] = 1, ["gun platform"] = 1, ["carrier"] = 4, ["tanker"] = 1, ["recovery"] = 2, ["command"] = 2, ["boss"] = 0.3 },
         ["Militia"] = new() { ["scout"] = 2, ["raider"] = 2, ["gun platform"] = 3, ["carrier"] = 3, ["tanker"] = 1, ["recovery"] = 1, ["command"] = 2, ["boss"] = 0.4 },
     };
 
@@ -450,7 +447,7 @@ public static class VehicleRoles
     public static VehicleRole PickRole(FactionStyle st, int seed)
     {
         var table = FieldedBy(st).Where(kv => kv.Value > 0 && Find(kv.Key) != null).ToList();
-        var d = Dice.Of(seed).Fork("role pick " + st.DiceName);
+        var d = Dice.Of(seed).Fork("role pick " + st.Name);
         var roll = d.Next() * table.Sum(kv => kv.Value);
         foreach (var (name, w) in table)
             if ((roll -= w) < 0)
@@ -972,7 +969,7 @@ public static class VehicleRolesCli
     }
 
     /// <summary>
-    /// <c>--role "Raider Raider" --tier 2 [--seeds N] [--from S] [--seed-list A,B] [--check] [--sliced]</c>: each seed's shape, fit, identity and what the role pass placed, then the hit
+    /// <c>--role "IT carrier" --tier 2 [--seeds N] [--from S] [--seed-list A,B] [--check] [--sliced]</c>: each seed's shape, fit, identity and what the role pass placed, then the hit
     /// rate; the first seed is made again (the same text), with <c>--sliced</c> as the dynamic spawn makes it (the same hash), and <c>--check</c> runs the full check on each
     /// (seconds a seed). Exit code: how many missed, failed or differed.
     /// </summary>
@@ -981,7 +978,7 @@ public static class VehicleRolesCli
         var (st, role) = Parse(text);
         if (st == null || role == null)
         {
-            Console.WriteLine($"--role \"{text}\": a style and a role, \"Raider raider\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
+            Console.WriteLine($"--role \"{text}\": a style and a role, \"IT carrier\". Roles: {string.Join(", ", VehicleRoles.All.Select(r => r.Name))}");
             return 1;
         }
         var tier = int.TryParse(Flag(args, "--tier"), out var t) ? Math.Clamp(t, 1, VehicleRoles.MaxTier) : 2;
@@ -1100,7 +1097,7 @@ public static class VehicleRolesCli
         var tiers = int.TryParse(Flag(args, "--tier"), out var one) ? [Math.Clamp(one, 1, VehicleRoles.MaxTier)] : Enumerable.Range(1, VehicleRoles.MaxTier).ToArray();
         var raw = args.Any(a => a.Equals("--raw", StringComparison.OrdinalIgnoreCase));
         Problems();
-        Make(Styles.Raider, VehicleRoles.All[0], 2, 1); // (a throwaway: the JIT's first generation isn't counted)
+        Make(Styles.It, VehicleRoles.All[0], 2, 1); // (a throwaway: the JIT's first generation isn't counted)
         var rows = new List<(string Style, string Role, int Tier, List<Outcome> O)>();
         Console.WriteLine($"role report: {seeds.Count} seed(s) a cell ({seeds.FirstOrDefault()} to {seeds.LastOrDefault()}), kit {VehicleKitVersion.Force?.ToString() ?? VehicleKitVersion.Current.ToString()}, generation only");
         foreach (var st in Styles.All.Where(s => styleOnly == null || s.Name.Equals(styleOnly, StringComparison.OrdinalIgnoreCase)))

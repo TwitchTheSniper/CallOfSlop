@@ -5,7 +5,7 @@ using CallOfSlop.VehicleKit;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--vehicle-shots "Raider Box Truck 14" ["Other 3" ...] [--map NAME]</c>: real shaded pictures of generated vehicles (docs/vehiclekit/VEHICLEKIT.md, "Looking at one"), written next to the log as
+/// <c>--vehicle-shots "IT Box Truck 5" ["Other 3" ...] [--map NAME]</c>: real shaded pictures of generated vehicles (docs/vehiclekit/VEHICLEKIT.md, "Looking at one"), written next to the log as
 /// smoke_vehicle_&lt;name&gt;_&lt;view&gt;.bmp, then the game quits: from the left, from either front and rear three-quarter, from above and from inside its first room. Each name is a generator and a seed, or a blueprint's name. Runs under a virtual X server.
 /// </summary>
 public static unsafe partial class Program

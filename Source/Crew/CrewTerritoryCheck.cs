@@ -80,10 +80,10 @@ public static class CrewTerritoryCheck
     private static bool FarContact()
     {
         var deckBp = ConstructBuild.FindBlueprint("Carrier Deck");
-        var heliBp = ConstructBuild.FindBlueprint("Raider Helicopter 1");
+        var heliBp = ConstructBuild.FindBlueprint("IT Helicopter 3");
         if (deckBp == null || heliBp == null)
         {
-            Console.WriteLine("fleet far contact: FAILED: no Carrier Deck or Raider Helicopter 1");
+            Console.WriteLine("fleet far contact: FAILED: no Carrier Deck or IT Helicopter 3");
             return false;
         }
         var power = CrewPowers.ForKindName("Militia");

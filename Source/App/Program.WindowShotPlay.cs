@@ -68,7 +68,7 @@ public static partial class Program
                     var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
                     var at = g.SandboxGroundAt(me.Position + fwd * 60);
-                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "Raider", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
+                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "IT", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
                     Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
                 }
                 return true;
