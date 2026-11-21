@@ -434,6 +434,11 @@ are no size classes. Code: `ConstructLaserCutterBed.cs`.
   2.4 kW: a wider bed cuts faster (`Heads`, the time law's power is `kw x heads`) and draws `PowerDraw x heads`.
 - **The offcut bin** holds 200 plus 100 for each block in the bed (`BinOf`).
 - A Core with no bed cuts nothing: "no bed: weld Laser Bed Blocks beside it".
+- **The largest plate** is what the largest bed takes either way round: 32 m on one side and 16 m on the other (`MachineBlocks.MaxSide`
+  and `MaxCells` blocks of 2 m; `HullLoft.CutPlateMaxCm`, `CutPlateShortCm`). A larger plate key is refused, and the Panel Designer's
+  sliders stop there.
+- **In the Production Showcase** the cutter's Run is wired to the orders console: press Start there before ordering a cut (its look line
+  says it is held off).
 - **Out Table.** An Out Table welded on the bed's far side (the side away from the Core, its -z face against the bed) is the cutter's
   Piece out: a conveyor off it takes the cut parts (`ConstructConveyor.Out`, `MachineBlocks.OutTable`). With none, a cut part lies on the
   bed. The Production Showcase lays one.

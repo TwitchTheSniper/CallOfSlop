@@ -684,7 +684,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 403: the clamshell Press (400 above) landed after 401 and 402, so the number moves on past them.
     // 407: Press part 2 (Sean, 2026-11-21): dies lose their size classes and one Die Lathe cuts them all (the Medium, Large and Capital dies,
     //      lathes and the Medium Die Rack go: part ids shift). 404 to 406 are kept for the Hall Crane, the Grow Former and the Laser Cutter's follow-up.
-    public const ushort ProtocolVersion = 407;
+    // 408: cut plates fit the largest Laser Cutter bed (Sean, 2026-11-21): a plate key over 32 m, or over 16 m both ways, is refused (HullLoft.StockRefusal), so peers must agree.
+    public const ushort ProtocolVersion = 408;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
