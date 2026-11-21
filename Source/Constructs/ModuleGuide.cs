@@ -61,6 +61,7 @@ public static class ModuleGuide
         public Vector3 Local, BodyLocal; // the beam's point on the ship, then on the module's body
         public float Dist, Strain;
         public bool Told;
+        public bool Pulling; // the player pulls past it this tick (the shake everyone sees: ShowPull)
         public Vector3 Eye; // the player's eye and yaw this tick (the gun's hand-over)
         public float Yaw;
     }
@@ -459,6 +460,23 @@ public static class ModuleGuide
             PullTick(world, hands, wg, player, eye, look, yaw);
         if (h.GrabBody != 0 && h.GrabSeg == 0 && h.Tool == ConstructTool.PhysicsGun && world.Get(h.GrabBody) is { } held && held.GrabbedBy == player)
             PullIn(world, hands, wg, player, held);
+        ShowPull(ref h, in wg.Pulls[player]);
+    }
+
+    /// <summary>The pull as the hands send it to everyone (the beam to where the player clicked, the module's shake: ModulePullLook.cs).</summary>
+    private static void ShowPull(ref SandboxHand h, in Pull p)
+    {
+        if (p.Phase == 0 || h.GrabBody != 0 || p.Plate.Part < 0)
+        {
+            h.PullShip = h.PullPlate = h.PullBody = 0;
+            h.PullShake = 0;
+            return;
+        }
+        h.PullShip = p.Ship;
+        h.PullPlate = (ushort)p.Plate.Part;
+        h.PullBody = p.Phase == 2 ? p.Body : (ushort)0;
+        h.PullLocal = p.Phase == 2 ? p.BodyLocal : p.Local;
+        h.PullShake = p.Phase == 2 ? (byte)(p.Pulling ? 255 : 60) : (byte)Math.Clamp(p.Strain / PullSeconds * 255f, 0f, 255f);
     }
 
     private static void PullTick(ConstructWorld world, ConstructEdits hands, WorldGuides wg, byte player, Vector3 eye, Vector3 look, float yaw)
@@ -527,6 +545,7 @@ public static class ModuleGuide
                     var n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(plateRot, Vector3.UnitY), ship.Rot));
                     g.Want = Vector3.Dot(beam - body.ToWorld(p.BodyLocal), n) > PullBeam * 0.5f;
                 }
+                p.Pulling = g.Want && p.Active;
                 break;
             }
     }

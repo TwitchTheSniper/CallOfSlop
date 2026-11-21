@@ -275,6 +275,8 @@ public static partial class ConstructRender
             var origin = gfx.Origin;
             var rotM = Matrix4x4.CreateFromQuaternion(rot);
             var body = rotM * Matrix4x4.CreateTranslation(pos - origin);
+            if (ModulePullLook.Count > 0 && ModulePullLook.OfBody(c, out var wiggle))
+                body = wiggle * body; // (a module sliding out of its socket under the physics gun's pull shakes: ModulePullLook.cs)
             if (c.ModActive >= 0)
                 EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             gfx.Relative = true;
@@ -510,6 +512,13 @@ public static partial class ConstructRender
     }
 
     private static int DrawPart(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
+    {
+        if (ModulePullLook.Count > 0 && ModulePullLook.OfPart(c, i, out var wiggle))
+            return DrawPartAt(gfx, world, c, i, wiggle * body, alpha, opacity); // (a fitted module the physics gun strains on rocks on its seat: ModulePullLook.cs)
+        return DrawPartAt(gfx, world, c, i, body, alpha, opacity);
+    }
+
+    private static int DrawPartAt(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
     {
         if (c.Rides(i) && !_drawingRiders)
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
