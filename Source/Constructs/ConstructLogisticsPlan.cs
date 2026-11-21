@@ -498,7 +498,7 @@ public static class ConstructLogisticsPlan
             return -1;
         var end = -1;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Source == maker && c.Routes[k].FedEnd)
+            if (c.Routes[k].Type == RouteType.Conveyor && MachineBlocks.Owner(c, c.Routes[k].Source) == maker && c.Routes[k].FedEnd)
             {
                 if (end >= 0)
                     return -1; // (two lines out: not judged)

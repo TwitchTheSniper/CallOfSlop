@@ -742,6 +742,8 @@ public sealed class Assembling : IPartGenerator
         ("Modules/Round", "Round Module Socket 3 m", null),
         ("Modules/Round", "Round Module Plug 3 m", null),
         ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the Out Table, the bed machines' far end: OutTableParts, MachineBlocks role "end"; Sean 2026-11-21)
+        (null, null, Rec("Out Table", 60, 1, m: [("steel", 160), ("rubber", 40)], p: [("Gear Set", 1)])),
         // (the Laser Cutter on the block system, Sean 2026-11-21: its Laser Bed Block, its share of the bridge and a head; the Core keeps the Laser Cutter's row)
         (null, null, Rec("Laser Bed Block", 90, 1, m: [("steel", 480), ("rubber", 60), ("copper", 20)], p: [("Wiring Loom", 1), ("Gear Set", 1)])),
     ];
