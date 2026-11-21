@@ -115,7 +115,6 @@ public sealed class NavOrder
     /// <summary>Host, a Meet order (GameNavMeet.cs): which side of the other craft it holds on (+1/-1 along its X; 0: not chosen yet), a
     /// tick count for its looks, the other craft's drive axis (its own frame) to hold parallel to, and its acceleration as last measured.</summary>
     internal sbyte MeetSide;
-    internal bool MeetAbove; // host: in space it holds over the other craft (along its Y) instead, out of the way along its X (an escort off a station, clear of its berths' lanes: GameStationHaulers.cs)
     internal int MeetLook;
     internal System.Numerics.Vector3 MeetAxis;
     internal Vec3d MeetVel, MeetAccel;
@@ -403,7 +402,6 @@ public sealed partial class Game
         o.DockLook = 0;
         o.DockTractor = false;
         o.MeetSide = 0;
-        o.MeetAbove = false;
         o.MeetLook = 0;
         o.MeetAccelOk = false;
         c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
