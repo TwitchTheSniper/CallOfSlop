@@ -121,12 +121,13 @@ public static partial class ConstructPreview
         var models = Path.Combine(dir, "models");
         Directory.CreateDirectory(models);
         var picked = only?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
+        var skip = Skipped();
         var shipNames = only != null
             ? picked.Where(n => ConstructBuild.FindBlueprint(n) != null || File.Exists(n)).ToList()
-            : ConstructBuild.Blueprints.Where(b => b.Steps.Count >= MinWhole && ConstructParts.Find(b.Steps[0].Part)?.Group == group).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count >= MinWhole && ConstructParts.Find(b.Steps[0].Part)?.Group == group && !skip.Contains(b.Name)).OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
         var looseNames = only != null
             ? picked.Where(n => !shipNames.Contains(n)).ToList()
-            : ConstructParts.All.Where(d => d != null && d.Group == group).OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
+            : ConstructParts.All.Where(d => d != null && d.Group == group && !skip.Contains(d.Section)).OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
         var changed = new List<string>();
         var failed = 0;
         var ships = new List<object>();
@@ -254,6 +255,25 @@ public static partial class ConstructPreview
     private static int _tris, _skipped;
 
     private static string Safe(string s) => string.Concat(s.Select(ch => char.IsLetterOrDigit(ch) || ch is '-' or '_' ? ch : '_'));
+
+    /// <summary>The names a full gallery run leaves out (tools/preview/gallery-skip.txt, one a line, # for a comment): a blueprint by name,
+    /// or a part section (its loose parts). The gallery is for trying a ship's look while it is designed, so a finished ship is listed here;
+    /// a part a shown ship uses still goes in with that ship. Case is ignored. No file: nothing is skipped.</summary>
+    private static HashSet<string> Skipped()
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (var up = new DirectoryInfo(AppContext.BaseDirectory); up != null; up = up.Parent)
+        {
+            var path = Path.Combine(up.FullName, "tools", "preview", "gallery-skip.txt");
+            if (!File.Exists(path))
+                continue;
+            foreach (var line in File.ReadAllLines(path))
+                if (line.Split('#')[0].Trim() is { Length: > 0 } name)
+                    set.Add(name);
+            break;
+        }
+        return set;
+    }
 
     private static string? Template()
     {

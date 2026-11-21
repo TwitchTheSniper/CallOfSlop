@@ -1,0 +1,8 @@
+# What a full --preview-gallery run leaves out of the Ship gallery (Karl, 2026-11-21: the gallery is for trying a ship's
+# look while it is designed; once its look is settled, list it here). One name a line: a blueprint's name, or a part
+# section, whose loose parts then stay out too. The ships stay in the game.
+Zero Day Frigate (crewed)
+Shuttle
+Limpet
+Dray Container Hauler
+Dray hauler

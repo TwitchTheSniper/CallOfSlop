@@ -12,6 +12,8 @@ the DLL (rebuild after `--gen-parts`). The summary line goes to `callofslop.log`
   section files already in DIR and leaves the other section files alone. A second run leaves unchanged files alone and prints
   the changed ones (`changed: ...`), so the gallery Artifact is republished with only those. `--group Station` makes the
   same gallery of another part group (the space stations: their own Station gallery Artifact; the page then says "Whole station").
+  The Ship gallery is for trying a ship's look while it is designed (Karl, 2026-11-21): once a ship's look is settled, add its name
+  (and its part section) to `gallery-skip.txt` here, and a full run leaves it out and lists its files as removed.
 - `--preview-construct NAME|FILE [--out OUT.html]`: one blueprint (by name, or a draft file not yet in the data) or one
   part, as a single self-contained page.
 
