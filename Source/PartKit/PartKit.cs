@@ -115,9 +115,11 @@ public static class PartKit
         new Generators.ModuleSocketParts(), // (module sockets: plates, plugs and stands, docs/sandbox/design/module-sockets.md)
         new Generators.ContainerParts(), // (standard cargo containers: a draft for the Animation gallery, unlisted, no recipe)
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
+        new Generators.RoamerParts(), // (the Roamer, the rust bucket's camper sister: reuses its drives, jets, legs and fittings, so after it)
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.HaulerParts(), // (the Dray container hauler: likewise)
+        new Generators.FreighterParts(), // (the Packet, the Traders' spine freighter: likewise)
         new Generators.SpaceStationParts(), // (space stations from the station kit: Caledon Highport; its blueprint hangs docking clamps and hatches)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),

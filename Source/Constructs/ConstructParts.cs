@@ -326,6 +326,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     public byte Way { get; init; }
     /// <summary>"fence": true: a Conveyor Router's diverter, drawn turned about the deck's middle toward the way its last piece went.</summary>
     public bool Fence { get; init; }
+    /// <summary>"seam": a direction: a block machine's skirt, kerb or cap on that face, not drawn while a cell of its own machine is welded there (<see cref="Construct.BlockJoined"/>); 0: none, else the direction + 1.</summary>
+    public byte Seam { get; init; }
     /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
     public byte Shows { get; init; }
 
@@ -704,6 +706,9 @@ public sealed partial class ConstructPartDef
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsContainer; // a cargo container ("container": true): a Lifter Cab's crane carries it whole, contents and all (ConstructLifterCab.cs)
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
+    public BlockRole BlockRole; // a block machine's Core, block or shared cell ("machineBlock": MachineBlocks.cs)
+    public byte BlockFamily = 255; // ...its family (MachineBlocks.Families; 255: a shared cell, any family)
+    public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public float ExtGrowStep; // a Die Extension ("dieExtension": metres): flush with the die face of an Extruder of its size class, it adds a row or column of that much die (ExtruderGrowth.cs)
     public float ExtRunOut; // a Run-out Table ("runOut": metres): joined to an Extruder of its size class (or another such table), it adds that much to the longest piece
@@ -713,6 +718,7 @@ public sealed partial class ConstructPartDef
     public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool CraneRail; // "craneRail": true: a Crane Rail section, along its +z (a Bridge Crane runs on two runs of them: ConstructCraneRails.cs)
     public bool LifterCab; // "lifterCab": true: a seat that steers the nearest lifter on its construct by hand (ConstructLifterCab.cs, arms and cranes phase 8)
+    public bool HasSeams; // its "seam" boxes (a block machine's: MachineBlocks.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
@@ -1367,7 +1373,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1563,7 +1569,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1641,6 +1647,8 @@ public static partial class ConstructParts
                 made = detail && Num(wayBox, file, where + ".way") is >= 1 and <= 3 and var wn ? made with { Way = (byte)wn } : throw new ConstructPartException($"{file}: {where}.way is 1, 2 or 3 on a detail box");
             if (Opt(b, "fence") is { ValueKind: JsonValueKind.True })
                 made = detail ? made with { Fence = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"fence\"");
+            if (Opt(b, "seam") is { } seamBox)
+                made = detail ? made with { Seam = (byte)(DirOf(Str(seamBox, file, where + ".seam"), file, where + ".seam") + 1) } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"seam\" (hidden where a block machine's cell is welded on that face)");
             if (Opt(b, "shows") is { } showsBox)
                 made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
                     : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
@@ -1673,6 +1681,7 @@ public static partial class ConstructParts
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
+        d.HasSeams = list.Any(x => x.Seam != 0);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
@@ -1724,6 +1733,7 @@ public static partial class ConstructParts
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
+        MachineBlocks.Parse(d, root, file); // (after the sockets and bounds: a cell is checked against its lattice step)
         if (Opt(root, "dieExtension") is { } dext)
         {
             d.ExtGrowStep = Num(dext, file, "dieExtension");

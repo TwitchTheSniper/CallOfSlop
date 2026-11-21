@@ -44,6 +44,10 @@ The Zero Day's 8-person boarding pod, docked under its keel: the command view's 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
+## [The Packet spine freighter](constructs/freighter.md), 3 KB
+
+The Traders' freighter: a glass-nosed crew cab, a hull-only spine with three cargo racks a side (two standard 2.5 x 2.5 x 6.5 m containers each, open outboard), engineering and two drive nacelles on pylons.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

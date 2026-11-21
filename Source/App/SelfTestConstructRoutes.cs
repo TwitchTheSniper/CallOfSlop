@@ -499,7 +499,7 @@ public static partial class SelfTest
                 for (var i = 0; i < built.PartCount; i++)
                     if (built.DefOf(i).Legacy)
                         left.Add($"{b.Name}: {built.DefOf(i).Name}");
-        var hidden = ConstructParts.All.Count(d => d.Legacy && !d.Folder.StartsWith("AirWeapons", StringComparison.Ordinal) && !d.Folder.StartsWith("Ordnance", StringComparison.Ordinal)) == 4; // (the air weapons' old mounts are legacy too: the Ordnance Rack took over)
+        var hidden = ConstructParts.All.Count(d => d.Legacy && !d.Folder.StartsWith("AirWeapons", StringComparison.Ordinal) && !d.Folder.StartsWith("Ordnance", StringComparison.Ordinal) && !d.Folder.StartsWith("WallBays", StringComparison.Ordinal)) == 4; // (the air weapons' old mounts are legacy too: the Ordnance Rack took over; and the first in-wall bays: the Wall Bay Socket took over)
         Line($"routed links migration: 2 fuel lines became {pipes} pipe link (lines left {lines}, the engine fed {fed}); a wire became {data} data link; a tank hung on its line kept it {kept}; "
              + $"old parts left in shipped blueprints: {(left.Count == 0 ? "none" : string.Join(", ", left))}; legacy parts hidden {hidden}");
         if (pipes != 1 || lines != 0 || !fed || data != 1 || !kept || left.Count > 0 || !hidden)

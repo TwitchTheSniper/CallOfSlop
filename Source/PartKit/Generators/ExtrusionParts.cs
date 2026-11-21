@@ -50,7 +50,7 @@ public sealed class ExtrusionParts : IPartGenerator
         [Small, 3, 0.5, 0.1, 6000, 400, 900, 520, 700, null, null],
         [Medium, 12, 2, 0.2, 24000, 2000, 3600, 18000, 6000, new[] { 5, 14, 4 }, 6],
         [Large, 48, 4, 0.8, 96000, 8000, 14400, 240000, 48000, new[] { 3, 8, 3 }, 6],
-        [Capital, 96, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
+        [Capital, 64, 8, 1.6, 384000, 32000, 57600, 2400000, 300000, new[] { 3, 5, 2 }, 3],
     ];
 
     // Airframe: (class, longest span, widest chord, first span, first chord, m/s of span, N of push, bin units, W, kg, health, cells x y z, the hub's row of cells)
