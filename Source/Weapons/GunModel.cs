@@ -500,11 +500,11 @@ public static class GunModel
     /// <summary>
     /// The shared material a gun part is drawn with, by its colour (Karl, 2026-11-21: the held gun takes the ships' look, so edge bevels,
     /// material contrast and the metal's sheen show on it at Materials Medium and High): dark parts are steel, browns wood, strong
-    /// colours plastic, the rest painted steel. Unlit, textured and see-through parts keep the old grid row. Low draws it all as before.
+    /// colours plastic, the rest painted steel. Unlit and textured parts keep the old grid row. Low draws it all as before.
     /// </summary>
-    public static Material LookOf(Vector3 c, int mode, float alpha = 1f)
+    public static Material LookOf(Vector3 c, int mode)
     {
-        if (mode != 0 || alpha < 0.999f)
+        if (mode != 0) // (by colour and mode only: a part fading in the aim cutaway keeps its material, as the scene graph's rig does)
             return Material.Grid;
         if (_steel < 0)
             (_steel, _wood, _plastic, _painted) = (Surfaces.Id("steel"), Surfaces.Id("wood"), Surfaces.Id("plastic"), Surfaces.Id("painted steel"));
@@ -542,7 +542,7 @@ public static class GunModel
                 return;
             m *= Matrix4x4.CreateTranslation(MagOffset);
         }
-        _g.Draw(m * _pose, c, alpha, mode, LookOf(c, mode, alpha));
+        _g.Draw(m * _pose, c, alpha, mode, LookOf(c, mode));
     }
 
     private static void Record(in Matrix4x4 m, bool clear)
@@ -795,7 +795,7 @@ public static class GunModel
             }
             if (blend)
                 _g.SetBlend(true);
-            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode, LookOf(pt.Color, pt.Mode, pt.Alpha), pt.Shape);
+            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode, LookOf(pt.Color, pt.Mode), pt.Shape);
             if (blend)
                 _g.SetBlend(false);
         }

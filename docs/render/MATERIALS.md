@@ -52,7 +52,7 @@ already has, with no textures:
   grazing-angle sheen in `ConstructRender.DrawGlass`. `uSurfQ.w` carries the switch.
 - **Held guns** (Karl, 2026-11-21): a gun's boxes (first person through `GunRig`, and `GunModel`'s own draws) take a shared material
   by colour (`GunModel.LookOf`: dark parts steel, browns wood, strong colours plastic, the rest painted steel), so bevels, material
-  contrast and the metal's sheen show on them at Medium and High. Unlit, textured and see-through parts keep the grid row.
+  contrast and the metal's sheen show on them at Medium and High. Unlit and textured parts keep the grid row.
 - **Edge bevels** (Karl, 2026-11-21, from the Ship Render Bench artifact RC5DA1XgTZ5PJUhMb8HBoB): Settings > Video > Edge bevels (on by
   default, Medium and High only; `--no-bevels` forces it off for a before picture). A band along each face edge takes a 45-degree chamfer's
   normal (2 cm, or 1.2 pixels where wider, at most half the face) and its albedo goes up 20%, so every box edge catches a sliver of light.
