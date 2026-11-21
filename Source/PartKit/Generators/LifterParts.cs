@@ -486,6 +486,6 @@ public sealed class LifterParts : IPartGenerator
     }
 
     public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))).Append(("", Cab()))
-        .Concat(new[] { ("Cranes", Rail(Medium)), ("Cranes", Bridge(Medium)) }) // (the Medium classed crane stays for the Dray's hold; the hall's is the Hall Crane: drawing 24)
+        .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })) // (the classed cranes stay: the Medium for the Dray's hold, the Large and Capital rows because saved Assemblers keep recipe numbers; the hall's is the Hall Crane: drawing 24)
         .Concat(new[] { ("HallCranes", HallRail()), ("HallCranes", HallCore()) }));
 }

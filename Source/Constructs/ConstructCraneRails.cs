@@ -83,6 +83,7 @@ public static partial class ConstructLifters
     }
 
     public const float LampNear = 3f;
+    public const float HallBridgeTop = 1f; // m over the rails' top: the bridge's end trucks and cab roof (what a part over the span must clear)
 
     /// <summary>The window tool's "lifter cranepoints": the points a crane reaches, and each nearby part's middle in its box's frame.</summary>
     public static string CranePoints(ConstructWorld world, Construct c, int part)
@@ -133,7 +134,7 @@ public static partial class ConstructLifters
         {
             var d = c.DefOf(i);
             if (!d.RuntimeMade)
-                fixedParts = fixedParts * 17 + (d.Id + 1) * (i + 1) + (long)(c.Parts[i].Pos.X * 7 + c.Parts[i].Pos.Y * 13 + c.Parts[i].Pos.Z * 19);
+                fixedParts = fixedParts * 17 + HashCode.Combine(d.Id, i, c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Broken); // (turned or broken in place: the drop and the clearance change)
             if (!d.CraneRail && d.Lifter is not { Bridge: true })
                 continue;
             ref readonly var p = ref c.Parts[i];
@@ -276,7 +277,7 @@ public static partial class ConstructLifters
                 continue; // (the rails, their masts and the cores: what the crane stands on)
             if (mx.X <= HallMargin * 0.5f || mn.X >= span - HallMargin * 0.5f)
                 continue; // (beside the runs, outside the span)
-            if (mx.Y > -own.Depth + 0.01f && mx.Y > blockerTop)
+            if (mx.Y > -own.Depth + 0.01f && mn.Y < HallBridgeTop && mx.Y > blockerTop) // (up into the band the bridge sweeps: a roof or a lamp above it is no blocker)
                 (blocker, blockerTop) = (d.Name, mx.Y);
         }
         copy.Down = floor < 0 ? Math.Clamp(-floor, own.Depth + 1f, 64f) : own.Down;

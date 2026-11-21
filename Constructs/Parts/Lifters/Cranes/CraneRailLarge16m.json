@@ -1,0 +1,285 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Crane Rail Large 16 m",
+  "description": "A 16 m section of crane runway. Lay two runs of them 32 m apart, in line end to end, on columns or walls; a Large Crane Bridge bolted to one runs over both.",
+  "group": "Large",
+  "section": "Bridge cranes",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 20480.0,
+  "health": 30720,
+  "armour": 32,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 12.0,
+  "craneRail": true,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        14.0
+      ],
+      "color": "#22262b",
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.68,
+        -1.984,
+        -1.984
+      ],
+      "max": [
+        1.68,
+        -1.44,
+        13.984
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.32,
+        -1.46,
+        -1.968
+      ],
+      "max": [
+        0.32,
+        1.54,
+        13.968
+      ],
+      "color": "#5e6266"
+    },
+    {
+      "min": [
+        -1.44,
+        1.52,
+        -1.984
+      ],
+      "max": [
+        1.44,
+        1.82,
+        13.984
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.36,
+        1.808,
+        -1.992
+      ],
+      "max": [
+        0.36,
+        2.0,
+        13.992
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.7,
+        -1.88,
+        -1.8
+      ],
+      "max": [
+        -1.664,
+        -1.56,
+        13.8
+      ],
+      "color": "#f0c21a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.664,
+        -1.88,
+        -1.8
+      ],
+      "max": [
+        1.7,
+        -1.56,
+        13.8
+      ],
+      "color": "#f0c21a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.1",
+      "at": [
+        -2.0,
+        0.0,
+        4.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.2",
+      "at": [
+        -2.0,
+        0.0,
+        8.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.3",
+      "at": [
+        -2.0,
+        0.0,
+        12.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.1",
+      "at": [
+        2.0,
+        0.0,
+        4.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.2",
+      "at": [
+        2.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.3",
+      "at": [
+        2.0,
+        0.0,
+        12.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.1",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.3",
+      "at": [
+        0.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.1",
+      "at": [
+        0.0,
+        2.0,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.2",
+      "at": [
+        0.0,
+        2.0,
+        8.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.3",
+      "at": [
+        0.0,
+        2.0,
+        12.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}
