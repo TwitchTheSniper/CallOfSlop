@@ -129,25 +129,31 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         };
     }
 
-    private static double[] Lerp(double[] a, double[] b, double t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    private static double[] Lerp(double[] a, double[] b, double t) => HullDress.Lerp(a, b, t);
 
     private static double[] Sh(double[] q) => P(q[0], q[1], q[2]);
 
-    /// <summary>A point on facet k (side s) between za and zb: u along z, v across from edge A to B.</summary>
-    private static double[] OnFacet(int k, int s, double za, double zb, double u, double v)
+    /// <summary>Facet k (side s) between za and zb as the dress library's band: u along z, v across from edge A to B, its length its z length.</summary>
+    private static HullDress.Band BandOf(int k, int s, double za, double zb)
     {
         var (a0, b0) = Edge(k, s, za);
         var (a1, b1) = Edge(k, s, zb);
-        return Lerp(Lerp(a0, b0, v), Lerp(a1, b1, v), u);
+        return new HullDress.Band(a0, b0, a1, b1, zb - za);
     }
 
+    /// <summary>A point on facet k (side s) between za and zb: u along z, v across from edge A to B.</summary>
+    private static double[] OnFacet(int k, int s, double za, double zb, double u, double v) => HullDress.On(BandOf(k, s, za, zb), u, v);
+
     /// <summary>The facet's outward normal at its middle (away from the hull's axis).</summary>
-    private static double[] FacetNormal(int k, int s, double za, double zb)
+    private static double[] FacetNormal(int k, int s, double za, double zb) => HullDress.Normal(BandOf(k, s, za, zb), Cx, 3.0);
+
+    /// <summary>The IT dress style (Constructs/DressStyles.json "it"): the armour's palette and panel patterns.</summary>
+    private static readonly DressStyle It = LoadIt();
+
+    private static DressStyle LoadIt()
     {
-        var c = OnFacet(k, s, za, zb, 0.5, 0.5);
-        var n = Unit(Cross(Sub(OnFacet(k, s, za, zb, 0.5, 1), OnFacet(k, s, za, zb, 0.5, 0)), Sub(OnFacet(k, s, za, zb, 1, 0.5), OnFacet(k, s, za, zb, 0, 0.5))));
-        double[] axis = [Cx, 3.0, c[2]];
-        return Dot(n, Sub(c, axis)) < 0 ? [-n[0], -n[1], -n[2]] : n;
+        var styles = DressStyles.Load(Path.Combine(PartKit.FindRoot(), "Constructs", "DressStyles.json"), out var problem);
+        return styles.GetValueOrDefault("it") ?? throw new InvalidOperationException($"torpedo_frigate_parts: no \"it\" dress style ({problem ?? "not in the file"})");
     }
 
     /// <summary>The skin of facet k on side s from za to zb (between two stations or inside one segment).</summary>
@@ -165,27 +171,13 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     /// <summary>A bevelled armour slab on facet k from (u0, v0) to (u1, v1), standing d0..d1 out, its face drawn in by bev metres.</summary>
     private static void Slab(Part p, int k, int s, double za, double zb, double u0, double u1, double v0, double v1, double d0, double d1, double bev, string color, string finish = "plated steel")
     {
-        var n = FacetNormal(k, s, za, zb);
-        var lu = zb - za;
-        var lv = Math.Sqrt(Dot(Sub(OnFacet(k, s, za, zb, 0.5, 1), OnFacet(k, s, za, zb, 0.5, 0)), Sub(OnFacet(k, s, za, zb, 0.5, 1), OnFacet(k, s, za, zb, 0.5, 0))));
-        double bu = bev / lu, bv = bev / Math.Max(lv, 0.1);
-        double[] Off(double[] q, double d) => [q[0] + n[0] * d, q[1] + n[1] * d, q[2] + n[2] * d];
-        double[][] inner = [.. new[] { (u0, v0), (u1, v0), (u1, v1), (u0, v1) }.Select(t => Sh(Off(OnFacet(k, s, za, zb, t.Item1, t.Item2), d0)))];
-        double[][] outer = [.. new[] { (u0 + bu, v0 + bv), (u1 - bu, v0 + bv), (u1 - bu, v1 - bv), (u0 + bu, v1 - bv) }.Select(t => Sh(Off(OnFacet(k, s, za, zb, t.Item1, t.Item2), d1)))];
-        Prism(p, inner, outer, color, finish);
+        var (inner, outer) = HullDress.SlabOutlines(BandOf(k, s, za, zb), FacetNormal(k, s, za, zb), u0, u1, v0, v1, d0, d1, bev);
+        Prism(p, [.. inner.Select(Sh)], [.. outer.Select(Sh)], color, finish);
     }
 
     /// <summary>A flat strip on a facet (a seam, a stripe, a light), d out from it.</summary>
-    private static void FStrip(Part p, int k, int s, double za, double zb, double u0, double u1, double v0, double v1, double d, string color, string finish = "painted plating", bool glow = false)
-    {
-        var n = FacetNormal(k, s, za, zb);
-        double[] Q(double u, double v)
-        {
-            var q = OnFacet(k, s, za, zb, u, v);
-            return Sh([q[0] + n[0] * d, q[1] + n[1] * d, q[2] + n[2] * d]);
-        }
-        Plate(p, [Q(u0, v0), Q(u1, v0), Q(u1, v1), Q(u0, v1)], color, finish, glow: glow);
-    }
+    private static void FStrip(Part p, int k, int s, double za, double zb, double u0, double u1, double v0, double v1, double d, string color, string finish = "painted plating", bool glow = false) =>
+        Plate(p, [.. HullDress.StripCorners(BandOf(k, s, za, zb), FacetNormal(k, s, za, zb), u0, u1, v0, v1, d).Select(Sh)], color, finish, glow: glow);
 
     /// <summary>A chine rail: a faceted bar along profile point i (1..3) on side s from za to zb, w wide each way and h proud.</summary>
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, string color) => Chine(p, i, s, za, zb, w, h, w, h, color);
@@ -193,9 +185,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     /// <summary>A shoulder block: a big chine rail whose ends rake down to a smaller section over rake metres.</summary>
     private static void Shoulder(Part p, int i, int s, double za, double zb, double w, double h, double rake, string color)
     {
-        Chine(p, i, s, za, za + rake, w * 0.55, h * 0.3, w, h, color);
-        Chine(p, i, s, za + rake + 0.004, zb - rake - 0.004, w, h, w, h, color == Armour ? Armour2 : Armour);
-        Chine(p, i, s, zb - rake, zb, w, h, w * 0.55, h * 0.3, color);
+        foreach (var r in HullDress.Shoulder(za, zb, w, h, rake))
+            Chine(p, i, s, r.Za, r.Zb, r.W, r.H, r.W2, r.H2, !r.Middle ? color : color == Armour ? Armour2 : Armour);
     }
 
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, double w2, double h2, string color)
@@ -204,11 +195,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         {
             var q = At(z);
             double[] c = [Cx + s * q[i].H, q[i].Y, z], a = [Cx + s * q[i - 1].H, q[i - 1].Y, z], b = i == 4 ? [Cx - s * q[4].H, q[4].Y, z] : [Cx + s * q[i + 1].H, q[i + 1].Y, z];
-            var da = Unit(Sub(a, c));
-            var db = Unit(Sub(b, c));
-            var n = Unit([-(da[0] + db[0]), -(da[1] + db[1]), 0]);
-            double[] Pt(double[] d1, double t1, double t2) => Sh([c[0] + d1[0] * t1 + n[0] * t2, c[1] + d1[1] * t1 + n[1] * t2, z]);
-            return [Pt(da, w, 0.01), Pt(da, w * 0.45, h), Pt(db, w * 0.45, h), Pt(db, w, 0.01)];
+            return [.. HullDress.ChineRing(a, c, b, w, h).Select(Sh)];
         }
         var ra = Ring(za, w, h);
         var rb = Ring(zb, w2, h2);
@@ -223,49 +210,22 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     /// or bare skin with its seam; the pattern is the same on both sides (k and the panel's index pick it).</summary>
     private static void Plates(Part p, int k, int s, double za, double zb, int salt, double v0 = 0.07, double v1 = 0.93)
     {
-        var n = Math.Max(1, (int)Math.Round((zb - za) / 3.2));
-        for (var i = 0; i < n; i++)
-        {
-            double u0 = (double)i / n + 0.03 / (zb - za) * 4, u1 = (double)(i + 1) / n - 0.03 / (zb - za) * 4;
-            var pick = (k * 7 + i * 3 + salt * 5 + (int)za) % 6;
-            switch (pick)
-            {
-                case 0:
-                case 3:
-                    Slab(p, k, s, za, zb, u0, u1, v0, v1, 0.02, 0.13, 0.07, Armour);
-                    break;
-                case 1:
-                    Slab(p, k, s, za, zb, u0, u1, v0, v1, 0.02, 0.12, 0.07, Armour2);
-                    Slab(p, k, s, za, zb, u0 + (u1 - u0) * 0.18, u1 - (u1 - u0) * 0.12, v0 + 0.14, v1 - 0.2, 0.12, 0.2, 0.05, Armour);
-                    break;
-                case 2:
-                    Slab(p, k, s, za, zb, u0, u1, v0, v1, 0.02, 0.09, 0.05, Blue, "painted plating");
-                    break;
-                case 4:
-                    Slab(p, k, s, za, zb, u0, (u0 + u1) / 2 - 0.01, v0, v1, 0.02, 0.15, 0.08, Armour);
-                    Slab(p, k, s, za, zb, (u0 + u1) / 2 + 0.01, u1, v0 + 0.1, v1, 0.02, 0.1, 0.06, Armour2);
-                    break;
-                default:
-                    FStrip(p, k, s, za, zb, (u0 + u1) / 2 - 0.004, (u0 + u1) / 2 + 0.004, v0, v1, 0.03, Frame, "dirty steel");
-                    FStrip(p, k, s, za, zb, u0, u0 + Math.Min(0.25, (u1 - u0) * 0.2), v0 + 0.1, v0 + 0.22, 0.031, Blue, "painted plating");
-                    break;
-            }
-        }
+        foreach (var it in HullDress.Plates(BandOf(k, s, za, zb), It, k, (int)za, salt, v0, v1))
+            if (it.Strip)
+                FStrip(p, k, s, za, zb, it.U0, it.U1, it.V0, it.V1, it.D0, it.Color, it.Finish);
+            else
+                Slab(p, k, s, za, zb, it.U0, it.U1, it.V0, it.V1, it.D0, it.D1, it.Bevel, it.Color, it.Finish);
     }
 
     // ---- geometry helpers (the Halberd's)
 
-    private static double[] Sub(double[] a, double[] b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    private static double[] Sub(double[] a, double[] b) => HullDress.Sub(a, b);
 
-    private static double[] Cross(double[] a, double[] b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    private static double[] Cross(double[] a, double[] b) => HullDress.Cross(a, b);
 
-    private static double Dot(double[] a, double[] b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    private static double Dot(double[] a, double[] b) => HullDress.Dot(a, b);
 
-    private static double[] Unit(double[] a)
-    {
-        var l = Math.Sqrt(Dot(a, a));
-        return l < 1e-12 ? [0, 1, 0] : [a[0] / l, a[1] / l, a[2] / l];
-    }
+    private static double[] Unit(double[] a) => HullDress.Unit(a);
 
     /// <summary>A flat plate through the points (a convex polygon), T thick about them: a "hull" shape, drawn only.</summary>
     private static void Plate(Part p, double[][] pts, string color, string finish = "painted plating", bool glass = false, bool glow = false, double thick = T)
