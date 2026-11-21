@@ -200,13 +200,15 @@ public static class ModuleCut
     /// <summary>The plate's frame in the world: its face's middle, its normal (out of the face), its across (x) and its up (z, the long side).</summary>
     private static void Frame(Construct c, int plate, out Vector3 face, out Vector3 n, out Vector3 across, out Vector3 up)
     {
+        // (Through the plate's segment frame: a plate socket-welded onto a craft sits on a freeform segment, whose numbers are in its weld's frame.)
         var d = c.DefOf(plate);
         ref var p = ref c.Parts[plate];
         c.SocketAt(plate, d.ModSocket, out var at, out _);
-        face = c.ToWorld(at);
-        n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), c.Rot));
-        across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), c.Rot));
-        up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), c.Rot));
+        c.WorldFrame(p.Seg, out var q, out var t);
+        face = t + Vector3.Transform(at, q);
+        n = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), q));
+        across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitX), q));
+        up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), q));
     }
 
     /// <summary>
@@ -218,8 +220,8 @@ public static class ModuleCut
         var s = c.ModSockets[si];
         var cuts = new List<(int, ConstructPartDef?)>();
         var t = ModuleSocketTable.Current;
-        if (c.FrameOf(c.Parts[s.Plate].Seg) != 0)
-            return new Plan(cuts, s.Plate, "a socket on a joint can't cut a well", 0, 0, 0);
+        if (!c.Rigid(c.Parts[s.Plate].Seg))
+            return new Plan(cuts, s.Plate, "a socket on a joint can't cut a well", 0, 0, 0); // (a freeform weld, as a player's socket weld makes, is rigid: it cuts)
         Frame(c, s.Plate, out var face, out var n, out var across, out var up);
         var depth = s.Depth;
         Tunnel(c, s, face, n, out var mouth, out var len, out _, out _);
@@ -300,7 +302,7 @@ public static class ModuleCut
                 continue; // (burned below, once every swap is made: a break may split the body)
             lost += MathF.Max(0, p.D.Mass - holed.Mass);
             p.Def = holed.Id;
-            c.PartBounds(j, out var mn, out var mx);
+            ModuleSockets.RestBounds(c, j, out var mn, out var mx); // (the rest frame: parts on freeform welds too)
             var h = Vector3.Dot(c.ToWorld((mn + mx) * 0.5f) - face, n);
             if (h > topAt)
                 (top, topAt) = (j, h);
@@ -359,7 +361,8 @@ public static class ModuleCut
             return;
         }
         var at = face + n * (s.Depth + 0.3f + h * 0.0025f);
-        if (world.Create(at, c.Rot * Rot24.Quat(c.Parts[s.Plate].Rot)) is not { } slug)
+        ModuleSockets.PlateRest(c, s.Plate, out var pr, out _, out _); // (the rest frame: a plate welded on freeform is in its weld's)
+        if (world.Create(at, c.Rot * Rot24.Quat(pr)) is not { } slug)
         {
             Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well is dropped: the world is full");
             return;
