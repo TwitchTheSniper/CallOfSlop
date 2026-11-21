@@ -686,7 +686,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      lathes and the Medium Die Rack go: part ids shift). 404 to 406 are kept for the Hall Crane, the Grow Former and the Laser Cutter's follow-up.
     // 408: cut plates fit the largest Laser Cutter bed (Sean, 2026-11-21): a plate key over 32 m, or over 16 m both ways, is refused (HullLoft.StockRefusal), so peers must agree.
     // 409: the Dibber Lander's 23 parts (Constructs/Parts/Dibber, Karl 2026-11-21): a new part folder shifts the ids after it.
-    // 410: kept for the Hall Crane (PR 408), on its way in.
+    // 410: the Hall Crane (Sean, 2026-11-21): Crane Rail Block and Crane Core part files come (ids move); a hall crane's span, lift
+    //   and drop are worked out from its rails on each peer.
     // 411: the Grow Former (Sean, 2026-11-21): one Grow Former Core and its Former Block replace the twelve Wheel, Fan and Airframe Formers
     //   (part files go and come, ids move); CfgKey GrowMakes at the end.
     public const ushort ProtocolVersion = 411;

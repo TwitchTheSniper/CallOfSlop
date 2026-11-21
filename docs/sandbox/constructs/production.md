@@ -1667,6 +1667,23 @@ on a small floor), and a Crane Bridge bolted to the outer side of one run by its
 the rails, down its hook's drop; everything an arm does it does in that box. Its look line, screen and Alarm say when it is off its
 rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes.
 
+**The Hall Crane** (design page drawing 24, Sean 2026-11-21; parts from `LifterParts.cs`, `Constructs/Parts/Lifters/HallCranes`) is a
+Bridge Crane on the block rules, for moving pieces between machines, pads and roller runs; it comes on top of a machine's own crane,
+never in its place. A **Crane Rail Block** (2 x 1 x 2 m, `craneRail`) is 2 m of runway girder for the top of a Mast Block column: blocks
+in line end to end make a run, as sections do. A **Crane Core** (2 m cabinet, lifter `bridge` with `"hall": true`) bolts beside a run
+by its +x socket (the rail's foot at its middle height). Its numbers come from its rails at each walk (`ConstructCraneRails.HallWalk`):
+the span is the gap to the nearest parallel run across at the same height, at most 32 m (`HallSpan`); the reach across stops 1 m short
+of each rail; the lift is 20 t plus 5 t a rail block in both runs; the hook drops to the lowest Mast Block foot under the rails (the
+floor); the largest piece is the span less 2 m across and the shared run long. Every other fixed part under the span must stay under
+the hook's highest point (1.6 m under the rails' top): the tallest one that doesn't stops the crane, named on its look line and
+screen ("the Extruder stands up into the bridge's way"). More Cores on the same rails make more bridges, each with its own queue.
+Drawn from the hook's place as the classed crane is, at a 2 m scale, with a cab hung under the girders near the near rail (KEEP
+CLEAR on its sides), festoon loops along the girder and hazard stripes on the hook block; each rail block's amber lamp flashes while
+a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The Large and Capital classed cranes are gone; the Medium
+one stays for the Dray's hold. The **Hall Bay** blueprint (`HallShowcase.cs`) is a 24 x 20 m floor with a 16 m Hall Crane on two
+runs over three-mast columns, an Extruder with no conveyor and a Lay-down Pad: the crane carries each angle from the Run-out Table to
+the pad. Not yet: a hall crane doesn't yet skip a machine bed that the machine's own crane serves (no machine has its own crane yet).
+
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
 (a rack's or pad's kinds, a machine's pieces at its out and in its tray), and its orders. Click a kind under a pick point, then a put

@@ -617,6 +617,7 @@ public sealed partial class ConstructPartDef
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
     public bool HasWork; // a box that shows the machine working ("work" on a box)
+    public bool WorkGlowOnly; // ...and every such box only glows (nothing moves or smokes out of its bounds: the renderer may cull it off screen)
     public bool HasPieceWork; // a box that moves by the machine's piece ("ram", "shear": an Extruder's)
     public bool HasHubSlide; // a box that rides a Grow Former's hub slide ("slide", or a "spin" with a "travel": ConstructGrowFormer.HubRise)
     public bool HasMiddle; // a box marked "middle" (a module plate or plug that can be drawn as a frame: ModuleSockets.FrameLook)
@@ -1723,6 +1724,7 @@ public static partial class ConstructParts
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
+        d.WorkGlowOnly = d.HasWork && list.All(x => x.Work is BoxWork.None or BoxWork.Glow);
         d.HasPieceWork = list.Any(x => x.Work is BoxWork.Ram or BoxWork.Shear);
         d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
