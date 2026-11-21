@@ -127,7 +127,7 @@ public static unsafe partial class Program
                     var job = h.Name != null ? ConstructLaserCutter.JobOf(h.Name) : null;
                     WsSay($"cutter: {d.Name}#{i}: {(ExtrudeStall)st.Refused}{(st.Busy ? " busy" : "")}, offcut {st.Amount} {RecyclingTable.Current.NameOf(st.Material)} +{st.InAmount} tenths {RecyclingTable.Current.NameOf(st.InMaterial)}, "
                         + $"bed {(st.OnBed ? "blank" : "empty")} {st.Progress}%, orders {c.Parts[i].Orders?.Count ?? 0}, head {head}"
-                        + (job != null ? $"; job: edge {job.EdgeM:0.00} m, {job.Mm:0} mm, {ConstructLaserCutter.Seconds(job, d):0.0} s by the law, offcut {job.OffTenths / 10f:0.0}" : ""));
+                        + (job != null ? $"; job: edge {job.EdgeM:0.00} m, {job.Mm:0} mm, {ConstructLaserCutter.Seconds(job, c, i):0.0} s by the law ({ConstructLaserCutter.Heads(c, i)} heads), offcut {job.OffTenths / 10f:0.0}" : ""));
                 }
         var loose = new Dictionary<string, int>();
         foreach (var b in w.Bodies)

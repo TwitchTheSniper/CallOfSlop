@@ -1518,8 +1518,7 @@
     {"output": "Steel Panel Wall 16 m", "materials": {"steel": 1408, "concrete": 282}, "seconds": 180.0},
     {"output": "Steel Panel Wall 4 m", "materials": {"steel": 352, "concrete": 70}, "seconds": 54.8},
     {"output": "Steel Panel Wall 8 m", "materials": {"steel": 704, "concrete": 141}, "seconds": 107.6},
-    {"output": "Laser Cutter", "materials": {"steel": 96, "rubber": 19}, "seconds": 16.4},
-    {"output": "Medium Laser Cutter", "materials": {"steel": 1120, "rubber": 224}, "seconds": 170.0, "minTier": 2},
+    {"output": "Laser Cutter", "materials": {"steel": 440, "rubber": 88}, "seconds": 68.0},
     {"output": "Lever", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Capital Crane Bridge", "materials": {"steel": 2000}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 600.0, "minTier": 4},
     {"output": "Crane Rail Capital 32 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
@@ -2263,8 +2262,6 @@
     {"output": "Half Shell", "materials": {"steel": 12, "copper": 4, "rubber": 2}, "parts": {"Circuit Board": 1}, "seconds": 20, "minTier": 2},
     {"output": "Module Fitter S", "materials": {"steel": 304}, "parts": {"Servo Motor": 8, "Control Unit": 2}, "seconds": 47.6, "minTier": 4},
     {"output": "Construction Shell", "materials": {"steel": 220, "copper": 30, "rubber": 16}, "parts": {"Circuit Board": 6}, "seconds": 120, "minTier": 2},
-    {"output": "Large Laser Cutter", "materials": {"steel": 1600, "rubber": 320}, "seconds": 400.0, "minTier": 3},
-    {"output": "Capital Laser Cutter", "materials": {"steel": 2000, "rubber": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Actuator Spares Rack", "materials": {"steel": 6}, "parts": {"Bearing": 1}, "seconds": 2.9, "minTier": 2},
     {"output": "Airlock Chamber", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
     {"output": "Airlock Inner Door", "materials": {"steel": 12}, "parts": {"Bearing": 1}, "seconds": 3.8, "minTier": 2},
@@ -2492,6 +2489,7 @@
     {"output": "Bake Oven", "materials": {"steel": 900, "copper": 120, "rubber": 60}, "parts": {"Circuit Board": 2, "Wiring Loom": 2}, "seconds": 150, "minTier": 2},
     {"output": "Oven Bed Block", "materials": {"steel": 700, "copper": 80}, "parts": {"Wiring Loom": 1}, "seconds": 90},
     {"output": "Out Table", "materials": {"steel": 160, "rubber": 40}, "parts": {"Gear Set": 1}, "seconds": 60},
+    {"output": "Laser Bed Block", "materials": {"steel": 480, "rubber": 60, "copper": 20}, "parts": {"Wiring Loom": 1, "Gear Set": 1}, "seconds": 90},
     {"output": "Bay Block", "materials": {"steel": 420, "rubber": 20}, "parts": {"Wiring Loom": 1}, "seconds": 40}
   ]
 }

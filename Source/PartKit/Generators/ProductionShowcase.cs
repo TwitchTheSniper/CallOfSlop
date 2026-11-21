@@ -357,6 +357,13 @@ public sealed class ProductionShowcase : IPartGenerator
                     Paint(t, j == TilesZ ? Aisle : Floor);
                     Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
                 }
+            for (var j = TilesZ + 3; j < TilesZ + 5; j++) // (south of the cutter: its Out Table and its rack)
+                for (var i = 34; i < 42; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == TilesZ ? Aisle : Floor);
+                    Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
+                }
 
             var wing = On("Airframe Former", 57.75f, -17.75f, Flow, paint: Wheels);
             Feed(StockOf("steel", 55.75f, -17.75f), wing);
@@ -370,12 +377,17 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(plate, "Piece out", split, "Piece in", Cutter);
             var cutter = On("Laser Cutter", 75.25f, line, Flow); // (2 m of conveyor each side: a conveyor shorter than the piece jams the Router, "the conveyor after the junction is full")
             Convey(split, "Piece out", cutter, "Piece in", Cutter);
-            var spare = On("Piece Rack", 72.25f, -18.25f, Flow, "-y.0.0", Cutter);
+            var spare = On("Piece Rack", 66.75f, -18.75f, Flow, "-y.0.0", Cutter); // (west of the cutter's bed)
             var o2 = PortAt(split, "Piece out 2");
             var sIn = PortAt(spare, "Piece in");
             Convey(split, "Piece out 2", spare, "Piece in", Cutter, null, V(o2.X, o2.Y, sIn.Z));
-            var cut = On("Piece Rack", 78.75f, -15.75f, Flow, "-y.0.0", Cutter);
-            Convey(cutter, "Piece out", cut, "Piece in", Cutter);
+            var bed = Onto(cutter, "+x", "Laser Bed Block", by: "-x", spin: 0); // (the block system, Sean 2026-11-21: a 1 x 2 bed beside the Core's long side; the cut part lies on it)
+            Onto(bed, "+z", "Laser Bed Block", by: "-z", spin: 0);
+            var table = Onto(bed, "+x", "Out Table", by: "-z", spin: 0); // (the bed's far side, away from the Core: the cut part rides out over it)
+            var tOut = PortAt(table, "Piece out");
+            var cut = On("Piece Rack", 75.25f, -22.75f, Flow, "-y.0.0", Cutter);
+            var cIn = PortAt(cut, "Piece in");
+            Convey(table, "Piece out", cut, "Piece in", Cutter, null, V(tOut.X, tOut.Y, cIn.Z));
             Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; blank in, cut part out", false);
 
             var k = 0;
