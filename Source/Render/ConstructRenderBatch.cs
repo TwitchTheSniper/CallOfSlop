@@ -165,6 +165,8 @@ public static partial class ConstructRender
             return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
         if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
             return -1; // (an Opening socket's frame, or the plug on one: walked, DrawPart leaves its middle out)
+        if (p.D.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _))
+            return -1; // (a Press's clamshell segment: walked, swung about its hinge while the press works, ConstructPressShells.cs)
         if (p.D.ShellBody)
             return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)

@@ -3,10 +3,12 @@ namespace CallOfSlop;
 /// <summary>
 /// A Press on the block system (docs/sandbox/constructs/production.md "The Press", design page drawings 17 and 17b): the Press Core alone
 /// presses blanks up to its own 0.45 m across at speed 1. Press Blocks welded to it make the bed (the largest full rectangle of blocks
-/// that holds one welded to the Core: MachineBlocks.cs) and, stacked on the bed's two long edges (the rows at either end across the flow),
-/// its walls. The walls set the daylight, the largest across a blank may be: 1.6 m with one block on the bed, 2 m more for each block
-/// more, the shortest column of either wall counting. The bed's width (2 m a block across) is the widest side a blank may have, and a
-/// blank longer than the bed is pressed in bites, one stroke's time for each bed length. Speed and draw grow with the blocks taken in.
+/// that holds one welded to the Core: MachineBlocks.cs) and, stacked on the bed's two long edges (its first and last rows along the
+/// Core's z), its walls: the clamshell's shells (drawing 17b, ConstructPressShells.cs), hinged at the bed's edges, that swing shut over
+/// the blank. The flow runs along the Core's x, from the Core down the bed. The walls set the daylight, the largest across a blank may
+/// be: 1.6 m with one block on the bed, 2 m more for each block more, the shortest column of either wall counting. The bed's width
+/// across the flow (2 m a block) is the widest side a blank may have, and a blank longer than the bed is pressed in bites, one
+/// stroke's time for each bed length. Speed and draw grow with the blocks taken in.
 /// Everything is read from the construct's parts and links, so a client's copy agrees with the host's after a block is welded or shot off.
 /// </summary>
 public static partial class ConstructPress
@@ -28,14 +30,14 @@ public static partial class ConstructPress
     public static int Cells(Construct c, int part) =>
         c.Parts[part].D.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var asm) ? 1 + Math.Max(0, asm.Cells - asm.Idle) : 1;
 
-    /// <summary>The walls' height in blocks over the bed: the shortest column along either long edge (0: no walls, or a bed one block wide).</summary>
+    /// <summary>The walls' height in blocks over the bed: the shortest column along either long edge (its first and last rows along the Core's z; 0: no walls, or a bed one block wide).</summary>
     public static int Walls(Construct c, int part)
     {
-        if (!Bed(c, part, out var asm) || asm.W < 2)
+        if (!Bed(c, part, out var asm) || asm.L < 2)
             return 0;
         var h = int.MaxValue;
-        for (var z = asm.Z0; z < asm.Z0 + asm.L; z++)
-            h = Math.Min(h, Math.Min(MachineBlocks.ColumnAt(c, asm, asm.X0, z), MachineBlocks.ColumnAt(c, asm, asm.X0 + asm.W - 1, z)));
+        for (var x = asm.X0; x < asm.X0 + asm.W; x++)
+            h = Math.Min(h, Math.Min(MachineBlocks.ColumnAt(c, asm, x, asm.Z0), MachineBlocks.ColumnAt(c, asm, x, asm.Z0 + asm.L - 1)));
         return Math.Max(0, h);
     }
 
@@ -51,7 +53,7 @@ public static partial class ConstructPress
 
     /// <summary>The widest side (cm) a blank may have on this press: the bed's width, or no limit (int.MaxValue) for a Core alone.</summary>
     public static int WidthCm(Construct c, int part) =>
-        Bed(c, part, out var asm) ? (int)MathF.Round(asm.W * c.Parts[part].D.BlockCell * 100) : int.MaxValue;
+        Bed(c, part, out var asm) ? (int)MathF.Round(asm.L * c.Parts[part].D.BlockCell * 100) : int.MaxValue; // (across the flow: the Core's z)
 
     /// <summary>The wall blocks a blank this many cm across needs (0: a Core alone takes it).</summary>
     public static int WallsFor(int acrossCm) => acrossCm <= Pressed.PressMaxCm[0] ? 0 : acrossCm <= WallFirstCm ? 1 : 1 + (acrossCm - WallFirstCm + WallStepCm - 1) / WallStepCm;
@@ -72,7 +74,7 @@ public static partial class ConstructPress
     {
         if (!Bed(c, part, out var asm))
             return 1;
-        var bed = (int)MathF.Round(asm.L * c.Parts[part].D.BlockCell * 100);
+        var bed = (int)MathF.Round(asm.W * c.Parts[part].D.BlockCell * 100); // (along the flow: the Core's x)
         return Math.Max(1, (blank.L + bed - 1) / bed);
     }
 
@@ -109,6 +111,7 @@ public static partial class ConstructPress
         if (c.Parts[part].D.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm))
             return "";
         var s = asm.W == 0 ? MachineBlocks.Describe(c, asm) : $"{MachineBlocks.Describe(c, asm)}, {MaxCm(c, part) / 100f:0.00} m of daylight";
-        return $"{s}, speed x{Speed(c, part):0.0}";
+        var swing = SwingText(c, part);
+        return swing.Length > 0 ? $"{s}, speed x{Speed(c, part):0.0}, {swing}" : $"{s}, speed x{Speed(c, part):0.0}";
     }
 }

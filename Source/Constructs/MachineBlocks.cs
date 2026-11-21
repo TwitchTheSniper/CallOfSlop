@@ -23,6 +23,7 @@ public struct CMachineAsm
     public sbyte X0, Z0; // the rectangle's first cell, in the Core's cell frame (x across, z along the Core's +z)
     public byte W, L; // its size in cells (0: no rectangle)
     public bool Capped; // more cells were joined than MachineBlocks.MaxCells (the rest are idle)
+    public short Blocker; // a machine's own check at the rebuild (a Press's shells' swing: ConstructPress.SwingCheck): the part in the way, or -1
     public int Grid; // the assembly's slot in the construct's column grid (MachineBlocks.GridSide squared bytes a slot)
 }
 
@@ -32,6 +33,7 @@ public sealed partial class Construct
     public int MachineAsmCount;
     public short[] BlockAsmOf = []; // each part's assembly, or -1 (sized to PartCount while any assembly exists)
     public byte[] BlockJoined = []; // each part's faces (bits by direction, part frame) welded to a cell of its own assembly
+    public int[] BlockCellOf = []; // each part's cell in its Core's cell frame (MachineBlocks.CellOf: x, y, z packed a byte each, 128 the Core's)
     public byte[] BlockColumns = []; // per assembly, GridSide x GridSide column heights (bit 7: a bed cell; bits 0..6: cells stacked on it)
 }
 
@@ -115,6 +117,26 @@ public static class MachineBlocks
         }
     }
 
+    private static int Pack(int x, int y, int z) => (x + 128) | (y + 128) << 8 | (z + 128) << 16;
+
+    /// <summary>Part <paramref name="part"/>'s cell in its Core's cell frame (x across, y up, z along the Core's +z; the Core's own is 0, 0, 0).</summary>
+    public static bool CellOf(Construct c, int part, out int x, out int y, out int z)
+    {
+        x = y = z = 0;
+        if (AsmOf(c, part) < 0)
+            return false;
+        var v = c.BlockCellOf[part];
+        (x, y, z) = ((v & 0xFF) - 128, (v >> 8 & 0xFF) - 128, (v >> 16 & 0xFF) - 128);
+        return true;
+    }
+
+    /// <summary>The middle of the Core's own cell (body frame): cell (x, y, z) of its machine is this plus its rotation of (x, y, z) cells.</summary>
+    public static Vector3 CoreMid(Construct c, int core)
+    {
+        ref readonly var p = ref c.Parts[core];
+        return p.D.BlockOrigin is { } org ? p.Pos + Rot24.Apply(p.Rot, org) : Middle(c, core);
+    }
+
     /// <summary>Does this part's def take part in a block machine?</summary>
     public static bool Is(ConstructPartDef d) => d.BlockRole != BlockRole.None;
 
@@ -196,6 +218,7 @@ public static class MachineBlocks
         {
             c.BlockAsmOf = new short[Math.Max(n, c.BlockAsmOf.Length * 2)];
             c.BlockJoined = new byte[c.BlockAsmOf.Length];
+            c.BlockCellOf = new int[c.BlockAsmOf.Length];
         }
         Array.Fill(c.BlockAsmOf, (short)-1);
         Array.Clear(c.BlockJoined);
@@ -221,14 +244,15 @@ public static class MachineBlocks
         var id = (short)c.MachineAsmCount++;
         ref var asm = ref c.MachineAsms[id];
         var cd = c.Parts[core].D;
-        asm = new CMachineAsm { Core = (ushort)core, Family = cd.BlockFamily, Grid = id * GridSide * GridSide };
+        asm = new CMachineAsm { Core = (ushort)core, Family = cd.BlockFamily, Grid = id * GridSide * GridSide, Blocker = -1 };
         var grid = c.BlockColumns.AsSpan(asm.Grid, GridSide * GridSide);
         grid.Clear();
         var cell = cd.BlockCell;
         var coreRot = c.Parts[core].Rot;
         var unrot = Rot24Inverse(coreRot);
-        var coreMid = cd.BlockOrigin is { } org ? c.Parts[core].Pos + Rot24.Apply(coreRot, org) : Middle(c, core); // (a Core whose looks stand out of its cell names the cell's middle)
+        var coreMid = CoreMid(c, core); // (a Core whose looks stand out of its cell names the cell's middle)
         c.BlockAsmOf[core] = id;
+        c.BlockCellOf[core] = Pack(0, 0, 0);
         int count = 0, at = 0;
         queue[count++] = (ushort)core;
         cx[0] = cy[0] = cz[0] = 0;
@@ -274,6 +298,7 @@ public static class MachineBlocks
                 if (Math.Abs(x) > Mid || Math.Abs(z) > Mid || Math.Abs(y) > 127)
                     continue; // (beyond the grid: not part of this machine)
                 c.BlockAsmOf[o] = id;
+                c.BlockCellOf[o] = Pack(x, y, z);
                 cellCount++;
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
@@ -298,6 +323,8 @@ public static class MachineBlocks
                 g = (byte)((g & 0x80) | Math.Min(0x7F, Math.Max(g & 0x7F, cy[k])));
             }
         LargestRectangle(grid, sum, ref asm);
+        if (asm.W > 0 && Families[asm.Family] == "press")
+            ConstructPress.SwingCheck(c, ref asm, id); // (its shells' swing: a fixed part in the way stops it, and the screen names it)
         // Bed cells outside the rectangle idle; each cell's welded faces to its own machine (for the seam boxes).
         var bed = 0;
         foreach (var g in grid)

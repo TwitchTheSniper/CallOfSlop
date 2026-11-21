@@ -20,6 +20,7 @@ public enum PressStall : byte
     ConveyorCut, // its Piece out conveyor is cut
     Bay2Short, // a sized die's pattern wants more of its kit in bay 2 than it holds
     WantsOrder, // it has a queue (Press phase 4) and the queue is empty: it presses nothing until an order comes
+    SwingBlocked, // a fixed part stands in a shell's swing (the clamshell, ConstructPressShells.cs): it never swings into its own machine's neighbours
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -507,6 +508,7 @@ public static partial class ConstructPress
         var why = bay < 0 ? (p.Orders is { Bill: false, Count: 0 } ? PressStall.WantsOrder : PressStall.Wants)
             : need > KitHeld(st, pattern!.Bay2) ? PressStall.Bay2Short
             : preset != null && !TrayPartsRide(world, c, part, preset) && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull // (with a Piece out conveyor everything rides it: PutOut)
+            : SwingBlocked(c, part) ? PressStall.SwingBlocked
             : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
         SetStall(world, st, why);
         if (why != PressStall.None || held || p.Broken)
@@ -1442,6 +1444,7 @@ public static partial class ConstructPress
         PressStall.ConveyorCut => "Output conveyor cut",
         PressStall.Bay2Short => "Bay 2 needs its kit",
         PressStall.WantsOrder => "No orders: waiting",
+        PressStall.SwingBlocked => "Shell swing blocked",
         _ => "Ready",
     };
 

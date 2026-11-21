@@ -685,6 +685,10 @@ public static partial class ConstructRender
         var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
+        ConstructPress.ShellPose shellPose = default;
+        var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
+        var shellTurn = shellOn ? ConstructPress.ShellTurn(shellPose, ConstructPress.Openness(!c.Parts[shellPose.Core].Broken && world.StoreOf(c, shellPose.Core) is { } shellStore
+            && ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), shellPose.Index, ConstructLifters.DrawTick)) : Matrix4x4.Identity;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -748,6 +752,8 @@ public static partial class ConstructRender
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
                 model *= Matrix4x4.CreateTranslation(c.EngineShake); // (a big engine rocks on its mounts)
+            if (shellOn)
+                model *= shellTurn;
             model = model * wheel * (box.IsLeaf && leafMoves ? railSeg : box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
             if ((d.IsBeacon || d.IsTerminal) && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {
@@ -778,6 +784,8 @@ public static partial class ConstructRender
         }
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
+        if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
+            drawn += DrawShellLip(gfx, in p, d, in shellPose, shellTurn * seg * body, shade, opacity);
         return drawn;
     }
 
@@ -803,6 +811,37 @@ public static partial class ConstructRender
         }
         return drawn;
     }
+
+    private static readonly Vector3 ShellLip = new(0.133f, 0.149f, 0.169f), ShellLatch = new(0.82f, 0.16f, 0.12f);
+
+    /// <summary>
+    /// A clamshell segment's roof lip (drawing 17b): from the top of its column's inner face out to the bed's centre line, where the
+    /// other side's meets it, with red latch teeth along its leading edge. Its own segment's turn goes with it (<paramref name="onBody"/>).
+    /// </summary>
+    private static int DrawShellLip(Renderer gfx, in CPart p, ConstructPartDef d, in ConstructPress.ShellPose s, in Matrix4x4 onBody, float shade, float opacity)
+    {
+        const float Thick = 0.2f, Under = 0.004f;
+        var middle = p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f);
+        var reach = s.Gap - 0.005f; // (5 mm short of the centre: the two lips never share a face)
+        var inner = middle - s.Out * (s.Cell * 0.5f);
+        var lip = inner - s.Out * (reach * 0.5f) + s.Up * (s.Cell * 0.5f - Thick * 0.5f - Under);
+        gfx.Draw(Oriented(s, lip, s.Cell - 0.02f, Thick, reach) * onBody, ShellLip * shade, opacity);
+        var teeth = Math.Max(1, (int)(s.Cell / 0.5f));
+        for (var k = 0; k < teeth; k++)
+        {
+            var along = ((k + 0.5f) / teeth - 0.5f) * (s.Cell - 0.1f);
+            var at = inner - s.Out * (reach - 0.04f) + s.Up * (s.Cell * 0.5f - Thick - Under - 0.04f) + s.Along * along;
+            gfx.Draw(Oriented(s, at, 0.16f, 0.08f, 0.06f) * onBody, ShellLatch * shade, opacity);
+        }
+        return 1 + teeth;
+    }
+
+    /// <summary>A unit box's model: <paramref name="along"/> by <paramref name="up"/> by <paramref name="out"/> metres on a shell's axes, centred at <paramref name="at"/>.</summary>
+    private static Matrix4x4 Oriented(in ConstructPress.ShellPose s, Vector3 at, float along, float up, float @out) => new(
+        s.Along.X * along, s.Along.Y * along, s.Along.Z * along, 0,
+        s.Up.X * up, s.Up.Y * up, s.Up.Z * up, 0,
+        s.Out.X * @out, s.Out.Y * @out, s.Out.Z * @out, 0,
+        at.X, at.Y, at.Z, 1);
 
     private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
     private static readonly Vector3 RouterOrder = new(1f, 0.5f, 0.1f), RouterStore = new(0.95f, 0.95f, 0.9f), RouterStuck = new(1f, 0.12f, 0.08f);
