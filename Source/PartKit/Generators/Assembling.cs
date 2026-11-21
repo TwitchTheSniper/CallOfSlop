@@ -511,9 +511,6 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Half Shell", 20, 2, m: [("steel", 12), ("copper", 4), ("rubber", 2)], p: [("Circuit Board", 1)])), // (docs/sandbox/design/half-shell.md)
         ("Modules/Fitters", "Module Fitter S", null), // (module sockets phase 4: the Module Fitter S)
         (null, null, Rec("Construction Shell", 120, 2, m: [("steel", 220), ("copper", 30), ("rubber", 16)], p: [("Circuit Board", 6)])), // (docs/sandbox/design/construction-shell.md)
-        // (the capital ship's cutters, Karl 2026-11-20: hand rows, since the LaserCutter folder's two older cutters keep their rows in the long tail)
-        (null, null, Rec("Large Laser Cutter", 400.0, 3, m: [("steel", 1600), ("rubber", 320)])),
-        (null, null, Rec("Capital Laser Cutter", 600.0, 4, m: [("steel", 2000), ("rubber", 500)])),
         // (the in-wall bays, Karl 2026-11-20: frames, inserts, pull-outs, ship systems' wear parts and consumables, the hull airlock;
         // WallBayParts.cs, in the folder's file order of 2026-11-20)
         ("WallBays", "Actuator Spares Rack", null),
@@ -736,6 +733,29 @@ public sealed class Assembling : IPartGenerator
         ("Packet", "Packet Stern", null),
         // (the Extruder on the block system, Sean 2026-11-21: its Die Block; the Core keeps the Extruder's row and the Run-out Table its own)
         (null, null, Rec("Die Block", 120, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)])),
+        // (round module sockets, Sean 2026-11-21: plates, plugs and stands 1-3 m across for nacelles and pods)
+        ("Modules/Round", "Round Module Socket 1 m", null),
+        ("Modules/Round", "Round Module Plug 1 m", null),
+        ("Modules/Round", "Round Module Stand 1 m", null),
+        ("Modules/Round", "Round Module Socket 2 m", null),
+        ("Modules/Round", "Round Module Plug 2 m", null),
+        ("Modules/Round", "Round Module Stand 2 m", null),
+        ("Modules/Round", "Round Module Socket 3 m", null),
+        ("Modules/Round", "Round Module Plug 3 m", null),
+        ("Modules/Round", "Round Module Stand 3 m", null),
+        // (the block machines' shared 2 m cube, design page drawings 19 to 24: masts for pads, ovens, stations and crane rails)
+        ("Machines", "Mast Block", null), // (a named row: a new part file in Machines is refused until it has its own row here)
+        // (the Bake Oven on the block system, design page drawing 19: its Core and its Bed Block; BakeOvenParts.cs)
+        (null, null, Rec("Bake Oven", 150, 2, m: [("steel", 900), ("copper", 120), ("rubber", 60)], p: [("Circuit Board", 2), ("Wiring Loom", 2)])),
+        (null, null, Rec("Oven Bed Block", 90, 1, m: [("steel", 700), ("copper", 80)], p: [("Wiring Loom", 1)])),
+        // (the Out Table, the bed machines' far end: OutTableParts, MachineBlocks role "end"; Sean 2026-11-21)
+        (null, null, Rec("Out Table", 60, 1, m: [("steel", 160), ("rubber", 40)], p: [("Gear Set", 1)])),
+        // (the Laser Cutter on the block system, Sean 2026-11-21: its Laser Bed Block, its share of the bridge and a head; the Core keeps the Laser Cutter's row)
+        (null, null, Rec("Laser Bed Block", 90, 1, m: [("steel", 480), ("rubber", 60), ("copper", 20)], p: [("Wiring Loom", 1), ("Gear Set", 1)])),
+        // (the Building Station on the block system, Sean 2026-11-21: its Bay Block; the Core keeps the Building Station's row)
+        (null, null, Rec("Bay Block", 40, 1, m: [("steel", 420), ("rubber", 20)], p: [("Wiring Loom", 1)])),
+        // (the Press on the block system, Sean 2026-11-21: its Press Block, a 2 m cube of the bed or a wall; the Core keeps the Press's row)
+        (null, null, Rec("Press Block", 60, 1, m: [("steel", 400), ("concrete", 200)], p: [("Gear Set", 1)])),
     ];
 
     /// <summary>

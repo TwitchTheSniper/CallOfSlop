@@ -419,11 +419,11 @@ public static partial class ConstructPreview
                 var b = d.Boxes[boxIndex];
                 var track = i >= 0 ? _trackOf?.Invoke(i, boxIndex) ?? (byte)0 : (byte)0;
                 anyTrack |= track != 0;
-                if (b.Hidden)
+                if (b.Hidden || b.SeamHidden(0))
                 {
                     if (count)
                         _skipped++;
-                    continue;
+                    continue; // (and a block machine's "seamFill": shown as a lone cell, nothing is welded to it)
                 }
                 var centre = t + Vector3.Transform(ppos + Rot24.Apply(rot, b.Center), q);
                 var m = b.Model(rot, Vector3.Zero) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre);

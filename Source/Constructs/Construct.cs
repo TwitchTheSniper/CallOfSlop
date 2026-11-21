@@ -303,6 +303,13 @@ public sealed partial class Construct
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public float GrabBoost = 1f; // held: how much faster the beam moves it after a while carried in the air (ConstructGrab.FlightBoost; 1: none)
     public bool GrabTouch; // held: a contact pushed on it this tick (the physics step sets it; the boost reads and clears it)
+    // A held module caught by a free socket's pull (server; ModuleGuide.PullIn): the ship, its plate, how far the pull has it (0..1, 0: not caught) and the tick it is looked for again.
+    public ushort ModCatchShip;
+    public int ModCatchPlate = -1;
+    public float ModCatch;
+    public long ModCatchLook;
+    public ushort ModSkipShip; // server: the socket a gun just pulled this module out of, which won't catch it again until it has been carried out of the pull's range (ModuleGuide.FindSocket)
+    public int ModSkipPlate = -1;
     public bool Asleep;
     public int SleepTicks;
     /// <summary>Server: far from every person (ConstructFar.cs): its physics steps once every this many ticks, by that many ticks' time (0 or 1: every tick).</summary>

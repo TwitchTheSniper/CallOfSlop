@@ -15,8 +15,9 @@ namespace CallOfSlop;
 public static partial class HullLoft
 {
     public const string PanelPrefix = "Formed Panel (";
-    public const int PanelMaxAlong = 8, PanelMaxAcross = 6; // facets: at most 48 a panel (each a hull shape: a part's first make is 0.1 ms a facet)
-    public const int PanelMinCm = 20, PanelMaxCm = 600, PanelStepCm = 5, PanelMaxCrownCm = 80, PanelMaxRakeCm = 200, PanelMinMm = 12, PanelMaxMm = 40;
+    public const int PanelMaxAlong = 16, PanelMaxAcross = 12; // facets: at most 192 a panel (each a hull shape: a part's first make is 0.1 ms a facet, made in slices)
+    public const int SmallAlong = 8, SmallAcross = 6, SmallCm = 600; // a panel up to 6 m keeps the facets it always had (a saved key's part is the same part)
+    public const int PanelMinCm = 20, PanelMaxCm = 3200, PanelStepCm = 5, PanelMaxCrownCm = 80, PanelMaxRakeCm = 200, PanelMinMm = 12, PanelMaxMm = 40;
 
     /// <summary>A preset: its key word, its name, and its default length, width, crown and rake (cm).</summary>
     public readonly record struct PanelPreset(string Word, string Label, int L, int W, int Crown, int Rake, string What);
@@ -239,7 +240,7 @@ public static partial class HullLoft
     public static (int Along, int Across) PanelGrid(in PanelShape p)
     {
         if (p.Kind == PanelBend)
-            return (BendRows(p, null), p.Crown > 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1);
+            return (BendRows(p, null), p.Crown > 0 ? (p.W <= SmallCm ? Math.Clamp(p.W / 20, 4, SmallAcross) : Math.Clamp(p.W / 266, SmallAcross, PanelMaxAcross)) : 1);
         if (p.Kind == PanelLoft)
         {
             // Across: a facet between each two of the eight heights (both profiles straight: one). Along: the rulings are straight, so one
@@ -251,8 +252,9 @@ public static partial class HullLoft
             return (alike || flat ? 1 : Math.Clamp(p.L / 30, 2, 6), flat ? 1 : PanelProfilePoints - 1);
         }
         var bent = p.Rake != 0 && p.Kind is not (4 or 6);
-        var along = bent ? Math.Clamp(p.L / 20, 5, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
-        var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1;
+        // A big panel (the block bed's, up to 32 m: drawing 15) takes more facets, a facet every 2 m or so past 6 m.
+        var along = bent ? (p.L <= SmallCm ? Math.Clamp(p.L / 20, 5, SmallAlong) : Math.Clamp(p.L / 200, SmallAlong, PanelMaxAlong)) : p.Kind == 2 ? 4 : 1;
+        var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? (p.W <= SmallCm ? Math.Clamp(p.W / 20, 4, SmallAcross) : Math.Clamp(p.W / 266, SmallAcross, PanelMaxAcross)) : 1;
         return (along, across);
     }
 
@@ -276,6 +278,9 @@ public static partial class HullLoft
         }
         return new(x * PanelHalf(p, s), y + PanelHeight(p, s, x), z);
     }
+
+    /// <summary>The panel's surface height (m) at <paramref name="s"/> along (0 to 1) and <paramref name="x"/> across (-1 to 1): what a Bed Block's pins rise to.</summary>
+    public static float PanelLift(in PanelShape p, float s, float x) => PanelPoint(p, Math.Clamp(s, 0, 1), Math.Clamp(x, -1, 1)).Y;
 
     /// <summary>A fold's arc along the sheet (metres from its back edge), its radius and its signed angle (radians).</summary>
     private static void BendSpan(in PanelShape p, out float u0, out float u1, out float rad, out float a)

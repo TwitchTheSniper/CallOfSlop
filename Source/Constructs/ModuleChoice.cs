@@ -69,7 +69,7 @@ public sealed class ModuleWants
 }
 
 /// <summary>One module design a faction could fit: its size, tags and stats (from a flat build of its blueprint).</summary>
-public readonly record struct ModuleCandidate(string Name, int W, int L, ModTag Primary, ushort Tags, float Mass, float Thrust, float MadeKw, float DrawW, int Guns, int Stores, int Harvest);
+public readonly record struct ModuleCandidate(string Name, int W, int L, ModTag Primary, ushort Tags, float Mass, float Thrust, float MadeKw, float DrawW, int Guns, int Stores, int Harvest, bool Round = false);
 
 /// <summary>What a ship has without the module being chosen: mass, power made and drawn, thrust, guns (9.2's denominators).</summary>
 public struct ShipSummary
@@ -99,7 +99,7 @@ public struct ShipSummary
 }
 
 /// <summary>A free socket to fill: its size and kind.</summary>
-public readonly record struct ModuleSlot(int W, int L, ModKind Kind);
+public readonly record struct ModuleSlot(int W, int L, ModKind Kind, bool Round = false);
 
 /// <summary>
 /// Faction and NPC module choice (docs/sandbox/design/module-sockets.md 9.2): pure functions over candidates and a ship summary.
@@ -108,8 +108,8 @@ public readonly record struct ModuleSlot(int W, int L, ModKind Kind);
 public static class ModuleChoice
 {
     /// <summary>Does candidate <paramref name="m"/> fit a socket of size W x L and kind <paramref name="kind"/> (exact size; restricted kinds by primary tag; reactors fit generic sockets too)?</summary>
-    public static bool Fits(in ModuleCandidate m, int w, int l, ModKind kind) =>
-        m.W == w && m.L == l && kind switch
+    public static bool Fits(in ModuleCandidate m, int w, int l, ModKind kind, bool round = false) =>
+        m.W == w && m.L == l && m.Round == round && kind switch
         {
             ModKind.Engine => m.Primary == ModTag.Engine,
             ModKind.Reactor => m.Primary == ModTag.Reactor,
@@ -166,14 +166,14 @@ public static class ModuleChoice
     /// Chooses for one socket: the candidates that fit, scored, one of the best <see cref="ModuleWants.Pick"/> by the dice. The index into
     /// <paramref name="all"/>, or -1. <paramref name="scores"/> gets each candidate's score (NaN: doesn't fit).
     /// </summary>
-    public static int Choose(ModuleWants w, int sw, int sl, ModKind kind, ReadOnlySpan<ModuleCandidate> all, in ShipSummary ship, Random dice, Span<float> scores)
+    public static int Choose(ModuleWants w, int sw, int sl, ModKind kind, ReadOnlySpan<ModuleCandidate> all, in ShipSummary ship, Random dice, Span<float> scores, bool round = false)
     {
         Span<int> best = stackalloc int[Math.Clamp(w.Pick, 1, 16)];
         var n = 0;
         for (var i = 0; i < all.Length; i++)
         {
             scores[i] = float.NaN;
-            if (!Fits(all[i], sw, sl, kind))
+            if (!Fits(all[i], sw, sl, kind, round))
                 continue;
             scores[i] = Score(w, all[i], all, ship);
             // (keep the best N, best first)
@@ -230,10 +230,10 @@ public static class ModuleChoice
         foreach (var k in order)
         {
             var s = sl[k];
-            var pick = picks[k] = Choose(w, s.W, s.L, s.Kind, all, sum, dice, scores);
+            var pick = picks[k] = Choose(w, s.W, s.L, s.Kind, all, sum, dice, scores, s.Round);
             if (log != null)
             {
-                log($"socket {k}: {ModuleSocketTable.SizeText(s.W, s.L)} {s.Kind}");
+                log($"socket {k}: {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} {s.Kind}");
                 for (var i = 0; i < all.Length; i++)
                     if (!float.IsNaN(scores[i]))
                         log(FormattableString.Invariant($"  {(i == pick ? "*" : " ")} {scores[i],7:0.000}  {all[i].Name} ({ModuleSockets.TagName(all[i].Primary)}, {all[i].Mass:0} kg, {all[i].Thrust / 1000:0} kN, makes {all[i].MadeKw:0} kW, draws {all[i].DrawW / 1000:0.#} kW, {all[i].Guns} guns)"));
@@ -261,7 +261,7 @@ public static class ModuleChoice
                         trial.Remove(all[picks[k]]);
                     for (var c = 0; c < all.Length; c++)
                     {
-                        if (c == picks[k] || !Fits(all[c], sl[k].W, sl[k].L, sl[k].Kind))
+                        if (c == picks[k] || !Fits(all[c], sl[k].W, sl[k].L, sl[k].Kind, sl[k].Round))
                             continue;
                         var t = trial;
                         t.Add(all[c]);
@@ -337,7 +337,7 @@ public static class ModuleChoice
                 harvest += x.Harvest;
                 tags |= x.Tags;
             }
-            return new ModuleCandidate(name, d.ModW, d.ModL, m.Primary, tags, mass, thrust, made, draw, guns, stores, harvest);
+            return new ModuleCandidate(name, d.ModW, d.ModL, m.Primary, tags, mass, thrust, made, draw, guns, stores, harvest, d.ModRound);
         }
         return null;
     }
@@ -421,7 +421,7 @@ public static class ModuleChoice
         var all = Shipped(Console.WriteLine);
         Console.WriteLine($"{bp.Name} for {faction.Name} (seed {seed}): {ship.ModSockets.Length} sockets, {all.Length} module designs; ship {sum.Mass / 1000:0.#} t, makes {sum.MadeKw:0} kW, draws {sum.DrawW / 1000:0.#} kW, {sum.Thrust / 1000:0} kN, {sum.Guns} guns");
         var free = Enumerable.Range(0, ship.ModSockets.Length).Where(k => !ship.ModSockets[k].Stand && ship.ModSockets[k].Module < 0).ToArray();
-        var slots = free.Select(k => new ModuleSlot(ship.ModSockets[k].W, ship.ModSockets[k].L, ship.ModSockets[k].Kind)).ToArray();
+        var slots = free.Select(k => new ModuleSlot(ship.ModSockets[k].W, ship.ModSockets[k].L, ship.ModSockets[k].Kind, ship.ModSockets[k].Round)).ToArray();
         var picks = Fill(wants, slots, all, ref sum, new Random(seed), Console.WriteLine);
         for (var i = 0; i < free.Length; i++)
             Console.WriteLine($"socket {i} (part {ship.ModSockets[free[i]].Plate}): {(picks[i] >= 0 ? all[picks[i]].Name : "nothing")}");

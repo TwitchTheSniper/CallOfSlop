@@ -26,9 +26,9 @@ public sealed partial class ConstructEdits
         if (si < 0)
             return "not a tracked socket";
         var s = c.ModSockets[si];
-        c.SocketAt(s.Plate, c.DefOf(s.Plate).ModSocket, out var faceAt, out _);
+        ModuleSockets.PlateRest(c, s.Plate, out var plateRot, out var faceAt, out _); // (the body's rest frame: a plate welded on freeform is in its weld's)
         var wface = c.ToWorld(faceAt);
-        var wdir = Vector3.Transform(Rot24.Apply(c.Parts[s.Plate].Rot, Vector3.UnitY), c.Rot);
+        var wdir = Vector3.Transform(Rot24.Apply(plateRot, Vector3.UnitY), c.Rot);
         Construct? best = null;
         var bestDist = 30f;
         foreach (var o in world.Bodies)
@@ -38,11 +38,11 @@ public sealed partial class ConstructEdits
             if (o.Dirty)
                 o.Rebuild();
             foreach (var m in o.Modules)
-                if (m.Socket < 0 && o.DefOf(m.Plug).ModW == s.W && o.DefOf(m.Plug).ModL == s.L && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
+                if (m.Socket < 0 && ModuleSockets.Matches(s, o.DefOf(m.Plug)) && Vector3.Distance(o.ToWorld(o.Com), wface) < bestDist)
                     (best, bestDist) = (o, Vector3.Distance(o.ToWorld(o.Com), wface));
         }
         if (best == null)
-            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L)} module within 30 m";
+            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module within 30 m";
         best.SocketAt(best.Modules[0].Plug, best.DefOf(best.Modules[0].Plug).ModSocket, out var pat, out _);
         best.Pos += wface + wdir * 0.6f - best.ToWorld(pat);
         best.PrevPos = best.Pos;
@@ -101,21 +101,56 @@ public sealed partial class ConstructEdits
         if (m.Bridged)
             return "that module is welded to more than its socket: take the extra welds off with the attach tool first";
         if ((!world.Creative || world.TimedMachines) && !s.Stand && (!ModuleSocketTable.Current.HandSize(s.W, s.L) || m.Mass > LiftOf(player, false))
-            && ModuleFitters.ReachAt(world, c, c.ToWorld(c.Parts[s.Plate].Pos), player) > 0) // (a fitter aboard, or a dock's beside the ship)
+            && ModuleFitters.ReachAt(world, c, c.SegToWorld(c.Parts[s.Plate].Seg, c.Parts[s.Plate].Pos), player) > 0) // (a fitter aboard, or a dock's beside the ship)
         {
             if (ModuleFitters.TakeOff(world, player, c, si) is { } fitterWhy)
                 return fitterWhy;
             Done.Add($"player {player}: a Module Fitter takes the module off socket part {s.Plate} of construct {c.Id}");
             return null;
         }
+        if (!s.Stand && ModuleSockets.Locked(c, s.Plate))
+            return "the socket is locked: slide its lock off first (its side, or its Lock wire low), or cut the module free with a Module Fitter";
         if (!world.Creative && !s.Stand)
         {
             var t = ModuleSocketTable.Current;
             if (!t.HandSize(s.W, s.L))
-                return $"a {ModuleSocketTable.SizeText(s.W, s.L)} module is taken off by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
+                return $"a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module is taken off by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
             if (m.Mass > LiftOf(player, false))
                 return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {LiftOf(player, false) / 1000f:0.#} t (a Module Fitter lifts more)";
         }
+        var name = ModuleSockets.ModuleName(c, s.Module);
+        var plateRef = ModuleFitters.PartRef.Of(c, s.Plate);
+        if (CutModule(world, player, c, si, out var piece, out var count) is { } why)
+            return why;
+        if (s.Style != ModStyle.Proud && !s.Stand)
+        {
+            // Out of a well or an opening: its socket slides it out, as the eject button does (ModuleGuide).
+            ModuleGuide.Start(world, c, plateRef, piece!, ModuleGuide.Kind.Out, player);
+            Done.Add($"player {player}: took the {name} ({count} parts) off socket part {s.Plate} of construct {c.Id} -> {piece!.Id} (sliding out)");
+            return null;
+        }
+        ModuleSockets.PlateRest(c, s.Plate, out var plateRot, out _, out _); // (a plate welded on freeform: its turn in the body's frame)
+        var normal = Vector3.Transform(Rot24.Apply(plateRot, Vector3.UnitY), c.Rot);
+        piece!.Pos += normal * ModuleLift;
+        piece.PrevPos = piece.Pos;
+        piece.Wake();
+        Done.Add($"player {player}: took the {name} ({count} parts) off socket part {s.Plate} of construct {c.Id} -> {piece.Id}");
+        return null;
+    }
+
+    /// <summary>
+    /// Cuts the module fitted to socket <paramref name="si"/> (and every submodule on it) out of <paramref name="c"/> as a body of its own,
+    /// where it is: no limits of the hand (the callers' own). Null and the piece, or why not.
+    /// </summary>
+    internal string? CutModule(ConstructWorld world, byte player, Construct c, int si, out Construct? piece, out int count)
+    {
+        piece = null;
+        count = 0;
+        var s = c.ModSockets[si];
+        if (s.Module < 0)
+            return "no module is fitted there";
+        if (c.Modules[s.Module].Bridged)
+            return "that module is welded to more than its socket: take the extra welds off with the attach tool first";
         var of = c.ModuleOf!;
         // The module and every submodule on it (a turret on a turret bay): modules whose plug sits on a plate of one taken.
         var take = new bool[c.Modules.Length];
@@ -128,7 +163,6 @@ public sealed partial class ConstructEdits
                     take[k] = more = true;
         }
         var marks = new bool[c.PartCount];
-        var count = 0;
         for (var j = 0; j < c.PartCount; j++)
             if (of[j] >= 0 && take[of[j]])
             {
@@ -139,15 +173,8 @@ public sealed partial class ConstructEdits
             }
         if (count >= c.PartCount)
             return "that's the whole construct";
-        var name = ModuleSockets.ModuleName(c, s.Module);
-        var normal = Vector3.Transform(Rot24.Apply(c.Parts[s.Plate].Rot, Vector3.UnitY), c.Rot);
-        if (world.CutOut(c, marks, player) is not { } piece)
-            return "the world is full";
-        piece.Pos += normal * ModuleLift;
-        piece.PrevPos = piece.Pos;
-        piece.Wake();
-        Done.Add($"player {player}: took the {name} ({count} parts) off socket part {s.Plate} of construct {c.Id} -> {piece.Id}");
-        return null;
+        piece = world.CutOut(c, marks, player);
+        return piece == null ? "the world is full" : null;
     }
 
     /// <summary>Fits the nearest free module within the hand's pull onto socket <paramref name="si"/>.</summary>
@@ -155,13 +182,17 @@ public sealed partial class ConstructEdits
     {
         var s = c.ModSockets[si];
         var plateDef = c.DefOf(s.Plate);
-        if (c.Parts[s.Plate].Seg != 0)
-            return "a socket on a joint takes its module by the attach tool's socket weld";
+        // A socket welded on freeform (a face point, or an off-grid spin of the socket weld: how a player's own socket usually goes
+        // on) is rigid with the body: the module merges into that weld's frame (ModuleSockets.PlanOnPlate). Only a moving joint's isn't.
+        if (!c.Rigid(c.Parts[s.Plate].Seg))
+            return "a socket on a moving joint takes its module by the attach tool's socket weld";
+        if (!ModuleSockets.PlateFrame(c, s.Plate, out _, out _))
+            return ModuleSockets.OffGrid;
         if (s.InTheWay >= 0)
             return $"in the way: the {c.DefOf(s.InTheWay).Name} (part {s.InTheWay}) is in the socket's room";
         var hand = ModuleSocketTable.Current.HandPull;
-        c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out var faceDir);
-        var wface = c.ToWorld(faceAt);
+        c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out _);
+        var wface = c.SegToWorld(c.Parts[s.Plate].Seg, faceAt);
         // A Module Fitter aboard, or on a construct beside this one (a dock the ship pulled into): modules within its reach of the socket; it checks both ends.
         var fitterReach = world.Creative && !world.TimedMachines ? 0 : ModuleFitters.ReachAt(world, c, wface, player);
         var pull = MathF.Max(hand, fitterReach * 2);
@@ -174,7 +205,7 @@ public sealed partial class ConstructEdits
             if (!m.OnStand || c.Parts[m.Plug].Broken)
                 continue;
             var pd = c.DefOf(m.Plug);
-            if (pd.ModW != s.W || pd.ModL != s.L)
+            if (!ModuleSockets.Matches(s, pd))
                 continue;
             c.SocketAt(m.Plug, pd.ModSocket, out var pat, out _);
             var dist = Vector3.Distance(c.ToWorld(pat), wface);
@@ -192,7 +223,7 @@ public sealed partial class ConstructEdits
                 if (m.Socket >= 0 || o.Parts[m.Plug].Seg != 0 || o.Parts[m.Plug].Broken)
                     continue;
                 var pd = o.DefOf(m.Plug);
-                if (pd.ModW != s.W || pd.ModL != s.L)
+                if (!ModuleSockets.Matches(s, pd))
                     continue;
                 o.SocketAt(m.Plug, pd.ModSocket, out var pat, out _);
                 var dist = Vector3.Distance(o.ToWorld(pat), wface);
@@ -201,7 +232,7 @@ public sealed partial class ConstructEdits
             }
         }
         if (best == null)
-            return $"bring a {ModuleSocketTable.SizeText(s.W, s.L)} module within {pull:0.#} m of the socket first (the physics gun carries it)";
+            return $"bring a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module within {pull:0.#} m of the socket first (the physics gun carries it)";
         // By hand when it may (Creative, or in the hand's size, lift and pull), else by a Module Fitter aboard.
         var bestMass = ModuleSockets.ModuleOfPart(best, bestPlug) is var bmi and >= 0 ? best.Modules[bmi].Mass : 0f;
         var byFitter = fitterReach > 0 && (bestDist > hand || !ModuleSocketTable.Current.HandSize(s.W, s.L) || bestMass > LiftOf(player, false));
@@ -249,7 +280,6 @@ public sealed partial class ConstructEdits
                     return "the socket moved";
                 s = c.ModSockets[si];
                 plateDef = c.DefOf(s.Plate);
-                c.SocketAt(s.Plate, plateDef.ModSocket, out faceAt, out faceDir);
             }
             best = lifted;
             best.Rebuild();
@@ -272,7 +302,7 @@ public sealed partial class ConstructEdits
             Done.Add($"player {player}: a Module Fitter fits module construct {best.Id} onto socket part {s.Plate} of construct {c.Id}");
             return null;
         }
-        if (SocketWeld.Overlap(world, Query, best, c, pos, rot, Feet(world)) is { } blocked)
+        if (SocketWeld.Overlap(world, Query, best, c, pos, rot, Feet(world), s.Seat > 0 ? s.Plate : -1) is { } blocked)
             return blocked;
         var from = best.Id;
         var parts = best.PartCount;
@@ -280,6 +310,7 @@ public sealed partial class ConstructEdits
         best.Pos = best.PrevPos = pos;
         best.Vel = best.AngVel = Vector3.Zero;
         var plan = new JoinPlan { Other = best, PartA = s.Plate, SockA = plateDef.ModSocket, PartB = bestPlug, SockB = plugDef.ModSocket, Turn = bodyTurn, Offset = rel };
+        ModuleSockets.PlanOnPlate(c, s.Plate, ref plan);
         if (!world.Merge(c, plan))
             return "it can't be fitted";
         Done.Add($"player {player}: fitted module construct {from} ({parts} parts) onto socket part {s.Plate} of construct {c.Id}");
@@ -297,7 +328,8 @@ public sealed partial class ConstructEdits
         rel = pos = default;
         rot = Quaternion.Identity;
         var plateDef = c.DefOf(s.Plate);
-        c.SocketAt(s.Plate, plateDef.ModSocket, out var faceAt, out var faceDir);
+        if (!ModuleSockets.PlateRest(c, s.Plate, out var plateRot, out var faceAt, out var faceDir)) // (in the body's rest frame: a plate welded on freeform is in its weld's)
+            return ModuleSockets.OffGrid;
         var plugDef = body.DefOf(plug);
         var plugPartRot = body.Parts[plug].Rot;
         var inv = Quaternion.Conjugate(c.Rot);
@@ -307,7 +339,7 @@ public sealed partial class ConstructEdits
         var bestMatch = -1f;
         for (byte r = 0; r < Rot24.Count; r++)
         {
-            if (Rot24.ApplyDir(r, plugDef.Sockets[plugDef.ModSocket].Dir) != want || !ModuleSockets.TurnFits(plateDef, c.Parts[s.Plate].Rot, plugDef, r, s.Keyed))
+            if (Rot24.ApplyDir(r, plugDef.Sockets[plugDef.ModSocket].Dir) != want || !ModuleSockets.TurnFits(plateDef, plateRot, plugDef, r, s.Keyed))
                 continue;
             var match = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), lies));
             if (match > bestMatch)
@@ -322,9 +354,128 @@ public sealed partial class ConstructEdits
                 break;
             }
         body.SocketAt(plug, plugDef.ModSocket, out var plugAt, out _);
-        rel = ConstructWorld.Quantise(faceAt - Rot24.Apply(bodyTurn, plugAt));
+        var seatAt = faceAt - ConstructParts.DirVector(faceDir) * s.Seat; // (flush and Well: the well's floor, behind the plate's face)
+        rel = ConstructWorld.Quantise(seatAt - Rot24.Apply(bodyTurn, plugAt));
         rot = Quaternion.Normalize(c.Rot * Rot24.Quat(bodyTurn));
         pos = c.ToWorld(rel);
         return null;
     }
+
+    /// <summary>
+    /// A plate's controls (Sean 2026-11-21; ModuleGuide.cs): <paramref name="control"/> 1 the eject button, 2 the lock slider, 3 the physics
+    /// gun's pull on a fitted module's part begins (<paramref name="local"/> the beam's point on the body), 4 it ends. Server. Null, or why not.
+    /// </summary>
+    public string? ModuleControl(ConstructWorld world, byte player, ushort body, int part, byte control, Vector3 eye, Vector3 local)
+    {
+        if (control == 4)
+        {
+            ModuleGuide.PullEnd(world, player);
+            return null;
+        }
+        if (world.Get(body) is not { } c || (uint)part >= (uint)c.PartCount)
+            return "that is gone";
+        if (c.Dirty)
+            c.Rebuild();
+        if (Vector3.Distance(eye, c.SegToWorld(c.Parts[part].Seg, c.Parts[part].Pos)) > ConstructBuild.UseReach + 3f)
+            return "too far";
+        if (Contested(c, player) is { } defended)
+            return defended;
+        if (SalvageRefusal(c, player) != null)
+            return "that construct is someone else's";
+        int si;
+        if (control == 3)
+        {
+            var mi = ModuleSockets.ModuleOfPart(c, part);
+            var plate = mi >= 0 ? ModuleSockets.PlateOf(c, c.Modules[mi].Plug) : -1;
+            si = plate >= 0 ? ModuleSockets.SocketOfPlate(c, plate) : -1;
+            if (si < 0)
+                return "that isn't a fitted module";
+            return ModuleGuide.PullStart(world, this, player, c, si, eye, local);
+        }
+        si = ModuleSockets.SocketOfPlate(c, part);
+        if (si < 0 || c.ModSockets[si].Stand)
+            return "that isn't a module socket";
+        var s = c.ModSockets[si];
+        if (control == 2)
+        {
+            ref var p = ref c.Parts[s.Plate];
+            var on = ConstructConfig.Get(p, p.D, CfgKey.ModLock, 0) < 0.5f;
+            ConstructConfig.Put(ref p, p.D, CfgKey.ModLock, on ? 1 : 0);
+            world.StructureDirty.Add(c.Id);
+            Done.Add($"player {player}: {(on ? "locked" : "unlocked")} socket part {s.Plate} of construct {c.Id}");
+            return ((int)p.Mem & ModuleGuide.MemLockHigh) != 0 && !on ? "unlocked, but its Lock wire is high: it stays locked while the wire is" : null;
+        }
+        if (control == 1)
+            return ModuleEject(world, player, c, si);
+        return "no such control";
+    }
+
+    /// <summary>The eject button (or a rise on the Eject wire): the fitted module is cut free and its socket slides it out. Any size: the socket's own works. Null, or why not.</summary>
+    internal string? ModuleEject(ConstructWorld world, byte player, Construct c, int si)
+    {
+        var s = c.ModSockets[si];
+        if (s.Module < 0)
+            return "no module is fitted";
+        if (ModuleSockets.Locked(c, s.Plate))
+            return "the socket is locked: slide its lock off first";
+        if (ModuleFitters.Busy(world, c, s.Plate))
+            return "a Module Fitter is at work on that socket";
+        var plateRef = ModuleFitters.PartRef.Of(c, s.Plate);
+        if (CutModule(world, player, c, si, out var piece, out var count) is { } why)
+            return why;
+        ModuleGuide.Start(world, c, plateRef, piece!, ModuleGuide.Kind.Out, player);
+        Done.Add($"{(player == 255 ? "a wire" : $"player {player}")}: ejected the module ({count} parts) from socket part {s.Plate} of construct {c.Id} -> {piece!.Id}");
+        return null;
+    }
+
+    /// <summary>
+    /// Fits module body <paramref name="body"/> (its root plug <paramref name="plug"/>) onto socket <paramref name="si"/> of <paramref name="c"/>
+    /// at its seat, now: the guide's end (a pull-in, a reseat). The fit's rules as the socket's own works fits it (no hand limits). Null, or why not.
+    /// </summary>
+    internal string? FitBody(ConstructWorld world, byte player, Construct c, int si, Construct body, int plug)
+    {
+        var s = c.ModSockets[si];
+        var mi = ModuleSockets.ModuleOfPart(body, plug);
+        if (mi < 0)
+            return "not a module";
+        if (SeatPose(c, s, body, plug, out var bodyTurn, out var rel, out var rot, out var pos) is { } noTurn)
+            return noTurn;
+        if (ModuleSockets.FitRefusal(c, si, body, mi, rot, pos, byHand: false, creative: true) is { } why)
+            return why;
+        if (world.CanMerge(c, body) is { } merge)
+            return merge;
+        var plateDef = c.DefOf(s.Plate);
+        var plugDef = body.DefOf(plug);
+        body.Rot = body.PrevRot = rot;
+        body.Pos = body.PrevPos = pos;
+        body.Vel = body.AngVel = Vector3.Zero;
+        var plan = new JoinPlan { Other = body, PartA = s.Plate, SockA = plateDef.ModSocket, PartB = plug, SockB = plugDef.ModSocket, Turn = bodyTurn, Offset = rel };
+        ModuleSockets.PlanOnPlate(c, s.Plate, ref plan);
+        var from = body.Id;
+        if (!world.Merge(c, plan))
+            return "it can't be fitted";
+        Done.Add($"{(player == 255 ? "a wire" : $"player {player}")}: seated module construct {from} onto socket part {s.Plate} of construct {c.Id}");
+        return null;
+    }
+
+    /// <summary>The free module of <paramref name="body"/> whose plug sits on none of its own plates (its root), or -1.</summary>
+    internal static int RootPlug(Construct body)
+    {
+        if (body.Dirty)
+            body.Rebuild();
+        foreach (var m in body.Modules)
+            if (m.Socket < 0 && !m.OnStand && ModuleSockets.PlateOf(body, m.Plug) < 0 && body.Parts[m.Plug].Seg == 0)
+                return m.Plug;
+        return -1;
+    }
+
+    /// <summary>The physics gun's grab is handed over (the pull-off's end): <paramref name="player"/> holds <paramref name="body"/> by its middle.</summary>
+    internal string? HandOver(ConstructWorld world, byte player, Vector3 eye, float yaw, Construct body)
+    {
+        body.GrabbedBy = 255;
+        return Grab(world, player, eye, yaw, body.Id, body.Com);
+    }
+
+    /// <summary>The physics gun lets go of what <paramref name="player"/> holds, without a throw (the pull-in seats it).</summary>
+    internal void DropHeld(ConstructWorld world, byte player) => Release(world, player);
 }

@@ -49,6 +49,7 @@ public static class PartKit
     public static readonly IPartGenerator[] All =
     [
         new Generators.FreeParts(),
+        new Generators.OutTableParts(), // (the Out Table: the bed machines' far end, MachineBlocks role "end")
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
         new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)
         new Generators.BanditParts(),
@@ -83,10 +84,12 @@ public static class PartKit
         new Generators.HydraulicsParts(),
         new Generators.PressParts(),
         new Generators.ExtrusionParts(),
+        new Generators.MachineMastParts(), // (the block machines' shared cells: the Mast Block)
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
         new Generators.LaserCutterParts(),
+        new Generators.BakeOvenParts(),
         new Generators.ConveyorJunctionParts(),
         new Generators.CraftingTerminalParts(),
         new Generators.BuildStationParts(),
@@ -126,7 +129,6 @@ public static class PartKit
         new Generators.MachineTiers(),
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
-        new Generators.FactoryShowcase(), // (the connected factory and its Works Runabout: also last)
         new Generators.SubmoduleShowcase(),
         new Generators.LinkedLogisticsShowcase(), // (linked logistics: a works, a yard and a hauler) // (sub-blueprints: a pod, a skiff that uses it twice, a yard of two stations and an arm)
     ];

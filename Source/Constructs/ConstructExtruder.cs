@@ -113,6 +113,24 @@ public static partial class ConstructExtruder
     /// </summary>
     public static void Die(Construct c, int part, out Vector2 centre, out Vector2 size) => Reach(c, part, out centre, out size, out _);
 
+    /// <summary>
+    /// How far over a block die's foot its piece runs (m): it slides onto the Run-out Tables, whose top is level with the machine's foot, and
+    /// clears a Foundation's top and the centimetre a piece's origin rounds to (Sean 2026-11-21: the piece comes out at the bottom).
+    /// </summary>
+    public const float FootLift = 0.02f;
+
+    /// <summary>
+    /// Where a block die's piece runs (its middle's height in the Core's frame, m) for a section <paramref name="tall"/> high: 2 cm over
+    /// the die's foot when Run-out Tables take it (their top is the machine's foot); with none, at the Core's own die's foot, where its
+    /// conveyor takes a piece, as the Core alone makes it. Held inside the die.
+    /// </summary>
+    public static float PieceY(Construct c, int part, float centreY, float dieY, float tall)
+    {
+        var d = c.Parts[part].D;
+        var foot = TablesReach(c, part) > 0 ? centreY - dieY * 0.5f + FootLift : d.ExtDieAt.Y - d.ExtDie.Y * 0.5f;
+        return MathF.Min(foot, centreY + dieY * 0.5f - tall) + tall * 0.5f;
+    }
+
     /// <summary>The section the machine's settings ask for, held inside its die (centimetres, on the settings' 5 cm step).</summary>
     public static void Section(Construct c, int part, out ulong mask, out int w, out int h, out Vector2 centre)
     {
@@ -132,11 +150,19 @@ public static partial class ConstructExtruder
         mask = MaskOf(p, d);
         shape = Extrusion.ShapeOf((int)ConstructConfig.Get(p, d, CfgKey.Profile, 0));
         wall = 0;
+        var block = Blocks(c, part) > 0; // (a block die's piece comes out along its foot: PieceY)
+        var dieY = centre.Y;
         if (shape == ExShape.Section)
+        {
+            if (block)
+                centre.Y = PieceY(c, part, dieY, size.Y, h * 0.01f);
             return;
+        }
         mask = 0;
         var across = Math.Clamp((int)MathF.Floor(MathF.Min(MathF.Min(wide, size.X), size.Y) * 20 + 0.001f) * 5, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
         w = h = across;
+        if (block)
+            centre.Y = PieceY(c, part, dieY, size.Y, h * 0.01f);
         if (shape == ExShape.Pipe)
             wall = (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), 1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
     }
@@ -338,7 +364,14 @@ public static partial class ConstructExtruder
                 return ExtrudeStall.BadMaterial;
             Section(c, part, out var mask, out var w, out var h, out var centre, out var shape, out var wall);
             if (order)
-                (mask, w, h, shape, wall) = (head.Key.Mask, head.Key.W, head.Key.H, head.Key.Shape, head.Key.Wall); // (the die's centre stays the settings')
+            {
+                if (Blocks(c, part) > 0)
+                {
+                    Die(c, part, out var dc, out var ds);
+                    centre.Y = PieceY(c, part, dc.Y, ds.Y, head.Key.H * 0.01f); // (on a block die the order's piece runs along the die's foot too)
+                }
+                (mask, w, h, shape, wall) = (head.Key.Mask, head.Key.W, head.Key.H, head.Key.Shape, head.Key.Wall); // (across, the die's centre stays the settings')
+            }
             if (shape == ExShape.Section && Extrusion.Refusal(mask) != null)
                 return ExtrudeStall.BadShape;
             key = new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, st.Material, true, shape, wall);
@@ -741,12 +774,14 @@ public static partial class ConstructExtruder
         return (p.State & CutPending) != 0 || CutDueCm(c, part, p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
     }
 
+    private static bool OwnBlock(ConstructPartDef d) => d.BlockRole == BlockRole.Block && d.BlockFamily < MachineBlocks.Families.Count && MachineBlocks.Families[d.BlockFamily] == "extruder";
+
     internal static bool Hits(Construct b, int skip, in Obb obb, bool own = false)
     {
         var reach = obb.Half.Length();
         for (var i = 0; i < b.PartCount; i++)
         {
-            if (i == skip || own && b.Parts[i].D is { ExtRunOut: > 0 } or { BlockRole: BlockRole.Block }) // (an Extruder's own Run-out Tables and Die Blocks never block its piece)
+            if (i == skip || own && (b.Parts[i].D is { ExtRunOut: > 0 } || OwnBlock(b.Parts[i].D))) // (an Extruder's own Run-out Tables and Die Blocks never block its piece; another machine's blocks, a Press's, do)
                 continue;
             b.WorldFrame(b.Parts[i].Seg, out var q, out var t);
             b.PartBounds(i, out var mn, out var mx);
@@ -913,6 +948,7 @@ public static partial class ConstructExtruder
                 ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the panel - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
                 ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
                 ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
+                ExtrudeStall.OrderTooLong => " - " + (WorkOrders.HeadOf(c.Parts[part], out var bh) && bh.Name != null && ConstructParts.Find(bh.Name) is { } bp ? ConstructPanelFormer.BedRefusal(c, part, bp) ?? "its bed changed" : "its bed changed") + ", or Cancel it",
                 ExtrudeStall.NoOrders => ", waiting for orders (Queue on its screen, or a Line Console's bill)",
                 _ => st.Busy ? ", forming" : ", waiting",
             };
@@ -947,7 +983,7 @@ public static partial class ConstructExtruder
         var d = p.D;
         var names = RecyclingTable.Current;
         var product = ProductOf(c, part);
-        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity);
+        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.BulkCapacity);
         if (st.Amount > 0)
             sb.Append(' ').Append(names.NameOf(st.Material));
         if (d.IsPanelFormer)
@@ -956,6 +992,8 @@ public static partial class ConstructExtruder
                 ConstructLaserCutter.Look(c, part, st, sb);
             else if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
                 sb.Append(", ").Append(ph.Name);
+            if (!d.IsLaserCutter && d.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var pasm))
+                sb.Append(", ").Append(MachineBlocks.Describe(c, pasm)); // (its bed: "bed 3 x 2 (6.0 x 4.0 m), 1 idle")
             sb.Append(Status(c, part, st));
         }
         else if (d.IsWheelFormer)

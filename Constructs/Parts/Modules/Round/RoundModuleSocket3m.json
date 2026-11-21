@@ -1,0 +1,1205 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Round Module Socket 3 m",
+  "description": "A standard round socket 3 m across, for round hulls (nacelles, pods): a Round Module Plug of its size fits it. F with a module near fits it; F again takes it off.",
+  "group": "Ship Modules",
+  "section": "Module sockets",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 601.0,
+  "health": 1392,
+  "armour": 24,
+  "material": "steel",
+  "color": "#3d444c",
+  "attachSeconds": 10.1,
+  "onBreak": "detach",
+  "moduleSocket": {
+    "w": 3,
+    "l": 3,
+    "round": true
+  },
+  "ports": [
+    {
+      "name": "Fuel A",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        1.787,
+        -0.5,
+        0.212
+      ],
+      "face": "-y"
+    },
+    {
+      "name": "Fuel B",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0.212,
+        -0.5,
+        1.787
+      ],
+      "face": "-y"
+    },
+    {
+      "name": "Coolant A",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "coolant",
+      "at": [
+        1.787,
+        -0.5,
+        1.0
+      ],
+      "face": "-y",
+      "noEffect": true
+    },
+    {
+      "name": "Coolant B",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "coolant",
+      "at": [
+        0.212,
+        -0.5,
+        1.0
+      ],
+      "face": "-y",
+      "noEffect": true
+    },
+    {
+      "name": "Ammo A",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        1.0,
+        -0.5,
+        0.212
+      ],
+      "face": "-y"
+    },
+    {
+      "name": "Chute A",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        1.0,
+        -0.5,
+        1.787
+      ],
+      "face": "-y"
+    },
+    {
+      "name": "Chute B",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        1.787,
+        -0.5,
+        1.787
+      ],
+      "face": "-y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        -0.5,
+        2.37
+      ],
+      "max": [
+        2.05,
+        -0.383,
+        2.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.05,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        2.05,
+        -0.383,
+        -0.37
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.37,
+        -0.5,
+        -0.37
+      ],
+      "max": [
+        2.5,
+        -0.383,
+        2.37
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.37
+      ],
+      "max": [
+        -0.37,
+        -0.383,
+        2.37
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        2.5,
+        -0.465,
+        2.5
+      ],
+      "color": "#2b2f34",
+      "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9133,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.5,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.465,
+        2.37
+      ],
+      "color": "#2b2f34",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 40,
+      "front": "+y",
+      "middle": true
+    },
+    {
+      "min": [
+        -0.48,
+        -0.465,
+        -0.48
+      ],
+      "max": [
+        2.48,
+        -0.399,
+        2.48
+      ],
+      "color": "#3d444c",
+      "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9257,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.465,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.399,
+        2.37
+      ],
+      "color": "#3d444c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 40,
+      "front": "+y",
+      "middle": true
+    },
+    {
+      "min": [
+        -0.476,
+        -0.399,
+        -0.476
+      ],
+      "max": [
+        2.476,
+        -0.383,
+        2.476
+      ],
+      "color": "#d8a320",
+      "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9282,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.399,
+        -0.37
+      ],
+      "max": [
+        2.37,
+        -0.383,
+        2.37
+      ],
+      "color": "#3d444c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 40,
+      "front": "+y",
+      "middle": true
+    },
+    {
+      "min": [
+        2.373,
+        -0.393,
+        0.982
+      ],
+      "max": [
+        2.473,
+        -0.379,
+        1.018
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        0.982,
+        -0.393,
+        2.373
+      ],
+      "max": [
+        1.018,
+        -0.379,
+        2.473
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.473,
+        -0.393,
+        0.982
+      ],
+      "max": [
+        -0.373,
+        -0.379,
+        1.018
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        0.982,
+        -0.393,
+        -0.473
+      ],
+      "max": [
+        1.018,
+        -0.379,
+        -0.373
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        2.3908,
+        -0.393,
+        1.1657
+      ],
+      "max": [
+        2.4308,
+        -0.377,
+        1.2057
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.2947,
+        -0.393,
+        1.5246
+      ],
+      "max": [
+        2.3347,
+        -0.377,
+        1.5646
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.1089,
+        -0.393,
+        1.8463
+      ],
+      "max": [
+        2.1489,
+        -0.377,
+        1.8863
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.8463,
+        -0.393,
+        2.1089
+      ],
+      "max": [
+        1.8863,
+        -0.377,
+        2.1489
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.5246,
+        -0.393,
+        2.2947
+      ],
+      "max": [
+        1.5646,
+        -0.377,
+        2.3347
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.1657,
+        -0.393,
+        2.3908
+      ],
+      "max": [
+        1.2057,
+        -0.377,
+        2.4308
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.7943,
+        -0.393,
+        2.3908
+      ],
+      "max": [
+        0.8343,
+        -0.377,
+        2.4308
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.4354,
+        -0.393,
+        2.2947
+      ],
+      "max": [
+        0.4754,
+        -0.377,
+        2.3347
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.1137,
+        -0.393,
+        2.1089
+      ],
+      "max": [
+        0.1537,
+        -0.377,
+        2.1489
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.1489,
+        -0.393,
+        1.8463
+      ],
+      "max": [
+        -0.1089,
+        -0.377,
+        1.8863
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.3347,
+        -0.393,
+        1.5246
+      ],
+      "max": [
+        -0.2947,
+        -0.377,
+        1.5646
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.4308,
+        -0.393,
+        1.1657
+      ],
+      "max": [
+        -0.3908,
+        -0.377,
+        1.2057
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.4308,
+        -0.393,
+        0.7943
+      ],
+      "max": [
+        -0.3908,
+        -0.377,
+        0.8343
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.3347,
+        -0.393,
+        0.4354
+      ],
+      "max": [
+        -0.2947,
+        -0.377,
+        0.4754
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.1489,
+        -0.393,
+        0.1137
+      ],
+      "max": [
+        -0.1089,
+        -0.377,
+        0.1537
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.1137,
+        -0.393,
+        -0.1489
+      ],
+      "max": [
+        0.1537,
+        -0.377,
+        -0.1089
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.4354,
+        -0.393,
+        -0.3347
+      ],
+      "max": [
+        0.4754,
+        -0.377,
+        -0.2947
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.7943,
+        -0.393,
+        -0.4308
+      ],
+      "max": [
+        0.8343,
+        -0.377,
+        -0.3908
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.1657,
+        -0.393,
+        -0.4308
+      ],
+      "max": [
+        1.2057,
+        -0.377,
+        -0.3908
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.5246,
+        -0.393,
+        -0.3347
+      ],
+      "max": [
+        1.5646,
+        -0.377,
+        -0.2947
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        1.8463,
+        -0.393,
+        -0.1489
+      ],
+      "max": [
+        1.8863,
+        -0.377,
+        -0.1089
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.1089,
+        -0.393,
+        0.1137
+      ],
+      "max": [
+        2.1489,
+        -0.377,
+        0.1537
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.2947,
+        -0.393,
+        0.4354
+      ],
+      "max": [
+        2.3347,
+        -0.377,
+        0.4754
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        2.3908,
+        -0.393,
+        0.7943
+      ],
+      "max": [
+        2.4308,
+        -0.377,
+        0.8343
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.335,
+        -0.393,
+        -0.335
+      ],
+      "max": [
+        2.335,
+        -0.379,
+        2.335
+      ],
+      "color": "#24282d",
+      "detail": true,
+      "shape": "tube",
+      "segments": 40,
+      "inner": 0.9738,
+      "front": "+y",
+      "middle": true
+    },
+    {
+      "min": [
+        0.9,
+        -0.393,
+        0.9
+      ],
+      "max": [
+        1.1,
+        -0.379,
+        1.1
+      ],
+      "color": "#8c939b",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "inner": 0.6,
+      "front": "+y",
+      "middle": true
+    },
+    {
+      "min": [
+        0.0803,
+        -0.393,
+        0.0803
+      ],
+      "max": [
+        0.1803,
+        -0.377,
+        0.1803
+      ],
+      "color": "#2b2f34",
+      "detail": true,
+      "middle": true
+    },
+    {
+      "min": [
+        0.97,
+        -0.392,
+        0.97
+      ],
+      "max": [
+        1.03,
+        -0.38,
+        1.03
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.774,
+        -0.474,
+        -0.314
+      ],
+      "max": [
+        1.788,
+        -0.406,
+        -0.246
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        1.786,
+        -0.462,
+        -0.302
+      ],
+      "max": [
+        1.798,
+        -0.418,
+        -0.258
+      ],
+      "color": "#c8372d",
+      "detail": true
+    },
+    {
+      "min": [
+        1.9989,
+        -0.456,
+        -0.14
+      ],
+      "max": [
+        2.0119,
+        -0.424,
+        -0.082
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        2.0612,
+        -0.457,
+        -0.08
+      ],
+      "max": [
+        2.0752,
+        -0.423,
+        -0.022
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        2.1169,
+        -0.458,
+        -0.02
+      ],
+      "max": [
+        2.1299,
+        -0.422,
+        0.038
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        2.1669,
+        -0.459,
+        0.04
+      ],
+      "max": [
+        2.1809,
+        -0.421,
+        0.098
+      ],
+      "color": "#2b2f34",
+      "detail": true
+    },
+    {
+      "min": [
+        1.8397,
+        -0.393,
+        0.1003
+      ],
+      "max": [
+        1.8997,
+        -0.377,
+        0.1603
+      ],
+      "color": "#39465a",
+      "detail": true,
+      "middle": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "module",
+      "at": [
+        1.0,
+        -0.38,
+        1.0
+      ],
+      "dir": "+y",
+      "kind": "module"
+    },
+    {
+      "name": "b01.01",
+      "at": [
+        0.25,
+        -0.5,
+        0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "back.0.1",
+      "at": [
+        0.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b00.10",
+      "at": [
+        -0.25,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b00.11",
+      "at": [
+        -0.25,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b01.10",
+      "at": [
+        0.25,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b01.11",
+      "at": [
+        0.25,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b01.20",
+      "at": [
+        0.25,
+        -0.5,
+        1.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "back.1.0",
+      "at": [
+        1.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b10.00",
+      "at": [
+        0.75,
+        -0.5,
+        -0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b10.01",
+      "at": [
+        0.75,
+        -0.5,
+        0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.00",
+      "at": [
+        1.25,
+        -0.5,
+        -0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.01",
+      "at": [
+        1.25,
+        -0.5,
+        0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "back.1.1",
+      "at": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b10.10",
+      "at": [
+        0.75,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b10.11",
+      "at": [
+        0.75,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.10",
+      "at": [
+        1.25,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.11",
+      "at": [
+        1.25,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "back.1.2",
+      "at": [
+        1.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b10.20",
+      "at": [
+        0.75,
+        -0.5,
+        1.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b10.21",
+      "at": [
+        0.75,
+        -0.5,
+        2.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.20",
+      "at": [
+        1.25,
+        -0.5,
+        1.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b11.21",
+      "at": [
+        1.25,
+        -0.5,
+        2.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b20.01",
+      "at": [
+        1.75,
+        -0.5,
+        0.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "back.2.1",
+      "at": [
+        2.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b20.10",
+      "at": [
+        1.75,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b20.11",
+      "at": [
+        1.75,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b21.10",
+      "at": [
+        2.25,
+        -0.5,
+        0.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b21.11",
+      "at": [
+        2.25,
+        -0.5,
+        1.25
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "b20.20",
+      "at": [
+        1.75,
+        -0.5,
+        1.75
+      ],
+      "dir": "-y",
+      "class": "small"
+    },
+    {
+      "name": "bc",
+      "at": [
+        1.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y",
+      "class": "small"
+    }
+  ]
+}
