@@ -401,6 +401,17 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   full", empty it by chute from its Offcut port); Cancel or Clear puts a blank on the bed back into the bin whole (`GiveBack`). The
   look line and screen name the blank needed: "needs a 1.71 x 0.47 m steel blank, 2 cm (up to 25% over each way) on Piece in"
   (`Lacks`, `BlankText`). Drawn: the blank lies flat on the bed, and the panel over the pins late in the stroke (`BedLook`).
+- **Plain hull skins** (Sean, 2026-11-21: "the whole sections should start in the panel former": a formed piece is the base, the
+  other pieces are added to it). A plain skin's key, `Hull Section (... - 0 - | ...)` (style `-`, salt 0, extras `-`;
+  docs/sandbox/design/hull-dress.md), is a formed name (`HullLoft.IsPlainSectionName`, read with no allocation), so a former takes its order
+  like a panel's, from its screen's bill, a terminal, a blueprint's bill or a Building Station's step. Its flat size is its facets unrolled
+  side by side (`HullLoft.SectionFlat`: the longest facet edge along, the facet widths added across at the wider end), its blank a 4 cm
+  steel sheet (`HullLoft.SectionSkinCm`); the skin weighs its 4 cm plate (area x 0.04 m x the steel row's units a m3 x a unit's weight), so it
+  costs what its blank holds. It is made standing as it sits on the hull, so the bed lays it turned (`ConstructPanelFormer.LayOf`): its
+  shallowest side up (that is its depth for the pins: most of the Zero Day's need corner masts), its longest along the bed, its outer face
+  up. The pins rise evenly under it (no key shape to read). A dressed section's key is refused: "a dressed hull section: the Panel Former
+  forms its plain skin, Hull Section (...); a Building Station's Dress skins job dresses it". `--form-panel "Hull Section (...)"` prints
+  the flat size, the blank, the depth and the laid turn.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
   ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size in steel, Order count times; the
   Preset button opens the recipe picker on its presets (below). An order queued at the former itself (its Queue, a bill's Send) asks a

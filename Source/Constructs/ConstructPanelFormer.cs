@@ -145,6 +145,10 @@ public static class ConstructPanelFormer
             return $"not a panel: the {d.Name} forms panels, {(o.IsPiece ? $"a {Extrusion.Label(o.Key)} is {WorkOrders.Maker(o.Key)}'s order" : $"{ConstructParts.Def(o.Part).Name} is an Assembler's order")}";
         if (o.Count is < 1 or > WorkOrders.MaxCount)
             return $"an order is for 1 to {WorkOrders.MaxCount} panels";
+        if (HullLoft.IsSectionName(o.Name) && !HullLoft.IsPlainSectionName(o.Name))
+            return HullLoft.SectionOf(o.Name, out var swhy) is { } dressed
+                ? $"a dressed hull section: the {d.Name} forms its plain skin, {HullLoft.PlainOf(dressed)}; a Building Station's Dress skins job dresses it"
+                : $"not a hull section: {swhy}";
         if (!HullLoft.IsFormedName(o.Name) || ConstructParts.Find(o.Name) is not { } panel)
             return $"not a panel: nothing makes \"{o.Name}\"";
         if (!Fits(d, panel))
@@ -304,7 +308,11 @@ public static class ConstructPanelFormer
                 spot = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, d.ExtDieAt.Y + 0.05f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell);
                 if (asm.OutSide is 0 or 1)
                     lay = turn * Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2);
-                spot -= Vector3.Transform((panel.BoundsMin + panel.BoundsMax) * new Vector3(0.5f, 0, 0.5f) + new Vector3(0, panel.BoundsMin.Y, 0), Quaternion.Conjugate(turn) * lay);
+                // (a hull skin lies turned, its shallowest side up: LayOf; its foot is read in that turn)
+                var own = LayOf(panel);
+                LaidBounds(panel, own, out var lmin, out var lmax);
+                spot -= Vector3.Transform((lmin + lmax) * new Vector3(0.5f, 0, 0.5f) + new Vector3(0, lmin.Y, 0), Quaternion.Conjugate(turn) * lay);
+                lay *= Rot24.Quat(own);
             }
             var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(spot, turn);
             if (ConstructEdits.DropLoose(world, panel, at, lay) is not { } body)
@@ -369,6 +377,14 @@ public static class ConstructPanelFormer
         var mat = HullLoft.FormedMaterial(panel.Name);
         if (mat == 0 || ExtrusionTable.Current.Find(mat) is not { } row)
             return default;
+        if (HullLoft.IsSectionName(panel.Name))
+        {
+            // A plain hull skin: its facets unrolled side by side, its 4 cm plate (HullLoft.Dress.cs PlainJson weighs it so).
+            if (HullLoft.SectionOf(panel.Name, out _) is not { Plain: true } sec)
+                return default;
+            HullLoft.SectionFlat(sec, out var along, out var across, out _);
+            return new Flat(along, across, HullLoft.SectionSkinCm, mat);
+        }
         if (HullLoft.PanelOf(panel.Name) is { } sh)
         {
             HullLoft.PanelFlat(sh, out var along, out var across);
@@ -378,6 +394,56 @@ public static class ConstructPanelFormer
         var volume = panel.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) / MathF.Max(1, row.UnitsPerM3);
         var cm = (int)MathF.Round(volume / MathF.Max(0.01f, a * b) * 100);
         return new Flat(a, b, Math.Clamp(cm, Extrusion.MinSheetCm, Extrusion.SheetMaxCm), mat);
+    }
+
+    private static readonly Dictionary<string, byte> _lays = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The turn a formed part lies on the bed in (Rot24, before the bed's own): 0 for a panel (formed lying flat, its depth up); a plain hull skin
+    /// (which is made standing as it sits on the hull) turned so its shallowest side is up and its longest along the bed, its outer face up so
+    /// the pins rise inside its arch. Kept per name (the draw reads it every frame).
+    /// </summary>
+    public static byte LayOf(ConstructPartDef panel)
+    {
+        if (!HullLoft.IsSectionName(panel.Name))
+            return 0;
+        if (_lays.TryGetValue(panel.Name, out var r))
+            return r;
+        r = 0;
+        if (HullLoft.SectionOf(panel.Name, out _) is { } sec)
+        {
+            HullLoft.SectionFlat(sec, out _, out _, out var outward);
+            var size = panel.BoundsMax - panel.BoundsMin;
+            int low = size.X <= size.Y && size.X <= size.Z ? 0 : size.Y <= size.Z ? 1 : 2;
+            int high = size.X > size.Y && size.X > size.Z ? 0 : size.Y >= size.Z ? 1 : 2;
+            if (high == low)
+                high = (low + 2) % 3;
+            Vector3 Axis(int i) => i == 0 ? Vector3.UnitX : i == 1 ? Vector3.UnitY : Vector3.UnitZ;
+            var best = float.MinValue;
+            for (byte q = 0; q < Rot24.Count; q++)
+            {
+                if (MathF.Abs(Rot24.Apply(q, Axis(low)).Y) < 0.99f || MathF.Abs(Rot24.Apply(q, Axis(high)).Z) < 0.99f)
+                    continue;
+                var up = Rot24.Apply(q, outward).Y;
+                if (up > best)
+                    (best, r) = (up, q);
+            }
+        }
+        _lays[panel.Name] = r;
+        return r;
+    }
+
+    /// <summary>A formed part's bounds turned as it lies on the bed (<see cref="LayOf"/>).</summary>
+    private static void LaidBounds(ConstructPartDef panel, byte lay, out Vector3 min, out Vector3 max)
+    {
+        if (lay == 0)
+        {
+            (min, max) = (panel.BoundsMin, panel.BoundsMax);
+            return;
+        }
+        var mid = Rot24.Apply(lay, (panel.BoundsMin + panel.BoundsMax) * 0.5f);
+        var half = Rot24.ApplyHalf(lay, (panel.BoundsMax - panel.BoundsMin) * 0.5f);
+        (min, max) = (mid - half, mid + half);
     }
 
     private static int Step(float m) => Math.Clamp((int)MathF.Ceiling(m * 100 / Extrusion.StepCm - 0.01f) * Extrusion.StepCm, Extrusion.MinSectionCm, Extrusion.MaxLengthCm);
@@ -690,13 +756,16 @@ public static class ConstructPanelFormer
         if (def == null)
             return false;
         what = def;
-        rot = asm.OutSide is 0 or 1 ? _quarter : (byte)0; // (its length along the bed: z, or x on a bed that runs along x)
+        var own = formed ? LayOf(def) : (byte)0; // (a hull skin lies turned, its shallowest side up)
+        var bed = asm.OutSide is 0 or 1 ? _quarter : (byte)0; // (its length along the bed: z, or x on a bed that runs along x)
+        rot = own == 0 ? bed : Rot24.Compose(bed, own);
         var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
         var mid = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, d.ExtDieAt.Y, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell);
-        var foot = (def.BoundsMin + def.BoundsMax) * 0.5f;
-        foot.Y = def.BoundsMin.Y;
+        LaidBounds(def, own, out var lmin, out var lmax);
+        var foot = (lmin + lmax) * 0.5f;
+        foot.Y = lmin.Y;
         var lift = formed ? 0.12f + 0.006f : 0.004f; // (over the pins' tops: a formed panel rides on the risen wave, PinLift's 12 cm base)
-        at = mid + new Vector3(0, lift, 0) - Rot24.Apply(rot, foot);
+        at = mid + new Vector3(0, lift, 0) - Rot24.Apply(bed, foot);
         return true;
     }
 
