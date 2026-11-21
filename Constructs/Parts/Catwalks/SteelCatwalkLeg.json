@@ -1,0 +1,254 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Catwalk Leg",
+  "description": "A steel post for a catwalk's channel: stands its deck a storey (3 m) over the floor, level with a Roamer Stair's head.",
+  "group": "Building",
+  "section": "Stairs and access",
+  "role": "frame",
+  "tool": "welder",
+  "centreSockets": false,
+  "mass": 45.0,
+  "health": 260,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a8088",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.125,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        -0.105,
+        0.1
+      ],
+      "color": "#7a8088",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.03,
+        -0.105,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        2.725,
+        0.03
+      ],
+      "color": "#7a8088",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.045,
+        2.703,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        2.721,
+        0.045
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.082,
+        -0.103,
+        -0.082
+      ],
+      "max": [
+        -0.058,
+        -0.091,
+        -0.058
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.058,
+        -0.103,
+        -0.082
+      ],
+      "max": [
+        0.082,
+        -0.091,
+        -0.058
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.082,
+        -0.103,
+        0.058
+      ],
+      "max": [
+        -0.058,
+        -0.091,
+        0.082
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.058,
+        -0.103,
+        0.058
+      ],
+      "max": [
+        0.082,
+        -0.091,
+        0.082
+      ],
+      "color": "#a4aab0",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.006,
+        -0.103,
+        -0.095
+      ],
+      "max": [
+        0.006,
+        0.075,
+        -0.033
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.006,
+          -0.103,
+          -0.033
+        ],
+        [
+          -0.006,
+          -0.103,
+          -0.095
+        ],
+        [
+          -0.006,
+          0.075,
+          -0.033
+        ],
+        [
+          0.006,
+          -0.103,
+          -0.033
+        ],
+        [
+          0.006,
+          -0.103,
+          -0.095
+        ],
+        [
+          0.006,
+          0.075,
+          -0.033
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.006,
+        -0.103,
+        0.033
+      ],
+      "max": [
+        0.006,
+        0.075,
+        0.095
+      ],
+      "color": "#7a8088",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.006,
+          -0.103,
+          0.033
+        ],
+        [
+          -0.006,
+          -0.103,
+          0.095
+        ],
+        [
+          -0.006,
+          0.075,
+          0.033
+        ],
+        [
+          0.006,
+          -0.103,
+          0.033
+        ],
+        [
+          0.006,
+          -0.103,
+          0.095
+        ],
+        [
+          0.006,
+          0.075,
+          0.033
+        ]
+      ],
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.034,
+        0.275,
+        -0.034
+      ],
+      "max": [
+        0.034,
+        0.425,
+        0.034
+      ],
+      "color": "#d8b62a",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.725,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

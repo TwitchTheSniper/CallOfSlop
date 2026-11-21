@@ -56,6 +56,7 @@ public static class Extrusion
     public const int StepCm = 5; // lengths go in steps of this, so the 0.1 m and 0.25 m lattices are both reachable
     public const int MaxLengthCm = 19200; // 192 m: no piece is longer (an Extruder's with its Run-out Tables; ConstructParts.MaxPartReach is 200 m)
     public const int MinSectionCm = 10, MaxSectionCm = 3200; // 0.1 to 32 m a side
+    public const int MinSheetCm = 1, SheetMaxCm = 10; // a Sheet: a solid section 1 to 10 cm thick (its H, any whole cm), 0.1 to 32 m wide (its W): a Panel Former's blank
     public const int MinBoreCm = 5; // a pipe's wall always leaves this much hole
     public const int MaxWallCm = 200; // and is at most this thick
     public const int MinWheelWidthCm = 5, MaxWheelWidthCm = 2000; // a wheel: 5 cm to 20 m wide...
@@ -208,6 +209,13 @@ public static class Extrusion
 
     public static int PipeProfile => Presets.Length + 2;
 
+    /// <summary>The Sheet choice, after the three foils (a saved Profile is its index, so it went on the end): a solid section, Width across, its Wall setting the thickness.</summary>
+    /// <remarks>The Profile list holds three foils (ExtrusionParts.Profiles): a fourth airfoil row would need its option after Sheet, and every lookup checks Sheet before the foils.</remarks>
+    public static int SheetProfile => Presets.Length + 6;
+
+    /// <summary>A sheet: a solid section no thicker than <see cref="SheetMaxCm"/> (H) and wider than it is thick. Below <see cref="MinSectionCm"/> only a sheet is valid.</summary>
+    public static bool IsSheet(in ExtrusionKey k) => k.Shape == ExShape.Section && k.Mask == ulong.MaxValue && k.H <= SheetMaxCm && k.W > k.H;
+
     /// <summary>The shape a Profile choice makes.</summary>
     public static ExShape ShapeOf(int profile) => profile == RoundProfile ? ExShape.Round : profile == PipeProfile ? ExShape.Pipe : ExShape.Section;
 
@@ -220,6 +228,7 @@ public static class Extrusion
         ExShape.Fan => $"{FanKindOf(k.Wall)?.Label ?? "Fan"} {k.H / 100f:0.##} m across, {FanBladesOf(k.Wall)} {StyleRow(FanStyleOf(k.Wall)).Label.ToLowerInvariant()} blades",
         ExShape.Blade => $"{StyleRow(k.Wall).Label} blade {k.H / 100f:0.##} m long",
         ExShape.Wing => $"{AirframeOf(k.Wall)?.Label ?? "Wing"} {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span",
+        _ when IsSheet(k) => $"Sheet {k.W / 100f:0.##} m wide, {k.H} cm thick",
         _ => $"{ProfileLabel(k.Mask)} {k.W / 100f:0.##} x {k.H / 100f:0.##} m",
     };
 
@@ -383,8 +392,14 @@ public static class Extrusion
             return null;
         if (k.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe))
             return $"no such {k.Shape.ToString().ToLowerInvariant()} piece can be made";
-        if (k.W is < MinSectionCm or > MaxSectionCm || k.H is < MinSectionCm or > MaxSectionCm)
-            return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m: sections are {MinSectionCm / 100f:0.##} to {MaxSectionCm / 100f:0.##} m a side";
+        if (k.Shape == ExShape.Section && k.Mask == ulong.MaxValue && k.H is >= MinSheetCm and < MinSectionCm && k.W is >= MinSectionCm and <= MaxSectionCm)
+        {
+            // (a sheet's thickness: whole cm from 1; its length and material are checked below)
+        }
+        else if (k.W is < MinSectionCm or > MaxSectionCm || k.H is < MinSectionCm or > MaxSectionCm)
+            return k.H < MinSectionCm && k.H >= MinSheetCm && k.Shape == ExShape.Section
+                ? $"a section {k.H} cm thick: only a Sheet (a solid section at least {MinSectionCm / 100f:0.##} m wide) is thinner than {MinSectionCm} cm"
+                : $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m: sections are {MinSectionCm / 100f:0.##} to {MaxSectionCm / 100f:0.##} m a side (a Sheet from {MinSheetCm} cm thick)";
         if (k.L is < StepCm or > MaxLengthCm || k.L % StepCm != 0)
             return $"a piece {k.L / 100f:0.##} m long: pieces are {StepCm / 100f:0.##} to {MaxLengthCm / 100f:0.##} m, in {StepCm} cm steps";
         if (ExtrusionTable.Current.Find(k.Material) == null)
@@ -413,7 +428,8 @@ public static class Extrusion
         if (k.Shape == ExShape.Wheel)
             return k.W is >= MinWheelWidthCm and <= MaxWheelWidthCm && k.H is >= MinWheelCm and <= MaxWheelCm && k.W % StepCm == 0 && k.H % StepCm == 0
                 && k.L == 0 && k.Mask == 0 && k.Wall == 0 && ExtrusionTable.Current.FindWheel(k.Material) != null;
-        if (k.W is < MinSectionCm or > MaxSectionCm || k.H is < MinSectionCm or > MaxSectionCm || k.L is < StepCm or > MaxLengthCm || k.L % StepCm != 0
+        var thin = k.Shape == ExShape.Section && k.Mask == ulong.MaxValue && k.H is >= MinSheetCm and < MinSectionCm; // (a sheet: the one section under 10 cm)
+        if (k.W is < MinSectionCm or > MaxSectionCm || (thin ? false : k.H is < MinSectionCm or > MaxSectionCm) || k.L is < StepCm or > MaxLengthCm || k.L % StepCm != 0
             || ExtrusionTable.Current.Find(k.Material) == null)
             return false;
         return k.Shape switch
@@ -495,7 +511,8 @@ public static class Extrusion
             thinnest = MathF.Min(thinnest, MathF.Min(r.W * cw, r.H * ch));
         }
         var area = Fill(k.Mask) * w * h;
-        var d = Stats(k, mat, area, area * len, thinnest, $"An extrusion: a {ProfileLabel(k.Mask)} section {w:0.##} by {h:0.##} m, {len:0.##} m of {names.NameOf(k.Material)}.");
+        var d = Stats(k, mat, area, area * len, thinnest, IsSheet(k) ? $"An extruded sheet {w:0.##} m wide and {k.H} cm thick, {len:0.##} m of {names.NameOf(k.Material)}: a Panel Former's blank."
+            : $"An extrusion: a {ProfileLabel(k.Mask)} section {w:0.##} by {h:0.##} m, {len:0.##} m of {names.NameOf(k.Material)}.");
         d.Boxes = boxes;
         d.SurfaceOverride = SurfaceRules.OfBulk(names.NameOf(k.Material));
         SurfaceRules.Apply(d);

@@ -59,7 +59,8 @@ public struct PowerMission
     public byte NeedCargo, NeedArmed;
     public ShipRole Armed;
     public bool Paid, Called, Looted, Commanded;
-    public long Started, StageAt, QuietSince, CalledAt, ReadTick;
+    public long Started, StageAt, QuietSince, CalledAt;
+    public long ReadTick; // the crews' tick (CrewWorld.Tick, its group's reports' stamps) it last read its group's reports at; -1: not yet
     public int CargoSeen; // a raid: the target's cargo ships when last looked
 }
 
@@ -641,7 +642,7 @@ public sealed partial class PowerControllers
         for (var k = 0; k < MaxShips; k++)
             if (p.Ships[k].State == PowerShipState.Out && p.Ships[k].Mission < 0 && p.Ships[k].Far == 0 && Array.IndexOf(_ids, p.Ships[k].Body, 0, n) >= 0)
                 p.Ships[k].Mission = (sbyte)i;
-        p.Missions[i] = new PowerMission { Kind = MissionKind.Patrol, Stage = PowerMissionStage.Return, Group = (short)slot, GroupNumber = crew.Fleet.Groups[slot].Number, OtherGroup = -1, Started = Tick, StageAt = Tick, ReadTick = Tick };
+        p.Missions[i] = new PowerMission { Kind = MissionKind.Patrol, Stage = PowerMissionStage.Return, Group = (short)slot, GroupNumber = crew.Fleet.Groups[slot].Number, OtherGroup = -1, Started = Tick, StageAt = Tick, ReadTick = crew.Tick };
         crew.Fleet.Command(slot, OrderKind.GoTo, p.Place[home]);
     }
 
@@ -789,7 +790,7 @@ public sealed partial class PowerControllers
         var i = FreeMission(p);
         if (i < 0)
             return -1;
-        p.Missions[i] = new PowerMission { Kind = kind, Stage = PowerMissionStage.Gather, Group = -1, OtherGroup = -1, At = at, Started = Tick, StageAt = Tick, ReadTick = Tick };
+        p.Missions[i] = new PowerMission { Kind = kind, Stage = PowerMissionStage.Gather, Group = -1, OtherGroup = -1, At = at, Started = Tick, StageAt = Tick, ReadTick = -1 };
         Log.Add($"{Name(a)}: a {kind} mission ({why})");
         return i;
     }
@@ -860,14 +861,29 @@ public sealed partial class PowerControllers
         }
     }
 
-    /// <summary>A group's cargo ships still with it (by its power's records: a cargo hauler may carry a gun).</summary>
+    /// <summary>
+    /// A group's cargo ships still with it and their cargo still theirs (by its power's records: a cargo hauler may carry a gun). One shot up (its hull
+    /// under the rules' raidTake share: holds breached, cargo shot out or handed over) has lost its cargo to whoever did it: a raid loots it without
+    /// having to destroy the hauler (machine guns took minutes to wreck a 4x4 Truck), and it delivers nothing.
+    /// </summary>
+    /// <summary>Power <paramref name="b"/>'s convoy in that group has delivered its cargo (it goes home empty).</summary>
+    private bool Delivered(byte b, short group, ushort number)
+    {
+        if (b == 0 || b > N)
+            return false;
+        foreach (var o in Powers[b].Missions)
+            if (o.Kind == MissionKind.Convoy && o.Group == group && o.GroupNumber == number)
+                return o.Paid;
+        return false;
+    }
+
     private int CargoIn(CrewWorld crew, ConstructWorld w, CrewGroup g)
     {
         var n = 0;
         if (g.Power == 0 || g.Power > N)
             return 0;
         foreach (var s in Powers[g.Power].Ships)
-            if (s.State == PowerShipState.Out && s.Role == ShipRole.Cargo && s.Body != 0 && crew.ShipOf(s.Body) is { } cs && cs.Group == g.Slot && w.Get(s.Body) is { Wreck: false })
+            if (s.State == PowerShipState.Out && s.Role == ShipRole.Cargo && s.Body != 0 && crew.ShipOf(s.Body) is { } cs && cs.Hull >= Rules.RaidTake && cs.Group == g.Slot && w.Get(s.Body) is { Wreck: false })
                 n++;
         return n;
     }
@@ -899,6 +915,8 @@ public sealed partial class PowerControllers
                 crew.Fleet.Join(crew, w, m.Group, s.Body);
         // Its group's reports since the last look.
         var contact = g.Enemy > 0;
+        if (m.ReadTick < 0)
+            m.ReadTick = crew.Tick; // (a mission loaded or not yet run: from now on)
         for (var k = 0; k < g.RingCount; k++)
         {
             ref var e = ref g.Ring[(g.RingHead - 1 - k + CrewGroup.RingSize * 2) % CrewGroup.RingSize];
@@ -906,7 +924,7 @@ public sealed partial class PowerControllers
                 break;
             if (e.Kind == FleetReport.Arrived && m.Kind == MissionKind.Convoy)
             {
-                if (e.Other == 1 && !m.Paid)
+                        if (e.Other == 1 && !m.Paid)
                 {
                     m.Paid = true;
                     p.Stock += Rules.CargoValue * CargoIn(crew, w, g) / Math.Max(1, (int)m.NeedCargo);
@@ -917,7 +935,7 @@ public sealed partial class PowerControllers
                     m.StageAt = -1; // (back home: done)
             }
         }
-        m.ReadTick = Tick;
+        m.ReadTick = crew.Tick; // (the reports are stamped with the crews' tick, not this clock: one tick apart, a convoy's arrival went unread and it never delivered)
         switch (m.Kind)
         {
             case MissionKind.Convoy:
@@ -930,8 +948,9 @@ public sealed partial class PowerControllers
             {
                 var tg = crew.Fleet.Of(m.OtherGroup);
                 var alive = tg != null && tg.Number == m.OtherNumber && w.Get(tg.Flagship) is not null;
-                var cargo = alive ? CargoIn(crew, w, tg!) : 0;
-                if (cargo < m.CargoSeen && !m.Looted)
+                var delivered = alive && Delivered(m.Other, m.OtherGroup, m.OtherNumber); // (on its way home, delivered, it carries nothing to take)
+                var cargo = alive && !delivered ? CargoIn(crew, w, tg!) : 0;
+                if (alive && !delivered && cargo < m.CargoSeen && !m.Looted) // (a convoy home and stood down has lost nothing)
                 {
                     m.Looted = true;
                     var loot = Rules.CargoValue * Rules.RaidLoot * (m.CargoSeen - cargo);
@@ -1019,7 +1038,7 @@ public sealed partial class PowerControllers
         if (slot < 0)
             return;
         var g = crew.Fleet.Groups[slot];
-        (m.Group, m.GroupNumber, m.Stage, m.StageAt, m.QuietSince, m.ReadTick) = ((short)slot, g.Number, PowerMissionStage.Run, Tick, Tick, Tick);
+        (m.Group, m.GroupNumber, m.Stage, m.StageAt, m.QuietSince, m.ReadTick) = ((short)slot, g.Number, PowerMissionStage.Run, Tick, Tick, crew.Tick);
         switch (m.Kind)
         {
             case MissionKind.Convoy:
@@ -1385,7 +1404,7 @@ public sealed partial class PowerControllers
                     (m.Paid, m.Called, m.Looted) = ((mf & 1) != 0, (mf & 2) != 0, (mf & 4) != 0);
                     m.Started = Tick - (long)r.I32() * T;
                     m.StageAt = Tick - (long)r.I32() * T;
-                    m.ReadTick = Tick;
+                    m.ReadTick = -1;
                     m.QuietSince = Tick;
                     int slot = r.U8();
                     if (p.Id != 0 && slot < MaxMissions && m.Kind is > MissionKind.None and <= MissionKind.Raid)

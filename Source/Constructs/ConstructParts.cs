@@ -381,7 +381,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
-        : Matrix4x4.CreateScale(MeshSize(ShapeHalf * 2, Front)) * FrontTurns[Front] * TurnM * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+        : Turn == 0 ? Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre)
+        : Matrix4x4.CreateScale(MeshSize(ShapeHalf * 2, Front)) * FrontTurns[Front] * TurnM * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre); // (a baked part's shaped box: its subpart's turn too)
 
     /// <summary>
     /// A leg's model between two points of the frame the part sits in: its part-Y across the span from <paramref name="from"/> to

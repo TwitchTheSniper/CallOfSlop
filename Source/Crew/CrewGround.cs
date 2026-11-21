@@ -101,9 +101,10 @@ public sealed partial class ShipAi
         var com = c.WorldCom;
         var up = GravityFrames.UpAt(com);
         var brief = c.Brief;
-        if (has && Ship is { Goal: CrewGoal.Flee })
+        if (has && Ship is { Goal: CrewGoal.Flee } && !(Crew != null && Ship.Ordered(Crew.Tick) && Ship.Order.Kind is not (OrderKind.Engage or OrderKind.Hold or OrderKind.Board)))
         {
-            // Its captain runs: away from the target at full speed, whatever its place in a convoy.
+            // Its captain runs: away from the target at full speed, whatever its place in a convoy. Under its admiral's moving order (a convoy's
+            // route, a Retreat to a place) it goes where it was sent instead: a hauler that ran its own way fled 2 km and its convoy stalled.
             _state = 9;
             _stateDist = dist;
             return Drive(world, c, com + Level(com - t.At, up) * 60, GroundClose * 2, up, stopAt: false);
@@ -161,7 +162,7 @@ public sealed partial class ShipAi
         if (dist > band + GroundBand)
         {
             _state = 4;
-            return Drive(world, c, t.At, GroundClose, up, stopAt: false);
+            return Drive(world, c, t.At, MathF.Max(GroundClose, t.Vel.Length() * 1.25f + 2), up, stopAt: false); // (a target running from it is run down: closing at 12 m/s, raiders never caught a convoy running at 19)
         }
         if (dist < band - GroundBand * 2)
         {
@@ -170,6 +171,16 @@ public sealed partial class ShipAi
             return Drive(world, c, com + away * 40, GroundClose * 0.7f, up, stopAt: false);
         }
         _state = 6;
+        if (_pilot >= 0 && FixedGunsOnly(c))
+        {
+            // Its guns point the way it does (a hood gun): it turns its nose onto the target, creeping, to fire (Gunnery's bearing).
+            var fwd = Level(Vector3.Transform(c.DriveFwd, c.Rot), up);
+            var to = Level(t.At - com, up);
+            var ang = MathF.Atan2(Vector3.Dot(Vector3.Cross(fwd, to), up), Vector3.Dot(fwd, to)) * 180 / MathF.PI; // (+: to its left)
+            if (MathF.Abs(ang) > FixedBear * 0.6f)
+                return (ushort)((Vector3.Dot(c.Vel, fwd) < 2.5f ? Buttons.Forward : 0) | (ang > 0 ? Buttons.Left : Buttons.Right));
+            return (ushort)Buttons.Jump;
+        }
         if (brief is { KeepAway: < 4 } && Vector3.Dot(c.Vel, c.Vel) < 4)
         {
             // Which side faces the enemy, in its own frame: on the weak side, creep forward turning away.

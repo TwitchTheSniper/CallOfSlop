@@ -98,7 +98,13 @@ public sealed partial class Ui
             var round = shape != ExShape.Section;
             if (Stepper(round ? "Diameter"u8 : "Width"u8, "##exw"u8, ref wv, 5, Extrusion.MinSectionCm, round ? Math.Min(dw, dh) : dw, ref _exWText, true))
                 _exPick = _exPick with { W = (ushort)wv };
-            if (!round)
+            if (_exPick.Profile == Extrusion.SheetProfile)
+            {
+                var tv = (int)_exPick.H;
+                if (Stepper("Thickness"u8, "##exh"u8, ref tv, 1, Extrusion.MinSheetCm, ExtruderPicks.SheetMaxCm(dh), ref _exHText, false))
+                    _exPick = _exPick with { H = (ushort)tv };
+            }
+            else if (!round)
             {
                 var hv = (int)_exPick.H;
                 if (Stepper("Height"u8, "##exh"u8, ref hv, 5, Extrusion.MinSectionCm, dh, ref _exHText, true))
@@ -169,7 +175,8 @@ public sealed partial class Ui
     {
         var round = Extrusion.ShapeOf(_exPick.Profile) != ExShape.Section;
         var w = Math.Clamp((int)_exPick.W, Extrusion.MinSectionCm, round ? Math.Min(_exDieW, _exDieH) : _exDieW);
-        var h = Math.Clamp((int)_exPick.H, Extrusion.MinSectionCm, _exDieH);
+        var h = _exPick.Profile == Extrusion.SheetProfile ? Math.Clamp((int)_exPick.H, Extrusion.MinSheetCm, ExtruderPicks.SheetMaxCm(_exDieH))
+            : Math.Clamp((int)_exPick.H, Extrusion.MinSectionCm, _exDieH);
         var wall = Math.Clamp((int)_exPick.Wall, 1, ExtruderPicks.MaxWallCm(w));
         if (w != _exPick.W || h != _exPick.H || wall != _exPick.Wall)
             _exPick = _exPick with { W = (ushort)w, H = (ushort)h, Wall = (ushort)wall };
@@ -275,6 +282,7 @@ public sealed partial class Ui
         IsCustom(k) ? "Custom: your own section, drawn on the 8 by 8 cell grid that opens beside the sizes."
         : Extrusion.ShapeOf(k) == ExShape.Round ? "Round: a solid rod; Diameter is its size."
         : Extrusion.ShapeOf(k) == ExShape.Pipe ? "Pipe: a tube; Diameter and its wall (it leaves a bore of at least 5 cm)."
+        : k == Extrusion.SheetProfile ? $"Sheet: a solid plate {Extrusion.MinSheetCm} to {Extrusion.SheetMaxCm} cm thick, Width across (up to the die's): a Panel Former's blank."
         : k >= Extrusion.AirfoilProfile(0) ? $"{_exNames[k]}: a wing's section, Width its chord and Height its thickness."
         : $"{_exNames[k]}: Width across, Height up.";
 
@@ -300,6 +308,13 @@ public sealed partial class Ui
             var share = _exPick.Profile == profile ? Math.Clamp(_exPick.Wall / (float)Math.Max(1, (int)_exPick.W), 0.04f, 0.5f) : 0.12f;
             dl.AddCircleFilled(centre, s * 0.5f, ExSection, 32);
             dl.AddCircleFilled(centre, s * 0.5f * (1 - 2 * share), ExBore, 32);
+            return;
+        }
+        if (profile == Extrusion.SheetProfile)
+        {
+            // A sheet: a thin plate across the square (its thickness drawn at least a few pixels).
+            var t = MathF.Max(2 * _scale, s * 0.08f);
+            dl.AddRectFilled(new float2(o.X, centre.Y - t * 0.5f), new float2(o.X + s, centre.Y + t * 0.5f), ExSection);
             return;
         }
         var foil = profile - Extrusion.AirfoilProfile(0);
