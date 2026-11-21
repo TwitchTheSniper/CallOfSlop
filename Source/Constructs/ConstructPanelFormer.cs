@@ -14,7 +14,6 @@ namespace CallOfSlop;
 public static class ConstructPanelFormer
 {
     public const float OverMost = 1.25f; // a blank fits a panel up to this much over its flat size, each way (the trim is the offcut)
-    public const int BlankMinCm = 1, BlankMaxCm = 10; // a blank's thickness, whole cm (the Extruder's Sheet profile: Extrusion.IsSheet)
 
     public const float PinTravel = 2; // m: how far a Bed Block's pins rise, the deepest panel (crown and rake) a bed forms
     public const float SetSeconds = 4, PressSeconds = 8; // a stroke on the block bed: the pins set, then the upper platen presses
@@ -340,12 +339,12 @@ public static class ConstructPanelFormer
         if (HullLoft.PanelOf(panel.Name) is { } sh)
         {
             HullLoft.PanelFlat(sh, out var along, out var across);
-            return new Flat(along, across, Math.Clamp((int)MathF.Round(sh.Mm / 10f, MidpointRounding.AwayFromZero), BlankMinCm, BlankMaxCm), mat);
+            return new Flat(along, across, Math.Clamp((int)MathF.Round(sh.Mm / 10f, MidpointRounding.AwayFromZero), Extrusion.MinSheetCm, Extrusion.SheetMaxCm), mat);
         }
         Sides(panel, out var a, out var b);
         var volume = panel.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) / MathF.Max(1, row.UnitsPerM3);
         var cm = (int)MathF.Round(volume / MathF.Max(0.01f, a * b) * 100);
-        return new Flat(a, b, Math.Clamp(cm, BlankMinCm, BlankMaxCm), mat);
+        return new Flat(a, b, Math.Clamp(cm, Extrusion.MinSheetCm, Extrusion.SheetMaxCm), mat);
     }
 
     private static int Step(float m) => Math.Clamp((int)MathF.Ceiling(m * 100 / Extrusion.StepCm - 0.01f) * Extrusion.StepCm, Extrusion.MinSectionCm, Extrusion.MaxLengthCm);
@@ -364,7 +363,7 @@ public static class ConstructPanelFormer
     /// <summary>Is this piece a blank for this panel? A solid sheet of its material and thickness, its two sides each from the flat size to <see cref="OverMost"/> over it (either way round).</summary>
     public static bool BlankFits(ConstructPartDef piece, ConstructPartDef panel)
     {
-        if (!piece.IsExtrusion || piece.ExKey is not { Shape: ExShape.Section, Mask: ulong.MaxValue } k || !FlatOf(panel, out var f))
+        if (!piece.IsExtrusion || piece.ExKey is var k && !Extrusion.IsSheet(k) || !FlatOf(panel, out var f))
             return false;
         if (k.Material != f.Material || k.H != f.ThickCm)
             return false;

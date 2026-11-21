@@ -707,8 +707,16 @@ public sealed partial class CrewFleet
             var sc = w.Get(s.Body)!;
             var armed = s.Strength > CrewWorld.HullOf(sc) * 0.01f + 0.5f;
             ShipOrder o = default;
-            if (g.Retreating)
-                o = new ShipOrder { Kind = OrderKind.Retreat, At = g.Order == OrderKind.Retreat ? g.OrderAt : _pos[k] + away * 2000 };
+            if (g.Retreating && g.Civilian && !isFlag && armed && g.Order != OrderKind.Retreat)
+                o = new ShipOrder { Kind = OrderKind.Screen, Body = g.Flagship, Threat = g.Focus, At = new Vector3(0, 0, g.Doctrine.Spacing * (1 + slotN++ % 3)), Fight = true }; // (a convoy's escorts stay between the threat and their running cargo, not each running its own way)
+            else if (g.Retreating)
+                o = new ShipOrder
+                {
+                    Kind = OrderKind.Retreat,
+                    // A convoy on its route runs on for its leg's end (a place of its own), not 2 km straight away from the threat: running
+                    // blind, a cargo hauler fled for minutes and its convoy never delivered.
+                    At = g.Order == OrderKind.Retreat ? g.OrderAt : g.Civilian && g.Order == OrderKind.Route && g.RouteCount > 0 ? g.Route[g.RouteAt] : _pos[k] + away * 2000,
+                };
             else if (running)
                 o = new ShipOrder { Kind = isFlag ? OrderKind.Retreat : OrderKind.Form, At = isFlag ? g.OrderAt : Slot(g.Doctrine, ++slotN, span), Body = g.Flagship }; // (the whole group runs with its flagship, nobody stops to fight)
             else if (g.Order == OrderKind.Board && g.OrderBody != 0 && armed)

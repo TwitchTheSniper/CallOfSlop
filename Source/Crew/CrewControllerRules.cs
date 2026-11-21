@@ -55,7 +55,7 @@ public sealed class ControllerRules
     public float SpawnFromPeople = 600, DockFromPeople = 400, DockRange = 150; // m
     public float PlaceNear = 1200, PlaceFar = 2200; // m from the first person: a power's places on an open world its plan names none on
     public float CostPerUnit = 1, BuildSecondsScale = 0.05f, MinBuildSeconds = 8, RepairShare = 1;
-    public float ConvoyEveryMinutes = 4, CargoValue = 900, RaidSight = 3000, RaidLoot = 0.5f, CallRange = 5000, DefendMinutes = 4, QuietSeconds = 40;
+    public float ConvoyEveryMinutes = 4, CargoValue = 900, RaidSight = 3000, RaidLoot = 0.5f, RaidTake = 0.9f, CallRange = 5000, DefendMinutes = 4, QuietSeconds = 40;
     public float GatherMinutes = 4, RunMinutes = 12, PatrolMinutes = 8, RazeSeconds = 180, RazeRange = 300, DwellSeconds = 8;
     public readonly Dictionary<string, PowerPlan> Kinds = new(StringComparer.OrdinalIgnoreCase);
 
@@ -188,6 +188,7 @@ public sealed class ControllerRules
                 r.CargoValue = Num(m, "cargoValue", r.CargoValue, 0, 1e7f);
                 r.RaidSight = Num(m, "raidSight", r.RaidSight, 0, 1e6f);
                 r.RaidLoot = Num(m, "raidLoot", r.RaidLoot, 0, 1);
+                r.RaidTake = Num(m, "raidTake", r.RaidTake, 0.05f, 1); // (a cargo hauler's hull share under which its cargo is lost to its attackers)
                 r.CallRange = Num(m, "callRange", r.CallRange, 0, 1e7f);
                 r.DefendMinutes = Num(m, "defendMinutes", r.DefendMinutes, 0.1f, 1440);
                 r.QuietSeconds = Num(m, "quietSeconds", r.QuietSeconds, 1, 3600);

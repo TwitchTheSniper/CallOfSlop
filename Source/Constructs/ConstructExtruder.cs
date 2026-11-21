@@ -152,6 +152,8 @@ public static partial class ConstructExtruder
         wall = 0;
         var block = Blocks(c, part) > 0; // (a block die's piece comes out along its foot: PieceY)
         var dieY = centre.Y;
+        if (shape == ExShape.Section && (int)ConstructConfig.Get(p, d, CfgKey.Profile, 0) == Extrusion.SheetProfile)
+            h = SheetCm(p, d, size.Y); // (a Sheet: its Wall setting is the thickness, whole cm; Height isn't read)
         if (shape == ExShape.Section)
         {
             if (block)
@@ -167,6 +169,10 @@ public static partial class ConstructExtruder
             wall = (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), 1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
     }
 
+    /// <summary>A Sheet's thickness in cm from a machine's Wall setting: 1 to 10, held inside a die <paramref name="dieH"/> m tall.</summary>
+    public static int SheetCm(in CPart p, ConstructPartDef d, float dieH) =>
+        Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), Extrusion.MinSheetCm, Math.Max(Extrusion.MinSheetCm, Math.Min(Extrusion.SheetMaxCm, (int)MathF.Floor(dieH * 100 + 0.001f))));
+
     /// <summary>A round section's look on the grid (the panel and the die's preview).</summary>
     public static ulong RoundMaskOf(int profile, float across, float wall) =>
         Extrusion.RoundMask(profile == Extrusion.PipeProfile ? MathF.Max(0, 1 - 2 * wall / MathF.Max(0.1f, across)) : 0);
@@ -179,6 +185,8 @@ public static partial class ConstructExtruder
             return RoundMaskOf(profile, ConstructConfig.Get(p, d, CfgKey.Width, 0.25f), ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f));
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
+        if (profile == Extrusion.SheetProfile)
+            return ulong.MaxValue;
         if (profile >= Extrusion.AirfoilProfile(0) && profile - Extrusion.AirfoilProfile(0) < ExtrusionTable.Current.Airfoils.Length)
             return ExtrusionTable.Current.Airfoils[profile - Extrusion.AirfoilProfile(0)].Mask;
         return (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskA, 0) | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskB, 0) << 16
@@ -1053,8 +1061,9 @@ public static partial class ConstructExtruder
             else
                 sb.Append(", ").Append(Extrusion.Label(new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, 0, true, shape, wall)));
             sb.Append(Status(c, part, st));
-            if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
-                sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die{(die.X < MostSection(d).X - 0.001f || die.Y < MostSection(d).Y - 0.001f ? ": " + WideFix(d, (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Width, 0) * 100), (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Height, 0) * 100)) : "")}");
+            var setH = (int)ConstructConfig.Get(p, d, CfgKey.Profile, 0) == Extrusion.SheetProfile ? h / 100f : ConstructConfig.Get(p, d, CfgKey.Height, 0); // (a Sheet doesn't read Height)
+            if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || setH > die.Y + 0.001f)
+                sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die{(die.X < MostSection(d).X - 0.001f || die.Y < MostSection(d).Y - 0.001f ? ": " + WideFix(d, (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Width, 0) * 100), (int)MathF.Round(setH * 100)) : "")}");
         }
         if (near)
         {
