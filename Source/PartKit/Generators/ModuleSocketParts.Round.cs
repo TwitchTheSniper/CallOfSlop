@@ -38,6 +38,19 @@ public sealed partial class ModuleSocketParts
         p.Add(Box([cx - 0.38 * r, y0, cz - 0.92 * r], [cx + 0.38 * r, y1, cz + 0.92 * r], hidden: true));
     }
 
+    /// <summary>
+    /// A ring's solid (a plate's or plug's frame, whose middle an Opening leaves open): four hidden bars round a square hole of half
+    /// <paramref name="hole"/>, inside the footprint's square. The middle is drawn only, so things pass through the hole.
+    /// </summary>
+    private static void SolidRing(Part p, double cx, double cz, double hole, double r, double y0, double y1)
+    {
+        var s = 0.7 * r;
+        p.Add(Box([cx - s, y0, cz + hole], [cx + s, y1, cz + r], hidden: true));
+        p.Add(Box([cx - s, y0, cz - r], [cx + s, y1, cz - hole], hidden: true));
+        p.Add(Box([cx + hole, y0, cz - hole], [cx + r, y1, cz + hole], hidden: true));
+        p.Add(Box([cx - r, y0, cz - hole], [cx - hole, y1, cz + hole], hidden: true));
+    }
+
     /// <summary>A ring round (<paramref name="cx"/>, <paramref name="cz"/>) from radius <paramref name="r0"/> out to <paramref name="r1"/>.</summary>
     private static PyDict? Ring(double cx, double cz, double r0, double r1, double y0, double y1, string colour, int segs, bool detail = false) =>
         Box([cx - r1, y0, cz - r1], [cx + r1, y1, cz + r1], colour, detail: detail, shape: Tube(segs, r0 / r1));
@@ -98,7 +111,7 @@ public sealed partial class ModuleSocketParts
     {
         var segs = Segs(d);
         double c = (d - 1) * 0.5, r = d * 0.5, face = top - Drawn;
-        SolidDisc(p, c, c, r, y0, face);
+        SolidRing(p, c, c, r - FrameW - 0.01, r, y0, face); // (nothing solid inside the round hole)
         // The base flange (full width, dark) and the body, each a ring round a middle that an Opening socket leaves out (a frame).
         var hole = r - FrameW - 0.01;
         p.Add(Ring(c, c, hole, r, y0, y0 + 0.035, LugC, segs, detail: true));
@@ -126,7 +139,7 @@ public sealed partial class ModuleSocketParts
         // The keying notch: a dark block on the -x -z side (a keyed socket takes its module with the notches together).
         var k = c - (r - 0.27) * Math.Sqrt(0.5);
         p.Add(Mid(Box([k - 0.05, face - 0.01, k - 0.05], [k + 0.05, face + 0.006, k + 0.05], LugC, detail: true)));
-        p.Add(Box([c - 0.1, top - 0.012, c - 0.1], [c + 0.1, top, c + 0.1], hidden: true)); // (the socket's solid face; never drawn)
+        p.Add(Box([c - 0.03, top - 0.012, c - 0.03], [c + 0.03, top, c + 0.03], hidden: true)); // (the socket's solid face; never drawn: small, as it stands in an Opening's hole)
         p.Sock("module", [c, top, c], "+y", kind: "module");
     }
 
@@ -155,7 +168,7 @@ public sealed partial class ModuleSocketParts
         var segs = Segs(d);
         double c = (d - 1) * 0.5, r = d * 0.5 - Inset;
         double y0 = Back + 0.012, y1 = Back + PlugT; // (its underside 12 mm over its socket: 15 mm over the plate's drawn face, clear of its bolts)
-        SolidDisc(p, c, c, r, y0, y1);
+        SolidRing(p, c, c, d * 0.5 - FrameW - 0.01, r, y0, y1);
         // The body (its rim a ledge round the top) and the top where parts weld, each a ring round a middle left out on an Opening socket.
         var hole = d * 0.5 - FrameW - 0.01;
         p.Add(Ring(c, c, hole, r, y0, y1 - 0.02, PlugC, segs, detail: true));
@@ -177,7 +190,7 @@ public sealed partial class ModuleSocketParts
         // The keying notch on the ledge, matching the plate's (-x -z).
         var k = c - (r - 0.03) * Math.Sqrt(0.5);
         p.Add(Box([k - 0.018, y1 - 0.02, k - 0.018], [k + 0.018, y1 + 0.004, k + 0.018], LugC, detail: true));
-        p.Add(Box([c - 0.1, Back, c - 0.1], [c + 0.1, Back + 0.012, c + 0.1], hidden: true)); // (the socket's solid face)
+        p.Add(Box([c - 0.03, Back, c - 0.03], [c + 0.03, Back + 0.012, c + 0.03], hidden: true)); // (the socket's solid face: small, as it stands in an Opening's hole)
         p.Sock("module", [c, Back, c], "-y", kind: "module");
         for (var i = 0; i < d; i++)
             for (var j = 0; j < d; j++)

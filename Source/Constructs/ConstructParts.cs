@@ -2519,9 +2519,11 @@ public static partial class ConstructParts
     private static bool OnBoxFace(ConstructPartDef d, Vector3 at, byte dir)
     {
         var axis = dir >> 1;
-        for (var b = 0; b < d.SolidBoxes; b++)
+        for (var b = 0; b < d.Boxes.Length; b++)
         {
             var box = d.Boxes[b];
+            if (b >= d.SolidBoxes && !box.Middle)
+                continue; // (a solid box, or a module frame's drawn middle: its sockets stand over an Opening's hole)
             var face = (dir & 1) == 0 ? box.Center[axis] + box.Half[axis] : box.Center[axis] - box.Half[axis];
             if (MathF.Abs(at[axis] - face) > 0.005f)
                 continue;
