@@ -489,6 +489,10 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(MachineLook.Work(L([-0.4, GrowHubY - 0.38, f + 0.03], [0.4, GrowHubY + 0.38, f + 0.07], MachineLook.Base), "slide", "+y", GrowRide));
         foreach (var x in new[] { -0.46, 0.46 })
             p.Add(MachineLook.Work(L([x - 0.07, GrowHubY - 0.3, f + 0.03], [x + 0.07, GrowHubY + 0.3, f + 0.058], MachineLook.Accent), "slide", "+y", GrowRide));
+        // The hub's bearing collar: a wide dark housing behind the face plate with a yellow rim, so the hub reads from across a hall
+        // (look review 2026-11-21: "a painted box with a screen" without its masts). It rides the carriage and stands still while the hub turns.
+        p.Add(MachineLook.Work(L([-0.46, GrowHubY - 0.46, f + 0.072], [0.46, GrowHubY + 0.46, f + 0.094], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 28))), "slide", "+y", GrowRide));
+        p.Add(MachineLook.Work(L([-0.49, GrowHubY - 0.49, f + 0.075], [0.49, GrowHubY + 0.49, f + 0.088], MachineLook.Accent, shape: Kw(("shape", "tube"), ("segments", 28), ("inner", 0.94))), "slide", "+y", GrowRide));
         // The hub: a bare steel face plate, a yellow four-jaw chuck and a dark boss; all of it turns while a wheel or a prop grows, and rides the carriage.
         p.Add(MachineLook.Work(L([-0.32, GrowHubY - 0.32, f + 0.07], [0.32, GrowHubY + 0.32, f + 0.1], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 24))), "spin", "+z", GrowRide));
         p.Add(MachineLook.Work(L([-0.28, GrowHubY - 0.04, f + 0.1], [0.28, GrowHubY + 0.04, f + 0.13], MachineLook.Accent), "spin", "+z", GrowRide));
@@ -574,10 +578,10 @@ public sealed class ExtrusionParts : IPartGenerator
         foreach (var x in new[] { -0.92, -0.08, 0.08, 0.92 })
             foreach (var z in new[] { -0.92, -0.08, 0.08, 0.92 })
                 p.Add(L([x - 0.018, h + BedDeck, z - 0.018], [x + 0.018, h + BedDeck + 0.014, z + 0.018], MachineLook.Accent));
-        // The kerb: hazard paint along each outer edge of the bed's top (the x sides 4 mm proud of the z sides at the corners, so no two share a plane).
+        // The kerb along each outer edge: hazard paint on the sides, white at the Core's end, orange at the out end of the bed's top (the x sides 4 mm proud of the z sides at the corners, so no two share a plane).
         var top = h + BedDeck;
-        p.Add(Seam(MachineLook.D([-e + 0.002, top, e - 0.08], [e - 0.002, top + BedKerb - 0.004, e], MachineLook.Accent, "hazard paint"), "+z"));
-        p.Add(Seam(MachineLook.D([-e + 0.002, top, -e], [e - 0.002, top + BedKerb - 0.004, -e + 0.08], MachineLook.Accent, "hazard paint"), "-z"));
+        p.Add(Seam(MachineLook.D([-e + 0.002, top, e - 0.08], [e - 0.002, top + BedKerb - 0.004, e], MachineLook.Out), "+z")); // (the out edge: orange, the way a piece leaves)
+        p.Add(Seam(MachineLook.D([-e + 0.002, top, -e], [e - 0.002, top + BedKerb - 0.004, -e + 0.08], MachineLook.In), "-z")); // (the Core side: white)
         p.Add(Seam(MachineLook.D([e - 0.08, top, -e + 0.002], [e, top + BedKerb, e - 0.002], MachineLook.Accent, "hazard paint"), "+x"));
         p.Add(Seam(MachineLook.D([-e, top, -e + 0.002], [-e + 0.08, top + BedKerb, e - 0.002], MachineLook.Accent, "hazard paint"), "-x"));
         // The sunk sides: a dark skirt panel with two lifting slots, and a bolt row along the lip; only on the bed's outer edges.

@@ -827,6 +827,47 @@
     },
     {
       "min": [
+        -0.46,
+        0.74,
+        1.072
+      ],
+      "max": [
+        0.46,
+        1.66,
+        1.094
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 28,
+      "paintable": false,
+      "work": "slide",
+      "axis": "+y",
+      "travel": 40.0
+    },
+    {
+      "min": [
+        -0.49,
+        0.71,
+        1.075
+      ],
+      "max": [
+        0.49,
+        1.69,
+        1.088
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 28,
+      "inner": 0.94,
+      "paintable": false,
+      "work": "slide",
+      "axis": "+y",
+      "travel": 40.0
+    },
+    {
+      "min": [
         -0.32,
         0.88,
         1.07

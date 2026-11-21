@@ -503,10 +503,9 @@
         0.328,
         0.997
       ],
-      "color": "#f2b01e",
+      "color": "#f07818",
       "detail": true,
       "paintable": false,
-      "finish": "hazard paint",
       "seam": "+z"
     },
     {
@@ -520,10 +519,9 @@
         0.328,
         -0.917
       ],
-      "color": "#f2b01e",
+      "color": "#ecebe4",
       "detail": true,
       "paintable": false,
-      "finish": "hazard paint",
       "seam": "-z"
     },
     {
