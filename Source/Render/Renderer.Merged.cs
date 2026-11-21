@@ -303,9 +303,7 @@ public sealed unsafe partial class Renderer
             int first, count;
             if (shape == 0)
                 (first, count) = (0, 36);
-            else if (shape + 1 < _shapeFirst.Count)
-                (first, count) = (_shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
-            else
+            else if (!ShapeRange(shape, out first, out count))
                 continue;
             var instances = all ? m.GroupCount[g] : m.GroupClassEnd[g * m.ClassCount + Math.Max(0, detail)];
             if (instances <= 0)

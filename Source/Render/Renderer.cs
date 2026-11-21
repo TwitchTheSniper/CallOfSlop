@@ -1086,25 +1086,102 @@ public sealed unsafe partial class Renderer
         }
         if (_shapeVersion != PartShapes.Version)
             UploadShapes();
-        if (shape + 1 < _shapeFirst.Count)
+        if (ShapeRange(shape, out var first, out var count))
         {
-            PerfCounters.Draw(_shapeFirst[shape + 1] - _shapeFirst[shape]); // the perf window's counters (Source/Perf/PerfCounters.cs)
-            Native.glDrawArrays(GL_TRIANGLES, _shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
+            PerfCounters.Draw(count); // the perf window's counters (Source/Perf/PerfCounters.cs)
+            Native.glDrawArrays(GL_TRIANGLES, first, count);
         }
     }
 
     private int _shapeVersion; // PartShapes.Version starts at 0 with no shapes
-    private readonly List<int> _shapeFirst = [];
 
-    /// <summary>Puts the unit cube and every part shape made so far into the box vertex buffer (once per new batch of shapes, at load).</summary>
+    // The box buffer: the unit cube, then each part shape's vertices, kept on the CPU as well (_shapeMirror) so a new shape is
+    // added at the end and only it is sent. Karl's F9 (2026-11-21, autocannon rounds holing a Zero Day): every holed hull facet is
+    // a new shape, and each one copied and sent every shape made so far (ToArray of megabytes, then glBufferData): 18-22 ms
+    // frames about once a second and 230 KB allocated a frame. A slot given a new mesh (a freed shape taken again) adds it at
+    // the end too; once more than half the buffer is such leftovers it is packed again in one go.
+    private int[] _shapeStart = [], _shapeCount = []; // per shape id: first vertex and vertices (id 0: the cube)
+    private float[]?[] _shapeSent = []; // the mesh each slot holds in the buffer (compared by reference)
+    private readonly List<float[]> _shapeRefs = [];
+    private float[] _shapeMirror = [];
+    private int _shapeUsed, _shapeWaste, _shapeCapacity; // floats in the mirror, floats left behind by replaced meshes, floats the GPU buffer holds
+
+    /// <summary>The vertices of shape <paramref name="shape"/> in the box buffer (after <see cref="UploadShapes"/>).</summary>
+    private bool ShapeRange(int shape, out int first, out int count)
+    {
+        if ((uint)shape < (uint)_shapeStart.Length && (shape == 0 || _shapeSent[shape] != null))
+        {
+            (first, count) = (_shapeStart[shape], _shapeCount[shape]);
+            return true;
+        }
+        (first, count) = (0, 0);
+        return false;
+    }
+
+    /// <summary>Brings the box buffer up to every part shape made so far, sending only the shapes it doesn't hold yet.</summary>
     private void UploadShapes()
     {
-        var data = new List<float>(BuildCube());
-        _shapeVersion = PartShapes.CopyAll(data, _shapeFirst);
-        var arr = data.ToArray();
+        const int fpv = PartShapes.FloatsPerVertex;
+        _shapeVersion = PartShapes.MeshRefs(_shapeRefs);
+        var n = _shapeRefs.Count;
+        if (_shapeStart.Length < n)
+        {
+            var size = Math.Max(n, _shapeStart.Length * 2);
+            Array.Resize(ref _shapeStart, size);
+            Array.Resize(ref _shapeCount, size);
+            Array.Resize(ref _shapeSent, size);
+        }
+        var repack = _shapeUsed == 0 || _shapeWaste > 65536 && _shapeWaste * 2 > _shapeUsed;
+        if (repack)
+        {
+            Array.Clear(_shapeSent);
+            var cube = BuildCube();
+            Grow(cube.Length + PartShapes.FloatsTotal() * 3 / 2, keep: false); // (room for half as much again: a battle's holed facets add shapes)
+            cube.CopyTo(_shapeMirror, 0);
+            (_shapeUsed, _shapeWaste) = (cube.Length, 0);
+            (_shapeStart[0], _shapeCount[0]) = (0, cube.Length / fpv);
+        }
+        var from = _shapeUsed;
+        var grew = false;
+        for (var id = 1; id < n; id++)
+        {
+            var mesh = _shapeRefs[id];
+            if (ReferenceEquals(_shapeSent[id], mesh))
+                continue;
+            if (_shapeSent[id] != null)
+                _shapeWaste += _shapeCount[id] * fpv; // (a freed slot taken by another mesh: the old vertices stay behind)
+            grew |= Grow(_shapeUsed + mesh.Length, keep: true);
+            mesh.CopyTo(_shapeMirror, _shapeUsed);
+            (_shapeStart[id], _shapeCount[id]) = (_shapeUsed / fpv, mesh.Length / fpv);
+            _shapeUsed += mesh.Length;
+            _shapeSent[id] = mesh;
+        }
+        _shapeRefs.Clear(); // (holds no meshes between uploads)
         Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        fixed (float* p = arr)
-            Native.glBufferData(GL_ARRAY_BUFFER, arr.Length * sizeof(float), p, GL_STATIC_DRAW);
+        fixed (float* p = _shapeMirror)
+        {
+            if (repack || grew || _shapeCapacity != _shapeMirror.Length)
+            {
+                Native.glBufferData(GL_ARRAY_BUFFER, _shapeMirror.Length * sizeof(float), null, GL_STATIC_DRAW);
+                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _shapeUsed * sizeof(float), p);
+                _shapeCapacity = _shapeMirror.Length;
+            }
+            else if (_shapeUsed > from)
+                Native.glBufferSubData(GL_ARRAY_BUFFER, from * sizeof(float), (_shapeUsed - from) * sizeof(float), p + from);
+        }
+    }
+
+    /// <summary>Makes the mirror hold <paramref name="floats"/> (doubling); true when it had to grow.</summary>
+    private bool Grow(int floats, bool keep)
+    {
+        if (_shapeMirror.Length >= floats)
+            return false;
+        var size = Math.Max(floats, Math.Max(_shapeMirror.Length * 2, 65536));
+        if (keep)
+            Array.Resize(ref _shapeMirror, size);
+        else
+            _shapeMirror = new float[size];
+        return true;
     }
 
     public void DrawBox(Box box, Vector3 color, int mode = 0, Material material = Material.Grid) =>
