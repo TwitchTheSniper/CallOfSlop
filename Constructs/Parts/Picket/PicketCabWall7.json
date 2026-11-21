@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Picket Cab Wall 7",
+  "description": "A wall of the Picket's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Picket gunship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 317.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c9c7bf",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        -10.025
+      ],
+      "max": [
+        3.125,
+        2.625,
+        -9.775
+      ],
+      "color": "#c9c7bf",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.925,
+        0.128,
+        -10.037
+      ],
+      "max": [
+        3.075,
+        0.875,
+        -9.763
+      ],
+      "color": "#6f6a52",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        1.995,
+        0.125,
+        -9.905
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.125,
+        1.375,
+        -9.905
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.875,
+        1.375,
+        -9.905
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        1.995,
+        2.625,
+        -9.905
+      ],
+      "dir": "+y"
+    }
+  ]
+}
