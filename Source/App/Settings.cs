@@ -111,6 +111,7 @@ public sealed class Settings
     public VideoLevel PostEffects = VideoLevel.Low; // Low none (the default: the one effect measured to cost a frame, docs/render/MATERIALS.md), Medium bloom and heat haze, High ambient occlusion too (PostFx.cs)
     public bool Bloom = true, HeatHaze = true, AmbientOcclusion = true; // each post effect's own switch
     public bool MaterialContrast = true; // Materials Medium and High: paint a satin 0.6 roughness, dark framing and rubber rough (Surfaces.cs)
+    public bool ContactShadows = true; // at any Post effects level: a soft shadow on the ground under ships and vehicles (PostFx.Contact.cs)
     public bool EdgeBevels = true; // Materials Medium and High: every box edge drawn as a thin chamfer that catches the light (Surfaces.cs)
     public bool HiddenCulling = true; // big ships: parts hidden behind hulls and walls aren't drawn (ConstructRenderOcclusion.cs)
     public VideoLevel FarDetail = VideoLevel.Medium; // big ships: how small a far box may get before it is left out (Low 2.5 pixels, Medium 1, High: never)
@@ -577,6 +578,7 @@ public sealed class Settings
                     case "heat_haze" when bool.TryParse(v, out var hazeOn): s.HeatHaze = hazeOn; break;
                     case "ambient_occlusion" when bool.TryParse(v, out var aoOn): s.AmbientOcclusion = aoOn; break;
                     case "material_contrast" when bool.TryParse(v, out var contrastOn): s.MaterialContrast = contrastOn; break;
+                    case "contact_shadows" when bool.TryParse(v, out var contactOn): s.ContactShadows = contactOn; break;
                     case "edge_bevels" when bool.TryParse(v, out var bevelOn): s.EdgeBevels = bevelOn; break;
                     case "hidden_culling" when bool.TryParse(v, out var hcOn): s.HiddenCulling = hcOn; break;
                     case "far_detail" when Enum.TryParse<VideoLevel>(v, out var fd) && Enum.IsDefined(fd): s.FarDetail = fd; break;
@@ -732,6 +734,7 @@ public sealed class Settings
                     $"heat_haze={HeatHaze}",
                     $"ambient_occlusion={AmbientOcclusion}",
                     $"edge_bevels={EdgeBevels}",
+                    $"contact_shadows={ContactShadows}",
                     $"material_contrast={MaterialContrast}",
                     $"hidden_culling={HiddenCulling}",
                     $"far_detail={FarDetail}",

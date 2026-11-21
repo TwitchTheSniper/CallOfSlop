@@ -175,6 +175,12 @@ back buffer is resolved once into a texture, and everything works from that at s
 - **Heat haze** (`PostFx.AddHaze`, 32 a frame): small quads in one instanced draw that read the copy a little off to the side.
 - **Ambient occlusion** (High): the depth buffer resolved, 8 samples at half size, a small blur, multiplied in before the effects. It is off
   by itself, with a log line, if the driver can't resolve depth.
+- **Contact shadows** (Karl, 2026-11-21, from the Ship Render Bench): Settings > Video > Contact shadows, on by default and at any
+  Post effects level (`contact_shadows`; `--no-contact` forces it off for a before picture). `PostFx.Contact.cs`: ConstructRender.Draw
+  offers each body it draws in full (`PostFx.OfferContact`, the 8 nearest kept); after ambient occlusion each one's footprint (a 64x64
+  RG32F texture made once per rebuild from its boxes in its own frame: r the blurred cover, g the lowest bottom over the cell) is read
+  under a scissor round its box on screen, every pixel's depth taken back to the body's frame, and the ground darkened by cover, fading
+  out by 3 m below the hull. Multiplied in rgb only, like the AO, so the bloom's mark stays. Shares the AO's depth copy when both run.
 
 `PerfGpuPass`: Ambient occlusion, Particles, Bloom and heat haze are their own lines in the F9 window; `--gl-bench` has `particles` and `post`.
 
