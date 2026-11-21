@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Haywain Cab Wall 6",
+  "description": "A wall of the Haywain's cab, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Haywain hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 317.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#d6cfb8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.375,
+        0.125,
+        -15.725
+      ],
+      "max": [
+        -1.125,
+        2.625,
+        -15.475
+      ],
+      "color": "#d6cfb8",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.325,
+        0.128,
+        -15.737
+      ],
+      "max": [
+        -1.175,
+        0.875,
+        -15.463
+      ],
+      "color": "#56654a",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lockerBunk",
+      "at": [
+        -1.625,
+        0.25,
+        -15.725
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -2.245,
+        0.125,
+        -15.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -3.375,
+        1.375,
+        -15.605
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -1.125,
+        1.375,
+        -15.605
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -2.245,
+        2.625,
+        -15.605
+      ],
+      "dir": "+y"
+    }
+  ]
+}
