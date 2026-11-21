@@ -33,10 +33,17 @@
     "hydrogen": 0.4, "helium": 0.6, "oxidiser": 0.4, "ammo": 1.8
   },
   // The Traders' first supply lines (phase 2; the ships are placeholders until Karl's Traders ships are in: change "ship" to swap one in).
+  // Convoys (phase 3): "needs": true also loads any good the far station is short of that this one sells, most needed first (a listed good
+  // the far one is full of stays behind). "escort" puts "count" (up to 4) warships of the power with each hauler, holding "gap" m beside it
+  // (three times that off a station while it docks); the hauler waits up to two minutes past its "wait" for them before a leg. A lost escort
+  // is replaced at the hauler's next station a minute on. The Traders' Zero Day is the placeholder escort.
   "haulers": [
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30 },
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Cinder Fuel Depot", "to": "Caledon Highport", "goods": ["hydrogen", "helium"], "back": ["metal"], "wait": 30 },
-    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Slopolis Exchange", "goods": ["copper ore", "gold ore"], "back": ["circuits"], "wait": 30 }
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Glacier Watch", "goods": ["iron ore", "copper ore"], "back": ["steel"], "wait": 30, "needs": true,
+      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Cinder Fuel Depot", "to": "Caledon Highport", "goods": ["hydrogen", "helium"], "back": ["metal"], "wait": 30, "needs": true,
+      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
+    { "power": "Traders", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Highport", "to": "Slopolis Exchange", "goods": ["copper ore", "gold ore"], "back": ["circuits"], "wait": 30, "needs": true,
+      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } }
   ],
   "stations": [
     {

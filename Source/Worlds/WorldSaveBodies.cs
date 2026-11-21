@@ -174,6 +174,7 @@ public sealed partial class ConstructWorld
             b.StationTitle = c.StationTitle;
             b.HaulRoute = c.HaulRoute;
             b.HaulAtTo = c.HaulAtTo;
+            b.HaulEscort = c.HaulEscort;
             b.Pos = c.Pos;
             b.Rot = c.Rot;
             if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
@@ -307,7 +308,7 @@ public sealed partial class ConstructWorld
     /// <summary>The setting key a body's Capacitor Banks' charge (kJ, ConstructPower.cs) is saved under, on its first part; an older save has none: empty.</summary>
     public const string CapKey = "body:cap";
 
-    /// <summary>A station's own name (Construct.StationTitle) is saved as this key plus the name, on its first part; a hauler's route as HaulKey plus its number, valued 1 on the leg to its second station.</summary>
+    /// <summary>A station's own name (Construct.StationTitle) is saved as this key plus the name, on its first part; a hauler's route as HaulKey plus its number, valued 1 on the leg to its second station, plus 2 for one of the route's escorts.</summary>
     public const string StationKey = "body:station:", HaulKey = "body:haul:";
 
     /// <summary>The setting key the moving construct whose frame a loose body is in (ConstructFrames.cs) is saved under, on its first part, valued its id; an older save has none: it joins a frame by itself.</summary>
@@ -393,7 +394,7 @@ public sealed partial class ConstructWorld
         }
         if (b.HaulRoute >= 0 && parts.Length > 0)
         {
-            countAt.U16(0).U16(names.Key(HaulKey + b.HaulRoute.ToString(CultureInfo.InvariantCulture))).F32(b.HaulAtTo ? 1 : 0);
+            countAt.U16(0).U16(names.Key(HaulKey + b.HaulRoute.ToString(CultureInfo.InvariantCulture))).F32((b.HaulAtTo ? 1 : 0) + (b.HaulEscort ? 2 : 0)); // (2 and up: one of its escorts)
             settings++;
         }
         for (var i = 0; i < parts.Length; i++)
@@ -770,6 +771,7 @@ public sealed partial class ConstructWorld
         var titleSaved = "";
         sbyte haulSaved = -1;
         var haulAtTo = false;
+        var haulEscort = false;
         ConstructFuse.Renumber? units = null;
         for (var k = 0; k < settings; k++)
         {
@@ -812,7 +814,7 @@ public sealed partial class ConstructWorld
             if (names.Keys[key].StartsWith(HaulKey, StringComparison.Ordinal))
             {
                 if (sbyte.TryParse(names.Keys[key].AsSpan(HaulKey.Length), NumberStyles.None, CultureInfo.InvariantCulture, out var hr))
-                    (haulSaved, haulAtTo) = (hr, v >= 0.5f);
+                    (haulSaved, haulAtTo, haulEscort) = (hr, v % 2 >= 0.5f, v >= 1.5f);
                 continue;
             }
             if (names.Keys[key] == MadeKey)
@@ -1137,6 +1139,7 @@ public sealed partial class ConstructWorld
         c.StationTitle = titleSaved;
         c.HaulRoute = haulSaved;
         c.HaulAtTo = haulAtTo;
+        c.HaulEscort = haulEscort;
         c.Cap = Math.Clamp(capSaved, 0, c.CapCapacity); // (the banks the rebuild found on its circuit)
         c.Gear = Math.Max(0, gear);
         ConstructNet.SetPower(c, ConstructNet.PowerFlags(c), (byte)c.Gear);
