@@ -200,13 +200,20 @@ public static class ThirdPersonArms
     }
 
     /// <summary>
+    /// The gun <see cref="Animate"/> just posed is drawn on a body grown about its feet (a robot shell's frame, PlayerRig's Root):
+    /// the pose kept for the tracers (<see cref="DrawnGun"/>) takes the same growth, so a small or big shell's shots leave its muzzle.
+    /// </summary>
+    public static void GrowGun(byte id, in Matrix4x4 grow) => States[id].GunPose *= grow;
+
+    /// <summary>
     /// Where a player's gun sits before the arm animation (the same frame <see cref="PlayerRig"/> and
     /// <see cref="PlayerRender"/> start from, without the hips' sway): for a gun nobody has drawn yet.
     /// </summary>
     public static Matrix4x4 RestGun(Player p)
     {
+        var size = p.Alive ? ShellFrames.ScaleOf(p) : 1f; // (a robot shell's frame: drawn grown about its feet, PlayerRig.Pose)
         if (p.RenderSeat != SeatKind.None)
-            return SeatedGun(p) * PlayerRender.BodyFrame(p);
+            return SeatedGun(p) * Matrix4x4.CreateScale(size) * PlayerRender.BodyFrame(p);
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var body = GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at;
@@ -217,7 +224,7 @@ public static class ThirdPersonArms
             _ => new Vector3(0.3f, 1.3f, -0.25f),
         };
         gunAt.X += ShellSpread(p);
-        return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * body;
+        return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * Matrix4x4.CreateScale(size) * body;
     }
 
     /// <summary>
