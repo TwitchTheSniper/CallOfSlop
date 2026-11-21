@@ -447,7 +447,9 @@ public static class BuildingWalkCheck
                         if (!n.Fit || n.Part < 0 || n.Reach == 3 || MathF.Abs(n.Top - hc.Y) > ShaftSpan)
                             continue;
                         var shaftTop = new Vector3(hc.X, n.Top + 0.5f, hc.Z);
-                        if (ClearLine(hc + new Vector3(0, MathF.Sign(n.Top - hc.Y) * 0.1f, 0), shaftTop) && ClearLine(new Vector3(px, n.Top + 0.5f, pz), shaftTop))
+                        // (a hatch flush in the floor it is on, a landing pad's, has no shaft: the craft sits on that floor)
+                        var flush = MathF.Abs(n.Top - hc.Y) < 0.5f;
+                        if ((flush || ClearLine(hc + new Vector3(0, MathF.Sign(n.Top - hc.Y) * 0.1f, 0), shaftTop)) && ClearLine(new Vector3(px, n.Top + 0.5f, pz), shaftTop))
                         {
                             n.Reach = 3;
                             fwd.Enqueue((col, k));

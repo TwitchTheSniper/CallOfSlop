@@ -82,7 +82,7 @@ public sealed class ContainerParts : IPartGenerator
 
     private static Part Container()
     {
-        var k = K(ContainerName(N), "frame",
+        var k = K(ContainerName(N), "storage", // (a store: its hold takes parts or bulk)
             $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
             Medium);
         double w = W2, l = L2, y0 = -H;
@@ -205,6 +205,19 @@ public sealed class ContainerParts : IPartGenerator
         foreach (var sx in new[] { -1, 1 })
             foreach (var sz in new[] { -1, 1 })
                 k.P.Sock($"head.{f++}", [Py.Round(sx * (w - 0.085), 3), 0, Py.Round(sz * (l - 0.085), 3)], "+y");
+        // Its hold (Karl, 2026-11-21: the Traders' freighter carries a store's furniture in its containers): the inside between the floor,
+        // the roof and the ends, a Storage Volume's box that takes parts or bulk. The box settings only shrink it.
+        double ix = 2 * (w - F), iy = -F - FloorY - 0.01, iz = 2 * (l - 0.1) - 0.02;
+        k.P.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("volume", true))))), ("container", true),
+            ("config", Py.L(
+                Kw(("key", "sizeX"), ("label", "Width"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(ix, 2)), ("step", 0.1), ("default", Py.Round(ix, 2)), ("tooltip", "The hold's size across the container.")),
+                Kw(("key", "sizeY"), ("label", "Height"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(iy, 2)), ("step", 0.1), ("default", Py.Round(iy, 2)), ("tooltip", "The hold's height.")),
+                Kw(("key", "sizeZ"), ("label", "Length"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(iz, 2)), ("step", 0.1), ("default", Py.Round(iz, 2)), ("tooltip", "The hold's length.")),
+                Kw(("key", "atX"), ("label", "Centre x"), ("group", "Box"), ("unit", "m"), ("min", -w), ("max", w), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (x).")),
+                Kw(("key", "atY"), ("label", "Centre y"), ("group", "Box"), ("unit", "m"), ("min", Py.Round(y0, 2)), ("max", 0.0), ("step", 0.05), ("default", Py.Round((FloorY - F) / 2, 2)), ("tooltip", "Where the hold's middle is (y: under the roof).")),
+                Kw(("key", "atZ"), ("label", "Centre z"), ("group", "Box"), ("unit", "m"), ("min", Py.Round(-l, 2)), ("max", Py.Round(l, 2)), ("step", 0.05), ("default", 0.0), ("tooltip", "Where the hold's middle is (z).")),
+                Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "The bulk it holds. Creative worlds only.")),
+                Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full the hold is.")))));
         // Mass: about a third of a tonne a metre of length at 2 m (a 20 ft steel box is 2.2 t): the shell's area at 25 kg a square metre.
         var area = 2 * (2 * w * 2 * l) + 2 * (2 * w * H) + 2 * (H * 2 * l);
         return k.P.Stats(Math.Round(area * 25), 400 + area * 60, 14, 6.0 + N * 2);
