@@ -29,6 +29,7 @@ public sealed partial class Game
     private readonly Dictionary<ushort, ShopState> _shops = new(4);
     private readonly Dictionary<byte, List<BasketLine>> _baskets = new(8);
     private readonly Dictionary<byte, Vector3> _shopperAt = new(8); // a shopper's last place in their store's layout frame (for the arches' line)
+    private readonly Dictionary<byte, Vector3> _shopperIn = new(8); // ...and their last place inside the store's box (where one leaving unpaid is put back)
     private readonly Dictionary<ushort, ushort> _storeSpotlight = new(4); // a store station -> the part its last delivery brought most of
 
     /// <summary>The Reduced corner's price, of the store's.</summary>
@@ -47,6 +48,7 @@ public sealed partial class Game
         _shops.Clear();
         _baskets.Clear();
         _shopperAt.Clear();
+        _shopperIn.Clear();
         _storeSpotlight.Clear();
     }
 
@@ -406,11 +408,16 @@ public sealed partial class Game
             _shopperAt[pid] = here;
             var inside = here.X >= lay.StoreMin.X && here.X <= lay.StoreMax.X && here.Y >= lay.StoreMin.Y && here.Y <= lay.StoreMax.Y && here.Z >= lay.StoreMin.Z && here.Z <= lay.StoreMax.Z;
             if (!p.Alive)
+            {
+                StoreBasketLost(p, st, basket); // (what they carried is lost with them: no way out with it)
                 continue;
+            }
+            if (inside)
+                _shopperIn[pid] = here;
             if (StoreThroughArch(lay, was, here))
                 StoreSettle(p, st, m, basket, walkedOut: false);
-            else if (!inside)
-                StoreSettle(p, st, m, basket, walkedOut: true);
+            else if (!inside && !StoreSettle(p, st, m, basket, walkedOut: true))
+                StoreTurnBack(p, st, lay, aPos, aRot, basket);
         }
     }
 
@@ -433,7 +440,7 @@ public sealed partial class Game
     }
 
     /// <summary>Host: a shopper pays for what they took from store <paramref name="st"/>: off their tab, else in goods they carry, else from their ship's hold.</summary>
-    private void StoreSettle(Player p, Construct st, StationMarket m, List<BasketLine> basket, bool walkedOut)
+    private bool StoreSettle(Player p, Construct st, StationMarket m, List<BasketLine> basket, bool walkedOut)
     {
         var lines = 0;
         float sum = 0;
@@ -441,7 +448,7 @@ public sealed partial class Game
             if (x.Station == st.Id)
                 (lines, sum) = (lines + 1, sum + x.Price);
         if (lines == 0)
-            return;
+            return true;
         var cost = (long)MathF.Ceiling(sum);
         var power = StationPower(m);
         var name = StationName(st);
@@ -465,17 +472,54 @@ public sealed partial class Game
             StationMargin(m, cost); // (the power's books, as a bought part's: GameStationMarket.cs)
             SandboxHands.Notices.Add((p.Id, $"{(walkedOut ? "You left" : "The arch beeps:")} {name}: {lines} thing{(lines > 1 ? "s" : "")} paid, {how}."));
             Log($"[store] {p.Name} paid {cost} for {lines} part(s) at {name}{(walkedOut ? " on leaving" : " at a trade arch")}: {how}");
-            return;
+            return true;
         }
         if (walkedOut)
         {
-            basket.RemoveAll(x => x.Station == st.Id); // (what they couldn't pay for went with them: the Traders write it off, for now)
-            SandboxHands.Notices.Add((p.Id, $"You left {name} with {lines} unpaid thing{(lines > 1 ? "s" : "")} ({cost}): {cant}."));
-            Log($"[store] {p.Name} left {name} with {lines} unpaid part(s) worth {cost}: {cant}");
-            return;
+            // (no way out with unpaid parts, Karl 2026-11-21: StoreTurnBack puts them back inside)
+            SandboxHands.Notices.Add((p.Id, $"The way out is shut: {lines} unpaid thing{(lines > 1 ? "s" : "")} ({cost}): {cant}. Pay at a trade arch, or put them back."));
+            Log($"[store] {p.Name} tried to leave {name} with {lines} unpaid part(s) worth {cost}: {cant}");
+            return false;
         }
         SandboxHands.Notices.Add((p.Id, $"The arch flashes red: {lines} thing{(lines > 1 ? "s" : "")} cost {cost}: {cant}. Put something back."));
         Log($"[store] {p.Name} couldn't pay {cost} for {lines} part(s) at a trade arch of {name}: {cant}");
+        return false;
+    }
+
+    /// <summary>
+    /// Host: a shopper who left the store with unpaid parts (on foot, flying or in a seat) stood back inside, where they last were in it, riding the
+    /// station. One who was never seen inside (put out some other way) has the parts written off, with a log line.
+    /// </summary>
+    private void StoreTurnBack(Player p, Construct st, StoreLayout lay, Vector3 aPos, byte aRot, List<BasketLine> basket)
+    {
+        if (!_shopperIn.TryGetValue(p.Id, out var lastIn))
+        {
+            StoreBasketLost(p, st, basket);
+            return;
+        }
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (h.Seated)
+        {
+            var was = Constructs.Get(h.SeatBody);
+            SandboxHands.Stand(Constructs, p.Id);
+            if (was != null && was.Driver == p.Id)
+                SandboxHands.StopDriving(was);
+        }
+        var at = StoreWorld(st, StoreLocal(aPos, aRot, lay, lastIn) + new Vector3(0, 0.03f, 0));
+        p.Teleport(at);
+        p.Sim.Velocity = st.MovePointVel(at);
+        ConstructRide.End(ref p.Sim, null, st, 0, Vector3.Zero, frame: true); // (the station's own frame, as a person rides it)
+        _shopperAt[p.Id] = lastIn;
+        Log($"[store] {p.Name} turned back into {StationName(st)} at {lastIn:0.0} (layout)");
+    }
+
+    /// <summary>Host: a shopper's unpaid lines at a store gone with them (they died, or were put out of the store some way other than walking).</summary>
+    private void StoreBasketLost(Player p, Construct st, List<BasketLine> basket)
+    {
+        var n = basket.RemoveAll(x => x.Station == st.Id);
+        _shopperIn.Remove(p.Id);
+        if (n > 0)
+            Log($"[store] {p.Name}'s {n} unpaid part(s) at {StationName(st)} were lost with them (death or put outside)");
     }
 
     /// <summary>What a player carries in materials, at the trade values.</summary>
