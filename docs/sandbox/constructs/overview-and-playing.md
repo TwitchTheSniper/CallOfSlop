@@ -751,7 +751,7 @@ Players group into factions and share what they own (`Source/Constructs/Factions
 - **Other factions.** Toward each other faction a faction is neutral, offers an alliance, or declares war
   (`FactionTable.Stance`): two factions are **allied** when both want it and **at war** when either says so. For now this is
   shown in the window and told to both sides, and the story hears of it (below); it changes no rule of who may use what.
-- **The story's factions** (docs/archive/story/STORY.md "Factions"). The window lists how each story faction (the IT Department...)
+- **The story's factions** (docs/archive/story/STORY.md "Factions"). The window lists how each story faction (IT...)
   stands with your faction, -100 to 100 in words, and a **Notorious** faction is marked in red: the server copies it from the
   story once a second (`GameStoryFactions.StoryStandingsTick`) and sends it in the table when it changes. Founding a faction
   is a `Unite` event, and alliances, wars and their ends `Ally`, `Feud` and `Truce` between the two groups, which the radio

@@ -84,10 +84,10 @@ the committed files carry fixed engines and are unchanged):
 
 | Vehicle | Main | Branch |
 | --- | --- | --- |
-| Bandit Car 1, tier 3, 33 m/s | 1944 kg, 480 kW plain, 19.5 m/s, grip | 1819 kg, 529 kW, 22.2 m/s, grip |
-| Bandit Car 1, tier 5, 33 m/s | 1944 kg, 480 kW plain, 19.5 m/s, grip | 1694 kg, 596 kW, 24.8 m/s, grip |
-| Bandit Box Truck 1, tier 3, 30 m/s | 2870 kg, 480 kW, 21.3 m/s, power against drag | 2745 kg, 529 kW, 22.2 m/s |
-| Bandit Box Truck 1, tier 5, 30 m/s | 2870 kg, 480 kW, 21.3 m/s | 2726 kg, 611 kW, 22.2 m/s |
+| Raider Car 1, tier 3, 33 m/s | 1944 kg, 480 kW plain, 19.5 m/s, grip | 1819 kg, 529 kW, 22.2 m/s, grip |
+| Raider Car 1, tier 5, 33 m/s | 1944 kg, 480 kW plain, 19.5 m/s, grip | 1694 kg, 596 kW, 24.8 m/s, grip |
+| Raider Box Truck 1, tier 3, 30 m/s | 2870 kg, 480 kW, 21.3 m/s, power against drag | 2745 kg, 529 kW, 22.2 m/s |
+| Raider Box Truck 1, tier 5, 30 m/s | 2870 kg, 480 kW, 21.3 m/s | 2726 kg, 611 kW, 22.2 m/s |
 
 `--gen-vehicles`: 238, all identical to the committed files (no committed vehicle moves; nothing to regenerate).
 

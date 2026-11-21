@@ -8,9 +8,9 @@ namespace CallOfSlop;
 /// platform at a room's floor level outside its door, with a railing round its outer edge and one end and a gap at the other end where its ladder comes up. Made at
 /// run time and named by its key, as a pod is; it stands on a free edge socket of the room's floor, outward (its <c>base</c>), so its key carries how far its deck's
 /// inner edge stands out past that socket (clear of the jambs and the hinge) and how far its deck's top stands over it (the floor's top). Its frame: x out from the
-/// wall (0 at its deck's inner edge), y up (0 the room's floor top), z along the wall (0 its middle); the socket is at (-inset, -rise, 0). Kinds, each a faction's: <c>w</c> welded grating and diagonals (Bandit), <c>s</c> slats outside its posts
-/// (Militia), <c>f</c> a smooth fairing panel under a chrome rail (IT), <c>g</c> chrome posts with gold knobs and a sign band (Scam), <c>t</c> timber posts, rails
-/// and balusters on planks (Highland), <c>r</c> a wrought rail of thin dark balusters (British).
+/// wall (0 at its deck's inner edge), y up (0 the room's floor top), z along the wall (0 its middle); the socket is at (-inset, -rise, 0). Kinds, each a faction's: <c>w</c> welded grating and diagonals (Raider), <c>s</c> slats outside its posts
+/// (Militia), <c>f</c> a smooth fairing panel under a chrome rail (IT), <c>g</c> chrome posts with gold knobs and a sign band (Salvager), <c>t</c> timber posts, rails
+/// and balusters on planks (no style uses it since 2026-11-21), <c>r</c> a wrought rail of thin dark balusters (Mercenary).
 /// </summary>
 public static partial class HullLoft
 {

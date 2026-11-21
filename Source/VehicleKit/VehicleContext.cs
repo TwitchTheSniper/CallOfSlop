@@ -154,7 +154,7 @@ public sealed record SpawnContext
 /// <summary>
 /// How a style leans in each context: what the kit may swap and how far, keyed by style name as <see cref="LayerTables"/> is, so <c>Styles.cs</c> is untouched. A
 /// style not named takes <see cref="VehicleContext.Default"/>. Every choice is still among the style's own parts and colours (or the game's parts of the same class
-/// for a spring, as kit 3's swaps are), so a desert Bandit truck is still a Bandit truck.
+/// for a spring, as kit 3's swaps are), so a desert Raider truck is still a Raider truck.
 /// </summary>
 public sealed record ContextStyle
 {
@@ -189,11 +189,10 @@ public static class VehicleContext
     /// <summary>By style name (additive: Karl's styles are untouched).</summary>
     public static readonly Dictionary<string, ContextStyle> ByStyle = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["Bandit"] = new() { Strength = 1.2 }, // (scavengers: they build from whatever is lying about)
+        ["Raider"] = new() { Strength = 1.2 }, // (scavengers: they build from whatever is lying about)
         ["IT"] = new() { Strength = 0.7, Near = 100 }, // (procurement buys what the catalogue has)
-        ["Scam"] = new() { Strength = 0.7, Near = 100 },
-        ["Highland"] = new() { Strength = 1.0, GroundRoles = ["rust"] }, // (the tartan may go to the hills' colours; the hood's blue stays)
-        ["British"] = new() { Strength = 0.6, GroundRoles = ["rust"], Near = 90 }, // (the bus stays red unless something near the ground is listed)
+        ["Salvager"] = new() { Strength = 0.7, Near = 100 },
+        ["Mercenary"] = new() { Strength = 0.6, GroundRoles = ["rust"], Near = 90 }, // (the bus stays red unless something near the ground is listed)
     };
 
     public static ContextStyle Of(FactionStyle st) => ByStyle.GetValueOrDefault(st.Name) ?? Default;

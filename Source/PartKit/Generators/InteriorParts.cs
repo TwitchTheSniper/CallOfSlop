@@ -697,7 +697,7 @@ public sealed partial class InteriorParts : IPartGenerator
             all.Add(("Furniture", f.Json));
         foreach (var m in new[] { 8, 16 })
             all.Add(("Floors", FloorPanel(m).Json));
-        foreach (var d in DressingParts().Concat(ColdWarDressing())) // (the Ministry's old fittings: InteriorParts.ColdWar.cs)
+        foreach (var d in DressingParts().Concat(ColdWarDressing())) // (the cold war fittings: InteriorParts.ColdWar.cs)
             all.Add(("Dressing", d.Json));
         // scale.write_parts over both kinds of part (a scale Part and a Building piece)
         o.Own(Out);

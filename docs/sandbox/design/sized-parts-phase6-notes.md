@@ -17,7 +17,7 @@ message changes; no part ids move).
   `PressDie.PatternFor` skips them, so Auto makes of every blank what it made on main, and the Pattern setting or an order reaches them.
   Their order is the loaded table's, new ones appended by name (a Press saves its Pattern setting as 1 + the place). A label over 24
   characters drops "receiver".
-- **`--bill`**: of Bandit Gun Wagon 1 and Bandit Giant Truck 1, before and after (scratch files): the Bucket Launcher Receiver went
+- **`--bill`**: of Raider Gun Wagon 1 and Raider Giant Truck 1, before and after (scratch files): the Bucket Launcher Receiver went
   from "no recipe" to pressed. The three left (Full-Auto Sear, Lob Trigger, Single Breech) are an action, a trigger and a breech,
   which the design leaves without a recipe (section 9: feeds, actions, muzzles... unchanged).
 - **Presets never recycle for more than they cost** (question 5): `PressTable.CostCapOf` is a preset part's cheapest preset's blank
@@ -51,8 +51,8 @@ Throwaway runs with `--save-dir` to a scratch folder; test blueprints copied int
   catalogue Medium Carburettor, a Large Flywheel, a pressed starter `round 480x480x485`, a Large Fuel Bunker and Battery Bank, a
   Switch through an adapter: "the engine started"; `I1 800 kW - bank 1 starved: the Medium Carburettor feeds 5% of its cylinders;
   scale 16 (large), stroke 1.04, peak 1346 rpm`. No coplanar faces. (No driveline: it turned no load.)
-- **`--speed-test` before and after** (the branch base `9b5a1de2` built in a scratch worktree): Bandit Car 1 and Bandit Box Truck 1 carry
-  the fixed V8 Engine part, so they are identical (24.6 and 19.3 m/s). A kit vehicle, `--gen-vehicle BanditCar --seed 1
+- **`--speed-test` before and after** (the branch base `9b5a1de2` built in a scratch worktree): Raider Car 1 and Raider Box Truck 1 carry
+  the fixed V8 Engine part, so they are identical (24.6 and 19.3 m/s). A kit vehicle, `--gen-vehicle RaiderCar --seed 1
   --engine-tier 4 --top-speed 33`: before, ten Small Performance Cylinders, 640 kW, 2074 kg, 18.8 m/s; after, ten plain Small
   Cylinders (bored ones are heavier than the car's budget), 480 kW, 1944 kg, 19.5 m/s; both limited by grip. At tier 5 the car, the
   box truck and the giant truck all picked plain pieces too.

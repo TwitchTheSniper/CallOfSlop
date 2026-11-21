@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wall Clock",
-  "description": "A Ministry clock. Right twice a day, which is above target.",
+  "description": "An office clock. Right twice a day, which is above target.",
   "group": "Interior",
   "section": "Dressing",
   "role": "frame",

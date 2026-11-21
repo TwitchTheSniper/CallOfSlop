@@ -170,7 +170,7 @@ NPC factions are kinds (SURVIVAL.md: traders, mercenaries, details not fixed). T
 the construct data, loaded at start-up like any other, a bad file refused with a reason:
 
 - `Crew/Factions/<Name>.json` (`"format": "call-of-slop-npc-faction/1"`), one per kind: `Traders`, `Mercenaries`,
-  `Raiders` (the Bandit style's), `Militia` (a planet's holder), `Salvagers`, plus `Player Crew` (section 9) and
+  `Raiders` (the Raider style's), `Militia` (a planet's holder), `Salvagers`, plus `Player Crew` (section 9) and
   `Test Hostile` (what "Fights everyone" means today).
 - `Crew/Jobs.json`: each job's methods (the steps of section 3), its station kinds, the stations a goal needs manned.
 - `Crew/Names.json`: crew names per faction (ASCII).
@@ -179,7 +179,7 @@ A faction file holds:
 
 | Key | What |
 | --- | --- |
-| `name`, `about`, `styles` | Its name, a line for the look line, the vehicle kit styles its craft are made in (`Bandit`, `IT`...; the style is only a look) |
+| `name`, `about`, `styles` | Its name, a line for the look line, the vehicle kit styles its craft are made in (`Raider`, `IT`...; the style is only a look) |
 | `stance` | To players by default: `hostile`, `wary` (fights only who shot first), `neutral`; to each other faction kind |
 | `engage` | Sight range, the range band it fights at (or the brief's `Engage`), whether it chases, whether it fights on foot |
 | `crew` | Crew per body class (min, max, spares), skill range, share of robots, guns carried |

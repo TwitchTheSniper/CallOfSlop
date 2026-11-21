@@ -91,7 +91,7 @@ All in `Source/App/Program.WindowShotPlay.cs`, one line each in `WsKnown` and `W
 - **A cab wired through a Driving Module** (`VT Cab Drive`: a Foundation, a Loader Arm, a Lifter Cab wired to a Driving Module, a Battery;
   `sit Lifter Cab; hold MoveForward 2; hold MoveLeft 2; hold MoveBack+MoveRight 2`): W, A and S+D moved the hook 2.6, 4.4 and 4.6 m; the
   body's throttle and steer stayed 0. **Partly**: the rig has no drivetrain, so the cab isn't a drive seat there; a truck with a crane
-  (Bandit Car 1 with an arm and a cab) wouldn't build at any socket tried (the arm's foot meets the car's parts).
+  (Raider Car 1 with an arm and a cab) wouldn't build at any socket tried (the arm's foot meets the car's parts).
 - **The Welder's join (F) aimed at a Loader Arm** (`tool Welder; near Loader Arm 2; aim Loader Arm; key Interact`): the lifter panel opened.
   That is the code's order (`Program.Sandbox.cs` 370 and 432: the join only when `FindJoin` finds a construct the arm touches, then the
   panel). Review: tried with a join there (`VT Cab Drive`; `standon Loader Arm | Foundation top12 -y.0.0`, a second arm pinned with its
@@ -104,7 +104,7 @@ All in `Source/App/Program.WindowShotPlay.cs`, one line each in `WsKnown` and `W
 ## 2. Stroke power and bored cylinders
 
 - **Short, plain and long strokes of one bore, and plain against bored of one outer size**, through the blueprint build rules: the kit's
-  Bandit Car V8 (`--gen-vehicle "Bandit Car" --seed 1 --engine-tier 3`) with its eight cylinders' key swapped, each spawned and driven
+  Raider Car V8 (`--gen-vehicle "Raider Car" --seed 1 --engine-tier 3`) with its eight cylinders' key swapped, each spawned and driven
   (`partinfo ...; sit Seat#1; hold MoveForward 5; secs 2; seated; engines`):
 
   | Cylinder | Stroke | kg, hp each | Engine kW | N m at peak | idle / peak / limiter | Running, 2 s of W |
@@ -117,7 +117,7 @@ All in `Source/App/Program.WindowShotPlay.cs`, one line each in `WsKnown` and `W
 
   Every figure equals the stroke notes' table (section 3) and run 5's bored table; a long stroke on the kit's carburettor is starved by
   power as the notes say. **Verified** (the plain one's `partinfo` missed it by name: the key is the catalogue part).
-- **`--speed-test Constructs/Blueprints/BanditCar1.json Constructs/Blueprints/BanditBoxTruck1.json`**: 1653 kg, 218 kW, 24.6 m/s (grip);
+- **`--speed-test Constructs/Blueprints/RaiderCar1.json Constructs/Blueprints/RaiderBoxTruck1.json`**: 1653 kg, 218 kW, 24.6 m/s (grip);
   2475 kg, 218 kW, 19.3 m/s (power against drag). **Verified** (shipped files; the kit's figures are run 5's and unchanged).
 - **The creative Engine tab's Car bay, 800 to 2000 kW** (`makeengine 800 5 car; makeengine 1200 5 car; makeengine 2000 5 car; makeengine 2000
   5 any`): every Car bay request gives `Small V8 Performance: 611 kW, 1167 N m at 5000 rpm (limiter 7000) ... 611 kW is short of 800 kW: the

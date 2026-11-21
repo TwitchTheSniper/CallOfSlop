@@ -152,7 +152,7 @@ public sealed partial class Vehicle
 
     /// <summary>
     /// A pannier mustn't overlap one already on: a 1 m pannier on a bay under a metre long reached into its neighbour's, and their tops shared a plane once wear
-    /// painted them apart (Highland War Bus 16, 2026-11-10: the placing check took them as one look).
+    /// painted them apart (a War Bus, 2026-11-10: the placing check took them as one look).
     /// </summary>
     private string? PannierClear(ConstructPartDef def, ConstructGhost g)
     {
