@@ -520,17 +520,17 @@ public sealed class WedgeFighterParts : IPartGenerator
         }
         // The cockpit: the pilot, the flight computer ahead of the pilot and the rocket pods' Turret Module beside it, the power cell on
         // the starboard wall and floor behind the couch to stand on (a couch fills the cockpit's width: a second one there shut the pilot
-        // off). The cabin: lockers either side aft of the hatch, the gunner's console and couch on the centreline behind them (both used
-        // from the gap between the lockers), the air and the battery along the walls.
+        // off). The cabin: along the port wall aft of the hatch, the two suit lockers, the gunner's console and couch and the air; the
+        // battery thin on the starboard wall by the hatch, so the way aft to the engines and the air runs clear along the starboard side.
         Sock(p, "pilot", 0, Ft, -4.72, "+y");
         Sock(p, "computer", 0, Ft, -5.3, "+y");
         Sock(p, "rocketModule", 0.58, Ft, -5.3, "+y");
-        Sock(p, "gunConsole", 0, Ft, 1.95, "+y");
-        Sock(p, "gunner", 0, Ft, 2.7, "+y");
-        Sock(p, "lockerL", -(CabW - 0.3), Ft, 1.0, "+y");
-        Sock(p, "lifeSupport", -(CabW - 0.3), Ft, 2.75, "+y"); // (beside the gunner's couch)
-        Sock(p, "lockerR", CabW - 0.3, Ft, 0.98, "+y"); // (aft of the belly hatch: the way forward past it runs along this wall)
-        Sock(p, "battery", CabW - 0.17, Ft, 1.68, "+y");
+        Sock(p, "gunConsole", -(CabW - 0.47), Ft, 1.92, "+y"); // (against the port wall: the way aft to the engines and the air runs beside)
+        Sock(p, "gunner", -(CabW - 0.42), Ft, 2.55, "+y");
+        Sock(p, "lockerL", -(CabW - 0.3), Ft, 0.42, "+y");
+        Sock(p, "lifeSupport", -(CabW - 0.3), Ft, 3.38, "+y"); // (behind the gunner's couch, before the engines)
+        Sock(p, "lockerR", -(CabW - 0.3), Ft, 1.24, "+y"); // (both lockers on the port wall too: the starboard side is the way aft)
+        Sock(p, "battery", CabW - 0.17, Ft, 0.4, "+y"); // (the one fitting on the starboard side: thin, by the hatch)
         Sock(p, "power", CockW - 0.33, Ft, -3.2, "+y"); // (under the canopy's sill: 1 m tall)
         // (the wing turrets' Turret Module on the floor between the engines: a wire reaches 8 m, the console is too far from the
         // wing tips, and a seat aims one module, so one module takes both guns, about 6.6 m from each)
@@ -597,7 +597,7 @@ public sealed class WedgeFighterParts : IPartGenerator
         // Lamps and switches.
         Sock(p, "lampCockpit", xc, Sill - 0.35, -2.2, s < 0 ? "+x" : "-x");
         Sock(p, "lampCabinF", xb, CeilY - 0.4, -0.6, s < 0 ? "+x" : "-x");
-        Sock(p, "lampCabinB", xb, CeilY - 0.4, 3.65, s < 0 ? "+x" : "-x");
+        Sock(p, "lampCabinB", xb, CeilY - 0.4, 2.3, s < 0 ? "+x" : "-x");
         Sock(p, "switch", xc, Ft + 1.1, -1.95, s < 0 ? "+x" : "-x");
         Sock(p, "switchCabin", xb, Ft + 1.3, -0.25, s < 0 ? "+x" : "-x");
         foreach (var (z, xh, top) in new[] { (NoseZ, CockW + WallT, Sill), (BulkZ, CockW + WallT, Sill), (BulkZ, CabW + WallT, CeilY), (AftZ, CabW + WallT, CeilY) })
@@ -1303,7 +1303,7 @@ public sealed class WedgeFighterParts : IPartGenerator
         // (a locker's back is its +z: RY270 puts it to -x, against the port wall, and RY90 to +x)
         bp.HangTurned(EvaParts.LockerName, belly, "lockerL", "bottom", BuildingParts.RY270);
         bp.HangTurned(EvaParts.LifeSupportName, belly, "lifeSupport", "bottom", BuildingParts.RY270);
-        bp.HangTurned(EvaParts.LockerName, belly, "lockerR", "bottom", BuildingParts.RY90);
+        bp.HangTurned(EvaParts.LockerName, belly, "lockerR", "bottom", BuildingParts.RY270);
         bp.HangTurned("Ship Battery XS", belly, "battery", "bottom", BuildingParts.RY90);
         bp.Hang("Hatchet Power Cell", belly, "power", "bottom");
         // Lights: the cockpit's on its switch to starboard, the cabin's on the switch by the hatch... (the cabin's own, starboard).
