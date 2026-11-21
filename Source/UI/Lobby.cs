@@ -1007,6 +1007,11 @@ public sealed partial class Ui
                 {
                     ImGui.SameLine();
                     ImGui.Checkbox("Ambient occlusion##post"u8, ref s.AmbientOcclusion);
+                    if (s.AmbientOcclusion)
+                    {
+                        ImGui.SliderFloat("Shade strength##ao"u8, ref s.AoStrength, 0.25f, 2f, "%.2fx"u8);
+                        ImGui.SliderFloat("Shade reach##ao"u8, ref s.AoRadius, 0.3f, 2.5f, "%.1f m"u8);
+                    }
                 }
             }
             ImGui.TextColored(Dim, "Low: none. Medium: a glow round lamps, flames and screens, and heat haze over flames. High: a wider glow, and soft shade in corners."u8);
