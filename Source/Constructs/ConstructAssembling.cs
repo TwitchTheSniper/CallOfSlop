@@ -61,9 +61,6 @@ public readonly struct AsmFit
     /// <summary>The draw for each working arm: x1.8 an Overdrive Unit.</summary>
     public float DrawScale => Limited ? MathF.Pow(1.8f, Overdrive) : 1f;
 
-    /// <summary>The batches its hopper holds a carriage: x2 a Feed Buffer.</summary>
-    public int BatchScale => Limited ? Carriages << Buffers : 1;
-
     /// <summary>The modules a recipe needs that this one hasn't got (bits), 0 when it has them all.</summary>
     public byte Missing(AssembleRecipe r) => Limited ? (byte)(r.Needs & ~Modules) : (byte)0;
 
@@ -530,15 +527,45 @@ public static class ConstructAssembling
 
     /// <summary>The same on a block Assembler: its batches a carriage (x2 a Feed Buffer).</summary>
     public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, byte material, in AsmFit fit) =>
-        Math.Min(ConstructStorage.MaxBulk, r.UnitsOf(material) * d.AsmBatches * fit.BatchScale) - st.MixOf(material);
+        RoomFor(d, st, r, material, fit, int.MaxValue);
+
+    /// <summary>
+    /// The same, at most <paramref name="batches"/> batches held (<see cref="OrderedBatches"/>: what its orders still ask for). An Assembler
+    /// on orders filled its hopper with 2,800 rubber for one Zero Day Keel that takes 208 (Sean, 2026-11-22): its buffer was four batches a
+    /// carriage, whatever the bed could build at once or the orders wanted.
+    /// </summary>
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, byte material, in AsmFit fit, int batches) =>
+        (int)Math.Min(ConstructStorage.MaxBulk, (long)r.UnitsOf(material) * Math.Min(BufferBatches(d, r, fit), batches)) - st.MixOf(material);
+
+    /// <summary>The batches its hopper holds of a recipe: four (the part's) for each part a wave builds at once (x2 a Feed Buffer).</summary>
+    public static int BufferBatches(ConstructPartDef d, AssembleRecipe r, in AsmFit fit) =>
+        d.AsmBatches * (fit.Limited ? Math.Max(1, fit.AtOnce(r.Output)) << fit.Buffers : 1);
+
+    /// <summary>
+    /// How many batches of a recipe its queued orders still ask for: int.MaxValue for a machine on its own recipe (no queue). The head
+    /// order is the recipe's (<see cref="RecipeOf"/>), and a later order for the same part adds to it.
+    /// </summary>
+    public static int OrderedBatches(in CPart p, AssembleRecipe r)
+    {
+        if (p.Orders is not { Bill: false } q)
+            return int.MaxValue;
+        var left = 0;
+        for (var k = 0; k < q.Count; k++)
+            if (!q.Items[k].IsPiece && q.Items[k].Part == r.Output.Id)
+                left += q.Items[k].Left;
+        var per = Math.Max(1, r.Count);
+        return (left + per - 1) / per;
+    }
 
     /// <summary>How many of a part the input takes for a recipe.</summary>
     public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part) => RoomFor(d, st, r, part, AsmFit.Free);
 
-    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part, in AsmFit fit)
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part, in AsmFit fit) => RoomFor(d, st, r, part, fit, int.MaxValue);
+
+    public static int RoomFor(ConstructPartDef d, CStore st, AssembleRecipe r, ushort part, in AsmFit fit, int batches)
     {
         var k = st.KindIndex(part);
-        return Math.Min(ConstructStorage.MaxBulk, r.CountOf(part) * d.AsmBatches * fit.BatchScale) - (k < 0 ? 0 : st.KindCount![k]);
+        return (int)Math.Min(ConstructStorage.MaxBulk, (long)r.CountOf(part) * Math.Min(BufferBatches(d, r, fit), batches)) - (k < 0 ? 0 : st.KindCount![k]);
     }
 
     /// <summary>Where a machine stands with what it holds.</summary>
@@ -800,7 +827,7 @@ public sealed partial class ConstructWorld
             NoteRefused(st, material);
             return 0;
         }
-        var n = Math.Min(amount, ConstructAssembling.RoomFor(d, st, r, material, ConstructAssembling.FitOf(c, part)));
+        var n = Math.Min(amount, ConstructAssembling.RoomFor(d, st, r, material, ConstructAssembling.FitOf(c, part), ConstructAssembling.OrderedBatches(c.Parts[part], r)));
         if (n <= 0)
             return 0;
         AddInput(st, material, n);
@@ -819,7 +846,7 @@ public sealed partial class ConstructWorld
             NoteRefusedPart(st, item.Id);
             return false;
         }
-        if (ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part)) <= 0)
+        if (ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part), ConstructAssembling.OrderedBatches(c.Parts[part], r)) <= 0)
             return false;
         AddInputPart(st, item.Id, 1);
         return true;
@@ -838,7 +865,7 @@ public sealed partial class ConstructWorld
         var table = AssemblingTable.Current;
         for (var k = 1; k < q.Count; k++)
             if (!q.Items[k].IsPiece && table.Of(q.Items[k].Part) is { } r && r.Machine == d.AsmMachine && r.MinTier <= d.Tier && r.CountOf(item.Id) > 0
-                && ConstructAssembling.Takes(c, part, r) && ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part)) > 0)
+                && ConstructAssembling.Takes(c, part, r) && ConstructAssembling.RoomFor(d, st, r, item.Id, ConstructAssembling.FitOf(c, part), ConstructAssembling.OrderedBatches(c.Parts[part], r)) > 0)
             {
                 AddInputPart(st, item.Id, 1);
                 return true;
@@ -868,6 +895,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st)
             return false;
         var d = c.DefOf(part);
-        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.Takes(c, part, r) && ConstructAssembling.RoomFor(d, st, r, item, ConstructAssembling.FitOf(c, part)) > 0;
+        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.Takes(c, part, r)
+            && ConstructAssembling.RoomFor(d, st, r, item, ConstructAssembling.FitOf(c, part), ConstructAssembling.OrderedBatches(c.Parts[part], r)) > 0;
     }
 }
