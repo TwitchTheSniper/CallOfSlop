@@ -21,6 +21,9 @@ public sealed partial class ZeroDayWorks
         /// <summary>The four bay cranes, west to east: bay 1, bay 2 west (line C), bay 2 east (line D), bay 3.</summary>
         private readonly List<VPart> _cranes = new();
 
+        /// <summary>Each column's Mast Blocks, foot first, by (run, rail block index): the shell's wall sheets hang on them.</summary>
+        private readonly Dictionary<(int Run, int K), List<VPart>> _columns = new();
+
         private int RailBlocks => (int)((RailNorth - RailSouth) / 2) + 1;
 
         /// <summary>The column rows and their rails, then a Crane Core at the north end of each span (outside every span: x - 2 of its near run).</summary>
@@ -38,11 +41,14 @@ public sealed partial class ZeroDayWorks
                     {
                         var column = Stand("Mast Block", V(x, FloorY, z), Up, Tile(x, z), "bottom");
                         Paint(column, Steel);
+                        var masts = new List<VPart> { column };
                         for (var m = 1; m < ColumnMasts; m++)
                         {
                             column = Stand("Mast Block", V(x, FloorY + 2 * m, z), Up, column, "bottom");
                             Paint(column, Steel);
+                            masts.Add(column);
                         }
+                        _columns[(r, k)] = masts;
                         rail = Stand("Crane Rail Block", V(x, RailFoot, z), Up, column, "bottom");
                     }
                     else

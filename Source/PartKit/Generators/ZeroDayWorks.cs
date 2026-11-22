@@ -87,6 +87,7 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayGeneralLine();
             LayPower();
             LayYard();
+            LayShell();
         }
 
         /// <summary>
