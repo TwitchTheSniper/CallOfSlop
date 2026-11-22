@@ -16,8 +16,8 @@ public sealed partial class Game
     /// <summary>Host: player <paramref name="player"/> mined <paramref name="units"/> of <paramref name="material"/> here.</summary>
     private void Trespass(byte player, byte material, int units)
     {
-        if (!IsServer || !PowersActive || units <= 0 || player >= MaxPlayers)
-            return;
+        if (!IsServer || !PowersActive || units <= 0 || player >= MaxPlayers || !Players.TryGetValue(player, out var who) || who.Bot != null)
+            return; // (a person only: a crew's miner works for its power, and a player gone bills no one)
         var c = Controllers;
         var pl = -1;
         var here = World.Map.Name;
@@ -33,12 +33,21 @@ public sealed partial class Game
         var k = player * 256 + holder;
         _trespassOwed[k] += TradeValues.Of(material) * units * RelationRules.Current.TrespassPerValue;
         var whole = (int)_trespassOwed[k];
-        if (_trespassTold.Add(k * 64 + pl) && Players.ContainsKey(player))
+        if (_trespassTold.Add(k * 64 + pl))
             SandboxHands.Notices.Add((player, $"{here} is held by {CrewPowers.Of(holder)?.Name}: what you mine here costs you their goodwill."));
         if (whole <= 0)
             return;
         _trespassOwed[k] -= whole;
         rel.MovePlayer(holder, player, -whole);
+    }
+
+    /// <summary>Host, a person arrived: an id used before starts clean (nothing owed, told again).</summary>
+    private void TrespassArrive(byte player)
+    {
+        if (player >= MaxPlayers)
+            return;
+        Array.Clear(_trespassOwed, player * 256, 256);
+        _trespassTold.RemoveWhere(k => k / 64 / 256 == player);
     }
 
     /// <summary>Host, once a second: the players' constructs' mining since the last look, as trespass.</summary>
