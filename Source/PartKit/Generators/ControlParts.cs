@@ -326,11 +326,14 @@ public sealed class ControlParts : IPartGenerator
         List<object?> Scale() => Py.L(Decimals, Unit, Low, High);
         List<object?> Plot() => Py.L(Low, High, Ramp);
         const double s = 0.4;
+        // (Function: what of the seat it works and shows, CockpitFns.cs; the options come from the game)
+        var fn = D(("key", "seatFn"), ("label", "Function"), ("group", "Cockpit"), ("default", 0),
+            ("tooltip", "Linked to the craft's seat controls: it works that and shows its state (dampeners, reactor, landing legs...). None: a plain switch."));
         var o = new List<(string, Part)>
         {
-            Toggle("Panel Toggle Switch", "switch", "toggle", s: 0.5, mass: 0.3),
-            Toggle("Panel Rocker Switch", "switch", "rocker", s: 0.5, mass: 0.3),
-            Toggle("Panel Push Button", "button", "mushroom", s: 0.5, mass: 0.3, config: ButtonCfg()),
+            Toggle("Panel Toggle Switch", "switch", "toggle", s: 0.5, mass: 0.3, config: [.. LatchCfg(), fn]),
+            Toggle("Panel Rocker Switch", "switch", "rocker", s: 0.5, mass: 0.3, config: [.. LatchCfg(), fn]),
+            Toggle("Panel Push Button", "button", "mushroom", s: 0.5, mass: 0.3, config: [.. ButtonCfg(), fn]),
             Analog("Panel Rotary Knob", sec, "knob", s: 0.5, snap: 0.1, mass: 0.3),
             Analog("Panel Slider", sec, "slide", s: 0.5, mass: 0.3),
             Lever("Panel Throttle Lever", Small, 0.7, 0.8, 30, 1, "wrench"),

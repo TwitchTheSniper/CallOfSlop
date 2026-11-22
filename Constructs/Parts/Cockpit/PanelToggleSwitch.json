@@ -33,6 +33,13 @@
       "step": 0.05,
       "default": 0.5,
       "tooltip": "How long a press keeps it on (when not latched)."
+    },
+    {
+      "key": "seatFn",
+      "label": "Function",
+      "group": "Cockpit",
+      "default": 0,
+      "tooltip": "Linked to the craft's seat controls: it works that and shows its state (dampeners, reactor, landing legs...). None: a plain switch."
     }
   ],
   "boxes": [
