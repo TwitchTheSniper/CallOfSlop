@@ -53,7 +53,9 @@
       "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
     // The Farmers' food runs (economy step 6): produce out to the Highport and Glacier Watch, water home (no escorts: the Farmers don't fight).
     { "power": "Farmers", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Granary", "to": "Caledon Highport", "goods": ["produce"], "back": ["water"], "wait": 30 },
-    { "power": "Farmers", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Granary", "to": "Glacier Watch", "goods": ["produce"], "back": ["water"], "wait": 30 }
+    { "power": "Farmers", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Granary", "to": "Glacier Watch", "goods": ["produce"], "back": ["water"], "wait": 30 },
+    // The Militia's fuel run (economy step 9): Glacier Watch buys its hydrogen at the Traders' Cinder Fuel Depot in its own hauler.
+    { "power": "Militia", "ship": "Magpie Mining Ship", "count": 1, "from": "Glacier Watch", "to": "Cinder Fuel Depot", "goods": [], "back": ["hydrogen"], "wait": 30 }
   ],
   "stations": [
     {
