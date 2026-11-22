@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tender Keel 10",
+  "description": "A length of the Tender Hauler's keel: the deck there, the tankage under it, the belly plating and the mounts on it.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 270.0,
+  "health": 750,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5d6266",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        -0.125,
+        17.85
+      ],
+      "max": [
+        0.675,
+        0.125,
+        18.15
+      ],
+      "color": "#5d6266",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -0.955,
+        -0.475,
+        17.854
+      ],
+      "max": [
+        0.705,
+        -0.125,
+        18.146
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.625,
+        0.128,
+        17.95
+      ],
+      "max": [
+        0.375,
+        0.14,
+        18.05
+      ],
+      "color": "#3d4144",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -0.975,
+        -0.545,
+        17.8565
+      ],
+      "max": [
+        0.725,
+        -0.505,
+        18.1475
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.975,
+          -0.505,
+          17.8565
+        ],
+        [
+          -0.975,
+          -0.545,
+          17.8565
+        ],
+        [
+          0.725,
+          -0.505,
+          17.8565
+        ],
+        [
+          0.725,
+          -0.545,
+          17.8565
+        ],
+        [
+          0.725,
+          -0.505,
+          18.1475
+        ],
+        [
+          0.725,
+          -0.545,
+          18.1475
+        ],
+        [
+          -0.975,
+          -0.505,
+          18.1475
+        ],
+        [
+          -0.975,
+          -0.545,
+          18.1475
+        ]
+      ],
+      "finish": "plated steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.005,
+        17.85
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.925,
+        -0.005,
+        18.005
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.675,
+        -0.005,
+        18.005
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        -0.005,
+        18.15
+      ],
+      "dir": "+z"
+    }
+  ]
+}

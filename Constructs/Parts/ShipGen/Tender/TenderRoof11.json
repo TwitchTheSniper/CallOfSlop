@@ -1,0 +1,186 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tender Roof 11",
+  "description": "A length of the Tender Hauler's roof: the plating, the ceiling under it and the void between.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 1920,
+  "armour": 20,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        2.475,
+        18.15
+      ],
+      "max": [
+        0.675,
+        2.725,
+        19.75
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.765,
+        2.725,
+        18.154
+      ],
+      "max": [
+        0.515,
+        3.165,
+        18.95
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.975,
+        2.725,
+        18.95
+      ],
+      "max": [
+        1.725,
+        3.165,
+        19.746
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.225,
+        2.447,
+        18.65
+      ],
+      "max": [
+        -0.025,
+        2.472,
+        19.45
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -2.8328,
+        3.2055,
+        18.1457
+      ],
+      "max": [
+        2.5828,
+        3.5937,
+        19.7503
+      ],
+      "color": "#c4bca3",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.7655,
+          3.2445,
+          18.1457
+        ],
+        [
+          -0.7655,
+          3.2055,
+          18.1543
+        ],
+        [
+          0.5155,
+          3.2445,
+          18.1457
+        ],
+        [
+          0.5155,
+          3.2055,
+          18.1543
+        ],
+        [
+          2.5828,
+          3.5937,
+          19.7417
+        ],
+        [
+          2.5828,
+          3.5546,
+          19.7503
+        ],
+        [
+          -2.8328,
+          3.5937,
+          19.7417
+        ],
+        [
+          -2.8328,
+          3.5546,
+          19.7503
+        ]
+      ],
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampSp11",
+      "at": [
+        0.175,
+        2.475,
+        18.945
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.595,
+        18.15
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.485,
+        2.725,
+        19.345
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        1.235,
+        2.725,
+        19.345
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.555,
+        19.75
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        2.675,
+        19.75
+      ],
+      "dir": "+z"
+    }
+  ]
+}

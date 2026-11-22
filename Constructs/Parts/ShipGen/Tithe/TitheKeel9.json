@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tithe Keel 9",
+  "description": "A length of the Tithe Hauler's keel: the deck there, the tankage under it, the belly plating and the mounts on it.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1440.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5d6266",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        -0.125,
+        10.45
+      ],
+      "max": [
+        0.675,
+        0.125,
+        12.05
+      ],
+      "color": "#5d6266",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -1.065,
+        -0.475,
+        10.454
+      ],
+      "max": [
+        0.815,
+        -0.125,
+        11.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.185,
+        -0.475,
+        11.25
+      ],
+      "max": [
+        1.935,
+        -0.125,
+        12.046
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.625,
+        0.128,
+        10.65
+      ],
+      "max": [
+        0.375,
+        0.14,
+        11.85
+      ],
+      "color": "#3d4144",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -2.9175,
+        -0.9428,
+        10.4476
+      ],
+      "max": [
+        2.6675,
+        -0.5062,
+        12.0484
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -1.0779,
+          -0.5062,
+          10.4574
+        ],
+        [
+          -1.0779,
+          -0.545,
+          10.4476
+        ],
+        [
+          0.8279,
+          -0.5062,
+          10.4574
+        ],
+        [
+          0.8279,
+          -0.545,
+          10.4476
+        ],
+        [
+          2.6675,
+          -0.904,
+          12.0484
+        ],
+        [
+          2.6675,
+          -0.9428,
+          12.0386
+        ],
+        [
+          -2.9175,
+          -0.904,
+          12.0484
+        ],
+        [
+          -2.9175,
+          -0.9428,
+          12.0386
+        ]
+      ],
+      "finish": "plated steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.005,
+        10.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.585,
+        -0.125,
+        11.645
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        1.335,
+        -0.125,
+        11.645
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        -0.005,
+        12.05
+      ],
+      "dir": "+z"
+    }
+  ]
+}

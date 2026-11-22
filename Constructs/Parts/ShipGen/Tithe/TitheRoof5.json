@@ -1,0 +1,140 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tithe Roof 5",
+  "description": "A length of the Tithe Hauler's roof: the plating, the ceiling under it and the void between.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 90.0,
+  "health": 360,
+  "armour": 20,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        2.475,
+        -5.35
+      ],
+      "max": [
+        0.675,
+        2.725,
+        -5.05
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.905,
+        2.725,
+        -5.346
+      ],
+      "max": [
+        0.655,
+        3.165,
+        -5.054
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.909,
+        3.205,
+        -5.35
+      ],
+      "max": [
+        0.659,
+        3.245,
+        -5.054
+      ],
+      "color": "#c4bca3",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.909,
+          3.245,
+          -5.35
+        ],
+        [
+          -0.909,
+          3.205,
+          -5.35
+        ],
+        [
+          0.659,
+          3.245,
+          -5.35
+        ],
+        [
+          0.659,
+          3.205,
+          -5.35
+        ],
+        [
+          0.659,
+          3.245,
+          -5.054
+        ],
+        [
+          0.659,
+          3.205,
+          -5.054
+        ],
+        [
+          -0.909,
+          3.245,
+          -5.054
+        ],
+        [
+          -0.909,
+          3.205,
+          -5.054
+        ]
+      ],
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.595,
+        -5.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.925,
+        2.595,
+        -5.195
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.675,
+        2.595,
+        -5.195
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.595,
+        -5.05
+      ],
+      "dir": "+z"
+    }
+  ]
+}

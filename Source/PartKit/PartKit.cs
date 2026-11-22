@@ -49,6 +49,7 @@ public static class PartKit
     public static readonly IPartGenerator[] All =
     [
         new Generators.FreeParts(),
+        new ShipGen.ShipGenParts(), // (the procedural ship generator's shipped hulls: Source/ShipGen, docs/sandbox/shipgen/README.md)
         new Generators.OutTableParts(), // (the Out Table: the bed machines' far end, MachineBlocks role "end")
         new Generators.FactoryShellParts(), // (the factory kit's parts: ore bunkers, later the shell)
         new Generators.LinkSupportParts(), // (trestles and link bridges: links up and over an aisle, conveyor-inclines.md)

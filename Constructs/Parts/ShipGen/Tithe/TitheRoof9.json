@@ -1,0 +1,186 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tithe Roof 9",
+  "description": "A length of the Tithe Hauler's roof: the plating, the ceiling under it and the void between.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 1920,
+  "armour": 20,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        2.475,
+        10.45
+      ],
+      "max": [
+        0.675,
+        2.725,
+        12.05
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.905,
+        2.725,
+        10.454
+      ],
+      "max": [
+        0.655,
+        3.165,
+        11.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.115,
+        2.725,
+        11.25
+      ],
+      "max": [
+        1.865,
+        3.165,
+        12.046
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.225,
+        2.447,
+        10.95
+      ],
+      "max": [
+        -0.025,
+        2.472,
+        11.75
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -2.9838,
+        3.2055,
+        10.4457
+      ],
+      "max": [
+        2.7338,
+        3.5937,
+        12.0503
+      ],
+      "color": "#c4bca3",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.909,
+          3.2445,
+          10.4457
+        ],
+        [
+          -0.909,
+          3.2055,
+          10.4543
+        ],
+        [
+          0.659,
+          3.2445,
+          10.4457
+        ],
+        [
+          0.659,
+          3.2055,
+          10.4543
+        ],
+        [
+          2.7338,
+          3.5937,
+          12.0417
+        ],
+        [
+          2.7338,
+          3.5546,
+          12.0503
+        ],
+        [
+          -2.9838,
+          3.5937,
+          12.0417
+        ],
+        [
+          -2.9838,
+          3.5546,
+          12.0503
+        ]
+      ],
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampSp9",
+      "at": [
+        0.175,
+        2.475,
+        11.245
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.595,
+        10.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.545,
+        2.725,
+        11.645
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        1.295,
+        2.725,
+        11.645
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.555,
+        12.05
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        2.675,
+        12.05
+      ],
+      "dir": "+z"
+    }
+  ]
+}
