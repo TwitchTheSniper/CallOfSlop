@@ -2608,6 +2608,11 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        if (_hostOfStations)
+        {
+            _hostOfStations = false;
+            StationMarkets.HostGames--; // (GameStationLife.cs)
+        }
         World.OpenSky = false; // (the next thing to move anyone sets its own)
         ClosePlaces(); // free travel: the planetoids running beside it saved into the world first (GameTravel.cs)
         World.Enter(Place); // (its last save and goodbyes run in its own world)
