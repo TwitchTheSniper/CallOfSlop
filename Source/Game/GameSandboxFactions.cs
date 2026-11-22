@@ -33,6 +33,8 @@ public enum FactionOp : byte
     StationBuy, // u16 ship, u8 good: buy as much of one of its station's goods as the moored ship's bins and your tab with its power take (a good past its goods: one of its parts, into your inventory)
     // Protocol 389 (barter and tabs: GameTabs.cs).
     StationSellPart, // u16 ship, u8 good: trade every one of a station's part (by its index past the goods) you carry to it, for your tab
+    // Protocol 441 (stations come and go, part 2: GameStationLife.cs).
+    StationPurchase, // u16 ship: your faction buys the station for sale the moored ship you are aboard is at
 }
 
 /// <summary>
@@ -336,6 +338,8 @@ public sealed partial class Game
                 return StationBuyAct(p, r.U16(), r.U8());
             case FactionOp.StationSellPart:
                 return StationSellPartAct(p, r.U16(), r.U8());
+            case FactionOp.StationPurchase:
+                return StationPurchaseAct(p, r.U16());
         }
         return "unknown faction action";
     }
@@ -865,6 +869,7 @@ public sealed partial class Game
                 w.U8((byte)a).U16((ushort)b);
                 break;
             case FactionOp.StationSell:
+            case FactionOp.StationPurchase:
                 w.U16((ushort)a);
                 break;
             case FactionOp.StationBuy:

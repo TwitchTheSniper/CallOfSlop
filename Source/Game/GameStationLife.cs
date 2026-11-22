@@ -106,6 +106,7 @@ public sealed partial class Game
             return;
         var kind = StationLife.Kinds[def.Kind];
         def.Goods = kind.Goods;
+        (def.BaseMost, def.Storage, def.Berths) = ([], 0, 0); // (its site's bill lines go: it grows from its kind's goods)
         def.Upkeep = kind.Upkeep;
         def.Labour = kind.Labour;
         def.State = MarketState.Open;
@@ -214,6 +215,9 @@ public sealed partial class Game
             if (m.HoldHours > 0)
                 m.HoldHours--;
             m.LoseHours = full && m.HoldHours == 0 && sum < -StationLife.SaleBelow * m.CostSum ? m.LoseHours + 1 : 0;
+            StationGrowHour(d, def, m);
+            if (def.Owner.Length > 0)
+                continue; // (a player faction's: they keep it or leave it, its ledger only shows)
             if (def.State == MarketState.Open && m.LoseHours >= StationLife.SaleAfter && (def.Kind >= 0 || StationLife.SaleListed))
             {
                 def.State = MarketState.ForSale;
@@ -234,6 +238,83 @@ public sealed partial class Game
             }
         }
         StationInvest();
+    }
+
+    /// <summary>
+    /// Host, an hour of play for an open station: it grows with demand (Karl, 2026-11-22: "more berths when docking is refused, more storage
+    /// when it keeps maxing out"). Full (a good it buys at its most) or turning ships away (no berth fitted or free) for
+    /// <see cref="StationLife.GrowAfter"/> hours of the last stretch, it pays a growth's bill (its power's stations; a player faction's: its own
+    /// stock) and grows: each good's most by <see cref="StationLife.StorageStep"/>, or a standoff berth (a ship turned away trades from beside it).
+    /// </summary>
+    private void StationGrowHour(int d, StationDef def, StationMarket m)
+    {
+        var fullNow = false;
+        for (var k = 0; k < def.Goods.Length && k < m.Stock.Length; k++)
+            fullNow |= def.Goods[k].Buy > 0 && m.Stock[k] >= def.Goods[k].Most;
+        m.FullHours = fullNow ? m.FullHours + 1 : Math.Max(0, m.FullHours - 1);
+        m.RefusedHours = m.Refused > 0 ? m.RefusedHours + 1 : Math.Max(0, m.RefusedHours - 1);
+        var refused = m.Refused;
+        m.Refused = 0;
+        if (m.FullHours >= StationLife.GrowAfter && def.Storage < StationLife.MaxStorage && StationGrowPay(d, StationLife.StorageBill, "storage"))
+        {
+            def.Storage++;
+            StationLife.ApplyStorage(def);
+            m.FullHours = 0;
+            StationsVersion++;
+            Log(FormattableString.Invariant($"[station] {def.Name} grows its storage (growth {def.Storage}): it was full {StationLife.GrowAfter} hours; each good now holds {1 + StationLife.StorageStep * def.Storage:0.00} times its first"));
+        }
+        if (m.RefusedHours >= StationLife.GrowAfter && def.Berths < StationLife.MaxBerths && StationGrowPay(d, StationLife.BerthBill, "a berth"))
+        {
+            def.Berths++;
+            m.RefusedHours = 0;
+            StationsVersion++;
+            Log($"[station] {def.Name} grows a standoff berth ({def.Berths} now): it turned ships away {StationLife.GrowAfter} hours ({refused} in the last)");
+        }
+    }
+
+    /// <summary>Host: a growth's bill paid for station <paramref name="d"/> (its power's stations, else its own stock). Paid?</summary>
+    private bool StationGrowPay(int d, (byte Material, float Units)[] bill, string what)
+    {
+        var def = StationMarkets.All[d];
+        var power = CrewPowers.Find(def.Power);
+        if (bill.Length == 0)
+            return true;
+        if (power > 0)
+        {
+            if (((IPowerHost)this).TakeGoods(power, bill, 1, out var shortOf))
+                return true;
+            if (_investWeighed.Add($"grow:{d}:{what}"))
+                Log($"[station] {def.Name} would grow {what} but its power's stations are short of {RecyclingTable.Current.NameOf(shortOf)}");
+            return false;
+        }
+        var m = MarketOfDef(d);
+        foreach (var (mat, units) in bill)
+            if (Array.FindIndex(def.Goods, g => g.Material == mat) is var k && (k < 0 || m.Stock[k] < (int)MathF.Ceiling(units)))
+            {
+                if (_investWeighed.Add($"grow:{d}:{what}"))
+                    Log($"[station] {def.Name} would grow {what} but holds too little {RecyclingTable.Current.NameOf(mat)}");
+                return false;
+            }
+        foreach (var (mat, units) in bill)
+            m.Stock[Array.FindIndex(def.Goods, g => g.Material == mat)] -= (int)MathF.Ceiling(units);
+        return true;
+    }
+
+    /// <summary>Host: a ship found no berth at station body <paramref name="st"/> (its Dock order refused): counted toward its growing a berth.</summary>
+    private void StationRefused(Construct st)
+    {
+        if (IsServer && StationMarketsHere.TryGetValue(st.Id, out var m))
+            m.Refused++;
+    }
+
+    /// <summary>Host: has station <paramref name="def"/> a standoff berth free for a hauler turned away (its grown berths, less the haulers trading from them now)?</summary>
+    private bool StandoffFree(int def)
+    {
+        var used = 0;
+        foreach (var r in _hauls)
+            if (r.Stage == HaulStage.Orbiting && (r.AtTo ? StationMarkets.Haulers[r.Route].To : StationMarkets.Haulers[r.Route].From) == def)
+                used++;
+        return StationMarkets.All[def].Berths > used;
     }
 
     /// <summary>Host: a station for sale bought by a power that holds its planet (or a key site on it) and can pay. Did one?</summary>
@@ -278,6 +359,65 @@ public sealed partial class Game
         StationsVersion++;
         Log(FormattableString.Invariant($"[station] {def.Name} is sold by {was} to {def.Power} for {price:0} (value)"));
         return true;
+    }
+
+    /// <summary>Is <paramref name="p"/> a member of the player faction that holds this station (bought, StationPurchaseAct)?</summary>
+    public bool StationMember(StationMarket m, Player p) =>
+        m.Def >= 0 && m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Owner is { Length: > 0 } owner
+        && FactionTable.Of[p.Id] is > 0 and var f && owner.Equals(FactionTable.Names[f], StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Server: <paramref name="p"/>'s faction buys the station for sale that moored ship <paramref name="shipId"/> is at (Karl, 2026-11-22: player
+    /// factions buy what powers offload, in neutral or allied space): its seller and its planet's holder must not be hostile to them, and the
+    /// price comes off their tab with the seller (else in goods from the ship's bins). The station is theirs: the seller's routes stop, it pays
+    /// its goods upkeep from its own stock, it is never sold or closed by the powers, and it trades with the faction's members only, for nothing.
+    /// </summary>
+    private string? StationPurchaseAct(Player p, ushort shipId)
+    {
+        if (StationTradeCheck(p, shipId, out var ship, out var st, out var m) is { } why)
+            return why;
+        var def = StationMarkets.All[m.Def];
+        if (def.State != MarketState.ForSale)
+            return $"{def.Name} isn't for sale";
+        if (FactionTable.Of[p.Id] is not (> 0 and var f) || FactionTable.Names[f] is not { Length: > 0 } faction)
+            return "found or join a faction first: a station is bought by a faction";
+        var seller = CrewPowers.Find(def.Power);
+        var pl = Controllers.Territory.Planets.FindIndex(x => x.Equals(def.Planet, StringComparison.OrdinalIgnoreCase));
+        var holder = pl >= 0 && pl < Controllers.PlanetCount ? Controllers.PlanetHolder[pl] : (byte)0;
+        if (holder != 0 && holder != seller && CrewStanding(holder, p.Id) < 0)
+            return $"{def.Planet} is held by the {CrewPowers.Of(holder)?.Name}, who are hostile to you: buy where the space is neutral or allied";
+        var price = (long)Math.Ceiling(SalePrice(def));
+        if (TabOrGoods(p.Id, seller, price, ship, out var how) is { } cant)
+            return cant;
+        if (seller > 0 && Controllers.Powers[seller] is { Fallen: false } sp)
+        {
+            sp.Stock += price;
+            sp.Earned += price;
+        }
+        for (var r = 0; r < StationMarkets.Haulers.Length; r++)
+            if (StationMarkets.Haulers[r] is var h && (h.To == m.Def || h.From == m.Def))
+                h.Count = 0; // (the seller's routes there stop)
+        var was = def.Power;
+        (def.Power, def.Owner, def.State) = ("", faction, MarketState.Open);
+        (m.LoseHours, m.SaleHours, m.NetN) = (0, 0, 0);
+        Array.Clear(m.Net);
+        StationsVersion++;
+        SandboxHands.Notices.Add((p.Id, $"{faction} bought {def.Name} from the {was} for {how}. It is yours: its stock is your faction's."));
+        Log($"[station] {def.Name} is bought by the player faction {faction} ({p.Name}) from {was} for {how}");
+        return null;
+    }
+
+    /// <summary>Window tool, a test state: the station moored ship <paramref name="shipId"/> is at goes up for sale now.</summary>
+    internal string StationForSaleTest(ushort shipId, Player? pay)
+    {
+        if (Constructs.Get(shipId) is not { MooredTo: not 0 } s || Constructs.Get(s.MooredTo) is not { } st || StationMarketOf(st) is not { } m)
+            return "the picked craft isn't moored at a station";
+        var def = StationMarkets.All[m.Def];
+        (def.State, m.SaleHours) = (MarketState.ForSale, 0);
+        StationsVersion++;
+        if (pay != null)
+            TabGive(pay.Id, CrewPowers.Find(def.Power), (long)Math.Ceiling(SalePrice(def)));
+        return FormattableString.Invariant($"{def.Name} is for sale by {def.Power} for {SalePrice(def):0}");
     }
 
     /// <summary>What a station sells for: a share of its kind's bill (a listed one: of its blueprint's).</summary>
@@ -650,6 +790,7 @@ public sealed partial class Game
         var m = MarketOfDef(d);
         return def.State switch
         {
+            _ when def.Owner.Length > 0 => m.NetN > 0 ? FormattableString.Invariant($"HELD BY {def.Owner.ToUpperInvariant()}: LEDGER {(m.Ledger >= 0 ? "+" : "")}{m.Ledger:0}") : $"HELD BY {def.Owner.ToUpperInvariant()}",
             MarketState.Building => $"BEING BUILT BY {def.Power.ToUpperInvariant()}: {def.Built} OF {def.Steps} STEPS",
             MarketState.ForSale => FormattableString.Invariant($"FOR SALE BY {def.Power.ToUpperInvariant()}: {SalePrice(def):0}"),
             MarketState.Closing => "CLOSED: OPEN FOR SALVAGE",
@@ -687,7 +828,8 @@ public sealed partial class Game
             var d = Array.IndexOf(all, def);
             var m = MarketOfDef(d);
             w.Str(def.Name).Str(def.Power).U8((byte)def.State).I32(def.Kind).Str(def.Kind >= 0 && def.Kind < StationLife.Kinds.Length ? StationLife.Kinds[def.Kind].Name : "")
-                .Str(def.Planet).F32(def.Orbit).I32(def.Built).I32(def.Steps).F64(m.Gain).I32(m.NetN).I32(m.LoseHours).I32(m.SaleHours).I32(m.HoldHours).F64(m.CostSum);
+                .Str(def.Planet).F32(def.Orbit).I32(def.Built).I32(def.Steps).F64(m.Gain).I32(m.NetN).I32(m.LoseHours).I32(m.SaleHours).I32(m.HoldHours).F64(m.CostSum)
+                .Str(def.Owner).I32(def.Storage).I32(def.Berths); // (version 3)
             w.I32(m.Net.Length);
             foreach (var v in m.Net)
                 w.F64(v);
@@ -713,7 +855,7 @@ public sealed partial class Game
     }
 
     /// <summary>Host, loading the markets: stations made in play made again (from their kind, or a site's bill), the listed ones' state and power, the routes.</summary>
-    private void StationLifeRead(SaveReader s)
+    private void StationLifeRead(SaveReader s, int version)
     {
         StationLifeReset();
         var n = s.Count(16);
@@ -735,6 +877,9 @@ public sealed partial class Game
             var sale = s.I32();
             var hold = s.I32();
             var costSum = s.F64();
+            var owner = version >= 3 ? s.Str() : "";
+            var storage = version >= 3 ? Math.Clamp(s.I32(), 0, StationLife.MaxStorage) : 0;
+            var berths = version >= 3 ? Math.Clamp(s.I32(), 0, StationLife.MaxBerths) : 0;
             var net = new double[Math.Clamp(s.Count(8), 0, 48)];
             for (var k = 0; k < net.Length; k++)
                 net[k] = s.F64();
@@ -770,7 +915,14 @@ public sealed partial class Game
                     StationMarkets.All[d].Power = power;
             }
             if (d >= 0)
+            {
+                var sd = StationMarkets.All[d];
+                (sd.Owner, sd.Storage, sd.Berths) = (owner, storage, berths);
+                if (owner.Length > 0)
+                    sd.Power = ""; // (a player faction's: no power holds it)
+                StationLife.ApplyStorage(sd);
                 ledgers.Add((d, gain, netN, lose, sale, net, hold, costSum));
+            }
         }
         foreach (var (d, gain, netN, lose, sale, net, hold, costSum) in ledgers)
         {
@@ -826,7 +978,8 @@ public sealed partial class Game
         for (var d = StationMarkets.Listed; d < StationMarkets.Listed + made; d++)
         {
             var def = all[d];
-            w.Str(def.Name).Str(def.Power).Str(def.Planet).U8((byte)def.State).U8((byte)Math.Clamp(def.Kind, 0, 255)).U16((ushort)Math.Min(def.Built, ushort.MaxValue)).U16((ushort)Math.Min(def.Steps, ushort.MaxValue));
+            w.Str(def.Name).Str(def.Power).Str(def.Planet).U8((byte)def.State).U8((byte)Math.Clamp(def.Kind, 0, 255)).U16((ushort)Math.Min(def.Built, ushort.MaxValue)).U16((ushort)Math.Min(def.Steps, ushort.MaxValue))
+                .Str(def.Owner).U8((byte)def.Berths); // (its goods' most below has its storage growth in)
             w.U8((byte)Math.Min(def.Goods.Length, StationMarkets.MaxGoods));
             for (var k = 0; k < def.Goods.Length && k < StationMarkets.MaxGoods; k++)
             {
@@ -837,7 +990,7 @@ public sealed partial class Game
         var listed = Math.Min(255, StationMarkets.Listed);
         w.U8((byte)listed);
         for (var d = 0; d < listed; d++)
-            w.Str(all[d].Power).U8((byte)all[d].State);
+            w.Str(all[d].Power).U8((byte)all[d].State).Str(all[d].Owner).U8((byte)all[d].Storage).U8((byte)all[d].Berths);
     }
 
     /// <summary>Client: the head of <see cref="Msg.Stations"/> into this peer's stations (the host's word on what was made in play).</summary>
@@ -855,6 +1008,8 @@ public sealed partial class Game
             def.Kind = r.U8();
             def.Built = r.U16();
             def.Steps = r.U16();
+            def.Owner = r.Str();
+            def.Berths = r.U8();
             int goods = r.U8();
             var list = new StationGood[goods];
             for (var k = 0; k < goods && r.Has(17); k++)
@@ -869,12 +1024,12 @@ public sealed partial class Game
             def.Goods = list;
             defs.Add(def);
         }
-        var powers = new List<(string, MarketState)>();
+        var powers = new List<(string Power, MarketState State, string Owner, int Storage, int Berths)>();
         if (r.Has(1))
         {
             int listed = r.U8();
             for (var i = 0; i < listed && r.Has(3); i++)
-                powers.Add((r.Str(), (MarketState)Math.Min((int)r.U8(), (int)MarketState.Closed)));
+                powers.Add((r.Str(), (MarketState)Math.Min((int)r.U8(), (int)MarketState.Closed), r.Str(), Math.Min((int)r.U8(), StationLife.MaxStorage), Math.Min((int)r.U8(), StationLife.MaxBerths)));
         }
         if (StationMarkets.HostGames > 0)
             return; // (a host in this process keeps the list: a bench or a check that joins itself)
@@ -882,6 +1037,10 @@ public sealed partial class Game
         foreach (var def in defs)
             StationMarkets.Add(def);
         for (var d = 0; d < powers.Count && d < StationMarkets.Listed; d++)
-            (StationMarkets.All[d].Power, StationMarkets.All[d].State) = powers[d];
+        {
+            var sd = StationMarkets.All[d];
+            (sd.Power, sd.State, sd.Owner, sd.Storage, sd.Berths) = powers[d];
+            StationLife.ApplyStorage(sd); // (its goods' most as the host grew them)
+        }
     }
 }

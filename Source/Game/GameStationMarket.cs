@@ -17,6 +17,9 @@ public sealed class StationDef
     public int Built, Steps; // being built: the blueprint's steps fitted, of all of them
     public (byte Material, float Units)[] Upkeep = []; // what an hour of running takes from its own stock (the kind's, else the file's "stationRules")
     public float Labour; // and from its power's number an hour
+    public string Owner = ""; // a player faction that bought it (its name; Power is then ""): it trades with its members only, for nothing (GameStationLife.cs)
+    public int Storage, Berths; // its growth (Karl, 2026-11-22: "more storage when it keeps maxing out, more berths when docking is refused")
+    public int[] BaseMost = []; // each good's most before its storage grew (StationLife.ApplyStorage)
 }
 
 /// <summary>Where a station stands in its life (economy step 11; Karl, 2026-11-22: "stations are dynamic").</summary>
@@ -248,6 +251,9 @@ public static class StationMarkets
         {
             d.Power = d.ListedPower;
             d.State = MarketState.Open;
+            d.Owner = "";
+            (d.Storage, d.Berths) = (0, 0);
+            StationLife.ApplyStorage(d);
         }
         foreach (var h in _haulers)
             h.Count = h.ListedCount;
@@ -424,7 +430,8 @@ public sealed partial class Game
         public double Gain, Ledger, LastCost; // host: its power's gain this hour, its ledger over the window, its last hour's upkeep (GameStationLife.cs)
         public double[] Net = []; // host: each hour's gain less upkeep, a ring over StationLife.Window
         public int NetN, LoseHours, SaleHours, HoldHours; // (HoldHours: hours its power keeps it before it may sell it, after a sale or its opening)
-        public double CostSum; // host: about its upkeep over the window (a running sum) // host: hours in the ring, hours its ledger has been under nothing, hours for sale or closed
+        public double CostSum;
+        public int FullHours, RefusedHours, Refused; // host: its growth's counts (GameStationLife.cs StationGrowHour); Refused this hour // host: about its upkeep over the window (a running sum) // host: hours in the ring, hours its ledger has been under nothing, hours for sale or closed
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
@@ -941,6 +948,8 @@ public sealed partial class Game
         (st, m) = (station, market);
         if (m.Def >= 0 && m.Def < StationMarkets.All.Length && !StationLife.Trades(StationMarkets.All[m.Def]))
             return "the station is closed: it trades no more";
+        if (StationMarkets.All[m.Def].Owner is { Length: > 0 } owner && !StationMember(m, p))
+            return $"{owner} hold this station: it trades with their members only";
         if (!StationAboard(p, s))
             return "you need to be aboard the docked ship to trade";
         var power = StationPower(m);
@@ -975,6 +984,12 @@ public sealed partial class Game
         TabGive(p.Id, power, owed); // (barter: the goods for value on your tab with the station's power, spendable only with them)
         StationsVersion++;
         var what = StationGoodsText(m, sold);
+        if (StationMember(m, p))
+        {
+            SandboxHands.Notices.Add((p.Id, $"Stored {what} at {name}, your faction's station."));
+            Log($"[station] {p.Name} stored {what} from construct {ship.Id} at their faction's {name}");
+            return null;
+        }
         SandboxHands.Notices.Add((p.Id, $"Traded {what} to {name}: the {TabPowerName(power)} owe you {owed} more."));
         Log($"[station] {p.Name} traded {what} from construct {ship.Id} to {name} for {owed} on their tab");
         return null;
@@ -999,15 +1014,16 @@ public sealed partial class Game
         var power = StationPower(m);
         var rate = StandingRate(power, p.Id);
         var price = m.SellAt(k) / rate;
-        var afford = SandboxInfiniteParts ? int.MaxValue : m.Afford(k, TabOf(p.Id, power) * rate); // (priced across the stock the load moves; a friend pays less: StandingRate)
+        var member = StationMember(m, p); // (your faction's own station: its stock is yours, GameStationLife.cs)
+        var afford = SandboxInfiniteParts || member ? int.MaxValue : m.Afford(k, TabOf(p.Id, power) * rate); // (priced across the stock the load moves; a friend pays less: StandingRate)
         if (afford <= 0)
             return $"a unit takes {price:0.00} off your tab with the {TabPowerName(power)}, who owe you {TabOf(p.Id, power)}: trade them goods first";
         var units = StationLoadCargo(m, ship, k, afford, out var paid);
         var good = RecyclingTable.Current.NameOf(goods[k].Material);
         if (units == 0)
             return $"no bin aboard has room for {good}";
-        var cost = (long)Math.Ceiling(paid / rate);
-        if (TabPay(p.Id, power, Math.Min(cost, TabOf(p.Id, power))) is { } cant) // (it can't fail: afford was counted from the same tab; a rounding cent is let go)
+        var cost = member ? 0 : (long)Math.Ceiling(paid / rate);
+        if (!member && TabPay(p.Id, power, Math.Min(cost, TabOf(p.Id, power))) is { } cant) // (it can't fail: afford was counted from the same tab; a rounding cent is let go)
             return cant;
         SandboxHands.Notices.Add((p.Id, $"Took {units:N0} {good} from {name} for {cost} off your tab."));
         Log($"[station] {p.Name} took {units} {good} into construct {ship.Id} from {name} for {cost} off their tab");
@@ -1048,8 +1064,8 @@ public sealed partial class Game
         if (m.Stock[k] <= 0)
             return $"{name} has no {pd.Name} left";
         var power = StationPower(m);
-        var cost = (long)Math.Ceiling(part.Sell / StandingRate(power, p.Id));
-        if (!SandboxInfiniteParts && TabOf(p.Id, power) < cost)
+        var cost = StationMember(m, p) ? 0 : (long)Math.Ceiling(part.Sell / StandingRate(power, p.Id));
+        if (cost > 0 && !SandboxInfiniteParts && TabOf(p.Id, power) < cost)
             return TabPay(p.Id, power, cost);
         var put = -1;
         string? refusal = null;

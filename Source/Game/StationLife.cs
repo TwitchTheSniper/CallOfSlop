@@ -44,7 +44,27 @@ public static class StationLife
     public static float Labour; // and its labour an hour
     public static float SaleBelow = 0.5f; // a station is losing when its ledger is under this share of its upkeep over the window, below nothing (a hair under breaks no station)
     public static int HoldAfter = 24; // h a power keeps a station it bought or built before it may sell it
-    public static bool SaleListed = true; // may a listed station (Crew/Stations.json "stations") go up for sale and close, as one made in play may
+    public static bool SaleListed = true;
+    public static float HubShare = 0.05f; // the share of the value of the goods its own power's haulers bring a station that its ledger counts (a hub moves them for nothing)
+    public static int GrowAfter = 4; // h of the window a station is full (a good at its most) or turns ships away before it grows
+    public static float StorageStep = 0.25f; // a storage growth: each good's most up by this share of its first
+    public static int MaxStorage = 4, MaxBerths = 4; // growths at most of each
+    public static (byte Material, float Units)[] StorageBill = [], BerthBill = []; // what a growth costs its power's stations (a player faction's: its own stock)
+
+    /// <summary>A station's goods' most by its storage growth (its first most kept in <see cref="StationDef.BaseMost"/>); the goods array is copied, as a kind's is shared.</summary>
+    public static void ApplyStorage(StationDef d)
+    {
+        if (d.BaseMost.Length != d.Goods.Length)
+        {
+            if (d.Storage == 0)
+                return; // (nothing grown: its goods are as they are)
+            d.BaseMost = [.. d.Goods.Select(g => g.Most)];
+        }
+        var goods = d.Goods.ToArray();
+        for (var k = 0; k < goods.Length; k++)
+            goods[k] = goods[k] with { Most = (int)Math.Min(10_000_000, d.BaseMost[k] * (1 + StorageStep * d.Storage)) };
+        d.Goods = goods;
+    } // may a listed station (Crew/Stations.json "stations") go up for sale and close, as one made in play may
 
     internal static void Load(JsonElement root, List<StationDef> list, Func<JsonElement, string, List<StationGood>> goodsOf,
         Func<JsonElement?, string, (byte Material, float Units)[]> upkeepOf)
@@ -68,6 +88,13 @@ public static class StationLife
             MaxNew = (int)F("maxNew", 8, 0, 64);
             Upkeep = upkeepOf(r.TryGetProperty("upkeep", out var u) ? u : null, "stationRules");
             Labour = F("labour", 0, 0, 100_000);
+            HubShare = F("hubShare", 0.05f, 0, 1);
+            GrowAfter = (int)F("growAfter", 4, 1, 48);
+            StorageStep = F("storageStep", 0.25f, 0, 4);
+            MaxStorage = (int)F("maxStorage", 4, 0, 16);
+            MaxBerths = (int)F("maxBerths", 4, 0, 16);
+            StorageBill = upkeepOf(r.TryGetProperty("storageBill", out var sbl) ? sbl : null, "stationRules storageBill");
+            BerthBill = upkeepOf(r.TryGetProperty("berthBill", out var bbl) ? bbl : null, "stationRules berthBill");
             SaleBelow = F("saleBelow", 0.5f, 0, 10);
             HoldAfter = (int)F("holdAfter", 24, 0, 1000);
             SaleListed = !r.TryGetProperty("saleListed", out var sl0) || sl0.GetBoolean();
