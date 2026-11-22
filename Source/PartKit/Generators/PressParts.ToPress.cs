@@ -71,6 +71,15 @@ public sealed partial class PressParts
         ("beam", "tube", "Steel Tube 1 m", "tube", "pipe5 15x15x100 steel", ["pipe"]),
         ("beam", "angle", "Angle Iron 1 m", "angle", "l-angle 25x25x100 steel", ["l-angle"]),
         ("beam", "channel", "Channel 1 m", "channel", "c-channel 25x25x100 steel", ["c-channel"]),
+        // Leg pods (Sean, 2026-11-22: pressed without the Bearings and concrete their Assembler rows took): one pattern a piece, its S size
+        // the like part, a like body (the piece's own boxes and leaves) so a sized one still opens as its door does.
+        ("bracket", "podbrace", "Leg Pod Brace S", "leg pod brace", "solid 10x10x10 steel", ["solid"]),
+        ("bracket", "podfoot", "Leg Pod Foot S", "leg pod foot", "solid 20x40x50 steel", ["solid"]),
+        ("bracket", "podstrut", "Leg Pod Strut S", "leg pod strut", "solid 10x10x15 steel", ["solid"]),
+        ("plate", "canopyport", "Leg Pod Canopy Port S", "pod canopy port", "plate 30x10x180 steel", null),
+        ("plate", "canopystbd", "Leg Pod Canopy Stbd S", "pod canopy stbd", "plate 30x10x180 steel", null),
+        ("beam", "podcarriage", "Leg Pod Carriage S", "leg pod carriage", "solid 10x10x55 steel", ["solid"]),
+        ("housing", "podhousing", "Leg Pod Housing S", "leg pod housing", "hollow 50x70x225 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -193,11 +202,33 @@ public sealed partial class PressParts
         ("Steel Tube 2 m", "beam", "tube", "pipe5 15x15x200 steel"),
         ("Angle Iron 2 m", "beam", "angle", "l-angle 25x25x200 steel"),
         ("Channel 2 m", "beam", "channel", "c-channel 25x25x200 steel"),
+        ("Leg Pod Brace M", "bracket", "podbrace", "solid 10x10x15 steel"),
+        ("Leg Pod Brace L", "bracket", "podbrace", "solid 15x15x15 steel"),
+        ("Leg Pod Brace XL", "bracket", "podbrace", "solid 15x15x20 steel"),
+        ("Leg Pod Foot M", "bracket", "podfoot", "solid 25x65x75 steel"),
+        ("Leg Pod Foot L", "bracket", "podfoot", "solid 35x85x100 steel"),
+        ("Leg Pod Foot XL", "bracket", "podfoot", "solid 45x105x125 steel"),
+        ("Leg Pod Strut M", "bracket", "podstrut", "solid 15x15x25 steel"),
+        ("Leg Pod Strut L", "bracket", "podstrut", "solid 20x20x30 steel"),
+        ("Leg Pod Strut XL", "bracket", "podstrut", "solid 25x25x40 steel"),
+        ("Leg Pod Canopy Port M", "plate", "canopyport", "plate 45x10x270 steel"),
+        ("Leg Pod Canopy Port L", "plate", "canopyport", "plate 55x10x360 steel"),
+        ("Leg Pod Canopy Port XL", "plate", "canopyport", "plate 70x10x450 steel"),
+        ("Leg Pod Canopy Stbd M", "plate", "canopystbd", "plate 45x10x270 steel"),
+        ("Leg Pod Canopy Stbd L", "plate", "canopystbd", "plate 55x10x360 steel"),
+        ("Leg Pod Canopy Stbd XL", "plate", "canopystbd", "plate 70x10x450 steel"),
+        ("Leg Pod Carriage M", "beam", "podcarriage", "solid 10x20x85 steel"),
+        ("Leg Pod Carriage L", "beam", "podcarriage", "solid 15x25x110 steel"),
+        ("Leg Pod Carriage XL", "beam", "podcarriage", "solid 15x30x140 steel"),
+        ("Leg Pod Housing M", "housing", "podhousing", "hollow 75x110x340 steel"),
+        ("Leg Pod Housing L", "housing", "podhousing", "hollow 100x145x450 steel"),
+        ("Leg Pod Housing XL", "housing", "podhousing", "hollow 125x180x565 steel"),
     ];
 
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
     private static IEnumerable<object?> More(string die, PyDict? bay2 = null, List<object?>? scale = null, string? along = null) =>
-        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale, along: along, auto: false));
+        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
+            along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
 
     /// <summary>The presets this adds (Presets calls it, after the ones before it).</summary>
     private static IEnumerable<(string Part, string Die, string Pattern, string Blank)> MoreToPress() =>

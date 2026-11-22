@@ -699,7 +699,7 @@ public sealed partial class PressParts : IPartGenerator
         housing.Add(Feature("seam", [0.97, 0.89, 0.1, 1.01, 0.91, 0.9], "dark", proud: "x", clamp: "y", min: 1, max: 4));
         foreach (var (x0, y0) in new[] { (-0.03, -0.03), (0.94, -0.03), (-0.03, 0.94), (0.94, 0.94) })
             housing.Add(Feature("boss", [x0, y0, 0.44, x0 + 0.09, y0 + 0.09, 0.56], "dark", proud: "xy"));
-        var housingPatterns = Py.L(Pattern("housing", "Housing 0.5 m", "housing", "hollow 45x45x50 metal"));
+        var housingPatterns = Py.L(Pattern("housing", "Housing 0.5 m", "housing", "hollow 45x45x50 metal")).And(More("housing"));
         // Plate: a rolled lip round the rim (proud of both faces); per pattern a field of treads, rivets or ribs on its top face.
         var plate = Py.L(
             Feature("lip", [0, 0.3, 0, 0.04, 0.7, 1], "bare", proud: "y", clamp: "x", min: 1, max: 10),
@@ -727,7 +727,7 @@ public sealed partial class PressParts : IPartGenerator
             Pattern("steel", "Steel Plate", "steel plate", "plate 50x10x50 steel"),
             Pattern("tread", "Tread Plate 1 m", "tread plate", "plate 100x10x100 steel", features: treads),
             Pattern("armour", "Armour Plate 1 m", "armour plate", "plate 100x20x100 steel", features: rivets),
-            Pattern("grate", "Mesh Grate 1 m", "ribbed plate", "plate 100x10x100 steel", features: ribs));
+            Pattern("grate", "Mesh Grate 1 m", "ribbed plate", "plate 100x10x100 steel", features: ribs)).And(More("plate"));
         var dies = Py.L(
             SizedDie("Bracket", ["l-angle", "plate", "solid"], metals, [10, 2880], [10, 800], [0.5, 8], 1, 0.02, bracket, bracketPatterns),
             SizedDie("Housing", ["hollow", "solid"], metals, [15, 2880], [15, 3200], [0.5, 8], 2, 0.01, housing, housingPatterns),
