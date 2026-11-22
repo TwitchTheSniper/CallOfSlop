@@ -81,6 +81,7 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayFrame();
             LayMaterials();
             LayArmourLines();
+            LayGeneralLine();
         }
 
         /// <summary>

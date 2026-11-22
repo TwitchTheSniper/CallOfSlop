@@ -22,10 +22,14 @@ strip (-40 to -68), crane bays (-68 to -199), assembly yard (-199 to -239).
 | Floor, column rows, crane rails, four bay cranes | `ZeroDayWorks.cs`, `.Frame.cs` | Rails on 9-mast (18 m) columns every 8 m at x 1, 31, 51, 71, 95 (spans 30, 20, 20, 24 m), z -41 to -197; each span's Crane Core at its run's north end, west of its near run |
 | Materials row | `.Materials.cs` | Ore bunkers (iron ore, copper ore, sand), stone and wood bunkers, Smelter, Workshop Smelter (copper), glass Smelter, Foundry, Sawmill, Recycler, refined bins (metal, copper, glass, steel, planks), chuted |
 | Armour lines A to D | `.Lines.cs` | Each line its own Sheet Extruder (die blocks, Run-out Tables), a roller run into its Panel Former (bed welded, a Mast Block on each corner, pins 4 m), Out Tables, a run onto a skin pad. A to C turn the pad east into a Laser Cutter (a cutter takes its blank by conveyor only, and its bed lies on its Core's +x side), its cut pieces waiting at a pick run's end for the bay crane. The crane then carries each piece to the dress station (a Building Station), the Bake Oven's bed and the line's stores. Line D has no cutter: its skins wait on their pad for the crane and its Building Station. Loader arms: 4 Industrial on each of A and B, 3 Industrial on C (a Plasma arm's base doesn't fit beside its station), 2 Plasma on D |
-| General line (bay 3) | | not yet |
+| General line (bay 3) | `.Bay3.cs` | Under the 24 m span (clear x 73 to 93), north to south: the walls line (a 2-cell Sheet Extruder with 3 Run-out Tables straight onto a pad that feeds a 2 x 9 Laser Cutter: `ArmourLine` with no former), the module Building Station (5 x 6 bay, masts 3 high) with a 3 x 4 stock pad and 2 Plasma arms, four Presses in two rows (a 3 x 4 bed east of each Core, a shell block on the north and south rows, a 2 m swing strip each side kept clear) with four Die Racks and the Die Lathe between them, the block Assembler (4 x 4 bed, 2-block masts, a Gantry Carriage a row, the Thruster Jig docked on its west side, Power Coupling, Servo Rack, Coolant Loop) with the Block Rack (welded on freeform: it is a medium part and the floor's sockets small) and the Sewing Table Block, the walls store (5 x 8) and fittings store (4 x 8), and the fittings run south along the bay's east side. The repair shop, spare parts and maintenance rooms come with the shell |
 | Yard, generator hall and power | | not yet: nothing has power until then |
 | Shell, catwalks, dressing | | not yet |
 
 **Size.** About 3,300 parts and 6,100 links so far, 360 of them floor slabs (`Construct.MaxParts` is 16,000, `MaxLinks` 48,000).
 `--machine-blocks` on the file lists every block machine and whether its bed is whole. `--check-vehicle` on the file
 takes about 2 minutes on the cloud box.
+
+**Known.** `--check-vehicle` (about 4 minutes) finds about 250 coplanar pairs between parts, all small detail boxes where two
+machines' cells meet on the 2 m grid (a Mast Block's stripe against a Roller Tile's or a Laser Bed Block's edge detail). They come
+from the parts' own details sitting on their cell faces, not from the layout, so they are fixed in those parts' generators.
