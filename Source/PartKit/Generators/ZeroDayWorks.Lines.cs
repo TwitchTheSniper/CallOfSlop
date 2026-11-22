@@ -30,7 +30,7 @@ public sealed partial class ZeroDayWorks
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
                 Station(east, -119, east - 10, -117, 5, 9, 3, paint);
                 Oven(east - 6, -137, east - 10, 5, 9, 3, paint);
-                Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 9);
+                Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
                 // Four Industrial arms on the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns).
                 foreach (var z in new[] { -127f, -133f, -143f, -149f })
                     Arm("Industrial Loader Arm", east, z);
@@ -46,7 +46,7 @@ public sealed partial class ZeroDayWorks
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, padAcross: 6, cutAlong: 0);
             Station(69, -101, 53, -99, 8, 8, 6, LineD);
             Oven(61, -119, 53, 8, 8, 6, LineD);
-            Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 26);
+            Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
             Arm("Plasma Loader Arm", 52, -118); // (two Plasma arms at the station's south corners, either side of the oven's Core)
             Arm("Plasma Loader Arm", 63, -118);
         }

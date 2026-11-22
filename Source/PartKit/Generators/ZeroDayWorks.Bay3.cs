@@ -1,3 +1,4 @@
+using System.Numerics;
 using CallOfSlop.VehicleKit;
 
 namespace CallOfSlop.PartKit.Generators;
@@ -39,11 +40,16 @@ public sealed partial class ZeroDayWorks
 
             // ---- The block Assembler: Core at x 75, a 4 x 4 bed east of it, 2-block masts outside the bed's corners, a Gantry Carriage
             // a bed row, the Thruster Jig docked on its west side (its Tool Bay), three upgrade modules; the Block Rack east of the bed. ----
-            Assembler(75, -131);
-            // (the Block Rack is a medium part and the floor's sockets small: welded on freeform, its feet 3 mm over the slab)
-            var rack = Def("Block Rack");
-            Paint(Weld("Block Rack", Tile(89, -138), V(89, FloorY + 0.003f + (rack.BoundsMax.Y - rack.BoundsMin.Y) * 0.5f, -138), Up, 0, 0, 0), General2);
-            On("Sewing Table Block", 91, -131, Up, paint: General2); // (the other tool block, waiting by the rack for the swap)
+            var asm = Assembler(75, -131);
+            // (the Block Rack is a medium part and the floor's sockets small: welded on freeform, its feet 3 mm over the slab). A chute from
+            // it into the Core is the tool swap's way (AssemblerToolBay.Chute): a recipe that wants the rack's tool block takes it from there.
+            var rack = Weld(Medium("Block Rack", 89, -138));
+            Paint(rack, General2);
+            var top = _welded[rack] + new Vector3((rack.Def.BoundsMin.X + rack.Def.BoundsMax.X) * 0.5f, rack.Def.BoundsMax.Y, (rack.Def.BoundsMin.Z + rack.Def.BoundsMax.Z) * 0.5f);
+            var (chuteIn, _) = PortOf(asm, "Chute in");
+            Link("chute", rack, asm, null, "Chute in", General2, false, null,
+                [V(top.X, top.Y + 1, top.Z), V(top.X, 5f, top.Z), V(top.X - 7, 5f, top.Z), V(chuteIn.X, 5f, top.Z), V(chuteIn.X, 5f, chuteIn.Z), V(chuteIn.X, chuteIn.Y + 1, chuteIn.Z)]);
+            On("Sewing Table Block", 91, -131, Up, paint: General2); // (the other tool block, on the floor: a player shelves it on the rack, which a blueprint can't)
 
             // ---- The walls store (5 x 8) and the fittings store (4 x 8), side by side; the fittings run south from it to the yard. -------
             var walls = Tiles("Pad Tile", 73, -147, 5, 8, South, Stock);

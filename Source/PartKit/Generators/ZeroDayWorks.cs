@@ -54,6 +54,9 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         public static readonly Orient East = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitX); // own +z east
         public static readonly Orient West = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitX); // own +z west
 
+        /// <summary>Parts welded on freeform, unturned: where their own origin is in the site (their Pos is in the weld's frame).</summary>
+        private readonly Dictionary<VPart, Vector3> _welded = new();
+
         /// <summary>The site's floor slabs (i east, j south): null where none is laid.</summary>
         private readonly VPart?[,] _tiles = new VPart?[SlabsX, SlabsZ];
 
@@ -82,6 +85,8 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayMaterials();
             LayArmourLines();
             LayGeneralLine();
+            LayPower();
+            LayYard();
         }
 
         /// <summary>
@@ -127,6 +132,8 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         private (Vector3 At, Vector3 Face) PortOf(VPart p, string name)
         {
             var np = p.Def.NamedPorts.FirstOrDefault(x => x.Name == name) ?? throw new VehicleKitException($"a {p.Name} has no port \"{name}\"");
+            if (_welded.TryGetValue(p, out var origin))
+                return (origin + np.At, ConstructParts.DirVector(np.Face)); // (a freeform part's place is in its own weld's frame: unturned, from where it was welded)
             ref var cp = ref Live.Parts[p.Index];
             return (FromRest(cp.Pos + Rot24.Apply(cp.Rot, np.At)), Rot24.Apply(cp.Rot, ConstructParts.DirVector(np.Face)));
         }
