@@ -459,6 +459,12 @@ to start testing logistics runs with ships.
   stock of the stations it holds (`IPowerHost.TakeGoods`, Game/GameCrewPowers.cs), all or nothing. A material none of its stations trades isn't
   taken; one they trade but are short of makes it wait ("can't build ...: its stations are short of steel", once a minute), so cutting its
   supply lines starves its yards. A power with no station (the Raiders) builds from its stock alone.
+- **Territory pays in goods (Karl, 2026-11-22: "goods only").** A key site no longer adds its kind's `"income"` to its holder's stock. Each
+  site's `"goods"` in Crew/Territory.json (material: units an hour) go to its holder's nearest station that trades them, one over that planet
+  first, else the one most short of it against its want (`SiteSend` in CrewTerritory.cs, `IPowerHost.SiteGoods` in Game/GameCrewPowers.cs).
+  Taking a site moves that supply from one power's stations to another's. A power with no such station gets nothing from it (the Raiders
+  live on loot), logged once. Every ten minutes the host logs what each power's sites sent. A place's income in the books (`Plan.Income`) is
+  unchanged.
 - **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
   stations and runs kept in saves.
 
