@@ -10,7 +10,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// the building and capital frames past a 2 m girder or column (trusses, buttresses, corbels, nodes, 4 m sections), the ship generators'
 /// hull and wall pieces, and the odd matches by size alone (a Bearing or a Lens on the Gear die, a Driving Module on the Button die).
 ///
-/// A new kind is a pattern appended to its die's list (a Press saves its Pattern setting as 1 + the pattern's place: never insert),
+/// A new kind is a pattern appended to its die's list (a Press saves its Pattern setting as 1 + the pattern's place: never insert), never
+/// Auto's ("auto": false, as the generated receivers: a press on Auto makes of a blank what it made before; the Pattern setting or an order reaches it),
 /// its like part the kind's first size, whose preset is the pattern's own blank. The other sizes are presets on that pattern, each blank
 /// the part's bounds on the 5 cm lattice, held to the die's ranges (at least 10 cm across; a Medium Girder 1 m is 50 cm across, the
 /// Beam die pressing at least twice as long as across). Grades of one size (kart to truck suspension arms) take a thicker blank each,
@@ -196,7 +197,7 @@ public sealed partial class PressParts
 
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
     private static IEnumerable<object?> More(string die, PyDict? bay2 = null, List<object?>? scale = null, string? along = null) =>
-        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale, along: along));
+        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale, along: along, auto: false));
 
     /// <summary>The presets this adds (Presets calls it, after the ones before it).</summary>
     private static IEnumerable<(string Part, string Die, string Pattern, string Blank)> MoreToPress() =>

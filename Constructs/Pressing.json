@@ -577,6 +577,7 @@
      "like": "Brace 1:2 0.5x1 m",
      "label": "brace 1:2",
      "preset": "plate 50x10x100 steel",
+     "auto": false,
      "blanks": [
       "plate"
      ]
@@ -586,6 +587,7 @@
      "like": "Brace 45 1 m",
      "label": "brace 45",
      "preset": "plate 100x10x100 steel",
+     "auto": false,
      "blanks": [
       "plate"
      ]
@@ -595,6 +597,7 @@
      "like": "Cross Brace 1 m",
      "label": "cross brace",
      "preset": "plate 100x10x100 steel",
+     "auto": false,
      "blanks": [
       "plate"
      ]
@@ -604,6 +607,7 @@
      "like": "3-Way Corner",
      "label": "3-way corner",
      "preset": "solid 50x50x50 steel",
+     "auto": false,
      "blanks": [
       "solid"
      ]
@@ -613,6 +617,7 @@
      "like": "6-Way Hub",
      "label": "6-way hub",
      "preset": "solid 75x75x75 steel",
+     "auto": false,
      "blanks": [
       "solid"
      ]
@@ -622,6 +627,7 @@
      "like": "Corner Junction",
      "label": "corner junction",
      "preset": "solid 25x50x50 steel",
+     "auto": false,
      "blanks": [
       "solid"
      ]
@@ -631,6 +637,7 @@
      "like": "Cross Junction",
      "label": "cross junction",
      "preset": "solid 25x75x75 steel",
+     "auto": false,
      "blanks": [
       "solid"
      ]
@@ -640,6 +647,7 @@
      "like": "T Junction",
      "label": "T junction",
      "preset": "solid 25x50x75 steel",
+     "auto": false,
      "blanks": [
       "solid"
      ]
@@ -649,6 +657,7 @@
      "like": "Beam End Cap",
      "label": "beam end cap",
      "preset": "plate 25x10x25 steel",
+     "auto": false,
      "blanks": [
       "plate"
      ]
@@ -1539,6 +1548,7 @@
      "like": "Key Switch",
      "label": "key switch",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1552,6 +1562,7 @@
      "like": "Mushroom Button",
      "label": "mushroom button",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1565,6 +1576,7 @@
      "like": "Rocker Switch",
      "label": "rocker switch",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1578,6 +1590,7 @@
      "like": "Rotary Knob",
      "label": "rotary knob",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1591,6 +1604,7 @@
      "like": "Slider",
      "label": "slider",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1604,6 +1618,7 @@
      "like": "Toggle Switch",
      "label": "toggle switch",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1617,6 +1632,7 @@
      "like": "Gear Selector",
      "label": "gear selector",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1630,6 +1646,7 @@
      "like": "Input Reader",
      "label": "input reader",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1643,6 +1660,7 @@
      "like": "Bakelite Switch",
      "label": "bakelite switch",
      "preset": "plate 15x10x15 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -1656,6 +1674,7 @@
      "like": "Lever",
      "label": "lever",
      "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -3045,6 +3064,7 @@
      "like": "Free Swivel 1x1",
      "label": "free swivel",
      "preset": "solid 25x25x25 steel",
+     "auto": false,
      "body": "like",
      "along": "y",
      "blanks": [
@@ -3229,6 +3249,7 @@
      "like": "Adjustable Suspension",
      "label": "adjustable suspension",
      "preset": "solid 10x30x30 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3251,6 +3272,7 @@
      "like": "Hydraulic Suspension",
      "label": "hydraulic suspension",
      "preset": "solid 10x30x30 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3273,6 +3295,7 @@
      "like": "Long-Travel Suspension",
      "label": "long-travel suspension",
      "preset": "solid 10x30x30 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3295,6 +3318,7 @@
      "like": "Stiff Suspension",
      "label": "stiff suspension",
      "preset": "solid 10x30x30 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3317,6 +3341,7 @@
      "like": "Double Wishbone",
      "label": "double wishbone",
      "preset": "solid 20x75x75 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3339,6 +3364,7 @@
      "like": "Swing Arm",
      "label": "swing arm",
      "preset": "solid 20x50x75 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3361,6 +3387,7 @@
      "like": "Trailing Arm",
      "label": "trailing arm",
      "preset": "solid 20x25x75 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3383,6 +3410,7 @@
      "like": "Pogo Strut",
      "label": "pogo strut",
      "preset": "solid 20x25x125 steel",
+     "auto": false,
      "body": "like",
      "bay2": {
       "part": "Bearing",
@@ -3640,6 +3668,7 @@
      "like": "Cable Clamp x1",
      "label": "cable clamp",
      "preset": "round 10x10x20 steel",
+     "auto": false,
      "blanks": [
       "round"
      ]
@@ -3820,6 +3849,7 @@
      "like": "Altitude Sensor",
      "label": "altitude sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3835,6 +3865,7 @@
      "like": "Damage Sensor",
      "label": "damage sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3850,6 +3881,7 @@
      "like": "Heading Sensor",
      "label": "heading sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3865,6 +3897,7 @@
      "like": "Level Sensor",
      "label": "level sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3880,6 +3913,7 @@
      "like": "Occupancy Sensor",
      "label": "occupancy sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3895,6 +3929,7 @@
      "like": "Tilt Sensor",
      "label": "tilt sensor",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3910,6 +3945,7 @@
      "like": "Filter",
      "label": "filter",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3925,6 +3961,7 @@
      "like": "Math Block",
      "label": "math block",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3940,6 +3977,7 @@
      "like": "Multiplexer",
      "label": "multiplexer",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3955,6 +3993,7 @@
      "like": "NAND Gate",
      "label": "NAND gate",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3970,6 +4009,7 @@
      "like": "OR Gate",
      "label": "OR gate",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3985,6 +4025,7 @@
      "like": "XOR Gate",
      "label": "XOR gate",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -4000,6 +4041,7 @@
      "like": "Random",
      "label": "random",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -4015,6 +4057,7 @@
      "like": "Scale",
      "label": "scale",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -4030,6 +4073,7 @@
      "like": "Toggle",
      "label": "toggle",
      "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -4420,6 +4464,7 @@
      "like": "Steel Rod 1 m",
      "label": "rod",
      "preset": "round 10x10x100 steel",
+     "auto": false,
      "blanks": [
       "round"
      ]
@@ -4429,6 +4474,7 @@
      "like": "Steel Tube 1 m",
      "label": "tube",
      "preset": "pipe5 15x15x100 steel",
+     "auto": false,
      "blanks": [
       "pipe"
      ]
@@ -4438,6 +4484,7 @@
      "like": "Angle Iron 1 m",
      "label": "angle",
      "preset": "l-angle 25x25x100 steel",
+     "auto": false,
      "blanks": [
       "l-angle"
      ]
@@ -4447,6 +4494,7 @@
      "like": "Channel 1 m",
      "label": "channel",
      "preset": "c-channel 25x25x100 steel",
+     "auto": false,
      "blanks": [
       "c-channel"
      ]
