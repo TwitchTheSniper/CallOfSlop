@@ -486,6 +486,16 @@ public sealed partial class PowerRelations
         return ref t.PlayerStanding[j];
     }
 
+    /// <summary>A client: the standing as the host sent it (the factions table), never met or started here.</summary>
+    public int Heard(byte power, byte player)
+    {
+        if (Def(power) is null)
+            return 0;
+        var t = Table;
+        var party = t.Of[player];
+        return party != 0 ? t.StoryStanding[party * N + power - 1] : t.PlayerStanding[player * N + power - 1];
+    }
+
     /// <summary>The standing without meeting (a power's start value for someone it hasn't met).</summary>
     public int Peek(byte power, byte player)
     {

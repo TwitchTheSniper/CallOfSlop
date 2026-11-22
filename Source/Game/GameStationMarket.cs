@@ -840,7 +840,7 @@ public sealed partial class Game
     /// standing 100. What a person is paid is times this; what they pay is divided by it.
     /// </summary>
     public double StandingRate(byte power, byte player) =>
-        power == 0 ? 1 : 1 + RelationRules.Current.StandingPrice * Math.Clamp(CrewStanding(power, player), -100, 100) / 100.0;
+        power == 0 ? 1 : 1 + RelationRules.Current.StandingPrice * Math.Clamp(IsServer || !CrewStandingOn ? CrewStanding(power, player) : Relations.Heard(power, player), -100, 100) / 100.0;
 
     private string? StationSellAct(Player p, ushort shipId)
     {

@@ -31,7 +31,7 @@ public sealed partial class Game
         public int Route;
         public bool AtTo; // the leg it is on: false, to the route's first station ("from"); true, to its second ("to")
         public HaulStage Stage;
-        public long Since, RetryAt;
+        public long Since, RetryAt, FuelRetry;
         public string Last = ""; // the last line logged for its leg (so a refusal repeated every try is logged once)
         public long EscortNext; // when a lost escort may be replaced
     }
@@ -540,6 +540,20 @@ public sealed partial class Game
                 HaulSay(run, c, "waits for its escorts");
                 return; // (a convoy sets out together)
             }
+            if (c.Fuel < c.FuelCapacity() * HaulFuelLeast)
+            {
+                // (fuel isn't free: a hauler with too little for a leg waits at the station for its hydrogen, rather than set out and drift dry)
+                if (ServerTick >= run.FuelRetry)
+                {
+                    run.FuelRetry = ServerTick + 30 * World.TickRate;
+                    HaulFuel(c, MarketOfDef(def), Controllers.Powers[CrewPowers.Find(h.Power)], h.Power, d.Name, "construct", quiet: true);
+                }
+                if (c.Fuel < c.FuelCapacity() * HaulFuelLeast)
+                {
+                    HaulSay(run, c, "waits for fuel: its station has no hydrogen to spare"); // (a literal: said each second it waits, logged once)
+                    return;
+                }
+            }
             run.AtTo = !run.AtTo; // (the next leg)
             c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
@@ -609,11 +623,14 @@ public sealed partial class Game
     /// <summary>Litres of fuel a unit of a station's hydrogen makes (fuel is no longer free: economy step 11; a tuning number).</summary>
     private const float FuelPerHydrogen = 10;
 
+    /// <summary>The share of a full tank a hauler needs to set out on a leg (a leg between planets takes most of a tank).</summary>
+    private const float HaulFuelLeast = 0.6f;
+
     /// <summary>
     /// Host: <paramref name="c"/>'s tank filled at a station from its hydrogen stock (Karl, 2026-11-22: no making from nothing), as far as the stock
     /// goes; a hauler of another power pays the station's asking price from its books. A station that trades no hydrogen fills it as before.
     /// </summary>
-    private void HaulFuel(Construct c, StationMarket m, PowerControllers.Power? pw, string power, string name, string what)
+    private void HaulFuel(Construct c, StationMarket m, PowerControllers.Power? pw, string power, string name, string what, bool quiet = false)
     {
         var cap = c.FuelCapacity();
         if (c.Fuel >= cap)
@@ -645,7 +662,8 @@ public sealed partial class Game
         }
         if (units <= 0)
         {
-            Log($"[haul] {what} {c.Id} gets no fuel at {name}: {(m.Stock[k] <= 0 ? "it is out of hydrogen" : "its power can't pay for it")} ({c.Fuel:0} of {cap:0} L aboard)");
+            if (!quiet)
+                Log($"[haul] {what} {c.Id} gets no fuel at {name}: {(m.Stock[k] <= 0 ? "it is out of hydrogen" : "its power can't pay for it")} ({c.Fuel:0} of {cap:0} L aboard)");
             return;
         }
         m.Stock[k] -= units;
