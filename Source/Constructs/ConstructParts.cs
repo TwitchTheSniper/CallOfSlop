@@ -772,6 +772,7 @@ public sealed partial class ConstructPartDef
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public float StationLiftKg; // a Building Station ("storage.pieces.lift"): the heaviest piece its crane picks off a pick pad of its own (0: none; ConstructStation.PadPick)
+    public bool IsCargoHold; // a Heavy Container's piece hold (storage.pieces.cargo): what a hauler carries for a store, physics-only pieces and new empty stores alike (GameStationHaulers.HaulParts)
     public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)

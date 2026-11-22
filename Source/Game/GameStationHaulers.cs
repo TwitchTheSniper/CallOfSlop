@@ -34,6 +34,10 @@ public sealed partial class Game
         public long Since, RetryAt, FuelRetry;
         public string Last = ""; // the last line logged for its leg (so a refusal repeated every try is logged once)
         public long EscortNext; // when a lost escort may be replaced
+        public long FarUntil; // on a leg between planets: when it gets there (0: not on one; HaulFarOut)
+        public int PutAt = -1; // a hauler of a route with neither station in this world, just built: the planet it is put at once it is in space (HaulPut)
+        public long PutSince;
+        public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
     }
 
     /// <summary>An escort (phase 3: convoys): a warship of the route's power that holds beside its hauler with a Meet order, and off the station while the hauler docks.</summary>
@@ -233,7 +237,7 @@ public sealed partial class Game
                 known |= run.Ship == c.Id;
             if (known)
                 continue;
-            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate, Adopted = true });
             RouteSeen(c.HaulRoute);
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
@@ -296,6 +300,9 @@ public sealed partial class Game
             var to = StationBodyOf(routes[ri].To);
             if (Constructs.Get(from != 0 ? from : to) is { SpaceAway: 0, SpaceShip: not 0 } st) // (a station here, in this world's space)
                 HaulerOut(ri, st, from == 0);
+            else if (from == 0 && to == 0 && StationPlanet(s, StationMarkets.All[routes[ri].From]) is var fp and >= 0 && AnyStationHere() is { } any
+                && HaulerOut(ri, any, false) is { } far)
+                (far.PutAt, far.PutSince) = (fp, ServerTick); // (neither end here: it runs out of sight, from its first station: HaulPut)
         }
         for (var i = _escorts.Count - 1; i >= 0; i--)
             if (Constructs.Get(_escorts[i].Ship) is not { Wreck: false, PartCount: > 0 })
@@ -561,7 +568,20 @@ public sealed partial class Game
             HaulStep(s, run, c);
             return;
         }
+        if (run.PutAt >= 0)
+        {
+            HaulPut(s, run, c);
+            return;
+        }
+        if (run.FarUntil != 0)
+        {
+            if (ServerTick >= run.FarUntil)
+                HaulFarArrive(s, run, c, def, d, planet, st, here);
+            return;
+        }
         if (ServerTick < run.RetryAt)
+            return;
+        if (HaulFarOut(s, run, c, d, planet))
             return;
         // Its order for this leg. A station here with the hauler out in this world's space: a circle a little under or over the station's
         // (under when the station is ahead of it, so it gains on it; over when behind), which costs little fuel and brings it up beside it
@@ -575,7 +595,8 @@ public sealed partial class Game
             if (sb.Dirty)
                 sb.Rebuild();
             var gap = sb.WorldCom - c.WorldCom;
-            if (gap.Length() > HaulDockFrom)
+            var along = c.Vel.LengthSquared() > 1 ? MathF.Abs(Vector3.Dot(gap, Vector3.Normalize(c.Vel))) : gap.Length();
+            if (gap.Length() > HaulDockFrom && (along > HaulDockFrom || gap.Length() > HaulDockFrom + HaulPhaseBy * 1.5f)) // (along its way: on a circle under or over, it passes the station a circle's step off, so it docks from there, 2026-11-22: it swapped circles for ever)
             {
                 var stR = (sb.WorldCom - gp.Center).Length();
                 var ahead = Vector3.Dot(gap, c.Vel) > 0;
@@ -611,6 +632,142 @@ public sealed partial class Game
             : FormattableString.Invariant($"sets out for {d.Name}, {d.Orbit / 1000:0} km up round {d.Planet}"));
     }
 
+    /// <summary>A leg between planets takes this much play, more the farther apart they are now (minutes; Karl, 2026-11-22: "far legs in play time").</summary>
+    private const double HaulFarLeast = 20, HaulFarMost = 40;
+
+    /// <summary>The share of a full tank a leg between planets burns.</summary>
+    private const float HaulFarFuel = 0.3f;
+
+    /// <summary>A hauler come to a station in this world from another planet is put this far behind it on its orbit (m).</summary>
+    private const double HaulFarBehind = 4000;
+
+    /// <summary>
+    /// Host: a leg to a station round another planet (Karl, 2026-11-22: "far legs in play time"). Station needs run on hours of play,
+    /// and a real trip between planets takes a year or more of space time, so at the normal time speed nothing would arrive: the hauler
+    /// sets out (round the planet being played, it climbs away on a circle a little over its station's), burns <see cref="HaulFarFuel"/>
+    /// of its tank and gets there after <see cref="HaulFarMinutes"/> of play, whatever the time speed (<see cref="HaulFarArrive"/>).
+    /// A leg round the same planet is flown for real. False: this leg is not between planets.
+    /// </summary>
+    private bool HaulFarOut(SpaceSession s, HaulRun run, Construct c, StationDef d, int planet)
+    {
+        if (planet < 0 || d.Orbit <= 0 || c.SpaceShip == 0 || c.SpaceAway != 0 && c.SpaceAway - 1 != s.GalaxyIndex || s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0))
+            return false; // (in this system's flight: here, or parked far out in it, GameSpaceJump.cs)
+        var at = f.Ships.PrimaryOf(i);
+        if (at == planet)
+            return false;
+        var minutes = HaulFarMinutes(s.System, at, planet, f.Ships.Time);
+        var resumed = run.Adopted && c.MooredTo == 0; // (a loaded world's hauler out on a leg: half a leg more, its fuel spent already; the leg's own time isn't saved)
+        run.Adopted = false;
+        if (resumed)
+            minutes *= 0.5;
+        if (c.MooredTo != 0)
+            StationCastOff(c);
+        if (NavOf(c.Id) is { } o)
+            NavEnd(o, c, "it sets out for another planet");
+        if (at == s.Bubble.Body)
+        {
+            f.Ships.RelativeOf(i, out _, out var r, out _);
+            NavApply(s, c, NavKind.Orbit, at, Vec3d.Zero, r.Length + HaulPhaseBy * 2, 255, StationMarkets.Haulers[run.Route].Power + " hauler", null, out _); // (seen leaving: it climbs away)
+        }
+        if (!resumed)
+            c.Fuel = MathF.Max(0, c.Fuel - c.FuelCapacity() * HaulFarFuel);
+        run.FarUntil = ServerTick + (long)(minutes * 60 * World.TickRate);
+        run.RetryAt = 0;
+        HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} round {d.Planet}: {minutes:0} minutes of play away"));
+        RouteArrived(run.Route); // (set out: its supply line runs)
+        return true;
+    }
+
+    /// <summary>Host: a station body in this world's space (where a hauler of a route with neither end here is built), or null.</summary>
+    private Construct? AnyStationHere()
+    {
+        foreach (var m in StationMarketsHere.Values)
+            if (Constructs.Get(m.Body) is { Wreck: false, IsStation: true, SpaceAway: 0, SpaceShip: not 0 } c)
+                return c;
+        return null;
+    }
+
+    /// <summary>
+    /// Host: a hauler of a route with neither station in this world (Slopolis Exchange to Hexkey Orbital while Caledon is played), built
+    /// beside a station here: once it and its escorts are in space (or after a minute) they are put on its first station's circle,
+    /// out of sight, and it trades there as a hauler come from another planet does (<see cref="HaulFarArrive"/>).
+    /// </summary>
+    private void HaulPut(SpaceSession s, HaulRun run, Construct c)
+    {
+        var ready = c.SpaceShip != 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
+                ready = false;
+        if (!ready && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
+            return;
+        var planet = run.PutAt;
+        run.PutAt = -1;
+        run.AtTo = false;
+        c.HaulAtTo = false;
+        run.Stage = HaulStage.Going;
+        var def = StationMarkets.Haulers[run.Route].From;
+        HaulFarArrive(s, run, c, def, StationMarkets.All[def], planet, 0, here: false);
+    }
+
+    /// <summary>Minutes of play a leg from body <paramref name="from"/> to <paramref name="to"/> takes, by how far apart they are now against the system's widest span.</summary>
+    private static double HaulFarMinutes(StarSystem sys, int from, int to, SpaceTime t)
+    {
+        double far = 0;
+        var sun = sys.PositionOf(0, t);
+        for (var b = 1; b < sys.Bodies.Length; b++)
+            far = Math.Max(far, (sys.PositionOf(b, t) - sun).Length);
+        var gap = (sys.PositionOf(to, t) - sys.PositionOf(from, t)).Length;
+        return far > 0 ? HaulFarLeast + (HaulFarMost - HaulFarLeast) * Math.Clamp(gap / (2 * far), 0, 1) : HaulFarLeast;
+    }
+
+    /// <summary>
+    /// Host: a hauler's leg between planets is over. Its station in this world: it is put on the station's orbit a little behind it, and
+    /// docks as a hauler round the same planet does. Its station round another planet: it is put on that station's circle and trades
+    /// there, as one circling it does. Its escorts come with it.
+    /// </summary>
+    private void HaulFarArrive(SpaceSession s, HaulRun run, Construct c, int def, StationDef d, int planet, ushort st, bool here)
+    {
+        run.FarUntil = 0;
+        if (s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0))
+            return;
+        if (NavOf(c.Id) is { } o)
+            NavEnd(o, c, $"it has come to {d.Planet}");
+        Vec3d r, v;
+        var mu = s.System.Bodies[planet].Mu;
+        if (here && Constructs.Get(st) is { SpaceShip: not 0 } sb && f.Ships.IndexOfId(sb.SpaceShip) is var si and >= 0 && f.Ships.PrimaryOf(si) == planet)
+        {
+            f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+            var n = Vec3d.Cross(sr, sv);
+            var q = QuatD.AxisAngle(n.LengthSquared > 0 ? n.Normalized() : Vec3d.UnitY, -HaulFarBehind / Math.Max(1, sr.Length));
+            (r, v) = (q.Rotate(sr), q.Rotate(sv));
+        }
+        else
+        {
+            var radius = s.System.Bodies[planet].Radius + d.Orbit;
+            var (sin, cos) = Math.SinCos(run.Ship * 2.399963); // (each hauler its own place on the circle, so those of one route aren't put on top of each other)
+            r = new Vec3d(radius * cos, 0, radius * sin);
+            v = new Vec3d(-sin, 0, cos) * Math.Sqrt(mu / radius);
+        }
+        f.Ships.SetState(i, planet, r, v);
+        var k = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: not 0 } ec && f.Ships.IndexOfId(ec.SpaceShip) is var ei and >= 0)
+            {
+                var q = QuatD.AxisAngle(Vec3d.Cross(r, v).Normalized(), -(1500.0 * ++k) / r.Length); // (a little behind it, on its orbit)
+                f.Ships.SetState(ei, planet, q.Rotate(r), q.Rotate(v));
+                if (NavOf(ec.Id) is { } eo)
+                    NavEnd(eo, ec, $"it has come to {d.Planet} with its hauler"); // (its next order is given there: EscortStep)
+            }
+        HaulSay(run, c, $"comes to {d.Planet} from another planet");
+        if (!here)
+        {
+            run.Stage = HaulStage.Orbiting;
+            run.Since = ServerTick;
+            RouteArrived(run.Route);
+            HaulTrade(run, c, StationMarkets.Haulers[run.Route], def, MarketOfDef(def));
+        }
+    }
+
     private void HaulSay(HaulRun run, Construct c, string line)
     {
         if (line == run.Last)
@@ -621,7 +778,7 @@ public sealed partial class Game
 
     /// <summary>Host: a hauler at its station (moored there, or on its circle when the station is in another world): it sells what it carries that the station buys, fills its tanks, then loads the leg's goods, paying from its power.</summary>
     /// <summary>Litres of fuel a unit of a station's hydrogen makes (fuel is no longer free: economy step 11; a tuning number).</summary>
-    private const float FuelPerHydrogen = 10;
+    private const float FuelPerHydrogen = 40; // (10 until the long check, 2026-11-22: the haulers burned four times what Cinder makes)
 
     /// <summary>The share of a full tank a hauler needs to set out on a leg (a leg between planets takes most of a tank).</summary>
     private const float HaulFuelLeast = 0.6f;
@@ -688,7 +845,16 @@ public sealed partial class Game
                 HaulFuel(es, m, pw, h.Power, name, "escort"); // (its escorts' too, wherever they hold)
         ConsignAtStation(c, run.Route, h, def, run.AtTo ? h.From : h.To); // (consignments off here and on for the next leg: GameConsignments.cs)
         Span<int> sold = stackalloc int[StationMarkets.All[def].Goods.Length];
-        var value = StationTakeCargo(m, c, sold);
+        var own = pw != null && StationPower(m) == CrewPowers.Find(h.Power); // (its own power's station: goods move between its stations for nothing, 2026-11-22)
+        var value = StationTakeCargo(m, c, sold, own);
+        var unloaded = 0;
+        foreach (var n in sold)
+            unloaded += n;
+        if (own && unloaded > 0)
+        {
+            StationsVersion++;
+            Log($"[haul] construct {c.Id} ({h.Power}) unloaded {StationGoodsText(m, sold)} at its own {where}");
+        }
         if (value > 0)
         {
             if (pw is { Fallen: false })
@@ -721,8 +887,8 @@ public sealed partial class Game
                     fk = j;
             var need = fk >= 0 && fk < fm.Stock.Length && fg[fk].Buy > 0 ? 1f - fm.Stock[fk] / (float)fg[fk].Target : -1f; // (above 0: short of its want)
             var mine = Array.IndexOf(listed, goods[k].Material) >= 0;
-            if (mine ? fk >= 0 && fk < fm.Stock.Length && fm.Stock[fk] >= fg[fk].Most : !h.Needs || need <= 0)
-                continue;
+            if (mine ? fk >= 0 && fk < fm.Stock.Length && fm.Stock[fk] >= fg[fk].Most : !h.Needs || need <= 0 || m.Stock[k] <= Keeps(goods[k]))
+                continue; // (a good taken for the far end's needs only from what this station has past what it keeps: the Militia's steel run bought Slopolis' steel back to Glacier, 2026-11-22)
             pick[np] = k;
             want[np++] = need + (mine ? 0.01f : 0); // (a tie goes to the route's own)
         }
@@ -735,26 +901,32 @@ public sealed partial class Game
         for (var i = 0; i < np; i++)
         {
             var k = pick[i];
-            var afford = pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock - cost)) : 0; // (priced across the stock the load moves)
+            var spare = Array.IndexOf(listed, goods[k].Material) >= 0 ? m.Stock[k] : Math.Max(0, m.Stock[k] - Keeps(goods[k]));
+            var afford = own ? Math.Max(0, m.Stock[k] - Keeps(goods[k])) : pw is { Fallen: false } ? Math.Min(spare, m.Afford(k, Math.Max(0, pw.Stock - cost))) : 0; // (priced across the stock the load moves; at its own station, what it has past what it keeps, as a consignment takes)
             if (afford < HaulLeastLot)
                 continue; // (a handful isn't worth a bin: what its power can afford of it, or the station has)
-            var n = StationLoadCargo(m, c, k, afford, out var paid);
+            var n = StationLoadCargo(m, c, k, afford, out var paid, own);
             bought[k] += n;
             cost += paid;
         }
         if (h.Parts)
         {
-            var (pv, pc) = HaulParts(run, c, h, def, m, pw, cost, where);
+            var (pv, pc) = HaulParts(run, c, h, def, m, pw, cost, where, own);
             value += pv;
             cost += pc;
         }
+        var took = 0;
+        foreach (var n in bought)
+            took += n;
         if (cost > 0 && pw != null)
         {
             pw.Stock -= cost;
             pw.Spent += cost;
             Log($"[haul] construct {c.Id} ({h.Power}) bought {(StationGoodsText(m, bought) is { Length: > 0 } t ? t : "parts")} at {where} for {cost:0} (value)");
         }
-        else if (value <= 0)
+        else if (own && took > 0)
+            Log($"[haul] construct {c.Id} ({h.Power}) loaded {StationGoodsText(m, bought)} at its own {where}");
+        else if (value <= 0 && unloaded == 0 && !h.Parts)
             Log($"[haul] construct {c.Id} ({h.Power}) traded nothing at {where}");
     }
 
@@ -764,7 +936,19 @@ public sealed partial class Game
     /// Storage Volumes the parts this station sells that the far one is short of (under its want), most needed first, up to the shortfall and
     /// what its power can afford. The value it earned (already in its power's books) and what the load cost (for the caller to book).
     /// </summary>
-    private (double Value, double Cost) HaulParts(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket m, PowerControllers.Power? pw, double spent, string where)
+    /// <summary>Host: up to <paramref name="most"/> pieces of a kind off a piece hold (a heavy container's), each off the top of its stack; how many.</summary>
+    private int HaulRackTake(Construct b, int part, ushort def, int most)
+    {
+        if (Constructs.StoreOf(b, part) is not { } st)
+            return 0;
+        ConstructRackPack.Ensure(ConstructPads.RackDef(b, part), st);
+        var n = 0;
+        while (n < most && ConstructRackPack.LastOf(st, def, out var slab, out var lane) && Constructs.RackTakeAt(b, part, slab, lane) != null)
+            n++;
+        return n;
+    }
+
+    private (double Value, double Cost) HaulParts(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket m, PowerControllers.Power? pw, double spent, string where, bool own)
     {
         var sd = StationMarkets.All[def];
         var parts = sd.Parts;
@@ -780,6 +964,7 @@ public sealed partial class Game
         // their stores and volumes, found once a stop (not once per part kind or unit)
         var stores = new List<(Construct B, int P)>();
         var vols = new List<(Construct B, int P)>();
+        var cargo = new List<(Construct B, int P)>(); // (heavy containers' piece holds: what a volume can't take, Karl 2026-11-22)
         foreach (var b in holds)
             for (var i = 0; i < b.PartCount; i++)
             {
@@ -787,6 +972,8 @@ public sealed partial class Game
                     stores.Add((b, i));
                 if (b.DefOf(i).IsVolumeStore)
                     vols.Add((b, i));
+                if (b.DefOf(i).IsCargoHold)
+                    cargo.Add((b, i));
             }
         for (var j = 0; j < parts.Length; j++)
         {
@@ -799,7 +986,7 @@ public sealed partial class Game
             var took = 0;
             foreach (var (b, i) in stores)
                 if (took < room)
-                    took += Constructs.TakeHolding(b, i, what, room - took);
+                    took += b.DefOf(i).IsPieceRack ? HaulRackTake(b, i, parts[j].Part, room - took) : Constructs.TakeHolding(b, i, what, room - took);
             if (took == 0)
                 continue;
             if (took > mostTook)
@@ -810,7 +997,9 @@ public sealed partial class Game
         }
         if (sold > 0)
         {
-            if (pw is { Fallen: false })
+            if (own)
+                value = 0; // (its own store: nobody is paid)
+            else if (pw is { Fallen: false })
             {
                 pw.Stock += value;
                 pw.Earned += value;
@@ -849,7 +1038,7 @@ public sealed partial class Game
                 (pick[k], pick[k - 1]) = (pick[k - 1], pick[k]);
                 (short_[k], short_[k - 1]) = (short_[k - 1], short_[k]);
             }
-        int loaded = 0, vi = 0;
+        int loaded = 0, vi = 0, ci = 0;
         string? refusal = null;
         for (var i = 0; i < np; i++)
         {
@@ -859,10 +1048,22 @@ public sealed partial class Game
             var n = Math.Min(short_[i], m.Stock[ng + j]);
             for (var u = 0; u < n; u++)
             {
-                if (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell)
+                if (!own && (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell))
                     break;
                 var put = false;
-                for (var t = 0; t < vols.Count && !put; t++)
+                var heavy = pd.PhysicsOnly || pd.Role == PartRole.Storage; // (no Storage Volume takes it: a heavy container's hold does)
+                for (var t = 0; t < cargo.Count && !put && heavy; t++)
+                {
+                    var (b, p) = cargo[(ci + t) % cargo.Count];
+                    if (Constructs.RackPut(b, p, pd, ordered: true))
+                    {
+                        put = true;
+                        ci = (ci + t) % cargo.Count;
+                    }
+                }
+                if (heavy && !put && refusal == null)
+                    refusal = cargo.Count == 0 ? $"the {pd.Name} is {(pd.PhysicsOnly ? $"physics-only ({pd.PhysicsWhy})" : "a store")} and it has no heavy container" : ConstructRackPack.Fit(cargo[0].B.DefOf(cargo[0].P), pd, out _, out _, out _) ? "its heavy containers are full" : $"the {pd.Name} is too big for its heavy containers";
+                for (var t = 0; t < vols.Count && !put && !heavy; t++)
                 {
                     var (b, p) = vols[(vi + t) % vols.Count]; // (from the volume that took the last one)
                     if (Constructs.PutPart(b, p, pd) is { } why)
@@ -876,7 +1077,8 @@ public sealed partial class Game
                 if (!put)
                     break;
                 m.Stock[ng + j]--;
-                cost += parts[j].Sell;
+                if (!own)
+                    cost += parts[j].Sell;
                 loaded++;
             }
         }

@@ -452,8 +452,12 @@ public sealed partial class Game
             for (var k = 0; k < lines; k++)
             {
                 var use = k < goods.Length ? goods[k].Use : parts[k - goods.Length].Use;
-                if (use > 0)
-                    Move(m, k, -use / 60.0, k < goods.Length ? goods[k].Most : parts[k - goods.Length].Most);
+                if (use <= 0)
+                    continue;
+                var before = m.Stock[k];
+                Move(m, k, -use / 60.0, k < goods.Length ? goods[k].Most : parts[k - goods.Length].Most);
+                if (k >= goods.Length && m.Stock[k] < before)
+                    StationShoppers(m, (before - m.Stock[k]) * (double)parts[k - goods.Length].Sell);
             }
             for (var k = 0; k < lines; k++)
             {
@@ -740,9 +744,10 @@ public sealed partial class Game
 
     /// <summary>
     /// Host: the station buys what <paramref name="ship"/>'s bins hold of the goods it buys, up to the room it has for each; <paramref name="sold"/>
-    /// gets the units by good. Returns what it pays (value on a tab); the power holding it counts its margin on that as earned.
+    /// gets the units by good. Returns what it pays (value on a tab); the power holding it counts its margin on that as earned. A hauler of the
+    /// station's own power (<paramref name="own"/>) only brings its power's goods home: it is paid nothing (goods are the only wealth, 2026-11-22).
     /// </summary>
-    private double StationTakeCargo(StationMarket m, Construct ship, Span<int> sold)
+    private double StationTakeCargo(StationMarket m, Construct ship, Span<int> sold, bool own = false)
     {
         var goods = StationMarkets.All[m.Def].Goods;
         for (var i = 0; i < ship.PartCount; i++)
@@ -762,6 +767,8 @@ public sealed partial class Game
             value += m.BuyValue(k, sold[k]); // (across the stock the sale moves: the card's offer counts it the same way)
             m.Stock[k] += sold[k];
         }
+        if (own)
+            return 0; // (its own power's hauler: its goods come home, nobody is paid)
         StationMargin(m, value);
         return value;
     }
@@ -770,7 +777,7 @@ public sealed partial class Game
     /// Host: up to <paramref name="most"/> units of good <paramref name="k"/> from the station's stock into <paramref name="ship"/>'s bins (those that
     /// take it, an empty one or one holding it already). Returns the units loaded; they cost its asking price each.
     /// </summary>
-    private int StationLoadCargo(StationMarket m, Construct ship, int k, int most, out double cost)
+    private int StationLoadCargo(StationMarket m, Construct ship, int k, int most, out double cost, bool own = false)
     {
         var good = StationMarkets.All[m.Def].Goods[k];
         var left = Math.Min(most, m.Stock[k]);
@@ -784,7 +791,7 @@ public sealed partial class Game
                 left -= n;
                 put += n;
             }
-        cost = m.SellCost(k, put); // (across the stock the load moves)
+        cost = own ? 0 : m.SellCost(k, put); // (across the stock the load moves; its own power's hauler takes its goods for nothing)
         m.Stock[k] -= put;
         if (put > 0)
         {
@@ -792,6 +799,18 @@ public sealed partial class Game
             StationsVersion++;
         }
         return put;
+    }
+
+    /// <summary>
+    /// Host: a store's shoppers took parts worth <paramref name="value"/> at its asking price (a part line's "uses": Hexkey Orbital's furniture), and
+    /// the station's power is paid it (2026-11-22, from the long check: the Traders paid the Militia for the flat-pack works' steel and nothing came back).
+    /// </summary>
+    private void StationShoppers(StationMarket m, double value)
+    {
+        if (value <= 0 || StationPower(m) is not (> 0 and var power) || Controllers.Powers[power] is not { Fallen: false } pw)
+            return;
+        pw.Stock += value;
+        pw.Earned += value;
     }
 
     /// <summary>Host: the station's power counts its margin on a trade of <paramref name="value"/> (its stock and its books).</summary>

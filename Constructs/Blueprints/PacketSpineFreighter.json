@@ -1501,7 +1501,7 @@
   "conduit": true,
   "cargo": [
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         -3.05,
         1.118,
@@ -1519,7 +1519,7 @@
       "turn": 2
     },
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         2.8,
         1.118,
@@ -1537,7 +1537,7 @@
       "turn": 0
     },
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         -3.05,
         1.118,
@@ -1555,7 +1555,7 @@
       "turn": 2
     },
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         2.8,
         1.118,
@@ -1573,7 +1573,7 @@
       "turn": 0
     },
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         -3.05,
         1.118,
@@ -1591,7 +1591,7 @@
       "turn": 2
     },
     {
-      "part": "Standard Container 2m",
+      "part": "Heavy Container 2m",
       "at": [
         2.8,
         1.118,
