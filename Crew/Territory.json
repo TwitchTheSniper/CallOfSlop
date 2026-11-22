@@ -3,7 +3,9 @@
   // who holds each at the start. A planet belongs to the power with more than "majority" of its control; a site gives control by its kind's weight,
   // shared among the sites of that kind on that planet (one spaceport there counts for all of a spaceport's weight). Garrisons are abstract until
   // outposts are built as buildings. "at" is latitude and longitude in degrees on a planetoid (x and z on a flat map). Holders name a power, or a kind
-  // (its first power). The "far" numbers move, fight and set down the groups nobody sees (section 8).
+  // (its first power). A site's "goods" (Karl, 2026-11-22: territory pays in goods only) are units an hour of each material it sends its holder's
+  // nearest station that trades it (one over that planet, else the one most short of it), and that is all a site earns: a kind's "income" is no
+  // longer paid. A power with no station (the Raiders) gets nothing from its sites; it lives on loot. The "far" numbers move, fight and set down the groups nobody sees (section 8).
   "format": "call-of-slop-npc-territory/1",
   "majority": 0.5,
   "kinds": {
@@ -21,16 +23,16 @@
   "planets": {
     "Glacier": [
       { "name": "Glacier Spaceport", "kind": "spaceport", "at": [20, 30], "holder": "Militia" },
-      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia" },
-      { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders" },
-      { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders" },
+      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia", "goods": { "iron ore": 800 } },
+      { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders", "goods": { "iron ore": 600 } },
+      { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders", "goods": { "copper ore": 300 } },
       { "name": "Drift Camp", "kind": "outpost", "at": [-40, -100], "holder": "Raiders" }
     ],
-    "Rime": [ { "name": "Rime Mine", "kind": "mine", "at": [0, 0], "holder": "Militia" } ],
+    "Rime": [ { "name": "Rime Mine", "kind": "mine", "at": [0, 0], "holder": "Militia", "goods": { "iron ore": 400 } } ],
     "Shard": [
-      { "name": "Shard Mine 1", "kind": "mine", "at": [10, 10], "holder": "Raiders" },
-      { "name": "Shard Mine 2", "kind": "mine", "at": [-20, 60], "holder": "Raiders" },
-      { "name": "Shard Mine 3", "kind": "mine", "at": [40, -90], "holder": "Traders" },
+      { "name": "Shard Mine 1", "kind": "mine", "at": [10, 10], "holder": "Raiders", "goods": { "gold ore": 60 } },
+      { "name": "Shard Mine 2", "kind": "mine", "at": [-20, 60], "holder": "Raiders", "goods": { "iron ore": 300 } },
+      { "name": "Shard Mine 3", "kind": "mine", "at": [40, -90], "holder": "Traders", "goods": { "gold ore": 60 } },
       { "name": "Splinter Post", "kind": "outpost", "at": [0, 170], "holder": "Raiders" }
     ],
     "Slopolis": [
@@ -38,22 +40,22 @@
       { "name": "Slopolis Watch", "kind": "outpost", "at": [30, 90], "holder": "Traders" }
     ],
     "Cinder": [
-      { "name": "Ash Refinery", "kind": "refinery", "at": [15, 20], "holder": "Traders" },
-      { "name": "Ember Mine", "kind": "mine", "at": [-25, -60], "holder": "Traders" },
-      { "name": "Slag Mine", "kind": "mine", "at": [45, 120], "holder": "Traders" },
+      { "name": "Ash Refinery", "kind": "refinery", "at": [15, 20], "holder": "Traders", "goods": { "hydrogen": 1400, "helium": 300, "oxidiser": 300 } },
+      { "name": "Ember Mine", "kind": "mine", "at": [-25, -60], "holder": "Traders", "goods": { "iron ore": 400 } },
+      { "name": "Slag Mine", "kind": "mine", "at": [45, 120], "holder": "Traders", "goods": { "copper ore": 500 } },
       { "name": "Cinder Watch", "kind": "outpost", "at": [-5, 170], "holder": "Militia" }
     ],
     "Caledon": [
       { "name": "Caledon Port", "kind": "spaceport", "at": [25, 0], "holder": "Traders" },
-      { "name": "Heather Mine", "kind": "mine", "at": [-15, 70], "holder": "Militia" },
+      { "name": "Heather Mine", "kind": "mine", "at": [-15, 70], "holder": "Militia", "goods": { "copper ore": 300 } },
       { "name": "Glen Post", "kind": "outpost", "at": [50, -80], "holder": "Militia" },
       { "name": "Loch Post", "kind": "outpost", "at": [-40, 140], "holder": "Militia" }
     ],
-    "Cairn": [ { "name": "Cairn Mine", "kind": "mine", "at": [0, 0], "holder": "Traders" } ],
+    "Cairn": [ { "name": "Cairn Mine", "kind": "mine", "at": [0, 0], "holder": "Traders", "goods": { "gold ore": 80, "levite ore": 20 } } ],
     "Mille": [
       { "name": "Mille Port", "kind": "spaceport", "at": [10, 45], "holder": "Raiders" },
-      { "name": "Crust Mine", "kind": "mine", "at": [-30, -30], "holder": "Raiders" },
-      { "name": "Mille Refinery", "kind": "refinery", "at": [35, 150], "holder": "Militia" }
+      { "name": "Crust Mine", "kind": "mine", "at": [-30, -30], "holder": "Raiders", "goods": { "iron ore": 300 } },
+      { "name": "Mille Refinery", "kind": "refinery", "at": [35, 150], "holder": "Militia", "goods": { "iron ore": 300 } }
     ],
     "Crumb": [ { "name": "Crumb Den", "kind": "outpost", "at": [0, 0], "holder": "Raiders" } ]
   }

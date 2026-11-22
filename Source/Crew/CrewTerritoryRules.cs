@@ -16,6 +16,7 @@ public sealed class SiteDef
     public string Name = "", Planet = "", Holder = "";
     public int Kind;
     public Vector2 At;
+    public (byte Material, float PerHour)[] Goods = []; // what it sends its holder's stations an hour (Karl, 2026-11-22: territory pays in goods only)
 }
 
 /// <summary>
@@ -54,6 +55,21 @@ public sealed class TerritoryRules
 
     /// <summary>A copy whose numbers a test may change (the lists are shared).</summary>
     public TerritoryRules Copy() => (TerritoryRules)MemberwiseClone();
+
+    /// <summary>A site's "goods" (material: units an hour); a material the game doesn't know is left out with a log line.</summary>
+    private static (byte, float)[] SiteGoods(JsonElement e, string path, string site)
+    {
+        var list = new List<(byte, float)>();
+        foreach (var g in e.EnumerateObject())
+        {
+            var id = RecyclingTable.Current.IdOf(g.Name);
+            if (id == 0)
+                Console.WriteLine($"[territory] {path}: site \"{site}\" sends \"{g.Name}\", which is no material (Constructs/Recycling.json): left out");
+            else
+                list.Add((id, Math.Clamp(g.Value.GetSingle(), 0, 1_000_000)));
+        }
+        return [.. list];
+    }
 
     public int KindOf(string name) => Kinds.FindIndex(k => k.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
@@ -124,6 +140,7 @@ public sealed class TerritoryRules
                             Kind = kind,
                             At = new Vector2(at[0].GetSingle(), at[1].GetSingle()),
                             Holder = s.TryGetProperty("holder", out var h) ? h.GetString() ?? "" : "",
+                            Goods = s.TryGetProperty("goods", out var gs) ? SiteGoods(gs, path, name) : [],
                         });
                     }
                 }

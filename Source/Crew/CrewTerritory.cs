@@ -177,6 +177,32 @@ public sealed partial class PowerControllers
         return k >= 0 && k < SiteCount && _siteWorldOk[k];
     }
 
+    private float[][] _siteOwed = [];
+
+    /// <summary>A held site's goods for <paramref name="minutes"/>, whole units to its holder's stations through the host, the rest kept (not saved).</summary>
+    private void SiteSend(IPowerHost host, int k, byte a, double minutes)
+    {
+        var site = Territory.Sites[k];
+        if (site.Goods.Length == 0)
+            return;
+        if (_siteOwed.Length != SiteCount)
+            _siteOwed = new float[SiteCount][];
+        var owed = _siteOwed[k] ??= new float[site.Goods.Length];
+        for (var g = 0; g < site.Goods.Length; g++)
+        {
+            owed[g] += (float)(site.Goods[g].PerHour * minutes / 60);
+            var whole = (int)owed[g];
+            if (whole <= 0)
+                continue;
+            owed[g] -= whole;
+            var took = host.SiteGoods(a, site.Planet, site.Goods[g].Material, whole);
+            GoodsSent += took;
+        }
+    }
+
+    /// <summary>Units the held sites' goods have put into stations (a check's read).</summary>
+    public long GoodsSent;
+
     private bool OpenWorld(IPowerHost host, int planet) => planet >= 0 && planet < PlanetCount && Territory.Planets[planet].Equals(host.WorldKey, StringComparison.OrdinalIgnoreCase);
 
     // ---- A controller's think: its sites, then Take and Defend -------------------------------------------------------------------
@@ -194,8 +220,7 @@ public sealed partial class PowerControllers
             var kind = Territory.Kinds[Territory.Sites[k].Kind];
             if (minutes > 0)
             {
-                p.Stock += kind.Income * minutes;
-                p.Earned += kind.Income * minutes;
+                SiteSend(host, k, a, minutes); // (its goods to the holder's stations: territory pays in goods only, Karl 2026-11-22)
                 if (SiteEmptySince[k] == 0 && !Besieged(rel, k, a))
                     SiteGarrison[k] = MathF.Min(kind.Garrison, SiteGarrison[k] + (float)(kind.Garrison * Territory.RegenPerMinute * minutes));
             }

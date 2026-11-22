@@ -221,6 +221,72 @@ public sealed partial class Game : IPowerHost
         return true;
     }
 
+    private readonly HashSet<int> _siteGoodsLost = new();
+    private readonly long[] _siteGoodsGiven = new long[256];
+    private long _siteGoodsLogAt;
+
+    int IPowerHost.SiteGoods(byte power, string planet, byte material, int units)
+    {
+        if (!IsServer || units <= 0)
+            return 0;
+        var all = StationMarkets.All;
+        int bestD = -1, bestK = -1;
+        var bestScore = double.MinValue;
+        for (var d = 0; d < all.Length; d++)
+        {
+            if (CrewPowers.Find(all[d].Power) != power)
+                continue;
+            for (var k = 0; k < all[d].Goods.Length; k++)
+            {
+                var g = all[d].Goods[k];
+                if (g.Material != material)
+                    continue;
+                var m = MarketOfDef(d);
+                if (m.Stock[k] >= g.Most)
+                    continue;
+                // (the nearest: a station over the site's planet first, else the one most short of it against its want)
+                var score = (all[d].Planet.Equals(planet, StringComparison.OrdinalIgnoreCase) ? 1e9 : 0) + (g.Target - m.Stock[k]) / (double)Math.Max(1, g.Target);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestD = d;
+                    bestK = k;
+                }
+            }
+        }
+        if (bestD < 0)
+        {
+            if (_siteGoodsLost.Add(power * 256 + material))
+                Log($"[powers] {CrewPowers.Of(power)?.Name}: its sites' {RecyclingTable.Current.NameOf(material)} has no station of its with room to take it: left in the ground");
+            return 0;
+        }
+        _siteGoodsLost.Remove(power * 256 + material);
+        var mk = MarketOfDef(bestD);
+        var took = Math.Min(units, all[bestD].Goods[bestK].Most - mk.Stock[bestK]);
+        mk.Stock[bestK] += took;
+        if (mk.Body != 0)
+            StationsVersion++;
+        _siteGoodsGiven[power] += took;
+        if (ServerTick >= _siteGoodsLogAt)
+            SiteGoodsLog();
+        return took;
+    }
+
+    /// <summary>Every ten minutes of play at most: what each power's sites put into its stations since the last line.</summary>
+    private void SiteGoodsLog()
+    {
+        var first = _siteGoodsLogAt == 0;
+        _siteGoodsLogAt = ServerTick + 10 * 60 * World.TickRate;
+        if (first)
+            return;
+        for (var p = 0; p < _siteGoodsGiven.Length; p++)
+            if (_siteGoodsGiven[p] > 0)
+            {
+                Log($"[powers] {CrewPowers.Of((byte)p)?.Name}: its sites sent {_siteGoodsGiven[p]} units of goods to its stations");
+                _siteGoodsGiven[p] = 0;
+            }
+    }
+
     /// <summary>Does a station <paramref name="power"/> holds trade material <paramref name="mat"/>?</summary>
     private static bool Traded(byte power, byte mat)
     {
