@@ -47,6 +47,26 @@
       "face": "+y"
     }
   ],
+  "config": [
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the bunker holds. Empty, it takes the first stock a chute or a tipper brings."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. Chutes and tippers move this as they run."
+    }
+  ],
   "mass": 8450.1,
   "health": 67500,
   "armour": 20,

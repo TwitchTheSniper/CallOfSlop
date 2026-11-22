@@ -11,7 +11,16 @@ public sealed class StationDef
     public StationPart[] Parts = []; // parts it trades (Karl, 2026-11-20: parts are physical and carry a value); their stock follows the goods' in a market
     public float Orbit; // its height over its planet (m): where a hauler meets it when its world isn't the one being played (0: unknown)
     public string Blueprint = ""; // built in its planet's world the first time that world is played without it (empty: a ship start builds it)
+    public string ListedPower = ""; // the power the file gives it (a sale changes Power in play: StationMarkets.ResetRunTime puts it back)
+    public MarketState State; // open, being built, for sale, closing (GameStationLife.cs)
+    public int Kind = -1; // a station made in play: its kind (StationLife.Kinds); -1 a listed one
+    public int Built, Steps; // being built: the blueprint's steps fitted, of all of them
+    public (byte Material, float Units)[] Upkeep = []; // what an hour of running takes from its own stock (the kind's, else the file's "stationRules")
+    public float Labour; // and from its power's number an hour
 }
+
+/// <summary>Where a station stands in its life (economy step 11; Karl, 2026-11-22: "stations are dynamic").</summary>
+public enum MarketState : byte { Open, Building, ForSale, Closing, Closed }
 
 /// <summary>
 /// A good a station trades: what it pays and asks a unit at its "want" (value on a tab: Game/GameTabs.cs), what it starts with and holds at most;
@@ -112,6 +121,8 @@ public sealed class StationHaulerDef
     public string Escort = ""; // the blueprint of its escorts (phase 3: convoys): "" none
     public int Escorts; // how many fly with each hauler
     public float EscortGap = 150; // m they hold clear of it (and three times that off a station while it docks)
+    public int ListedCount; // the file's count (a route made in play: its first; a retired route's Count is 0)
+    public bool Builder; // a builder's route: carries a new station's bill to it (GameStationLife.cs)
 }
 
 /// <summary>The stations' markets (Crew/Stations.json). A bad file is refused with a reason in the log, and no station has a market.</summary>
@@ -144,6 +155,102 @@ public static class StationMarkets
             if (all[i].Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return i;
         return -1;
+    }
+
+    /// <summary>
+    /// A station's or a kind's "goods" (each a material it trades: buy, sell, stock, most, uses, makes, want). Making (Karl, 2026-11-22: "I want
+    /// it to be inputs, so that it would need to be collected first"): a good it makes names what a unit takes ("from": material and units, each
+    /// one of its own goods). Nothing is made from nothing, so a line that makes with no inputs is refused.
+    /// </summary>
+    private static List<StationGood> GoodsOf(JsonElement arr, string who)
+    {
+        var goods = new List<StationGood>();
+        var froms = new List<JsonElement?>();
+        foreach (var g in arr.EnumerateArray())
+        {
+            froms.Add(g.TryGetProperty("from", out var fr) ? fr : null);
+            var good = g.GetProperty("good").GetString() ?? "";
+            var mat = RecyclingTable.Current.IdOf(good);
+            if (mat == 0)
+                throw new FormatException($"{who}: no material named \"{good}\" (Constructs/Recycling.json)");
+            if (goods.Any(x => x.Material == mat))
+                throw new FormatException($"{who}: \"{good}\" is listed twice");
+            var most = Math.Clamp(g.TryGetProperty("most", out var mo) ? mo.GetInt32() : 100000, 0, 10_000_000);
+            goods.Add(new StationGood(mat, Math.Clamp(g.GetProperty("buy").GetSingle(), 0, 10000), Math.Clamp(g.GetProperty("sell").GetSingle(), 0, 10000),
+                Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most,
+                Math.Clamp(g.TryGetProperty("uses", out var us) ? us.GetSingle() : 0, 0, 1_000_000), Math.Clamp(g.TryGetProperty("makes", out var mk) ? mk.GetSingle() : 0, 0, 1_000_000),
+                Math.Clamp(g.TryGetProperty("want", out var wa) ? wa.GetInt32() : 0, 0, most)));
+        }
+        for (var k = 0; k < goods.Count; k++)
+        {
+            if (goods[k].Make <= 0)
+                continue;
+            var name = RecyclingTable.Current.NameOf(goods[k].Material);
+            if (froms[k] is not { ValueKind: JsonValueKind.Object } fr || !fr.EnumerateObject().Any())
+                throw new FormatException($"{who}: it makes \"{name}\" from nothing (give it a \"from\": what a unit takes)");
+            var ins = fr.EnumerateObject().Select(x => InputOf(goods, x.Name, Math.Clamp(x.Value.GetSingle(), 0.001f, 100_000f), who, $"\"{name}\"")).ToArray();
+            if (ins.Any(x => x.Line == k))
+                throw new FormatException($"{who}: \"{name}\" is made from itself");
+            goods[k] = goods[k] with { From = ins };
+        }
+        return goods;
+    }
+
+    private static StationInput InputOf(List<StationGood> goods, string mat, float per, string who, string what)
+    {
+        var id = RecyclingTable.Current.IdOf(mat);
+        var line = goods.FindIndex(x => id != 0 && x.Material == id);
+        if (line < 0)
+            throw new FormatException($"{who}: {what} is made from \"{mat}\", which the station doesn't trade (add it to its \"goods\")");
+        return new StationInput(line, per);
+    }
+
+    /// <summary>What an hour's upkeep takes ({"steel": 20, ...}: units of its goods an hour).</summary>
+    private static (byte Material, float Units)[] UpkeepOf(JsonElement? e, string who)
+    {
+        if (e is not { ValueKind: JsonValueKind.Object } o)
+            return [];
+        return [.. o.EnumerateObject().Select(x => RecyclingTable.Current.IdOf(x.Name) is var id and > 0 ? (id, Math.Clamp(x.Value.GetSingle(), 0f, 100_000f))
+            : throw new FormatException($"{who}: upkeep names no material \"{x.Name}\""))];
+    }
+
+    /// <summary>How many stations and routes the file lists: the rest of <see cref="All"/> and <see cref="Haulers"/> are a game's own (GameStationLife.cs).</summary>
+    public static int Listed { get; private set; }
+
+    /// <summary>Host games alive in this process: while any is, a client beside it leaves the run-time stations (the host's) alone.</summary>
+    public static int HostGames;
+    public static int ListedRoutes { get; private set; }
+
+    /// <summary>A station made in play (a power's new one, GameStationLife.cs) on the end of <see cref="All"/>: its index.</summary>
+    public static int Add(StationDef d)
+    {
+        _all = [.. All, d];
+        return _all.Length - 1;
+    }
+
+    /// <summary>A route made in play (a builder's or a new station's) on the end of <see cref="Haulers"/>: its index.</summary>
+    public static int AddRoute(StationHaulerDef h)
+    {
+        _ = All;
+        _haulers = [.. _haulers, h];
+        return _haulers.Length - 1;
+    }
+
+    /// <summary>A new game, a load or a joiner: only the listed stations and routes, as the file has them.</summary>
+    public static void ResetRunTime()
+    {
+        var all = All;
+        if (all.Length > Listed)
+            _all = all[..Listed];
+        if (_haulers.Length > ListedRoutes)
+            _haulers = _haulers[..ListedRoutes];
+        foreach (var d in _all!)
+        {
+            d.Power = d.ListedPower;
+            d.State = MarketState.Open;
+        }
+        foreach (var h in _haulers)
+            h.Count = h.ListedCount;
     }
 
     public static StationDef[] Load(string path)
@@ -193,23 +300,7 @@ public static class StationMarkets
                     throw new FormatException($"{d.Name}: a station built in its world needs a \"planet\" and an \"orbit\" of at least 5 km");
                 if (d.Name.Length == 0 || d.Name.Any(ch => ch > 127))
                     throw new FormatException("a station needs an ASCII \"name\"");
-                var goods = new List<StationGood>();
-                var froms = new List<JsonElement?>();
-                foreach (var g in s.GetProperty("goods").EnumerateArray())
-                {
-                    froms.Add(g.TryGetProperty("from", out var fr) ? fr : null);
-                    var good = g.GetProperty("good").GetString() ?? "";
-                    var mat = RecyclingTable.Current.IdOf(good);
-                    if (mat == 0)
-                        throw new FormatException($"{d.Name}: no material named \"{good}\" (Constructs/Recycling.json)");
-                    if (goods.Any(x => x.Material == mat))
-                        throw new FormatException($"{d.Name}: \"{good}\" is listed twice");
-                    var most = Math.Clamp(g.TryGetProperty("most", out var mo) ? mo.GetInt32() : 100000, 0, 10_000_000);
-                    goods.Add(new StationGood(mat, Math.Clamp(g.GetProperty("buy").GetSingle(), 0, 10000), Math.Clamp(g.GetProperty("sell").GetSingle(), 0, 10000),
-                        Math.Clamp(g.TryGetProperty("stock", out var st) ? st.GetInt32() : 0, 0, most), most,
-                        Math.Clamp(g.TryGetProperty("uses", out var us) ? us.GetSingle() : 0, 0, 1_000_000), Math.Clamp(g.TryGetProperty("makes", out var mk) ? mk.GetSingle() : 0, 0, 1_000_000),
-                        Math.Clamp(g.TryGetProperty("want", out var wa) ? wa.GetInt32() : 0, 0, most)));
-                }
+                var goods = GoodsOf(s.GetProperty("goods"), d.Name);
                 var parts = new List<StationPart>();
                 if (s.TryGetProperty("parts", out var ps))
                     foreach (var g in ps.EnumerateArray())
@@ -229,29 +320,6 @@ public static class StationMarkets
                     }
                 if (goods.Count + parts.Count > MaxGoods)
                     throw new FormatException($"{d.Name}: at most {MaxGoods} goods and parts");
-                // Making (Karl, 2026-11-22: "I want it to be inputs, so that it would need to be collected first"): a good it makes names what a unit
-                // takes ("from": material and units, each one of its own goods); a part it makes takes its Assembling recipe's bulk materials. Nothing is
-                // made from nothing, so a line that makes with no inputs is refused.
-                StationInput Input(string mat, float per, string what)
-                {
-                    var id = RecyclingTable.Current.IdOf(mat);
-                    var line = goods.FindIndex(x => id != 0 && x.Material == id);
-                    if (line < 0)
-                        throw new FormatException($"{d.Name}: {what} is made from \"{mat}\", which the station doesn't trade (add it to its \"goods\")");
-                    return new StationInput(line, per);
-                }
-                for (var k = 0; k < goods.Count; k++)
-                {
-                    if (goods[k].Make <= 0)
-                        continue;
-                    var name = RecyclingTable.Current.NameOf(goods[k].Material);
-                    if (froms[k] is not { ValueKind: JsonValueKind.Object } fr || !fr.EnumerateObject().Any())
-                        throw new FormatException($"{d.Name}: it makes \"{name}\" from nothing (give it a \"from\": what a unit takes)");
-                    var ins = fr.EnumerateObject().Select(x => Input(x.Name, Math.Clamp(x.Value.GetSingle(), 0.001f, 100_000f), $"\"{name}\"")).ToArray();
-                    if (ins.Any(x => x.Line == k))
-                        throw new FormatException($"{d.Name}: \"{name}\" is made from itself");
-                    goods[k] = goods[k] with { From = ins };
-                }
                 for (var k = 0; k < parts.Count; k++)
                 {
                     if (parts[k].Make <= 0)
@@ -268,7 +336,7 @@ public static class StationMarkets
                         parts[k] = parts[k] with { Make = 0 };
                         continue;
                     }
-                    parts[k] = parts[k] with { From = [.. sum.Where(x => x.Value > 0).Select(x => Input(RecyclingTable.Current.NameOf(x.Key), x.Value, $"\"{pd.Name}\""))] };
+                    parts[k] = parts[k] with { From = [.. sum.Where(x => x.Value > 0).Select(x => InputOf(goods, RecyclingTable.Current.NameOf(x.Key), x.Value, d.Name, $"\"{pd.Name}\""))] };
                 }
                 d.Goods = [.. goods];
                 d.Parts = [.. parts];
@@ -303,6 +371,7 @@ public static class StationMarkets
                         Needs = h.TryGetProperty("needs", out var nd) && nd.GetBoolean(),
                         Parts = h.TryGetProperty("parts", out var hp) && hp.GetBoolean(),
                     };
+                    d.ListedCount = d.Count;
                     if (h.TryGetProperty("escort", out var es))
                     {
                         d.Escort = es.GetProperty("ship").GetString() ?? "";
@@ -318,7 +387,12 @@ public static class StationMarkets
                     haulers.Add(d);
                 }
             _haulers = [.. haulers];
-            Console.WriteLine($"[stations] {list.Count} station market(s) and {_haulers.Length} hauler route(s) from {path}");
+            StationLife.Load(root, list, GoodsOf, UpkeepOf);
+            foreach (var d in list)
+                d.ListedPower = d.Power;
+            Listed = list.Count;
+            ListedRoutes = _haulers.Length;
+            Console.WriteLine($"[stations] {list.Count} station market(s), {_haulers.Length} hauler route(s) and {StationLife.Kinds.Length} station kind(s) from {path}");
             return [.. list];
         }
         catch (Exception ex) when (ex is IOException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
@@ -347,6 +421,10 @@ public sealed partial class Game
         public double[] Owed = []; // host: what its making is owed short of a whole unit, by line (not saved: under one unit a line)
         public bool[] Stalled = []; // host: a line it makes that last stopped for want of an input (its log line is said once)
         public string[] Lines = []; // a client: its supply lines and consignments bound for it, as the host last told (StationLines)
+        public double Gain, Ledger, LastCost; // host: its power's gain this hour, its ledger over the window, its last hour's upkeep (GameStationLife.cs)
+        public double[] Net = []; // host: each hour's gain less upkeep, a ring over StationLife.Window
+        public int NetN, LoseHours, SaleHours, HoldHours; // (HoldHours: hours its power keeps it before it may sell it, after a sale or its opening)
+        public double CostSum; // host: about its upkeep over the window (a running sum) // host: hours in the ring, hours its ledger has been under nothing, hours for sale or closed
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
@@ -438,6 +516,8 @@ public sealed partial class Game
         for (var d = 0; d < StationMarkets.All.Length; d++)
         {
             var def = StationMarkets.All[d];
+            if (!StationLife.Trades(def))
+                continue; // (a site, or one closed: no needs, no making)
             var goods = def.Goods;
             var parts = def.Parts;
             var lines = goods.Length + parts.Length;
@@ -481,9 +561,14 @@ public sealed partial class Game
                 m.Owed[k] = Math.Min(owed - n, 1); // (a line held up by its want or its inputs banks no more than one unit)
                 if (n > 0)
                 {
+                    var added = k < goods.Length ? TradeValues.Of(goods[k].Material) : (double)parts[k - goods.Length].Sell;
                     foreach (var inp in from)
+                    {
                         Move(m, inp.Line, -inp.Per * n, goods[inp.Line].Most);
+                        added -= inp.Per * TradeValues.Of(goods[inp.Line].Material);
+                    }
                     Move(m, k, n, most);
+                    StationGain(m, added * n); // (the value its making adds: its ledger, GameStationLife.cs)
                 }
                 var stalled = shortOf >= 0 && m.Stock[k] < target;
                 if (stalled != m.Stalled[k])
@@ -495,6 +580,7 @@ public sealed partial class Game
                 }
             }
         }
+        StationLifeMinute(); // (sites, upkeep and ledgers, sales and closing, building: GameStationLife.cs)
         HardshipTick(); // (each planet's hardship and the raider bands it forms: GameCamps.cs)
         StationsVersion++; // (once a minute the cards hear the supply lines again: a line goes late with no other change, GameSupplyLines.cs)
         ConsignTick(); // (shortages no route answers straight: consignments routed over the haulers, GameConsignments.cs)
@@ -570,6 +656,7 @@ public sealed partial class Game
         if (!travel)
         {
             _marketByDef = [];
+            StationLifeReset(); // (only the listed stations and routes: a save's made ones come back with its markets, GameStationLife.cs)
             _consigns.Clear(); // (a new game: GameConsignments.cs)
             CampsReset(); // (GameCamps.cs)
         }
@@ -593,6 +680,7 @@ public sealed partial class Game
         StationMoorsAdopt(); // (a loaded world's moorings, once its bodies are in: GameStationSave.cs)
         TrespassTick(); // (what players' constructs mined on a held planet: GameTrespass.cs)
         StationNeedsTick();
+        StationSiteTick(); // (stations made in play over this world's planet, going up: GameStationLife.cs)
         foreach (var c in Constructs.Bodies)
             if (c.IsStation && !c.Wreck)
                 StationMarketOf(c);
@@ -626,7 +714,9 @@ public sealed partial class Game
     /// <summary><see cref="Msg.Stations"/>: u8 n, each (u16 body, u8 def, u8 goods, each i32 stock, u8 moored, each (u16 ship, u16 berth), u8 lines, each str).</summary>
     private void WriteStations(PacketWriter w)
     {
-        w.Begin(Msg.Stations).U8((byte)Math.Min(255, StationMarketsHere.Count));
+        w.Begin(Msg.Stations);
+        WriteStationDefs(w); // (the stations made in play first: a market's def may be one, GameStationLife.cs)
+        w.U8((byte)Math.Min(255, StationMarketsHere.Count));
         var n = 0;
         foreach (var m in StationMarketsHere.Values)
         {
@@ -648,8 +738,8 @@ public sealed partial class Game
     /// <summary>Server: the markets to one joiner.</summary>
     private void SendStationsTo(RakNetGUID to)
     {
-        if (StationMarketsHere.Count == 0)
-            return;
+        if (StationMarketsHere.Count == 0 && StationMarkets.All.Length == StationMarkets.Listed)
+            return; // (nothing here, and nothing made in play: but a listed station sold or closed still goes, as its card's line)
         WriteStations(SbW);
         Net.SendTo(to, SbW.Span, PacketReliability.ReliableOrdered);
     }
@@ -658,6 +748,9 @@ public sealed partial class Game
     internal void ReadStations(ref PacketReader r)
     {
         if (IsServer || !r.Has(1))
+            return;
+        ReadStationDefs(ref r);
+        if (!r.Has(1))
             return;
         foreach (var c in Constructs.Bodies)
             c.MooredTo = 0;
@@ -811,6 +904,7 @@ public sealed partial class Game
             return;
         pw.Stock += value;
         pw.Earned += value;
+        StationGain(m, value);
     }
 
     /// <summary>Host: the station's power counts its margin on a trade of <paramref name="value"/> (its stock and its books).</summary>
@@ -821,6 +915,7 @@ public sealed partial class Game
         var share = value * StationMarkets.Margin;
         pw.Stock += share; // (its trade on it: the books keep it as earned)
         pw.Earned += share;
+        StationGain(m, share);
     }
 
     private static string StationGoodsText(StationMarket m, ReadOnlySpan<int> units)
@@ -844,6 +939,8 @@ public sealed partial class Game
         if (s.MooredTo == 0 || Constructs.Get(s.MooredTo) is not { } station || StationMarketOf(station) is not { } market)
             return "dock at a station's berth first";
         (st, m) = (station, market);
+        if (m.Def >= 0 && m.Def < StationMarkets.All.Length && !StationLife.Trades(StationMarkets.All[m.Def]))
+            return "the station is closed: it trades no more";
         if (!StationAboard(p, s))
             return "you need to be aboard the docked ship to trade";
         var power = StationPower(m);

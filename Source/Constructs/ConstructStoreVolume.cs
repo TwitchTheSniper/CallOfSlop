@@ -157,8 +157,27 @@ public static class ConstructStoreVolume
         p.Cfg[d.CfgSlot[(int)CfgKey.Material]] != before[d.CfgSlot[(int)CfgKey.Material]] || p.Cfg[d.CfgSlot[(int)CfgKey.Fill]] != before[d.CfgSlot[(int)CfgKey.Fill]];
 
     /// <summary>
+    /// A fixed bin (an Ore Bunker, a Tipping Bunker) whose part file lists the creative Material and Fill settings: the configure
+    /// tool sets what it holds, as a Storage Volume's, and the settings follow the store (<see cref="Follow"/>).
+    /// </summary>
+    public static bool IsFillBin(ConstructPartDef d) => d.IsBin && !d.IsVolumeStore && d.CfgSlot[(int)CfgKey.Material] >= 0 && d.CfgSlot[(int)CfgKey.Fill] >= 0;
+
+    /// <summary>Does this store take its contents from its Material and Fill settings (a Storage Volume, or a <see cref="IsFillBin"/>)?</summary>
+    public static bool HasContents(ConstructPartDef d) => d.IsVolumeStore || IsFillBin(d);
+
+    /// <summary>What a full store holds (units): a Storage Volume's box whatever its open faces, a bin its capacity.</summary>
+    private static int FullUnits(Construct c, int part)
+    {
+        if (!c.DefOf(part).IsVolumeStore)
+            return ConstructStorage.Capacity(c, part);
+        Usable(c, part, out var min, out var max);
+        return UnitsFor(min, max);
+    }
+
+    /// <summary>
     /// Server: the store takes what the Material and Fill settings say (creative only: the settings are <c>"creative": true</c>).
-    /// <paramref name="limit"/>: stop at what the box holds with its open faces. A box of parts is refused.
+    /// <paramref name="limit"/>: stop at what the box holds with its open faces. A box of parts is refused, and a bin refuses a
+    /// material it doesn't take.
     /// </summary>
     public static string? SetContents(ConstructWorld world, Construct c, int part, bool limit)
     {
@@ -169,27 +188,36 @@ public static class ConstructStoreVolume
         if (st.KindN > 0)
             return $"the {d.Name} holds parts: take them out first";
         var material = (byte)ConstructConfig.Get(p, d, CfgKey.Material, 0);
-        Usable(c, part, out var min, out var max);
-        var units = material == 0 ? 0 : (int)(UnitsFor(min, max) * ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f);
-        if (limit)
-            units = Math.Min(units, Capacity(c, part));
+        if (material != 0 && !d.IsVolumeStore && !ConstructStorage.BinTakes(d, material))
+            return $"a {d.Name} holds {d.BulkMaterial} only";
+        var units = material == 0 ? 0 : (int)(FullUnits(c, part) * ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f);
+        if (limit || !d.IsVolumeStore)
+            units = Math.Min(units, ConstructStorage.Capacity(c, part));
         world.SetBulk(st, material, units);
         return null;
     }
 
-    /// <summary>A creative paste: every Storage Volume takes what its settings say.</summary>
+    /// <summary>A creative paste: every Storage Volume and fill bin takes what its settings say.</summary>
     public static void FillAll(ConstructWorld world, Construct c)
     {
         for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D.IsVolumeStore)
+            if (HasContents(c.Parts[i].D))
                 SetContents(world, c, i, limit: false);
+    }
+
+    /// <summary>Both sides: every fill bin's settings follow its store (before a copy, so a blueprint says what is in it).</summary>
+    public static void FollowBins(ConstructWorld world, Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (IsFillBin(c.Parts[i].D))
+                Follow(world, c, i);
     }
 
     /// <summary>A survival paste: new parts, paid for, with no contents setting (the store itself comes empty).</summary>
     public static void EmptyAll(Construct c)
     {
         for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D is { IsVolumeStore: true } d)
+            if (c.Parts[i].D is var d && HasContents(d))
             {
                 c.Parts[i].Cfg[d.CfgSlot[(int)CfgKey.Material]] = 0;
                 c.Parts[i].Cfg[d.CfgSlot[(int)CfgKey.Fill]] = 0;
@@ -209,9 +237,8 @@ public static class ConstructStoreVolume
         int ms = d.CfgSlot[(int)CfgKey.Material], fs = d.CfgSlot[(int)CfgKey.Fill];
         if (st.Amount > 0)
         {
-            Usable(c, part, out var min, out var max);
             p.Cfg[ms] = st.Material;
-            p.Cfg[fs] = MathF.Min(100, st.Amount * 100f / MathF.Max(1, UnitsFor(min, max)));
+            p.Cfg[fs] = MathF.Min(100, st.Amount * 100f / MathF.Max(1, FullUnits(c, part)));
         }
         else if (p.Cfg[ms] != 0)
             p.Cfg[fs] = 0;

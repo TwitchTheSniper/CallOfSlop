@@ -739,9 +739,13 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      CfgKey 138 (the unused Blade5) as SeatFn, a cockpit switch's Function; new part files move part ids.
     // 438: Deck Hatches (Karl 2026-11-22: ladders between decks in shafts at the hull under flush hatches): four new event door parts
     //      move the part ids, and the ships' decks, ladders and blueprints changed with them.
-    // 439: the Zero Day's Limpet shaft under a flush Deck Hatch 1.1 m with its own ladder (Karl 2026-11-22): new part files move
+    // 439: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
+    //      steps, goods) and every listed station's power and state, which 438 reads as markets.
+    // 440: cockpit command stations (cockpits.md "Command stations"): every seat has a Station setting (its Setting, 0-5), crew jobs and
+    //      station kinds for them (the roster's job byte), and the "Crew hold fire" Function.
+    // 441: the Zero Day's Limpet shaft under a flush Deck Hatch 1.1 m with its own ladder (Karl 2026-11-22): new part files move
     //      part ids; a ladder climbs on through two open docking hatches into the docked craft's ladder (ConstructRide.Chained).
-    public const ushort ProtocolVersion = 439;
+    public const ushort ProtocolVersion = 441;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

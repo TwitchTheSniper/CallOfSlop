@@ -2773,6 +2773,21 @@
     {"output": "Panel Speedometer", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Panel Lamp Strip 4", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Panel Lamp Strip 8", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Panel Wide Screen", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
+    {"output": "Panel Wide Screen", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Console Bay 2x6", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Plug 2x6", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Console Bay 2x8", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Plug 2x8", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Console Drawer Case 2x2", "materials": {"steel": 1}, "seconds": 2.0},
+    {"output": "Console Drawer Tray 2x2", "materials": {"steel": 1}, "parts": {"Bearing": 1}, "seconds": 2.0, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Drawer Case 2x4", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Console Drawer Tray 2x4", "materials": {"steel": 1}, "parts": {"Bearing": 1}, "seconds": 2.0, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Drawer Case 2x6", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Console Drawer Tray 2x6", "materials": {"steel": 1}, "parts": {"Bearing": 1}, "seconds": 2.0, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Drawer Case 2x8", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Console Drawer Tray 2x8", "materials": {"steel": 1}, "parts": {"Bearing": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Console Arc Desk R0.6 90", "materials": {"steel": 2, "concrete": 1}, "seconds": 2.4},
+    {"output": "Console Arc Desk R0.7 120", "materials": {"steel": 3, "concrete": 1}, "seconds": 2.4},
+    {"output": "Console Arc Desk R0.8 180", "materials": {"steel": 4, "concrete": 1}, "seconds": 2.6}
   ]
 }

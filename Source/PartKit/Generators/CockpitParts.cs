@@ -25,6 +25,15 @@ public sealed class CockpitParts : IPartGenerator
     public static readonly (int W, int L)[] Sizes =
         [(1, 4), (1, 10), (2, 2), (2, 4), (3, 3), (4, 4), (4, 6), (6, 6), (6, 10), (1, 30), (3, 6), (5, 12), (5, 8), (4, 10)];
 
+    /// <summary>Sizes added with the drawers (phase 6), written after the panel instruments so the Assembling rows before them keep their places.</summary>
+    public static readonly (int W, int L)[] LaterSizes = [(2, 6), (2, 8)];
+
+    /// <summary>The Console Drawers (phase 6): a 2 x L cell footprint (the hole 20 cm high, L cells wide) and a tray D cells deep.</summary>
+    public static readonly (int L, int D)[] Drawers = [(2, 2), (4, 3), (6, 3), (8, 4)];
+
+    /// <summary>A drawer tray's part name (the game knows a drawer by it: CockpitFns.IsDrawer).</summary>
+    public const string TrayName = "Console Drawer Tray";
+
     private const double C = ModuleSocketsCell;
     private const double ModuleSocketsCell = 0.1; // (ModuleSockets.Cell: the part kit doesn't reference the game)
     // (every solid box is at least 1 cm on each side, the part kit's floor: a thinner one is dropped, a thinner detail grown to 16 mm)
@@ -113,11 +122,154 @@ public sealed class CockpitParts : IPartGenerator
         return p;
     }
 
+    // ---- Console Drawers (phase 6: pull-outs and pop-ups) --------------------------------------------------------------------------
+    // A drawer is a module of a 2 x L Console Bay set to Opening: its case (the plug) is a sleeve back into the hole behind the bay's
+    // face, and its tray an event door that slides out along the socket's normal. Instruments go on the tray's deck (its +x face), each
+    // on the tray alone, so they ride it (Construct.Doors.cs: MaxDoorLeaf). In a wall it pulls out like a keyboard tray; in a desk it
+    // rises like a pop-up screen. Wired from a seat (on while someone sits) it comes out when the seat is taken.
+
+    private const double DrSleeve = 0.018, DrWall = 0.0104, DrDeckX = 0.032, DrDeckT = 0.012;
+
+    private static double DrFront => Back + 0.0045; // the tray's front plate's back face, shut (just in front of the sleeve's ends)
+
+    private static double DrDeckBack(int d) => DrFront - d * C - 0.02;
+
+    /// <summary>How far a drawer's tray runs out (m).</summary>
+    public static double DrawerTravel(int d) => d * C + 0.015;
+
+    private static Part DrawerCase(int l, int d)
+    {
+        const int w = 2;
+        var p = new Part($"Console Drawer Case 2x{l}", Small, "Console bays",
+            $"A pull-out console's case for a 2x{l} Console Bay set to Opening (Depth at least {Py.G(Math.Round(d * C + 0.05, 2))} m): hang a Console Drawer Tray 2x{l} on it, put panel instruments on the tray, fit it by hand.",
+            role: "frame", tool: "wrench", color: BezelC, group: Group);
+        var (ex0, ex1, ez0, ez1) = Edges(w, l);
+        double cx = (w - 1) * 0.5 * C, cz = (l - 1) * 0.5 * C;
+        // The bezel round the hole, in front of the bay's face (its middle open: the tray's front plate shuts it).
+        double by0 = Back + 0.004, by1 = Back + 0.014;
+        p.Add(Box([ex0 + Inset, by0, ez0 + Inset], [ex1 - Inset, by1, ez0 + Rim], RimC));
+        p.Add(Box([ex0 + Inset, by0, ez1 - Rim], [ex1 - Inset, by1, ez1 - Inset], RimC));
+        p.Add(Box([ex0 + Inset, by0, ez0 + Rim], [ex0 + Rim, by1, ez1 - Rim], RimC));
+        p.Add(Box([ex1 - Rim, by0, ez0 + Rim], [ex1 - Inset, by1, ez1 - Rim], RimC));
+        // The sleeve back into the hole, inside the bay's rim, and its back plate.
+        double back = DrDeckBack(d) - 0.022, sy1 = Back + 0.0035;
+        double ix0 = ex0 + DrSleeve, ix1 = ex1 - DrSleeve, iz0 = ez0 + DrSleeve, iz1 = ez1 - DrSleeve;
+        p.Add(Box([ix0, back, iz0], [ix0 + DrWall, sy1, iz1], BezelC));
+        p.Add(Box([ix1 - DrWall, back, iz0], [ix1, sy1, iz1], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz0], [ix1 - DrWall, sy1 - 0.002, iz0 + DrWall], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz1 - DrWall], [ix1 - DrWall, sy1 - 0.002, iz1], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz0 + DrWall], [ix1 - DrWall, back + DrWall, iz1 - DrWall], BezelC));
+        // The tray's catch: a tab on the back plate, its face where the tray's back block meets it.
+        double tx = ex0 + DrDeckX + DrDeckT + 0.006, tb = DrDeckBack(d);
+        p.Add(Box([tx - 0.006, back + DrWall, cz - 0.006], [tx + 0.006, tb, cz + 0.006], BezelC));
+        p.Sock("tray", [tx, tb, cz], "+y");
+        p.Add(Box([cx - 0.006, Back, cz - 0.006], [cx + 0.006, Back + 0.012, cz + 0.006], hidden: true)); // (the socket's solid face)
+        p.Sock("module", [cx, Back, cz], "-y", kind: "module");
+        var area = w * l * C * C;
+        p.Stats(0.6 + area * 14, 25 + area * 100, 0, seconds: 1.0);
+        p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l), ("cells", true))));
+        return p;
+    }
+
+    private static Part DrawerTray(int l, int d)
+    {
+        const int w = 2;
+        var p = new Part($"{TrayName} 2x{l}", Small, "Console bays",
+            $"A pull-out console's tray, {l - 1} by {d} cells of panel instruments on its deck: hung on a Console Drawer Case 2x{l}, F slides it out and back. Wired from a seat, it comes out while someone sits there.",
+            role: "door", tool: "wrench", color: FaceC, group: Group);
+        var (ex0, ex1, ez0, ez1) = Edges(w, l);
+        double cz = (l - 1) * 0.5 * C;
+        // The front plate, filling the bezel's opening when shut, with a pull along it.
+        p.Add(Box([ex0 + Rim + 0.002, DrFront, ez0 + Rim + 0.002], [ex1 - Rim - 0.002, DrFront + 0.012, ez1 - Rim - 0.002], FaceC));
+        p.Add(Box([ex0 + 0.07, DrFront + 0.012, cz - 0.04], [ex0 + 0.086, DrFront + 0.028, cz + 0.04], RimC, detail: true));
+        // The deck behind it, and the back block it hangs by.
+        double x0 = ex0 + DrDeckX, x1 = x0 + DrDeckT, z0 = ez0 + DrSleeve + DrWall + 0.003, z1 = ez1 - DrSleeve - DrWall - 0.003, yb = DrDeckBack(d);
+        p.Add(Box([x0, yb, z0], [x1, DrFront - 0.0005, z1], FaceTopC));
+        p.Add(Box([x1, yb, cz - 0.006], [x1 + 0.012, yb + 0.012, cz + 0.006], FaceC));
+        p.Sock("hang", [x1 + 0.006, yb, cz], "-y");
+        // A Small socket on each cell of the deck: L - 1 across (a housing is a whole cell, and the sleeve takes 3 cm a side), D deep.
+        for (var j = 0; j < l - 1; j++)
+            for (var i = 0; i < d; i++)
+                p.Sock($"c{j}.{i}", [x1, DrFront - 0.004 - (i + 0.5) * C, (j + 0.5) * C], "+x");
+        var area = w * l * C * C;
+        p.Stats(0.4 + area * 10, 20 + area * 90, 0, seconds: 1.0);
+        p.Set(("onBreak", "detach"), ("door", Kw(("kind", "slide"), ("axis", "+y"), ("travel", Py.Round(DrawerTravel(d), 3)), ("seconds", 0.6), ("hang", "hang"))));
+        return p;
+    }
+
+    // ---- Console Arc Desks (phase 6: curved consoles) ------------------------------------------------------------------------------
+    // A desk top bent round a seat: level facets on an arc about the part's origin (where the seat goes). A shaped box is a look, so each
+    // facet has a hidden solid box inside it whose top is the facet's: Console Bays go on it with the attach tool's socket weld (a face
+    // point, turned to the facet's angle). The bays stay flat, the desk carries the curve (the storyboard's frame 9, "wraparound").
+
+    /// <summary>The shipped arcs: inner radius (m), sweep (degrees), facets.</summary>
+    public static readonly (double R, int Sweep, int N)[] Arcs = [(0.6, 90, 3), (0.7, 120, 4), (0.8, 180, 6)];
+
+    private const double ArcDepth = 0.45, ArcTop = 0.72, ArcRake = 0.0, ArcT = 0.04, ArcGap = 0.003;
+
+    private static double[] ArcPt(double r, double a, double y) => [r * Math.Sin(a), y, r * Math.Cos(a)];
+
+    private static void ArcHull(Part p, IEnumerable<double[]> pts, string col)
+    {
+        var all = pts.Select(q => q.Select(x => Py.Round(x, 4)).ToArray()).ToList();
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => all.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => all.Max(q => q[k]))];
+        p.Add(Box(mn, mx, col, detail: true, shape: Kw(("shape", "hull"), ("points", all.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()))));
+    }
+
+    private static Part ArcDesk(double r, int sweep, int n)
+    {
+        var name = $"Console Arc Desk R{Py.G(r)} {sweep}";
+        var p = new Part(name, Small, "Console bays",
+            $"A curved console desk, {Py.G(r)} m round its middle (set a seat there) over {sweep} degrees, in {n} raked facets: weld Console Bays onto the facets with the attach tool, at each facet's angle.",
+            role: "frame", tool: "welder", color: BezelC, group: Group);
+        double ro = r + ArcDepth, half = sweep * Math.PI / 360, step = 2 * half / n;
+        for (var k = 0; k < n; k++)
+        {
+            // (each facet stops ArcGap short of its neighbour, so no two share an end face; the thickness alternates by 2 mm too)
+            double a0 = -half + k * step + ArcGap / r, a1 = -half + (k + 1) * step - ArcGap / r, t = ArcT + (k % 2) * 0.002;
+            double yi = ArcTop, yo = ArcTop + ArcRake;
+            ArcHull(p, [ArcPt(r, a0, yi), ArcPt(r, a1, yi), ArcPt(ro, a0, yo), ArcPt(ro, a1, yo),
+                ArcPt(r, a0, yi - t), ArcPt(r, a1, yi - t), ArcPt(ro, a0, yo - t), ArcPt(ro, a1, yo - t)], k % 2 == 0 ? FaceC : FaceTopC);
+            // The facet's solid: a square inside it (hidden), its top the facet's top, so a face-point weld lands on the drawn face.
+            {
+                double rm = (r + ro) / 2, am0 = (a0 + a1) / 2, wTan = (a1 - a0) * r, th = Math.Abs(am0) % (Math.PI / 2);
+                var side = Math.Min(wTan, ArcDepth) / (Math.Cos(th) + Math.Sin(th)) - 0.01;
+                var mid = ArcPt(rm, am0, 0);
+                p.Add(Box([mid[0] - side / 2, yi - t, mid[2] - side / 2], [mid[0] + side / 2, yi, mid[2] + side / 2], hidden: true));
+            }
+            // A modesty panel under the far edge of every facet, and a foot under every other one.
+            double am = (a0 + a1) / 2, rp = ro - 0.03;
+            // (its foot 4 mm off the floor plane the feet stand on)
+            ArcHull(p, [ArcPt(rp, a0, 0.004), ArcPt(rp, a1, 0.004), ArcPt(rp, a0, yo - t - 0.004), ArcPt(rp, a1, yo - t - 0.004),
+                ArcPt(rp - 0.02, a0, 0.004), ArcPt(rp - 0.02, a1, 0.004), ArcPt(rp - 0.02, a0, yo - t - 0.004), ArcPt(rp - 0.02, a1, yo - t - 0.004)], BezelC);
+        }
+        // Feet: square pads under the panels at the middle and both ends, on the floor's grid by their -y sockets.
+        var feet = new List<double> { 0 };
+        if (n > 2)
+        {
+            feet.Add(-half + step / 2);
+            feet.Add(half - step / 2);
+        }
+        var f = 0;
+        foreach (var a in feet)
+        {
+            var c = ArcPt(ro - 0.04, a, 0);
+            double fx = Py.Round(c[0], 2), fz = Py.Round(c[2], 2);
+            p.Add(Box([fx - 0.06, 0.0, fz - 0.06], [fx + 0.06, 0.02, fz + 0.06], RimC));
+            p.Sock($"foot{f++}", [fx, 0.0, fz], "-y");
+        }
+        var mass = 8 + sweep * r * 0.08;
+        p.Stats(mass, 60 + sweep * r, 0, seconds: 2.0);
+        return p;
+    }
+
     /// <summary>The shipped parts' names, in their file order: Assembling's Tail and AfterCloche take them one by one.</summary>
     public static IReadOnlyList<string> Names => [.. Parts().Select(e => (string)e.Item2.D["name"]!)];
 
     private static List<(string, Part)> Parts()
     {
+        // (the order is the Assembling table's: a new part goes at the end, or saved Assemblers' recipes move)
         var parts = new List<(string, Part)>();
         foreach (var (w, l) in Sizes)
         {
@@ -125,6 +277,18 @@ public sealed class CockpitParts : IPartGenerator
             parts.Add(("", Plug(w, l)));
         }
         parts.AddRange(ControlParts.PanelInstruments());
+        foreach (var (w, l) in LaterSizes)
+        {
+            parts.Add(("", Bay(w, l)));
+            parts.Add(("", Plug(w, l)));
+        }
+        foreach (var (l, d) in Drawers)
+        {
+            parts.Add(("", DrawerCase(l, d)));
+            parts.Add(("", DrawerTray(l, d)));
+        }
+        foreach (var (r, sweep, n) in Arcs)
+            parts.Add(("", ArcDesk(r, sweep, n)));
         return parts;
     }
 

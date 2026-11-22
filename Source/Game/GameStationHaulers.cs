@@ -40,6 +40,7 @@ public sealed partial class Game
         public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
         public bool Ledger; // its last leg was taken on the ledger (nobody near): its escorts fly nothing (GameHaulLedger.cs)
         public long LedgerUntil; // on a ledger leg: when it gets there (0: not on one)
+        public LedgerTrip? Trip; // a ledger leg round one planet in play: its path, burns and coast in space time (GameHaulLedger.cs)
         public bool Flying; // this leg is flown from here on (a person saw it): it doesn't go on the ledger part way (GameHaulLedger.cs)
         public long LegAt; // when this leg began (0: not known), and its fuel then: a leg flown out of the bubble before the ledger takes it is not paid twice
         public float LegFuel;
@@ -141,8 +142,8 @@ public sealed partial class Game
         for (var d = 0; d < all.Length; d++)
         {
             var def = all[d];
-            if (def.Blueprint.Length == 0 || !def.Planet.Equals(e.System.Bodies[body].Name, StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (def.Blueprint.Length == 0 || d >= StationMarkets.Listed || def.State == MarketState.Closed || !def.Planet.Equals(e.System.Bodies[body].Name, StringComparison.OrdinalIgnoreCase))
+                continue; // (one made in play: StationSiteTick; a dismantled one isn't put up again)
             foreach (var c in Constructs.Bodies)
                 if (c.IsStation && !c.Wreck)
                     StationMarketOf(c); // (a station this world kept has its market already)
@@ -273,8 +274,10 @@ public sealed partial class Game
             return;
         if (_haulNext.Length != routes.Length)
         {
-            _haulNext = new long[routes.Length];
-            Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
+            var was = _haulNext.Length;
+            Array.Resize(ref _haulNext, routes.Length); // (a route made in play goes on the end: the others keep their times, GameStationLife.cs)
+            for (var i = was; i < routes.Length; i++)
+                _haulNext[i] = ServerTick + 10 * World.TickRate; // (the first set out once the world has settled)
         }
         if (_haulAdopt)
         {
@@ -290,6 +293,8 @@ public sealed partial class Game
                 _hauls.RemoveAt(i);
                 StationsVersion++; // (a supply line may be cut: the cards hear it, GameSupplyLines.cs)
             }
+            else if (routes[_hauls[i].Route].Count == 0 && _hauls[i].Stage != HaulStage.Going)
+                HaulRetire(i); // (its route stopped: it goes off it at a station, GameStationLife.cs)
         for (var ri = 0; ri < routes.Length; ri++)
         {
             if (ServerTick < _haulNext[ri])
@@ -420,6 +425,7 @@ public sealed partial class Game
     {
         if (EscortOnLedger(e))
             return; // (its hauler's legs are on the ledger: it is put beside it at each end, GameHaulLedger.cs)
+        c.LedgerCoast = false; // (its drive its own again)
         var h = StationMarkets.Haulers[e.Route];
         HaulRun? run = null;
         foreach (var r in _hauls)
@@ -530,7 +536,7 @@ public sealed partial class Game
         var st = StationBodyOf(def);
         var o = NavOf(c.Id);
         var planet = StationPlanet(s, d);
-        var here = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 }; // (the station is a body in this world's space)
+        var here = st != 0 && d.State != MarketState.Building && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 }; // (the station is a body in this world's space; a site has no berth: its builders trade on its circle)
         var circling = !here && o is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting } && o.Body == planet;
         if (run.Stage == HaulStage.Going && (st != 0 && c.MooredTo == st || circling))
         {
@@ -580,6 +586,7 @@ public sealed partial class Game
         if (HaulLedger(s, run, c, def, d, planet))
             return; // (nobody near: the leg on a schedule, GameHaulLedger.cs)
         run.Ledger = false;
+        c.LedgerCoast = false;
         if (run.PutAt >= 0)
         {
             HaulPut(s, run, c);
@@ -710,8 +717,8 @@ public sealed partial class Game
         foreach (var e in _escorts)
             if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
                 ready = false;
-        if (!ready && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
-            return;
+        if (!ready && !LedgerAll && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
+            return; // (on the fast clock nothing flies out of the bubble: it goes at once, and the ledger takes its legs, GameHaulLedger.cs)
         var planet = run.PutAt;
         run.PutAt = -1;
         run.AtTo = false;
@@ -846,8 +853,8 @@ public sealed partial class Game
 
     private void HaulTrade(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket? m)
     {
-        if (m == null)
-            return;
+        if (m == null || StationMarkets.All[def].State is MarketState.Closing or MarketState.Closed)
+            return; // (a closed station trades with nobody: the hauler goes off its stopped route here)
         var name = StationMarkets.All[def].Name;
         var where = run.Stage == HaulStage.Orbiting ? $"{name} (on its circle: the station is in another world)" : name;
         var pw = Controllers.Powers[CrewPowers.Find(h.Power)];
@@ -914,12 +921,21 @@ public sealed partial class Game
         {
             var k = pick[i];
             var spare = Array.IndexOf(listed, goods[k].Material) >= 0 ? m.Stock[k] : Math.Max(0, m.Stock[k] - Keeps(goods[k]));
-            var afford = own ? Math.Max(0, m.Stock[k] - Keeps(goods[k])) : pw is { Fallen: false } ? Math.Min(spare, m.Afford(k, Math.Max(0, pw.Stock - cost))) : 0; // (priced across the stock the load moves; at its own station, what it has past what it keeps, as a consignment takes)
-            if (afford < HaulLeastLot)
+            var afford = own ? Math.Max(0, m.Stock[k] - (h.Builder ? Keeps(goods[k]) / 2 : Keeps(goods[k]))) : pw is { Fallen: false } ? Math.Min(spare, m.Afford(k, Math.Max(0, pw.Stock - cost))) : 0; // (priced across the stock the load moves; at its own station, what it has past what it keeps, as a consignment takes)
+            if (h.Builder && fk_(k) is var bk and >= 0)
+                afford = Math.Min(afford, Math.Max(0, fg[bk].Most - fm.Stock[bk])); // (a builder takes what its site's bill still lacks, and dips into half its station's reserve for it: GameStationLife.cs)
+            if (afford < HaulLeastLot && !(h.Builder && afford > 0 && fk_(k) is var lk and >= 0 && afford >= fg[lk].Most - fm.Stock[lk]))
                 continue; // (a handful isn't worth a bin: what its power can afford of it, or the station has)
             var n = StationLoadCargo(m, c, k, afford, out var paid, own);
             bought[k] += n;
             cost += paid;
+        }
+        int fk_(int k)
+        {
+            for (var j = 0; j < fg.Length; j++)
+                if (fg[j].Material == goods[k].Material)
+                    return j;
+            return -1;
         }
         if (h.Parts)
         {

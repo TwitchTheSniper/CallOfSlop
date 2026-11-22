@@ -38,6 +38,17 @@ public sealed class Planetoid
     /// <summary>Colours of the ground (grass, dirt, rock, sand, snow, slope rules): as a flat terrain's.</summary>
     public TerrainSurface Surface = new();
 
+    /// <summary>The world's biomes (docs/planets/BIOMES.md), or null: one surface everywhere and no plants.</summary>
+    public PlanetBiomes? Biomes;
+
+    /// <summary>The biomes as written in the map file (written back as they were).</summary>
+    public string? BiomesJson;
+
+    private PlanetFlora? _flora;
+
+    /// <summary>Where the biomes' plants stand (null without biomes). Made on first use.</summary>
+    public PlanetFlora? Flora => Biomes is { } b ? _flora ??= new PlanetFlora(this, b) : null;
+
     /// <summary>The terrain features (noise, mountain, flatten, crater), in order.</summary>
     public List<TerrainFeature> Features = new();
 
@@ -708,6 +719,12 @@ public sealed class Planetoid
 
     private PlanetEdits? Dug => _edits is { Any: true } e ? e : null;
 
+    /// <summary>Is the ground dug (or filled) along unit direction <paramref name="dir"/>?</summary>
+    public bool IsDugAt(Vector3 dir) => Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out _);
+
+    /// <summary>Changes each time the dug ground does (0: never dug).</summary>
+    public int DugVersion => _edits?.Version ?? 0;
+
     /// <summary>The highest solid ground can be right now (metres above <see cref="Radius"/>): fills can stand over the features' own.</summary>
     public float HighestNow => MaxHeight + (_edits?.MaxRise ?? 0);
 
@@ -1234,6 +1251,7 @@ public sealed class Planetoid
                 case "surface": p.Surface = TerrainSpec.ParseSurface(kv.Value, where); break;
                 case "cavity": ParseCavity(p, kv.Value, where + ".cavity"); break;
                 case "landing": ParseLanding(p, kv.Value, where + ".landing"); break;
+                case "biomes": p.Biomes = PlanetBiomes.Parse(kv.Value, where + ".biomes"); p.BiomesJson = kv.Value.GetRawText(); break;
                 case "features":
                     if (kv.Value.ValueKind != JsonValueKind.Array)
                         throw new MapFileException($"{where}.features should be a list");
@@ -1242,7 +1260,7 @@ public sealed class Planetoid
                         p.Features.Add(ParseFeature(fe, $"{where}.features[{k++}]"));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, landing, features)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, landing, biomes, features)");
             }
         }
         var arc = p.Radius * Math.PI / 2;
@@ -1381,6 +1399,7 @@ public sealed class Planetoid
                + $"{i2}\"strength\": {Strength.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},\n"
                + (Base != 0 ? $"{i2}\"base\": {Base.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},\n" : "")
                + $"{i2}\"surface\": {TerrainSpec.SurfaceJson(Surface)},\n"
+               + (BiomesJson != null ? $"{i2}\"biomes\": {BiomesJson},\n" : "")
                + (Crust > 0 ? $"{i2}\"cavity\": {{ \"crust\": {Js(Crust)}, \"glow\": [{Js(Glow.X)}, {Js(Glow.Y)}, {Js(Glow.Z)}], \"core\": {Js(CoreRadius)} }},\n" : "")
                + TerrainSpec.FeaturesJson(Features, i2) + $"\n{indent}}}";
 
@@ -1411,6 +1430,7 @@ public sealed class Planetoid
         mix((float)s.RockSlope);
         mix((float)(s.SandBelow ?? -1e6));
         mix((float)(s.SnowAbove ?? 1e6));
+        Biomes?.Mix(mix); // (worlds without biomes keep the fingerprint they had)
         if (Crust > 0) // (solid planetoids keep the fingerprint they had)
         {
             mix((float)Crust);

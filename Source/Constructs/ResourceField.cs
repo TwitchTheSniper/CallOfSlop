@@ -16,6 +16,7 @@ public sealed class ResourceKind
     public float RegrowSeconds = ResourceTable.DefaultRegrowSeconds; // a felled tree grows back after this long (0: never); surface kinds only
     public float OutcropSpacing, OutcropSizeMin, OutcropSizeMax; // underground: the rocks that show it on the surface (spacing 0: none; ResourceOutcrops.cs)
     public Vector3 OutcropTint;
+    public Vector3 GroundTint; // underground: the colour a planetoid's ground takes over the deposit ("ground"; default: the outcrop's tint)
 }
 
 /// <summary>The table of resource kinds. A bad file gives no kinds with <see cref="Problem"/> (a world without deposits).</summary>
@@ -27,6 +28,8 @@ public sealed class ResourceTable
 
     public readonly List<ResourceKind> Kinds = new();
     public float MinWorldHalf = 150; // a smaller world generates nothing (the Construct Yard); its map may still place deposits
+    public float PlanetCell = 1, PlanetRadius = 1, PlanetUnits = 1; // a planetoid's deposits: cell, radius and units times these ("planet")
+    public float PlanetGround = 0.6f; // how much of a deposit's ground colour shows at its middle on a planetoid (0: none)
     public string Problem = "";
 
     private static ResourceTable? _current;
@@ -64,6 +67,15 @@ public sealed class ResourceTable
             var t = new ResourceTable();
             if (root.TryGetProperty("minWorldHalf", out var mh))
                 t.MinWorldHalf = mh.GetSingle();
+            if (root.TryGetProperty("planet", out var pe))
+            {
+                t.PlanetCell = pe.TryGetProperty("cell", out var v) ? v.GetSingle() : 1;
+                t.PlanetRadius = pe.TryGetProperty("radius", out v) ? v.GetSingle() : 1;
+                t.PlanetUnits = pe.TryGetProperty("units", out v) ? v.GetSingle() : 1;
+                t.PlanetGround = pe.TryGetProperty("ground", out v) ? v.GetSingle() : t.PlanetGround;
+                if (t.PlanetCell is < 0.25f or > 20 || t.PlanetRadius is < 0.25f or > 8 || t.PlanetUnits is < 0.1f or > 30 || t.PlanetGround is < 0 or > 1)
+                    throw new FormatException("\"planet\": cell 0.25 to 20, radius 0.25 to 8, units 0.1 to 30, ground 0 to 1");
+            }
             if (!root.TryGetProperty("kinds", out var kinds) || kinds.ValueKind != JsonValueKind.Array || kinds.GetArrayLength() is 0 or > MaxKinds)
                 throw new FormatException($"\"kinds\" lists 1 to {MaxKinds} resource kinds");
             foreach (var e in kinds.EnumerateArray())
@@ -86,9 +98,13 @@ public sealed class ResourceTable
         k.OutcropTint = new Vector3(t[0].GetSingle(), t[1].GetSingle(), t[2].GetSingle());
         k.OutcropSpacing = o.GetProperty("spacing").GetSingle();
         (k.OutcropSizeMin, k.OutcropSizeMax) = (s[0].GetSingle(), s[1].GetSingle());
+        k.GroundTint = k.OutcropTint;
+        if (o.TryGetProperty("ground", out var g))
+            k.GroundTint = new Vector3(g[0].GetSingle(), g[1].GetSingle(), g[2].GetSingle());
         if (k.Surface || k.OutcropSpacing < 2 || k.OutcropSizeMin <= 0 || k.OutcropSizeMax < k.OutcropSizeMin || k.OutcropSizeMax > 5
-            || k.OutcropTint.X is < 0 or > 1 || k.OutcropTint.Y is < 0 or > 1 || k.OutcropTint.Z is < 0 or > 1)
-            throw new FormatException($"resource kind \"{k.Name}\": an outcrop is for an underground kind: spacing at least 2, size above 0 up to 5 (low, high), tint 0 to 1");
+            || k.OutcropTint.X is < 0 or > 1 || k.OutcropTint.Y is < 0 or > 1 || k.OutcropTint.Z is < 0 or > 1
+            || k.GroundTint.X is < 0 or > 1 || k.GroundTint.Y is < 0 or > 1 || k.GroundTint.Z is < 0 or > 1)
+            throw new FormatException($"resource kind \"{k.Name}\": an outcrop is for an underground kind: spacing at least 2, size above 0 up to 5 (low, high), tint and ground 0 to 1");
     }
 
     private static ResourceKind ReadKind(JsonElement e)
@@ -162,6 +178,8 @@ public sealed partial class ResourceField
     private readonly List<Deposit> _deposits = new();
     private readonly int[][] _grid; // per kind: a cell's deposit index, or -1
     private readonly int[] _nx, _nz;
+    private readonly float[] _cell, _rmax; // per kind: the cell and largest radius in use (a planetoid's are the table's times its "planet" scales)
+    private readonly float _unitsScale; // a deposit holds its kind's units times this (1 on a flat map)
     private readonly List<int> _placed = new(); // deposits the map placed (found by a plain scan: there are few)
     private readonly HashSet<uint> _blocked = new(); // lattice cells under the map's solid boxes
     private readonly ConcurrentDictionary<uint, byte> _felled = new(); // (read by collision queries, also a background vantage build)
@@ -204,7 +222,10 @@ public sealed partial class ResourceField
         _grid = new int[n][];
         _nx = new int[n];
         _nz = new int[n];
+        _cell = new float[n];
+        _rmax = new float[n];
         _planet = map.Planetoid;
+        _unitsScale = _planet != null ? table.PlanetUnits : 1;
         _faces = _planet != null ? 6 : 1;
         (_halfX, _halfZ) = _planet != null ? (FaceHalf(_planet), FaceHalf(_planet)) : (map.HalfX, map.HalfZ);
         var generate = (rules?.Generate ?? true) && Math.Min(_halfX, _halfZ) >= table.MinWorldHalf;
@@ -213,8 +234,11 @@ public sealed partial class ResourceField
             var kind = table.Kinds[k];
             var chance = kind.Chance * (rules != null && rules.Mix.TryGetValue(kind.Name, out var mul) ? mul : 1f);
             var here = generate && chance > 0 && !(kind.Surface && _planet != null); // (no forests on a round world yet: trees stand along +Y)
-            _nx[k] = here ? (int)MathF.Ceiling(_halfX * 2 / kind.Cell) : 0;
-            _nz[k] = here ? (int)MathF.Ceiling(_halfZ * 2 / kind.Cell) : 0;
+            // A planetoid's deposits are fewer and bigger (Sean, 2026-11-22): rare to find, but one in sight stays in sight a long walk.
+            _cell[k] = kind.Cell * (_planet != null ? table.PlanetCell : 1);
+            _rmax[k] = kind.RadiusMax * (_planet != null ? table.PlanetRadius : 1);
+            _nx[k] = here ? (int)MathF.Ceiling(_halfX * 2 / _cell[k]) : 0;
+            _nz[k] = here ? (int)MathF.Ceiling(_halfZ * 2 / _cell[k]) : 0;
             _grid[k] = new int[_faces * _nx[k] * _nz[k]];
             Array.Fill(_grid[k], -1);
             for (var f = 0; f < _faces; f++)
@@ -244,13 +268,13 @@ public sealed partial class ResourceField
         var h = Mix(Mix(Mix(face == 0 ? _seed : Mix(_seed, 0xFACE0000u + (uint)face), (uint)k), (uint)cx), (uint)cz);
         if (Unit(ref h) >= chance)
             return;
-        var x = -_halfX + (cx + Unit(ref h)) * kind.Cell;
-        var z = -_halfZ + (cz + Unit(ref h)) * kind.Cell;
-        var r = kind.RadiusMin + Unit(ref h) * (kind.RadiusMax - kind.RadiusMin);
+        var x = -_halfX + (cx + Unit(ref h)) * _cell[k];
+        var z = -_halfZ + (cz + Unit(ref h)) * _cell[k];
+        var r = (kind.RadiusMin + Unit(ref h) * (kind.RadiusMax - kind.RadiusMin)) * (_rmax[k] / kind.RadiusMax);
         var aspect = kind.AspectMin + Unit(ref h) * (kind.AspectMax - kind.AspectMin);
         var yaw = Unit(ref h) * MathF.PI;
         _grid[k][(face * _nz[k] + cz) * _nx[k] + cx] = _deposits.Count;
-        _deposits.Add(new Deposit { Face = (byte)face, Kind = k, Left = kind.Units, X = x, Z = z, Rx = r, Rz = r * aspect, Cos = MathF.Cos(yaw), Sin = MathF.Sin(yaw), Phase = Unit(ref h) * 6.28f });
+        _deposits.Add(new Deposit { Face = (byte)face, Kind = k, Left = Full(k), X = x, Z = z, Rx = r, Rz = r * aspect, Cos = MathF.Cos(yaw), Sin = MathF.Sin(yaw), Phase = Unit(ref h) * 6.28f });
     }
 
     private void BlockLattice(Box b)
@@ -264,6 +288,9 @@ public sealed partial class ResourceField
             for (var ix = Lattice(lo.X - 1); ix <= Lattice(hi.X + 1); ix++)
                 _blocked.Add(TreeKey(ix, iz));
     }
+
+    /// <summary>What a full deposit of a kind holds here (a planetoid's bigger deposits hold more).</summary>
+    private int Full(int kind) => (int)MathF.Min(_table.Kinds[kind].Units * _unitsScale, int.MaxValue / 2f);
 
     /// <summary>The lattice cell holding a coordinate.</summary>
     public static int Lattice(float v) => (int)MathF.Floor(v / TreeSpacing);
@@ -290,9 +317,9 @@ public sealed partial class ResourceField
             var kind = _table.Kinds[k];
             if (kind.Surface != surface || _nx[k] == 0)
                 continue;
-            var cx = (int)MathF.Floor((x + _halfX) / kind.Cell);
-            var cz = (int)MathF.Floor((z + _halfZ) / kind.Cell);
-            var reach = (int)MathF.Ceiling(kind.RadiusMax * 1.25f / kind.Cell);
+            var cx = (int)MathF.Floor((x + _halfX) / _cell[k]);
+            var cz = (int)MathF.Floor((z + _halfZ) / _cell[k]);
+            var reach = (int)MathF.Ceiling(_rmax[k] * 1.25f / _cell[k]);
             for (var j = Math.Max(cz - reach, 0); j <= Math.Min(cz + reach, _nz[k] - 1); j++)
                 for (var i = Math.Max(cx - reach, 0); i <= Math.Min(cx + reach, _nx[k] - 1); i++)
                 {
@@ -517,7 +544,7 @@ public sealed partial class ResourceField
         for (var i = 0; i < _deposits.Count; i++)
         {
             var d = _deposits[i];
-            d.Left = _table.Kinds[d.Kind].Units;
+            d.Left = Full(d.Kind);
             _deposits[i] = d;
         }
         _cut.Clear();
@@ -653,7 +680,7 @@ public sealed partial class ResourceField
         var s = new ResourceFieldState { Seed = _seed, Deposits = _deposits.Count, Clock = _clock };
         var worked = new List<(int, int)>();
         for (var i = 0; i < _deposits.Count; i++)
-            if (_deposits[i].Left != _table.Kinds[_deposits[i].Kind].Units)
+            if (_deposits[i].Left != Full(_deposits[i].Kind))
                 worked.Add((i, _deposits[i].Left));
         s.Worked = worked.ToArray();
         s.Felled = _felled.Keys.ToArray();
@@ -674,7 +701,7 @@ public sealed partial class ResourceField
             foreach (var (index, left) in s.Worked)
             {
                 var d = _deposits[index];
-                d.Left = Math.Clamp(left, 0, _table.Kinds[d.Kind].Units);
+                d.Left = Math.Clamp(left, 0, Full(d.Kind));
                 _deposits[index] = d;
             }
         else if (s.Worked.Length > 0)

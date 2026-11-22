@@ -286,6 +286,8 @@ public sealed partial class Ui
             CloseSandboxConfig();
             return false;
         }
+        if (ConstructStoreVolume.IsFillBin(d))
+            ConstructStoreVolume.Follow(game.Constructs, c, _cfPart); // (a bin's Material and Fill show what it holds now)
         ref var part = ref c.Parts[_cfPart];
         // The server's values flow in, except where the panel has its own still on the way.
         for (var s = 0; s < d.Config.Length; s++)

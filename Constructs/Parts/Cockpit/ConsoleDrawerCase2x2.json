@@ -1,0 +1,187 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Console Drawer Case 2x2",
+  "description": "A pull-out console's case for a 2x2 Console Bay set to Opening (Depth at least 0.25 m): hang a Console Drawer Tray 2x2 on it, put panel instruments on the tray, fit it by hand.",
+  "group": "Cockpit",
+  "section": "Console bays",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 1.2,
+  "health": 29,
+  "armour": 0,
+  "material": "steel",
+  "color": "#2b2f35",
+  "attachSeconds": 1.0,
+  "onBreak": "detach",
+  "modulePlug": {
+    "w": 2,
+    "l": 2,
+    "cells": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.048,
+        -0.031,
+        -0.048
+      ],
+      "max": [
+        0.148,
+        -0.021,
+        -0.034
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        -0.048,
+        -0.031,
+        0.134
+      ],
+      "max": [
+        0.148,
+        -0.021,
+        0.148
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        -0.048,
+        -0.031,
+        -0.034
+      ],
+      "max": [
+        -0.034,
+        -0.021,
+        0.134
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        0.134,
+        -0.031,
+        -0.034
+      ],
+      "max": [
+        0.148,
+        -0.021,
+        0.134
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        -0.032,
+        -0.2725,
+        -0.032
+      ],
+      "max": [
+        -0.0216,
+        -0.0315,
+        0.132
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        0.1216,
+        -0.2725,
+        -0.032
+      ],
+      "max": [
+        0.132,
+        -0.0315,
+        0.132
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.0216,
+        -0.2725,
+        -0.032
+      ],
+      "max": [
+        0.1216,
+        -0.0335,
+        -0.0216
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.0216,
+        -0.2725,
+        0.1216
+      ],
+      "max": [
+        0.1216,
+        -0.0335,
+        0.132
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.0216,
+        -0.2725,
+        -0.0216
+      ],
+      "max": [
+        0.1216,
+        -0.2621,
+        0.1216
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.006,
+        -0.2621,
+        0.044
+      ],
+      "max": [
+        0.006,
+        -0.2505,
+        0.056
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        0.044,
+        -0.035,
+        0.044
+      ],
+      "max": [
+        0.056,
+        -0.023,
+        0.056
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "tray",
+      "at": [
+        0.0,
+        -0.2505,
+        0.05
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "module",
+      "at": [
+        0.05,
+        -0.035,
+        0.05
+      ],
+      "dir": "-y",
+      "kind": "module"
+    }
+  ]
+}

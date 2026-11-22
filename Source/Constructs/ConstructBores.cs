@@ -8,6 +8,7 @@ public struct BoreMark
     public ushort Body;
     public ushort Part; // its index when made (found again by Key when the parts were renumbered)
     public Vector3 Key; // the part's Pos then: how it is found again
+    public ConstructPartDef? Base, Def; // ...with the file part it was holed from (a big shape's facets share one Pos), and its def last seen
     public Vector3 Pos, Normal; // on the face, out of it (the part's segment frame)
     public float Radius;
     public double Born; // the clock the game draws by
@@ -304,10 +305,15 @@ public static class ConstructBores
             {
                 var dn = Vector3.Dot(d, edge.Normal);
                 var t = MathF.Abs(dn) > 0.2f ? MathF.Max(0f, Vector3.Dot(edge.Point - pos, edge.Normal) / dn) : edge.Distance;
-                edge.Point = pos + d * t;
-                edge.Distance = t;
-                hit = edge;
-                mid = true;
+                // Only a part the line itself crosses (its cut hole): a part the side ray grazes beside the line would put the
+                // mark in the open, off its face's plane.
+                if (InBounds(edge.Body, edge.Part, pos + d * t))
+                {
+                    edge.Point = pos + d * t;
+                    edge.Distance = t;
+                    hit = edge;
+                    mid = true;
+                }
             }
             if (!mid || hit.RoutePlus1 > 0 || hit.TrackPlus1 > 0)
                 break;
@@ -319,14 +325,105 @@ public static class ConstructBores
             var gone = hit.Distance + exit;
             if (gone > left)
                 break; // (it stopped inside)
-            if (!hit.Glass)
-                world.AddBoreMark(c, hit.Part, outAt, normal, radius, now);
+            // The bounds' face is where the round flies on from, but the mark goes on the part's real far face (a pipe, a wedge,
+            // a part with a gap: its bounds' face can be in the open), found by a ray back along the line; none, no mark.
+            if (!hit.Glass && RealExit(c, hit.Part, hit.Point, d, exit, aside, out var realAt, out var realNormal))
+                world.AddBoreMark(c, hit.Part, realAt, realNormal, radius, now);
             if (n < exits.Length)
                 exits[n++] = outAt;
             pos = outAt + d * 0.01f;
             left -= gone + 0.01f;
         }
         return n;
+    }
+
+    /// <summary>
+    /// Where a bore that entered part <paramref name="part"/> at <paramref name="at"/> really leaves it: a ray back from just past its
+    /// bounds' exit (<paramref name="exit"/>) meets the part's far face. A second ray <paramref name="aside"/> of the line finds a face
+    /// whose middle was cut away (a real hole), its point taken back onto the line. False when neither meets the part.
+    /// </summary>
+    private static bool RealExit(Construct c, int part, Vector3 at, Vector3 d, float exit, Vector3 aside, out Vector3 point, out Vector3 normal)
+    {
+        point = normal = default;
+        if (c.MergeOf[part] != 0)
+        {
+            ExitFace(c, part, at, d, out normal); // (a merged receiver is one box: its bounds are its face)
+            point = at + d * exit;
+            return true;
+        }
+        var span = exit + 0.02f;
+        var back = at + d * span;
+        var found = PartRay(c, part, back, -d, span, out var t, out normal);
+        if (PartRay(c, part, back + aside, -d, span, out var te, out var ne) && (!found || te < t - 0.005f))
+        {
+            var dn = Vector3.Dot(-d, ne);
+            t = MathF.Abs(dn) > 0.2f ? MathF.Max(0f, Vector3.Dot(aside - d * te, ne) / dn) : te;
+            if (InBounds(c, part, back - d * t))
+            {
+                normal = ne;
+                found = true;
+            }
+            else if (found)
+                PartRay(c, part, back, -d, span, out t, out normal); // (the side ray met it beside the line: the middle's answer stands)
+        }
+        if (!found || t > span)
+            return false;
+        point = back - d * t;
+        return true;
+    }
+
+    /// <summary>Is a world point within part <paramref name="part"/>'s bounds (a centimetre of slack)?</summary>
+    private static bool InBounds(Construct c, int part, Vector3 at)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return false;
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        var lo = Vector3.Transform(at - t, Quaternion.Conjugate(q));
+        c.PartBounds(part, out var mn, out var mx);
+        var s = new Vector3(0.01f);
+        return lo.X >= mn.X - s.X && lo.Y >= mn.Y - s.Y && lo.Z >= mn.Z - s.Z && lo.X <= mx.X + s.X && lo.Y <= mx.Y + s.Y && lo.Z <= mx.Z + s.Z;
+    }
+
+    /// <summary>A ray against one part's solid boxes and hulls (world space): the nearest hit and its outward normal.</summary>
+    private static bool PartRay(Construct c, int i, Vector3 origin, Vector3 dir, float max, out float dist, out Vector3 normal)
+    {
+        dist = max;
+        normal = default;
+        var found = false;
+        ref var p = ref c.Parts[i];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var iq = Quaternion.Conjugate(q);
+        var lo = Vector3.Transform(origin - t, iq);
+        var ld = Vector3.Transform(dir, iq);
+        var boxes = c.SolidCount(i);
+        for (var bi = 0; bi < boxes; bi++)
+        {
+            if (c.MergeOf[i] == 0 && ConstructHulls.Covered(p.D, bi))
+                continue; // (a shape's hidden boxes: its hull stands for them)
+            c.SolidBox(i, bi, out var centre, out var half);
+            if (Geometry.RayAabb(centre - half, centre + half, lo, ld, dist) is { } bd && bd < dist && bd > 0)
+            {
+                dist = bd;
+                found = true;
+                normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, bd), q);
+            }
+        }
+        if (c.MergeOf[i] == 0)
+        {
+            var hulls = ConstructHulls.Of(p.D);
+            var pr = Rot24.Quat(p.Rot);
+            var bk = Quaternion.Conjugate(pr);
+            var pl = Vector3.Transform(lo - p.Pos, bk);
+            var pd = Vector3.Transform(ld, bk);
+            for (var h = 0; h < hulls.Length; h++)
+                if (hulls[h].Ray(pl, pd, dist, out var hd, out var pn) && hd < dist && hd > 0)
+                {
+                    dist = hd;
+                    found = true;
+                    normal = Vector3.Transform(Vector3.Transform(pn, pr), q);
+                }
+        }
+        return found;
     }
 
     /// <summary><see cref="ConstructWeapons.ExitDistance"/>, and the world normal of the face it leaves by.</summary>
@@ -377,6 +474,7 @@ public sealed partial class ConstructWorld
         BoreMarks[_boreNext] = new BoreMark
         {
             Body = c.Id, Part = (ushort)part, Key = c.Parts[part].Pos, Radius = radius, Born = now,
+            Def = c.DefOf(part), Base = HullHoles.BaseOf(c.DefOf(part)),
             Pos = Vector3.Transform(at - t, iq), Normal = Vector3.Normalize(Vector3.Transform(normal, iq)),
         };
         _boreNext = (_boreNext + 1) % MaxBoreMarks;
@@ -422,6 +520,18 @@ public sealed partial class ConstructWorld
         return false;
     }
 
+    /// <summary>Is part <paramref name="i"/> the mark's own (not a facet of the same shape beside it, at the same Pos)? Its def, or one holed from the same file part.</summary>
+    private static bool Same(ref BoreMark m, Construct c, int i)
+    {
+        var d = c.DefOf(i);
+        if (ReferenceEquals(d, m.Def))
+            return true;
+        if (!ReferenceEquals(HullHoles.BaseOf(d), m.Base))
+            return false;
+        m.Def = d; // (holed since: the base lookup once)
+        return true;
+    }
+
     /// <summary>Is mark <paramref name="k"/>'s part still on its body? Finds it again after a renumbering (parts keep their order); false (and the mark goes) when it is gone.</summary>
     public bool BoreMarkLive(int k, out Construct c)
     {
@@ -434,10 +544,10 @@ public sealed partial class ConstructWorld
         }
         c = body;
         var i = Math.Min(m.Part, body.PartCount - 1);
-        if (i >= 0 && body.Parts[i].Pos == m.Key)
+        if (i >= 0 && body.Parts[i].Pos == m.Key && Same(ref m, body, i))
             return true;
         for (; i >= 0; i--)
-            if (body.Parts[i].Pos == m.Key)
+            if (body.Parts[i].Pos == m.Key && Same(ref m, body, i))
             {
                 m.Part = (ushort)i;
                 return true;

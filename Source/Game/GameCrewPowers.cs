@@ -190,7 +190,7 @@ public sealed partial class Game : IPowerHost
             long have = 0;
             var traded = false;
             for (var d = 0; d < all.Length; d++)
-                if (CrewPowers.Find(all[d].Power) == power)
+                if (StationLife.Trades(all[d]) && CrewPowers.Find(all[d].Power) == power)
                     for (var k = 0; k < all[d].Goods.Length; k++)
                         if (all[d].Goods[k].Material == mat)
                         {
@@ -207,7 +207,7 @@ public sealed partial class Game : IPowerHost
         {
             var need = (int)MathF.Ceiling(units * share);
             for (var d = 0; d < all.Length && need > 0; d++)
-                if (CrewPowers.Find(all[d].Power) == power)
+                if (StationLife.Trades(all[d]) && CrewPowers.Find(all[d].Power) == power)
                     for (var k = 0; k < all[d].Goods.Length && need > 0; k++)
                         if (all[d].Goods[k].Material == mat)
                         {
@@ -245,7 +245,7 @@ public sealed partial class Game : IPowerHost
         var bestScore = double.MinValue;
         for (var d = 0; d < all.Length; d++)
         {
-            if (CrewPowers.Find(all[d].Power) != power)
+            if (!StationLife.Trades(all[d]) || CrewPowers.Find(all[d].Power) != power)
                 continue;
             for (var k = 0; k < all[d].Goods.Length; k++)
             {
@@ -276,6 +276,8 @@ public sealed partial class Game : IPowerHost
         mk.Stock[bestK] += took;
         if (mk.Body != 0)
             StationsVersion++;
+        if (all[bestD].Planet.Equals(planet, StringComparison.OrdinalIgnoreCase))
+            StationGain(mk, took * (double)TradeValues.Of(material) * StationLife.HaulSave); // (the hauling a station over the site's planet saves: its ledger)
         _siteGoodsGiven[power] += took;
         if (ServerTick >= _siteGoodsLogAt)
             SiteGoodsLog();
@@ -301,7 +303,7 @@ public sealed partial class Game : IPowerHost
     private static bool Traded(byte power, byte mat)
     {
         foreach (var d in StationMarkets.All)
-            if (CrewPowers.Find(d.Power) == power)
+            if (StationLife.Trades(d) && CrewPowers.Find(d.Power) == power)
                 foreach (var g in d.Goods)
                     if (g.Material == mat)
                         return true;

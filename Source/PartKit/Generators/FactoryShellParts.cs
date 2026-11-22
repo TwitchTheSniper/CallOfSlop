@@ -46,7 +46,11 @@ public sealed partial class FactoryShellParts : IPartGenerator
                 ("min", Vec(i0, t + 0.005, i0)), ("max", Vec(i1, h - 0.05, i1)))))),
             ("ports", Py.L(
                 Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Vec(x0 + t * 0.5, h, 0)), ("face", "+y")),
-                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Vec(x1 - t * 0.5, h, 0)), ("face", "+y")))));
+                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Vec(x1 - t * 0.5, h, 0)), ("face", "+y")))),
+            // Creative: the configure tool sets what it holds (ConstructStoreVolume.IsFillBin), to try a factory without hauling its stock.
+            ("config", Py.L(
+                Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "What the bunker holds. Empty, it takes the first stock a chute or a tipper brings.")),
+                Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full it is. Chutes and tippers move this as they run.")))));
         var area = w * w + 4 * w * h;
         // The mass (and so the recipe): the 2 and 3 m ones as they were; past 3 m it grows more slowly than the concrete, so every size costs more
         // than the one below and the 8 m one stays under the recipes' cap (Assembling's MaxUnits, 2000).

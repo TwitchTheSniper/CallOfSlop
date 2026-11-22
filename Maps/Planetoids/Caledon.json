@@ -42,6 +42,435 @@
       "sandBelow": -140,
       "snowAbove": 1040
     },
+    "biomes": {
+      "seed": 4,
+      "tempPole": 7,
+      "tempEquator": 17,
+      "lapse": 6.5,
+      "tempNoise": 2.5,
+      "tempScale": 2600,
+      "wetScale": 2200,
+      "wetLow": -60,
+      "wetLowEdge": 160,
+      "wetLowAdd": 0.3,
+      "clumps": 0.9,
+      "clumpScale": 80,
+      "list": [
+        {
+          "name": "bog",
+          "wet": [
+            0.78,
+            3
+          ],
+          "height": [
+            -600,
+            420
+          ],
+          "slope": 9,
+          "grass": "#5c5a36",
+          "dirt": "#4a3f2d",
+          "plants": [
+            {
+              "type": "reed",
+              "density": 0.12,
+              "size": [
+                0.8,
+                1.3
+              ],
+              "color": "#8a8a4a",
+              "patch": 0.6,
+              "patchScale": 18,
+              "slope": 8
+            },
+            {
+              "type": "grass",
+              "density": 0.55,
+              "size": [
+                0.7,
+                1.1
+              ],
+              "color": "#7a7a3e",
+              "jitter": 0.2
+            },
+            {
+              "type": "heather",
+              "density": 0.05,
+              "size": [
+                0.7,
+                1.1
+              ],
+              "color": "#5a3e48",
+              "patch": 0.5
+            },
+            {
+              "type": "birch",
+              "density": 0.002,
+              "size": [
+                6,
+                10
+              ],
+              "color": "#7a8a42",
+              "bark": "#cfcabd",
+              "slope": 10
+            }
+          ]
+        },
+        {
+          "name": "glen woods",
+          "temp": [
+            10.5,
+            40
+          ],
+          "wet": [
+            0.4,
+            3
+          ],
+          "height": [
+            -600,
+            380
+          ],
+          "slope": 26,
+          "grass": "#405a2c",
+          "dirt": "#54452f",
+          "plants": [
+            {
+              "type": "tree",
+              "density": 0.016,
+              "size": [
+                9,
+                16
+              ],
+              "color": "#3f5f28",
+              "bark": "#4a3d30",
+              "patch": 0.55,
+              "patchScale": 110
+            },
+            {
+              "type": "birch",
+              "density": 0.008,
+              "size": [
+                10,
+                17
+              ],
+              "color": "#6f8d3a",
+              "bark": "#d6d2c6",
+              "patch": 0.4,
+              "patchScale": 60
+            },
+            {
+              "type": "bush",
+              "density": 0.025,
+              "size": [
+                0.8,
+                1.5
+              ],
+              "color": "#36552a",
+              "patch": 0.4
+            },
+            {
+              "type": "bracken",
+              "density": 0.12,
+              "size": [
+                0.8,
+                1.3
+              ],
+              "color": "#55702a",
+              "patch": 0.6,
+              "patchScale": 20
+            },
+            {
+              "type": "shrub",
+              "density": 0.06,
+              "size": [
+                0.7,
+                1.1
+              ],
+              "color": "#4a6a2a"
+            },
+            {
+              "type": "grass",
+              "density": 0.35,
+              "size": [
+                0.7,
+                1.1
+              ],
+              "color": "#4f6e30",
+              "patch": 0.4
+            }
+          ]
+        },
+        {
+          "name": "pinewood",
+          "temp": [
+            5,
+            10.5
+          ],
+          "wet": [
+            0.25,
+            3
+          ],
+          "height": [
+            -600,
+            820
+          ],
+          "slope": 30,
+          "grass": "#3a4c2c",
+          "dirt": "#4d3f30",
+          "plants": [
+            {
+              "type": "scotspine",
+              "density": 0.012,
+              "size": [
+                12,
+                20
+              ],
+              "color": "#2f4a2a",
+              "bark": "#8a5a3c",
+              "patch": 0.45,
+              "patchScale": 140
+            },
+            {
+              "type": "spruce",
+              "density": 0.009,
+              "size": [
+                14,
+                26
+              ],
+              "color": "#24402a",
+              "bark": "#4a3a2e",
+              "patch": 0.5,
+              "patchScale": 90
+            },
+            {
+              "type": "pine",
+              "density": 0.004,
+              "size": [
+                8,
+                13
+              ],
+              "color": "#2c4a2c",
+              "bark": "#5a4030"
+            },
+            {
+              "type": "shrub",
+              "density": 0.08,
+              "size": [
+                0.7,
+                1.2
+              ],
+              "color": "#3f5a28",
+              "patch": 0.5
+            },
+            {
+              "type": "heather",
+              "density": 0.12,
+              "size": [
+                0.7,
+                1.2
+              ],
+              "color": "#5d4250",
+              "patch": 0.6,
+              "patchScale": 25
+            },
+            {
+              "type": "grass",
+              "density": 0.2,
+              "size": [
+                0.6,
+                1.0
+              ],
+              "color": "#556a36"
+            }
+          ]
+        },
+        {
+          "name": "meadow",
+          "temp": [
+            6,
+            40
+          ],
+          "wet": [
+            -1,
+            0.4
+          ],
+          "height": [
+            -600,
+            600
+          ],
+          "slope": 28,
+          "grass": "#62803c",
+          "dirt": "#6b5a3c",
+          "plants": [
+            {
+              "type": "grass",
+              "density": 1.0,
+              "size": [
+                0.7,
+                1.25
+              ],
+              "color": "#6a8a3a",
+              "jitter": 0.18,
+              "patch": 0.3
+            },
+            {
+              "type": "grass",
+              "density": 0.12,
+              "size": [
+                0.6,
+                0.9
+              ],
+              "color": "#b0a040",
+              "jitter": 0.25,
+              "patch": 0.7,
+              "patchScale": 9
+            },
+            {
+              "type": "bush",
+              "density": 0.006,
+              "size": [
+                0.9,
+                1.6
+              ],
+              "color": "#3e5e2a",
+              "patch": 0.6,
+              "patchScale": 40
+            },
+            {
+              "type": "tree",
+              "density": 0.0015,
+              "size": [
+                8,
+                14
+              ],
+              "color": "#466a2c",
+              "bark": "#4a3d30"
+            }
+          ]
+        },
+        {
+          "name": "heather moor",
+          "temp": [
+            1.5,
+            8
+          ],
+          "wet": [
+            -1,
+            3
+          ],
+          "height": [
+            80,
+            1300
+          ],
+          "slope": 34,
+          "grass": "#5e4a50",
+          "dirt": "#6e5866",
+          "plants": [
+            {
+              "type": "heather",
+              "density": 0.7,
+              "size": [
+                0.7,
+                1.3
+              ],
+              "color": "#6a4058",
+              "jitter": 0.2,
+              "patch": 0.35,
+              "patchScale": 12
+            },
+            {
+              "type": "grass",
+              "density": 0.25,
+              "size": [
+                0.6,
+                1.0
+              ],
+              "color": "#7a7a48",
+              "jitter": 0.2
+            },
+            {
+              "type": "bracken",
+              "density": 0.03,
+              "size": [
+                0.8,
+                1.2
+              ],
+              "color": "#6a6a2c",
+              "patch": 0.7,
+              "patchScale": 30
+            },
+            {
+              "type": "boulder",
+              "density": 0.002,
+              "size": [
+                0.6,
+                2.4
+              ],
+              "color": "#6a6a68",
+              "slope": 40
+            },
+            {
+              "type": "birch",
+              "density": 0.0008,
+              "size": [
+                5,
+                9
+              ],
+              "color": "#7a8a40",
+              "bark": "#d0ccc0"
+            }
+          ]
+        },
+        {
+          "name": "high fell",
+          "temp": [
+            -30,
+            1.5
+          ],
+          "height": [
+            500,
+            20000
+          ],
+          "slope": 90,
+          "grass": "#6f7065",
+          "dirt": "#67635c",
+          "plants": [
+            {
+              "type": "scree",
+              "density": 0.25,
+              "size": [
+                0.7,
+                1.4
+              ],
+              "color": "#77766f",
+              "slope": 45,
+              "jitter": 0.15
+            },
+            {
+              "type": "boulder",
+              "density": 0.006,
+              "size": [
+                0.6,
+                3
+              ],
+              "color": "#6a6a66",
+              "slope": 50
+            },
+            {
+              "type": "grass",
+              "density": 0.15,
+              "size": [
+                0.5,
+                0.8
+              ],
+              "color": "#7d7d58",
+              "patch": 0.6,
+              "patchScale": 10,
+              "slope": 30
+            }
+          ]
+        }
+      ]
+    },
     "features": [
       {
         "type": "noise",

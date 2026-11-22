@@ -33,6 +33,8 @@ public sealed partial class ZeroDayWorks
             var bunkers = new List<VPart>();
             foreach (var x in new[] { 60f, 68f })
                 bunkers.Add(Paint(Weld(Medium("Medium Fluid Bunker", x, -8f)), Stock));
+            foreach (var b in bunkers)
+                Config(b, ("fluid", "fuel"), ("fill", 100)); // (full of fuel when spawned in creative, Sean 2026-11-22)
             // Fuel: each bunker's out to every genset's Fuel in (a port takes any number of links), over the hall at 6 m.
             foreach (var g in gensets)
                 Duct("pipe", bunkers[0], "Fluid out", g, "Fuel in", 6f, Power);

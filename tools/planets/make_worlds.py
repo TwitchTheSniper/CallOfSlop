@@ -101,6 +101,69 @@ def scattered(radius, seed, count, keep, make):
 GLACIER_KEEP = [(90, 0, 1600), (76.4, 90, 500), (-10, 320, 900), (15, 170, 300)]
 
 
+def plant(type, density, size=None, color=None, **more):
+    """One plant of a biome (docs/planets/BIOMES.md): density per square metre at High quality."""
+    p = {"type": type, "density": density}
+    if size:
+        p["size"] = list(size)
+    if color:
+        p["color"] = color
+    p.update(more)
+    return p
+
+
+# Caledon's biomes (Sean, 2026-11-22: "biomes where they fit, such as the Earth-type planet"). Heights are the grown
+# world's own metres: the bens reach about 2.9 km, the glens' floors -200 m, most ground lies 0 to 400 m.
+CALEDON_BIOMES = {
+    "seed": 4, "tempPole": 7, "tempEquator": 17, "lapse": 6.5, "tempNoise": 2.5, "tempScale": 2600,
+    "wetScale": 2200, "wetLow": -60, "wetLowEdge": 160, "wetLowAdd": 0.3,
+    "clumps": 0.9, "clumpScale": 80,  # (Sean, 2026-11-22: thickets, glades and clearings, not even cover)
+    "list": [
+        {"name": "bog", "wet": [0.78, 3], "height": [-600, 420], "slope": 9, "grass": "#5c5a36", "dirt": "#4a3f2d",
+         "plants": [plant("reed", 0.12, (0.8, 1.3), "#8a8a4a", patch=0.6, patchScale=18, slope=8),
+                    plant("grass", 0.55, (0.7, 1.1), "#7a7a3e", jitter=0.2),
+                    plant("heather", 0.05, (0.7, 1.1), "#5a3e48", patch=0.5),
+                    plant("birch", 0.002, (6, 10), "#7a8a42", bark="#cfcabd", slope=10)]},
+        {"name": "glen woods", "temp": [10.5, 40], "wet": [0.4, 3], "height": [-600, 380], "slope": 26, "grass": "#405a2c", "dirt": "#54452f",
+         "plants": [plant("tree", 0.016, (9, 16), "#3f5f28", bark="#4a3d30", patch=0.55, patchScale=110),
+                    plant("birch", 0.008, (10, 17), "#6f8d3a", bark="#d6d2c6", patch=0.4, patchScale=60),
+                    plant("bush", 0.025, (0.8, 1.5), "#36552a", patch=0.4),
+                    plant("bracken", 0.12, (0.8, 1.3), "#55702a", patch=0.6, patchScale=20),
+                    plant("shrub", 0.06, (0.7, 1.1), "#4a6a2a"),
+                    plant("grass", 0.35, (0.7, 1.1), "#4f6e30", patch=0.4)]},
+        {"name": "pinewood", "temp": [5, 10.5], "wet": [0.25, 3], "height": [-600, 820], "slope": 30, "grass": "#3a4c2c", "dirt": "#4d3f30",
+         "plants": [plant("scotspine", 0.012, (12, 20), "#2f4a2a", bark="#8a5a3c", patch=0.45, patchScale=140),
+                    plant("spruce", 0.009, (14, 26), "#24402a", bark="#4a3a2e", patch=0.5, patchScale=90),
+                    plant("pine", 0.004, (8, 13), "#2c4a2c", bark="#5a4030"),
+                    plant("shrub", 0.08, (0.7, 1.2), "#3f5a28", patch=0.5),
+                    plant("heather", 0.12, (0.7, 1.2), "#5d4250", patch=0.6, patchScale=25),
+                    plant("grass", 0.2, (0.6, 1.0), "#556a36")]},
+        {"name": "meadow", "temp": [6, 40], "wet": [-1, 0.4], "height": [-600, 600], "slope": 28, "grass": "#62803c", "dirt": "#6b5a3c",
+         "plants": [plant("grass", 1.0, (0.7, 1.25), "#6a8a3a", jitter=0.18, patch=0.3),
+                    plant("grass", 0.12, (0.6, 0.9), "#b0a040", jitter=0.25, patch=0.7, patchScale=9),  # (buttercups and dry tufts)
+                    plant("bush", 0.006, (0.9, 1.6), "#3e5e2a", patch=0.6, patchScale=40),
+                    plant("tree", 0.0015, (8, 14), "#466a2c", bark="#4a3d30")]},
+        {"name": "heather moor", "temp": [1.5, 8], "wet": [-1, 3], "height": [80, 1300], "slope": 34, "grass": "#5e4a50", "dirt": "#6e5866",
+         "plants": [plant("heather", 0.7, (0.7, 1.3), "#6a4058", jitter=0.2, patch=0.35, patchScale=12),
+                    plant("grass", 0.25, (0.6, 1.0), "#7a7a48", jitter=0.2),
+                    plant("bracken", 0.03, (0.8, 1.2), "#6a6a2c", patch=0.7, patchScale=30),
+                    plant("boulder", 0.002, (0.6, 2.4), "#6a6a68", slope=40),
+                    plant("birch", 0.0008, (5, 9), "#7a8a40", bark="#d0ccc0")]},
+        {"name": "high fell", "temp": [-30, 1.5], "height": [500, 20000], "slope": 90, "grass": "#6f7065", "dirt": "#67635c",
+         "plants": [plant("scree", 0.25, (0.7, 1.4), "#77766f", slope=45, jitter=0.15),
+                    plant("boulder", 0.006, (0.6, 3), "#6a6a66", slope=50),
+                    plant("grass", 0.15, (0.5, 0.8), "#7d7d58", patch=0.6, patchScale=10, slope=30)]},
+    ],
+}
+
+# The Dev Planetoid gets the same set to try them on near the middle of the map's area (its pole).
+# The barren worlds grow no plants: only loose rocks and scree, so their ground isn't bare.
+def barren(seed, rock, stone, boulders=0.004, scree=0.12):
+    return {"seed": seed, "tempNoise": 0, "list": [
+        {"name": "rubble", "plants": [plant("boulder", boulders, (0.5, 2.6), rock, slope=45),
+                                      plant("scree", scree, (0.6, 1.4), stone, slope=42, patch=0.6, patchScale=30)]}]}
+
+
 def glacier_terrain():
     """Glacier's rough country (docs/planets/WORLDS.md "Glacier's ground"): near the colony a ridge, a pressure-ridge field
     and a crevasse field, each within a short walk; over the whole world ice ridges with passes, crevasse fields, pressure
@@ -199,6 +262,7 @@ WORLDS = [
         ],
         "landing": 10,
         "sites": [("home", 12, 130, 420, -150, 200), ("data", -10, 50, 70, -128, 60)],
+        "biomes": barren(11, "#2a2424", "#3a302e"),
     },
     {
         "name": "Glacier", "order": 3, "radius": 8000, "strength": 14,
@@ -234,6 +298,7 @@ WORLDS = [
         ],
         "landing": 20,
         "sites": [("home", -10, 320, 700, -62, 300), ("data", 15, 170, 80, -318, 70)],
+        "biomes": barren(12, "#3d4248", "#4a5058", boulders=0.0015, scree=0.03),  # (dark stones on the snow: few)
     },
     {
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
@@ -266,6 +331,7 @@ WORLDS = [
         ],
         "landing": 30,
         "sites": [("home", 30, 150, 160, -100, 220), ("data", 60, 152, 70, 640, 140)],
+        "biomes": CALEDON_BIOMES,
     },
     {
         "name": "Mille", "order": 5, "radius": 3000, "strength": 8, "grow": 4 / 3,  # (4 km: a hollow world's most)
@@ -334,6 +400,7 @@ WORLDS = [
         ],
         "landing": 6,
         "sites": [],
+        "biomes": barren(13, "#4a443d", "#5c5348", boulders=0.008, scree=0.2),
     },
 ]
 
@@ -410,6 +477,8 @@ def build(w):
     else:
         features.append(flatten(90, 0, 70, h, 150))
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
+    if "biomes" in w:  # (docs/planets/BIOMES.md: heights in them are the grown world's)
+        planetoid["biomes"] = w["biomes"]
     if "cavity" in w:
         planetoid["cavity"] = w["cavity"]
     if "limit" in w:  # the heaviest ship that may come down (WORLDS.md "Landing limits")

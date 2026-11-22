@@ -1,0 +1,170 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Console Drawer Tray 2x4",
+  "description": "A pull-out console's tray, 3 by 3 cells of panel instruments on its deck: hung on a Console Drawer Case 2x4, F slides it out and back. Wired from a seat, it comes out while someone sits there.",
+  "group": "Cockpit",
+  "section": "Console bays",
+  "role": "door",
+  "tool": "wrench",
+  "mass": 1.2,
+  "health": 27,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3a4048",
+  "attachSeconds": 1.0,
+  "onBreak": "detach",
+  "door": {
+    "kind": "slide",
+    "axis": "+y",
+    "travel": 0.315,
+    "seconds": 0.6,
+    "hang": "hang"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.032,
+        -0.0305,
+        -0.032
+      ],
+      "max": [
+        0.132,
+        -0.0185,
+        0.332
+      ],
+      "color": "#3a4048"
+    },
+    {
+      "min": [
+        0.02,
+        -0.0185,
+        0.11
+      ],
+      "max": [
+        0.036,
+        -0.0025,
+        0.19
+      ],
+      "color": "#3f454d",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.018,
+        -0.3505,
+        -0.0186
+      ],
+      "max": [
+        -0.006,
+        -0.031,
+        0.3186
+      ],
+      "color": "#30353c"
+    },
+    {
+      "min": [
+        -0.006,
+        -0.3505,
+        0.144
+      ],
+      "max": [
+        0.006,
+        -0.3385,
+        0.156
+      ],
+      "color": "#3a4048"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        -0.3505,
+        0.15
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "c0.0",
+      "at": [
+        -0.006,
+        -0.0845,
+        0.05
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c0.1",
+      "at": [
+        -0.006,
+        -0.1845,
+        0.05
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c0.2",
+      "at": [
+        -0.006,
+        -0.2845,
+        0.05
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c1.0",
+      "at": [
+        -0.006,
+        -0.0845,
+        0.15
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c1.1",
+      "at": [
+        -0.006,
+        -0.1845,
+        0.15
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c1.2",
+      "at": [
+        -0.006,
+        -0.2845,
+        0.15
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c2.0",
+      "at": [
+        -0.006,
+        -0.0845,
+        0.25
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c2.1",
+      "at": [
+        -0.006,
+        -0.1845,
+        0.25
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "c2.2",
+      "at": [
+        -0.006,
+        -0.2845,
+        0.25
+      ],
+      "dir": "+x"
+    }
+  ]
+}

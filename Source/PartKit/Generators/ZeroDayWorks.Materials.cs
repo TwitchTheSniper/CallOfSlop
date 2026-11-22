@@ -19,11 +19,11 @@ public sealed partial class ZeroDayWorks
         private void LayMaterials()
         {
             // Raw stock, west end: three ore bunkers (one ore each) and bunkers of stone and wood for the Foundry and the Sawmill.
-            var iron = Raw("Ore Bunker 6 m", 5f) /* iron ore */;
-            var copperOre = Raw("Ore Bunker 6 m", 13f) /* copper ore */;
-            var sand = Raw("Ore Bunker 6 m", 19f) /* sand */;
-            var stone = Raw("Ore Bunker 4 m", 25f) /* stone */;
-            var wood = Raw("Ore Bunker 4 m", 89f) /* wood */;
+            var iron = Raw("Ore Bunker 6 m", 5f, "iron ore");
+            var copperOre = Raw("Ore Bunker 6 m", 13f, "copper ore");
+            var sand = Raw("Ore Bunker 6 m", 19f, "sand");
+            var stone = Raw("Ore Bunker 4 m", 25f, "stone");
+            var wood = Raw("Ore Bunker 4 m", 89f, "wood");
 
             // Three Smelters (iron ore to metal, copper ore to copper at tier 2, sand to glass), the Foundry (metal and stone to steel),
             // the Sawmill (wood to planks) and the Recycler, each over the bin it fills.
@@ -59,8 +59,13 @@ public sealed partial class ZeroDayWorks
             Chute(rubber, Bin("rubber", 75f));
         }
 
-        /// <summary>A raw stock bunker on the north row at x.</summary>
-        private VPart Raw(string part, float x) => On(part, x, RawRow, Up, paint: Stock, finish: "concrete");
+        /// <summary>A raw stock bunker on the north row at x, full of its stock when spawned in creative (Sean, 2026-11-22: a works to try at once).</summary>
+        private VPart Raw(string part, float x, string stock)
+        {
+            var b = On(part, x, RawRow, Up, paint: Stock, finish: "concrete");
+            Config(b, ("material", stock), ("fill", 100));
+            return b;
+        }
 
         private VPart Refiner(string part, float x) => On(part, x, RawRow, Up, paint: Refining);
 

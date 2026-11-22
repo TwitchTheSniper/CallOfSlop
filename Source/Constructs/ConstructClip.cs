@@ -49,6 +49,8 @@ public sealed partial class ConstructClip
     public static ConstructClip? Capture(Construct src, ReadOnlySpan<ushort> items, out string why, ConstructWorld? srcWorld = null)
     {
         var clip = new ConstructClip();
+        if (srcWorld != null)
+            ConstructStoreVolume.FollowBins(srcWorld, src); // (a bin's Material and Fill say what it holds: a creative paste fills it so)
         var body = clip.World.CopyPiece(src, WalkOrder(src, items), Vector3.Zero, Quaternion.Identity, out why, srcWorld); // (ropes and springs with both ends in the selection come along)
         if (body == null)
             return null;
@@ -62,6 +64,8 @@ public sealed partial class ConstructClip
     public static ConstructClip Of(Construct body, string name, ConstructWorld? srcWorld = null)
     {
         var clip = new ConstructClip { Name = name, BaseFrozen = body.Frozen };
+        if (srcWorld != null)
+            ConstructStoreVolume.FollowBins(srcWorld, body);
         var copy = clip.World.CopyPiece(body, WalkOrder(body, AllOf(body)), Vector3.Zero, Quaternion.Identity, out _, srcWorld);
         clip.Set(copy ?? throw new InvalidOperationException("a built construct copies"));
         return clip;
