@@ -364,7 +364,7 @@ public sealed partial class Game
         }
         if (j < 0)
             return;
-        var price = def.Parts[j].Sell * (sh.ReducedAt.Contains(ShelfKey(c.Parts[part].Pos)) ? ReducedShare : 1);
+        var price = (float)(def.Parts[j].Sell * (sh.ReducedAt.Contains(ShelfKey(c.Parts[part].Pos)) ? ReducedShare : 1) / StandingRate(StationPower(m), player)); // (a friend pays less: StandingRate)
         basket.Add(new BasketLine(c.Id, partDef, price));
         if (def.Goods.Length + j < m.Stock.Length)
             m.Stock[def.Goods.Length + j] = Math.Max(0, m.Stock[def.Goods.Length + j] - 1);
@@ -456,8 +456,8 @@ public sealed partial class Game
                 (lines, sum) = (lines + 1, sum + x.Price);
         if (lines == 0)
             return true;
-        var cost = (long)MathF.Ceiling(sum);
         var power = StationPower(m);
+        var cost = (long)MathF.Ceiling(sum); // (each line was priced by standing as it went in the basket: StandingRate)
         var name = StationName(st);
         string how;
         string? cant;
@@ -591,8 +591,9 @@ public sealed partial class Game
                 continue;
             }
             var basket = _baskets.TryGetValue(who, out var b) ? b : _baskets[who] = [];
-            basket.Add(new BasketLine(st.Id, part, def.Parts[j].Sell, body?.Id ?? 0, s));
-            SandboxHands.Notices.Add((who, $"{ConstructParts.Def(part)?.Name}: {MathF.Ceiling(def.Parts[j].Sell):0} at the trade arches. Basket: {StoreBasketText(basket, st.Id)}."));
+            var price = (float)(def.Parts[j].Sell / StandingRate(StationPower(m), who)); // (a friend pays less: StandingRate)
+            basket.Add(new BasketLine(st.Id, part, price, body?.Id ?? 0, s));
+            SandboxHands.Notices.Add((who, $"{ConstructParts.Def(part)?.Name}: {MathF.Ceiling(price):0} at the trade arches. Basket: {StoreBasketText(basket, st.Id)}."));
         }
     }
 

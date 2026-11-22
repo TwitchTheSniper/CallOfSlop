@@ -427,10 +427,10 @@ public static partial class ConstructLifters
         for (var pass = tag == 0 ? 1 : 0; pass < 2; pass++)
         {
             int si = 0, t = -1;
-            while (NextStation(world, ref si, ref t, out var sc, out _, out var tray))
+            while (NextStation(world, ref si, ref t, out var sc, out _, out _))
             {
-                if (OrderOf(sc, t, (ushort)d.Id, pass == 0 ? tag : (ushort)0) < 0 || !TooBigForHold(sc, t, tray, d) || !ServesPad(world, sc, t, b.Id, pad))
-                    continue;
+                if (OrderOf(sc, t, (ushort)d.Id, pass == 0 ? tag : (ushort)0) < 0 || !ServesPad(world, sc, t, b.Id, pad))
+                    continue; // (any size since the hand-offs, 2026-11-22: a part handed on to the pad counts as a large one always has)
                 ConstructCrafting.Arrived(world, sc, t, d);
                 Console.WriteLine($"[lifter] a {d.Name} landed on the pick pad (body {b.Id} part {pad}) for the station (body {sc.Id} part {t})");
                 return;

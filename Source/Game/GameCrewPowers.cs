@@ -169,11 +169,17 @@ public sealed partial class Game : IPowerHost
         Constructs.Remove(c);
     }
 
+    int IPowerHost.Bands(byte power) => IsServer && power != 0 && power == CrewPowers.Find("Raiders") ? _bands : 0;
+
+    void IPowerHost.Loot(byte raider, (byte Material, float Units)[] goods, double value) => CampLoot(raider, goods, value);
+
     bool IPowerHost.TakeGoods(byte power, (byte Material, float Units)[] goods, float share, out byte shortOf)
     {
         shortOf = 0;
         if (!IsServer || power == 0 || goods.Length == 0)
             return true;
+        if (!HasStation(power))
+            return CampTake(power, goods, share, out shortOf); // (a power with no station builds from its camp: GameCamps.cs)
         var all = StationMarkets.All;
         // (first: is every material its stations trade there? a station with no line for it doesn't count; none trades it: not taken)
         foreach (var (mat, units) in goods)
@@ -229,6 +235,11 @@ public sealed partial class Game : IPowerHost
     {
         if (!IsServer || units <= 0)
             return 0;
+        if (!HasStation(power))
+        {
+            CampPut(power, material, units); // (a power with no station keeps its sites' goods in its camp: GameCamps.cs)
+            return units;
+        }
         var all = StationMarkets.All;
         int bestD = -1, bestK = -1;
         var bestScore = double.MinValue;

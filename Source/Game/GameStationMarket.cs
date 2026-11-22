@@ -346,6 +346,7 @@ public sealed partial class Game
         public double[] Frac = []; // host: what its needs used or made short of a whole unit, by good
         public double[] Owed = []; // host: what its making is owed short of a whole unit, by line (not saved: under one unit a line)
         public bool[] Stalled = []; // host: a line it makes that last stopped for want of an input (its log line is said once)
+        public string[] Lines = []; // a client: its supply lines and consignments bound for it, as the host last told (StationLines)
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
@@ -490,6 +491,8 @@ public sealed partial class Game
                 }
             }
         }
+        HardshipTick(); // (each planet's hardship and the raider bands it forms: GameCamps.cs)
+        StationsVersion++; // (once a minute the cards hear the supply lines again: a line goes late with no other change, GameSupplyLines.cs)
         ConsignTick(); // (shortages no route answers straight: consignments routed over the haulers, GameConsignments.cs)
 
         // (a line's stock moved by an amount, whole units into the stock and the rest kept, inside 0 and its most)
@@ -564,7 +567,10 @@ public sealed partial class Game
         {
             _marketByDef = [];
             _consigns.Clear(); // (a new game: GameConsignments.cs)
+            CampsReset(); // (GameCamps.cs)
         }
+        Array.Clear(_routeHadHauler);
+        Array.Clear(_routeArrived); // (a route's haulers are seen again in the new world: GameSupplyLines.cs)
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
         _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)
         _haulAdopt = true;
@@ -613,7 +619,7 @@ public sealed partial class Game
         }
     }
 
-    /// <summary><see cref="Msg.Stations"/>: u8 n, each (u16 body, u8 def, u8 goods, each i32 stock, u8 moored, each (u16 ship, u16 berth)).</summary>
+    /// <summary><see cref="Msg.Stations"/>: u8 n, each (u16 body, u8 def, u8 goods, each i32 stock, u8 moored, each (u16 ship, u16 berth), u8 lines, each str).</summary>
     private void WriteStations(PacketWriter w)
     {
         w.Begin(Msg.Stations).U8((byte)Math.Min(255, StationMarketsHere.Count));
@@ -628,6 +634,10 @@ public sealed partial class Game
             w.U8((byte)Math.Min(255, m.Moored.Count));
             for (var k = 0; k < m.Moored.Count && k < 255; k++)
                 w.U16(m.Moored[k].Ship).U16(m.Moored[k].Part);
+            StationLines(m.Def, _linesBuf); // (its supply lines and consignments: GameSupplyLines.cs)
+            w.U8((byte)_linesBuf.Count);
+            foreach (var l in _linesBuf)
+                w.Str(l);
         }
     }
 
@@ -665,6 +675,13 @@ public sealed partial class Game
                 m.Moored.Add((ship, part));
                 if (Constructs.Get(ship) is { } c)
                     (c.MooredTo, c.MoorPart) = (m.Body, part);
+            }
+            if (r.Has(1))
+            {
+                var lines = Math.Min((int)r.U8(), MaxSupplyLines);
+                m.Lines = new string[lines];
+                for (var k = 0; k < lines; k++)
+                    m.Lines[k] = r.Has(2) ? r.Str() : ""; // (a short packet leaves no hole)
             }
             if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length + StationMarkets.All[m.Def].Parts.Length == m.Stock.Length)
             {
@@ -817,6 +834,14 @@ public sealed partial class Game
     }
 
     /// <summary>Server: <paramref name="p"/> sells the ore and goods aboard moored ship <paramref name="shipId"/> to its station. Null: sold; else why not.</summary>
+    /// <summary>
+    /// Any peer: how a station's power sees <paramref name="player"/> moves its prices to them (Karl, 2026-11-22: "5 or 10% to start"): over 1 for
+    /// a friend (it pays them more and asks less), under 1 for one it dislikes, by <c>contracts.standingPrice</c> in Crew/Relations.json at
+    /// standing 100. What a person is paid is times this; what they pay is divided by it.
+    /// </summary>
+    public double StandingRate(byte power, byte player) =>
+        power == 0 ? 1 : 1 + RelationRules.Current.StandingPrice * Math.Clamp(IsServer || !CrewStandingOn ? CrewStanding(power, player) : Relations.Heard(power, player), -100, 100) / 100.0;
+
     private string? StationSellAct(Player p, ushort shipId)
     {
         if (StationTradeCheck(p, shipId, out var ship, out var st, out var m) is { } why)
@@ -829,8 +854,8 @@ public sealed partial class Game
             total += s;
         if (total == 0)
             return $"nothing aboard is wanted at {name} (or it holds all it can of what you carry)";
-        var owed = (long)Math.Floor(value);
         var power = StationPower(m);
+        var owed = (long)Math.Floor(value * StandingRate(power, p.Id)); // (a friend is paid more: StandingRate)
         TabGive(p.Id, power, owed); // (barter: the goods for value on your tab with the station's power, spendable only with them)
         StationsVersion++;
         var what = StationGoodsText(m, sold);
@@ -855,16 +880,17 @@ public sealed partial class Game
             return $"{name} doesn't sell that";
         if (m.Stock[k] <= 0)
             return $"{name} has none left";
-        var price = (double)m.SellAt(k);
         var power = StationPower(m);
-        var afford = SandboxInfiniteParts ? int.MaxValue : m.Afford(k, TabOf(p.Id, power)); // (priced across the stock the load moves)
+        var rate = StandingRate(power, p.Id);
+        var price = m.SellAt(k) / rate;
+        var afford = SandboxInfiniteParts ? int.MaxValue : m.Afford(k, TabOf(p.Id, power) * rate); // (priced across the stock the load moves; a friend pays less: StandingRate)
         if (afford <= 0)
             return $"a unit takes {price:0.00} off your tab with the {TabPowerName(power)}, who owe you {TabOf(p.Id, power)}: trade them goods first";
         var units = StationLoadCargo(m, ship, k, afford, out var paid);
         var good = RecyclingTable.Current.NameOf(goods[k].Material);
         if (units == 0)
             return $"no bin aboard has room for {good}";
-        var cost = (long)Math.Ceiling(paid);
+        var cost = (long)Math.Ceiling(paid / rate);
         if (TabPay(p.Id, power, Math.Min(cost, TabOf(p.Id, power))) is { } cant) // (it can't fail: afford was counted from the same tab; a rounding cent is let go)
             return cant;
         SandboxHands.Notices.Add((p.Id, $"Took {units:N0} {good} from {name} for {cost} off your tab."));
@@ -906,7 +932,7 @@ public sealed partial class Game
         if (m.Stock[k] <= 0)
             return $"{name} has no {pd.Name} left";
         var power = StationPower(m);
-        var cost = (long)Math.Ceiling(part.Sell);
+        var cost = (long)Math.Ceiling(part.Sell / StandingRate(power, p.Id));
         if (!SandboxInfiniteParts && TabOf(p.Id, power) < cost)
             return TabPay(p.Id, power, cost);
         var put = -1;
@@ -957,8 +983,8 @@ public sealed partial class Game
         if (took == 0)
             return $"no store aboard holds a {pd.Name}";
         m.Stock[k] += took;
-        var owed = (long)Math.Floor(took * (double)part.Buy);
         var power = StationPower(m);
+        var owed = (long)Math.Floor(took * (double)part.Buy * StandingRate(power, p.Id));
         TabGive(p.Id, power, owed);
         StationsVersion++;
         SandboxHands.Notices.Add((p.Id, $"Traded {took} {pd.Name} to {name}: the {TabPowerName(power)} owe you {owed} more."));

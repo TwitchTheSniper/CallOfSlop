@@ -56,7 +56,10 @@ public sealed partial class Game
                 w.U16(c.Id).U16(c.MooredTo).U16(c.MoorPart).F32(c.MoorAt.X).F32(c.MoorAt.Y).F32(c.MoorAt.Z)
                     .F32(c.MoorRot.X).F32(c.MoorRot.Y).F32(c.MoorRot.Z).F32(c.MoorRot.W);
         if (stock)
+        {
             ConsignWrite(w); // (after the moorings: an older reader stops before them, GameConsignments.cs)
+            CampWrite(w); // (GameCamps.cs)
+        }
         if (stock && n > 0)
             Log($"[station] markets saved: {n} stations, {StockTotal()} units in stock; {moors} moorings; {_consigns.Count} consignments");
         return n == 0 && moors == 0 && (!stock || _consigns.Count == 0) ? null : w.Span.ToArray();
@@ -147,7 +150,10 @@ public sealed partial class Game
                 _moorsLoaded.Add((ship, station, part, at, Quaternion.Normalize(rot)));
         }
         if (stock)
+        {
             ConsignRead(s); // (GameConsignments.cs)
+            CampRead(s); // (GameCamps.cs)
+        }
         if (stock)
             Log($"[station] markets loaded: {kept} stock lines kept, {dropped} dropped, {StockTotal()} units in stock; {_moorsLoaded.Count} moorings to take up");
         StationsVersion++;
