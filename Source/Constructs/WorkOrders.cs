@@ -185,6 +185,22 @@ public static class WorkOrders
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
             return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
+        // A block Assembler builds only what its bed and clear height hold, and only with the modules a recipe needs: taken, such an
+        // order would sit at the head of the queue as Too big or Needs module for good (a 17 m frigate deck on an 8 x 8 m bed). A tool
+        // block isn't checked: a chute from a Block Rack swaps it in (AssemblerToolBay).
+        var fit = ConstructAssembling.FitOf(c, part);
+        if (fit.Missing(r) is var missing and not 0)
+            return $"the {made.Name} needs {AsmFit.ModuleWords(missing)} on the {d.Name}";
+        if (fit.AtOnce(made) <= 0)
+        {
+            fit.Footprint(made, out var fx, out var fz, out _);
+            if (Math.Max(fx, fz) > d.BlockMaxSide || fx * fz > d.BlockMaxCells)
+            {
+                var size = made.BoundsMax - made.BoundsMin;
+                return $"the {made.Name} ({size.X:0.#} x {size.Z:0.#} m) is bigger than any {d.Name}'s bed can grow ({d.BlockMaxSide} cells a side, {d.BlockMaxCells} in all)";
+            }
+            return $"the {made.Name} is too big for the {d.Name}: {fit.TooBigWhy(made)}";
+        }
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
         return null;

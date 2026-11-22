@@ -93,6 +93,7 @@ public sealed class RelationRules
     public int ContractOfferSeconds = 45, ContractOfferMinutes = 15, EscortSeconds = 180, EscortMinutes = 20, DeliverMinutes = 30, RaidMinutes = 30;
     public float EscortRange = 400, DeliverRange = 60;
     public int EscortPay = 300, RaidPay = 400, DeliverBase = 100, DeliverPerUnit = 2, DeliverMin = 40, DeliverMax = 160;
+    public float StandingPrice = 0.075f; // a station's prices to a person swing by this share either way with how its power sees them, at standing 100 (Karl, 2026-11-22: 5-10% to start)
     public float TrespassPerValue = 0.01f; // standing a power loses with a person for each unit of value they mine on a planet it holds (Karl, 2026-11-22)
     public float DeliverPremium = 1.25f; // a station's need pays its price for the short good times this (Karl, 2026-11-22: contracts from needs)
     public string[] DeliverMaterials = ["iron ore", "copper ore", "stone", "planks", "metal"];
@@ -196,6 +197,8 @@ public sealed class RelationRules
                 r.RaidPay = Int(ct, "raidPay", r.RaidPay, 0, 1000000);
                 r.DeliverBase = Int(ct, "deliverBase", r.DeliverBase, 0, 1000000);
                 r.DeliverPerUnit = Int(ct, "deliverPerUnit", r.DeliverPerUnit, 0, 10000);
+                if (ct.TryGetProperty("standingPrice", out var spv))
+                    r.StandingPrice = Math.Clamp(spv.GetSingle(), 0f, 0.5f);
                 if (ct.TryGetProperty("trespassPerValue", out var tpv))
                     r.TrespassPerValue = Math.Clamp(tpv.GetSingle(), 0f, 10f);
                 if (ct.TryGetProperty("deliverPremium", out var dpr))
@@ -481,6 +484,16 @@ public sealed partial class PowerRelations
             t.Version++;
         }
         return ref t.PlayerStanding[j];
+    }
+
+    /// <summary>A client: the standing as the host sent it (the factions table), never met or started here.</summary>
+    public int Heard(byte power, byte player)
+    {
+        if (Def(power) is null)
+            return 0;
+        var t = Table;
+        var party = t.Of[player];
+        return party != 0 ? t.StoryStanding[party * N + power - 1] : t.PlayerStanding[player * N + power - 1];
     }
 
     /// <summary>The standing without meeting (a power's start value for someone it hasn't met).</summary>
