@@ -46,9 +46,45 @@ public static partial class HullLoft
         }
 
         public bool Has(char extra) => Extras.Contains(extra);
+
+        /// <summary>A plain skin (style <see cref="PlainStyle"/>): the facets, the void and the dress anchors, no dress (the Building Station lays it: HullLoft.Dress.cs).</summary>
+        public bool Plain => Style == PlainStyle;
     }
 
     public static bool IsSectionName(string name) => name.StartsWith(SectionPrefix, StringComparison.Ordinal);
+
+    /// <summary>
+    /// A plain skin's key (style -, salt 0, extras -), read with no allocation: what a Panel Former forms (Sean, 2026-11-21: "the whole sections
+    /// should start in the panel former"). A key that only looks plain is still read whole where the part is made.
+    /// </summary>
+    public static bool IsPlainSectionName(string name) =>
+        IsSectionName(name) && name.AsSpan(SectionPrefix.Length).IndexOf(" - 0 - | ", StringComparison.Ordinal) is var at and > 0
+        && name.AsSpan(SectionPrefix.Length, at).IndexOf(" | ", StringComparison.Ordinal) < 0;
+
+    /// <summary>
+    /// A plain skin laid flat (m), as a Panel Former's blank must cover it: its longest facet edge along the section (a tapered section's edges
+    /// run aslant) by the facets' widths added across (the wider of its two ends), and which way its outer face looks, on the whole (the part's
+    /// frame: the bed lays it face up, so its pins rise inside the skin's arch).
+    /// </summary>
+    public static void SectionFlat(SectionShape sh, out float along, out float across, out Vector3 outward)
+    {
+        double len = sh.L / 100.0, a = 0, b = 0, most = len;
+        double axisY = (sh.A.Min(q => q.Y) + sh.A.Max(q => q.Y)) / 200.0;
+        var o = Vector3.Zero;
+        double[] Pt((int H, int Y) q, double z) => [sh.Side * q.H / 100.0, q.Y / 100.0, z];
+        static double Dist(double[] p, double[] q) => Math.Sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]) + (p[2] - q[2]) * (p[2] - q[2]));
+        for (var k = sh.K0; k <= sh.K1; k++)
+        {
+            var band = new HullDress.Band(Pt(sh.A[k - 1], 0), Pt(sh.A[k], 0), Pt(sh.B[k - 1], len), Pt(sh.B[k], len), len);
+            a += Dist(band.A0, band.B0);
+            b += Dist(band.A1, band.B1);
+            most = Math.Max(most, Math.Max(Dist(band.A0, band.A1), Dist(band.B0, band.B1)));
+            var n = HullDress.Normal(band, 0, axisY);
+            var w = (float)(Dist(band.A0, band.B0) + Dist(band.A1, band.B1)); // (each facet's look by its size)
+            o += new Vector3((float)n[0], (float)n[1], (float)n[2]) * w;
+        }
+        (along, across, outward) = ((float)most, (float)Math.Max(a, b), o);
+    }
 
     /// <summary>A hull section's key read, or null with the reason (a refusal names what is wrong).</summary>
     public static SectionShape? SectionOf(string name, out string why)
@@ -72,13 +108,15 @@ public static partial class HullLoft
         var side = w[2] switch { "p" => -1, "s" => 1, _ => 0 };
         if (side == 0)
             return Fail(out why, "the side is p (port) or s (starboard)");
-        if (DressStyles.Find(w[3]) == null)
-            return Fail(out why, $"no dress style \"{w[3]}\" (Constructs/DressStyles.json)");
+        if (w[3] != PlainStyle && DressStyles.Find(w[3]) == null)
+            return Fail(out why, $"no dress style \"{w[3]}\" (Constructs/DressStyles.json), nor {PlainStyle} for a plain skin");
         if (!int.TryParse(w[4], NumberStyles.None, CultureInfo.InvariantCulture, out var salt) || salt > SectionMaxSalt)
             return Fail(out why, $"the salt is 0 to {SectionMaxSalt}");
         var extras = w[5] == "-" ? "" : w[5];
         if (extras.Any(c => !SectionExtras.Contains(c)) || extras.Distinct().Count() != extras.Length || !extras.SequenceEqual(SectionExtras.Where(extras.Contains)))
             return Fail(out why, $"extras are some of {SectionExtras} in that order, or -");
+        if (w[3] == PlainStyle && (salt != 0 || extras.Length != 0))
+            return Fail(out why, "a plain skin (style -) has salt 0 and extras -");
         var a = ProfileOf(parts[1]);
         var b = parts[2] == "=" ? a : ProfileOf(parts[2]);
         if (a == null || b == null)
@@ -177,11 +215,18 @@ public static partial class HullLoft
     // ---- The part ------------------------------------------------------------------------------------------------
 
     private const double SecT = 0.04; // the skin's thickness (the Zero Day's)
+    public const int SectionSkinCm = 4; // ...in whole cm: a plain skin's blank is a sheet this thick (ConstructPanelFormer.FlatOf)
     private const double SecTrim = 0.003; // dress stops this far short of the section's ends (rails 1x, the light strip 2x, conduit 3x), so no two pieces' ends share a plane
+
+    /// <summary>The trim for a section this long: <see cref="SecTrim"/> up to 8 m, then 1/800 of its length (at most 5 cm), the z-fighting rule's
+    /// gap for a long patch (.claude/rules/z-fighting.md): a 32 m twisted section's rails met its facets' end planes at 3 mm.</summary>
+    private static double TrimOf(double len) => len <= 8 ? SecTrim : Math.Min(0.05, len / 800);
 
     /// <summary>A section's part file. Its numbers by kind in <paramref name="counts"/>.</summary>
     public static string SectionJson(string name, SectionShape sh, out SectionCounts counts)
     {
+        if (sh.Plain)
+            return PlainJson(name, sh, out counts); // (a plain skin for the Dress step: HullLoft.Dress.cs)
         var style = DressStyles.Find(sh.Style)!;
         var tr = style.Trim;
         var p = new Builder();
@@ -257,7 +302,7 @@ public static partial class HullLoft
             var isBeam = i == beam;
             double w = isBeam ? tr.BeamW : tr.RailW, h = isBeam ? tr.BeamH : tr.RailH;
             double[][] Ring((int H, int Y)[] prof, double z) => HullDress.ChineRing(Pt(prof[i - 1], z), Pt(prof[i], z), Pt(prof[i + 1], z), w, h);
-            Hull(p, [.. Ring(sh.A, SecTrim), .. Ring(sh.B, len - SecTrim)], style.Color(isBeam ? tr.BeamRail : tr.Rail), "plated steel", false);
+            Hull(p, [.. Ring(sh.A, TrimOf(len)), .. Ring(sh.B, len - TrimOf(len))], style.Color(isBeam ? tr.BeamRail : tr.Rail), "plated steel", false);
             rails++;
         }
 
@@ -271,7 +316,7 @@ public static partial class HullLoft
             double v0 = (tr.StripOff + (beam >= sh.K0 && beam < sh.K1 ? tr.BeamW * 0.5 : 0)) / Math.Max(across, 0.1), v1 = v0 + tr.StripW / Math.Max(across, 0.1);
             if (v1 < 0.5)
             {
-                Plate(p, HullDress.StripCorners(band, nrm, 2 * SecTrim / len, 1 - 2 * SecTrim / len, v0, v1, 0.025), style.Color(tr.Strip), null, true);
+                Plate(p, HullDress.StripCorners(band, nrm, 2 * TrimOf(len) / len, 1 - 2 * TrimOf(len) / len, v0, v1, 0.025), style.Color(tr.Strip), null, true);
                 strips++;
                 if (sh.Has('D'))
                 {
@@ -507,7 +552,7 @@ public static partial class HullLoft
                 return new[] { c[0] + n[0] * cn + across[0] * cs, c[1] + n[1] * cn + across[1] * cs, c[2] + n[2] * cn + across[2] * cs };
             })];
         }
-        Hull(p, [.. Ring(3 * SecTrim / len), .. Ring(1 - 3 * SecTrim / len)], style.Color(tr.Pipe), "painted plating", false);
+        Hull(p, [.. Ring(3 * TrimOf(len) / len), .. Ring(1 - 3 * TrimOf(len) / len)], style.Color(tr.Pipe), "painted plating", false);
         var made = 1;
         var count = Math.Max(2, (int)Math.Floor(len / tr.BracketEvery));
         for (var i = 0; i < count && made < most; i++)

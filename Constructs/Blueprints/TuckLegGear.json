@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Tuck Leg Gear",
+  "description": "A tuck leg assembled, stowed: the mount, its strut and its foot. Weld the mount's top under a keel; B in a seat lowers it to stand 1.75 m under the mount's top.",
+  "steps": [
+    {
+      "part": "Tuck Leg Mount"
+    },
+    {
+      "part": "Tuck Leg Strut",
+      "on": 0,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Tuck Leg Foot",
+      "on": 0,
+      "socket": "foot",
+      "by": "hang"
+    }
+  ]
+}

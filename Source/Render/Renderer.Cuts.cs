@@ -121,9 +121,8 @@ public sealed unsafe partial class Renderer
         {
             if (_shapeVersion != PartShapes.Version)
                 UploadShapes();
-            if (shape + 1 >= _shapeFirst.Count)
+            if (!ShapeRange(shape, out first, out count))
                 return;
-            (first, count) = (_shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
         }
         if (_cutOneVao.Id == 0)
         {

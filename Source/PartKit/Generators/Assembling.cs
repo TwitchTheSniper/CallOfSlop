@@ -976,7 +976,7 @@ public sealed class Assembling : IPartGenerator
         // (the block machines' tier pieces, design page drawing 21: MachineTierParts; Sean 2026-11-21)
         (null, null, Rec("Power Coupling", 40, 1, m: [("steel", 30), ("copper", 40), ("rubber", 6)], p: [("Wiring Loom", 2)])),
         (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
-        (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Control Unit", 1)])),
+        (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Circuit Board", 2)])),
         (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
         // (steel catwalks in the Roamer Stair's style, Sean 2026-11-21: CatwalkParts; at the end so saved choices keep their index)
         ("Catwalks", "Steel Catwalk 1.5 m", null),
@@ -990,6 +990,16 @@ public sealed class Assembling : IPartGenerator
         ("Catwalks", "Steel Catwalk Hanger 2.5 m", null),
         ("Catwalks", "Steel Catwalk Hanger 4 m", null),
         ("Catwalks", "Steel Catwalk Hanger 6 m", null),
+        // (the Assembler on the block system, Sean 2026-11-21: AssemblerParts; the Overdrive Unit and Feed Buffer by hand, as the tier pieces)
+        ("Assembler", "Assembler", null),
+        ("Assembler", "Assembly Bed Block", null),
+        ("Assembler", "Gantry Carriage", null),
+        (null, null, Rec("Overdrive Unit", 60, 1, m: [("steel", 40), ("copper", 30), ("rubber", 6)], p: [("Gear Set", 2), ("Wiring Loom", 1)])),
+        (null, null, Rec("Feed Buffer", 30, 1, m: [("steel", 45), ("rubber", 4)], p: [("Gear Set", 1)])),
+        // (Assembler PR 3: its tool blocks and the Block Rack, the Die Rack at 2 m bays)
+        ("Assembler", "Thruster Jig Block", null),
+        ("Assembler", "Sewing Table Block", null),
+        ("Assembler", "Block Rack", null),
         // (the Folio, the Traders' shuttle and the first ship on the ship kit, Karl 2026-11-21: FolioParts; in the folder's file order)
         ("Folio", "Folio Belly Hatch", null),
         ("Folio", "Folio Boarding Ladder", null),
@@ -1029,6 +1039,70 @@ public sealed class Assembling : IPartGenerator
         ("Folio", "Folio Utility Wall 1", null),
         ("Folio", "Folio Utility Wall 2", null),
         ("Folio", "Folio Utility Wall 3", null),
+        // (the compact landing gear, the Tuck, Skid and Ram Legs, Karl 2026-11-21: LandingGearParts; in the folder's file order)
+        ("LandingGear", "Ram Leg Foot", null),
+        ("LandingGear", "Ram Leg Mount", null),
+        ("LandingGear", "Ram Leg Strut", null),
+        ("LandingGear", "Skid Leg Foot", null),
+        ("LandingGear", "Skid Leg Mount", null),
+        ("LandingGear", "Skid Leg Strut", null),
+        ("LandingGear", "Tuck Leg Foot", null),
+        ("LandingGear", "Tuck Leg Mount", null),
+        ("LandingGear", "Tuck Leg Strut", null),
+        // (the Knacker, the Salvagers' breaker, Karl 2026-11-21: KnackerParts; in the folder's file order)
+        ("Knacker", "Knacker Belly Hatch", null),
+        ("Knacker", "Knacker Boarding Ladder", null),
+        ("Knacker", "Knacker Bow", null),
+        ("Knacker", "Knacker Drive", null),
+        ("Knacker", "Knacker Flight Computer", null),
+        ("Knacker", "Knacker Jaw Port", null),
+        ("Knacker", "Knacker Jaw Stbd", null),
+        ("Knacker", "Knacker Keel", null),
+        ("Knacker", "Knacker Keel 1", null),
+        ("Knacker", "Knacker Keel 3", null),
+        ("Knacker", "Knacker Keel 4", null),
+        ("Knacker", "Knacker Keel 5", null),
+        ("Knacker", "Knacker Keel 6", null),
+        ("Knacker", "Knacker Keel 7", null),
+        ("Knacker", "Knacker Lift Jet", null),
+        ("Knacker", "Knacker Pod", null),
+        ("Knacker", "Knacker Pod Ceiling", null),
+        ("Knacker", "Knacker Pod Hull Port 5", null),
+        ("Knacker", "Knacker Pod Hull Port 6", null),
+        ("Knacker", "Knacker Pod Hull Port 7", null),
+        ("Knacker", "Knacker Pod Hull Stbd 5", null),
+        ("Knacker", "Knacker Pod Hull Stbd 6", null),
+        ("Knacker", "Knacker Pod Hull Stbd 7", null),
+        ("Knacker", "Knacker Pod Wall 1", null),
+        ("Knacker", "Knacker Pod Wall 2", null),
+        ("Knacker", "Knacker Pod Wall 3", null),
+        ("Knacker", "Knacker Pod Wall 4", null),
+        ("Knacker", "Knacker Pod Wall 5", null),
+        ("Knacker", "Knacker Pod Wall 6", null),
+        ("Knacker", "Knacker Power Plant", null),
+        ("Knacker", "Knacker Rack Port", null),
+        ("Knacker", "Knacker Rack Stbd", null),
+        ("Knacker", "Knacker Roof", null),
+        ("Knacker", "Knacker Roof 1", null),
+        ("Knacker", "Knacker Roof 3", null),
+        ("Knacker", "Knacker Roof 4", null),
+        ("Knacker", "Knacker Roof 5", null),
+        ("Knacker", "Knacker Roof 6", null),
+        ("Knacker", "Knacker Roof 7", null),
+        ("Knacker", "Knacker Root", null),
+        ("Knacker", "Knacker Root Ceiling", null),
+        ("Knacker", "Knacker Root Hull Port 1", null),
+        ("Knacker", "Knacker Root Hull Port 2", null),
+        ("Knacker", "Knacker Root Hull Port 3", null),
+        ("Knacker", "Knacker Root Hull Port 4", null),
+        ("Knacker", "Knacker Root Hull Stbd 1", null),
+        ("Knacker", "Knacker Root Hull Stbd 2", null),
+        ("Knacker", "Knacker Root Hull Stbd 3", null),
+        ("Knacker", "Knacker Root Hull Stbd 4", null),
+        ("Knacker", "Knacker Root Wall 1", null),
+        ("Knacker", "Knacker Root Wall 2", null),
+        ("Knacker", "Knacker Root Wall 3", null),
+        ("Knacker", "Knacker Stern", null),
     ];
 
     /// <summary>
@@ -1157,6 +1231,7 @@ public sealed class Assembling : IPartGenerator
                 throw new InvalidOperationException($"assembling: {output} is to be pressed, but no die has a preset for it (PressParts.Presets)");
             recipes.RemoveAt(k);
         }
+        Modules(recipes);
         if (recipes.Count > AssemblingTable.MaxRecipes) // (past it the game refuses the whole table, and every Assembler has no recipes)
             throw new InvalidOperationException($"assembling: {recipes.Count} recipes, past AssemblingTable.MaxRecipes ({AssemblingTable.MaxRecipes})");
         if (_capped.Count > 0)
@@ -1164,6 +1239,76 @@ public sealed class Assembling : IPartGenerator
         _capped.Clear();
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
+
+    // ---- Upgrade modules in place of tiers (the Assembler on the block system, Sean 2026-11-21: no tiers on the Assembler)
+
+    // What each input asks of the Assembler's Core: the upgrade module that unlocks it (MachineBlocks.TierPieceNames).
+    private static readonly Dictionary<string, string> ModuleOf = new(StringComparer.Ordinal)
+    {
+        ["copper"] = "Power Coupling", ["Copper Coil"] = "Power Coupling", ["Wiring Loom"] = "Power Coupling", ["Servo Motor"] = "Power Coupling",
+        ["bronze"] = "Coolant Loop", ["Bearing"] = "Coolant Loop", ["Piston Set"] = "Coolant Loop", ["Turbine Stage"] = "Coolant Loop",
+        ["gold"] = "Servo Rack", ["circuits"] = "Servo Rack", ["Circuit Board"] = "Servo Rack", ["Control Unit"] = "Servo Rack",
+        ["levite"] = "Plasma Conditioner", ["Field Coil"] = "Plasma Conditioner", ["Levite Core"] = "Plasma Conditioner",
+    };
+
+    private static readonly string[] ModuleOrder = ["Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner"];
+
+    // The modules themselves need none (a bare Core makes its first ones), and so do the Assembler's own pieces' modules' inputs' makers.
+    private static readonly HashSet<string> NeedsNothing = new(StringComparer.Ordinal) { "Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner", "Overdrive Unit", "Feed Buffer" };
+
+    /// <summary>
+    /// Each recipe's "needs" from its inputs, in place of "minTier" (size no longer gates anything: the bed sets it), anti-grav to the Plasma
+    /// Conditioner; and the thruster and tailor families' rows, folded into the one Assembler, go to the end of the list (saved recipe
+    /// numbers before them keep), each naming the tool block it will need ("tool", the Tool Bay of Assembler PR 3).
+    /// </summary>
+    private static void Modules(List<PyDict> recipes)
+    {
+        var folded = new List<PyDict>();
+        var after = new List<PyDict>();
+        for (var k = 0; k < recipes.Count; k++)
+        {
+            var r = recipes[k];
+            // The old tier stays as "techTier": how advanced the part is, which vehicles and loot tables read (the Assembler gates by modules).
+            var tech = r.Has("minTier") ? Int(r["minTier"]) : 1;
+            r.Remove("minTier");
+            if (tech > 1)
+                r["techTier"] = tech;
+            var output = (string)r["output"]!;
+            var needs = new HashSet<string>(StringComparer.Ordinal);
+            if (!NeedsNothing.Contains(output))
+            {
+                foreach (var key in ((r.Get("materials") as PyDict)?.Keys ?? []).Concat((r.Get("parts") as PyDict)?.Keys ?? []))
+                    if (ModuleOf.TryGetValue(key, out var m))
+                        needs.Add(m);
+                if (output.Contains("Anti-Grav", StringComparison.Ordinal))
+                    needs.Add("Plasma Conditioner");
+            }
+            var tool = r.Get("machine") as string;
+            r.Remove("machine");
+            if (!string.IsNullOrEmpty(tool))
+                r["tool"] = tool;
+            if (needs.Count > 0)
+                r["needs"] = ModuleOrder.Where(needs.Contains).Select(m => (object?)m).ToList();
+            if (!string.IsNullOrEmpty(tool))
+            {
+                folded.Add(r);
+                recipes.RemoveAt(k--);
+            }
+            else if (AfterFolded.Contains(output))
+            {
+                after.Add(r);
+                recipes.RemoveAt(k--);
+            }
+        }
+        recipes.AddRange(folded);
+        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!))); // (after the folded rows: a saved Assembler's number keeps)
+    }
+
+    /// <summary>
+    /// Rows added since the thruster and tailor rows were folded to the end (Assembler PR 3 on), in the order added: they go after those
+    /// rows so no saved recipe number moves. Closed: a new row goes at the END of this list (its Tail entry stays where it is).
+    /// </summary>
+    private static readonly string[] AfterFolded = ["Thruster Jig Block", "Sewing Table Block", "Block Rack"];
 
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 

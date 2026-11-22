@@ -1,0 +1,392 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Skid Leg Mount",
+  "description": "A skid leg's mount: a shallow bay welded by its top under a keel, the leg's hinge at one end and the wall its foot stows against at the other. B in a seat lowers and raises the leg in it. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Landing gear",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 160.0,
+  "health": 2500,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.21,
+        -0.06,
+        -1.484
+      ],
+      "max": [
+        0.21,
+        0.0,
+        1.115
+      ],
+      "color": "#b4b2aa",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.21,
+        -0.28,
+        -1.484
+      ],
+      "max": [
+        -0.16,
+        -0.06,
+        1.115
+      ],
+      "color": "#9e9c94",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.16,
+        -0.28,
+        -1.484
+      ],
+      "max": [
+        0.21,
+        -0.06,
+        1.115
+      ],
+      "color": "#9e9c94",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.16,
+        -0.28,
+        1.035
+      ],
+      "max": [
+        0.16,
+        -0.06,
+        1.115
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.16,
+        -0.36,
+        -1.484
+      ],
+      "max": [
+        0.16,
+        -0.06,
+        -1.404
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.095,
+        -0.075,
+        0.785
+      ],
+      "max": [
+        0.095,
+        -0.06,
+        0.915
+      ],
+      "color": "#1f2226",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.235,
+        -0.1855,
+        0.8045
+      ],
+      "max": [
+        -0.158,
+        -0.0945,
+        0.8955
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        0.158,
+        -0.1855,
+        0.8045
+      ],
+      "max": [
+        0.235,
+        -0.0945,
+        0.8955
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        -1.254
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        -1.154
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        -0.8462
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        -0.7462
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        -0.4384
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        -0.3384
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        -0.0306
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        0.0694
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        0.3772
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        0.4772
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.224,
+        -0.22,
+        0.785
+      ],
+      "max": [
+        -0.21,
+        -0.1,
+        0.885
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        -1.254
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        -1.154
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        -0.8462
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        -0.7462
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        -0.4384
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        -0.3384
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        -0.0306
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        0.0694
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        0.3772
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        0.4772
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        -0.22,
+        0.785
+      ],
+      "max": [
+        0.224,
+        -0.1,
+        0.885
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.214,
+        -0.292,
+        -1.464
+      ],
+      "max": [
+        0.214,
+        -0.276,
+        -1.424
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.214,
+        -0.292,
+        1.055
+      ],
+      "max": [
+        0.214,
+        -0.276,
+        1.095
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.296,
+        -0.2345
+      ],
+      "max": [
+        0.05,
+        -0.282,
+        -0.1345
+      ],
+      "color": "#ffb040",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "leg",
+      "at": [
+        0.0,
+        -0.075,
+        0.85
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        -0.29,
+        -1.404
+      ],
+      "dir": "+z"
+    }
+  ]
+}

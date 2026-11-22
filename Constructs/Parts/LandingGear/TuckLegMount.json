@@ -1,0 +1,308 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tuck Leg Mount",
+  "description": "A tuck leg's mount: a shallow bay welded by its top under a keel, the leg's hinge at one end and the wall its foot stows against at the other. B in a seat lowers and raises the leg in it. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Landing gear",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 140.0,
+  "health": 2500,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.38,
+        -0.06,
+        -1.02
+      ],
+      "max": [
+        0.38,
+        0.0,
+        1.034
+      ],
+      "color": "#b4b2aa",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.38,
+        -0.28,
+        -1.02
+      ],
+      "max": [
+        -0.33,
+        -0.06,
+        1.034
+      ],
+      "color": "#9e9c94",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.33,
+        -0.28,
+        -1.02
+      ],
+      "max": [
+        0.38,
+        -0.06,
+        1.034
+      ],
+      "color": "#9e9c94",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.33,
+        -0.28,
+        -1.02
+      ],
+      "max": [
+        0.33,
+        -0.06,
+        -0.94
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.33,
+        -0.42,
+        0.954
+      ],
+      "max": [
+        0.33,
+        -0.06,
+        1.034
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.09,
+        -0.82
+      ],
+      "max": [
+        0.1,
+        -0.06,
+        -0.68
+      ],
+      "color": "#1f2226",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.405,
+        -0.209,
+        -0.799
+      ],
+      "max": [
+        -0.328,
+        -0.111,
+        -0.701
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        0.328,
+        -0.209,
+        -0.799
+      ],
+      "max": [
+        0.405,
+        -0.111,
+        -0.701
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.326,
+        -0.2,
+        -0.936
+      ],
+      "max": [
+        0.326,
+        -0.064,
+        0.95
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.28,
+        -1.02
+      ],
+      "max": [
+        -0.38,
+        -0.06,
+        1.034
+      ],
+      "color": "#b4b2aa",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.38,
+          -0.28,
+          -1.02
+        ],
+        [
+          -0.38,
+          -0.28,
+          1.034
+        ],
+        [
+          -0.44,
+          -0.06,
+          1.034
+        ],
+        [
+          -0.44,
+          -0.06,
+          -1.02
+        ],
+        [
+          -0.38,
+          -0.06,
+          -1.02
+        ],
+        [
+          -0.38,
+          -0.06,
+          1.034
+        ]
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.38,
+        -0.28,
+        -1.02
+      ],
+      "max": [
+        0.44,
+        -0.06,
+        1.034
+      ],
+      "color": "#b4b2aa",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.38,
+          -0.28,
+          -1.02
+        ],
+        [
+          0.38,
+          -0.28,
+          1.034
+        ],
+        [
+          0.44,
+          -0.06,
+          1.034
+        ],
+        [
+          0.44,
+          -0.06,
+          -1.02
+        ],
+        [
+          0.38,
+          -0.06,
+          -1.02
+        ],
+        [
+          0.38,
+          -0.06,
+          1.034
+        ]
+      ],
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.384,
+        -0.292,
+        -1.0
+      ],
+      "max": [
+        0.384,
+        -0.276,
+        -0.9
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.08,
+        -0.296,
+        -0.998
+      ],
+      "max": [
+        0.08,
+        -0.282,
+        -0.96
+      ],
+      "color": "#ffb040",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "leg",
+      "at": [
+        0.0,
+        -0.09,
+        -0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        -0.34,
+        0.954
+      ],
+      "dir": "-z"
+    }
+  ]
+}

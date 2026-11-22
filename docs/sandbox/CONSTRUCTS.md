@@ -76,6 +76,10 @@ The base new lofted ships are written on (`Source/PartKit/ShipKit`): a faction's
 
 The Traders' shuttle and the first ship on the kit: a glass cockpit in a blunt nose, a cabin of six couches under a blue glasshouse band, a utility room with the belly hatch, two drives in office-case housings, four lift jets.
 
+## [The Knacker breaker](constructs/knacker.md), 2 KB
+
+The Salvagers' breaker on the ship kit: two open truss jaws ahead of a plated root, a sorting floor, a crew pod, containers on flank racks; and the compact landing gear (Tuck, Skid and Ram Legs) it stands on.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

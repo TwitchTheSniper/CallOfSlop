@@ -275,6 +275,8 @@ public static partial class ConstructRender
             var origin = gfx.Origin;
             var rotM = Matrix4x4.CreateFromQuaternion(rot);
             var body = rotM * Matrix4x4.CreateTranslation(pos - origin);
+            if (ModulePullLook.Count > 0 && ModulePullLook.OfBody(c, out var wiggle))
+                body = wiggle * body; // (a module sliding out of its socket under the physics gun's pull shakes: ModulePullLook.cs)
             if (c.ModActive >= 0)
                 EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             gfx.Relative = true;
@@ -510,6 +512,13 @@ public static partial class ConstructRender
     }
 
     private static int DrawPart(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
+    {
+        if (ModulePullLook.Count > 0 && ModulePullLook.OfPart(c, i, out var wiggle))
+            return DrawPartAt(gfx, world, c, i, wiggle * body, alpha, opacity); // (a fitted module the physics gun strains on rocks on its seat: ModulePullLook.cs)
+        return DrawPartAt(gfx, world, c, i, body, alpha, opacity);
+    }
+
+    private static int DrawPartAt(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
     {
         if (c.Rides(i) && !_drawingRiders)
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
@@ -799,6 +808,8 @@ public static partial class ConstructRender
         }
         if (d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } bedStore && ConstructLaserCutter.BlankOnBed(c, i, bedStore, out var blank, out var blankRot, out var blankAt))
             drawn += DrawBlank(gfx, blank, blankRot, blankAt, in p, seg * body, shade, opacity); // (a Laser Cutter's blank lying on its bed while it is cut)
+        else if (d.IsPanelFormer && !d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } formStore && ConstructPanelFormer.BedLook(c, i, formStore, Now, out var sheet, out var sheetRot, out var sheetAt))
+            drawn += DrawBlank(gfx, sheet, sheetRot, sheetAt, in p, seg * body, shade, opacity); // (a Panel Former's blank on its bed, flat; the panel over the pins once they have set)
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
@@ -903,7 +914,7 @@ public static partial class ConstructRender
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
     private static int WorkPart(Construct c, int i, ConstructPartDef d) =>
-        d.BlockRole is BlockRole.Block or BlockRole.Shared or BlockRole.End or BlockRole.Tier ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1) // (a shared cell, a Mast Block, or an Out Table shows the work of the machine that took it in)
+        d.BlockRole is BlockRole.Block or BlockRole.Shared or BlockRole.End or BlockRole.Tier or BlockRole.Carriage or BlockRole.Tool ? (MachineBlocks.TryOf(c, i, out var asm) ? asm.Core : -1) // (a shared cell, a Mast Block, or an Out Table shows the work of the machine that took it in)
         : d.ExtRunOut > 0 ? ConstructExtruder.TableMachine(c, i)
         : i;
 

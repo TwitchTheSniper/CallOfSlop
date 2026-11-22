@@ -708,8 +708,24 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   whether it takes its part off a pick pad (u8) and, when it does, where the hook takes it (CmVec, the bay's frame).
     // 422: the Bake Oven's bake (Sean, 2026-11-21): CBodyKind.Baked carries a baked part's design (u32 bytes, its text) before any body that names
     //   it; "Baked (#hash)" keys travel as named run-time parts (BakedParts.cs); OvenStall gains CantBake, NotBaked and Failed at its end.
-    // 423: the Folio, the Traders' shuttle (Karl, 2026-11-21): a new part folder, Constructs/Parts/Folio, shifts the part ids after it.
-    public const ushort ProtocolVersion = 423;
+    // 423: the Panel Former takes one blank a panel (Sean, 2026-11-21): no stock bin, hopper or chute in; its bin is offcut with an Offcut
+    //   chute port (a new port on the Core); its "Too wide: make strips" setting slot is gone (settings ride CBody by slot).
+    // 424: an Extruder's run-out feeds a roller run (2026-11-21): new sockets appended on the Run-out Table ("roller"), Roller Tile
+    //   ("-z table"), Panel Former and Laser Cutter Cores ("-z"); links carry socket indices past an old build's lists.
+    // 425: hull dress (Sean, 2026-11-21, option B): run-time part kinds Hull Dress (...) and plain skins (Hull Section style -),
+    //   the Building Station's Dress job ("Dress skins") and its settings dressStyle/dressSalt/dressExtras in the unused BayWidth/Depth/Height slots.
+    // 426: the physics gun's pull on a fitted module is in each hand of the mode-state tail (Sean, 2026-11-21): u16 ship, then
+    //   u16 plate, u16 module body, CmVec beam point and u8 shake, so everyone sees its beam and the module shake (ModulePullLook.cs).
+    // 427: welded groups on pads (Sean, 2026-11-21): "Packed (#hash)" keys travel as named run-time parts, their designs as baked ones'
+    //   do (CBodyKind.Baked); an older peer would make a Frame Beam of one (PackedGroups.cs).
+    // 428: plain hull skins on the Panel Former (Sean, 2026-11-21): a plain skin (Hull Section style -) weighs its 4 cm steel plate, worked out
+    //      from the key on each peer (no new bytes; mass differs), and its key is a Panel Former's order.
+    // 429: the Assembler's Tool Bay (Assembler PR 3, Sean 2026-11-21): new parts Thruster Jig Block, Sewing Table Block and Block Rack
+    //      (part ids shift) and three Assembling rows at the end of the table.
+    // 430: the Folio, the Traders' shuttle (Karl, 2026-11-21): a new part folder, Constructs/Parts/Folio, shifts the part ids after it.
+    // 431: the Knacker, the Salvagers' breaker, and the compact landing gear (Karl, 2026-11-21): new part folders Constructs/Parts/Knacker
+    //      and Constructs/Parts/LandingGear shift the part ids after them.
+    public const ushort ProtocolVersion = 431;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ram Leg Strut",
+  "description": "A ram leg's strut: it lies folded in its mount and swings 90 degrees down on its hinge, the foot at its ankle kept level. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Landing gear",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "pivot": [
+      0.0,
+      -0.2,
+      0.7
+    ],
+    "angle": -90.0,
+    "held": true,
+    "seconds": 3.0,
+    "hang": "hang",
+    "gear": "leg"
+  },
+  "mass": 130.0,
+  "health": 1800,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.094,
+        -0.305,
+        0.595
+      ],
+      "max": [
+        0.094,
+        -0.095,
+        0.805
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.094,
+        -0.29,
+        -0.74
+      ],
+      "max": [
+        0.094,
+        -0.11,
+        -0.56
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.09,
+        -0.29,
+        -0.137
+      ],
+      "max": [
+        0.09,
+        -0.11,
+        0.538
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.102,
+        -0.302,
+        -0.164
+      ],
+      "max": [
+        0.102,
+        -0.098,
+        -0.083
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.045,
+        -0.245,
+        -0.515
+      ],
+      "max": [
+        0.045,
+        -0.155,
+        -0.11
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.018,
+        -0.103,
+        -0.0425
+      ],
+      "max": [
+        0.018,
+        -0.067,
+        0.4975
+      ],
+      "color": "#1a1b1d",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+z",
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.03,
+        -0.114,
+        0.4945
+      ],
+      "max": [
+        0.03,
+        -0.065,
+        0.5545
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.29,
+        0.61
+      ],
+      "max": [
+        0.1,
+        -0.11,
+        0.79
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        -0.11,
+        0.7
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  // Ram Leg landing gear (LandingGearParts.cs): a telescoping ram with a ribbed square pad (the Knacker Breaker's). The strut swings down on its hinge and the foot rides the ankle, kept level, on its spring.
+  "blueprint": "Ram Leg Gear",
+  "title": "Ram Leg: deploy",
+  "shelf": "Landing legs",
+  "steps": [
+    { "part": "Ram Leg Strut", "at": 0, "label": "Leg swings down" },
+    { "part": "Ram Leg Foot", "at": 0 }
+  ]
+}

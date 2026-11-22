@@ -136,14 +136,25 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(0, MachineLook.EyeY, Py.Round(Front + 0.213, 3))), ("size", Py.L(1.4, 0.56)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 12)))));
         static PyDict Fill(string key, string label, string tip) => Kw(("key", key), ("label", label), ("group", "Fill"), ("min", 0), ("max", 100), ("step", 5), ("default", 100), ("unit", "%"),
             ("tooltip", "Survival: a build is filled to this share. " + tip + " 0: none, 100: full."));
-        p.Set(("config", Py.L(
+        var config = Py.L(
             Fill("fillFuel", "Fuel and tanks", "Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins."),
             Fill("fillAmmo", "Ammo", "Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins."),
             Fill("fillCharge", "Battery charge", "Batteries: charged from the station's own power, which takes time."),
             Kw(("key", "fillWait"), ("label", "Wait until filled"), ("group", "Fill"), ("type", "toggle"), ("default", false),
                 ("tooltip", "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short.")),
             Kw(("key", "subJobs"), ("label", "Sub-jobs"), ("group", "Bay"), ("type", "choice"), ("options", Py.L("Off", "Auto", "Linked")), ("default", 1),
-                ("tooltip", "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds.")))));
+                ("tooltip", "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds.")),
+            Kw(("key", "dressSalt"), ("label", "Dress salt"), ("group", "Dress"), ("min", 0), ("max", 99), ("step", 1), ("default", 0),
+                ("tooltip", "Which of the style's panel patterns goes where: another number is another layout. Both sides of a ship match on one salt.")),
+            Kw(("key", "dressExtras"), ("label", "Dress extras"), ("group", "Dress"), ("type", "choice"), ("options", Py.L("All", "No conduit", "No lights", "Bolts and vents", "None")), ("default", 0),
+                ("tooltip", "The extra bits it lays with the armour: A bolt rows and chevrons, B vents, D lights, F conduit. All: every one; None: armour, rails and the strip only.")));
+        // The Dress job's style (HullLoft.Dress.cs, docs/sandbox/design/hull-dress.md): a choice once Constructs/DressStyles.json has two (a choice
+        // takes 2 to 16 names); with one, every skin gets that one.
+        if (DressStyles.Current.Count >= 2)
+            config.Insert(5, Kw(("key", "dressStyle"), ("label", "Dress style"), ("group", "Dress"), ("type", "choice"),
+                ("options", Py.L([.. DressStyles.Current.Values.Take(16).Select(x => (object?)x.Label)])), ("default", 0),
+                ("tooltip", "The Dress job (pick \"Dress skins\" as the blueprint): the faction look it lays on each plain hull skin in the bay, as subparts a Bake Oven bakes in.")));
+        p.Set(("config", config));
         const double section = 1.8, length = 4.8;
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.2)), ("length", length), ("count", 400), ("crafting", true), ("station", true), ("lift", LiftKg),
             ("hold", Py.L(Py.L(x0 + 0.05, Plinth + 0.024, Hz0), Py.L(x1 - 0.05, top - 0.01, Hz1))))))));

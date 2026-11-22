@@ -199,9 +199,9 @@ public enum CfgKey : byte
     LinePage, // Line Console: the line or the bill on its screen (not on the panel)
     TextSize, // any part with a text panel: its text size, % of the part file's (DisplayPanel.cs, ConstructPanels.RowsAt)
     LineStopAfter, // Line Console: stops the line when its Made count reaches this (0: never; ProductionLines.Monitors.cs)
-    BayWidth, // Building Station: its bay across, away from the station, m (ConstructStation.cs)
-    BayDepth, // ...along the station
-    BayHeight, // ...and up
+    DressStyle, // Building Station: the style its Dress job lays on a plain hull skin, an index into DressStyles (HullLoft.Dress.cs; was the unused BayWidth, 2026-11-21: the enum is full)
+    DressSalt, // ...the salt it dresses with, 0 to 99 (was BayDepth)
+    DressExtras, // ...the extras it lays, an index into HullLoft.DressExtraChoices (was BayHeight)
     RouterSpill, // Conveyor Router: where a piece with no order goes (Auto: storage by the map; Ahead, Left, Right: that way; StockTargets.cs)
     RouterHold, // Conveyor Router: a piece with no way to its order waits here rather than going to storage
     StoreKeep, // Piece Rack: keep this many of each kind it holds (0: off); the network makes what runs short (StockTargets.cs)
@@ -806,6 +806,7 @@ public static class ConstructConfig
         >= CfgKey.ShellKit0 and <= CfgKey.ShellKit2 => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
+        CfgKey.DressStyle or CfgKey.DressExtras => "choice",
         CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
         CfgKey.ModKeyed or CfgKey.ModLock => "toggle",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
@@ -855,12 +856,12 @@ public static class ConstructConfig
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
-                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight or (>= CfgKey.FillFuel and <= CfgKey.FillWait) or CfgKey.SubJobs => d.IsBuildStation,
+                CfgKey.DressStyle or CfgKey.DressSalt or CfgKey.DressExtras or (>= CfgKey.FillFuel and <= CfgKey.FillWait) or CfgKey.SubJobs => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
                 CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
-                CfgKey.FormerStrips => d.IsPanelFormer && !d.IsLaserCutter,
+                CfgKey.FormerStrips => false, // (gone with the Panel Former's bin: a panel is one blank; the key stays so later keys keep their numbers)
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

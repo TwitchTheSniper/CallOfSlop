@@ -79,6 +79,8 @@ public sealed class CStore
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
     public byte ProgressAge; // ...steps since it was last sent (server only)
+    public byte DrawnProgress; // the Progress the drawing last saw, and when (ConstructRender.Now): it runs the job on between sends (AssemblerRender)
+    public double DrawnAt;
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)
     public bool PullMaterial; // ...the id is a material
@@ -353,6 +355,12 @@ public static class ConstructStorage
         deep = Math.Max(1, (int)(room.Z / size.Z));
     }
 
+    /// <summary>
+    /// A shelf that holds a physics-only part all the same: an Assembler's tool block on a rack (a Block Rack, or a Die Rack it fits), so a
+    /// chute can swap it into a Tool Bay (AssemblerToolBay). Taken out by hand, it leaves as a body, as every physics-only part does.
+    /// </summary>
+    public static bool RackHolds(in CSlotDef s, ConstructPartDef d) => s.Rack && d.BlockRole == BlockRole.Tool;
+
     /// <summary>How many of a part a slot piles up: its <c>stack</c>, or on a shelf as many as fit it in this turn.</summary>
     public static int StackOf(in CSlotDef s, ConstructPartDef d, byte rot)
     {
@@ -371,7 +379,7 @@ public static class ConstructStorage
         ref readonly var s = ref cd.Slots[slot];
         if (cd.IsAssembler || cd.IsTerminal || cd.IsPress)
             return SlotCheck.OutputOnly;
-        if (d.PhysicsOnly)
+        if (d.PhysicsOnly && !RackHolds(s, d))
             return SlotCheck.PhysicsOnly;
         if (cd.StoreMaxMass > 0 && d.Mass > cd.StoreMaxMass)
             return SlotCheck.TooHeavy;

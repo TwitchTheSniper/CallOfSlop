@@ -352,6 +352,9 @@ reactor: the ship goes dark".
   beam 0.3 m out along the socket's normal for 0.6 s before it gives. It then slides out slowly (5 cm/s for the first
   12 cm, then 0.5 m/s), only while they keep pulling; let go and it slides back at 0.2 m/s and seats again. Once its plug
   is 12 cm past the surface the gun holds it as anything (`ModuleGuide`, `Kind.Pull`).
+  While it pulls, the gun's beam runs to the point clicked on the module, and the module rocks and shudders on its seat, harder as
+  the strain builds and while it slides out (Sean, 2026-11-21). The pull is sent in each hand of the mode-state tail (protocol 426:
+  `SandboxHand.PullShip`...), so everyone sees it; the shake is drawn only (`ModulePullLook`), the server's pose is untouched.
 - **Seen.** Within 18 m: the lock knob (red locked, green free), depth rings on a dug well's liner every 0.25 m (heavier
   each metre), the floor of an empty well; with the configure panel open on the socket or a module held near, a ghost of
   the well, the room as a wire box (green when the held module fits, red when not) and its overhang in red

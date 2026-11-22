@@ -1148,7 +1148,7 @@ public static unsafe partial class Program
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
-            return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held, hit.Body.Parts[hit.Part].Orders is { Bill: false });
+            return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), ConstructAssembling.FitOf(hit.Body, hit.Part), near, inv, held, hit.Body.Parts[hit.Part].Orders is { Bill: false });
         if (cd.IsPress && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructPress.Look(hit.Body, hit.Part, st, near, held, Gfx.CameraPosition);
         if (cd.IsExtruder)
@@ -1319,6 +1319,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.ShellRigs = ScenePresentation.Enabled; // (robot shells nobody wears: drawn as worn ones, below)
+        GatherModulePulls(g, now); // (a module the physics gun pulls on shakes: ModulePullLook.cs)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         ConstructRender.ShellRigs = false;
         if (ConstructRender.ShellRigCount > 0)

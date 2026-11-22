@@ -1,6 +1,6 @@
 # The ship kit
 
-A base for new lofted ships (Karl, 2026-11-21: new ships only; the older ships keep their own generators). It is the code the Satchel, the Docket, the Dibber and the Grapnel each carried a copy of, gathered once in `Source/PartKit/ShipKit`. The Folio shuttle (folio.md) is the first ship on it.
+A base for new lofted ships (Karl, 2026-11-21: new ships only; the older ships keep their own generators). It is the code the Satchel, the Docket, the Dibber and the Grapnel each carried a copy of, gathered once in `Source/PartKit/ShipKit`. The Folio shuttle (folio.md) is the first ship on it, the Knacker breaker (knacker.md) the next in the game.
 
 **What it is not:** a set of shared ship parts. Every piece and fitting a ship gets is still drawn for that ship, in its own part folder and under its own name prefix. The kit holds the method (how a hull is lofted, split, welded and dressed), never the look. Factions keep their look: a ship's colours come from a `ShipStyle`, its shapes from its own sections and its own fitting specs.
 

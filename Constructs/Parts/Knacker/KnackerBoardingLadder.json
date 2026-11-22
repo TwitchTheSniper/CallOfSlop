@@ -1,0 +1,282 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Knacker Boarding Ladder",
+  "description": "The Knacker's boarding ladder: it stands on the belly hatch, stowed up through the utility room's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.",
+  "group": "Ship",
+  "section": "Knacker breaker",
+  "role": "frame",
+  "tool": "welder",
+  "ladder": 2.675,
+  "mass": 92.1,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#26292b",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.29,
+        0.0,
+        -0.19
+      ],
+      "max": [
+        0.29,
+        2.645,
+        -0.005
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.27,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.21,
+        2.647,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.26,
+        0.5,
+        -0.12
+      ],
+      "max": [
+        -0.22,
+        0.56,
+        -0.01
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.26,
+        1.5,
+        -0.12
+      ],
+      "max": [
+        -0.22,
+        1.56,
+        -0.01
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.21,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.27,
+        2.647,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.22,
+        0.5,
+        -0.12
+      ],
+      "max": [
+        0.26,
+        0.56,
+        -0.01
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.22,
+        1.5,
+        -0.12
+      ],
+      "max": [
+        0.26,
+        1.56,
+        -0.01
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.21,
+        0.28,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        0.32,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        0.58,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        0.62,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        0.88,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        0.92,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        1.18,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        1.22,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        1.48,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        1.52,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        1.78,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        1.82,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        2.08,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        2.12,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        2.38,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        2.42,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.21,
+        2.68,
+        -0.165
+      ],
+      "max": [
+        0.21,
+        2.72,
+        -0.135
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.28,
+        2.585,
+        -0.19
+      ],
+      "max": [
+        0.28,
+        2.645,
+        -0.11
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-y"
+    }
+  ]
+}

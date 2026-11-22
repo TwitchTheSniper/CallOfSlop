@@ -103,8 +103,8 @@ public static partial class HullLoft
 
     public static bool IsPanelName(string name) => name.StartsWith(PanelPrefix, StringComparison.Ordinal);
 
-    /// <summary>A named part a Panel Former makes: a formed panel or one of the vehicle kit's lofted parts.</summary>
-    public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal);
+    /// <summary>A named part a Panel Former makes: a formed panel, one of the vehicle kit's lofted parts, or a plain hull skin (HullLoft.Section.cs).</summary>
+    public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal) || IsPlainSectionName(name);
 
     public static string PanelKey(in PanelShape s) => s.Kind == PanelLoft
         ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}loft {s.L}x{s.W}x{s.NoseW} t{s.Mm} b{ProfileText(s.Back)} f{ProfileText(s.Nose)} {s.Material})")
@@ -281,6 +281,34 @@ public static partial class HullLoft
 
     /// <summary>The panel's surface height (m) at <paramref name="s"/> along (0 to 1) and <paramref name="x"/> across (-1 to 1): what a Bed Block's pins rise to.</summary>
     public static float PanelLift(in PanelShape p, float s, float x) => PanelPoint(p, Math.Clamp(s, 0, 1), Math.Clamp(x, -1, 1)).Y;
+
+    /// <summary>
+    /// A panel's flat size (m): its surface measured along its length and across its width, each the longest of three lines over it (its
+    /// edges and its middle), so a crown, a rake or a fold is unrolled. What a Panel Former's blank must cover (ConstructPanelFormer.FlatOf).
+    /// </summary>
+    public static void PanelFlat(in PanelShape p, out float along, out float across)
+    {
+        const int n = 48;
+        along = across = 0;
+        for (var line = 0; line < 3; line++)
+        {
+            float a = 0, b = 0;
+            var x = line - 1f; // (-1, 0, 1 across)
+            var s = line * 0.5f; // (0, 0.5, 1 along)
+            var pa = PanelPoint(p, 0, x);
+            var pb = PanelPoint(p, s, -1);
+            for (var k = 1; k <= n; k++)
+            {
+                var qa = PanelPoint(p, k / (float)n, x);
+                var qb = PanelPoint(p, s, -1 + 2f * k / n);
+                a += Vector3.Distance(pa, qa);
+                b += Vector3.Distance(pb, qb);
+                (pa, pb) = (qa, qb);
+            }
+            along = MathF.Max(along, a);
+            across = MathF.Max(across, b);
+        }
+    }
 
     /// <summary>A fold's arc along the sheet (metres from its back edge), its radius and its signed angle (radians).</summary>
     private static void BendSpan(in PanelShape p, out float u0, out float u1, out float rad, out float a)
@@ -804,7 +832,11 @@ public static partial class HullLoft
             Console.WriteLine($"  pane: edge {paneEdge:0.00} m; glass {d.HasGlass}; blank {paneBlank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
         }
         else
+        {
             Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
+            if (ConstructPanelFormer.FlatOf(d, out var flat))
+                Console.WriteLine($"  flat {flat.Length:0.##} x {flat.Width:0.##} m, {flat.ThickCm} cm; blank {(ConstructPanelFormer.BlankFor(d) is { W: > 0 } bk ? Extrusion.Name(bk) : "none")}; depth {ConstructPanelFormer.Depth(d):0.##} m (pins {ConstructPanelFormer.PinTravel:0} m, {ConstructPanelFormer.PinTravel * (1 + ConstructPanelFormer.MastLevelsMost):0} m with corner masts); laid turn {ConstructPanelFormer.LayOf(d)}");
+        }
         Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer); first make {madeMs:0.0} ms (the first part a process makes also pays the JIT)");
         // A second make from the name alone (the table forgotten) gives the same part.
         var first = PanelHash(d);

@@ -151,9 +151,16 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   fits), the next on the last one's far end; lay them side by side under a wide die. The longest piece is the Core's 16 m, or out to the farthest
   table's end, up to 192 m (`growLength`, `Extrusion.MaxLengthCm`). A table's top is level with the machine's foot, so a block machine stands on
   Foundations and its tables on the ground in front. The step walks the tables only within 1 m of the plain cap.
+  **Inline into a roller run** (Sean 2026-11-21: extruders feed the formers along the conveying system, no arm or crane). A Roller Tile's
+  `-z table` socket welds on a table's far-end `roller` socket with the rollers' tops level with the table's (the tile's foot 1 m under the
+  table's top: in a line, the Extruder stands so its tables are at the 1 m work height, on a 0.7 m plinth over the floor the tiles stand on).
+  A run butted on a Run-out Table is its Extruder's `Piece out` (`RollerRuns.Butted`, `ConstructExtruder.TableMachine`): the link starts at the
+  die, so each cut piece is handed off whole (`ConstructConveyor.HandOff`) and rides from the die over the tables and on along the run. Butt
+  the run's out end on a Panel Former's or a Laser Cutter's back (their Cores' `-z` socket, on the Piece in) and the
+  Panel Former takes it as the blank of the order it fits (one blank a panel), a cutter onto its bed. Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
+  tiles, into a Panel Former's bin. A conveyor a player linked from the Extruder's Piece out keeps it, and the run then starts at its own first tile. Not tried: a joined client's view of the ride, a die wider than one table.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
-  Former's sheet link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`), then, for a Panel
-  Former's sheet, strips. The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
+  Former's blank link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`). The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
 - **Sizes.** 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass` and `MaxPartHealth`
   (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
@@ -367,7 +374,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 - **The machine** (design page drawing 15; `storage.panel`: `speed`, `at`, `maxWidth`, `maxLength`, `blockPower`, on an `any` bin;
   `IsPanelFormer`, a member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the
   Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`): a **Panel Former** Core (2 m wide: screen and queue,
-  Orders, power, the sheet hopper, Piece in and its in rollers; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
+  Orders, power, Piece in and its in rollers, the offcut bin with its Offcut chute port; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
   a pin field, an upper pin platen, corner posts, their own hydraulics; 900 W each while forming) welded on its far side and to each
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
@@ -382,18 +389,39 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
   wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
   work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
-- **Stock** is its bin, fed two ways: loose material by chute or F, as an Extruder's hopper; and **extruded sheet by conveyor** into its
-  **Piece in**: an arriving extruded section no thicker than 10 cm (a Sheet is 1 to 10 cm) is taken whole and counted into the bin at
-  what it holds (its mass at the material's weight); a thicker piece, another material than the bin's or more than its room waits on
-  the conveyor. A panel costs its mass in units of its material, taken whole when its stroke starts; the kit's lofts are steel.
+- **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
+  profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
+  comes from the panel's **flat size**: the surface unrolled (`HullLoft.PanelFlat`, three lines each way), its thickness in whole cm
+  (`round(mm / 10)`, 1 to 10); a kit loft's from its two longest sides and its mass by area (`ConstructPanelFormer.FlatOf`, cached per
+  def). `BlankFor(panel)` is the blank asked for: each side the flat size rounded up to 5 cm, in the panel's material. A blank fits
+  (`BlankFits`) when its material and thickness are the panel's and each side is from the flat size up to 25% over (`OverMost`, or the
+  next 5 cm step), either way round. An arriving blank that fits a queued order moves that order to the head and lies on the bed
+  (`TakeFromConveyor`; `JobAmount` its units, `OnBed`, both on the wire and saved); anything else waits on the conveyor. Done, the
+  trim (the blank's units less the panel's, `HullLoft.FormedUnits`) goes whole into the **offcut bin** (one material: "offcut bin
+  full", empty it by chute from its Offcut port); Cancel or Clear puts a blank on the bed back into the bin whole (`GiveBack`). The
+  look line and screen name the blank needed: "needs a 1.71 x 0.47 m steel blank, 2 cm (up to 25% over each way) on Piece in"
+  (`Lacks`, `BlankText`). Drawn: the blank lies flat on the bed, and the panel over the pins late in the stroke (`BedLook`).
+- **Plain hull skins** (Sean, 2026-11-21: "the whole sections should start in the panel former": a formed piece is the base, the
+  other pieces are added to it). A plain skin's key, `Hull Section (... - 0 - | ...)` (style `-`, salt 0, extras `-`;
+  docs/sandbox/design/hull-dress.md), is a formed name (`HullLoft.IsPlainSectionName`, read with no allocation), so a former takes its order
+  like a panel's, from its screen's bill, a terminal, a blueprint's bill or a Building Station's step. Its flat size is its facets unrolled
+  side by side (`HullLoft.SectionFlat`: the longest facet edge along, the facet widths added across at the wider end), its blank a 4 cm
+  steel sheet (`HullLoft.SectionSkinCm`); the skin weighs its 4 cm plate (area x 0.04 m x the steel row's units a m3 x a unit's weight), so it
+  costs what its blank holds. It is made standing as it sits on the hull, so the bed lays it turned (`ConstructPanelFormer.LayOf`): its
+  shallowest side up (that is its depth for the pins: most of the Zero Day's need corner masts), its longest along the bed, its outer face
+  up. The pins rise evenly under it (no key shape to read). A dressed section's key is refused: "a dressed hull section: the Panel Former
+  forms its plain skin, Hull Section (...); a Building Station's Dress skins job dresses it". `--form-panel "Hull Section (...)"` prints
+  the flat size, the blank, the depth and the laid turn.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
-  ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size, in what its bin holds (steel when
-  empty), Order count times; the Preset button opens the recipe picker on its presets (below). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
-  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"), more
-  than its bin holds, another material than its bin's ("another line"), a full queue. An Extruder or an Assembler refuses a panel ("a
-  Panel Former's order"). Starved says what it lacks: "needs 26 steel sheet for its panel, holds 10".
+  ("waiting for orders"). Queue on its screen orders its **Preset** setting at the preset's own size in steel, Order count times; the
+  Preset button opens the recipe picker on its presets (below). An order queued at the former itself (its Queue, a bill's Send) asks a
+  linked Sheet Extruder for its blanks (`AskBlanks`: those with a conveyor way to the former first); a chained order (a terminal, the
+  designer) asks the blank through the planner (`ConstructLogisticsPlan.FormerInputs`), which refuses a blank wider than any linked
+  Extruder's die ("Too wide", with the Die Blocks or Run-out Tables it needs). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
+  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"),
+  a full queue. An Extruder or an Assembler refuses a panel ("a Panel Former's order").
 - **Forming is a timed stroke**: 12 s on the block machine; the finished panel then rides out of the Out Table's **Piece out** on a
-  conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut), or with none linked drops on the middle of the bed as
+  conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut; a conveyor out shorter than the panel says so), or with none linked drops on the middle of the bed as
   a loose part, laid along it. Panel keys run up to 32 m (`HullLoft.PanelMaxCm`); a panel over 6 m gets more facets (16 along, 12 across
   at most).
 - **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every `Hull Loft (` and `Formed Panel (` step in `Bill.Panels`;
@@ -501,7 +529,7 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
-(Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+(Drill Module, Saw Module, Sawmill, Smelter, Foundry); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
 
 The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The drill's buffer and shaft](gathering-and-salvage.md#the-drills-buffer-and-shaft)), so the Bin column is the Saw Module's:
 
@@ -515,7 +543,9 @@ The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The
 
 Everything else is a building, large and unwieldy at every tier: a truck can't sensibly carry one, so production wants a base, a dedicated heavy carrier or (several of them) a mothership.
 
-| Tier | Speed | Bin, input | Smelter | Sawmill | Foundry | Assembler |
+(The Assembler column is history: since 2026-11-21 the Assembler is a block machine with no tiers, [Assembling](#assembling).)
+
+| Tier | Speed | Bin, input | Smelter | Sawmill | Foundry | Assembler (gone) |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 Scrap | x1 | 400, 200 | 3.5 m, 3.5 m tall, 5.1 t, 3 kW | 3 m, 3 m, 2.2 t, 1.8 kW | 4 m, 3.9 m, 7.7 t, 3.5 kW | 2 m, 2 m, 0.6 t, 1.5 kW |
 | 2 Workshop | x2 | 800, 400 | 4.5 m, 6.3 m, 8.5 t, 5.4 kW | 4 m, 4.5 m, 3.8 t, 3.2 kW | 5 m, 6.1 m, 12 t, 6.3 kW | 2.5 m, 2.4 m, 0.9 t, 2.7 kW |
@@ -583,41 +613,42 @@ run from "Gathering", "Gathering network", "Refining" and "Refining network".
 
 The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: the part kit's `--gen-parts assembling`.
 
-- **The part** (`Constructs/Parts/Assembling`, attach tool, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
+- **The machine** (block system, Sean 2026-11-21; design doc "Assembler on the block system"; parts `Constructs/Parts/Assembler`, generator `AssemblerParts.cs`; `MachineBlocks` family `assembler`). It has **no tiers**. The **Assembler** is its Core: a 2 m cell with the hopper on its top (Chute in), four tray cubbies on its front, Chute out on its side, its screen on -x, its own arm over a deck on its front half, and six **upgrade slots** on its back (sockets `module1` to `module6`, kind `tier`). **Assembly Bed Blocks** (2 x 2 x 0.4 m) welded beside it make the bed: the largest full rectangle next to the Core, up to 16 x 16 cells. **Mast Blocks** stand on the floor just *outside* the bed's four corners, welded to a corner block's side by their low sockets (`+x.low` ...), and stack: the shortest corner column sets the clear height, 2 m a mast block, 2 m with none (`CMachineAsm.Masts`). A **Gantry Carriage** welded on a bed block's `carriage` socket (its yellow rail edge) is one more arm: a bare Core has its own one, and the bed takes one a block, 32 a machine at most (`CMachineAsm.Carriages`, `MachineBlocks.MaxCarriages`). `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers an arm: 4), and `outAt`, `outDir`, where a body leaves a bare Core. Its `slots` are the tray.
+- **Upgrade modules** bolt on the upgrade slots, any mix, any order (`AsmFit`, `ConstructAssembling.FitOf`): the tier pieces are its unlocking modules, each unlocking one kind of work whatever else is fitted: **Power Coupling** (copper, Copper Coils, Wiring Looms, Servo Motors), **Coolant Loop** (bronze, Bearings, Piston Sets, Turbine Stages), **Servo Rack** (gold, circuits, Circuit Boards, Control Units), **Plasma Conditioner** (levite, Field Coils, Levite Cores, anti-grav). Two more stack, 4 at most: the **Overdrive Unit** (build speed x2, draw x1.8, each) and the **Feed Buffer** (the hopper holds twice the batches, each). A module's own recipe needs no module, so a bare Core starts the ladder.
+- **Fit.** A recipe's part has a footprint: its plan sides rounded up to whole cells (2 cm slack), either way round. The bed packs as many as fit (its **places**); the part's height must stand under the clear height. A bare Core builds a part up to 2 m a side (an Assembly Bed Block, so survival can start a bed). **Parts at once** = the smaller of its arms and the places: a wave of the recipe's seconds (divided by the Overdrive speed) builds one part an arm that has its batch in, every arm the head order's part. Each working arm draws the Core's 1.5 kW (x1.8 an Overdrive Unit). A part that doesn't fit says what to weld ("needs a 1 x 3 bed, this one is 2 x 2", "needs 4 m clear, this one has 2 m: stack 2 Mast Blocks on each mast column"); a missing module says which ("needs a Servo Rack on the Core"). A body built on a bed is set down at its place on the bed for a crane, a Loader Arm or a Piece out conveyor (from an Out Table) to take; a place still holding the last one waits. `--machine-blocks BLUEPRINT` prints a machine's arms, masts and modules and what a few parts fit.
+- **Looks and motion** (`AssemblerRender.cs`, drawn, nothing collides; posed from the store's progress byte and busy flag, so no wire change). A bed draws a runway rail along each long side over the clear height, on legs with a lamp each (green at work, amber waiting); a bridge on it over each column of working places, with a trolley, a hoist and a four-axis arm a place whose tool circles the part and flares while it welds; the kit shuttle running from the Core along the bed's edge at the wave's start; the job run on between the progress byte's sends at the recipe's rate; the part filling in from its base, its own boxes cut at a height that rises with the wave (at most 16 places drawn, 400 boxes a part); and the lift platen raising it at the end. Idle, one bridge parks over the Core's end. The Core has a power cabinet (breakers, gauges), a fan that turns at work, a tool rack with spare heads; a bed block a bolt row round its platen and a trench strip.
+- **Hazards.** The machine never stops for people: a person standing on a working bed is struck and burned, 60 a second (the whole bed: a part goes to its first free place) (`ConstructAssembling.AddHazards`, through GameMachineHazards). The kerb's stripes are the warning. (The design's "thrown out" knock-back isn't done.)
+- **Tool Bay and tool blocks** (Assembler PR 3; `AssemblerToolBay.cs`). A recipe with `"tool"` (`thruster`: thrusters, rocket engines, boosters; `tailor`: lift cells) needs that tool block docked in the Core's Tool Bay: a **Thruster Jig Block** or a **Sewing Table Block** (2 x 2 m, role `tool` in `machineBlock` with its `tool`) on a Core side socket (`+x`, `-x` or `+z`) its bed doesn't use, by its `dock` socket. `MachineBlocks` finds it at the rebuild (`CMachineAsm.Tool`, `ToolPart`; it joins the assembly and shows the Core's work); without it the state is `NeedsTool` and the look line names the block. The **Block Rack** is the Die Rack at 2 m bays (one generator, `PressParts.Rack`; Sean: "the die rack and the block rack the same piece"): two shelves, one kind a shelf, that hold tool blocks and dies. Tool blocks are physics-only, but a rack shelf holds them all the same (`ConstructStorage.RackHolds`); taken by hand, one leaves as a body; let go low over a rack's bay with the physics gun, it goes on the shelf (`ConstructTerminal.Shelve`). An Assembler hands a made tool block out as a body. Its three rows sit after the folded thruster and tailor rows (`Assembling.AfterFolded`), so no saved recipe number moves. **The swap:** a chute from a store into the Core takes the tool block its head recipe needs (`AssemblerToolBay.Chute`); at the start of the next step the old block goes back into that store and the new one docks in its place (`Deliver`, `Dock`); a swap that couldn't finish (no slot for the old block, no free side) is never started (`CanSwap`). Tool blocks on a rack are never refused at the Core (they wait). Not done yet: a Hall Crane, Loader Arm or carriage carrying the blocks, and the look line naming the rack that holds the wanted block.
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
-- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`). A part a die presses from a standard blank has no row: it is pressed, not assembled ([The Press](#the-press)).
+- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `needs` (the upgrade modules it takes, written by the generator from its inputs), `tool` (thruster or tailor: the tool block it will need in the Core's Tool Bay, Assembler PR 3; not yet enforced), `techTier` (how advanced the part is, the old Assembler tier: faction vehicles weigh parts and loot tables cap them by it; the Assembler ignores it) and `minTier` (unused by the Assembler now). At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`). A part a die presses from a standard blank has no row: it is pressed, not assembled ([The Press](#the-press)).
 - **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
-- **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
+- **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and the modules from what that needs. The Thruster Assembler's and the Tailor's rows went to the end of the one list (`tool`), so saved recipe numbers before them keep. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
-| Example (by hand) | Takes | Seconds | From tier |
+| Example (by hand) | Takes | Seconds | Needs |
 | --- | --- | --- | --- |
-| Gear Set | 5 steel | 4 | 1 |
-| Tyre Carcass | 4 rubber + 2 cloth | 5 | 1 |
-| Wheel | 2 steel + 1 Tyre Carcass | 5 | 1 |
-| Transmission | 8 steel + 2 Gear Set | 12 | 1 |
-| Piston Set | 4 steel + 2 bronze | 8 | 2 |
-| Wiring Loom | 2 copper + 1 rubber | 3 | 2 |
-| Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | 2 |
-| Circuit Board | 2 circuits + 1 laminate | 4 | 3 |
-| Battery | 4 copper + 2 circuits | 8 | 3 |
+| Tyre Carcass | 4 rubber + 2 cloth | 5 | nothing |
+| Wheel | 2 steel + 1 Tyre Carcass | 5 | nothing |
+| Bearing (2) | 2 bronze | 2 | Coolant Loop |
+| Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | Power Coupling, Coolant Loop |
+| Control Unit | 1 steel + 1 Circuit Board + 1 Wiring Loom | 6 | Power Coupling, Servo Rack |
 
-  A tier 1 machine asks only what a tier 1 Assembler can make, so survival can start: a Smelter is 643 steel, 322 concrete, 129 rubber and 2 Gear Sets.
+  (Gear Sets, Piston Sets, Wiring Looms and Circuit Boards are pressed: [The Press](#the-press).)
 - **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
 - **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why. With a conveyor out of its **Piece out** each batch rides to a rack instead, and with a queue of
   **work orders** its head order sets the recipe ([Work orders](#work-orders), protocol 251); a status lamp stands over its screen, which
   lists the queue over Queue, Cancel, Clear, Up and Down, and an Order count setting.
 - **Same rules as the machines.** The batch's inputs go when it is done, so power cut or broken loses nothing. It needs power in survival (`ConstructRecycler.Powered`), draws only while it works, and takes a **Run** wire. In creative (`CreativeRecycling`) it builds a batch a step, unpowered. Its input counts in the mass (`LoadOf`), and a broken one spills its input and tray.
 - **Beacons.** A network reads the tray and can take from it. It never sees the input or fills the tray (`SlotCheck.OutputOnly`).
-- **The look line**: "Workshop Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
-- **The Assembly Bay** blueprint: a Workshop Assembler set to Engine, a slab of bins, shelf, Chest and Battery beside it, and chutes to and from its ports.
+- **The look line**: "Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
+- **The Assembly Bay** blueprint: an Assembler set to Engine with a Power Coupling, a Coolant Loop and an Overdrive Unit, a slab of bins, shelf, Chest and Battery beside it, and chutes to and from its ports.
 - **Network (protocol 118).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
 - **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
 
-**In survival ([Creative or Survival](overview-and-playing.md#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
+**In survival ([Creative or Survival](overview-and-playing.md#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Its upgrade modules need no module to make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
 
-**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, tier gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
+**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
-Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches a tier; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
+Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches an arm (x2 a Feed Buffer); the tray is 4 slots of 12; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
 
 ## Build stations
 
@@ -1031,10 +1062,10 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
   stamp and flags (an older phase 2 block loads as one level).
 - **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
-  into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
-  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
-  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
-  on the network takes it, phase 5: the link waits and says what would make it, Die Blocks on an Extruder whose most section takes it (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 303) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  into the bay that takes them). A Panel Former's order now chains too: each panel asks **one blank** (`ConstructPanelFormer.BlankFor`, 2026-11-21: a Sheet the
+  panel's flat size rounded up to 5 cm, at its thickness), less a blank lying on the bed for the head order; when no Extruder on the
+  network takes it, the link waits and says what would make it, Die Blocks on an Extruder whose most section takes it, or Run-out Tables
+  (`TooWideText`; the old "Too wide: make strips" setting is gone, protocol 423); a blank that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -1108,7 +1139,7 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
 
 - **An order** (`WorkOrder`) is a piece's whole key (shape, section, width, height, pipe wall, length, material; a wheel's length 0) and
   a count, 1 to 999; or a catalogue part and a count, which an Assembler takes (below).
-- **The Assembler's orders** (2026-11-11). Every Assembler, Thruster Assembler and Tailor takes an order for a catalogue part its family
+- **The Assembler's orders** (2026-11-11; since 2026-11-21 the one Assembler, its modules in place of tiers). Every Assembler, Thruster Assembler and Tailor takes an order for a catalogue part its family
   has a recipe for at its tier (`AssemblingTable.Of`: one recipe a part); else the reason: "no recipe makes the Rudder", "the Bearing needs
   a tier 2 Assembler (this is tier 1)", "the Capital Jet is made by a Thruster Assembler, not the Assembler", a full queue. With a queue
   its head order sets the recipe (`ConstructAssembling.RecipeOf`), chutes and F feed that recipe, Starved names the missing input, and each
@@ -1435,6 +1466,10 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   each 16 Bay Blocks, at least one, at most 8 (`ConstructStation.Arms`). A runway longer than 12 m between supports is a deeper girder on
   legs along the bay's sides, each braced in to the rail, and a bay wider than 12 m gets truss bridges (a 24 m span reads as a truss, not a
   plank). A piece longer than 3 m hangs on a two-leg bridle from the hook block.
+- **The Dress job** (`ConstructStation.Dress.cs`, Sean 2026-11-21): the blueprint `Dress skins` waits for a plain hull skin in the bay
+  or the hold and builds its dress blueprint (the station's `dressStyle`, `dressSalt`, `dressExtras`), laying the dress subparts from
+  linked steel rather than ordering them; then the next skin. Design: docs/sandbox/design/hull-dress.md "The dress station";
+  `--dress-skin` prints a skin's plan and builds it headless.
 - **Pick pads under its crane** (`ConstructStationPads.cs`, Sean 2026-11-21: "pick pads for pieces up to 14 t and 14 m long"). A Lay-down
   Pad (or a Pad Tile pad) on the station's body whose deck lies within the bay's width, wholly past either end of the bay and within 20 m of
   it, is a pick pad of the station itself (four at most, the nearest first). The runway is drawn on over it. Its fitting arms take a step's
@@ -1707,8 +1742,13 @@ CLEAR on its sides), festoon loops along the girder and hazard stripes on the ho
 a bridge moves within 3 m of it (`ConstructLifters.RailLit`, drawing only). The classed cranes stay (the Medium for the Dray's hold;
 the Large and Capital keep their Assembler rows, which saved recipe numbers count). The **Hall Bay** blueprint (`HallShowcase.cs`) is
 a 24 x 20 m floor with a 16 m Hall Crane on two runs over three-mast columns, an Extruder with no conveyor and a 3 x 4 pad of Pad
-Tiles: the crane carries each angle from the Run-out Table to the pad. Not yet: a hall crane doesn't yet skip a machine bed that the
-machine's own crane serves (no machine has its own crane yet).
+Tiles: the crane carries each angle from the Run-out Table to the pad. A crane (or an arm) also picks from the end of a Roller Tile
+run that has no way on (`LiftPointKind.RunEnd`, `RollerRuns.EndRunAt`: the run ends at its own last tile's Run end and no conveyor
+leaves that tile's Piece out): the lead piece waiting there comes off the run into the hand and goes to the store it was riding to
+when that is in reach and takes it, else by the Routers' rule (a want, else storage); the run's look line says "waiting at the run's
+end for a crane or an arm". Hand orders don't pick from a run's end. Hall Bay has such a run: three tiles down the bay under the
+span (`logi spawn 3 Roller Tile@<tile>` puts Gear Sets on it; `logi runs` lists each run and whether its end is a pick point). Not
+yet: a hall crane doesn't yet skip a machine bed that the machine's own crane serves (no machine has its own crane yet).
 
 **Pad Tiles** (design page drawing 23, Sean 2026-11-21; parts from `PieceRackParts.cs`, `Constructs/Parts/Pads`; code
 `ConstructPads.cs`). A Pad Tile is a 2 m deck with no Core (`machineBlock` family `pad`, `"seed": true`). Tiles welded side by side are
@@ -1732,16 +1772,21 @@ rectangle holding the lowest-index tile. A run is one ordinary conveyor link alo
 12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
-out table, which the former or cutter hands its piece to; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
+out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
 its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
 or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
 **Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
 a junction: a run ending in it passes its pieces in turn to the runs that start at it, never back out the side they came in, turned
-to the new run's way (its disc turns while a piece crosses). Hall Bay has a line: a Pad Tile, two tiles, a turntable and one tile
-into the pad (`logi spawn 3` sends three Gear Sets along it). Not yet: a run doesn't carry a person along, and the Hall Crane doesn't
-pick from a run's end; a powered turntable doesn't choose the way by a piece's destination as a Router does.
+to the new run's way (its disc turns while a piece crosses). A turntable sends a piece that has a destination (a store, a tray
+or a machine's input it was given by a Router or its maker's order) the way to it, as a Router does: it is a Router slot on the
+logistics map (`LogiMap.Routers`, so a way may pass through it, and it counts towards `MaxRouters`), and `ConstructLogistics.TurntableWay`
+reads its next hop, never back out the side the piece came in; while that way is full the piece waits. It only follows a destination:
+a piece with none, or with no way from here, goes each way in turn as before, and a turntable never sets a piece off the line, holds
+it stuck or has an Alarm. Hall Bay has a line: a Pad Tile, two tiles, a turntable, then one tile north into the big pad and one
+tile east into a one-tile pad (`logi spawn 3` sends three Gear Sets along it; `logi dest Pad Tile@<tile>` gives every rider that
+pad as its destination). Not yet: a run doesn't carry a person along.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
@@ -1771,6 +1816,18 @@ any piece that reaches a player standing on a construct (a floor slab, a pad, a 
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
 arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
 is 2.2 m tall: a Large pad, not a Medium one.
+**Welded groups on a pad** (Sean, 2026-11-21, in place of Cargo Volumes; `PackedGroups.cs`): a welded group set down at rest on a
+Lay-down Pad or a Pad Tile pad goes in as one kind, `Packed (#hash)`, and packs as any piece does. Its design is a baked part's
+(`BakedParts.cs`: one line a part, its place, turn, paint and finish; the same store, wire message and save section), written in the
+pad's frame with the group's longest side along the pad, so the same group set down either way round is one kind and stacks. Any part
+may be in it, but each as new (whole, empty, settings at their defaults; paint and finish are kept), and the group rigid: no joint,
+every part at a grid turn, no wires, no seat. Whatever takes it out (a crane, an arm, a hand, a spill) makes a body of the one packed
+part, which the server turns back into the group at its next lifters' look (each second), welded again where its sockets meet; a body
+someone holds waits until they let go. A packed part is physics-only (never in the hands) and only drawn while stored: a group over
+256 boxes loses its detail boxes there first. A Lifter Cab carries a welded group whole on its hook, as it does a container (F over
+it; its size and mass as packed), so a Hall Crane can set one on a pad. `--pack-check` tries it headless: two groups built in
+different orders and turns go in as one kind, a damaged one is refused, one taken out is its group again. Not yet: arms and cranes
+carrying a group by order (only the cab does), and a stock target naming a packed kind.
 
 ## Bake Oven and baked parts (2026-11-21)
 

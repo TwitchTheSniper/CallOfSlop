@@ -1,0 +1,171 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Knacker Root Wall 1",
+  "description": "A wall of the Knacker's root, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Knacker breaker",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 332.2,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#9a9e98",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -4.875,
+        0.125,
+        -2.975
+      ],
+      "max": [
+        -4.625,
+        2.525,
+        6.75
+      ],
+      "color": "#9a9e98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.887,
+        0.128,
+        -2.925
+      ],
+      "max": [
+        -4.613,
+        0.875,
+        6.7
+      ],
+      "color": "#3b4146",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.621,
+        1.125,
+        -0.925
+      ],
+      "max": [
+        -4.605,
+        1.325,
+        -0.325
+      ],
+      "color": "#8a4a2e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -4.621,
+        1.125,
+        0.075
+      ],
+      "max": [
+        -4.605,
+        1.325,
+        0.675
+      ],
+      "color": "#b87333",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -4.621,
+        1.125,
+        1.075
+      ],
+      "max": [
+        -4.605,
+        1.325,
+        1.675
+      ],
+      "color": "#c9cdd1",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -4.621,
+        1.125,
+        2.075
+      ],
+      "max": [
+        -4.605,
+        1.325,
+        2.675
+      ],
+      "color": "#5a6e3a",
+      "detail": true,
+      "finish": "worn paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -4.745,
+        0.125,
+        1.885
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -4.745,
+        1.325,
+        6.75
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -4.745,
+        2.525,
+        1.885
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -4.875,
+        1.855,
+        -1.805
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -4.875,
+        1.855,
+        0.625
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -4.875,
+        1.855,
+        3.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        -4.875,
+        1.855,
+        5.565
+      ],
+      "dir": "-x"
+    }
+  ]
+}

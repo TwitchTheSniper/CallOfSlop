@@ -1,0 +1,240 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tuck Leg Foot",
+  "description": "A tuck leg's foot: it rides the strut's ankle down and back without turning, so it stays level; on the ground its spring gives up to 8 cm and it stands 1.75 m under the mount's top. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Landing gear",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "swing",
+    "axis": "+x",
+    "held": true,
+    "seconds": 3.0,
+    "hang": "hang",
+    "gear": "leg",
+    "link": {
+      "crank": [
+        0.0,
+        -0.16,
+        -0.75
+      ],
+      "crankAxis": "+x",
+      "crankAngle": 90.0,
+      "knee": [
+        0.0,
+        -0.16,
+        0.65
+      ],
+      "ride": true
+    },
+    "spring": {
+      "travel": 0.08,
+      "hz": 3.02,
+      "damping": 0.6
+    }
+  },
+  "mass": 70.0,
+  "health": 2000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.13,
+        -0.232,
+        0.55
+      ],
+      "max": [
+        -0.086,
+        -0.11,
+        0.75
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.086,
+        -0.232,
+        0.55
+      ],
+      "max": [
+        0.13,
+        -0.11,
+        0.75
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.195,
+        0.615
+      ],
+      "max": [
+        0.14,
+        -0.125,
+        0.685
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.13,
+        -0.261,
+        0.54
+      ],
+      "max": [
+        0.13,
+        -0.236,
+        0.76
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.03,
+        -0.26,
+        0.62
+      ],
+      "max": [
+        0.03,
+        -0.244,
+        0.68
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "chrome",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.3,
+        -0.37,
+        0.35
+      ],
+      "max": [
+        0.3,
+        -0.28,
+        0.95
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plated steel",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.25,
+        -0.28,
+        0.4
+      ],
+      "max": [
+        0.25,
+        -0.255,
+        0.9
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plated steel",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.306,
+        -0.37,
+        0.344
+      ],
+      "max": [
+        0.306,
+        -0.34,
+        0.956
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "hazard paint",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.28,
+        -0.4,
+        0.37
+      ],
+      "max": [
+        0.28,
+        -0.37,
+        0.93
+      ],
+      "color": "#1a1b1d",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "rubber",
+      "rig": "oleo"
+    },
+    {
+      "min": [
+        -0.3,
+        -0.4,
+        0.35
+      ],
+      "max": [
+        0.3,
+        -0.28,
+        0.95
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.13,
+        -0.261,
+        0.54
+      ],
+      "max": [
+        0.13,
+        -0.236,
+        0.76
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        -0.34,
+        0.95
+      ],
+      "dir": "+z"
+    }
+  ]
+}

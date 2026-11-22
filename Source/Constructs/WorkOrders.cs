@@ -256,7 +256,7 @@ public static class WorkOrders
     };
 
     /// <summary>Server: queues an order on a machine, or says why not.</summary>
-    public static string? Queue(ConstructWorld world, Construct c, int part, in WorkOrder o)
+    public static string? Queue(ConstructWorld world, Construct c, int part, in WorkOrder o, bool blanks = true)
     {
         if (Refusal(world, c, part, o) is { } why)
             return why;
@@ -267,6 +267,8 @@ public static class WorkOrders
             add.Key = preset; // (a former's preset: the part by its id, and the key it is cut as, for its material on screens and look lines)
         p.Orders.Add(add);
         world.OrdersChanged(c);
+        if (blanks && p.D is { IsPanelFormer: true, IsLaserCutter: false } && o.Chain == 0)
+            ConstructPanelFormer.AskBlanks(world, c, part, add); // (its blanks, of a linked Extruder: it has no stock of its own; a chained order's blank, or a terminal's, is the chain's)
         return null;
     }
 
@@ -400,9 +402,6 @@ public static class WorkOrders
             return why;
         if (o.IsPiece)
             o.Key = o.Key with { Material = MaterialFor(world, c, part) };
-        else if (o.IsPanel && !c.DefOf(part).IsLaserCutter && world.StoreOf(c, part) is { Amount: > 0 } fed && fed.Material != o.Key.Material
-            && ConstructPanelFormer.FromSettings(c, part, o.Count, RecyclingTable.Current.NameOf(fed.Material), out var inStock) == null)
-            o = inStock; // (a preset in what its bin holds)
         return Queue(world, c, part, o);
     }
 
@@ -413,6 +412,8 @@ public static class WorkOrders
             return "no orders to cancel";
         if (c.DefOf(part).IsLaserCutter)
             ConstructLaserCutter.GiveBack(world, c, part); // (the head's blank leaves the bed, so it is never cut to the next order)
+        else if (c.DefOf(part).IsPanelFormer)
+            ConstructPanelFormer.GiveBack(world, c, part); // (...and a former's is sheared into its offcut bin)
         q.RemoveAt(0);
         world.OrdersChanged(c);
         return null;
@@ -425,6 +426,8 @@ public static class WorkOrders
             return "no queue: it works its own settings";
         if (c.DefOf(part).IsLaserCutter)
             ConstructLaserCutter.GiveBack(world, c, part);
+        else if (c.DefOf(part).IsPanelFormer)
+            ConstructPanelFormer.GiveBack(world, c, part);
         c.Parts[part].Orders = null;
         world.OrdersChanged(c);
         return null;
@@ -1246,7 +1249,7 @@ public static class ConstructBill
             {
                 var pd = ConstructParts.Find(o.Name!);
                 var how = pd == null ? "not a part this build makes" : ConstructPanelFormer.TierFor(pd) is { } tier
-                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, {(ConstructParts.Find(tier) is { } fd ? ConstructPanelFormer.Seconds(fd, pd) : 0):0} s"
+                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, blank {(ConstructPanelFormer.BlankFor(pd) is { W: > 0 } bk ? Extrusion.Name(bk) : "none")}, {(ConstructParts.Find(tier) is { } fd ? ConstructPanelFormer.Seconds(fd, pd) : 0):0} s"
                     : "no recipe: too large for any Panel Former";
                 if (pd == null || ConstructPanelFormer.TierFor(pd) == null)
                 {
@@ -1308,7 +1311,7 @@ public static class ConstructBill
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({"Grow Former"}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({"Grow Former"}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)}{(r.Needs != 0 ? $" with {AsmFit.ModuleWords(r.Needs)}" : "")}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }

@@ -178,6 +178,7 @@ public static class ConstructBakeOven
                     Work(world, c, core, a, st);
             }
         }
+        ConstructAssembling.AddHazards(world); // (after the ovens', so their crush boxes always have room: Assemblers' working beds, the arms strike and the weld burns)
     }
 
     private static void Work(ConstructWorld world, Construct c, int part, int asmIndex, CStore st)

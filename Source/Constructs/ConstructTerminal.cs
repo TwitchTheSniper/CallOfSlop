@@ -729,15 +729,15 @@ public sealed partial class ConstructEdits
     /// <summary>
     /// A loose part let go over a shelf (the physics gun's release, a drop from the hands) goes into the slot nearest where it
     /// would land: a shelf is held in slots, so a stack never tips over on a moving construct. Runs on the release, not per
-    /// tick. What a shelf won't take (physics-only, too big, the slots taken) stays a body and comes to rest on the board.
+    /// tick. What a shelf won't take (physics-only but for a tool block on a rack, too big, the slots taken) stays a body and comes to rest on the board.
     /// </summary>
     private void Shelve(ConstructWorld world, Construct body, byte player)
     {
-        if (!body.Loose || body.DefOf(0) is not { PhysicsOnly: false } d || world.StoreOf(body, 0) != null)
-            return;
+        if (!body.Loose || body.DefOf(0) is not { } d || d.PhysicsOnly && d.BlockRole != BlockRole.Tool || world.StoreOf(body, 0) != null)
+            return; // (a tool block, physics-only, goes on a rack's shelf all the same: ConstructStorage.RackHolds)
         var from = body.WorldCom;
         var down = -GravityFrames.UpAt(from);
-        var left = ConstructTerminals.ShelveDrop;
+        var left = ConstructTerminals.ShelveDrop + (d.BlockRole == BlockRole.Tool ? (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f : 0); // (a 2 m tool block's middle stands high over its own floor)
         ConstructHit hit;
         while (true)
         {

@@ -36,7 +36,9 @@ public static unsafe class LightGrid
     /// The most dynamic lights (muzzle flashes, blasts, construct lamps: ConstructLamps.cs) a frame takes; more are dropped.
     /// The shader's arrays take their size from <see cref="MaxDynamicGlsl"/>, which must say the same number.
     /// </summary>
-    public const int MaxDynamic = 12;
+    /// (32, Karl 2026-11-21: with 12, a ship room's far end went dark or lit by where you stood, a Zero Day deck having 30 lamps
+    /// in reach. A pixel pays only for the lights within their range of it, so more lights cost little where they don't reach.)
+    public const int MaxDynamic = 32;
 
     /// <summary>Is the shader's block the same size as <see cref="FrameBlock"/> (its arrays sized <see cref="MaxDynamic"/>)? Checked when the block is made.</summary>
     public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal);

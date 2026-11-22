@@ -450,7 +450,7 @@ public static class ConstructConveyor
     /// <summary>
     /// Whether a conveyor's lead piece waits at its far end, and why: 0 it moves, 1 its end is gone, 2 to 5 the rack's
     /// <see cref="RackCheck"/> (2 not a piece, 3 too big, 4 full; 5 too long), 6 a junction's way on is full, 7 a machine isn't
-    /// taking it. Either side, from what it heard; allocates nothing (a look line asks every frame).
+    /// taking it, 8 held at a Router, 9 waiting at a Roller Tile run's end for a lifter. Either side, from what it heard; allocates nothing (a look line asks every frame).
     /// </summary>
     public static int Jam(ConstructWorld world, Construct c, int route)
     {
@@ -474,6 +474,8 @@ public static class ConstructConveyor
             }
             if (td.IsRouter && ((LogiFlags)c.Conveyed[i].Flags & LogiFlags.Stuck) != 0)
                 return 8;
+            if (td.IsRollerTile && RollerRuns.EndRunAt(c, to) == route)
+                return 9; // (a run with no way on: its pieces wait at its end for a crane)
             return td.IsConveyorJunction ? 6 : 7;
         }
         return 0;
@@ -489,6 +491,7 @@ public static class ConstructConveyor
         5 => "jammed: piece too long for this rack",
         6 => "jammed: the conveyor after the junction is full",
         7 => $"jammed: the {(c.Routes[route].To < c.PartCount ? c.DefOf(c.Routes[route].To).Name : "machine")} isn't taking it",
+        9 => "waiting at the run's end for a crane or an arm",
         8 => "held at " + ConstructLogisticsBoard.RouterLabel(c, c.Routes[route].To) + ": " + StuckWhy(c, route), // (its name, else its number: phase 4c)
         _ => null,
     };
@@ -633,7 +636,7 @@ public static class ConstructConveyor
     }
 
     /// <summary>A rider's centre and turn in the world now (server: where it drops).</summary>
-    private static void WorldPose(Construct c, int route, in CRider r, ConstructPartDef d, out Vector3 centre, out Quaternion rot)
+    internal static void WorldPose(Construct c, int route, in CRider r, ConstructPartDef d, out Vector3 centre, out Quaternion rot)
     {
         Size(d, out _, out _, out var along);
         Pose(c, route, r.At - along * 0.5f, d, out var origin, out var lr, out var seg, r.ViaPlus1 - 1);
@@ -857,6 +860,9 @@ public static class ConstructConveyor
         int j = c.Routes[k].To;
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
             return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
+        if (c.DefOf(j).IsTurntable && c.Conveyed[lead].Dest != 0 && ConstructLogistics.Map(c) is var tm && tm.RouterSlot(j) is var ts and >= 0
+            && ConstructLogistics.TurntableWay(c, tm, ts, k, c.Conveyed[lead]) is var way and not -1)
+            return way >= 0 && PassTo(c, k, lead, way); // (a Turntable Tile: the way to the piece's destination, waiting while it is full; none, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         var jd = c.DefOf(j);
         var rollers = jd.IsRollerTile || jd.IsTurntable; // (a run's tile or a turntable: which way on, RollerRuns.Passes)
@@ -1081,7 +1087,7 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
         {
-            if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d))) // (extruded sheet into its bin; a cutter's blank onto its bed)
+            if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d, scrap: true))) // (extruded sheet into its bin; a cutter's blank onto its bed)
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
             return true;
