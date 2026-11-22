@@ -169,6 +169,10 @@ public static partial class ConstructLifters
                 continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
             ref readonly var p = ref b.Parts[i];
             var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
+            Vector3 bedMin = default, bedMax = default;
+            var bed = d.IsAssembler && OutZone.BedOf(b, i, out _, out bedMin, out bedMax);
+            if (bed)
+                half = MathF.Max(half, Vector3.Max(Vector3.Abs(bedMin), Vector3.Abs(bedMax)).Length() + 0.5f); // (a block Assembler: its whole bed, measured from the Core)
             if (d.IsPieceRack && ConstructPads.RackDef(b, i) is var pd && !ReferenceEquals(pd, d))
                 half = MathF.Max(MathF.Abs(pd.RackHoldMin.X), MathF.Abs(pd.RackHoldMax.X)) + MathF.Max(MathF.Abs(pd.RackHoldMin.Z), MathF.Abs(pd.RackHoldMax.Z)) + pd.RackHoldMax.Y + 0.5f; // (a pad's owner: its whole rectangle, measured from the tile)
             if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
@@ -193,8 +197,9 @@ public static partial class ConstructLifters
                 continue;
             }
             var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer;
+            // A machine's Piece out with no conveyor on it; a block Assembler's is its bed too, where it leaves what it builds (LeaveOnBed).
             if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
-                && InReach(ld, shoulder, lr, o, SafeLift, out _))
+                && (InReach(ld, shoulder, lr, o, SafeLift, out _) || bed && BedSpot(b, i, ld, shoulder, lr)))
                 pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out };
             if (d.IsAssembler || d.IsPanelFormer)
                 TryIn(pts, ref n, b, i, d, d.IsAssembler ? LiftPointKind.Assembler : LiftPointKind.Former, 0, "Piece in", ld, shoulder, lr);
@@ -350,7 +355,8 @@ public static partial class ConstructLifters
             if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || !PointAt(b, pt, out var outAt))
                 continue;
             // The piece the machine dropped at its out as before (a loose one-part body at rest there: seen, saved and
-            // takeable by hand as any loose piece); the arm takes it only when it can carry it and something in reach takes it.
+            // takeable by hand as any loose piece), or left on its bed; the arm takes it only when it can carry it and something in reach takes it.
+            var zone = OutZone.Of(b, pt.Part, outAt);
             var bodies = world.Bodies;
             for (var bi = 0; bi < bodies.Count; bi++)
             {
@@ -358,8 +364,7 @@ public static partial class ConstructLifters
                 if (lo.PartCount != 1 || lo == b || lo == c || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Anchored || lo.Parts[0].Broken)
                     continue;
                 var d = lo.DefOf(0);
-                var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
-                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d) || PickWhy(world, lo) != null)
+                if (!zone.Holds(lo, d) || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d) || PickWhy(world, lo) != null)
                     continue;
                 Freeform.PartWorld(lo, 0, out var pp, out var pr);
                 var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
@@ -496,14 +501,15 @@ public static partial class ConstructLifters
     }
 
     /// <summary>
-    /// Could this machine have made this piece as it is set now (an Assembler's recipe output, a press's row output, an Extruder's
-    /// piece)? A loose part someone left by a machine's out is not taken.
+    /// Could this machine have made this piece (an Assembler's recipe output, a press's row output, an Extruder's piece)? A loose part
+    /// someone left by a machine's out is not taken. An Assembler: any part its machine's recipes make, not only its recipe now (Zero Day
+    /// works, 2026-11-22: once its order queue moved on, "waiting for orders", the keel it had left on its bed was never lifted).
     /// </summary>
     private static bool MadeBy(Construct b, int part, ConstructPartDef d)
     {
         var md = b.DefOf(part);
         if (md.IsAssembler)
-            return ConstructAssembling.RecipeOf(AssemblingTable.Current, b.Parts[part], md) is { } r && r.Output == d;
+            return AssemblingTable.Current.Of((ushort)d.Id) is { } r && r.Output == d && r.Machine == md.AsmMachine;
         if (md.IsPress && ConstructPress.SizedDieOf(PressTable.Current, b, part) is { } die)
         {
             // A press with a sized die (phase 5: phase 4 read only the lathe's rows, so a press's output was never picked): one of the
@@ -518,6 +524,75 @@ public static partial class ConstructLifters
         if (md.IsPress)
             return ConstructPress.RowFor(ConstructPress.RowsOf(PressTable.Current, b, part), b, part) is { } row && row.Output == d;
         return md.IsExtruder && d.IsExtrusion;
+    }
+
+    /// <summary>Does a lifter reach any spot over a block Assembler's bed (on a grid a cell apart, at most 16 by 16)? Only from FindPoints (every 2 s).</summary>
+    private static bool BedSpot(Construct b, int part, LifterDef ld, Vector3 shoulder, Quaternion lr)
+    {
+        if (!OutZone.BedOf(b, part, out var toCore, out var min, out var max) || !Matrix4x4.Invert(toCore, out var core))
+            return false;
+        var cell = b.Parts[part].D.BlockCell;
+        var nx = Math.Clamp((int)MathF.Ceiling((max.X - min.X) / MathF.Max(0.5f, cell)), 1, 16);
+        var nz = Math.Clamp((int)MathF.Ceiling((max.Z - min.Z) / MathF.Max(0.5f, cell)), 1, 16);
+        for (var xi = 0; xi <= nx; xi++)
+            for (var zi = 0; zi <= nz; zi++)
+            {
+                var p = Vector3.Transform(new Vector3(min.X + (max.X - min.X) * xi / nx, min.Y + OutZone.BedSlack, min.Z + (max.Z - min.Z) * zi / nz), core);
+                if (InReach(ld, shoulder, lr, p, SafeLift, out _))
+                    return true;
+            }
+        return false;
+    }
+
+    /// <summary>
+    /// Where a machine's out holds its made pieces: near its out point (1 m and half the piece's size), and for a block Assembler with a
+    /// bed anywhere over the bed, up to its clear height (ConstructAssembling.LeaveOnBed sets what it builds there). Worked out once a point.
+    /// </summary>
+    internal readonly struct OutZone
+    {
+        public const float BedSlack = 0.1f; // m: under the bed's top a piece's middle may sit (it never does) and how far a piece may lie past its edge
+
+        private readonly Vector3 _at, _min, _max;
+        private readonly Matrix4x4 _toCore;
+        private readonly bool _bed;
+
+        private OutZone(Vector3 at, bool bed, Matrix4x4 toCore, Vector3 min, Vector3 max) => (_at, _bed, _toCore, _min, _max) = (at, bed, toCore, min, max);
+
+        public static OutZone Of(Construct b, int part, Vector3 outAt)
+        {
+            if (part < b.PartCount && b.DefOf(part).IsAssembler && BedOf(b, part, out var toCore, out var min, out var max))
+                return new OutZone(outAt, true, toCore, min, max);
+            return new OutZone(outAt, false, default, default, default);
+        }
+
+        public bool Holds(Construct lo, ConstructPartDef d)
+        {
+            var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
+            if (Vector3.DistanceSquared(lo.WorldCom, _at) <= reach * reach)
+                return true;
+            if (!_bed)
+                return false;
+            var p = Vector3.Transform(lo.WorldCom, _toCore);
+            return p.X >= _min.X - BedSlack && p.X <= _max.X + BedSlack && p.Z >= _min.Z - BedSlack && p.Z <= _max.Z + BedSlack && p.Y >= _min.Y - BedSlack && p.Y <= _max.Y;
+        }
+
+        /// <summary>
+        /// A block Assembler's bed as a box in its Core part's frame, from the bed's top to its clear height (the hazard box's, AddHazards),
+        /// and the world-to-Core matrix. False for a bare Core or any other machine.
+        /// </summary>
+        public static bool BedOf(Construct b, int part, out Matrix4x4 toCore, out Vector3 min, out Vector3 max)
+        {
+            toCore = default;
+            (min, max) = (default, default);
+            if (ConstructAssembling.FitOf(b, part) is not { Limited: true, W: > 0 } fit || !MachineBlocks.TryOf(b, part, out var asm)
+                || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
+                return false;
+            var o = b.Parts[part].D.BlockOrigin ?? Vector3.Zero;
+            var bedTop = o.Y * 2f; // (the Core's cell middle is the bed layer's: its top is as far over it as the foot is under)
+            min = new Vector3(o.X + (asm.X0 - 0.5f) * fit.Cell, bedTop, o.Z + (asm.Z0 - 0.5f) * fit.Cell);
+            max = min + new Vector3(asm.W * fit.Cell, MathF.Max(fit.Clear, 0.5f), asm.L * fit.Cell);
+            return true;
+        }
     }
 
     private static void Wake(Construct b, int part)
@@ -544,7 +619,7 @@ public static partial class ConstructLifters
         l.From = Vector3.Transform(from - Vector3.Transform(mid, fromRot) - lp, inv);
         l.To = Vector3.Transform(toAt - Vector3.Transform(mid, toRot) - lp, inv);
         l.Rise = RiseOf(c, l.Part, ld);
-        l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+        l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
         Begin(l);
         (l.State, l.Why, l.ToHold, l.Moved, l.Fitted) = (LiftState.Carry, LiftWhy.Carrying, false, true, false);
         (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (pt.Body, -1, -1, null, null);

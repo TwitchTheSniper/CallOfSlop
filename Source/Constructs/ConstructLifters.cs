@@ -375,13 +375,26 @@ public static partial class ConstructLifters
             return;
         var busy = 0;
         var decisions = 0;
-        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        // The lifters take turns at the step's few decisions (Zero Day works, 2026-11-22: with a station open every idle lifter asks, so
+        // the first four in the list took them all and the yard crane, listed last, never looked): the step starts where the last one's
+        // decisions ran out.
+        var bodyN = world.LiftBodies.Count;
+        var startBody = world.LiftTurnBody < bodyN ? world.LiftTurnBody : 0;
+        var startLift = world.LiftTurnBody < bodyN ? world.LiftTurnLift : 0;
+        var turnSet = false;
+        for (var bk = 0; bk <= bodyN; bk++)
         {
+            var bi = (startBody + bk) % bodyN;
             var lb = world.LiftBodies[bi];
-            if (world.Get(lb.Body) is not { } c)
+            // (the start body twice: its lifters from the turn on first, those before it last)
+            var i0 = bk == 0 ? Math.Min(startLift, lb.N) : 0;
+            var i1 = bk == bodyN ? Math.Min(startLift, lb.N) : lb.N;
+            if (bk == bodyN && bi != startBody || world.Get(lb.Body) is not { } c)
                 continue;
-            for (var i = 0; i < lb.N; i++)
+            for (var i = i0; i < i1; i++)
             {
+                if (!turnSet && decisions >= DecisionsAStep)
+                    (turnSet, world.LiftTurnBody, world.LiftTurnLift) = (true, bi, i); // (the next step starts at the first lifter left without one)
                 var l = lb.Lifts[i];
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
@@ -532,6 +545,8 @@ public static partial class ConstructLifters
                 Ports(c, l);
             }
         }
+        if (!turnSet)
+            (world.LiftTurnBody, world.LiftTurnLift) = (0, 0);
         world.LiftBusy = busy;
     }
 
@@ -596,9 +611,21 @@ public static partial class ConstructLifters
     public const float Wrist = 0.35f; // the wrist over the gripper bar
     public const float SafeLift = GripLift + Wrist; // an empty hand's wrist over its point
 
-    /// <summary>How far an arm's wrist can be over a piece's origin, at most, however the piece is turned.</summary>
+    /// <summary>
+    /// How far an arm's wrist can be over a piece's middle (where every pick and put point is measured), at most, however the piece is
+    /// turned: half its bounds' diagonal. (Until 2026-11-22 it was measured from the part's origin: a ship section's origin is the ship's,
+    /// so a Zero Day Keel 9 m long asked a 21 m hook drop for 44 m of lift and no crane ever reached it.)
+    /// </summary>
     public static float WristLift(ConstructPartDef? d) =>
-        d == null ? SafeLift : MathF.Max(d.BoundsMin.Length(), d.BoundsMax.Length()) + SafeLift;
+        d == null ? SafeLift : ((d.BoundsMax - d.BoundsMin) * 0.5f).Length() + SafeLift;
+
+    /// <summary>
+    /// The same over a piece's origin, for what poses a carry by its origin (l.From and l.To: <see cref="Ticks"/>, the carry height,
+    /// a crane's legs, a cab's clamp): <see cref="WristLift"/> plus the middle's height over the origin, so an upright piece's wrist
+    /// stands where the reach checks put it (the merge review, 2026-11-22: a piece whose origin is under its middle rose past the bridge).
+    /// </summary>
+    public static float OriginLift(ConstructPartDef? d) =>
+        d == null ? SafeLift : MathF.Max(SafeLift, WristLift(d) + (d.BoundsMin.Y + d.BoundsMax.Y) * 0.5f);
 
     /// <summary>Does a part fit the hand: its mass and its size (the longest side against the length, the next against across)?</summary>
     public static bool Carries(LifterDef ld, ConstructPartDef d)
@@ -662,7 +689,7 @@ public static partial class ConstructLifters
                 l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
                 Begin(l);
@@ -847,7 +874,7 @@ public static partial class ConstructLifters
                 l.ToRot = rot;
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
                 Begin(l);
                 (l.State, l.ToHold, l.Why, l.Moved, l.Fitted) = (LiftState.Carry, true, LiftWhy.PutBack, true, false);
                 (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (sc.Id, t, -1, null, null);
@@ -1032,7 +1059,7 @@ public static partial class ConstructLifters
         if (ld.Bridge)
         {
             // A crane: hoist, travel and traverse together in a straight line at the carry height, lower (arms-and-cranes.md 3.3).
-            BridgeLegs(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
+            BridgeLegs(ld, from, to, l.Def != 0 ? OriginLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
             var tu = bu / ld.Hoist;
             if (sec < tu)
                 return new Vector3(from.X, from.Y + sec * ld.Hoist, from.Z);
@@ -1049,7 +1076,7 @@ public static partial class ConstructLifters
             var dn = sec * ld.Hoist;
             return dn < bd ? new Vector3(to.X, bh - dn, to.Z) : to;
         }
-        var h = CarryY(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
+        var h = CarryY(ld, from, to, l.Def != 0 ? OriginLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
         var up = MathF.Max(0, h - from.Y);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
@@ -1606,6 +1633,7 @@ public sealed partial class ConstructWorld
     public bool FitThisTick; // server: a part was fitted at a station this tick (one a tick a world)
     public int LiftBusy; // server: lifters not idle at the last step
     public int LiftTick;
+    public int LiftTurnBody, LiftTurnLift; // server: where the next lifter step starts (the lifters take turns at its decisions)
 
     public void LiftClear()
     {

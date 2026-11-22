@@ -39,12 +39,27 @@ public static class StationCheck
         // --fill "X,Z,MATERIAL,N;...": bulk put straight into the store nearest each point (a bin a hauler would fill); with --keep, topped
         // up to that every second of the run (a refinery that keeps up).
         var keep = new List<(int Bin, int Material, int N)>();
+        // (the store nearest the point that takes the material: a bin for it, or an Assembler's own input mix, 2026-11-22: a bin was any
+        // store, so a point at an Assembler filled nothing)
+        int FillTarget(float px, float pz, string fm) => Enumerable.Range(0, c.PartCount)
+            .Where(i => w.StoreOf(c, i) != null && !c.DefOf(i).IsBuildStation && (c.DefOf(i).IsAssembler || c.DefOf(i).IsBin && ConstructStorage.BinTakes(c.DefOf(i), RecyclingTable.Current.IdOf(fm))))
+            .OrderBy(i => Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(px, pz))).FirstOrDefault(-1);
+        int Fill(int bin, int n, byte m)
+        {
+            if (bin < 0 || m == 0)
+                return 0;
+            if (!c.DefOf(bin).IsAssembler)
+                return w.Deposit(c, bin, n, m);
+            var st = w.StoreOf(c, bin)!;
+            var add = Math.Max(0, n - st.MixOf(m));
+            w.AddInput(st, m, add);
+            return add;
+        }
         foreach (var f in (Arg("--fill") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
             if (f.Split(',') is [var fx, var fz, var fm, var fn] && float.TryParse(fx, out var px) && float.TryParse(fz, out var pz) && int.TryParse(fn, out var pn))
             {
-                var bin = Enumerable.Range(0, c.PartCount).Where(i => w.StoreOf(c, i) != null && !c.DefOf(i).IsBuildStation)
-                    .OrderBy(i => Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(px, pz))).FirstOrDefault(-1);
-                var put = bin < 0 ? 0 : w.Deposit(c, bin, pn, RecyclingTable.Current.IdOf(fm));
+                var bin = FillTarget(px, pz, fm);
+                var put = Fill(bin, pn, RecyclingTable.Current.IdOf(fm));
                 if (bin >= 0 && args.Contains("--keep"))
                     keep.Add((bin, RecyclingTable.Current.IdOf(fm), pn));
                 Console.WriteLine($"  fill: {put} {fm} into the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz}");
@@ -137,6 +152,7 @@ public static class StationCheck
         using (place.In())
             for (var k = 0; k < seconds * World.TickRate; k++)
             {
+                MoverPhysics.Clock++; // (the server tick: Game.ServerTickStep sets it in a game; lifters' moves run on it, and never ended here before 2026-11-22)
                 w.Step(q, World.TickDt);
                 if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
@@ -144,7 +160,9 @@ public static class StationCheck
                             + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
                 if (k % World.TickRate == 0)
                     foreach (var (bin, mat, n) in keep)
-                        if (w.StoreOf(c, bin) is { } st && (st.Amount == 0 || st.Material == mat) && st.Amount < n)
+                        if (c.DefOf(bin).IsAssembler)
+                            Fill(bin, n, (byte)mat);
+                        else if (w.StoreOf(c, bin) is { } st && (st.Amount == 0 || st.Material == mat) && st.Amount < n)
                             w.Deposit(c, bin, n - st.Amount, (byte)mat);
                 if (c.Parts[t].Station is { } sj && sj.Note != lastNote)
                 {
@@ -164,10 +182,9 @@ public static class StationCheck
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} holds {Holds(m)}; looks: "
                 + (w.StoreOf(c, m) is { } ast ? ConstructAssembling.Look(c.DefOf(m), ast, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, AssemblerToolBay.HeldIn(w, c, m)) : ""));
         foreach (var f in (Arg("--fill") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
-            if (f.Split(',') is [var fx, var fz, _, _] && float.TryParse(fx, out var px) && float.TryParse(fz, out var pz))
+            if (f.Split(',') is [var fx, var fz, var fm, _] && float.TryParse(fx, out var px) && float.TryParse(fz, out var pz))
             {
-                var bin = Enumerable.Range(0, c.PartCount).Where(i => w.StoreOf(c, i) != null && !c.DefOf(i).IsBuildStation)
-                    .OrderBy(i => Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(px, pz))).FirstOrDefault(-1);
+                var bin = FillTarget(px, pz, fm);
                 Console.WriteLine($"  at the end the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz} holds {(bin < 0 ? "" : Holds(bin))}");
             }
         foreach (var b in w.Bodies)
