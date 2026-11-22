@@ -2681,6 +2681,20 @@
     {"output": "Wall Sheet 4x4 m", "materials": {"steel": 38, "concrete": 8}, "seconds": 7.8},
     {"output": "Wall Sheet 4x3 m", "materials": {"steel": 29, "concrete": 6}, "seconds": 6.3},
     {"output": "Wall Sheet 4x2 m", "materials": {"steel": 19, "concrete": 4}, "seconds": 4.9},
-    {"output": "Wall Sheet 4x3 m Eaves", "materials": {"steel": 29, "concrete": 6}, "seconds": 6.3}
+    {"output": "Wall Sheet 4x3 m Eaves", "materials": {"steel": 29, "concrete": 6}, "seconds": 6.3},
+    {"output": "High-Bay Pendant", "materials": {"steel": 3, "copper": 5}, "parts": {"Circuit Board": 1}, "seconds": 2.4, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Amber Beacon", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Lagged Main 6 m", "materials": {"steel": 114, "concrete": 23}, "seconds": 19.1},
+    {"output": "Lagged Main 2 m", "materials": {"steel": 38, "concrete": 8}, "seconds": 7.7},
+    {"output": "Lagged Main Elbow", "materials": {"steel": 28, "concrete": 6}, "seconds": 6.2},
+    {"output": "Lagged Main Riser", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
+    {"output": "Gauge Cluster", "materials": {"steel": 2, "concrete": 1}, "seconds": 2.4},
+    {"output": "Heat Shield", "materials": {"steel": 11, "concrete": 2}, "seconds": 3.6},
+    {"output": "Hook and Chain Rack", "materials": {"steel": 14, "concrete": 3}, "seconds": 4.1},
+    {"output": "Gas Bottle Cage", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
+    {"output": "Ladle Stand", "materials": {"steel": 520, "concrete": 104}, "seconds": 80.0},
+    {"output": "Slag Pot", "materials": {"steel": 360, "concrete": 72}, "seconds": 56.0},
+    {"output": "Cork Notice Board", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.2, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Wall Frame", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]}
   ]
 }

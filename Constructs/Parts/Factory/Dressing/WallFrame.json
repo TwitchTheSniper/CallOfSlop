@@ -1,0 +1,224 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wall Frame",
+  "description": "A framed picture of the Zero Day under way, for an office or a control room wall. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "wood",
+  "mass": 3.0,
+  "health": 20,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2a2420",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        -0.32,
+        0.0
+      ],
+      "max": [
+        0.45,
+        0.32,
+        0.03
+      ],
+      "color": "#2a2420",
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.448,
+        0.27,
+        0.026
+      ],
+      "max": [
+        0.448,
+        0.318,
+        0.055
+      ],
+      "color": "#2a2420",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.448,
+        -0.318,
+        0.026
+      ],
+      "max": [
+        0.448,
+        -0.27,
+        0.055
+      ],
+      "color": "#2a2420",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.448,
+        -0.268,
+        0.026
+      ],
+      "max": [
+        -0.4,
+        0.268,
+        0.053
+      ],
+      "color": "#2a2420",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        0.4,
+        -0.268,
+        0.026
+      ],
+      "max": [
+        0.448,
+        0.268,
+        0.053
+      ],
+      "color": "#2a2420",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.398,
+        -0.268,
+        0.026
+      ],
+      "max": [
+        0.398,
+        0.268,
+        0.037
+      ],
+      "color": "#e8e0c8",
+      "detail": true,
+      "finish": "painted wood"
+    },
+    {
+      "min": [
+        -0.33,
+        -0.2,
+        0.032
+      ],
+      "max": [
+        0.33,
+        0.2,
+        0.043
+      ],
+      "color": "#7a96b0",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.328,
+        -0.198,
+        0.034
+      ],
+      "max": [
+        0.328,
+        -0.12,
+        0.046
+      ],
+      "color": "#3f4a55",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.24,
+        -0.06,
+        0.038
+      ],
+      "max": [
+        0.2,
+        0.0,
+        0.049
+      ],
+      "color": "#5d6670",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.198,
+        -0.05,
+        0.035
+      ],
+      "max": [
+        0.27,
+        -0.012,
+        0.0465
+      ],
+      "color": "#5d6670",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.06,
+        -0.002,
+        0.039
+      ],
+      "max": [
+        0.05,
+        0.06,
+        0.0505
+      ],
+      "color": "#4d555e",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.29,
+        -0.055,
+        0.04
+      ],
+      "max": [
+        -0.238,
+        -0.005,
+        0.0515
+      ],
+      "color": "#f0a040",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.25,
+        0.034
+      ],
+      "max": [
+        0.1,
+        -0.225,
+        0.046
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "finish": "brass"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

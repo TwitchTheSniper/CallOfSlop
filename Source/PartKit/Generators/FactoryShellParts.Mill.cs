@@ -178,6 +178,8 @@ public sealed partial class FactoryShellParts
         p.Sock("topRidge", [0, Top(l), l], "+y");
         p.Sock("+x", [w, 0.12, 0], "+x");
         p.Sock("-x", [-w, 0.12, 0], "-x");
+        for (var z = 2; z < l - 0.5; z += 2)
+            p.Sock($"hang{z}", [0, 0, z], "-y"); // (under the bottom chord every 2 m: a High-Bay Pendant hangs here. Added last: saved socket numbers keep)
         p.Stats(l * 260, 1200 + l * 80, 14);
         return p;
     }

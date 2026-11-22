@@ -1,0 +1,344 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gauge Cluster",
+  "description": "Three pressure gauges on a plate with their copper manifold, for a furnace, an oven or a plant room wall. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "painted steel",
+  "mass": 12.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3d4a40",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.3,
+        0.0
+      ],
+      "max": [
+        0.4,
+        0.3,
+        0.03
+      ],
+      "color": "#3d4a40",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.37,
+        -0.02,
+        0.027
+      ],
+      "max": [
+        -0.13,
+        0.22,
+        0.07
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.35,
+        0.0,
+        0.062
+      ],
+      "max": [
+        -0.15,
+        0.2,
+        0.078
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.21,
+        0.14,
+        0.0665
+      ],
+      "max": [
+        -0.17,
+        0.18,
+        0.0825
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.256,
+        0.09,
+        0.076
+      ],
+      "max": [
+        -0.244,
+        0.18,
+        0.088
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.265,
+        -0.19,
+        0.075
+      ],
+      "max": [
+        -0.235,
+        -0.024,
+        0.105
+      ],
+      "color": "#b5734a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.12,
+        -0.02,
+        0.027
+      ],
+      "max": [
+        0.12,
+        0.22,
+        0.07
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.1,
+        0.0,
+        0.062
+      ],
+      "max": [
+        0.1,
+        0.2,
+        0.078
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.04,
+        0.14,
+        0.0665
+      ],
+      "max": [
+        0.08,
+        0.18,
+        0.0825
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.01,
+        0.094,
+        0.076
+      ],
+      "max": [
+        0.08,
+        0.106,
+        0.088
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.015,
+        -0.19,
+        0.075
+      ],
+      "max": [
+        0.015,
+        -0.024,
+        0.105
+      ],
+      "color": "#b5734a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.13,
+        -0.02,
+        0.027
+      ],
+      "max": [
+        0.37,
+        0.22,
+        0.07
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "brass"
+    },
+    {
+      "min": [
+        0.15,
+        0.0,
+        0.062
+      ],
+      "max": [
+        0.35,
+        0.2,
+        0.078
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.29,
+        0.14,
+        0.0665
+      ],
+      "max": [
+        0.33,
+        0.18,
+        0.0825
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.17,
+        0.094,
+        0.076
+      ],
+      "max": [
+        0.26,
+        0.106,
+        0.088
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.235,
+        -0.19,
+        0.075
+      ],
+      "max": [
+        0.265,
+        -0.024,
+        0.105
+      ],
+      "color": "#b5734a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.36,
+        -0.24,
+        0.05
+      ],
+      "max": [
+        0.36,
+        -0.16,
+        0.13
+      ],
+      "color": "#b5734a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x",
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.3,
+        -0.27,
+        0.12
+      ],
+      "max": [
+        0.34,
+        -0.13,
+        0.16
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.3,
+        0.25,
+        0.0235
+      ],
+      "max": [
+        0.3,
+        0.285,
+        0.0395
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

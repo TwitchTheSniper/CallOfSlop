@@ -1,0 +1,268 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Slag Pot",
+  "description": "A pot of cooling slag on its bogie, for beside a furnace or a foundry. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "dirty steel",
+  "mass": 1800.0,
+  "health": 1800,
+  "armour": 10,
+  "material": "steel",
+  "color": "#4a4440",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.254,
+        0.1
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.9,
+        0.25,
+        -0.7
+      ],
+      "max": [
+        0.9,
+        0.45,
+        0.7
+      ],
+      "color": "#3a3c3e",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.85,
+        0.004,
+        -0.82
+      ],
+      "max": [
+        -0.35,
+        0.504,
+        -0.705
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 14,
+      "front": "+z",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.85,
+        0.004,
+        0.705
+      ],
+      "max": [
+        -0.35,
+        0.504,
+        0.82
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 14,
+      "front": "+z",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.35,
+        0.004,
+        -0.82
+      ],
+      "max": [
+        0.85,
+        0.504,
+        -0.705
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 14,
+      "front": "+z",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.35,
+        0.004,
+        0.705
+      ],
+      "max": [
+        0.85,
+        0.504,
+        0.82
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 14,
+      "front": "+z",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.75,
+        0.446,
+        -0.75
+      ],
+      "max": [
+        0.75,
+        1.5,
+        0.75
+      ],
+      "color": "#4a4440",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 18,
+      "front": "-y",
+      "taper": [
+        0.55,
+        0.55
+      ],
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.8,
+        1.45,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        1.53,
+        0.8
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 18,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.68,
+        1.526,
+        -0.68
+      ],
+      "max": [
+        0.68,
+        1.545,
+        0.68
+      ],
+      "color": "#5a4a3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 18,
+      "front": "+y",
+      "finish": "rust"
+    },
+    {
+      "min": [
+        -0.32,
+        1.541,
+        0.05
+      ],
+      "max": [
+        -0.18,
+        1.56,
+        0.15
+      ],
+      "color": "#c8552a",
+      "detail": true,
+      "finish": "rust"
+    },
+    {
+      "min": [
+        0.13,
+        1.541,
+        -0.35
+      ],
+      "max": [
+        0.27,
+        1.56,
+        -0.25
+      ],
+      "color": "#c8552a",
+      "detail": true,
+      "finish": "rust"
+    },
+    {
+      "min": [
+        0.28,
+        1.541,
+        0.2
+      ],
+      "max": [
+        0.42,
+        1.56,
+        0.3
+      ],
+      "color": "#c8552a",
+      "detail": true,
+      "finish": "rust"
+    },
+    {
+      "min": [
+        -0.92,
+        1.15,
+        -0.1
+      ],
+      "max": [
+        -0.62,
+        1.35,
+        0.1
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.62,
+        1.15,
+        -0.1
+      ],
+      "max": [
+        0.92,
+        1.35,
+        0.1
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

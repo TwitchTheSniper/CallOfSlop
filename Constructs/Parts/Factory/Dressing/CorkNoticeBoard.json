@@ -1,0 +1,314 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cork Notice Board",
+  "description": "A cork board in a wooden frame with notices pinned up, for an office, a control room or a crew room. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "wood",
+  "mass": 6.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#6b4a2b",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.62,
+        -0.45,
+        0.0
+      ],
+      "max": [
+        0.62,
+        0.45,
+        0.03
+      ],
+      "color": "#6b4a2b",
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.573,
+        -0.403,
+        0.026
+      ],
+      "max": [
+        0.573,
+        0.403,
+        0.038
+      ],
+      "color": "#b38a5a",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.618,
+        0.405,
+        0.026
+      ],
+      "max": [
+        0.618,
+        0.448,
+        0.05
+      ],
+      "color": "#6b4a2b",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.618,
+        -0.448,
+        0.026
+      ],
+      "max": [
+        0.618,
+        -0.405,
+        0.05
+      ],
+      "color": "#6b4a2b",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.618,
+        -0.403,
+        0.026
+      ],
+      "max": [
+        -0.575,
+        0.403,
+        0.048
+      ],
+      "color": "#6b4a2b",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        0.575,
+        -0.403,
+        0.026
+      ],
+      "max": [
+        0.618,
+        0.403,
+        0.048
+      ],
+      "color": "#6b4a2b",
+      "detail": true,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.45,
+        -0.0985,
+        0.034
+      ],
+      "max": [
+        -0.24,
+        0.1985,
+        0.046
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.355,
+        0.1685,
+        0.042
+      ],
+      "max": [
+        -0.335,
+        0.1885,
+        0.054
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.2,
+        0.0,
+        0.036
+      ],
+      "max": [
+        0.01,
+        0.24,
+        0.048
+      ],
+      "color": "#efe39a",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.105,
+        0.21,
+        0.044
+      ],
+      "max": [
+        -0.085,
+        0.23,
+        0.056
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.05,
+        -0.155,
+        0.034
+      ],
+      "max": [
+        0.347,
+        0.055,
+        0.046
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.1885,
+        0.025,
+        0.042
+      ],
+      "max": [
+        0.2085,
+        0.045,
+        0.054
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.32,
+        -0.01,
+        0.036
+      ],
+      "max": [
+        0.5,
+        0.21,
+        0.048
+      ],
+      "color": "#e9b8c2",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.4,
+        0.18,
+        0.044
+      ],
+      "max": [
+        0.42,
+        0.2,
+        0.056
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.38,
+        -0.38,
+        0.034
+      ],
+      "max": [
+        -0.13,
+        -0.26,
+        0.046
+      ],
+      "color": "#b8d0e6",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.265,
+        -0.29,
+        0.042
+      ],
+      "max": [
+        -0.245,
+        -0.27,
+        0.054
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.28,
+        -0.38,
+        0.036
+      ],
+      "max": [
+        0.49,
+        -0.22,
+        0.048
+      ],
+      "color": "#e8e6dc",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.375,
+        -0.25,
+        0.044
+      ],
+      "max": [
+        0.395,
+        -0.23,
+        0.056
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.06,
+        0.025,
+        0.042
+      ],
+      "max": [
+        0.17,
+        0.045,
+        0.054
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "plastic"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

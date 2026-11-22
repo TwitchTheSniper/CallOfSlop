@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lagged Main Elbow",
+  "description": "A lagged bend for a Lagged Main: fit it to a main's end and turn it to drop to a Lagged Main Riser, rise or round a corner.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "lagging",
+  "mass": 140.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4bda8",
+  "attachSeconds": 1.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.3,
+        -0.3
+      ],
+      "max": [
+        0.6,
+        0.3,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.3,
+        -0.6,
+        -0.3
+      ],
+      "max": [
+        0.9,
+        0.0,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.012,
+        -0.3,
+        -0.3
+      ],
+      "max": [
+        0.6,
+        0.3,
+        0.3
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        0.3,
+        -0.588,
+        -0.3
+      ],
+      "max": [
+        0.9,
+        0.0,
+        0.3
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        0.27,
+        -0.33,
+        -0.33
+      ],
+      "max": [
+        0.93,
+        0.33,
+        0.33
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 16,
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        0.004,
+        -0.36,
+        -0.36
+      ],
+      "max": [
+        0.12,
+        0.36,
+        0.36
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.24,
+        -0.596,
+        -0.36
+      ],
+      "max": [
+        0.96,
+        -0.48,
+        0.36
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.264,
+        -0.03,
+        -0.336
+      ],
+      "max": [
+        0.936,
+        0.03,
+        0.336
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "aluminium"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "a",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "b",
+      "at": [
+        0.6,
+        -0.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lagged Main Riser",
+  "description": "A 4 m upright of lagged steam main on a wall bracket, for the drops to the furnaces: join it under a Lagged Main Elbow.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "lagging",
+  "mass": 380.0,
+  "health": 540,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4bda8",
+  "attachSeconds": 1.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        -2.0,
+        0.25
+      ],
+      "max": [
+        0.3,
+        2.0,
+        0.85
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.3,
+        -1.988,
+        0.25
+      ],
+      "max": [
+        0.3,
+        1.988,
+        0.85
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        -0.36,
+        -1.996,
+        0.19
+      ],
+      "max": [
+        0.36,
+        -1.88,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.36,
+        1.88,
+        0.19
+      ],
+      "max": [
+        0.36,
+        1.996,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.308,
+        -1.23,
+        0.242
+      ],
+      "max": [
+        0.308,
+        -1.17,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.308,
+        -0.63,
+        0.242
+      ],
+      "max": [
+        0.308,
+        -0.57,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.308,
+        0.57,
+        0.242
+      ],
+      "max": [
+        0.308,
+        0.63,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.308,
+        1.17,
+        0.242
+      ],
+      "max": [
+        0.308,
+        1.23,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.4,
+        -0.15,
+        0.0
+      ],
+      "max": [
+        0.4,
+        0.15,
+        0.03
+      ],
+      "color": "#3a3c3e",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.38,
+        -0.05,
+        0.027
+      ],
+      "max": [
+        -0.3,
+        0.05,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.3,
+        -0.05,
+        0.027
+      ],
+      "max": [
+        0.38,
+        0.05,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.34,
+        -0.06,
+        0.21
+      ],
+      "max": [
+        0.34,
+        0.06,
+        0.89
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+y",
+      "inner": 0.9,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.55
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.55
+      ],
+      "dir": "+y"
+    }
+  ]
+}
