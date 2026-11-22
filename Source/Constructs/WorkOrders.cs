@@ -182,6 +182,9 @@ public static class WorkOrders
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
             return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
+        // (a part its bed can't hold would sit at the head of its queue for good: a station or a chain asks another Assembler instead)
+        if (ConstructAssembling.FitOf(c, part) is { Limited: true } fit && fit.Places(made) == 0)
+            return $"the {made.Name} {fit.TooBigWhy(made)}";
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
         return null;

@@ -55,9 +55,9 @@ public sealed partial class ZeroDayWorks
         /// A Building Station: its Core at (<paramref name="coreX"/>, <paramref name="coreZ"/>) facing south with its bay west of it (the bay's
         /// north-west cell at <paramref name="bayX0"/>, <paramref name="bayZ0"/>), <paramref name="masts"/> Mast Blocks on each bay corner.
         /// </summary>
-        private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint)
+        private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint, Orient? turned = null)
         {
-            var core = On("Building Station", coreX, coreZ, South, "-y.0.1", paint);
+            var core = On("Building Station", coreX, coreZ, turned ?? South, "-y.0.1", paint);
             var bay = Tiles("Bay Block", bayX0, bayZ0, across, along, South, paint);
             foreach (var c in Corners(bay))
                 Stack(c, "top", masts);

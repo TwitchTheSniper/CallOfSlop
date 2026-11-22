@@ -45,6 +45,18 @@ public sealed partial class ZeroDayWorks
             Chute(_bins["metal"], foundry);
             Chute(foundry, Bin("steel", 57f));
             Chute(sawmill, Bin("planks", 81f));
+            // Two more Foundries, each set to one recipe (the block Assembler's frigate pieces want concrete and rubber): stone and sand to
+            // concrete at x 63, planks and sand to rubber at x 75 (a Foundry's choices: ammo, steel, concrete, laminate, rubber).
+            var concrete = Refiner("Foundry", 63f);
+            Config(concrete, ("recipe", 3));
+            var rubber = Refiner("Foundry", 75f);
+            Config(rubber, ("recipe", 5));
+            Chute(stone, concrete, 6.5f);
+            Chute(sand, concrete, 7f);
+            Chute(_bins["planks"], rubber, 6.5f);
+            Chute(sand, rubber, 7.5f);
+            Chute(concrete, Bin("concrete", 63f));
+            Chute(rubber, Bin("rubber", 75f));
         }
 
         /// <summary>A raw stock bunker on the north row at x.</summary>

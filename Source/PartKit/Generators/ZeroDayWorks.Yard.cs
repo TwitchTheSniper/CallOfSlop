@@ -22,6 +22,7 @@ public sealed partial class ZeroDayWorks
         public static float YardRailFoot => FloorY + 2 * YardMasts;
 
         private VPart? _yardStation, _yardCrane;
+        private readonly List<VPart> _makers = new(); // (the general line's Presses and the block Assembler: the yard's orders console runs them)
 
         private void LayPower()
         {
@@ -86,8 +87,31 @@ public sealed partial class ZeroDayWorks
             _yardCrane = Paint(Stand("Crane Core", V(YardRailWest + 2, YardRailFoot + 0.5f, YardRailNorth + 1), turned, runs[0][1], "+x"), Crane);
             Config(_yardCrane, ("carryHeight", 1.5));
 
-            // ---- The yard's Building Station: a 30 x 12 bay (x 17 to 75, z -203 to -225), its Core east of the bay, 8 Mast Blocks on each corner.
-            _yardStation = Station(77, -205, 17, -203, 30, 12, 8, General);
+            // ---- The yard's Building Station: a 30 x 12 bay (x 17 to 75, z -203 to -225), 8 Mast Blocks on each corner, its Core on the bay's
+            // north side between two of the crane's columns (x 52 to 58), turned so the bay runs along it: a station builds a blueprint's
+            // length along its Core (the bay's "along"), and the frigate's 51 m must lie east-west in the 60 m (with the Core east of the bay,
+            // facing south, the bay was 60 m across and 24 m along, and the frigate didn't fit).
+            _yardStation = Station(55, -201, 17, -203, 30, 12, 8, General, East);
+            // ---- The yard Assembler, west of the bay (x 0 to 14, z -202 to -224): the frigate's big pieces (decks 5 x 9 cells, the spine 3 x
+            // 11, bow and stern 8 m high) need a 6 x 11 bed with 10 m masts; the bay-3 Assembler's 4 x 4 makes the rest. Under the yard
+            // crane, which lifts what it makes to the station.
+            var big = Assembler(1, -205, 6, 11, 5, jig: false);
+            var up = 9.5f;
+            foreach (var m in new[] { "steel", "copper", "glass", "concrete", "rubber" })
+            {
+                var (from, ff) = PortOf(_bins[m], "Chute out");
+                var (to, tf) = PortOf(big, "Chute in");
+                var a1 = from + ff;
+                var b1 = to + tf;
+                // (south down the bin's own x over the bays, west along the yard's north edge, then in: clear of the shed's west columns)
+                // (and past the yard crane's north columns, every 8 m from x 3, between two of them)
+                var gap = 7f + 8f * MathF.Round((a1.X - 7f) / 8f);
+                var lane = RailX.FirstOrDefault(r => MathF.Abs(r - a1.X) < 1.5f, float.NaN) is var rx && float.IsNaN(rx) ? a1.X : rx - 2f; // (off a column row)
+                Link("chute", _bins[m], big, "Chute out", "Chute in", Stock, false, null,
+                    Cut(from, a1, V(a1.X, up, a1.Z), V(lane, up, a1.Z), V(lane, up, -195f), V(gap, up, -195f), V(gap, up, -201.2f), V(b1.X, up, -201.2f), V(b1.X, up, b1.Z), b1));
+                up += 0.5f;
+            }
+            YardOrders(_yardStation, big);
 
             // ---- East of the Core: the staging pad (6 x 5) for the hull sections and the fittings pick pad (5 x 4), corner masts on each.
             var staging = Tiles("Pad Tile", 81, -203, 6, 5, South, Stock);
@@ -100,9 +124,61 @@ public sealed partial class ZeroDayWorks
             _stores.Add(("fittings pick", pick[0, 0]));
             Arm("Plasma Loader Arm", 81, -229); // (at the pick pad's foot)
 
-            // ---- Plasma Loader Arms along the bay's south side, one between each pair of the south run's columns.
-            for (var x = YardRailWest + 2; x + 3.6f < 80f; x += 2 * ColumnEvery)
+            // ---- Plasma Loader Arms along the bay's south side, one between each pair of the south run's columns (from x 21: the yard
+            // Assembler's bed and masts stand west of the bay).
+            for (var x = YardRailWest + 2 + 4 * ColumnEvery; x + 3.6f < 80f; x += 2 * ColumnEvery)
                 Arm("Plasma Loader Arm", x, -231);
+        }
+
+        /// <summary>
+        /// What the yard's station orders through: a Line Console (started) in bay 3 by the block Assembler, its Run wired to the Assembler,
+        /// the four Presses and the yard Assembler, its wire into the station's Orders port carried south over the fittings run at 6 m; and the link stock (copper
+        /// for wires, steel for pipes) in two Materials Bins beside the Core, chuted into it (a bin takes any material: a player fills them).
+        /// </summary>
+        /// <summary>A link's nodes through <paramref name="pts"/> from <paramref name="from"/>, each straight cut into spans of at most <see cref="SegmentMax"/>.</summary>
+        private static Vector3[] Cut(Vector3 from, params Vector3[] pts)
+        {
+            var nodes = new List<Vector3>();
+            var last = from;
+            foreach (var q in pts)
+            {
+                if (Vector3.Distance(q, last) < 0.05f)
+                    continue;
+                var n = (int)MathF.Ceiling(Vector3.Distance(q, last) / SegmentMax);
+                for (var k = 1; k <= n; k++)
+                    nodes.Add(Vector3.Lerp(last, q, k / (float)n));
+                last = q;
+            }
+            return nodes.ToArray();
+        }
+
+        private void YardOrders(VPart station, VPart big)
+        {
+            const float up = 6f;
+            var console = Paint(On("Line Console", 93, -127, West, paint: Rail), Rail);
+            Config(console, ("startOn", 1));
+            var at = SocketAt(console, "bottom");
+            foreach (var m in _makers)
+            {
+                var to = SocketAt(m, m.Def.Sockets[0].Name);
+                Link("data", console, m, null, "Run", Rail, false, null, Cut(at, V(at.X, up, at.Z), V(to.X, up, at.Z), V(to.X, up, to.Z)));
+            }
+            var s = SocketAt(station, "-y.0.1");
+            Link("data", console, station, null, "Orders", Rail, false, null,
+                Cut(at, V(at.X, up, at.Z), V(88.5f, up, at.Z), V(88.5f, up, -199f), V(s.X, up, -199f), V(s.X, up, s.Z)));
+            // ...and the yard Assembler, the same way south and on west along the yard's north edge (a station takes one console).
+            var bs = SocketAt(big, big.Def.Sockets[0].Name);
+            Link("data", console, big, null, "Run", Rail, false, null,
+                Cut(at, V(at.X, up, at.Z), V(88.5f, up, at.Z), V(88.5f, up, -199f), V(bs.X, up, -199f), V(bs.X, up, bs.Z)));
+            // (bins, not open Storage Volumes: an open face's lowest corner under the level pours: production.md lessons, 2026-11-17)
+            var (ci, cf) = PortOf(station, "Chute in");
+            var c1 = ci + cf;
+            foreach (var x in new[] { 61f, 63f })
+            {
+                var bin = On("Materials Bin", x, -201f, Up, paint: Stock);
+                var top = SocketAt(bin, "bottom") + new Vector3(0, bin.Def.BoundsMax.Y + 0.2f, 0);
+                Link("chute", bin, station, null, "Chute in", Stock, false, null, Cut(top, V(top.X, 3f, top.Z), V(c1.X, 3f, top.Z), V(c1.X, 3f, c1.Z), c1));
+            }
         }
     }
 }

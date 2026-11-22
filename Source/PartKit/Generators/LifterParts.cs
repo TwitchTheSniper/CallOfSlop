@@ -428,6 +428,7 @@ public sealed class LifterParts : IPartGenerator
         p.Sock("+z", [0, 1, 1], "+z");
         p.Sock("-z", [0, 1, -1], "-z");
         p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 2, 0], "+y"); // (an Amber Beacon's: after the others, so saved socket numbers keep)
         p.Stats(2200, 3600, 10, 16);
         p.Set(("power", 12000), ("onBreak", "disable"), ("centreSockets", false), ("collider", "boxes"));
         p.Set(("lifter", Kw(("kind", "bridge"), ("hall", true), ("base", Py.L(2.0, 2.0, 0.0)), ("span", 32.0), ("depth", 1.6),
