@@ -227,6 +227,8 @@ public static unsafe partial class Program
             return FactoryKit.FactoryCli.GenFactory(genFactory, args); // the factory kit (Source/FactoryKit, docs/sandbox/design/factory-generator.md): a factory building from a brief
         if (args.SkipWhile(a => !a.Equals("--factory-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } factoryCheck)
             return FactoryKit.FactoryCheck.Cli(factoryCheck, args); // a generated factory spawned headless, fed and run: every machine works, the tick stays in budget
+        if (args.SkipWhile(a => !a.Equals("--station-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } stationCheck)
+            return FactoryKit.StationCheck.Cli(stationCheck, args); // a site's Building Station started on a blueprint headless: its bill, then what it waits on
         if (args.Any(a => a.Equals("--excavator-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ExcavatorCheck.Cli(args); // the Militia Excavator on a host with terrain and a joined client: digs, slews, loads a hauler (docs/vehiclekit/EXCAVATOR-notes.md)
         if (args.Any(a => a.Equals("--economy-sim", StringComparison.OrdinalIgnoreCase)))
@@ -259,6 +261,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--stress-check", StringComparison.OrdinalIgnoreCase)))
+            return StressCheck.Cli(args); // hundreds of wrecks and haulers in orbit, headless: what an idle, busy world costs (Source/DevTools/StressCheck.cs)
         if (args.Any(a => a.Equals("--battle-check", StringComparison.OrdinalIgnoreCase)))
         {
             if (args.Any(a => a.Equals("--old-pierce", StringComparison.OrdinalIgnoreCase)))
@@ -305,6 +309,8 @@ public static unsafe partial class Program
             return RouteEndsProbe.Cli(args); // how auto-routed links leave and arrive at their ports: turns and short legs by the ends (RouteEndsProbe.cs)
         if (args.Any(a => a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)))
             return HullLoft.DressCli([.. args.SkipWhile(a => !a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a plain skin's dress plan, its subparts and the built dress (HullLoft.Dress.cs)
+        if (args.Any(a => a.Equals("--handoff-check", StringComparison.OrdinalIgnoreCase)))
+            return HandOffCheck.Cli(args); // a station's parts handed on by lifters and Roller Tile runs to its pick pad, headless (ConstructLifterHandOff.cs)
         if (args.Any(a => a.Equals("--pack-check", StringComparison.OrdinalIgnoreCase)))
             return PackCheck.Cli(args); // welded groups on a pad, packed as one kind and back out as the group (PackedGroups.cs)
         if (args.Any(a => a.Equals("--bake-check", StringComparison.OrdinalIgnoreCase)))

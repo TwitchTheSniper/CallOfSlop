@@ -155,7 +155,7 @@ public static partial class ConstructLifters
     /// <summary>The hand's place kept in the lifter's reach (its part frame; a piece's origin, its middle for the box).</summary>
     private static Vector3 Clamp(LifterDef ld, CLift l, Vector3 p)
     {
-        var lift = l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift;
+        var lift = l.Def != 0 ? OriginLift(ConstructParts.Get(l.Def)) : SafeLift;
         var d = p - ld.Base;
         if (ld.Bridge)
         {

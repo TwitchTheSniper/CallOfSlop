@@ -2349,8 +2349,11 @@ public sealed partial class ConstructWorld
         }
         StepPart(1);
         part = Perf.Measure(PerfArea.CWeapons);
+        AllocProfile.Mark("c: weapons");
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        AllocProfile.Mark("c: break-up");
         ConstructBreakUp.Step(this, ++BreakTicks); // (big bodies hurt this tick: does one snap where its structure was shot away? ConstructBreakUp.cs)
+        AllocProfile.Mark("c: bores");
         ConstructBores.Step(this, BreakTicks); // (the holes this fifth of a second's bores cut: ConstructBores.Cut)
         part.Dispose();
         StepPart(2);
@@ -2377,9 +2380,12 @@ public sealed partial class ConstructWorld
         StepPart(4);
         perf = Perf.Measure(PerfArea.ConstructPhysics);
         var p0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        AllocProfile.Mark("c: physics");
         ConstructFar.Physics(this, query, dt); // (every body, or the near ones then the far ones whose turn it is: ConstructFar.cs)
         PhysicsMs += (System.Diagnostics.Stopwatch.GetTimestamp() - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        AllocProfile.Mark("c: overload damage");
         OverloadDamage();
+        AllocProfile.Mark("c: after physics");
         StepPart(5);
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Production);

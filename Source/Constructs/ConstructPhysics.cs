@@ -284,15 +284,19 @@ public static partial class ConstructPhysics
         FrameLead(n);
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
+        AllocProfile.Mark("p: body contacts");
         BodyContacts(world, n, dt);
+        AllocProfile.Mark("p: rows");
         CouplingRows(world, n, dt);
         ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
         if (world.BeamCount > 0)
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
         Lap(2, ref t0);
+        AllocProfile.Mark("p: solve");
         Solve(dt);
         Lap(3, ref t0);
+        AllocProfile.Mark("p: integrate");
         if (_anyHeld)
             HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
         ConnectorLoads(world, dt);
@@ -2389,8 +2393,8 @@ public static partial class ConstructPhysics
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
-            if (jt.Freeform || MathF.Abs(jt.Vel) <= 0.02f)
-                continue;
+            if (jt.Freeform || MathF.Abs(jt.Vel) < 0.05f)
+                continue; // (what Sleep counts as a still joint: an idle Motor Hinge on a Zero Day in orbit creeps at 0.02-0.04 rad/s and woke a heap of bundles beside it every few ticks)
             var seg = j + 1;
             local ??= c.ToLocal(at);
             var spread = MathF.Sqrt(MathF.Max(c.SegSpin[seg], 0) / MathF.Max(c.SegMass[seg], 1f)) * 2f + 2f;
@@ -2427,6 +2431,35 @@ public static partial class ConstructPhysics
             }
     }
 
+    /// <summary>
+    /// A body resting in a moving frame far from the World's origin (aboard a ship in orbit, 30 km out on Caledon): each tick its
+    /// world pose and the hull's are rounded to the floats' grain there (2 mm past 16 km) at a new place, so the contacts between
+    /// it, the deck and what lies on it see up to a grain of new overlap a tick, a grain times the tick rate of speed (0.12 m/s at
+    /// 30 km) and that over its size of spin. That failed the still test for ever: a heap of Material Bundles spilled in a ship in
+    /// orbit never slept (Karl's F9 recording over Caledon, 2026-11-21: 100 bundles awake, 2.5 ms of physics a tick). The test
+    /// allows that much; asleep, the frame carries it with no step and no rounding against the hull.
+    /// </summary>
+    private static void FrameGrainStill(Construct c, ref float still2, ref float spin2)
+    {
+        var p = c.Pos;
+        var far = MathF.Max(MathF.Abs(p.X), MathF.Max(MathF.Abs(p.Y), MathF.Abs(p.Z)));
+        var jitter = 4f * (MathF.BitIncrement(far) - far) * World.TickRate; // (its pose's and the hull's rounding, a tick apart, and the solver's answer to it: a heap's peaks, measured)
+        still2 = MathF.Max(still2, jitter * jitter);
+        var turn = jitter / MathF.Max(0.5f * c.Radius, 0.1f); // (pushed at its corners: about half its bounding radius out)
+        spin2 = MathF.Max(spin2, turn * turn);
+    }
+
+    /// <summary>Does a body touching a sleeper move enough to wake it (through their shared frame when <paramref name="inFrame"/>, with its grain allowed: <see cref="FrameGrainStill"/>)?</summary>
+    private static bool MovesToWake(Construct c, bool inFrame)
+    {
+        var v = inFrame ? c.Vel - c.FrameV : c.Vel;
+        var w = inFrame ? c.AngVel - c.FrameW : c.AngVel;
+        float still2 = StillSpeed2, spin2 = StillSpeed2;
+        if (inFrame && c.FrameV.LengthSquared() > 1f)
+            FrameGrainStill(c, ref still2, ref spin2);
+        return v.LengthSquared() >= still2 || w.LengthSquared() >= spin2;
+    }
+
     private static void Sleep(Construct c)
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
@@ -2434,7 +2467,10 @@ public static partial class ConstructPhysics
         var framed = c.Framed; // (in a moving construct's frame: still in it, not in the world, ConstructFrames.cs)
         var v = framed ? c.Vel - c.FrameV : c.Vel;
         var w = framed ? c.AngVel - c.FrameW : c.AngVel;
-        var still = c.Anchored || v.LengthSquared() < still2 && w.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < still2;
+        var spin2 = still2;
+        if (framed && c.FrameV.LengthSquared() > 1f)
+            FrameGrainStill(c, ref still2, ref spin2);
+        var still = c.Anchored || v.LengthSquared() < still2 && w.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < spin2;
         still &= (!c.Driven || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {

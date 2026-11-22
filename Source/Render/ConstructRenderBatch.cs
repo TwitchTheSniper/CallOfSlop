@@ -66,6 +66,7 @@ public static partial class ConstructRender
         public int WalkedCount, Boxes;
         public int[] Extra = []; // merged parts whose stored parts or glass panes are drawn alone each frame
         public int ExtraCount;
+        public int[] ExtraClass = []; // a merged machine block's biggest work box's size class (FarGlow)
         public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: always drawn (it moves, burns or smokes)
     }
 
@@ -114,6 +115,7 @@ public static partial class ConstructRender
     {
         _defBoxes.Clear();
         _defPanes.Clear();
+        _defWork.Clear();
     }
 
     private static readonly HashSet<ConstructPartDef> _defPanes = new(ReferenceEqualityComparer.Instance as IEqualityComparer<ConstructPartDef>); // merged types with glass panes to draw alone
@@ -126,31 +128,57 @@ public static partial class ConstructRender
         n = 0;
         // (a lamp merges with its lit look in the chunk's looks; designed ordnance with its wings folded, as it sits until it drops;
         // a part with glass merges its opaque boxes and only the panes are walked: GlassOnly)
+        var split = WorkSplits(d);
         if (d.Role == PartRole.Joint || d.IsRail || d.HasRig || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner
-            || d.HasWork || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever || d.Surface is { Control: > 0 })
+            || d.HasWork && !split || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever || d.Surface is { Control: > 0 })
             n = -1;
         else
         {
             var panes = false;
-            foreach (var box in d.Boxes.AsSpan())
+            for (var b = 0; b < d.Boxes.Length; b++)
             {
+                ref readonly var box = ref d.Boxes[b];
                 if (box.Rig != BoxRig.None || box.Shows != 0 || box.Spin || box.Roll || box.IsLeaf || box.Pump != 0)
                 {
                     n = -1;
                     break;
                 }
                 panes |= box.IsGlass && !box.Hidden;
-                if (!box.Hidden && !box.IsGlass)
+                if (!box.Hidden && !box.IsGlass && !(split && WorkBox(d, b)))
                     n++;
             }
             if (panes && d.Logic == CLogic.Lamp)
                 n = -1; // (a lit lamp's glass glows with the rest of it: DrawPart's order, so it is walked)
             if (panes && n >= 0)
                 _defPanes.Add(d); // (by its boxes as they are now, not HasGlass: a run-time def's boxes arrive later)
+            if (split && n >= 0)
+                _defWork.Add(d);
         }
         _defBoxes[d] = n;
         return n;
     }
+
+    private static readonly HashSet<ConstructPartDef> _defWork = new(ReferenceEqualityComparer.Instance as IEqualityComparer<ConstructPartDef>); // merged types whose "work" boxes and status lamp are drawn alone
+
+    /// <summary>
+    /// A machine block's cell, a Roller Tile or a Crane Rail Block: a type whose only moving or changing boxes are its "work"
+    /// boxes and its status lamp, everything else standing still in the cell. Such a type merges its other boxes into the
+    /// body's chunks and only those are drawn part by part (<see cref="MergeSet.Extra"/>, DrawPart with <see cref="_workOnly"/>).
+    /// A works is thousands of them (the Zero Day Works: 1,442 Mast Blocks, each 4 lamps among some 60 boxes), and walked
+    /// whole they cost most of its frame. A Core, a Gantry Carriage and a tier piece stay walked whole: their looks draw more
+    /// than their work boxes (a blank on the bed, the carriage on its rail).
+    /// </summary>
+    private static bool WorkSplits(ConstructPartDef d) =>
+        d.HasWork && (d.BlockRole is BlockRole.Block or BlockRole.Shared or BlockRole.End || d.IsRollerTile || d.CraneRail)
+        && d.Logic != CLogic.Lamp && !d.IsLaserCutter && !d.IsPanelFormer && !d.IsExtruder && !d.ShellBody && !d.IsOrdnance;
+
+    /// <summary>A box of a <see cref="WorkSplits"/> type drawn part by part: its work boxes and its status lamp.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool WorkBox(ConstructPartDef d, int b) => d.Boxes[b].Work != BoxWork.None || b == d.StatusBox;
+
+    /// <summary>Is box <paramref name="b"/> of this type in its part's merged chunk?</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool InChunk(ConstructPartDef d, int b) => !d.Boxes[b].Hidden && !d.Boxes[b].IsGlass && !(_defWork.Contains(d) && WorkBox(d, b));
 
     /// <summary>
     /// Boxes part <paramref name="i"/> puts in a merged mesh, or -1: it is walked whole. A part that holds stored parts or has
@@ -354,8 +382,8 @@ public static partial class ConstructRender
                     set.Walked[set.WalkedCount++] = i;
                 continue;
             }
-            if (c.Parts[i].Store != 0 || _defPanes.Contains(c.Parts[i].D))
-                set.Extra[set.ExtraCount++] = i; // (its own opaque boxes merged; what it holds and its panes drawn alone)
+            if (c.Parts[i].Store != 0 || _defPanes.Contains(c.Parts[i].D) || _defWork.Contains(c.Parts[i].D))
+                set.Extra[set.ExtraCount++] = i; // (its own opaque boxes merged; what it holds, its panes and its work boxes drawn alone)
             if (nb == 0)
             {
                 _partEntry[i] = -1;
@@ -394,10 +422,14 @@ public static partial class ConstructRender
         set.Boxes = total;
         Grow(ref set.WalkedSphere, set.WalkedCount);
         Grow(ref set.ExtraSphere, set.ExtraCount);
+        Grow(ref set.ExtraClass, set.ExtraCount);
         for (var k = 0; k < set.WalkedCount; k++)
             set.WalkedSphere[k] = WalkSphere(c, set.Walked[k]);
         for (var k = 0; k < set.ExtraCount; k++)
+        {
             set.ExtraSphere[k] = WalkSphere(c, set.Extra[k]);
+            set.ExtraClass[k] = WorkClass(c.Parts[set.Extra[k]].D);
+        }
         var on = gfx != null && total >= MergeMinBoxes;
         if (!on)
         {
@@ -542,7 +574,7 @@ public static partial class ConstructRender
             var boxes = c.Parts[i].D.Boxes;
             // (BuildChunk's slot key: shape from bit 40, size class 36-39, member 8-35, box 0-7)
             for (var b = 0; b < boxes.Length; b++)
-                if (!boxes[b].Hidden && !boxes[b].IsGlass)
+                if (InChunk(c.Parts[i].D, b))
                     keys[s++] = (long)boxes[b].Shape << 40 | (long)SizeClass(in boxes[b], c.Parts[i].D.Logic == CLogic.Lamp) << 36 | (long)k << 8 | (long)b; // (shape, its size class biggest first: the far detail level draws a group's first slots; then the member's place, then box)
         }
         Array.Sort(keys, 0, s);
@@ -783,11 +815,43 @@ public static partial class ConstructRender
             HostCut(gfx, c, i);
             if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
                 n += DrawPanes(gfx, c, i, body, alpha); // (not while its chunk waits its rebuild: DrawPart drew its panes above)
+            if (_defWork.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken)
+                && !(cull && c.Parts[i].D.WorkGlowOnly && FarGlow(in set.ExtraSphere[k], set.ExtraClass[k], in body, origin)))
+            {
+                _workOnly = true; // (its work boxes and status lamp, at the machine's state; the rest is in its chunk)
+                n += DrawPart(gfx, world, c, i, body, alpha, 1f);
+                _workOnly = false;
+            }
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
         }
         drawn += n;
         return true;
+    }
+
+    /// <summary>
+    /// Is a merged machine block's glow-only work (a Mast Block's corner lamps) so far off that the far detail level leaves
+    /// out boxes of its biggest work box's size class (<paramref name="cls"/>, <see cref="DetailAt"/>)? Then it isn't drawn:
+    /// from there it is under a pixel, as the chunk's own boxes that size are.
+    /// </summary>
+    private static bool FarGlow(in Vector4 sphere, int cls, in Matrix4x4 body, Vector3 origin)
+    {
+        if (sphere.W < 0)
+            return false;
+        var at = Vector3.Transform(new Vector3(sphere.X, sphere.Y, sphere.Z), body) + origin;
+        return DetailAt(Vector3.Distance(at, _lodEye) - sphere.W) < cls;
+    }
+
+    /// <summary>The size class of a type's biggest work box or status lamp (its smallest class number), or the last class when it has none.</summary>
+    private static int WorkClass(ConstructPartDef d)
+    {
+        var cls = LodClasses - 1;
+        if (!_defWork.Contains(d))
+            return cls;
+        for (var b = 0; b < d.Boxes.Length; b++)
+            if (!d.Boxes[b].Hidden && WorkBox(d, b))
+                cls = Math.Min(cls, SizeClass(in d.Boxes[b], false));
+        return cls;
     }
 
     /// <summary>A merged part's glass panes, as <see cref="DrawPart"/> draws them (its opaque boxes are in its chunk).</summary>

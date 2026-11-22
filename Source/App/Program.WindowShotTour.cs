@@ -198,6 +198,14 @@ public static partial class Program
             var dir = new Vector3((float)(Math.Cos(fl) * Math.Sin(fo)), (float)Math.Sin(fl), (float)(Math.Cos(fl) * Math.Cos(fo)));
             return pl.Center + dir * (float)(pl.Radius + pl.HeightAt(dir.X, dir.Y, dir.Z));
         }
+        if (what.Equals("body big", StringComparison.OrdinalIgnoreCase)) // (the body with the most parts: a spawned works, whatever its id)
+        {
+            Construct? big = null;
+            foreach (var bb in g.Constructs.Bodies)
+                if (big == null || bb.PartCount > big.PartCount)
+                    big = bb;
+            return big?.WorldCom;
+        }
         if (what.StartsWith("body ", StringComparison.OrdinalIgnoreCase))
             return ushort.TryParse(what[5..], out var id) && g.Constructs.Get(id) is { } bc ? bc.WorldCom : null;
         return WsVec(what);

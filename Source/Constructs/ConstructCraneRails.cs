@@ -75,7 +75,9 @@ public static partial class ConstructLifters
                 continue;
             Freeform.PartWorld(c, part, out var bp, out var br);
             var at = Vector3.Transform(mid - bp, Quaternion.Conjugate(br));
-            var hook = Pose(ld, l, AgeNow(l), out _);
+            var hook = Pose(ld, l, AgeNow(l), out var hookRot);
+            if (l.Def != 0 && ConstructParts.Get(l.Def) is { } hd)
+                hook += Vector3.Transform((hd.BoundsMin + hd.BoundsMax) * 0.5f, hookRot); // (the bridge is over the piece's middle, not its origin)
             if (MathF.Abs(at.Z - hook.Z) < LampNear && at.X > ld.Base.X - 1.5f && at.X < ld.Base.X + ld.Span + 1.5f)
                 return true;
         }
@@ -194,7 +196,10 @@ public static partial class ConstructLifters
             var mid = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, 0);
             var a = Vector3.Transform(rp + Vector3.Transform(mid with { Z = d.BoundsMin.Z }, rr) - bp, inv) - own.Base;
             var b = Vector3.Transform(rp + Vector3.Transform(mid with { Z = d.BoundsMax.Z }, rr) - bp, inv) - own.Base;
-            (x[m], y[m], z0[m], z1[m]) = ((a.X + b.X) * 0.5f, (a.Y + b.Y) * 0.5f, MathF.Min(a.Z, b.Z), MathF.Max(a.Z, b.Z));
+            var ax = (a.X + b.X) * 0.5f;
+            if (ax < -1f || ax > (own.Hall ? HallSpan : own.Span) + 1f)
+                continue; // (only its near run, at x 0, and what lies across its span count: a works with several spans has far more rail blocks than the list holds, and the later cranes found none of theirs)
+            (x[m], y[m], z0[m], z1[m]) = (ax, (a.Y + b.Y) * 0.5f, MathF.Min(a.Z, b.Z), MathF.Max(a.Z, b.Z));
             m++;
         }
         if (!Run(x[..m], y[..m], z0[..m], z1[..m], 0, 0, FarRail, 0, out var n0, out var n1, out var nx, out var ny))

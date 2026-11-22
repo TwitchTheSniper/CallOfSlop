@@ -58,7 +58,7 @@ public sealed class FreighterParts : IPartGenerator
     private const double RkD = 2.95, RkHy = 2.78, RkHz = 3.45, RkSh = 0.12, RkPost = 0.15;
     /// <summary>The standard container a rack takes (Karl, 2026-11-20: three 2x2x2 m parts in a row): across, up, along. Its shape is
     /// the standard container work's; until that part lands the racks carry a stand-in of the same size.</summary>
-    private const double CtW = 2.5, CtH = 2.5, CtL = 6.5;
+    private const double CtH = 2.5;
 
     /// <summary>The hull's stations (the hull pieces are cut at them).</summary>
     private static readonly double[] Bands = [Zt, ZS1, ZCk, ZCab, -17.0, ZCabEnd, ZSp0, -1.0, 6.5, ZSp1, ZEng, 22.0, ZEngEnd, Stern];
@@ -253,14 +253,6 @@ public sealed class FreighterParts : IPartGenerator
     /// <summary>A chine rail: a faceted bar along profile point i (1..3) on side s from za to zb, w wide each way and h proud.</summary>
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, string color) => Chine(p, i, s, za, zb, w, h, w, h, color);
 
-    /// <summary>A shoulder block: a big chine rail whose ends rake down to a smaller section over rake metres.</summary>
-    private static void Shoulder(Part p, int i, int s, double za, double zb, double w, double h, double rake, string color)
-    {
-        Chine(p, i, s, za, za + rake, w * 0.55, h * 0.3, w, h, color);
-        Chine(p, i, s, za + rake + 0.004, zb - rake - 0.004, w, h, w, h, color == Armour ? Armour2 : Armour);
-        Chine(p, i, s, zb - rake, zb, w, h, w * 0.55, h * 0.3, color);
-    }
-
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, double w2, double h2, string color)
     {
         double[][] Ring(double z, double w, double h)
@@ -419,56 +411,6 @@ public sealed class FreighterParts : IPartGenerator
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
         return P(cx + r * Math.Cos(a), y, cz + r * Math.Sin(a));
     })];
-
-    /// <summary>A ring of n points round axis (0 x, 1 y, 2 z) through c, radius r, at a along the axis; map turns each point into the part's frame.</summary>
-    private static double[][] RingAx(double[] c, int axis, double r, double a, int n, Func<double[], double[]> map) => [.. Enumerable.Range(0, n).Select(i =>
-    {
-        var an = Math.PI / n + i * 2 * Math.PI / n;
-        int u = (axis + 1) % 3, v = (axis + 2) % 3;
-        var q = (double[])c.Clone();
-        q[axis] = a;
-        q[u] += r * Math.Cos(an);
-        q[v] += r * Math.Sin(an);
-        return map(q);
-    })];
-
-    /// <summary>A drawn tank: a cylinder of radius r along axis from a0 to a1, its ends domed over dome metres, hoop bands round it.</summary>
-    private static void DrawTank(Part p, double[] c, int axis, double r, double a0, double a1, double dome, int hoops, string col, string band, Func<double[], double[]> map)
-    {
-        const int n = 16;
-        double[][] R(double rr, double a) => RingAx(c, axis, rr, a, n, map);
-        Prism(p, R(r * 0.55, a0), R(r, a0 + dome), col, "worn paint");
-        Prism(p, R(r, a0 + dome + 0.003), R(r, a1 - dome - 0.003), col, "worn paint");
-        Prism(p, R(r, a1 - dome), R(r * 0.55, a1), col, "worn paint");
-        for (var i = 0; i < hoops; i++)
-        {
-            var a = a0 + dome + 0.4 + i * (a1 - a0 - 2 * dome - 0.8) / Math.Max(1, hoops - 1);
-            Prism(p, R(r + 0.025, a - 0.06), R(r + 0.025, a + 0.06), band, "dirty steel");
-        }
-    }
-
-    /// <summary>A ring of n points round an axis along z at (cx, cy), radius rx by ry, at z (unshifted part-local metres).</summary>
-    private static double[][] RingZ(double cx, double cy, double rx, double ry, double z, int n) => [.. Enumerable.Range(0, n).Select(i =>
-    {
-        var a = Math.PI / n + i * 2 * Math.PI / n;
-        return new[] { Py.Round(cx + rx * Math.Cos(a), 4), Py.Round(cy + ry * Math.Sin(a), 4), z };
-    })];
-
-    /// <summary>Hidden boxes for the void between the skin and the rooms, both sides: x from xin (the rooms' outer face; 0: one box across the
-    /// middle) out to the skin less a margin, y and z bands.</summary>
-    private static void Void(Part p, double za, double zb, double ya, double yb, double xin)
-    {
-        var xo = Math.Floor((new[] { SkinHalf(za, ya), SkinHalf(za, yb), SkinHalf(zb, ya), SkinHalf(zb, yb) }.Min() - 0.06) * 100) / 100;
-        if (xo < xin + 0.08)
-            return;
-        za += 0.004; // (no face shared with the neighbouring band's boxes)
-        zb -= 0.004;
-        if (xin <= 0)
-            Hidden(p, Cx - xo, ya, za, Cx + xo, yb, zb);
-        else
-            foreach (var s in new[] { -1, 1 })
-                Hidden(p, Cx + s * xin, ya, za, Cx + s * xo, yb, zb);
-    }
 
     // ---- rooms: floors, walls, doors
 
@@ -799,7 +741,7 @@ public sealed class FreighterParts : IPartGenerator
         foreach (var s in new[] { -1, 1 })
             RcsPad(p, "rcsUp" + (s < 0 ? "L" : "R"), Cx + s * 1.2, Top(BowRcsZ), BowRcsZ, "+y", 0.056); // (its top clear of the roof's rib)
         // The void over the ceilings.
-        foreach (var (i, za, zb) in BandsIn(ZCk, ZEngEnd))
+        foreach (var (_, za, zb) in BandsIn(ZCk, ZEngEnd))
         {
             var floor = za >= ZEng - 1e-6 ? ERoof : za >= ZCabEnd - 1e-6 ? SRoof : CRoof;
             var z0 = Math.Max(za, ZCk + 0.25);

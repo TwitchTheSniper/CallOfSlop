@@ -165,6 +165,8 @@ public static partial class ConstructPhysics
     {
         if (a.Hull < 0 && b.Hull < 0)
             return ConstructNarrow.BoxBox(a, b, margin, _cand, n);
+        if (!ConstructNarrow.Overlapping(a, b, -margin))
+            return n; // (a hull sits inside its leaf's box: boxes further apart than the margin give no point, and moving each hull into the world costs 2-3 us; 2026-11-22)
         if (a.Hull >= 0)
             _sa.FromHull(ca.Hulls[a.Hull], fa);
         else
@@ -801,8 +803,8 @@ public static partial class ConstructPhysics
         // frame's own changes of motion wake them, ConstructFrames.Carry)
         var framePair = a.Frame == b.Id || b.Frame == a.Id;
         var same = a.Frame != 0 && a.Frame == b.Frame;
-        var moving = !framePair && _dyn[ia] && ((same ? a.Vel - a.FrameV : a.Vel).LengthSquared() >= StillSpeed2 || (same ? a.AngVel - a.FrameW : a.AngVel).LengthSquared() >= StillSpeed2);
-        var movingB = !framePair && _dyn[ib] && ((same ? b.Vel - b.FrameV : b.Vel).LengthSquared() >= StillSpeed2 || (same ? b.AngVel - b.FrameW : b.AngVel).LengthSquared() >= StillSpeed2);
+        var moving = !framePair && _dyn[ia] && MovesToWake(a, same);
+        var movingB = !framePair && _dyn[ib] && MovesToWake(b, same);
         for (var k = 0; k < n; k++)
         {
             ref var p = ref _cand[k];

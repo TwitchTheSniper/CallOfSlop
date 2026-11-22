@@ -278,7 +278,7 @@ public sealed class ShipParts : IPartGenerator
 
     /// <summary>Whether a strip of a storey has the rooms' own wall (a room box in the hull), not the skin, at its sides: the whole
     /// lower deck (the hold, its ramp bay and the engine room), and the upper deck aft of the cockpit.</summary>
-    private static bool BoxWalled(int level, double z0, double z1) => level == 0 || z0 >= CockpitBack - 1e-6;
+    private static bool BoxWalled(int level, double z0) => level == 0 || z0 >= CockpitBack - 1e-6;
 
     /// <summary>Where the hold's own walls start: the first strip aft of the nose wide enough for them.</summary>
     private static double HoldWallFront => Strips(LowFront, Back, RoomCuts(0)).First(t => SkinHalfIn(0, t.Z0, t.Z1) >= Lw - 1e-6).Z0;
@@ -338,7 +338,7 @@ public sealed class ShipParts : IPartGenerator
         {
             // (where the rooms are a box, the floor stops under their walls, upstairs over the hold's, and the gap to the skin is open;
             // the cockpit's runs out to the skin, and the ramp bay to its walls)
-            var w = BoxWalled(level, z0, z1) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
+            var w = BoxWalled(level, z0) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
             double xa = Cx - w, xb = Cx + w;
             var xs = new List<(double, double)> { (xa, xb) };
             foreach (var h in holes)
@@ -364,7 +364,7 @@ public sealed class ShipParts : IPartGenerator
             foreach (var (z0, z1) in Strips(front, Back, RoomCuts(level)))
             {
                 var inner = RoomHalf(level, z0, z1);
-                var boxed = BoxWalled(level, z0, z1);
+                var boxed = BoxWalled(level, z0);
                 var back = boxed ? inner + WallT : inner;
                 var outer = Math.Max(back + 0.04, Cm(SkinMin(z0, z1, y0, y1) - 0.06));
                 foreach (var s in new[] { -1, 1 })
@@ -566,7 +566,7 @@ public sealed class ShipParts : IPartGenerator
     private static void Rib(Part p, int r)
     {
         const double Proud = 0.11;
-        double[] Normal2(double[] a, double[] b, int s)
+        double[] Normal2(double[] a, double[] b)
         {
             var d = U2(b[0] - a[0], b[1] - a[1]);
             double[] n = [d[1], -d[0]];
@@ -574,10 +574,10 @@ public sealed class ShipParts : IPartGenerator
             return n[0] * c[0] + n[1] * c[1] < 0 ? [-n[0], -n[1]] : n;
         }
         // Neighbouring segments overlap at their corners, so every other one is 8 mm thinner (its fore and aft faces stay inside its neighbour).
-        void Seg(double[] a, double[] b, int s, bool thick)
+        void Seg(double[] a, double[] b, bool thick)
         {
             var Half = thick ? 0.1 : 0.096;
-            var n = Normal2(a, b, s);
+            var n = Normal2(a, b);
             // (each end runs 15 mm past the ring's point, so a rib's ends never share a plane with the facets' edges there)
             var d = U2(b[0] - a[0], b[1] - a[1]);
             a = [a[0] - d[0] * 0.015, a[1] - d[1] * 0.015, a[2]];
@@ -588,9 +588,9 @@ public sealed class ShipParts : IPartGenerator
         double[] V(int k, int s) => [Cx + s * Rings[r][k].W, Rings[r][k].Y, Rings[r][k].Z];
         foreach (var s in new[] { -1, 1 })
             for (var k = 0; k < 4; k++)
-                Seg(V(k, s), V(k + 1, s), s, k % 2 == 1);
-        Seg(V(B, -1), V(B, 1), 1, true);
-        Seg(V(R, 1), V(R, -1), 1, false);
+                Seg(V(k, s), V(k + 1, s), k % 2 == 1);
+        Seg(V(B, -1), V(B, 1), true);
+        Seg(V(R, 1), V(R, -1), false);
     }
 
     /// <summary>A box run along z split at the frames (the frame's rib covers the joint), so each length goes to its own hull piece.</summary>
@@ -695,7 +695,7 @@ public sealed class ShipParts : IPartGenerator
                 foreach (var s in new[] { -1, 1 })
                 {
                     Facet(p, r, B, s, Belly, "dirty steel", paint: false);
-                    var c = r == 1 ? Patch : r == 5 ? RoofDark : (r + (s > 0 ? 1 : 0)) % 3 == 0 ? Patch2 : HullPaint;
+                    var c = r == 1 ? Patch : (r + (s > 0 ? 1 : 0)) % 3 == 0 ? Patch2 : HullPaint;
                     Facet(p, r, L, s, c, "rusty paint", paint: c == HullPaint);
                 }
             // The chine and the beam's rails, the beam's the heavier (the rub strake).
@@ -1083,7 +1083,6 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
         Sock(p, "module", 4.0, F1T, 1.6, "+y"); // (on the floor in the pilot's footwell, so the seat's link runs along the floor, not up past the windscreen)
-        Sock(p, "chart", 7.4, F1T + 0.475, 3.875, "-z");
         Sock(p, "linkChair", 2.6, F1T, 3.5, "+y"); // (the one Shell Control Chair, port of the cockpit's door, its back to the partition)
         Sock(p, "bed", Cx - Uw, F1T + 0.125, 6.0, "+x");
         Sock(p, "locker", 3.2, F1T + 0.125, 4.125, "+z");

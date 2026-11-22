@@ -375,13 +375,26 @@ public static partial class ConstructLifters
             return;
         var busy = 0;
         var decisions = 0;
-        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        // The lifters take turns at the step's few decisions (Zero Day works, 2026-11-22: with a station open every idle lifter asks, so
+        // the first four in the list took them all and the yard crane, listed last, never looked): the step starts where the last one's
+        // decisions ran out.
+        var bodyN = world.LiftBodies.Count;
+        var startBody = world.LiftTurnBody < bodyN ? world.LiftTurnBody : 0;
+        var startLift = world.LiftTurnBody < bodyN ? world.LiftTurnLift : 0;
+        var turnSet = false;
+        for (var bk = 0; bk <= bodyN; bk++)
         {
+            var bi = (startBody + bk) % bodyN;
             var lb = world.LiftBodies[bi];
-            if (world.Get(lb.Body) is not { } c)
+            // (the start body twice: its lifters from the turn on first, those before it last)
+            var i0 = bk == 0 ? Math.Min(startLift, lb.N) : 0;
+            var i1 = bk == bodyN ? Math.Min(startLift, lb.N) : lb.N;
+            if (bk == bodyN && bi != startBody || world.Get(lb.Body) is not { } c)
                 continue;
-            for (var i = 0; i < lb.N; i++)
+            for (var i = i0; i < i1; i++)
             {
+                if (!turnSet && decisions >= DecisionsAStep)
+                    (turnSet, world.LiftTurnBody, world.LiftTurnLift) = (true, bi, i); // (the next step starts at the first lifter left without one)
                 var l = lb.Lifts[i];
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
@@ -532,6 +545,8 @@ public static partial class ConstructLifters
                 Ports(c, l);
             }
         }
+        if (!turnSet)
+            (world.LiftTurnBody, world.LiftTurnLift) = (0, 0);
         world.LiftBusy = busy;
     }
 
@@ -596,9 +611,21 @@ public static partial class ConstructLifters
     public const float Wrist = 0.35f; // the wrist over the gripper bar
     public const float SafeLift = GripLift + Wrist; // an empty hand's wrist over its point
 
-    /// <summary>How far an arm's wrist can be over a piece's origin, at most, however the piece is turned.</summary>
+    /// <summary>
+    /// How far an arm's wrist can be over a piece's middle (where every pick and put point is measured), at most, however the piece is
+    /// turned: half its bounds' diagonal. (Until 2026-11-22 it was measured from the part's origin: a ship section's origin is the ship's,
+    /// so a Zero Day Keel 9 m long asked a 21 m hook drop for 44 m of lift and no crane ever reached it.)
+    /// </summary>
     public static float WristLift(ConstructPartDef? d) =>
-        d == null ? SafeLift : MathF.Max(d.BoundsMin.Length(), d.BoundsMax.Length()) + SafeLift;
+        d == null ? SafeLift : ((d.BoundsMax - d.BoundsMin) * 0.5f).Length() + SafeLift;
+
+    /// <summary>
+    /// The same over a piece's origin, for what poses a carry by its origin (l.From and l.To: <see cref="Ticks"/>, the carry height,
+    /// a crane's legs, a cab's clamp): <see cref="WristLift"/> plus the middle's height over the origin, so an upright piece's wrist
+    /// stands where the reach checks put it (the merge review, 2026-11-22: a piece whose origin is under its middle rose past the bridge).
+    /// </summary>
+    public static float OriginLift(ConstructPartDef? d) =>
+        d == null ? SafeLift : MathF.Max(SafeLift, WristLift(d) + (d.BoundsMin.Y + d.BoundsMax.Y) * 0.5f);
 
     /// <summary>Does a part fit the hand: its mass and its size (the longest side against the length, the next against across)?</summary>
     public static bool Carries(LifterDef ld, ConstructPartDef d)
@@ -662,7 +689,7 @@ public static partial class ConstructLifters
                 l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = CarryTicks(ld, l, d);
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
                 Begin(l);
@@ -746,8 +773,16 @@ public static partial class ConstructLifters
     /// <summary>The empty hand's way back: from where the piece was to the hold it came from (or where it is, with no station).</summary>
     private static void Back(Construct c, CLift l, LifterDef ld, Construct? sc, int t)
     {
-        var from = l.State == LiftState.Carry ? Pose(ld, l, l.Age, out _) : l.To;
+        var endRot = l.ToRot;
+        var from = l.State == LiftState.Carry ? Pose(ld, l, l.Age, out endRot) : l.To;
         var to = l.From;
+        if (l.Def != 0 && ConstructParts.Get(l.Def) is { } pd)
+        {
+            // (the empty hand starts where it let go, over the piece's top middle, not at the piece's origin, and with no station goes back
+            // over where the piece's middle was: a ship section's origin is far off it)
+            from += Vector3.Transform(new Vector3((pd.BoundsMin.X + pd.BoundsMax.X) * 0.5f, pd.BoundsMax.Y, (pd.BoundsMin.Z + pd.BoundsMax.Z) * 0.5f), endRot);
+            to += Vector3.Transform((pd.BoundsMin + pd.BoundsMax) * 0.5f, l.FromRot);
+        }
         if (sc != null && t >= 0 && t < sc.PartCount)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
@@ -843,11 +878,11 @@ public static partial class ConstructLifters
                 var inv = Quaternion.Conjugate(lr);
                 l.From = Pose(ld, l, l.Age, out var rot);
                 l.FromRot = rot;
-                l.To = Vector3.Transform(hold - lp, inv);
+                l.To = Vector3.Transform(hold - lp, inv) - Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rot); // (HoldPick's point is the piece's middle: To is its origin)
                 l.ToRot = rot;
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = CarryTicks(ld, l, d);
                 Begin(l);
                 (l.State, l.ToHold, l.Why, l.Moved, l.Fitted) = (LiftState.Carry, true, LiftWhy.PutBack, true, false);
                 (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (sc.Id, t, -1, null, null);
@@ -936,6 +971,13 @@ public static partial class ConstructLifters
         : ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0);
 
     /// <summary>The move's length in ticks: half the handling at each end, the path at the hand's speed.</summary>
+    /// <summary>A loaded move's ticks, its ends set (From, To and their turns): measured along the piece's middle, as <see cref="Pose"/> moves it.</summary>
+    internal static int CarryTicks(LifterDef ld, CLift l, ConstructPartDef d)
+    {
+        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        return Ticks(ld, l.From + Vector3.Transform(mid, l.FromRot), l.To + Vector3.Transform(mid, l.ToRot), true, WristLift(d), l.Rise);
+    }
+
     public static int Ticks(LifterDef ld, Vector3 from, Vector3 to, bool loaded, float lift, float rise)
     {
         float sec;
@@ -1021,18 +1063,27 @@ public static partial class ConstructLifters
             rot = l.ToRot;
             return Vector3.Lerp(l.From, l.To, l.Dur > 0 ? Math.Clamp(age / l.Dur, 0, 1) : 1);
         }
+        // A loaded move follows the piece's middle (2026-11-22: a ship section's origin is the ship's, so a path of its origin swung
+        // the Zero Day keel 117 m round for a 55 m carry): the legs below are the middle's, and the origin is posed from it.
+        var d = l.Def != 0 ? ConstructParts.Get(l.Def) : null;
+        var mid = d == null ? Vector3.Zero : (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var at = PoseMiddle(ld, l, age, d, l.From + Vector3.Transform(mid, l.FromRot), l.To + Vector3.Transform(mid, l.ToRot), out rot);
+        return at - Vector3.Transform(mid, rot);
+    }
+
+    /// <summary>A carry's middle at <paramref name="age"/>: <paramref name="from"/> and <paramref name="to"/> are the piece's middle at the ends (an empty hand's own point).</summary>
+    private static Vector3 PoseMiddle(LifterDef ld, CLift l, float age, ConstructPartDef? d, Vector3 from, Vector3 to, out Quaternion rot)
+    {
         var loaded = l.Def != 0;
         var still = (loaded ? ld.Handle : ld.Handle * 0.25f) * 0.5f;
         var sec = age / World.TickRate - still;
-        var from = l.From;
-        var to = l.To;
         rot = l.FromRot;
         if (sec <= 0)
             return from;
         if (ld.Bridge)
         {
             // A crane: hoist, travel and traverse together in a straight line at the carry height, lower (arms-and-cranes.md 3.3).
-            BridgeLegs(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
+            BridgeLegs(ld, from, to, d != null ? WristLift(d) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
             var tu = bu / ld.Hoist;
             if (sec < tu)
                 return new Vector3(from.X, from.Y + sec * ld.Hoist, from.Z);
@@ -1049,7 +1100,7 @@ public static partial class ConstructLifters
             var dn = sec * ld.Hoist;
             return dn < bd ? new Vector3(to.X, bh - dn, to.Z) : to;
         }
-        var h = CarryY(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
+        var h = CarryY(ld, from, to, d != null ? WristLift(d) : SafeLift, l.Rise);
         var up = MathF.Max(0, h - from.Y);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
@@ -1606,6 +1657,7 @@ public sealed partial class ConstructWorld
     public bool FitThisTick; // server: a part was fitted at a station this tick (one a tick a world)
     public int LiftBusy; // server: lifters not idle at the last step
     public int LiftTick;
+    public int LiftTurnBody, LiftTurnLift; // server: where the next lifter step starts (the lifters take turns at its decisions)
 
     public void LiftClear()
     {

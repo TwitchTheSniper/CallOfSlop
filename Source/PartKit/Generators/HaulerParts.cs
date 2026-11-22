@@ -31,7 +31,7 @@ public sealed class HaulerParts : IPartGenerator
     // The paint: a freight line's. Freight-blue plate over a pale weathered skin, a dark frame, bare steel panels, hazard orange where
     // things move and where people go in. Inside: pale grey walls over a blue-grey dado; the hold in darker steel with a yellow dado.
     private const string Skin = "#a3a8a6", Skin2 = "#8d9391", Armour = "#2f5d80", Armour2 = "#264b67", Bare = "#666d71", Frame = "#202326",
-        Hazard = "#e0a020", Orange = "#dd6a1e", Red = "#e0402c", Glow = "#ffe0a0", Glass = "#7f9ea8",
+        Hazard = "#e0a020", Orange = "#dd6a1e", Red = "#e0402c", Glass = "#7f9ea8",
         Wall = "#b9bdb5", WallLow = "#3d5569", WallTrim = "#2a2e31", Deck = "#4b4f51", Grate = "#3a3d3f", Ceil = "#8f969a",
         HoldWall = "#71787c", HoldDado = "#c08a1c", HoldDeck = "#45494a";
 
@@ -498,22 +498,6 @@ public sealed class HaulerParts : IPartGenerator
         return new[] { Py.Round(cx + rx * Math.Cos(a), 4), Py.Round(cy + ry * Math.Sin(a), 4), z };
     })];
 
-    /// <summary>Hidden boxes for the void between the skin and the rooms, both sides: x from xin (the rooms' outer face; 0: one box across the
-    /// middle) out to the skin less a margin, y and z bands.</summary>
-    private static void Void(Part p, double za, double zb, double ya, double yb, double xin)
-    {
-        var xo = Math.Floor((new[] { SkinHalf(za, ya), SkinHalf(za, yb), SkinHalf(zb, ya), SkinHalf(zb, yb) }.Min() - 0.06) * 100) / 100;
-        if (xo < xin + 0.08)
-            return;
-        za += 0.004; // (no face shared with the neighbouring band's boxes)
-        zb -= 0.004;
-        if (xin <= 0)
-            Hidden(p, Cx - xo, ya, za, Cx + xo, yb, zb);
-        else
-            foreach (var s in new[] { -1, 1 })
-                Hidden(p, Cx + s * xin, ya, za, Cx + s * xo, yb, zb);
-    }
-
     // ---- rooms: floors, walls, doors
 
     private readonly record struct Rect(double X0, double Z0, double X1, double Z1);
@@ -615,10 +599,6 @@ public sealed class HaulerParts : IPartGenerator
         Detail(p, h.X0 - 0.075, y + 0.96, h.Z0 - 0.075, h.X1 + 0.075, y + 1.04, h.Z0 + 0.015, Hazard, "hazard paint");
         Detail(p, h.X0 - 0.12, y, h.Z1, h.X1 + 0.12, y + 0.012, h.Z1 + 0.12, Hazard, "hazard paint");
     }
-
-    /// <summary>A light strip under a ceiling (link blue), and a lamp socket on a wall face.</summary>
-    private static void CeilStrip(Part p, double x0, double x1, double z0, double z1, double ceil) =>
-        Detail(p, x0, ceil - 0.025, z0, x1, ceil, z1, "#d8f0ff", glow: true);
 
 
     // ---- the hauler's own helpers

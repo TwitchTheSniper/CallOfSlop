@@ -119,7 +119,7 @@ public static unsafe class RoomShade
             Lookup[i] = Matrix4x4.CreateTranslation(cam - centre) * view * ortho * toMap;
             Native.glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _tex, 0, i);
             Native.glClear(GL_DEPTH_BUFFER_BIT);
-            SunShadows.DrawPicked(n, view * ortho * toClip, centre, alpha, blendTicks, ref bodies, ref boxes);
+            SunShadows.DrawPicked(n, view * ortho * toClip, centre, d, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes); // (only the cells that reach the map's square)
         }
         SunShadows.ClearPicks(n);
         Native.glBindVertexArray(default);

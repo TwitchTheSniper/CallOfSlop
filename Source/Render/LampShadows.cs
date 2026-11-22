@@ -320,26 +320,13 @@ public static unsafe class LampShadows
         }
     }
 
+    /// <summary>A body's caster boxes within the map's reach (<see cref="Store"/>) of the lamp, <paramref name="model"/> taking the body's frame to the lamp's.</summary>
     private static void DrawBody(Construct c, Matrix4x4 model, bool self)
     {
-        var (vbo, count, shapes, verts) = SunShadows.CasterBoxes(c);
-        if (count == 0 && verts == 0)
+        if (!Matrix4x4.Invert(model, out var back))
             return;
         Native.glUniformMatrix4fv(_lModel, 1, false, &model.M11);
-        if (count > 0)
-        {
-            Native.glUniform1f(_lSelf, self ? 1f : 0f);
-            Native.glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
-            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
-            Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, count);
-            LastBoxes += count;
-        }
-        if (verts > 0)
-        {
-            Native.glUniform1f(_lSelf, 0f); // (the fixture test is for boxes: a shape's corner near the lamp would tear its triangle)
-            SunShadows.DrawShapes(shapes, verts);
-        }
+        LastBoxes += SunShadows.DrawNear(c, Vector3.Transform(Vector3.Zero, back), Store, _lSelf, self); // (the lamp's point in the body's frame: a works' far bays aren't drawn for a lamp in one)
     }
 
     // Face f: axis f / 2, + for even f. The map's u, v are the other two axes (x: y, z; y: z, x; z: x, y) over the distance along

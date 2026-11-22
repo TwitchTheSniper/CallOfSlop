@@ -377,6 +377,8 @@ public static partial class ConstructStation
             return ConstructPanelFormer.Order(d.Name, n);
         if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
             return pressed; // (a pressed part by its key: a Press's order, Press phase 4)
+        if (AssembledParts.Order(d.Name, n) is { } made)
+            return made; // (a run-time Ordnance Rack or ordnance design by its key: an Assembler's order, AssembledParts)
         if (d.Name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(d.Name) is { } key)
             return new WorkOrder { Key = key with { Growing = false }, Part = ConstructParts.None, Count = n };
         return new WorkOrder { Part = (ushort)d.Id, Count = n };
