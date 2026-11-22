@@ -95,6 +95,26 @@ public static class RollerRuns
         return run;
     }
 
+    /// <summary>
+    /// The run that starts at Roller Tile <paramref name="tile"/>'s own Run start (nothing butted on its in end): where a lifter may put
+    /// a piece onto it (ConstructLifters, LiftPointKind.RunStart; the hand-offs toward a station). Its conveyor, or -1. Either peer;
+    /// allocates nothing.
+    /// </summary>
+    public static int StartRunAt(Construct c, int tile)
+    {
+        if ((uint)tile >= (uint)c.PartCount || !c.Parts[tile].D.IsRollerTile)
+            return -1;
+        var d = c.Parts[tile].D;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.From == tile && IsRunPort(d, r.FromPort)
+                && c.RouteNodes[r.Start].Host == tile && IsRun(c, k))
+                return k;
+        }
+        return -1;
+    }
+
     /// <summary>The lead rider of conveyor <paramref name="route"/> when it waits at the link's far end, or -1.</summary>
     public static int WaitingLead(Construct c, int route)
     {

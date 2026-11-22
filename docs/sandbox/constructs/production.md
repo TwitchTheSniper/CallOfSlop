@@ -1833,6 +1833,23 @@ while it moves; a client eases between them. Window tool: `lifter cab [arm|crane
 A **cargo container** (a part with `"container": true`, the Cargo Container 20 ft) is carried whole: F takes the body itself onto the
 hook, frozen, with what it holds, and F lets it fall free (`CabTakeBody`, `CabLetGo`; the Dray's hold, hauler.md).
 
+**Hand-offs to a station** (Sean, 2026-11-22: a part made in the Zero Day works' bay 3 had no way to the yard station 70 m south;
+`ConstructLifterHandOff.cs`). A lifter carries a piece that a building station still lacks one hop nearer to it, through runs and
+other lifters, to a pick pad the station's arm (or its own crane) fits from. A Roller Tile run whose own first tile has nothing butted
+on its in end is a put point (`LiftPointKind.RunStart`, `RollerRuns.StartRunAt`): a lifter sets a piece on its first tile and it rides
+the run. About once a second the server works out the **leads**: every pick pad that serves a building station (no hops), then the free
+start of each run whose end a lifter reaching a lead picks from (one hop more, at most 4). An idle lifter with a piece in reach (a
+machine's out or tray, a rack, a pad, a run's end) that some station lacks (needed, less fitted, in its hold, on its pick pads, riding
+to its pad or in a hand bound there) puts it on the lead with the fewest hops in its reach, after any want and before storage. A piece
+set on a leading run rides with the pad as its destination (on the same body) and the station's order of its kind as its tag, so the
+lifter at the run's end takes it to the pad, or on to the next lead. A pick pad takes a part of any size this way (not only those too
+big for the hold), and a part landing on it counts for the station's order as a large part always has. A piece already on a station's
+pick pad is never handed on, a damaged or painted piece is never put on a run, and a lifter set to Station only or Off hands nothing
+on. A lifter has up to 32 points now (16 before). `--handoff-check [BLUEPRINT] [--seconds S] [--points]` tries it headless: a small
+station builds Storage Corner from a stock pad 40 m away, through an arm, a run, an arm, a run and the station's arm (it prints the leads' cost too). A run's start is not a hand order's put point (only hand-offs use it). Not yet: a
+station's own conveyor fetch from a store doesn't cross lifters (the store's pieces go by hand-off instead), and the logistics map
+has no edge for a run's start or end (a Router doesn't route by them).
+
 **Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
 any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
