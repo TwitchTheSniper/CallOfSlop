@@ -235,10 +235,11 @@ public sealed unsafe partial class PlanetRenderer
 
     // ---- What's drawn from ------------------------------------------------------------------------------------------
 
-    private sealed class Source(Planetoid p, int gen)
+    private sealed class Source(Planetoid p, int gen, ResourceField? ore)
     {
         public readonly Planetoid Planet = p;
         public readonly int Gen = gen;
+        public readonly ResourceField? Ore = ore; // the world's deposits: their ground colours (ResourceSphere.cs TintGround)
     }
 
     private Source? _src;
@@ -339,8 +340,11 @@ public sealed unsafe partial class PlanetRenderer
     /// <summary>The planetoid being drawn (null: none).</summary>
     public Planetoid? Planet => _src?.Planet;
 
+    /// <summary>The deposits whose ground colours the pages show (null: none).</summary>
+    public ResourceField? Ore => _src?.Ore;
+
     /// <summary>Starts drawing <paramref name="p"/> (or nothing): every page is dropped, the worker's old work thrown away.</summary>
-    public void Reset(Planetoid? p)
+    public void Reset(Planetoid? p, ResourceField? ore = null)
     {
         _gen++;
         _pageOf.Clear();
@@ -362,7 +366,7 @@ public sealed unsafe partial class PlanetRenderer
         }
         ResetDug();
         ResetCavity();
-        _src = p == null ? null : new Source(p, _gen);
+        _src = p == null ? null : new Source(p, _gen, ore);
         if (_src == null)
             return;
         _levels = Math.Min(p!.Levels, MaxLevels);
@@ -477,6 +481,8 @@ public sealed unsafe partial class PlanetRenderer
                 : surf.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
                 : TerrainMaterial.Grass;
             var (col, rock) = TerrainData.ColourOf(surf, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+            if (r.Src.Ore is { } ore)
+                col = ore.TintGround(px, py, pz, col, rock); // (each resource's own earth over its deposits)
             // Hollows darken with how far they sit below their neighbours (a cheap cavity term): a crevasse reads as a
             // crack going down into shadow, not a strip of lit wall, and gullies and dips get a little depth.
             var cavity = (float)((wh[k - 1] + wh[k + 1] + wh[k - Apron] + wh[k + Apron]) * 0.25 - h) / cellSize;

@@ -113,6 +113,14 @@ face's edge. A Drill Module taps what is under its bit and digs its hole with do
 (`ConstructGatherer.WorkRound`, `DrillShaft`'s planetoid half); a deposit shows as a streak of rocks on the ground within
 400 m, and looking at a drill names the nearest deposit and the way to it (north is towards the +Y pole).
 
+**Rare but big (Sean, 2026-11-22).** A planetoid's deposits are few, big and dense, so most views hold one kind at most and
+one found stays in sight a long walk: `Constructs/Resources.json` `"planet"` scales each kind's cell (7x: 49 times fewer),
+radius (2x) and units (5x) on a round world only (flat maps keep the table's own). The ground over a deposit takes its kind's
+`"ground"` colour (the planet renderer's pages, `ResourceField.TintGround`; `"planet"."ground"` is how much shows at a
+deposit's middle), side lanes of rock clusters thicken its streak, and its middle has a big outcrop of weathered host rock
+with the vein's chunks breaking out of it (`ResourceOutcrops.cs` `AddCore`). Outcrops are drawn only: nothing collides with
+them. The window shot's `deposit` verb gives a planetoid's nearest deposit middle for `--at`/`--look-at`.
+
 Each world has its own mix: `"sandbox": { "resources": { "mix": { "gold vein": 2, "sand bed": 0 } } }` multiplies a
 kind's chance from `Constructs/Resources.json` (0 to 4; a kind not named keeps its own). In `make_worlds.py` it is a
 world's `"ore"`. `--check-planetoid` prints the count of each kind and the share of ground over a deposit.
