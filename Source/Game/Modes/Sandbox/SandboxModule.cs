@@ -107,7 +107,7 @@ public sealed class SandboxModule : GameModeModule
                 if (pass == 1)
                 {
                     // (empty hands count as idle too: a calm story body holds the Hands tool, GameStoryBodies.cs; a change of tool is sent three times again)
-                    var idle = h.Tool is ConstructTool.None or ConstructTool.Hands && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
+                    var idle = h.Tool is ConstructTool.None or ConstructTool.Hands && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0 && h.PullShip == 0;
                     ref var quiet = ref game.SbHandQuiet[p.Id];
                     ref var was = ref game.SbHandTool[p.Id];
                     quiet = idle && was == (byte)h.Tool ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
@@ -132,6 +132,9 @@ public sealed class SandboxModule : GameModeModule
             if (h.GrabBody != 0)
                 w.CmVec(h.GrabLocal).U8(h.GrabSeg) // (protocol 137: a free joint held on its own, GrabLocal in its frame)
                     .U8(ConstructGrab.BoostByte(h.GrabSeg == 0 && game.Constructs.Get(h.GrabBody) is { } held ? held.GrabBoost : 1f)); // (protocol 375: the flight boost)
+            w.U16(h.PullShip); // (protocol 426: the physics gun's pull on a fitted module, for its beam and the module's shake)
+            if (h.PullShip != 0)
+                w.U16(h.PullPlate).U16(h.PullBody).CmVec(h.PullLocal).U8(h.PullShake);
             var levels = game.SandboxHands.LevelsOf(p.Id); // (tool upgrades, protocol 215: a byte a stat, ConstructEditsUpgrades.cs)
             w.U8((byte)ToolStat.COUNT);
             for (var s = 0; s < (int)ToolStat.COUNT; s++)
@@ -156,6 +159,11 @@ public sealed class SandboxModule : GameModeModule
             var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
             var grabSeg = grab == 0 ? (byte)0 : r.U8();
             var grabBoost = grab == 0 ? 1f : ConstructGrab.BoostOf(r.U8());
+            var pullShip = r.U16();
+            var pullPlate = pullShip == 0 ? (ushort)0 : r.U16();
+            var pullBody = pullShip == 0 ? (ushort)0 : r.U16();
+            var pullAt = pullShip == 0 ? Vector3.Zero : r.CmVec();
+            var pullShake = pullShip == 0 ? (byte)0 : r.U8();
             int stats = r.U8();
             if (!game.IsServer)
             {
@@ -192,7 +200,12 @@ public sealed class SandboxModule : GameModeModule
                 h.GrabBody = grab;
                 h.GrabLocal = grabAt;
                 h.GrabSeg = grabSeg;
+                h.PullShip = pullShip;
+                h.PullPlate = pullPlate;
+                h.PullBody = pullBody;
+                h.PullLocal = pullAt;
             }
+            h.PullShake = pullShake;
             h.GrabBoost = grabBoost;
         }
     }

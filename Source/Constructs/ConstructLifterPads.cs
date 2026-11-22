@@ -88,7 +88,8 @@ public static partial class ConstructLifters
         var d = ConstructPads.RackDef(c, part); // (a Pad Tile: the whole pad's hold, seen from it)
         // The hands' rule for a loose part (Construct.Loose: one whole part, not a seat, a foundation or a core, not anchored), and
         // nobody has it: not held by a station, grabbed, carried, nudged (the Nudge tool placing it), frozen by the physics gun or driven.
-        if (!lo.Loose || lo == c)
+        var group = lo.PartCount > 1; // (a welded group goes in packed as one kind: PackedGroups.cs)
+        if (lo == c || !group && !lo.Loose || group && lo.Anchored)
             return "not loose";
         if (lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.NudgeBy != 255 || lo.Frozen || lo.Driver != 255)
             return "someone has it";
@@ -98,6 +99,8 @@ public static partial class ConstructLifters
         if (local.X < d.RackHoldMin.X || local.X > d.RackHoldMax.X || local.Z < d.RackHoldMin.Z || local.Z > d.RackHoldMax.Z
             || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > d.RackHoldMax.Y)
             return "not over the hold";
+        if (group)
+            return GroupTakeInWhy(world, c, part, st, inv, d.RackHoldMin.Y, pp, lo);
         var pd = lo.DefOf(0);
         // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
         // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
@@ -110,6 +113,18 @@ public static partial class ConstructLifters
             return "not as new";
         if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
             return "not on the deck"; // (standing beside the pad on the ground, as a placed machine does: not set down on it)
+        if (ConstructConveyor.RackCheck(c, part, st, pd) is var rc and not 0)
+            return rc == 3 ? "too big for the pad" : rc == 4 ? "pad full" : "the pad refuses it";
+        return StockTargets.Accepts(world, c, part, st, pd) ? null : "its stock target refuses it";
+    }
+
+    /// <summary>A welded group over the hold: it rests on the deck and packs into one kind the pad and its stock target take (allocates only when the group is new).</summary>
+    private static string? GroupTakeInWhy(ConstructWorld world, Construct c, int part, CStore st, Quaternion inv, float floor, Vector3 pp, Construct lo)
+    {
+        if (!OnDeckGroup(lo, pp, inv, floor))
+            return "not on the deck";
+        if (BakedParts.PackOf(world, lo, Quaternion.Conjugate(inv), out var why) is not { } pd)
+            return why ?? "it can't be packed";
         if (ConstructConveyor.RackCheck(c, part, st, pd) is var rc and not 0)
             return rc == 3 ? "too big for the pad" : rc == 4 ? "pad full" : "the pad refuses it";
         return StockTargets.Accepts(world, c, part, st, pd) ? null : "its stock target refuses it";
@@ -128,9 +143,9 @@ public static partial class ConstructLifters
         var inv = Quaternion.Conjugate(pr);
         var reach = c.Radius + Vector3.Distance(c.Pos, pp) + 2f;
         foreach (var lo in world.Bodies)
-            if (lo != c && lo.PartCount == 1 && TakeInWhy(world, c, part, st, pp, inv, reach, lo) is { } why
+            if (lo != c && TakeInWhy(world, c, part, st, pp, inv, reach, lo) is { } why
                 && why is not ("not loose" or "someone has it" or "far or moving" or "not over the hold" or "not on the deck"))
-                return $"a {lo.DefOf(0).Name} on it: {why}";
+                return lo.PartCount > 1 ? $"a welded group of {lo.PartCount} parts on it: {why}" : $"a {lo.DefOf(0).Name} on it: {why}";
         return null;
     }
 
@@ -157,15 +172,19 @@ public static partial class ConstructLifters
                 }
                 continue;
             }
-            var pd = lo.DefOf(0);
+            var group = lo.PartCount > 1;
+            var pd = group ? lo.PackDef! : lo.DefOf(0); // (a group: what TakeInWhy packed it into, PackedGroups.cs)
+            var parts = lo.PartCount;
             world.Remove(lo);
             if (!world.RackPut(c, part, pd))
                 continue; // (checked above: not reached)
+            if (group)
+                BakedParts.NoteInUse(world, pd); // (its design is kept with the world and sent to everyone before the store's count)
             if (world.StockTargetN > 0)
                 ConstructLogisticsPlan.Arrived(world, c, part, 0, pd); // (a stock target's refill counts it, as a conveyor's delivery does)
             PadArrived(world, c, part, 0, pd); // (phase 5b: a station's large part set down on its pick pad counts for its order)
             world.CraftChanged(c);
-            Console.WriteLine($"[lifter] pad body {c.Id} part {part}: took in a loose {pd.Name}");
+            Console.WriteLine(group ? $"[lifter] pad body {c.Id} part {part}: took in a welded group of {parts} parts as {pd.Name}" : $"[lifter] pad body {c.Id} part {part}: took in a loose {pd.Name}");
             n++;
         }
         return n;
@@ -218,7 +237,7 @@ public static partial class ConstructLifters
     private static readonly LifterDef[] ServeDef = new LifterDef[MaxServing];
     private static readonly Vector3[] ServeShoulder = new Vector3[MaxServing];
     private static readonly Quaternion[] ServeRot = new Quaternion[MaxServing];
-    private static int[] _padHeld = new int[16], _padReach = new int[16];
+    private static int[] _padHeld = new int[16], _padReach = new int[16], _ownHeld = new int[16];
     private static StationJob? _padJob;
     private static int _padTick = int.MinValue;
 
@@ -237,8 +256,8 @@ public static partial class ConstructLifters
             world.PadScanTick = world.LiftTick;
             Scan(world, server: true); // (bodies whose parts changed only: the stations step before the lifters, and a loaded world's first orders would see no arm and no pad)
         }
-        if (world.PadBodies.Count == 0 || world.LiftBodies.Count == 0)
-            return 0;
+        if ((world.PadBodies.Count == 0 || world.LiftBodies.Count == 0) && !ConstructStation.HasOwnPad(sc, t))
+            return 0; // (no arm and no pad, nor a pick pad under the station's own crane: ConstructStationPads.cs)
         var kind = Array.IndexOf(j.KindDef, def, 0, j.KindN);
         if (kind < 0)
             return 0;
@@ -248,18 +267,33 @@ public static partial class ConstructLifters
             PadCounts(world, sc, t, j);
             LifterProbe.Cost(ref LifterProbe.PadCount, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
         }
-        return Math.Min(_padHeld[kind], _padReach[kind]);
+        return Math.Min(_padHeld[kind], _padReach[kind]) + _ownHeld[kind];
     }
 
     private static void PadCounts(ConstructWorld world, Construct sc, int t, StationJob j)
     {
         (_padJob, _padTick) = (j, world.LiftTick);
         if (_padHeld.Length < j.KindN)
-            (_padHeld, _padReach) = (new int[j.KindN * 2], new int[j.KindN * 2]);
+            (_padHeld, _padReach, _ownHeld) = (new int[j.KindN * 2], new int[j.KindN * 2], new int[j.KindN * 2]);
         Array.Clear(_padHeld, 0, j.KindN);
         Array.Clear(_padReach, 0, j.KindN);
+        Array.Clear(_ownHeld, 0, j.KindN);
         ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
         var seen = 0;
+        // The station's own pick pads first (ConstructStationPads.cs): its crane reaches every step, so all a pad holds of a kind it
+        // lifts counts as held; a pad an arm also serves is counted once, here.
+        Span<ushort> own = stackalloc ushort[ConstructStation.MaxOwnPads];
+        var ownN = ConstructStation.OwnPads(sc, t, own);
+        var liftKg = ConstructStation.LiftKg(sc, t);
+        for (var p = 0; p < ownN; p++)
+        {
+            if (world.StoreOf(sc, own[p]) is not { } st)
+                continue;
+            // (not marked seen yet: a Loader Arm serving it too counts what the crane can't lift, below; marked after for the claims)
+            for (var q = 0; q < j.KindN; q++)
+                if (ConstructParts.Get(j.KindDef[q]) is { } kd && kd.Mass <= liftKg)
+                    _ownHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
+        }
         var serving = 0;
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {
@@ -294,12 +328,20 @@ public static partial class ConstructLifters
                         continue;
                     if (seen < world.PadSeen.Length)
                         world.PadSeen[seen++] = key;
+                    var ownPad = pt.Body == sc.Id && own[..ownN].Contains((ushort)pt.Part); // (the station's crane counted what it lifts there)
                     for (var q = 0; q < j.KindN; q++)
-                        _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
+                        if (!ownPad || ConstructParts.Get(j.KindDef[q]) is not { } hd || hd.Mass > liftKg)
+                            _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
                 }
                 if (any && serving < MaxServing)
                     (ServeDef[serving], ServeShoulder[serving], ServeRot[serving], serving) = (ld, shoulder, lr, serving + 1);
             }
+        }
+        for (var p = 0; p < ownN; p++)
+        {
+            var key = (uint)sc.Id << 16 | own[p];
+            if (Array.IndexOf(world.PadSeen, key, 0, seen) < 0 && seen < world.PadSeen.Length)
+                world.PadSeen[seen++] = key; // (the station's own pick pads: their pieces are claimed for the build too)
         }
         world.PadSeenN = seen;
         if (serving == 0 || j.Plan is not { } plan || plan.At.Length != j.PartOf.Length)
@@ -334,6 +376,30 @@ public static partial class ConstructLifters
     private static bool AsNew(in CPart p, ConstructPartDef d) =>
         p.Health >= d.Health * 0.999f && p.Rounds == 0 && p.Paint == 0 && p.Text == null && p.Text2 == null && p.Orders == null && p.Craft == null
         && ConstructConfig.AllDefault(p, d) && (d.Role != PartRole.FluidTank || ConstructFluid.Held(p, d) == null); // (Held reads a tank's own settings: only a tank has them)
+
+    /// <summary>Does a welded group rest on the pad: <see cref="OnDeck"/> over every part's solid boxes (at most 4096 boxes looked at).</summary>
+    private static bool OnDeckGroup(Construct lo, Vector3 padAt, Quaternion padInv, float floor)
+    {
+        var low = float.MaxValue;
+        var looked = 0;
+        for (var i = 0; i < lo.PartCount && looked < 4096; i++)
+        {
+            Freeform.PartWorld(lo, i, out var at, out var rot);
+            var pd = lo.DefOf(i);
+            var n = Math.Min(pd.SolidBoxes, 64);
+            looked += n;
+            for (var b = 0; b < n; b++)
+            {
+                var bx = pd.Boxes[b];
+                for (var k = 0; k < 8; k++)
+                {
+                    var corner = bx.Center + new Vector3((k & 1) != 0 ? bx.Half.X : -bx.Half.X, (k & 2) != 0 ? bx.Half.Y : -bx.Half.Y, (k & 4) != 0 ? bx.Half.Z : -bx.Half.Z);
+                    low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+                }
+            }
+        }
+        return low > floor - 0.15f && low < floor + 0.5f;
+    }
 
     /// <summary>Does the piece rest on the pad: its lowest corner from 15 cm under the hold's floor to 50 cm over it (on its rails or on another piece; never below: on the ground beside)?</summary>
     private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)

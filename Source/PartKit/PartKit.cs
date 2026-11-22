@@ -91,6 +91,7 @@ public static class PartKit
         new Generators.PanelFormerParts(),
         new Generators.LaserCutterParts(),
         new Generators.BakeOvenParts(),
+        new Generators.AssemblerParts(), // (the Assembler on the block system: Core, Assembly Bed Block, Gantry Carriage, Overdrive Unit, Feed Buffer; before Assembling, which reads them)
         new Generators.ConveyorJunctionParts(),
         new Generators.CraftingTerminalParts(),
         new Generators.BuildStationParts(),

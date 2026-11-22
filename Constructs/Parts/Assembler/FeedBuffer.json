@@ -1,0 +1,218 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Feed Buffer",
+  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most). It does nothing on another machine.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 45.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5a6470",
+  "attachSeconds": 8,
+  "machineBlock": {
+    "role": "tier",
+    "module": "buffer"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.19,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.19,
+        0.5,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.19,
+        0.003,
+        -0.022
+      ],
+      "max": [
+        0.19,
+        0.497,
+        -0.003
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.171,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.019,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.051,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.171,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        -0.139,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.139,
+        0.449,
+        -0.04
+      ],
+      "max": [
+        0.171,
+        0.481,
+        -0.022
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.17,
+        0.04,
+        -0.28
+      ],
+      "max": [
+        0.17,
+        0.44,
+        -0.022
+      ],
+      "color": "#5a6470",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.1,
+        -0.296
+      ],
+      "max": [
+        0.05,
+        0.36,
+        -0.28
+      ],
+      "color": "#8fc5d9",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.04,
+        0.11,
+        -0.31
+      ],
+      "max": [
+        0.04,
+        0.2,
+        -0.298
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.19,
+        0.443,
+        -0.27
+      ],
+      "max": [
+        0.19,
+        0.473,
+        -0.03
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.08,
+        0.473,
+        -0.17
+      ],
+      "max": [
+        0.14,
+        0.5,
+        -0.11
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+z",
+      "kind": "tier"
+    }
+  ]
+}

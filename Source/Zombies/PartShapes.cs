@@ -109,6 +109,17 @@ public static class PartShapes
         }
     }
 
+    /// <summary>
+    /// One more holder of a shape another part made (a baked part keeps its subparts' shapes: BakedParts.cs): inside a collection it is counted
+    /// and listed for the part being made, as <see cref="For"/> does; outside, it is kept for good.
+    /// </summary>
+    internal static void Keep(ushort id)
+    {
+        lock (Gate)
+            if (id > 0 && id < Meshes.Count && KeyOfId[id] != null)
+                Hold(id);
+    }
+
     /// <summary>Goes up whenever a new mesh is added (the renderer re-uploads its vertex buffer when it changes).</summary>
     public static int Version { get; private set; }
 
@@ -208,21 +219,25 @@ public static class PartShapes
             return id > 0 && id < ProxyList.Count ? ProxyList[id] : ProxyList[0];
     }
 
-    /// <summary>Copies every mesh after the cube into <paramref name="into"/> and records where each one starts (vertex index after the cube's 36), plus where the last one ends.</summary>
-    internal static int CopyAll(List<float> into, List<int> first)
+    /// <summary>Floats in every mesh made so far (the renderer sizes its box buffer by it).</summary>
+    internal static int FloatsTotal()
     {
         lock (Gate)
         {
-            first.Clear();
-            first.Add(0);
-            var at = 36;
+            var n = 0;
             for (var i = 1; i < Meshes.Count; i++)
-            {
-                first.Add(at);
-                into.AddRange(Meshes[i]);
-                at += Meshes[i].Length / FloatsPerVertex;
-            }
-            first.Add(at); // the end of the last one
+                n += Meshes[i].Length;
+            return n;
+        }
+    }
+
+    /// <summary>Every slot's mesh (references, nothing copied; id 0 the cube's empty one) into <paramref name="into"/>; returns <see cref="Version"/>.</summary>
+    internal static int MeshRefs(List<float[]> into)
+    {
+        lock (Gate)
+        {
+            into.Clear();
+            into.AddRange(Meshes);
             return Version;
         }
     }

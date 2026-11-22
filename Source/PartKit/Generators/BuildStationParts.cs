@@ -23,9 +23,13 @@ public sealed class BuildStationParts : IPartGenerator
     private const double Plinth = 0.25; // the Core's plinth and a Bay Block are this high: the bay's floor
     private const double Hz0 = -2.55, Hz1 = 2.27; // the hold, along the Core (4.82 m: a 4.8 m piece lies in it)
     private const double Back = -2.58, Front = 2.3; // the intake housing's inner face, the control cabinet's back
+    // The station's own block limits (Sean 2026-11-21, the Zero Day works: one station builds the whole 53 m frigate): a bay up to 32 cells
+    // a side (64 m) and 512 cells in all, masts included, past the other machines' 16 and 128 (MachineBlocks.cs, "maxSide" and "maxCells").
+    private const int MaxSide = 32, MaxCells = 512;
+    private const int LiftKg = 14000; // the heaviest piece its crane lifts off a pick pad beside the bay (ConstructStation.PadPick: a 14 t stern)
 
     private static PyDict BlockKey(string role) => role == "core"
-        ? Kw(("family", "station"), ("role", "core"), ("origin", Py.L(0, Plinth / 2, 0)))
+        ? Kw(("family", "station"), ("role", "core"), ("origin", Py.L(0, Plinth / 2, 0)), ("maxSide", MaxSide), ("maxCells", MaxCells))
         : Kw(("family", "station"), ("role", role));
 
     private static PyDict Seam(PyDict? box, params string[] faces) => box!.Update(("seam", faces.Length == 1 ? faces[0] : Py.L([.. faces])));
@@ -35,7 +39,7 @@ public sealed class BuildStationParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Building Station", Small, "Extrusion",
-            "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay and stack Mast Blocks on its corners for height. Pick a blueprint on its screen. Needs power.",
+            "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay, up to 32 x 32 of them, and stack Mast Blocks on its corners for height. Its crane also picks pieces up to 14 t off a Lay-down Pad under its runway, just past the bay. Pick a blueprint on its screen. Needs power.",
             role: "storage", tool: "welder", color: Body, group: "Production");
         const double x0 = -1, x1 = 1, z0 = -3, z1 = 3, top = 1.5; // (top: the hold's rails)
         // ---- The plinth: the Core stands on it, flush with the Bay Blocks' floor; a skirt and a hazard edge on the bay side.
@@ -132,16 +136,27 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(0, MachineLook.EyeY, Py.Round(Front + 0.213, 3))), ("size", Py.L(1.4, 0.56)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 12)))));
         static PyDict Fill(string key, string label, string tip) => Kw(("key", key), ("label", label), ("group", "Fill"), ("min", 0), ("max", 100), ("step", 5), ("default", 100), ("unit", "%"),
             ("tooltip", "Survival: a build is filled to this share. " + tip + " 0: none, 100: full."));
-        p.Set(("config", Py.L(
+        var config = Py.L(
             Fill("fillFuel", "Fuel and tanks", "Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins."),
             Fill("fillAmmo", "Ammo", "Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins."),
             Fill("fillCharge", "Battery charge", "Batteries: charged from the station's own power, which takes time."),
             Kw(("key", "fillWait"), ("label", "Wait until filled"), ("group", "Fill"), ("type", "toggle"), ("default", false),
                 ("tooltip", "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short.")),
             Kw(("key", "subJobs"), ("label", "Sub-jobs"), ("group", "Bay"), ("type", "choice"), ("options", Py.L("Off", "Auto", "Linked")), ("default", 1),
-                ("tooltip", "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds.")))));
+                ("tooltip", "Auto: when idle it builds other stations' sub-blueprint uses on this construct. Linked: also uses sent over a logistics link (the module goes by cargo ship). Off: only your own builds.")),
+            Kw(("key", "dressSalt"), ("label", "Dress salt"), ("group", "Dress"), ("min", 0), ("max", 99), ("step", 1), ("default", 0),
+                ("tooltip", "Which of the style's panel patterns goes where: another number is another layout. Both sides of a ship match on one salt.")),
+            Kw(("key", "dressExtras"), ("label", "Dress extras"), ("group", "Dress"), ("type", "choice"), ("options", Py.L("All", "No conduit", "No lights", "Bolts and vents", "None")), ("default", 0),
+                ("tooltip", "The extra bits it lays with the armour: A bolt rows and chevrons, B vents, D lights, F conduit. All: every one; None: armour, rails and the strip only.")));
+        // The Dress job's style (HullLoft.Dress.cs, docs/sandbox/design/hull-dress.md): a choice once Constructs/DressStyles.json has two (a choice
+        // takes 2 to 16 names); with one, every skin gets that one.
+        if (DressStyles.Current.Count >= 2)
+            config.Insert(5, Kw(("key", "dressStyle"), ("label", "Dress style"), ("group", "Dress"), ("type", "choice"),
+                ("options", Py.L([.. DressStyles.Current.Values.Take(16).Select(x => (object?)x.Label)])), ("default", 0),
+                ("tooltip", "The Dress job (pick \"Dress skins\" as the blueprint): the faction look it lays on each plain hull skin in the bay, as subparts a Bake Oven bakes in.")));
+        p.Set(("config", config));
         const double section = 1.8, length = 4.8;
-        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.2)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
+        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.2)), ("length", length), ("count", 400), ("crafting", true), ("station", true), ("lift", LiftKg),
             ("hold", Py.L(Py.L(x0 + 0.05, Plinth + 0.024, Hz0), Py.L(x1 - 0.05, top - 0.01, Hz1))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, 0.05, z0)), ("face", "-z"), ("opening", Py.L(1.7, 1.7))),

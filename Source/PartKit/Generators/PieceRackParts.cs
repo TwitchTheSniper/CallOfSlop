@@ -292,6 +292,9 @@ public sealed class PieceRackParts : IPartGenerator
         }
     }
 
+    /// <summary>How far under a Roller Tile's rollers' tops its "-z table" socket is, and a Run-out Table's "roller" socket under the table's top.</summary>
+    internal const double TableSock = 0.2;
+
     private static void RollerSockets(Part p)
     {
         p.Sock("bottom", [0, 0, 0], "-y");
@@ -333,6 +336,8 @@ public sealed class PieceRackParts : IPartGenerator
         SeamAdded(p, "-z", () => MachineLook.Port(p, [0, 0.42, -e], 2, -1, 0.2, 0.12, true));
         SeamAdded(p, "+z", () => MachineLook.Port(p, [0, 0.42, e], 2, 1, 0.2, 0.12, false));
         RollerSockets(p);
+        // (its in end on a Run-out Table's far end, the rollers' tops level with the table's: an Extruder's pieces ride on along the run)
+        p.Sock("-z table", [0, RollTop - TableSock, -1], "-z");
         p.Stats(260, 700, 5, 6);
         p.Set(("ports", Py.L(
                 Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, RunY, -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),

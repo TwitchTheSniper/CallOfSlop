@@ -40,6 +40,8 @@ public sealed partial class StationJob
     public readonly ushort[] ArmTicks = new ushort[ConstructStation.MaxArms];
     public readonly ushort[] ArmDef = new ushort[ConstructStation.MaxArms];
     public readonly Vector3[] ArmAt = new Vector3[ConstructStation.MaxArms];
+    public readonly bool[] ArmOffPad = new bool[ConstructStation.MaxArms]; // ...it takes its part off a pick pad of the station's own, not the hold (protocol 421)
+    public readonly Vector3[] ArmPick = new Vector3[ConstructStation.MaxArms]; // ...and where the hook takes it there (the bay's frame)
 
     // ---- Server only.
     public ConstructBuild.Blueprint? Bp;
@@ -56,6 +58,7 @@ public sealed partial class StationJob
     public int FillKey; // the fill stage's counts as its note last said them
     public int Cursor; // every step before it is fitted
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
+    public bool[] KindLaid = []; // kinds laid from linked stock instead of ordered (dress subparts: ConstructStation.Dress.cs)
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
     public int KindN;
     public int[] KindWay = [], KindAhead = []; // (each look) what of a kind is held or on its way, handed to the ready steps in build order; how many of a kind are ordered ahead (a ready step's child whose parent part is coming)
@@ -68,6 +71,7 @@ public sealed partial class StationJob
     public double CostMs, WorstMs;
     public readonly int[] ArmStep = [-1, -1, -1, -1, -1, -1, -1, -1]; // each arm's step on its way (-1: idle; MaxArms long)
     public readonly int[] ArmLeft = new int[ConstructStation.MaxArms]; // ...ticks until it goes on
+    public readonly ushort[] ArmPad = [ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue]; // ...the pick pad it takes its part off (MaxValue: the hold; ConstructStationPads.cs)
     public int ArmWait; // server: ticks before idle arms look again after a look found nothing (a long blueprint's scan isn't run every tick)
     public long Started; // Stopwatch ticks at Start (the log's start-to-drivable time)
 
@@ -128,7 +132,7 @@ public static partial class ConstructStation
     public const float MastStep = 2f; // m of bay height a Mast Block stacked on each corner adds
     public const float LowBay = 2f; // m: a bay with no masts builds things this low
     public const int BlocksPerArm = 16; // a fitting arm for every this many Bay Blocks in the bay (at least one)
-    public const int MaxArms = MachineBlocks.MaxCells / BlocksPerArm;
+    public const int MaxArms = 8; // (a 128-block bay has them all; ArmStep is this long, and the wire sends an arm by its index)
 
     /// <summary>The side of the corner cells a build may not take (the masts stand there), or 0 when the bay has no masts.</summary>
     public static float BayCorner(Construct c, int part) =>
@@ -415,6 +419,9 @@ public static partial class ConstructStation
         j.KindWay = new int[defs.Count];
         j.KindAhead = new int[defs.Count];
         j.StepComing = new bool[bp.Steps.Count];
+        j.KindLaid = new bool[defs.Count];
+        for (var i = 0; i < defs.Count; i++)
+            j.KindLaid[i] = IsLaid(ConstructParts.Get(defs[i]));
         j.StepKind = new int[bp.Steps.Count];
         for (var s = 0; s < bp.Steps.Count; s++)
             j.StepKind[s] = defs.IndexOf((ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None));
@@ -490,6 +497,11 @@ public static partial class ConstructStation
             else if (have > j.KindHave[i] && j.KindOut[i] > 0)
                 j.KindOut[i] = Math.Max(0, j.KindOut[i] - (have - j.KindHave[i])); // (one came back)
             j.KindHave[i] = have;
+            if (j.KindLaid[i])
+            {
+                j.KindWhy[i] = null;
+                continue; // (laid from linked stock as it goes on, never ordered: LaidShort says when the stock is short)
+            }
             var lack = j.KindNeed[i] - j.KindFit[i] - held;
             if (lack <= 0)
             {
@@ -529,7 +541,8 @@ public static partial class ConstructStation
         string? stuck = null;
         if (firstKind >= 0 && j.KindReady[firstKind] > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
             && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) is var rc and not 0)
-            stuck = rc == 3 ? "too long for this station's hold: build a larger station or fit it by hand"
+            stuck = rc == 3 ? HasOwnPad(c, t) ? nd.Mass > LiftKg(c, t) ? $"too heavy for this station's crane ({nd.Mass / 1000f:0.#} t, it lifts {LiftKg(c, t) / 1000f:0.#} t): fit it by hand or with a Hall Crane" : null
+                : "too long for this station's hold: lay a Lay-down Pad under its crane just past the bay, or fit it by hand"
                 : tray.ItemCount > 0 && !MakeRoomFor(world, c, t, nd) ? "hold full of parts no step fits yet, no rack with room: take one out" : null;
         for (var i = 0; i < j.KindN && stuck == null; i++)
             if (j.KindOut[i] > 0 && j.KindReady[i] > ConstructCrafting.Holds(tray, j.KindDef[i]))
@@ -537,15 +550,16 @@ public static partial class ConstructStation
                 firstKind = i; // (what it waits for is the part taken out)
                 stuck = $"you took {j.KindOut[i]} out by hand: bring {(j.KindOut[i] == 1 ? "it" : "them")} back (none ordered while you are near)";
             }
+        var laidShort = lacking == 0 ? LaidShort(world, c, t, j) : null;
         // The note is made again only when what it says changed (a look allocates nothing otherwise).
         var oq = c.Parts[t].Craft;
         var full = firstOrder >= 0 && oq!.Items[firstOrder].State == CraftState.Held && tray.ItemCount > 0 && oq.Items[firstOrder].Note.Contains("full", StringComparison.Ordinal);
         var key = lacking * 1009 + (firstKind + 1) * 31 + (firstOrder < 0 ? 0 : ((int)oq!.Items[firstOrder].State + 1) * 7 + oq.Items[firstOrder].Where + (oq.Items[firstOrder].Note?.GetHashCode() ?? 0))
-            + (firstKind >= 0 ? j.KindWhy[firstKind]?.GetHashCode() ?? 0 : 0) + (full ? 3 : 0) + (stuck?.GetHashCode() ?? 0);
+            + (firstKind >= 0 ? j.KindWhy[firstKind]?.GetHashCode() ?? 0 : 0) + (full ? 3 : 0) + (stuck?.GetHashCode() ?? 0) + (laidShort?.GetHashCode() ?? 0);
         if (key == j.NoteKey)
             return;
         j.NoteKey = key;
-        var note = "";
+        var note = laidShort ?? "";
         if (lacking > 0)
         {
             var name = firstKind < 0 ? "a part whose parent isn't in place" : ConstructParts.Get(j.KindDef[firstKind])?.Name ?? "a part this build doesn't have";
@@ -607,7 +621,7 @@ public static partial class ConstructStation
 
     /// <summary>A blueprint by name: the shipped ones, then the host's own saved ones.</summary>
     public static ConstructBuild.Blueprint? Find(string name) =>
-        ConstructBuild.FindBlueprint(name) ?? Own(name);
+        ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? Own(name);
 
     private static ConstructBuild.Blueprint? Own(string name)
     {
@@ -632,7 +646,9 @@ public static partial class ConstructStation
             return "it is still giving parts back";
         if (c.Parts[t].Station is { Body: not 0 } was && !BayClear(world, c, t, was))
             return "the bay isn't clear: move what was built out of it first";
-        if (ConstructBuild.FindBlueprint(name) is { } bp)
+        if (name == HullLoft.DressJobName)
+            return StartDress(world, c, t, repeat); // (the Dress job: each plain skin that comes in, ConstructStation.Dress.cs)
+        if ((ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name)) is { } bp)
         {
             if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
                 return "that blueprint has no parts";
@@ -1252,12 +1268,15 @@ public static partial class ConstructStation
                 busy = true;
                 continue;
             }
+            var pad = j.ArmPad[a]; // (before Idle clears it)
             Idle(world, c, j, a);
             if (j.PartOf[k] != -1)
                 continue; // (a lifter got there first)
             var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-            if (!world.StationTake(c, t, tray, d))
-                continue; // (taken from the hold meanwhile: it is looked for again)
+            if (j.StepKind[k] is var sk and >= 0 && j.KindLaid[sk] ? !TakeLaid(world, c, t, d) : pad != ushort.MaxValue ? pad >= c.PartCount || world.StoreOf(c, pad) is not { } pst || !world.StationTake(c, pad, pst, d) : !world.StationTake(c, t, tray, d))
+                continue; // (taken from the hold or the pad meanwhile, or a laid part's stock gone: it is looked for again)
+            if (pad != ushort.MaxValue)
+                Console.WriteLine($"[station] body {c.Id} part {t}: arm {a} took a {d.Name} ({d.Mass / 1000f:0.#} t) off its pick pad (part {pad})");
             world.CraftChanged(c);
             FitOne(world, c, t, j, k);
             j.ArmWait = 0; // (a part in: the next may be ready now)
@@ -1270,7 +1289,7 @@ public static partial class ConstructStation
         {
             if (j.ArmStep[a] >= 0)
                 continue;
-            var k = ArmPick(j, tray);
+            var k = ArmPick(world, c, t, j, tray, out var from);
             if (k < 0)
             {
                 j.ArmWait = busy ? OrderEvery : 0; // (nothing to carry now: look again at the order pass's rate; with no arm busy the step itself waits that long)
@@ -1282,6 +1301,9 @@ public static partial class ConstructStation
             j.ArmTicks[a] = (ushort)j.ArmLeft[a];
             j.ArmDef[a] = (ushort)d.Id;
             j.ArmAt[a] = ArmTarget(c, t, j, k, d);
+            j.ArmPad[a] = from < 0 ? ushort.MaxValue : (ushort)from;
+            j.ArmOffPad[a] = from >= 0;
+            j.ArmPick[a] = from >= 0 ? PadPickAt(c, t, from, d) : default;
             j.ArmSeq[a]++;
             world.StationChanged(c);
             busy = true;
@@ -1301,6 +1323,7 @@ public static partial class ConstructStation
     {
         j.ArmStep[a] = -1;
         j.ArmTicks[a] = 0;
+        j.ArmPad[a] = ushort.MaxValue;
         world.StationChanged(c);
     }
 
@@ -1313,22 +1336,29 @@ public static partial class ConstructStation
                 Idle(world, c, j, a);
     }
 
-    /// <summary>The next ready step whose part the hold has more of than the arms already carry, and that no arm carries; -1: none.</summary>
-    private static int ArmPick(StationJob j, CStore tray)
+    /// <summary>
+    /// The next ready step whose part the hold (or a pick pad of the station's own, <paramref name="from"/> its part; -1: the hold) has more
+    /// of than the arms already carry from there, and that no arm carries; -1: none.
+    /// </summary>
+    private static int ArmPick(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, out int from)
     {
+        from = -1;
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
         for (var k = j.Cursor; k < j.PartOf.Length; k++)
         {
             if (j.PartOf[k] != -1 || j.StepKind[k] is not (var kind and >= 0) || Array.IndexOf(j.ArmStep, k) >= 0 || !Ready(j, k))
                 continue;
-            var def = j.KindDef[kind];
-            var carried = 0;
-            foreach (var s in j.ArmStep)
-                if (s >= 0 && j.StepKind[s] == kind)
-                    carried++;
-            if (ConstructCrafting.Holds(tray, def) > carried)
-                return k;
+            if (j.KindLaid[kind])
+            {
+                if (ConstructParts.Get(j.KindDef[kind]) is { } ld && LaidReady(world, c, t, ld))
+                    return k; // (laid from linked stock: no part in the hold)
+                continue;
+            }
+            if (ConstructParts.Get(j.KindDef[kind]) is not { } d || PickFrom(world, c, t, j, tray, kind, d) is not (var src and >= -1))
+                continue;
+            from = src;
+            return k;
         }
         return -1;
     }
@@ -1581,14 +1611,14 @@ public static partial class ConstructStation
         var rd = c.DefOf(t);
         ConstructPartDef? reserve = null;
         for (var i = 0; i < j.KindN; i++)
-            if (j.KindReady[i] > ConstructCrafting.Holds(tray, j.KindDef[i]) && ConstructParts.Get(j.KindDef[i]) is { } rdp
+            if (!j.KindLaid[i] && j.KindReady[i] > ConstructCrafting.Holds(tray, j.KindDef[i]) && ConstructParts.Get(j.KindDef[i]) is { } rdp
                 && (reserve == null || Volume(rdp) > Volume(reserve)))
                 reserve = rdp; // (the largest ready part not yet in the hold)
         var simReady = false;
         var items = tray.ItemCount;
         for (var i = 0; i < j.KindN && placed < OrdersAStep; i++)
         {
-            if (j.KindAhead[i] <= 0 || j.SetAside.Contains(j.KindDef[i]) || ConstructParts.Get(j.KindDef[i]) is not { } d)
+            if (j.KindAhead[i] <= 0 || j.KindLaid[i] || j.SetAside.Contains(j.KindDef[i]) || ConstructParts.Get(j.KindDef[i]) is not { } d)
                 continue;
             var held = ConstructCrafting.Holds(tray, d.Id) + LiftHolds(world, c, t, d.Id);
             var asked = Asked(q, d.Id);
@@ -1847,7 +1877,12 @@ public static partial class ConstructStation
                 GiveBack(world, c, t, j);
             if (j.State == StationState.Building && world.StoreOf(c, t) is { } hold && ConstructRecycler.Powered(world, c, t))
                 Orders(world, c, t, hold, j);
-            if (j.State == StationState.Done && j.Repeat > 0 && j.Bp != null && BayClear(world, c, t, j))
+            if (j.State == StationState.Done && j.Repeat > 0 && Dresses(j) && BayClear(world, c, t, j) && ConstructRecycler.Powered(world, c, t))
+            {
+                if (DressNext(world, c, t, j))
+                    return true; // (a Dress job: the next plain skin, its own blueprint, costing from the next tick)
+            }
+            else if (j.State == StationState.Done && j.Repeat > 0 && j.Bp != null && !Dresses(j) && BayClear(world, c, t, j))
             {
                 // Repeat: the bay is clear, so the bill goes out again.
                 if (j.Repeat != None)
@@ -1998,6 +2033,9 @@ public static partial class ConstructStation
                 w.U8((byte)a).U8(j.ArmSeq[a]).U16(j.ArmTicks[a]);
                 ConstructStorage.WriteDef(w, j.ArmDef[a]);
                 w.CmVec(j.ArmAt[a]);
+                w.U8((byte)(j.ArmOffPad[a] ? 1 : 0)); // (protocol 421: off a pick pad, and where)
+                if (j.ArmOffPad[a])
+                    w.CmVec(j.ArmPick[a]);
             }
     }
 
@@ -2013,9 +2051,11 @@ public static partial class ConstructStation
             var ticks = r.U16();
             var def = ConstructStorage.ReadDef(ref r);
             var at = r.CmVec();
+            var offPad = r.U8() != 0;
+            var pick = offPad ? r.CmVec() : default;
             if (j == null || a >= MaxArms)
                 continue;
-            (j.ArmSeq[a], j.ArmTicks[a], j.ArmDef[a], j.ArmAt[a]) = (seq, ticks, def, at);
+            (j.ArmSeq[a], j.ArmTicks[a], j.ArmDef[a], j.ArmAt[a], j.ArmOffPad[a], j.ArmPick[a]) = (seq, ticks, def, at, offPad, pick);
         }
     }
 
@@ -2076,6 +2116,13 @@ public static partial class ConstructStation
     {
         foreach (var (part, j) in jobs)
         {
+            if (part < c.PartCount && c.DefOf(part).IsBuildStation && j.State == StationState.Done && Dresses(j) && j.Repeat > 0)
+            {
+                c.Parts[part].Station = j; // (a Dress job waiting for its next skin: it waits again)
+                world.StationOpened(c);
+                world.StationChanged(c);
+                continue;
+            }
             if (part >= c.PartCount || !c.DefOf(part).IsBuildStation || (j.PinnedBp ?? (j.Role == 1 ? null : Find(j.Name))) is not { } bp)
                 continue; // (a job with uses builds its pinned tree: the versions it started with)
             j.Bp = bp;
@@ -2418,15 +2465,17 @@ public static class StationProbe
     {
         if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
             return "nothing is being built";
-        int put = 0, refused = 0;
+        int put = 0, refused = 0, padPut = 0;
         var first = "";
         for (var i = 0; i < j.KindN; i++)
         {
             if (ConstructParts.Get(j.KindDef[i]) is not { } d)
                 continue;
-            for (var n = j.KindNeed[i] - j.KindFit[i] - ConstructCrafting.Holds(tray, j.KindDef[i]); n > 0; n--)
+            for (var n = j.KindNeed[i] - j.KindFit[i] - ConstructCrafting.Holds(tray, j.KindDef[i]) - ConstructLifters.PickPadHolds(world, c, t, j.KindDef[i]); n > 0; n--)
                 if (world.RackPut(c, t, d))
                     put++;
+                else if (ConstructConveyor.RackCheck(c, t, tray, d) == 3 && PadPut(world, c, t, d))
+                    padPut++; // (too big for the hold: onto a pick pad under its crane, ConstructStationPads.cs)
                 else
                 {
                     refused++;
@@ -2439,7 +2488,21 @@ public static class StationProbe
         for (var s = 0; s < tray.SlabN; s++)
             used = Math.Max(used, tray.Slabs![s].Z0Mm + tray.Slabs[s].LenMm);
         ConstructRackPack.Hold(c.DefOf(t), out var hlo, out var hhi);
-        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}; the hold: {tray.SlabN} column(s) of {tray.KindN} kind(s) over {used / 1000f:0.00} of {hhi.Z - hlo.Z:0.00} m";
+        return $"{put} part(s) into the hold{(padPut > 0 ? $", {padPut} onto its pick pads" : "")}{(refused > 0 ? $", {refused} refused ({first})" : "")}; the hold: {tray.SlabN} column(s) of {tray.KindN} kind(s) over {used / 1000f:0.00} of {hhi.Z - hlo.Z:0.00} m";
+    }
+
+    /// <summary>One part onto the first of the station's own pick pads that takes it.</summary>
+    private static bool PadPut(ConstructWorld world, Construct c, int t, ConstructPartDef d)
+    {
+        Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
+        var n = ConstructStation.OwnPads(c, t, pads);
+        for (var p = 0; p < n; p++)
+            if (world.RackPut(c, pads[p], d))
+            {
+                world.CraftChanged(c);
+                return true;
+            }
+        return false;
     }
 
     /// <summary>A job in one line, for the window tool's dump.</summary>

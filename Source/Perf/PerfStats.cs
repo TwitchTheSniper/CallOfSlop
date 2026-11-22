@@ -168,6 +168,9 @@ public sealed class PerfStats
             if (WorstBack[k] >= 0)
                 sb.Append(c, $" {WorstMs[k]:0.0} ms ({WorstBack[k]} frames ago)");
         sb.Append('\n');
+        for (var k = 0; k < Worst; k++)
+            if (WorstBack[k] >= 0)
+                WorstAreas(sb, c, WorstMs[k], WorstBack[k]);
         sb.Append(c, $"server ticks: {TicksPerSecond:0}/s, avg {TickAvgMs:0.000} ms, worst {TickWorstMs:0.000} ms (budget 8 ms)\n");
         sb.Append(c, $"CPU per frame over the last {RecentFrames} frames (avg / self / peak ms):\n");
         for (var a = 0; a < Perf.Count; a++)
@@ -188,5 +191,53 @@ public sealed class PerfStats
             sb.Append(c, $"misnested scopes: {Perf.Misnested}\n");
         sb.Append(extra);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// One worst frame's line: the deepest areas over 0.5 ms in it (an area its children explain is left out), the ticks it
+    /// ran and a GC, so a hitch older than the last second still says where it went (Karl's 117 ms frames, 2026-11-21, were
+    /// 277 frames back). The area history starts when the window opens: a frame before that has none.
+    /// </summary>
+    private static void WorstAreas(StringBuilder sb, CultureInfo c, float ms, int back)
+    {
+        sb.Append(c, $"  {ms:0.0} ms, {Perf.Ticks(back)} tick(s), longest {Perf.TickWorstMs(back):0.00} ms");
+        var gc = PerfCounters.GcAt(back);
+        if (gc != 0)
+            sb.Append(c, $", GC gen{((gc & 4) != 0 ? 2 : (gc & 2) != 0 ? 1 : 0)}");
+        sb.Append(':');
+        var any = false;
+        Span<int> top = stackalloc int[Perf.Count];
+        var n = 0;
+        for (var a = 0; a < Perf.Count; a++)
+        {
+            var v = Perf.AreaMs(back, a);
+            if (v < 0.5f)
+                continue;
+            var kids = 0f;
+            for (var k = 0; k < Perf.Count; k++)
+                if (Perf.Parent[k] == a)
+                    kids += Perf.AreaMs(back, k);
+            if (kids >= v * 0.8f)
+                continue; // (its children say more)
+            var at = n++;
+            top[at] = a;
+            for (; at > 0 && Perf.AreaMs(back, top[at - 1]) < v; at--)
+                (top[at - 1], top[at]) = (top[at], top[at - 1]); // (longest first)
+        }
+        n = Math.Min(n, 8);
+        var timed = 0f;
+        for (var a = 0; a < Perf.Count; a++)
+            if (Perf.Parent[a] < 0)
+                timed += Perf.AreaMs(back, a);
+        for (var i = 0; i < n; i++)
+        {
+            sb.Append(c, $" {Perf.Names[top[i]]} {Perf.AreaMs(back, top[i]):0.00};");
+            any = true;
+        }
+        if (!any)
+            sb.Append(" (no areas recorded: the window was closed)");
+        else if (ms - timed >= 1f)
+            sb.Append(c, $" outside every area {ms - timed:0.00}");
+        sb.Append('\n');
     }
 }

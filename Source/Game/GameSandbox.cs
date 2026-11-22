@@ -364,6 +364,8 @@ public sealed partial class Game
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (p.Alive && h.Tool == ConstructTool.PhysicsGun)
                 ModuleGuide.PlayerTick(Constructs, SandboxHands, p.Id, p.Eye, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), p.Yaw); // (a pull on a fitted module, a held one's pull-in: ModuleGuide.cs)
+            else if (h.PullShip != 0)
+                h.PullShip = h.PullBody = 0; // (no gun out, or dead: no pull to show)
             if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
                 p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);
@@ -572,6 +574,16 @@ public sealed partial class Game
     private void SandboxFlush()
     {
         var w = SbW;
+        if (Constructs.BakedNew.Count > 0)
+        {
+            foreach (var hash in Constructs.BakedNew)
+                if (!Net.IsOffline && BakedParts.Find(hash) is { } d)
+                {
+                    BakedParts.Write(w, d); // (before the bodies that name it: BakedParts.cs)
+                    Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+                }
+            Constructs.BakedNew.Clear();
+        }
         foreach (var id in Constructs.Removed)
         {
             ConstructNet.WriteGone(w, id);
@@ -830,6 +842,13 @@ public sealed partial class Game
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        BakedParts.NoteInUse(Constructs); // (a baked part brought by a blueprint or another world, which no oven here made)
+        foreach (var hash in Constructs.Baked)
+            if (BakedParts.Find(hash) is { } bd)
+            {
+                BakedParts.Write(w, bd); // (the baked designs, before any body or store that names one: BakedParts.cs)
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
         ShellSendAll(to); // (who wears a robot shell: GameRobotShell.cs)
         GantrySendAll(to); // (Shell Gantries at work: GameShellGantry.cs)
         PodSendAll(to); // (shell pods at work: GameShellPod.cs)

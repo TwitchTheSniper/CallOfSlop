@@ -452,7 +452,7 @@ else {
       if (top === "loose") {
         fillKind("parts"); sel.value = "parts"; sel3.hidden = true; current = null;
         const id = /^part-(.+)$/.exec(rest || "")?.[1];
-        if (id && partById.has(id)) { sel2.value = "loose--part-" + id; show(await load(partById.get(id))); } else say("No parts yet");
+        if (id && partById.has(id)) { sel2.value = "loose--part-" + id; show(await load(partById.get(id))); } else say(idx.ships.length ? "No parts yet" : "Nothing in the gallery yet");
         return;
       }
       fillKind("ships"); sel.value = "ships"; sel2.value = top; sel3.hidden = false; await fillShip(top);

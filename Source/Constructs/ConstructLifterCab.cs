@@ -222,6 +222,9 @@ public static partial class ConstructLifters
             Construct? best = null;
             var bestD = CabGrabReach * CabGrabReach;
             var many = false;
+            Construct? group = null; // (a welded group under the hook: carried whole, as a container is, and packed by the pad it is set on)
+            var groupD = CabGrabReach * CabGrabReach;
+            string? groupWhy = null;
             foreach (var lo in world.Bodies)
             {
                 if (lo == c || lo.Anchored || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.Driver != 255)
@@ -236,6 +239,13 @@ public static partial class ConstructLifters
                     continue;
                 if (lo.PartCount != 1)
                 {
+                    if (dd < groupD && lo.CarriedBy == 0 && !lo.Anchored && BakedParts.GroupWhy(world, lo) is var gw)
+                    {
+                        if (gw == null)
+                            (group, groupD) = (lo, dd);
+                        else
+                            groupWhy ??= gw;
+                    }
                     many = true;
                     continue;
                 }
@@ -266,6 +276,11 @@ public static partial class ConstructLifters
                 world.Remove(best);
                 CabHold(l, d, Clamp(ld, l, Vector3.Transform(bp - lp, inv)), Quaternion.Normalize(inv * br));
                 CabSay(l, LiftWhy.CabGrabbed, $"took the {d.Name}");
+                return;
+            }
+            if (group != null && (best == null || groupD < bestD))
+            {
+                CabTakeGroup(world, c, l, ld, group, lp, inv);
                 return;
             }
             // A pick point's piece: a rack or pad under the hook, a machine's tray.
@@ -307,7 +322,7 @@ public static partial class ConstructLifters
                             return;
                         }
             }
-            CabSay(l, LiftWhy.CabNothing, many ? "only a single piece: that is a construct" : "nothing to take under the hook");
+            CabSay(l, LiftWhy.CabNothing, groupWhy != null ? $"a welded group, but {groupWhy}" : many ? "only a single piece or a welded group: that is a craft" : "nothing to take under the hook");
             return;
         }
         if (ConstructParts.Get(l.Def) is not { } pd)
@@ -402,6 +417,31 @@ public static partial class ConstructLifters
         CabSay(l, LiftWhy.CabGrabbed, $"took the {d.Name} ({body.Mass / 1000f:0.#} t)");
     }
 
+    /// <summary>Server: F over a welded group: the hook carries it whole, as a container (its size and mass as packed, PackedGroups.cs).</summary>
+    private static void CabTakeGroup(ConstructWorld world, Construct c, CLift l, LifterDef ld, Construct body, Vector3 lp, Quaternion inv)
+    {
+        if (BakedParts.PackOf(world, body, Quaternion.Identity, out var why) is not { } pd)
+        {
+            CabSay(l, LiftWhy.CabNotNew, $"a welded group, but {why}");
+            return;
+        }
+        if (body.Mass > ld.Payload || !Carries(ld, pd))
+        {
+            CabSay(l, LiftWhy.CabTooBig, CarryRefusal(ld, pd));
+            return;
+        }
+        var at = Vector3.Transform(body.Pos - lp, inv);
+        (l.From, l.To, l.FromRot, l.ToRot) = (at, at, Quaternion.Normalize(inv * body.Rot), Quaternion.Normalize(inv * body.Rot));
+        (l.Start, l.Dur, l.Age, l.State, l.Def) = (Now, Every, Every, LiftState.Carry, (ushort)0);
+        l.CarryBody = body.Id;
+        body.Frozen = true;
+        body.HeldBy = c.Id;
+        body.Vel = body.AngVel = Vector3.Zero;
+        if (!world.BodyCarries.Contains(l))
+            world.BodyCarries.Add(l);
+        CabSay(l, LiftWhy.CabGrabbed, $"took a welded group of {body.PartCount} parts ({body.Mass / 1000f:0.#} t)");
+    }
+
     /// <summary>Server: the hook lets go of the body it carries (F in the cab, the cab left): it falls free at the carrier's speed.</summary>
     private static void CabLetGo(ConstructWorld world, Construct c, CLift l, string what)
     {
@@ -412,7 +452,7 @@ public static partial class ConstructLifters
             body.Vel = c.Vel;
             body.AngVel = Vector3.Zero;
             body.Wake();
-            CabSay(l, LiftWhy.CabDropped, $"{what}: the {body.DefOf(0).Name}");
+            CabSay(l, LiftWhy.CabDropped, body.PartCount > 1 ? $"{what}: the welded group" : $"{what}: the {body.DefOf(0).Name}");
             l.Moves++;
         }
         l.CarryBody = 0;

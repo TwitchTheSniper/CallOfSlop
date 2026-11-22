@@ -66,6 +66,7 @@ public sealed class LaserCutterParts : IPartGenerator
         p.Add(Box([-e + 0.04, 1.1, cz + 0.046], [e - 0.04, 2.0, 0.957]));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [0.5, 0.5, 0], "+x"); // (the bed's first Laser Bed Block)
+        p.Sock("-z", [0, 0.5, -1], "-z"); // (a Roller Tile's run butted on its Piece in: RollerRuns.Butted)
         p.Stats(2200, 2200, 6, 10);
         var bulkCap = CoreBin + BlockBin * 128;
         var bulk = Kw(("material", "any"), ("capacity", bulkCap), ("min", Py.L(-0.4, 0.2, R(cz + 0.08))), ("max", Py.L(0.4, 1.0, 0.9)));

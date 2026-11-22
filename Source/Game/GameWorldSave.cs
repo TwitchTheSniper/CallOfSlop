@@ -563,6 +563,9 @@ public sealed partial class Game
             case WorldSaveWriter.Misc:
                 nextTag = r.U16();
                 break;
+            case WorldSaveWriter.BakedTag:
+                BakedParts.ReadSave(r, Constructs); // (the baked designs, before the names that make their parts: BakedParts.cs)
+                break;
             case WorldSaveWriter.DesignsTag:
                 PanelDesigns.ReadSave(r, Constructs); // (the world's shared panel designs: PanelDesigns.cs)
                 break;

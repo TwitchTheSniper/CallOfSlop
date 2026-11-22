@@ -48,6 +48,7 @@ public sealed partial class Ui
             return;
         _bstListed = true;
         _bstList.Clear();
+        _bstList.Add((HullLoft.DressJobName, "Hull dress", HullLoft.DressJobName.ToLowerInvariant())); // (the Dress job: ConstructStation.Dress.cs)
         foreach (var bp in ConstructBuild.Blueprints)
             _bstList.Add((bp.Name, bp.Group.Length > 0 ? bp.Group : "Blueprints", bp.Name.ToLowerInvariant()));
         _bstList.Sort(static (a, b) => string.CompareOrdinal(a.Group, b.Group) is var g and not 0 ? g : string.CompareOrdinal(a.Name, b.Name));
@@ -141,7 +142,12 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.BeginChild("##stbill"u8, new float2(0, -foot), ImGuiChildFlags.Borders))
             {
-                if (_bstQuick.Length > 0)
+                if (_bstSel >= 0 && _bstSel < _bstList.Count && _bstList[_bstSel].Name == HullLoft.DressJobName)
+                {
+                    ImGuiSafe.TextColored(StHead, "Dress skins: lay a hull dress on plain skins");
+                    ImGuiSafe.TextWrapped("Each plain hull skin set down in the bay or brought into the hold is dressed in the station's Dress settings (style, salt, extras: the configure tool): its armour panels, rails, light strip and extra bits go on as subparts, laid from steel in a linked bin (free in creative). Then a Bake Oven bakes the piece. Build N dresses N skins; forever keeps dressing.");
+                }
+                else if (_bstQuick.Length > 0)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, StBad);
                     ImGuiSafe.TextWrapped(_bstQuick);
@@ -168,7 +174,8 @@ public sealed partial class Ui
                 }
             }
             ImGui.EndChild();
-            var can = _bstSel >= 0 && _bstQuick.Length == 0 && _bstPreview.Ready && _bstPreview.Why.Length == 0 && !busy;
+            var dressPick = _bstSel >= 0 && _bstSel < _bstList.Count && _bstList[_bstSel].Name == HullLoft.DressJobName;
+            var can = _bstSel >= 0 && (dressPick || _bstQuick.Length == 0 && _bstPreview.Ready && _bstPreview.Why.Length == 0) && !busy;
             ImGui.BeginDisabled(!can);
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
             start = ImGui.Button("Start"u8, new float2(120 * _scale, 0));
@@ -215,7 +222,8 @@ public sealed partial class Ui
             _bstFilledAt = 0;
             _bstQuick = "";
             var pickName = _bstList[pick].Name;
-            _bstFinding = Task.Run(() => ConstructStation.Find(pickName)); // (a player's blueprint with uses is resolved and flattened: never in a frame)
+            if (pickName != HullLoft.DressJobName) // (the Dress job has no blueprint until a skin comes)
+                _bstFinding = Task.Run(() => ConstructStation.Find(pickName)); // (a player's blueprint with uses is resolved and flattened: never in a frame)
         }
         if (_bstFinding is { IsCompleted: true } finding)
         {
