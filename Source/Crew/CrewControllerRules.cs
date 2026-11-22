@@ -142,7 +142,7 @@ public sealed class ControllerRules
         return list;
     }
 
-    private static void PartGoods(ConstructPartDef d, float times, int depth, Dictionary<byte, float> sum)
+    internal static void PartGoods(ConstructPartDef d, float times, int depth, Dictionary<byte, float> sum)
     {
         if (depth >= 4 || AssemblingTable.Current.Of((ushort)d.Id) is not { } r)
             return;
