@@ -1110,6 +1110,8 @@ public static unsafe partial class Program
         var carried = inv.TotalMaterials;
         var hands = g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Hands; // (hands out: the click takes a stored part, as F does)
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48) ^ (hands ? 1L << 60 : 0);
+        if (hit.Body.DefOf(hit.Part).IsAssembler && AssemblerToolBay.HeldIn(g.Constructs, hit.Body, hit.Part) is { } toolIn)
+            key ^= (long)toolIn.GetHashCode() * 0x9E3779B97F4AL; // (its line names the store holding the tool block it wants: another store's change)
         if (hit.Body.DefOf(hit.Part).IsGrower)
             key ^= (long)ConstructFluid.Aboard(hit.Body, Fluid.Water) * 40503L; // (its line says the water aboard, which a tank changes, not the store)
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)

@@ -82,7 +82,18 @@ public static class Pressed
         if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
             return false;
         var aspect = k.L / (float)across;
-        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L));
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L))
+            && (!p.PresetsOnly || IsPresetBlank(die, p, k));
+    }
+
+    /// <summary>Is <paramref name="k"/> one of this pattern's presets' blanks (a <see cref="PressPattern.PresetsOnly"/> pattern takes only those).</summary>
+    private static bool IsPresetBlank(PressDie die, PressPattern p, in ExtrusionKey k)
+    {
+        var plain = k with { Growing = false };
+        foreach (var q in die.Presets)
+            if (q.Pattern == p && q.Blank == plain)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -122,6 +133,8 @@ public static class Pressed
             return $"a {p.Like.Name} blank keeps its shape ({p.Preset.W}x{p.Preset.H}x{p.Preset.L}): {want.W / 100f:0.00} x {want.H / 100f:0.00} x {want.L / 100f:0.00} m";
         if (PressClass(across) < 0)
             return "too large for any press";
+        if (p.PresetsOnly && !IsPresetBlank(die, p, k))
+            return $"a {p.Label} is pressed at its catalogue sizes only: {string.Join(", ", die.Presets.Where(q => q.Pattern == p).Select(q => BlankText(q.Blank)))}";
         return null;
     }
 
