@@ -48,7 +48,7 @@ public sealed partial class Game
                 LedgerBreak(run, c); // (a person comes near part way: it flies the rest from where it is, nothing moved before their eyes)
             else if (run.Trip is { } going)
             {
-                if (s.Flight is not { } tf || !LedgerTripStep(tf, run, c, going, planet))
+                if (LedgerAll || s.Flight is not { } tf || !LedgerTripStep(tf, run, c, going, planet)) // (on the fast clock space time stands still: it is put at its station)
                     LedgerArrive(s, run, c, def, d, planet); // (its path's end, or its path lost: it is put at its station)
             }
             else if (ServerTick >= run.LedgerUntil)
