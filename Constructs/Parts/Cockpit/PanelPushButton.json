@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Panel Push Button",
+  "description": "A big red button.",
+  "group": "Logic",
+  "section": "Cockpit instruments",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 0.5,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "button"
+  },
+  "config": [
+    {
+      "key": "latched",
+      "label": "Latched",
+      "group": "General",
+      "default": false,
+      "tooltip": "On: each press turns it on or off. Off: it springs back after its hold time."
+    },
+    {
+      "key": "hold",
+      "label": "Stays on for",
+      "group": "General",
+      "unit": "s",
+      "min": 0.05,
+      "max": 30,
+      "step": 0.05,
+      "default": 0.5,
+      "tooltip": "How long a press keeps it on (when not latched)."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        -0.025,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.025,
+        0.05
+      ]
+    },
+    {
+      "min": [
+        -0.015,
+        0.024,
+        -0.015
+      ],
+      "max": [
+        0.015,
+        0.045,
+        0.015
+      ],
+      "color": "#c9ced4",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.045,
+        -0.04
+      ],
+      "max": [
+        0.04,
+        0.0625,
+        0.04
+      ],
+      "color": "#d0352c",
+      "detail": true,
+      "use": true,
+      "rig": "press",
+      "travel": 0.015
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.05,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.05,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.05
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.05
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.025,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
