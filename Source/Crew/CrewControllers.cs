@@ -110,6 +110,17 @@ public interface IPowerHost
         return false;
     }
 
+    /// <summary>
+    /// Ships use goods from stations (Karl, 2026-11-22): <paramref name="share"/> of <paramref name="goods"/> (a blueprint's materials) taken from
+    /// the stock of the stations <paramref name="power"/> holds, all or nothing. A material none of its stations trades isn't taken (its stock pays
+    /// for it as before). False: a station's material it trades is short (<paramref name="shortOf"/>), and nothing was taken.
+    /// </summary>
+    bool TakeGoods(byte power, (byte Material, float Units)[] goods, float share, out byte shortOf)
+    {
+        shortOf = 0;
+        return true;
+    }
+
     /// <summary>Phase 5: where person <paramref name="player"/> is (alive, here); false: not.</summary>
     bool PersonAt(byte player, out Vector3 at)
     {
@@ -293,6 +304,7 @@ public sealed partial class PowerControllers
     /// <summary>A server tick: one power thinks when its turn comes (each every <see cref="ControllerRules.ThinkSeconds"/>).</summary>
     public void Step(CrewWorld crew, ConstructWorld w, PowerRelations rel, IPowerHost host)
     {
+        _host = host;
         Tick++;
         Ticks++;
         if (!On || Count == 0)
@@ -710,6 +722,27 @@ public sealed partial class PowerControllers
         crew.Events.Add($"powers: {Name(a)}'s {Blueprints[s.Bp].Name} is out as construct {c.Id}");
     }
 
+    private IPowerHost? _host; // (the last step's: a ship's goods are taken through it, TakeGoods)
+    private readonly long[] _goodsSaidAt = new long[256]; // (when each power last said it waits for goods: once a minute)
+
+    /// <summary>
+    /// A ship's goods (<see cref="ControllerRules.GoodsOf"/>, times <paramref name="share"/> of a whole build) taken from power <paramref name="a"/>'s
+    /// stations. False: short of one, nothing taken, and the wait is logged at most once a minute a power.
+    /// </summary>
+    private bool TakeGoods(byte a, int bp, float share)
+    {
+        if (_host == null || Rules.GoodsShare <= 0 || share <= 0)
+            return true;
+        if (_host.TakeGoods(a, Rules.GoodsOf(Blueprints[bp]), share * Rules.GoodsShare, out var shortOf))
+            return true;
+        if (Tick >= _goodsSaidAt[a])
+        {
+            _goodsSaidAt[a] = Tick + 60L * T;
+            Log.Add($"{Name(a)} can't build a {Blueprints[bp].Name}: its stations are short of {RecyclingTable.Current.NameOf(shortOf)}");
+        }
+        return false;
+    }
+
     /// <summary>A ship of <paramref name="role"/> for mission <paramref name="m"/>: one out and free, else one from the hangar (its repair paid), else one bought
     /// and built (its bill paid) within the caps. False: none now (no ship, no stock: spending never runs past what it has).</summary>
     private bool Field(Power p, byte a, ShipRole role, int m)
@@ -725,7 +758,7 @@ public sealed partial class PowerControllers
             {
                 ref var s = ref p.Ships[i];
                 var repair = (1 - s.Hull) * Bills[s.Bp].Units * Rules.RepairShare;
-                if (p.Stock < repair)
+                if (p.Stock < repair || !TakeGoods(a, s.Bp, (1 - s.Hull) * Rules.RepairShare))
                     continue;
                 p.Stock -= repair;
                 p.Spent += repair;
@@ -744,6 +777,8 @@ public sealed partial class PowerControllers
         for (var i = 0; i < MaxShips; i++)
             if (p.Ships[i].State == PowerShipState.None)
             {
+                if (!TakeGoods(a, bp, 1))
+                    return false; // (its stations are short: it waits, so cutting a supply line starves its yards)
                 p.Stock -= bill.Units;
                 p.Spent += bill.Units;
                 p.Bought++;

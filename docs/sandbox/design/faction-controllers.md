@@ -454,6 +454,11 @@ to start testing logistics runs with ships.
   arriving in a world in orbit at its station, buying at stations, and the powers' haulers: real crewed ships on a route between two stations,
   docking at the one in the world being played and trading by orbit at the other, their cargo moving both markets' stock and the powers'
   books (station.md "Markets"). Players can see goods move, and raid or escort the runs.
+- **Ships use goods from stations (Karl, 2026-11-22).** A power's stock still pays a ship's bill, but building or repairing one also takes its
+  materials (its parts' Assembling recipes down to bulk materials: `ControllerRules.GoodsOf`, times `Controllers.json` cost `"goods"`) from the
+  stock of the stations it holds (`IPowerHost.TakeGoods`, Game/GameCrewPowers.cs), all or nothing. A material none of its stations trades isn't
+  taken; one they trade but are short of makes it wait ("can't build ...: its stations are short of steel", once a minute), so cutting its
+  supply lines starves its yards. A power with no station (the Raiders) builds from its stock alone.
 - **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
   stations and runs kept in saves.
 

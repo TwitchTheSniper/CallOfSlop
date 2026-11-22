@@ -55,6 +55,7 @@ public sealed class ControllerRules
     public float SpawnFromPeople = 600, DockFromPeople = 400, DockRange = 150; // m
     public float PlaceNear = 1200, PlaceFar = 2200; // m from the first person: a power's places on an open world its plan names none on
     public float CostPerUnit = 1, BuildSecondsScale = 0.05f, MinBuildSeconds = 8, RepairShare = 1;
+    public float GoodsShare = 1; // the share of a ship's materials its power takes from its stations' stock as it builds (Karl, 2026-11-22; 0: none)
     public float ConvoyEveryMinutes = 4, CargoValue = 900, RaidSight = 3000, RaidLoot = 0.5f, RaidTake = 0.9f, CallRange = 5000, DefendMinutes = 4, QuietSeconds = 40;
     public float GatherMinutes = 4, RunMinutes = 12, PatrolMinutes = 8, RazeSeconds = 180, RazeRange = 300, DwellSeconds = 8;
     public readonly Dictionary<string, PowerPlan> Kinds = new(StringComparer.OrdinalIgnoreCase);
@@ -121,6 +122,37 @@ public sealed class ControllerRules
         return b;
     }
 
+    private readonly Dictionary<string, (byte Material, float Units)[]> _goods = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// A blueprint's materials (Karl, 2026-11-22: "ships use goods from stations"): every part's Assembling recipe down to its bulk
+    /// materials, by material, most first. A power building it takes these from its stations' stock (<see cref="IPowerHost.TakeGoods"/>).
+    /// Made once a blueprint, never in a tick.
+    /// </summary>
+    public (byte Material, float Units)[] GoodsOf(ConstructBuild.Blueprint bp)
+    {
+        if (_goods.TryGetValue(bp.Name, out var had))
+            return had;
+        var sum = new Dictionary<byte, float>();
+        foreach (var step in bp.Steps)
+            if (ConstructParts.Find(step.Part) is { } d)
+                PartGoods(d, 1, 0, sum);
+        var list = sum.Where(kv => kv.Value > 0).Select(kv => (kv.Key, kv.Value)).OrderByDescending(x => x.Value).ToArray();
+        _goods[bp.Name] = list;
+        return list;
+    }
+
+    private static void PartGoods(ConstructPartDef d, float times, int depth, Dictionary<byte, float> sum)
+    {
+        if (depth >= 4 || AssemblingTable.Current.Of((ushort)d.Id) is not { } r)
+            return;
+        var each = times / Math.Max(1, r.Count);
+        foreach (var (mat, n) in r.Materials)
+            sum[mat] = sum.GetValueOrDefault(mat) + n * each;
+        foreach (var (part, n) in r.Parts)
+            PartGoods(part, n * each, depth + 1, sum);
+    }
+
     private (float, float) PartBill(ConstructPartDef d, int depth)
     {
         if (_partBills.TryGetValue(d.Id, out var had))
@@ -183,6 +215,7 @@ public sealed class ControllerRules
                 r.BuildSecondsScale = Num(c, "buildSecondsScale", r.BuildSecondsScale, 0, 100);
                 r.MinBuildSeconds = Num(c, "minBuildSeconds", r.MinBuildSeconds, 0, 36000);
                 r.RepairShare = Num(c, "repairShare", r.RepairShare, 0, 10);
+                r.GoodsShare = Num(c, "goods", r.GoodsShare, 0, 10);
             }
             if (root.TryGetProperty("missions", out var m))
             {
