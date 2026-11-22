@@ -488,7 +488,7 @@ public sealed class PowerContracts
             }
             All[k++] = new Contract
             {
-                Kind = kind, State = state, Power = map[a], Target = kind == ContractKind.Raid ? map[b] : kind == ContractKind.Deliver && b < StationMarkets.All.Length ? (byte)(b + 1) : (byte)0, // (a delivery's station by index) Party = party, Taker = 255, TakerName = name, Material = mat,
+                Kind = kind, State = state, Power = map[a], Target = kind == ContractKind.Raid ? map[b] : kind == ContractKind.Deliver && b < StationMarkets.All.Length ? (byte)(b + 1) : (byte)0, /* (a delivery's station by index) */ Party = party, Taker = 255, TakerName = name, Material = mat,
                 Units = units, Uid = uid, Pay = pay, Progress = progress, Need = need, At = at, Serial = ++_serial == 0 ? ++_serial : _serial,
                 Until = _tickForSave + (long)left * T, StateAt = _tickForSave,
             };
