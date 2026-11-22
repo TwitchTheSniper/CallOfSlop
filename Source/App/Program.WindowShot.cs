@@ -975,6 +975,12 @@ public static unsafe partial class Program
                     _wsWait = 1;
                     return;
                 }
+                if (verb == "ladderclimb" && ConstructRide.OpenWay(g.Constructs, c, part))
+                {
+                    WsSay("ladder: F opens the way (its hatches and sections)"); // (as F on it does: GameSandbox Use)
+                    _wsWait = 1;
+                    return;
+                }
                 if (verb == "ladderclimb")
                 {
                     var why = g.SandboxGrabOn(me, c, part, ladder: true);

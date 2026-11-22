@@ -69,7 +69,7 @@ public static partial class ConstructRide
         if (ConstructDoor.EventDoor(c, part) is var hatch and >= 0 && hatch != part && (ConstructDoors.IsMoving(c, hatch) || !ConstructDoors.SettledOpen(c, hatch)))
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
         if (NextLid(c, part) is var lid and >= 0)
-            return ConstructDoors.IsMoving(c, c.Doors[lid].Part) ? "the hatch is still moving" : "the hatch is shut: F opens it"; // (a deck hatch over its shaft, a belly door under it: F on the ladder opens them first, GameSandbox Use; crews too, CrewNav)
+            return ConstructDoors.IsMoving(c, c.Doors[lid].Part) ? "the hatch is still moving" : ConstructDoors.Locked(c, c.Doors[lid].Part) ? "the hatch is locked" : "the hatch is shut: F opens it"; // (a deck hatch over its shaft, a belly door under it: F on the ladder opens them first, GameSandbox Use; crews too, CrewNav)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
@@ -145,7 +145,7 @@ public static partial class ConstructRide
     {
         var any = false;
         for (var k = NextLid(c, ladder); k >= 0; k = NextLid(c, ladder, k + 1))
-            if (!ConstructDoors.TargetOpen(c, c.Doors[k].Part))
+            if (!ConstructDoors.TargetOpen(c, c.Doors[k].Part) && !ConstructDoors.Locked(c, c.Doors[k].Part)) // (a locked lid stays shut: F on the ladder is no key)
             {
                 ConstructDoors.Command(world, c, k, true);
                 any = true;
