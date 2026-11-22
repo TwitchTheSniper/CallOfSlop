@@ -718,6 +718,8 @@ public static partial class ConstructRender
             ref readonly var box = ref d.Boxes[b];
             if (box.Hidden || box.IsLeaf && !railShown)
                 continue; // (a shaped part's stepped collision: its shape is drawn instead)
+            if (_workOnly && !WorkBox(d, b))
+                continue; // (a merged machine block: its other boxes are in its chunk, ConstructRenderBatch.WorkSplits)
             if (frame && box.Middle)
                 continue;
             if (boxSlots != null && boxSlots[b] < 8 && (hideSlots >> boxSlots[b] & 1) != 0)
@@ -895,6 +897,7 @@ public static partial class ConstructRender
 
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
     private const int ShearCm = 25;
+    private static bool _workOnly; // DrawPart draws only the work boxes and status lamp (a merged machine block: ConstructRenderBatch.WorkSplits)
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
     private static float _hubRise; // a Grow Former's hub raised on its slide (m), for the part being drawn: its "slide" boxes and riding chuck
     private static bool _laserOn, _laserActive; // a Laser Bed Block being drawn: its bridge and head move, its head the one cutting

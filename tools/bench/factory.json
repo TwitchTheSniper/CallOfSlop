@@ -1,0 +1,15 @@
+{
+  "about": "The Zero Day Works on the Proving Ground in creative (its \"blueprint\" is spawned in front of the player; \"body big\" is the body with the most parts): the frame cost of one 5,500-part works body seen from outside, over its roof and inside its bays. docs/perf/BENCHMARK.md",
+  "map": "Proving Ground",
+  "survival": false,
+  "calm": true,
+  "blueprint": "Zero Day Works",
+  "size": "1600x900",
+  "settle": 600,
+  "frames": 600,
+  "spots": [
+    { "name": "works_outside", "view": "body big | 160,40,200" },
+    { "name": "works_over", "view": "body big | 120,60,0" },
+    { "name": "works_inside", "view": "body big | 30,8,90" }
+  ]
+}

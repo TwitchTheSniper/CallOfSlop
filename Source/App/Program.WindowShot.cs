@@ -261,7 +261,7 @@ public static unsafe partial class Program
                     {
                         if (_wsSetDownSince == 0)
                             _wsSetDownSince = System.Diagnostics.Stopwatch.GetTimestamp();
-                        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsSetDownSince).TotalSeconds > 10)
+                        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsSetDownSince).TotalSeconds > (game.VehicleSpawn.Pending > 0 ? 300 : 10)) // (a big blueprint goes down a slice a tick: the Zero Day Works takes longer than 10 s on the cloud box)
                             WsFail($"the {_wsBlueprint} wasn't set down ({string.Join("; ", game.SandboxHands.Notices.Select(n => n.Item2))})");
                         return;
                     }
