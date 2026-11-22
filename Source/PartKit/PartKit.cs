@@ -139,6 +139,7 @@ public static class PartKit
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
         new Generators.SubmoduleShowcase(),
         new Generators.HallShowcase(), // (the Hall Bay: the Hall Crane, pads and roller runs on the block rules)
+        new Generators.ZeroDayWorks(), // (the Zero Day works: the factory that builds the frigate, Sean 2026-11-22; after the machines it lays)
         new Generators.LinkedLogisticsShowcase(), // (linked logistics: a works, a yard and a hauler) // (sub-blueprints: a pod, a skiff that uses it twice, a yard of two stations and an arm)
     ];
 

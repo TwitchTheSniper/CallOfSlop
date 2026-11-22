@@ -184,6 +184,28 @@ public sealed class FactoryShellParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// A Works Floor Slab (the Zero Day works, Sean 2026-11-22): an 8 x 8 m concrete foundation, 0.3 m thick as a Foundation is, with a top
+    /// socket every metre (the 2 m machine cells' middles among them) and one socket a side, so a big site's floor is a sixteenth of the
+    /// Foundations' parts and an eighth of their links (2 m Foundations met by four sockets an edge and filled a 96 x 239 m site's
+    /// 48,000 links before its machines were on).
+    /// </summary>
+    private static Part FloorSlab()
+    {
+        const double h = 4, t = 0.3;
+        var p = new Part("Works Floor Slab 8 m", Small, "Foundations", "An 8 x 8 m concrete floor slab: anchors a construct to the ground, a socket every metre on its top for machines and blocks.", role: "foundation", material: "concrete", color: Concrete, group: "Building");
+        p.Add(Box([-h, 0, -h], [h, t, h]));
+        for (var i = -3; i <= 3; i++)
+            for (var j = -3; j <= 3; j++)
+                p.Sock($"t{i + 3}{j + 3}", [i, t, j], "+y");
+        p.Sock("+x", [h, t * 0.5, 0], "+x");
+        p.Sock("-x", [-h, t * 0.5, 0], "-x");
+        p.Sock("+z", [0, t * 0.5, h], "+z");
+        p.Sock("-z", [0, t * 0.5, -h], "-z");
+        p.Stats(9600, 24000, 15);
+        return p;
+    }
+
     public void Make(PartOutput o)
     {
         var shell = new List<(string, Part)> { ("", Column()) };
@@ -206,6 +228,7 @@ public sealed class FactoryShellParts : IPartGenerator
             ("", Grate(6.0, 12000)),
             ("", Auger(4.0)),
             ("", Auger(6.0)),
+            ("Floor", FloorSlab()),
         ]);
     }
 }
