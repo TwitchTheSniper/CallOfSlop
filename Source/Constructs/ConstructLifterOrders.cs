@@ -117,7 +117,8 @@ public static partial class ConstructLifters
         }
         if (!PointAt(fb, o.From, out var outAt))
             return LiftOrderWhy.Unreached;
-        // A machine's out: the loose piece it dropped there, else its output tray (a press's or an Assembler's).
+        // A machine's out: the loose piece it dropped there (or a block Assembler left on its bed), else its output tray (a press's or an Assembler's).
+        var zone = OutZone.Of(fb, o.From.Part, outAt);
         var bodies = world.Bodies;
         for (var bi = 0; bi < bodies.Count; bi++)
         {
@@ -125,8 +126,7 @@ public static partial class ConstructLifters
             if (lo.PartCount != 1 || lo == fb || lo == c || lo.Parts[0].Def != o.Def || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Anchored || lo.Parts[0].Broken || PickWhy(world, lo) != null
                 || o.To.Kind is LiftPointKind.Rack or LiftPointKind.Tray && (lo.Parts[0].Health < d.Health * 0.999f || lo.Parts[0].Paint != 0)) // (the one pick rule; a damaged or painted piece never becomes a count)
                 continue;
-            var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
-            if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
+            if (!zone.Holds(lo, d) || lo.Vel.LengthSquared() > 0.25f)
                 continue;
             Freeform.PartWorld(lo, 0, out var pp, out var pr);
             var at = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
@@ -336,13 +336,13 @@ public static partial class ConstructLifters
         }
         if (pt.Kind != LiftPointKind.Out || !PointAt(b, pt, out var outAt))
             return 0;
+        var zone = OutZone.Of(b, pt.Part, outAt); // (a block Assembler's bed too)
         foreach (var lo in world.Bodies)
         {
             if (lo.PartCount != 1 || lo == b || lo.Parts[0].Broken || lo.Anchored)
                 continue;
             var d = lo.DefOf(0);
-            var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
-            if (Vector3.DistanceSquared(lo.WorldCom, outAt) <= reach * reach)
+            if (zone.Holds(lo, d))
                 Add(lo.Parts[0].Def, 1);
         }
         var md = b.DefOf(pt.Part);
