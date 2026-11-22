@@ -424,7 +424,7 @@ public static class ConstructDoors
             if (p.D.Door is not { Gear: 2, Held: true } dd || dd.Shift == Vector3.Zero || !SettledOpen(c, part))
                 continue;
             c.PartBounds(part, out var mn, out var mx);
-            var sole = c.ToWorld(new Vector3((mn.X + mx.X) * 0.5f, mn.Y, (mn.Z + mx.Z) * 0.5f));
+            var sole = c.SegToWorld(p.Seg, new Vector3((mn.X + mx.X) * 0.5f, mn.Y, (mn.Z + mx.Z) * 0.5f));
             var give = dd.SpringTravel;
             if (ConstructPhysics.DeckUnder(world, c, sole - down * (give + 0.5f), down, give + 0.5f + GearStandClear) != null)
                 return true;
@@ -626,9 +626,9 @@ public static class ConstructDoors
     {
         ref var p = ref c.Parts[part];
         var dd = p.D.Door!;
-        if (!SettledOpen(c, part))
-            return p.Pos;
-        return dd.Held ? p.Pos - Rot24.Apply(p.Rot, dd.Shift) : dd.Slide ? p.Pos - Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis)) * dd.Travel : p.Pos;
+        var at = !SettledOpen(c, part) ? p.Pos
+            : dd.Held ? p.Pos - Rot24.Apply(p.Rot, dd.Shift) : dd.Slide ? p.Pos - Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis)) * dd.Travel : p.Pos;
+        return c.ToRest(p.Seg, at); // (a door on a freeform weld sits in its weld's frame)
     }
 
     private static void StepBody(ConstructWorld world, Construct c)
@@ -749,7 +749,9 @@ public static class ConstructDoors
         Delta(c, part, open: false, out var r, out var pivot, out var shift);
         c.PartBounds(part, out var mn, out var mx);
         var centre = pivot + Rot24.Apply(r, (mn + mx) * 0.5f - pivot) + shift;
-        var half = Rot24.ApplyHalf(r, (mx - mn) * 0.5f) + new Vector3(PlayerHalf);
+        var half = Rot24.ApplyHalf(r, (mx - mn) * 0.5f);
+        ModuleSockets.RestAabb(c, c.Parts[part].Seg, ref centre, ref half); // (a door on a freeform weld: from its weld's frame to the body's)
+        half += new Vector3(PlayerHalf);
         var back = Quaternion.Conjugate(c.Rot);
         var up = Vector3.Transform(Vector3.UnitY, back);
         for (var i = 0; i < world.PlayerSpotCount; i++)
