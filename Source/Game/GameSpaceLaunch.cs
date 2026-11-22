@@ -53,7 +53,7 @@ public sealed partial class Game
             if (c.Dirty)
                 c.Rebuild();
             var torque = Vector3.Zero;
-            var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt, out torque) : Vector3.Zero;
+            var force = c.ThrusterCount > 0 && !c.LedgerCoast ? ConstructPhysics.SpaceThrust(c, dt, out torque) : Vector3.Zero; // (on a ledger path its burns are the path's: GameHaulLedger.cs)
             var a = c.Mass > 0 ? Vec3d.From(force) / c.Mass : Vec3d.Zero;
             f.Ships.Thrust[i] = pose.Rot.Rotate(a); // (game axes to the ecliptic's)
             c.SpaceAccel = a.ToVector3(); // (what its drive gives it this tick: what loose bodies aboard feel, ConstructFrames.cs)

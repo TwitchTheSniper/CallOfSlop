@@ -40,6 +40,7 @@ public sealed partial class Game
         public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
         public bool Ledger; // its last leg was taken on the ledger (nobody near): its escorts fly nothing (GameHaulLedger.cs)
         public long LedgerUntil; // on a ledger leg: when it gets there (0: not on one)
+        public LedgerTrip? Trip; // a ledger leg round one planet in play: its path, burns and coast in space time (GameHaulLedger.cs)
         public bool Flying; // this leg is flown from here on (a person saw it): it doesn't go on the ledger part way (GameHaulLedger.cs)
         public long LegAt; // when this leg began (0: not known), and its fuel then: a leg flown out of the bubble before the ledger takes it is not paid twice
         public float LegFuel;
@@ -424,6 +425,7 @@ public sealed partial class Game
     {
         if (EscortOnLedger(e))
             return; // (its hauler's legs are on the ledger: it is put beside it at each end, GameHaulLedger.cs)
+        c.LedgerCoast = false; // (its drive its own again)
         var h = StationMarkets.Haulers[e.Route];
         HaulRun? run = null;
         foreach (var r in _hauls)
@@ -584,6 +586,7 @@ public sealed partial class Game
         if (HaulLedger(s, run, c, def, d, planet))
             return; // (nobody near: the leg on a schedule, GameHaulLedger.cs)
         run.Ledger = false;
+        c.LedgerCoast = false;
         if (run.PutAt >= 0)
         {
             HaulPut(s, run, c);
@@ -714,8 +717,8 @@ public sealed partial class Game
         foreach (var e in _escorts)
             if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
                 ready = false;
-        if (!ready && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
-            return;
+        if (!ready && !LedgerAll && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
+            return; // (on the fast clock nothing flies out of the bubble: it goes at once, and the ledger takes its legs, GameHaulLedger.cs)
         var planet = run.PutAt;
         run.PutAt = -1;
         run.AtTo = false;
