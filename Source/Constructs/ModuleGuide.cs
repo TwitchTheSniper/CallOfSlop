@@ -391,7 +391,7 @@ public static class ModuleGuide
                 (best, bestPlug, bestDist) = (o, plug, dist);
         }
         if (best == null)
-            return $"no loose {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module within {pull:0.#} m";
+            return $"no loose {ModuleSocketTable.SizeText(s)} module within {pull:0.#} m";
         if (ConstructEdits.SeatPose(c, s, best, bestPlug, out _, out _, out var rot, out var pos) is { } noTurn)
             return noTurn;
         var mi = ModuleSockets.ModuleOfPart(best, bestPlug);
@@ -422,8 +422,8 @@ public static class ModuleGuide
         if (m.Bridged)
             return "that module is welded to more than its socket";
         var creative = world.Creative && !world.TimedMachines;
-        if (!creative && !ModuleSocketTable.Current.HandSize(s.W, s.L))
-            return $"a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module is too big for the physics gun: a Module Fitter takes it off";
+        if (!creative && !ModuleSocketTable.Current.HandSize(s))
+            return $"a {ModuleSocketTable.SizeText(s)} module is too big for the physics gun: a Module Fitter takes it off";
         if (m.Mass > hands.LiftOf(player, world.Creative))
             return $"the module weighs {m.Mass:0} kg: too heavy for the physics gun ({hands.LiftOf(player, world.Creative):0} kg)";
         var wg = ByWorld.GetOrCreateValue(world);

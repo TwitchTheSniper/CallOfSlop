@@ -71,7 +71,7 @@ public static partial class ConstructRender
             var m = Matrix4x4.CreateScale(0.022f, 0.026f, 0.05f) * Matrix4x4.CreateFromQuaternion(pq) * Matrix4x4.CreateTranslation(pp + Vector3.Transform(k, pq));
             gfx.Draw(m, locked ? LockOn : LockOff);
         }
-        float hw = s.W * 0.5f, hl = s.L * 0.5f;
+        float hw = s.Wm * 0.5f, hl = s.Lm * 0.5f;
         // The depth marks round the liner, and an empty well's floor.
         if (s.Style != ModStyle.Proud && !hide && s.InTheWay < 0)
         {
