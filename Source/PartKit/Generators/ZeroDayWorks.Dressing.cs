@@ -106,6 +106,10 @@ public sealed partial class ZeroDayWorks
             }
         }
 
+        /// <summary>A placing refused for want of room (something in the way, or a face on another's), which a leg or dressing may
+        /// skip; anything else (a part or socket renamed, a cap reached) still throws.</summary>
+        private static bool Refused(VehicleKitException e) => e.Message.Contains(" is in the way") || e.Message.Contains(": z-fighting: ");
+
         /// <summary>Dressing on a socket where it fits (clear of what is there and of z-fighting), else left out.</summary>
         private void Dress(VPart on, string socket, string part, string paint)
         {
@@ -113,7 +117,7 @@ public sealed partial class ZeroDayWorks
             {
                 Paint(Onto(on, socket, part, "back", clear: true), paint);
             }
-            catch (VehicleKitException)
+            catch (VehicleKitException e) when (Refused(e))
             {
                 // (a bed's edge, a wall sheet or a chute there)
             }

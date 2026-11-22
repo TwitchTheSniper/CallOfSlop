@@ -57,7 +57,7 @@ public sealed partial class ZeroDayWorks
             {
                 Paint(Onto(p, socket, "Steel Catwalk Leg", "+y"), Steel);
             }
-            catch (VehicleKitException)
+            catch (VehicleKitException e) when (Refused(e))
             {
                 // (a die or a chute under the walk there: the run is held by its neighbours' legs)
             }
