@@ -68,13 +68,9 @@ The Traders' tug: a stubby head (push bow, crew cab, a raised glass wheelhouse, 
 
 The Salvagers' salvage tug from Karl's picture: boxy yellow hull, glass cockpit, three tool mounts (sockets) on the chin, tank racks on the flanks, two hull drives on the stern; the Satchel's cab and container bay.
 
-## [The ship kit](constructs/ship-kit.md), 4 KB
-
-The base new lofted ships are written on (`Source/PartKit/ShipKit`): a faction's `ShipStyle`, the loft, the split into welded pieces and fittings drawn from each ship's own specs. Method shared, looks not.
-
 ## [The Knacker breaker](constructs/knacker.md), 2 KB
 
-The Salvagers' breaker on the ship kit: two open truss jaws ahead of a plated root, a sorting floor, a crew pod, containers on flank racks; and the Ram Leg landing gear it stands on.
+The Salvagers' breaker: two open truss jaws ahead of a plated root, a sorting floor, a crew pod, containers on flank racks; and the Ram Leg landing gear it stands on.
 
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 

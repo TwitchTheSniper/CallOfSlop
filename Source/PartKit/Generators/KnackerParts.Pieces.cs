@@ -1,17 +1,9 @@
-using CallOfSlop.PartKit.Generators;
 using static CallOfSlop.PartKit.PartKitMath;
 
-namespace CallOfSlop.PartKit.ShipKit;
+namespace CallOfSlop.PartKit.Generators;
 
-/// <summary>
-/// The kit's rooms (floors, wall runs with their doorways and windows, hatch rails) and the ship in welded pieces (the Zero Day's way).
-/// Each big part is drawn whole, then its boxes are dealt out: a deck part keeps its floor (and what stands loose on it) under its own
-/// name; each wall run is a wall piece with what is fixed to it (OnWall); a ceiling is a piece; the hull outside the rooms (the skin,
-/// its armour and the void behind it) is one piece a side per station band. The keel and the roof are cut at the stations. A socket
-/// goes with the piece whose face it is on; wherever two pieces' solid boxes touch they get a facing socket pair (Connect): one pair
-/// places a piece (PlaceOrder, out from the keel), the game welds the rest (ConstructBuild.AutoLink).
-/// </summary>
-public abstract partial class LoftedShip
+/// <summary>The Knacker's rooms and the split of its big parts into welded pieces (SplitDeck, SplitBands), their welds and place order.</summary>
+public sealed partial class KnackerParts
 {
     private readonly record struct WallLine(bool AlongX, double A0, double A1, double C, double Y0, double Y1);
 
@@ -23,7 +15,7 @@ public abstract partial class LoftedShip
     private Dictionary<string, int> pieceSteps = [];
 
     /// <summary>Forgets the pieces of the last run (a generator's Make starts with it).</summary>
-    protected void Reset()
+    private void Reset()
     {
         walls.Clear();
         rooms.Clear();
@@ -37,7 +29,7 @@ public abstract partial class LoftedShip
 
     // ---- rooms
 
-    protected static List<Rect> Minus(List<Rect> rs, Rect h)
+    private static List<Rect> Minus(List<Rect> rs, Rect h)
     {
         var o = new List<Rect>();
         foreach (var r in rs)
@@ -57,7 +49,7 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>A floor (or a ceiling slab) over the plan from y0 to y1, with holes cut in it.</summary>
-    protected static void Floor(Part p, Rect[] plan, double y0, double y1, string color, string finish, params Rect[] holes)
+    private static void Floor(Part p, Rect[] plan, double y0, double y1, string color, string finish, params Rect[] holes)
     {
         var rs = plan.ToList();
         foreach (var h in holes)
@@ -66,11 +58,11 @@ public abstract partial class LoftedShip
             Solid(p, r.X0, y0, r.Z0, r.X1, y1, r.Z1, color, finish);
     }
 
-    protected Gap Door(double a) => new(a, 1.5, 0, DoorH);
+    private Gap Door(double a) => new(a, 1.5, 0, DoorH);
 
     /// <summary>A wall 0.25 m thick centred on c, along x (alongX) or z from a0 to a1, from the floor's top y0 to y1, with its gaps;
     /// a dado on both faces, dark jambs and a hazard head on each doorway, glass in a window.</summary>
-    protected void WallRun(Part p, bool alongX, double a0, double a1, double c, double y0, double y1, params Gap[] gaps)
+    private void WallRun(Part p, bool alongX, double a0, double a1, double c, double y0, double y1, params Gap[] gaps)
     {
         (walls.TryGetValue(p, out var ws) ? ws : walls[p] = []).Add(new WallLine(alongX, a0, a1, c, y0, y1)); // (each run is a piece of its own)
         void Run(double a, double b, double ya, double yb, string col, string fin, double th, bool detail)
@@ -125,11 +117,11 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>The socket a door hangs by in a wall's doorway (from Gap a): on the wall's centre line at the doorway's start.</summary>
-    protected static void DoorSock(Part p, string name, bool alongX, double a, double c, double floor) =>
+    private static void DoorSock(Part p, string name, bool alongX, double a, double c, double floor) =>
         Sock(p, name, alongX ? a : c, floor + 1.125, alongX ? c : a, alongX ? "+x" : "+z");
 
     /// <summary>A safety rail round a hatch on three sides, open at its back edge (+z), where the ladder lands people.</summary>
-    protected void HatchRail(Part p, Rect h, double y)
+    private void HatchRail(Part p, Rect h, double y)
     {
         Solid(p, h.X0 - 0.06, y, h.Z0 - 0.06, h.X1 + 0.06, y + 1.0, h.Z0, Frame, "painted steel");
         Solid(p, h.X0 - 0.06, y, h.Z0, h.X0, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
@@ -139,17 +131,17 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>A light strip under a ceiling.</summary>
-    protected static void CeilStrip(Part p, double x0, double x1, double z0, double z1, double ceil, string color = "#d8f0ff") =>
+    private static void CeilStrip(Part p, double x0, double x1, double z0, double z1, double ceil, string color = "#d8f0ff") =>
         Detail(p, x0, ceil - 0.025, z0, x1, ceil, z1, color, glow: true);
 
     /// <summary>The volume a part's rooms take (with their walls): what SplitDeck calls inside; outside it is hull.</summary>
-    protected void Room(Part p, Rect r, double y0, double y1) => (rooms.TryGetValue(p, out var rs) ? rs : rooms[p] = []).Add((r, y0, y1));
+    private void Room(Part p, Rect r, double y0, double y1) => (rooms.TryGetValue(p, out var rs) ? rs : rooms[p] = []).Add((r, y0, y1));
 
     /// <summary>The height of a part's ceiling: SplitDeck gives what is above it less 35 cm to the ceiling piece.</summary>
-    protected void CeilingAt(Part p, double y) => ceils[p] = y;
+    private void CeilingAt(Part p, double y) => ceils[p] = y;
 
     /// <summary>Draws with draw() and gives every box it adds to the part's last wall run (a rail, a pipe, a frame on its face).</summary>
-    protected void OnWall(Part p, Action draw)
+    private void OnWall(Part p, Action draw)
     {
         var n = p.Boxes.Count;
         draw();
@@ -161,7 +153,7 @@ public abstract partial class LoftedShip
     // ---- splitting
 
     /// <summary>A deck part dealt out into its floor (the part itself), its wall runs, its ceiling and its hull pieces.</summary>
-    protected List<Part> SplitDeck(Part core, string shortName)
+    private List<Part> SplitDeck(Part core, string shortName)
     {
         var ws = walls.TryGetValue(core, out var w0) ? w0 : [];
         var wallPieces = new Part?[ws.Count];
@@ -236,18 +228,18 @@ public abstract partial class LoftedShip
         return all;
     }
 
-    protected static double[] Vd(PyDict b, string key) => [.. ((List<object?>)b[key]!).Select(v => Convert.ToDouble(v) + H)];
+    private static double[] Vd(PyDict b, string key) => [.. ((List<object?>)b[key]!).Select(v => Convert.ToDouble(v) + H)];
 
-    protected static bool Drawn(PyDict b) => b.Get("detail") is true;
+    private static bool Drawn(PyDict b) => b.Get("detail") is true;
 
-    protected static double[] Mid3(PyDict b)
+    private static double[] Mid3(PyDict b)
     {
         double[] mn = Vd(b, "min"), mx = Vd(b, "max");
         return [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
     }
 
     /// <summary>The station band z is in.</summary>
-    protected int Band(double z)
+    private int Band(double z)
     {
         var i = 0;
         while (i < Bands.Length - 2 && z >= Bands[i + 1])
@@ -257,7 +249,7 @@ public abstract partial class LoftedShip
 
     /// <summary>The keel or the roof cut at the stations: the band holding coreZ keeps the part's name. A tank's capacity is shared out,
     /// each band with its own Fuel out (a jet takes its fuel from the tank it is on).</summary>
-    protected List<Part> SplitBands(Part core, string shortName, double coreZ)
+    private List<Part> SplitBands(Part core, string shortName, double coreZ)
     {
         var keep = Band(coreZ);
         var bands = new SortedDictionary<int, Part>();
@@ -307,7 +299,7 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>A fuel tank's Fuel out on its aft (+z) face, on the centreline at height y (ship metres).</summary>
-    protected void FuelPort(Part q, double y)
+    private void FuelPort(Part q, double y)
     {
         var solid = q.Boxes.Where(bx => !Drawn(bx)).ToList();
         var zmax = solid.Max(bx => Convert.ToDouble(((List<object?>)bx["max"]!)[2]));
@@ -318,7 +310,7 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>A split part's sockets: each to the piece whose box face it is on (a solid box first), else to fallback's, else the core.</summary>
-    protected void DealSockets(Part core, List<Part> all, Func<double[], Part?> fallback)
+    private void DealSockets(Part core, List<Part> all, Func<double[], Part?> fallback)
     {
         var name = (string)core.D["name"]!;
         var socks = core.Sockets.ToList();
@@ -355,7 +347,7 @@ public abstract partial class LoftedShip
 
     /// <summary>A facing socket pair wherever two of the parts' solid boxes touch face to face (one pair a pair of parts, on their
     /// biggest contact), unless they already meet at one: what welds the pieces to each other.</summary>
-    protected static void Connect(List<Part> parts)
+    private static void Connect(List<Part> parts)
     {
         var solid = parts.Select(q => q.Boxes.Where(b => !Drawn(b)).Select(b => (Mn: Vd(b, "min"), Mx: Vd(b, "max"))).ToList()).ToList();
         var bounds = solid.Select(l => (Mn: Enumerable.Range(0, 3).Select(a => l.Count == 0 ? 0 : l.Min(b => b.Mn[a])).ToArray(), Mx: Enumerable.Range(0, 3).Select(a => l.Count == 0 ? 0 : l.Max(b => b.Mx[a])).ToArray())).ToList();
@@ -404,7 +396,7 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>Whether two parts (at one origin) already have a socket of each at one point, facing each other.</summary>
-    protected static bool Meet(Part a, Part b)
+    private static bool Meet(Part a, Part b)
     {
         foreach (var s in a.Sockets)
             foreach (var t in b.Sockets)
@@ -422,7 +414,7 @@ public abstract partial class LoftedShip
 
     /// <summary>The order to place the structure in: out from the first part over the socket pairs they meet at. Throws on a piece
     /// joined to nothing (a floating bit).</summary>
-    protected List<string> PlaceOrder(List<Part> parts, string first)
+    private List<string> PlaceOrder(List<Part> parts, string first)
     {
         var names = parts.Select(q => (string)q.D["name"]!).ToList();
         var seen = new HashSet<int> { names.IndexOf(first) };
@@ -447,7 +439,7 @@ public abstract partial class LoftedShip
     // ---- the blueprint
 
     /// <summary>Places the structure in order (the first by First, the rest welded on at the origin) and returns each piece's step.</summary>
-    protected Dictionary<string, int> PlaceStructure(BuildingParts.Blueprint bp, List<string> order)
+    private Dictionary<string, int> PlaceStructure(BuildingParts.Blueprint bp, List<string> order)
     {
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -458,12 +450,12 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>The step that holds socket sock of step on: the piece that took it when its part was split, else on itself.</summary>
-    protected int Holder(BuildingParts.Blueprint bp, int on, string sock) =>
+    private int Holder(BuildingParts.Blueprint bp, int on, string sock) =>
         bp.Steps[on]["part"] is string part && sockOwner.TryGetValue((part, sock), out var piece) ? pieceSteps[piece] : on;
 
-    protected int Hang(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int spin = 0) => bp.Hang(part, Holder(bp, on, sock), sock, by, spin);
+    private int Hang(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int spin = 0) => bp.Hang(part, Holder(bp, on, sock), sock, by, spin);
 
-    protected static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
+    private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
     {
         bp.Steps[step]["paint"] = paint;
         if (finish != null)
@@ -472,18 +464,18 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>A bulkhead door in a doorway, in the style's hazard paint.</summary>
-    protected int HangDoor(BuildingParts.Blueprint bp, int on, string sock, string? paint = null) => Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", on, sock, "hang"), paint ?? Hazard, "worn paint");
+    private int HangDoor(BuildingParts.Blueprint bp, int on, string sock, string? paint = null) => Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", on, sock, "hang"), paint ?? Hazard, "worn paint");
 
-    protected int Lamp(BuildingParts.Blueprint bp, int on, string sock, string colour = "#fff0d0")
+    private int Lamp(BuildingParts.Blueprint bp, int on, string sock, string colour = "#fff0d0")
     {
         var s = Hang(bp, "Bulkhead Light", on, sock, "back");
         bp.Steps[s]["config"] = new PyDict { ["colour"] = colour };
         return s;
     }
 
-    protected void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps) => Switch(bp, on, sock, true, lamps);
+    private void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps) => Switch(bp, on, sock, true, lamps);
 
-    protected void Switch(BuildingParts.Blueprint bp, int on, string sock, bool startOn, params int[] lamps)
+    private void Switch(BuildingParts.Blueprint bp, int on, string sock, bool startOn, params int[] lamps)
     {
         var s = Hang(bp, "Bakelite Switch", on, sock, "back");
         bp.Steps[s]["config"] = new PyDict { ["startOn"] = startOn };
@@ -492,7 +484,7 @@ public abstract partial class LoftedShip
     }
 
     /// <summary>Writes the ship's parts (each name at most 32 characters) into outDir and its blueprint, made from their definitions.</summary>
-    protected void Emit(PartOutput o, string outDir, IEnumerable<Part> parts, string blueprintPath, Func<Dictionary<string, PyDict>, PyDict> blueprint)
+    private void Emit(PartOutput o, string outDir, IEnumerable<Part> parts, string blueprintPath, Func<Dictionary<string, PyDict>, PyDict> blueprint)
     {
         var defs = new Dictionary<string, PyDict>();
         o.Own(outDir);

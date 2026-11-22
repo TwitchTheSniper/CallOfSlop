@@ -1,11 +1,10 @@
-using CallOfSlop.PartKit.ShipKit;
 using static CallOfSlop.PartKit.PartKitMath;
 
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The Knacker, the Salvagers' breaker (Karl, 2026-11-21: "New design using a different style please. This one can be for salvage").
-/// The third ship on the ship kit and the first in the Salvagers' look from their mood board: a frame for holding someone else's ship.
+/// The first ship in the Salvagers' look from their mood board: a frame for holding someone else's ship.
 /// Two open truss jaws reach 18 m forward of a wide plated root, fendered clamp pads on their inner faces and chevron claws at their
 /// tips; the bridge looks straight down between them through the root's front. Behind it the sorting floor (the Recycler and a row of
 /// Materials Bins), then a narrower crew pod (four bunks; the utility room with the belly hatch). Four standard containers ride on
@@ -13,10 +12,10 @@ namespace CallOfSlop.PartKit.Generators;
 /// Bare galvanised zinc, dark mill-scale frames, fender black, claim lime where hands go and material flows, heat-tinted cut seams
 /// and the odd panel in someone else's paint.
 ///
-/// Drawn on the kit (LoftedShip, docs/sandbox/constructs/ship-kit.md). Ship metres: x across, y up from the deck's underside, z along
+/// Its loft, pieces and fittings are in KnackerParts.Loft.cs, .Pieces.cs and .Fittings.cs. Ship metres: x across, y up from the deck's underside, z along
 /// (forward is -z; 0 on the sorting floor).
 /// </summary>
-public sealed class KnackerParts : LoftedShip, IPartGenerator
+public sealed partial class KnackerParts : IPartGenerator
 {
     public string Name => "knacker_parts";
 
@@ -35,8 +34,13 @@ public sealed class KnackerParts : LoftedShip, IPartGenerator
     private const string Tint = "#7a4a30", Tint2 = "#4a5a78"; // a cut seam's heat tint (bronze to blue)
     private static readonly string[] Borrowed = ["#1f4e8c", "#8a2a22", "#c8a640"]; // other factions' paint on salvaged panels
 
-    public KnackerParts() : base("Knacker", "Knacker breaker", Salvagers)
+    public KnackerParts()
     {
+        Prefix = "Knacker";
+        Section = "Knacker breaker";
+        Style = Salvagers;
+        WallCol = Salvagers.Wall;
+        DadoCol = Salvagers.WallLow;
         Hull = HullSecs;
         Bands = [Zf, ZR1, ZR2, ZR3, ZRootEnd, ZPodF, ZP1, ZPodEnd, ZStern];
         RibZ = [ZR2, ZRootEnd, ZPodEnd]; // (Karl, 2026-11-21: "remove a little bit of the beading": the hoops at ZR1, ZR3 and ZP1 went)

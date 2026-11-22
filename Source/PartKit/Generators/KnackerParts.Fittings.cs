@@ -1,17 +1,9 @@
-using CallOfSlop.PartKit.Generators;
 using static CallOfSlop.PartKit.PartKitMath;
 
-namespace CallOfSlop.PartKit.ShipKit;
+namespace CallOfSlop.PartKit.Generators;
 
-/// <summary>
-/// The working fittings a ship has of its own: its jets, its power plant, its flight computer, its boarding ladder and belly hatch.
-/// Every ship before the kit drew these again from a copy, so most came out as the same shape in another colour. Here each is drawn
-/// from a spec the ship writes: the shape (a jet's nozzle stations and its collar or louvred shroud, a plant's cells and cage, a
-/// console's body, rake and screens) and the numbers (force, rate, gyro) are the ship's; the kit only knows how to draw them, in the
-/// ship's style, with the game's blocks (thruster, generator, logic, ladder, door) set right. A new ship writes its own specs: a spec
-/// copied from another ship is the cookie-cutter the kit is not for.
-/// </summary>
-public abstract partial class LoftedShip
+/// <summary>The Knacker's fittings, drawn from the specs it writes (jets, the power plant, the flight computer, the ladder, the hatch).</summary>
+public sealed partial class KnackerParts
 {
     /// <summary>Which way a jet pushes: Lift (exhaust down, its "top" socket up on a mount under the keel), Aft (exhaust +z, its
     /// "mount" socket -z on a transom) or Fore (exhaust -z, a retro, "mount" +z).</summary>
@@ -21,14 +13,14 @@ public abstract partial class LoftedShip
     /// fuel (litres a second a MN), its spool; the nozzle as stations (along from the mount, radius) drawn as an n-sided bell; the
     /// mount either a round collar (radius at the mount, radius at its end, its length) or a square louvred shroud (half width, length,
     /// slats a side); where the hazard band goes round it; the glow in its throat.</summary>
-    protected sealed record JetSpec(string Name, string Desc, JetAxis Axis, double Force, double Burn, double Spool,
+    private sealed record JetSpec(string Name, string Desc, JetAxis Axis, double Force, double Burn, double Spool,
         (double Along, double R)[] Nozzle, int Sides = 8,
         double CollarR = 0, double CollarR2 = 0, double CollarL = 0,
         double ShroudW = 0, double ShroudL = 0, int Louvres = 0,
         double BandAt = -1, string? Body = null, string? Throat = "#ffb060", double Mass = 1000, double Health = 4000);
 
     /// <summary>Draws a jet from its spec.</summary>
-    protected Part Jet(JetSpec j)
+    private Part Jet(JetSpec j)
     {
         var p = new Part(j.Name, Small, Section, j.Desc, role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
         var body = j.Body ?? Armour;
@@ -120,12 +112,12 @@ public abstract partial class LoftedShip
     /// <summary>A power plant: its rate (kW), its plinth (half sizes across and along, height), its cells (middles on the plinth,
     /// radius, height, sides, the height of each's glowing band), the cage's posts (inset from the plinth's corners) and lid, the
     /// risers on the lid. No fuel. Stands on its "bottom" socket.</summary>
-    protected sealed record PlantSpec(string Name, string Desc, double Rate, double HalfX, double HalfZ, double PlinthH,
+    private sealed record PlantSpec(string Name, string Desc, double Rate, double HalfX, double HalfZ, double PlinthH,
         (double X, double Z)[] Cells, double CellR, double CellH, int CellSides, double BandY,
         double CageInset, double CageH, (double X, string Colour)[] Risers, string? CellCol = null, string BandCol = "#80d0ff",
         double Mass = 2400, double Health = 3500);
 
-    protected Part PowerPlant(PlantSpec s)
+    private Part PowerPlant(PlantSpec s)
     {
         var p = new Part(s.Name, Small, Section, s.Desc, role: "generator", tool: "welder", material: "steel", color: Armour, group: Group);
         void B(double x0, double y0, double z0, double x1, double y1, double z1, string col, string fin, bool detail = false) =>
@@ -157,10 +149,10 @@ public abstract partial class LoftedShip
     /// <summary>A flight computer's console: its gyro (N m: small craft overshoot on a big one), its body (half width, depth, the
     /// height of its back and of its front, so its top rakes toward the couches), the screens on the face toward the couches (x0, x1,
     /// y0, y1, glow colour), a row of keys under them, the arrow on its top (forward, -z). Fit it level, its arrow forward.</summary>
-    protected sealed record ConsoleSpec(string Name, string Desc, double Gyro, double HalfW, double Depth, double BackH, double FrontH,
+    private sealed record ConsoleSpec(string Name, string Desc, double Gyro, double HalfW, double Depth, double BackH, double FrontH,
         (double X0, double X1, double Y0, double Y1, string Colour)[] Screens, int Keys, double KeysY);
 
-    protected Part FlightComputer(ConsoleSpec c)
+    private Part FlightComputer(ConsoleSpec c)
     {
         var console = Style.Console;
         var p = new Part(c.Name, Small, Section, c.Desc, role: "logic", tool: "wrench", material: "steel", color: console, group: Group);
@@ -188,10 +180,10 @@ public abstract partial class LoftedShip
 
     /// <summary>A ladder: rails up from its foot (its rise, and over metres past the landing), rungs every rung metres, stand-offs every
     /// standoff metres, a hazard cap; its back (-z) to the wall it stands on. Its socket by the caller's name.</summary>
-    protected sealed record LadderSpec(string Name, string Desc, double Rise, double Over, string SockName, double[] SockAt, string SockDir,
+    private sealed record LadderSpec(string Name, string Desc, double Rise, double Over, string SockName, double[] SockAt, string SockDir,
         double Rung = 0.3, double Standoff = 1.2, double HalfW = 0.25, string? RailCol = null, bool Hoop = false);
 
-    protected Part Ladder(LadderSpec l)
+    private Part Ladder(LadderSpec l)
     {
         var p = new Part(l.Name, Small, Section, l.Desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         var top = l.Rise + l.Over;
@@ -215,10 +207,10 @@ public abstract partial class LoftedShip
     /// aft wall to the deck's edge. It slides down travel metres to the ground, and the boarding ladder standing on it rides it.
     /// Ship metres: the shaft (its rect), the plate's bottom and top, the deck's top, the hang point's x, the ladder's foot z; stripes
     /// under it; the paint of its plate.</summary>
-    protected sealed record HatchSpec(string Name, string Desc, Rect Shaft, double Bottom, double Top, double DeckTop, double HangX, double LadderZ,
+    private sealed record HatchSpec(string Name, string Desc, Rect Shaft, double Bottom, double Top, double DeckTop, double HangX, double LadderZ,
         double Travel, int Stripes = 4, string? Plate = null, double Seconds = 4.0);
 
-    protected Part BellyHatch(HatchSpec h)
+    private Part BellyHatch(HatchSpec h)
     {
         var plate = h.Plate ?? Armour;
         var p = new Part(h.Name, Small, Section, h.Desc, role: "door", tool: "welder", material: "steel", color: plate, group: Group);
