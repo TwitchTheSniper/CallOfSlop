@@ -28,6 +28,10 @@ The first Survival ship: a lofted two-deck miner with four drills on rams throug
 
 The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares; its AI crew, which flies and fights any stabilised craft by itself (ConstructShipAi.cs).
 
+## [The turret camera](constructs/turret-camera.md), 3 KB
+
+A gunner's station that works a turret looks through it: the camera on the turret in first person, the orbit round it in third, and the gunsight readouts (GunnerHud).
+
 ## [Space stations](constructs/station.md), 3 KB
 
 The station kit (SpaceStationParts): Caledon Highport's pieces, how a station is laid out and generated, and the Station gallery.
