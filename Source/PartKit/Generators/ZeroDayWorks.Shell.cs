@@ -18,10 +18,13 @@ public sealed partial class ZeroDayWorks
         /// <summary>Each half's length and whether its low end is the eave (else a valley), west to east: bay 1, bay 2, bay 3.</summary>
         private static readonly (int Length, bool Eave)[] Halves = [(15, true), (15, false), (20, false), (20, false), (12, false), (12, true)];
 
+        /// <summary>Each column line's truss chain, west to east (the pendants hang from them).</summary>
+        private readonly Dictionary<int, VPart[]> _trusses = new();
+
         private void LayShell()
         {
             var ks = Enumerable.Range(0, RailBlocks).Where(k => _columns.ContainsKey((0, k))).ToList();
-            var trusses = new Dictionary<int, VPart[]>();
+            var trusses = _trusses;
             var westPosts = new Dictionary<int, VPart>();
             var eastPosts = new Dictionary<int, VPart>();
             foreach (var k in ks)

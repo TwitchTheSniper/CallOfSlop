@@ -6,11 +6,11 @@ public sealed partial class ZeroDayWorks
 {
     private sealed partial class Script
     {
-        // Dressing (doc "Dressing: steel-mill details"), from parts already on main: the rooms' furniture, and on the shed's columns
+        // Dressing (doc "Dressing: steel-mill details"): the rooms' furniture, a High-Bay Pendant under each truss half, and on the shed's columns
         // Hall Floodlights (on every second column, about 11 m up, under the crane rails, facing the lines; staggered so each bay is lit
-        // from both sides), Deck Signs at head height and a Fire Point every 32 m. The doc's ten new dressing parts (High-Bay Pendant,
-        // Amber Beacon, Lagged Main, ...) come with their own thread; the pipe banks, cable trays, floor markings and the yard's
-        // lights are not laid yet.
+        // from both sides), Deck Signs at head height and a Fire Point every 32 m. Not laid yet: the Lagged Main, the ovens' heat shields,
+        // gauge clusters and bottle cages, the Foundry's ladle stand and slag pots, the cranes' Amber Beacons (a Crane Core has no top
+        // socket), pipe banks, cable trays, floor markings and the yard's lights.
         //
         // Furniture stands against a wall by its "wall" socket (buildings.md "Laying out a building"), on the wall's inside face: a
         // south or east wall's "k" side, a north or west wall's "f" side, clear of the posts where walls meet (so a 2 m wall takes
@@ -82,6 +82,7 @@ public sealed partial class ZeroDayWorks
                     var table = OnFloor(g, 16, 16, 's', "Mess Table", Wood);
                     Paint(Onto(table, "top", "Office Plant", "base"), Green);
                     AtWall(w['n'][0], 'n', 7, "Waiting Bench 2 m", Wood);
+                    Paint(Onto(w['n'][0], "f7_5", "Cork Notice Board", "back"), Wood); // (over the bench)
                     break;
             }
         }
@@ -104,6 +105,10 @@ public sealed partial class ZeroDayWorks
                         Dress(masts[0], f, "Fire Point", Power);
                 }
             }
+            // A High-Bay Pendant under the middle of every truss half (two rows a span, one every 8 m along the shed), 0.7 m under
+            // the chord, clear over the crane bridges.
+            foreach (var h in _trusses.Values.SelectMany(x => x))
+                Dress(h, $"hang{(h.Def.Sockets.Count(x => x.Name.StartsWith("hang")) + 1) / 2 * 2}", "High-Bay Pendant", Rail, "top");
         }
 
         /// <summary>A placing refused for want of room (something in the way, or a face on another's), which a leg or dressing may
@@ -111,11 +116,11 @@ public sealed partial class ZeroDayWorks
         private static bool Refused(VehicleKitException e) => e.Message.Contains(" is in the way") || e.Message.Contains(": z-fighting: ");
 
         /// <summary>Dressing on a socket where it fits (clear of what is there and of z-fighting), else left out.</summary>
-        private void Dress(VPart on, string socket, string part, string paint)
+        private void Dress(VPart on, string socket, string part, string paint, string by = "back")
         {
             try
             {
-                Paint(Onto(on, socket, part, "back", clear: true), paint);
+                Paint(Onto(on, socket, part, by, clear: true), paint);
             }
             catch (VehicleKitException e) when (Refused(e))
             {
