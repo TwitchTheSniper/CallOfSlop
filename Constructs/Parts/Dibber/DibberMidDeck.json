@@ -1871,48 +1871,51 @@
     },
     {
       "min": [
-        0.675,
-        2.995,
-        -0.675
+        0.705,
+        2.9905,
+        -0.645
       ],
       "max": [
-        1.525,
-        3.005,
-        -0.579
+        1.595,
+        3.0065,
+        -0.578
       ],
-      "color": "#e8b317",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        0.675,
-        2.995,
-        0.329
+        0.705,
+        2.9905,
+        0.328
       ],
       "max": [
-        1.525,
-        3.005,
-        0.425
+        1.595,
+        3.0065,
+        0.395
       ],
-      "color": "#e8b317",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        0.675,
-        2.995,
-        -0.579
+        0.705,
+        2.9905,
+        -0.577
       ],
       "max": [
-        0.771,
-        3.005,
-        0.329
+        0.772,
+        3.0065,
+        0.327
       ],
-      "color": "#e8b317",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
@@ -1946,6 +1949,15 @@
     }
   ],
   "sockets": [
+    {
+      "name": "hatchUp",
+      "at": [
+        1.15,
+        2.972,
+        -0.575
+      ],
+      "dir": "+z"
+    },
     {
       "name": "plant",
       "at": [

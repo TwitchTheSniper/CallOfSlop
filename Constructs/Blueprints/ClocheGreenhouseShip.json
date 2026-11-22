@@ -423,6 +423,18 @@
       "by": "back"
     },
     {
+      "part": "Deck Hatch 1.1x1.2 m",
+      "on": 19,
+      "socket": "lidP",
+      "by": "hang"
+    },
+    {
+      "part": "Deck Hatch 1.1x1.2 m",
+      "on": 19,
+      "socket": "lidS",
+      "by": "hang"
+    },
+    {
       "part": "Cloche Cage Lamp",
       "on": 17,
       "socket": "lampDoor",

@@ -51,7 +51,7 @@ public static class BuildingWalkCheck
             var bp = ConstructBuild.FindBlueprint(name);
             if (bp == null)
             {
-                Say($"[building] {name}: no such blueprint");
+                Say($"[building] {name}: no such blueprint{(ConstructBuild.RefusedBlueprints.Count > 0 ? $" ({ConstructBuild.RefusedBlueprints.Count} refused: {string.Join("; ", ConstructBuild.RefusedBlueprints)})" : "")}");
                 bad++;
                 continue;
             }
@@ -135,6 +135,11 @@ public static class BuildingWalkCheck
                 walked.Add(dp);
             }
         }
+        // Every ladder's way open, as F on it opens it (ConstructRide.OpenWay): the lids across its line, and the sections or foot
+        // linked to it (a boarding shaft's belly hatch, telescoping sections and deck hatch, BoardingShaft).
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).LadderTop > 0 && !c.Parts[i].Broken)
+                ConstructRide.SettleWay(c, i);
         var boxes = new List<Box>();
         var lo = new Vector3(float.MaxValue);
         var hi = new Vector3(float.MinValue);
@@ -340,7 +345,7 @@ public static class BuildingWalkCheck
             c.WorldFrame(lp.Seg, out var lq, out var lt);
             var stand = World.PlayerRadius + 0.12f;
             var cx = (ld.BoundsMin.X + ld.BoundsMax.X) * 0.5f;
-            var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.BoundsMin.Y + 0.02f, ld.BoundsMin.Z - stand)), lq);
+            var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderFoot + 0.02f, ld.BoundsMin.Z - stand)), lq);
             var topAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderTop + 0.02f, ld.BoundsMax.Z + stand)), lq);
             // (the spot itself, else the nearest that fits within the climb's exit search, ConstructRideLadder.LadderExit)
             (int, int) NodeAt(Vector3 at)
@@ -367,7 +372,7 @@ public static class BuildingWalkCheck
             {
                 ladders.Add((f, u));
                 ladders.Add((u, f));
-                Grabs(u, f, footAt, ConstructDoor.EventDoor(c, i) is var leaf and >= 0 && leaf != i);
+                Grabs(u, f, footAt, ld.LadderFoot < 0 || ConstructDoor.EventDoor(c, i) is var leaf and >= 0 && leaf != i); // (a boarding ladder's foot on the ground under a keel, BoardingShaft, or on a door's leaf: crouched out from under the hull)
                 Grabs(f, u, topAt);
             }
             else

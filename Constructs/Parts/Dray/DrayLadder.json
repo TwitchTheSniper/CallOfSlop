@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Ladder",
-  "description": "A ladder between the Dray's crew decks: F climbs it.",
+  "description": "A ladder between the Dray's crew decks, under a deck hatch: F climbs it.",
   "group": "Ship",
   "section": "Dray hauler",
   "role": "frame",
@@ -22,7 +22,7 @@
       ],
       "max": [
         0.3,
-        4.25,
+        3.19,
         -0.005
       ],
       "hidden": true
@@ -35,7 +35,7 @@
       ],
       "max": [
         -0.22,
-        4.252,
+        3.192,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -66,21 +66,6 @@
       "max": [
         -0.23,
         1.86,
-        -0.01
-      ],
-      "color": "#202326",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        -0.27,
-        3.0,
-        -0.12
-      ],
-      "max": [
-        -0.23,
-        3.06,
         -0.01
       ],
       "color": "#202326",
@@ -95,7 +80,7 @@
       ],
       "max": [
         0.28,
-        4.252,
+        3.192,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -126,21 +111,6 @@
       "max": [
         0.27,
         1.86,
-        -0.01
-      ],
-      "color": "#202326",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        0.23,
-        3.0,
-        -0.12
-      ],
-      "max": [
-        0.27,
-        3.06,
         -0.01
       ],
       "color": "#202326",
@@ -315,12 +285,12 @@
     {
       "min": [
         -0.29,
-        4.19,
+        3.13,
         -0.19
       ],
       "max": [
         0.29,
-        4.25,
+        3.19,
         -0.11
       ],
       "color": "#e0a020",

@@ -31,7 +31,7 @@
       "min": [
         -2.525,
         2.875,
-        -3.075
+        -3.025
       ],
       "max": [
         2.275,
@@ -48,23 +48,23 @@
         -4.275
       ],
       "max": [
-        -0.725,
+        0.905,
         3.325,
-        -3.075
+        -3.025
       ],
       "color": "#5d6266",
       "finish": "painted deck plate"
     },
     {
       "min": [
-        0.475,
+        2.155,
         2.875,
         -4.275
       ],
       "max": [
         2.275,
         3.325,
-        -3.075
+        -3.025
       ],
       "color": "#5d6266",
       "finish": "painted deck plate"
@@ -146,75 +146,51 @@
     },
     {
       "min": [
-        -0.785,
-        3.325,
-        -4.335
+        0.835,
+        3.3185,
+        -4.345
       ],
       "max": [
-        0.535,
-        4.325,
-        -4.275
+        2.225,
+        3.3345,
+        -4.278
       ],
-      "color": "#3b3f44",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.785,
-        3.325,
-        -4.275
-      ],
-      "max": [
-        -0.725,
-        4.325,
-        -3.375
-      ],
-      "color": "#3b3f44",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        0.475,
-        3.325,
-        -4.275
-      ],
-      "max": [
-        0.535,
-        4.325,
-        -3.375
-      ],
-      "color": "#3b3f44",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.8,
-        4.285,
-        -4.35
-      ],
-      "max": [
-        0.55,
-        4.365,
-        -4.26
-      ],
-      "color": "#f2c400",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.845,
-        3.325,
-        -3.075
+        0.835,
+        3.3185,
+        -3.022
       ],
       "max": [
-        0.595,
-        3.337,
+        2.225,
+        3.3345,
         -2.955
       ],
-      "color": "#f2c400",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.835,
+        3.3185,
+        -4.277
+      ],
+      "max": [
+        0.902,
+        3.3345,
+        -3.023
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
@@ -2986,6 +2962,15 @@
     }
   ],
   "sockets": [
+    {
+      "name": "hatchWh",
+      "at": [
+        2.155,
+        3.3,
+        -3.65
+      ],
+      "dir": "-x"
+    },
     {
       "name": "pilot",
       "at": [
