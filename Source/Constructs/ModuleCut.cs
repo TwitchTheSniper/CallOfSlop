@@ -258,7 +258,7 @@ public static class ModuleCut
                 return new Plan(cuts, j, $"the {d.Name} (part {j}) is on a joint", 0, 0, 0);
             if (Array.Exists(HullHoles.HolesOf(d), h => h.TunnelText == local.TunnelText))
                 continue; // (cut already: this well's hole)
-            if (HullHoles.WithHole(d, local) is { } holed)
+            if (HullHoles.WithHole(d, local, recut: true) is { } holed)
             {
                 cuts.Add((j, holed));
                 // The hull's thickness here: the part's extent along the normal inside the well.

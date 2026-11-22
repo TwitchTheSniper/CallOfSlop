@@ -85,15 +85,10 @@ public static class HullHoles
             return b > a ? this with { LineFrom = a, LineTo = b, LineIn = i } : this;
         }
 
-        /// <summary>Do this and <paramref name="o"/> run down one line at one size (a socket's well cut again at another depth)?</summary>
-        public bool SameLine(in Hole o)
-        {
-            if (Dx != o.Dx || Dy != o.Dy || Dz != o.Dz || Ux != o.Ux || Uy != o.Uy || Uz != o.Uz || W != o.W || H != o.H)
-                return false;
-            var rel = o.Origin - Origin;
-            var d = Dir;
-            return (rel - d * Vector3.Dot(rel, d)).LengthSquared() < 0.015f * 0.015f;
-        }
+        /// <summary>Do this and <paramref name="o"/> start at one mouth and run down one line at one size (a socket's well cut again at another depth)?</summary>
+        public bool SameLine(in Hole o) =>
+            Dx == o.Dx && Dy == o.Dy && Dz == o.Dz && Ux == o.Ux && Uy == o.Uy && Uz == o.Uz && W == o.W && H == o.H
+            && Math.Abs(X - o.X) <= 1 && Math.Abs(Y - o.Y) <= 1 && Math.Abs(Z - o.Z) <= 1;
 
         public static Hole Of(Vector3 origin, Vector3 dir, Vector3 up, float halfW, float halfH, float depth)
         {
@@ -290,17 +285,18 @@ public static class HullHoles
     /// <paramref name="d"/> with one more hole (made the first time its key is asked for). Null: the part can't take holes, or has all it
     /// may, or the hole misses it, or the cut would pass a limit (<see cref="LastRefusal"/> says which).
     /// </summary>
-    public static ConstructPartDef? WithHole(ConstructPartDef d, Hole h)
+    public static ConstructPartDef? WithHole(ConstructPartDef d, Hole h, bool recut = false)
     {
         var b = BaseOf(d);
         var had = HolesOf(d);
         var sleeves = SleevesOf(d);
         if (Refusal(b) is { } why)
             return Refuse(why);
-        // A hole down the same line at the same size is this cut made before at another depth (a socket's well set deeper or shallower):
-        // the new one takes its place, with the liner a well had then (a separate sleeve down that line, before lined holes), so a
-        // socket cut again doesn't pile entries onto the part until its key is too long for its liner (Sean, 2026-11-22).
-        if (Array.Exists(had, o => o.SameLine(h)))
+        // A socket's well cut again (recut: ModuleCut only): a hole from the same mouth down the same line at the same size is this cut
+        // made before at another depth, so the new one takes its place, with the liner the well had then (a separate sleeve down that
+        // line, before lined holes); a socket cut again doesn't pile entries onto the part until its key is too long for its liner
+        // (Sean, 2026-11-22). Never for bores or breaches: a second round or pod down one line keeps the first one's hole.
+        if (recut && Array.Exists(had, o => o.SameLine(h)))
         {
             sleeves = Array.FindAll(sleeves, v => !Array.Exists(had, o => o.SameLine(h) && LinesSleeve(o, v)));
             had = Array.FindAll(had, o => !o.SameLine(h));
