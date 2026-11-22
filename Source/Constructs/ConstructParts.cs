@@ -350,9 +350,14 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// (bit 7: a fill); 0: none.
     /// </summary>
     public byte Seam { get; init; }
+    /// <summary>
+    /// "inMachine": true: drawn only while its part is a cell of a block machine's assembly (<see cref="MachineBlocks.InMachine"/> in
+    /// <see cref="Construct.BlockJoined"/>): a Mast Block's bracing, bolts and lamps, which a bare column of masts (a shed's pillar) leaves off.
+    /// </summary>
+    public bool InMachine { get; init; }
 
     /// <summary>Is this box hidden on a block machine's cell whose welded faces are <paramref name="joined"/>?</summary>
-    public bool SeamHidden(byte joined) => Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
+    public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
     /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
     public byte Shows { get; init; }
 
@@ -1633,7 +1638,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "middle"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "inMachine", "middle"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1721,6 +1726,8 @@ public static partial class ConstructParts
                         mask |= (byte)(1 << DirOf(Str(f, file, $"{where}.{key}"), file, $"{where}.{key}"));
                     made = made with { Seam = (byte)(mask | (fill ? 0x80 : 0)) };
                 }
+            if (Opt(b, "inMachine") is { ValueKind: JsonValueKind.True })
+                made = detail ? made with { InMachine = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be \"inMachine\" (drawn only while its part is a block machine's cell)");
             if (Opt(b, "shows") is { } showsBox)
                 made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
                     : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
@@ -1762,7 +1769,7 @@ public static partial class ConstructParts
         d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
-        d.HasSeams = list.Any(x => x.Seam != 0);
+        d.HasSeams = list.Any(x => x.Seam != 0 || x.InMachine);
         d.HasMiddle = d.Boxes.Any(x => x.Middle);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
