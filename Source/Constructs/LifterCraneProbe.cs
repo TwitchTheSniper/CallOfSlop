@@ -60,7 +60,7 @@ public static partial class LifterProbe
         }
         ConstructPartDef? rail = null;
         foreach (var d in ConstructParts.All)
-            if (d is { CraneRail: true } && d.Class == bridge.Class)
+            if (d is { CraneRail: true, HallRail: false } && d.Class == bridge.Class)
                 rail = d;
         if (rail == null)
         {

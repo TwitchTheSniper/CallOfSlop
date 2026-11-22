@@ -12,7 +12,7 @@
   "material": "steel",
   "color": "#22262b",
   "attachSeconds": 12,
-  "craneRail": true,
+  "craneRail": "hall",
   "centreSockets": false,
   "collider": "boxes",
   "boxes": [

@@ -192,15 +192,20 @@ public sealed class LifterParts : IPartGenerator
         return p;
     }
 
-    // ---- The Bridge Crane (arms-and-cranes.md 3.4, phase 6): Crane Rail sections and the Crane Bridge, in three size classes.
+    // ---- The Bridge Crane (arms-and-cranes.md 3.4, phase 6): Crane Rail sections and the Crane Bridge, in four size classes (the Small
+    // for small container ships' holds, Sean 2026-11-22: a 4 m span on 0.25 m runway girders).
 
     /// <summary>The design's table: span, rail section, hook drop, payload kg, piece across and long, travel and hoist m/s, handling s, power W.</summary>
     private static (double Span, int Rail, double Drop, int Payload, double Across, double Long, double Travel, double Hoist, double Handle, int Power) Crane(Cls c) => c.Key switch
     {
+        "small" => (4, 1, 4, 5_000, 3.6, 8, 2.5, 1.25, 2.0, 2000),
         "medium" => (8, 4, 8, 30_000, 7.2, 16, 2.0, 1.0, 3.0, 6000),
         "large" => (32, 16, 24, 300_000, 28.8, 64, 1.5, 0.75, 5.0, 30_000),
         _ => (64, 32, 48, 3_000_000, 28.8, 128, 1.0, 0.5, 8.0, 120_000),
     };
+
+    /// <summary>A crane class's word in names: the Small class has none of its own ("" in PartScale), so its cranes say "Small".</summary>
+    private static string CraneName(Cls c) => c.Name == "" ? "Small" : c.Name;
 
     private const string CraneBase = "#22262b", CraneSteel = "#98a1a9", CraneYellow = "#f0c21a", CraneWeb = "#5e6266";
 
@@ -213,9 +218,10 @@ public sealed class LifterParts : IPartGenerator
         var cr = Crane(c);
         var n = c.N(cr.Rail);
         var k = c.Cell;
-        var p = new Part($"Crane Rail {c.Name} {cr.Rail} m", c, "Bridge cranes",
-            $"A {cr.Rail} m section of crane runway. Lay two runs of them {cr.Span:0} m apart, in line end to end, on columns or walls; a {c.Name} Crane Bridge bolted to one runs over both.",
-            role: "frame", color: CraneBase);
+        var cn = CraneName(c);
+        var p = new Part($"Crane Rail {cn} {cr.Rail} m", c, "Bridge cranes",
+            $"A {cr.Rail} m section of crane runway. Lay two runs of them {cr.Span:0} m apart, in line end to end, on columns or walls; a {cn} Crane Bridge bolted to one runs over both.",
+            role: "frame", color: CraneBase, group: cn);
         double z0 = c.Lo(), z1 = c.Hi(n), h = 0.5 * k;
         var cell = Box([-h, -h, z0], [h, h, z1], CraneBase)!;
         cell["hidden"] = true; // (the collider and the sockets' faces: the I-beam inside it is drawn)
@@ -245,8 +251,9 @@ public sealed class LifterParts : IPartGenerator
         var cr = Crane(c);
         var k = c.Cell;
         var carries = cr.Payload >= 1000 ? $"{cr.Payload / 1000:0} t" : $"{cr.Payload} kg";
-        var p = new Part($"{c.Name} Crane Bridge", c, "Bridge cranes",
-            $"An overhead crane over a {cr.Span:0} m span: bolt it to the outer side of a run of {c.Name} Crane Rails with a second run {cr.Span:0} m across. Carries {carries} between machines, racks and pads under it, and fits parts at a Building Station. Needs power while it moves.",
+        var cn = CraneName(c);
+        var p = new Part($"{cn} Crane Bridge", c, "Bridge cranes",
+            $"An overhead crane over a {cr.Span:0} m span: bolt it to the outer side of a run of {cn} Crane Rails with a second run {cr.Span:0} m across. Carries {carries} between machines, racks and pads under it, and fits parts at a Building Station. Needs power while it moves.",
             role: "frame", color: CraneYellow, group: "Production");
         double lo = c.Lo(), hi = c.Hi(1);
         var whole = Box([lo, lo, lo], [hi, hi, hi], CraneBase)!;
@@ -255,15 +262,16 @@ public sealed class LifterParts : IPartGenerator
         // The cabinet: a dark skirt, the yellow body, a steel door, hazard bands round its foot, a lamp mast with the festoon's arm.
         p.Add(Box([lo + 0.02 * k, lo, lo + 0.02 * k], [hi - 0.03 * k, lo + 0.12 * k, hi - 0.02 * k], CraneBase));
         p.Add(Box([lo + 0.06 * k, lo + 0.116 * k, lo + 0.06 * k], [hi - 0.06 * k, hi - 0.1 * k, hi - 0.06 * k], CraneYellow));
-        p.Add(MachineLook.D([lo + 0.2 * k, lo + 0.18 * k, lo + 0.056 * k], [hi - 0.2 * k, hi - 0.2 * k, lo + 0.064 * k], CraneSteel, "steel")); // (its door, -z)
-        MachineLook.Hazard(p, [lo + 0.016 * k, lo + 0.03 * k, lo + 0.1 * k], [lo + 0.024 * k, lo + 0.1 * k, hi - 0.1 * k]);
-        MachineLook.Hazard(p, [lo + 0.1 * k, lo + 0.03 * k, hi - 0.024 * k], [hi - 0.1 * k, lo + 0.1 * k, hi - 0.016 * k]);
+        var t = Math.Max(0.004 * k, 0.003); // (half a skin's thickness: at Small 0.004 a cell is a 2 mm sliver Box drops, so 3 mm, grown to a detail's 16 mm)
+        p.Add(MachineLook.D([lo + 0.2 * k, lo + 0.18 * k, lo + 0.06 * k - t], [hi - 0.2 * k, hi - 0.2 * k, lo + 0.06 * k + t], CraneSteel, "steel")); // (its door, -z)
+        MachineLook.Hazard(p, [lo + 0.02 * k - t, lo + 0.03 * k, lo + 0.1 * k], [lo + 0.02 * k + t, lo + 0.1 * k, hi - 0.1 * k]);
+        MachineLook.Hazard(p, [lo + 0.1 * k, lo + 0.03 * k, hi - 0.02 * k - t], [hi - 0.1 * k, lo + 0.1 * k, hi - 0.02 * k + t]);
         p.Add(MachineLook.D([lo + 0.1 * k, hi - 0.104 * k, lo + 0.1 * k], [hi - 0.1 * k, hi - 0.04 * k, hi - 0.1 * k], CraneBase)); // (its lid)
-        p.Add(MachineLook.D([lo + 0.12 * k, hi - 0.044 * k, lo + 0.4 * k], [lo + 0.2 * k, hi, lo + 0.48 * k], MachineLook.Accent)); // (the beacon's foot)
+        p.Add(MachineLook.D([lo + 0.12 * k, hi - Math.Max(0.044 * k, 0.016), lo + 0.4 * k], [lo + 0.2 * k, hi, lo + 0.48 * k], MachineLook.Accent)); // (the beacon's foot; never under a detail's 16 mm)
         // Its screen on the -x face (away from the rail: the aisle side), the middle about 1.5 m up at Medium.
-        double sx = lo + 0.056 * k, sy = lo + 0.62 * k;
-        p.Add(MachineLook.D([sx - 0.004 * k, sy - 0.16 * k, lo + 0.16 * k], [sx + 0.004 * k, sy + 0.16 * k, hi - 0.16 * k], Screen));
-        p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(sx - 0.007 * k, 3), Py.Round(sy, 3), 0.0)), ("size", Py.L(Py.Round(0.6 * k, 3), Py.Round(0.28 * k, 3))),
+        double sx = lo + 0.056 * k, sy = lo + 0.62 * k; // (at Small the screen grows to a detail's 16 mm, so its panel sits 11 mm out)
+        p.Add(MachineLook.D([sx - t, sy - 0.16 * k, lo + 0.16 * k], [sx + t, sy + 0.16 * k, hi - 0.16 * k], Screen));
+        p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(sx - (k < 1 ? 0.011 : 0.007 * k), 3), Py.Round(sy, 3), 0.0)), ("size", Py.L(Py.Round(0.6 * k, 3), Py.Round(0.28 * k, 3))),
             ("face", "-x"), ("up", "+y"), ("rows", 5), ("range", Py.Round(10 * k, 1))))));
         BlockSockets(p, 1, 1, 1, faces: "xyz", skip: ["+y"]);
         p.Stats(c.KgM2 * 6 * k * k, c.HealthM2 * 6 * k * k, c.Armour, seconds: Py.Round(c.Seconds * 2, 1));
@@ -351,7 +359,7 @@ public sealed class LifterParts : IPartGenerator
         p.Sock("+x", [1, 0.5, 0], "+x");
         p.Sock("-x", [-1, 0.5, 0], "-x");
         p.Stats(1400, 3000, 10, 12);
-        p.Set(("craneRail", true), ("centreSockets", false), ("collider", "boxes"));
+        p.Set(("craneRail", "hall"), ("centreSockets", false), ("collider", "boxes")); // ("hall": a Crane Core's rails, never a Small Crane Bridge's)
         return p;
     }
 
@@ -487,5 +495,6 @@ public sealed class LifterParts : IPartGenerator
 
     public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))).Append(("", Cab()))
         .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })) // (the classed cranes stay: the Medium for the Dray's hold, the Large and Capital rows because saved Assemblers keep recipe numbers; the hall's is the Hall Crane: drawing 24)
-        .Concat(new[] { ("HallCranes", HallRail()), ("HallCranes", HallCore()) }));
+        .Concat(new[] { ("HallCranes", HallRail()), ("HallCranes", HallCore()) })
+        .Concat(new[] { ("SmallCranes", Rail(Small)), ("SmallCranes", Bridge(Small)) })); // (a folder of their own, so their Assembling rows go at the end: Assembling.AfterCloche)
 }

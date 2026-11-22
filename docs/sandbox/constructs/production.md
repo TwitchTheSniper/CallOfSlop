@@ -1746,7 +1746,8 @@ claimed for it. A pad takes in a loose part at rest over its hold, as new; a dam
 sections laid end to end in two runs a span apart on whatever the player stands them on (Medium Columns on an Adapter Medium to Small
 on a small floor), and a Crane Bridge bolted to the outer side of one run by its +x socket. Its reach is the box between the runs, under
 the rails, down its hook's drop; everything an arm does it does in that box. Its look line, screen and Alarm say when it is off its
-rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes.
+rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes. Four classes: Small (Crane Rail
+Small 1 m, a 4 m span, 5 t, for small container ships; `Constructs/Parts/Lifters/SmallCranes`), Medium (8 m, the Dray's hold), Large and Capital.
 
 **The Hall Crane** (design page drawing 24, Sean 2026-11-21; parts from `LifterParts.cs`, `Constructs/Parts/Lifters/HallCranes`) is a
 Bridge Crane on the block rules, for moving pieces between machines, pads and roller runs; it comes on top of a machine's own crane,

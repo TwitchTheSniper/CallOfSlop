@@ -143,10 +143,11 @@ needs (3.6). A move's `T` in seconds, where the text below says it, is that coun
 
 ### 3.4 The Bridge Crane
 
-Three parts by class (the classes and loads of the existing Winch and Crane Boom):
+Four parts by class (the classes and loads of the existing Winch and Crane Boom; the Small added for small container ships' holds, Sean 2026-11-22):
 
 | Class | Bridge span | Rail section | Hook drop | Payload | Largest piece | Travel, hoist |
 | --- | --- | --- | --- | --- | --- | --- |
+| Small | 4 m | 1 m | 4 m | 5 t | 3.6, 8 m | 2.5 m/s, 1.25 m/s |
 | Medium | 8 m | 4 m | 8 m | 30 t | 7.2, 16 m | 2 m/s, 1 m/s |
 | Large | 32 m | 16 m | 24 m | 300 t | 28.8, 64 m | 1.5 m/s, 0.75 m/s |
 | Capital | 64 m | 32 m | 48 m | 3,000 t | 28.8, 128 m | 1 m/s, 0.5 m/s |

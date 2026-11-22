@@ -211,7 +211,7 @@ public static class LifterRender
     /// </summary>
     private static void DrawCrane(Renderer gfx, LifterDef ld, Matrix4x4 part, Vector3 grip)
     {
-        var k = ld.Hall ? 2f : MathF.Max(0.25f, ld.Depth / 0.6f); // (Medium 1, Large 4, Capital 16; a Hall Crane 2: its 2 m rail blocks)
+        var k = ld.Hall ? 2f : MathF.Max(0.25f, ld.Depth / 0.6f); // (Small 0.25, Medium 1, Large 4, Capital 16; a Hall Crane 2: its 2 m rail blocks)
         var b = ld.Base;
         var hz = grip.Z;
         var id = Matrix4x4.Identity;

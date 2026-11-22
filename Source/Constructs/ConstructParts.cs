@@ -760,6 +760,7 @@ public sealed partial class ConstructPartDef
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
     public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool CraneRail; // "craneRail": true: a Crane Rail section, along its +z (a Bridge Crane runs on two runs of them: ConstructCraneRails.cs)
+    public bool HallRail; // "craneRail": "hall": a Hall Crane's Crane Rail Block (a Crane Core runs on these only, a classed Crane Bridge never: both are Small class)
     public bool LifterCab; // "lifterCab": true: a seat that steers the nearest lifter on its construct by hand (ConstructLifterCab.cs, arms and cranes phase 8)
     public bool HasSeams; // its "seam" boxes (a block machine's: MachineBlocks.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
@@ -1506,7 +1507,8 @@ public static partial class ConstructParts
         if (d.IsRouter && d.TextSlots == 0)
             d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
         d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
-        d.CraneRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.True };
+        d.HallRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.String } hr && hr.GetString() == "hall";
+        d.CraneRail = d.HallRail || Opt(root, "craneRail") is { ValueKind: JsonValueKind.True };
         d.LifterCab = Opt(root, "lifterCab") is { ValueKind: JsonValueKind.True } && d.Role == PartRole.Seat;
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
