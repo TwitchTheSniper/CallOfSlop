@@ -222,6 +222,7 @@ public sealed partial class Game
         s.Fleet = IsServer ? Crew.Fleet.SaveBytes() : null; // (groups and admirals: Crew/CrewFleet.cs)
         s.Controllers = ControllersBytes(); // (the powers' controllers: GameCrewPowers.cs)
         s.Powers = PowersBytes(); // (the powers' relations among themselves, pacts and news: GameCrewFactions.cs)
+        s.Markets = MarketsBytes(Keep == null && stashFolder == null, keep); // (the stations' stock, the main world's only, and this world's moorings: GameStationSave.cs)
         s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
@@ -620,6 +621,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.PowersTag:
                 WorldReadPowers(r); // (the NPC powers' relations, pacts and news: GameCrewFactions.cs)
+                break;
+            case WorldSaveWriter.MarketsTag:
+                WorldReadMarkets(r, stock: Keep == null); // (the stations' stock and moorings: GameStationSave.cs)
                 break;
             case WorldSaveWriter.ControllersTag:
                 WorldReadControllers(r); // (the powers' stocks, places, ships and missions: GameCrewPowers.cs)
