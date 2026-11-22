@@ -217,7 +217,11 @@ public sealed partial class Game
             m.LoseHours = full && m.HoldHours == 0 && sum < -StationLife.SaleBelow * m.CostSum ? m.LoseHours + 1 : 0;
             StationGrowHour(d, def, m);
             if (def.Owner.Length > 0)
-                continue; // (a player faction's: they keep it or leave it, its ledger only shows)
+            {
+                if (!FactionStands(def.Owner))
+                    StationAbandoned(d, def, m);
+                continue;
+            } // (a player faction's: they keep it or leave it, its ledger only shows)
             if (def.State == MarketState.Open && m.LoseHours >= StationLife.SaleAfter && (def.Kind >= 0 || StationLife.SaleListed))
             {
                 def.State = MarketState.ForSale;
@@ -362,9 +366,45 @@ public sealed partial class Game
     }
 
     /// <summary>Is <paramref name="p"/> a member of the player faction that holds this station (bought, StationPurchaseAct)?</summary>
-    public bool StationMember(StationMarket m, Player p) =>
+    public bool StationMember(StationMarket m, Player p) => StationMember(m, p.Id);
+
+    /// <summary>Whether player <paramref name="id"/> is in the player faction that holds the station.</summary>
+    public bool StationMember(StationMarket m, byte id) =>
         m.Def >= 0 && m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Owner is { Length: > 0 } owner
-        && FactionTable.Of[p.Id] is > 0 and var f && owner.Equals(FactionTable.Names[f], StringComparison.OrdinalIgnoreCase);
+        && FactionTable.Of[id] is > 0 and var f && owner.Equals(FactionTable.Names[f], StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Whether a player faction of that name still stands (one with no members left is cleared by the faction table).</summary>
+    private bool FactionStands(string name)
+    {
+        for (var f = 1; f < FactionTable.Max; f++)
+            if (FactionTable.Names[f].Length > 0 && name.Equals(FactionTable.Names[f], StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Host, an hour: a station whose player faction is gone (disbanded, or none of it came back with the world) is nobody's: the holder of its
+    /// planet takes it on, or, with nobody holding the planet, it closes for salvage. Else it would stand locked for good, or go to the next
+    /// faction that took the old name.
+    /// </summary>
+    private void StationAbandoned(int d, StationDef def, StationMarket m)
+    {
+        var was = def.Owner;
+        def.Owner = "";
+        var pl = Controllers.Territory.Planets.FindIndex(x => x.Equals(def.Planet, StringComparison.OrdinalIgnoreCase));
+        var holder = pl >= 0 && pl < Controllers.PlanetCount ? Controllers.PlanetHolder[pl] : (byte)0;
+        if (holder > 0 && Controllers.Powers[holder] is { Fallen: false } && CrewPowers.Of(holder)?.Name is { } name)
+        {
+            (def.Power, def.State, m.LoseHours, m.HoldHours) = (name, MarketState.Open, 0, StationLife.HoldAfter);
+            StationsVersion++;
+            Log($"[station] {def.Name}: {was} are gone, and {name}, who hold {def.Planet}, take it on");
+        }
+        else
+        {
+            Log($"[station] {def.Name}: {was} are gone, and nobody holds {def.Planet}");
+            StationClose(d);
+        }
+    }
 
     /// <summary>
     /// Server: <paramref name="p"/>'s faction buys the station for sale that moored ship <paramref name="shipId"/> is at (Karl, 2026-11-22: player
