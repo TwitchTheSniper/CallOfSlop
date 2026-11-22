@@ -465,6 +465,12 @@ to start testing logistics runs with ships.
   Taking a site moves that supply from one power's stations to another's. A power with no such station gets nothing from it (the Raiders
   live on loot), logged once. Every ten minutes the host logs what each power's sites sent. A place's income in the books (`Plan.Income`) is
   unchanged.
+- **Contracts from needs (Karl, 2026-11-22).** A delivery is a station's shortage first: `IContractHost.Shortage` picks a good one of the
+  power's stations in this world is short of (`StationMarket.Short`), asks for what brings it to its want (rounded to tens, from
+  `deliverMin` to four times `deliverMax`) and pays the station's price for those units times `deliverPremium` (Relations.json, 1.25).
+  The station rides in the contract's `Target` (its index plus one), so neither the wire nor the save changed shape. It is delivered by
+  docking there with the goods in a ship of the taker's side (`StationCargo`), and they go into its stock. A power with no station short
+  of anything here offers a random material to its place as before. One delivery per station and good is open at a time.
 - **Next:** haulers as Convoy missions of the controllers (escorts, routes chosen by what a station lacks), prices that follow stock, and
   stations and runs kept in saves.
 
