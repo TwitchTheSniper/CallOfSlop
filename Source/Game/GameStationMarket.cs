@@ -461,6 +461,7 @@ public sealed partial class Game
     /// <summary>Host, once a second from the moor step: the moorings into the markets, and the markets to everyone when they changed.</summary>
     private void StationMarketTick()
     {
+        StationMoorsAdopt(); // (a loaded world's moorings, once its bodies are in: GameStationSave.cs)
         StationNeedsTick();
         foreach (var c in Constructs.Bodies)
             if (c.IsStation && !c.Wreck)

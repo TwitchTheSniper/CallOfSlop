@@ -376,6 +376,8 @@ public sealed partial class Game
                 if (tag is WorldSaveWriter.BakedTag or WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Stores or WorldSaveWriter.Bodies or WorldSaveWriter.Links
                     or WorldSaveWriter.Connectors or WorldSaveWriter.NoCollide or WorldSaveWriter.Ground or WorldSaveWriter.Resources)
                     WorldReadSection(tag, r, ws, thereNames, ref kept, ref lost, ref thereTag);
+                else if (tag == WorldSaveWriter.MarketsTag)
+                    WorldReadMarkets(r, stock: false); // (its moorings only: the markets' stock stayed in memory, GameStationSave.cs)
             }, ref lost);
             skipped += thereNames.Skipped;
         }
