@@ -423,7 +423,8 @@ public sealed partial class Game
         public string[] Lines = []; // a client: its supply lines and consignments bound for it, as the host last told (StationLines)
         public double Gain, Ledger, LastCost; // host: its power's gain this hour, its ledger over the window, its last hour's upkeep (GameStationLife.cs)
         public double[] Net = []; // host: each hour's gain less upkeep, a ring over StationLife.Window
-        public int NetN, LoseHours, SaleHours; // host: hours in the ring, hours its ledger has been under nothing, hours for sale or closed
+        public int NetN, LoseHours, SaleHours, HoldHours; // (HoldHours: hours its power keeps it before it may sell it, after a sale or its opening)
+        public double CostSum; // host: about its upkeep over the window (a running sum) // host: hours in the ring, hours its ledger has been under nothing, hours for sale or closed
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs

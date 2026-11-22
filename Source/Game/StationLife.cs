@@ -42,6 +42,8 @@ public static class StationLife
     public static int MaxNew = 8; // stations made in play at most (open or not)
     public static (byte Material, float Units)[] Upkeep = []; // a listed station's upkeep an hour, unless its own "upkeep" says
     public static float Labour; // and its labour an hour
+    public static float SaleBelow = 0.5f; // a station is losing when its ledger is under this share of its upkeep over the window, below nothing (a hair under breaks no station)
+    public static int HoldAfter = 24; // h a power keeps a station it bought or built before it may sell it
     public static bool SaleListed = true; // may a listed station (Crew/Stations.json "stations") go up for sale and close, as one made in play may
 
     internal static void Load(JsonElement root, List<StationDef> list, Func<JsonElement, string, List<StationGood>> goodsOf,
@@ -66,6 +68,8 @@ public static class StationLife
             MaxNew = (int)F("maxNew", 8, 0, 64);
             Upkeep = upkeepOf(r.TryGetProperty("upkeep", out var u) ? u : null, "stationRules");
             Labour = F("labour", 0, 0, 100_000);
+            SaleBelow = F("saleBelow", 0.5f, 0, 10);
+            HoldAfter = (int)F("holdAfter", 24, 0, 1000);
             SaleListed = !r.TryGetProperty("saleListed", out var sl0) || sl0.GetBoolean();
         }
         // A listed station's upkeep: its own, else the rules'.

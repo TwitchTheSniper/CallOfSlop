@@ -65,15 +65,15 @@
   // "stationRules", hours of play: "upkeep", what a station takes an hour from its own stock unless its own "upkeep" says (each listed
   // station must trade it; what it hasn't got counts twice against its ledger), "labour" its power pays an hour from its number. A station's
   // ledger is what it earned its power (the margin on its trade, its shoppers, the value its making adds, "haulSave" of its planet's site goods'
-  // value) less its upkeep over "window" hours. Under nothing for "saleAfter" hours it goes up for sale ("saleListed": a listed station too),
-  // for "salePrice" of its bill's value, to a power that holds its planet or a key site there; unsold for "closeAfter" hours, it closes (its
+  // value) less its upkeep over "window" hours. Under nothing by more than "saleBelow" of that upkeep for "saleAfter" hours it goes up for sale ("saleListed": a listed station too),
+  // ("holdAfter": hours a power keeps one it bought or built first) for "salePrice" of its bill's value, to a power that holds its planet or a key site there; unsold for "closeAfter" hours, it closes (its
   // stock to its power's other stations; open for salvage), and "salvageFor" hours on the Salvagers dismantle it ("salvageShare" theirs, the
   // rest back to its power). A power builds over a planet it holds with no station of its where a kind's "expect" (value an hour) and the
   // hauling it saves, over "payback" hours, beat its bill (its blueprint's materials times "billScale") and labour ("labourShare" of the bill):
   // "builders" ships of "builderShip" a route bring the bill from its stations, and the site goes up step by step. "maxNew": stations made in play at most.
   "stationRules": {
     "payback": 72, "window": 6, "saleAfter": 6, "closeAfter": 6, "salvageFor": 6, "saleListed": true,
-    "builders": 2, "builderShip": "Magpie Mining Ship", "haulSave": 0.1, "labourShare": 0.05, "salePrice": 0.5, "salvageShare": 0.25,
+    "builders": 2, "builderShip": "Magpie Mining Ship", "haulSave": 0.1, "labourShare": 0.05, "salePrice": 0.5, "salvageShare": 0.25, "saleBelow": 0.5, "holdAfter": 24,
     "billScale": 0.25, "maxNew": 8, "upkeep": { "hydrogen": 40 }, "labour": 10
   },
   // "kinds": the stations a power can put up. "blueprint" it is built from, "orbit" km over its planet (4 km more for each station there

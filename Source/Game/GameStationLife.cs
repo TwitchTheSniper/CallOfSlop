@@ -110,7 +110,7 @@ public sealed partial class Game
         def.Labour = kind.Labour;
         def.State = MarketState.Open;
         var old = MarketOfDef(d);
-        var m = _marketByDef[d] = new StationMarket { Def = d, Body = old.Body, Stock = [.. kind.Goods.Select(g => g.Stock)] };
+        var m = _marketByDef[d] = new StationMarket { Def = d, Body = old.Body, Stock = [.. kind.Goods.Select(g => g.Stock)], HoldHours = StationLife.HoldAfter };
         m.Moored.AddRange(old.Moored);
         if (old.Body != 0)
             StationMarketsHere[old.Body] = m;
@@ -210,7 +210,10 @@ public sealed partial class Game
             foreach (var v in m.Net)
                 sum += v;
             m.Ledger = sum;
-            m.LoseHours = full && sum < 0 ? m.LoseHours + 1 : 0;
+            m.CostSum = m.CostSum * (m.Net.Length - 1) / m.Net.Length + cost; // (about the window's upkeep)
+            if (m.HoldHours > 0)
+                m.HoldHours--;
+            m.LoseHours = full && m.HoldHours == 0 && sum < -StationLife.SaleBelow * m.CostSum ? m.LoseHours + 1 : 0;
             if (def.State == MarketState.Open && m.LoseHours >= StationLife.SaleAfter && (def.Kind >= 0 || StationLife.SaleListed))
             {
                 def.State = MarketState.ForSale;
@@ -270,7 +273,7 @@ public sealed partial class Game
         def.Power = CrewPowers.Of(buyer)!.Name;
         def.State = MarketState.Open;
         var m = MarketOfDef(d);
-        (m.LoseHours, m.SaleHours, m.NetN) = (0, 0, 0);
+        (m.LoseHours, m.SaleHours, m.NetN, m.HoldHours) = (0, 0, 0, StationLife.HoldAfter);
         Array.Clear(m.Net);
         StationsVersion++;
         Log(FormattableString.Invariant($"[station] {def.Name} is sold by {was} to {def.Power} for {price:0} (value)"));
@@ -684,7 +687,7 @@ public sealed partial class Game
             var d = Array.IndexOf(all, def);
             var m = MarketOfDef(d);
             w.Str(def.Name).Str(def.Power).U8((byte)def.State).I32(def.Kind).Str(def.Kind >= 0 && def.Kind < StationLife.Kinds.Length ? StationLife.Kinds[def.Kind].Name : "")
-                .Str(def.Planet).F32(def.Orbit).I32(def.Built).I32(def.Steps).F64(m.Gain).I32(m.NetN).I32(m.LoseHours).I32(m.SaleHours);
+                .Str(def.Planet).F32(def.Orbit).I32(def.Built).I32(def.Steps).F64(m.Gain).I32(m.NetN).I32(m.LoseHours).I32(m.SaleHours).I32(m.HoldHours).F64(m.CostSum);
             w.I32(m.Net.Length);
             foreach (var v in m.Net)
                 w.F64(v);
@@ -714,7 +717,7 @@ public sealed partial class Game
     {
         StationLifeReset();
         var n = s.Count(16);
-        var ledgers = new List<(int Def, double Gain, int NetN, int Lose, int Sale, double[] Net)>();
+        var ledgers = new List<(int Def, double Gain, int NetN, int Lose, int Sale, double[] Net, int Hold, double CostSum)>();
         for (var i = 0; i < n; i++)
         {
             var name = s.Str();
@@ -730,6 +733,8 @@ public sealed partial class Game
             var netN = s.I32();
             var lose = s.I32();
             var sale = s.I32();
+            var hold = s.I32();
+            var costSum = s.F64();
             var net = new double[Math.Clamp(s.Count(8), 0, 48)];
             for (var k = 0; k < net.Length; k++)
                 net[k] = s.F64();
@@ -765,12 +770,13 @@ public sealed partial class Game
                     StationMarkets.All[d].Power = power;
             }
             if (d >= 0)
-                ledgers.Add((d, gain, netN, lose, sale, net));
+                ledgers.Add((d, gain, netN, lose, sale, net, hold, costSum));
         }
-        foreach (var (d, gain, netN, lose, sale, net) in ledgers)
+        foreach (var (d, gain, netN, lose, sale, net, hold, costSum) in ledgers)
         {
             var m = MarketOfDef(d);
             (m.Gain, m.NetN, m.LoseHours, m.SaleHours, m.Net) = (gain, netN, lose, sale, net);
+            (m.HoldHours, m.CostSum) = (Math.Clamp(hold, 0, 1000), double.IsFinite(costSum) ? Math.Max(0, costSum) : 0);
         }
         var routes = s.Count(16);
         for (var i = 0; i < routes; i++)
