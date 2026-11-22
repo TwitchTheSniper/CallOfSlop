@@ -34,8 +34,61 @@ public static partial class ConstructPress
     }
 
     /// <summary>
+    /// The next press after cursor <paramref name="k"/> that a chute from store <paramref name="rack"/> of <paramref name="rackBody"/> feeds
+    /// (its body's chutes first, then world links); false when there are no more. Start with k = 0.
+    /// </summary>
+    private static bool NextFed(ConstructWorld world, Construct rackBody, int rack, ref int k, out Construct? body, out int press)
+    {
+        for (; k < rackBody.RouteCount; k++)
+        {
+            ref readonly var r = ref rackBody.Routes[k];
+            if (r.Type == RouteType.Chute && r.Source == rack && (uint)r.To < (uint)rackBody.PartCount && rackBody.Parts[r.To].D is { IsPress: true, IsLathe: false })
+            {
+                (body, press) = (rackBody, r.To);
+                k++;
+                return true;
+            }
+        }
+        for (; k - rackBody.RouteCount < world.WorldLinkCount; k++)
+        {
+            ref readonly var l = ref world.WorldLinks[k - rackBody.RouteCount];
+            if (l.Type == RouteType.Chute && l.BodyFrom == rackBody.Id && l.From == rack && world.Get(l.BodyTo) is { } to && l.To < to.PartCount && to.Parts[l.To].D is { IsPress: true, IsLathe: false })
+            {
+                (body, press) = (to, l.To);
+                k++;
+                return true;
+            }
+        }
+        (body, press) = (null, -1);
+        return false;
+    }
+
+    /// <summary>
+    /// Another press a chute from the same store feeds (a rack shared by several presses) that holds a die of the family
+    /// <paramref name="die"/> for <paramref name="press"/>'s slot: it gives the die back to the rack once its own head order doesn't need it
+    /// (<see cref="ChuteSwap"/>). Its body and part; false when none does.
+    /// </summary>
+    private static bool SiblingHolding(ConstructWorld world, Construct rackBody, int rack, Construct c, int press, PressDie die, out Construct? holder, out int at)
+    {
+        var d = c.DefOf(press);
+        for (var k = 0; NextFed(world, rackBody, rack, ref k, out holder, out at);)
+            if (!(ReferenceEquals(holder, c) && at == press) && DieIn(holder!, at) is var i and >= 0 && IsDieFor(holder!.Parts[i].D, die, d))
+                return true;
+        return false;
+    }
+
+    /// <summary>Does another press this store feeds want a die of <paramref name="def"/>'s family for its head order? (It is kept for that one.)</summary>
+    private static bool SiblingWants(ConstructWorld world, Construct rackBody, int rack, Construct c, int press, ConstructPartDef def)
+    {
+        for (var k = 0; NextFed(world, rackBody, rack, ref k, out var other, out var at);)
+            if (!(ReferenceEquals(other, c) && at == press) && DieWanted(other!, at) is { } want && want.Family == def.DieFamily)
+                return true;
+        return false;
+    }
+
+    /// <summary>
     /// The store a chute into this press takes from that holds a die of the family <paramref name="die"/> (the rack a swap would take it
-    /// from): its body and part; false when none does. For order checks and look lines, not a tick.
+    /// from), or feeds another press holding one that gives it back when done: its body and part; false when none does. For order checks, not a tick.
     /// </summary>
     public static bool DieRackOf(ConstructWorld world, Construct c, int part, PressDie die, out Construct? rackBody, out int rack)
     {
@@ -43,7 +96,8 @@ public static partial class ConstructPress
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type == RouteType.Chute && r.To == part && (uint)r.Source < (uint)c.PartCount && world.StoreOf(c, r.Source) is { } st && DieSlot(st, die, d) >= 0)
+            if (r.Type == RouteType.Chute && r.To == part && (uint)r.Source < (uint)c.PartCount && world.StoreOf(c, r.Source) is { } st
+                && (DieSlot(st, die, d) >= 0 || SiblingHolding(world, c, r.Source, c, part, die, out _, out _)))
             {
                 (rackBody, rack) = (c, r.Source);
                 return true;
@@ -53,7 +107,7 @@ public static partial class ConstructPress
         {
             ref readonly var l = ref world.WorldLinks[k];
             if (l.Type == RouteType.Chute && l.BodyTo == c.Id && l.To == part && world.Get(l.BodyFrom) is { } from && l.From < from.PartCount
-                && world.StoreOf(from, l.From) is { } st && DieSlot(st, die, d) >= 0)
+                && world.StoreOf(from, l.From) is { } st && (DieSlot(st, die, d) >= 0 || SiblingHolding(world, from, l.From, c, part, die, out _, out _)))
             {
                 (rackBody, rack) = (from, l.From);
                 return true;
@@ -76,8 +130,21 @@ public static partial class ConstructPress
                 return false; // (one is on its way already)
         var d = ct.DefOf(to);
         var slot = DieSlot(src, want, d);
-        if (slot < 0 || world.PressFeeds.Count >= world.PressFeeds.Capacity)
+        if (world.PressFeeds.Count >= world.PressFeeds.Capacity)
             return false;
+        if (slot < 0)
+        {
+            // Not on the rack: another press this rack feeds may hold it. It gives it back once its own head order doesn't need it.
+            if (SiblingHolding(world, cf, from, ct, to, want, out var holder, out var press) && !ReferenceEquals(DieOfHead(holder!, press), want)
+                && FreeDieSlot(world, cf, from, holder!.Parts[DieIn(holder, press)].D) >= 0)
+            {
+                foreach (var f in world.PressFeeds)
+                    if (f.Return && f.FromBody == holder.Id && f.FromPart == press)
+                        return false;
+                world.PressFeeds.Add(new Feed(holder.Id, (ushort)press, cf.Id, (ushort)from, (ushort)holder.Parts[DieIn(holder, press)].D.Id, Return: true));
+            }
+            return false; // (the next move takes it off the rack)
+        }
         var old = DieIn(ct, to);
         if (old >= 0)
         {
@@ -98,15 +165,16 @@ public static partial class ConstructPress
 
     /// <summary>
     /// A swap's delivery: the old die (if any) goes back onto the store the new one came from, and the new one goes into the slot. What
-    /// can't go where it should goes back to its store, else onto the press's tray; never lost silently.
+    /// can't go where it should goes back to its store, else onto the press's tray; never lost silently. The part index it removed from
+    /// the press's body (the old die), or -1.
     /// </summary>
-    private static void DeliverSwap(ConstructWorld world, Construct to, in Feed f, ConstructPartDef die)
+    private static int DeliverSwap(ConstructWorld world, Construct to, in Feed f, ConstructPartDef die)
     {
         var from = world.Get(f.FromBody);
         if (from is { Dirty: true })
             from.Rebuild();
         int fromPart = from != null && f.FromPart < from.PartCount && world.StoreOf(from, f.FromPart) != null ? f.FromPart : -1;
-        int press = f.ToPart;
+        int press = f.ToPart, removed = -1;
         if (DieIn(to, press) is var old and >= 0)
         {
             var oldDef = to.Parts[old].D;
@@ -115,11 +183,12 @@ public static partial class ConstructPress
                 DieBack(world, from, fromPart, to, press, die);
                 if (!ReferenceEquals(oldDef, die))
                     Console.WriteLine($"[press] the {to.Parts[press].D.Name} keeps its {oldDef.Name}: no room for it on the rack the {die.Name} came from");
-                return;
+                return -1;
             }
             world.SetIn(from, fromPart, slot, oldDef);
             var sameBody = ReferenceEquals(from, to);
             world.RemovePart(to, old);
+            removed = old;
             if (old < press)
                 press--;
             if (sameBody && old < fromPart)
@@ -129,7 +198,7 @@ public static partial class ConstructPress
             if (press >= to.PartCount || !to.Parts[press].D.IsPress)
             {
                 DieBack(world, from, fromPart, null, -1, die); // (the press came off with it: a part that held them together went)
-                return;
+                return removed;
             }
         }
         if (!FitDie(world, to, press, die))
@@ -137,6 +206,35 @@ public static partial class ConstructPress
             DieBack(world, from, fromPart, to, press, die);
             Console.WriteLine($"[press] the {die.Name} can't go into the {to.Parts[press].D.Name}'s die slot");
         }
+        return removed;
+    }
+
+    /// <summary>The die a press's head order needs, or null (no order).</summary>
+    private static PressDie? DieOfHead(Construct c, int part) =>
+        c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec ? spec.Die : null;
+
+    /// <summary>
+    /// A give-back's delivery: the die leaves press <see cref="Feed.FromPart"/> for the rack <see cref="Feed.ToPart"/>, unless the press's
+    /// head order needs it now. The part index it removed from the press's body, or -1.
+    /// </summary>
+    private static int DeliverReturn(ConstructWorld world, in Feed f)
+    {
+        if (world.Get(f.FromBody) is not { } c || world.Get(f.ToBody) is not { } rb)
+            return -1;
+        if (c.Dirty)
+            c.Rebuild();
+        if (rb.Dirty)
+            rb.Rebuild();
+        if (f.FromPart >= c.PartCount || !c.Parts[f.FromPart].D.IsPress || DieIn(c, f.FromPart) is not (>= 0 and var die) || c.Parts[die].D.Id != f.Die
+            || f.ToPart >= rb.PartCount || world.StoreOf(rb, f.ToPart) == null)
+            return -1;
+        var def = c.Parts[die].D;
+        if (DieOfHead(c, f.FromPart) is { } head && head.Family == def.DieFamily)
+            return -1; // (it got an order for this die meanwhile)
+        if (FreeDieSlot(world, rb, f.ToPart, def) is not (>= 0 and var slot) || world.SetIn(rb, f.ToPart, slot, def) != null)
+            return -1;
+        world.RemovePart(c, die);
+        return die;
     }
 
     private static void SwapBack(ConstructWorld world, in Feed f, ConstructPartDef die)
@@ -146,6 +244,9 @@ public static partial class ConstructPress
             from.Rebuild();
         DieBack(world, from, from != null && f.FromPart < from.PartCount && world.StoreOf(from, f.FromPart) != null ? f.FromPart : -1, null, -1, die);
     }
+
+    /// <summary>A chute's plain die move into an empty slot (a press with no order): false for a die another press on the same rack waits for.</summary>
+    public static bool FreeToTake(ConstructWorld world, Construct cf, int from, Construct ct, int to, ConstructPartDef def) => !SiblingWants(world, cf, from, ct, to, def);
 
     private static int FreeDieSlot(ConstructWorld world, Construct c, int part, ConstructPartDef d)
     {
