@@ -490,6 +490,7 @@ public sealed partial class Game
                 }
             }
         }
+        HardshipTick(); // (each planet's hardship and the raider bands it forms: GameCamps.cs)
         ConsignTick(); // (shortages no route answers straight: consignments routed over the haulers, GameConsignments.cs)
 
         // (a line's stock moved by an amount, whole units into the stock and the rest kept, inside 0 and its most)
@@ -564,6 +565,7 @@ public sealed partial class Game
         {
             _marketByDef = [];
             _consigns.Clear(); // (a new game: GameConsignments.cs)
+            CampsReset(); // (GameCamps.cs)
         }
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
         _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)

@@ -128,6 +128,14 @@ public interface IPowerHost
     /// </summary>
     int SiteGoods(byte power, string planet, byte material, int units) => 0;
 
+    /// <summary>Economy step 9: raider bands formed from hardship (Karl, 2026-11-22): the ships <paramref name="power"/> may field past its plan's.</summary>
+    int Bands(byte power) => 0;
+
+    /// <summary>Economy step 9: a raid by <paramref name="raider"/> took cargo worth <paramref name="value"/>; its camp gets it as <paramref name="goods"/> (what its ships are built of).</summary>
+    void Loot(byte raider, (byte Material, float Units)[] goods, double value)
+    {
+    }
+
     /// <summary>Phase 5: where person <paramref name="player"/> is (alive, here); false: not.</summary>
     bool PersonAt(byte player, out Vector3 at)
     {
@@ -746,7 +754,7 @@ public sealed partial class PowerControllers
         if (Tick >= _goodsSaidAt[a])
         {
             _goodsSaidAt[a] = Tick + 60L * T;
-            Log.Add($"{Name(a)} can't build a {Blueprints[bp].Name}: its stations are short of {RecyclingTable.Current.NameOf(shortOf)}");
+            Log.Add($"{Name(a)} can't build a {Blueprints[bp].Name}: its stations (or its camp) are short of {RecyclingTable.Current.NameOf(shortOf)}");
         }
         return false;
     }
@@ -776,7 +784,7 @@ public sealed partial class PowerControllers
                 return true;
             }
         var list = _fleet[a][(int)role];
-        if (list.Length == 0 || p.ShipCount() >= p.Plan.Ships)
+        if (list.Length == 0 || p.ShipCount() >= p.Plan.Ships + (_host?.Bands(a) ?? 0))
             return false;
         var bp = list[(p.Bought + m) % list.Length];
         var bill = Bills[bp];
@@ -999,6 +1007,8 @@ public sealed partial class PowerControllers
                     var loot = Rules.CargoValue * Rules.RaidLoot * (m.CargoSeen - cargo);
                     p.Stock += loot;
                     p.Looted += loot;
+                    if (_fleet[a][(int)ShipRole.Warship] is { Length: > 0 } wl)
+                        host.Loot(a, Rules.GoodsOf(Blueprints[wl[0]]), loot); // (the cargo as goods in its camp: raiders build from loot)
                     rel.Post(RelEvent.RaidConvoy, m.Other, a, 255, flag?.WorldCom ?? m.At);
                     Say($"{Name(a)} raids {Name(m.Other)}'s convoy and takes its cargo");
                 }

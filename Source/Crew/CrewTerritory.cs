@@ -349,7 +349,7 @@ public sealed partial class PowerControllers
             n++;
         }
         var list = _fleet[a][(int)role];
-        for (var i = 0; i < MaxShips && n < ships && list.Length > 0 && p.ShipCount() < p.Plan.Ships; i++)
+        for (var i = 0; i < MaxShips && n < ships && list.Length > 0 && p.ShipCount() < p.Plan.Ships + (_host?.Bands(a) ?? 0); i++)
         {
             if (p.Ships[i].State != PowerShipState.None)
                 continue;
