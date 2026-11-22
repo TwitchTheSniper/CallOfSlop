@@ -13,7 +13,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// one row per family, material and size band, so the coverage of the Assembler's list can be counted. Run the part kit's assembling (--gen-parts assembling)
 /// after it for the machines' recipes.
 /// </summary>
-public sealed class PressParts : IPartGenerator
+public sealed partial class PressParts : IPartGenerator
 {
     public string Name => "press_parts";
 
@@ -685,6 +685,7 @@ public sealed class PressParts : IPartGenerator
             Pattern("l", "L Bracket", "L bracket", "l-angle 15x15x15 steel", blanks: ["l-angle", "solid"]),
             Pattern("corner", "Corner Bracket", "corner bracket", "l-angle 25x25x25 steel", blanks: ["l-angle"]),
             Pattern("gusset", "Gusset 0.25 m", "gusset", "plate 25x10x25 steel", blanks: ["plate"]));
+        bracketPatterns.AddRange(More("bracket")); // (Assembler parts to the press, PressParts.ToPress.cs: at the end of the list, as every die's new patterns)
         // Housing: a flange round each open end, a lid seam at 0.9 of its height on its sides, four bosses on its long edges.
         var housing = new List<object?>();
         foreach (var (z0, z1) in new[] { (0.0, 0.06), (0.94, 1.0) })
@@ -820,7 +821,7 @@ public sealed class PressParts : IPartGenerator
         var copper = Kit("copper", false, 1, 2, "length", 99);
         yield return SizedDie("Button", ["plate", "solid", "round"], ["laminate", "metal", "steel", "wood"], [10, 180], [10, 800], [0.25, 16], 1, 0.02, button, Py.L(
             Pattern("button", "Button", "button", "plate 10x10x10 laminate", bay2: copper),
-            Pattern("switch", "Switch", "switch", "plate 10x10x15 laminate", bay2: copper)));
+            Pattern("switch", "Switch", "switch", "plate 10x10x15 laminate", bay2: copper)).And(More("button", copper)));
         // Gear: a toothed rim round the middle of the rod and a hub at each end.
         var gear = Py.L(
             Feature("teeth", [-0.08, -0.08, 0.25, 1.08, 1.08, 0.75], "bare", proud: "xy"),
@@ -861,7 +862,7 @@ public sealed class PressParts : IPartGenerator
         // pressed one there, so a pressed gearbox drove a truck at 11.5 m/s where its catalogue twin gave 17.9: Press phase 5. A rated like part scales.)
         var torque = Py.L(Scale("maxTorque", "across", 3, true));
         yield return SizedDie("Drive", ["hollow", "solid"], ["steel", "metal", "bronze"], [20, 720], [20, 1600], [0.5, 8], 3, 0.02, drive,
-            DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
+            DrivePatterns.Concat(MoreDrivePatterns).Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
         foreach (var die in WorkingDies3b())
             yield return die;
         yield return BarrelDie();
@@ -1074,7 +1075,7 @@ public sealed class PressParts : IPartGenerator
             Pattern("piston", "Piston 1x1 Medium", "piston", "round 25x25x50 steel", bay2: servos, scale: linear, along: "y"),
             Pattern("hinge", "Motor Hinge", "motor hinge", "solid 20x25x55 steel", blanks: ["solid"], bay2: servos, scale: turning, along: "y"),
             Pattern("turntable", "Turntable", "turntable", "solid 65x65x20 steel", blanks: ["solid"], bay2: servos, scale: turning, along: "y"),
-            Pattern("pivot", "Free Pivot 1x1", "free pivot", "solid 30x25x30 steel", blanks: ["solid"], bay2: Kit("Bearing", true, 1, 2, "across", 16), along: "y")));
+            Pattern("pivot", "Free Pivot 1x1", "free pivot", "solid 30x25x30 steel", blanks: ["solid"], bay2: Kit("Bearing", true, 1, 2, "across", 16), along: "y")).And(More("actuator", Kit("Bearing", true, 1, 2, "across", 16), along: "y")));
         // Spring: wound bands from 0.25 to 0.75 of its length; Bearings by size; load as the section's area and strength, travel as the length.
         var spring = new List<object?>();
         foreach (var z in new[] { 0.25, 0.45, 0.65 })
@@ -1085,7 +1086,7 @@ public sealed class PressParts : IPartGenerator
             Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: Kit("Gear Set", true, 0, 2, "across", 16), scale: load, along: "y"),
             Pattern("leaf", "Leaf Spring", "leaf spring", "solid 10x55x90 steel", bay2: springBearings, scale: load, along: "z"),
             Pattern("rigid", "Rigid Mount", "rigid mount", "solid 10x30x40 steel", bay2: springBearings, scale: load, along: "y"),
-            Pattern("light", "Light Suspension", "light suspension", "solid 25x25x30 steel", bay2: springBearings, scale: load, along: "y")));
+            Pattern("light", "Light Suspension", "light suspension", "solid 25x25x30 steel", bay2: springBearings, scale: load, along: "y")).And(More("spring", springBearings, load, along: "")));
         // Cable: a ribbed jacket (a ring every 0.2 of its length) and a plug at each end; copper or rubber by length (the user's "cable by length").
         var cable = new List<object?>();
         foreach (var z in new[] { 0.2, 0.4, 0.6, 0.8 })
@@ -1101,7 +1102,7 @@ public sealed class PressParts : IPartGenerator
             Pattern("power", "Power Lead Reel", "power lead reel", "round 45x45x60 steel", bay2: copperByLength, scale: reach, along: "x"),
             Pattern("data", "Data Lead Reel", "data lead reel", "round 45x45x60 steel", bay2: copperByLength, scale: reach, along: "x"),
             Pattern("hose", "Fluid Hose Reel", "fluid hose reel", "round 45x45x60 steel", bay2: rubberByLength, scale: reach, along: "x"),
-            Pattern("fuel", "Fuel Line", "fuel line", "pipe5 15x15x50 steel", blanks: ["pipe"], bay2: rubberByLength, along: "x")));
+            Pattern("fuel", "Fuel Line", "fuel line", "pipe5 15x15x50 steel", blanks: ["pipe"], bay2: rubberByLength, along: "x")).And(More("cable")));
         // Control: a face plate on its top end and a cable gland on its side; Circuit Boards by its largest face.
         var control = Py.L(
             Feature("face", [0.15, 0.15, 1, 0.85, 0.85, 1.03], "bare", proud: "z", clamp: "z", min: 0.3, max: 3),
@@ -1113,7 +1114,7 @@ public sealed class PressParts : IPartGenerator
             ("compare", "Compare", "compare"), ("proximity", "Proximity Sensor", "proximity sensor"), ("speed", "Speed Sensor", "speed sensor"),
         };
         yield return SizedDie("Control", ["plate", "hollow", "solid"], ["laminate", "metal", "steel"], [10, 720], [10, 800], [0.1, 8], 2, 0.02, control,
-            gates.Select(g => (object?)Pattern(g.Id, g.Like, g.Label, "solid 20x20x25 laminate", bay2: boards, along: "y")).ToList());
+            [.. gates.Select(g => (object?)Pattern(g.Id, g.Like, g.Label, "solid 20x20x25 laminate", bay2: boards, along: "y")), .. More("control", boards, along: "y")]);
         // Tank: a dished cap on each end, a filler neck at the middle of its top, two saddle bands; capacity as its volume.
         var tank = Py.L(
             Feature("cap", [0.1, 0.1, -0.04, 0.9, 0.9, 0], "dark", proud: "z", clamp: "z", min: 1, max: 50),
@@ -1132,13 +1133,13 @@ public sealed class PressParts : IPartGenerator
         var beam = Py.L(
             Feature("flange", [-0.075, -0.075, 0, 1.075, 1.075, 0.05], "bare", proud: "xy", clamp: "z", min: 1, max: 50),
             Feature("flange", [-0.075, -0.075, 0.95, 1.075, 1.075, 1], "bare", proud: "xy", clamp: "z", min: 1, max: 50));
-        yield return SizedDie("Beam", ["solid", "hollow", "i-beam", "c-channel", "t-bar", "round"], ["steel", "metal", "bronze", "wood", "concrete"], [10, 2880], [50, 12800], [2, 64], 2, 0.002, beam, Py.L(
+        yield return SizedDie("Beam", ["solid", "hollow", "i-beam", "c-channel", "t-bar", "round", "pipe", "l-angle"], ["steel", "metal", "bronze", "wood", "concrete"], [10, 2880], [50, 12800], [2, 64], 2, 0.002, beam, Py.L(
             Pattern("girder", "Frame Beam", "girder", "i-beam 50x50x200 steel"),
             Pattern("column", "Frame Beam", "column", "hollow 50x50x200 steel", features: Py.L(
                 Feature("base", [-0.2, -0.2, -0.03, 1.2, 1.2, 0], "dark", proud: "z", clamp: "z", min: 1, max: 30),
                 Feature("base", [-0.2, -0.2, 1, 1.2, 1.2, 1.03], "dark", proud: "z", clamp: "z", min: 1, max: 30))),
             Pattern("strut", "Frame Beam", "strut", "solid 20x20x100 steel", features: Py.L(
-                Feature("band", [-0.06, -0.06, 0.47, 1.06, 1.06, 0.53], "dark", proud: "xy")))));
+                Feature("band", [-0.06, -0.06, 0.47, 1.06, 1.06, 0.53], "dark", proud: "xy")))).And(More("beam")));
     }
 
     /// <summary>
@@ -1177,7 +1178,7 @@ public sealed class PressParts : IPartGenerator
         foreach (var p in EnginePatterns)
             foreach (var (name, blank) in EnginePresets(p.Piece, p.Section, p.Along))
                 Add(name, "engine", p.Id, blank);
-        foreach (var d in DrivePatterns)
+        foreach (var d in DrivePatterns.Concat(MoreDrivePatterns))
             Add(d.Like, "drive", d.Id, d.Blank);
         Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");
         Add("Sheet Steel 1 m", "plate", "sheet", "plate 100x10x100 steel");
@@ -1204,6 +1205,9 @@ public sealed class PressParts : IPartGenerator
         // assembly by the sort's rule (role gun), so the hand-made three keep their Assembler recipes beside their presets.
         foreach (var (id, like, _, blank, _) in AllReceiverPatterns())
             Add(like, "receiver", id, blank);
+        // Assembler parts to the press (Sean, 2026-11-22; PressParts.ToPress.cs): after every preset before them.
+        foreach (var (part, die, pattern, blank) in MoreToPress())
+            Add(part, die, pattern, blank);
         return r;
     }
 

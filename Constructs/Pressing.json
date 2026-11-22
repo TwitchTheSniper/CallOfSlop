@@ -571,6 +571,96 @@
      "blanks": [
       "plate"
      ]
+    },
+    {
+     "id": "brace12",
+     "like": "Brace 1:2 0.5x1 m",
+     "label": "brace 1:2",
+     "preset": "plate 50x10x100 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ]
+    },
+    {
+     "id": "brace45",
+     "like": "Brace 45 1 m",
+     "label": "brace 45",
+     "preset": "plate 100x10x100 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ]
+    },
+    {
+     "id": "cross",
+     "like": "Cross Brace 1 m",
+     "label": "cross brace",
+     "preset": "plate 100x10x100 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ]
+    },
+    {
+     "id": "corner3",
+     "like": "3-Way Corner",
+     "label": "3-way corner",
+     "preset": "solid 50x50x50 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "hub6",
+     "like": "6-Way Hub",
+     "label": "6-way hub",
+     "preset": "solid 75x75x75 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "cornerjn",
+     "like": "Corner Junction",
+     "label": "corner junction",
+     "preset": "solid 25x50x50 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "crossjn",
+     "like": "Cross Junction",
+     "label": "cross junction",
+     "preset": "solid 25x75x75 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "tjunction",
+     "like": "T Junction",
+     "label": "T junction",
+     "preset": "solid 25x50x75 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "endcap",
+     "like": "Beam End Cap",
+     "label": "beam end cap",
+     "preset": "plate 25x10x25 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ]
     }
    ]
   },
@@ -1445,6 +1535,146 @@
      "like": "Switch",
      "label": "switch",
      "preset": "plate 10x10x15 laminate",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "keyswitch",
+     "like": "Key Switch",
+     "label": "key switch",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "mushroom",
+     "like": "Mushroom Button",
+     "label": "mushroom button",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "rocker",
+     "like": "Rocker Switch",
+     "label": "rocker switch",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "knob",
+     "like": "Rotary Knob",
+     "label": "rotary knob",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "slider",
+     "like": "Slider",
+     "label": "slider",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "toggleswitch",
+     "like": "Toggle Switch",
+     "label": "toggle switch",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "selector",
+     "like": "Gear Selector",
+     "label": "gear selector",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "reader",
+     "like": "Input Reader",
+     "label": "input reader",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "bakelite",
+     "like": "Bakelite Switch",
+     "label": "bakelite switch",
+     "preset": "plate 15x10x15 laminate",
+     "auto": false,
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "lever",
+     "like": "Lever",
+     "label": "lever",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
      "bay2": {
       "material": "copper",
       "base": 1.0,
@@ -2327,6 +2557,153 @@
        "strength": true
       }
      ]
+    },
+    {
+     "id": "lowrange",
+     "like": "Low-Range Gearbox",
+     "label": "low-range gearbox",
+     "preset": "solid 50x50x60 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "reduction",
+     "like": "Reduction Gearbox",
+     "label": "reduction gearbox",
+     "preset": "solid 40x40x50 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "rightangle",
+     "like": "Right-Angle Gearbox",
+     "label": "right-angle gearbox",
+     "preset": "solid 50x50x50 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "sequential",
+     "like": "Sequential Gearbox",
+     "label": "sequential gearbox",
+     "preset": "solid 50x50x60 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "tgearbox",
+     "like": "T Gearbox",
+     "label": "T gearbox",
+     "preset": "solid 50x50x50 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "transmission",
+     "like": "Transmission",
+     "label": "transmission",
+     "preset": "solid 50x50x50 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "liveaxle",
+     "like": "Live Axle",
+     "label": "live axle",
+     "preset": "hollow 50x50x160 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
     }
    ]
   },
@@ -2681,6 +3058,25 @@
       "by": "across",
       "max": 16
      }
+    },
+    {
+     "id": "swivel",
+     "like": "Free Swivel 1x1",
+     "label": "free swivel",
+     "preset": "solid 25x25x25 steel",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     }
     }
    ]
   },
@@ -2832,6 +3228,190 @@
      "preset": "solid 25x25x30 steel",
      "body": "like",
      "along": "y",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "adjustable",
+     "like": "Adjustable Suspension",
+     "label": "adjustable suspension",
+     "preset": "solid 10x30x30 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "hydraulic",
+     "like": "Hydraulic Suspension",
+     "label": "hydraulic suspension",
+     "preset": "solid 10x30x30 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "longtravel",
+     "like": "Long-Travel Suspension",
+     "label": "long-travel suspension",
+     "preset": "solid 10x30x30 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "stiff",
+     "like": "Stiff Suspension",
+     "label": "stiff suspension",
+     "preset": "solid 10x30x30 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "wishbone",
+     "like": "Double Wishbone",
+     "label": "double wishbone",
+     "preset": "solid 20x75x75 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "swingarm",
+     "like": "Swing Arm",
+     "label": "swing arm",
+     "preset": "solid 20x50x75 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "trailing",
+     "like": "Trailing Arm",
+     "label": "trailing arm",
+     "preset": "solid 20x25x75 steel",
+     "auto": false,
+     "body": "like",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "pogo",
+     "like": "Pogo Strut",
+     "label": "pogo strut",
+     "preset": "solid 20x25x125 steel",
+     "auto": false,
+     "body": "like",
      "bay2": {
       "part": "Bearing",
       "base": 1.0,
@@ -3082,6 +3662,16 @@
       "by": "length",
       "max": 99
      }
+    },
+    {
+     "id": "clamp",
+     "like": "Cable Clamp x1",
+     "label": "cable clamp",
+     "preset": "round 10x10x20 steel",
+     "auto": false,
+     "blanks": [
+      "round"
+     ]
     }
    ]
   },
@@ -3244,6 +3834,246 @@
      "like": "Speed Sensor",
      "label": "speed sensor",
      "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "altitude",
+     "like": "Altitude Sensor",
+     "label": "altitude sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "damage",
+     "like": "Damage Sensor",
+     "label": "damage sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "heading",
+     "like": "Heading Sensor",
+     "label": "heading sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "level",
+     "like": "Level Sensor",
+     "label": "level sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "occupancy",
+     "like": "Occupancy Sensor",
+     "label": "occupancy sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "tilt",
+     "like": "Tilt Sensor",
+     "label": "tilt sensor",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "filter",
+     "like": "Filter",
+     "label": "filter",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "math",
+     "like": "Math Block",
+     "label": "math block",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "mux",
+     "like": "Multiplexer",
+     "label": "multiplexer",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "nand",
+     "like": "NAND Gate",
+     "label": "NAND gate",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "or",
+     "like": "OR Gate",
+     "label": "OR gate",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "xor",
+     "like": "XOR Gate",
+     "label": "XOR gate",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "random",
+     "like": "Random",
+     "label": "random",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "scale",
+     "like": "Scale",
+     "label": "scale",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "toggle",
+     "like": "Toggle",
+     "label": "toggle",
+     "preset": "solid 20x20x25 laminate",
+     "auto": false,
      "body": "like",
      "along": "y",
      "bay2": {
@@ -3499,7 +4329,9 @@
     "i-beam",
     "c-channel",
     "t-bar",
-    "round"
+    "round",
+    "pipe",
+    "l-angle"
    ],
    "materials": [
     "steel",
@@ -3625,6 +4457,46 @@
        "proud": "xy",
        "look": "dark"
       }
+     ]
+    },
+    {
+     "id": "rod",
+     "like": "Steel Rod 1 m",
+     "label": "rod",
+     "preset": "round 10x10x100 steel",
+     "auto": false,
+     "blanks": [
+      "round"
+     ]
+    },
+    {
+     "id": "tube",
+     "like": "Steel Tube 1 m",
+     "label": "tube",
+     "preset": "pipe5 15x15x100 steel",
+     "auto": false,
+     "blanks": [
+      "pipe"
+     ]
+    },
+    {
+     "id": "angle",
+     "like": "Angle Iron 1 m",
+     "label": "angle",
+     "preset": "l-angle 25x25x100 steel",
+     "auto": false,
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "id": "channel",
+     "like": "Channel 1 m",
+     "label": "channel",
+     "preset": "c-channel 25x25x100 steel",
+     "auto": false,
+     "blanks": [
+      "c-channel"
      ]
     }
    ]
@@ -6701,6 +7573,48 @@
    "blank": "hollow 50x50x50 steel"
   },
   {
+   "part": "Low-Range Gearbox",
+   "die": "drive",
+   "pattern": "lowrange",
+   "blank": "solid 50x50x60 steel"
+  },
+  {
+   "part": "Reduction Gearbox",
+   "die": "drive",
+   "pattern": "reduction",
+   "blank": "solid 40x40x50 steel"
+  },
+  {
+   "part": "Right-Angle Gearbox",
+   "die": "drive",
+   "pattern": "rightangle",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "Sequential Gearbox",
+   "die": "drive",
+   "pattern": "sequential",
+   "blank": "solid 50x50x60 steel"
+  },
+  {
+   "part": "T Gearbox",
+   "die": "drive",
+   "pattern": "tgearbox",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "Transmission",
+   "die": "drive",
+   "pattern": "transmission",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "Live Axle",
+   "die": "drive",
+   "pattern": "liveaxle",
+   "blank": "hollow 50x50x160 steel"
+  },
+  {
    "part": "Steel Plate",
    "die": "plate",
    "pattern": "steel",
@@ -7215,6 +8129,924 @@
    "die": "receiver",
    "pattern": "sunbeamlance",
    "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Brace 1:2 0.5x1 m",
+   "die": "bracket",
+   "pattern": "brace12",
+   "blank": "plate 50x10x100 steel"
+  },
+  {
+   "part": "Brace 45 1 m",
+   "die": "bracket",
+   "pattern": "brace45",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Cross Brace 1 m",
+   "die": "bracket",
+   "pattern": "cross",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "3-Way Corner",
+   "die": "bracket",
+   "pattern": "corner3",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "6-Way Hub",
+   "die": "bracket",
+   "pattern": "hub6",
+   "blank": "solid 75x75x75 steel"
+  },
+  {
+   "part": "Corner Junction",
+   "die": "bracket",
+   "pattern": "cornerjn",
+   "blank": "solid 25x50x50 steel"
+  },
+  {
+   "part": "Cross Junction",
+   "die": "bracket",
+   "pattern": "crossjn",
+   "blank": "solid 25x75x75 steel"
+  },
+  {
+   "part": "T Junction",
+   "die": "bracket",
+   "pattern": "tjunction",
+   "blank": "solid 25x50x75 steel"
+  },
+  {
+   "part": "Beam End Cap",
+   "die": "bracket",
+   "pattern": "endcap",
+   "blank": "plate 25x10x25 steel"
+  },
+  {
+   "part": "Key Switch",
+   "die": "button",
+   "pattern": "keyswitch",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Mushroom Button",
+   "die": "button",
+   "pattern": "mushroom",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Rocker Switch",
+   "die": "button",
+   "pattern": "rocker",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Rotary Knob",
+   "die": "button",
+   "pattern": "knob",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Slider",
+   "die": "button",
+   "pattern": "slider",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Toggle Switch",
+   "die": "button",
+   "pattern": "toggleswitch",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Gear Selector",
+   "die": "button",
+   "pattern": "selector",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Input Reader",
+   "die": "button",
+   "pattern": "reader",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Bakelite Switch",
+   "die": "button",
+   "pattern": "bakelite",
+   "blank": "plate 15x10x15 laminate"
+  },
+  {
+   "part": "Lever",
+   "die": "button",
+   "pattern": "lever",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Altitude Sensor",
+   "die": "control",
+   "pattern": "altitude",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Damage Sensor",
+   "die": "control",
+   "pattern": "damage",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Heading Sensor",
+   "die": "control",
+   "pattern": "heading",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Level Sensor",
+   "die": "control",
+   "pattern": "level",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Occupancy Sensor",
+   "die": "control",
+   "pattern": "occupancy",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Tilt Sensor",
+   "die": "control",
+   "pattern": "tilt",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Filter",
+   "die": "control",
+   "pattern": "filter",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Math Block",
+   "die": "control",
+   "pattern": "math",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Multiplexer",
+   "die": "control",
+   "pattern": "mux",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "NAND Gate",
+   "die": "control",
+   "pattern": "nand",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "OR Gate",
+   "die": "control",
+   "pattern": "or",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "XOR Gate",
+   "die": "control",
+   "pattern": "xor",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Random",
+   "die": "control",
+   "pattern": "random",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Scale",
+   "die": "control",
+   "pattern": "scale",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Toggle",
+   "die": "control",
+   "pattern": "toggle",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Free Swivel 1x1",
+   "die": "actuator",
+   "pattern": "swivel",
+   "blank": "solid 25x25x25 steel"
+  },
+  {
+   "part": "Adjustable Suspension",
+   "die": "spring",
+   "pattern": "adjustable",
+   "blank": "solid 10x30x30 steel"
+  },
+  {
+   "part": "Hydraulic Suspension",
+   "die": "spring",
+   "pattern": "hydraulic",
+   "blank": "solid 10x30x30 steel"
+  },
+  {
+   "part": "Long-Travel Suspension",
+   "die": "spring",
+   "pattern": "longtravel",
+   "blank": "solid 10x30x30 steel"
+  },
+  {
+   "part": "Stiff Suspension",
+   "die": "spring",
+   "pattern": "stiff",
+   "blank": "solid 10x30x30 steel"
+  },
+  {
+   "part": "Double Wishbone",
+   "die": "spring",
+   "pattern": "wishbone",
+   "blank": "solid 20x75x75 steel"
+  },
+  {
+   "part": "Swing Arm",
+   "die": "spring",
+   "pattern": "swingarm",
+   "blank": "solid 20x50x75 steel"
+  },
+  {
+   "part": "Trailing Arm",
+   "die": "spring",
+   "pattern": "trailing",
+   "blank": "solid 20x25x75 steel"
+  },
+  {
+   "part": "Pogo Strut",
+   "die": "spring",
+   "pattern": "pogo",
+   "blank": "solid 20x25x125 steel"
+  },
+  {
+   "part": "Cable Clamp x1",
+   "die": "cable",
+   "pattern": "clamp",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Steel Rod 1 m",
+   "die": "beam",
+   "pattern": "rod",
+   "blank": "round 10x10x100 steel"
+  },
+  {
+   "part": "Steel Tube 1 m",
+   "die": "beam",
+   "pattern": "tube",
+   "blank": "pipe5 15x15x100 steel"
+  },
+  {
+   "part": "Angle Iron 1 m",
+   "die": "beam",
+   "pattern": "angle",
+   "blank": "l-angle 25x25x100 steel"
+  },
+  {
+   "part": "Channel 1 m",
+   "die": "beam",
+   "pattern": "channel",
+   "blank": "c-channel 25x25x100 steel"
+  },
+  {
+   "part": "Brace 1:2 1x2 m",
+   "die": "bracket",
+   "pattern": "brace12",
+   "blank": "plate 100x10x200 steel"
+  },
+  {
+   "part": "Brace 45 0.5 m",
+   "die": "bracket",
+   "pattern": "brace45",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Brace 45 2 m",
+   "die": "bracket",
+   "pattern": "brace45",
+   "blank": "plate 200x10x200 steel"
+  },
+  {
+   "part": "Cross Brace 0.5 m",
+   "die": "bracket",
+   "pattern": "cross",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Motor Hinge 1x1 Short",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 20x25x30 steel"
+  },
+  {
+   "part": "Motor Hinge 1x1 Long",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 20x25x80 steel"
+  },
+  {
+   "part": "Motor Hinge 2x2 Short",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 45x50x30 steel"
+  },
+  {
+   "part": "Motor Hinge 2x2 Medium",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 45x50x55 steel"
+  },
+  {
+   "part": "Motor Hinge 2x2 Long",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 45x50x80 steel"
+  },
+  {
+   "part": "Motor Hinge 3x3 Short",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 70x75x30 steel"
+  },
+  {
+   "part": "Motor Hinge 3x3 Medium",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 70x75x55 steel"
+  },
+  {
+   "part": "Motor Hinge 3x3 Long",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 70x75x80 steel"
+  },
+  {
+   "part": "Motor Hinge Medium",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 95x100x105 steel"
+  },
+  {
+   "part": "Piston",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 40x40x30 steel"
+  },
+  {
+   "part": "Piston 1x1 Short",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Piston 1x1 Long",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 25x25x75 steel"
+  },
+  {
+   "part": "Piston 2x2 Short",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 50x50x25 steel"
+  },
+  {
+   "part": "Piston 2x2 Medium",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 50x50x50 steel"
+  },
+  {
+   "part": "Piston 3x3 Short",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 75x75x25 steel"
+  },
+  {
+   "part": "Piston 3x3 Medium",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 75x75x50 steel"
+  },
+  {
+   "part": "Piston 3x3 Long",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 75x75x75 steel"
+  },
+  {
+   "part": "Turntable 1x1 Short",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 25x25x20 steel"
+  },
+  {
+   "part": "Turntable 1x1 Medium",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 25x25x30 steel"
+  },
+  {
+   "part": "Turntable 1x1 Long",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 25x25x40 steel"
+  },
+  {
+   "part": "Turntable 2x2 Medium",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 50x50x30 steel"
+  },
+  {
+   "part": "Turntable 2x2 Long",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 50x50x40 steel"
+  },
+  {
+   "part": "Turntable 3x3 Short",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 75x75x20 steel"
+  },
+  {
+   "part": "Turntable 3x3 Medium",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 75x75x30 steel"
+  },
+  {
+   "part": "Turntable 3x3 Long",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 75x75x40 steel"
+  },
+  {
+   "part": "Turntable Medium",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 100x100x100 steel"
+  },
+  {
+   "part": "Free Pivot 2x2",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "Free Pivot 3x3",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 75x75x75 steel"
+  },
+  {
+   "part": "Free Pivot Medium",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 100x100x100 steel"
+  },
+  {
+   "part": "Free Swivel 2x2",
+   "die": "actuator",
+   "pattern": "swivel",
+   "blank": "solid 50x50x25 steel"
+  },
+  {
+   "part": "Free Swivel 3x3",
+   "die": "actuator",
+   "pattern": "swivel",
+   "blank": "solid 75x75x40 steel"
+  },
+  {
+   "part": "Free Swivel Medium",
+   "die": "actuator",
+   "pattern": "swivel",
+   "blank": "solid 100x100x50 steel"
+  },
+  {
+   "part": "Kart Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 10x25x25 steel"
+  },
+  {
+   "part": "Heavy Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 20x25x25 steel"
+  },
+  {
+   "part": "Truck Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 25x25x30 steel"
+  },
+  {
+   "part": "Medium Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 45x100x100 steel"
+  },
+  {
+   "part": "Kart Double Wishbone",
+   "die": "spring",
+   "pattern": "wishbone",
+   "blank": "solid 10x50x75 steel"
+  },
+  {
+   "part": "Light Double Wishbone",
+   "die": "spring",
+   "pattern": "wishbone",
+   "blank": "solid 15x75x75 steel"
+  },
+  {
+   "part": "Heavy Double Wishbone",
+   "die": "spring",
+   "pattern": "wishbone",
+   "blank": "solid 25x75x100 steel"
+  },
+  {
+   "part": "Truck Double Wishbone",
+   "die": "spring",
+   "pattern": "wishbone",
+   "blank": "solid 30x75x150 steel"
+  },
+  {
+   "part": "Kart Swing Arm",
+   "die": "spring",
+   "pattern": "swingarm",
+   "blank": "solid 10x50x50 steel"
+  },
+  {
+   "part": "Light Swing Arm",
+   "die": "spring",
+   "pattern": "swingarm",
+   "blank": "solid 15x50x75 steel"
+  },
+  {
+   "part": "Heavy Swing Arm",
+   "die": "spring",
+   "pattern": "swingarm",
+   "blank": "solid 25x50x100 steel"
+  },
+  {
+   "part": "Truck Swing Arm",
+   "die": "spring",
+   "pattern": "swingarm",
+   "blank": "solid 30x50x150 steel"
+  },
+  {
+   "part": "Kart Trailing Arm",
+   "die": "spring",
+   "pattern": "trailing",
+   "blank": "solid 10x25x50 steel"
+  },
+  {
+   "part": "Light Trailing Arm",
+   "die": "spring",
+   "pattern": "trailing",
+   "blank": "solid 15x25x75 steel"
+  },
+  {
+   "part": "Heavy Trailing Arm",
+   "die": "spring",
+   "pattern": "trailing",
+   "blank": "solid 25x25x100 steel"
+  },
+  {
+   "part": "Truck Trailing Arm",
+   "die": "spring",
+   "pattern": "trailing",
+   "blank": "solid 30x25x150 steel"
+  },
+  {
+   "part": "Kart Pogo Strut",
+   "die": "spring",
+   "pattern": "pogo",
+   "blank": "solid 10x25x75 steel"
+  },
+  {
+   "part": "Light Pogo Strut",
+   "die": "spring",
+   "pattern": "pogo",
+   "blank": "solid 15x25x100 steel"
+  },
+  {
+   "part": "Heavy Pogo Strut",
+   "die": "spring",
+   "pattern": "pogo",
+   "blank": "solid 25x25x150 steel"
+  },
+  {
+   "part": "Cable Clamp x2",
+   "die": "cable",
+   "pattern": "clamp",
+   "blank": "round 10x10x35 steel"
+  },
+  {
+   "part": "Cable Clamp x3",
+   "die": "cable",
+   "pattern": "clamp",
+   "blank": "round 10x10x45 steel"
+  },
+  {
+   "part": "Drive Shaft 0.5 m",
+   "die": "shaft",
+   "pattern": "shaft",
+   "blank": "round 20x20x50 steel"
+  },
+  {
+   "part": "Drive Shaft 2 m",
+   "die": "shaft",
+   "pattern": "shaft",
+   "blank": "round 20x20x200 steel"
+  },
+  {
+   "part": "Wide Differential",
+   "die": "drive",
+   "pattern": "diff",
+   "blank": "hollow 50x50x160 steel"
+  },
+  {
+   "part": "Large Fuel Tank",
+   "die": "tank",
+   "pattern": "fuel",
+   "blank": "hollow 50x50x100 steel"
+  },
+  {
+   "part": "Large Fluid Tank",
+   "die": "tank",
+   "pattern": "fluid",
+   "blank": "hollow 50x50x100 steel"
+  },
+  {
+   "part": "Sheet Steel 0.25 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 25x10x25 steel"
+  },
+  {
+   "part": "Sheet Steel 0.5 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Sheet Steel 0.5x1 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 50x10x100 steel"
+  },
+  {
+   "part": "Sheet Steel 1x2 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 100x10x200 steel"
+  },
+  {
+   "part": "Sheet Steel 2 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 200x10x200 steel"
+  },
+  {
+   "part": "Plate Steel 0.25 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 25x10x25 steel"
+  },
+  {
+   "part": "Plate Steel 0.5 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Plate Steel 0.5x1 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 50x10x100 steel"
+  },
+  {
+   "part": "Plate Steel 1x2 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 100x10x200 steel"
+  },
+  {
+   "part": "Plate Steel 2 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 200x10x200 steel"
+  },
+  {
+   "part": "Tread Plate 0.5 m",
+   "die": "plate",
+   "pattern": "tread",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Tread Plate 1x2 m",
+   "die": "plate",
+   "pattern": "tread",
+   "blank": "plate 100x10x200 steel"
+  },
+  {
+   "part": "Tread Plate 2 m",
+   "die": "plate",
+   "pattern": "tread",
+   "blank": "plate 200x10x200 steel"
+  },
+  {
+   "part": "Mesh Grate 0.5 m",
+   "die": "plate",
+   "pattern": "grate",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Mesh Grate 1x2 m",
+   "die": "plate",
+   "pattern": "grate",
+   "blank": "plate 100x10x200 steel"
+  },
+  {
+   "part": "Mesh Grate 2 m",
+   "die": "plate",
+   "pattern": "grate",
+   "blank": "plate 200x10x200 steel"
+  },
+  {
+   "part": "Armour Plate 0.5 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 50x20x50 steel"
+  },
+  {
+   "part": "Armour Plate 0.5x1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 50x20x100 steel"
+  },
+  {
+   "part": "Armour Plate 1x2 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x20x200 steel"
+  },
+  {
+   "part": "Armour Plate 2 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 200x20x200 steel"
+  },
+  {
+   "part": "Medium Armour Plate 1x1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x40x100 steel"
+  },
+  {
+   "part": "Medium Armour Plate 2x1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x40x200 steel"
+  },
+  {
+   "part": "Medium Armour Plate 2x2 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 200x40x200 steel"
+  },
+  {
+   "part": "Medium Armour Belt 1x1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x65x100 steel"
+  },
+  {
+   "part": "Medium Armour Belt 2x1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x65x200 steel"
+  },
+  {
+   "part": "Medium Armour Belt 2x2 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 200x65x200 steel"
+  },
+  {
+   "part": "I-Beam 1 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 25x25x100 steel"
+  },
+  {
+   "part": "I-Beam 1.5 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 25x25x150 steel"
+  },
+  {
+   "part": "I-Beam 2 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 25x25x200 steel"
+  },
+  {
+   "part": "Medium Girder 1 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 50x50x100 steel"
+  },
+  {
+   "part": "Medium Girder 2 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 100x100x200 steel"
+  },
+  {
+   "part": "Medium Girder 3 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 100x100x300 steel"
+  },
+  {
+   "part": "Medium Girder 4 m",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 100x100x400 steel"
+  },
+  {
+   "part": "Square Beam 1 m",
+   "die": "beam",
+   "pattern": "strut",
+   "blank": "solid 25x25x100 steel"
+  },
+  {
+   "part": "Square Beam 1.5 m",
+   "die": "beam",
+   "pattern": "strut",
+   "blank": "solid 25x25x150 steel"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "die": "beam",
+   "pattern": "strut",
+   "blank": "solid 25x25x200 steel"
+  },
+  {
+   "part": "Medium Column 1 m",
+   "die": "beam",
+   "pattern": "column",
+   "blank": "hollow 50x50x100 steel"
+  },
+  {
+   "part": "Medium Column 2 m",
+   "die": "beam",
+   "pattern": "column",
+   "blank": "hollow 100x100x200 steel"
+  },
+  {
+   "part": "Medium Column 4 m",
+   "die": "beam",
+   "pattern": "column",
+   "blank": "hollow 100x100x400 steel"
+  },
+  {
+   "part": "Steel Rod 2 m",
+   "die": "beam",
+   "pattern": "rod",
+   "blank": "round 10x10x200 steel"
+  },
+  {
+   "part": "Steel Tube 2 m",
+   "die": "beam",
+   "pattern": "tube",
+   "blank": "pipe5 15x15x200 steel"
+  },
+  {
+   "part": "Angle Iron 2 m",
+   "die": "beam",
+   "pattern": "angle",
+   "blank": "l-angle 25x25x200 steel"
+  },
+  {
+   "part": "Channel 2 m",
+   "die": "beam",
+   "pattern": "channel",
+   "blank": "c-channel 25x25x200 steel"
   }
  ]
 }

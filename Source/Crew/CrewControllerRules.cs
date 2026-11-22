@@ -139,6 +139,8 @@ public sealed class ControllerRules
                 secs += s * n / Math.Max(1, r.Count);
             }
         }
+        else if (PressTable.Current.CostCapOf(d) is > 0 and var kg) // (a pressed part has no Assembler row: its blank and kit, as units of stock, and a stroke's work)
+            (units, secs) = (kg / Math.Max(RecyclingTable.MinKgPerUnit, RecyclingTable.Current.DefaultKgPerUnit), 5);
         _partBills[d.Id] = (units, secs);
         return (units, secs);
     }
