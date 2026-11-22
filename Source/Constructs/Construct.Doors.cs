@@ -3,7 +3,8 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// One event door of a construct (docs/sandbox/CONSTRUCTS.md, "Event doors"): a door part on the body's own segment with a
+/// One event door of a construct (docs/sandbox/CONSTRUCTS.md, "Event doors"): a door part on the body's own segment (or on a
+/// freeform weld rigid with it, in that weld's frame: a drawer in a module fitted on a welded socket) with a
 /// <c>"door"</c> block, and the small parts hung on it alone (a handle, a sign). Not a joint and not a segment: its leaf sits
 /// in the body frame at its settled pose (shut or open), and only a door that is moving does anything a tick. Its parts are
 /// never in the merged meshes (they are drawn on their own), and settling moves their boxes in the collider and the part tree
@@ -80,8 +81,8 @@ public sealed partial class Construct
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
-            if (p.D.Door == null || p.Seg != 0 || p.Broken)
-                continue;
+            if (p.D.Door == null || p.Seg != 0 && !Rigid(p.Seg) || p.Broken)
+                continue; // (on the body's segment, or on a freeform weld rigid with it: a drawer in a module fitted on a welded socket)
             if (DoorCount == MaxDoors)
                 break;
             if (DoorCount == Doors.Length)
@@ -148,7 +149,7 @@ public sealed partial class Construct
             for (var side = 0; side < 2; side++)
             {
                 int door = side == 0 ? ln.A : ln.B, other = side == 0 ? ln.B : ln.A, sock = side == 0 ? ln.SA : ln.SB;
-                if (_doorAt[door] is not (var k and >= 0) || _doorAt[other] >= 0 || _doorLinks[other] != 1 || Parts[other].Seg != 0)
+                if (_doorAt[door] is not (var k and >= 0) || _doorAt[other] >= 0 || _doorLinks[other] != 1 || Parts[other].Seg != Parts[door].Seg)
                     continue;
                 if (sock == Parts[door].D.Door!.Hang)
                     continue;
@@ -232,7 +233,7 @@ public sealed partial class Construct
     private bool DoorSums(int part) => _sumsValid && !Dirty && !FuseMassHeld(part);
 
     /// <summary>
-    /// Door part <paramref name="part"/> (on segment 0) was just put at its new pose, turned by <paramref name="r"/> from
+    /// Door part <paramref name="part"/> (in its segment's frame) was just put at its new pose, turned by <paramref name="r"/> from
     /// <paramref name="oldPos"/>, its bounds before being <paramref name="oldMin"/>..<paramref name="oldMax"/>. Its boxes are moved
     /// in the collider and its bounds in the part tree, the nodes over them refitted; the body's bounds grow to hold it. The
     /// rest stays as built: the mass and inertia (a leaf moving a metre on a big body changes nothing that matters; a big body's
@@ -266,7 +267,7 @@ public sealed partial class Construct
         ref var p = ref Parts[part];
         if (_collider != null && !_colliderStale)
         {
-            if (FuseRough(part) || MergeOf[part] != 0 || p.D.IsEnvelope || Rides(part)
+            if (p.Seg != 0 || FuseRough(part) || MergeOf[part] != 0 || p.D.IsEnvelope || Rides(part) // (a door on a freeform weld: its leaves are turned into the body's frame, built again)
                 || !_collider.MovePart(part, ColliderLeaves(part), oldMin, oldMax, oldPos, p.Pos, r))
                 ColliderChanged();
         }

@@ -542,6 +542,8 @@ public static partial class ConstructRender
         if (p.Seg > 0 && p.Seg <= c.JointCount)
         {
             seg = SegMatrix(c, p.Seg, alpha);
+            if ((c.DoorMovingCount | c.DoorHeldCount) > 0 && c.MovingDoorOf(i) is var weldDoor and >= 0)
+                seg = ConstructDoors.DrawPose(c, weldDoor) * seg; // (a door on a freeform weld, a drawer in a fitted module: its move in the weld's frame)
         }
         else if ((c.DoorMovingCount | c.DoorHeldCount) > 0 && c.MovingDoorOf(i) is var door and >= 0)
             seg = ConstructDoors.DrawPose(c, door); // (an event door on its way, or a held one open: ConstructDoors.cs)
