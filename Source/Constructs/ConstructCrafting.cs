@@ -397,8 +397,8 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.Pressed || r.MinTier > md.Tier)
-                        continue;
+                    if (r.Pressed || r.MinTier > md.Tier || !ConstructAssembling.Takes(c, m, r))
+                        continue; // (a block Assembler lists only what its modules and bed build: WorkOrders refuses the rest)
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
                         continue;
@@ -416,25 +416,30 @@ public static class ConstructCrafting
             }
             if (md.IsPress)
             {
-                // A Press (Press phase 4): its fitted die's presets, by their catalogue parts. Parts "to size" come by bills and blueprints.
-                if (ConstructPress.SizedDieOf(PressTable.Current, c, m) is not { } die)
-                    continue;
-                foreach (var pr in die.Presets)
+                // A Press (Press phase 4): its fitted die's presets, by their catalogue parts, and those of every die it can swap to from a
+                // Die Rack chuted into it (PressDieSwap.cs). Parts "to size" come by bills and blueprints.
+                var fitted = ConstructPress.SizedDieOf(PressTable.Current, c, m);
+                foreach (var die in PressTable.Current.Dies)
                 {
-                    var what = new WorkOrder { Part = (ushort)pr.Part.Id, Count = 1 };
-                    if (WorkOrders.Refusal(world, c, m, what) != null)
+                    if (!ReferenceEquals(die, fitted) && !ConstructPress.DieRackOf(world, c, m, die, out _, out _))
                         continue;
-                    var row = Row(what, pr.Part);
-                    if (row.Make == 1)
-                        continue;
-                    var missing = PressMissing(world, c, net, m, pr.Pattern, pr.Blank, out var chain);
-                    var make = (byte)(missing.Length == 0 ? 1 : chain ? 2 : 3);
-                    if (row.Make == 0 || make < row.Make)
+                    foreach (var pr in die.Presets)
                     {
-                        row.Make = make;
-                        row.Missing = missing;
-                        row.Machine = m;
-                        row.Recipe = null;
+                        var what = new WorkOrder { Part = (ushort)pr.Part.Id, Count = 1 };
+                        if (WorkOrders.Refusal(world, c, m, what) != null)
+                            continue;
+                        var row = Row(what, pr.Part);
+                        if (row.Make == 1)
+                            continue;
+                        var missing = PressMissing(world, c, net, m, pr.Pattern, pr.Blank, out var chain);
+                        var make = (byte)(missing.Length == 0 ? 1 : chain ? 2 : 3);
+                        if (row.Make == 0 || make < row.Make)
+                        {
+                            row.Make = make;
+                            row.Missing = missing;
+                            row.Machine = m;
+                            row.Recipe = null;
+                        }
                     }
                 }
                 continue;
@@ -605,7 +610,7 @@ public static class ConstructCrafting
         foreach (var (part, count) in r.Parts)
             if (Stock(world, c, net, (ushort)part.Id) + (ms0 != null ? Holds(ms0, (ushort)part.Id) : 0) < count)
             {
-                var made = MachineMakes(c, net, (ushort)part.Id);
+                var made = MachineMakes(world, c, net, (ushort)part.Id);
                 chain &= made != null;
                 fp = (fp ^ (ulong)(part.Id * 1000003 + count + 7)) * 1099511628211UL ^ (ulong)(made?.GetHashCode() ?? 0);
             }
@@ -643,7 +648,7 @@ public static class ConstructCrafting
             var have = Stock(world, c, net, (ushort)part.Id) + (ms != null ? Holds(ms, (ushort)part.Id) : 0);
             if (have >= count)
                 continue;
-            var made = MachineMakes(c, net, (ushort)part.Id);
+            var made = MachineMakes(world, c, net, (ushort)part.Id);
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(count).Append(' ').Append(part.Name);
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
@@ -685,7 +690,7 @@ public static class ConstructCrafting
             held += kit.Part != null ? Stock(world, c, net, (ushort)kit.Part.Id) : Bulk(world, c, net, kit.Material, -1);
             if (held < need)
             {
-                var made = kit.Part != null ? MachineMakes(c, net, (ushort)kit.Part.Id) : RefinerMakes(c, net, kit.Material);
+                var made = kit.Part != null ? MachineMakes(world, c, net, (ushort)kit.Part.Id) : RefinerMakes(c, net, kit.Material);
                 chain &= made != null;
                 (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(need).Append(' ').Append(kit.What).Append(" in bay 2");
                 if (made != null)
@@ -707,7 +712,7 @@ public static class ConstructCrafting
         return null;
     }
 
-    private static string? MachineMakes(Construct c, CraftNet net, ushort part)
+    private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
         if (AssemblingTable.Current.Of(part) is not { } r)
         {
@@ -722,7 +727,7 @@ public static class ConstructCrafting
                 return null;
             }
             for (var i = 0; i < net.MachineN; i++)
-                if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die)
+                if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && (ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die) || ConstructPress.DieRackOf(world, c, net.Machines[i], spec.Die, out _, out _))
                     && ConstructPress.Fits(c, net.Machines[i], spec.Blank))
                     return pd.Name;
             return null;

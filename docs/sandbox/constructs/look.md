@@ -115,7 +115,9 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    the piece on its die, back each metre), `"shear"` (over an Extruder's die: down and up as a new piece starts) or `"hinge"` (a clamshell leaf: `"pivot"` on
    the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle). A block
    machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
-   face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is).
+   face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is),
+   and `"inMachine": true` (drawn only while the part is a cell of a machine: a Mast Block outside one, a shed's pillar or a
+   crane's column, draws only its posts, top girts, one foot and one cap, about a ninth of its triangles).
    Drawn only while `ProductionLines.Working` says
    the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
    the bin's fill are the game's own.

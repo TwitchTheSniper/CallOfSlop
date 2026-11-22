@@ -729,7 +729,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      two Assembling rows at the end of the table; Crane Rail Blocks are "craneRail": "hall".
     // 433: lined holes (Sean 2026-11-22): a holed part's key may give a hole three more numbers, its lining (a socket well's walls), which
     //      432 refuses; a socket's well cut again replaces its old hole.
-    public const ushort ProtocolVersion = 433;
+    // 434: supply lines on the station card (economy step 10): Msg.Stations gives each station its supply lines and the consignments
+    //      bound for it as text lines after its moorings.
+    // 435: hand-offs toward a building station (Sean 2026-11-22): a lifter's carry may end at a run's start (LiftPointKind.RunStart, a
+    //      new byte in the lift word's put kind), which 434 can't read.
+    public const ushort ProtocolVersion = 435;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

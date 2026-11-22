@@ -108,7 +108,7 @@ public static class WorkOrders
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (d.IsPress)
-            return PressRefusal(c, part, d, o);
+            return PressRefusal(world, c, part, d, o);
         if (d.IsPanelFormer)
             return ConstructPanelFormer.Refusal(world, c, part, d, o);
         if (o.IsPressed)
@@ -182,6 +182,22 @@ public static class WorkOrders
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
             return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
+        // A block Assembler builds only what its bed and clear height hold, and only with the modules a recipe needs: taken, such an
+        // order would sit at the head of the queue as Too big or Needs module for good (a 17 m frigate deck on an 8 x 8 m bed). A tool
+        // block isn't checked: a chute from a Block Rack swaps it in (AssemblerToolBay).
+        var fit = ConstructAssembling.FitOf(c, part);
+        if (fit.Missing(r) is var missing and not 0)
+            return $"the {made.Name} needs {AsmFit.ModuleWords(missing)} on the {d.Name}";
+        if (fit.AtOnce(made) <= 0)
+        {
+            fit.Footprint(made, out var fx, out var fz, out _);
+            if (Math.Max(fx, fz) > d.BlockMaxSide || fx * fz > d.BlockMaxCells)
+            {
+                var size = made.BoundsMax - made.BoundsMin;
+                return $"the {made.Name} ({size.X:0.#} x {size.Z:0.#} m) is bigger than any {d.Name}'s bed can grow ({d.BlockMaxSide} cells a side, {d.BlockMaxCells} in all)";
+            }
+            return $"the {made.Name} is too big for the {d.Name}: {fit.TooBigWhy(made)}";
+        }
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
         return null;
@@ -191,7 +207,7 @@ public static class WorkOrders
     /// A Press's side (Press phase 4): a pressed key, or a catalogue part that is a preset, whose die is the one fitted and whose blank is
     /// inside the press's across. The order sets what the press makes: its bays take only the order's blank (ConstructPress.SizedRefusal).
     /// </summary>
-    private static string? PressRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    private static string? PressRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (Pressed.SpecOf(o) is not { } spec)
             return o.IsPiece ? $"the {d.Name} presses parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order"
@@ -199,10 +215,11 @@ public static class WorkOrders
                 : $"no die presses the {ConstructParts.Def(o.Part).Name}";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
-        if (ConstructPress.SizedDieOf(PressTable.Current, c, part) is not { } die)
-            return $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die";
-        if (!ReferenceEquals(die, spec.Die))
-            return $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die";
+        // A die it doesn't hold is fine when a chute into it comes from a rack that holds one: it swaps to it for this order (PressDieSwap.cs).
+        var die = ConstructPress.SizedDieOf(PressTable.Current, c, part);
+        if (!ReferenceEquals(die, spec.Die) && !ConstructPress.DieRackOf(world, c, part, spec.Die, out _, out _))
+            return die == null ? $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)"
+                : $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)";
         var across = Pressed.Across(spec.Blank);
         if (!ConstructPress.Fits(c, part, spec.Blank))
             return $"the blank is {across / 100f:0.00} m across and {Math.Max(spec.Blank.W, spec.Blank.H) / 100f:0.00} m wide, {ConstructPress.TooBig(c, part)}";

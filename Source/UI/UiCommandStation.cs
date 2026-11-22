@@ -27,6 +27,7 @@ public sealed partial class Ui
         public bool[] Sells; // a part by its row: does the local player carry one the station takes (goods' rows: false)
         public string Tab; // what the station's power owes the local player
         public string Makes, Uses; // its needs: what it makes and uses (Crew/Stations.json "makes", "uses"; "" for none)
+        public List<string> Lines; // its supply lines and the consignments bound for it (Game.StationLines; economy step 10)
         public int GoodCount;
         public ushort Ship; // the moored ship the local player is aboard (0: none)
         public string ShipLine, SellLabel;
@@ -35,7 +36,7 @@ public sealed partial class Ui
 
     private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   VALUE A UNIT";
 
-    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxListed], Buys = new bool[StationMarkets.MaxListed], Sells = new bool[StationMarkets.MaxListed], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "" };
+    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxListed], Buys = new bool[StationMarkets.MaxListed], Sells = new bool[StationMarkets.MaxListed], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "", Lines = new(Game.MaxSupplyLines) };
 
     private void CmdStationRead(Game g, Construct c, double now)
     {
@@ -58,7 +59,9 @@ public sealed partial class Ui
         var me = g.Local;
         k.Held = (CrewPowers.Of(power)?.Name ?? "NOBODY").ToUpperInvariant();
         k.Trades = power == 0 || me == null || g.CrewStanding(power, me.Id) >= 0;
-        k.Trade = k.Trades ? "TRADES WITH YOU" : "WON'T TRADE WITH YOU";
+        var rate = me == null ? 1 : g.StandingRate(power, me.Id); // (how its power sees you moves its prices to you: Game.StandingRate)
+        var pct = (int)Math.Round((rate - 1) * 100);
+        k.Trade = !k.Trades ? "WON'T TRADE WITH YOU" : pct == 0 ? "TRADES WITH YOU" : string.Create(inv, $"TRADES WITH YOU, PRICES {(pct > 0 ? "BETTER" : "WORSE")} BY {Math.Abs(pct)}%");
         k.Tab = me == null || power == 0 ? "" : g.TabUnlimited ? "UNLIMITED (CREATIVE)" : string.Create(inv, $"THEY OWE YOU {g.TabOf(me.Id, power):N0}");
         var goods = StationMarkets.All[m.Def].Goods;
         for (var i = 0; i < goods.Length && i < m.Stock.Length && k.GoodCount < k.Goods.Length; i++)
@@ -67,7 +70,7 @@ public sealed partial class Ui
             var full = goods[i].Buy > 0 && m.Stock[i] >= goods[i].Most;
             k.Buys[k.GoodCount] = k.Trades && goods[i].Sell > 0 && m.Stock[i] > 0;
             k.Sells[k.GoodCount] = false;
-            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : m.BuyAt(i).ToString("0.00", inv)),6}   {m.SellAt(i),6:0.00}{(m.Short(i) ? "  SHORT" : "")}");
+            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : (m.BuyAt(i) * rate).ToString("0.00", inv)),6}   {m.SellAt(i) / rate,6:0.00}{(m.Short(i) ? "  SHORT" : "")}");
         }
         // Its needs (Karl, 2026-11-20): what it makes and uses an hour; a good it uses and is short of is marked SHORT above, and pays more.
         var makes = new System.Text.StringBuilder();
@@ -82,6 +85,13 @@ public sealed partial class Ui
         }
         k.Makes = makes.ToString();
         k.Uses = uses.ToString();
+        if (g.IsServer)
+            g.StationLines(m.Def, k.Lines);
+        else
+        {
+            k.Lines.Clear();
+            k.Lines.AddRange(m.Lines);
+        }
         // Its parts (Karl, 2026-11-20: parts are physical and carry a value): BUY takes one into a Storage Volume of the moored ship you are
         // aboard, SELL trades every one its stores hold.
         var parts = StationMarkets.All[m.Def].Parts;
@@ -100,7 +110,7 @@ public sealed partial class Ui
             var full = parts[j].Buy > 0 && m.Stock[i] >= parts[j].Most;
             k.Buys[k.GoodCount] = k.Trades && parts[j].Sell > 0 && m.Stock[i] > 0;
             k.Sells[k.GoodCount] = k.Trades && parts[j].Buy > 0 && !full && aboard != null && g.StationShipParts(aboard, parts[j].Part) > 0;
-            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : parts[j].Buy.ToString("0.0", inv)),6}   {parts[j].Sell,6:0.0}");
+            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : (parts[j].Buy * rate).ToString("0.0", inv)),6}   {parts[j].Sell / rate,6:0.0}");
         }
         // Aboard a ship moored here: what the station would pay for its bins.
         if (me == null)
@@ -110,7 +120,7 @@ public sealed partial class Ui
             if (g.Constructs.Get(ship) is not { } s || !g.StationAboard(me, s))
                 continue;
             k.Ship = ship;
-            var value = g.StationOffer(m, s, out var units);
+            var value = g.StationOffer(m, s, out var units) * rate;
             k.ShipLine = "YOU ARE ABOARD " + CmdName(s) + ", DOCKED HERE";
             k.CanSell = k.Trades && units > 0;
             k.SellLabel = !k.Trades ? "THEY WON'T BUY FROM YOU"
@@ -131,7 +141,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 540 * _scale; // (room for a part row's SELL beside its BUY)
         var line = 19 * _scale;
-        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
+        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + t.Lines.Count + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + rows * line + 60 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdStation);
@@ -166,6 +176,12 @@ public sealed partial class Ui
             Row(dl, "MAKES", t.Makes, CmdGreen, ref y);
         if (t.Uses.Length > 0)
             Row(dl, "USES", t.Uses, CmdAmber, ref y);
+        for (var i = 0; i < t.Lines.Count; i++) // (its supply lines and what is on its way: a cut line shows in time to do something about it)
+        {
+            var ln = t.Lines[i];
+            Row(dl, i == 0 ? "SUPPLY" : "", ln, ln.EndsWith("CUT", StringComparison.Ordinal) ? CmdRed : ln.EndsWith("LATE", StringComparison.Ordinal) ? CmdAmber
+                : ln.EndsWith("RUNNING", StringComparison.Ordinal) ? CmdGreen : CmdCyan, ref y);
+        }
         if (t.GoodCount > 0)
         {
             y += 6 * _scale;

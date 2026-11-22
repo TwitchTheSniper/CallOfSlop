@@ -63,6 +63,8 @@ public sealed partial class Construct
 /// </summary>
 public static class MachineBlocks
 {
+    /// <summary>A bit of <see cref="Construct.BlockJoined"/> past the six faces: the part is a cell of a machine's assembly ("inMachine" boxes draw).</summary>
+    public const byte InMachine = 0x40;
     public const int MaxSide = 16; // cells along either side of a bed rectangle (a Core's default: "maxSide" gives its own)
     public const int MaxCells = 128; // cells one machine takes in (a Core's default: "maxCells" gives its own)
     public const int GridHalf = 32; // the furthest a cell may lie from its Core's, either way, and the longest side any Core may ask for
@@ -454,8 +456,8 @@ public static class MachineBlocks
         for (var i = 0; i < n; i++)
         {
             var d = c.Parts[i].D;
-            if (!d.SeamSame)
-                continue;
+            if (!d.SeamSame || i < c.BlockAsmOf.Length && c.BlockAsmOf[i] >= 0)
+                continue; // (a cell a machine took keeps its machine's faces: a Mast Block in an oven's corner)
             if (c.BlockAsmOf.Length < n)
             {
                 var old = c.BlockAsmOf.Length;
@@ -609,7 +611,7 @@ public static class MachineBlocks
         for (var k = 0; k < count; k++)
         {
             var i = queue[k];
-            byte mask = 0;
+            byte mask = InMachine;
             for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
             {
                 var o = c.OtherEnd(e);
@@ -854,6 +856,25 @@ public static class MachineBlocks
             }
             Console.WriteLine($"[blocks] {bp.Name}: {c.PartCount} parts, {c.MachineAsmCount} block machines");
             Console.Write(Report(c));
+            // Seam parts outside any machine (a shed's pillars of Mast Blocks): how many, and how many of their look boxes are drawn.
+            int lone = 0, drawn = 0, all = 0;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var d = c.Parts[i].D;
+                if (!d.HasSeams || i < c.BlockAsmOf.Length && c.BlockAsmOf[i] >= 0)
+                    continue;
+                lone++;
+                var joined = i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0;
+                foreach (var b in d.Boxes)
+                    if (!b.Hidden)
+                    {
+                        all++;
+                        if (!b.SeamHidden(joined))
+                            drawn++;
+                    }
+            }
+            if (lone > 0)
+                Console.WriteLine($"[blocks]   {lone} seam parts outside a machine: {drawn} of their {all} look boxes drawn");
             for (var m = 0; m < c.MachineAsmCount; m++)
                 if (ConstructAssembling.FitOf(c, c.MachineAsms[m].Core) is { Limited: true } fit)
                     foreach (var part in (string[])["Bulkhead Light", "Engine", "Ship Battery Bank", "Leg Pod Housing XL"])
@@ -878,7 +899,7 @@ public static class MachineBlocks
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)
-                    faces += System.Numerics.BitOperations.PopCount(c.BlockJoined[i]);
+                    faces += System.Numerics.BitOperations.PopCount((uint)(c.BlockJoined[i] & 0x3F));
             sb.Append($", {faces} welded faces");
             if (c.Parts[asm.Core].D.IsBuildStation)
             {

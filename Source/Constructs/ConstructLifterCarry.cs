@@ -13,6 +13,7 @@ public enum LiftPointKind : byte
     Former, // a Panel Former's Piece in with no conveyor: put (sheet for its bin)
     Tray, // (phase 5b) a Crafting Terminal's tray: put (a part one of its open orders still waits for)
     RunEnd, // a Roller Tile run's last tile with no way on (RollerRuns.EndRunAt): pick (the lead piece waiting at its end)
+    RunStart, // a Roller Tile run's own first tile, nothing butted on its in end (RollerRuns.StartRunAt): put (a piece handed on toward a station: ConstructLifterHandOff.cs)
 }
 
 /// <summary>A point in a lifter's reach (server; found every <see cref="ConstructLifters.PointEvery"/> ticks, never per tick).</summary>
@@ -34,7 +35,7 @@ public struct LiftPoint
 /// </summary>
 public static partial class ConstructLifters
 {
-    public const int MaxPoints = 16; // a lifter's points
+    public const int MaxPoints = 32; // a lifter's points (16 until 2026-11-22: a bay crane over four presses, an Assembler and its stores ran out)
     public const int PointEvery = 120; // ticks between looks for a lifter's points (2 s)
     public const int CarryLook = 6; // 10 Hz steps between an idle lifter's looks for a carry (about 1 s)
 
@@ -93,6 +94,12 @@ public static partial class ConstructLifters
                     return false;
                 b.WorldFrame(b.Parts[pt.Part].Seg, out var rq, out var rt);
                 at = rt + Vector3.Transform(b.RouteNodes[b.Routes[run].Start + 1].Pos, rq); // (the run's last node, over its end tile)
+                return true;
+            case LiftPointKind.RunStart:
+                if (RollerRuns.StartRunAt(b, pt.Part) is not (var srun and >= 0))
+                    return false;
+                b.WorldFrame(b.Parts[pt.Part].Seg, out var sq, out var st);
+                at = st + Vector3.Transform(b.RouteNodes[b.Routes[srun].Start].Pos, sq); // (the run's first node, over its first tile)
                 return true;
             default:
                 var name = pt.Kind == LiftPointKind.PressBay ? BayPortNames[Math.Min((int)pt.Bay, BayPortNames.Length - 1)] : "Piece in";
@@ -172,6 +179,10 @@ public static partial class ConstructLifters
                 var re = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.RunEnd };
                 if (PointAt(b, re, out var ra) && InReach(ld, shoulder, lr, ra, SafeLift, out _))
                     pts[n++] = re;
+                // A run's own first tile with nothing butted on its in end: a lifter may put a piece on it (a hand-off toward a station).
+                var rs = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.RunStart };
+                if (n < pts.Length && PointAt(b, rs, out var sa) && InReach(ld, shoulder, lr, sa, SafeLift, out _))
+                    pts[n++] = rs;
                 continue;
             }
             if (d.IsPieceRack)
@@ -282,6 +293,9 @@ public static partial class ConstructLifters
             at = p;
             return k;
         }
+        // A piece a building station still lacks, one hop nearer to it: its pick pad, or a run that leads there (ConstructLifterHandOff.cs).
+        if (asNew && HandOffFor(world, l, ld, shoulder, lr, d, skip, out at) is var hand and >= 0)
+            return hand;
         if (!storage)
             return -1;
         var best = -1;
@@ -438,6 +452,8 @@ public static partial class ConstructLifters
                 continue;
             var asNew = rider.Health == 255 && rider.Paint == 0;
             var to = DestPoint(world, l, ld, shoulder, lr, d, rider.Dest, out var toAt);
+            if (to < 0 && asNew && IsLeadPadHandle(world, b.Id, rider.Dest))
+                to = HandOffFor(world, l, ld, shoulder, lr, d, k, out toAt, rider.Dest); // (handed on toward its station's pick pad, out of this lifter's reach)
             if (to < 0)
                 to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out toAt, asNew);
             if (to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
@@ -591,6 +607,7 @@ public static partial class ConstructLifters
         {
             LiftPointKind.Rack or LiftPointKind.Tray => $"the {name}",
             LiftPointKind.PressBay => $"the {name}'s bay {l.ToBay + 1}",
+            LiftPointKind.RunStart => $"the start of the {name} run",
             _ => $"the {name}'s Piece in",
         };
     }
@@ -626,8 +643,11 @@ public static partial class ConstructLifters
             case LiftPointKind.Former:
                 ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
                 break;
+            case LiftPointKind.RunStart:
+                ok = health == 255 && paint == 0 && PutOnRun(world, b, part, d); // (a run carries a piece as new: a damaged or painted one stays in the hand)
+                break;
         }
-        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
+        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray or LiftPointKind.RunStart) && world.ChainCount > 0)
             ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
         if (ok)
         {
