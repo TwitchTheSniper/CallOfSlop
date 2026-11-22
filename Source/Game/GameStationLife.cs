@@ -39,6 +39,7 @@ public sealed partial class Game
 
     private readonly Dictionary<int, SiteBuild> _siteBuilds = new();
     private int _lifeMinutes;
+    private bool _hostOfStations; // this game is a host that counts in StationMarkets.HostGames (Dispose takes it off)
     private readonly HashSet<string> _investWeighed = new();
     private readonly Dictionary<string, ((byte Material, float Units)[] Goods, double Value)> _kindBills = new(StringComparer.OrdinalIgnoreCase);
 
@@ -340,7 +341,8 @@ public sealed partial class Game
     private void StationSalvaged(int d)
     {
         var def = StationMarkets.All[d];
-        var bill = def.Kind >= 0 && def.Kind < StationLife.Kinds.Length ? KindBill(StationLife.Kinds[def.Kind]).Goods : [];
+        var bill = def.Kind >= 0 && def.Kind < StationLife.Kinds.Length ? KindBill(StationLife.Kinds[def.Kind]).Goods
+            : ConstructBuild.FindBlueprint(def.Blueprint.Length > 0 ? def.Blueprint : "Caledon Highport") is { } lbp ? [.. Controllers.Rules.GoodsOf(lbp)] : [];
         var back = bill.Select(g => (g.Material, (int)(g.Units * (1 - StationLife.SalvageShare)))).ToArray();
         var moved = StationStockOut(d, back);
         var body = StationBodyOf(d);
@@ -522,6 +524,8 @@ public sealed partial class Game
                 continue;
             if (!_siteBuilds.TryGetValue(d, out var sb))
             {
+                if (def.State == MarketState.Building && Math.Max(def.Built, SiteTarget(d)) <= 0)
+                    continue; // (nothing to put up yet: an empty body isn't kept by the world, so the site's first step makes it)
                 var had = StationBodyOf(d);
                 foreach (var c0 in Constructs.Bodies)
                     if (had == 0 && !c0.Wreck && c0.StationTitle.Equals(def.Name, StringComparison.OrdinalIgnoreCase))
@@ -608,8 +612,15 @@ public sealed partial class Game
     {
         var run = _hauls[i];
         var h = StationMarkets.Haulers[run.Route];
+        var at = run.AtTo ? h.To : h.From;
+        for (var k = 0; k < _consigns.Count; k++)
+            if (_consigns[k] is { } cn && cn.Ship == run.Ship && cn.Route == run.Route)
+            {
+                (cn.Ship, cn.At, cn.Waits) = (0, at, ServerTick); // (what it carried for others gets off here and waits, as at a hop: GameConsignments.cs)
+                _consigns[k] = cn;
+            }
         for (var e = _escorts.Count - 1; e >= 0; e--)
-            if (_escorts[e].Hauler == run.Ship || _escorts[e].Route == run.Route)
+            if (_escorts[e].Hauler == run.Ship || _escorts[e].Hauler == 0 && _escorts[e].Route == run.Route)
             {
                 if (Constructs.Get(_escorts[e].Ship) is { } es)
                     Constructs.Remove(es);
@@ -623,7 +634,7 @@ public sealed partial class Game
         }
         _hauls.RemoveAt(i);
         StationsVersion++;
-        Log($"[haul] construct {run.Ship} ({h.Power}) goes off its stopped route {StationMarkets.All[h.From].Name} - {StationMarkets.All[h.To].Name}{(h.Builder ? ": its builders' work is done" : "")}");
+        Log($"[haul] construct {run.Ship} ({h.Power}) goes off its stopped route {StationMarkets.All[h.From].Name} - {StationMarkets.All[h.To].Name}{(h.Builder && StationMarkets.All[h.To].State == MarketState.Open ? ": its builders' work is done" : "")}");
     }
 
     /// <summary>Steps a site puts up a second in its world, at most (so it is seen going up).</summary>
@@ -647,7 +658,13 @@ public sealed partial class Game
     /// <summary>Both sides: a new game or a load: only the listed stations and routes, and no site going up.</summary>
     private void StationLifeReset()
     {
-        StationMarkets.ResetRunTime();
+        if (IsServer && !_hostOfStations)
+        {
+            _hostOfStations = true;
+            StationMarkets.HostGames++;
+        }
+        if (IsServer || StationMarkets.HostGames == 0)
+            StationMarkets.ResetRunTime(); // (a client beside a host in one process reads the host's own list: the stations are static)
         if (_marketByDef.Length > StationMarkets.Listed)
             Array.Resize(ref _marketByDef, StationMarkets.Listed);
         _siteBuilds.Clear();
@@ -853,6 +870,8 @@ public sealed partial class Game
             for (var i = 0; i < listed && r.Has(3); i++)
                 powers.Add((r.Str(), (MarketState)Math.Min((int)r.U8(), (int)MarketState.Closed)));
         }
+        if (StationMarkets.HostGames > 0)
+            return; // (a host in this process keeps the list: a bench or a check that joins itself)
         StationMarkets.ResetRunTime();
         foreach (var def in defs)
             StationMarkets.Add(def);

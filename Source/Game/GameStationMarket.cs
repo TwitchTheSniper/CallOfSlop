@@ -216,6 +216,9 @@ public static class StationMarkets
 
     /// <summary>How many stations and routes the file lists: the rest of <see cref="All"/> and <see cref="Haulers"/> are a game's own (GameStationLife.cs).</summary>
     public static int Listed { get; private set; }
+
+    /// <summary>Host games alive in this process: while any is, a client beside it leaves the run-time stations (the host's) alone.</summary>
+    public static int HostGames;
     public static int ListedRoutes { get; private set; }
 
     /// <summary>A station made in play (a power's new one, GameStationLife.cs) on the end of <see cref="All"/>: its index.</summary>
@@ -935,6 +938,8 @@ public sealed partial class Game
         if (s.MooredTo == 0 || Constructs.Get(s.MooredTo) is not { } station || StationMarketOf(station) is not { } market)
             return "dock at a station's berth first";
         (st, m) = (station, market);
+        if (m.Def >= 0 && m.Def < StationMarkets.All.Length && !StationLife.Trades(StationMarkets.All[m.Def]))
+            return "the station is closed: it trades no more";
         if (!StationAboard(p, s))
             return "you need to be aboard the docked ship to trade";
         var power = StationPower(m);

@@ -268,8 +268,10 @@ public sealed partial class Game
             return;
         if (_haulNext.Length != routes.Length)
         {
-            _haulNext = new long[routes.Length];
-            Array.Fill(_haulNext, ServerTick + 10 * World.TickRate); // (the first set out once the world has settled)
+            var was = _haulNext.Length;
+            Array.Resize(ref _haulNext, routes.Length); // (a route made in play goes on the end: the others keep their times, GameStationLife.cs)
+            for (var i = was; i < routes.Length; i++)
+                _haulNext[i] = ServerTick + 10 * World.TickRate; // (the first set out once the world has settled)
         }
         if (_haulAdopt)
         {
