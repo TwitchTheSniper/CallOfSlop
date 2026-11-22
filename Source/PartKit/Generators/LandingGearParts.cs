@@ -6,28 +6,20 @@ namespace CallOfSlop.PartKit.Generators;
 /// Compact landing gear sets (Karl, 2026-11-21: "Ship doesn't need landing gear so big. Try and design a new few sets to use").
 /// The leg pods (LegPodParts) are a canopy, a gantry, a brace and a carriage round one leg, three or four metres of pod under the
 /// keel. These are the same working leg without the pod: a shallow mount welded under a keel, a leg on a hinge in it and a sprung
-/// foot that rides the leg's ankle level. Three sets, each its own look and stance:
-///
-/// <list type="bullet">
-/// <item><b>Tuck Leg</b>: a slim boxed leg hinged at the bow end of a flush bay, folding aft flat into it; it swings a quarter turn
-/// to stand straight under its hinge on a round pad. Clean, like a small craft's nose gear.</item>
-/// <item><b>Skid Leg</b>: a raked leg hinged aft, folding forward; it swings 70 degrees down and stands raked like a bird's leg on
-/// a long skid runner with turned-up ends. For a craft that sets down on rough ground or on wrecks.</item>
-/// <item><b>Ram Leg</b>: a hydraulic ram (a barrel and a chrome rod) in an open box cradle with hazard bars, folding forward; it swings
-/// a quarter turn down onto a broad square pad. Industrial, for haulers and yards.</item>
-/// </list>
+/// foot that rides the leg's ankle level. One set kept (Karl, 2026-11-22, the Tuck and Skid Legs taken out with the other ships):
+/// the <b>Ram Leg</b>, a hydraulic ram (a barrel and a chrome rod) in an open box cradle with hazard bars, folding forward; it swings
+/// a quarter turn down onto a broad square pad. Industrial, for haulers and yards; the Knacker stands on six.
 ///
 /// The machinery is the pods' (ConstructDoors): the leg is a "held" swing door ("gear": "leg"; its collider stays at the hinge), the foot
 /// a held door whose link rides the ankle round the hinge and keeps it level, on a "spring". B in a seat lowers and raises them as it
 /// does the pods (no canopy: the legs go at once). Frame: the mount's top at y 0 ("top", +y, under a keel), x across, z along (bow -z).
-/// Writes Constructs/Parts/LandingGear and one blueprint a set (the set assembled, stowed).
+/// Writes Constructs/Parts/LandingGear; a ship hangs a set with HangGear.
 /// </summary>
 public sealed class LandingGearParts : IPartGenerator
 {
     public string Name => "landing_gear";
 
     private const string Out = "Constructs/Parts/LandingGear";
-    private const string BpOut = "Constructs/Blueprints";
     private const string Section = "Landing gear", Group = "Ship";
 
     private const string Skin = "#b4b2aa", Skin2 = "#9e9c94", Armour = "#3b4148", Armour2 = "#30353b", Frame = "#1f2226",
@@ -51,10 +43,8 @@ public sealed class LandingGearParts : IPartGenerator
         public double WallZ => AnkleZ0 + Dir * (PadL + 0.004);
     }
 
-    private static readonly Set Tuck = new("Tuck Leg", -0.16, -0.75, 1.4, 1, 90, 0.08, 0.07, 0.3, 0.3, 0.12, 0.12, 0.08, 0.05, 140, 90, 70);
-    private static readonly Set Skid = new("Skid Leg", -0.14, 0.85, 1.55, -1, 70, 0.075, 0.065, 0.13, 0.7, 0.1, 0.1, 0.08, 0.05, 160, 100, 90);
     private static readonly Set Ram = new("Ram Leg", -0.2, 0.7, 1.35, -1, 90, 0.1, 0.09, 0.32, 0.32, 0.1, 0.14, 0.07, 0.04, 220, 130, 90);
-    private static readonly Set[] Sets = [Tuck, Skid, Ram];
+    private static readonly Set[] Sets = [Ram];
 
     /// <summary>Where a set's pad stands under its mount's top, its leg down and its spring in under the ship's weight.</summary>
     public static double StandingOf(string set) => Sets.First(s => s.Name == set).Standing;
@@ -143,44 +133,19 @@ public sealed class LandingGearParts : IPartGenerator
         foreach (var sx in new[] { -1.0, 1.0 })
             Cyl(p, 'x', 0, s.PivotY, s.PivotZ, s.LegH * 0.7, sx * (inW - 0.002), sx * (inW + 0.025 + wallT), Chrome, "chrome");
         // The looks of each set.
-        if (s == Tuck)
+        // An open box cradle: the side walls cut to a lattice of bars, hazard bars along the bottom edges, a reservoir on the top.
+        foreach (var sx in new[] { -1.0, 1.0 })
         {
-            // A flush bay: a dark lining, a chamfered lip round the mouth, an amber lamp at the hinge end.
-            D(p, -inW + 0.004, -0.2, z0 + 0.004, inW - 0.004, -0.064, z1 - 0.004, Lining, "matte paint");
-            foreach (var sx in new[] { -1.0, 1.0 })
-                Hull(p, [V(sx * outW, depth, z0 - 0.08), V(sx * outW, depth, z1 + 0.08), V(sx * (outW + 0.06), -0.06, z1 + 0.08), V(sx * (outW + 0.06), -0.06, z0 - 0.08),
-                    V(sx * outW, -0.06, z0 - 0.08), V(sx * outW, -0.06, z1 + 0.08)], Skin, "plated steel");
-            D(p, -outW - 0.004, depth - 0.012, z0 - 0.06, outW + 0.004, depth + 0.004, z0 + 0.04, Hazard, "hazard paint");
-            D(p, -0.08, depth - 0.016, hingeEnd - e * 0.06, 0.08, depth - 0.002, hingeEnd - e * 0.02, Glow, "", glow: true);
-        }
-        else if (s == Skid)
-        {
-            // A long narrow keel box with louvred cheeks, a hazard tab at each end.
-            foreach (var sx in new[] { -1.0, 1.0 })
-                for (var i = 0; i < 6; i++)
-                {
-                    var z = z0 + 0.2 + i * (z1 - z0 - 0.4) / 5;
-                    D(p, sx * outW, depth + 0.06, z - 0.05, sx * (outW + 0.014), -0.1, z + 0.05, Frame, "dirty steel");
-                }
-            foreach (var z in new[] { z0 - 0.06, z1 + 0.02 })
-                D(p, -outW - 0.004, depth - 0.012, z, outW + 0.004, depth + 0.004, z + 0.04, Hazard, "hazard paint");
-            D(p, -0.05, depth - 0.016, (z0 + z1) / 2 - 0.05, 0.05, depth - 0.002, (z0 + z1) / 2 + 0.05, Glow, "", glow: true);
-        }
-        else
-        {
-            // An open box cradle: the side walls cut to a lattice of bars, hazard bars along the bottom edges, a reservoir on the top.
-            foreach (var sx in new[] { -1.0, 1.0 })
+            D(p, sx * (outW + 0.004), depth - 0.004, z0 - 0.08, sx * (outW + 0.02), depth + 0.07, z1 + 0.08, Hazard, "hazard paint");
+            for (var i = 0; i < 4; i++)
             {
-                D(p, sx * (outW + 0.004), depth - 0.004, z0 - 0.08, sx * (outW + 0.02), depth + 0.07, z1 + 0.08, Hazard, "hazard paint");
-                for (var i = 0; i < 4; i++)
-                {
-                    var z = z0 + 0.15 + i * (z1 - z0 - 0.3) / 3;
-                    D(p, sx * (outW + 0.004), depth + 0.07, z - 0.04, sx * (outW + 0.03), -0.06, z + 0.04, Frame, "dirty steel");
-                }
+                var z = z0 + 0.15 + i * (z1 - z0 - 0.3) / 3;
+                D(p, sx * (outW + 0.004), depth + 0.07, z - 0.04, sx * (outW + 0.03), -0.06, z + 0.04, Frame, "dirty steel");
             }
-            Cyl(p, 'z', 0.18, -0.06 - 0.075, 0, 0.07, z0 + 0.1, z0 + 0.5, Hazard, "hazard paint");
-            D(p, -0.12, depth - 0.016, footEnd - e * 0.04 - 0.03, 0.12, depth - 0.002, footEnd - e * 0.04 + 0.03, Glow, "", glow: true);
         }
+        Cyl(p, 'z', 0.18, -0.06 - 0.075, 0, 0.07, z0 + 0.1, z0 + 0.5, Hazard, "hazard paint");
+        D(p, -0.12, depth - 0.016, footEnd - e * 0.04 - 0.03, 0.12, depth - 0.002, footEnd - e * 0.04 + 0.03, Glow, "", glow: true);
+        
         p.Sock("top", [0, 0, 0], "+y");
         p.Sock("leg", V(0, s.PivotY + s.LegH, s.PivotZ), "-y");
         p.Sock("foot", V(0, padMid, footEnd), e > 0 ? "-z" : "+z");
@@ -199,28 +164,12 @@ public sealed class LandingGearParts : IPartGenerator
         double zIn(double t) => zr + e * s.Len * t;
         Cyl(p, 'x', 0, y, zr, h + 0.015, -w + 0.006, w - 0.006, Frame, "dirty steel");
         Cyl(p, 'x', 0, y, za, h, -w + 0.006, w - 0.006, Frame, "dirty steel");
-        if (s == Ram)
-        {
-            // A ram: the barrel from the root, the chrome rod out of it to the ankle, a gland ring, a hose along the barrel.
-            Cyl(p, 'z', 0, y, 0, h, zIn(0.12), zIn(0.62), Armour, "painted steel", 16);
-            Cyl(p, 'z', 0, y, 0, h + 0.012, zIn(0.58), zIn(0.64), Hazard, "hazard paint", 16);
-            Cyl(p, 'z', 0, y, 0, h * 0.5, zIn(0.6), zIn(0.9), Chrome, "chrome", 16);
-            Cyl(p, 'z', 0.0, y + h + 0.025, 0, 0.018, zIn(0.15), zIn(0.55), Rubber, "rubber", 8);
-            D(p, -0.03, y + h - 0.004, zIn(0.13) - 0.03, 0.03, y + h + 0.045, zIn(0.13) + 0.03, Frame, "dirty steel");
-        }
-        else
-        {
-            // A boxed beam with a darker web each side and a hazard band near the ankle; the skid leg tapers to the ankle.
-            var taper = s == Skid ? 0.7 : 1.0;
-            double a = zIn(0.1), b = zIn(0.9);
-            Hull(p, [V(-w, y - h, a), V(w, y - h, a), V(w, y + h, a), V(-w, y + h, a), V(-w * taper, y - h * taper, b), V(w * taper, y - h * taper, b), V(w * taper, y + h * taper, b), V(-w * taper, y + h * taper, b)], Armour, "plated steel");
-            foreach (var sx in new[] { -1.0, 1.0 })
-            {
-                var t2 = (1 + taper) / 2;
-                D(p, sx * (w * t2 - 0.01), y - h * t2 * 0.6, Math.Min(zIn(0.2), zIn(0.7)), sx * (w * t2 + 0.004), y + h * t2 * 0.6, Math.Max(zIn(0.2), zIn(0.7)), Armour2, "plated steel");
-            }
-            D(p, -w * taper - 0.008, y - h * taper - 0.008, Math.Min(zIn(0.8), zIn(0.86)), w * taper + 0.008, y + h * taper + 0.008, Math.Max(zIn(0.8), zIn(0.86)), Hazard, "hazard paint");
-        }
+        // A ram: the barrel from the root, the chrome rod out of it to the ankle, a gland ring, a hose along the barrel.
+        Cyl(p, 'z', 0, y, 0, h, zIn(0.12), zIn(0.62), Armour, "painted steel", 16);
+        Cyl(p, 'z', 0, y, 0, h + 0.012, zIn(0.58), zIn(0.64), Hazard, "hazard paint", 16);
+        Cyl(p, 'z', 0, y, 0, h * 0.5, zIn(0.6), zIn(0.9), Chrome, "chrome", 16);
+        Cyl(p, 'z', 0.0, y + h + 0.025, 0, 0.018, zIn(0.15), zIn(0.55), Rubber, "rubber", 8);
+        D(p, -0.03, y + h - 0.004, zIn(0.13) - 0.03, 0.03, y + h + 0.045, zIn(0.13) + 0.03, Frame, "dirty steel");
         Hidden(p, -w, y - h, zr - h, w, y + h, zr + h);
         p.Sock("hang", V(0, y + h, zr), "+y");
         p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", L3(0, y, zr)), ("angle", s.Angle), ("held", true), ("seconds", 3.0), ("hang", "hang"), ("gear", "leg"))));
@@ -243,43 +192,19 @@ public sealed class LandingGearParts : IPartGenerator
         D(p, -w - 0.05, plate - 0.025, az - 0.11, w + 0.05, plate, az + 0.11, Armour2, "plated steel");
         // What the spring moves: the rod and the pad.
         Cyl(p, 'y', 0, 0, az, 0.03, top + 0.02, plate - 0.008, Chrome, "chrome", 12, "oleo");
-        if (s == Tuck)
+        // A broad square pad: a ribbed top, a hazard rim, a thick rubber sole.
+        double W = s.PadW;
+        D(p, -W, bot + 0.04, az - W, W, top, az + W, Armour, "plated steel", rig: "oleo");
+        for (var i = -1; i <= 1; i++)
         {
-            Cyl(p, 'y', 0, 0, az, s.PadW, bot + 0.03, top, Armour, "plated steel", 16, "oleo");
-            Cyl(p, 'y', 0, 0, az, s.PadW - 0.05, top, top + 0.025, Armour2, "plated steel", 16, "oleo");
-            Cyl(p, 'y', 0, 0, az, s.PadW + 0.006, bot + 0.03, bot + 0.06, Hazard, "hazard paint", 16, "oleo");
-            Cyl(p, 'y', 0, 0, az, s.PadW - 0.02, bot, bot + 0.03, Rubber, "rubber", 16, "oleo");
+            D(p, i * 0.18 - 0.02, top, az - W + 0.05, i * 0.18 + 0.02, top + 0.04, az + W - 0.05, Armour2, "plated steel", rig: "oleo");
+            D(p, -W + 0.05, top, az + i * 0.18 - 0.02, W - 0.05, top + 0.036, az + i * 0.18 + 0.02, Armour2, "plated steel", rig: "oleo");
         }
-        else if (s == Skid)
-        {
-            // The runner: a flat shoe with its ends turned up, a rubbing strip under it, a hazard tip each end.
-            double L = s.PadL, W = s.PadW, rise = 0.12, run = 0.18;
-            D(p, -W, bot + 0.025, az - L + run, W, top, az + L - run, Armour, "plated steel", rig: "oleo");
-            foreach (var e in new[] { -1.0, 1.0 })
-            {
-                double zA = az + e * (L - run), zB = az + e * L;
-                Hull(p, [V(-W, bot + 0.025, zA), V(W, bot + 0.025, zA), V(W, top, zA), V(-W, top, zA), V(-W, bot + rise, zB), V(W, bot + rise, zB), V(W, top + rise * 0.6, zB), V(-W, top + rise * 0.6, zB)], Armour, "plated steel", "oleo");
-                Hull(p, [V(-W - 0.006, bot + rise - 0.004, zB - e * 0.002), V(W + 0.006, bot + rise - 0.004, zB - e * 0.002), V(W + 0.006, top + rise * 0.6 + 0.004, zB - e * 0.002), V(-W - 0.006, top + rise * 0.6 + 0.004, zB - e * 0.002),
-                    V(-W - 0.006, bot + rise - 0.004, zB + e * 0.03), V(W + 0.006, bot + rise - 0.004, zB + e * 0.03), V(W + 0.006, top + rise * 0.6 + 0.004, zB + e * 0.03), V(-W - 0.006, top + rise * 0.6 + 0.004, zB + e * 0.03)], Hazard, "hazard paint", "oleo");
-            }
-            D(p, -W + 0.02, bot, az - L + run + 0.02, W - 0.02, bot + 0.025, az + L - run - 0.02, Rubber, "rubber", rig: "oleo");
-            D(p, -0.04, top, az - 0.18, 0.04, top + 0.03, az + 0.18, Armour2, "plated steel", rig: "oleo");
-        }
-        else
-        {
-            // A broad square pad: a ribbed top, a hazard rim, a thick rubber sole.
-            double W = s.PadW;
-            D(p, -W, bot + 0.04, az - W, W, top, az + W, Armour, "plated steel", rig: "oleo");
-            for (var i = -1; i <= 1; i++)
-            {
-                D(p, i * 0.18 - 0.02, top, az - W + 0.05, i * 0.18 + 0.02, top + 0.04, az + W - 0.05, Armour2, "plated steel", rig: "oleo");
-                D(p, -W + 0.05, top, az + i * 0.18 - 0.02, W - 0.05, top + 0.036, az + i * 0.18 + 0.02, Armour2, "plated steel", rig: "oleo");
-            }
-            D(p, -W - 0.006, bot + 0.04, az - W - 0.006, W + 0.006, bot + 0.07, az + W + 0.006, Hazard, "hazard paint", rig: "oleo");
-            D(p, -W + 0.02, bot, az - W + 0.02, W - 0.02, bot + 0.04, az + W - 0.02, Rubber, "rubber", rig: "oleo");
-        }
+        D(p, -W - 0.006, bot + 0.04, az - W - 0.006, W + 0.006, bot + 0.07, az + W + 0.006, Hazard, "hazard paint", rig: "oleo");
+        D(p, -W + 0.02, bot, az - W + 0.02, W - 0.02, bot + 0.04, az + W - 0.02, Rubber, "rubber", rig: "oleo");
+        
         // Collision: the pad (it meets the ground past the spring's travel) and the clevis's plate.
-        double pw = s.PadW, pl = s == Skid ? s.PadL : s.PadW;
+        double pw = s.PadW, pl = s.PadW;
         Hidden(p, -pw, bot, az - pl, pw, top, az + pl);
         Hidden(p, -w - 0.05, plate - 0.025, az - 0.11, w + 0.05, plate, az + 0.11);
         p.Sock("hang", V(0, (top + bot) / 2, az + s.Dir * pl), s.Dir > 0 ? "+z" : "-z");
@@ -289,28 +214,16 @@ public sealed class LandingGearParts : IPartGenerator
         return p.Stats(s.FootMass, 2000, 30, 4.0);
     }
 
-    private static PyDict Assembly(Set s, Dictionary<string, PyDict> defs)
-    {
-        var bp = new BuildingParts.Blueprint($"{s.Name} Gear",
-            $"A {s.Name.ToLowerInvariant()} assembled, stowed: the mount, its strut and its foot. Weld the mount's top under a keel; B in a seat lowers it to stand {Py.G(s.Standing)} m under the mount's top.", defs);
-        GearOn(bp, s.Name, bp.First($"{s.Name} Mount"));
-        return bp.Json();
-    }
-
     public void Make(PartOutput o)
     {
         o.Own(Out);
         foreach (var s in Sets)
         {
-            var defs = new Dictionary<string, PyDict>();
             foreach (var part in new[] { Mount(s), Strut(s), Foot(s) })
             {
                 var d = part.Json();
-                var name = (string)d["name"]!;
-                defs.Add(name, d);
-                o.File($"{Out}/{name.Replace(" ", "")}.json", PyJson.Dumps(d, 2) + "\n");
+                o.File($"{Out}/{((string)d["name"]!).Replace(" ", "")}.json", PyJson.Dumps(d, 2) + "\n");
             }
-            o.File($"{BpOut}/{s.Name.Replace(" ", "")}Gear.json", PyJson.Dumps(Assembly(s, defs), 2) + "\n");
         }
     }
 }

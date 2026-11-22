@@ -28,7 +28,7 @@ public abstract partial class LoftedShip
     /// <summary>A gap in a wall: from A, W wide, open from sill to head over the floor (a doorway: sill 0).</summary>
     protected readonly record struct Gap(double A, double W, double Sill, double Head, bool Glass = false);
 
-    /// <summary>The ship's name as its pieces start ("Folio"), the gallery's section, the paint.</summary>
+    /// <summary>The ship's name as its pieces start ("Knacker"), the gallery's section, the paint.</summary>
     protected readonly string Prefix;
     protected readonly string Section;
     protected readonly ShipStyle Style;

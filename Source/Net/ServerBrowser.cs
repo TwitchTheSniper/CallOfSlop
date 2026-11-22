@@ -722,10 +722,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      from the key on each peer (no new bytes; mass differs), and its key is a Panel Former's order.
     // 429: the Assembler's Tool Bay (Assembler PR 3, Sean 2026-11-21): new parts Thruster Jig Block, Sewing Table Block and Block Rack
     //      (part ids shift) and three Assembling rows at the end of the table.
-    // 430: the Folio, the Traders' shuttle (Karl, 2026-11-21): a new part folder, Constructs/Parts/Folio, shifts the part ids after it.
-    // 431: the Knacker, the Salvagers' breaker, and the compact landing gear (Karl, 2026-11-21): new part folders Constructs/Parts/Knacker
+    // 430: the Knacker, the Salvagers' breaker, and the Ram Leg landing gear (Karl, 2026-11-21): new part folders Constructs/Parts/Knacker
     //      and Constructs/Parts/LandingGear shift the part ids after them.
-    public const ushort ProtocolVersion = 431;
+    public const ushort ProtocolVersion = 430;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
