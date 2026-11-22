@@ -1003,6 +1003,8 @@ public sealed class CrewNav
         // A ladder: climb it from its end (the game's own climb).
         if (WLadder[w * MaxPts + WAt[w]] is var lad and >= 0 && s.RideClimb == 0 && d < 1.6f)
         {
+            if (ConstructRide.HatchOver(c, lad) is var lid and >= 0 && !ConstructDoors.TargetOpen(c, lid) && c.DoorOf(lid) is var lk and >= 0)
+                ConstructDoors.Command(world, c, lk, true); // (a deck hatch shut over its shaft: the crew opens it, then climbs once it rests open)
             if (ConstructRide.ClimbLadder(ref s, c, lad, World.HeightOf(Stance.Stand), frame: true) == null)
             {
                 WAt[w]++;

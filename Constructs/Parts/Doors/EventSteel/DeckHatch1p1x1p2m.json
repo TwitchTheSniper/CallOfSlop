@@ -1,0 +1,249 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Deck Hatch 1.1x1.2 m",
+  "description": "A flush lid for a 1.1 by 1.2 m hole in a deck, level with the floor: walk over it shut. It hangs by one edge (the hull side of a ladder shaft) and F swings it down into the shaft; F on a ladder under a shut one opens it.",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "swing",
+    "axis": "+z",
+    "pivot": [
+      0,
+      -0.05,
+      0
+    ],
+    "angle": -90,
+    "seconds": 1.2,
+    "hang": "hang"
+  },
+  "mass": 54.8,
+  "health": 274,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.05,
+        -0.54
+      ],
+      "max": [
+        1.18,
+        0.0,
+        0.54
+      ],
+      "color": "#3b4148",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        -0.5
+      ],
+      "max": [
+        1.14,
+        0.0095,
+        -0.482
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        0.482
+      ],
+      "max": [
+        1.14,
+        0.0095,
+        0.5
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        -0.479
+      ],
+      "max": [
+        0.058,
+        0.0095,
+        0.479
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.122,
+        -0.0065,
+        -0.479
+      ],
+      "max": [
+        1.14,
+        0.0095,
+        0.479
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.98,
+        -0.0065,
+        -0.14
+      ],
+      "max": [
+        1.1,
+        0.0095,
+        0.14
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        1.01,
+        -0.0035,
+        -0.1
+      ],
+      "max": [
+        1.07,
+        0.0125,
+        0.1
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.006,
+        -0.0065,
+        -0.46
+      ],
+      "max": [
+        0.03,
+        0.0095,
+        0.46
+      ],
+      "color": "#55595e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.08,
+        -0.085,
+        -0.48
+      ],
+      "max": [
+        0.14,
+        -0.05,
+        0.48
+      ],
+      "color": "#2c3036",
+      "detail": true
+    },
+    {
+      "min": [
+        1.04,
+        -0.085,
+        -0.48
+      ],
+      "max": [
+        1.1,
+        -0.05,
+        0.48
+      ],
+      "color": "#2c3036",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2,
+        -0.0595,
+        -0.42
+      ],
+      "max": [
+        0.98,
+        -0.0435,
+        -0.3
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        -0.0595,
+        -0.12
+      ],
+      "max": [
+        0.98,
+        -0.0435,
+        0.0
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        -0.0595,
+        0.18
+      ],
+      "max": [
+        0.98,
+        -0.0435,
+        0.3
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.01,
+        -0.05,
+        -0.2
+      ],
+      "max": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -0.01,
+        -0.025,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

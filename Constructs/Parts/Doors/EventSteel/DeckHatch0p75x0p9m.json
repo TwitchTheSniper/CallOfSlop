@@ -1,0 +1,233 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Deck Hatch 0.75x0.9 m",
+  "description": "A flush lid for a 0.75 by 0.9 m hole in a deck, level with the floor: walk over it shut. It hangs by one edge (the hull side of a ladder shaft) and F swings it down into the shaft; F on a ladder under a shut one opens it.",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "swing",
+    "axis": "+z",
+    "pivot": [
+      0,
+      -0.05,
+      0
+    ],
+    "angle": -90,
+    "seconds": 1.2,
+    "hang": "hang"
+  },
+  "mass": 27.6,
+  "health": 138,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.05,
+        -0.365
+      ],
+      "max": [
+        0.88,
+        0.0,
+        0.365
+      ],
+      "color": "#3b4148",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        -0.325
+      ],
+      "max": [
+        0.84,
+        0.0095,
+        -0.307
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        0.307
+      ],
+      "max": [
+        0.84,
+        0.0095,
+        0.325
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.04,
+        -0.0065,
+        -0.304
+      ],
+      "max": [
+        0.058,
+        0.0095,
+        0.304
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.822,
+        -0.0065,
+        -0.304
+      ],
+      "max": [
+        0.84,
+        0.0095,
+        0.304
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.68,
+        -0.0065,
+        -0.14
+      ],
+      "max": [
+        0.8,
+        0.0095,
+        0.14
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "rubber",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.71,
+        -0.0035,
+        -0.1
+      ],
+      "max": [
+        0.77,
+        0.0125,
+        0.1
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.006,
+        -0.0065,
+        -0.285
+      ],
+      "max": [
+        0.03,
+        0.0095,
+        0.285
+      ],
+      "color": "#55595e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.08,
+        -0.085,
+        -0.305
+      ],
+      "max": [
+        0.14,
+        -0.05,
+        0.305
+      ],
+      "color": "#2c3036",
+      "detail": true
+    },
+    {
+      "min": [
+        0.74,
+        -0.085,
+        -0.305
+      ],
+      "max": [
+        0.8,
+        -0.05,
+        0.305
+      ],
+      "color": "#2c3036",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2,
+        -0.0595,
+        -0.245
+      ],
+      "max": [
+        0.68,
+        -0.0435,
+        -0.125
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        -0.0595,
+        0.055
+      ],
+      "max": [
+        0.68,
+        -0.0435,
+        0.175
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.01,
+        -0.05,
+        -0.2
+      ],
+      "max": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -0.01,
+        -0.025,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

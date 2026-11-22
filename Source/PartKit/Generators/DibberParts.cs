@@ -583,9 +583,9 @@ public sealed class DibberParts : IPartGenerator
         for (var k = 0; k < 8; k++)
             FStrip(p, k, Mid0 - 0.4, Mid0 + 0.4, 0.0, 1.0, Mid0 - 0.04, Mid0 + 0.04, 0.035 + (k % 2) * 0.004, Frame, "dirty steel");
         // Hazard round the hole, the hole's lining, a light strip under the ceiling.
-        Detail(p, HoleX0 - 0.1, Mid1 + 0.02, HoleZ0 - 0.1, HoleX1, Mid1 + 0.03, HoleZ0 - 0.004, Hazard, "hazard paint");
-        Detail(p, HoleX0 - 0.1, Mid1 + 0.02, HoleZ1 + 0.004, HoleX1, Mid1 + 0.03, HoleZ1 + 0.1, Hazard, "hazard paint");
-        Detail(p, HoleX0 - 0.1, Mid1 + 0.02, HoleZ0 - 0.004, HoleX0 - 0.004, Mid1 + 0.03, HoleZ1 + 0.004, Hazard, "hazard paint");
+        // (Karl, 2026-11-22: a flush Deck Hatch over the shaft, hung by its fore edge so it hangs clear of the climber, DoorParts.DeckHatch)
+        DoorParts.DeckHatchRim(p, HoleX0, HoleZ0, HoleX1, HoleZ1, Mid1 + 0.012, "+x");
+        Sock(p, "hatchUp", (HoleX0 + HoleX1) / 2, Mid1 + 0.012 - DoorParts.HatchThick / 2, HoleZ0, "+z");
         Detail(p, HoleX0, Mid0 + 0.005, HoleZ0, HoleX0 + 0.016, Mid1 - 0.005, HoleZ1, Frame, "dirty steel");
         Detail(p, -0.6, Mid0 - 0.04, -0.06, 0.6, Mid0 - 0.022, 0.06, "#fff0d0", glow: true);
         Sock(p, "plant", 0, Mid1, 0.3, "+y");
@@ -991,6 +991,7 @@ public sealed class DibberParts : IPartGenerator
         var hatch = bp.Hang(HatchName, belly, "boarding", "hang");
         Paint(bp, bp.HangTurned("Dibber Boarding Ladder", hatch, "ladder", "foot", BuildingParts.RY180), Frame, "painted steel");
         bp.HangTurned("Dibber Deck Ladder", belly, "ladderUp", "foot", BuildingParts.RY270); // (its back to the hole's inboard edge: off its top onto the deck inboard)
+        bp.Hang(DoorParts.HatchName(0.9, 0.75), mid, "hatchUp", "hang"); // (shut: the systems deck walks over it)
         // The systems deck.
         bp.Hang("Dibber Power Plant", mid, "plant", "bottom");
         bp.Hang("Battery", mid, "battery0", "-y");
@@ -1049,7 +1050,7 @@ public sealed class DibberParts : IPartGenerator
             LiftJet(TrimJet, TrimForce, TrimScale, $"A trim jet: {TrimForce / 1e3:0} kN straight down. One under each of the Dibber's thighs, far out from its middle, keeps it level over its belly jet."),
             PowerPlant(), FlightComputer(), BellyHatchPart(),
             Ladder("Dibber Boarding Ladder", BoardRise, -0.03, "The Dibber's boarding ladder: it stands on the belly hatch, stowed up through the cockpit's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y"),
-            Ladder("Dibber Deck Ladder", Mid1 - Ft, 0.9, "The ladder from the Dibber's cockpit up through the floor to the systems deck. F climbs it.", "foot", [0, 0, -0.1], "-y"),
+            Ladder("Dibber Deck Ladder", Mid1 - Ft, -DoorParts.HatchThick - 0.01, "The ladder from the Dibber's cockpit up through the floor, under a deck hatch, to the systems deck. F climbs it.", "foot", [0, 0, -0.1], "-y"),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

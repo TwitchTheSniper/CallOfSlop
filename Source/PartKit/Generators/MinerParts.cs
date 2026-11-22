@@ -504,24 +504,19 @@ public sealed class MinerParts : IPartGenerator
     private static void DoorSock(Part p, string name, bool alongX, double a, double c, double floor) =>
         Sock(p, name, alongX ? a : c, floor + 1.125, alongX ? c : a, alongX ? "+x" : "+z");
 
-    /// <summary>A safety rail round a hatch on three sides, open at its back edge (+z), where the ladder lands people.</summary>
-    private static void HatchRail(Part p, Rect h, double y)
-    {
-        Solid(p, h.X0 - 0.06, y, h.Z0 - 0.06, h.X1 + 0.06, y + 1.0, h.Z0, Frame, "painted steel");
-        Solid(p, h.X0 - 0.06, y, h.Z0, h.X0, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
-        Solid(p, h.X1, y, h.Z0, h.X1 + 0.06, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
-        Detail(p, h.X0 - 0.075, y + 0.96, h.Z0 - 0.075, h.X1 + 0.075, y + 1.04, h.Z0 + 0.015, Hazard, "hazard paint");
-        Detail(p, h.X0 - 0.12, y, h.Z1, h.X1 + 0.12, y + 0.012, h.Z1 + 0.12, Hazard, "hazard paint");
-    }
+    /// <summary>The socket a Deck Hatch hangs by: the middle of the hole's starboard (hull-side) edge, half its lid under the deck's top.</summary>
+    private static void HatchSock(Part p, string name, Rect h) => Sock(p, name, h.X1, Ft1 - DoorParts.HatchThick / 2, (h.Z0 + h.Z1) / 2, "-x");
 
     private static void CeilStrip(Part p, double x0, double x1, double z0, double z1, double ceil) =>
         Detail(p, x0, ceil - 0.025, z0, x1, ceil, z1, "#fff0d0", glow: true);
 
     /// <summary>Pipes along both upper corners of a room, labelled (red and blue mains, a yellow one beside the red).</summary>
-    private static void CeilPipes(Part p, double hw, double z0, double z1, double ceil)
+    private static void CeilPipes(Part p, double hw, double z0, double z1, double ceil, double starboardTo = double.MaxValue)
     {
+        var zAll = z1;
         foreach (var s in new[] { -1, 1 })
         {
+            z1 = s > 0 ? Math.Min(zAll, starboardTo) : zAll;
             Detail(p, Cx + s * (hw - 0.18) - 0.05, ceil - 0.3, z0, Cx + s * (hw - 0.18) + 0.05, ceil - 0.2, z1, s < 0 ? PipeRed : PipeBlue, "painted steel");
             Detail(p, Cx + s * (hw - 0.32) - 0.04, ceil - 0.28, z0, Cx + s * (hw - 0.32) + 0.04, ceil - 0.2, z1, PipeYellow, "painted steel");
             Detail(p, Cx + s * (hw - 0.18) - 0.062, ceil - 0.312, (z0 + z1) / 2 - 0.06, Cx + s * (hw - 0.18) + 0.062, ceil - 0.188, (z0 + z1) / 2 + 0.06, "#e8e4d8", "matte paint");
@@ -580,8 +575,11 @@ public sealed class MinerParts : IPartGenerator
 
     // ---- the lower deck: the workshop, the drill bay, engineering and the airlock
 
-    private static readonly Rect ForeHatch = new(Cx + 1.4, 9.1, Cx + 2.65, 10.35); // the workshop up to the hall behind the bridge
-    private static readonly Rect AftHatch = new(Cx + 2.0, 21.4, Cx + 3.25, 22.65); // engineering up to the mess
+    // (Karl, 2026-11-22: a ladder's shaft meets the hull, its top under a flush Deck Hatch: both holes stand against the upper deck's
+    // starboard wall, and the hatch hangs by that edge, DoorParts.DeckHatch)
+    private const double HatchSide = 1.25;
+    private static readonly Rect ForeHatch = new(Cx + Uw - HatchSide, 9.1, Cx + Uw, 10.35); // the workshop up to the hall behind the bridge
+    private static readonly Rect AftHatch = new(Cx + Uw - HatchSide, 21.4, Cx + Uw, 22.65); // engineering up to the mess
 
     private static Part LowerFore()
     {
@@ -600,7 +598,7 @@ public sealed class MinerParts : IPartGenerator
         foreach (var i in Enumerable.Range(0, 6))
             Detail(p, Cx + 0.9 + i * 0.22, Ft0 + 1.1, ZFront + 0.06, Cx + 0.96 + i * 0.22, Ft0 + 1.5, ZFront + 0.12, "#9a9c98", "steel");
         CeilStrip(p, Cx - 0.5, Cx + 0.5, ZFront + 0.5, ZWork - 0.5, y1);
-        CeilPipes(p, LwF, ZFront + 0.2, ZWork - 0.02, y1);
+        CeilPipes(p, LwF, ZFront + 0.2, ZWork - 0.02, y1, starboardTo: ForeHatch.Z0 - 0.1); // (the starboard run stops short of the ladder's shaft: the open hatch hangs there)
         foreach (var z in new[] { 7.0, 9.0 })
             Detail(p, Cx - LwF + 0.1, y1 - 0.18, z - 0.07, Cx + LwF - 0.1, y1 - 0.012, z + 0.07, Frame, "dirty steel");
         foreach (var s in new[] { -1, 1 })
@@ -814,7 +812,8 @@ public sealed class MinerParts : IPartGenerator
         Floor(p, [new Rect(Cx - LwF - 0.25, ZFront - 0.25, Cx + LwF + 0.25, ZWork), new Rect(Cx - Lw - 0.25, ZWork, Cx + Lw + 0.25, ZUp)], Ceil0, Ft1, Deck, "painted deck plate", ForeHatch);
         Floor(p, [new Rect(Cx - UwF - 0.25, ZFront - 0.25, Cx + UwF + 0.25, ZBridge), new Rect(Cx - Uw - 0.25, ZBridge, Cx + Uw + 0.25, ZUp)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - UwF + 0.05, Ft1, ZFront + 0.6, Cx + UwF - 0.05, Ft1 + 0.012, ZBridge - 0.05, "#30332f", "rubber matting");
-        HatchRail(p, ForeHatch, Ft1);
+        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x");
+        HatchSock(p, "hatchFore", ForeHatch);
         // The bridge: sealed, a view screen across its front wall over the dashboard, a camera screen each side looking down at the ground.
         WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1);
         Detail(p, Cx - 2.1, Ft1 + 1.2, ZFront - 0.016, Cx + 2.1, Ft1 + 2.6, ZFront + 0.016, "#202428", "plastic");
@@ -903,7 +902,8 @@ public sealed class MinerParts : IPartGenerator
         Floor(p, [new Rect(Cx - Uw - 0.25, ZUp, Cx + Uw + 0.25, ZT)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - 0.8, Ft1, ZUp, Cx + 0.8, Ft1 + 0.012, 18.95, "#30332f", "rubber matting");
         Detail(p, Cx + 1.2, Ft1, 16.2, Cx + Uw - 0.05, Ft1 + 0.012, 18.95, "#b9c4c2", "gloss paint"); // (the sick bay's floor)
-        HatchRail(p, AftHatch, Ft1);
+        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x");
+        HatchSock(p, "hatchAft", AftHatch);
         foreach (var s in new[] { -1, 1 })
             WallRun(p, false, ZUp, ZAft, Cx + s * (Uw + 0.125), y0, y1);
         WallRun(p, true, Cx - Uw - 0.25, Cx + Uw + 0.25, ZAft + 0.125, y0, y1);
@@ -1358,7 +1358,7 @@ public sealed class MinerParts : IPartGenerator
     private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
     {
         var p = new Part(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var top = rise + 1.0;
+        var top = rise - DoorParts.HatchThick - 0.01; // (its top under the shut Deck Hatch over its shaft: nothing stands above the deck)
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
         {
@@ -1960,6 +1960,8 @@ public sealed class MinerParts : IPartGenerator
         Paint(bp, bp.Hang("Magpie Stern Ramp", eng, "ramp", "hang"), Yellow2, "worn paint"); // (F lowers it to the ground: the way in)
         bp.Hang("Magpie Ladder", work, "ladder", "bottom");
         bp.Hang("Magpie Ladder", eng, "ladder", "bottom");
+        bp.Hang(DoorParts.HatchName(HatchSide), uf, "hatchFore", "hang"); // (flush Deck Hatches over their shafts, shut: the deck walks over them)
+        bp.Hang(DoorParts.HatchName(HatchSide), ua, "hatchAft", "hang");
         // The workshop.
         bp.Hang("Tool Rack", work, "toolRack", "back");
         Paint(bp, bp.Hang("Magpie Locker", work, "locker0", "wall"), Yellow2, "worn paint");

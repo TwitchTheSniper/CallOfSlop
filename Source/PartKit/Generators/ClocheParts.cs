@@ -300,13 +300,12 @@ public sealed class ClocheParts : IPartGenerator
         Less(z0, -In, z1, In, holes, (a0, b0, a1, b1) => Detail(p, b0, CeilY - 0.02, a0 + 0.002, b1, CeilY, a1 - 0.002, CeilC, "painted plating"));
         foreach (var (hz0, hx0, hz1, hx1) in holes)
         {
-            // (the hatch's shaft and its hazard rim)
-            Detail(p, hx0 - 0.02, CeilY - 0.01, hz0 - 0.02, hx0, RoofY + 0.004, hz1 + 0.02, Rib, "dirty steel");
-            Detail(p, hx1, CeilY - 0.01, hz0 - 0.02, hx1 + 0.02, RoofY + 0.004, hz1 + 0.02, Rib, "dirty steel");
-            Detail(p, hx0, CeilY - 0.01, hz0 - 0.02, hx1, RoofY + 0.004, hz0, Rib, "dirty steel");
-            Detail(p, hx0, CeilY - 0.01, hz1, hx1, RoofY + 0.004, hz1 + 0.02, Rib, "dirty steel");
-            Detail(p, hx0 - 0.1, RoofY, hz0 - 0.1, hx1 + 0.1, RoofY + 0.012, hz0 - 0.02, Hazard, "hazard paint");
-            Detail(p, hx0 - 0.1, RoofY, hz1 + 0.02, hx1 + 0.1, RoofY + 0.012, hz1 + 0.1, Hazard, "hazard paint");
+            // (the hatch's shaft, its lining under the deck's top, and the coaming round the flush Deck Hatch over it: Karl, 2026-11-22)
+            Detail(p, hx0 - 0.02, CeilY - 0.01, hz0 - 0.02, hx0, RoofY - 0.003, hz1 + 0.02, Rib, "dirty steel");
+            Detail(p, hx1, CeilY - 0.01, hz0 - 0.02, hx1 + 0.02, RoofY - 0.003, hz1 + 0.02, Rib, "dirty steel");
+            Detail(p, hx0, CeilY - 0.01, hz0 - 0.02, hx1, RoofY - 0.003, hz0, Rib, "dirty steel");
+            Detail(p, hx0, CeilY - 0.01, hz1, hx1, RoofY - 0.003, hz1 + 0.02, Rib, "dirty steel");
+            DoorParts.DeckHatchRim(p, hx0, hz0, hx1, hz1, RoofY);
         }
         return p.Stats(3000, 5000, 20, 6.0);
     }
@@ -1164,6 +1163,8 @@ public sealed class ClocheParts : IPartGenerator
         SockOn(st, "bowLadder", -4.55, 4.52, BalZ, "-z");
         foreach (var s in new[] { -1, 1 })
             SockOn(st, $"hatch{(s < 0 ? "P" : "S")}", s * (HoleX0 + HoleX1) / 2, 6.3, HoleZ1, "-z");
+        foreach (var s in new[] { -1, 1 }) // (the Deck Hatch over each shaft hangs by its outboard edge, swinging down clear of the ladder on the aft edge)
+            SockOn(st, $"lid{(s < 0 ? "P" : "S")}", s * HoleX1, RoofY - DoorParts.HatchThick / 2, (HoleZ0 + HoleZ1) / 2, s < 0 ? "+x" : "-x");
         foreach (var s in new[] { -1, 1 })
             SockOn(st, $"drive{(s < 0 ? "P" : "S")}", s * NacX, NacY, NacTail, "+z");
     }
@@ -1200,6 +1201,8 @@ public sealed class ClocheParts : IPartGenerator
         Turned("Cloche Bow Ladder", "bowLadder", "back");
         foreach (var s in new[] { "P", "S" })
             Turned("Cloche Hatch Ladder", $"hatch{s}", "back");
+        foreach (var s in new[] { "P", "S" })
+            Hang(DoorParts.HatchName(1.2, 1.1), $"lid{s}", "hang"); // (shut: the greenhouse's walkway goes over it)
         foreach (var l in Lamps)
             if (l.Turned)
                 Turned("Cloche Cage Lamp", l.Name, "back");
@@ -1259,7 +1262,7 @@ public sealed class ClocheParts : IPartGenerator
             Drive(), LiftJet(), Dashboard(), DriverSeat(), PowerPlant(), Lamp(), GrowRack(), GrowBed(false), GrowBed(true), SideDoor(),
             Ladder("Cloche Step Ladder", FloorY, 0.9, 1.22, "The ladder up to a step beside the Cloche's cab from the ground. F climbs it."),
             Ladder("Cloche Bow Ladder", CabRoof1 - FloorY, 0.9, 4.52 - FloorY, "The ladder from the Cloche's port step up to the balcony across its bow. F climbs it."),
-            Ladder("Cloche Hatch Ladder", RoofY - FloorY, 0.9, 6.3 - FloorY, "The ladder from the Cloche's grow hall up through the roof into a greenhouse. F climbs it."),
+            Ladder("Cloche Hatch Ladder", RoofY - FloorY, -DoorParts.HatchThick - 0.01, 6.3 - FloorY, "The ladder from the Cloche's grow hall up through the roof, under a deck hatch, into a greenhouse. F climbs it."),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

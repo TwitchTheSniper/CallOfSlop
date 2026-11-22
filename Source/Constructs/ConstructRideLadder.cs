@@ -68,6 +68,8 @@ public static partial class ConstructRide
             return "the ladder is stowed: F on its foot rolls it down";
         if (ConstructDoor.EventDoor(c, part) is var hatch and >= 0 && hatch != part && (ConstructDoors.IsMoving(c, hatch) || !ConstructDoors.SettledOpen(c, hatch)))
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
+        if (HatchOver(c, part) is var lid and >= 0 && (ConstructDoors.IsMoving(c, lid) || !ConstructDoors.SettledOpen(c, lid)))
+            return ConstructDoors.IsMoving(c, lid) ? "the hatch is still moving" : "the hatch over it is shut: F opens it"; // (a deck hatch over the ladder's shaft: F on the ladder opens it first, GameSandbox Use; crews open it, CrewNav)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
@@ -93,6 +95,39 @@ public static partial class ConstructRide
         s.RideLadder = (byte)(LadderOn | (atTop ? LadderDown : 0) | 2);
         s.RideLadderPart = (ushort)part;
         return null;
+    }
+
+    /// <summary>
+    /// A deck hatch over a ladder's top (Karl, 2026-11-22: ladders in shafts under flush floor hatches): the event door part, other
+    /// than one the ladder rides, a solid box of which lies over the ladder's landing end, else -1. A shut one is found by its
+    /// shut pose; an open one hangs down the side of the shaft and isn't, so -1 also means "open, or none".
+    /// </summary>
+    public static int HatchOver(Construct c, int ladder)
+    {
+        if (c.DoorCount == 0 || (uint)ladder >= (uint)c.PartCount)
+            return -1;
+        ref var p = ref c.Parts[ladder];
+        var d = p.D;
+        var own = ConstructDoor.EventDoor(c, ladder);
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var cz = (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f;
+        var top = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.LadderTop, cz)), q);
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var dp = c.Doors[k].Part;
+            if (dp == own || dp == ladder || c.Parts[dp].Broken)
+                continue;
+            c.WorldFrame(c.Parts[dp].Seg, out var dq, out var dt);
+            var at = Vector3.Transform(top - dt, Quaternion.Conjugate(dq)); // (the ladder's top in the door's segment frame)
+            for (var b = 0; b < c.SolidCount(dp); b++)
+            {
+                c.SolidBox(dp, b, out var centre, out var half);
+                var o = Vector3.Abs(at - centre);
+                if (o.X <= half.X + 0.35f && o.Z <= half.Z + 0.35f && at.Y >= centre.Y - half.Y - 0.5f && at.Y <= centre.Y + half.Y + 0.3f)
+                    return dp;
+            }
+        }
+        return -1;
     }
 
     /// <summary>Ticks a leg of a ladder's climb takes at <paramref name="speed"/> (a long ladder is climbed a little faster: a leg fits a byte).</summary>

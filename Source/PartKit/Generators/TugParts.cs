@@ -60,7 +60,10 @@ public sealed class TugParts : IPartGenerator
 
     /// <summary>The wheelhouse over engineering: its half width, its floor's top, the glass's sill and head, the ladder's opening.</summary>
     private const double WhX = 2.4, WFl = 3.45, WSill = WFl + 1.0, WHead = WFl + 2.3, WRake = 0.35;
-    private static readonly Rect WhHole = new(Cx - 0.6, -4.15, Cx + 0.6, -2.95);
+    // (Karl, 2026-11-22: a ladder's shaft meets the hull, its top under a flush Deck Hatch: the opening stands against the wheelhouse's
+    // starboard sill and the hatch hangs by that edge, DoorParts.DeckHatch)
+    private const double HatchSide = 1.25;
+    private static readonly Rect WhHole = new(Cx + WhX - 0.12 - HatchSide, -4.15, Cx + WhX - 0.12, -4.15 + HatchSide);
     private static double WhLadderZ => WhHole.Z1 - 0.03;
 
     /// <summary>The hull's stations (the hull pieces are cut at them).</summary>
@@ -1017,7 +1020,7 @@ public sealed class TugParts : IPartGenerator
         Sock(p, "mmuDock", Cx - 1.9, Ft + 0.125, ZEngAW - 0.125, "-z");
         Sock(p, "lampEngL", Cx - PassOut, Ft + 2.3, -5.0, "+x");
         Sock(p, "lampEngR", Cx + PassOut, Ft + 2.3, -3.0, "-x");
-        Sock(p, "ladderWh", Cx, Ft, WhLadderZ - 0.1, "+y");
+        Sock(p, "ladderWh", WhHole.X0 + HatchSide / 2, Ft, WhLadderZ - 0.1, "+y");
         foreach (var z in new[] { plan.Z0, ZEngM, plan.Z1 })
             foreach (var y in new[] { 0.0, ERoof })
                 MustFit("engineering", z, PassOut + SLine, y);
@@ -1040,7 +1043,8 @@ public sealed class TugParts : IPartGenerator
         Detail(p, Cx - x + 0.004, 3.335, z0 - 0.012, Cx + x - 0.004, WFl - 0.004, z0, Armour, "painted plating");
         Detail(p, Cx - x + 0.004, 3.335, z1, Cx + x - 0.004, WFl - 0.004, z1 + 0.012, Armour, "painted plating");
         Detail(p, Cx - x + 0.2, WFl, z0 + 0.55, Cx + x - 0.2, WFl + 0.012, WhHole.Z0 - 0.2, "#30353b", "rubber matting");
-        HatchRail(p, WhHole, WFl);
+        DoorParts.DeckHatchRim(p, WhHole.X0, WhHole.Z0, WhHole.X1, WhHole.Z1, WFl, "+x");
+        Sock(p, "hatchWh", WhHole.X1, WFl - DoorParts.HatchThick / 2, (WhHole.Z0 + WhHole.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         // The sills all round (beige outside, a blue dado inside), corner posts and mid posts.
         Solid(p, Cx - x, WFl, z0, Cx + x, WSill, z0 + 0.12, Skin, "painted plating");
         Solid(p, Cx - x, WFl, z1 - 0.12, Cx + x, WSill, z1, Skin, "painted plating");
@@ -1848,6 +1852,7 @@ public sealed class TugParts : IPartGenerator
         bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
         Paint(bp, Hang(bp, "Docket Wheelhouse Ladder", eng, "ladderWh", "foot"), Frame, "painted steel");
+        Hang(bp, DoorParts.HatchName(HatchSide), wh, "hatchWh", "hang"); // (shut: the wheelhouse walks over it)
         // The bunk room and the head to port, a locker at the corridor's end.
         Hang(bp, "Bunk", cab, "bunk0", "bottom");
         Hang(bp, "Bunk", cab, "bunk1", "bottom");
@@ -1954,7 +1959,7 @@ public sealed class TugParts : IPartGenerator
         [
             .. structure, Nacelle(-1, 0), Nacelle(-1, 1), Nacelle(1, 0), Nacelle(1, 1),
             Ladder("Docket Boarding Ladder", Py.Round(BoardRise, 3), "The Docket's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
-            Ladder("Docket Wheelhouse Ladder", Py.Round(WFl - Ft, 3), "The Docket's wheelhouse ladder: from engineering's deck up through the opening in its ceiling to the wheelhouse. F climbs it.", "foot", [0, 0, -0.1], "-y"),
+            Ladder("Docket Wheelhouse Ladder", Py.Round(WFl - Ft, 3), "The Docket's wheelhouse ladder: from engineering's deck up through the opening in its ceiling, under a deck hatch, to the wheelhouse. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -DoorParts.HatchThick - 0.01),
             BellyHatchPart(), LiftJet(), RetroJet(), PowerPlant(), FlightComputer(),
         ];
         var defs = new Dictionary<string, PyDict>();

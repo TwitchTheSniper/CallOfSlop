@@ -46,6 +46,13 @@ public static class LadderCheck
                 ladders++;
                 if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
                     ConstructDoors.Settle(c, c.DoorOf(i), true);
+                if (ConstructRide.HatchOver(c, i) is var lid and >= 0) // (a deck hatch shut over its shaft: climbed with it open, as F on the ladder leaves it)
+                {
+                    c.SolidBox(lid, 0, out var lc, out var lh);
+                    var landing = c.Parts[i].Pos.Y + d.LadderTop;
+                    Console.WriteLine($"    under {c.Parts[lid].D.Name} #{lid}, its top {lc.Y + lh.Y - landing:+0.000;-0.000} m from the landing{(lc.Y > landing ? " (UPSIDE DOWN: it stands over the deck)" : "")}");
+                    ConstructDoors.Settle(c, c.DoorOf(lid), true);
+                }
                 var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
                 var ok = up == null && down == null;
                 bad += ok ? 0 : 1;

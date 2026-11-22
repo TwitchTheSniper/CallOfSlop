@@ -735,7 +735,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new byte in the lift word's put kind), which 434 can't read.
     // 436: an Assembler's order for a run-time Ordnance Rack or ordnance design goes by its key as a named order (AssembledParts), which
     //      435 refuses as a bad panel order; and 5 die patterns and 18 presets for the ship works in Pressing.json.
-    public const ushort ProtocolVersion = 436;
+    // 437: Deck Hatches (Karl 2026-11-22: ladders between decks in shafts at the hull under flush hatches): four new event door parts
+    //      move the part ids, and the ships' decks, ladders and blueprints changed with them.
+    public const ushort ProtocolVersion = 437;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

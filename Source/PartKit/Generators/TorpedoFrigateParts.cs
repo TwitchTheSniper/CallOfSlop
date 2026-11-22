@@ -690,8 +690,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     // ---- the lower deck: the server room, the armoury, the torpedo room, the airlock, engineering
 
-    private static readonly Rect AftHatch = new(Cx + 2.0, 39.5, Cx + 3.25, 40.75); // engineering up to the mess
-    private static readonly Rect ForeHatch = new(Cx + 1.6, 15.6, Cx + 2.85, 16.85); // the armoury up to the ops room
+    // (Karl, 2026-11-22: a ladder's shaft meets the hull, its top under a flush Deck Hatch: both holes stand against the upper deck's
+    // starboard wall, and the hatch hangs by that edge, DoorParts.DeckHatch)
+    private const double HatchSide = 1.25;
+    private static readonly Rect AftHatch = new(Cx + Uw - HatchSide, 39.5, Cx + Uw, 40.75); // engineering up to the mess
+    private static readonly Rect ForeHatch = new(Cx + Uw - HatchSide, 15.6, Cx + Uw, 16.85); // the armoury up to the ops room
 
     private static Part LowerFore()
     {
@@ -919,7 +922,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Floor(p, [new Rect(Cx - LwF - 0.25, 8.25, Cx + LwF + 0.25, ZStep), new Rect(Cx - Lw - 0.25, ZStep, Cx + Lw + 0.25, 25.0)], Ceil0, Ft1, Deck, "painted deck plate", ForeHatch);
         Floor(p, [new Rect(Cx - UwF - 0.25, 8.25, Cx + UwF + 0.25, ZStep), new Rect(Cx - Uw - 0.25, ZStep, Cx + Uw + 0.25, 25.0)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - UwF + 0.05, Ft1, ZFront + 0.05, Cx + UwF - 0.05, Ft1 + 0.012, ZStep - 0.3, "#30353b", "rubber matting"); // (the bridge's mat)
-        HatchRail(p, ForeHatch, Ft1);
+        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x");
+        Sock(p, "hatchFore", ForeHatch.X1, Ft1 - DoorParts.HatchThick / 2, (ForeHatch.Z0 + ForeHatch.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         // The bridge: narrow and sealed, a wide view screen on its forward wall over the dashboard, a camera screen on each side.
         WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1);
         Detail(p, Cx - 2.1, Ft1 + 1.2, ZFront - 0.016, Cx + 2.1, Ft1 + 2.6, ZFront + 0.016, "#202428", "plastic"); // (the screen's bezel)
@@ -1036,7 +1040,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Floor(p, [new Rect(Cx - Uw - 0.25, 25.0, Cx + Uw + 0.25, ZAft + 0.25)], Ceil1, Roof, Ceil, "painted plating", ShuttleShaft);
         Detail(p, Cx + 1.2, Ft1, 25.15, Cx + Uw - 0.05, Ft1 + 0.012, 33.8, "#b9c4c2", "gloss paint"); // (the med bay's floor, wipe-clean)
         Detail(p, Cx - 0.8, Ft1, 25.0, Cx + 0.8, Ft1 + 0.012, 33.9, "#30353b", "rubber matting"); // (the corridor's runner)
-        HatchRail(p, AftHatch, Ft1);
+        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x");
+        Sock(p, "hatchAft", AftHatch.X1, Ft1 - DoorParts.HatchThick / 2, (AftHatch.Z0 + AftHatch.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         foreach (var s in new[] { -1, 1 })
             WallRun(p, false, 25.0, ZAft, Cx + s * (Uw + 0.125), y0, y1);
         WallRun(p, true, Cx - Uw - 0.25, Cx + Uw + 0.25, ZAft + 0.125, y0, y1);
@@ -1704,7 +1709,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
     {
         var p = new Part(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
-        var top = rise + 1.0;
+        var top = rise - DoorParts.HatchThick - 0.01; // (its top under the shut Deck Hatch over its shaft: nothing stands above the deck)
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
         {
@@ -2303,6 +2308,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // Ladders: two between the decks (the boarding shaft has none: Karl, 2026-11-18, it is the MMU's way out).
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");
         Hang(bp, "Zero Day Ladder", la, "ladder", "bottom");
+        Hang(bp, DoorParts.HatchName(HatchSide), uf, "hatchFore", "hang"); // (flush Deck Hatches over the shafts, shut: the decks walk over them)
+        Hang(bp, DoorParts.HatchName(HatchSide), ua, "hatchAft", "hang");
         // Lower deck fore: the server room (the IT style's own), the armoury, the torpedo room.
         for (var i = 0; i < 4; i++)
         {
