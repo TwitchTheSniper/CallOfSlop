@@ -548,7 +548,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open", "lift"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open", "lift", "cargo"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -570,7 +570,8 @@ public static class ConstructStorage
                     throw new ConstructPartException($"{file}: storage.pieces.hold is at least 0.1 m each way");
             }
             d.IsPieceRack = true;
-            d.IsLayDownPad = ConstructParts.Opt(pc, "open") is { ValueKind: JsonValueKind.True }; // (a Lay-down Pad: takes in a loose piece set down on it, ConstructLifterPads.cs)
+            d.IsLayDownPad = ConstructParts.Opt(pc, "open") is { ValueKind: JsonValueKind.True };
+            d.IsCargoHold = ConstructParts.Opt(pc, "cargo") is { ValueKind: JsonValueKind.True }; // (a Heavy Container's hold, ContainerParts: takes new empty stores too, as a Building Station's hold does) // (a Lay-down Pad: takes in a loose piece set down on it, ConstructLifterPads.cs)
             d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
             d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
             if (ConstructParts.Opt(pc, "lift") is { } lift)

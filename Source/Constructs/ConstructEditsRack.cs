@@ -93,7 +93,7 @@ public sealed partial class ConstructEdits
             return "the rack is empty";
         if (DropLoose(world, piece, at, turn) is not { } loose)
         {
-            world.RackPut(c, part, piece); // (back where it can go)
+            world.RackPut(c, part, piece, ordered: true); // (back where it came from: a heavy container's store piece too)
             return "the world is full";
         }
         if (rd.IsBuildStation)

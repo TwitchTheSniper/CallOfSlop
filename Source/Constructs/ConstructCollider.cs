@@ -250,9 +250,10 @@ internal sealed partial class ConstructCollider
     /// Leaves from which the trees are built from Morton order instead (docs/perf/LIMITS.md, "Rebuilds"): each group's
     /// leaf centres on a lattice of 1,024 cells along its longest side (cubes: a long hull is cut along its length), interleaved, radix sorted (no compare, so no branch a tree-ordered list can
     /// fool), then cut where the codes first differ all the way down (a lattice cell's boundary), the bounds made bottom-up: O(n), the leaves moved once. Below this
-    /// the old sort is kept, so small bodies' trees (and the contacts they give) are what they were.
+    /// the old sort is kept (sorting the leaves again at every level). It was 2,048: a 140-part Zero Day half of 1,400 leaves then took 3-13 ms a
+    /// build, rebuilt on every hit; from Morton order about 1 ms (2026-11-22).
     /// </summary>
-    internal const int FastMin = 2048;
+    internal const int FastMin = 256;
 
     private int[] _order = [], _orderB = [];
     private uint[] _code = [], _codeB = [];

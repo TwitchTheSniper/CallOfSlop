@@ -284,15 +284,19 @@ public static partial class ConstructPhysics
         FrameLead(n);
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
+        AllocProfile.Mark("p: body contacts");
         BodyContacts(world, n, dt);
+        AllocProfile.Mark("p: rows");
         CouplingRows(world, n, dt);
         ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
         if (world.BeamCount > 0)
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
         Lap(2, ref t0);
+        AllocProfile.Mark("p: solve");
         Solve(dt);
         Lap(3, ref t0);
+        AllocProfile.Mark("p: integrate");
         if (_anyHeld)
             HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
         ConnectorLoads(world, dt);
@@ -417,10 +421,11 @@ public static partial class ConstructPhysics
                 continue; // (the far bodies' LOD: ConstructFar.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
+            var moving = !c.Asleep && !c.OnRail && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
+                c.OnRail = false; // (stepped here: the physics' again, ConstructRails.cs)
                 _sim.Add(c);
             }
         }
@@ -440,13 +445,18 @@ public static partial class ConstructPhysics
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
                 b.SimMark = stamp;
+                if (Pass == 0 || InPass(b))
+                    b.OnRail = false; // (something it may meet: the physics' again, from its true pose and speed, ConstructRails.cs; another pass's body is a fixed obstacle here, not stepped, so it stays on its rail)
             }
         }
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
             if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp) && (Pass == 0 || InPass(a) && InPass(b)))
+            {
                 a.SimMark = b.SimMark = stamp;
+                a.OnRail = b.OnRail = false; // (both in this pass: stepped here)
+            }
         }
         MarkConnectors(world, stamp);
         // In list order, so every run steps the same bodies the same way.

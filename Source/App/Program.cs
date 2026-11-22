@@ -231,6 +231,8 @@ public static unsafe partial class Program
             return FactoryKit.StationCheck.Cli(stationCheck, args); // a site's Building Station started on a blueprint headless: its bill, then what it waits on
         if (args.Any(a => a.Equals("--excavator-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ExcavatorCheck.Cli(args); // the Militia Excavator on a host with terrain and a joined client: digs, slews, loads a hauler (docs/vehiclekit/EXCAVATOR-notes.md)
+        if (args.Any(a => a.Equals("--economy-sim", StringComparison.OrdinalIgnoreCase)))
+            return EconomySimCheck.Cli(args); // a headless Survival host left alone for hours of play: the stations' stock hour by hour (Source/Game/EconomySimCheck.cs)
         if (args.Any(a => a.Equals("--haul-check", StringComparison.OrdinalIgnoreCase)))
             return FactoryKit.FactoryHaul.Cli(args); // the ore loop headless: post, skip, Ore Hauler, tipping bay, refinery
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
@@ -259,6 +261,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--stress-check", StringComparison.OrdinalIgnoreCase)))
+            return StressCheck.Cli(args); // hundreds of wrecks and haulers in orbit, headless: what an idle, busy world costs (Source/DevTools/StressCheck.cs)
         if (args.Any(a => a.Equals("--battle-check", StringComparison.OrdinalIgnoreCase)))
         {
             if (args.Any(a => a.Equals("--old-pierce", StringComparison.OrdinalIgnoreCase)))

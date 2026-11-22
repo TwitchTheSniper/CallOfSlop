@@ -337,6 +337,9 @@ public sealed partial class Construct
     public Quaternion CarryRot = Quaternion.Identity;
     public CCargoMass[] Cargo = []; // (grows by doubling to ConstructCargo.MaxPerConstruct as it carries more: a loose block pays nothing)
     public int CargoCount;
+
+    /// <summary>The cargo scan's or refresh's stamp when this body last carried something, and how many it carried at the scan (ConstructCargo).</summary>
+    public int CargoStamp, CarriedNow;
     public float CargoMass; // what Cargo adds up to (kg)
 
     // Pose: the body frame's origin and turn in the world.
@@ -1253,7 +1256,14 @@ public sealed partial class Construct
     {
         Asleep = false;
         SleepTicks = 0;
+        OnRail = false; // (back into the physics: ConstructRails.cs)
     }
+
+    /// <summary>Server: falling free on a rail, out of the physics' list and the per-body systems (ConstructRails.cs). Its pose and speed are true every tick.</summary>
+    public bool OnRail;
+
+    /// <summary>A rail body's lowest distance from the planet's centre until its next check (ConstructRails.cs).</summary>
+    public float RailLow;
 
     // ---- Caches: mass, inertia, contact points, wheels, the drivetrain ------------------------------------------
 
