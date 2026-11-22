@@ -126,7 +126,11 @@ public sealed partial class Game
             var at = pose.FromEcliptic(f.Ships.PositionOf(i));
             var vel = pose.VelocityFromEcliptic(f.Ships.PositionOf(i), f.Ships.VelocityOf(i));
             var p = at.ToVector3();
-            if (limited && Vector3.DistanceSquared(p, centre) < edge * edge && LandOverLimit(c, out var tonnes))
+            if (c.LedgerCoast)
+            {
+                // On a ledger route (GameHaulLedger.cs): posed by it, never back into the bubble at its pace; its leg's end puts it by its station.
+            }
+            else if (limited && Vector3.DistanceSquared(p, centre) < edge * edge && LandOverLimit(c, out var tonnes))
             {
                 // Too heavy for this world (GameSpaceLanding.cs): it waits at the sky's edge, and a shuttle goes down.
                 LandHoldOut(f, i, c, edge, tonnes);

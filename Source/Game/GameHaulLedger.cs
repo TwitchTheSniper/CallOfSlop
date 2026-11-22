@@ -48,7 +48,7 @@ public sealed partial class Game
                 LedgerBreak(run, c); // (a person comes near part way: it flies the rest from where it is, nothing moved before their eyes)
             else if (run.Trip is { } going)
             {
-                if (LedgerAll || s.Flight is not { } tf || !LedgerTripStep(tf, run, c, going, planet)) // (on the fast clock space time stands still: it is put at its station)
+                if (LedgerAll || s.Flight is not { } tf || !(going.Far ? LedgerFarStep(tf, run, c, going, def, planet) : LedgerTripStep(tf, run, c, going, planet))) // (on the fast clock space time stands still: it is put at its station)
                     LedgerArrive(s, run, c, def, d, planet); // (its path's end, or its path lost: it is put at its station)
             }
             else if (ServerTick >= run.LedgerUntil)
@@ -102,6 +102,13 @@ public sealed partial class Game
             RouteArrived(run.Route);
             return true;
         }
+        if (far && !LedgerAll && LedgerFarPlan(s, run, c, def, from, planet, minutes) is { } route)
+        {
+            run.Trip = route; // (between planets in play: the real route round the star at the leg's pace, LedgerFarPlan)
+            HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} on the ledger: {route.Tof / 86400:0.0} days' transfer round {s.System.Bodies[route.Centre].Name}, flown in {minutes:0} minutes of play"));
+            RouteArrived(run.Route);
+            return true;
+        }
         HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} on the ledger: {minutes:0} minutes of play away"));
         RouteArrived(run.Route); // (set out: its supply line runs, as a flown leg's)
         return true;
@@ -115,7 +122,11 @@ public sealed partial class Game
     {
         run.LedgerUntil = 0;
         if (run.Trip != null)
+        {
+            if (run.Trip.Far && Space?.Flight is { } f)
+                LedgerFarRealSpeed(f, run, c, run.Trip); // (it goes on at the transfer's own speed, not the leg's pace)
             LedgerCoasting(run, c, false);
+        }
         run.Trip = null;
         run.Ledger = false;
         run.Flying = true;
@@ -259,6 +270,14 @@ public sealed partial class Game
         public bool Snapped;
         public ushort Station; // the station body it is bound for
         public int Fixes; // the course corrections made on the coast (at LedgerFixAt)
+        // A leg between planets (Far): the transfer conic round the star from where the planet it leaves was to where the one it is bound
+        // for was at set-out (R1, V1 from the star; Tof its real time), flown at the leg's pace in play ticks (FromTick to ToTick).
+        public bool Far;
+        public int From, To;
+        public int Centre;
+        public Vec3d R1, V1, R2, A0;
+        public double Tof;
+        public long FromTick, ToTick;
         public const double EscortGap = 1500;
     }
 
@@ -276,7 +295,7 @@ public sealed partial class Game
     /// </summary>
     private LedgerTrip? LedgerPlan(SpaceSession s, HaulRun run, Construct c, int def, int planet)
     {
-        if (s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0) || f.Ships.PrimaryOf(i) != planet || c.SpaceAway != 0
+        if (s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0) || f.Ships.PrimaryOf(i) != planet || c.SpaceAway != 0 && c.SpaceAway - 1 != s.GalaxyIndex
             || Constructs.Get(StationBodyOf(def)) is not { SpaceShip: not 0, SpaceAway: 0 } sb || f.Ships.IndexOfId(sb.SpaceShip) is not (var si and >= 0) || f.Ships.PrimaryOf(si) != planet)
             return null;
         var accel = c.Mass > 0 ? ConstructPhysics.NavDrive(c, out _, out _, out _) / c.Mass : 0;
@@ -414,6 +433,223 @@ public sealed partial class Game
             return; // (a correction bigger than the burn out: something else went wrong, and the snap at the end puts it right)
         LedgerPush(f, run, i, planet, dv, trip.Axis);
         trip.Dv2 = vt - v2;
+    }
+
+
+    // ---- A ledger leg between planets (Karl's decision card, 2026-11-22: "real route, game-time pace") ----
+
+    /// <summary>The share of a leg between planets at its end that the ship spends at its place by the station, off the route.</summary>
+    private const double LedgerFarEnds = 0.03;
+
+    /// <summary>The body a transfer between two bodies goes round: the nearest both are round (the star for two planets, the planet for a planet and its moon or two of its moons).</summary>
+    private static int LedgerCentre(StarSystem sys, int a, int b)
+    {
+        for (var x = a; x >= 0; x = sys.Bodies[x].Parent)
+            for (var y = b; y >= 0; y = sys.Bodies[y].Parent)
+                if (x == y)
+                    return x;
+        return -1;
+    }
+
+    /// <summary>A body's place from the transfer's centre now (the centre itself: nothing, the ship's end place is given apart).</summary>
+    private static Vec3d LedgerRel(StarSystem sys, int body, int centre, SpaceTime t) => body == centre ? Vec3d.Zero : sys.PositionOf(body, t) - sys.PositionOf(centre, t);
+
+    /// <summary>
+    /// Host, rare: the route of a ledger leg between planets: the transfer conic round the body both are round (the star, or a planet for
+    /// its moons) from where the ship is now to where the far planet is now (or, bound for the centre itself, to its place there), its time
+    /// picked near a Hohmann transfer's for the least change of speed against the bodies', none near half a turn. The ship is flown along it
+    /// in <paramref name="minutes"/> of play, speeding up from its orbit and braking at the far end (a smooth step: a flip at the middle), and
+    /// comes off it onto its place behind the station there. Null: no route (not in the flight, or no conic found), and the leg runs as a time alone.
+    /// </summary>
+    private LedgerTrip? LedgerFarPlan(SpaceSession s, HaulRun run, Construct c, int def, int from, int to, double minutes)
+    {
+        if (from < 0 || s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0) || c.SpaceAway != 0 && c.SpaceAway - 1 != s.GalaxyIndex)
+            return null; // (in this system's flight: here, or parked far out in it)
+        var sys = s.System;
+        var centre = LedgerCentre(sys, from, to);
+        if (centre < 0)
+            return null;
+        var t = f.Ships.Time;
+        var trip = new LedgerTrip { Far = true, From = from, To = to, Centre = centre, Station = StationBodyOf(def), Accel = 1, Start = t.Ns, Last = t.Ns };
+        sys.StateOf(centre, t, out var cp, out var cv);
+        f.Ships.RelativeOf(i, out var prim, out var sr0, out var sv0);
+        sys.StateOf(prim, t, out var pp, out var pv);
+        var r1 = pp + sr0 - cp; // (from its primary as the system has it: see LedgerPose)
+        var v0 = pv + sv0 - cv;
+        var endAt = LedgerFarEnd(f, trip, run, StationMarkets.All[def], to, out var endVel);
+        var r2 = endAt - cp; // (the route ends at its place by the station, not at the planet's middle)
+        var vb = endVel - cv;
+        var mu = sys.Bodies[centre].Mu;
+        if (!(r1.Length > 1) || !(r2.Length > 1) || Vec3d.Dot(r1, r2) / (r1.Length * r2.Length) < -0.985)
+            return null; // (either side of the centre: the transfer's plane is ill set)
+        var hohmann = Math.PI * Math.Sqrt(Math.Pow((r1.Length + r2.Length) / 2, 3) / mu);
+        double best = double.MaxValue, bestT = 0;
+        var v1Best = Vec3d.Zero;
+        for (var k = 0; k < 16; k++)
+        {
+            var tof = hohmann * (0.4 + 1.2 * k / 15);
+            for (var way = 0; way < 2; way++)
+            {
+                if (!NavTrip.Lambert(r1, r2, tof, mu, way == 1, out var v1, out var v2)
+                    || !UniversalKepler.Propagate(mu, r1, v1, tof, out var reach, out _) || (reach - r2).Length > 1e-4 * r2.Length)
+                    continue; // (a conic that doesn't come to the far end: the solver didn't settle there)
+                var cost = (v1 - v0).Length + (vb - v2).Length;
+                if (cost < best)
+                    (best, bestT, v1Best) = (cost, tof, v1);
+            }
+        }
+        if (bestT <= 0)
+            return null;
+        UniversalKepler.Propagate(mu, r1, v1Best, bestT, out var rEnd, out _);
+        (trip.R1, trip.V1, trip.Tof, trip.R2) = (r1, v1Best, bestT, rEnd); // (where the conic itself ends: the end's pull onto its place is measured from there)
+        trip.A0 = LedgerRel(sys, from, centre, t);
+        trip.FromTick = ServerTick;
+        trip.ToTick = ServerTick + (long)(minutes * 60 * World.TickRate);
+        LedgerCoasting(run, c, true);
+        LedgerFarStep(f, run, c, trip, def, to);
+        return trip;
+    }
+
+    /// <summary>
+    /// The ledger ship's place on its route between planets at <paramref name="tau"/> of the leg (the ecliptic frame): along the conic at the
+    /// leg's pace (a smooth step, so it speeds up and brakes), its start moved with the planet it left and its end onto <paramref name="endAt"/>
+    /// (its place by the station now).
+    /// </summary>
+    private static SpacePos LedgerFarAt(StarSystem sys, LedgerTrip trip, SpaceTime t, double tau, SpacePos endAt)
+    {
+        tau = Math.Clamp(tau, 0, 1);
+        var u = tau * tau * (3 - 2 * tau); // (speeding up to the middle, then braking: the flip at the midpoint)
+        var mu = sys.Bodies[trip.Centre].Mu;
+        var cp = sys.PositionOf(trip.Centre, t);
+        if (!UniversalKepler.Propagate(mu, trip.R1, trip.V1, u * trip.Tof, out var r, out _))
+            r = trip.R1 + (trip.R2 - trip.R1) * u;
+        // The route's ends follow what has moved since it was planned: its start the planet it left, its end its place by the station.
+        r = r + (LedgerRel(sys, trip.From, trip.Centre, t) - trip.A0) * (1 - u) + (endAt - cp - trip.R2) * u;
+        return cp + r;
+    }
+
+    /// <summary>Where a ledger ship ends its leg between planets: behind its station there (in this world's flight), or on the station's circle.</summary>
+    private SpacePos LedgerFarEnd(SpaceFlight f, LedgerTrip trip, HaulRun run, StationDef d, int planet, out Vec3d vel)
+    {
+        var sys = f.System;
+        sys.StateOf(planet, f.Ships.Time, out var bp, out var bv);
+        if (Constructs.Get(trip.Station) is { SpaceShip: not 0, SpaceAway: 0 } sb && f.Ships.IndexOfId(sb.SpaceShip) is var si and >= 0 && f.Ships.PrimaryOf(si) == planet)
+        {
+            f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+            var n = Vec3d.Cross(sr, sv);
+            var q = QuatD.AxisAngle(n.LengthSquared > 0 ? n.Normalized() : Vec3d.UnitY, -HaulFarBehind / Math.Max(1, sr.Length));
+            vel = bv + q.Rotate(sv);
+            return bp + q.Rotate(sr);
+        }
+        var radius = sys.Bodies[planet].Radius + d.Orbit;
+        var (sin, cos) = Math.SinCos(run.Ship * 2.399963);
+        vel = bv + new Vec3d(-sin, 0, cos) * Math.Sqrt(sys.Bodies[planet].Mu / radius);
+        return bp + new Vec3d(radius * cos, 0, radius * sin);
+    }
+
+    /// <summary>
+    /// Host, each second of a ledger leg between planets: the ship and its escorts posed on the route (their speed is the route's pace, so the
+    /// flight carries them on between the seconds). False: the leg's time is up (or the ship is gone from the flight).
+    /// </summary>
+    private bool LedgerFarStep(SpaceFlight f, HaulRun run, Construct c, LedgerTrip trip, int def, int planet)
+    {
+        if (f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0))
+            return false;
+        var span = Math.Max(1, trip.ToTick - trip.FromTick);
+        var tau = (ServerTick - trip.FromTick) / (double)span;
+        var sys = f.System;
+        var t = f.Ships.Time;
+        var endAt = LedgerFarEnd(f, trip, run, StationMarkets.All[def], planet, out var endVel);
+        if (tau >= 1)
+        {
+            Log(FormattableString.Invariant($"[haul] construct {c.Id} comes off its route at {StationMarkets.All[def].Name}, {(f.Ships.PositionOf(i) - f.Ships.BodyPosition(planet) - (endAt - sys.PositionOf(planet, t))).Length:0} m and {(f.Ships.VelocityOf(i) - endVel).Length:0.0} m/s off its place"));
+            return false;
+        }
+        // The route is flown over the leg less its last part, which it spends at its place by the station (on its orbit there),
+        // so it comes off the route there with nothing to make up.
+        var along = tau / (1 - LedgerFarEnds);
+        if (along >= 1)
+        {
+            LedgerPose(f, run, i, endAt, endVel, planet);
+            return true;
+        }
+        var pos = LedgerFarAt(sys, trip, t, along, endAt);
+        var ahead = LedgerFarAt(sys, trip, t + SpaceTime.FromSeconds(1).Ns, along + World.TickRate / (span * (1 - LedgerFarEnds)), endAt);
+        LedgerPose(f, run, i, pos, ahead - pos); // (its speed the route's pace a second on: the flight carries it between the seconds)
+        return true;
+    }
+
+    /// <summary>A ledger ship and its escorts posed at <paramref name="pos"/> with <paramref name="vel"/> (the ecliptic frame), each round whatever body holds it there; escorts behind it along its way.</summary>
+    private void LedgerPose(SpaceFlight f, HaulRun run, int i, SpacePos pos, Vec3d vel, int round = -1)
+    {
+        // (round its primary as the system has it now: the flight's own copy of a body's place is drawn between steps and can lie a long way off it)
+        var p = round >= 0 ? round : f.Ships.PrimaryAt(pos);
+        f.System.StateOf(p, f.Ships.Time, out var bp, out var bv);
+        f.Ships.SetState(i, p, pos - bp, vel - bv);
+        var back = vel.LengthSquared > 1e-6 ? vel.Normalized() * -LedgerTrip.EscortGap : new Vec3d(-LedgerTrip.EscortGap, 0, 0);
+        var n = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: not 0 } ec && f.Ships.IndexOfId(ec.SpaceShip) is var ei and >= 0)
+            {
+                var at = pos + back * ++n;
+                var ep = round >= 0 ? round : f.Ships.PrimaryAt(at);
+                f.System.StateOf(ep, f.Ships.Time, out var ebp, out var ebv);
+                f.Ships.SetState(ei, ep, at - ebp, vel - ebv);
+            }
+    }
+
+    /// <summary>A ledger ship met part way between planets goes on at the transfer conic's own speed where it is, so it flies the rest for real.</summary>
+    private void LedgerFarRealSpeed(SpaceFlight f, HaulRun run, Construct c, LedgerTrip trip)
+    {
+        if (f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0))
+            return;
+        var sys = f.System;
+        var along = (ServerTick - trip.FromTick) / (double)Math.Max(1, trip.ToTick - trip.FromTick) / (1 - LedgerFarEnds);
+        if (along >= 1)
+            return; // (at its place by the station already, at its speed)
+        along = Math.Max(0, along);
+        var u = along * along * (3 - 2 * along);
+        if (!UniversalKepler.Propagate(sys.Bodies[trip.Centre].Mu, trip.R1, trip.V1, u * trip.Tof, out _, out var v))
+            return;
+        f.Ships.RelativeOf(i, out var p, out var r, out _);
+        sys.StateOf(p, f.Ships.Time, out var bp, out _);
+        sys.StateOf(trip.Centre, f.Ships.Time, out _, out var cv);
+        LedgerPose(f, run, i, bp + r, cv + v, p);
+    }
+
+    /// <summary>
+    /// Host, each second of a flown leg between planets (<c>HaulFarOut</c>: someone saw it set out): once it and its escorts are out of the
+    /// bubble with nobody near, nor by its station, the rest of the leg goes on the real route at its pace (<see cref="LedgerFarPlan"/>),
+    /// its fuel paid already. True: it is on the route now.
+    /// </summary>
+    private bool LedgerFarTake(SpaceSession s, HaulRun run, Construct c, int def, StationDef d, int planet)
+    {
+        if (LedgerAll || LedgerOff || run.RouteTried || run.LedgerUntil != 0 || planet < 0 || !OutOfBubble(run, c) || LedgerSeen(run, c)
+            || Constructs.Get(StationBodyOf(def)) is { } to && LedgerSeesAt(to.WorldCom, LedgerRange + LedgerBehindSeen)
+            || s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0))
+            return false;
+        var left = (run.FarUntil - ServerTick) / (60.0 * World.TickRate);
+        var from = f.Ships.PrimaryOf(i);
+        if (left < 1 || from == planet)
+            return false;
+        if (LedgerFarPlan(s, run, c, def, from, planet, left) is not { } route)
+        {
+            run.RouteTried = true;
+            return false;
+        }
+        if (NavOf(c.Id) is { } o)
+            NavEnd(o, c, "it goes on the ledger: nobody is near");
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } ec && NavOf(ec.Id) is { } eo)
+                NavEnd(eo, ec, "its hauler goes on the ledger");
+        run.FarUntil = 0;
+        run.Trip = route;
+        run.Ledger = true;
+        run.LedgerUntil = ServerTick + (long)(left * 60 * World.TickRate);
+        run.RetryAt = 0;
+        LedgerLegs++;
+        HaulSay(run, c, FormattableString.Invariant($"goes on the ledger to {d.Name}: {route.Tof / 86400:0.0} days' transfer round {s.System.Bodies[route.Centre].Name}, the last {left:0} minutes of play"));
+        return true;
     }
 
     /// <summary>The hauler and its escorts' drives held off their ships (on a ledger path) or let go again.</summary>
