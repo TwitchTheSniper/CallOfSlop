@@ -1,0 +1,199 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lagged Main 2 m",
+  "description": "A big insulated steam main on wall brackets, flanged at its ends: chain them end to end, turn corners and drops with a Lagged Main Elbow.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "lagging",
+  "mass": 190.0,
+  "health": 420,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4bda8",
+  "attachSeconds": 1.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        -0.3,
+        0.25
+      ],
+      "max": [
+        1.0,
+        0.3,
+        0.85
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.988,
+        -0.3,
+        0.25
+      ],
+      "max": [
+        0.988,
+        0.3,
+        0.85
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        -0.996,
+        -0.36,
+        0.19
+      ],
+      "max": [
+        -0.88,
+        0.36,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.88,
+        -0.36,
+        0.19
+      ],
+      "max": [
+        0.996,
+        0.36,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.53,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        -0.47,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        0.47,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        0.53,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.15,
+        -0.4,
+        0.0
+      ],
+      "max": [
+        0.15,
+        0.4,
+        0.03
+      ],
+      "color": "#3a3c3e",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.38,
+        0.027
+      ],
+      "max": [
+        0.05,
+        -0.3,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.06,
+        -0.34,
+        0.21
+      ],
+      "max": [
+        0.06,
+        0.34,
+        0.89
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+x",
+      "inner": 0.9,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.0,
+        0.55
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.0,
+        0.55
+      ],
+      "dir": "+x"
+    }
+  ]
+}

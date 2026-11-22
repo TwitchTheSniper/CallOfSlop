@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Amber Beacon",
+  "description": "A rotating amber warning light for a crane, a door or a crossing. Its mirror turns while it is lit; a wire into it switches it.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "logic",
+  "tool": "wrench",
+  "finish": "matte paint",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#262626",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "lamp",
+    "mains": true
+  },
+  "power": 40,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ffa31a",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "default": 160,
+      "tooltip": "How bright it glows."
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Flashes this many times a second while lit (0: steady)."
+    }
+  ],
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.14,
+        0.0,
+        -0.14
+      ],
+      "max": [
+        0.14,
+        0.06,
+        0.14
+      ],
+      "color": "#262626",
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.12,
+        0.056,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.124,
+        0.12
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.11,
+        0.12,
+        -0.11
+      ],
+      "max": [
+        0.11,
+        0.36,
+        0.11
+      ],
+      "color": "#e08a12",
+      "detail": true,
+      "glass": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "taper": [
+        0.9,
+        0.9
+      ],
+      "finish": "glass"
+    },
+    {
+      "min": [
+        -0.115,
+        0.357,
+        -0.115
+      ],
+      "max": [
+        0.115,
+        0.39,
+        0.115
+      ],
+      "color": "#262626",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.085,
+        0.152,
+        -0.014
+      ],
+      "max": [
+        0.085,
+        0.33,
+        0.014
+      ],
+      "color": "#fff3b0",
+      "detail": true,
+      "paintable": false,
+      "work": "spin",
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.02,
+        0.122,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.15,
+        0.02
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
