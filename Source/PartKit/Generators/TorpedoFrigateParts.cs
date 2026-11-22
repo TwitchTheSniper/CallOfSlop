@@ -993,7 +993,6 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "copilot", Cx + 0.9, Ft1, 10.8, "+y");
         Sock(p, "computer", Cx, Ft1, 12.9, "+y");
         Sock(p, "gunModule", Cx, Ft1, 9.3, "+y");
-        Sock(p, "chart", Cx + UwF, Ft1 + 0.475, 13.4, "-x");
         Sock(p, "bridgeLocker", Cx - UwF, Ft1 + 0.125, 13.6, "+x");
         // Ops: the forward gunnery station, a plot table with a CRT on it, the flare button.
         Sock(p, "gun", Cx - 0.3, Ft1, 16.3, "+y");

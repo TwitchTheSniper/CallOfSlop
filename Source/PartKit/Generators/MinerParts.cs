@@ -871,7 +871,6 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "pilot", Cx - 0.8, Ft1, 6.95, "+y");
         Sock(p, "copilot", Cx + 0.8, Ft1, 6.95, "+y");
         Sock(p, "module", Cx, Ft1, 5.9, "+y");
-        Sock(p, "chart", Cx + UwF, Ft1 + 0.475, 7.9, "-x");
         Sock(p, "bridgeLocker", Cx - UwF, Ft1 + 0.125, 8.2, "+x");
         Sock(p, "shelf", Cx - Uw, Ft1 + 0.125, 10.2, "+x");
         Sock(p, "couchA", Cx - Uw, Ft1 + 0.125, 14.4, "+x");

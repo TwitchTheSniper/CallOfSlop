@@ -189,40 +189,6 @@
       "max": [
         8.885,
         4.542,
-        12.821
-      ],
-      "color": "#2a2e33",
-      "detail": true,
-      "shape": "bevel",
-      "radius": 0.35,
-      "edges": "long",
-      "front": "+z",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        8.8511,
-        4.546,
-        8.379
-      ],
-      "max": [
-        8.885,
-        4.568,
-        12.821
-      ],
-      "color": "#2c5aa0",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        8.835,
-        4.452,
-        13.729
-      ],
-      "max": [
-        8.885,
-        4.542,
         14.371
       ],
       "color": "#2a2e33",
@@ -237,7 +203,7 @@
       "min": [
         8.851,
         4.546,
-        13.729
+        8.379
       ],
       "max": [
         8.885,
@@ -455,9 +421,9 @@
     },
     {
       "min": [
-        8.85,
+        8.8566,
         3.712,
-        13.415
+        13.26
       ],
       "max": [
         8.885,
@@ -466,9 +432,82 @@
       ],
       "color": "#4b5359",
       "detail": true,
-      "shape": "bevel",
-      "radius": 0.4,
-      "finish": "painted plating"
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.8353,
+        3.852,
+        13.38
+      ],
+      "max": [
+        8.885,
+        4.268,
+        14.125
+      ],
+      "color": "#1c1f23",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.8417,
+        3.902,
+        13.4
+      ],
+      "max": [
+        8.885,
+        3.937,
+        14.105
+      ],
+      "color": "#4b5359",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.8416,
+        3.997,
+        13.4
+      ],
+      "max": [
+        8.885,
+        4.032,
+        14.105
+      ],
+      "color": "#4b5359",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.8415,
+        4.092,
+        13.4
+      ],
+      "max": [
+        8.885,
+        4.127,
+        14.105
+      ],
+      "color": "#4b5359",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        8.8419,
+        4.187,
+        13.4
+      ],
+      "max": [
+        8.885,
+        4.222,
+        14.105
+      ],
+      "color": "#4b5359",
+      "detail": true,
+      "finish": "painted steel"
     },
     {
       "min": [
@@ -504,15 +543,6 @@
     }
   ],
   "sockets": [
-    {
-      "name": "chart",
-      "at": [
-        8.875,
-        3.85,
-        13.275
-      ],
-      "dir": "-x"
-    },
     {
       "name": "lampBridgeR",
       "at": [
