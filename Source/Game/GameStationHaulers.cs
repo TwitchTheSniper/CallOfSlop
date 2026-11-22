@@ -37,6 +37,7 @@ public sealed partial class Game
         public long FarUntil; // on a leg between planets: when it gets there (0: not on one; HaulFarOut)
         public int PutAt = -1; // a hauler of a route with neither station in this world, just built: the planet it is put at once it is in space (HaulPut)
         public long PutSince;
+        public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
     }
 
     /// <summary>An escort (phase 3: convoys): a warship of the route's power that holds beside its hauler with a Meet order, and off the station while the hauler docks.</summary>
@@ -236,7 +237,7 @@ public sealed partial class Game
                 known |= run.Ship == c.Id;
             if (known)
                 continue;
-            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
+            _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate, Adopted = true });
             RouteSeen(c.HaulRoute);
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
@@ -655,6 +656,10 @@ public sealed partial class Game
         if (at == planet)
             return false;
         var minutes = HaulFarMinutes(s.System, at, planet, f.Ships.Time);
+        var resumed = run.Adopted && c.MooredTo == 0; // (a loaded world's hauler out on a leg: half a leg more, its fuel spent already; the leg's own time isn't saved)
+        run.Adopted = false;
+        if (resumed)
+            minutes *= 0.5;
         if (c.MooredTo != 0)
             StationCastOff(c);
         if (NavOf(c.Id) is { } o)
@@ -664,7 +669,8 @@ public sealed partial class Game
             f.Ships.RelativeOf(i, out _, out var r, out _);
             NavApply(s, c, NavKind.Orbit, at, Vec3d.Zero, r.Length + HaulPhaseBy * 2, 255, StationMarkets.Haulers[run.Route].Power + " hauler", null, out _); // (seen leaving: it climbs away)
         }
-        c.Fuel = MathF.Max(0, c.Fuel - c.FuelCapacity() * HaulFarFuel);
+        if (!resumed)
+            c.Fuel = MathF.Max(0, c.Fuel - c.FuelCapacity() * HaulFarFuel);
         run.FarUntil = ServerTick + (long)(minutes * 60 * World.TickRate);
         run.RetryAt = 0;
         HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} round {d.Planet}: {minutes:0} minutes of play away"));
@@ -683,7 +689,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Host: a hauler of a route with neither station in this world (Slopolis Exchange to Hexkey Orbital while Caledon is played), built
-    /// beside a station here: once it and its escorts are in space (or after ten seconds) they are put on its first station's circle,
+    /// beside a station here: once it and its escorts are in space (or after a minute) they are put on its first station's circle,
     /// out of sight, and it trades there as a hauler come from another planet does (<see cref="HaulFarArrive"/>).
     /// </summary>
     private void HaulPut(SpaceSession s, HaulRun run, Construct c)
@@ -692,7 +698,7 @@ public sealed partial class Game
         foreach (var e in _escorts)
             if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
                 ready = false;
-        if (!ready && (c.SpaceShip == 0 || ServerTick - run.PutSince < 10 * World.TickRate))
+        if (!ready && (c.SpaceShip == 0 || ServerTick - run.PutSince < 60 * World.TickRate))
             return;
         var planet = run.PutAt;
         run.PutAt = -1;
@@ -738,8 +744,9 @@ public sealed partial class Game
         else
         {
             var radius = s.System.Bodies[planet].Radius + d.Orbit;
-            r = new Vec3d(radius, 0, 0);
-            v = new Vec3d(0, 0, Math.Sqrt(mu / radius));
+            var (sin, cos) = Math.SinCos(run.Ship * 2.399963); // (each hauler its own place on the circle, so those of one route aren't put on top of each other)
+            r = new Vec3d(radius * cos, 0, radius * sin);
+            v = new Vec3d(-sin, 0, cos) * Math.Sqrt(mu / radius);
         }
         f.Ships.SetState(i, planet, r, v);
         var k = 0;
@@ -748,6 +755,8 @@ public sealed partial class Game
             {
                 var q = QuatD.AxisAngle(Vec3d.Cross(r, v).Normalized(), -(1500.0 * ++k) / r.Length); // (a little behind it, on its orbit)
                 f.Ships.SetState(ei, planet, q.Rotate(r), q.Rotate(v));
+                if (NavOf(ec.Id) is { } eo)
+                    NavEnd(eo, ec, $"it has come to {d.Planet} with its hauler"); // (its next order is given there: EscortStep)
             }
         HaulSay(run, c, $"comes to {d.Planet} from another planet");
         if (!here)

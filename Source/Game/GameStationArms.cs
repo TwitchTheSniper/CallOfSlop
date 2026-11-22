@@ -49,6 +49,11 @@ public sealed partial class Game
         if (Constructs.Get(a.Ship) is not { } ship || a.Berth >= st.PartCount || st.Parts[a.Berth].Broken)
             return;
         var d = st.DefOf(a.Berth);
+        if (NavOf(ship.Id) is { } going && !(going.Kind == NavKind.Dock && going.Target == st.Id))
+        {
+            StationArmRefused(st, a.Berth, ship, d); // (under an order to go elsewhere: an arm took a hauler setting out slowly back in, 2026-11-22)
+            return;
+        }
         if (!d.IsDock || !StationMoorable(st, ship, d) || !NavDockFree(Constructs, st, a.Berth, ship) || !BerthFits(st, a.Berth, ship, out _) || f.Ships.IndexOfId(ship.SpaceShip) is not (var i and >= 0))
         {
             StationArmRefused(st, a.Berth, ship, d);
@@ -72,7 +77,7 @@ public sealed partial class Game
             arm.Refused = ship.Id;
             arm.Ship = 0;
         }
-        var why = !d.IsDock ? "not a berth" : ship.Mass > d.DockMaxMass ? $"{ship.Mass:0} kg, over the berth's {d.DockMaxMass:0} kg" : !StationMoorable(st, ship, d) ? "not moorable now (anchored, held, frozen or just cast off)" : !NavDockFree(Constructs, st, berth, ship) ? "the berth is taken" : !BerthFits(st, berth, ship, out _) ? "too big for the berth" : "not in the flight";
+        var why = NavOf(ship.Id) is { } o && !(o.Kind == NavKind.Dock && o.Target == st.Id) ? "it is under orders to go elsewhere" : !d.IsDock ? "not a berth" : ship.Mass > d.DockMaxMass ? $"{ship.Mass:0} kg, over the berth's {d.DockMaxMass:0} kg" : !StationMoorable(st, ship, d) ? "not moorable now (anchored, held, frozen or just cast off)" : !NavDockFree(Constructs, st, berth, ship) ? "the berth is taken" : !BerthFits(st, berth, ship, out _) ? "too big for the berth" : "not in the flight";
         Log($"[station] the clamp arm of berth {berth} of {StationName(st)} let go of construct {ship.Id}: {why}");
     }
 
