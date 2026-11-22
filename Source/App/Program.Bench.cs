@@ -143,6 +143,7 @@ public static partial class Program
             s.Extra["sunBoxes"] = SunShadows.LastBoxes;
             s.Extra["roomBoxes"] = RoomShade.LastBoxes;
             s.Extra["lampBoxes"] = LampShadows.LastBoxes;
+            s.Extra["casterCellsSkipped"] = SunShadows.CellsSkipped;
         }
         WsSay(PerfBench.Line(s));
         if (s.FrameSections.Length > 0)
