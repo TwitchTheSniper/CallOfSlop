@@ -70,6 +70,8 @@ public static partial class ConstructRide
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
         if (NextLid(c, part) is var lid and >= 0)
             return ConstructDoors.IsMoving(c, c.Doors[lid].Part) ? "the hatch is still moving" : ConstructDoors.Locked(c, c.Doors[lid].Part) ? "the hatch is locked" : "the hatch is shut: F opens it"; // (a deck hatch over its shaft, a belly door under it: F on the ladder opens them first, GameSandbox Use; crews too, CrewNav)
+        if (s.RideBody == c.Id && s.RideUp != Vector3.Zero && s.RideSeg <= c.JointCount)
+            s.Position = ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal); // (a rider in its frame is where the frame holds them now: a ship posed in orbit moves metres a tick after the riders' step, so the world feet lag it and the wrong end was taken; Karl, 2026-11-22)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
