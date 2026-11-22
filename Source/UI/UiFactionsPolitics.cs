@@ -142,6 +142,7 @@ public sealed partial class Ui
                     var how = c.Kind switch
                     {
                         ContractKind.Escort => $"{c.Progress / 60}:{c.Progress % 60:00} of {c.Need / 60}:{c.Need % 60:00} near it; it is {dist:0} m away",
+                        ContractKind.Deliver when c.Target > 0 => $"the station is {dist:0} m away; dock there with the load aboard",
                         ContractKind.Deliver => $"the place is {dist:0} m away; bring the load in a ship within {RelationRules.Current.DeliverRange:0} m",
                         _ => "destroy or take one of their ships",
                     };
