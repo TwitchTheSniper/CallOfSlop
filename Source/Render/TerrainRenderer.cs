@@ -115,7 +115,7 @@ public sealed unsafe partial class TerrainRenderer
             return;
         if (map.Planetoid is { } planet)
         {
-            DrawPlanet(gfx, planet); // a planetoid's ground all round (Source/Planets/PlanetRenderer.cs)
+            DrawPlanet(gfx, planet, map.Resources); // a planetoid's ground all round (Source/Planets/PlanetRenderer.cs)
             return;
         }
         if (_planet?.Planet != null)
@@ -157,13 +157,13 @@ public sealed unsafe partial class TerrainRenderer
     /// <summary>The planetoid's dug ground in the drawing: level-0 pages masked, chunks of blocks, their triangles (PlanetRendererDug.cs).</summary>
     public (int MaskedPages, int Chunks, int Triangles) PlanetDugStats => _planet?.DugStats ?? default;
 
-    private void DrawPlanet(Renderer gfx, Planetoid planet)
+    private void DrawPlanet(Renderer gfx, Planetoid planet, ResourceField? ore)
     {
         try
         {
             _planet ??= new PlanetRenderer();
-            if (!ReferenceEquals(_planet.Planet, planet))
-                _planet.Reset(planet);
+            if (!ReferenceEquals(_planet.Planet, planet) || !ReferenceEquals(_planet.Ore, ore))
+                _planet.Reset(planet, ore);
             var vp = gfx.ViewProj;
             Span<Vector4> planes = stackalloc Vector4[6];
             FrustumPlanes(vp, planes);

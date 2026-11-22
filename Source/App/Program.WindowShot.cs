@@ -2008,6 +2008,13 @@ public static unsafe partial class Program
                     WsSay("deposit: this map has no resources");
                     return;
                 }
+                if (World.Map.Planetoid != null)
+                {
+                    WsSay(field.NearestMiddle(me.Position, out var mid) is { } k
+                        ? $"deposit: {k.Name}, its middle at {mid.X:0},{mid.Y:0},{mid.Z:0} ({Vector3.Distance(mid, me.Position):0} m away)"
+                        : "deposit: none on this planetoid");
+                    return;
+                }
                 for (var r = 0f; r <= 600; r += 4)
                     for (var a = 0f; a < MathF.Tau; a += r > 0 ? 4 / r : MathF.Tau)
                     {
