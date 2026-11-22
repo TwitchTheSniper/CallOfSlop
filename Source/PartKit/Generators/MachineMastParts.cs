@@ -8,7 +8,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// the shared 2 m cube: a lattice column cell that any family's machine takes in ("machineBlock" role "shared"). Stacked on a bed cell it
 /// is that cell's column: a pad's stacking height, an oven's or a station's corner mast, the column a Crane Rail Block sits on. Its cap and
 /// foot are seams, so a stacked column shows one foot at the bottom and one cap at the top; its face bracing is a seam too, so masts
-/// welded side by side read as one wall of lattice. A lamp near the top of each face glows while its machine works.
+/// welded side by side read as one wall of lattice. A lamp near the top of each face glows while its machine works. Outside a machine (a
+/// shed's pillar, a crane's column) a mast draws only its posts, top girts, foot and cap: the bracing, bolts and lamps are "inMachine".
 /// </summary>
 public sealed class MachineMastParts : IPartGenerator
 {
@@ -48,6 +49,9 @@ public sealed class MachineMastParts : IPartGenerator
 
     private static PyDict Seam(PyDict? box, params string[] faces) => box!.Update(("seam", faces.Length == 1 ? faces[0] : Py.L([.. faces.Cast<object?>()])));
 
+    /// <summary>Drawn only while the mast is a machine's cell: a bare column of masts (a shed's pillar under a crane rail) is its posts, girts, foot and cap alone.</summary>
+    private static PyDict M(PyDict? box) => box!.Update(("inMachine", true));
+
     /// <summary>
     /// The Mast Block: 2 x 2 x 2 m, origin at its foot's middle. Four angle posts at its corners, a ring of girts at the top and the foot,
     /// X bracing on each face between them, gusset plates and bolts at the joints, a cable tray up one post, a metre mark on each post,
@@ -71,12 +75,12 @@ public sealed class MachineMastParts : IPartGenerator
             p.Add(Box([fx0, 0.003, z0], [fx1, h - 0.003, z1])); // (the flange on the x face)
             // A dark mark at every metre: the old pad posts' marks (drawing 20), on the post's outer corner.
             foreach (var y in new[] { 1.0 })
-                p.Add(L([Math.Min(x0, x1) - 0.004, y - 0.02, Math.Min(z0, z1) - 0.004], [Math.Max(x0, x1) + 0.004, y + 0.02, Math.Max(z0, z1) + 0.004], MachineLook.Ink));
+                p.Add(M(L([Math.Min(x0, x1) - 0.004, y - 0.02, Math.Min(z0, z1) - 0.004], [Math.Max(x0, x1) + 0.004, y + 0.02, Math.Max(z0, z1) + 0.004], MachineLook.Ink)));
             // The foot plate under each post (a seam down: a stacked mast stands on the one below) and its two anchor bolts.
             double cx = sx * (i - post / 2), cz = sz * (i - post / 2);
             p.Add(Seam(L([cx - 0.13, 0.003, cz - 0.13], [cx + 0.13, 0.04, cz + 0.13], MachineLook.Base), "-y"));
             foreach (var (bx, bz) in new[] { (cx - sx * 0.09, cz), (cx, cz - sz * 0.09) })
-                p.Add(Seam(L([bx - 0.022, 0.04, bz - 0.022], [bx + 0.022, 0.07, bz + 0.022], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+y"))), "-y"));
+                p.Add(M(Seam(L([bx - 0.022, 0.04, bz - 0.022], [bx + 0.022, 0.07, bz + 0.022], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+y"))), "-y")));
             // The amber cap on top of each post (a seam up: a column shows its caps once, at its top).
             p.Add(Seam(L([Math.Min(x0, x1) - 0.006, h - 0.04, Math.Min(z0, z1) - 0.006], [Math.Max(x0, x1) + 0.006, h - 0.003, Math.Max(z0, z1) + 0.006], MachineLook.Accent), "+y"));
         }
@@ -95,35 +99,35 @@ public sealed class MachineMastParts : IPartGenerator
             }
             var w = i - post; // (the girts run between the posts' flanges)
             p.Add(Seam(Face(0.1, h - 0.17, h - 0.05, -w + 0.004, w - 0.004, Graphite, paint: true), face));
-            p.Add(Seam(Face(0.1, 0.05, 0.17, -w + 0.004, w - 0.004, Graphite, paint: true), face));
+            p.Add(M(Seam(Face(0.1, 0.05, 0.17, -w + 0.004, w - 0.004, Graphite, paint: true), face)));
             // X bracing, a flat bar each way (the second 6 mm further out, so the two never share a plane where they cross).
             double ya = 0.17, yb = h - 0.17, aa = -w + 0.02, ab = w - 0.02;
             PyDict X(double y0, double a0, double y1, double a1, double out_) // (Strut's other two axes, in order: x face (y, z), z face (x, y))
                 => n == 0 ? Strut(0, at - sg * out_, -sg, y0, a0, y1, a1, 0.09, 0.022, Graphite) : Strut(2, at - sg * out_, -sg, a0, y0, a1, y1, 0.09, 0.022, Graphite);
-            p.Add(Seam(X(ya, aa, yb, ab, 0.05), face));
-            p.Add(Seam(X(ya, ab, yb, aa, 0.028), face));
+            p.Add(M(Seam(X(ya, aa, yb, ab, 0.05), face)));
+            p.Add(M(Seam(X(ya, ab, yb, aa, 0.028), face)));
             // The gusset at the crossing and its bolts.
-            p.Add(Seam(Face(0.014, h / 2 - 0.13, h / 2 + 0.13, -0.13, 0.13, MachineLook.Base), face));
+            p.Add(M(Seam(Face(0.014, h / 2 - 0.13, h / 2 + 0.13, -0.13, 0.13, MachineLook.Base), face)));
             foreach (var (by, ba) in new[] { (0.08, 0.08), (0.08, -0.08), (-0.08, 0.08), (-0.08, -0.08) })
-                p.Add(Seam(Face(0.03, h / 2 + by - 0.018, h / 2 + by + 0.018, ba - 0.018, ba + 0.018, MachineLook.Steel, "steel"), face));
+                p.Add(M(Seam(Face(0.03, h / 2 + by - 0.018, h / 2 + by + 0.018, ba - 0.018, ba + 0.018, MachineLook.Steel, "steel"), face)));
             // Gussets at the girts' ends, two bolts each.
             foreach (var ga in new[] { -1, 1 })
                 foreach (var (gy0, gy1) in new[] { (h - 0.28, h - 0.04), (0.04, 0.28) })
                 {
                     double a0 = ga > 0 ? w - 0.2 : -w + 0.004, a1 = ga > 0 ? w - 0.004 : -w + 0.2;
-                    p.Add(Seam(Face(0.012, gy0, gy1, a0, a1, MachineLook.Base), face));
-                    p.Add(Seam(Face(0.028, (gy0 + gy1) / 2 - 0.018, (gy0 + gy1) / 2 + 0.018, (a0 + a1) / 2 - 0.018, (a0 + a1) / 2 + 0.018, MachineLook.Steel, "steel"), face));
+                    p.Add(M(Seam(Face(0.012, gy0, gy1, a0, a1, MachineLook.Base), face)));
+                    p.Add(M(Seam(Face(0.028, (gy0 + gy1) / 2 - 0.018, (gy0 + gy1) / 2 + 0.018, (a0 + a1) / 2 - 0.018, (a0 + a1) / 2 + 0.018, MachineLook.Steel, "steel"), face)));
                 }
             // The status lamp under the top girt: a dark housing, a lens that glows while its machine works (drawing 21: a cell shows its Core's work).
-            p.Add(Seam(Face(0.05, h - 0.33, h - 0.19, -0.11, 0.11, MachineLook.Base), face));
-            p.Add(Seam(MachineLook.Work(Face(0.064, h - 0.31, h - 0.21, -0.08, 0.08, MachineLook.Accent), "glow"), face));
+            p.Add(M(Seam(Face(0.05, h - 0.33, h - 0.19, -0.11, 0.11, MachineLook.Base), face)));
+            p.Add(M(Seam(MachineLook.Work(Face(0.064, h - 0.31, h - 0.21, -0.08, 0.08, MachineLook.Accent), "glow"), face)));
         }
         // A cable tray up the +x/+z post's inner face, and a maker's plate on the -z face's foot girt.
-        p.Add(Seam(L([i - post - 0.07, 0.17, i - fl - 0.06], [i - post - 0.004, h - 0.17, i - fl - 0.012], MachineLook.Base), "+z"));
+        p.Add(M(Seam(L([i - post - 0.07, 0.17, i - fl - 0.06], [i - post - 0.004, h - 0.17, i - fl - 0.012], MachineLook.Base), "+z")));
         foreach (var y in new[] { 0.5, 1.0, 1.5 })
-            p.Add(Seam(L([i - post - 0.08, y - 0.02, i - fl - 0.07], [i - post + 0.004, y + 0.02, i - fl - 0.012], MachineLook.Steel, "steel"), "+z"));
-        p.Add(Seam(L([-0.3, 0.07, -i - 0.022], [0.3, 0.15, -i + 0.004], MachineLook.In), "-z"));
-        p.Add(Seam(L([-0.25, 0.095, -i - 0.03], [0.25, 0.125, -i - 0.016], MachineLook.Ink), "-z"));
+            p.Add(M(Seam(L([i - post - 0.08, y - 0.02, i - fl - 0.07], [i - post + 0.004, y + 0.02, i - fl - 0.012], MachineLook.Steel, "steel"), "+z")));
+        p.Add(M(Seam(L([-0.3, 0.07, -i - 0.022], [0.3, 0.15, -i + 0.004], MachineLook.In), "-z")));
+        p.Add(M(Seam(L([-0.25, 0.095, -i - 0.03], [0.25, 0.125, -i - 0.016], MachineLook.Ink), "-z")));
         p.Sock("top", [0, h, 0], "+y");
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [e, 1, 0], "+x");
@@ -137,7 +141,7 @@ public sealed class MachineMastParts : IPartGenerator
         p.Sock("+z.low", [0, low, e], "+z");
         p.Sock("-z.low", [0, low, -e], "-z");
         p.Stats(900, 2400, 8, 12);
-        p.Set(("machineBlock", SharedKey()), ("centreSockets", false), ("collider", "boxes"));
+        p.Set(("machineBlock", SharedKey()), ("centreSockets", false), ("collider", "boxes"), ("seamSame", true)); // (seamSame: a bare column shows one foot and one cap)
         return p;
     }
 
