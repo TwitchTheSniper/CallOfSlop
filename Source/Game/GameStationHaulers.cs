@@ -31,7 +31,7 @@ public sealed partial class Game
         public int Route;
         public bool AtTo; // the leg it is on: false, to the route's first station ("from"); true, to its second ("to")
         public HaulStage Stage;
-        public long Since, RetryAt;
+        public long Since, RetryAt, FuelRetry;
         public string Last = ""; // the last line logged for its leg (so a refusal repeated every try is logged once)
         public long EscortNext; // when a lost escort may be replaced
     }
@@ -193,6 +193,7 @@ public sealed partial class Game
         c.HaulAtTo = atTo;
         var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
         _hauls.Add(r);
+        RouteSeen(r.Route); // (its supply line runs: GameSupplyLines.cs)
         Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
         EscortsAdopt(r); // (a lost hauler's escorts first)
         for (var k = EscortsOf(r); k < h.Escorts; k++)
@@ -233,6 +234,7 @@ public sealed partial class Game
             if (known)
                 continue;
             _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
+            RouteSeen(c.HaulRoute);
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
     }
@@ -277,6 +279,7 @@ public sealed partial class Game
                 Log($"[haul] construct {_hauls[i].Ship} is gone: another sets out in a minute");
                 _haulNext[_hauls[i].Route] = Math.Max(_haulNext[_hauls[i].Route], ServerTick + 60 * World.TickRate);
                 _hauls.RemoveAt(i);
+                StationsVersion++; // (a supply line may be cut: the cards hear it, GameSupplyLines.cs)
             }
         for (var ri = 0; ri < routes.Length; ri++)
         {
@@ -519,6 +522,7 @@ public sealed partial class Game
         {
             run.Stage = circling ? HaulStage.Orbiting : HaulStage.Moored;
             run.Since = ServerTick;
+            RouteArrived(run.Route); // (its supply line runs: GameSupplyLines.cs)
             HaulTrade(run, c, h, def, st != 0 && c.MooredTo == st ? StationMarketOf(Constructs.Get(st)!) : MarketOfDef(def));
             return;
         }
@@ -535,6 +539,20 @@ public sealed partial class Game
             {
                 HaulSay(run, c, "waits for its escorts");
                 return; // (a convoy sets out together)
+            }
+            if (c.Fuel < c.FuelCapacity() * HaulFuelLeast)
+            {
+                // (fuel isn't free: a hauler with too little for a leg waits at the station for its hydrogen, rather than set out and drift dry)
+                if (ServerTick >= run.FuelRetry)
+                {
+                    run.FuelRetry = ServerTick + 30 * World.TickRate;
+                    HaulFuel(c, MarketOfDef(def), Controllers.Powers[CrewPowers.Find(h.Power)], h.Power, d.Name, "construct", quiet: true);
+                }
+                if (c.Fuel < c.FuelCapacity() * HaulFuelLeast)
+                {
+                    HaulSay(run, c, "waits for fuel: its station has no hydrogen to spare"); // (a literal: said each second it waits, logged once)
+                    return;
+                }
             }
             run.AtTo = !run.AtTo; // (the next leg)
             c.HaulAtTo = run.AtTo;
@@ -602,6 +620,61 @@ public sealed partial class Game
     }
 
     /// <summary>Host: a hauler at its station (moored there, or on its circle when the station is in another world): it sells what it carries that the station buys, fills its tanks, then loads the leg's goods, paying from its power.</summary>
+    /// <summary>Litres of fuel a unit of a station's hydrogen makes (fuel is no longer free: economy step 11; a tuning number).</summary>
+    private const float FuelPerHydrogen = 10;
+
+    /// <summary>The share of a full tank a hauler needs to set out on a leg (a leg between planets takes most of a tank).</summary>
+    private const float HaulFuelLeast = 0.6f;
+
+    /// <summary>
+    /// Host: <paramref name="c"/>'s tank filled at a station from its hydrogen stock (Karl, 2026-11-22: no making from nothing), as far as the stock
+    /// goes; a hauler of another power pays the station's asking price from its books. A station that trades no hydrogen fills it as before.
+    /// </summary>
+    private void HaulFuel(Construct c, StationMarket m, PowerControllers.Power? pw, string power, string name, string what, bool quiet = false)
+    {
+        var cap = c.FuelCapacity();
+        if (c.Fuel >= cap)
+            return;
+        var goods = StationMarkets.All[m.Def].Goods;
+        var k = -1;
+        for (var i = 0; i < goods.Length && k < 0; i++)
+            if (goods[i].Material == _hydrogenId)
+                k = i;
+        if (k < 0)
+        {
+            Log($"[haul] {what} {c.Id} took on {cap - c.Fuel:0} L of fuel at {name}");
+            c.Fuel = cap;
+            return;
+        }
+        var want = (int)MathF.Ceiling((cap - c.Fuel) / FuelPerHydrogen);
+        var units = Math.Min(want, m.Stock[k]);
+        var foreign = StationPower(m) != CrewPowers.Find(power);
+        if (foreign && units > 0)
+        {
+            units = Math.Min(units, pw is { Fallen: false } ? m.Afford(k, Math.Max(0, pw.Stock)) : 0);
+            if (units > 0)
+            {
+                var cost = m.SellCost(k, units);
+                pw!.Stock -= cost;
+                pw.Spent += cost;
+                StationMargin(m, cost);
+            }
+        }
+        if (units <= 0)
+        {
+            if (!quiet)
+                Log($"[haul] {what} {c.Id} gets no fuel at {name}: {(m.Stock[k] <= 0 ? "it is out of hydrogen" : "its power can't pay for it")} ({c.Fuel:0} of {cap:0} L aboard)");
+            return;
+        }
+        m.Stock[k] -= units;
+        StationsVersion++;
+        var was = c.Fuel;
+        c.Fuel = Math.Min(cap, c.Fuel + units * FuelPerHydrogen);
+        Log($"[haul] {what} {c.Id} took on {c.Fuel - was:0} L of fuel at {name} for {units} hydrogen{(units < want ? " (all it had)" : "")}");
+    }
+
+    private byte _hydrogenId => RecyclingTable.Current.IdOf("hydrogen");
+
     private void HaulTrade(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket? m)
     {
         if (m == null)
@@ -609,18 +682,10 @@ public sealed partial class Game
         var name = StationMarkets.All[def].Name;
         var where = run.Stage == HaulStage.Orbiting ? $"{name} (on its circle: the station is in another world)" : name;
         var pw = Controllers.Powers[CrewPowers.Find(h.Power)];
-        var cap = c.FuelCapacity();
-        if (c.Fuel < cap)
-        {
-            Log($"[haul] construct {c.Id} took on {cap - c.Fuel:0} L of fuel at {name}");
-            c.Fuel = cap; // (a station fills its haulers' tanks: a leg between planets takes most of a tank)
-        }
+        HaulFuel(c, m, pw, h.Power, name, "construct"); // (a station fills its haulers' tanks from its hydrogen: a leg between planets takes most of a tank)
         foreach (var e in _escorts)
-            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } es && es.Fuel < es.FuelCapacity())
-            {
-                Log($"[haul] escort {es.Id} took on {es.FuelCapacity() - es.Fuel:0} L of fuel at {name}");
-                es.Fuel = es.FuelCapacity(); // (its escorts' too, wherever they hold)
-            }
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } es)
+                HaulFuel(es, m, pw, h.Power, name, "escort"); // (its escorts' too, wherever they hold)
         ConsignAtStation(c, run.Route, h, def, run.AtTo ? h.From : h.To); // (consignments off here and on for the next leg: GameConsignments.cs)
         Span<int> sold = stackalloc int[StationMarkets.All[def].Goods.Length];
         var value = StationTakeCargo(m, c, sold);

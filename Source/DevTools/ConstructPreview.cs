@@ -489,7 +489,7 @@ public static partial class ConstructPreview
                 var b = d.Boxes[boxIndex];
                 var track = i >= 0 ? _trackOf?.Invoke(i, boxIndex) ?? (byte)0 : (byte)0;
                 anyTrack |= track != 0;
-                if (b.Hidden || b.SeamHidden(0))
+                if (b.Hidden || b.SeamHidden(MachineBlocks.InMachine))
                 {
                     if (count)
                         _skipped++;
