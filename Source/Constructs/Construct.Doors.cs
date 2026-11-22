@@ -36,7 +36,7 @@ public sealed partial class Construct
     public const int MaxDoors = 1024;
 
     /// <summary>Parts that may ride one door's leaf besides the door part itself (each linked to that part alone).</summary>
-    public const int MaxDoorLeaf = 8;
+    public const int MaxDoorLeaf = 32; // (a Console Drawer Tray carries up to 21 instruments: CockpitParts.Drawers)
 
     public CDoor[] Doors = [];
     public int DoorCount;

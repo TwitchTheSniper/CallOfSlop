@@ -56,7 +56,8 @@ public sealed partial class Game
                   ^ (ConstructFlight.DampenersOff(c) ? 1L : 0) ^ (ConstructFlight.MouseSteerOff(c) ? 2L : 0) ^ (long)gear << 2 ^ (long)hintKind << 4
                   ^ (RadarCraft == c && RadarCanLock ? 1L << 6 : 0) ^ (long)(turret + 1) << 7 ^ (c.DriveSeat == seat ? 1L << 62 : 0)
                   ^ (c.EngineRunning ? 1L << 61 : 0) ^ (long)c.StabCount << 56
-                  ^ (ConstructShutdown.ReactorOff(c) ? 1L << 59 : 0) ^ (ConstructShutdown.ThrustersOff(c) ? 1L << 60 : 0);
+                  ^ (ConstructShutdown.ReactorOff(c) ? 1L << 59 : 0) ^ (ConstructShutdown.ThrustersOff(c) ? 1L << 60 : 0)
+                  ^ (CockpitStations.Of(c, seat) == SeatStation.Command ? CommandKey(c) * 7919L << 20 : 0);
         if (key != _seatPanelKey)
         {
             _seatPanelKey = key;
@@ -210,6 +211,11 @@ public sealed partial class Game
             Row(SandboxKeys.KRadar, "", "radar lock, again: next");
         }
 
+        // COMMAND (cockpits phase 4: the captain, Karl 2026-11-22): at the command seat, the crew's orders, every station and who mans it,
+        // and the helm's states read only. The captain orders; to work a station's controls, sit at it.
+        if (CockpitStations.Of(c, seat) == SeatStation.Command)
+            CommandRows(c, seat, gear);
+
         // DOCKING AND LANDING: the craft's landing leg pods (any seat works them), its rail or dock, the seat's ejection handle.
         var eject = c.Parts[seat].D.SeatEject;
         if (gear > 0 || hintKind > 0 || eject)
@@ -337,6 +343,104 @@ public sealed partial class Game
         var kind = ends == 0 ? (byte)3 : c.DefOf(DevEnds[0]).Logic == CLogic.Lamp ? (byte)1 : ConstructDoor.Swings(c, DevEnds[0]) ? (byte)2 : c.DefOf(DevEnds[0]).HasJoint || c.DefOf(DevEnds[0]).IsRail ? (byte)0 : (byte)3;
         if (_seatPanel.Count < SeatPanel.MaxRows - 2)
             _seatPanel.Rows[_seatPanel.Count++] = new SeatRow { Text = text, Key1 = Cap(key), Key2 = "", State = state, Tone = (byte)(10 + kind) }; // (10+: its section, sorted out in GroupDevices)
+    }
+
+    private long _cmdKey;
+    private int _cmdKeyFrame, _cmdKeyBody = -1;
+
+    /// <summary>The command seat's state as one number (crew holding fire, each station manned): the panel is made again when it changes.
+    /// Walks the parts at most four times a second (a station manned shows a quarter second late), never every frame.</summary>
+    private long CommandKey(Construct c)
+    {
+        if (c.Id == _cmdKeyBody && ++_cmdKeyFrame < 15)
+            return _cmdKey;
+        _cmdKeyBody = c.Id;
+        _cmdKeyFrame = 0;
+        long k = CrewRosters.TryGetValue(c.Id, out var v) && v.HoldFire ? 1 : 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Role == PartRole.Seat)
+                k = k * 31 + (Manned(c, i) ? 2 : 1);
+        return _cmdKey = k;
+    }
+
+    /// <summary>Does someone work seat <paramref name="seat"/>: a person or crew body in it, or a crew stand-in at it.</summary>
+    private bool Manned(Construct c, int seat)
+    {
+        if (c.Parts[seat].SitterPlus1 != 0)
+            return true;
+        if (CrewStandIns.TryGetValue(c.Id, out var ps))
+            foreach (var p in ps)
+                if (p == seat)
+                    return true;
+        return false;
+    }
+
+    /// <summary>The station seat <paramref name="seat"/> is, in words ("" for a couch).</summary>
+    private static string StationWord(Construct c, int seat)
+    {
+        if (seat == c.DriveSeat)
+            return "helm";
+        var st = CockpitStations.Of(c, seat);
+        if (st != SeatStation.Auto)
+            return CockpitStations.Name(st);
+        for (var g = 0; g < c.GunCount; g++)
+            if (c.Guns[g].Seat == seat)
+                return "guns";
+        return "";
+    }
+
+    /// <summary>STATIONS rows at most (the rest as one line), so the sections after it keep their room in the panel's rows.</summary>
+    private const int MaxStationRows = 10;
+
+    private void CommandRows(Construct c, int seat, int gear)
+    {
+        Head("COMMAND", "");
+        if (CrewRosters.TryGetValue(c.Id, out var v) && v.Own)
+            Lamp("", "crew holding fire (dash, Crew window)", v.HoldFire);
+        else
+            Row("", "", "no crew of yours aboard", "", 0);
+        // STATIONS: every seat that is a station, and whether it is manned.
+        var any = false;
+        int shown = 0, more = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (i == seat || c.Parts[i].D.Role != PartRole.Seat || StationWord(c, i) is not { Length: > 0 } word)
+                continue;
+            if (shown >= MaxStationRows)
+            {
+                more++;
+                continue;
+            }
+            shown++;
+            if (!any)
+            {
+                Head("STATIONS", "read only");
+                any = true;
+            }
+            var manned = Manned(c, i);
+            Row("", "", $"{word}: {Short(LogicText.Name(c, i))}", manned ? "MANNED" : "EMPTY", manned ? (byte)1 : (byte)2);
+        }
+        if (more > 0)
+            Row("", "", $"and {more} more stations", "", 0);
+        // The helm's page, read only (no keys: sit at the helm to work it).
+        if (seat == c.DriveSeat)
+            return;
+        var dampers = ConstructFlight.HasDampeners(c);
+        var reactor = ConstructShutdown.HasReactor(c);
+        var thrust = ConstructShutdown.HasThrusters(c);
+        if (!dampers && !reactor && !thrust && gear == 0)
+            return;
+        Head("HELM", "read only");
+        if (dampers)
+            Lamp("", "inertia dampeners", !ConstructFlight.DampenersOff(c));
+        if (ConstructFlight.HasMouseSteer(c))
+            Lamp("", "mouse steering", !ConstructFlight.MouseSteerOff(c));
+        if (reactor)
+            Lamp("", "reactor on", !ConstructShutdown.ReactorOff(c));
+        if (thrust)
+            Lamp("", "thrusters on", !ConstructShutdown.ThrustersOff(c));
+        if (gear > 0)
+            Lamp("", "landing legs down", gear == 2);
     }
 
     /// <summary>Sorts the device rows from <paramref name="start"/> into MOTORS (hinges, pistons, turntables, rails), LIGHTS, DOORS and OTHER DEVICES, each under its heading.</summary>

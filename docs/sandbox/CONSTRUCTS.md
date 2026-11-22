@@ -243,7 +243,7 @@ Storage volumes, physical storage, modular shelves, the Smart Terminal, the Inve
 
 ## [Modular cockpits](constructs/cockpits.md)
 
-Console bays (the cell class of module socket, 10 cm cells), their faceplates and panel instruments, the seat link (a switch's Function, MASTER CAUTION), working a dash from the seat, the Roamer's dash.
+Console bays (the cell class of module socket, 10 cm cells), their faceplates and panel instruments, the seat link (a switch's Function, MASTER CAUTION), working a dash from the seat, the Roamer's dash, command stations (a seat's Station setting, the captain's page), Console Drawers and Console Arc Desks.
 
 ## [Big systems](constructs/big-systems.md), 20 KB
 

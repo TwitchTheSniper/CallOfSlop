@@ -741,7 +741,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      move the part ids, and the ships' decks, ladders and blueprints changed with them.
     // 439: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
     //      steps, goods) and every listed station's power and state, which 438 reads as markets.
-    public const ushort ProtocolVersion = 439;
+    // 440: cockpit command stations (cockpits.md "Command stations"): every seat has a Station setting (its Setting, 0-5), crew jobs and
+    //      station kinds for them (the roster's job byte), and the "Crew hold fire" Function.
+    public const ushort ProtocolVersion = 440;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

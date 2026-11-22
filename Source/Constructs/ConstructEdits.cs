@@ -1223,7 +1223,9 @@ public sealed partial class ConstructEdits
                     return "sit at the console to work it";
                 if (fn is SeatFn.Reactor or SeatFn.Thrusters && h.SeatPart != c.DriveSeat)
                     return "only the pilot's seat shuts the ship down";
-                return CockpitFns.Press(world, c, ref lp, fn);
+                if (CockpitFns.IsOrder(fn) && !CockpitStations.Commands(c, h.SeatPart))
+                    return "crew orders are given from the command seat";
+                return CockpitFns.Press(world, c, ref lp, fn, player);
             }
             switch (d.Logic)
             {

@@ -2115,6 +2115,7 @@ public static partial class ConstructParts
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
         SmartRotation.ParseFaces(d, Opt(root, "faces"), Opt(root, "faceAxis"), file);
+        CockpitStations.Give(d); // (a seat's Station setting: CockpitStations.cs)
         ConstructConfig.Parse(d, root, file); // (last: it folds in the role's own choice and checks the keys fit the part)
         return d;
     }
