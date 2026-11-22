@@ -9,13 +9,20 @@ namespace CallOfSlop;
 /// territory's goods, consignments, camps and hardship, all the real code. Every hour of play it writes each station's stock, line by line,
 /// to <c>economy-sim.txt</c> next to the DLL, and at the end the lines that ran dry or filled up. <c>--warp W</c> asks for space time W times
 /// faster (as a player at the command view's time speed: legs between planets take months of space time; the rule slows it while ships thrust). A multi-minute run: ask the user first.
+/// <c>--no-ledger</c>: haulers fly every leg, nobody near or not (to compare). <c>--fast [--real M] [--every H] [--step S]</c>: after M minutes of play in full (default 5: the stations built, the haulers out), the economy alone
+/// S seconds of play a step (default 10) (<see cref="Game.EconomyFastSecond"/>: every hauler on the ledger, no world step), so years of play run in minutes (up to
+/// two years: the server tick is a uint, 2.2 years at 60 Hz); a look every H hours (default 1, or 30 days past 500 hours).
 /// </summary>
 public static class EconomySimCheck
 {
     public static int Cli(string[] args)
     {
         string? Val(string flag) => args.SkipWhile(a => !a.Equals(flag, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
-        var hours = double.TryParse(Val("--hours"), System.Globalization.CultureInfo.InvariantCulture, out var h) ? Math.Clamp(h, 0.1, 48) : 4;
+        var fast = args.Contains("--fast", StringComparer.OrdinalIgnoreCase);
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var hours = double.TryParse(Val("--hours"), inv, out var h) ? Math.Clamp(h, 0.1, fast ? 24 * 365 * 2 : 48) : 4;
+        var real = double.TryParse(Val("--real"), inv, out var rm) ? Math.Max(0, rm) : 5; // (fast: minutes of play stepped in full first, so the stations are built and the haulers out)
+        var every = double.TryParse(Val("--every"), inv, out var ev) ? Math.Max(0.1, ev) : hours > 500 ? 24 * 30 : 1; // (hours between looks)
         Space.StarSystems.Reload();
         if (Maps.Find(Val("--map") ?? "Caledon") is not { } map)
         {
@@ -27,6 +34,7 @@ public static class EconomySimCheck
         g.SetSandboxSurvival(true); // (before the mode: setting it starts the world, and its opening places the start's stations)
         g.SetStoryStart(Val("--start") ?? "Interactions");
         g.Mode = GameMode.Sandbox;
+        g.LedgerOff = args.Contains("--no-ledger", StringComparer.OrdinalIgnoreCase); // (haulers fly every leg, as before the ledger: to compare)
         double now = 0;
         void Step()
         {
@@ -47,15 +55,29 @@ public static class EconomySimCheck
         var wall = Stopwatch.StartNew();
         var perHour = 3600 * World.TickRate;
         var total = (long)(hours * perHour);
-        for (long t = 0; t < total; t++)
+        var look = Math.Max(World.TickRate, (long)(every * perHour));
+        var warm = fast ? Math.Min(total, (long)(real * 60 * World.TickRate)) : total;
+        var stepS = int.TryParse(Val("--step"), out var sv) ? Math.Clamp(sv, 1, 60) : 10; // (fast: seconds of play a step)
+        var nextLook = look;
+        for (long t = 0; t < total;)
         {
-            if (warp > 1 && t % World.TickRate == 0)
-                g.RequestTimeSpeed(warp);
-            Step();
-            if ((t + 1) % perHour != 0 && t + 1 != total)
+            if (t < warm)
+            {
+                if (warp > 1 && t % World.TickRate == 0)
+                    g.RequestTimeSpeed(warp);
+                Step();
+                t++;
+            }
+            else
+            {
+                g.EconomyFastSecond(stepS); // (the economy alone, a step at a time: GameHaulLedger.cs)
+                t += stepS * World.TickRate;
+            }
+            if (t < nextLook && t < total)
                 continue;
-            var hour = (t + 1) / (double)perHour;
-            sb.Append($"== hour {hour:0.0} ({wall.Elapsed.TotalMinutes:0.0} min wall; space day {g.EconomySimSpaceDays():0.0})\n");
+            nextLook += look;
+            var hour = t / (double)perHour;
+            sb.Append($"== hour {hour:0.0}{(hour >= 48 ? $" (day {hour / 24:0.0})" : "")} ({wall.Elapsed.TotalMinutes:0.0} min wall; space day {g.EconomySimSpaceDays():0.0}; ledger legs {g.LedgerLegs})\n");
             for (var d = 0; d < all.Length; d++)
             {
                 var m = g.EconomySimMarket(d);

@@ -38,6 +38,11 @@ public sealed partial class Game
         public int PutAt = -1; // a hauler of a route with neither station in this world, just built: the planet it is put at once it is in space (HaulPut)
         public long PutSince;
         public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
+        public bool Ledger; // its last leg was taken on the ledger (nobody near): its escorts fly nothing (GameHaulLedger.cs)
+        public long LedgerUntil; // on a ledger leg: when it gets there (0: not on one)
+        public bool Flying; // this leg is flown from here on (a person saw it): it doesn't go on the ledger part way (GameHaulLedger.cs)
+        public long LegAt; // when this leg began (0: not known), and its fuel then: a leg flown out of the bubble before the ledger takes it is not paid twice
+        public float LegFuel;
     }
 
     /// <summary>An escort (phase 3: convoys): a warship of the route's power that holds beside its hauler with a Meet order, and off the station while the hauler docks.</summary>
@@ -413,6 +418,8 @@ public sealed partial class Game
     /// </summary>
     private void EscortStep(SpaceSession s, EscortRun e, Construct c)
     {
+        if (EscortOnLedger(e))
+            return; // (its hauler's legs are on the ledger: it is put beside it at each end, GameHaulLedger.cs)
         var h = StationMarkets.Haulers[e.Route];
         HaulRun? run = null;
         foreach (var r in _hauls)
@@ -542,7 +549,7 @@ public sealed partial class Game
                 HaulSay(run, c, "waits for its crew shopping aboard the store");
                 return; // (its shoppers come back aboard first: GameStoreLife.cs)
             }
-            if (ServerTick - run.Since < (long)((h.Wait + EscortGatherMost) * World.TickRate) && !EscortsGathered(run, c))
+            if (ServerTick - run.Since < (long)((h.Wait + EscortGatherMost) * World.TickRate) && !run.Ledger && !EscortsGathered(run, c)) // (on the ledger its escorts were put beside it)
             {
                 HaulSay(run, c, "waits for its escorts");
                 return; // (a convoy sets out together)
@@ -564,10 +571,15 @@ public sealed partial class Game
             run.AtTo = !run.AtTo; // (the next leg)
             c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
+            run.Flying = false; // (a new leg: the ledger may take it)
+            (run.LegAt, run.LegFuel) = (ServerTick, c.Fuel);
             run.RetryAt = 0;
             HaulStep(s, run, c);
             return;
         }
+        if (HaulLedger(s, run, c, def, d, planet))
+            return; // (nobody near: the leg on a schedule, GameHaulLedger.cs)
+        run.Ledger = false;
         if (run.PutAt >= 0)
         {
             HaulPut(s, run, c);
