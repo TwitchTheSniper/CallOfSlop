@@ -62,7 +62,7 @@ public sealed class DibberParts : IPartGenerator
     private const double ShaftX = 0.6, ShaftZ0 = 1.2, SkirtZ = -0.06, SkirtA = 1.15; // (the shaft through the belly: a little wider than the hatch, on the strips' lattice)
     private const double HoleX0 = 0.9, HoleX1 = 1.65, HoleZ0 = -0.45, HoleZ1 = 0.45;
     private const double Ground = -1.5; // the pads' soles
-    internal static BoardingShaft.Spec Shaft => new("Dibber", Section, Group, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.012, 0, Ground, false, Grey2, Frame, Hazard, Fore: true, Lip: 0);
+    internal static BoardingShaft.Spec Shaft => new("Dibber", Section, Group, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.022, 0, Ground, false, Grey2, Frame, Hazard, Fore: true, Lip: 0); // (the deck plate's top: Floor draws it 2 cm thick about its height)
 
     // Flying it: one big jet in the skirt under the middle of the belly, a small trim jet under each leg's thigh (the flight computer tips it on those), RCS pads on the lower flat faces and four up the roof.
     private const double MainForce = 440000, MainScale = 1.15, TrimForce = 80000, TrimScale = 0.55, Burn = 2.5, TrimR = 2.95, TrimY = 0.4;
@@ -395,7 +395,7 @@ public sealed class DibberParts : IPartGenerator
         foreach (var poly in OctLess(A(0) - 0.01, -ShaftX, ShaftZ0, ShaftX, HatchZ1))
             Floor(p, poly, -0.006, Dark, "dirty steel");
         // Hazard paint round the hatch on the deck, the shaft's lining.
-        DoorParts.DeckHatchRim(p, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.012, "+z", H); // (the deck hatch's coaming, walked over shut; the aft wall stands at its aft edge)
+        DoorParts.DeckHatchRim(p, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.022, "+z", H); // (the deck hatch's coaming, walked over shut; the aft wall stands at its aft edge)
         foreach (var (x0, z0, x1, z1) in new[] { (-ShaftX, ShaftZ0, ShaftX, ShaftZ0 + 0.016), (-ShaftX + 0.003, ShaftZ0 + 0.019, -ShaftX + 0.019, HatchZ1 - 0.003), (ShaftX - 0.019, ShaftZ0 + 0.019, ShaftX - 0.003, HatchZ1 - 0.003) })
             Detail(p, x0, 0.01, z0, x1, Ft - 0.004, z1, Frame, "dirty steel");
         // The chamfer from the belly to the shoulder, all eight faces.
@@ -422,7 +422,7 @@ public sealed class DibberParts : IPartGenerator
         Sock(p, "main", 0, 0, SkirtZ, "-y");
         // The boarding shaft: the ladder's line on its fore face, the deck hatch by its port edge, the belly hatch on its fore face.
         Sock(p, "boarding", Shaft.LadderAt[0], Shaft.LadderAt[1], Shaft.LadderAt[2], Shaft.LadderDir);
-        Sock(p, "deckHatch", -ShaftX, Ft + 0.012 - DoorParts.HatchThick / 2, (ShaftZ0 + HatchZ1) / 2, "+x");
+        Sock(p, "deckHatch", -ShaftX, Ft + 0.022 - DoorParts.HatchThick / 2, (ShaftZ0 + HatchZ1) / 2, "+x");
         Sock(p, "bellyHatch", Shaft.HatchAt[0], Shaft.HatchAt[1], Shaft.HatchAt[2], Shaft.HatchDir);
         p.Set(("fuelTank", Kw(("capacity", BellyFuel))));
         var zMin = p.Boxes.Where(b => !Drawn(b)).Min(b => Convert.ToDouble(((List<object?>)b["min"]!)[2])); // (a port leaves the part's own fore face)
@@ -581,8 +581,8 @@ public sealed class DibberParts : IPartGenerator
             FStrip(p, k, Mid0 - 0.4, Mid0 + 0.4, 0.0, 1.0, Mid0 - 0.04, Mid0 + 0.04, 0.035 + (k % 2) * 0.004, Frame, "dirty steel");
         // Hazard round the hole, the hole's lining, a light strip under the ceiling.
         // (Karl, 2026-11-22: a flush Deck Hatch over the shaft, hung by its fore edge so it hangs clear of the climber, DoorParts.DeckHatch)
-        DoorParts.DeckHatchRim(p, HoleX0, HoleZ0, HoleX1, HoleZ1, Mid1 + 0.012, "+x", H);
-        Sock(p, "hatchUp", (HoleX0 + HoleX1) / 2, Mid1 + 0.012 - DoorParts.HatchThick / 2, HoleZ0, "+z");
+        DoorParts.DeckHatchRim(p, HoleX0, HoleZ0, HoleX1, HoleZ1, Mid1 + 0.022, "+x", H);
+        Sock(p, "hatchUp", (HoleX0 + HoleX1) / 2, Mid1 + 0.022 - DoorParts.HatchThick / 2, HoleZ0, "+z");
         Detail(p, HoleX0, Mid0 + 0.005, HoleZ0, HoleX0 + 0.016, Mid1 - 0.005, HoleZ1, Frame, "dirty steel");
         Detail(p, -0.6, Mid0 - 0.04, -0.06, 0.6, Mid0 - 0.022, 0.06, "#fff0d0", glow: true);
         Sock(p, "plant", 0, Mid1, 0.3, "+y");

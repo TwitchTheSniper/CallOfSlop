@@ -7,7 +7,7 @@
   "role": "frame",
   "tool": "welder",
   "ladder": 0.125,
-  "ladderFoot": -1.687,
+  "ladderFoot": -1.697,
   "mass": 10.0,
   "health": 200,
   "armour": 6,
@@ -18,7 +18,7 @@
     {
       "min": [
         -0.3,
-        -0.067,
+        -0.077,
         -0.19
       ],
       "max": [

@@ -301,10 +301,13 @@ public sealed class DoorParts : IPartGenerator
             p.Add(Box([ax, y, az], [bx, y + 0.003, bz], HatchHazard, detail: true, shape: Kw(("finish", "hazard paint"), ("paintable", false))));
         void Trim(double ax, double az, double bx, double bz) =>
             p.Add(Box([ax, y + 0.003, az], [bx, y + 0.005, bz], HatchTrim, detail: true, shape: Kw(("paintable", false))));
-        if (skip != "-z") { Band(x0 - band, z0 - band, x1 + band, z0); Trim(x0, z0 - 0.025, x1, z0 - 0.008); }
-        if (skip != "+z") { Band(x0 - band, z1, x1 + band, z1 + band); Trim(x0, z1 + 0.008, x1, z1 + 0.025); }
-        if (skip != "-x") { Band(x0 - band, z0 + 0.001, x0, z1 - 0.001); Trim(x0 - 0.025, z0, x0 - 0.008, z1); }
-        if (skip != "+x") { Band(x1, z0 + 0.001, x1 + band, z1 - 0.001); Trim(x1 + 0.008, z0, x1 + 0.025, z1); }
+        // (each band stops 3 mm short of the hole's edge: a thin detail grows to PartScale.DetailMin about its middle, down into the
+        // floor, and its inner face would lie on the hole's face)
+        const double off = 0.003;
+        if (skip != "-z") { Band(x0 - band, z0 - band, x1 + band, z0 - off); Trim(x0, z0 - 0.025, x1, z0 - 0.008); }
+        if (skip != "+z") { Band(x0 - band, z1 + off, x1 + band, z1 + band); Trim(x0, z1 + 0.008, x1, z1 + 0.025); }
+        if (skip != "-x") { Band(x0 - band, z0 - off + 0.001, x0 - off, z1 + off - 0.001); Trim(x0 - 0.025, z0, x0 - 0.008, z1); }
+        if (skip != "+x") { Band(x1 + off, z0 - off + 0.001, x1 + band, z1 + off - 0.001); Trim(x1 + 0.008, z0, x1 + 0.025, z1); }
     }
 
     private static Part Handle()
