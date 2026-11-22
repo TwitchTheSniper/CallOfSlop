@@ -21,7 +21,13 @@ public sealed class StationDef
 public readonly record struct StationGood(byte Material, float Buy, float Sell, int Stock, int Most, float Use = 0, float Make = 0, int Want = 0)
 {
     public int Target => Want > 0 ? Want : Math.Max(1, Most / 2);
+
+    /// <summary>What a unit made takes (Karl, 2026-11-22: a station makes only from what it holds): its goods lines and how much of each ("from").</summary>
+    public StationInput[] From { get; init; } = [];
 }
+
+/// <summary>An input to a station's making: one of its goods lines (by index in <see cref="StationDef.Goods"/>) and the units of it a unit made takes.</summary>
+public readonly record struct StationInput(int Line, float Per);
 
 /// <summary>
 /// A part a station trades (a construct part by id): what it pays and asks for one (by default its value, <see cref="TradeValues.Part"/>, times the
@@ -30,6 +36,9 @@ public readonly record struct StationGood(byte Material, float Buy, float Sell, 
 public readonly record struct StationPart(ushort Part, float Buy, float Sell, int Stock, int Most, float Use = 0, float Make = 0, int Want = 0)
 {
     public int Target => Want > 0 ? Want : Math.Max(1, Most / 2);
+
+    /// <summary>What one made takes: its Assembling recipe's bulk materials (down through the parts in it), from the station's goods lines.</summary>
+    public StationInput[] From { get; init; } = [];
 }
 
 /// <summary>
@@ -185,8 +194,10 @@ public static class StationMarkets
                 if (d.Name.Length == 0 || d.Name.Any(ch => ch > 127))
                     throw new FormatException("a station needs an ASCII \"name\"");
                 var goods = new List<StationGood>();
+                var froms = new List<JsonElement?>();
                 foreach (var g in s.GetProperty("goods").EnumerateArray())
                 {
+                    froms.Add(g.TryGetProperty("from", out var fr) ? fr : null);
                     var good = g.GetProperty("good").GetString() ?? "";
                     var mat = RecyclingTable.Current.IdOf(good);
                     if (mat == 0)
@@ -218,6 +229,40 @@ public static class StationMarkets
                     }
                 if (goods.Count + parts.Count > MaxGoods)
                     throw new FormatException($"{d.Name}: at most {MaxGoods} goods and parts");
+                // Making (Karl, 2026-11-22: "I want it to be inputs, so that it would need to be collected first"): a good it makes names what a unit
+                // takes ("from": material and units, each one of its own goods); a part it makes takes its Assembling recipe's bulk materials. Nothing is
+                // made from nothing, so a line that makes with no inputs is refused.
+                StationInput Input(string mat, float per, string what)
+                {
+                    var id = RecyclingTable.Current.IdOf(mat);
+                    var line = goods.FindIndex(x => id != 0 && x.Material == id);
+                    if (line < 0)
+                        throw new FormatException($"{d.Name}: {what} is made from \"{mat}\", which the station doesn't trade (add it to its \"goods\")");
+                    return new StationInput(line, per);
+                }
+                for (var k = 0; k < goods.Count; k++)
+                {
+                    if (goods[k].Make <= 0)
+                        continue;
+                    var name = RecyclingTable.Current.NameOf(goods[k].Material);
+                    if (froms[k] is not { ValueKind: JsonValueKind.Object } fr || !fr.EnumerateObject().Any())
+                        throw new FormatException($"{d.Name}: it makes \"{name}\" from nothing (give it a \"from\": what a unit takes)");
+                    var ins = fr.EnumerateObject().Select(x => Input(x.Name, Math.Clamp(x.Value.GetSingle(), 0.001f, 100_000f), $"\"{name}\"")).ToArray();
+                    if (ins.Any(x => x.Line == k))
+                        throw new FormatException($"{d.Name}: \"{name}\" is made from itself");
+                    goods[k] = goods[k] with { From = ins };
+                }
+                for (var k = 0; k < parts.Count; k++)
+                {
+                    if (parts[k].Make <= 0)
+                        continue;
+                    var pd = ConstructParts.Def(parts[k].Part);
+                    var sum = new Dictionary<byte, float>();
+                    ControllerRules.PartGoods(pd, 1, 0, sum);
+                    if (sum.Count == 0)
+                        throw new FormatException($"{d.Name}: it makes \"{pd.Name}\", which has no Assembling recipe to make it from");
+                    parts[k] = parts[k] with { From = [.. sum.Where(x => x.Value > 0).Select(x => Input(RecyclingTable.Current.NameOf(x.Key), x.Value, $"\"{pd.Name}\""))] };
+                }
                 d.Goods = [.. goods];
                 d.Parts = [.. parts];
                 list.Add(d);
@@ -292,6 +337,8 @@ public sealed partial class Game
         public int[] Stock = [];
         public readonly List<(ushort Ship, ushort Part)> Moored = new(16);
         public double[] Frac = []; // host: what its needs used or made short of a whole unit, by good
+        public double[] Owed = []; // host: what its making is owed short of a whole unit, by line (not saved: under one unit a line)
+        public bool[] Stalled = []; // host: a line it makes that last stopped for want of an input (its log line is said once)
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
@@ -367,8 +414,10 @@ public sealed partial class Game
     private long _needsAt;
 
     /// <summary>
-    /// Host, once a minute: every station's needs (Crew/Stations.json "uses" and "makes" an hour): its stock of each good goes down by what it
-    /// uses and up by what it makes, inside 0 and its most, whether its world is the one being played or not (a market is kept by its entry).
+    /// Host, once a minute: every station's needs (Crew/Stations.json "uses" and "makes" an hour), whether its world is the one being played or
+    /// not (a market is kept by its entry). What it uses goes from its stock. What it makes it makes only from what it holds (Karl, 2026-11-22:
+    /// "it would need to be collected first"): each unit takes its inputs ("from", or a part's recipe) out of its own goods, and a line stops
+    /// when an input runs out or its stock reaches its want, so a shortage spreads down the chain.
     /// </summary>
     private void StationNeedsTick()
     {
@@ -380,26 +429,73 @@ public sealed partial class Game
             return; // (the first minute starts the clock)
         for (var d = 0; d < StationMarkets.All.Length; d++)
         {
-            var goods = StationMarkets.All[d].Goods;
-            var parts = StationMarkets.All[d].Parts;
+            var def = StationMarkets.All[d];
+            var goods = def.Goods;
+            var parts = def.Parts;
+            var lines = goods.Length + parts.Length;
             var m = MarketOfDef(d);
-            if (m.Frac.Length != goods.Length + parts.Length)
-                m.Frac = new double[goods.Length + parts.Length];
-            for (var k = 0; k < goods.Length + parts.Length; k++)
+            if (m.Frac.Length != lines)
+                m.Frac = new double[lines];
+            if (m.Owed.Length != lines)
             {
-                var (use, make, most) = k < goods.Length ? (goods[k].Use, goods[k].Make, goods[k].Most) : (parts[k - goods.Length].Use, parts[k - goods.Length].Make, parts[k - goods.Length].Most);
-                if (use == 0 && make == 0)
-                    continue;
-                m.Frac[k] += (make - use) / 60.0;
-                var whole = (int)Math.Truncate(m.Frac[k]);
-                if (whole == 0)
-                    continue;
-                m.Frac[k] -= whole;
-                var was = m.Stock[k];
-                m.Stock[k] = Math.Clamp(m.Stock[k] + whole, 0, most);
-                if (m.Stock[k] != was && m.Body != 0)
-                    StationsVersion++;
+                m.Owed = new double[lines];
+                m.Stalled = new bool[lines];
             }
+            for (var k = 0; k < lines; k++)
+            {
+                var use = k < goods.Length ? goods[k].Use : parts[k - goods.Length].Use;
+                if (use > 0)
+                    Move(m, k, -use / 60.0, k < goods.Length ? goods[k].Most : parts[k - goods.Length].Most);
+            }
+            for (var k = 0; k < lines; k++)
+            {
+                var (make, target, most, from) = k < goods.Length ? (goods[k].Make, goods[k].Target, goods[k].Most, goods[k].From)
+                    : (parts[k - goods.Length].Make, parts[k - goods.Length].Target, parts[k - goods.Length].Most, parts[k - goods.Length].From);
+                if (make <= 0 || from.Length == 0)
+                    continue;
+                var owed = m.Owed[k] + make / 60.0;
+                var n = (int)owed;
+                n = Math.Min(n, Math.Max(0, Math.Min(target, most) - m.Stock[k])); // (it makes for the stock it wants, not past it)
+                var shortOf = -1;
+                foreach (var inp in from)
+                {
+                    var can = (int)Math.Floor((m.Stock[inp.Line] + m.Frac[inp.Line]) / inp.Per + 1e-9);
+                    if (can < n)
+                    {
+                        n = Math.Max(0, can);
+                        shortOf = inp.Line;
+                    }
+                }
+                m.Owed[k] = Math.Min(owed - n, 1); // (a line held up by its want or its inputs banks no more than one unit)
+                if (n > 0)
+                {
+                    foreach (var inp in from)
+                        Move(m, inp.Line, -inp.Per * n, goods[inp.Line].Most);
+                    Move(m, k, n, most);
+                }
+                var stalled = shortOf >= 0 && m.Stock[k] < target;
+                if (stalled != m.Stalled[k])
+                {
+                    m.Stalled[k] = stalled;
+                    var what = k < goods.Length ? RecyclingTable.Current.NameOf(goods[k].Material) : ConstructParts.Def(parts[k - goods.Length].Part).Name;
+                    Log(stalled ? $"[station] {def.Name} stops making {what}: it is out of {RecyclingTable.Current.NameOf(goods[shortOf].Material)}"
+                        : $"[station] {def.Name} makes {what} again");
+                }
+            }
+        }
+
+        // (a line's stock moved by an amount, whole units into the stock and the rest kept, inside 0 and its most)
+        void Move(StationMarket m, int k, double by, int most)
+        {
+            m.Frac[k] += by;
+            var whole = (int)Math.Truncate(m.Frac[k]);
+            if (whole == 0)
+                return;
+            m.Frac[k] -= whole;
+            var was = m.Stock[k];
+            m.Stock[k] = Math.Clamp(m.Stock[k] + whole, 0, most);
+            if (m.Stock[k] != was && m.Body != 0)
+                StationsVersion++;
         }
     }
 
