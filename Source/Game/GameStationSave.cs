@@ -55,9 +55,11 @@ public sealed partial class Game
             if (Kept(c, keep))
                 w.U16(c.Id).U16(c.MooredTo).U16(c.MoorPart).F32(c.MoorAt.X).F32(c.MoorAt.Y).F32(c.MoorAt.Z)
                     .F32(c.MoorRot.X).F32(c.MoorRot.Y).F32(c.MoorRot.Z).F32(c.MoorRot.W);
+        if (stock)
+            ConsignWrite(w); // (after the moorings: an older reader stops before them, GameConsignments.cs)
         if (stock && n > 0)
-            Log($"[station] markets saved: {n} stations, {StockTotal()} units in stock; {moors} moorings");
-        return n == 0 && moors == 0 ? null : w.Span.ToArray();
+            Log($"[station] markets saved: {n} stations, {StockTotal()} units in stock; {moors} moorings; {_consigns.Count} consignments");
+        return n == 0 && moors == 0 && (!stock || _consigns.Count == 0) ? null : w.Span.ToArray();
 
         // (a mooring is kept when the ship is in its berth and both bodies go into this file: a planetoid's stash takes only some)
         bool Kept(Construct c, Func<Construct, bool>? keep) => c.MooredTo != 0 && c.MoorDraw >= 1 && Constructs.Get(c.MooredTo) is { IsStation: true } st
@@ -144,6 +146,8 @@ public sealed partial class Game
             if (float.IsFinite(at.X + at.Y + at.Z + rot.X + rot.Y + rot.Z + rot.W) && rot.LengthSquared() > 0.5f)
                 _moorsLoaded.Add((ship, station, part, at, Quaternion.Normalize(rot)));
         }
+        if (stock)
+            ConsignRead(s); // (GameConsignments.cs)
         if (stock)
             Log($"[station] markets loaded: {kept} stock lines kept, {dropped} dropped, {StockTotal()} units in stock; {_moorsLoaded.Count} moorings to take up");
         StationsVersion++;

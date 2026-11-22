@@ -621,6 +621,7 @@ public sealed partial class Game
                 Log($"[haul] escort {es.Id} took on {es.FuelCapacity() - es.Fuel:0} L of fuel at {name}");
                 es.Fuel = es.FuelCapacity(); // (its escorts' too, wherever they hold)
             }
+        ConsignAtStation(c, h, def, run.AtTo ? h.From : h.To); // (consignments off here and on for the next leg: GameConsignments.cs)
         Span<int> sold = stackalloc int[StationMarkets.All[def].Goods.Length];
         var value = StationTakeCargo(m, c, sold);
         if (value > 0)
