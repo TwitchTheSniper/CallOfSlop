@@ -4,7 +4,7 @@ using System.Text;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--economy-sim [--hours H] [--map NAME] [--start ID] [--warp W]</c>: a headless host plays a Survival world with nobody at the keys for H hours of
+/// <c>--economy-sim [--hours H] [--map NAME] [--start ID] [--warp W] [--lay POWER:PLANET:KIND]</c>: a headless host plays a Survival world with nobody at the keys for H hours of
 /// game time (default 4) as fast as the machine runs it: the stations' needs, their haulers flying their routes, the powers' controllers, the
 /// territory's goods, consignments, camps and hardship, all the real code. Every hour of play it writes each station's stock, line by line,
 /// to <c>economy-sim.txt</c> next to the DLL, and at the end the lines that ran dry or filled up. <c>--warp W</c> asks for space time W times
@@ -45,6 +45,8 @@ public static class EconomySimCheck
             Step();
         World.Enter(g.Place);
         var warp = int.TryParse(Val("--warp"), out var wv) ? Math.Clamp(wv, 1, Space.SpaceClock.MaxSpeed) : 1;
+        if (Val("--lay") is { } lay) // (POWER:PLANET:KIND: a site laid at once, as a power would lay it: GameStationLife.cs)
+            Console.WriteLine($"[economy-sim] {g.EconomySimLay(lay)}");
         var outPath = Path.Combine(AppContext.BaseDirectory, "economy-sim.txt");
         var sb = new StringBuilder();
         var all = StationMarkets.All;
@@ -77,12 +79,21 @@ public static class EconomySimCheck
                 continue;
             nextLook += look;
             var hour = t / (double)perHour;
+            if (all.Length != StationMarkets.All.Length)
+            {
+                // (stations made in play: GameStationLife.cs)
+                (all, var was) = (StationMarkets.All, low.Length);
+                Array.Resize(ref low, all.Length);
+                Array.Resize(ref high, all.Length);
+                for (var d = was; d < all.Length; d++)
+                    (low[d], high[d]) = (new int[all[d].Goods.Length + all[d].Parts.Length], new int[all[d].Goods.Length + all[d].Parts.Length]);
+            }
             sb.Append($"== hour {hour:0.0}{(hour >= 48 ? $" (day {hour / 24:0.0})" : "")} ({wall.Elapsed.TotalMinutes:0.0} min wall; space day {g.EconomySimSpaceDays():0.0}; ledger legs {g.LedgerLegs})\n");
             for (var d = 0; d < all.Length; d++)
             {
                 var m = g.EconomySimMarket(d);
-                sb.Append($"  {all[d].Name} ({all[d].Power}):");
-                for (var k = 0; k < all[d].Goods.Length && k < m.Length; k++)
+                sb.Append($"  {all[d].Name} ({all[d].Power}{(g.EconomySimLife(d) is { } life ? ", " + life : "")}):");
+                for (var k = 0; k < all[d].Goods.Length && k < m.Length && k < low[d].Length; k++)
                 {
                     var gd = all[d].Goods[k];
                     sb.Append($" {RecyclingTable.Current.NameOf(gd.Material)} {m[k]}");
@@ -139,6 +150,18 @@ public static class EconomySimCheck
 
 public sealed partial class Game
 {
+    /// <summary>The economy sim: station <paramref name="def"/>'s life line (building, for sale, closed, its ledger), or null.</summary>
+    internal string? EconomySimLife(int def) => StationLifeLine(def);
+
+    /// <summary>The economy sim's <c>--lay POWER:PLANET:KIND</c>: a site laid now, its labour paid or not.</summary>
+    internal string EconomySimLay(string what)
+    {
+        var bits = what.Split(':');
+        if (bits.Length != 3 || CrewPowers.Find(bits[0]) is not (> 0 and var p) || StationLife.Find(bits[2]) is not (>= 0 and var kind))
+            return $"--lay {what}: give POWER:PLANET:KIND (kinds: {string.Join(", ", StationLife.Kinds.Select(k => k.Name))})";
+        return SiteLay(p, bits[1], kind, 0) ? $"--lay: {bits[0]} lays a {StationLife.Kinds[kind].Name} over {bits[1]}" : $"--lay {what}: no site laid (see callofslop.log)";
+    }
+
     /// <summary>The economy sim: station <paramref name="def"/>'s stock by line (the host's market).</summary>
     internal int[] EconomySimMarket(int def) => MarketOfDef(def).Stock;
 
