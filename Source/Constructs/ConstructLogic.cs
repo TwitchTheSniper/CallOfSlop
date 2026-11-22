@@ -192,6 +192,12 @@ public static class ConstructLogic
                 var on = high[i] > 0;
                 switch (d.Logic)
                 {
+                    case CLogic.Button when CockpitFns.Of(p, d) is var bfn and not SeatFn.None:
+                        next = CockpitFns.Shown(c, ref p, bfn); // (a cockpit button with a Function: it shows the craft's state, CockpitFns.cs)
+                        break;
+                    case CLogic.Switch when CockpitFns.Of(p, d) is var sfn and not SeatFn.None:
+                        next = CockpitFns.Shown(c, ref p, sfn);
+                        break;
                     case CLogic.Button:
                         // Latched (a setting): each press flips it on or off; else on for its hold time after a press.
                         if (ConstructConfig.Get(p, d, CfgKey.Latched, 0) >= 0.5f)

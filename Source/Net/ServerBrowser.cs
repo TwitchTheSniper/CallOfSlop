@@ -735,9 +735,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new byte in the lift word's put kind), which 434 can't read.
     // 436: an Assembler's order for a run-time Ordnance Rack or ordnance design goes by its key as a named order (AssembledParts), which
     //      435 refuses as a bad panel order; and 5 die patterns and 18 presets for the ship works in Pressing.json.
-    // 437: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
-    //      steps, goods) and every listed station's power and state, which 436 reads as markets.
-    public const ushort ProtocolVersion = 437;
+    // 437: the modular cockpit (cockpits.md): cell-class module sockets (Console Bays and Plugs, ModCells), the panel instruments and
+    //      CfgKey 138 (the unused Blade5) as SeatFn, a cockpit switch's Function; new part files move part ids.
+    // 438: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
+    //      steps, goods) and every listed station's power and state, which 437 reads as markets.
+    public const ushort ProtocolVersion = 438;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

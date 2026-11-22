@@ -67,7 +67,7 @@ public static class ConstructFar
     }
 
     /// <summary>Is a far body's logic and power due this tick (and so stepped by <see cref="Construct.FarLogic"/> ticks' time)?</summary>
-    public static bool LogicDue(Construct c) => c.FarLogic <= 1 || _tick % c.FarLogic == 0; // (one phase, as the physics)
+    public static bool LogicDue(Construct c) => !c.OnRail && (c.FarLogic <= 1 || _tick % c.FarLogic == 0); // (one phase, as the physics)
 
     /// <summary>Ticks one logic step of <paramref name="c"/> stands for (a hold counted in ticks counts down by this).</summary>
     public static int StepTicks(Construct c) => c.FarLogic > 1 ? c.FarLogic : 1;

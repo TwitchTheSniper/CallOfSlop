@@ -9,6 +9,7 @@ namespace CallOfSlop;
 public sealed class ModuleBlock
 {
     public int W, L;
+    public bool Cells; // a cell-class module (W, L in 10 cm cells: a console faceplate)
     public bool Round; // a round module (its plug a Round Module Plug, W its diameter)
     public string Primary = "utility";
     public string[] Tags = [];
@@ -25,7 +26,7 @@ public sealed class ModuleBlock
 /// </summary>
 public static class ModuleBlueprints
 {
-    private static readonly string[] Keys = ["w", "l", "round", "primary", "tags", "styles", "maker", "stats"];
+    private static readonly string[] Keys = ["w", "l", "cells", "round", "primary", "tags", "styles", "maker", "stats"];
 
     public static ModuleBlock Parse(JsonElement e, string file)
     {
@@ -37,8 +38,9 @@ public static class ModuleBlueprints
             W = (int)ConstructParts.Num(ConstructParts.Need(e, "w", $"{file}, module"), file, "module.w"),
             L = (int)ConstructParts.Num(ConstructParts.Need(e, "l", $"{file}, module"), file, "module.l"),
         };
-        if (!ModuleSocketTable.ValidSize(m.W, m.L))
-            throw new ConstructPartException($"{file}: \"module\" is {m.W} x {m.L}: whole metres, 1 <= w <= l <= {ModuleSocketTable.MostSide}");
+        m.Cells = ConstructParts.Opt(e, "cells") is { ValueKind: JsonValueKind.True };
+        if (m.Cells ? !ModuleSocketTable.ValidCells(m.W, m.L) : !ModuleSocketTable.ValidSize(m.W, m.L))
+            throw new ConstructPartException($"{file}: \"module\" is {m.W} x {m.L}: {(m.Cells ? $"cells, 1 <= w <= l <= {ModuleSockets.MostCells}" : $"whole metres, 1 <= w <= l <= {ModuleSocketTable.MostSide}")}");
         m.Round = ConstructParts.Opt(e, "round") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(e, "primary") is { ValueKind: JsonValueKind.String } p)
             m.Primary = p.GetString() ?? "utility";
@@ -94,6 +96,8 @@ public static class ModuleBlueprints
         var ic = CultureInfo.InvariantCulture;
         var sb = new StringBuilder(256);
         sb.Append("{ \"w\": ").Append(pd.ModW).Append(", \"l\": ").Append(pd.ModL);
+        if (pd.ModCells)
+            sb.Append(", \"cells\": true");
         if (pd.ModRound)
             sb.Append(", \"round\": true");
         sb.Append(", \"primary\": \"").Append(ModuleSockets.TagName(m.Primary)).Append("\", \"tags\": [");

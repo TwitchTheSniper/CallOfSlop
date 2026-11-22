@@ -357,12 +357,21 @@ public static class ConstructCargo
             if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && VolumeOf(c, b) is var v and >= 0 && !Inside(c, v, b.WorldCom, LeaveMargin))
                 Release(world, b);
         }
+        // Each carrier's count, in one walk (a walk of every body for each body with logic cost 2-3 ms a tick in a world of 2,000).
+        var scan = ++_stamp;
+        foreach (var b in bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } carrier)
+            {
+                if (carrier.CargoStamp != scan)
+                    (carrier.CargoStamp, carrier.CarriedNow) = (scan, 0);
+                carrier.CarriedNow++;
+            }
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
             if (c.CarriedBy != 0 || !c.HasLogic)
                 continue; // (no cargo in cargo; a volume is a logic part: thousands of bodies without logic cost a test each)
-            var carried = CarriedCount(world, c);
+            var carried = c.CargoStamp == scan ? c.CarriedNow : 0;
             for (var part = 0; part < c.PartCount; part++)
             {
                 ref var p = ref c.Parts[part];
@@ -415,35 +424,29 @@ public static class ConstructCargo
     }
 
     private static readonly List<Construct> _near = new(256), _carried = new(64);
+    private static int _stamp;
 
     /// <summary>Every carrier's cargo list (its mass and where it sits, body frame); a carrier whose list changed rebuilds its mass.</summary>
-    /// <summary>Is a craft gripped (by its own grapples) on <paramref name="c"/>? Walks only the carried bodies.</summary>
-    private static bool GripsOn(Construct c)
-    {
-        foreach (var b in _carried)
-            if (b.CarriedBy == c.Id && b.CarryTag == 0)
-                return true;
-        return false;
-    }
-
     private static void Refresh(ConstructWorld world)
     {
         world.CargoChanged = false;
         var bodies = world.Bodies;
         // The carried bodies once (in list order), so each carrier walks only them, not every body.
+        // Each carrier is stamped (in a volume, or gripped by a craft's own grapples), so a body that carried nothing and
+        // carries nothing now costs a test (walking the carried list for every body with logic cost 0.4 ms a tick in a world of 2,000).
         _carried.Clear();
-        var gripped = 0;
+        _stamp++;
         foreach (var b in bodies)
             if (b.CarriedBy != 0)
             {
                 _carried.Add(b);
-                if (b.CarryTag == 0)
-                    gripped++; // (a craft gripped by its grapples: any body can carry one, logic or not)
+                if (world.Get(b.CarriedBy) is { } carrier)
+                    carrier.CargoStamp = _stamp;
             }
         foreach (var c in bodies)
         {
-            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic && (gripped == 0 || !GripsOn(c))))
-                continue; // (carries nothing, and can't: nothing to refresh)
+            if (c.CargoCount == 0 && c.CargoStamp != _stamp)
+                continue; // (carries nothing, and didn't: nothing to refresh)
             var n = 0;
             var mass = 0f;
             var changed = false;
