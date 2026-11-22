@@ -114,8 +114,8 @@ public sealed partial class Ui
         float Val(CfgKey k, float or) => d.CfgSlot[(int)k] is var sl and >= 0 ? _cfVals[sl] : or;
         var t = ModuleSocketTable.Current;
         var style = (ModStyle)Math.Clamp((int)Val(CfgKey.ModStyle, 0), 0, ModuleSocketTable.StyleLabels.Length - 1);
-        var depth = style == ModStyle.Proud ? 0 : MathF.Max(t.DepthStep, Val(CfgKey.ModDepth, t.DepthStep));
-        var above = Val(CfgKey.ModAbove, 0) is var a && a > 0 ? a : ModuleSocketTable.DefaultAbove(d.ModW);
+        var depth = style == ModStyle.Proud ? 0 : MathF.Max(t.StepOf(d.ModCells), Val(CfgKey.ModDepth, t.StepOf(d.ModCells)));
+        var above = Val(CfgKey.ModAbove, 0) is var a && a > 0 ? a : ModuleSocketTable.DefaultAbove(d.ModW, d.ModCells);
         var thick = ModuleSockets.Thickness(d);
         var behind = style switch { ModStyle.Proud => 0, ModStyle.Through => thick + depth, _ => MathF.Max(depth, thick + 0.02f) };
         var room = style == ModStyle.Flush ? 0 : above;
@@ -126,11 +126,11 @@ public sealed partial class Ui
         ImGui.Dummy(new float2(width, hPix + 6 * _scale));
         dl.AddRectFilled(start, start + new float2(width, hPix), SkCard, 3 * _scale);
         // The scale: the room and the well fit in the box, and the hull shows at least 0.3 m under the well.
-        var spanM = MathF.Max(1f, room + behind + 0.35f);
+        var spanM = MathF.Max(d.ModCells ? 0.3f : 1f, room + behind + (d.ModCells ? 0.1f : 0.35f));
         var px = (hPix - 22 * _scale) / spanM;
         var surface = start.Y + 8 * _scale + room * px;
         float x0 = start.X + 6 * _scale, x1 = start.X + width - 84 * _scale;
-        var mw = MathF.Min((x1 - x0) * 0.5f, d.ModW * px);
+        var mw = MathF.Min((x1 - x0) * 0.5f, d.ModW * d.ModUnit * px);
         var mid = (x0 + x1) * 0.5f;
         float wx0 = mid - mw * 0.5f - 3 * _scale, wx1 = mid + mw * 0.5f + 3 * _scale;
         var bottom = start.Y + hPix - 4 * _scale;

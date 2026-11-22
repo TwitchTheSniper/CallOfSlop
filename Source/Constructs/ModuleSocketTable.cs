@@ -87,6 +87,35 @@ public sealed class ModuleSocketTable
 
     public static bool ValidSize(int w, int l) => w >= 1 && l >= w && l <= MostSide;
 
+    /// <summary>A cell-class footprint (a Console Bay, cockpits.md): W x L 10 cm cells.</summary>
+    public static bool ValidCells(int w, int l) => w >= 1 && l >= w && l <= ModuleSockets.MostCells;
+
+    public const float CellStep = 0.05f; // m: a cell-class socket's depth and room steps
+
+    /// <summary>A socket's depth step: the table's, or 5 cm for a cell-class one.</summary>
+    public float StepOf(bool cells) => cells ? CellStep : DepthStep;
+
+    /// <summary>A footprint's area, m2.</summary>
+    public static float Area(in CModSocket s) => s.Wm * s.Lm;
+
+    public float MassRating(in CModSocket s) => MassPerM2 * Area(s);
+
+    public float ThrustRating(in CModSocket s) => ThrustPerM2 * Area(s);
+
+    /// <summary>A cell-class socket is always fitted by hand.</summary>
+    public bool HandSize(in CModSocket s) => s.Cells || HandSize(s.W, s.L);
+
+    public static string SizeText(in CModSocket s) => s.Cells ? $"{s.W}x{s.L} cell" : SizeText(s.W, s.L, s.Round);
+
+    public static string SizeText(ConstructPartDef d) => d.ModCells ? $"{d.ModW}x{d.ModL} cell" : SizeText(d.ModW, d.ModL, d.ModRound);
+
+    /// <summary>The room's height when its setting is 0: twice the short side, or 0.3 m for a cell-class one (instruments are low).</summary>
+    public static float DefaultAbove(int w, bool cells) => cells ? 0.3f : DefaultAbove(w);
+
+    public float MostDepth(int w, bool cells) => cells ? MathF.Max(0.5f, DepthMost * w * ModuleSockets.Cell) : MostDepth(w);
+
+    public float MostAbove(int l, bool cells) => cells ? MathF.Max(0.5f, AboveMost * l * ModuleSockets.Cell) : MostAbove(l);
+
     /// <summary>The most a module of this footprint may weigh (kg).</summary>
     public float MassRating(int w, int l) => MassPerM2 * w * l;
 

@@ -69,7 +69,7 @@ public static unsafe partial class Program
         var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitX), c.Rot));
         var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitZ), c.Rot));
         var top = c.ToWorld(at) + n * 0.01f; // (every dug style: the ring runs round its frame's face)
-        float hw = s.W * 0.5f + ModuleCut.Margin * 0.5f, hl = s.L * 0.5f + ModuleCut.Margin * 0.5f;
+        float hw = s.Wm * 0.5f + ModuleCut.Margin * 0.5f, hl = s.Lm * 0.5f + ModuleCut.Margin * 0.5f;
         // The ring has heads at each corner: each runs a quarter of the outline.
         for (var h = 0; h < 4; h++)
         {
@@ -99,7 +99,7 @@ public static unsafe partial class Program
         var across = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitX), c.Rot));
         var up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(pr, Vector3.UnitZ), c.Rot));
         var face = c.ToWorld(at) + n * 0.02f;
-        float hw = s.W * 0.5f, hl = s.L * 0.5f;
+        float hw = s.Wm * 0.5f, hl = s.Lm * 0.5f;
         var head = OutlineAt(face, across, up, hw, hl, f);
         for (var k = 0; k < (weld ? 2 : 4); k++)
         {

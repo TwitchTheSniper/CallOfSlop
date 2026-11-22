@@ -563,7 +563,13 @@ public sealed class RoamerParts : IPartGenerator
             if (level == 1)
             {
                 var fw = Cm(SkinMin(UpFront - 0.04, UpFront, y0, y1) - 0.06);
-                Hidden(p, Cx - fw, y0, UpFront - 0.04, Cx + fw, y1, UpFront);
+                // (over the dash it starts above the console bays' room, so their instruments, forward of it on the desk top, are in
+                // reach from the cockpit: cockpits.md "The Roamer's dash"; the desk itself closes the gap under it)
+                Hidden(p, Cx - fw, DashWallFoot, UpFront - 0.04, Cx + fw, y1, UpFront);
+                if (Cx - fw < DashX0)
+                    Hidden(p, Cx - fw, y0, UpFront - 0.04, DashX0, DashWallFoot, UpFront);
+                if (Cx + fw > DashX1)
+                    Hidden(p, DashX1, y0, UpFront - 0.04, Cx + fw, DashWallFoot, UpFront);
             }
             else
             {
@@ -1280,10 +1286,12 @@ public sealed class RoamerParts : IPartGenerator
         HullWalls(p, 1);
         // The cockpit's dashboard under the windscreen, in front of where anyone stands: a raked desk with dials and screens.
         // (kept low, its top well under a seated pilot's eye, and the yokes short stubs off the sight line: Karl, 2026-11-16)
-        Solid(p, 2.9, F1T, 0.55, 7.1, F1T + 0.55, 1.35, Frame, "dirty steel");
+        Solid(p, DashX0, F1T, 0.55, DashX1, F1T + 0.55, 1.35, Frame, "dirty steel");
         Detail(p, 3.0, F1T + 0.55, 0.75, 7.0, F1T + 0.69, 1.3, "#3a3d3f", "plastic");
-        foreach (var (x, c) in new[] { (3.5, "#5fd06a"), (4.6, "#e0a030"), (5.4, "#5fd06a"), (6.5, "#d04030") })
-            Detail(p, x - 0.3, F1T + 0.7, 0.85, x + 0.3, F1T + 0.72, 1.2, c, glow: true);
+        // (its instruments are console bays on the desk top, cockpits.md "The Roamer's dash": DashBays and the blueprint's Dash; a hidden
+        // pad under each, its top the bay's socket face, as a +y socket stands on a solid box's top)
+        foreach (var b in DashBays)
+            Hidden(p, b.X - b.L * 0.05, DashTop - 0.012, DashZ - b.W * 0.05, b.X + b.L * 0.05, DashTop, DashZ + b.W * 0.05);
         foreach (var x in new[] { 4.3, 5.7 })
         {
             Detail(p, x - 0.03, F1T + 0.555, 1.305, x + 0.03, F1T + 0.8, 1.34, Frame, "dirty steel"); // (the yokes' columns)
@@ -1316,6 +1324,8 @@ public sealed class RoamerParts : IPartGenerator
         // Sockets: the seats, the cabins' furniture, the doors' jambs, the lamps.
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
+        foreach (var b in DashBays)
+            Sock(p, b.Sock, b.X, DashTop, DashZ, "+y"); // (the console bays' middles on the desk top, 3 mm over it: z-fighting rule)
         Sock(p, "module", 4.0, F1T, 1.6, "+y"); // (on the floor in the pilot's footwell, so the seat's link runs along the floor, not up past the windscreen)
         Sock(p, "linkChair", 2.6, F1T, 3.5, "+y"); // (the one Shell Control Chair, port of the cockpit's door, its back to the partition)
         Sock(p, "bed", Cx - Uw, F1T + 0.125, 6.0, "+x");
@@ -1938,6 +1948,37 @@ public sealed class RoamerParts : IPartGenerator
         return s;
     }
 
+    // ---- The dash (cockpits.md "The Roamer's dash"): three console bays across the desk top, each turned so its long side runs
+    // across the ship, the pilot's (port), the centre and the co-pilot's, their faceplates carrying the panel instruments. A plug's
+    // cell (i, j): i runs aft towards the seat (0 the windscreen's side, 4 the seat's), j to port from the bay's starboard end.
+    private const double DashTop = F1T + 0.693, DashZ = 1.03;
+    private const double DashX0 = 2.9, DashX1 = 7.1, DashWallFoot = DashTop + 0.35; // the desk's sides; the cockpit's front wall's foot over it
+
+    private static readonly (string Sock, double X, int W, int L, (string Part, string Cell, string By, int Fn)[] Fit)[] DashBays =
+    [
+        ("dashP", 3.75, 5, 12, [("Panel Speedometer", "c1.2", "back", 0), ("Panel Altimeter", "c1.6", "back", 0), ("Panel Compass", "c1.9", "back", 0),
+            ("Panel Toggle Switch", "c4.1", "-y", 1), ("Panel Toggle Switch", "c4.3", "-y", 2), ("Panel Rocker Switch", "c4.7", "-y", 3), ("Panel Rocker Switch", "c4.9", "-y", 4)]),
+        ("dashC", 5.0, 5, 8, [("Panel Push Button", "c2.2", "-y", 6), ("Panel Rocker Switch", "c2.5", "-y", 5)]),
+        ("dashS", 6.25, 5, 12, [("Panel Speedometer", "c1.2", "back", 0), ("Panel Altimeter", "c1.6", "back", 0), ("Panel Compass", "c1.9", "back", 0),
+            ("Panel Push Button", "c4.3", "-y", 6), ("Panel Toggle Switch", "c4.7", "-y", 5)]),
+    ];
+
+    /// <summary>The dash's bays, faceplates and instruments (a Function: CockpitFns.Options' index).</summary>
+    private static void Dash(BuildingParts.Blueprint bp, int deck)
+    {
+        foreach (var b in DashBays)
+        {
+            var bay = bp.HangTurned($"Console Bay {b.W}x{b.L}", Holder(bp, deck, b.Sock), b.Sock, "bc", BuildingParts.RY90);
+            var plug = bp.Hang($"Console Plug {b.W}x{b.L}", bay, "module", "module", 2);
+            foreach (var (part, cell, by, fn) in b.Fit)
+            {
+                var s = bp.Hang(part, plug, cell, by);
+                if (fn != 0)
+                    bp.Steps[s]["config"] = new PyDict { ["seatFn"] = fn, ["latched"] = true };
+            }
+        }
+    }
+
     /// <summary>A module fitted to a plate: its plug, then <paramref name="part"/> by <paramref name="by"/> on the plug's middle, unturned in the ship as it stood before the retrofit. The part's step.</summary>
     private static int FittedModule(BuildingParts.Blueprint bp, int plate, int w, int l, string part, string by)
     {
@@ -2015,6 +2056,7 @@ public sealed class RoamerParts : IPartGenerator
         var stab = Hang(bp, "Flight Stabilizer", deck, "module", "-y"); // (a small gyro: the attitude jets turn it)
         bp.Steps[stab]["config"] = ShipFlight();
         bp.Wires.Add((pilot, stab));
+        Dash(bp, deck);
         bp.HangTurned("Shell Control Chair", Holder(bp, deck, "linkChair"), "linkChair", "bottom", BuildingParts.R0);
         // The bedroom, the bathroom.
         Paint(bp, Hang(bp, "Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");

@@ -135,7 +135,7 @@ public enum CfgKey : byte
     BladeLost, // rotor: the blades gone, a bit each (not on the panel; ConstructRotor.cs)
     Blade0, Blade1, Blade2, Blade3, // rotor: its blades' wear, four blades a setting, 4 bits each (not on the panel; ConstructRotor.Wear)
     Shutdown, // power plant or thruster: on, it is shut down and makes nothing (the seat's reactor and thruster keys flip every one aboard: ConstructShutdown.cs; was the unused Blade4, 2026-11-21: the enum is full)
-    Blade5, // (no longer used: its number stays)
+    SeatFn, // a cockpit switch or button: what of the seat it works and shows (CockpitFns.cs; was the unused Blade5, 2026-11-22: the enum is full)
     FanKind, // Fan Former: what it makes
     FanBlades, // Fan Former, rotor: how many blades
     FanDiameter, // Fan Former: how far across, m
@@ -755,6 +755,8 @@ public static class ConstructConfig
             c.Options = ConstructStoreVolume.MaterialOptions;
         if (c.Id == CfgKey.AmmoType)
             c.Options = ConstructAmmo.Types;
+        if (c.Id == CfgKey.SeatFn)
+            c.Options = CockpitFns.Options;
         if (ConstructParts.Opt(e, "options") is { } opts)
         {
             if (c.Type != CfgType.Choice || opts.ValueKind != JsonValueKind.Array || opts.GetArrayLength() is < 2 or > 16)
@@ -808,6 +810,7 @@ public static class ConstructConfig
         CfgKey.Ramp => "choice",
         CfgKey.DressStyle or CfgKey.DressExtras => "choice",
         CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
+        CfgKey.SeatFn => "choice",
         CfgKey.ModKeyed or CfgKey.ModLock => "toggle",
         CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
@@ -916,6 +919,7 @@ public static class ConstructConfig
                 CfgKey.Offset => d.Logic is CLogic.Scale or CLogic.MathBlock,
                 CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever or CLogic.Display or CLogic.Instrument or CLogic.Filter or CLogic.RandomPulse,
                 CfgKey.Latched => d.Logic is CLogic.Button or CLogic.Switch,
+                CfgKey.SeatFn => d.Logic is CLogic.Button or CLogic.Switch,
                 CfgKey.Pushable => d.Role == PartRole.Hinge,
                 CfgKey.DoorOpen or CfgKey.DoorLocked => d.Door != null,
                 CfgKey.Hold => d.Logic is CLogic.Button or CLogic.Switch or CLogic.CodeLock or CLogic.DamageSensor,

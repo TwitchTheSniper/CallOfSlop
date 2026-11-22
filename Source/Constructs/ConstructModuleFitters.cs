@@ -324,7 +324,7 @@ public static class ModuleFitters
                     var t = ModuleSocketTable.Current;
                     var job = new Job { Ship = c.Id, Rig = rig.Id, StandBody = sb.Id, Plate = PartRef.Of(c, s.Plate), From = PartRef.Of(c, s.Plate), Stand = PartRef.Of(sb, st.Plate),
                         Fitter = PartRef.Of(rig, fitter), Phase = Phase.Cut, FitterName = rig.DefOf(fitter).Name, RigAt = rig.ToLocal(face),
-                        Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(s.W, s.L) / t.FitterS.Cut };
+                        Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(s.Wm, s.Lm) / t.FitterS.Cut };
                     wj.Jobs.Add(job);
                     SetWeld(world, c, s.Plate, -MathF.Max(0.1f, job.Seconds));
                     world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {job.FitterName}{(rig == c ? "" : $" of construct {rig.Id}")} cuts the seam of the module on socket part {s.Plate}, for the stand part {st.Plate} of construct {sb.Id}: {job.Seconds:0} s"));
@@ -333,11 +333,11 @@ public static class ModuleFitters
             }
         }
         if (stands == 0 && why == null)
-            return $"no free {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} Module Stand on this construct or the fitter's to set it on (a fitter takes a module off onto a stand)";
+            return $"no free {ModuleSocketTable.SizeText(s)} Module Stand on this construct or the fitter's to set it on (a fitter takes a module off onto a stand)";
         return why ?? "no Module Fitter on this construct or beside it";
     }
 
-    private static float Perimeter(int w, int l) => 2f * (w + l);
+    private static float Perimeter(float w, float l) => 2f * (w + l);
 
     /// <summary>The middle of the module whose plug is <paramref name="plug"/>, in <paramref name="body"/>'s frame (its bounds' centre; the body's centre of mass when the plug is no module's).</summary>
     public static Vector3 MiddleOf(Construct body, int plug)
@@ -435,7 +435,7 @@ public static class ModuleFitters
                 if (Wait(world, j, c, m))
                     return false;
                 j.Phase = j.Phase == Phase.Carry ? Phase.Weld : Phase.WeldOff;
-                j.Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(c.DefOf(j.Plate.Part).ModW, c.DefOf(j.Plate.Part).ModL) / ModuleSocketTable.Current.FitterS.Weld;
+                j.Seconds = world.Creative && !world.TimedMachines ? 0 : Perimeter(c.DefOf(j.Plate.Part).ModW * c.DefOf(j.Plate.Part).ModUnit, c.DefOf(j.Plate.Part).ModL * c.DefOf(j.Plate.Part).ModUnit) / ModuleSocketTable.Current.FitterS.Weld;
                 j.Done = 0;
                 SetWeld(world, c, j.Plate.Part, MathF.Max(0.1f, j.Seconds));
                 world.Events.Add(FormattableString.Invariant($"construct {c.Id}: the {j.FitterName} welds module body {m.Id} on socket part {j.Plate.Part}: {j.Seconds:0} s"));

@@ -15,6 +15,9 @@ and `Constructs/Blueprints/Roamer.json`. Change the generator, never its output.
   sides a band of framed windows (`Windows`) looks into the rooms: each is a hole in the skin with glass, a rubber gasket and a
   chrome sill, a reveal back to the room's own wall, glass in that wall, a wooden valance and orange curtains inside. The bathroom's
   is frosted. Skylights on the roof.
+- **The dash** (Karl, 2026-11-22, the modular cockpit): three console bays across the desk top with panel instruments, their switches
+  linked to the seat (dampeners, mouse steering, reactor, thrusters, landing legs, MASTER CAUTION): `docs/sandbox/constructs/cockpits.md`.
+  The cockpit's hidden front wall starts above the bays' room over the desk, so they are in reach.
 - **Colours**: faded cream paint; the camper's brown, orange and mustard stripes along the sides, across the nose and sweeping up
   round the rear corners; chrome trim (bumper, drip rails, sill bars, mirrors); the rust bucket's patch panels below the deck line.
 - **The rear** (Karl, 2026-11-20: "the rear contour space needs to be taken up a little more and sealed", then "utilise the space
