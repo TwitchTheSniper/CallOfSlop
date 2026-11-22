@@ -23,7 +23,10 @@ public sealed class CockpitParts : IPartGenerator
 
     /// <summary>The shipped sizes, cells (W <= L): plain ones, then the Roamer dash's (glareshield 1x30, wings 3x6, side panels 5x12, centre 5x8, overhead 4x10).</summary>
     public static readonly (int W, int L)[] Sizes =
-        [(1, 4), (1, 10), (2, 2), (2, 4), (3, 3), (4, 4), (4, 6), (6, 6), (6, 10), (1, 30), (3, 6), (5, 12), (5, 8), (4, 10), (2, 6), (2, 8)];
+        [(1, 4), (1, 10), (2, 2), (2, 4), (3, 3), (4, 4), (4, 6), (6, 6), (6, 10), (1, 30), (3, 6), (5, 12), (5, 8), (4, 10)];
+
+    /// <summary>Sizes added with the drawers (phase 6), written after the panel instruments so the Assembling rows before them keep their places.</summary>
+    public static readonly (int W, int L)[] LaterSizes = [(2, 6), (2, 8)];
 
     /// <summary>The Console Drawers (phase 6): a 2 x L cell footprint (the hole 20 cm high, L cells wide) and a tray D cells deep.</summary>
     public static readonly (int L, int D)[] Drawers = [(2, 2), (4, 3), (6, 3), (8, 4)];
@@ -266,8 +269,15 @@ public sealed class CockpitParts : IPartGenerator
 
     private static List<(string, Part)> Parts()
     {
+        // (the order is the Assembling table's: a new part goes at the end, or saved Assemblers' recipes move)
         var parts = new List<(string, Part)>();
         foreach (var (w, l) in Sizes)
+        {
+            parts.Add(("", Bay(w, l)));
+            parts.Add(("", Plug(w, l)));
+        }
+        parts.AddRange(ControlParts.PanelInstruments());
+        foreach (var (w, l) in LaterSizes)
         {
             parts.Add(("", Bay(w, l)));
             parts.Add(("", Plug(w, l)));
@@ -279,7 +289,6 @@ public sealed class CockpitParts : IPartGenerator
         }
         foreach (var (r, sweep, n) in Arcs)
             parts.Add(("", ArcDesk(r, sweep, n)));
-        parts.AddRange(ControlParts.PanelInstruments());
         return parts;
     }
 
