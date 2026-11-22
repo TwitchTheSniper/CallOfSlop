@@ -231,6 +231,8 @@ public static unsafe partial class Program
             return FactoryKit.StationCheck.Cli(stationCheck, args); // a site's Building Station started on a blueprint headless: its bill, then what it waits on
         if (args.Any(a => a.Equals("--excavator-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ExcavatorCheck.Cli(args); // the Militia Excavator on a host with terrain and a joined client: digs, slews, loads a hauler (docs/vehiclekit/EXCAVATOR-notes.md)
+        if (args.Any(a => a.Equals("--economy-sim", StringComparison.OrdinalIgnoreCase)))
+            return EconomySimCheck.Cli(args); // a headless Survival host left alone for hours of play: the stations' stock hour by hour (Source/Game/EconomySimCheck.cs)
         if (args.Any(a => a.Equals("--haul-check", StringComparison.OrdinalIgnoreCase)))
             return FactoryKit.FactoryHaul.Cli(args); // the ore loop headless: post, skip, Ore Hauler, tipping bay, refinery
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
