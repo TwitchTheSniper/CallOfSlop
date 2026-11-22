@@ -149,6 +149,7 @@ public static class StationCheck
             return Math.Max(1, preview.Unmade);
         }
         var lastNote = "";
+        var lifterLooks = new Dictionary<int, string>();
         using (place.In())
             for (var k = 0; k < seconds * World.TickRate; k++)
             {
@@ -158,6 +159,14 @@ public static class StationCheck
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
                         Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: queue {c.Parts[m].Orders?.Count ?? -1}, "
                             + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
+                if (args.Contains("--trace") && k % World.TickRate == 0)
+                    for (var i = 0; i < c.PartCount; i++)
+                        if (ConstructLifters.DefOf(c, i) != null && ConstructLifters.Look(w, c, i) is var look && (!lifterLooks.TryGetValue(i, out var was) || was != look))
+                        {
+                            lifterLooks[i] = look; // (a lifter's look as it changes: what it carries where, and why it waits)
+                            if (k > 0)
+                                Console.WriteLine($"  {k / World.TickRate,4} s: lifter {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {look}");
+                        }
                 if (k % World.TickRate == 0)
                     foreach (var (bin, mat, n) in keep)
                         if (c.DefOf(bin).IsAssembler)
