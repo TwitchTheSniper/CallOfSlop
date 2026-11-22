@@ -121,6 +121,13 @@ public interface IPowerHost
         return true;
     }
 
+    /// <summary>
+    /// Territory pays in goods (Karl, 2026-11-22): <paramref name="units"/> of <paramref name="material"/> from a site <paramref name="power"/> holds on
+    /// <paramref name="planet"/>, into its nearest station that trades it (one over that planet, else the one most short of it). A power with no
+    /// such station gets nothing. The host says what it took.
+    /// </summary>
+    int SiteGoods(byte power, string planet, byte material, int units) => 0;
+
     /// <summary>Phase 5: where person <paramref name="player"/> is (alive, here); false: not.</summary>
     bool PersonAt(byte player, out Vector3 at)
     {
