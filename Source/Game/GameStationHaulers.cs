@@ -40,6 +40,9 @@ public sealed partial class Game
         public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
         public bool Ledger; // its last leg was taken on the ledger (nobody near): its escorts fly nothing (GameHaulLedger.cs)
         public long LedgerUntil; // on a ledger leg: when it gets there (0: not on one)
+        public bool Flying; // this leg is flown from here on (a person saw it): it doesn't go on the ledger part way (GameHaulLedger.cs)
+        public long LegAt; // when this leg began (0: not known), and its fuel then: a leg flown out of the bubble before the ledger takes it is not paid twice
+        public float LegFuel;
     }
 
     /// <summary>An escort (phase 3: convoys): a warship of the route's power that holds beside its hauler with a Meet order, and off the station while the hauler docks.</summary>
@@ -568,6 +571,8 @@ public sealed partial class Game
             run.AtTo = !run.AtTo; // (the next leg)
             c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
+            run.Flying = false; // (a new leg: the ledger may take it)
+            (run.LegAt, run.LegFuel) = (ServerTick, c.Fuel);
             run.RetryAt = 0;
             HaulStep(s, run, c);
             return;
