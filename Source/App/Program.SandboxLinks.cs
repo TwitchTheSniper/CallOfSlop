@@ -1412,6 +1412,7 @@ public static partial class Program
     /// <summary>The tool's ImGui pass (port markers, the picker, the adjust text), as the match HUD draws it.</summary>
     internal static void LinkTestDraw() => DrawLinkWheelInMatch();
     internal static int LinkTestPickCount => _lkPickCount;
+    internal static bool LinkTestPickIn(int i) => i >= 0 && i < _lkPickCount && _lkPickIn[i]; // (an input: picking it starts the link from the other end)
     internal static RouteType LinkTestType => _lkType;
     internal static string LinkTestLabel => _lkLabel;
     internal static bool LinkTestRouting => _lkBody != 0;
