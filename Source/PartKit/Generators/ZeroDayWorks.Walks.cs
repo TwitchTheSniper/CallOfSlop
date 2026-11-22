@@ -12,7 +12,7 @@ public sealed partial class ZeroDayWorks
         //    west wall (its foot on the floor's metre grid: every piece hangs off the last), 14 runs of 6 m and one of 3 m, a stair down
         //    at the east wall. A leg goes under each run where the floor under it is free (a die or a bunker's chute stands there).
         //  - The doc's two long walks beside the column rows are left out: lines B and C's cutter beds and Out Tables run up to the
-        //    columns, so a walk there would hang over a bed the cranes lift from (Sean decides).
+        //    columns, so a walk there would hang over a bed the cranes lift from (Sean, 2026-11-22: leave them out).
         public const float CrossingZ = -38f;
 
         private void LayWalks()
