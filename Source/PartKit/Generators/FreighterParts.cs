@@ -1407,6 +1407,7 @@ public sealed class FreighterParts : IPartGenerator
     // ---- the freight: the standard container ("Design the standard cargo container", ContainerParts.cs), origin at its roof's middle
 
     public const string BoxName = "Standard Container 2m";
+    public const string HeavyBoxName = "Heavy Container 2m"; // (the bottom shelf's: a store's heavy furniture, Karl 2026-11-22)
 
     private static Part Big(string name, string desc, string role = "frame", string color = Skin) =>
         new(name, Small, Section, desc, role: role, tool: "welder", material: "steel", color: color, group: Group);
@@ -1843,7 +1844,7 @@ public sealed class FreighterParts : IPartGenerator
                 // The containers stand on the bottom and middle shelves; their origin is their roof's middle.
                 var x = Cx + s * (RackX + RkD / 2);
                 foreach (var y in new[] { -RkHy + RkSh + 0.003 + CtH, RkSh / 2 + 0.003 + CtH })
-                    cargo.Add(Kw(("part", BoxName),
+                    cargo.Add(Kw(("part", y < 0 ? HeavyBoxName : BoxName), // (the bottom shelf a heavy container: beds, lockers and wall bays ride low)
                         ("at", Py.L(Py.Round(x - H, 3), Py.Round(RackY + y - H, 3), Py.Round(RackZ[i] - H, 3))), ("turn", s < 0 ? halfRound : 0)));
             }
         // Lamps and their switches (the spine's and engineering's light while the power reaches them).

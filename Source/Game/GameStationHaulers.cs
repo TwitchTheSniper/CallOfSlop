@@ -936,6 +936,18 @@ public sealed partial class Game
     /// Storage Volumes the parts this station sells that the far one is short of (under its want), most needed first, up to the shortfall and
     /// what its power can afford. The value it earned (already in its power's books) and what the load cost (for the caller to book).
     /// </summary>
+    /// <summary>Host: up to <paramref name="most"/> pieces of a kind off a piece hold (a heavy container's), each off the top of its stack; how many.</summary>
+    private int HaulRackTake(Construct b, int part, ushort def, int most)
+    {
+        if (Constructs.StoreOf(b, part) is not { } st)
+            return 0;
+        ConstructRackPack.Ensure(ConstructPads.RackDef(b, part), st);
+        var n = 0;
+        while (n < most && ConstructRackPack.LastOf(st, def, out var slab, out var lane) && Constructs.RackTakeAt(b, part, slab, lane) != null)
+            n++;
+        return n;
+    }
+
     private (double Value, double Cost) HaulParts(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket m, PowerControllers.Power? pw, double spent, string where, bool own)
     {
         var sd = StationMarkets.All[def];
@@ -952,6 +964,7 @@ public sealed partial class Game
         // their stores and volumes, found once a stop (not once per part kind or unit)
         var stores = new List<(Construct B, int P)>();
         var vols = new List<(Construct B, int P)>();
+        var cargo = new List<(Construct B, int P)>(); // (heavy containers' piece holds: what a volume can't take, Karl 2026-11-22)
         foreach (var b in holds)
             for (var i = 0; i < b.PartCount; i++)
             {
@@ -959,6 +972,8 @@ public sealed partial class Game
                     stores.Add((b, i));
                 if (b.DefOf(i).IsVolumeStore)
                     vols.Add((b, i));
+                if (b.DefOf(i).IsCargoHold)
+                    cargo.Add((b, i));
             }
         for (var j = 0; j < parts.Length; j++)
         {
@@ -971,7 +986,7 @@ public sealed partial class Game
             var took = 0;
             foreach (var (b, i) in stores)
                 if (took < room)
-                    took += Constructs.TakeHolding(b, i, what, room - took);
+                    took += b.DefOf(i).IsPieceRack ? HaulRackTake(b, i, parts[j].Part, room - took) : Constructs.TakeHolding(b, i, what, room - took);
             if (took == 0)
                 continue;
             if (took > mostTook)
@@ -1023,7 +1038,7 @@ public sealed partial class Game
                 (pick[k], pick[k - 1]) = (pick[k - 1], pick[k]);
                 (short_[k], short_[k - 1]) = (short_[k - 1], short_[k]);
             }
-        int loaded = 0, vi = 0;
+        int loaded = 0, vi = 0, ci = 0;
         string? refusal = null;
         for (var i = 0; i < np; i++)
         {
@@ -1036,7 +1051,19 @@ public sealed partial class Game
                 if (!own && (pw is not { Fallen: false } || pw.Stock - spent - cost < parts[j].Sell))
                     break;
                 var put = false;
-                for (var t = 0; t < vols.Count && !put; t++)
+                var heavy = pd.PhysicsOnly || pd.Role == PartRole.Storage; // (no Storage Volume takes it: a heavy container's hold does)
+                for (var t = 0; t < cargo.Count && !put && heavy; t++)
+                {
+                    var (b, p) = cargo[(ci + t) % cargo.Count];
+                    if (Constructs.RackPut(b, p, pd, ordered: true))
+                    {
+                        put = true;
+                        ci = (ci + t) % cargo.Count;
+                    }
+                }
+                if (heavy && !put && refusal == null)
+                    refusal = cargo.Count == 0 ? $"the {pd.Name} is {(pd.PhysicsOnly ? $"physics-only ({pd.PhysicsWhy})" : "a store")} and it has no heavy container" : "its heavy containers are full";
+                for (var t = 0; t < vols.Count && !put && !heavy; t++)
                 {
                     var (b, p) = vols[(vi + t) % vols.Count]; // (from the volume that took the last one)
                     if (Constructs.PutPart(b, p, pd) is { } why)

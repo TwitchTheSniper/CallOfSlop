@@ -49,6 +49,7 @@ public sealed class ContainerParts : IPartGenerator
     private static void Size(int n) => (N, H, W2, L2, FloorY) = (n, n + 0.5, (n + 0.5) / 2, (3 * n + 0.5) / 2, -(n + 0.5) + F);
 
     public static string ContainerName(int n) => $"Standard Container {n}m";
+    public static string HeavyName(int n) => $"Heavy Container {n}m";
     public static string HatchName(int n) => $"Standard Container {n}m Hatch";
     public static string CradleName(int n) => $"Container Cradle {n}x{n}";
 
@@ -80,10 +81,18 @@ public sealed class ContainerParts : IPartGenerator
 
     // ---- the container: frame, floor, roof, the back side and the two ends; the hatch hangs on its +x side
 
-    private static Part Container()
+    /// <summary>
+    /// The container, or with <paramref name="heavy"/> its heavy-cargo sister (Karl, 2026-11-22: "a heavy cargo module", so a store's beds,
+    /// lockers and wall bays ride to it): the same shell, hatches, castings and clamps, but its hold is a piece hold (a Piece Rack's
+    /// <c>storage.pieces</c>, <c>cargo</c>), which packs whole pieces by volume on its floor, the physics-only ones too (over 40 kg,
+    /// welded, bulky) and new empty stores, and draws them. No cradles (nothing stands on slots), no box settings; hazard bands across both ends.
+    /// </summary>
+    private static Part Container(bool heavy = false)
     {
-        var k = K(ContainerName(N), "storage", // (a store: its hold takes parts or bulk)
-            $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
+        var k = K(heavy ? HeavyName(N) : ContainerName(N), "storage", // (a store: its hold takes parts or bulk)
+            heavy
+                ? $"A heavy-cargo {N} m container: the standard shell and hatches, with a hold that packs whole pieces on its floor by size, however heavy (beds, lockers, wall bays, machines) and draws them. A crane's spreader takes it whole by its four top corner castings; clamps at its feet lock it onto a container under it."
+                : $"A standard {N} m cargo container: three {N}x{N}x{N} m slots in a row, each a cradle a module stands on, and a hatch the whole length of each side that swings up to an awning. A crane's spreader takes it whole by its four top corner castings; it stands on its four bottom ones, and clamps at its feet lock it onto a container under it.",
             Medium);
         double w = W2, l = L2, y0 = -H;
         // Solids: the floor, the roof and the ends (both long sides are open: each hatch's own leaf closes its side).
@@ -124,6 +133,16 @@ public sealed class ContainerParts : IPartGenerator
             double za = sz * (l - 0.07), zb = sz * (l - 0.035);
             Brace(k, "z", Math.Min(za, zb), Math.Max(za, zb), -w + F + 0.05, y0 + F + 0.07, w - F - 0.05, -F - 0.05, 0.1, FrameC, "dirty steel");
             Brace(k, "z", Math.Min(za, zb) + sz * 0.003, Math.Max(za, zb) + sz * 0.003, -w + F + 0.05, -F - 0.05, w - F - 0.05, y0 + F + 0.07, 0.1, FrameC, "dirty steel"); // (3 mm prouder: the bars cross)
+            if (heavy) // (a heavy container's mark: a hazard band low across each end, proud of the braces, under the data plate)
+            {
+                var bands = 2 * N + 2;
+                double bx0 = -w + F + 0.02, bx1 = w - F - 0.02, bz0 = sz * (l - 0.028), bz1 = sz * (l - 0.016);
+                for (var i = 0; i < bands; i++)
+                {
+                    double xa = bx0 + i * (bx1 - bx0) / bands, xb = xa + (bx1 - bx0) / bands - 0.004;
+                    k.Box(xa, y0 + F + 0.08, Math.Min(bz0, bz1), xb, y0 + F + 0.22, Math.Max(bz0, bz1), i % 2 == 0 ? Hazard : HazardDark, "hazard paint");
+                }
+            }
         }
         double ze = l - 0.035;
         k.Paint(-w + F + 0.06, -F - 0.42, ze, -w + F + 0.5, -F - 0.12, ze + 0.012, Paper); // (the data plate: owner, size, mass)
@@ -193,7 +212,7 @@ public sealed class ContainerParts : IPartGenerator
                 k.P.Sock($"clamp.{c++}", [Py.Round(cx, 3), y0 + 0.01, Py.Round(sz * (l + ClampOff), 4)], sz > 0 ? "+z" : "-z");
             }
         // The cradles' sockets on the floor, the spreader's reference on the roof, its feet under it and under each casting.
-        for (var s = 0; s < 3; s++)
+        for (var s = 0; s < 3 && !heavy; s++) // (a heavy container has no cradles: its pieces lie on the floor)
             k.P.Sock($"slot{s}", [0, FloorY, SlotZ(s)], "+y");
         k.P.Sock("top", [0, 0, 0], "+y");
         k.P.Sock("-y", [0, y0, 0], "-y");
@@ -208,6 +227,17 @@ public sealed class ContainerParts : IPartGenerator
         // Its hold (Karl, 2026-11-21: the Traders' freighter carries a store's furniture in its containers): the inside between the floor,
         // the roof and the ends, a Storage Volume's box that takes parts or bulk. The box settings only shrink it.
         double ix = 2 * (w - F), iy = -F - FloorY - 0.01, iz = 2 * (l - 0.1) - 0.02;
+        var area = 2 * (2 * w * 2 * l) + 2 * (2 * w * H) + 2 * (H * 2 * l);
+        if (heavy)
+        {
+            // The piece hold: the inside over the floor's marks (12 mm proud) to under the lamps, short of the end linings.
+            double hy0 = FloorY + 0.015, hy1 = -F + 0.005, hz = l - 0.125;
+            k.P.Set(("storage", Kw(("pieces", Kw(("section", Py.L(Py.Round(ix, 2), Py.Round(hy1 - hy0, 2))), ("length", Py.Round(2 * hz, 2)), ("count", 400),
+                ("hold", Py.L(Py.L(Py.Round(-ix / 2, 3), Py.Round(hy0, 3), Py.Round(-hz, 3)), Py.L(Py.Round(ix / 2, 3), Py.Round(hy1, 3), Py.Round(hz, 3)))), ("cargo", true))))),
+                ("container", true));
+            // Mass: the standard shell's, and a floor and frame built for weight (a fifth more).
+            return k.P.Stats(Math.Round(area * 30), 480 + area * 70, 14, 6.0 + N * 2);
+        }
         k.P.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("volume", true))))), ("container", true),
             ("config", Py.L(
                 Kw(("key", "sizeX"), ("label", "Width"), ("group", "Box"), ("unit", "m"), ("min", 0.2), ("max", Py.Round(ix, 2)), ("step", 0.1), ("default", Py.Round(ix, 2)), ("tooltip", "The hold's size across the container.")),
@@ -219,7 +249,6 @@ public sealed class ContainerParts : IPartGenerator
                 Kw(("key", "material"), ("label", "Material"), ("group", "Contents"), ("creative", true), ("tooltip", "The bulk it holds. Creative worlds only.")),
                 Kw(("key", "fill"), ("label", "Fill"), ("group", "Contents"), ("unit", "%"), ("min", 0), ("max", 100), ("default", 0), ("creative", true), ("tooltip", "How full the hold is.")))));
         // Mass: about a third of a tonne a metre of length at 2 m (a 20 ft steel box is 2.2 t): the shell's area at 25 kg a square metre.
-        var area = 2 * (2 * w * 2 * l) + 2 * (2 * w * H) + 2 * (H * 2 * l);
         return k.P.Stats(Math.Round(area * 25), 400 + area * 60, 14, 6.0 + N * 2);
     }
 
@@ -427,6 +456,7 @@ public sealed class ContainerParts : IPartGenerator
         {
             Size(n);
             parts.Add(("", Container()));
+            parts.Add(("", Container(heavy: true)));
             parts.Add(("", Hatch()));
             parts.Add(("", Cradle()));
         }

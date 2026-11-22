@@ -33,6 +33,11 @@ racks are open outboard so a container slides out to a shell or a crane, and the
 hatches face out. Allow about 2.5 m clear outboard for an open hatch. A frozen Cargo Volume on each rack holds its two containers.
 The racks carry the real part, "Standard Container 2m" (`ContainerParts.cs`); its hatches open on both long sides, so
 the inboard one stays shut against the spine.
+The bottom shelf of each rack carries a "Heavy Container 2m" instead (Karl, 2026-11-22: a heavy cargo module): the same shell,
+hatches and castings, with hazard bands across both ends and a piece hold (`storage.pieces`, `cargo`) in place of the Storage
+Volume. It packs whole pieces on its floor by size, physics-only ones too (over 40 kg, welded, bulky), and draws them, so a
+store's beds, lockers and wall bays ride with the rest. Only a hauler's load puts a new empty store in it (`RackCheck` ordered);
+a hand, an arm or a conveyor puts pieces in as on any Piece Rack.
 
 ## Checks (2026-11-20)
 
