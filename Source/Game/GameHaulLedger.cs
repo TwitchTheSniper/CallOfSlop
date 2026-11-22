@@ -46,6 +46,11 @@ public sealed partial class Game
         {
             if (!LedgerAll && LedgerSeen(run, c))
                 LedgerBreak(run, c); // (a person comes near part way: it flies the rest from where it is, nothing moved before their eyes)
+            else if (run.Trip is { } going)
+            {
+                if (s.Flight is not { } tf || !LedgerTripStep(tf, run, c, going, planet))
+                    LedgerArrive(s, run, c, def, d, planet); // (its path's end, or its path lost: it is put at its station)
+            }
             else if (ServerTick >= run.LedgerUntil)
                 LedgerArrive(s, run, c, def, d, planet);
             return run.LedgerUntil != 0 || run.Stage != HaulStage.Going;
@@ -90,6 +95,13 @@ public sealed partial class Game
         run.LedgerUntil = ServerTick + (long)(minutes * 60 * World.TickRate);
         run.RetryAt = 0;
         LedgerLegs++;
+        if (!far && !LedgerAll && LedgerPlan(s, run, c, def, planet) is { } trip)
+        {
+            run.Trip = trip; // (round one planet in play: its path is real, in space time: LedgerPlan)
+            HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} on the ledger: a burn of {trip.Dv1.Length:0} m/s, {(trip.Arrive - trip.Start) / 6e10:0} minutes' coast and {trip.Dv2.Length:0} m/s to brake, at {trip.Accel / 9.81:0.0} g"));
+            RouteArrived(run.Route);
+            return true;
+        }
         HaulSay(run, c, FormattableString.Invariant($"sets out for {d.Name} on the ledger: {minutes:0} minutes of play away"));
         RouteArrived(run.Route); // (set out: its supply line runs, as a flown leg's)
         return true;
@@ -102,6 +114,9 @@ public sealed partial class Game
     private void LedgerBreak(HaulRun run, Construct c)
     {
         run.LedgerUntil = 0;
+        if (run.Trip != null)
+            LedgerCoasting(run, c, false);
+        run.Trip = null;
         run.Ledger = false;
         run.Flying = true;
         run.RetryAt = 0;
@@ -174,6 +189,9 @@ public sealed partial class Game
     private void LedgerArrive(SpaceSession s, HaulRun run, Construct c, int def, StationDef d, int planet)
     {
         run.LedgerUntil = 0;
+        if (run.Trip != null)
+            LedgerCoasting(run, c, false);
+        run.Trip = null;
         // A person by the station: it comes up out of sight behind it and flies the rest (its Dock order: HaulStep), so nothing appears beside them.
         var stBody = StationBodyOf(def);
         var stc = Constructs.Get(stBody);
@@ -221,6 +239,226 @@ public sealed partial class Game
         run.Since = ServerTick;
         RouteArrived(run.Route);
         HaulTrade(run, c, StationMarkets.Haulers[run.Route], def, MarketOfDef(def));
+    }
+
+
+    // ---- A ledger leg's path round one planet (Karl, 2026-11-22: "the increase in speed from the station and decrease at an expected point") ----
+
+    /// <summary>
+    /// A ledger leg round one planet in play, as a function of space time: a burn out of <see cref="Dv1"/> at the ship's own acceleration from
+    /// <see cref="Start"/>, a coast on the conic it puts the ship on (the flight carries it on its Kepler rail, so it moves on the map and is
+    /// where it should be at any moment), and a braking burn of <see cref="Dv2"/> centred on <see cref="Arrive"/>, which brings it up
+    /// <c>HaulFarBehind</c> behind its station at the station's speed; then it docks (<see cref="End"/>). Its escorts fly the same path
+    /// turned back round the planet by <see cref="EscortGap"/> metres each (a turn about the planet's centre keeps a path a path).
+    /// </summary>
+    private sealed class LedgerTrip
+    {
+        public long Start, Arrive, End, Last; // space time (ns): set out, the braking burn's middle, docked, and when the burns were last stepped
+        public Vec3d Dv1, Dv2, Axis; // the burns (the hauler's planet frame), and the axis its escorts' paths are turned about
+        public double Accel, Done1, Done2; // the hauler's acceleration (m/s/s) and how much of each burn is done (m/s)
+        public bool Snapped;
+        public ushort Station; // the station body it is bound for
+        public int Fixes; // the course corrections made on the coast (at LedgerFixAt)
+        public const double EscortGap = 1500;
+    }
+
+    /// <summary>Where along a ledger path's coast its course is corrected (shares of the coast: a burn stepped a second at a time, on a transfer near half a turn, can miss by kilometres).</summary>
+    private static readonly double[] LedgerFixAt = { 0.25, 0.6, 0.9 };
+
+    /// <summary>The transfer times tried for a ledger path (between the least and most a leg takes, less the docking).</summary>
+    private const int LedgerPlanTries = 48;
+
+    /// <summary>
+    /// Host, rare: a ledger path for a hauler round its station's planet, both in this system's flight: the transfer to a place
+    /// <c>HaulFarBehind</c> behind the station, the time picked for the least change of speed (two Lambert burns), with the burns at most a
+    /// fifth of the coast. Its escorts are put on the same path behind it. Null: no path (not both in the flight round that planet, no drive,
+    /// or no transfer fits), and the leg runs as a time alone.
+    /// </summary>
+    private LedgerTrip? LedgerPlan(SpaceSession s, HaulRun run, Construct c, int def, int planet)
+    {
+        if (s.Flight is not { } f || f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0) || f.Ships.PrimaryOf(i) != planet || c.SpaceAway != 0
+            || Constructs.Get(StationBodyOf(def)) is not { SpaceShip: not 0, SpaceAway: 0 } sb || f.Ships.IndexOfId(sb.SpaceShip) is not (var si and >= 0) || f.Ships.PrimaryOf(si) != planet)
+            return null;
+        var accel = c.Mass > 0 ? ConstructPhysics.NavDrive(c, out _, out _, out _) / c.Mass : 0;
+        if (!(accel > 0.01))
+            return null;
+        f.Ships.RelativeOf(i, out _, out var r0, out var v0);
+        f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+        var mu = s.System.Bodies[planet].Mu;
+        var sn = Vec3d.Cross(sr, sv);
+        var axis = sn.LengthSquared > 0 ? sn.Normalized() : Vec3d.UnitY;
+        double best = double.MaxValue, bestT = 0;
+        Vec3d b1 = Vec3d.Zero, b2 = Vec3d.Zero;
+        var least = Math.Max(60, (LedgerLeast - LedgerDockMinutes) * 60);
+        var most = (LedgerMost - LedgerDockMinutes) * 60;
+        for (var k = 0; k < LedgerPlanTries; k++)
+        {
+            var t = least + (most - least) * k / (LedgerPlanTries - 1);
+            if (!UniversalKepler.Propagate(mu, sr, sv, t, out var rs, out var vs))
+                continue;
+            var q = QuatD.AxisAngle(axis, -HaulFarBehind / Math.Max(1, rs.Length));
+            var (rt, vt) = (q.Rotate(rs), q.Rotate(vs));
+            if (Vec3d.Dot(r0, rt) / (r0.Length * rt.Length) < -0.985)
+                continue; // (near half a turn the transfer's plane is ill set: a small error at the burn misses by kilometres)
+            for (var way = 0; way < 2; way++)
+            {
+                if (!NavTrip.Lambert(r0, rt, t, mu, way == 1, out var v1, out var v2))
+                    continue;
+                var (d1, d2) = (v1 - v0, vt - v2);
+                var cost = d1.Length + d2.Length;
+                if (cost < best && cost / accel < t * NavTrip.BurnShare)
+                    (best, bestT, b1, b2) = (cost, t, d1, d2);
+            }
+        }
+        if (bestT <= 0)
+            return null;
+        var now = f.Ships.Time.Ns;
+        var trip = new LedgerTrip
+        {
+            Start = now, Last = now, Accel = accel, Dv1 = b1, Dv2 = b2, Axis = axis, Station = sb.Id,
+            Arrive = now + (long)(bestT * SpaceTime.NsPerSecond),
+        };
+        trip.End = trip.Arrive + (long)((b2.Length / accel / 2 + LedgerDockMinutes * 60) * SpaceTime.NsPerSecond);
+        // Its escorts on its path, behind it (they were by it; nobody is near to see them close up).
+        var n = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: not 0 } ec && f.Ships.IndexOfId(ec.SpaceShip) is var ei and >= 0)
+            {
+                var q = QuatD.AxisAngle(axis, -(LedgerTrip.EscortGap * ++n) / Math.Max(1, r0.Length));
+                f.Ships.SetState(ei, planet, q.Rotate(r0), q.Rotate(v0));
+            }
+        LedgerCoasting(run, c, true);
+        LedgerTripStep(f, run, c, trip, planet); // (the burn's first part now)
+        return trip;
+    }
+
+    /// <summary>
+    /// Host, each second of a ledger path: the burns as far as space time has come (the ship's acceleration times the time since the last step,
+    /// so a fast time speed makes them kicks), the hauler and its escorts snapped onto their places behind the station once braked (the
+    /// burns stepped a second at a time land them a little off). False: the path is done (docked) or lost.
+    /// </summary>
+    private bool LedgerTripStep(SpaceFlight f, HaulRun run, Construct c, LedgerTrip trip, int planet)
+    {
+        if (f.Ships.IndexOfId(c.SpaceShip) is not (var i and >= 0) || f.Ships.PrimaryOf(i) != planet)
+            return false;
+        var now = f.Ships.Time.Ns;
+        var dt = (now - trip.Last) / (double)SpaceTime.NsPerSecond;
+        var brakeFrom = trip.Arrive - (long)(trip.Dv2.Length / trip.Accel / 2 * SpaceTime.NsPerSecond);
+        var push = Vec3d.Zero;
+        if (trip.Done1 < trip.Dv1.Length)
+        {
+            var amount = Math.Min(trip.Dv1.Length - trip.Done1, trip.Accel * Math.Max(dt, 1.0 / World.TickRate));
+            trip.Done1 += amount;
+            push = trip.Dv1.Normalized() * amount;
+        }
+        var braking = !trip.Snapped && now >= brakeFrom;
+        var brakeDt = braking ? Math.Max(1.0 / World.TickRate, (now - Math.Max(trip.Last, brakeFrom)) / (double)SpaceTime.NsPerSecond) : 0;
+        trip.Last = now;
+        if (push.LengthSquared > 0)
+            LedgerPush(f, run, i, planet, push, trip.Axis);
+        if (trip.Done1 >= trip.Dv1.Length && trip.Fixes < LedgerFixAt.Length && now >= trip.Start + (long)((trip.Arrive - trip.Start) * LedgerFixAt[trip.Fixes]))
+        {
+            trip.Fixes++;
+            LedgerFix(f, run, i, planet, trip, now);
+        }
+        if (braking)
+        {
+            // The braking burn closed-loop: towards the speed of its place behind the station, at the ship's acceleration, until matched.
+            if (Constructs.Get(trip.Station) is { SpaceShip: not 0 } sb && f.Ships.IndexOfId(sb.SpaceShip) is var si and >= 0 && f.Ships.PrimaryOf(si) == planet)
+            {
+                f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+                f.Ships.RelativeOf(i, out _, out _, out var v);
+                var need = QuatD.AxisAngle(trip.Axis, -HaulFarBehind / Math.Max(1, sr.Length)).Rotate(sv) - v;
+                var amount = Math.Min(need.Length, trip.Accel * brakeDt);
+                if (amount > 0)
+                {
+                    trip.Done2 += amount;
+                    LedgerPush(f, run, i, planet, need.Normalized() * amount, trip.Axis);
+                }
+                if (need.Length - amount < 0.5 && now >= trip.Arrive)
+                {
+                    trip.Snapped = true;
+                    LedgerAlongside(f, run, c, i, planet, trip.Axis);
+                }
+            }
+            else
+                trip.Snapped = true;
+        }
+        return now < trip.End;
+    }
+
+    /// <summary>
+    /// A course correction on a ledger path's coast: the transfer from where the hauler is now to its place behind the station at the
+    /// path's arrival, solved again, its small change of speed made at once and the braking burn made new.
+    /// </summary>
+    private void LedgerFix(SpaceFlight f, HaulRun run, int i, int planet, LedgerTrip trip, long now)
+    {
+        var left = (trip.Arrive - now) / (double)SpaceTime.NsPerSecond;
+        if (!(left > 10) || trip.Done2 > 0 || Constructs.Get(trip.Station) is not { SpaceShip: not 0 } sb || f.Ships.IndexOfId(sb.SpaceShip) is not (var si and >= 0) || f.Ships.PrimaryOf(si) != planet)
+            return;
+        var mu = f.System.Bodies[planet].Mu;
+        f.Ships.RelativeOf(i, out _, out var r, out var v);
+        f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+        if (!UniversalKepler.Propagate(mu, sr, sv, left, out var rs, out var vs))
+            return;
+        var q = QuatD.AxisAngle(trip.Axis, -HaulFarBehind / Math.Max(1, rs.Length));
+        var (rt, vt) = (q.Rotate(rs), q.Rotate(vs));
+        // (the way round that needs least: a path that set out the long way round is the short way once past half a turn)
+        var ok1 = NavTrip.Lambert(r, rt, left, mu, false, out var s1, out var s2);
+        var ok2 = NavTrip.Lambert(r, rt, left, mu, true, out var l1, out var l2);
+        if (!ok1 && !ok2)
+            return;
+        var (v1, v2) = !ok2 || ok1 && (s1 - v).LengthSquared <= (l1 - v).LengthSquared ? (s1, s2) : (l1, l2);
+        var dv = v1 - v;
+        if (dv.Length > trip.Dv1.Length)
+            return; // (a correction bigger than the burn out: something else went wrong, and the snap at the end puts it right)
+        LedgerPush(f, run, i, planet, dv, trip.Axis);
+        trip.Dv2 = vt - v2;
+    }
+
+    /// <summary>The hauler and its escorts' drives held off their ships (on a ledger path) or let go again.</summary>
+    private void LedgerCoasting(HaulRun run, Construct c, bool on)
+    {
+        c.LedgerCoast = on;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } ec)
+                ec.LedgerCoast = on;
+    }
+
+    /// <summary>A change of speed to the hauler and its escorts (each escort's turned with its path).</summary>
+    private void LedgerPush(SpaceFlight f, HaulRun run, int i, int planet, Vec3d dv, Vec3d axis)
+    {
+        f.Ships.RelativeOf(i, out _, out var r, out var v);
+        f.Ships.SetState(i, planet, r, v + dv);
+        var n = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: not 0 } ec && f.Ships.IndexOfId(ec.SpaceShip) is var ei and >= 0)
+            {
+                var q = QuatD.AxisAngle(axis, -(LedgerTrip.EscortGap * ++n) / Math.Max(1, r.Length));
+                f.Ships.RelativeOf(ei, out _, out var er, out var ev);
+                f.Ships.SetState(ei, planet, er, ev + q.Rotate(dv));
+            }
+    }
+
+    /// <summary>Braked: the hauler <c>HaulFarBehind</c> behind its station at its speed, its escorts behind it, where its path brought it within a few hundred metres.</summary>
+    private void LedgerAlongside(SpaceFlight f, HaulRun run, Construct c, int i, int planet, Vec3d axis)
+    {
+        var h = StationMarkets.Haulers[run.Route];
+        if (Constructs.Get(StationBodyOf(run.AtTo ? h.To : h.From)) is not { SpaceShip: not 0 } sb || f.Ships.IndexOfId(sb.SpaceShip) is not (var si and >= 0) || f.Ships.PrimaryOf(si) != planet)
+            return;
+        f.Ships.RelativeOf(si, out _, out var sr, out var sv);
+        var q = QuatD.AxisAngle(axis, -HaulFarBehind / Math.Max(1, sr.Length));
+        var (r, v) = (q.Rotate(sr), q.Rotate(sv));
+        f.Ships.RelativeOf(i, out _, out var hr, out var hv);
+        Log(FormattableString.Invariant($"[haul] construct {c.Id} brakes behind its station on the ledger, {(hr - r).Length:0} m and {(hv - v).Length:0.0} m/s off its place"));
+        f.Ships.SetState(i, planet, r, v);
+        var n = 0;
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: not 0 } ec && f.Ships.IndexOfId(ec.SpaceShip) is var ei and >= 0)
+            {
+                var qe = QuatD.AxisAngle(axis, -(LedgerTrip.EscortGap * ++n) / Math.Max(1, r.Length));
+                f.Ships.SetState(ei, planet, qe.Rotate(r), qe.Rotate(v));
+            }
     }
 
     /// <summary>
