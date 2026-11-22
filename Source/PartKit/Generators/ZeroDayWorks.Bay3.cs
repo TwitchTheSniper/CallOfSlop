@@ -101,9 +101,9 @@ public sealed partial class ZeroDayWorks
         /// <summary>
         /// The block Assembler: its Core at (x, z), a 4 x 4 bed of Assembly Bed Blocks east of it (the Core's row the bed's north row),
         /// two Mast Blocks on the floor outside each bed corner (welded to the corner block's north or south side), a Gantry Carriage
-        /// on the first block of each row, the Thruster Jig Block in its Tool Bay on the Core's west side, and three upgrade modules.
+        /// on the first block of each row (or the last: <paramref name="carriagesEast"/>), the Thruster Jig Block in its Tool Bay on the Core's west side, and three upgrade modules.
         /// </summary>
-        private VPart Assembler(float x, float z, int across = 4, int along = 4, int masts = 2, bool jig = true)
+        private VPart Assembler(float x, float z, int across = 4, int along = 4, int masts = 2, bool jig = true, bool carriagesEast = false)
         {
             var core = On("Assembler", x, z, Up, paint: General);
             OrdersOnly(core);
@@ -115,8 +115,10 @@ public sealed partial class ZeroDayWorks
             int a = across - 1, b = along - 1;
             foreach (var (c, side, by) in new[] { (bed[0, 0], "+z", "-z.low"), (bed[a, 0], "+z", "-z.low"), (bed[0, b], "-z", "+z.low"), (bed[a, b], "-z", "+z.low") })
                 Stack(Paint(Onto(c, side, "Mast Block", by), Steel), "top", masts - 1);
+            // (a carriage stands 1.4 m on its block's east edge, in the work zone: a part placed over it doesn't fit, so a big bed keeps
+            // them on its last column, clear of what the bed packs from its first: the yard's decks are 5 cells of its 6)
             for (var j = 0; j < along; j++)
-                Paint(Onto(bed[0, j], "carriage", "Gantry Carriage", "bottom"), Crane);
+                Paint(Onto(bed[carriagesEast ? a : 0, j], "carriage", "Gantry Carriage", "bottom"), Crane);
             if (jig)
                 Paint(Onto(core, "-x", "Thruster Jig Block", "dock"), General2);
             Onto(core, "module1", "Power Coupling", "mount");
