@@ -23,7 +23,7 @@ namespace CallOfSlop;
 /// GPU time is measured with GL_TIME_ELAPSED queries (read a few frames later, never stalling), and a one-line stat
 /// is logged every few seconds while a foliage map is drawn.
 /// </summary>
-public sealed unsafe class FoliageRenderer
+public sealed unsafe partial class FoliageRenderer
 {
     private const string VertexSrc = """
         #version 410 core
@@ -37,6 +37,7 @@ public sealed unsafe class FoliageRenderer
         uniform float uTime;
         uniform vec4 uFade;   // fade start, fade end, LOD start, LOD end (metres)
         uniform vec4 uMat;    // x: 0 = near mesh, 1 = far mesh; y: sway amount; z: light wrap
+        uniform vec4 uPlanet; // a planetoid's centre (xyz) and w = 1: plants stand along their own "up" (PlanetFoliage.cs)
         out vec3 vWorld;
         out vec3 vNormal;
         out vec3 vColor;
@@ -56,8 +57,9 @@ public sealed unsafe class FoliageRenderer
         {
             vec3 ip = iPosScale.xyz;
             float s = iPosScale.w;
-            float h = Hash(ip.xz);
-            float d = distance(uCam.xz, ip.xz);
+            bool onPlanet = uPlanet.w > 0.5;
+            float h = Hash(onPlanet ? ip.xz + ip.yy * vec2(0.37, 0.71) : ip.xz);
+            float d = onPlanet ? distance(uCam, ip) : distance(uCam.xz, ip.xz);
 
             // Density falloff: every plant has its own cutoff between fade start and end, then dithers out over a band.
             float cutoff = mix(uFade.x, uFade.y, h);
@@ -82,11 +84,20 @@ public sealed unsafe class FoliageRenderer
             vec3 n = vec3(aNormal.x * c - aNormal.z * sn, aNormal.y, aNormal.x * sn + aNormal.z * c);
 
             // Wind: a steady lean plus two gust waves travelling across the map, strongest at the tips.
-            float phase = dot(ip.xz, vec2(0.11, 0.07)) + h * 2.0;
+            float phase = dot(ip.xz, vec2(0.11, 0.07)) + (onPlanet ? ip.y * 0.09 : 0.0) + h * 2.0;
             float gust = sin(uTime * 1.3 - phase) * 0.6 + sin(uTime * 2.7 - phase * 1.7) * 0.3;
             float bend = aSwayShade.x * aSwayShade.x * uMat.y * s * (0.4 + gust);
             p.xz += normalize(vec2(1.0, 0.45)) * bend;
 
+            if (onPlanet)
+            {
+                // The plant's own frame: "up" from the planetoid's centre, any two sideways axes round it.
+                vec3 up = normalize(ip - uPlanet.xyz);
+                vec3 ex = normalize(cross(abs(up.y) < 0.95 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), up));
+                vec3 ez = cross(ex, up);
+                p = ex * p.x + up * p.y + ez * p.z;
+                n = ex * n.x + up * n.y + ez * n.z;
+            }
             vWorld = ip + p;
             vNormal = n;
             vColor = iColorYaw.rgb * aSwayShade.y;
@@ -131,7 +142,7 @@ public sealed unsafe class FoliageRenderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _meshVbo, _meshIbo, _instVbo;
-    private int _locViewProj, _locCam, _locFog, _locFogRange, _locTime, _locFade, _locMat;
+    private int _locViewProj, _locCam, _locFog, _locFogRange, _locTime, _locFade, _locMat, _locPlanet;
 
     private Map? _map;
     private FoliageQuality _quality;
@@ -182,6 +193,10 @@ public sealed unsafe class FoliageRenderer
     /// </summary>
     public void Draw(Map map, Renderer gfx, FoliageQuality quality, double now)
     {
+        if (map.Planetoid is { Flora: { } flora } planet && !_broken)
+            DrawPlanetFlora(planet, flora, gfx, quality, now); // (a planetoid's biomes: FoliageRendererPlanet.cs)
+        else
+            FreeFlora();
         var field = map.Resources; // (a Sandbox world's forests: ResourceField.cs)
         if (field != null)
             KeepField(map, field, quality, gfx.CameraPosition);
@@ -205,6 +220,7 @@ public sealed unsafe class FoliageRenderer
         var vp = gfx.ViewProj;
         Native.glUniformMatrix4fv(_locViewProj, 1, false, &vp.M11);
         Native.glUniform3f(_locCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform4f(_locPlanet, 0f, 0f, 0f, 0f);
         var fog = gfx.FogColor;
         var fogRange = gfx.FogRange;
         Native.glUniform3f(_locFog, fog.X, fog.Y, fog.Z);
@@ -329,7 +345,10 @@ public sealed unsafe class FoliageRenderer
         FoliageType.Grass => (0.2f, 0.6f),
         FoliageType.Shrub => (0.12f, 0.5f),
         FoliageType.Bush => (0.035f, 0.35f),
-        FoliageType.Tree => (0.012f, 0.3f),
+        FoliageType.Tree or FoliageType.Birch => (0.012f, 0.3f),
+        FoliageType.Reed => (0.15f, 0.6f),
+        FoliageType.Bracken => (0.08f, 0.5f),
+        FoliageType.Heather => (0.02f, 0.4f),
         _ => (0.008f, 0.25f),
     };
 
@@ -419,6 +438,7 @@ public sealed unsafe class FoliageRenderer
             _locTime = Uniform("uTime\0"u8);
             _locFade = Uniform("uFade\0"u8);
             _locMat = Uniform("uMat\0"u8);
+            _locPlanet = Uniform("uPlanet\0"u8);
 
             _vao = GenVertexArray();
             _vao.Bind();

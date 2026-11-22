@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 8;
+    public const int TypeCount = 17;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -148,6 +148,110 @@ public static class FoliageMeshes
                 {
                     Cone(0.22f, 0.7f, 0.25f, 6, 0f);
                     Cone(0.52f, 1.0f, 0.16f, 6, 0.5f);
+                }
+                break;
+
+            case FoliageType.Stem:
+                // A planet tree's trunk 1 unit tall, thin and tapering (far: four sides). Its tree's canopy hides the top.
+                Column(lod == 0 ? 7 : 4, 0.03f, 0.014f, 1f);
+                break;
+
+            case FoliageType.Birch:
+                // A tall, narrow broadleaf for a tree 1 unit tall: a long oval crown high on the stem and two small lobes (far: one oval).
+                if (lod == 0)
+                {
+                    Blob(new Vector3(0, 0.72f, 0), new Vector3(0.17f, 0.26f, 0.16f), 1, 61, 0.18f, 0.45f, 1f);
+                    Blob(new Vector3(0.09f, 0.52f, 0.05f), new Vector3(0.11f, 0.12f, 0.1f), 0, 67, 0.16f, 0.4f, 0.8f);
+                    Blob(new Vector3(-0.07f, 0.6f, -0.06f), new Vector3(0.1f, 0.12f, 0.1f), 0, 71, 0.16f, 0.4f, 0.8f);
+                }
+                else
+                    Blob(new Vector3(0, 0.7f, 0), new Vector3(0.18f, 0.3f, 0.17f), 0, 61, 0.1f, 0.45f, 1f);
+                break;
+
+            case FoliageType.Spruce:
+                // A narrow spire for a tree 1 unit tall: tiers of short cones almost to the ground (near: 5 x 8 sides, far: 2 x 5).
+                if (lod == 0)
+                {
+                    Cone(0.08f, 0.42f, 0.17f, 8, 0f);
+                    Cone(0.26f, 0.58f, 0.145f, 8, 0.3f);
+                    Cone(0.44f, 0.74f, 0.12f, 8, 0.6f);
+                    Cone(0.61f, 0.88f, 0.09f, 8, 0.15f);
+                    Cone(0.77f, 1.0f, 0.06f, 8, 0.45f);
+                }
+                else
+                {
+                    Cone(0.08f, 0.62f, 0.17f, 5, 0f);
+                    Cone(0.5f, 1.0f, 0.11f, 5, 0.5f);
+                }
+                break;
+
+            case FoliageType.ScotsPine:
+                // A crown at the top of a long bare stem (the trunk reaches 0.8): flat, broken masses of needles (far: two).
+                if (lod == 0)
+                {
+                    Blob(new Vector3(0, 0.88f, 0), new Vector3(0.24f, 0.08f, 0.22f), 1, 79, 0.25f, 0.5f, 1f);
+                    Blob(new Vector3(0.13f, 0.8f, 0.09f), new Vector3(0.14f, 0.06f, 0.13f), 0, 83, 0.25f, 0.5f, 1f);
+                    Blob(new Vector3(-0.12f, 0.83f, -0.08f), new Vector3(0.13f, 0.06f, 0.12f), 0, 89, 0.25f, 0.5f, 1f);
+                    Blob(new Vector3(0.02f, 0.97f, -0.02f), new Vector3(0.12f, 0.05f, 0.11f), 0, 97, 0.25f, 0.5f, 1f);
+                }
+                else
+                {
+                    Blob(new Vector3(0, 0.87f, 0), new Vector3(0.26f, 0.09f, 0.24f), 0, 79, 0.15f, 0.5f, 1f);
+                    Blob(new Vector3(0.02f, 0.96f, -0.02f), new Vector3(0.13f, 0.05f, 0.12f), 0, 97, 0.15f, 0.5f, 1f);
+                }
+                break;
+
+            case FoliageType.Heather:
+                // A low woody cushion about 0.7 m across and 0.3 m high, its top broken by small lumps (far: one flat blob).
+                if (lod == 0)
+                {
+                    Blob(new Vector3(0, 0.12f, 0), new Vector3(0.36f, 0.18f, 0.33f), 1, 101, 0.3f, 0f, 0.4f);
+                    Blob(new Vector3(0.22f, 0.1f, 0.12f), new Vector3(0.18f, 0.13f, 0.17f), 0, 103, 0.3f, 0f, 0.4f);
+                }
+                else
+                    Blob(new Vector3(0.04f, 0.11f, 0.02f), new Vector3(0.4f, 0.18f, 0.36f), 0, 101, 0.2f, 0f, 0.4f);
+                break;
+
+            case FoliageType.Reed:
+                // A stand of tall thin stems about 1.6 m high (near: 9 stems, far: 3 crossed cards).
+                if (lod == 0)
+                {
+                    for (var k = 0; k < 9; k++)
+                    {
+                        var a = k * 2.39996f;
+                        var off = new Vector3(MathF.Cos(a * 1.3f), 0, MathF.Sin(a * 1.3f)) * (0.06f + 0.03f * (k % 3));
+                        Blade(off, a, 0.05f, 0.012f, 1.3f + 0.12f * (k % 4), 0.1f + 0.04f * (k % 2));
+                    }
+                }
+                else
+                {
+                    for (var k = 0; k < 3; k++)
+                        Blade(Vector3.Zero, 0.2f + k * MathF.PI / 3, 0.28f, 0.1f, 1.45f, 0.06f);
+                }
+                break;
+
+            case FoliageType.Bracken:
+                // A fern with broad flat fronds held high, waist deep (near: 6, far: 3).
+                var brakes = lod == 0 ? 6 : 3;
+                for (var k = 0; k < brakes; k++)
+                    Frond(k * MathF.Tau / brakes + 0.5f * (k % 2), 0.85f + 0.1f * (k % 3), lod == 0 ? 0.42f : 0.55f, 0.85f + 0.1f * (k % 2));
+                break;
+
+            case FoliageType.Boulder:
+                // A loose rock 1 unit across, sunk a third into the ground, with a chip beside it (far: one coarse rock). No sway.
+                Blob(new Vector3(0, 0.18f, 0), new Vector3(0.5f, 0.42f, 0.44f), lod == 0 ? 1 : 0, 107, 0.28f, 0f, 0f);
+                if (lod == 0)
+                    Blob(new Vector3(0.46f, 0.02f, 0.22f), new Vector3(0.2f, 0.13f, 0.17f), 0, 109, 0.25f, 0f, 0f);
+                break;
+
+            case FoliageType.Scree:
+                // A scatter of small flat stones over about a metre (near: 5, far: 2). No sway.
+                var stones = lod == 0 ? 5 : 2;
+                for (var k = 0; k < stones; k++)
+                {
+                    var a = k * 2.39996f;
+                    var r = 0.12f + 0.09f * k;
+                    Blob(new Vector3(MathF.Cos(a) * r, 0.02f, MathF.Sin(a) * r), new Vector3(0.13f, 0.05f, 0.1f) * (1f + 0.25f * (k % 3)), 0, 113 + k, 0.2f, 0f, 0f);
                 }
                 break;
         }

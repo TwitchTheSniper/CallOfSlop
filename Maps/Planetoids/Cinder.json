@@ -39,6 +39,39 @@
       "rockSlope": 34,
       "sandBelow": -56
     },
+    "biomes": {
+      "seed": 11,
+      "tempNoise": 0,
+      "list": [
+        {
+          "name": "rubble",
+          "plants": [
+            {
+              "type": "boulder",
+              "density": 0.004,
+              "size": [
+                0.5,
+                2.6
+              ],
+              "color": "#2a2424",
+              "slope": 45
+            },
+            {
+              "type": "scree",
+              "density": 0.12,
+              "size": [
+                0.6,
+                1.4
+              ],
+              "color": "#3a302e",
+              "slope": 42,
+              "patch": 0.6,
+              "patchScale": 30
+            }
+          ]
+        }
+      ]
+    },
     "landing": {
       "tonnes": 60,
       "why": "the ash flats swallow anything heavier"

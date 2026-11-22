@@ -128,6 +128,57 @@ public static class PlanetCli
         else
             Console.WriteLine("ore: none (the map has no \"sandbox\" section)");
 
+        // Biomes (docs/planets/BIOMES.md): each one's share of the sampled ground, and what a drawing cell of each layer costs.
+        if (p.Biomes is { } bio)
+        {
+            var share = new double[bio.List.Count + 1];
+            Span<float> bw = stackalloc float[PlanetBiomes.MaxBiomes];
+            for (var j = 0; j < hgt; j += 4)
+            for (var i = 0; i < w; i += 4)
+            {
+                var lat = Math.Asin(1 - (j + 0.5) * 2.0 / hgt);
+                var lon = (i + 0.5) * 2 * Math.PI / w - Math.PI;
+                var slope = Slope(p, lat, lon, cell, out var h);
+                Dir(lat, lon, out var x, out var y, out var z);
+                var t = bio.Weights(x, y, z, p.Radius, (float)h, (float)slope, bw);
+                share[0] += 1 - t;
+                for (var b = 0; b < bio.List.Count; b++)
+                    share[b + 1] += bw[b];
+            }
+            var line = new System.Text.StringBuilder($"biomes: bare {share[0] * 100 / n:0.#}%");
+            for (var b = 0; b < bio.List.Count; b++)
+                line.Append($", {bio.List[b].Name} {share[b + 1] * 100 / n:0.#}%");
+            Console.WriteLine(line.ToString());
+            var flora = p.Flora!;
+            for (var layer = 0; layer < PlanetFlora.Layers; layer++)
+            {
+                if (!flora.Grows(layer))
+                    continue;
+                // The four cells round the first --at place, or round the +Y pole (where the starts land).
+                var (pla, plo) = at.Count > 0 ? at[0] : (90.0, 0.0);
+                Dir(pla * Math.PI / 180, plo * Math.PI / 180, out var cx, out var cy, out var cz);
+                p.Locate(cx, cy, cz, out var cf, out var cfi, out var cfj);
+                var sw = Stopwatch.StartNew();
+                var counts = new int[FoliageMeshes.TypeCount];
+                int mi = (int)Math.Round(cfi / flora.CellGrid[layer]), mj = (int)Math.Round(cfj / flora.CellGrid[layer]);
+                var cells = 0;
+                for (var cj = mj - 1; cj <= mj; cj++)
+                for (var ci = mi - 1; ci <= mi; ci++)
+                {
+                    var (a0, a1) = flora.PointsInCell(layer, ci);
+                    var (b0, b1) = flora.PointsInCell(layer, cj);
+                    for (var b = b0; b < b1; b++)
+                    for (var a = a0; a < a1; a++)
+                        if (flora.At(layer, cf, a, b, out var pt))
+                            counts[(int)pt.Type]++;
+                    cells++;
+                }
+                var ms = sw.Elapsed.TotalMilliseconds / cells;
+                var what = string.Join(", ", Enumerable.Range(0, counts.Length).Where(k => counts[k] > 0).Select(k => $"{(FoliageType)k} {counts[k] / cells}"));
+                Console.WriteLine($"plants, layer {layer} ({flora.CellGrid[layer] * cell:0} m cells, a point each {PlanetFlora.Spacing[layer]} m): {ms:0.0} ms a cell; a cell at {pla:0.##}, {plo:0.##} holds {(what.Length > 0 ? what : "nothing")}");
+            }
+        }
+
         foreach (var cave in PlanetCaves.Of(p))
         {
             var plan = PlanetCaves.Dig(p, cave);
@@ -168,6 +219,15 @@ public static class PlanetCli
                 farMax = Math.Max(farMax, h);
             }
             Console.WriteLine($"at {la:0.###}, {lon:0.###}: height {hMin:0.0} to {hMax:0.0} m within 40 m, steepest {worst:0.0} degrees; {farMin:0.0} to {farMax:0.0} m at 300 m");
+            if (p.Biomes is { } bi)
+            {
+                Dir(la * Math.PI / 180, lon * Math.PI / 180, out var x, out var y, out var z);
+                var hh = (float)p.HeightAt(x, y, z);
+                var ww = new float[PlanetBiomes.MaxBiomes];
+                bi.Weights(x, y, z, p.Radius, hh, (float)worst, ww);
+                var names = string.Join(", ", Enumerable.Range(0, bi.List.Count).Where(k => ww[k] > 0.01f).Select(k => $"{bi.List[k].Name} {ww[k] * 100:0}%"));
+                Console.WriteLine($"  climate {bi.Temperature(x, y, z, p.Radius, hh):0.0} degrees, wetness {bi.Wetness(x, y, z, p.Radius, hh):0.00}; {(names.Length > 0 ? names : "no biome (bare)")}");
+            }
         }
 
         // In a star system: where its sun stands over this ground (the point with the sun overhead), through one turn.
@@ -208,7 +268,13 @@ public static class PlanetCli
                     : slope >= surf.DirtSlope ? TerrainMaterial.Dirt
                     : surf.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
                     : TerrainMaterial.Grass;
-                var (col, _) = TerrainData.ColourOf(surf, new Vector3(MathF.Sqrt(MathF.Max(0, 1 - nrm.Y * nrm.Y)), nrm.Y, 0), h, (byte)rule, i * 7f, j * 7f);
+                var here = surf;
+                if (p.Biomes is { } pb)
+                {
+                    Dir(lat, (i + 0.5) * 2 * Math.PI / w - Math.PI, out var bx, out var by, out var bz);
+                    here = pb.SurfaceAt(surf, bx, by, bz, p.Radius, h, slope); // (the biomes' ground: PlanetBiomes.cs)
+                }
+                var (col, _) = TerrainData.ColourOf(here, new Vector3(MathF.Sqrt(MathF.Max(0, 1 - nrm.Y * nrm.Y)), nrm.Y, 0), h, (byte)rule, i * 7f, j * 7f);
                 var light = 0.35f + 0.75f * MathF.Max(Vector3.Dot(nrm, sun), 0);
                 var o = (j * w + i) * 3;
                 rgb[o] = (byte)Math.Clamp(col.X * light * 255, 0, 255);

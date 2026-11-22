@@ -285,6 +285,14 @@ public static partial class ConstructPhysics
             }
             else if (query is PhysicsWorld { Planet: { } planet } && planet.RoughAltitude(mid) <= reach.Length() + 2f)
                 n = PlanetGround(c, col, g, f, mid, v, w, query, planet, reach, margin, dt, n); // (a planetoid's ground: Source/Planets)
+            if (query is PhysicsWorld { Planet.Flora: { } flora })
+            {
+                // A planet's trees are solid only to constructs (Sean, 2026-11-22: people walk through them): PlanetFlora.cs.
+                _gather.Clear();
+                flora.GatherTrunks(mid - reach, mid + reach, _gather);
+                if (_gather.Count > 0)
+                    n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n);
+            }
             n = start + ReducePoints(_cand.AsSpan(start, n - start));
         }
         for (var k = 0; k < n; k++)
