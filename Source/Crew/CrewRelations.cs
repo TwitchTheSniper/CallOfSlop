@@ -93,6 +93,7 @@ public sealed class RelationRules
     public int ContractOfferSeconds = 45, ContractOfferMinutes = 15, EscortSeconds = 180, EscortMinutes = 20, DeliverMinutes = 30, RaidMinutes = 30;
     public float EscortRange = 400, DeliverRange = 60;
     public int EscortPay = 300, RaidPay = 400, DeliverBase = 100, DeliverPerUnit = 2, DeliverMin = 40, DeliverMax = 160;
+    public float DeliverPremium = 1.25f; // a station's need pays its price for the short good times this (Karl, 2026-11-22: contracts from needs)
     public string[] DeliverMaterials = ["iron ore", "copper ore", "stone", "planks", "metal"];
 
     private static RelationRules? _current;
@@ -194,6 +195,8 @@ public sealed class RelationRules
                 r.RaidPay = Int(ct, "raidPay", r.RaidPay, 0, 1000000);
                 r.DeliverBase = Int(ct, "deliverBase", r.DeliverBase, 0, 1000000);
                 r.DeliverPerUnit = Int(ct, "deliverPerUnit", r.DeliverPerUnit, 0, 10000);
+                if (ct.TryGetProperty("deliverPremium", out var dpr))
+                    r.DeliverPremium = Math.Clamp(dpr.GetSingle(), 0f, 10f);
                 r.DeliverMin = Int(ct, "deliverMin", r.DeliverMin, 1, 60000);
                 r.DeliverMax = Int(ct, "deliverMax", r.DeliverMax, r.DeliverMin, 60000);
                 if (ct.TryGetProperty("materials", out var mats))

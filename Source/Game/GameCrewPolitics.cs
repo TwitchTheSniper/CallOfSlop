@@ -288,6 +288,88 @@ public sealed partial class Game : IContractHost
         return true;
     }
 
+    bool IContractHost.Shortage(byte power, uint rand, out byte material, out int units, out int station, out int pay)
+    {
+        (material, units, station, pay) = (0, 0, -1, 0);
+        if (!IsServer)
+            return false;
+        var all = StationMarkets.All;
+        var r = Relations.Rules;
+        // (the short goods of its stations in this world, counted, then the rand-th of them: no list is made)
+        var count = 0;
+        for (var pass = 0; pass < 2; pass++)
+        {
+            var pick = pass == 1 ? (int)(rand % (uint)count) : -1;
+            var seen = 0;
+            for (var d = 0; d < all.Length; d++)
+            {
+                if (CrewPowers.Find(all[d].Power) != power || _marketByDef.Length <= d || _marketByDef[d] is not { Body: not 0 } m)
+                    continue;
+                for (var k = 0; k < all[d].Goods.Length; k++)
+                {
+                    if (!m.Short(k))
+                        continue;
+                    if (pass == 0)
+                    {
+                        count++;
+                        continue;
+                    }
+                    if (seen++ != pick)
+                        continue;
+                    var g = all[d].Goods[k];
+                    units = Math.Clamp((g.Target - m.Stock[k] + 9) / 10 * 10, r.DeliverMin, r.DeliverMax * 4);
+                    (material, station) = (g.Material, d);
+                    pay = (int)Math.Ceiling(m.BuyValue(k, units) * r.DeliverPremium); // (what it would pay for the goods short, and a premium for the run)
+                    return true;
+                }
+            }
+            if (count == 0)
+                return false;
+        }
+        return false;
+    }
+
+    bool IContractHost.StationAt(int station, out Vector3 at)
+    {
+        at = default;
+        if (station < 0 || station >= _marketByDef.Length || _marketByDef[station] is not { Body: not 0 } m || Constructs.Get(m.Body) is not { Wreck: false } st)
+            return false;
+        at = st.WorldCom;
+        return true;
+    }
+
+    int IContractHost.StationCargo(byte taker, int station, byte material, int units, bool take)
+    {
+        if (station < 0 || station >= _marketByDef.Length || _marketByDef[station] is not { Body: not 0 } m)
+            return 0;
+        var have = 0;
+        foreach (var (shipId, _) in m.Moored)
+        {
+            if (Constructs.Get(shipId) is not { Wreck: false } c || c.Owner == 255 || !OnSide(taker, c.Owner) && !Factions.Shares(c.Owner, taker))
+                continue;
+            for (var k = 0; k < c.PartCount && have < units; k++)
+            {
+                if (Constructs.StoreOf(c, k) is not { Amount: > 0 } st || st.Material != material)
+                    continue;
+                have += take ? Constructs.Withdraw(c, k, units - have) : Math.Min(st.Amount, units - have);
+            }
+            if (have >= units)
+                break;
+        }
+        if (take && have > 0)
+        {
+            var goods = StationMarkets.All[station].Goods;
+            for (var k = 0; k < goods.Length; k++)
+                if (goods[k].Material == material)
+                {
+                    m.Stock[k] = Math.Min(goods[k].Most, m.Stock[k] + have); // (the delivery goes into its stock)
+                    StationsVersion++;
+                    break;
+                }
+        }
+        return have;
+    }
+
     void IContractHost.Pay(byte player, byte power, int value) => TabGive(player, power, value); // (on the taker's tab with the power that offered it)
 
     void IContractHost.Tell(byte player, string line)

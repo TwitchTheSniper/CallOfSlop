@@ -64,6 +64,26 @@ public interface IContractHost
 
     /// <summary>Someone who could take a contract from <paramref name="power"/> is here (its standing with them 0 or more, or a pact).</summary>
     bool AnyoneFor(byte power);
+
+    /// <summary>
+    /// Contracts from needs (Karl, 2026-11-22): a good one of <paramref name="power"/>'s stations in this world is short of (picked by
+    /// <paramref name="rand"/>), how many units bring it to its want, and the pay (its price for a short good, with a premium). False: none.
+    /// </summary>
+    bool Shortage(byte power, uint rand, out byte material, out int units, out int station, out int pay)
+    {
+        (material, units, station, pay) = (0, 0, -1, 0);
+        return false;
+    }
+
+    /// <summary>Where station <paramref name="station"/> (StationMarkets.All) is in this world; false: not here.</summary>
+    bool StationAt(int station, out Vector3 at)
+    {
+        at = default;
+        return false;
+    }
+
+    /// <summary>Units of <paramref name="material"/> in the taker's side's ships moored at station <paramref name="station"/>; with <paramref name="take"/>, that many taken out and into its stock.</summary>
+    int StationCargo(byte taker, int station, byte material, int units, bool take) => 0;
 }
 
 /// <summary>
@@ -110,6 +130,7 @@ public sealed class PowerContracts
     public static string Describe(in Contract c) => c.Kind switch
     {
         ContractKind.Escort => $"Escort {Name(c.Power)}'s ship: stay within range of it for {c.Need / 60f:0.#} min while it lives",
+        ContractKind.Deliver when c.Target > 0 && c.Target <= StationMarkets.All.Length => $"Deliver {c.Units} {RecyclingTable.Current.NameOf(c.Material)} to {StationMarkets.All[c.Target - 1].Name}: dock there with it aboard",
         ContractKind.Deliver => $"Deliver {c.Units} {RecyclingTable.Current.NameOf(c.Material)} to {Name(c.Power)}'s place",
         ContractKind.Raid => $"Raid {Name(c.Target)}: destroy or take one of their ships",
         _ => "",
@@ -215,6 +236,14 @@ public sealed class PowerContracts
                 }
                 break;
             }
+            case ContractKind.Deliver when c.Target > 0: // (a station's need: delivered by docking there with the goods aboard)
+                if (host.StationCargo(c.Taker, c.Target - 1, c.Material, c.Units, false) >= c.Units)
+                {
+                    host.StationCargo(c.Taker, c.Target - 1, c.Material, c.Units, true);
+                    End(rel, host, ref c, true, "");
+                    return;
+                }
+                break;
             case ContractKind.Deliver:
                 if (host.PartyNear(c.Taker, c.At, rel.Rules.DeliverRange * 2) && host.Cargo(c.Taker, c.At, rel.Rules.DeliverRange, c.Material, c.Units, false) >= c.Units)
                 {
@@ -296,6 +325,17 @@ public sealed class PowerContracts
                     break;
                 default:
                 {
+                    // A station's need first (Karl, 2026-11-22: contracts come from needs); a random material only where the power has no
+                    // station here short of anything (a tool's host, or a power with no station).
+                    if (host.Shortage(a, Rand(), out var sm, out var su, out var ss, out var sp) && ss >= 0 && ss < 255)
+                    {
+                        var dup = false;
+                        foreach (ref readonly var o in All.AsSpan())
+                            dup |= o.State is ContractState.Offered or ContractState.Taken && o.Kind == ContractKind.Deliver && o.Target == ss + 1 && o.Material == sm;
+                        if (!dup)
+                            (c.Kind, c.Material, c.Units, c.Pay, c.Target) = (ContractKind.Deliver, sm, (ushort)Math.Clamp(su, 1, ushort.MaxValue), sp, (byte)(ss + 1));
+                        break;
+                    }
                     var name = r.DeliverMaterials[Rand() % (uint)r.DeliverMaterials.Length];
                     var m = RecyclingTable.Current.IdOf(name);
                     if (m == 0)
@@ -341,7 +381,13 @@ public sealed class PowerContracts
             Version++;
             return "that ship is gone";
         }
-        if (c.Kind == ContractKind.Deliver)
+        if (c.Kind == ContractKind.Deliver && c.Target > 0)
+        {
+            if (!host.StationAt(c.Target - 1, out var sat))
+                return "that station isn't in this world";
+            c.At = sat;
+        }
+        else if (c.Kind == ContractKind.Deliver)
         {
             if (!host.DeliverPlace(c.Power, player, out var at))
                 return $"{Name(c.Power)} has nowhere to take a delivery here";
@@ -442,7 +488,7 @@ public sealed class PowerContracts
             }
             All[k++] = new Contract
             {
-                Kind = kind, State = state, Power = map[a], Target = kind == ContractKind.Raid ? map[b] : (byte)0, Party = party, Taker = 255, TakerName = name, Material = mat,
+                Kind = kind, State = state, Power = map[a], Target = kind == ContractKind.Raid ? map[b] : kind == ContractKind.Deliver && b < StationMarkets.All.Length ? (byte)(b + 1) : (byte)0, // (a delivery's station by index) Party = party, Taker = 255, TakerName = name, Material = mat,
                 Units = units, Uid = uid, Pay = pay, Progress = progress, Need = need, At = at, Serial = ++_serial == 0 ? ++_serial : _serial,
                 Until = _tickForSave + (long)left * T, StateAt = _tickForSave,
             };
