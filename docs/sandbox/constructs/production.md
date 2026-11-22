@@ -1738,7 +1738,13 @@ arm's pick rack or pad when its way goes on by the arm, a chained order or a fet
 reaches the machines an arm serves. Overflow is never carried store to store. A **pick pad** is a Lay-down Pad among an arm's
 points: a station's part too big for its hold is asked for as before and delivered to the pad (a Router sends it there, an arm
 brings it, a fetch rides there, or a player sets it down on it), and the arm fits it from there; what the pads hold for a build is
-claimed for it. A pad takes in a loose part at rest over its hold, as new; a damaged one is left lying. Window tool: `lifter net
+claimed for it. A pad takes in a loose part at rest over its hold, as new; a damaged one is left lying. A block Assembler's Piece
+out is its whole bed too (2026-11-22, `OutZone`): what it leaves on its bed is picked from there by any lifter that reaches a spot
+over the bed, and a machine's out gives any part its machine's recipes make, not only its recipe now (a finished order queue left
+the Zero Day keel lying). The lifters take turns at a step's four decisions (with a station open the first four in the list took
+them all), and a piece's wrist lift is half its bounds' diagonal from its middle, not from its origin (a ship section's origin is
+the ship's). Not yet: a carry's path is still its origin's, so a section whose origin lies far off swings wide and slow (the Zero Day
+keel's carry took 95 s). Window tool: `lifter net
 [TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
 `logi net` marks a way "by a lifter".
 
