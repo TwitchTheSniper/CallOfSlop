@@ -1054,6 +1054,9 @@ public sealed class Assembling : IPartGenerator
         ("Cloche", "Cloche Tank Aft Stbd", null),
         ("Cloche", "Cloche Tank Fore Port", null),
         ("Cloche", "Cloche Tank Fore Stbd", null),
+        // (the Small bridge crane, for small container ships, Sean 2026-11-22: LifterParts; after the Cloche's rows: AfterCloche)
+        ("Lifters/SmallCranes", "Crane Rail Small 1 m", null),
+        ("Lifters/SmallCranes", "Small Crane Bridge", null),
     ];
 
     /// <summary>
@@ -1245,14 +1248,14 @@ public sealed class Assembling : IPartGenerator
                 folded.Add(r);
                 recipes.RemoveAt(k--);
             }
-            else if (AfterFolded.Contains(output) || AfterFoldedFolder(output))
+            else if (AfterFolded.Contains(output) || AfterFoldedFolder(output) || AfterCloche.Contains(output))
             {
                 after.Add(r);
                 recipes.RemoveAt(k--);
             }
         }
         recipes.AddRange(folded);
-        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!) is var i and >= 0 ? i : int.MaxValue)); // (after the folded rows: a saved Assembler's number keeps)
+        recipes.AddRange(after.OrderBy(r => AfterKey((string)r["output"]!))); // (after the folded rows: a saved Assembler's number keeps)
     }
 
     /// <summary>
@@ -1263,6 +1266,13 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Whole ships' parts that came after AfterFolded, in their Tail order, after its rows (the Cloche, 2026-11-22). A later ship's go after these.</summary>
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
+
+    /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge"];
+
+    /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
+    private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i
+        : Array.IndexOf(AfterCloche, output) is var j and >= 0 ? AfterFolded.Length + 1 + j : AfterFolded.Length;
 
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 
