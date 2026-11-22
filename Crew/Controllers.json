@@ -36,6 +36,12 @@
       "fleet": { "raider": ["Hood Gun Buggy"] },
       "missions": { "raid": { "ships": 2 } }
     },
+    // The Farmers (economy step 6, 2026-11-22): a granary over Caledon and its food runs; their stock pays the runs' loads, and a truck or two works their place.
+    "Farmers": {
+      "start": 3000, "income": 15, "ships": 2, "groups": 1, "places": 1,
+      "fleet": { "cargo": ["4x4 Truck"] },
+      "missions": { "convoy": { "cargo": 1, "escorts": 0 } }
+    },
     "Militia": {
       "start": 3500, "income": 25, "ships": 6, "groups": 2, "places": 1,
       "fleet": { "warship": ["Hood Gun Buggy"] },
