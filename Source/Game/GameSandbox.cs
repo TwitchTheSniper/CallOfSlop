@@ -333,6 +333,19 @@ public sealed partial class Game
 
     // ---- Server tick ------------------------------------------------------------------------------------------------
 
+    private Func<Construct, bool>? _cpHoldsFire;
+    private Func<Construct, byte, bool, string?>? _cpOrderFire;
+
+    private bool CrewHoldsFireOn(Construct c) => Crew.ShipOf(c.Id) is { Own: true } s && s.HoldFire;
+
+    private string? CrewOrderFireOn(Construct c, byte player, bool hold) =>
+        Players.TryGetValue(player, out var who) ? CrewOrderAct(who, c.Id, 0, hold ? CrewOrder.HoldFire : CrewOrder.FireAtWill) : "nobody there";
+
+    private static readonly string[] _stationLines = [.. CockpitStations.Labels.Select(l => l + " station")];
+
+    /// <summary>The status line at a station seat ("Command station"; cockpits phase 4).</summary>
+    private static string StationLine(SeatStation s) => _stationLines[(int)s];
+
     internal void ServerTickSandbox(double now)
     {
         using var perfAll = Perf.Measure(PerfArea.Sandbox); // the perf window's areas (Source/Perf): off, a bool test each
@@ -444,6 +457,8 @@ public sealed partial class Game
         Constructs.CrewBodies = Crew.IsBody; // (crew at the controls aren't a person taking over)
         Constructs.CrewWorks ??= Crew.Works; // (an NPC crew's machines work only manned: CrewGate)
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
+        CockpitFns.CrewHoldsFire = _cpHoldsFire ??= CrewHoldsFireOn; // (a dash's "Crew hold fire" switch: CockpitFns.cs; this game's, cached so a tick makes no delegate)
+        CockpitFns.CrewOrderFire = _cpOrderFire ??= CrewOrderFireOn;
         SandboxHands.SeatRefusal ??= ShipSeatRefusal; // (an NPC power's helm and gun seats are its crew's: GameShipControl.cs; a Half Shell sits in none)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         if (Constructs.PlayerEndCount > 0)
@@ -2941,7 +2956,7 @@ public sealed partial class Game
             if (ConstructModules.Problem(ride, h.SeatPart) is { } seatWhy)
                 dst.Add(new HudLine($"Won't go: {seatWhy}", red));
             else
-                dst.Add(new HudLine("Passenger", white));
+                dst.Add(new HudLine(CockpitStations.Of(ride, h.SeatPart) is var station and not SeatStation.Auto ? StationLine(station) : "Passenger", white));
             if (!SeatPanelShown)
                 dst.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;

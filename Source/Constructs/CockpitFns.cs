@@ -10,6 +10,7 @@ public enum SeatFn : byte
     Thrusters, // its thrusters on (ConstructShutdown.ToggleThrusters)
     Gear, // its landing leg pods down (ConstructDoors.ToggleGear)
     Caution, // MASTER CAUTION: lit while a caution is new; a press acknowledges it
+    HoldFire, // the crew's order: hold fire (lit) or fire at will; worked from the command seat only (CockpitStations.Commands)
     COUNT,
 }
 
@@ -22,7 +23,14 @@ public enum SeatFn : byte
 /// </summary>
 public static class CockpitFns
 {
-    public static readonly string[] Options = ["None", "Dampeners", "Mouse steering", "Reactor", "Thrusters", "Landing legs", "Master caution"];
+    public static readonly string[] Options = ["None", "Dampeners", "Mouse steering", "Reactor", "Thrusters", "Landing legs", "Master caution", "Crew hold fire"];
+
+    /// <summary>Set by the game (server): does the craft's own crew hold fire, and the order given (true: hold fire). Null: no crew (a check).</summary>
+    public static Func<Construct, bool>? CrewHoldsFire;
+    public static Func<Construct, byte, bool, string?>? CrewOrderFire;
+
+    /// <summary>A crew order: given only from the command seat (the drive seat on a craft with no Command seat).</summary>
+    public static bool IsOrder(SeatFn fn) => fn == SeatFn.HoldFire;
 
     /// <summary>The part's Function (None when it has no such setting).</summary>
     public static SeatFn Of(in CPart p, ConstructPartDef d)
@@ -52,6 +60,8 @@ public static class CockpitFns
                 return ConstructShutdown.HasThrusters(c) && !ConstructShutdown.ThrustersOff(c) ? 1 : 0;
             case SeatFn.Gear:
                 return ConstructDoors.GearState(c) == 2 ? 1 : 0;
+            case SeatFn.HoldFire:
+                return CrewHoldsFire?.Invoke(c) == true ? 1 : 0;
             case SeatFn.Caution:
             {
                 var now = Cautions(c);
@@ -64,7 +74,7 @@ public static class CockpitFns
     }
 
     /// <summary>Server: the use key (or a click from a seat) on a part with Function <paramref name="fn"/>: the craft's toggle, or the caution acknowledged. A refusal's reason, or null.</summary>
-    public static string? Press(ConstructWorld world, Construct c, ref CPart p, SeatFn fn)
+    public static string? Press(ConstructWorld world, Construct c, ref CPart p, SeatFn fn, byte player)
     {
         switch (fn)
         {
@@ -78,6 +88,8 @@ public static class CockpitFns
                 return ConstructShutdown.ToggleThrusters(world, c);
             case SeatFn.Gear:
                 return ConstructDoors.ToggleGear(world, c);
+            case SeatFn.HoldFire:
+                return CrewOrderFire == null ? "no crew aboard to order" : CrewOrderFire(c, player, CrewHoldsFire?.Invoke(c) != true);
             case SeatFn.Caution:
                 p.Count = Cautions(c);
                 c.Wake();

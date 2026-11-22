@@ -17,6 +17,11 @@ public enum CrewJob : byte
     Admiral, // faction-controllers.md phase 2: leads a group of captains from any seat on the fleet command network (CrewFleet.cs); never a station's worker
     Interrogator, // phase 2: questions prisoners for intelligence (a player's own hand: CrewFleet.Interrogate, Game/GameCrewIntel.cs)
     Miner, // works the ore near its post with a portable drill off a Tool Rack (or a Mining Shell), and carries it to the post's bin (Game/GameCrewMine.cs)
+    Officer, // cockpits phase 4: sits the Command seat (a seat's Station setting, CockpitStations.cs)
+    Navigator, // ... a Navigation seat
+    Sensors, // ... a Sensors seat
+    DamageControl, // ... a Damage control seat
+    Signals, // ... a Comms seat
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -60,6 +65,11 @@ public enum CrewStationKind : byte
     Dock, // a cargo dock
     Build, // a Building Station
     Rack, // a Tool Rack: its miner takes a drill from it to the ore (Game/GameCrewMine.cs)
+    Command, // cockpits phase 4: a seat whose Station setting names it (CockpitStations.cs); its member sits there
+    Nav,
+    Sensors,
+    Damage,
+    Comms,
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
@@ -694,6 +704,10 @@ public sealed class CrewWorld
                 AddStation(c, s, i, wk);
                 n++;
             }
+        // Station seats (cockpits phase 4: a seat's Station setting), then every other seat.
+        for (var i = 0; i < c.PartCount && s.StCount < MaxCrewPerBody; i++)
+            if (i != helm && c.Parts[i].D.Role == PartRole.Seat && StationKind(CockpitStations.Of(c, i)) is var sk and not CrewStationKind.Rest && Usable(c, i) && IndexOf(s, i) < 0)
+                AddStation(c, s, i, sk);
         for (var i = 0; i < c.PartCount && s.StCount < MaxCrewPerBody; i++)
             if (i != helm && c.Parts[i].D.Role == PartRole.Seat && Usable(c, i) && IndexOf(s, i) < 0)
                 AddStation(c, s, i, CrewStationKind.Rest);
@@ -788,7 +802,21 @@ public sealed class CrewWorld
         return best;
     }
 
-    private static bool Standing(CrewStationKind k) => k is not (CrewStationKind.Helm or CrewStationKind.Gun or CrewStationKind.Rest);
+    private static bool Standing(CrewStationKind k) => k is not (CrewStationKind.Helm or CrewStationKind.Gun or CrewStationKind.Rest) && !IsSeatStation(k);
+
+    /// <summary>A station seat's kind (cockpits phase 4): its member sits it, as at the helm.</summary>
+    public static bool IsSeatStation(CrewStationKind k) => k is >= CrewStationKind.Command and <= CrewStationKind.Comms;
+
+    /// <summary>The crew station a seat's Station setting makes it (Rest: Auto, which the helm and gun seats decide).</summary>
+    public static CrewStationKind StationKind(SeatStation s) => s switch
+    {
+        SeatStation.Command => CrewStationKind.Command,
+        SeatStation.Navigation => CrewStationKind.Nav,
+        SeatStation.Sensors => CrewStationKind.Sensors,
+        SeatStation.Damage => CrewStationKind.Damage,
+        SeatStation.Comms => CrewStationKind.Comms,
+        _ => CrewStationKind.Rest,
+    };
 
     /// <summary>A gun part this big (m3 of its bounds) or more is a capital gun: the biggest gets a spotter's place.</summary>
     public const float CapitalSize = 1.5f;
@@ -805,6 +833,11 @@ public sealed class CrewWorld
         CrewStationKind.Dock => CrewJob.Hauler,
         CrewStationKind.Build => CrewJob.Builder,
         CrewStationKind.Rack => CrewJob.Miner,
+        CrewStationKind.Command => CrewJob.Officer,
+        CrewStationKind.Nav => CrewJob.Navigator,
+        CrewStationKind.Sensors => CrewJob.Sensors,
+        CrewStationKind.Damage => CrewJob.DamageControl,
+        CrewStationKind.Comms => CrewJob.Signals,
         _ => CrewJob.Spare,
     };
 
@@ -1195,12 +1228,13 @@ public sealed class CrewWorld
             s.Ai?.Release(c);
             Events.Add($"construct {c.Id}: crew member {Uid[hm]} stands down from the helm (no fleet group)");
         }
-        for (var pass = 0; pass < 10; pass++)
+        for (var pass = 0; pass < 15; pass++)
         {
             var kind = pass switch
             {
-                0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, 4 => CrewStationKind.Spot,
-                5 => CrewStationKind.Crane, 6 => CrewStationKind.Dock, 7 => CrewStationKind.Build, 8 => CrewStationKind.Rack, _ => CrewStationKind.Rest,
+                0 => CrewStationKind.Helm, 1 => CrewStationKind.Command, 2 => CrewStationKind.Gun, 3 => CrewStationKind.Works, 4 => CrewStationKind.Magazine,
+                5 => CrewStationKind.Spot, 6 => CrewStationKind.Nav, 7 => CrewStationKind.Damage, 8 => CrewStationKind.Sensors, 9 => CrewStationKind.Comms,
+                10 => CrewStationKind.Crane, 11 => CrewStationKind.Dock, 12 => CrewStationKind.Build, 13 => CrewStationKind.Rack, _ => CrewStationKind.Rest,
             };
             for (var st = 0; st < s.StCount; st++)
             {
@@ -1379,6 +1413,11 @@ public sealed class CrewWorld
         CrewStationKind.Dock => "cargo dock",
         CrewStationKind.Build => "building station",
         CrewStationKind.Rack => "tool rack",
+        CrewStationKind.Command => "command seat",
+        CrewStationKind.Nav => "navigation seat",
+        CrewStationKind.Sensors => "sensors seat",
+        CrewStationKind.Damage => "damage control seat",
+        CrewStationKind.Comms => "comms seat",
         _ => "couch",
     };
 
@@ -1635,7 +1674,7 @@ public sealed class CrewWorld
             {
                 var uid = r.U32();
                 var jb = r.U8();
-                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Miner); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
+                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Signals); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader; the cap is the last job)
                 var health = r.U8() / 255f * MemberHealth;
                 var skill = r.U8();
                 var tag = r.U16();

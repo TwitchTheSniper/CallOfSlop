@@ -192,6 +192,12 @@ public sealed partial class Ui
         CrewJob.Builder => "BUILDER",
         CrewJob.Admiral => "ADMIRAL",
         CrewJob.Interrogator => "QUESTIONER",
+        CrewJob.Miner => "MINER",
+        CrewJob.Officer => "OFFICER",
+        CrewJob.Navigator => "NAVIGATOR",
+        CrewJob.Sensors => "SENSORS",
+        CrewJob.DamageControl => "DAMAGE CONTROL",
+        CrewJob.Signals => "SIGNALS",
         _ => "SPARE",
     };
 

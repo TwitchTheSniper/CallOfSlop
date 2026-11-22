@@ -737,7 +737,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      435 refuses as a bad panel order; and 5 die patterns and 18 presets for the ship works in Pressing.json.
     // 437: the modular cockpit (cockpits.md): cell-class module sockets (Console Bays and Plugs, ModCells), the panel instruments and
     //      CfgKey 138 (the unused Blade5) as SeatFn, a cockpit switch's Function; new part files move part ids.
-    public const ushort ProtocolVersion = 437;
+    // 438: cockpit command stations (cockpits.md "Command stations"): every seat has a Station setting (its Setting, 0-5), crew jobs and
+    //      station kinds for them (the roster's job byte), and the "Crew hold fire" Function.
+    public const ushort ProtocolVersion = 438;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
