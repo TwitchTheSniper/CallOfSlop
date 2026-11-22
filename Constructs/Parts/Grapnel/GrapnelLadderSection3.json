@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Grapnel Ladder Section 3",
+  "description": "Section 3 of the Grapnel's boarding ladder: it slides down 1.57 m from nested on the fixed flight, the ladder reaching the ground in 3 sections. F on the ladder lowers them all.",
+  "group": "Ship",
+  "section": "Grapnel salvage tug",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 1.57,
+    "seconds": 3.5,
+    "hang": "hang"
+  },
+  "physicsOnly": true,
+  "mass": 24.9,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#9aa0a4",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.185,
+        -0.61,
+        -0.105
+      ],
+      "max": [
+        -0.135,
+        0.26,
+        -0.075
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.135,
+        -0.61,
+        -0.105
+      ],
+      "max": [
+        0.185,
+        0.26,
+        -0.075
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.478,
+        -0.1
+      ],
+      "max": [
+        0.14,
+        -0.438,
+        -0.08
+      ],
+      "color": "#f0b81c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.178,
+        -0.1
+      ],
+      "max": [
+        0.14,
+        -0.138,
+        -0.08
+      ],
+      "color": "#f0b81c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.14,
+        0.122,
+        -0.1
+      ],
+      "max": [
+        0.14,
+        0.162,
+        -0.08
+      ],
+      "color": "#f0b81c",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.19,
+        -0.608,
+        -0.109
+      ],
+      "max": [
+        0.19,
+        -0.548,
+        -0.071
+      ],
+      "color": "#2f3134",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.01,
+        -0.105
+      ],
+      "max": [
+        0.02,
+        0.01,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

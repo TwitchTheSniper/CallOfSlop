@@ -1314,18 +1314,52 @@
       "by": "hang"
     },
     {
-      "part": "Dray Belly Hatch",
+      "part": "Dray Boarding Ladder",
       "on": 9,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Dray Ladder Section 1",
+      "on": 203,
+      "socket": "section1",
       "by": "hang"
     },
     {
-      "part": "Dray Boarding Ladder",
+      "part": "Dray Ladder Section 2",
       "on": 203,
-      "socket": "ladder",
-      "by": "foot",
-      "paint": "#202326",
-      "finish": "painted steel"
+      "socket": "section2",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 3",
+      "on": 203,
+      "socket": "section3",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 4",
+      "on": 203,
+      "socket": "section4",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 5",
+      "on": 203,
+      "socket": "section5",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Belly Hatch",
+      "on": 6,
+      "socket": "bellyHatch",
+      "by": "hang"
+    },
+    {
+      "part": "Deck Hatch 1.25x0.75 m",
+      "on": 9,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Bakelite Switch",
@@ -1612,28 +1646,32 @@
   ],
   "wires": [
     [
-      205,
-      203
+      211,
+      209
     ],
     [
-      206,
-      208
+      211,
+      210
     ],
     [
-      220,
-      218
+      212,
+      214
     ],
     [
-      220,
-      219
+      226,
+      224
     ],
     [
-      223,
-      221
+      226,
+      225
     ],
     [
-      223,
-      222
+      229,
+      227
+    ],
+    [
+      229,
+      228
     ]
   ],
   "conduit": true,

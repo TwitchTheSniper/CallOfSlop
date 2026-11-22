@@ -812,7 +812,7 @@ public sealed class MinerParts : IPartGenerator
         Floor(p, [new Rect(Cx - LwF - 0.25, ZFront - 0.25, Cx + LwF + 0.25, ZWork), new Rect(Cx - Lw - 0.25, ZWork, Cx + Lw + 0.25, ZUp)], Ceil0, Ft1, Deck, "painted deck plate", ForeHatch);
         Floor(p, [new Rect(Cx - UwF - 0.25, ZFront - 0.25, Cx + UwF + 0.25, ZBridge), new Rect(Cx - Uw - 0.25, ZBridge, Cx + Uw + 0.25, ZUp)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - UwF + 0.05, Ft1, ZFront + 0.6, Cx + UwF - 0.05, Ft1 + 0.012, ZBridge - 0.05, "#30332f", "rubber matting");
-        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x");
+        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x", H);
         HatchSock(p, "hatchFore", ForeHatch);
         // The bridge: sealed, a view screen across its front wall over the dashboard, a camera screen each side looking down at the ground.
         WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1);
@@ -902,7 +902,7 @@ public sealed class MinerParts : IPartGenerator
         Floor(p, [new Rect(Cx - Uw - 0.25, ZUp, Cx + Uw + 0.25, ZT)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - 0.8, Ft1, ZUp, Cx + 0.8, Ft1 + 0.012, 18.95, "#30332f", "rubber matting");
         Detail(p, Cx + 1.2, Ft1, 16.2, Cx + Uw - 0.05, Ft1 + 0.012, 18.95, "#b9c4c2", "gloss paint"); // (the sick bay's floor)
-        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x");
+        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x", H);
         HatchSock(p, "hatchAft", AftHatch);
         foreach (var s in new[] { -1, 1 })
             WallRun(p, false, ZUp, ZAft, Cx + s * (Uw + 0.125), y0, y1);

@@ -293,19 +293,22 @@
       "by": "wall"
     },
     {
-      "part": "Dibber Belly Hatch",
+      "part": "Dibber Boarding Ladder",
       "on": 0,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Dibber Belly Hatch",
+      "on": 0,
+      "socket": "bellyHatch",
       "by": "hang"
     },
     {
-      "part": "Dibber Boarding Ladder",
-      "on": 42,
-      "socket": "ladder",
-      "by": "foot",
-      "spin": 3,
-      "paint": "#2e302d",
-      "finish": "painted steel"
+      "part": "Deck Hatch 0.9x1.2 m",
+      "on": 0,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Dibber Deck Ladder",
@@ -429,28 +432,32 @@
       39
     ],
     [
-      54,
-      51
-    ],
-    [
-      54,
+      55,
       52
     ],
     [
-      54,
+      55,
       53
     ],
     [
       55,
-      42
+      54
     ],
     [
-      58,
-      56
+      56,
+      43
     ],
     [
-      58,
+      56,
+      44
+    ],
+    [
+      59,
       57
+    ],
+    [
+      59,
+      58
     ]
   ],
   "conduit": true

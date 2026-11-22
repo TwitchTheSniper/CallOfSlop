@@ -1,109 +1,118 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Belly Hatch",
-  "description": "The Dray's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the airlock's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.",
+  "description": "The Dray's belly hatch: a plate flush with the keel under the boarding shaft, hung on one edge. F (or the airlock's switch, or F on the ladder) swings it down outside.",
   "group": "Ship",
   "section": "Dray hauler",
   "role": "door",
   "tool": "welder",
   "door": {
-    "kind": "slide",
-    "axis": "-y",
-    "travel": 2.97,
-    "seconds": 4.0,
+    "kind": "swing",
+    "axis": "+z",
+    "pivot": [
+      -0.03,
+      -0.112,
+      0.0
+    ],
+    "angle": 90,
+    "seconds": 2.5,
     "hang": "hang"
   },
-  "mass": 500.0,
-  "health": 4000,
+  "mass": 243.8,
+  "health": 3000,
   "armour": 30,
   "material": "steel",
   "color": "#264b67",
-  "attachSeconds": 6.0,
+  "attachSeconds": 5.0,
   "boxes": [
     {
       "min": [
-        -0.395,
-        -1.249,
-        -1.27
+        -0.82,
+        -0.112,
+        -0.637
       ],
       "max": [
-        0.395,
-        -1.169,
-        -0.035
+        -0.03,
+        -0.032,
+        0.637
       ],
       "color": "#264b67",
       "finish": "plated steel"
     },
     {
       "min": [
-        -0.295,
-        -1.262,
-        -1.12
+        -0.72,
+        -0.123,
+        -0.487
       ],
       "max": [
-        0.295,
-        -1.246,
-        -1.0
+        -0.13,
+        -0.107,
+        -0.367
       ],
       "color": "#e0a020",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.295,
-        -1.262,
-        -0.82
+        -0.72,
+        -0.123,
+        -0.187
       ],
       "max": [
-        0.295,
-        -1.246,
-        -0.7
+        -0.13,
+        -0.107,
+        -0.067
       ],
       "color": "#e0a020",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.295,
-        -1.262,
-        -0.52
+        -0.72,
+        -0.123,
+        0.113
       ],
       "max": [
-        0.295,
-        -1.246,
-        -0.4
+        -0.13,
+        -0.107,
+        0.233
       ],
       "color": "#e0a020",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.295,
-        -1.262,
-        -0.22
+        -0.72,
+        -0.123,
+        0.413
       ],
       "max": [
-        0.295,
-        -1.246,
-        -0.1
+        -0.13,
+        -0.107,
+        0.533
       ],
       "color": "#e0a020",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.365,
-        -1.167,
-        -1.24
+        -0.78,
+        -0.03,
+        -0.597
       ],
       "max": [
-        -0.265,
-        -1.109,
-        -0.065
+        -0.7,
+        0.02,
+        0.597
       ],
       "color": "#202326",
       "detail": true,
@@ -111,14 +120,14 @@
     },
     {
       "min": [
-        0.265,
-        -1.167,
-        -1.24
+        -0.15,
+        -0.03,
+        -0.597
       ],
       "max": [
-        0.365,
-        -1.109,
-        -0.065
+        -0.07,
+        0.02,
+        0.597
       ],
       "color": "#202326",
       "detail": true,
@@ -126,30 +135,46 @@
     },
     {
       "min": [
-        -0.3,
-        -1.169,
-        -0.03
+        -0.045,
+        -0.1184,
+        -0.487
       ],
       "max": [
-        0.3,
-        0.115,
-        0.0
+        -0.0156,
+        -0.082,
+        -0.337
+      ],
+      "color": "#55595e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.045,
+        -0.1184,
+        0.337
+      ],
+      "max": [
+        -0.0156,
+        -0.082,
+        0.487
+      ],
+      "color": "#55595e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.03,
+        -0.01,
+        -0.2
+      ],
+      "max": [
+        0.0,
+        0.01,
+        0.2
       ],
       "hidden": true
-    },
-    {
-      "min": [
-        -0.28,
-        -1.165,
-        -0.028
-      ],
-      "max": [
-        0.28,
-        0.105,
-        -0.004
-      ],
-      "color": "#202326",
-      "finish": "painted steel"
     }
   ],
   "sockets": [
@@ -160,16 +185,7 @@
         0.0,
         0.0
       ],
-      "dir": "+z"
-    },
-    {
-      "name": "ladder",
-      "at": [
-        0.0,
-        -1.169,
-        -0.13
-      ],
-      "dir": "+y"
+      "dir": "+x"
     }
   ]
 }

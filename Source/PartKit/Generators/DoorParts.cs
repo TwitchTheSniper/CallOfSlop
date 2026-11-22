@@ -244,15 +244,15 @@ public sealed class DoorParts : IPartGenerator
     // ---- Deck hatches (Karl, 2026-11-22: "ladders need to be recessed and meet the edge of the hull ... I should be able to walk over
     // the hatch"; "it acts as a smooth part of the hull when closed": the flush shell pods' look). A ladder between decks stands in a
     // hole against the outboard wall, its top under the floor, and the hole takes one of these: a lid level with the deck, so a shut
-    // hatch is floor to walk over. It hangs by its hull-side edge and swings down a quarter turn into the shaft, standing against
-    // the hull side of it, clear of the ladder on the hole's fore or aft edge. F (from above or below) works it, and F on the ladder
+    // hatch is floor to walk over. It hangs by its hull-side edge and swings up a quarter turn, standing on that edge against the
+    // hull (down into the shaft it met a belly hatch swinging the other way), clear of the ladder on the hole's fore or aft edge. F (from above or below) works it, and F on the ladder
     // under a shut one opens it first (ConstructRide.NextLid, OpenWay). The floor round the hole carries the coaming (DeckHatchRim).
 
     /// <summary>A deck hatch's lid: its thickness (its top is the deck's top) and the gap round it in its hole.</summary>
     public const double HatchThick = 0.05, HatchGap = 0.01;
 
     /// <summary>The deck hatch sizes: the hole each fills (m), across (out from its hinge) and along its hinge.</summary>
-    public static readonly (double Across, double Along)[] HatchSizes = [(1.0, 1.0), (1.25, 1.25), (0.9, 0.75), (1.2, 1.1)];
+    public static readonly (double Across, double Along)[] HatchSizes = [(1.0, 1.0), (1.25, 1.25), (0.9, 0.75), (1.2, 1.1), (1.15, 1.25), (0.75, 1.25), (1.2, 0.9)]; // (the last three: boarding shafts, the Satchel family's, the Dray's and the Dibber's)
 
     /// <summary>A deck hatch's name for a hole <paramref name="across"/> out from its hinge and <paramref name="along"/> it (a square one by its side).</summary>
     public static string HatchName(double across, double? along = null) =>
@@ -263,7 +263,7 @@ public sealed class DoorParts : IPartGenerator
     private static Part DeckHatch(double across, double along)
     {
         var hole = across == along ? $"{Py.G(across)} m square" : $"{Py.G(along)} by {Py.G(across)} m";
-        var p = new Part(HatchName(across, along), Small, Section, $"A flush lid for a {hole} hole in a deck, level with the floor: walk over it shut. It hangs by one edge (the hull side of a ladder shaft) and F swings it down into the shaft; F on a ladder under a shut one opens it.",
+        var p = new Part(HatchName(across, along), Small, Section, $"A flush lid for a {hole} hole in a deck, level with the floor: walk over it shut. It hangs by one edge (the hull side of a ladder shaft) and F swings it up to stand on that edge; F on a ladder under a shut one opens it.",
             role: "door", tool: "wrench", material: "steel", color: HatchLid, group: Group);
         double t = HatchThick, a = across - 2 * HatchGap, h = (along - 2 * HatchGap) / 2; // (x: 0 at the hinge out to a; z: -h..h along the hinge; y: the top at 0)
         p.Add(Box([0, -t, -h], [a, 0, h], HatchLid, shape: Kw(("finish", "painted steel"))));
@@ -282,7 +282,7 @@ public sealed class DoorParts : IPartGenerator
             p.Add(Box([0.2, -t - 0.003, z], [a - 0.2, -t, z + 0.12], HatchHazard, detail: true, shape: Kw(("finish", "hazard paint"), ("paintable", false))));
         p.Add(Box([-HatchGap, -t, -0.2], [0, 0, 0.2], hidden: true)); // (the hang socket's strip, in the gap: a socket is on a face)
         p.Sock("hang", [-HatchGap, -t / 2, 0], "-x");
-        p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", Py.L(0, -t, 0)), ("angle", -90), ("seconds", 1.2), ("hang", "hang"))));
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", Py.L(0, 0, 0)), ("angle", 90), ("seconds", 1.2), ("hang", "hang"))));
         p.Stats(43 * a * 2 * h, 215 * a * 2 * h, 30, 2.0);
         return p;
     }
@@ -290,10 +290,12 @@ public sealed class DoorParts : IPartGenerator
     /// <summary>
     /// The coaming round a deck hatch's hole (x0, z0 to x1, z1) on a floor whose top is y: a hazard band 3 mm
     /// proud with a teal trim along its inner edge, the flush shell pods' rim. <paramref name="skip"/> leaves one side bare (a
-    /// wall stands there): "-x", "+x", "-z" or "+z".
+    /// wall stands there): "-x", "+x", "-z" or "+z". <paramref name="shift"/>: the part's frame is the ship's less this on every axis
+    /// (the ship generators' half cell, their P).
     /// </summary>
-    public static void DeckHatchRim(Part p, double x0, double z0, double x1, double z1, double y, string? skip = null)
+    public static void DeckHatchRim(Part p, double x0, double z0, double x1, double z1, double y, string? skip = null, double shift = 0)
     {
+        (x0, z0, x1, z1, y) = (x0 - shift, z0 - shift, x1 - shift, z1 - shift, y - shift);
         const double band = 0.07;
         void Band(double ax, double az, double bx, double bz) =>
             p.Add(Box([ax, y, az], [bx, y + 0.003, bz], HatchHazard, detail: true, shape: Kw(("finish", "hazard paint"), ("paintable", false))));

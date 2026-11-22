@@ -73,13 +73,8 @@ public sealed class TugParts : IPartGenerator
 
     // The boarding shaft in the airlock (starboard, aft in the cab), the belly hatch shutting it and the ladder on the hatch (the Satchel's way).
     private static readonly Rect BellyHatch = new(Cx + 1.1, -10.55, Cx + 2.25, -9.3);
-    private const string BellyHatchName = "Docket Belly Hatch";
-    private static double HatchX => BellyHatch.X0 + 0.575;
-    private static double HatchBottom => At(BellyHatch.Z1)[0].Y - 0.012;
-    private static double HatchTop => HatchBottom + 0.08;
-    private static double HatchTravel => Math.Min(HatchBottom - Ground - 0.005, CCeil - 0.03 - Ft);
-    private static double LadderZ => BellyHatch.Z1 - 0.03;
-    private static double BoardRise => Ft - (HatchTop - HatchTravel);
+    internal static BoardingShaft.Spec Shaft => new("Docket", Section, Group, BellyHatch.X0, BellyHatch.Z0, BellyHatch.X1, BellyHatch.Z1, Ft,
+        At((BellyHatch.Z0 + BellyHatch.Z1) / 2)[0].Y, Ground, false, Armour, Frame, Hazard); // (the boarding shaft, BoardingShaft; its belly hatch hung inboard: open, it leaves the way out to starboard clear)
 
     // ---- the string: the tow yoke behind the transom, three cells of open truss, the end car
 
@@ -524,16 +519,6 @@ public sealed class TugParts : IPartGenerator
     private static void DoorSock(Part p, string name, bool alongX, double a, double c, double floor) =>
         Sock(p, name, alongX ? a : c, floor + 1.125, alongX ? c : a, alongX ? "+x" : "+z");
 
-    /// <summary>A safety rail round a hatch on three sides, open at its back edge (+z), where the ladder lands people.</summary>
-    private static void HatchRail(Part p, Rect h, double y)
-    {
-        Solid(p, h.X0 - 0.06, y, h.Z0 - 0.06, h.X1 + 0.06, y + 1.0, h.Z0, Frame, "painted steel");
-        Solid(p, h.X0 - 0.06, y, h.Z0, h.X0, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
-        Solid(p, h.X1, y, h.Z0, h.X1 + 0.06, y + 1.0, h.Z1 - 0.3, Frame, "painted steel");
-        Detail(p, h.X0 - 0.075, y + 0.96, h.Z0 - 0.075, h.X1 + 0.075, y + 1.04, h.Z0 + 0.015, Hazard, "hazard paint");
-        Detail(p, h.X0 - 0.12, y, h.Z1, h.X1 + 0.12, y + 0.012, h.Z1 + 0.12, Hazard, "hazard paint");
-    }
-
     /// <summary>A light strip under a ceiling (link blue), and a lamp socket on a wall face.</summary>
     private static void CeilStrip(Part p, double x0, double x1, double z0, double z1, double ceil) =>
         Detail(p, x0, ceil - 0.025, z0, x1, ceil, z1, "#d8f0ff", glow: true);
@@ -654,6 +639,7 @@ public sealed class TugParts : IPartGenerator
             Plate(p, [P(x0, hy + 0.01 + e, z0), P(x1, hy + 0.01 + e, z1), P(x1, -0.01 - e, z1), P(x0, -0.01 - e, z0)], Grate, "dirty steel");
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 - 0.12, shaft.X1 + 0.12, hy - 0.004, shaft.Z0, Hazard, "hazard paint");
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z1, shaft.X1 + 0.12, hy - 0.004, shaft.Z1 + 0.12, Hazard, "hazard paint");
+        Sock(p, "bellyHatch", Shaft.HatchAt[0], Shaft.HatchAt[1], Shaft.HatchAt[2], Shaft.HatchDir);
         // The lift jets' and the legs' mounts: square pads under the flat.
         for (var i = 0; i < LiftAt.Length; i++)
             MountPad(p, $"lift{i}", Cx + LiftAt[i].X, At(LiftAt[i].Z)[0].Y, LiftAt[i].Z, 0.45);
@@ -836,8 +822,8 @@ public sealed class TugParts : IPartGenerator
         WallRun(p, true, Cx - Lw, Cx - 1.0, ZPortW, Ft, CCeil);
         WallRun(p, true, Cx + 1.0, Cx + Lw, ZStbdW, Ft, CCeil);
         WallRun(p, true, Cx - PassOut - SLine, Cx + PassOut + SLine, ZCabW, Ft, CCeil, Door(Cx - 0.75));
-        // The airlock: a rail round the boarding shaft, the cycle lights over its door.
-        HatchRail(p, BellyHatch, Ft);
+        // The boarding shaft's coaming round its deck hatch (walked over shut).
+        DoorParts.DeckHatchRim(p, BellyHatch.X0, BellyHatch.Z0, BellyHatch.X1, BellyHatch.Z1, Ft, null, H);
         Detail(p, Cx + 1.0, Ft + DoorH + 0.15, -8.4, Cx + 1.015, Ft + DoorH + 0.3, -8.1, Red, glow: true);
         Detail(p, Cx + 0.735, Ft + DoorH + 0.15, -8.4, Cx + 0.75, Ft + DoorH + 0.3, -8.1, "#40e070", glow: true);
         // The corridor: a grating runner, a light strip.
@@ -905,7 +891,8 @@ public sealed class TugParts : IPartGenerator
         Sock(p, "suit1", Cx + Lw, Ft + 0.125, -8.4, "-x");
         Sock(p, "switchHatch", Cx + 1.0, Ft + 1.45, -9.22, "+x");
         Sock(p, "lampAirlock", Cx + Lw, Ft + 2.3, -9.7, "-x");
-        Sock(p, "boarding", HatchX, Ft - 0.125, BellyHatch.Z1, "-z");
+        Sock(p, "boarding", Shaft.LadderAt[0], Shaft.LadderAt[1], Shaft.LadderAt[2], "-z");
+        Sock(p, "deckHatch", BellyHatch.X0, Ft - DoorParts.HatchThick / 2, (BellyHatch.Z0 + BellyHatch.Z1) / 2, "+x"); // (hung by its inboard edge, swinging up)
         // The corridor's lamps; the power board and engineering's switch on the aft wall's back.
         Sock(p, "lampHallA", Cx - 0.75, Ft + 2.3, -12.6, "+x");
         Sock(p, "lampHallB", Cx + 0.75, Ft + 2.3, -10.0, "-x");
@@ -1043,7 +1030,7 @@ public sealed class TugParts : IPartGenerator
         Detail(p, Cx - x + 0.004, 3.335, z0 - 0.012, Cx + x - 0.004, WFl - 0.004, z0, Armour, "painted plating");
         Detail(p, Cx - x + 0.004, 3.335, z1, Cx + x - 0.004, WFl - 0.004, z1 + 0.012, Armour, "painted plating");
         Detail(p, Cx - x + 0.2, WFl, z0 + 0.55, Cx + x - 0.2, WFl + 0.012, WhHole.Z0 - 0.2, "#30353b", "rubber matting");
-        DoorParts.DeckHatchRim(p, WhHole.X0, WhHole.Z0, WhHole.X1, WhHole.Z1, WFl, "+x");
+        DoorParts.DeckHatchRim(p, WhHole.X0, WhHole.Z0, WhHole.X1, WhHole.Z1, WFl, "+x", H);
         Sock(p, "hatchWh", WhHole.X1, WFl - DoorParts.HatchThick / 2, (WhHole.Z0 + WhHole.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         // The sills all round (beige outside, a blue dado inside), corner posts and mid posts.
         Solid(p, Cx - x, WFl, z0, Cx + x, WSill, z0 + 0.12, Skin, "painted plating");
@@ -1464,32 +1451,6 @@ public sealed class TugParts : IPartGenerator
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
     }
 
-    /// <summary>The belly hatch (the Dray's kind): a plate that shuts the boarding shaft flush under the keel, on a strut up the shaft's
-    /// aft wall to the deck's edge, where it hangs. It slides down to the ground and the boarding ladder standing on it rides it.</summary>
-    private static Part BellyHatchPart()
-    {
-        var p = new Part(BellyHatchName, Small, Section, "The Docket's belly hatch: a plate that shuts the boarding shaft under the keel. F (or the airlock's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.", role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
-        double[] S = [HatchX, Ft - 0.125, BellyHatch.Z1];
-        double[] L(double x, double y, double z) => [Py.Round(x - S[0], 4), Py.Round(y - S[1], 4), Py.Round(z - S[2], 4)];
-        void B(double x0, double y0, double z0, double x1, double y1, double z1, string? col, string? fin, bool detail = false, bool hidden = false) =>
-            p.Add(hidden ? Box(L(x0, y0, z0), L(x1, y1, z1), hidden: true) : Box(L(x0, y0, z0), L(x1, y1, z1), col!, detail: detail, shape: Kw(("finish", fin!))));
-        double x0 = BellyHatch.X0 - 0.02, x1 = BellyHatch.X1 + 0.02, z0 = BellyHatch.Z0 - 0.02, z1 = BellyHatch.Z1 - 0.035;
-        B(x0, HatchBottom, z0, x1, HatchTop, z1, Armour, "plated steel");
-        foreach (var i in Enumerable.Range(0, 4))
-        {
-            var z = z0 + 0.15 + i * 0.3;
-            B(x0 + 0.1, HatchBottom - 0.008, z, x1 - 0.1, HatchBottom - 0.002, z + 0.12, Hazard, "hazard paint", detail: true);
-        }
-        B(x0 + 0.03, HatchTop + 0.002, z0 + 0.03, x0 + 0.13, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
-        B(x1 - 0.13, HatchTop + 0.002, z0 + 0.03, x1 - 0.03, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
-        B(HatchX - 0.3, HatchTop, BellyHatch.Z1 - 0.03, HatchX + 0.3, Ft - 0.01, BellyHatch.Z1, null, null, hidden: true);
-        B(HatchX - 0.28, HatchTop + 0.004, BellyHatch.Z1 - 0.028, HatchX + 0.28, Ft - 0.02, BellyHatch.Z1 - 0.004, Frame, "painted steel");
-        p.Sock("hang", [0, 0, 0], "+z");
-        p.Sock("ladder", L(HatchX, HatchTop, LadderZ - 0.1), "+y");
-        p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", Py.Round(HatchTravel, 3)), ("seconds", 4.0), ("hang", "hang"))));
-        return p.Stats(500, 4000, 30, 6.0);
-    }
-
     private static Part Big(string name, string desc, string role = "frame", string color = Skin) =>
         new(name, Small, Section, desc, role: role, tool: "welder", material: "steel", color: color, group: Group);
 
@@ -1869,9 +1830,7 @@ public sealed class TugParts : IPartGenerator
             Hang(bp, EvaParts.LockerName, cab, n, "wall");
         Hang(bp, EvaParts.LifeSupportName, cab, "lifeSupport", "wall");
         Hang(bp, EvaParts.OxygenTankName, cab, "o2Tank0", "wall");
-        var hatch = Hang(bp, BellyHatchName, cab, "boarding", "hang"); // (the belly hatch, shut; the ladder stowed on it)
-        Paint(bp, bp.Hang("Docket Boarding Ladder", hatch, "ladder", "foot"), Frame, "painted steel");
-        Switch(bp, cab, "switchHatch", false, hatch); // (off: the hatch shut)
+        Switch(bp, cab, "switchHatch", false, BoardingShaft.Fit(bp, Shaft, Holder(bp, cab, "boarding"), "boarding", Holder(bp, cab, "deckHatch"), "deckHatch", Holder(bp, keel, "bellyHatch"), "bellyHatch")); // (off: both hatches shut)
         // Engineering: the panel, the power, a suit and the MMU for the walk out to the nacelles and down the string.
         Hang(bp, "Engineer's Panel", eng, "panel", "back");
         Hang(bp, "Power Board", cab, "board", "back");
@@ -1958,9 +1917,8 @@ public sealed class TugParts : IPartGenerator
         List<Part> parts =
         [
             .. structure, Nacelle(-1, 0), Nacelle(-1, 1), Nacelle(1, 0), Nacelle(1, 1),
-            Ladder("Docket Boarding Ladder", Py.Round(BoardRise, 3), "The Docket's boarding ladder: it stands on the belly hatch, stowed up through the airlock's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -0.03),
             Ladder("Docket Wheelhouse Ladder", Py.Round(WFl - Ft, 3), "The Docket's wheelhouse ladder: from engineering's deck up through the opening in its ceiling, under a deck hatch, to the wheelhouse. F climbs it.", "foot", [0, 0, -0.1], "-y", over: -DoorParts.HatchThick - 0.01),
-            BellyHatchPart(), LiftJet(), RetroJet(), PowerPlant(), FlightComputer(),
+            .. BoardingShaft.Parts(Shaft), LiftJet(), RetroJet(), PowerPlant(), FlightComputer(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

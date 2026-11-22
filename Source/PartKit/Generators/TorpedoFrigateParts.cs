@@ -922,7 +922,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Floor(p, [new Rect(Cx - LwF - 0.25, 8.25, Cx + LwF + 0.25, ZStep), new Rect(Cx - Lw - 0.25, ZStep, Cx + Lw + 0.25, 25.0)], Ceil0, Ft1, Deck, "painted deck plate", ForeHatch);
         Floor(p, [new Rect(Cx - UwF - 0.25, 8.25, Cx + UwF + 0.25, ZStep), new Rect(Cx - Uw - 0.25, ZStep, Cx + Uw + 0.25, 25.0)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - UwF + 0.05, Ft1, ZFront + 0.05, Cx + UwF - 0.05, Ft1 + 0.012, ZStep - 0.3, "#30353b", "rubber matting"); // (the bridge's mat)
-        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x");
+        DoorParts.DeckHatchRim(p, ForeHatch.X0, ForeHatch.Z0, ForeHatch.X1, ForeHatch.Z1, Ft1, "+x", H);
         Sock(p, "hatchFore", ForeHatch.X1, Ft1 - DoorParts.HatchThick / 2, (ForeHatch.Z0 + ForeHatch.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         // The bridge: narrow and sealed, a wide view screen on its forward wall over the dashboard, a camera screen on each side.
         WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1);
@@ -1040,7 +1040,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Floor(p, [new Rect(Cx - Uw - 0.25, 25.0, Cx + Uw + 0.25, ZAft + 0.25)], Ceil1, Roof, Ceil, "painted plating", ShuttleShaft);
         Detail(p, Cx + 1.2, Ft1, 25.15, Cx + Uw - 0.05, Ft1 + 0.012, 33.8, "#b9c4c2", "gloss paint"); // (the med bay's floor, wipe-clean)
         Detail(p, Cx - 0.8, Ft1, 25.0, Cx + 0.8, Ft1 + 0.012, 33.9, "#30353b", "rubber matting"); // (the corridor's runner)
-        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x");
+        DoorParts.DeckHatchRim(p, AftHatch.X0, AftHatch.Z0, AftHatch.X1, AftHatch.Z1, Ft1, "+x", H);
         Sock(p, "hatchAft", AftHatch.X1, Ft1 - DoorParts.HatchThick / 2, (AftHatch.Z0 + AftHatch.Z1) / 2, "-x"); // (the Deck Hatch over the ladder, by its starboard edge)
         foreach (var s in new[] { -1, 1 })
             WallRun(p, false, 25.0, ZAft, Cx + s * (Uw + 0.125), y0, y1);

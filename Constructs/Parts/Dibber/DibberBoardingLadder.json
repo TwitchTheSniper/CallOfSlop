@@ -1,207 +1,58 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dibber Boarding Ladder",
-  "description": "The Dibber's boarding ladder: it stands on the belly hatch, stowed up through the cockpit's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.",
+  "description": "The Dibber's boarding ladder: its rungs are on the belly hatch, which hangs down open from the shaft's edge under the deck hatch. F opens the way (both hatches), then F climbs it.",
   "group": "Ship",
   "section": "Dibber lander",
   "role": "frame",
   "tool": "welder",
-  "ladder": 1.715,
-  "mass": 80.6,
-  "health": 400,
+  "ladder": 0.125,
+  "ladderFoot": -1.687,
+  "mass": 10.0,
+  "health": 200,
   "armour": 6,
   "material": "steel",
   "color": "#2e302d",
-  "attachSeconds": 3.0,
+  "attachSeconds": 1.0,
   "boxes": [
     {
       "min": [
         -0.3,
-        0.0,
+        -0.067,
         -0.19
       ],
       "max": [
         0.3,
-        1.685,
-        -0.005
+        0.023,
+        0.0
       ],
       "hidden": true
     },
     {
       "min": [
-        -0.28,
-        0.0,
-        -0.18
+        -0.25,
+        0.023,
+        -0.06
       ],
       "max": [
-        -0.22,
-        1.687,
-        -0.12
+        0.25,
+        0.058,
+        -0.004
       ],
       "color": "#9aa0a4",
       "detail": true,
       "finish": "painted steel"
-    },
-    {
-      "min": [
-        -0.27,
-        0.6,
-        -0.12
-      ],
-      "max": [
-        -0.23,
-        0.66,
-        -0.01
-      ],
-      "color": "#2e302d",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        0.22,
-        0.0,
-        -0.18
-      ],
-      "max": [
-        0.28,
-        1.687,
-        -0.12
-      ],
-      "color": "#9aa0a4",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        0.23,
-        0.6,
-        -0.12
-      ],
-      "max": [
-        0.27,
-        0.66,
-        -0.01
-      ],
-      "color": "#2e302d",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        -0.22,
-        0.28,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        0.32,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.22,
-        0.58,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        0.62,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.22,
-        0.88,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        0.92,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.22,
-        1.18,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        1.22,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.22,
-        1.48,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        1.52,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.22,
-        1.78,
-        -0.165
-      ],
-      "max": [
-        0.22,
-        1.82,
-        -0.135
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        -0.29,
-        1.625,
-        -0.19
-      ],
-      "max": [
-        0.29,
-        1.685,
-        -0.11
-      ],
-      "color": "#e8b317",
-      "detail": true,
-      "finish": "hazard paint"
     }
   ],
   "sockets": [
     {
-      "name": "foot",
+      "name": "back",
       "at": [
         0.0,
         0.0,
-        -0.1
+        0.0
       ],
-      "dir": "-y"
+      "dir": "+z"
     }
   ]
 }

@@ -305,7 +305,7 @@ public sealed class ClocheParts : IPartGenerator
             Detail(p, hx1, CeilY - 0.01, hz0 - 0.02, hx1 + 0.02, RoofY - 0.003, hz1 + 0.02, Rib, "dirty steel");
             Detail(p, hx0, CeilY - 0.01, hz0 - 0.02, hx1, RoofY - 0.003, hz0, Rib, "dirty steel");
             Detail(p, hx0, CeilY - 0.01, hz1, hx1, RoofY - 0.003, hz1 + 0.02, Rib, "dirty steel");
-            DoorParts.DeckHatchRim(p, hx0, hz0, hx1, hz1, RoofY);
+            DoorParts.DeckHatchRim(p, hx0, hz0, hx1, hz1, RoofY, null, H);
         }
         return p.Stats(3000, 5000, 20, 6.0);
     }

@@ -1063,6 +1063,10 @@ public sealed class Assembling : IPartGenerator
         .. FactoryShellParts.MillShedNames.Select(n => ((string?)"Factory/Shed", (string?)n, (PyDict?)null)),
         // (the Zero Day works' steel-mill dressing, Sean 2026-11-22: FactoryShellParts.Dressing; after the shed: AfterCloche)
         .. FactoryShellParts.MillDressingNames.Select(n => ((string?)"Factory/Dressing", (string?)n, (PyDict?)null)),
+        // (the boarding shafts' telescoping ladder sections, Karl 2026-11-22: BoardingShaft; after the dressing, ship by ship, for the
+        // folders listed part by part: the Haywain's and the Dray's go by rule)
+        .. new[] { ("Satchel", CourierParts.Shaft), ("Docket", TugParts.Shaft), ("Packet", FreighterParts.Shaft), ("Grapnel", GrapnelParts.Shaft),
+            ("Dibber", DibberParts.Shaft) }.SelectMany(f => BoardingShaft.SectionNames(f.Item2).Select(n => ((string?)f.Item1, (string?)n, (PyDict?)null))),
     ];
 
     /// <summary>

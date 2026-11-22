@@ -590,18 +590,40 @@
       "by": "wall"
     },
     {
-      "part": "Packet Belly Hatch",
+      "part": "Packet Boarding Ladder",
       "on": 1,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Packet Ladder Section 1",
+      "on": 94,
+      "socket": "section1",
       "by": "hang"
     },
     {
-      "part": "Packet Boarding Ladder",
+      "part": "Packet Ladder Section 2",
       "on": 94,
-      "socket": "ladder",
-      "by": "foot",
-      "paint": "#3b3f44",
-      "finish": "painted steel"
+      "socket": "section2",
+      "by": "hang"
+    },
+    {
+      "part": "Packet Ladder Section 3",
+      "on": 94,
+      "socket": "section3",
+      "by": "hang"
+    },
+    {
+      "part": "Packet Belly Hatch",
+      "on": 0,
+      "socket": "bellyHatch",
+      "by": "hang"
+    },
+    {
+      "part": "Deck Hatch 1.25x1.15 m",
+      "on": 1,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Bakelite Switch",
@@ -675,25 +697,25 @@
     },
     {
       "part": "Drive Nozzle M",
-      "on": 106,
+      "on": 110,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 106,
+      "on": 110,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 108,
+      "on": 112,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 106,
+      "on": 110,
       "socket": "hatch",
       "by": "hang",
       "spin": 3,
@@ -702,7 +724,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 106,
+      "on": 110,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#3b3f44",
@@ -710,7 +732,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 106,
+      "on": 110,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#3b3f44",
@@ -718,7 +740,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 106,
+      "on": 110,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#3b3f44",
@@ -732,25 +754,25 @@
     },
     {
       "part": "Drive Nozzle M",
-      "on": 114,
+      "on": 118,
       "socket": "drive",
       "by": "mount"
     },
     {
       "part": "Drive Core M",
-      "on": 114,
+      "on": 118,
       "socket": "core",
       "by": "front"
     },
     {
       "part": "Fuel Pump M",
-      "on": 116,
+      "on": 120,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Service Hatch 1x0.8 m",
-      "on": 114,
+      "on": 118,
       "socket": "hatch",
       "by": "hang",
       "paint": "#1f4e8c",
@@ -758,7 +780,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 114,
+      "on": 118,
       "socket": "rcsFore",
       "by": "base",
       "paint": "#3b3f44",
@@ -766,7 +788,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 114,
+      "on": 118,
       "socket": "rcsUp",
       "by": "base",
       "paint": "#3b3f44",
@@ -774,7 +796,7 @@
     },
     {
       "part": "Heavy RCS Thruster",
-      "on": 114,
+      "on": 118,
       "socket": "rcsDown",
       "by": "base",
       "paint": "#3b3f44",
@@ -924,37 +946,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 140,
+      "on": 144,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 140,
+      "on": 144,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 140,
+      "on": 144,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 140,
+      "on": 144,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 144,
+      "on": 148,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 140,
+      "on": 144,
       "socket": "foot",
       "by": "hang"
     },
@@ -966,37 +988,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 147,
+      "on": 151,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 147,
+      "on": 151,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 147,
+      "on": 151,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 147,
+      "on": 151,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 151,
+      "on": 155,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 147,
+      "on": 151,
       "socket": "foot",
       "by": "hang"
     },
@@ -1008,37 +1030,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 154,
+      "on": 158,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 154,
+      "on": 158,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 154,
+      "on": 158,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 154,
+      "on": 158,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 158,
+      "on": 162,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 154,
+      "on": 158,
       "socket": "foot",
       "by": "hang"
     },
@@ -1050,37 +1072,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 161,
+      "on": 165,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 161,
+      "on": 165,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 161,
+      "on": 165,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 161,
+      "on": 165,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 165,
+      "on": 169,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 161,
+      "on": 165,
       "socket": "foot",
       "by": "hang"
     },
@@ -1094,7 +1116,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 168,
+      "on": 172,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1117,7 +1139,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 170,
+      "on": 174,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1140,7 +1162,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 172,
+      "on": 176,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1163,7 +1185,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 174,
+      "on": 178,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1186,7 +1208,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 176,
+      "on": 180,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1209,7 +1231,7 @@
     },
     {
       "part": "Cargo Volume",
-      "on": 178,
+      "on": 182,
       "socket": "volume",
       "by": "-y",
       "config": {
@@ -1436,20 +1458,16 @@
       74
     ],
     [
-      96,
-      94
+      100,
+      98
     ],
     [
-      182,
-      180
+      100,
+      99
     ],
     [
-      182,
-      181
-    ],
-    [
-      184,
-      183
+      186,
+      184
     ],
     [
       186,
@@ -1464,12 +1482,20 @@
       189
     ],
     [
-      202,
-      200
+      192,
+      191
     ],
     [
-      202,
-      201
+      194,
+      193
+    ],
+    [
+      206,
+      204
+    ],
+    [
+      206,
+      205
     ]
   ],
   "conduit": true,

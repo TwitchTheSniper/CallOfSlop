@@ -512,29 +512,14 @@
     },
     {
       "min": [
-        9.8545,
+        9.8544,
         3.378,
         37.879
       ],
       "max": [
         9.885,
         3.672,
-        39.376
-      ],
-      "color": "#30353b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8543,
-        3.378,
-        40.454
-      ],
-      "max": [
-        9.885,
-        3.672,
-        40.671
+        39.251
       ],
       "color": "#30353b",
       "detail": true,
@@ -705,44 +690,6 @@
         9.885,
         5.96,
         38.07
-      ],
-      "color": "#2a2e33",
-      "detail": true,
-      "shape": "bevel",
-      "radius": 0.3,
-      "edges": "long",
-      "front": "+y",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.825,
-        3.378,
-        39.2633
-      ],
-      "max": [
-        9.885,
-        5.96,
-        39.3533
-      ],
-      "color": "#2a2e33",
-      "detail": true,
-      "shape": "bevel",
-      "radius": 0.3,
-      "edges": "long",
-      "front": "+y",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.825,
-        3.378,
-        40.5467
-      ],
-      "max": [
-        9.885,
-        5.96,
-        40.6367
       ],
       "color": "#2a2e33",
       "detail": true,

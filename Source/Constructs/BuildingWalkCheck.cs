@@ -51,7 +51,7 @@ public static class BuildingWalkCheck
             var bp = ConstructBuild.FindBlueprint(name);
             if (bp == null)
             {
-                Say($"[building] {name}: no such blueprint");
+                Say($"[building] {name}: no such blueprint{(ConstructBuild.RefusedBlueprints.Count > 0 ? $" ({ConstructBuild.RefusedBlueprints.Count} refused: {string.Join("; ", ConstructBuild.RefusedBlueprints)})" : "")}");
                 bad++;
                 continue;
             }
@@ -135,6 +135,11 @@ public static class BuildingWalkCheck
                 walked.Add(dp);
             }
         }
+        // Every ladder's way open, as F on it opens it (ConstructRide.OpenWay): the lids across its line, and the sections or foot
+        // linked to it (a boarding shaft's belly hatch, telescoping sections and deck hatch, BoardingShaft).
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).LadderTop > 0 && !c.Parts[i].Broken)
+                ConstructRide.SettleWay(c, i);
         var boxes = new List<Box>();
         var lo = new Vector3(float.MaxValue);
         var hi = new Vector3(float.MinValue);
@@ -367,7 +372,7 @@ public static class BuildingWalkCheck
             {
                 ladders.Add((f, u));
                 ladders.Add((u, f));
-                Grabs(u, f, footAt, ConstructDoor.EventDoor(c, i) is var leaf and >= 0 && leaf != i);
+                Grabs(u, f, footAt, ld.LadderFoot < 0 || ConstructDoor.EventDoor(c, i) is var leaf and >= 0 && leaf != i); // (a boarding ladder's foot on the ground under a keel, BoardingShaft, or on a door's leaf: crouched out from under the hull)
                 Grabs(f, u, topAt);
             }
             else

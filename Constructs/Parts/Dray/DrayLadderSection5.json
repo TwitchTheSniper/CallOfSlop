@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Ladder Section 5",
+  "description": "Section 5 of the Dray's boarding ladder: it slides down 3.65 m from nested on the fixed flight, the ladder reaching the ground in 5 sections. F on the ladder lowers them all.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 3.648,
+    "seconds": 4.5,
+    "hang": "hang"
+  },
+  "physicsOnly": true,
+  "mass": 27.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#9aa0a4",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.752,
+        -0.175
+      ],
+      "max": [
+        -0.075,
+        0.38,
+        -0.145
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.075,
+        -0.752,
+        -0.175
+      ],
+      "max": [
+        0.125,
+        0.38,
+        -0.145
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.08,
+        -0.576,
+        -0.17
+      ],
+      "max": [
+        0.08,
+        -0.536,
+        -0.15
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.08,
+        -0.276,
+        -0.17
+      ],
+      "max": [
+        0.08,
+        -0.236,
+        -0.15
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.08,
+        0.024,
+        -0.17
+      ],
+      "max": [
+        0.08,
+        0.064,
+        -0.15
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.13,
+        -0.75,
+        -0.179
+      ],
+      "max": [
+        0.13,
+        -0.69,
+        -0.141
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.01,
+        -0.175
+      ],
+      "max": [
+        0.02,
+        0.01,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

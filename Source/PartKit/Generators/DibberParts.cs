@@ -56,16 +56,13 @@ public sealed class DibberParts : IPartGenerator
     // The cab: a glass box poking out of the fore face over the lower deck, its glass raked back.
     private const double CabX = 0.75, CabY0 = 0.75, CabY1 = 2.25, CabSill = 0.85, CabZ0 = -3.2, CabZ1 = -2.95, CabBack = -2.2;
 
-    // The belly hatch (aft of the jets) and the boarding ladder on it; the hole up into the upper deck (starboard).
-    private const double HatchX0 = -0.55, HatchX1 = 0.55, HatchZ0 = 1.25, HatchZ1 = 2.1;
+    // The boarding shaft (aft of the jets): too shallow for a flight under its deck hatch, so its belly hatch hangs on its fore edge and
+    // carries the rungs (BoardingShaft.Shallow); the hole up into the upper deck (starboard).
+    private const double HatchZ1 = 2.1;
     private const double ShaftX = 0.6, ShaftZ0 = 1.2, SkirtZ = -0.06, SkirtA = 1.15; // (the shaft through the belly: a little wider than the hatch, on the strips' lattice)
     private const double HoleX0 = 0.9, HoleX1 = 1.65, HoleZ0 = -0.45, HoleZ1 = 0.45;
-    private const string HatchName = "Dibber Belly Hatch";
     private const double Ground = -1.5; // the pads' soles
-    private const double HatchBottom = -0.012, HatchTop = HatchBottom + 0.08;
-    private static double HatchTravel => Math.Min(HatchBottom - Ground - 0.005, Mid0 - 0.03 - Ft);
-    private const double LadderZ = HatchZ0 + 0.1; // (the boarding ladder's socket on the hatch: its back to the shaft's fore edge, off its top forward onto the deck)
-    private static double BoardRise => Ft - (HatchTop - HatchTravel);
+    internal static BoardingShaft.Spec Shaft => new("Dibber", Section, Group, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.012, 0, Ground, false, Grey2, Frame, Hazard, Fore: true, Lip: 0);
 
     // Flying it: one big jet in the skirt under the middle of the belly, a small trim jet under each leg's thigh (the flight computer tips it on those), RCS pads on the lower flat faces and four up the roof.
     private const double MainForce = 440000, MainScale = 1.15, TrimForce = 80000, TrimScale = 0.55, Burn = 2.5, TrimR = 2.95, TrimY = 0.4;
@@ -398,9 +395,7 @@ public sealed class DibberParts : IPartGenerator
         foreach (var poly in OctLess(A(0) - 0.01, -ShaftX, ShaftZ0, ShaftX, HatchZ1))
             Floor(p, poly, -0.006, Dark, "dirty steel");
         // Hazard paint round the hatch on the deck, the shaft's lining.
-        Detail(p, -ShaftX - 0.1, Ft + 0.022, ShaftZ0 - 0.1, ShaftX + 0.1, Ft + 0.032, ShaftZ0 - 0.004, Hazard, "hazard paint");
-        Detail(p, -ShaftX - 0.1, Ft + 0.022, ShaftZ0 - 0.004, -ShaftX - 0.004, Ft + 0.032, HatchZ1, Hazard, "hazard paint");
-        Detail(p, ShaftX + 0.004, Ft + 0.022, ShaftZ0 - 0.004, ShaftX + 0.1, Ft + 0.032, HatchZ1, Hazard, "hazard paint");
+        DoorParts.DeckHatchRim(p, -ShaftX, ShaftZ0, ShaftX, HatchZ1, Ft + 0.012, "+z", H); // (the deck hatch's coaming, walked over shut; the aft wall stands at its aft edge)
         foreach (var (x0, z0, x1, z1) in new[] { (-ShaftX, ShaftZ0, ShaftX, ShaftZ0 + 0.016), (-ShaftX + 0.003, ShaftZ0 + 0.019, -ShaftX + 0.019, HatchZ1 - 0.003), (ShaftX - 0.019, ShaftZ0 + 0.019, ShaftX - 0.003, HatchZ1 - 0.003) })
             Detail(p, x0, 0.01, z0, x1, Ft - 0.004, z1, Frame, "dirty steel");
         // The chamfer from the belly to the shoulder, all eight faces.
@@ -425,8 +420,10 @@ public sealed class DibberParts : IPartGenerator
         Tube(a + 0.07, -0.42, a + 0.07, -0.5, Hazard, "hazard paint");
         Tube(a, -0.56, a + 0.06, -0.64, Frame, "soot");
         Sock(p, "main", 0, 0, SkirtZ, "-y");
-        // The hatch hangs on the shaft's aft wall.
-        Sock(p, "boarding", 0, Ft - 0.125, HatchZ1, "-z");
+        // The boarding shaft: the ladder's line on its fore face, the deck hatch by its port edge, the belly hatch on its fore face.
+        Sock(p, "boarding", Shaft.LadderAt[0], Shaft.LadderAt[1], Shaft.LadderAt[2], Shaft.LadderDir);
+        Sock(p, "deckHatch", -ShaftX, Ft + 0.012 - DoorParts.HatchThick / 2, (ShaftZ0 + HatchZ1) / 2, "+x");
+        Sock(p, "bellyHatch", Shaft.HatchAt[0], Shaft.HatchAt[1], Shaft.HatchAt[2], Shaft.HatchDir);
         p.Set(("fuelTank", Kw(("capacity", BellyFuel))));
         var zMin = p.Boxes.Where(b => !Drawn(b)).Min(b => Convert.ToDouble(((List<object?>)b["min"]!)[2])); // (a port leaves the part's own fore face)
         p.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. new[] { -H, 0.15 - H, zMin }.Cast<object>()], "-z", "fuel"))));
@@ -584,7 +581,7 @@ public sealed class DibberParts : IPartGenerator
             FStrip(p, k, Mid0 - 0.4, Mid0 + 0.4, 0.0, 1.0, Mid0 - 0.04, Mid0 + 0.04, 0.035 + (k % 2) * 0.004, Frame, "dirty steel");
         // Hazard round the hole, the hole's lining, a light strip under the ceiling.
         // (Karl, 2026-11-22: a flush Deck Hatch over the shaft, hung by its fore edge so it hangs clear of the climber, DoorParts.DeckHatch)
-        DoorParts.DeckHatchRim(p, HoleX0, HoleZ0, HoleX1, HoleZ1, Mid1 + 0.012, "+x");
+        DoorParts.DeckHatchRim(p, HoleX0, HoleZ0, HoleX1, HoleZ1, Mid1 + 0.012, "+x", H);
         Sock(p, "hatchUp", (HoleX0 + HoleX1) / 2, Mid1 + 0.012 - DoorParts.HatchThick / 2, HoleZ0, "+z");
         Detail(p, HoleX0, Mid0 + 0.005, HoleZ0, HoleX0 + 0.016, Mid1 - 0.005, HoleZ1, Frame, "dirty steel");
         Detail(p, -0.6, Mid0 - 0.04, -0.06, 0.6, Mid0 - 0.022, 0.06, "#fff0d0", glow: true);
@@ -811,32 +808,6 @@ public sealed class DibberParts : IPartGenerator
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
     }
 
-    /// <summary>The belly hatch (the Haywain's kind): a plate shutting the boarding shaft flush under the belly, on a strut up the shaft's
-    /// aft wall, where it hangs. It slides down to the ground and the boarding ladder standing on it rides it.</summary>
-    private static Part BellyHatchPart()
-    {
-        var p = new Part(HatchName, Small, Section, "The Dibber's belly hatch: a plate that shuts the boarding shaft under the belly. F (or the switch by it) slides it down to the ground, and the boarding ladder standing on it comes down with it.", role: "door", tool: "welder", material: "steel", color: Grey2, group: Group);
-        double[] S = [0, Ft - 0.125, HatchZ1];
-        double[] L(double x, double y, double z) => [Py.Round(x - S[0], 4), Py.Round(y - S[1], 4), Py.Round(z - S[2], 4)];
-        void B(double x0, double y0, double z0, double x1, double y1, double z1, string? col, string? fin, bool detail = false, bool hidden = false) =>
-            p.Add(hidden ? Box(L(x0, y0, z0), L(x1, y1, z1), hidden: true) : Box(L(x0, y0, z0), L(x1, y1, z1), col!, detail: detail, shape: Kw(("finish", fin!))));
-        double x0 = HatchX0 - 0.02, x1 = HatchX1 + 0.02, z0 = HatchZ0 - 0.02, z1 = HatchZ1 - 0.035;
-        B(x0, HatchBottom, z0, x1, HatchTop, z1, Grey2, "plated steel");
-        for (var i = 0; i < 4; i++)
-        {
-            var z = z0 + 0.12 + i * 0.28;
-            B(x0 + 0.1, HatchBottom - 0.008, z, x1 - 0.1, HatchBottom - 0.002, z + 0.12, Hazard, "hazard paint", detail: true);
-        }
-        B(x0 + 0.03, HatchTop + 0.002, z0 + 0.03, x0 + 0.13, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
-        B(x1 - 0.13, HatchTop + 0.002, z0 + 0.03, x1 - 0.03, HatchTop + 0.06, z1 - 0.03, Frame, "dirty steel", detail: true);
-        B(-0.3, HatchTop, HatchZ1 - 0.03, 0.3, Ft - 0.01, HatchZ1, null, null, hidden: true);
-        B(-0.28, HatchTop + 0.004, HatchZ1 - 0.028, 0.28, Ft - 0.02, HatchZ1 - 0.004, Frame, "painted steel");
-        p.Sock("hang", [0, 0, 0], "+z");
-        p.Sock("ladder", L(0, HatchTop, LadderZ), "+y");
-        p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", Py.Round(HatchTravel, 3)), ("seconds", 3.5), ("hang", "hang"))));
-        return p.Stats(300, 3000, 25, 5.0);
-    }
-
     // ---- welding the pieces
 
     private static readonly Dictionary<string, string> SockOwner = [];
@@ -988,8 +959,7 @@ public sealed class DibberParts : IPartGenerator
         // The suit lockers, the belly hatch with its ladder, the ladder up.
         foreach (var n in new[] { "suit0", "suit1" })
             bp.Hang(EvaParts.LockerName, On(lower, n), n, "wall");
-        var hatch = bp.Hang(HatchName, belly, "boarding", "hang");
-        Paint(bp, bp.HangTurned("Dibber Boarding Ladder", hatch, "ladder", "foot", BuildingParts.RY180), Frame, "painted steel");
+        var hatch = BoardingShaft.Fit(bp, Shaft, belly, "boarding", belly, "deckHatch", belly, "bellyHatch"); // (both hatches shut)
         bp.HangTurned("Dibber Deck Ladder", belly, "ladderUp", "foot", BuildingParts.RY270); // (its back to the hole's inboard edge: off its top onto the deck inboard)
         bp.Hang(DoorParts.HatchName(0.9, 0.75), mid, "hatchUp", "hang"); // (shut: the systems deck walks over it)
         // The systems deck.
@@ -1048,8 +1018,7 @@ public sealed class DibberParts : IPartGenerator
             .. structure,
             LiftJet(MainJet, MainForce, MainScale, $"The Dibber's belly jet: {MainForce / 1e3:0} kN straight down from the skirt under its belly, most of what lifts it off a field and sets it down; tilted, it pushes the craft along."),
             LiftJet(TrimJet, TrimForce, TrimScale, $"A trim jet: {TrimForce / 1e3:0} kN straight down. One under each of the Dibber's thighs, far out from its middle, keeps it level over its belly jet."),
-            PowerPlant(), FlightComputer(), BellyHatchPart(),
-            Ladder("Dibber Boarding Ladder", BoardRise, -0.03, "The Dibber's boarding ladder: it stands on the belly hatch, stowed up through the cockpit's floor while the hatch is shut, and runs from the ground up the shaft when it is open. F climbs it.", "foot", [0, 0, -0.1], "-y"),
+            PowerPlant(), FlightComputer(), .. BoardingShaft.Parts(Shaft),
             Ladder("Dibber Deck Ladder", Mid1 - Ft, -DoorParts.HatchThick - 0.01, "The ladder from the Dibber's cockpit up through the floor, under a deck hatch, to the systems deck. F climbs it.", "foot", [0, 0, -0.1], "-y"),
         ];
         var defs = new Dictionary<string, PyDict>();
