@@ -97,7 +97,7 @@ public sealed partial class ZeroDayWorks
             // ---- The yard Assembler, west of the bay (x 0 to 14, z -202 to -224): the frigate's big pieces (decks 5 x 9 cells, the spine 3 x
             // 11, bow and stern 8 m high) need a 6 x 11 bed with 10 m masts; the bay-3 Assembler's 4 x 4 makes the rest. Under the yard
             // crane, which lifts what it makes to the station.
-            var big = Assembler(1, -205, 6, 11, 5, jig: false);
+            var big = Assembler(1, -205, 6, 11, 5, jig: false, carriagesEast: true);
             var up = 9.5f;
             foreach (var m in new[] { "steel", "copper", "glass", "concrete", "rubber" })
             {
