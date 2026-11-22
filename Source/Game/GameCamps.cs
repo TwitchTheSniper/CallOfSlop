@@ -7,8 +7,8 @@ namespace CallOfSlop;
 /// them, <see cref="IPowerHost.TakeGoods"/>). A camp starts with the goods for two of the first ships it asks for, once a game.
 /// Hardship is kept per planet with stations: once a minute it moves a sixtieth of the way towards the share of those stations' lines that are
 /// short, food, water and fuel counting double, so an hour of shortage makes it. Over <see cref="HardshipBand"/> a raider band forms there (two
-/// over <see cref="HardshipBands"/>), and the Raiders may field a ship more for each band (<see cref="IPowerHost.Bands"/>); under it again, the
-/// band breaks up. Host only; kept in the markets section after the consignments (GameStationSave.cs).
+/// over <see cref="HardshipBands"/>), bringing the goods for a ship to the Raiders' camp, and the Raiders may field a ship more for each band
+/// (<see cref="IPowerHost.Bands"/>); under it again, the band breaks up. With no hardship and no ships left, the Raiders lie quiet: no new bands form. Host only; kept in the markets section after the consignments (GameStationSave.cs).
 /// </summary>
 public sealed partial class Game
 {
@@ -16,6 +16,7 @@ public sealed partial class Game
     private const float HardshipBand = 0.5f, HardshipBands = 0.8f, HardshipRate = 1f / 60;
     private readonly int[] _camp = new int[256 * CampMaterials]; // (by power and material)
     private readonly bool[] _campSeeded = new bool[256];
+    private int _bandShips; // (bands formed whose ship's goods the Raiders' camp hasn't had yet: each band brings its own)
     private readonly Dictionary<string, float> _hardship = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> _bandsAt = new(StringComparer.OrdinalIgnoreCase);
     private int _bands;
@@ -39,6 +40,13 @@ public sealed partial class Game
             foreach (var (mat, units) in goods)
                 _camp[power * CampMaterials + mat] += (int)MathF.Ceiling(units * 2);
             Log($"[camp] {CrewPowers.Of(power)?.Name}: its camp starts with the goods for two ships");
+        }
+        if (_bandShips > 0 && power == CrewPowers.Find("Raiders"))
+        {
+            foreach (var (mat, units) in goods)
+                _camp[power * CampMaterials + mat] += (int)MathF.Ceiling(units * _bandShips);
+            Log($"[camp] {CrewPowers.Of(power)?.Name}: {_bandShips} new band(s) bring the goods for a ship each");
+            _bandShips = 0;
         }
         foreach (var (mat, units) in goods)
             if (_camp[power * CampMaterials + mat] < (int)MathF.Ceiling(units * share))
@@ -70,7 +78,7 @@ public sealed partial class Game
             return;
         var share = value / bill;
         foreach (var (mat, units) in goods)
-            CampPut(raider, mat, (int)(units * share));
+            CampPut(raider, mat, (int)Math.Ceiling(units * share)); // (up: a small raid still brings something)
         Log($"[camp] {CrewPowers.Of(raider)?.Name}: a raid's loot, {value:0} of value, goes into its camp as {share:0.##} of a ship's goods");
     }
 
@@ -106,6 +114,8 @@ public sealed partial class Game
             if (here != before)
             {
                 _bandsAt[planet] = here;
+                if (here > before)
+                    _bandShips = Math.Min(MaxBands, _bandShips + here - before);
                 Log(here > before ? $"[hardship] {planet} is poor (hardship {now:0.00}: its stations go short): a raider band forms there ({here})"
                     : $"[hardship] {planet} is better off (hardship {now:0.00}): a raider band there breaks up ({here} left)");
             }
@@ -142,6 +152,7 @@ public sealed partial class Game
         w.I32(_hardship.Count);
         foreach (var (planet, h) in _hardship)
             w.Str(planet).F32(h);
+        w.I32(_bandShips);
     }
 
     /// <summary>Host, loading: the camps and hardship by name; a power or good gone is dropped with a log line.</summary>
@@ -176,6 +187,8 @@ public sealed partial class Game
             if (float.IsFinite(h))
                 _hardship[planet] = Math.Clamp(h, 0, 1);
         }
+        if (s.Has(4))
+            _bandShips = Math.Clamp(s.I32(), 0, MaxBands);
         foreach (var (planet, h) in _hardship)
             _bandsAt[planet] = h > HardshipBands ? 2 : h > HardshipBand ? 1 : 0;
         _bands = Math.Min(_bandsAt.Values.Sum(), MaxBands);
@@ -189,5 +202,6 @@ public sealed partial class Game
         _hardship.Clear();
         _bandsAt.Clear();
         _bands = 0;
+        _bandShips = 0;
     }
 }

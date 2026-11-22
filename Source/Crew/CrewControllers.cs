@@ -1007,8 +1007,12 @@ public sealed partial class PowerControllers
                     var loot = Rules.CargoValue * Rules.RaidLoot * (m.CargoSeen - cargo);
                     p.Stock += loot;
                     p.Looted += loot;
-                    if (_fleet[a][(int)ShipRole.Warship] is { Length: > 0 } wl)
-                        host.Loot(a, Rules.GoodsOf(Blueprints[wl[0]]), loot); // (the cargo as goods in its camp: raiders build from loot)
+                    foreach (var fl in _fleet[a])
+                        if (fl.Length > 0)
+                        {
+                            host.Loot(a, Rules.GoodsOf(Blueprints[fl[0]]), loot); // (the cargo as goods in its camp, as its first ship's: raiders build from loot)
+                            break;
+                        }
                     rel.Post(RelEvent.RaidConvoy, m.Other, a, 255, flag?.WorldCom ?? m.At);
                     Say($"{Name(a)} raids {Name(m.Other)}'s convoy and takes its cargo");
                 }
