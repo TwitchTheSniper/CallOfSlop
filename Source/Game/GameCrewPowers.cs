@@ -169,6 +169,69 @@ public sealed partial class Game : IPowerHost
         Constructs.Remove(c);
     }
 
+    bool IPowerHost.TakeGoods(byte power, (byte Material, float Units)[] goods, float share, out byte shortOf)
+    {
+        shortOf = 0;
+        if (!IsServer || power == 0 || goods.Length == 0)
+            return true;
+        var all = StationMarkets.All;
+        // (first: is every material its stations trade there? a station with no line for it doesn't count; none trades it: not taken)
+        foreach (var (mat, units) in goods)
+        {
+            var need = (int)MathF.Ceiling(units * share);
+            if (need <= 0)
+                continue;
+            long have = 0;
+            var traded = false;
+            for (var d = 0; d < all.Length; d++)
+                if (CrewPowers.Find(all[d].Power) == power)
+                    for (var k = 0; k < all[d].Goods.Length; k++)
+                        if (all[d].Goods[k].Material == mat)
+                        {
+                            traded = true;
+                            have += MarketOfDef(d).Stock[k];
+                        }
+            if (traded && have < need)
+            {
+                shortOf = mat;
+                return false;
+            }
+        }
+        foreach (var (mat, units) in goods)
+        {
+            var need = (int)MathF.Ceiling(units * share);
+            for (var d = 0; d < all.Length && need > 0; d++)
+                if (CrewPowers.Find(all[d].Power) == power)
+                    for (var k = 0; k < all[d].Goods.Length && need > 0; k++)
+                        if (all[d].Goods[k].Material == mat)
+                        {
+                            var m = MarketOfDef(d);
+                            var took = Math.Min(need, m.Stock[k]);
+                            m.Stock[k] -= took;
+                            need -= took;
+                            if (took > 0 && m.Body != 0)
+                                StationsVersion++;
+                        }
+        }
+        if (share < 0.999f)
+            return true; // (a repair says nothing: it is a quiet think, which allocates nothing; a buy logs what it took)
+        var gave = string.Join(", ", goods.Where(g => (int)MathF.Ceiling(g.Units * share) > 0 && Traded(power, g.Material)).Select(g => $"{(int)MathF.Ceiling(g.Units * share)} {RecyclingTable.Current.NameOf(g.Material)}"));
+        if (gave.Length > 0)
+            Log($"[powers] {CrewPowers.Of(power)?.Name}: its stations gave {gave} to build"); // (a buy: a few a minute at most)
+        return true;
+    }
+
+    /// <summary>Does a station <paramref name="power"/> holds trade material <paramref name="mat"/>?</summary>
+    private static bool Traded(byte power, byte mat)
+    {
+        foreach (var d in StationMarkets.All)
+            if (CrewPowers.Find(d.Power) == power)
+                foreach (var g in d.Goods)
+                    if (g.Material == mat)
+                        return true;
+        return false;
+    }
+
     bool IPowerHost.Sees(byte power, Vector3 at) => ((IPowerSight)this).Sees(power, at);
 
     bool IPowerHost.PersonAt(byte player, out Vector3 at)
