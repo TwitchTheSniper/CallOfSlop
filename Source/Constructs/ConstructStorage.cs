@@ -1211,7 +1211,13 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: bulk into a bin; returns how much went in (up to its room).</summary>
-    public int Deposit(Construct c, int part, int amount, byte material)
+    public int Deposit(Construct c, int part, int amount, byte material) =>
+        c.DefOf(part).IsGrower ? 0 : DepositAny(c, part, amount, material); // (nothing goes into a grow bed: chutes, stations, hoppers; it fills by growing)
+
+    /// <summary>Server: a grow bed's crop into its own bin (ConstructGrowing.cs): Deposit's path without the bed's refusal.</summary>
+    public int DepositGrown(Construct c, int part, int amount, byte material) => DepositAny(c, part, amount, material);
+
+    private int DepositAny(Construct c, int part, int amount, byte material)
     {
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsBin || amount <= 0 || material == 0 || !ConstructStorage.BinTakes(c.DefOf(part), material))
             return 0;

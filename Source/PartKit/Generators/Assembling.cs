@@ -990,6 +990,16 @@ public sealed class Assembling : IPartGenerator
         ("Catwalks", "Steel Catwalk Hanger 2.5 m", null),
         ("Catwalks", "Steel Catwalk Hanger 4 m", null),
         ("Catwalks", "Steel Catwalk Hanger 6 m", null),
+        // (the Assembler on the block system, Sean 2026-11-21: AssemblerParts; the Overdrive Unit and Feed Buffer by hand, as the tier pieces)
+        ("Assembler", "Assembler", null),
+        ("Assembler", "Assembly Bed Block", null),
+        ("Assembler", "Gantry Carriage", null),
+        (null, null, Rec("Overdrive Unit", 60, 1, m: [("steel", 40), ("copper", 30), ("rubber", 6)], p: [("Gear Set", 2), ("Wiring Loom", 1)])),
+        (null, null, Rec("Feed Buffer", 30, 1, m: [("steel", 45), ("rubber", 4)], p: [("Gear Set", 1)])),
+        // (Assembler PR 3: its tool blocks and the Block Rack, the Die Rack at 2 m bays)
+        ("Assembler", "Thruster Jig Block", null),
+        ("Assembler", "Sewing Table Block", null),
+        ("Assembler", "Block Rack", null),
         // (the Cloche, the farmers' greenhouse ship, Karl 2026-11-21: ClocheParts; in the folder's file order of 2026-11-21)
         ("Cloche", "Cloche Aft Bulkhead", null),
         ("Cloche", "Cloche Aft Roof", null),
@@ -1044,16 +1054,6 @@ public sealed class Assembling : IPartGenerator
         ("Cloche", "Cloche Tank Aft Stbd", null),
         ("Cloche", "Cloche Tank Fore Port", null),
         ("Cloche", "Cloche Tank Fore Stbd", null),
-        // (the Assembler on the block system, Sean 2026-11-21: AssemblerParts; the Overdrive Unit and Feed Buffer by hand, as the tier pieces)
-        ("Assembler", "Assembler", null),
-        ("Assembler", "Assembly Bed Block", null),
-        ("Assembler", "Gantry Carriage", null),
-        (null, null, Rec("Overdrive Unit", 60, 1, m: [("steel", 40), ("copper", 30), ("rubber", 6)], p: [("Gear Set", 2), ("Wiring Loom", 1)])),
-        (null, null, Rec("Feed Buffer", 30, 1, m: [("steel", 45), ("rubber", 4)], p: [("Gear Set", 1)])),
-        // (Assembler PR 3: its tool blocks and the Block Rack, the Die Rack at 2 m bays)
-        ("Assembler", "Thruster Jig Block", null),
-        ("Assembler", "Sewing Table Block", null),
-        ("Assembler", "Block Rack", null),
     ];
 
     /// <summary>
@@ -1245,14 +1245,14 @@ public sealed class Assembling : IPartGenerator
                 folded.Add(r);
                 recipes.RemoveAt(k--);
             }
-            else if (AfterFolded.Contains(output))
+            else if (AfterFolded.Contains(output) || AfterFoldedFolder(output))
             {
                 after.Add(r);
                 recipes.RemoveAt(k--);
             }
         }
         recipes.AddRange(folded);
-        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!))); // (after the folded rows: a saved Assembler's number keeps)
+        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!) is var i and >= 0 ? i : int.MaxValue)); // (after the folded rows: a saved Assembler's number keeps)
     }
 
     /// <summary>
@@ -1260,6 +1260,9 @@ public sealed class Assembling : IPartGenerator
     /// rows so no saved recipe number moves. Closed: a new row goes at the END of this list (its Tail entry stays where it is).
     /// </summary>
     private static readonly string[] AfterFolded = ["Thruster Jig Block", "Sewing Table Block", "Block Rack"];
+
+    /// <summary>Whole ships' parts that came after AfterFolded, in their Tail order, after its rows (the Cloche, 2026-11-22). A later ship's go after these.</summary>
+    private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 

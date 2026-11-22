@@ -65,7 +65,7 @@ public static class ConstructGrowing
             return;
         st.JobTicks = 0;
         water -= ConstructFluid.Use(c, Fluid.Water, d.GrowLitres);
-        world.Deposit(c, part, d.GrowUnits, RecyclingTable.Current.IdOf(d.BulkMaterial));
+        world.DepositGrown(c, part, d.GrowUnits, RecyclingTable.Current.IdOf(d.BulkMaterial));
         ProductionLines.Made(world, c, part, 1);
     }
 
