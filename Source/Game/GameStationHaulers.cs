@@ -1062,7 +1062,7 @@ public sealed partial class Game
                     }
                 }
                 if (heavy && !put && refusal == null)
-                    refusal = cargo.Count == 0 ? $"the {pd.Name} is {(pd.PhysicsOnly ? $"physics-only ({pd.PhysicsWhy})" : "a store")} and it has no heavy container" : "its heavy containers are full";
+                    refusal = cargo.Count == 0 ? $"the {pd.Name} is {(pd.PhysicsOnly ? $"physics-only ({pd.PhysicsWhy})" : "a store")} and it has no heavy container" : ConstructRackPack.Fit(cargo[0].B.DefOf(cargo[0].P), pd, out _, out _, out _) ? "its heavy containers are full" : $"the {pd.Name} is too big for its heavy containers";
                 for (var t = 0; t < vols.Count && !put && !heavy; t++)
                 {
                     var (b, p) = vols[(vi + t) % vols.Count]; // (from the volume that took the last one)
