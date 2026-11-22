@@ -1743,8 +1743,8 @@ out is its whole bed too (2026-11-22, `OutZone`): what it leaves on its bed is p
 over the bed, and a machine's out gives any part its machine's recipes make, not only its recipe now (a finished order queue left
 the Zero Day keel lying). The lifters take turns at a step's four decisions (with a station open the first four in the list took
 them all), and a piece's wrist lift is half its bounds' diagonal from its middle, not from its origin (a ship section's origin is
-the ship's; what poses a carry by its origin adds the middle's height over the origin, `OriginLift`). Not yet: a carry's path is still its origin's, so a section whose origin lies far off swings wide and slow (the Zero Day
-keel's carry took 95 s). Window tool: `lifter net
+the ship's; what poses a carry by its origin adds the middle's height over the origin, `OriginLift`). A loaded carry's path is its piece's middle's (`PoseMiddle`, `CarryTicks`; the origin is posed from it), and an empty hook starts
+back over where it let go: the Zero Day keel's carry to its pad went from 94 s to 59 s, most of it the yard crane's hoist. Window tool: `lifter net
 [TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
 `logi net` marks a way "by a lifter".
 
