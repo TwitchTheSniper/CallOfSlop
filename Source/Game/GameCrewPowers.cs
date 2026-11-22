@@ -213,6 +213,8 @@ public sealed partial class Game : IPowerHost
                                 StationsVersion++;
                         }
         }
+        if (share < 0.999f)
+            return true; // (a repair says nothing: it is a quiet think, which allocates nothing; a buy logs what it took)
         var gave = string.Join(", ", goods.Where(g => (int)MathF.Ceiling(g.Units * share) > 0 && Traded(power, g.Material)).Select(g => $"{(int)MathF.Ceiling(g.Units * share)} {RecyclingTable.Current.NameOf(g.Material)}"));
         if (gave.Length > 0)
             Log($"[powers] {CrewPowers.Of(power)?.Name}: its stations gave {gave} to build"); // (a buy: a few a minute at most)

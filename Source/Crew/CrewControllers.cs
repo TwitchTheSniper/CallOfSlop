@@ -262,6 +262,7 @@ public sealed partial class PowerControllers
                         k = Blueprints.Count;
                         Blueprints.Add(bp);
                         Bills.Add(Rules.BillOf(bp));
+                        Rules.GoodsOf(bp); // (its materials worked out now, not in the tick that first builds one)
                     }
                     list.Add((short)k);
                 }
@@ -1417,6 +1418,7 @@ public sealed partial class PowerControllers
                         bp = Blueprints.Count;
                         Blueprints.Add(found);
                         Bills.Add(Rules.BillOf(found));
+                        Rules.GoodsOf(found);
                     }
                     if (bp < 0 || p.Id == 0 || i >= MaxShips || st is not (PowerShipState.Building or PowerShipState.Hangar or PowerShipState.Out or PowerShipState.Far) || role >= ShipRole.Count)
                     {
