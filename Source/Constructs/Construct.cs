@@ -459,6 +459,7 @@ public sealed partial class Construct
     public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
+    public bool HasGrower; // a hydroponic bed: the growing step looks at it (ConstructGrowing.cs)
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
@@ -1751,6 +1752,7 @@ public sealed partial class Construct
         HasRecycler = false;
         HasGatherer = false;
         HasRefiner = false;
+        HasGrower = false;
         HasAssembler = false;
         HasExtruder = false;
         HasPress = false;
@@ -1773,6 +1775,8 @@ public sealed partial class Construct
                 HasGatherer = true;
             if (d.IsRefiner)
                 HasRefiner = true;
+            if (d.IsGrower)
+                HasGrower = true;
             if (d.IsAssembler)
                 HasAssembler = true;
             if (d.IsExtruder)

@@ -891,7 +891,7 @@ public sealed partial class ConstructEdits
     /// <summary>The material a player would tip into this bin: the bin's own when it has some, else the first one they carry that it takes (0: none).</summary>
     public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st)
     {
-        if (d.IsPanelFormer)
+        if (d.IsPanelFormer || d.IsGrower)
             return 0; // (a Panel Former's or a Laser Cutter's bin is its offcut: it only comes out; a former's stock is a blank a panel)
         if (st.Amount > 0)
             return inv.Materials[st.Material] > 0 ? st.Material : (byte)0;
@@ -969,7 +969,7 @@ public sealed partial class ConstructEdits
             return null;
         }
         if (st.Amount <= 0)
-            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine, d.Tier)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
+            return d.IsGrower ? $"nothing grown in the {d.Name} yet: {ConstructGrowing.Why(c, part, st)}" : d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine, d.Tier)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
         var mat = st.Material;
         var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxCount - inv.Materials[mat]));
         if (got <= 0)

@@ -542,7 +542,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger", "bake"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "ordnanceBench", "recycler", "gather", "grow", "refine", "assemble", "extrude", "wheel", "panel", "cut", "beacon", "scoop", "terminal", "press", "pieces", "auger", "bake"], bw);
         if (ConstructParts.Opt(b, "pieces") is { } pc)
         {
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
@@ -725,9 +725,29 @@ public static class ConstructStorage
             d.IsGatherer = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
+        if (ConstructParts.Opt(b, "grow") is { } gr)
+        {
+            if (gr.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer)
+                throw new ConstructPartException($"{file}: storage \"grow\" is an object (units, seconds, litres) on a bin: what it grows");
+            ConstructParts.Known(gr, ["units", "seconds", "litres"], $"{bw}.grow");
+            var units = ConstructParts.Num(ConstructParts.Need(gr, "units", $"{bw}.grow"), file, "storage.grow.units");
+            ConstructParts.Range(units, 1, 1000, file, "storage.grow.units");
+            var secs = ConstructParts.Num(ConstructParts.Need(gr, "seconds", $"{bw}.grow"), file, "storage.grow.seconds");
+            ConstructParts.Range(secs, 1, 3600, file, "storage.grow.seconds");
+            d.GrowLitres = ConstructParts.Num(ConstructParts.Need(gr, "litres", $"{bw}.grow"), file, "storage.grow.litres");
+            ConstructParts.Range(d.GrowLitres, 0.1f, 10000, file, "storage.grow.litres");
+            d.GrowUnits = (int)units;
+            d.GrowTicks = Math.Max(1, (int)MathF.Round(secs * World.TickRate));
+            if (d.BulkMaterial == Any)
+                throw new ConstructPartException($"{file}: a grow bed's bin names the material it grows (storage.bulk.material)");
+            if (d.BulkCapacity < d.GrowUnits)
+                throw new ConstructPartException($"{file}: a grow bed's bin holds at least a batch ({d.GrowUnits})");
+            d.IsGrower = true;
+            d.DataIn = [ConstructGatherer.RunPort];
+        }
         if (ConstructParts.Opt(b, "refine") is { } rf)
         {
-            if (rf.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer)
+            if (rf.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsGrower)
                 throw new ConstructPartException($"{file}: storage \"refine\" is an object (machine, capacity, min, max: its input) on a bin: its output");
             ConstructParts.Known(rf, ["machine", "capacity", "min", "max", "speed"], $"{bw}.refine");
             d.RefineMachine = ConstructParts.Str(ConstructParts.Need(rf, "machine", $"{bw}.refine"), file, "storage.refine.machine");

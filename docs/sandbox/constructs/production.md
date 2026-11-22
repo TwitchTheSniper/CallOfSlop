@@ -88,6 +88,25 @@ machine); a machine takes one input material at a time, so a stray unit short of
 machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
 its own.
 
+## Grow beds
+
+Hydroponics (Karl, 2026-11-22: the Cloche is the farmers' hydroponics ship, "it requires water to function"). A storage part with a
+`storage.grow` block (`{"units": 4, "seconds": 120, "litres": 3}`) on a bin that names its material (`"bulk": {"material": "produce", ...}`)
+grows a crop of `units` every `seconds` while it has power and its construct's Fluid Tanks hold `litres` of water; the crop's water comes
+off whatever working tanks hold water, tank by tank, as the crop is made (a bed is plumbed into its craft: no pipe is laid to it). It
+draws its `power` only while it grows; a wire into Run holds it off. A crop half grown waits through no water or no power and loses
+nothing. Chutes and F take the crop out; nothing goes in (no chute in, F never tips). `ConstructGrowing.cs`, at 10 Hz on bodies with a
+grow bed; its stall (no water, full, no power) rides the store's `Blocked` byte, so the look line is the same on a client:
+`Cloche Grow Bed: 12/200 produce - growing produce (4 every 2 min, 3 l water each); 107967 l water aboard`.
+
+- **Produce** is a bulk material (Recycling.json, the last id; 0.5 kg a unit, a crate's shape, 0.5 a unit in trade: Crew/Stations.json).
+  Nothing eats it yet, and no market buys it by name.
+- **Water** in the game today comes only from what a tank is filled with: a blueprint's `"config": {"fluid": "water", "fill": 100}`, the
+  Building Station's fill stage, a pipe or hose from another tank, or creative's settings. There is no world source of water yet.
+- The Cloche's growers: 19 Cloche Grow Racks (6 every 2 min, 5 l, 1.5 kW), 20 Cloche Grow Beds (4 every 2 min, 3 l, 600 W) and 20
+  Cloche Seed Beds (2 every 90 s, 1.5 l, 400 W), on 108 kl of water in its four flank tanks: about 100 l a minute, some 18 hours of
+  growing on a full load.
+
 ## Extrusion
 
 The developer's mothership loop: a machine that makes long pieces to length, for building panels, frames and shapes. An

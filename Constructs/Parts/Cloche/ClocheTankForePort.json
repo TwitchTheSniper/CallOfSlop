@@ -1,11 +1,61 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cloche Tank Fore Port",
-  "description": "One of the Cloche's water tanks: an eight-sided drum strapped low on its flank, cream ends and a band, a red body, a pipe up into the hull for the grow beds.",
+  "description": "One of the Cloche's water tanks: an eight-sided drum strapped low on its flank, cream ends and a band, a red body, a pipe up into the hull for the grow beds. Holds 30 kl; the beds drink from every tank aboard that holds water.",
   "group": "Ship",
   "section": "Cloche greenhouse ship",
-  "role": "frame",
+  "role": "fluidtank",
   "tool": "welder",
+  "fluidTank": {
+    "capacity": 30000,
+    "flow": 200
+  },
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "water",
+      "at": [
+        -6.825,
+        1.249,
+        -5.925
+      ],
+      "face": "-y"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "water",
+      "at": [
+        -6.825,
+        3.801,
+        -5.925
+      ],
+      "face": "+y"
+    }
+  ],
+  "config": [
+    {
+      "key": "fluid",
+      "label": "Fluid",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the tank holds: water for the grow beds. An empty tank takes whatever a pipe brings first."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. The grow beds drink it down as they grow."
+    }
+  ],
   "mass": 2500.0,
   "health": 2500,
   "armour": 10,

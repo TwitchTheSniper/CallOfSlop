@@ -1165,9 +1165,10 @@ public static unsafe partial class Program
             var tbl = RecyclingTable.Current;
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
-            var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
+            var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer || cd.IsGrower ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
             var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
-                : cd.IsGatherer ? GathererLook(cd, st, hit, g) : "";
+                : cd.IsGatherer ? GathererLook(cd, st, hit, g)
+                : cd.IsGrower ? ConstructGrowing.Look(hit.Body, hit.Part, st) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)

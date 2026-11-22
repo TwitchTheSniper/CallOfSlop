@@ -562,6 +562,41 @@ public static class ConstructFluid
         Changed(c);
     }
 
+    /// <summary>The litres of <paramref name="fluid"/> in a construct's working Fluid Tanks (a grow bed's water: ConstructGrowing.cs). Allocates nothing.</summary>
+    public static float Aboard(Construct c, Fluid fluid)
+    {
+        var litres = 0f;
+        for (var k = 0; k < c.FluidTankCount; k++)
+        {
+            if (!Current(c, k))
+                continue;
+            ref var p = ref c.Parts[c.FluidTanks[k]];
+            if (p.Working && !p.D.IsEnvelope && Held(p, p.D) == fluid)
+                litres += Litres(p, p.D);
+        }
+        return litres;
+    }
+
+    /// <summary>Takes up to <paramref name="litres"/> of <paramref name="fluid"/> off a construct's working Fluid Tanks, tank by tank; returns what it took.</summary>
+    public static float Use(Construct c, Fluid fluid, float litres)
+    {
+        var took = 0f;
+        for (var k = 0; k < c.FluidTankCount && litres - took > 0; k++)
+        {
+            if (!Current(c, k))
+                continue;
+            ref var p = ref c.Parts[c.FluidTanks[k]];
+            if (!p.Working || p.D.IsEnvelope || Held(p, p.D) != fluid)
+                continue;
+            var sip = MathF.Min(litres - took, Litres(p, p.D));
+            Change(ref p, p.D, -(double)sip);
+            took += sip;
+        }
+        if (took > 0)
+            Changed(c);
+        return took;
+    }
+
     /// <summary>A burner's sip once the pool is dry: off the feeding tanks that hold fuel.</summary>
     public static void Burn(Construct c, float litres)
     {

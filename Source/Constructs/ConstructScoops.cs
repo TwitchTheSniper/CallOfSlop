@@ -717,7 +717,7 @@ public static class ConstructScoops
         var d = to.DefOf(part);
         return d.IsAssembler ? world.FeedAssembler(to, part, units, material)
             : d.IsRefiner ? world.Feed(to, part, units, material)
-            : d.IsBin && !d.IsRecycler && !d.IsGatherer && !d.IsExtruder ? world.Deposit(to, part, units, material)
+            : d.IsBin && !d.IsRecycler && !d.IsGatherer && !d.IsGrower && !d.IsExtruder ? world.Deposit(to, part, units, material)
             : 0;
     }
 

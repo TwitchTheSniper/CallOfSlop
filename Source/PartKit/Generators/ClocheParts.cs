@@ -54,6 +54,9 @@ public sealed class ClocheParts : IPartGenerator
     // The greenhouses: barrel vaults on the roof, a walkway down the middle of each between two rows of beds.
     private const double GX0 = 0.35, GX1 = 4.05, GWall = 8.0, GRise = 1.3;
     private static readonly double[] Bays = [-14.2, -6.6, 1.0, 8.6];
+    /// <summary>The two outer beds beside each hatch are left out: the hatch fills the aisle, so the way aft goes round it there.</summary>
+    private static bool WalkBy(int row, int j) => row == 1 && Math.Abs(-13.0 + 2 * j - (HoleZ0 + HoleZ1) / 2) < 2.0;
+
     private const double HoleX0 = 1.6, HoleX1 = 2.8, HoleZ0 = -8.0, HoleZ1 = -6.9; // (each greenhouse's hatch through the roof: x mirrored)
 
     // Flying it: sixteen lift jets under the belly, a drive in each nacelle's tail, each under the 500 kN that needs works.
@@ -697,11 +700,13 @@ public sealed class ClocheParts : IPartGenerator
 
     // ---- the tanks and the nacelles
 
+    private const int TankForeLitres = 30000, TankAftLitres = 24000; // (about the drums' insides)
+
     /// <summary>A water tank strapped low on a flank: an eight-sided drum with chamfered ends, cream ends and band, a red body, dark straps on saddles, a pipe up into the hull.</summary>
     private static Part Tank(int s, bool fore)
     {
         double r = fore ? 1.45 : 1.3, z0 = fore ? -8.6 : 0.2, z1 = fore ? -3.0 : 5.4, yc = PlinthY + r + 0.1, xc = s * (Hw + 0.25 + r), zm = (z0 + z1) / 2;
-        var p = Piece($"Cloche Tank {(fore ? "Fore" : "Aft")} {SideName(s)}", "One of the Cloche's water tanks: an eight-sided drum strapped low on its flank, cream ends and a band, a red body, a pipe up into the hull for the grow beds.");
+        var p = Piece($"Cloche Tank {(fore ? "Fore" : "Aft")} {SideName(s)}", $"One of the Cloche's water tanks: an eight-sided drum strapped low on its flank, cream ends and a band, a red body, a pipe up into the hull for the grow beds. Holds {(fore ? TankForeLitres : TankAftLitres) / 1000} kl; the beds drink from every tank aboard that holds water.", Red, "fluidtank");
         Hidden(p, xc - r * 0.88, yc - r * 0.88, z0 + 0.1, xc + r * 0.88, yc + r * 0.88, z1 - 0.1);
         CylZ(p, xc, yc, z0 + 0.45, z1 - 0.45, r, r, Red, "painted plating");
         CylZ(p, xc, yc, z0, z0 + 0.46, r * 0.72, r - 0.004, Cream, "painted plating");
@@ -724,6 +729,12 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, s * (Hw - 0.01), 4.67, z1 + 0.24, px + s * 0.09, 4.85, z1 + 0.42, Pipe, "painted steel");
         Detail(p, px - 0.13, 3.5, z1 + 0.2, px + 0.13, 3.72, z1 + 0.46, Rib, "painted steel"); // (a valve)
         Detail(p, px - 0.03, 3.72, z1 + 0.3, px + 0.03, 3.9, z1 + 0.36, RedLamp, "painted steel");
+        p.Set(("fluidTank", Kw(("capacity", fore ? TankForeLitres : TankAftLitres), ("flow", 200))),
+            ("ports", Py.L(BigDriveParts.PipePort("Fluid out", "out", [.. Sh([xc, yc - r * 0.88, zm]).Cast<object>()], "-y", "water"),
+                BigDriveParts.PipePort("Fluid in", "in", [.. Sh([xc, yc + r * 0.88, zm]).Cast<object>()], "+y", "water"))),
+            ("config", Py.L(
+                new PyDict { ["key"] = "fluid", ["label"] = "Fluid", ["group"] = "Contents", ["creative"] = true, ["tooltip"] = "What the tank holds: water for the grow beds. An empty tank takes whatever a pipe brings first." },
+                new PyDict { ["key"] = "fill", ["label"] = "Fill", ["group"] = "Contents", ["unit"] = "%", ["min"] = 0, ["max"] = 100, ["default"] = 0, ["creative"] = true, ["tooltip"] = "How full it is. The grow beds drink it down as they grow." })));
         return p.Stats(fore ? 2500 : 2000, 2500, 10, 6.0);
     }
 
@@ -903,10 +914,24 @@ public sealed class ClocheParts : IPartGenerator
             }
     }
 
+    /// <summary>What a grower makes: units of produce a crop, seconds a crop, litres of water a crop, its bin, the grow lights' draw (W).</summary>
+    private readonly record struct Grow(int Units, int Seconds, double Litres, int Holds, int Watts);
+
+    private static readonly Grow RackGrow = new(6, 120, 5, 300, 1500), BedGrow = new(4, 120, 3, 200, 600), SeedGrow = new(2, 90, 1.5, 200, 400);
+
+    /// <summary>A grower's bin (its crop crates, from min to max), its grow block, the lights' draw and a chute out at <paramref name="chute"/> (on the face its x sign says).</summary>
+    private static void Grows(Part p, Grow g, double[] min, double[] max, double[] chute)
+    {
+        p.Set(("storage", Kw(("bulk", Kw(("material", "produce"), ("capacity", g.Holds), ("min", Py.L(min[0], min[1], min[2])), ("max", Py.L(max[0], max[1], max[2])))),
+                ("grow", Kw(("units", g.Units), ("seconds", g.Seconds), ("litres", g.Litres))))),
+            ("power", g.Watts),
+            ("ports", Py.L(Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(chute[0], chute[1], chute[2])), ("face", chute[0] < 0 ? "-x" : "+x")))));
+    }
+
     /// <summary>A grow rack for the hall: a dark frame, three cream trays of plants, a warm grow light under each shelf; reached from either side. Long along z.</summary>
     private static Part GrowRack()
     {
-        var p = Fitting("Cloche Grow Rack", "A grow rack in the Cloche's hall: a dark steel frame of three shelves, each a tray of plants in nutrient film under a warm grow light; tended from either side.", "frame", Rib, "welder");
+        var p = Fitting("Cloche Grow Rack", "A grow rack in the Cloche's hall: a dark steel frame of three shelves, each a tray of plants in nutrient film under a warm grow light; tended from either side. Grows produce on the water aboard and power; a chute or F takes the crop from the crates under it.", "storage", Rib, "welder");
         const double hx = 0.5, hz = 1.2;
         Hidden(p, -hx, 0, -hz, hx, 2.75, hz, raw: true);
         foreach (var (x, z) in new[] { (-hx, -hz), (hx, -hz), (-hx, hz), (hx, hz) })
@@ -924,6 +949,7 @@ public sealed class ClocheParts : IPartGenerator
         Detail(p, -hx + 0.04, 2.7, -hz + 0.04, hx - 0.04, 2.75, hz - 0.04, Rib, "painted steel", raw: true);
         CylZ(p, hx - 0.1, 0.18, -hz, hz, 0.04, 0.04, Pipe, "painted steel", 6, raw: true);
         p.Sock("bottom", [0, 0, 0], "-y");
+        Grows(p, RackGrow, [-0.4, 0.02, -1.1], [0.3, 0.22, 1.1], [-hx, 0.12, 0]);
         return p.Stats(250, 400, 3, 3.0);
     }
 
@@ -931,8 +957,8 @@ public sealed class ClocheParts : IPartGenerator
     private static Part GrowBed(bool seed)
     {
         var p = Fitting(seed ? "Cloche Seed Bed" : "Cloche Grow Bed", seed
-            ? "A seed bed in the Cloche's greenhouses: a cream trough on dark legs of seedling trays, many small plants in rows."
-            : "A grow bed in the Cloche's greenhouses: a cream trough of soil on dark legs, rows of full-grown plants and a misting line over them.", "frame", Tray, "welder");
+            ? "A seed bed in the Cloche's greenhouses: a cream trough on dark legs of seedling trays, many small plants in rows. Grows produce on the water aboard and power; a chute or F takes the crop from the crates under it."
+            : "A grow bed in the Cloche's greenhouses: a cream trough of soil on dark legs, rows of full-grown plants and a misting line over them. Grows produce on the water aboard and power; a chute or F takes the crop from the crates under it.", "storage", Tray, "welder");
         const double hx = 0.5, hz = 0.9;
         Hidden(p, -hx, 0, -hz, hx, 0.95, hz, raw: true);
         foreach (var (x, z) in new[] { (-hx + 0.08, -hz + 0.1), (hx - 0.08, -hz + 0.1), (-hx + 0.08, hz - 0.1), (hx - 0.08, hz - 0.1) })
@@ -954,6 +980,7 @@ public sealed class ClocheParts : IPartGenerator
         }
         Detail(p, -hx - 0.012, 0.66, -0.25, -hx + 0.004, 0.82, 0.25, Leaf2, "matte paint", raw: true); // (a tag)
         p.Sock("bottom", [0, 0, 0], "-y");
+        Grows(p, seed ? SeedGrow : BedGrow, [-0.38, 0.3, -0.75], [0.38, 0.6, 0.75], [hx, 0.75, 0]);
         return p.Stats(150, 300, 2, 3.0);
     }
 
@@ -1122,7 +1149,8 @@ public sealed class ClocheParts : IPartGenerator
         foreach (var s in new[] { -1, 1 })
             for (var row = 0; row < 2; row++)
                 for (var j = 0; j < 11; j++)
-                    SockOn(st, $"bed{(s < 0 ? "P" : "S")}{row}{j}", s * (row == 0 ? 1.0 : 3.4), RoofY, -13.0 + 2 * j, "+y");
+                    if (!WalkBy(row, j))
+                        SockOn(st, $"bed{(s < 0 ? "P" : "S")}{row}{j}", s * (row == 0 ? 1.0 : 3.4), RoofY, -13.0 + 2 * j, "+y");
         for (var k = 0; k < Jets.Length; k++)
             SockOn(st, $"jet{k}", Jets[k].X, Y0, Jets[k].Z, "-y");
         foreach (var l in Lamps)
@@ -1157,7 +1185,11 @@ public sealed class ClocheParts : IPartGenerator
         double[] zero = [0, 0, 0];
         var st = new Dictionary<string, int>();
         foreach (var name in order)
+        {
             st[name] = st.Count == 0 ? bp.First(name) : bp.Put(name, zero, 0);
+            if (name.StartsWith("Cloche Tank ", StringComparison.Ordinal))
+                bp.Steps[st[name]]["config"] = Kw(("fluid", "water"), ("fill", 100)); // (it leaves the yard full: the beds' water)
+        }
         int On(string sock) => st[Owner[sock]];
         int Hang(string part, string sock, string by) => bp.Hang(part, On(sock), sock, by);
         int Turned(string part, string sock, string by) => bp.HangTurned(part, On(sock), sock, by, BuildingParts.RY180);
@@ -1189,7 +1221,8 @@ public sealed class ClocheParts : IPartGenerator
         foreach (var s in new[] { "P", "S" })
             for (var row = 0; row < 2; row++)
                 for (var j = 0; j < 11; j++)
-                    Hang((j + row) % 2 == 0 ? "Cloche Grow Bed" : "Cloche Seed Bed", $"bed{s}{row}{j}", "bottom");
+                    if (!WalkBy(row, j))
+                        Hang((j + row) % 2 == 0 ? "Cloche Grow Bed" : "Cloche Seed Bed", $"bed{s}{row}{j}", "bottom");
         return bp.Json();
     }
 

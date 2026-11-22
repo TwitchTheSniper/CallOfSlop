@@ -19,6 +19,14 @@ grow racks and beds are its own. It has its own gallery page, apart from the Shi
   side of the aft block on a dark pylon, cream intake ring round a dark grille, a pipe in from the block.
 - On the aft roof: two stacks, three masts with lamps, a radome on a yellow lattice tower (fore port corner), a grille.
 
+## Hydroponics
+
+Karl (2026-11-22): the Cloche is the farmers' hydroponics production ship (one of them), and it needs water to work. Its grow racks,
+grow beds and seed beds are growers (production.md "Grow beds"): each grows produce into the crates under it while the power plant
+runs and the four flank tanks (Cloche Tank Fore/Aft Port/Stbd, Fluid Tanks of 30 and 24 kl, `TankForeLitres`, `TankAftLitres`) hold
+water. The blueprint fills them with water. Two outer beds beside each greenhouse hatch are left out (`WalkBy`), so the way aft goes
+round the hatch. Not yet: a Farmers power, a market for produce, a world source of water.
+
 ## Inside and flying
 
 - One deck the length of the hull at 1.3 m: the entry room behind the cab (the side door off the port step), the grow hall (three
@@ -29,5 +37,5 @@ grow racks and beds are its own. It has its own gallery page, apart from the Shi
   bulkheads, the aft block's sides, roof and stern, six greenhouse bays, four tanks, two nacelles. Every part says
   `"collider": "boxes"`: its hidden and solid boxes collide, the faceted looks are drawn only (a 12- or 16-sided look hull crashed the
   narrow phase in the first flight check).
-- Checks run: `--check-vehicle` 0 coplanar faces between parts; `--check-building` ok (263 m2); "No z-fighting", "Assembling" and
+- Checks run: `--check-vehicle` 0 coplanar faces between parts; `--check-building` ok (285 m2); "No z-fighting", "Assembling" and
   "Compound collision" pass.

@@ -1,11 +1,46 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cloche Grow Bed",
-  "description": "A grow bed in the Cloche's greenhouses: a cream trough of soil on dark legs, rows of full-grown plants and a misting line over them.",
+  "description": "A grow bed in the Cloche's greenhouses: a cream trough of soil on dark legs, rows of full-grown plants and a misting line over them. Grows produce on the water aboard and power; a chute or F takes the crop from the crates under it.",
   "group": "Ship",
   "section": "Cloche greenhouse ship",
-  "role": "frame",
+  "role": "storage",
   "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "produce",
+      "capacity": 200,
+      "min": [
+        -0.38,
+        0.3,
+        -0.75
+      ],
+      "max": [
+        0.38,
+        0.6,
+        0.75
+      ]
+    },
+    "grow": {
+      "units": 4,
+      "seconds": 120,
+      "litres": 3.0
+    }
+  },
+  "power": 600,
+  "ports": [
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0.5,
+        0.75,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
   "mass": 150.0,
   "health": 300,
   "armour": 2,

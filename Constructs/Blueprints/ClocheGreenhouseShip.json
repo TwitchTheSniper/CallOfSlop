@@ -82,13 +82,21 @@
       "part": "Cloche Tank Aft Port",
       "on": 3,
       "socket": "j4",
-      "by": "j0"
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
     },
     {
       "part": "Cloche Tank Aft Stbd",
       "on": 4,
       "socket": "j4",
-      "by": "j0"
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
     },
     {
       "part": "Cloche Side Port 1",
@@ -124,13 +132,21 @@
       "part": "Cloche Tank Fore Port",
       "on": 6,
       "socket": "j4",
-      "by": "j0"
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
     },
     {
       "part": "Cloche Tank Fore Stbd",
       "on": 7,
       "socket": "j4",
-      "by": "j0"
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
     },
     {
       "part": "Cloche Aft Side Port",
@@ -655,18 +671,6 @@
     {
       "part": "Cloche Seed Bed",
       "on": 19,
-      "socket": "bedP12",
-      "by": "bottom"
-    },
-    {
-      "part": "Cloche Grow Bed",
-      "on": 19,
-      "socket": "bedP13",
-      "by": "bottom"
-    },
-    {
-      "part": "Cloche Seed Bed",
-      "on": 19,
       "socket": "bedP14",
       "by": "bottom"
     },
@@ -782,18 +786,6 @@
       "part": "Cloche Grow Bed",
       "on": 30,
       "socket": "bedS11",
-      "by": "bottom"
-    },
-    {
-      "part": "Cloche Seed Bed",
-      "on": 19,
-      "socket": "bedS12",
-      "by": "bottom"
-    },
-    {
-      "part": "Cloche Grow Bed",
-      "on": 19,
-      "socket": "bedS13",
       "by": "bottom"
     },
     {

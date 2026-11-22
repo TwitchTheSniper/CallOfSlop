@@ -212,7 +212,7 @@ public sealed partial class Game
         {
             ref var p = ref c.Parts[i];
             var d = p.D;
-            if (p.Broken || !d.IsBin || d.IsGatherer || d.IsRecycler || d.IsRefiner || d.IsAuger || d.ShellBody || d.IsAssembler)
+            if (p.Broken || !d.IsBin || d.IsGatherer || d.IsGrower || d.IsRecycler || d.IsRefiner || d.IsAuger || d.ShellBody || d.IsAssembler)
                 continue;
             if (Constructs.StoreOf(c, i) is not { } st || st.KindN > 0 || mat != 0 && (st.Amount > 0 && st.Material != mat || !ConstructStorage.BinTakes(d, mat)))
                 continue;
