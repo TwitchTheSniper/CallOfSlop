@@ -323,7 +323,7 @@ public static class LogicSensors
             return 0;
         ref var p = ref c.Parts[part];
         var d = p.D;
-        if (ConstructConfig.Has(d, CfgKey.Fill))
+        if (ConstructConfig.Has(d, CfgKey.Fill) && !ConstructStoreVolume.IsFillBin(d)) // (a bin's fill setting only follows its store)
             return Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f, 0, 1);
         if (d.Role == PartRole.FuelTank)
         {

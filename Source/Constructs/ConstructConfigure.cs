@@ -53,13 +53,15 @@ public sealed partial class ConstructEdits
         var changed = 0;
         foreach (var i in parts)
         {
+            if (ConstructStoreVolume.IsFillBin(d))
+                ConstructStoreVolume.Follow(world, c, i); // (a bin's settings say what is in it now, so setting the same fill again refills it)
             ref var p = ref c.Parts[i];
             var any = false;
             Span<float> before = stackalloc float[ConstructConfig.MaxSlots];
             var overlap0 = 0f;
             var litres0 = d.IsTankVolume ? ConstructFluid.Litres(p, d) : 0f;
             var fill0 = d.IsTankVolume ? ConstructConfig.Get(p, d, CfgKey.Fill, 0) : 0f;
-            if (d.IsSizedBox || d.IsModularRack)
+            if (d.IsSizedBox || d.IsModularRack || ConstructStoreVolume.IsFillBin(d))
             {
                 if (d.IsSizedBox)
                     overlap0 = ConstructStoreVolume.Overlap(c, i);
@@ -76,7 +78,7 @@ public sealed partial class ConstructEdits
                     p.Cfg[k] = before[k];
                 return small;
             }
-            if (d.IsVolumeStore && ConstructStoreVolume.ContentsChanged(ref p, d, before) && ConstructStoreVolume.SetContents(world, c, i, limit: true) is { } busy)
+            if (ConstructStoreVolume.HasContents(d) && ConstructStoreVolume.ContentsChanged(ref p, d, before) && ConstructStoreVolume.SetContents(world, c, i, limit: true) is { } busy)
             {
                 for (var k = 0; k < d.Config.Length; k++)
                     p.Cfg[k] = before[k];
