@@ -61,12 +61,13 @@ public static partial class ConstructPress
     private static readonly List<Construct> _near = new(32);
 
     /// <summary>A chute's delivery, done at the start of the next step: a chute moves inside the routes' own loop, where parts can't come and go.</summary>
-    public readonly record struct Feed(ushort FromBody, ushort FromPart, ushort ToBody, ushort ToPart, ushort Die);
+    public readonly record struct Feed(ushort FromBody, ushort FromPart, ushort ToBody, ushort ToPart, ushort Die, bool Swap = false, bool Return = false); // (Swap: a die for the head order, the old one back to its rack; Return: a press gives a die back to a shared rack: PressDieSwap.cs)
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
         for (var k = 0; k < world.PressFeeds.Count; k++)
-            Deliver(world, query, world.PressFeeds[k]);
+            if (Deliver(world, query, world.PressFeeds[k]) is var (body, removed) && removed >= 0)
+                ShiftFeeds(world, k + 1, body, removed); // (a die swap took a part off: the later feeds' indices on that body move down)
         world.PressFeeds.Clear();
         if (++world.PressTicks < Every)
             return;
@@ -980,10 +981,12 @@ public static partial class ConstructPress
             Queue(world, new Feed(cf.Id, (ushort)from, ct.Id, (ushort)to, ConstructParts.None));
             return true;
         }
+        if (ChuteSwap(world, cf, from, src, ct, to))
+            return true; // (the die its head order needs, from a rack: swapped in at the next step)
         var d = ct.DefOf(to);
-        if (d.PressDieSocket >= 0 && DieIn(ct, to) < 0)
+        if (d.PressDieSocket >= 0 && DieIn(ct, to) < 0 && DieWanted(ct, to) == null) // (a press with an order takes only its order's die: ChuteSwap)
             for (var s = 0; s < src.SlotCount; s++)
-                if (ConstructParts.Get(src.Def[s]) is { IsPressDie: true } die && DieClassOf(die) == d.Sockets[d.PressDieSocket].Class && world.TakeOut(cf, from, s) is { } moved)
+                if (ConstructParts.Get(src.Def[s]) is { IsPressDie: true } die && DieClassOf(die) == d.Sockets[d.PressDieSocket].Class && FreeToTake(world, cf, from, ct, to, die) && world.TakeOut(cf, from, s) is { } moved)
                 {
                     Queue(world, new Feed(cf.Id, (ushort)from, ct.Id, (ushort)to, moved.Id));
                     return true;
@@ -1018,38 +1021,66 @@ public static partial class ConstructPress
             world.PressFeeds.Add(f);
     }
 
-    private static void Deliver(ConstructWorld world, IWorldQuery query, in Feed f)
+    /// <summary>A part came off body <paramref name="body"/> at index <paramref name="removed"/>: the feeds from <paramref name="from"/> on that name its parts follow.</summary>
+    private static void ShiftFeeds(ConstructWorld world, int from, ushort body, int removed)
     {
-        if (world.Get(f.ToBody) is not { } to)
-            return;
-        if (to.Dirty)
+        for (var j = from; j < world.PressFeeds.Count; j++)
+        {
+            var g = world.PressFeeds[j];
+            if (g.FromBody == body && g.FromPart > removed)
+                g = g with { FromPart = (ushort)(g.FromPart - 1) };
+            else if (g.FromBody == body && g.FromPart == removed)
+                g = g with { FromPart = ushort.MaxValue }; // (it was the part that went)
+            if (g.ToBody == body && g.ToPart > removed)
+                g = g with { ToPart = (ushort)(g.ToPart - 1) };
+            else if (g.ToBody == body && g.ToPart == removed)
+                g = g with { ToPart = ushort.MaxValue };
+            world.PressFeeds[j] = g;
+        }
+    }
+
+    /// <summary>A chute's delivery. The body and the part index a die swap removed from it, or -1.</summary>
+    private static (ushort Body, int Removed) Deliver(ConstructWorld world, IWorldQuery query, in Feed f)
+    {
+        if (f.Return)
+            return (f.FromBody, DeliverReturn(world, f));
+        var to = world.Get(f.ToBody);
+        if (to is { Dirty: true })
             to.Rebuild();
-        if (f.ToPart >= to.PartCount || !to.Parts[f.ToPart].D.IsPress || world.StoreOf(to, f.ToPart) is not { } st)
-            return;
+        if (to == null || f.ToPart >= to.PartCount || !to.Parts[f.ToPart].D.IsPress || world.StoreOf(to, f.ToPart) is not { } st)
+        {
+            if (f.Swap && ConstructParts.Get(f.Die) is { } lost)
+                SwapBack(world, f, lost); // (the press went: the die goes back on its rack)
+            return (f.ToBody, -1);
+        }
         if (f.Die != ConstructParts.None)
         {
-            if (ConstructParts.Get(f.Die) is { } die && (DieIn(to, f.ToPart) >= 0 || !FitDie(world, to, f.ToPart, die)))
+            if (f.Swap && ConstructParts.Get(f.Die) is { } swapped)
+                return (f.ToBody, DeliverSwap(world, to, f, swapped));
+            else if (ConstructParts.Get(f.Die) is { } die && (DieIn(to, f.ToPart) >= 0 || !FitDie(world, to, f.ToPart, die)))
                 world.TrayAdd(st, to.Parts[f.ToPart].D, die); // (the slot filled meanwhile: it isn't lost)
-            return;
+            return (f.ToBody, -1);
         }
         if (world.Get(f.FromBody) is not { } from)
-            return;
+            return (f.ToBody, -1);
         if (from.Dirty)
             from.Rebuild();
         if (f.FromPart >= from.PartCount || !from.Parts[f.FromPart].D.IsExtruder)
-            return;
+            return (f.ToBody, -1);
         var piece = ConstructExtruder.ProductOf(from, f.FromPart);
         if (piece < 0 || from.Parts[piece].D is not { IsExtrusion: true } pd)
-            return;
+            return (f.ToBody, -1);
         var bay = BayFor(PressTable.Current, world, query, to, f.ToPart, pd.ExKey, pd, out var why, out var at);
         if (bay < 0)
         {
             SetRefusal(world, st, at, why);
-            return;
+            return (f.ToBody, -1);
         }
         var health = from.Parts[piece].Health / MathF.Max(1, pd.Health);
-        if (FitPiece(world, to, f.ToPart, bay, pd.ExKey, health, from.Parts[piece].Paint))
-            world.RemovePart(from, piece);
+        if (!FitPiece(world, to, f.ToPart, bay, pd.ExKey, health, from.Parts[piece].Paint))
+            return (f.ToBody, -1);
+        world.RemovePart(from, piece);
+        return (f.FromBody, piece); // (the piece left the Extruder's body: later feeds on it shift)
     }
 
     // ---- Hands ---------------------------------------------------------------------------------------------------
@@ -1481,6 +1512,8 @@ public static partial class ConstructPress
                 : "");
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
+        if (!p.Broken && !st.Busy && DieWanted(c, part) is { } wanted)
+            problem = $"its order needs the {wanted.Family} Die: waits for it from a Die Rack chuted into it"; // (PressDieSwap.cs: from the rack, or given back by a press sharing it)
         string? action = null;
         if (near)
         {

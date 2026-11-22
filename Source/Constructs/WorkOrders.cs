@@ -10,18 +10,19 @@ namespace CallOfSlop;
 public struct WorkOrder
 {
     public ExtrusionKey Key; // a piece: Growing false; a wheel's L is 0
-    public ushort Part; // a catalogue part's id (a file part's, never a run-time one), or ConstructParts.None for a piece
+    public ushort Part; // a catalogue part's id (a file part's; a run-time one only with its key in Name: an Assembler's rack or design, AssembledParts), or ConstructParts.None for a piece
     public ushort Count, Made;
     public ushort Chain; // server: the chained order's link it serves (ConstructLogisticsPlan; 0: the player's own); saved in the LOGI block, never sent
     public byte Rank; // server: its order's rank in the queue (ConstructLogisticsPlan.Ranked: 1 a stock refill, 2 Low, 3 Normal, 4 High; 0 the player's own line, as Normal); never sent; saved with its line (fix-ups 2: an older save reads 0, Normal), and a chain line's is set again with its link at load (ConstructLogisticsPlan.Mark)
     public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
     public readonly bool IsPiece => Part == ConstructParts.None && Name == null;
-    public readonly bool IsPanel => Name != null && !Pressed.IsName(Name);
+    public readonly bool IsPanel => Name != null && !Pressed.IsName(Name) && !AssembledParts.IsName(Name);
     public readonly bool IsPressed => Pressed.IsName(Name); // a pressed part by its key (Press phase 4): a Press's order
+    public readonly bool IsMade => AssembledParts.IsName(Name); // a run-time rack or ordnance design by its key, Part its id here: an Assembler's order
 
     /// <summary>What makes it: 0 an Extruder or a Former (a piece), 1 an Assembler or a Press (a catalogue part; a preset is a Press's), 2 a Panel Former (a named panel) or a Press (a pressed key).</summary>
-    public readonly int Kind => Name != null ? 2 : Part != ConstructParts.None ? 1 : 0;
+    public readonly int Kind => Name != null && !IsMade ? 2 : Part != ConstructParts.None ? 1 : 0;
     public readonly int Left => Math.Max(0, Count - Made);
 }
 
@@ -107,8 +108,10 @@ public static class WorkOrders
             return ConstructLaserCutter.Refusal(world, c, part, d, o);
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
+        if (o.IsMade && !d.IsAssembler)
+            return $"the {d.Name} doesn't make it: the {o.Name} is an Assembler's order";
         if (d.IsPress)
-            return PressRefusal(c, part, d, o);
+            return PressRefusal(world, c, part, d, o);
         if (d.IsPanelFormer)
             return ConstructPanelFormer.Refusal(world, c, part, d, o);
         if (o.IsPressed)
@@ -207,7 +210,7 @@ public static class WorkOrders
     /// A Press's side (Press phase 4): a pressed key, or a catalogue part that is a preset, whose die is the one fitted and whose blank is
     /// inside the press's across. The order sets what the press makes: its bays take only the order's blank (ConstructPress.SizedRefusal).
     /// </summary>
-    private static string? PressRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    private static string? PressRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (Pressed.SpecOf(o) is not { } spec)
             return o.IsPiece ? $"the {d.Name} presses parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order"
@@ -215,10 +218,11 @@ public static class WorkOrders
                 : $"no die presses the {ConstructParts.Def(o.Part).Name}";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
-        if (ConstructPress.SizedDieOf(PressTable.Current, c, part) is not { } die)
-            return $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die";
-        if (!ReferenceEquals(die, spec.Die))
-            return $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die";
+        // A die it doesn't hold is fine when a chute into it comes from a rack that holds one: it swaps to it for this order (PressDieSwap.cs).
+        var die = ConstructPress.SizedDieOf(PressTable.Current, c, part);
+        if (!ReferenceEquals(die, spec.Die) && !ConstructPress.DieRackOf(world, c, part, spec.Die, out _, out _))
+            return die == null ? $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)"
+                : $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)";
         var across = Pressed.Across(spec.Blank);
         if (!ConstructPress.Fits(c, part, spec.Blank))
             return $"the blank is {across / 100f:0.00} m across and {Math.Max(spec.Blank.W, spec.Blank.H) / 100f:0.00} m wide, {ConstructPress.TooBig(c, part)}";
@@ -808,8 +812,10 @@ public static class WorkOrders
                     named.Made = r.U16();
                     named.Name = r.Text(ConstructParts.MaxRuntimeName);
                     named.Key = new ExtrusionKey(0, 0, 0, 0, nm, false, ExShape.Section);
-                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name) && !HullLoft.IsCutName(named.Name) && !Pressed.IsName(named.Name))
+                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name) && !HullLoft.IsCutName(named.Name) && !Pressed.IsName(named.Name) && !AssembledParts.IsName(named.Name))
                         throw new MalformedPacketException("a bad panel order");
+                    if (AssembledParts.IsName(named.Name)) // (a rack or design by its key: its id is this process's own)
+                        named.Part = (ushort)(AssembledParts.Def(named.Name)?.Id ?? ConstructParts.None);
                     q.Add(named);
                     continue;
                 }
@@ -917,6 +923,8 @@ public static class WorkOrders
                 q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
             else if (pc is >= 1 and <= MaxCount && Pressed.IsName(pn2) && PressedOrder(pn2, pc) is { } pressed)
                 q.Add(pressed with { Made = Math.Min(pm, pc) }); // (a pressed part's order, Press phase 4: a key this build can't read is left out)
+            else if (pc is >= 1 and <= MaxCount && AssembledParts.Order(pn2, pc) is { } byKey)
+                q.Add(byKey with { Made = Math.Min(pm, pc) }); // (a rack or design by its key, its id made again here)
             return;
         }
         var mask = r.U64();

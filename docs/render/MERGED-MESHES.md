@@ -33,6 +33,12 @@ Merged all the same since 2026-11-20 (the 1 km Mainframe walked 28,000 boxes a f
   every check (4 drawn frames), so a row of lamps across chunks switches together, and every frame while a lamp's
   configure panel is open on that body, so the colour preview follows the slider. A lamp with glass is walked.
 - **Designed ordnance**: merged with its wings folded, as it sits until it drops (`FoldWing` in `BuildChunk`).
+- **Machine blocks** (since 2026-11-22: the Zero Day Works walked 2,990 parts a frame, 1,442 of them Mast Blocks whose
+  only changing boxes are four corner lamps): a cell of a block machine (Block, Shared or End role), a Roller Tile and a
+  Crane Rail Block put every box but their "work" boxes and status lamp in their chunk; only those are drawn each frame
+  (`WorkSplits`, DrawPart with `_workOnly`), at the machine's state. A glow-only one past where the far detail level drops
+  boxes under 25 cm isn't drawn at all (`FarGlow`). A Core, a Gantry Carriage, a tier piece, a lamp, an Extruder, a Panel
+  Former and a Laser Cutter are walked whole as before (they draw more than their work boxes: a blank on the bed).
 
 A body with fewer than `MergeMinBoxes` (24) static boxes is walked whole: its own draws would cost more than its boxes do
 in the shared instanced batch. Outlines, ghosts, selection and the frozen outline are drawn over the top as before.

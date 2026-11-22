@@ -120,7 +120,7 @@ public sealed class PressPattern
     /// <see cref="ByKnot"/> this pattern with each knot's part as its like and its blank as its preset (made at load: a press allocates nothing).
     /// </summary>
     public bool LikeNearest;
-    public bool PresetsOnly; // a door's pattern (the leg pods, 2026-11-22): its presets' blanks only, since a stretched copy would keep its like's hinge, travel and gear reach (set after the presets load)
+    public bool PresetsOnly; // a door's pattern (the leg pods, 2026-11-22), a ship works piece's or a capacitor's: its presets' blanks only, since a stretched copy would keep its like's hinge, travel and gear reach, or its thrust, race and charge (set after the presets load)
     public bool Auto = true; // "auto": false: never what a press set to Auto makes, by a preset's blank or the nearest (the Pattern setting or an order picks it: the generated receivers, sized parts phase 6)
     public PressPreset[] Knots = [];
     public PressPattern[] ByKnot = [];
@@ -277,7 +277,7 @@ internal static class PressDies
         }
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)
-                pat.PresetsOnly = pat.Like.Door != null && Array.Exists(die.Presets, q => q.Pattern == pat);
+                pat.PresetsOnly = (pat.Like.Door != null || pat.Like.WorksKind != WorksKind.None || pat.Like.CapacitorKJ > 0) && Array.Exists(die.Presets, q => q.Pattern == pat);
         // A likeBy-nearest pattern's knots: its presets by size across (one at least; each a part of its like part's kind).
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)

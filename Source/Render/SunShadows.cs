@@ -55,7 +55,22 @@ public static unsafe class SunShadows
         public GlBuffer Vbo, Shapes;
         public int Count, ShapeVerts, Stamp = -1, Parts = -1, Doors = -1, Used;
         public float Radius;
+
+        // The boxes and shapes sorted by cell of the body's frame (CellSize), and each non-empty cell's slice and bounds, in
+        // cell order: a pass that covers part of a big body (the sun's square, a lamp's reach) draws only the cells it reaches.
+        public int Cells;
+        public int[] BoxFirst = [], BoxCount = [], ShapeFirst = [], ShapeCount = [];
+        public Vector3[] Min = [], Max = [];
     }
+
+    /// <summary>The side of a caster's cell (m, the body's frame): a works' 96 x 240 m floor is some 90 cells, a ship a few.</summary>
+    public const float CellSize = 16f;
+
+    /// <summary>Most cells a caster is cut into (the cell grows past it): the per-pass loop stays short whatever the body's size.</summary>
+    private const int MaxCells = 1024;
+
+    /// <summary>Casters' cells drawn and cells skipped as out of reach in the last frame's passes (F9, the bench).</summary>
+    public static int CellsDrawn, CellsSkipped;
 
     private struct Pick
     {
@@ -86,6 +101,7 @@ public static unsafe class SunShadows
     {
         Live = false;
         LastBodies = LastBoxes = 0;
+        CellsDrawn = CellsSkipped = 0; // (this frame's passes, the sun's first: RoomShade and LampShadows add theirs)
         _frame++;
         if ((_frame & 255) == 0)
             DropOld();
@@ -139,7 +155,7 @@ public static unsafe class SunShadows
         _prog.Use();
         Native.glBindVertexArray(_vao);
         int bodies = 0, boxes = 0;
-        DrawPicked(n, lightClip, centre, alpha, blendTicks, ref bodies, ref boxes);
+        DrawPicked(n, lightClip, centre, sun, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes);
         (LastBodies, LastBoxes) = (bodies, boxes);
         Native.glBindVertexArray(default);
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
@@ -194,28 +210,118 @@ public static unsafe class SunShadows
         return n;
     }
 
-    /// <summary>Draws the picked bodies' boxes into the bound depth target with <paramref name="lightClip"/> (positions less <paramref name="centre"/>); the depth program and arrays must be bound.</summary>
-    internal static void DrawPicked(int n, Matrix4x4 lightClip, Vector3 centre, float alpha, bool blendTicks, ref int bodies, ref int boxes)
+    /// <summary>
+    /// Draws the picked bodies' boxes into the bound depth target with <paramref name="lightClip"/> (positions less <paramref name="centre"/>),
+    /// an orthographic view along <paramref name="dir"/> that covers <paramref name="reach"/> m either side of the line through
+    /// <paramref name="centre"/>: only the cells of each body that reach that line are drawn. The depth program and arrays must be bound.
+    /// </summary>
+    internal static void DrawPicked(int n, Matrix4x4 lightClip, Vector3 centre, Vector3 dir, float reach, float alpha, bool blendTicks, ref int bodies, ref int boxes)
     {
         for (var k = 0; k < n; k++)
         {
             var c = Picks[k].Body;
             var cast = CasterOf(c);
-            if (cast.Count == 0)
+            if (cast.Count == 0 && cast.ShapeVerts == 0)
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var mvp = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos - centre) * lightClip;
             Native.glUniformMatrix4fv(_lMvp, 1, false, &mvp.M11);
-            Native.glBindBuffer(GL_ARRAY_BUFFER, cast.Vbo);
-            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
-            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12);
-            Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, cast.Count);
-            DrawShapes(cast.Shapes, cast.ShapeVerts);
+            var back = Quaternion.Conjugate(rot);
+            boxes += DrawCells(cast, Vector3.Transform(centre - pos, back), Vector3.Transform(dir, back), reach, -1, false);
             bodies++;
-            boxes += cast.Count;
         }
     }
+
+    /// <summary>
+    /// A body's caster into the bound depth target, the body's matrix set: the cells whose bounds come within <paramref name="reach"/> of
+    /// <paramref name="at"/> (the body's frame), or of the line through it along <paramref name="dir"/> when that isn't zero. Runs of
+    /// neighbouring cells go as one draw. <paramref name="selfLoc"/>: a uniform set to <paramref name="self"/> for the boxes and 0 for the
+    /// shapes (<see cref="LampShadows"/>' fixture test), or -1. Returns the boxes drawn.
+    /// </summary>
+    private static int DrawCells(Caster k, Vector3 at, Vector3 dir, float reach, int selfLoc, bool self)
+    {
+        var line = dir.LengthSquared() > 1e-8f;
+        if (line)
+            dir = Vector3.Normalize(dir);
+        var drawn = 0;
+        if (k.Count > 0)
+        {
+            if (selfLoc >= 0)
+                Native.glUniform1f(selfLoc, self ? 1f : 0f);
+            Native.glBindBuffer(GL_ARRAY_BUFFER, k.Vbo);
+            var first = -1;
+            var count = 0;
+            for (var q = 0; q <= k.Cells; q++)
+            {
+                var take = q < k.Cells && k.BoxCount[q] > 0 && Reaches(k.Min[q], k.Max[q], at, dir, line, reach);
+                if (q < k.Cells && !take && k.BoxCount[q] > 0)
+                    CellsSkipped++;
+                if (take && first >= 0 && first + count == k.BoxFirst[q])
+                {
+                    count += k.BoxCount[q];
+                    CellsDrawn++;
+                    continue;
+                }
+                if (count > 0)
+                {
+                    Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)(first * 24L));
+                    Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)(first * 24L + 12));
+                    Native.glDrawElementsInstanced(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, null, count);
+                    drawn += count;
+                }
+                (first, count) = take ? (k.BoxFirst[q], k.BoxCount[q]) : (-1, 0);
+                if (take)
+                    CellsDrawn++;
+            }
+        }
+        if (k.ShapeVerts > 0)
+        {
+            if (selfLoc >= 0)
+                Native.glUniform1f(selfLoc, 0f); // (the fixture test is for boxes: a shape's corner near the lamp would tear its triangle)
+            Native.glBindVertexArray(_shapeVao);
+            Native.glBindBuffer(GL_ARRAY_BUFFER, k.Shapes);
+            Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no corner)
+            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
+            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no half size)
+            var first = -1;
+            var count = 0;
+            for (var q = 0; q <= k.Cells; q++)
+            {
+                var take = q < k.Cells && k.ShapeCount[q] > 0 && Reaches(k.Min[q], k.Max[q], at, dir, line, reach);
+                if (take && first >= 0 && first + count == k.ShapeFirst[q])
+                {
+                    count += k.ShapeCount[q];
+                    continue;
+                }
+                if (count > 0)
+                    Native.glDrawArrays(GL_TRIANGLES, first, count);
+                (first, count) = take ? (k.ShapeFirst[q], k.ShapeCount[q]) : (-1, 0);
+            }
+            Native.glBindVertexArray(_vao);
+        }
+        return drawn;
+    }
+
+    /// <summary>Does a cell's box come within <paramref name="reach"/> of a point (or of the line through it along <paramref name="dir"/>, a unit vector)?</summary>
+    private static bool Reaches(Vector3 min, Vector3 max, Vector3 at, Vector3 dir, bool line, float reach)
+    {
+        var mid = (min + max) * 0.5f;
+        var half = (max - min) * 0.5f;
+        if (!line)
+        {
+            var d = Vector3.Max(Vector3.Abs(at - mid) - half, Vector3.Zero);
+            return d.LengthSquared() <= reach * reach;
+        }
+        // (the line against the cell's bounding sphere: a little generous, never short)
+        var rel = mid - at;
+        var off = rel - dir * Vector3.Dot(rel, dir);
+        var r = reach + half.Length();
+        return off.LengthSquared() <= r * r;
+    }
+
+    /// <summary>A body's caster boxes within <paramref name="reach"/> of <paramref name="at"/> (its own frame), into the bound depth target (<see cref="LampShadows"/>, the body's matrix set); the boxes drawn.</summary>
+    internal static int DrawNear(Construct c, Vector3 at, float reach, int selfLoc, bool self) => DrawCells(CasterOf(c), at, Vector3.Zero, reach, selfLoc, self);
 
     /// <summary>Binds the depth program and its arrays (<see cref="RoomShade"/>'s passes); false when it can't be made.</summary>
     internal static bool BindDepthProgram()
@@ -393,38 +499,14 @@ public static unsafe class SunShadows
         return true;
     }
 
+    /// <summary>A shaped box smaller than this (its largest half size, m) still casts as its box: a bolt's or a knob's shadow doesn't show the difference.</summary>
+    private const float ShapeMinHalf = 0.12f;
+
     /// <summary>
     /// The body's boxes at rest in its own frame (axis-aligned there: parts turn in quarter turns), made again on a rebuild and
     /// whenever a door starts moving or settles (<see cref="Construct.DoorPoseStamp"/>): a settled door's parts sit at its pose
     /// (shut or open), and a moving door is left out, so an open door lets the sun, the sky and lamps through.
     /// </summary>
-    internal static (GlBuffer Vbo, int Count, GlBuffer Shapes, int ShapeVerts) CasterBoxes(Construct c)
-    {
-        var k = CasterOf(c);
-        return (k.Vbo, k.Count, k.Shapes, k.ShapeVerts);
-    }
-
-    /// <summary>
-    /// Draws a body's shaped boxes as their own triangles (<see cref="CasterOf"/>) with whichever depth program is in use: each
-    /// vertex comes in as the caster's centre with no half size, so <c>iCentre + aPos * iHalf</c> is the point itself. Leaves the
-    /// unit cube's arrays bound again (the caller sets the body's matrix first).
-    /// </summary>
-    internal static void DrawShapes(GlBuffer vbo, int verts)
-    {
-        if (verts == 0)
-            return;
-        Native.glBindVertexArray(_shapeVao);
-        Native.glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no corner)
-        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 24, (void*)0);
-        Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, 24, (void*)12); // (zeros: no half size)
-        Native.glDrawArrays(GL_TRIANGLES, 0, verts);
-        Native.glBindVertexArray(_vao);
-    }
-
-    /// <summary>A shaped box smaller than this (its largest half size, m) still casts as its box: a bolt's or a knob's shadow doesn't show the difference.</summary>
-    private const float ShapeMinHalf = 0.12f;
-
     private static Caster CasterOf(Construct c)
     {
         if (!Casters.TryGetValue(c.Id, out var k))
@@ -441,6 +523,7 @@ public static unsafe class SunShadows
         k.Doors = c.DoorPoseStamp;
         var n = 0;
         var sv = 0;
+        var groups = 0;
         var doors = c.DoorMovingCount > 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -466,6 +549,13 @@ public static unsafe class SunShadows
                         var so = (sv + v) * 6;
                         (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
                     }
+                    if (groups == _grpFirst.Length)
+                    {
+                        Array.Resize(ref _grpFirst, groups * 2);
+                        Array.Resize(ref _grpCentre, groups * 2);
+                    }
+                    _grpFirst[groups] = sv;
+                    _grpCentre[groups++] = part.Pos + Rot24.Apply(part.Rot, b.Center);
                     sv += verts;
                     continue;
                 }
@@ -479,6 +569,7 @@ public static unsafe class SunShadows
             }
         }
         k.Count = n;
+        SortCells(k, n, groups, sv);
         Native.glBindBuffer(GL_ARRAY_BUFFER, k.Vbo);
         fixed (float* p = _boxes)
             Native.glBufferData(GL_ARRAY_BUFFER, Math.Max(n, 1) * 24, p, GL_STATIC_DRAW);
@@ -497,6 +588,131 @@ public static unsafe class SunShadows
         }
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
         return k;
+    }
+
+    private static int[] _grpFirst = new int[64], _cellOf = new int[256], _cellCount = [], _cellAt = [];
+    private static Vector3[] _grpCentre = new Vector3[64], _cellMin = [], _cellMax = [];
+    private static float[] _sorted = new float[6 * 256];
+
+    /// <summary>
+    /// <see cref="CasterOf"/>'s boxes (in <see cref="_boxes"/>) and shapes (in <see cref="_shapes"/>, <paramref name="groups"/> of them
+    /// starting at <see cref="_grpFirst"/>) put in cell order, each cell's slice and bounds kept on the caster.
+    /// </summary>
+    private static void SortCells(Caster k, int n, int groups, int sv)
+    {
+        k.Cells = 0;
+        if (n + groups == 0)
+            return;
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var b = 0; b < n; b++)
+        {
+            var at = new Vector3(_boxes[b * 6], _boxes[b * 6 + 1], _boxes[b * 6 + 2]);
+            lo = Vector3.Min(lo, at);
+            hi = Vector3.Max(hi, at);
+        }
+        for (var g = 0; g < groups; g++)
+        {
+            lo = Vector3.Min(lo, _grpCentre[g]);
+            hi = Vector3.Max(hi, _grpCentre[g]);
+        }
+        var size = CellSize;
+        int nx, ny, nz;
+        while (true)
+        {
+            nx = (int)((hi.X - lo.X) / size) + 1;
+            ny = (int)((hi.Y - lo.Y) / size) + 1;
+            nz = (int)((hi.Z - lo.Z) / size) + 1;
+            if ((long)nx * ny * nz <= MaxCells)
+                break;
+            size *= 2f;
+        }
+        var cells = nx * ny * nz;
+        if (_cellCount.Length < cells * 2)
+        {
+            _cellCount = new int[cells * 2];
+            _cellAt = new int[cells * 2];
+            _cellMin = new Vector3[cells];
+            _cellMax = new Vector3[cells];
+        }
+        if (_cellOf.Length < n + groups)
+            _cellOf = new int[Math.Max(n + groups, _cellOf.Length * 2)];
+        Array.Clear(_cellCount, 0, cells * 2); // (boxes in the first half, shape vertices in the second)
+        Array.Fill(_cellMin, new Vector3(float.MaxValue), 0, cells);
+        Array.Fill(_cellMax, new Vector3(float.MinValue), 0, cells);
+        int Cell(Vector3 at) => (Math.Clamp((int)((at.X - lo.X) / size), 0, nx - 1) * ny + Math.Clamp((int)((at.Y - lo.Y) / size), 0, ny - 1)) * nz + Math.Clamp((int)((at.Z - lo.Z) / size), 0, nz - 1);
+        for (var b = 0; b < n; b++)
+        {
+            var o = b * 6;
+            var at = new Vector3(_boxes[o], _boxes[o + 1], _boxes[o + 2]);
+            var half = new Vector3(_boxes[o + 3], _boxes[o + 4], _boxes[o + 5]);
+            var q = _cellOf[b] = Cell(at);
+            _cellCount[q]++;
+            _cellMin[q] = Vector3.Min(_cellMin[q], at - half);
+            _cellMax[q] = Vector3.Max(_cellMax[q], at + half);
+        }
+        for (var g = 0; g < groups; g++)
+        {
+            var q = _cellOf[n + g] = Cell(_grpCentre[g]);
+            var end = g + 1 < groups ? _grpFirst[g + 1] : sv;
+            _cellCount[cells + q] += end - _grpFirst[g];
+            for (var v = _grpFirst[g]; v < end; v++)
+            {
+                var p = new Vector3(_shapes[v * 6], _shapes[v * 6 + 1], _shapes[v * 6 + 2]);
+                _cellMin[q] = Vector3.Min(_cellMin[q], p);
+                _cellMax[q] = Vector3.Max(_cellMax[q], p);
+            }
+        }
+        // Each cell's start, boxes and shape vertices apart.
+        int bAt = 0, sAt = 0, used = 0;
+        for (var q = 0; q < cells; q++)
+        {
+            _cellAt[q] = bAt;
+            _cellAt[cells + q] = sAt;
+            bAt += _cellCount[q];
+            sAt += _cellCount[cells + q];
+            if (_cellCount[q] + _cellCount[cells + q] > 0)
+                used++;
+        }
+        if (k.BoxFirst.Length < used)
+        {
+            k.BoxFirst = new int[used];
+            k.BoxCount = new int[used];
+            k.ShapeFirst = new int[used];
+            k.ShapeCount = new int[used];
+            k.Min = new Vector3[used];
+            k.Max = new Vector3[used];
+        }
+        var u = 0;
+        for (var q = 0; q < cells; q++)
+            if (_cellCount[q] + _cellCount[cells + q] > 0)
+            {
+                (k.BoxFirst[u], k.BoxCount[u], k.ShapeFirst[u], k.ShapeCount[u], k.Min[u], k.Max[u]) = (_cellAt[q], _cellCount[q], _cellAt[cells + q], _cellCount[cells + q], _cellMin[q], _cellMax[q]);
+                u++;
+            }
+        k.Cells = used;
+        // The boxes in cell order.
+        if (_sorted.Length < Math.Max(n * 6, sv * 6))
+            _sorted = new float[Math.Max(n * 6, sv * 6)];
+        for (var b = 0; b < n; b++)
+        {
+            var to = _cellAt[_cellOf[b]]++ * 6;
+            Array.Copy(_boxes, b * 6, _sorted, to, 6);
+        }
+        (_boxes, _sorted) = (_sorted, _boxes);
+        if (groups == 0)
+            return;
+        if (_sorted.Length < sv * 6)
+            _sorted = new float[sv * 6];
+        for (var g = 0; g < groups; g++)
+        {
+            var end = g + 1 < groups ? _grpFirst[g + 1] : sv;
+            var verts = end - _grpFirst[g];
+            var to = _cellAt[cells + _cellOf[n + g]];
+            _cellAt[cells + _cellOf[n + g]] += verts;
+            Array.Copy(_shapes, _grpFirst[g] * 6, _sorted, to * 6, verts * 6);
+        }
+        (_shapes, _sorted) = (_sorted, _shapes);
     }
 
     private static void DropOld()
