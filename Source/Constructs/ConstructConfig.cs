@@ -910,8 +910,8 @@ public static class ConstructConfig
                 CfgKey.Lead or CfgKey.BackDrive => d.RailDrive == RailDriveKind.Shaft,
                 CfgKey.Limited => d.JointType == JointType.Swivel,
                 CfgKey.Fluid => d.Role == PartRole.FluidTank,
-                CfgKey.Fill => d.Role == PartRole.FluidTank || d.IsVolumeStore,
-                CfgKey.Material => d.IsVolumeStore,
+                CfgKey.Fill => d.Role == PartRole.FluidTank || d.IsVolumeStore || d.IsBin && d.Role == PartRole.Storage,
+                CfgKey.Material => d.IsVolumeStore || d.IsBin && d.Role == PartRole.Storage, // (a bin's: ConstructStoreVolume.IsFillBin)
                 CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Operator => d.Logic is CLogic.Compare or CLogic.MathBlock,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
