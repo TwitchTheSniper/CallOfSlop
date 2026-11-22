@@ -1,0 +1,268 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Bow Ladder",
+  "description": "The ladder from the Cloche's port step up to the balcony across its bow. F climbs it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "ladder": 3.3,
+  "mass": 89.6,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2e302e",
+  "attachSeconds": 3.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.19
+      ],
+      "max": [
+        0.3,
+        4.2,
+        -0.005
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.22,
+        4.202,
+        -0.12
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.22,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.28,
+        4.202,
+        -0.12
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.26,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.3,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.54,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.58,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.82,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.86,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        1.1,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.14,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        1.38,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.42,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        1.66,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.7,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        1.94,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.98,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        2.22,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        2.26,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        2.5,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        2.54,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        2.78,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        2.82,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        3.06,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        3.1,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.22,
+        3.34,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        3.38,
+        -0.135
+      ],
+      "color": "#7d817e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.3,
+        4.15,
+        -0.19
+      ],
+      "max": [
+        0.3,
+        4.2,
+        -0.11
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        3.22,
+        -0.19
+      ],
+      "dir": "-z"
+    }
+  ]
+}

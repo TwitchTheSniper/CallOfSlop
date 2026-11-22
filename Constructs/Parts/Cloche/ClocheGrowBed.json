@@ -1,0 +1,496 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Grow Bed",
+  "description": "A grow bed in the Cloche's greenhouses: a cream trough of soil on dark legs, rows of full-grown plants and a misting line over them. Grows produce on the water aboard and power; a chute or F takes the crop from the crates under it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "storage",
+  "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "produce",
+      "capacity": 200,
+      "min": [
+        -0.38,
+        0.3,
+        -0.75
+      ],
+      "max": [
+        0.38,
+        0.6,
+        0.75
+      ]
+    },
+    "grow": {
+      "units": 4,
+      "seconds": 120,
+      "litres": 3.0
+    }
+  },
+  "power": 600,
+  "ports": [
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0.5,
+        0.75,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "mass": 150.0,
+  "health": 300,
+  "armour": 2,
+  "material": "steel",
+  "color": "#ebe7da",
+  "attachSeconds": 3.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -0.9
+      ],
+      "max": [
+        0.5,
+        0.95,
+        0.9
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.455,
+        0.0,
+        -0.835
+      ],
+      "max": [
+        -0.385,
+        0.62,
+        -0.765
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.385,
+        0.0,
+        -0.835
+      ],
+      "max": [
+        0.455,
+        0.62,
+        -0.765
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.455,
+        0.0,
+        0.765
+      ],
+      "max": [
+        -0.385,
+        0.62,
+        0.835
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.385,
+        0.0,
+        0.765
+      ],
+      "max": [
+        0.455,
+        0.62,
+        0.835
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.4,
+        0.25,
+        -0.8
+      ],
+      "max": [
+        0.4,
+        0.29,
+        0.8
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.5,
+        0.62,
+        -0.9
+      ],
+      "max": [
+        0.5,
+        0.88,
+        0.9
+      ],
+      "color": "#ebe7da",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.45,
+        0.88,
+        -0.85
+      ],
+      "max": [
+        0.45,
+        0.9,
+        0.85
+      ],
+      "color": "#4a3a2c",
+      "detail": true,
+      "finish": "dirt"
+    },
+    {
+      "min": [
+        -0.34,
+        0.9,
+        -0.75
+      ],
+      "max": [
+        -0.1,
+        1.147,
+        -0.51
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.292,
+        1.143,
+        -0.702
+      ],
+      "max": [
+        -0.148,
+        1.212,
+        -0.558
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.346,
+        0.9,
+        -0.336
+      ],
+      "max": [
+        -0.094,
+        1.108,
+        -0.084
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.2956,
+        1.104,
+        -0.2856
+      ],
+      "max": [
+        -0.1444,
+        1.173,
+        -0.1344
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.358,
+        0.9,
+        0.072
+      ],
+      "max": [
+        -0.082,
+        1.134,
+        0.348
+      ],
+      "color": "#4f9a45",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.3028,
+        1.13,
+        0.1272
+      ],
+      "max": [
+        -0.1372,
+        1.199,
+        0.2928
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.1648,
+        1.017,
+        0.06
+      ],
+      "max": [
+        -0.1041,
+        1.077,
+        0.102
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.34,
+        0.9,
+        0.51
+      ],
+      "max": [
+        -0.1,
+        1.16,
+        0.75
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.292,
+        1.156,
+        0.558
+      ],
+      "max": [
+        -0.148,
+        1.225,
+        0.702
+      ],
+      "color": "#4f9a45",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.094,
+        0.9,
+        -0.756
+      ],
+      "max": [
+        0.346,
+        1.095,
+        -0.504
+      ],
+      "color": "#4f9a45",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.1444,
+        1.091,
+        -0.7056
+      ],
+      "max": [
+        0.2956,
+        1.16,
+        -0.5544
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.2704,
+        0.9975,
+        -0.768
+      ],
+      "max": [
+        0.3258,
+        1.0575,
+        -0.726
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        0.082,
+        0.9,
+        -0.348
+      ],
+      "max": [
+        0.358,
+        1.121,
+        -0.072
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.1372,
+        1.117,
+        -0.2928
+      ],
+      "max": [
+        0.3028,
+        1.186,
+        -0.1272
+      ],
+      "color": "#4f9a45",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.1,
+        0.9,
+        0.09
+      ],
+      "max": [
+        0.34,
+        1.147,
+        0.33
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.148,
+        1.143,
+        0.138
+      ],
+      "max": [
+        0.292,
+        1.212,
+        0.282
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.094,
+        0.9,
+        0.504
+      ],
+      "max": [
+        0.346,
+        1.108,
+        0.756
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.1444,
+        1.104,
+        0.5544
+      ],
+      "max": [
+        0.2956,
+        1.173,
+        0.7056
+      ],
+      "color": "#7cba5c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        -0.015,
+        0.9,
+        -0.88
+      ],
+      "max": [
+        0.015,
+        1.5,
+        -0.85
+      ],
+      "color": "#9ea2a0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.02,
+        1.5,
+        -0.88
+      ],
+      "max": [
+        0.02,
+        1.53,
+        0.88
+      ],
+      "color": "#9ea2a0",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.512,
+        0.66,
+        -0.25
+      ],
+      "max": [
+        -0.496,
+        0.82,
+        0.25
+      ],
+      "color": "#3c7a36",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,504 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Side Stbd 4",
+  "description": "A length of the Cloche's side: red plating up to a chamfer under the roof, dark ribs wrapped over it, cream walls over an olive dado inside.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 3000.0,
+  "health": 5000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a63a30",
+  "attachSeconds": 6.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        4.575,
+        0.375,
+        1.875
+      ],
+      "max": [
+        4.875,
+        5.875,
+        9.375
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        4.855,
+        0.975,
+        1.875
+      ],
+      "max": [
+        4.875,
+        5.775,
+        9.075
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.1609,
+        5.7609,
+        1.881
+      ],
+      "max": [
+        4.8891,
+        6.4891,
+        9.069
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.8891,
+          5.7891,
+          1.881
+        ],
+        [
+          4.8609,
+          5.7609,
+          1.881
+        ],
+        [
+          4.8891,
+          5.7891,
+          9.069
+        ],
+        [
+          4.8609,
+          5.7609,
+          9.069
+        ],
+        [
+          4.1891,
+          6.4891,
+          9.069
+        ],
+        [
+          4.1609,
+          6.4609,
+          9.069
+        ],
+        [
+          4.1891,
+          6.4891,
+          1.881
+        ],
+        [
+          4.1609,
+          6.4609,
+          1.881
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.845,
+        0.625,
+        3.295
+      ],
+      "max": [
+        5.005,
+        5.835,
+        3.655
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.194,
+        5.794,
+        3.301
+      ],
+      "max": [
+        4.986,
+        6.586,
+        3.649
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.986,
+          5.886,
+          3.301
+        ],
+        [
+          4.894,
+          5.794,
+          3.301
+        ],
+        [
+          4.986,
+          5.886,
+          3.649
+        ],
+        [
+          4.894,
+          5.794,
+          3.649
+        ],
+        [
+          4.286,
+          6.586,
+          3.649
+        ],
+        [
+          4.194,
+          6.494,
+          3.649
+        ],
+        [
+          4.286,
+          6.586,
+          3.301
+        ],
+        [
+          4.194,
+          6.494,
+          3.301
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        3.835
+      ],
+      "max": [
+        4.887,
+        5.335,
+        3.915
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        3.995
+      ],
+      "max": [
+        4.887,
+        5.335,
+        4.075
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        4.155
+      ],
+      "max": [
+        4.887,
+        5.335,
+        4.235
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        4.315
+      ],
+      "max": [
+        4.887,
+        5.335,
+        4.395
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.845,
+        0.625,
+        6.495
+      ],
+      "max": [
+        5.005,
+        5.835,
+        6.855
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.194,
+        5.794,
+        6.501
+      ],
+      "max": [
+        4.986,
+        6.586,
+        6.849
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.986,
+          5.886,
+          6.501
+        ],
+        [
+          4.894,
+          5.794,
+          6.501
+        ],
+        [
+          4.986,
+          5.886,
+          6.849
+        ],
+        [
+          4.894,
+          5.794,
+          6.849
+        ],
+        [
+          4.286,
+          6.586,
+          6.849
+        ],
+        [
+          4.194,
+          6.494,
+          6.849
+        ],
+        [
+          4.286,
+          6.586,
+          6.501
+        ],
+        [
+          4.194,
+          6.494,
+          6.501
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        7.035
+      ],
+      "max": [
+        4.887,
+        5.335,
+        7.115
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        7.195
+      ],
+      "max": [
+        4.887,
+        5.335,
+        7.275
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        7.355
+      ],
+      "max": [
+        4.887,
+        5.335,
+        7.435
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        5.195,
+        7.515
+      ],
+      "max": [
+        4.887,
+        5.335,
+        7.595
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        4.225,
+        7.775
+      ],
+      "max": [
+        4.889,
+        4.495,
+        8.675
+      ],
+      "color": "#e6dcc0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.881,
+        4.315,
+        7.875
+      ],
+      "max": [
+        4.897,
+        4.375,
+        8.525
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        4.555,
+        1.2,
+        1.88
+      ],
+      "max": [
+        4.573,
+        2.175,
+        9.37
+      ],
+      "color": "#56654a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.56,
+        2.175,
+        1.878
+      ],
+      "max": [
+        4.573,
+        5.85,
+        9.372
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        4.54,
+        2.145,
+        1.876
+      ],
+      "max": [
+        4.575,
+        2.215,
+        9.374
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        4.575,
+        0.775,
+        5.625
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.725,
+        3.125,
+        1.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        4.725,
+        5.875,
+        5.475
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        4.575,
+        3.525,
+        9.225
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        4.725,
+        3.125,
+        9.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        4.875,
+        2.375,
+        3.595
+      ],
+      "dir": "+x"
+    }
+  ]
+}

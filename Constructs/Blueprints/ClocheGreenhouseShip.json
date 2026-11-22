@@ -1,0 +1,841 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Cloche Greenhouse Ship",
+  "description": "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Sixteen lift jets under the belly hold it up and the two nacelle drives push it along.",
+  "steps": [
+    {
+      "part": "Cloche Keel 3"
+    },
+    {
+      "part": "Cloche Keel 2",
+      "on": 0,
+      "socket": "j0",
+      "by": "j1"
+    },
+    {
+      "part": "Cloche Keel 4",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Port 3",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Stbd 3",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Keel 1",
+      "on": 1,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Port 2",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Stbd 2",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Keel 5",
+      "on": 2,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Port 4",
+      "on": 2,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Stbd 4",
+      "on": 2,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Aft Bulkhead",
+      "on": 2,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Roof 3",
+      "on": 3,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Tank Aft Port",
+      "on": 3,
+      "socket": "j4",
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Cloche Tank Aft Stbd",
+      "on": 4,
+      "socket": "j4",
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Cloche Side Port 1",
+      "on": 5,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Side Stbd 1",
+      "on": 5,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Bow",
+      "on": 5,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Fore Bulkhead",
+      "on": 5,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Roof 2",
+      "on": 6,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Tank Fore Port",
+      "on": 6,
+      "socket": "j4",
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Cloche Tank Fore Stbd",
+      "on": 7,
+      "socket": "j4",
+      "by": "j0",
+      "config": {
+        "fluid": "water",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Cloche Aft Side Port",
+      "on": 8,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Aft Side Stbd",
+      "on": 8,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Stern",
+      "on": 8,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Roof 4",
+      "on": 9,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Glasshouse P2",
+      "on": 12,
+      "socket": "j4",
+      "by": "j1"
+    },
+    {
+      "part": "Cloche Glasshouse P3",
+      "on": 12,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Glasshouse S2",
+      "on": 12,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Cloche Glasshouse S3",
+      "on": 12,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Roof 1",
+      "on": 15,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Cab",
+      "on": 17,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Balcony",
+      "on": 17,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Step Port",
+      "on": 17,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Step Stbd",
+      "on": 17,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Glasshouse P1",
+      "on": 19,
+      "socket": "j4",
+      "by": "j1"
+    },
+    {
+      "part": "Cloche Glasshouse S1",
+      "on": 19,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Cloche Aft Roof",
+      "on": 22,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Nacelle Port",
+      "on": 22,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Nacelle Stbd",
+      "on": 23,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 5,
+      "socket": "jet0",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 5,
+      "socket": "jet1",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 1,
+      "socket": "jet2",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 1,
+      "socket": "jet3",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 0,
+      "socket": "jet4",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 0,
+      "socket": "jet5",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 2,
+      "socket": "jet6",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 2,
+      "socket": "jet7",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet8",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet9",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet10",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet11",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 5,
+      "socket": "jet12",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 0,
+      "socket": "jet13",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 2,
+      "socket": "jet14",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Lift Jet",
+      "on": 8,
+      "socket": "jet15",
+      "by": "top"
+    },
+    {
+      "part": "Cloche Drive",
+      "on": 38,
+      "socket": "driveP",
+      "by": "front"
+    },
+    {
+      "part": "Cloche Drive",
+      "on": 39,
+      "socket": "driveS",
+      "by": "front"
+    },
+    {
+      "part": "Cloche Driver Seat",
+      "on": 31,
+      "socket": "seat",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Dashboard",
+      "on": 31,
+      "socket": "dash",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
+    },
+    {
+      "part": "Cloche Power Plant",
+      "on": 8,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Side Door",
+      "on": 17,
+      "socket": "door",
+      "by": "hang"
+    },
+    {
+      "part": "Cloche Step Ladder",
+      "on": 33,
+      "socket": "stepLadderP",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Step Ladder",
+      "on": 34,
+      "socket": "stepLadderS",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Bow Ladder",
+      "on": 32,
+      "socket": "bowLadder",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Hatch Ladder",
+      "on": 19,
+      "socket": "hatchP",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Hatch Ladder",
+      "on": 19,
+      "socket": "hatchS",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 17,
+      "socket": "lampDoor",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 17,
+      "socket": "lampEntryL",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 17,
+      "socket": "lampEntryR",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 18,
+      "socket": "lampHallL",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 18,
+      "socket": "lampHallR",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 11,
+      "socket": "lampHallAftL",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 11,
+      "socket": "lampHallAftR",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 11,
+      "socket": "lampEngL",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Cage Lamp",
+      "on": 11,
+      "socket": "lampEngR",
+      "by": "back"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 1,
+      "socket": "rackP-9.4",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 1,
+      "socket": "rackP-6.8",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackP-4.2",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackP-1.6",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackP1.0",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackP3.6",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackP6.2",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 1,
+      "socket": "rackS-9.4",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 1,
+      "socket": "rackS-6.8",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackS-4.2",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackS-1.6",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackS1.0",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackS3.6",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackS6.2",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 1,
+      "socket": "rackM-5.4",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackM-2.8",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 0,
+      "socket": "rackM-0.2",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackM2.4",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Rack",
+      "on": 2,
+      "socket": "rackM5.0",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 30,
+      "socket": "bedP00",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 30,
+      "socket": "bedP01",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 19,
+      "socket": "bedP02",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 19,
+      "socket": "bedP03",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 19,
+      "socket": "bedP04",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedP05",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedP06",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedP07",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedP08",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedP09",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedP010",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 30,
+      "socket": "bedP10",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 30,
+      "socket": "bedP11",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 19,
+      "socket": "bedP14",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedP15",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedP16",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedP17",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedP18",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedP19",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedP110",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 30,
+      "socket": "bedS00",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 30,
+      "socket": "bedS01",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 19,
+      "socket": "bedS02",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 19,
+      "socket": "bedS03",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 19,
+      "socket": "bedS04",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedS05",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedS06",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedS07",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedS08",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedS09",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedS010",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 30,
+      "socket": "bedS10",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 30,
+      "socket": "bedS11",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 19,
+      "socket": "bedS14",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedS15",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 12,
+      "socket": "bedS16",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 12,
+      "socket": "bedS17",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedS18",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Grow Bed",
+      "on": 25,
+      "socket": "bedS19",
+      "by": "bottom"
+    },
+    {
+      "part": "Cloche Seed Bed",
+      "on": 25,
+      "socket": "bedS110",
+      "by": "bottom"
+    }
+  ],
+  "wires": [
+    [
+      58,
+      59
+    ]
+  ],
+  "conduit": true
+}

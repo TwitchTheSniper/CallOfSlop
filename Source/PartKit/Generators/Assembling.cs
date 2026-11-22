@@ -1000,6 +1000,60 @@ public sealed class Assembling : IPartGenerator
         ("Assembler", "Thruster Jig Block", null),
         ("Assembler", "Sewing Table Block", null),
         ("Assembler", "Block Rack", null),
+        // (the Cloche, the farmers' greenhouse ship, Karl 2026-11-21: ClocheParts; in the folder's file order of 2026-11-21)
+        ("Cloche", "Cloche Aft Bulkhead", null),
+        ("Cloche", "Cloche Aft Roof", null),
+        ("Cloche", "Cloche Aft Side Port", null),
+        ("Cloche", "Cloche Aft Side Stbd", null),
+        ("Cloche", "Cloche Balcony", null),
+        ("Cloche", "Cloche Bow", null),
+        ("Cloche", "Cloche Bow Ladder", null),
+        ("Cloche", "Cloche Cab", null),
+        ("Cloche", "Cloche Cage Lamp", null),
+        ("Cloche", "Cloche Dashboard", null),
+        ("Cloche", "Cloche Drive", null),
+        ("Cloche", "Cloche Driver Seat", null),
+        ("Cloche", "Cloche Fore Bulkhead", null),
+        ("Cloche", "Cloche Glasshouse P1", null),
+        ("Cloche", "Cloche Glasshouse P2", null),
+        ("Cloche", "Cloche Glasshouse P3", null),
+        ("Cloche", "Cloche Glasshouse S1", null),
+        ("Cloche", "Cloche Glasshouse S2", null),
+        ("Cloche", "Cloche Glasshouse S3", null),
+        ("Cloche", "Cloche Grow Bed", null),
+        ("Cloche", "Cloche Grow Rack", null),
+        ("Cloche", "Cloche Hatch Ladder", null),
+        ("Cloche", "Cloche Keel 1", null),
+        ("Cloche", "Cloche Keel 2", null),
+        ("Cloche", "Cloche Keel 3", null),
+        ("Cloche", "Cloche Keel 4", null),
+        ("Cloche", "Cloche Keel 5", null),
+        ("Cloche", "Cloche Lift Jet", null),
+        ("Cloche", "Cloche Nacelle Port", null),
+        ("Cloche", "Cloche Nacelle Stbd", null),
+        ("Cloche", "Cloche Power Plant", null),
+        ("Cloche", "Cloche Roof 1", null),
+        ("Cloche", "Cloche Roof 2", null),
+        ("Cloche", "Cloche Roof 3", null),
+        ("Cloche", "Cloche Roof 4", null),
+        ("Cloche", "Cloche Seed Bed", null),
+        ("Cloche", "Cloche Side Door", null),
+        ("Cloche", "Cloche Side Port 1", null),
+        ("Cloche", "Cloche Side Port 2", null),
+        ("Cloche", "Cloche Side Port 3", null),
+        ("Cloche", "Cloche Side Port 4", null),
+        ("Cloche", "Cloche Side Stbd 1", null),
+        ("Cloche", "Cloche Side Stbd 2", null),
+        ("Cloche", "Cloche Side Stbd 3", null),
+        ("Cloche", "Cloche Side Stbd 4", null),
+        ("Cloche", "Cloche Step Ladder", null),
+        ("Cloche", "Cloche Step Port", null),
+        ("Cloche", "Cloche Step Stbd", null),
+        ("Cloche", "Cloche Stern", null),
+        ("Cloche", "Cloche Tank Aft Port", null),
+        ("Cloche", "Cloche Tank Aft Stbd", null),
+        ("Cloche", "Cloche Tank Fore Port", null),
+        ("Cloche", "Cloche Tank Fore Stbd", null),
     ];
 
     /// <summary>
@@ -1191,14 +1245,14 @@ public sealed class Assembling : IPartGenerator
                 folded.Add(r);
                 recipes.RemoveAt(k--);
             }
-            else if (AfterFolded.Contains(output))
+            else if (AfterFolded.Contains(output) || AfterFoldedFolder(output))
             {
                 after.Add(r);
                 recipes.RemoveAt(k--);
             }
         }
         recipes.AddRange(folded);
-        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!))); // (after the folded rows: a saved Assembler's number keeps)
+        recipes.AddRange(after.OrderBy(r => Array.IndexOf(AfterFolded, (string)r["output"]!) is var i and >= 0 ? i : int.MaxValue)); // (after the folded rows: a saved Assembler's number keeps)
     }
 
     /// <summary>
@@ -1206,6 +1260,9 @@ public sealed class Assembling : IPartGenerator
     /// rows so no saved recipe number moves. Closed: a new row goes at the END of this list (its Tail entry stays where it is).
     /// </summary>
     private static readonly string[] AfterFolded = ["Thruster Jig Block", "Sewing Table Block", "Block Rack"];
+
+    /// <summary>Whole ships' parts that came after AfterFolded, in their Tail order, after its rows (the Cloche, 2026-11-22). A later ship's go after these.</summary>
+    private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 

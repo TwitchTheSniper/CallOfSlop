@@ -1,0 +1,369 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Step Port",
+  "description": "A step beside the Cloche's cab at the deck's height: grating, a yellow railing, the ladder up from the ground at its front. The side door opens off it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 600.0,
+  "health": 1200,
+  "armour": 8,
+  "material": "steel",
+  "color": "#2e302e",
+  "attachSeconds": 4.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        1.025,
+        -20.725
+      ],
+      "max": [
+        -3.025,
+        1.175,
+        -16.925
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.115,
+        1.029,
+        -20.721
+      ],
+      "max": [
+        -3.029,
+        1.175,
+        -16.929
+      ],
+      "color": "#4a4c48",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -5.125,
+        0.905,
+        -20.75
+      ],
+      "max": [
+        -3.025,
+        1.195,
+        -20.729
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -4.945,
+        0.575,
+        -20.485
+      ],
+      "max": [
+        -4.825,
+        1.025,
+        -20.365
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.945,
+        0.575,
+        -18.485
+      ],
+      "max": [
+        -4.825,
+        1.025,
+        -18.365
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -4.945,
+        0.575,
+        -17.285
+      ],
+      "max": [
+        -4.825,
+        1.025,
+        -17.165
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -5.102,
+        1.175,
+        -20.7
+      ],
+      "max": [
+        -5.05,
+        2.227,
+        -20.65
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.098,
+        1.175,
+        -19.7875
+      ],
+      "max": [
+        -5.052,
+        2.227,
+        -19.7375
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.098,
+        1.175,
+        -18.875
+      ],
+      "max": [
+        -5.052,
+        2.227,
+        -18.825
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.098,
+        1.175,
+        -17.9625
+      ],
+      "max": [
+        -5.052,
+        2.227,
+        -17.9125
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.098,
+        1.175,
+        -17.05
+      ],
+      "max": [
+        -5.052,
+        2.223,
+        -17.0
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.1,
+        2.175,
+        -20.675
+      ],
+      "max": [
+        -5.05,
+        2.225,
+        -17.025
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.095,
+        1.675,
+        -20.675
+      ],
+      "max": [
+        -5.055,
+        1.715,
+        -17.025
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.095,
+        1.175,
+        -20.675
+      ],
+      "max": [
+        -5.055,
+        2.225,
+        -17.025
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.1,
+        1.175,
+        -20.7
+      ],
+      "max": [
+        -3.05,
+        2.223,
+        -20.65
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.098,
+        1.175,
+        -20.702
+      ],
+      "max": [
+        -5.052,
+        2.223,
+        -20.652
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -3.825,
+        2.175,
+        -20.698
+      ],
+      "max": [
+        -3.075,
+        2.225,
+        -20.652
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -3.825,
+        1.675,
+        -20.695
+      ],
+      "max": [
+        -3.075,
+        1.715,
+        -20.655
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -3.825,
+        1.175,
+        -20.695
+      ],
+      "max": [
+        -3.075,
+        2.225,
+        -20.655
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.075,
+        2.175,
+        -20.698
+      ],
+      "max": [
+        -4.525,
+        2.225,
+        -20.65
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.075,
+        1.675,
+        -20.695
+      ],
+      "max": [
+        -4.525,
+        1.715,
+        -20.655
+      ],
+      "color": "#e3b021",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -5.075,
+        1.175,
+        -20.695
+      ],
+      "max": [
+        -4.525,
+        2.225,
+        -20.655
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "stepLadderP",
+      "at": [
+        -4.225,
+        1.095,
+        -20.725
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -3.705,
+        1.105,
+        -16.925
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -3.025,
+        1.105,
+        -18.825
+      ],
+      "dir": "+x"
+    }
+  ]
+}

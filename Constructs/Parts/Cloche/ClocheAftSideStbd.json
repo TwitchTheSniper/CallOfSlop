@@ -1,0 +1,679 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Aft Side Stbd",
+  "description": "A side of the Cloche's aft block over the engine room: red plating standing above the roof, dark ribs and a band, a cream louvred vent and a dark grille.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5000.0,
+  "health": 7000,
+  "armour": 22,
+  "material": "steel",
+  "color": "#a63a30",
+  "attachSeconds": 6.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        4.575,
+        0.375,
+        9.375
+      ],
+      "max": [
+        4.875,
+        8.575,
+        18.375
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        4.859,
+        0.975,
+        9.075
+      ],
+      "max": [
+        4.879,
+        8.475,
+        17.975
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.1609,
+        8.4609,
+        9.075
+      ],
+      "max": [
+        4.8891,
+        9.1891,
+        17.969
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.8891,
+          8.4891,
+          9.075
+        ],
+        [
+          4.8609,
+          8.4609,
+          9.075
+        ],
+        [
+          4.8891,
+          8.4891,
+          17.969
+        ],
+        [
+          4.8609,
+          8.4609,
+          17.969
+        ],
+        [
+          4.1891,
+          9.1891,
+          17.969
+        ],
+        [
+          4.1609,
+          9.1609,
+          17.969
+        ],
+        [
+          4.1891,
+          9.1891,
+          9.775
+        ],
+        [
+          4.1609,
+          9.1609,
+          9.775
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.1609,
+        0.981,
+        17.9609
+      ],
+      "max": [
+        4.8891,
+        8.472,
+        18.6891
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.1609,
+          0.981,
+          18.6609
+        ],
+        [
+          4.1891,
+          0.981,
+          18.6891
+        ],
+        [
+          4.8609,
+          0.981,
+          17.9609
+        ],
+        [
+          4.8891,
+          0.981,
+          17.9891
+        ],
+        [
+          4.8609,
+          8.472,
+          17.9609
+        ],
+        [
+          4.8891,
+          8.472,
+          17.9891
+        ],
+        [
+          4.1609,
+          8.472,
+          18.6609
+        ],
+        [
+          4.1891,
+          8.472,
+          18.6891
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.1635,
+        8.4635,
+        17.9635
+      ],
+      "max": [
+        4.8865,
+        9.1865,
+        18.6865
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.1635,
+          8.4635,
+          18.6635
+        ],
+        [
+          4.1865,
+          8.4865,
+          18.6865
+        ],
+        [
+          4.8635,
+          8.4635,
+          17.9635
+        ],
+        [
+          4.8865,
+          8.4865,
+          17.9865
+        ],
+        [
+          4.1635,
+          9.1635,
+          17.9635
+        ],
+        [
+          4.1865,
+          9.1865,
+          17.9865
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.845,
+        0.625,
+        9.095
+      ],
+      "max": [
+        5.005,
+        8.535,
+        9.455
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.845,
+        0.625,
+        17.495
+      ],
+      "max": [
+        5.005,
+        8.535,
+        17.855
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.194,
+        8.494,
+        17.501
+      ],
+      "max": [
+        4.986,
+        9.286,
+        17.849
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          4.986,
+          8.586,
+          17.501
+        ],
+        [
+          4.894,
+          8.494,
+          17.501
+        ],
+        [
+          4.986,
+          8.586,
+          17.849
+        ],
+        [
+          4.894,
+          8.494,
+          17.849
+        ],
+        [
+          4.286,
+          9.286,
+          17.849
+        ],
+        [
+          4.194,
+          9.194,
+          17.849
+        ],
+        [
+          4.286,
+          9.286,
+          17.501
+        ],
+        [
+          4.194,
+          9.194,
+          17.501
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.855,
+        5.825,
+        9.455
+      ],
+      "max": [
+        4.975,
+        6.175,
+        17.495
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        4.865,
+        6.575,
+        10.275
+      ],
+      "max": [
+        4.945,
+        8.025,
+        12.575
+      ],
+      "color": "#e6dcc0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.935,
+        6.725,
+        10.425
+      ],
+      "max": [
+        4.995,
+        6.845,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.935,
+        6.935,
+        10.425
+      ],
+      "max": [
+        4.995,
+        7.055,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.935,
+        7.145,
+        10.425
+      ],
+      "max": [
+        4.995,
+        7.265,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.935,
+        7.355,
+        10.425
+      ],
+      "max": [
+        4.995,
+        7.475,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.935,
+        7.565,
+        10.425
+      ],
+      "max": [
+        4.995,
+        7.685,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.935,
+        7.775,
+        10.425
+      ],
+      "max": [
+        4.995,
+        7.895,
+        12.425
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.865,
+        6.475,
+        15.275
+      ],
+      "max": [
+        4.925,
+        7.975,
+        17.075
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        6.555,
+        15.375
+      ],
+      "max": [
+        4.955,
+        6.635,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        6.755,
+        15.375
+      ],
+      "max": [
+        4.955,
+        6.835,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        6.955,
+        15.375
+      ],
+      "max": [
+        4.955,
+        7.035,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        7.155,
+        15.375
+      ],
+      "max": [
+        4.955,
+        7.235,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        7.355,
+        15.375
+      ],
+      "max": [
+        4.955,
+        7.435,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        7.555,
+        15.375
+      ],
+      "max": [
+        4.955,
+        7.635,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.915,
+        7.755,
+        15.375
+      ],
+      "max": [
+        4.955,
+        7.835,
+        16.975
+      ],
+      "color": "#4d504c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.871,
+        8.125,
+        10.575
+      ],
+      "max": [
+        4.889,
+        8.275,
+        10.655
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        8.125,
+        10.735
+      ],
+      "max": [
+        4.889,
+        8.275,
+        10.815
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        8.125,
+        10.895
+      ],
+      "max": [
+        4.889,
+        8.275,
+        10.975
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.871,
+        8.125,
+        11.055
+      ],
+      "max": [
+        4.889,
+        8.275,
+        11.135
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.555,
+        1.2,
+        9.378
+      ],
+      "max": [
+        4.575,
+        2.175,
+        18.372
+      ],
+      "color": "#56654a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.56,
+        2.175,
+        9.378
+      ],
+      "max": [
+        4.575,
+        8.55,
+        18.372
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        4.575,
+        0.775,
+        13.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.725,
+        3.125,
+        9.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        4.725,
+        8.575,
+        13.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        4.725,
+        4.475,
+        18.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        4.875,
+        3.275,
+        14.175
+      ],
+      "dir": "+x"
+    }
+  ]
+}

@@ -1110,6 +1110,8 @@ public static unsafe partial class Program
         var carried = inv.TotalMaterials;
         var hands = g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Hands; // (hands out: the click takes a stored part, as F does)
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48) ^ (hands ? 1L << 60 : 0);
+        if (hit.Body.DefOf(hit.Part).IsGrower)
+            key ^= (long)ConstructFluid.Aboard(hit.Body, Fluid.Water) * 40503L; // (its line says the water aboard, which a tank changes, not the store)
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L ^ (long)hit.Body.Parts[hit.Part].SealedFaces << 8; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is var ad && (ad.IsAssembler || ad.IsRefiner))
@@ -1165,9 +1167,10 @@ public static unsafe partial class Program
             var tbl = RecyclingTable.Current;
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
-            var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
+            var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer || cd.IsGrower ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
             var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
-                : cd.IsGatherer ? GathererLook(cd, st, hit, g) : "";
+                : cd.IsGatherer ? GathererLook(cd, st, hit, g)
+                : cd.IsGrower ? ConstructGrowing.Look(hit.Body, hit.Part, st) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)

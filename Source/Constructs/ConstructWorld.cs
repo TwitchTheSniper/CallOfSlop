@@ -2289,6 +2289,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>Ticks since the refining step (ConstructRefining.cs).</summary>
     public int RefineTicks;
+    public int GrowTicks; // ConstructGrowing's step count
 
     /// <summary>Takes a scoop out of the ground for a working drill and returns the columns it changed (the game's hook; null: drills dig no hole).</summary>
     public Func<DigOp, int>? DrillDig;
@@ -2390,6 +2391,8 @@ public sealed partial class ConstructWorld
         ConstructScoops.Step(this, query, dt); // (scoops dig where they are really pushed in, and pour when tipped)
         AllocProfile.Mark("machines: ConstructRefining");
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
+        AllocProfile.Mark("machines: ConstructGrowing");
+        ConstructGrowing.Step(this); // (grow beds grow produce on the water aboard)
         AllocProfile.Mark("machines: ConstructAssembling");
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
         AllocProfile.Mark("machines: ConstructExtruder");

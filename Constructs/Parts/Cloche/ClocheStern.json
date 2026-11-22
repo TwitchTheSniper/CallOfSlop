@@ -1,0 +1,343 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Stern",
+  "description": "The Cloche's stern: a red face with two dark ribs down it, red tail lamps and a cream service panel.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 3500.0,
+  "health": 6000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a63a30",
+  "attachSeconds": 6.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        0.375,
+        18.375
+      ],
+      "max": [
+        4.875,
+        9.175,
+        18.675
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.425,
+        0.975,
+        18.675
+      ],
+      "max": [
+        4.175,
+        8.475,
+        18.695
+      ],
+      "color": "#a63a30",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.985,
+        0.375,
+        18.375
+      ],
+      "max": [
+        4.735,
+        0.979,
+        18.535
+      ],
+      "color": "#242624",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.505,
+        0.625,
+        18.655
+      ],
+      "max": [
+        -2.145,
+        8.535,
+        18.825
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        1.895,
+        0.625,
+        18.655
+      ],
+      "max": [
+        2.255,
+        8.535,
+        18.825
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -4.025,
+        1.375,
+        18.69
+      ],
+      "max": [
+        -3.425,
+        1.775,
+        18.725
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.025,
+        1.825,
+        18.69
+      ],
+      "max": [
+        -3.425,
+        1.975,
+        18.725
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        3.175,
+        1.375,
+        18.69
+      ],
+      "max": [
+        3.775,
+        1.775,
+        18.725
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        3.175,
+        1.825,
+        18.69
+      ],
+      "max": [
+        3.775,
+        1.975,
+        18.725
+      ],
+      "color": "#f0a830",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.525,
+        2.075,
+        18.69
+      ],
+      "max": [
+        1.275,
+        4.275,
+        18.715
+      ],
+      "color": "#e6dcc0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -1.425,
+        2.175,
+        18.71
+      ],
+      "max": [
+        1.175,
+        2.235,
+        18.73
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -1.425,
+        4.115,
+        18.71
+      ],
+      "max": [
+        1.175,
+        4.175,
+        18.73
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -1.325,
+        4.875,
+        18.69
+      ],
+      "max": [
+        -1.125,
+        5.175,
+        18.715
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.905,
+        4.875,
+        18.69
+      ],
+      "max": [
+        -0.705,
+        5.175,
+        18.715
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.485,
+        4.875,
+        18.69
+      ],
+      "max": [
+        -0.285,
+        5.175,
+        18.715
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.065,
+        4.875,
+        18.69
+      ],
+      "max": [
+        0.135,
+        5.175,
+        18.715
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.355,
+        4.875,
+        18.69
+      ],
+      "max": [
+        0.555,
+        5.175,
+        18.715
+      ],
+      "color": "#e8b317",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.775,
+        4.875,
+        18.69
+      ],
+      "max": [
+        0.975,
+        5.175,
+        18.715
+      ],
+      "color": "#1f1f1d",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -4.795,
+        1.2,
+        18.355
+      ],
+      "max": [
+        4.545,
+        8.565,
+        18.375
+      ],
+      "color": "#d6cfb8",
+      "detail": true,
+      "finish": "wall panelling"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        0.775,
+        18.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -4.975,
+        4.475,
+        18.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        4.725,
+        4.475,
+        18.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        8.875,
+        18.375
+      ],
+      "dir": "-z"
+    }
+  ]
+}

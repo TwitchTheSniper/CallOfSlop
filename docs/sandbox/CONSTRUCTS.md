@@ -56,6 +56,10 @@ The farmers' medium hauler in a combine harvester's clothes: a glass cab room st
 
 The farmers' small vertical lander: an eight-sided capsule on end on four jointed legs, a glass cab low on the nose, two decks (cockpit and belly hatch below, systems above), one belly jet and a trim jet under each leg.
 
+## [The Cloche greenhouse ship](constructs/cloche.md), 3 KB
+
+The farmers' hydroponics ship, its exterior after Karl's picture: a long red ribbed hull, two glass barrel-vault greenhouses on the roof, a cream bus-fronted cab, water tanks on the flanks, nacelles on the taller aft block; its grow racks and beds grow produce on the water aboard.
+
 ## [The Satchel courier](constructs/courier.md), 2 KB
 
 The Traders' small fast courier: two standard containers side by side in a bay open to the sky, so a dock crane lifts them out; cab forward, engineering aft, two drive nacelles.
@@ -193,9 +197,10 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, the Panel Former, the Laser Cutter, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, lifters, the Production Showcase.
+Refining, grow beds (hydroponics on water), extrusion, the Wheel Former, the Press, the Panel Former, the Laser Cutter, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, lifters, the Production Showcase.
 
 - Refining (decision 14)
+- Grow beds
 - Extrusion
 - The Wheel Former
 - The Press

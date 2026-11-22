@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cloche Cage Lamp",
+  "description": "A caged lamp on the Cloche's walls: a cream back plate, a dark cage round a warm glass. Lights while the power circuit reaches it.",
+  "group": "Ship",
+  "section": "Cloche greenhouse ship",
+  "role": "logic",
+  "tool": "wrench",
+  "logic": {
+    "kind": "lamp",
+    "mains": true
+  },
+  "power": 30,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ffe6b0",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "default": 100,
+      "tooltip": "How bright it glows."
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Flashes this many times a second while lit (0: steady)."
+    }
+  ],
+  "mass": 5.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#e6dcc0",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        -0.16,
+        0.0
+      ],
+      "max": [
+        0.12,
+        0.16,
+        0.04
+      ],
+      "color": "#e6dcc0",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.07,
+        -0.1,
+        0.04
+      ],
+      "max": [
+        0.07,
+        0.1,
+        0.13
+      ],
+      "color": "#fff1c8",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.093,
+        -0.12,
+        0.04
+      ],
+      "max": [
+        -0.075,
+        0.12,
+        0.15
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.075,
+        -0.12,
+        0.04
+      ],
+      "max": [
+        0.095,
+        0.12,
+        0.15
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.095,
+        -0.06,
+        0.135
+      ],
+      "max": [
+        0.093,
+        -0.04,
+        0.155
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.095,
+        0.04,
+        0.135
+      ],
+      "max": [
+        0.093,
+        0.06,
+        0.155
+      ],
+      "color": "#2e302e",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
