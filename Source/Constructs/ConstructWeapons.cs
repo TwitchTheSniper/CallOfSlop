@@ -1100,11 +1100,17 @@ public static class ConstructWeapons
         return dir;
     }
 
-    /// <summary>The gunner's eye in seat <paramref name="seat"/> (the seat's feet point, up its up by the eye height).</summary>
+    /// <summary>
+    /// The gunner's eye in seat <paramref name="seat"/>: a turret camera's when the seat works one (<see cref="TurretCamGun"/>), else the seat's
+    /// feet point, up its up by the eye height. Every aim from the seat starts here (the server's <see cref="GunnerPoint"/>, the crews, the shells'
+    /// tracking), so what the view shows is what the guns converge on.
+    /// </summary>
     public static Vector3 SeatEye(Construct c, int seat)
     {
         if (c.Parts[seat].D.RemoteReceiver && RemoteSight(c, seat, 1f, false, out var sight))
             return sight; // (a remote gunner looks along the gun, not from inside the turret: the pilot's view is the same point)
+        if (TurretCamGun(c, seat) is var k and >= 0 && TurretEye(c, k, 1f, false, out var cam, out _))
+            return cam; // (a gunner's station working a turret: its camera, Program.TurretCamera)
         c.WorldFrame(c.Parts[seat].Seg, out var q, out _);
         var up = Vector3.Transform(Vector3.UnitY, q * Rot24.Quat(c.Parts[seat].Rot));
         return ConstructEdits.SeatFeet(c, seat) + up * World.EyeHeight;
@@ -1126,22 +1132,98 @@ public static class ConstructWeapons
             ref var g = ref c.Guns[k];
             if (g.Seat != seat || g.AimJoints == 0 || g.Part >= c.PartCount || c.Parts[g.Part].Broken)
                 continue;
-            // The height is chosen on the simulated pose, as the server chooses it, and placed on the drawn one.
-            c.WorldFrame(g.Seg, out var q, out var t);
-            SightFrame(c, k, q, t, out var muzzle, out var fwd, out var up);
-            var h = SightHeight(c, k, muzzle, fwd, up);
-            if (drawn)
-            {
-                var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-                var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
-                var sq = Quaternion.Identity;
-                var st = Vector3.Zero;
-                if (g.Seg > 0 && g.Seg <= c.JointCount)
-                    ConstructRender.SegPoseBlended(c, g.Seg, blendTicks ? alpha : 1f, out sq, out st);
-                SightFrame(c, k, rot * sq, pos + Vector3.Transform(st, rot), out muzzle, out _, out up);
-            }
-            eye = muzzle + up * h;
+            GunSight(c, k, alpha, drawn, blendTicks, out eye);
             return true;
+        }
+        return false;
+    }
+
+    /// <summary>Gun <paramref name="k"/>'s sight: past its muzzle and above its bore, high enough to see over its own housing (<see cref="RemoteSight"/>).</summary>
+    public static void GunSight(Construct c, int k, float alpha, bool drawn, bool blendTicks, out Vector3 eye)
+    {
+        ref var g = ref c.Guns[k];
+        // The height is chosen on the simulated pose, as the server chooses it, and placed on the drawn one.
+        c.WorldFrame(g.Seg, out var q, out var t);
+        SightFrame(c, k, q, t, out var muzzle, out var fwd, out var up);
+        var h = SightHeight(c, k, muzzle, fwd, up);
+        if (drawn)
+        {
+            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+            var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            var sq = Quaternion.Identity;
+            var st = Vector3.Zero;
+            if (g.Seg > 0 && g.Seg <= c.JointCount)
+                ConstructRender.SegPoseBlended(c, g.Seg, blendTicks ? alpha : 1f, out sq, out st);
+            SightFrame(c, k, rot * sq, pos + Vector3.Transform(st, rot), out muzzle, out _, out up);
+        }
+        eye = muzzle + up * h;
+    }
+
+    /// <summary>
+    /// The turret a gunner's station looks through (docs/sandbox/constructs/turret-camera.md): the gun the sitter of <paramref name="seat"/> works
+    /// through a Turret Module and a turning joint, when the seat stays put on the hull (a seat on the turret itself rides it and keeps its own view).
+    /// The module in use's gun, else the first such; -1 when the seat has none, or is a drone console's receiver (its own view).
+    /// </summary>
+    public static int TurretCamGun(Construct c, int seat)
+    {
+        if (seat < 0 || seat >= c.PartCount || c.Parts[seat].D.RemoteReceiver || !c.Rigid(c.Parts[seat].Seg))
+            return -1;
+        var active = ConstructModules.ActiveGun(c, seat);
+        if (active >= 0 && TurretCamOk(c, active))
+            return active;
+        for (var k = 0; k < c.GunCount; k++)
+            if (c.Guns[k].Seat == seat && TurretCamOk(c, k))
+                return k;
+        return -1;
+    }
+
+    private static bool TurretCamOk(Construct c, int k)
+    {
+        ref var g = ref c.Guns[k];
+        return g.AimJoints > 0 && g.Turret >= 0 && g.Turret < c.PartCount && g.Part < c.PartCount && !c.Parts[g.Part].Broken;
+    }
+
+    /// <summary>
+    /// Turret gun <paramref name="k"/>'s camera: a Camera part bolted to the turret (on the gun's segment or a turning one under it), at its lens,
+    /// else the gun's own sight (<see cref="GunSight"/>). <paramref name="camPart"/>: that Camera part, or -1 for the sight.
+    /// </summary>
+    public static bool TurretEye(Construct c, int k, float alpha, bool drawn, out Vector3 eye, out int camPart, bool blendTicks = false)
+    {
+        eye = default;
+        camPart = -1;
+        if (k < 0 || k >= c.GunCount)
+            return false;
+        ref var g = ref c.Guns[k];
+        for (var i = 0; i < c.CameraParts.Length; i++)
+        {
+            int cp = c.CameraParts[i];
+            if (cp >= c.PartCount || c.Parts[cp].Broken || !OnTurret(c, c.Parts[cp].Seg, g.Seg))
+                continue;
+            camPart = cp;
+            if (drawn)
+                eye = ConstructRender.DrawnPoint(c, cp, c.Parts[cp].D.CameraAt, alpha, blendTicks);
+            else
+            {
+                ref var p = ref c.Parts[cp];
+                c.WorldFrame(p.Seg, out var q, out var t);
+                eye = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.CameraAt), q);
+            }
+            return true;
+        }
+        GunSight(c, k, alpha, drawn, blendTicks, out eye);
+        return true;
+    }
+
+    /// <summary>Is segment <paramref name="seg"/> one of the moving segments that carry the gun on <paramref name="gunSeg"/> (the gun's own, or one down its chain short of the hull)?</summary>
+    private static bool OnTurret(Construct c, int seg, int gunSeg)
+    {
+        if (seg <= 0)
+            return false;
+        for (int s = gunSeg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            if (s == seg)
+                return true;
+            s = c.Joints[s - 1].ParentSeg;
         }
         return false;
     }

@@ -40,6 +40,11 @@ public sealed partial class Game
             return false;
         var pos = IsServer ? Vector3.Lerp(c.PrevPos, c.Pos, _alpha) : c.Pos;
         var rot = IsServer ? Quaternion.Slerp(c.PrevRot, c.Rot, _alpha) : c.Rot;
+        if (TurretOrbitPoint(out point, out dist, out zoomMin, out zoomMax))
+        {
+            heading = SeatYaw(rot); // (at a turret's station: the orbit is round the turret, GameTurretView.cs)
+            return true;
+        }
         point = ThirdPerson.SeatPoint(c, h.SeatPart, pos, rot, out dist, out zoomMin, out zoomMax, out follow);
         heading = SeatYaw(rot);
         return true;

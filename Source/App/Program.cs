@@ -981,6 +981,7 @@ public static unsafe partial class Program
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
                     LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
                     RadarHud.Draw(g, Ui.Scale, _settings.Bind(GameAction.SeatRadar)); // a craft's radar scope, its contacts and lock (RadarHud.cs)
+                    GunnerHud.Draw(g, Ui.Scale, _turretView && !ThirdPerson.Active, TurretZoomNow()); // at a turret's station: the gunsight's readouts (GunnerHud.cs)
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
@@ -1551,6 +1552,8 @@ public static unsafe partial class Program
             return; // (the Build Gantry's camera: the wheel zooms it; Program.SandboxGantry.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LeverScroll(offset.Y))
             return; // (aiming at an Analog Lever: the wheel nudges it; Program.SandboxLever.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && TurretScroll(offset.Y))
+            return; // (looking through a turret's camera: the wheel steps the gunsight's zoom; Program.TurretCamera.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
             return; // (Sandbox third person: the wheel zooms the camera; Program.ThirdPerson.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
@@ -1813,7 +1816,7 @@ public static unsafe partial class Program
         else if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
-            var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
+            var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT) * TurretZoomNow(); // (and a turret camera's gunsight zoom: Program.TurretCamera.cs)
             var sens = BaseSensitivity * _settings.Sensitivity / zoom * _game.TacticalLookMult; // a stun slows turning (GameTactical.cs)
             var dy = (float)delta.Y * (_settings.InvertY ? -1 : 1);
             if (_game.MmuLookSync())
@@ -2161,9 +2164,12 @@ public static unsafe partial class Program
             }
         }
         var pilotView = false;
+        _turretView = false;
         if (!tp)
         {
             pilotView = PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
+            if (!pilotView)
+                pilotView = TurretCamera(ref eye, ref fov); // (at a gunner's station that works a turret: the turret's camera, Program.TurretCamera.cs)
             _game.Audio.SetListener(eye, fwd);
         }
         var openingView = local != null && OpeningCamera(local, now, ref eye, ref fwd, ref camUp); // (the survival opening: waking aboard or at the start; Program.Opening.cs)
@@ -2629,7 +2635,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && !SpectateOn) // (the spectate camera has no crosshair; the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn && !SpectateOn && !(_turretView && !ThirdPerson.Active)) // (a turret's camera has the gunsight's reticle: GunnerHud.cs) // (the spectate camera has no crosshair; the gantry's camera draws its cursor: the build bar; the talk camera's shot has none)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
