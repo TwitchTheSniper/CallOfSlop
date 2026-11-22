@@ -252,7 +252,7 @@ public sealed class DoorParts : IPartGenerator
     public const double HatchThick = 0.05, HatchGap = 0.01;
 
     /// <summary>The deck hatch sizes: the hole each fills (m), across (out from its hinge) and along its hinge.</summary>
-    public static readonly (double Across, double Along)[] HatchSizes = [(1.0, 1.0), (1.25, 1.25), (0.9, 0.75), (1.2, 1.1), (1.15, 1.25), (0.75, 1.25), (1.2, 0.9)]; // (the last three: boarding shafts, the Satchel family's, the Dray's and the Dibber's)
+    public static readonly (double Across, double Along)[] HatchSizes = [(1.0, 1.0), (1.25, 1.25), (0.9, 0.75), (1.2, 1.1), (1.15, 1.25), (0.75, 1.25), (1.2, 0.9), (1.1, 1.1)]; // (then three boarding shafts, the Satchel family's, the Dray's and the Dibber's; the last the Zero Day's Limpet shaft)
 
     /// <summary>A deck hatch's name for a hole <paramref name="across"/> out from its hinge and <paramref name="along"/> it (a square one by its side).</summary>
     public static string HatchName(double across, double? along = null) =>

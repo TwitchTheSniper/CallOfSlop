@@ -21,8 +21,8 @@ bulkhead in four blocks round the door, the seal skirt with its gasket, the cutt
 
 Fittings: two Limpet Door Leaves (event doors, sliding 0.56 m apart, `"door"` slide), the Limpet Breaching Cutter (a ring
 round the door, `"breach": cutter`, reach 2 m, 900 a second raw), four Limpet Mag Locks at the skirt's corners
-(`"breach": grapple`, reach 0.6 m), the Limpet Ladder (its rails stop under the ceiling; its `ladder` climb reaches the
-Zero Day's lower deck), eight Flight Couches, a Flight Stabilizer (no pilot's seat: it takes orders), two Batteries, 16
+(`"breach": grapple`, reach 0.6 m), the Limpet Ladder (up to its own docking hatch, its rails stopping under the ceiling;
+docked, the climb runs on up the Zero Day's shaft ladder), eight Flight Couches, a Flight Stabilizer (no pilot's seat: it takes orders), two Batteries, 16
 RCS Thrusters and four Bulkhead Lights. Three switches by the door (starboard) work the locks, the cutter and the door; the
 port switch the lights. A Docking Hatch hangs upside down under the receiver and slides forward along the ceiling.
 
@@ -31,8 +31,13 @@ port switch the lights. A Docking Hatch hangs upside down under the receiver and
 The Zero Day's legs are 0.75 m longer for it (`Ground` -4.85). The pod hangs under the keel on the centreline, nose
 forward, its roof against the keel, held by a Docking Clamp Medium hung upside down under the keel to port
 (`LimpetClampConfig`: starts holding, its box round the pod). The keel has a 1.1 m shaft over the receiver (`LimpetShaft`,
-lined, rungs on its aft side, a hazard frame round its mouth, a rail round its top on the lower deck, open aft where the
-ladder lands) and a Docking Hatch in a pocket at its foot that slides aft into the keel. The two hatches open together
+lined, a hazard frame round its mouth) under a flush Deck Hatch 1.1 m in the lower deck, hung by its starboard edge (Karl,
+2026-11-22: no rails, walked over shut), with its own Zero Day Limpet Ladder on its aft side from the deck down to just over
+a Docking Hatch in a pocket at its foot that slides aft into the keel. Docked with both docking hatches open, F at either
+end climbs the two ladders as one, from the ship's lower deck to the pod's floor or back (`ConstructRide.Chained`: a ladder
+end by a docking hatch of its own body meets the docked craft's ladder lined up with it; a shut hatch there says "the
+docking hatch is shut: nothing is docked there"). Crews don't yet path through it, and `--check-building` walks the carrier
+alone, so it says the shaft ladder has no room at its foot; `--ladder-check` climbs it docked. The two hatches open together
 while the clamp holds the pod and shut when it lets go (`ConstructDoors.StepDocks`). The blueprint's `"carry"` list builds
 the pod held (`ConstructCargo.BuildCarry`).
 
