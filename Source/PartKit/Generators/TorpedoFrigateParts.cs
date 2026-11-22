@@ -573,6 +573,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     /// <summary>The Limpet's shaft (TorpedoFrigateLimpet.cs): from the passage by the airlock down through the keel into the pod's receiver, on the centreline.</summary>
     private const double LimpetLiningFoot = 0.18; // the Limpet shaft's lining stops this far over the keel: under it the docking hatch slides aft
     private static readonly Rect LimpetShaft = new(Cx - 0.55, LimpetRecvZ - 0.55, Cx + 0.55, LimpetRecvZ + 0.55);
+    private const double LimpetLadderFoot = -1.35, LimpetLadderZ = 31.845; // the shaft's ladder: its foot (over the docking hatch's lid and its ribs) and its socket, its back 1 cm inside the deck's hole
 
     private static Part Keel()
     {
@@ -653,8 +654,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var (x0, z0, x1, z1, e) in new[] { (ls.X0, ls.Z0, ls.X1, ls.Z0, 0.0), (ls.X0, ls.Z1, ls.X1, ls.Z1, 0.0),
             (ls.X0, ls.Z0 + 0.025, ls.X0, ls.Z1 - 0.025, 0.005), (ls.X1, ls.Z0 + 0.025, ls.X1, ls.Z1 - 0.025, 0.005) })
             Plate(p, [P(x0, hy + LimpetLiningFoot + e, z0), P(x1, hy + LimpetLiningFoot + e, z1), P(x1, -0.01 - e, z1), P(x0, -0.01 - e, z0)], Grate, "dirty steel");
-        for (var y = hy + 0.25; y < -0.1; y += 0.3)
-            Detail(p, Cx - 0.22, y - 0.02, ls.Z1 - 0.08, Cx + 0.22, y + 0.02, ls.Z1 - 0.012, Hazard, "hazard paint");
+        // (Karl, 2026-11-22: the shaft's own ladder stands on a ledge against its aft side, its foot clear over the docking hatch's
+        // lid, shut or sliding; docked, the Limpet's ladder meets its foot and one climb runs on through both: ConstructRide.Chained)
+        Hidden(p, Cx - 0.3, LimpetLadderFoot - 0.06, LimpetLadderZ - 0.1, Cx + 0.3, LimpetLadderFoot, ls.Z1 - 0.01);
+        Sock(p, "limpetLadder", Cx, LimpetLadderFoot, LimpetLadderZ, "+y");
         foreach (var (x0, z0, x1, z1) in new[] { (ls.X0 - 0.12, ls.Z0 - 0.12, ls.X1 + 0.12, ls.Z0), (ls.X0 - 0.12, ls.Z1, ls.X1 + 0.12, ls.Z1 + 0.12),
             (ls.X0 - 0.12, ls.Z0 + 0.003, ls.X0, ls.Z1 - 0.003), (ls.X1, ls.Z0 + 0.003, ls.X1 + 0.12, ls.Z1 - 0.003) })
             Detail(p, x0, hy - 0.03, z0, x1, hy - 0.004, z1, Hazard, "hazard paint");
@@ -822,7 +825,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         WallRun(p, true, Cx + 1.75, Cx + Lw, 30.25, y0, y1);
         WallRun(p, false, 30.375, 34.0, Cx + 1.875, y0, y1, Door(32.25));
         HatchRail(p, BellyHatch, Ft0, sides: true); // (the MMU's way out: no ladder, the dock aft of its open edge)
-        HatchRail(p, LimpetShaft, Ft0); // (the way down into the Limpet, open at its aft edge where its ladder lands)
+        // The way down into the Limpet: a flush Deck Hatch over its shaft, hung by its starboard edge (Karl, 2026-11-22: no rails, walked over shut).
+        DoorParts.DeckHatchRim(p, LimpetShaft.X0, LimpetShaft.Z0, LimpetShaft.X1, LimpetShaft.Z1, Ft0, null, H);
+        Sock(p, "hatchLimpet", LimpetShaft.X1, Ft0 - DoorParts.HatchThick / 2, (LimpetShaft.Z0 + LimpetShaft.Z1) / 2, "-x");
         // The bulkhead into engineering.
         WallRun(p, true, Cx - Lw, Cx + Lw, 34.125, y0, y1, Door(Cx - 0.75));
         // Engineering: pipes along the ceiling's corners, a catwalk-grey ceiling of frames, the reactor forward to starboard. Aft,
@@ -1717,7 +1722,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             for (var y = 0.6; y < top - 0.2; y += 1.2)
                 p.Add(Box([x - 0.02, y, -0.12], [x + 0.02, y + 0.06, -0.01], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
         }
-        for (var y = 0.3; y < rise + 0.1; y += 0.3)
+        for (var y = 0.3; y < top - 0.08; y += 0.3) // (none above its top: they would stand through the shut hatch)
             p.Add(Box([-0.22, y - 0.02, -0.165], [0.22, y + 0.02, -0.135], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Add(Box([-0.29, top - 0.06, -0.19], [0.29, top, -0.11], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock(sockName, sockAt, sockDir);
@@ -2310,6 +2315,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Hang(bp, "Zero Day Ladder", la, "ladder", "bottom");
         Hang(bp, DoorParts.HatchName(HatchSide), uf, "hatchFore", "hang"); // (flush Deck Hatches over the shafts, shut: the decks walk over them)
         Hang(bp, DoorParts.HatchName(HatchSide), ua, "hatchAft", "hang");
+        Hang(bp, "Zero Day Limpet Ladder", keel, "limpetLadder", "bottom"); // (down the Limpet's shaft to the docking hatch, under a flush Deck Hatch)
+        Hang(bp, DoorParts.HatchName(1.1), la, "hatchLimpet", "hang");
         // Lower deck fore: the server room (the IT style's own), the armoury, the torpedo room.
         for (var i = 0; i < 4; i++)
         {
@@ -2531,6 +2538,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Jet("Zero Day Lift Jet", $"A lift jet under the Zero Day's keel: {LiftForce / 1e6:0.0} MN straight down.", LiftForce, 1.4),
             Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down.", RetroForce, 1.0),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
+            Ladder("Zero Day Limpet Ladder", Ft0 - LimpetLadderFoot, "The ladder down the Zero Day's Limpet shaft to its docking hatch. With the Limpet docked and both hatches open, F climbs on through into the pod, and from the pod up into the ship.", "bottom", [0, 0, -0.095], "-y"),
             Railgun(), Pdc(), Autocannon(), Countermeasures(), Reactor(), FlightComputer(), Locker(), TorpedoHatch(),
         ];
         var defs = new Dictionary<string, PyDict>();

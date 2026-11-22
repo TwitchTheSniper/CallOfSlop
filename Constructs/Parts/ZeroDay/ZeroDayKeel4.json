@@ -2093,78 +2093,16 @@
     },
     {
       "min": [
-        6.155,
-        -1.495,
-        31.795
+        6.075,
+        -1.535,
+        31.62
       ],
       "max": [
-        6.595,
-        -1.455,
-        31.863
+        6.675,
+        -1.475,
+        31.865
       ],
-      "color": "#e0b020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.155,
-        -1.195,
-        31.795
-      ],
-      "max": [
-        6.595,
-        -1.155,
-        31.863
-      ],
-      "color": "#e0b020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.155,
-        -0.895,
-        31.795
-      ],
-      "max": [
-        6.595,
-        -0.855,
-        31.863
-      ],
-      "color": "#e0b020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.155,
-        -0.595,
-        31.795
-      ],
-      "max": [
-        6.595,
-        -0.555,
-        31.863
-      ],
-      "color": "#e0b020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.155,
-        -0.295,
-        31.795
-      ],
-      "max": [
-        6.595,
-        -0.255,
-        31.863
-      ],
-      "color": "#e0b020",
-      "detail": true,
-      "finish": "hazard paint"
+      "hidden": true
     },
     {
       "min": [
@@ -2269,6 +2207,15 @@
     }
   ],
   "sockets": [
+    {
+      "name": "limpetLadder",
+      "at": [
+        6.375,
+        -1.475,
+        31.72
+      ],
+      "dir": "+y"
+    },
     {
       "name": "limpetHatch",
       "at": [
