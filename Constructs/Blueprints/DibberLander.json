@@ -293,19 +293,22 @@
       "by": "wall"
     },
     {
-      "part": "Dibber Belly Hatch",
+      "part": "Dibber Boarding Ladder",
       "on": 0,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Dibber Belly Hatch",
+      "on": 0,
+      "socket": "bellyHatch",
       "by": "hang"
     },
     {
-      "part": "Dibber Boarding Ladder",
-      "on": 42,
-      "socket": "ladder",
-      "by": "foot",
-      "spin": 3,
-      "paint": "#2e302d",
-      "finish": "painted steel"
+      "part": "Deck Hatch 0.9x1.2 m",
+      "on": 0,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Dibber Deck Ladder",
@@ -313,6 +316,12 @@
       "socket": "ladderUp",
       "by": "foot",
       "spin": 2
+    },
+    {
+      "part": "Deck Hatch 0.75x0.9 m",
+      "on": 10,
+      "socket": "hatchUp",
+      "by": "hang"
     },
     {
       "part": "Dibber Power Plant",
@@ -423,28 +432,32 @@
       39
     ],
     [
-      53,
-      50
-    ],
-    [
-      53,
-      51
-    ],
-    [
-      53,
+      55,
       52
     ],
     [
-      54,
-      42
+      55,
+      53
     ],
     [
-      57,
-      55
+      55,
+      54
     ],
     [
-      57,
-      56
+      56,
+      43
+    ],
+    [
+      56,
+      44
+    ],
+    [
+      59,
+      57
+    ],
+    [
+      59,
+      58
     ]
   ],
   "conduit": true

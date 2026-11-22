@@ -35,7 +35,7 @@ public static partial class ConstructRide
     public static void LadderLine(ConstructPartDef d, out Vector3 low, out Vector3 high)
     {
         var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
-        low = new Vector3(cx, d.BoundsMin.Y + 0.02f, d.BoundsMin.Z - LadderBack);
+        low = new Vector3(cx, d.LadderFoot + 0.02f, d.BoundsMin.Z - LadderBack);
         high = new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMin.Z - LadderBack);
     }
 
@@ -44,7 +44,7 @@ public static partial class ConstructRide
     {
         var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
         var stand = World.BodyRadius + 0.12f;
-        foot = new Vector3(cx, d.BoundsMin.Y + 0.02f, d.BoundsMin.Z - stand);
+        foot = new Vector3(cx, d.LadderFoot + 0.02f, d.BoundsMin.Z - stand);
         top = new Vector3(cx, d.LadderTop + 0.02f, d.BoundsMax.Z + stand);
     }
 
@@ -68,6 +68,8 @@ public static partial class ConstructRide
             return "the ladder is stowed: F on its foot rolls it down";
         if (ConstructDoor.EventDoor(c, part) is var hatch and >= 0 && hatch != part && (ConstructDoors.IsMoving(c, hatch) || !ConstructDoors.SettledOpen(c, hatch)))
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
+        if (NextLid(c, part) is var lid and >= 0)
+            return ConstructDoors.IsMoving(c, c.Doors[lid].Part) ? "the hatch is still moving" : ConstructDoors.Locked(c, c.Doors[lid].Part) ? "the hatch is locked" : "the hatch is shut: F opens it"; // (a deck hatch over its shaft, a belly door under it: F on the ladder opens them first, GameSandbox Use; crews too, CrewNav)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
@@ -93,6 +95,86 @@ public static partial class ConstructRide
         s.RideLadder = (byte)(LadderOn | (atTop ? LadderDown : 0) | 2);
         s.RideLadderPart = (ushort)part;
         return null;
+    }
+
+    /// <summary>
+    /// The next lid across a ladder from door slot <paramref name="from"/> on (Karl, 2026-11-22: ladders in shafts under flush
+    /// hatches): an event door other than one the ladder rides, lying flat while shut (a Deck Hatch over the shaft's top, a belly
+    /// door under a boarding shaft), a solid box of which crosses the ladder's line from its foot to its landing. Its slot, else
+    /// -1. An open lid hangs upright down the shaft's side and isn't one, so only shut or moving lids are found.
+    /// </summary>
+    public static int NextLid(Construct c, int ladder, int from = 0)
+    {
+        if (c.DoorCount == 0 || (uint)ladder >= (uint)c.PartCount)
+            return -1;
+        ref var p = ref c.Parts[ladder];
+        var d = p.D;
+        var own = ConstructDoor.EventDoor(c, ladder);
+        c.WorldFrame(p.Seg, out var q, out var t);
+        float cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f, cz = (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f;
+        var foot = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, new Vector3(cx, d.LadderFoot, cz)), q);
+        var top = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, new Vector3(cx, d.LadderTop, cz)), q);
+        for (var k = Math.Max(0, from); k < c.DoorCount; k++)
+        {
+            var dp = c.Doors[k].Part;
+            if (dp == own || dp == ladder || c.Parts[dp].Broken || c.Parts[dp].D.Door is { Dock: true } or { Launch: true } or { Gear: > 0 })
+                continue; // (a docking hatch opens as its body docks, a launch hatch for a launch, landing gear from a seat: none is a ladder's to work)
+            c.WorldFrame(c.Parts[dp].Seg, out var dq, out var dt);
+            var iq = Quaternion.Conjugate(dq);
+            Vector3 a = Vector3.Transform(foot - dt, iq), b = Vector3.Transform(top - dt, iq); // (the ladder's line in the door's segment frame)
+            for (var n = 0; n < c.SolidCount(dp); n++)
+            {
+                c.SolidBox(dp, n, out var centre, out var half);
+                if (half.Y > 0.1f || half.X < 0.2f || half.Z < 0.2f)
+                    continue; // (not a lid lying flat: a door in a wall, an open lid hanging down the shaft, a socket's strip)
+                var y0 = MathF.Min(a.Y, b.Y) - 0.3f;
+                var y1 = MathF.Max(a.Y, b.Y) + 0.3f;
+                var o = Vector3.Abs(a - centre);
+                if (o.X <= half.X + 0.35f && o.Z <= half.Z + 0.35f && centre.Y + half.Y >= y0 && centre.Y - half.Y <= y1)
+                    return k;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// Server: opens everything that keeps a ladder from being climbed (its shut lids, NextLid, and a stowed foot or sections
+    /// linked to it, StowedFoot). True when something was set moving.
+    /// </summary>
+    public static bool OpenWay(ConstructWorld world, Construct c, int ladder)
+    {
+        var any = false;
+        for (var k = NextLid(c, ladder); k >= 0; k = NextLid(c, ladder, k + 1))
+            if (!ConstructDoors.TargetOpen(c, c.Doors[k].Part) && !ConstructDoors.Locked(c, c.Doors[k].Part)) // (a locked lid stays shut: F on the ladder is no key)
+            {
+                ConstructDoors.Command(world, c, k, true);
+                any = true;
+            }
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var ln = ref c.Links[l];
+            var other = ln.A == ladder ? ln.B : ln.B == ladder ? ln.A : -1;
+            if (other >= 0 && c.DoorOf(other) is var k and >= 0 && c.Doors[k].Part == other && !ConstructDoors.TargetOpen(c, other) && !ConstructDoors.Locked(c, other))
+            {
+                ConstructDoors.Command(world, c, k, true);
+                any = true;
+            }
+        }
+        return any;
+    }
+
+    /// <summary>Settles a ladder's way open at once (checks and tools: what OpenWay starts, finished).</summary>
+    public static void SettleWay(Construct c, int ladder)
+    {
+        for (var k = NextLid(c, ladder); k >= 0; k = NextLid(c, ladder, k + 1))
+            ConstructDoors.Settle(c, k, true);
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var ln = ref c.Links[l];
+            var other = ln.A == ladder ? ln.B : ln.B == ladder ? ln.A : -1;
+            if (other >= 0 && c.DoorOf(other) is var k and >= 0 && c.Doors[k].Part == other)
+                ConstructDoors.Settle(c, k, true);
+        }
     }
 
     /// <summary>Ticks a leg of a ladder's climb takes at <paramref name="speed"/> (a long ladder is climbed a little faster: a leg fits a byte).</summary>
@@ -262,7 +344,7 @@ public struct LadderGeom
 
     public static LadderGeom Of(ConstructPartDef d) => new()
     {
-        Cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f, FrontZ = d.BoundsMin.Z, RungZ = d.BoundsMin.Z + 0.04f, Base = d.BoundsMin.Y,
+        Cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f, FrontZ = d.BoundsMin.Z, RungZ = d.BoundsMin.Z + 0.04f, Base = d.LadderFoot,
         Top = d.LadderTop, RailTop = MathF.Max(d.BoundsMax.Y, d.LadderTop + 0.3f),
     };
 }

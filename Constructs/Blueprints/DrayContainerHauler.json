@@ -585,6 +585,12 @@
       "by": "bottom"
     },
     {
+      "part": "Deck Hatch 1.25 m",
+      "on": 40,
+      "socket": "hatchLadder",
+      "by": "hang"
+    },
+    {
       "part": "Space Suit Locker",
       "on": 31,
       "socket": "suit0",
@@ -604,7 +610,7 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 96,
+      "on": 97,
       "socket": "mmu",
       "by": "mount"
     },
@@ -628,7 +634,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 100,
+      "on": 101,
       "socket": "dock",
       "by": "back"
     },
@@ -647,7 +653,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 103,
+      "on": 104,
       "socket": "dock",
       "by": "back"
     },
@@ -666,7 +672,7 @@
     },
     {
       "part": "Robot Shell",
-      "on": 106,
+      "on": 107,
       "socket": "dock",
       "by": "back"
     },
@@ -691,13 +697,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 110,
+      "on": 111,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 111,
+      "on": 112,
       "socket": "back",
       "by": "front"
     },
@@ -715,13 +721,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 114,
+      "on": 115,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 115,
+      "on": 116,
       "socket": "back",
       "by": "front"
     },
@@ -1013,7 +1019,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 140,
+      "on": 141,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",
@@ -1063,37 +1069,37 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 160,
+      "on": 161,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 160,
+      "on": 161,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 160,
+      "on": 161,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 160,
+      "on": 161,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 164,
+      "on": 165,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 160,
+      "on": 161,
       "socket": "foot",
       "by": "hang"
     },
@@ -1105,37 +1111,37 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 167,
+      "on": 168,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 167,
+      "on": 168,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 167,
+      "on": 168,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 167,
+      "on": 168,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 171,
+      "on": 172,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 167,
+      "on": 168,
       "socket": "foot",
       "by": "hang"
     },
@@ -1147,37 +1153,37 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 174,
+      "on": 175,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 174,
+      "on": 175,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 174,
+      "on": 175,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 174,
+      "on": 175,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 178,
+      "on": 179,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 174,
+      "on": 175,
       "socket": "foot",
       "by": "hang"
     },
@@ -1189,37 +1195,37 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 181,
+      "on": 182,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 181,
+      "on": 182,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 181,
+      "on": 182,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 181,
+      "on": 182,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 185,
+      "on": 186,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 181,
+      "on": 182,
       "socket": "foot",
       "by": "hang"
     },
@@ -1231,37 +1237,37 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 188,
+      "on": 189,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 188,
+      "on": 189,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 188,
+      "on": 189,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 188,
+      "on": 189,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 192,
+      "on": 193,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 188,
+      "on": 189,
       "socket": "foot",
       "by": "hang"
     },
@@ -1273,53 +1279,87 @@
     },
     {
       "part": "Leg Pod Canopy Port XL",
-      "on": 195,
+      "on": 196,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd XL",
-      "on": 195,
+      "on": 196,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut XL",
-      "on": 195,
+      "on": 196,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage XL",
-      "on": 195,
+      "on": 196,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace XL",
-      "on": 199,
+      "on": 200,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot XL",
-      "on": 195,
+      "on": 196,
       "socket": "foot",
       "by": "hang"
     },
     {
-      "part": "Dray Belly Hatch",
+      "part": "Dray Boarding Ladder",
       "on": 9,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Dray Ladder Section 1",
+      "on": 203,
+      "socket": "section1",
       "by": "hang"
     },
     {
-      "part": "Dray Boarding Ladder",
-      "on": 202,
-      "socket": "ladder",
-      "by": "foot",
-      "paint": "#202326",
-      "finish": "painted steel"
+      "part": "Dray Ladder Section 2",
+      "on": 203,
+      "socket": "section2",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 3",
+      "on": 203,
+      "socket": "section3",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 4",
+      "on": 203,
+      "socket": "section4",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Ladder Section 5",
+      "on": 203,
+      "socket": "section5",
+      "by": "hang"
+    },
+    {
+      "part": "Dray Belly Hatch",
+      "on": 6,
+      "socket": "bellyHatch",
+      "by": "hang"
+    },
+    {
+      "part": "Deck Hatch 1.25x0.75 m",
+      "on": 9,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Bakelite Switch",
@@ -1606,28 +1646,32 @@
   ],
   "wires": [
     [
-      204,
-      202
+      211,
+      209
     ],
     [
-      205,
-      207
+      211,
+      210
     ],
     [
-      219,
-      217
+      212,
+      214
     ],
     [
-      219,
-      218
+      226,
+      224
     ],
     [
-      222,
-      220
+      226,
+      225
     ],
     [
-      222,
-      221
+      229,
+      227
+    ],
+    [
+      229,
+      228
     ]
   ],
   "conduit": true,

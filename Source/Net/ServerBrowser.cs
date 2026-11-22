@@ -737,9 +737,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      435 refuses as a bad panel order; and 5 die patterns and 18 presets for the ship works in Pressing.json.
     // 437: the modular cockpit (cockpits.md): cell-class module sockets (Console Bays and Plugs, ModCells), the panel instruments and
     //      CfgKey 138 (the unused Blade5) as SeatFn, a cockpit switch's Function; new part files move part ids.
-    // 438: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
-    //      steps, goods) and every listed station's power and state, which 437 reads as markets.
-    public const ushort ProtocolVersion = 438;
+    // 438: Deck Hatches (Karl 2026-11-22: ladders between decks in shafts at the hull under flush hatches): four new event door parts
+    //      move the part ids, and the ships' decks, ladders and blueprints changed with them.
+    // 439: stations come and go (economy step 11b): Msg.Stations starts with the stations made in play (name, power, planet, state, kind,
+    //      steps, goods) and every listed station's power and state, which 438 reads as markets.
+    public const ushort ProtocolVersion = 439;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
