@@ -616,6 +616,7 @@ public static partial class ConstructRender
         if (d.Role == PartRole.Joint && !p.Broken && c.RailJointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
             strain = Math.Clamp(c.Joints[oj].Over - 1, 0, 1) * (0.75f + 0.25f * MathF.Sin((float)Now * 9f));
         var lit = d.Logic == CLogic.Lamp && ConstructLamps.Lit(c, i); // a lamp that is on glows (a mains lamp: from the circuit, ConstructLamps.Lit) (unlit, bright)
+        var lampOn = lit; // (before a blink: a lamp's "work" boxes, an Amber Beacon's mirror, turn while it is on)
         var glow = new Vector3(1f, 0.93f, 0.6f);
         if (d.Logic == CLogic.Lamp)
         {
@@ -687,6 +688,7 @@ public static partial class ConstructRender
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
         var workPart = d.HasWork ? WorkPart(c, i, d) : -1; // (a block machine's cell shows its Core's work, a Run-out Table its Extruder's)
         var working = d.CraneRail ? d.HasWork && !p.Broken && ConstructLifters.RailLit(world, c, i, Now) // (a Crane Rail Block's lamp flashes while a bridge passes: drawing 24)
+            : d.Logic == CLogic.Lamp ? d.HasWork && !p.Broken && lampOn // (a lamp's work, an Amber Beacon's turning mirror, while it is lit)
             : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)

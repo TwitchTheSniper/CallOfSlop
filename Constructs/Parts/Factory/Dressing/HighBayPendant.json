@@ -1,0 +1,192 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "High-Bay Pendant",
+  "description": "An enamel lamp shade on a drop rod, for under a shed's roof trusses. Lights while the power circuit reaches it and has charge; a wire into it switches it.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "logic",
+  "tool": "wrench",
+  "finish": "gloss paint",
+  "mass": 14.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f4a3c",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "lamp",
+    "mains": true
+  },
+  "power": 250,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#fff1d0",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "default": 140,
+      "tooltip": "How bright it glows."
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Flashes this many times a second while lit (0: steady)."
+    }
+  ],
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        -0.03,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        0.0,
+        0.08
+      ],
+      "color": "#3a3c3e",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.22,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        -0.026,
+        0.02
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.12,
+        -0.34,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        -0.21,
+        0.12
+      ],
+      "color": "#2f4a3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.38,
+        -0.62,
+        -0.38
+      ],
+      "max": [
+        0.38,
+        -0.33,
+        0.38
+      ],
+      "color": "#2f4a3c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "taper": [
+        0.34,
+        0.34
+      ],
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.36,
+        -0.629,
+        -0.36
+      ],
+      "max": [
+        0.36,
+        -0.617,
+        0.36
+      ],
+      "color": "#e9e6dc",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.3,
+        -0.643,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        -0.631,
+        0.3
+      ],
+      "color": "#fff3b0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.09,
+        -0.7,
+        -0.09
+      ],
+      "max": [
+        0.09,
+        -0.634,
+        0.09
+      ],
+      "color": "#fff3b0",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 10,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

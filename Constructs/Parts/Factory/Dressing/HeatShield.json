@@ -1,0 +1,388 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heat Shield",
+  "description": "A ribbed aluminised sheet on stand-offs, 2 x 2 m: hang it on an oven's or a furnace's side where people walk past. Dressing.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "aluminium",
+  "mass": 55.0,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#9aa0a2",
+  "attachSeconds": 1.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.06,
+        -0.06,
+        0.0
+      ],
+      "max": [
+        0.06,
+        0.06,
+        0.154
+      ],
+      "color": "#3a3c3e",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.84,
+        -0.79,
+        0.004
+      ],
+      "max": [
+        -0.76,
+        -0.71,
+        0.154
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.76,
+        -0.79,
+        0.004
+      ],
+      "max": [
+        0.84,
+        -0.71,
+        0.154
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.84,
+        0.71,
+        0.004
+      ],
+      "max": [
+        -0.76,
+        0.79,
+        0.154
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.76,
+        0.71,
+        0.004
+      ],
+      "max": [
+        0.84,
+        0.79,
+        0.154
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.0,
+        -0.97,
+        0.15
+      ],
+      "max": [
+        1.0,
+        1.0,
+        0.19
+      ],
+      "color": "#9aa0a2",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        -0.855,
+        0.186
+      ],
+      "max": [
+        0.97,
+        -0.785,
+        0.212
+      ],
+      "color": "#8f8466",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        -0.655,
+        0.186
+      ],
+      "max": [
+        0.97,
+        -0.585,
+        0.212
+      ],
+      "color": "#8f8466",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        -0.455,
+        0.186
+      ],
+      "max": [
+        0.97,
+        -0.385,
+        0.212
+      ],
+      "color": "#8f8466",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        -0.255,
+        0.186
+      ],
+      "max": [
+        0.97,
+        -0.185,
+        0.212
+      ],
+      "color": "#9aa0a2",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        -0.055,
+        0.186
+      ],
+      "max": [
+        0.97,
+        0.015,
+        0.212
+      ],
+      "color": "#9aa0a2",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        0.145,
+        0.186
+      ],
+      "max": [
+        0.97,
+        0.215,
+        0.212
+      ],
+      "color": "#9aa0a2",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        0.345,
+        0.186
+      ],
+      "max": [
+        0.97,
+        0.415,
+        0.212
+      ],
+      "color": "#9aa0a2",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.97,
+        0.545,
+        0.186
+      ],
+      "max": [
+        0.97,
+        0.615,
+        0.212
+      ],
+      "color": "#9aa0a2",
+      "detail": true,
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.95,
+        0.842,
+        0.186
+      ],
+      "max": [
+        -0.76,
+        0.948,
+        0.202
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.763,
+        0.838,
+        0.189
+      ],
+      "max": [
+        -0.567,
+        0.952,
+        0.205
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.57,
+        0.842,
+        0.186
+      ],
+      "max": [
+        -0.38,
+        0.948,
+        0.202
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.383,
+        0.84,
+        0.189
+      ],
+      "max": [
+        -0.187,
+        0.95,
+        0.205
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.19,
+        0.842,
+        0.186
+      ],
+      "max": [
+        0.0,
+        0.948,
+        0.202
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.003,
+        0.838,
+        0.189
+      ],
+      "max": [
+        0.193,
+        0.952,
+        0.205
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.19,
+        0.842,
+        0.186
+      ],
+      "max": [
+        0.38,
+        0.948,
+        0.202
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.377,
+        0.84,
+        0.189
+      ],
+      "max": [
+        0.573,
+        0.95,
+        0.205
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.57,
+        0.838,
+        0.186
+      ],
+      "max": [
+        0.76,
+        0.952,
+        0.202
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.757,
+        0.842,
+        0.189
+      ],
+      "max": [
+        0.953,
+        0.948,
+        0.205
+      ],
+      "color": "#262626",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

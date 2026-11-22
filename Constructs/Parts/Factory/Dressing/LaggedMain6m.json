@@ -1,0 +1,436 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lagged Main 6 m",
+  "description": "A big insulated steam main on wall brackets, flanged at its ends: chain them end to end, turn corners and drops with a Lagged Main Elbow.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "lagging",
+  "mass": 570.0,
+  "health": 660,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c4bda8",
+  "attachSeconds": 1.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -3.0,
+        -0.3,
+        0.25
+      ],
+      "max": [
+        3.0,
+        0.3,
+        0.85
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.988,
+        -0.3,
+        0.25
+      ],
+      "max": [
+        2.988,
+        0.3,
+        0.85
+      ],
+      "color": "#c4bda8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "lagging"
+    },
+    {
+      "min": [
+        -2.996,
+        -0.36,
+        0.19
+      ],
+      "max": [
+        -2.88,
+        0.36,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        2.88,
+        -0.36,
+        0.19
+      ],
+      "max": [
+        2.996,
+        0.36,
+        0.91
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.73,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        -1.67,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.53,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        -0.47,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        0.47,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        0.53,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        1.57,
+        -0.308,
+        0.242
+      ],
+      "max": [
+        1.63,
+        0.308,
+        0.858
+      ],
+      "color": "#a4abb0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "aluminium"
+    },
+    {
+      "min": [
+        -0.15,
+        -0.4,
+        0.0
+      ],
+      "max": [
+        0.15,
+        0.4,
+        0.03
+      ],
+      "color": "#3a3c3e",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.38,
+        0.027
+      ],
+      "max": [
+        0.05,
+        -0.3,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.06,
+        -0.34,
+        0.21
+      ],
+      "max": [
+        0.06,
+        0.34,
+        0.89
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+x",
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.35,
+        -0.4,
+        0.0
+      ],
+      "max": [
+        -2.05,
+        0.4,
+        0.03
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.25,
+        -0.38,
+        0.027
+      ],
+      "max": [
+        -2.15,
+        -0.3,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.26,
+        -0.34,
+        0.21
+      ],
+      "max": [
+        -2.14,
+        0.34,
+        0.89
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+x",
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        2.05,
+        -0.4,
+        0.0
+      ],
+      "max": [
+        2.35,
+        0.4,
+        0.03
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        2.15,
+        -0.38,
+        0.027
+      ],
+      "max": [
+        2.25,
+        -0.3,
+        0.55
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        2.14,
+        -0.34,
+        0.21
+      ],
+      "max": [
+        2.26,
+        0.34,
+        0.89
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+x",
+      "inner": 0.9,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.88,
+        0.26,
+        0.43
+      ],
+      "max": [
+        1.12,
+        0.52,
+        0.67
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.98,
+        0.51,
+        0.53
+      ],
+      "max": [
+        1.02,
+        0.7,
+        0.57
+      ],
+      "color": "#3a3c3e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.78,
+        0.67,
+        0.33
+      ],
+      "max": [
+        1.22,
+        0.71,
+        0.77
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+y",
+      "inner": 0.82,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.8,
+        0.68,
+        0.538
+      ],
+      "max": [
+        1.2,
+        0.7,
+        0.562
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        0.988,
+        0.683,
+        0.35
+      ],
+      "max": [
+        1.012,
+        0.697,
+        0.75
+      ],
+      "color": "#a12a22",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -1.25,
+        -0.306,
+        0.244
+      ],
+      "max": [
+        -0.95,
+        0.306,
+        0.856
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -3.0,
+        0.0,
+        0.55
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        3.0,
+        0.0,
+        0.55
+      ],
+      "dir": "+x"
+    }
+  ]
+}

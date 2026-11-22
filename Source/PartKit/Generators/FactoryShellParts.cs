@@ -215,6 +215,7 @@ public sealed partial class FactoryShellParts : IPartGenerator
             shell.Add(("", RoofSheet(s)));
         }
         shell.AddRange(MillShed());
+        shell.AddRange(MillDressing());
         WriteParts(o, Out,
         [
             .. shell,
