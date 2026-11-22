@@ -27,6 +27,16 @@ public static partial class Program
     private static readonly ConstructRoutes.LinkPort[] _lkAll = new ConstructRoutes.LinkPort[ConstructRoutes.MaxLinkPorts];
     private static int _lkPickCount, _lkPickPart = -1;
     private static bool _lkPickEnd;
+    private static readonly bool[] _lkPickIn = new bool[ConstructRoutes.MaxLinkPorts]; // (a start picker's option: an input, so the link is made backwards)
+    // A link started at an input (Karl, 2026-11-22: a second control for a device, e.g. a button outside the Roamer's ramp): the input
+    // is kept here until a click on the device it comes from, whose output then starts the link as usual and the end picker opens
+    // on this input with the route found. 0: none.
+    private static ushort _lkRevBody;
+    private static int _lkRevPart = -1;
+    private static byte _lkRevPort;
+    private static RouteType _lkRevType;
+    private static long _lkRevStamp;
+    private static string _lkRevLabel = "";
     private static string _lkLabel = ""; // "Drive shaft from Engine: Drive out": the link being made, for the HUD
     private static long _lkMarkKey = long.MinValue;
     private static readonly string[] _lkMarkText = new string[ConstructRoutes.MaxLinkPorts];
@@ -94,6 +104,8 @@ public static partial class Program
         _lkAuto.Cancel();
         _lkAutoRes = null;
         _lkWorld = false; // (a world link being routed: Program.SandboxWorldLinks.cs)
+        _lkRevBody = 0;
+        _lkRevPart = -1;
         LoomReset();
         _lkWCount = 0;
         WorldLinkRender.PreviewCount = 0;
@@ -107,7 +119,7 @@ public static partial class Program
             sg.SpawnPlacing = false; // (placing a spawn: Esc stops, Program.SandboxSpawn.cs)
             return true;
         }
-        if (_lkPicker.IsOpen || _lkBody != 0 || _lkMoveRoute >= 0)
+        if (_lkPicker.IsOpen || _lkBody != 0 || _lkMoveRoute >= 0 || _lkRevBody != 0)
         {
             LinkReset();
             return true;
@@ -420,7 +432,7 @@ public static partial class Program
             var fluid = routing ? LinkFluid(c) : "";
             for (var i = 0; i < n; i++)
             {
-                var why = routing ? ConstructRoutes.EndWhy(c, hit.Part, _lkType, fluid, _lkAll[i]) : ConstructRoutes.StartWhy(_lkAll[i]);
+                var why = routing ? ConstructRoutes.EndWhy(c, hit.Part, _lkType, fluid, _lkAll[i]) : ConstructRoutes.StartWhy(_lkAll[i], null);
                 _lkMarkText[i] = _lkAll[i].Name;
                 _lkMarkWhy[i] = routing && why != null ? $"{_lkAll[i].Name} - {why}" : null;
                 _lkMarkOk[i] = routing ? why == null : _lkAll[i].FreeOut || _lkAll[i].FreeIn;
@@ -527,7 +539,7 @@ public static partial class Program
     /// </summary>
     private static bool LinkIsWatch(Construct c) => _lkType == RouteType.Data && _lkParent == 255 && _lkFrom >= 0 && _lkFrom < c.PartCount && ConstructRoutes.IsWatch(c.DefOf(_lkFrom), _lkFromPort);
 
-    private static bool OpenPicker(Construct c, int part, bool end, Vector3 near)
+    private static bool OpenPicker(Construct c, int part, bool end, Vector3 near, int prefer = -1)
     {
         var n = ConstructRoutes.AllPorts(c, part, _lkAll, Down(GameAction.Sprint));
         if (end && LinkIsWatch(c))
@@ -544,7 +556,8 @@ public static partial class Program
         for (var i = 0; i < n; i++)
         {
             ref var p = ref _lkAll[i];
-            var why = end ? ConstructRoutes.EndWhy(c, part, _lkType, fluid, p) : ConstructRoutes.StartWhy(p);
+            var why = end ? ConstructRoutes.EndWhy(c, part, _lkType, fluid, p) : _lkRevBody != 0 ? ConstructRoutes.StartWhy(p, _lkRevType) : ConstructRoutes.StartWhy(p, null);
+            _lkPickIn[i] = !end && _lkRevBody == 0 && !(p.Out && p.FreeOut); // (an input picked at the start: the link is made from the other end)
             var col = SandboxLinkWheel.TypeColour(p.Type);
             var it = picker.Items[i];
             it.Label = p.Name;
@@ -557,7 +570,7 @@ public static partial class Program
             _lkPickType[i] = p.Type;
             if (why == null)
             {
-                var d = Vector3.DistanceSquared(ConstructRoutes.PortPoint(c, part, p.Byte, p.Type), near);
+                var d = p.Byte == prefer ? -1f : Vector3.DistanceSquared(ConstructRoutes.PortPoint(c, part, p.Byte, p.Type), near); // (a port asked for by name wins: data ports share a point)
                 if (d < bestD)
                 {
                     bestD = d;
@@ -568,7 +581,8 @@ public static partial class Program
         if (best < 0)
             return false;
         _lkPickCount = n;
-        picker.Title = end ? $"{c.DefOf(part).Name}: end the {ConstructRoutes.Name(_lkType)} at which port?" : $"{c.DefOf(part).Name}: which port?";
+        picker.Title = end ? $"{c.DefOf(part).Name}: end the {ConstructRoutes.Name(_lkType)} at which port?"
+            : _lkRevBody != 0 ? $"{c.DefOf(part).Name}: which output goes into {_lkRevLabel}?" : $"{c.DefOf(part).Name}: which port?";
         picker.Help = $"{SandboxKeys.Fire}: pick, {SandboxKeys.Aim}: cancel";
         _lkPicker = picker;
         picker.Open();
@@ -593,6 +607,30 @@ public static partial class Program
         _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
         _lkStamp = LinkStamp(c, from, 255, 0);
         BuildSounds.Play(BuildSound.LinkNode, default);
+    }
+
+    /// <summary>A link started at an input: kept until the device it comes from is clicked (<see cref="LinkFromInput"/>).</summary>
+    private static void LinkStartAtInput(Construct c, int to, byte port, RouteType type)
+    {
+        _lkRevBody = c.Id;
+        _lkRevPart = to;
+        _lkRevPort = port;
+        _lkRevType = type;
+        _lkRevStamp = LinkStamp(c, to, 255, 0);
+        var pn = ConstructRoutes.PortName(c.DefOf(to), type, port, input: true);
+        _lkRevLabel = $"{c.DefOf(to).Name}{(pn.Length > 0 ? ": " + pn : "")}";
+        BuildSounds.Play(BuildSound.LinkNode, default);
+    }
+
+    /// <summary>The device a link started at an input comes from: its output starts the link, and the end picker opens on that input (the route found for it).</summary>
+    private static void LinkFromInput(Game g, Construct c, int from, byte port)
+    {
+        var (to, toPort, type) = (_lkRevPart, _lkRevPort, _lkRevType);
+        _lkRevBody = 0;
+        _lkRevPart = -1;
+        LinkStart(c, from, port, type);
+        if (!OpenPicker(c, to, end: true, ConstructRoutes.PortPoint(c, to, toPort, type), toPort))
+            g.SandboxSay($"no port of the {c.DefOf(to).Name} takes a {ConstructRoutes.Name(type)} from there");
     }
 
     private static void LinkFinish(Game g, Construct c, int to, byte port)
@@ -779,6 +817,13 @@ public static partial class Program
                     if (_lkNodes[i].Host >= c.PartCount)
                         why = "a part the link ran along was taken off";
         }
+        if (why == null && _lkRevBody != 0)
+        {
+            if (g.Constructs.Get(_lkRevBody) is not { } vc || _lkRevPart < 0 || _lkRevPart >= vc.PartCount)
+                why = "the part is gone";
+            else if (LinkStamp(vc, _lkRevPart, 255, 0) != _lkRevStamp)
+                why = "the construct was changed";
+        }
         if (why == null && _lkPicker.IsOpen)
         {
             if (g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is not { } pc || _lkPickPart < 0 || _lkPickPart >= pc.PartCount)
@@ -845,6 +890,10 @@ public static partial class Program
                         else
                             LinkFinish(g, pc, _lkPickPart, _lkPickPorts[pick]);
                     }
+                    else if (_lkPickIn[pick])
+                        LinkStartAtInput(pc, _lkPickPart, _lkPickPorts[pick], _lkPickType[pick]);
+                    else if (_lkRevBody != 0)
+                        LinkFromInput(g, pc, _lkPickPart, _lkPickPorts[pick]);
                     else
                         LinkStart(pc, _lkPickPart, _lkPickPorts[pick], _lkPickType[pick]);
                 }
@@ -1135,6 +1184,29 @@ public static partial class Program
             return;
         }
         // Nothing routed yet: LMB on an output starts one, on a link of the same type branches off it.
+        if (_lkRevBody != 0)
+        {
+            // An input picked first: the next click names the device it comes from.
+            if (fire && aimed)
+            {
+                var c = hit.Body;
+                if (onRoute)
+                    g.SandboxSay($"{SandboxKeys.Fire} the device the link comes from (a button, a lever...), not a link");
+                else if (c.Id != _lkRevBody)
+                    g.SandboxSay("the control must be on the same construct as what it works");
+                else
+                {
+                    RestPoint(hit, out var p, out _);
+                    _lkPickBody = c.Id;
+                    if (!OpenPicker(c, hit.Part, end: false, p))
+                        g.SandboxSay($"the {c.DefOf(hit.Part).Name} has no free {ConstructRoutes.Name(_lkRevType)} output");
+                }
+            }
+            if (Pressed(GameAction.Aim))
+                LinkReset();
+            LinkHud(g);
+            return;
+        }
         if (fire && aimed)
         {
             var c = hit.Body;
@@ -1173,7 +1245,7 @@ public static partial class Program
                 if (!OpenPicker(c, hit.Part, end: false, p))
                     g.SandboxSay(ConstructRoutes.AllPorts(c, hit.Part, _lkAll) == 0
                         ? $"a {d.Name} has no link ports"
-                        : $"the {d.Name} has no free output: a link starts at an output");
+                        : $"every port of the {d.Name} is taken");
             }
         }
         if (Pressed(GameAction.Aim) && aimed && !onRoute)
@@ -1284,7 +1356,7 @@ public static partial class Program
         var grade = LinkGrade();
         var key = (long)(grade + 128) << 56 ^ (long)ConstructRoutes.Grade << 60 ^ (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
-                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4) ^ ((long)LinkLayNow << 46);
+                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4) ^ ((long)LinkLayNow << 46) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkRevLabel) << 28) ^ ((long)_lkRevBody << 38);
         if (key == _lkHudKey)
         {
             g.SandboxWireFrom = _lkHud;
@@ -1306,6 +1378,8 @@ public static partial class Program
             : w.Mode != LinkMode.Link
                 ? w.Mode == LinkMode.Loom ? LoomHud
                 : _lkMoveRoute >= 0 ? $"Move node: {fire}: place (red: hold to adjust), {aim}: let go{why}" : $"{Cap(w.ModeName)}: {fire} a link"
+                : _lkBody == 0 && _lkRevBody != 0
+                    ? $"{Cap(ConstructRoutes.Name(_lkRevType))} into {_lkRevLabel}: {fire} the device it comes from (a button, a lever...), {aim} or Esc: cancel"
                 : _lkBody == 0
                     ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting, hold {SandboxKeys.Sprint}: every port"
                     : _lkFree
