@@ -505,9 +505,17 @@ public static partial class ConstructRoutes
         return false;
     }
 
-    /// <summary>Why a link can't start at port <paramref name="p"/> (greyed in the picker), or null.</summary>
-    public static string? StartWhy(in LinkPort p)
-        => !p.Out ? $"{p.Name} is an input: a link starts at an output" : !p.FreeOut ? $"{p.Name} is already used" : null;
+    /// <summary>
+    /// Why a link can't start at port <paramref name="p"/> (greyed in the picker), or null. With no <paramref name="from"/> a free
+    /// input may start one too (the link is then made from the device it comes from, Karl 2026-11-22: several controls for one
+    /// device); with <paramref name="from"/> (an input already picked) only a free output of that type may.
+    /// </summary>
+    public static string? StartWhy(in LinkPort p, RouteType? from)
+    {
+        if (from is { } t)
+            return p.Type != t ? $"a {Name(t)} can't come from {p.Name}" : !p.Out ? $"{p.Name} is an input: pick an output" : !p.FreeOut ? $"{p.Name} is already used" : null;
+        return p.Out && p.FreeOut || p.In && p.FreeIn ? null : $"{p.Name} is already used";
+    }
 
     /// <summary>
     /// Why a link of type <paramref name="t"/> (carrying <paramref name="fluid"/>, a pipe) can't end at port

@@ -151,7 +151,8 @@ public static partial class SelfTest
         Want(Program.LinkTestPicker.IsOpen && engineLabels.Contains("Fuel in") && engineLabels.Contains("Drive out") && engineLabels.Contains("Exhaust out"), $"clicking an engine lists [{string.Join(", ", engineLabels)}] (Fuel in, Drive out and Exhaust out expected together)");
         var fuelInItem = Idx("Fuel in") is var fi and >= 0 ? pk0.Items[fi] : null;
         var driveItem = Idx("Drive out") is var di and >= 0 ? pk0.Items[di] : null;
-        Want(fuelInItem is { Enabled: false } && driveItem is { Enabled: true } && driveItem.Hint.Contains("drive shaft"), "an input port isn't greyed at the start, or Drive out isn't a drive shaft port");
+        Want(fuelInItem is { Enabled: true } && Program.LinkTestPickIn(Idx("Fuel in")) && driveItem is { Enabled: true } && !Program.LinkTestPickIn(Idx("Drive out")) && driveItem.Hint.Contains("drive shaft"),
+            "a free input doesn't start a link from the other end (Karl 2026-11-22), or Drive out isn't a drive shaft port");
         var types = Enumerable.Range(0, Program.LinkTestPickCount).Select(i => pk0.Items[i].Icon).Distinct().Count();
         Want(types >= 2, "the engine's ports don't show more than one link type");
         // 2) Drive out starts a drive shaft; its end offers only shaft inputs.
