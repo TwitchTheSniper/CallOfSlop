@@ -1,0 +1,330 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Eaves Post",
+  "description": "A post for the top of a shed's side wall: bolt it to the outside of a Crane Rail Block over a mast. Its bracket carries a Roof Truss Half over the rail, clear of the crane.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 780.0,
+  "health": 2200,
+  "armour": 18,
+  "material": "steel",
+  "color": "#4a5058",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.5,
+        -0.2
+      ],
+      "max": [
+        -0.36,
+        3.65,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.063,
+        -0.5,
+        -0.2
+      ],
+      "max": [
+        -0.023,
+        3.65,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.36,
+        -0.5,
+        -0.02
+      ],
+      "max": [
+        -0.063,
+        3.646,
+        0.02
+      ]
+    },
+    {
+      "min": [
+        -0.023,
+        -0.4,
+        -0.3
+      ],
+      "max": [
+        0.0,
+        0.4,
+        0.3
+      ],
+      "color": "#3a3f46"
+    },
+    {
+      "min": [
+        -0.395,
+        3.65,
+        -0.15
+      ],
+      "max": [
+        1.15,
+        4.0,
+        0.15
+      ]
+    },
+    {
+      "min": [
+        -0.018,
+        3.4,
+        -0.01
+      ],
+      "max": [
+        0.55,
+        3.652,
+        0.01
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.02,
+        3.15,
+        -0.014
+      ],
+      "max": [
+        0.4,
+        3.402,
+        0.014
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.018,
+        2.9,
+        -0.012
+      ],
+      "max": [
+        0.25,
+        3.152,
+        0.012
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.02,
+        2.65,
+        -0.01
+      ],
+      "max": [
+        0.1,
+        2.902,
+        0.01
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        0.9,
+        -0.19
+      ],
+      "max": [
+        -0.066,
+        0.92,
+        -0.023
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        0.9,
+        0.023
+      ],
+      "max": [
+        -0.066,
+        0.92,
+        0.19
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        1.8,
+        -0.19
+      ],
+      "max": [
+        -0.066,
+        1.82,
+        -0.023
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        1.8,
+        0.023
+      ],
+      "max": [
+        -0.066,
+        1.82,
+        0.19
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        2.7,
+        -0.19
+      ],
+      "max": [
+        -0.066,
+        2.72,
+        -0.023
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.357,
+        2.7,
+        0.023
+      ],
+      "max": [
+        -0.066,
+        2.72,
+        0.19
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.048,
+        -0.28,
+        -0.27
+      ],
+      "max": [
+        -0.023,
+        -0.22,
+        -0.21
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-x"
+    },
+    {
+      "min": [
+        -0.048,
+        -0.28,
+        0.21
+      ],
+      "max": [
+        -0.023,
+        -0.22,
+        0.27
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-x"
+    },
+    {
+      "min": [
+        -0.048,
+        0.22,
+        -0.27
+      ],
+      "max": [
+        -0.023,
+        0.28,
+        -0.21
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-x"
+    },
+    {
+      "min": [
+        -0.048,
+        0.22,
+        0.21
+      ],
+      "max": [
+        -0.023,
+        0.28,
+        0.27
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 6,
+      "front": "-x"
+    },
+    {
+      "min": [
+        0.85,
+        4.002,
+        -0.13
+      ],
+      "max": [
+        1.13,
+        4.022,
+        0.13
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rail",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "seat",
+      "at": [
+        1.0,
+        4.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        -0.4,
+        2.5,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

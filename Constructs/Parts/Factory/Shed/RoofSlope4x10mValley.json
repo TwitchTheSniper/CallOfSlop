@@ -1,0 +1,206 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Slope 4x10 m Valley",
+  "description": "Corrugated roofing for a truss bay, valley gutter to ridge.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 442.8,
+  "health": 2013,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6a6f6c",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        0.004,
+        2.985,
+        0.3
+      ],
+      "max": [
+        3.996,
+        3.065,
+        9.94
+      ],
+      "color": "#6a6f6c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -36.15
+      ]
+    },
+    {
+      "min": [
+        0.004,
+        0.093,
+        0.3
+      ],
+      "max": [
+        3.996,
+        0.173,
+        5.12
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.004,
+        1.539,
+        5.12
+      ],
+      "max": [
+        3.996,
+        1.619,
+        9.94
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.35,
+        3.065,
+        0.303
+      ],
+      "max": [
+        0.45,
+        3.115,
+        9.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -57.84
+      ]
+    },
+    {
+      "min": [
+        1.15,
+        3.065,
+        0.303
+      ],
+      "max": [
+        1.25,
+        3.115,
+        9.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -57.84
+      ]
+    },
+    {
+      "min": [
+        1.95,
+        3.065,
+        0.303
+      ],
+      "max": [
+        2.05,
+        3.115,
+        9.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -57.84
+      ]
+    },
+    {
+      "min": [
+        2.75,
+        3.065,
+        0.303
+      ],
+      "max": [
+        2.85,
+        3.115,
+        9.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -57.84
+      ]
+    },
+    {
+      "min": [
+        3.55,
+        3.065,
+        0.303
+      ],
+      "max": [
+        3.65,
+        3.115,
+        9.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -57.84
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.2,
+        0.012,
+        0.05
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rest",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

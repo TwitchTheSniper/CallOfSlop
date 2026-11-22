@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ridge Cap 8 m",
+  "description": "The flashing along a roof's ridge, a truss bay long: set it on the ridge where the two slopes meet.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 144.0,
+  "health": 960,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        0.125,
+        -0.8
+      ],
+      "max": [
+        8.0,
+        0.175,
+        0.0
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -4.8
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        -0.115,
+        0.0
+      ],
+      "max": [
+        8.0,
+        -0.065,
+        0.8
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        4.8
+      ]
+    },
+    {
+      "min": [
+        0.003,
+        0.17,
+        -0.05
+      ],
+      "max": [
+        7.997,
+        0.22,
+        0.05
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.2,
+        0.012,
+        0.05
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rest",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

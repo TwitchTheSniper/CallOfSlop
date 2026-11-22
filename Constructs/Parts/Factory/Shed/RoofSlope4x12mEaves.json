@@ -1,0 +1,347 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Slope 4x12 m Eaves",
+  "description": "Corrugated roofing for a truss bay, eaves to ridge: it overhangs the wall by 2 m.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 640.3,
+  "health": 2911,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6a6f6c",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        0.004,
+        3.585,
+        -2.0
+      ],
+      "max": [
+        3.996,
+        3.665,
+        11.94
+      ],
+      "color": "#6a6f6c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -52.275
+      ]
+    },
+    {
+      "min": [
+        0.004,
+        -0.597,
+        -2.0
+      ],
+      "max": [
+        3.996,
+        -0.517,
+        2.6467
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.004,
+        0.797,
+        2.6467
+      ],
+      "max": [
+        3.996,
+        0.877,
+        7.2933
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.004,
+        2.191,
+        7.2933
+      ],
+      "max": [
+        3.996,
+        2.271,
+        11.94
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.35,
+        1.574,
+        -1.997
+      ],
+      "max": [
+        0.45,
+        1.624,
+        4.97
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        0.35,
+        3.665,
+        4.97
+      ],
+      "max": [
+        0.45,
+        3.715,
+        11.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        1.15,
+        1.574,
+        -1.997
+      ],
+      "max": [
+        1.25,
+        1.624,
+        4.97
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        1.15,
+        3.665,
+        4.97
+      ],
+      "max": [
+        1.25,
+        3.715,
+        11.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        1.95,
+        1.574,
+        -1.997
+      ],
+      "max": [
+        2.05,
+        1.624,
+        4.97
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        1.95,
+        3.665,
+        4.97
+      ],
+      "max": [
+        2.05,
+        3.715,
+        11.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        2.75,
+        1.574,
+        -1.997
+      ],
+      "max": [
+        2.85,
+        1.624,
+        4.97
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        2.75,
+        3.665,
+        4.97
+      ],
+      "max": [
+        2.85,
+        3.715,
+        11.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        3.55,
+        1.574,
+        -1.997
+      ],
+      "max": [
+        3.65,
+        1.624,
+        4.97
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        3.55,
+        3.665,
+        4.97
+      ],
+      "max": [
+        3.65,
+        3.715,
+        11.937
+      ],
+      "color": "#6c7874",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -41.82
+      ]
+    },
+    {
+      "min": [
+        0.004,
+        -0.797,
+        -2.12
+      ],
+      "max": [
+        3.996,
+        -0.517,
+        -2.003
+      ],
+      "color": "#3a3f46"
+    },
+    {
+      "min": [
+        0.0,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.2,
+        0.012,
+        0.05
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rest",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

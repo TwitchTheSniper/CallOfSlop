@@ -10,7 +10,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Tipping Bunker is low (its top 1 m up) so a side-tipping Ore Hauler's lip pours over it from the road.
 /// Run the part kit's assembling (--gen-parts assembling) after it for the recipes.
 /// </summary>
-public sealed class FactoryShellParts : IPartGenerator
+public sealed partial class FactoryShellParts : IPartGenerator
 {
     public string Name => "factory_shell";
 
@@ -214,6 +214,7 @@ public sealed class FactoryShellParts : IPartGenerator
             shell.Add(("", Rafter(s)));
             shell.Add(("", RoofSheet(s)));
         }
+        shell.AddRange(MillShed());
         WriteParts(o, Out,
         [
             .. shell,
