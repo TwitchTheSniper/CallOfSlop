@@ -619,7 +619,7 @@ public static partial class ConstructLifters
         l.From = Vector3.Transform(from - Vector3.Transform(mid, fromRot) - lp, inv);
         l.To = Vector3.Transform(toAt - Vector3.Transform(mid, toRot) - lp, inv);
         l.Rise = RiseOf(c, l.Part, ld);
-        l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
+        l.Dur = CarryTicks(ld, l, d);
         Begin(l);
         (l.State, l.Why, l.ToHold, l.Moved, l.Fitted) = (LiftState.Carry, LiftWhy.Carrying, false, true, false);
         (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (pt.Body, -1, -1, null, null);
