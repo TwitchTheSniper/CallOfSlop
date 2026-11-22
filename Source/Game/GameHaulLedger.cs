@@ -123,8 +123,12 @@ public sealed partial class Game
         run.LedgerUntil = 0;
         if (run.Trip != null)
         {
-            if (run.Trip.Far && Space?.Flight is { } f)
-                LedgerFarRealSpeed(f, run, c, run.Trip); // (it goes on at the transfer's own speed, not the leg's pace)
+            if (run.Trip.Far)
+            {
+                if (Space?.Flight is { } f)
+                    LedgerFarRealSpeed(f, run, c, run.Trip); // (it goes on at the transfer's own speed, not the leg's pace)
+                run.FarUntil = Math.Max(ServerTick + World.TickRate, run.Trip.ToTick); // (its leg's time goes on as a flown leg between planets, paid for already: not a new one)
+            }
             LedgerCoasting(run, c, false);
         }
         run.Trip = null;
@@ -155,10 +159,11 @@ public sealed partial class Game
     /// <summary>Is a person within <see cref="LedgerRange"/> of the hauler or one of its escorts?</summary>
     private bool LedgerSeen(HaulRun run, Construct c)
     {
-        if (LedgerSeesAt(c.WorldCom, LedgerRange))
+        // (a ship parked far out, GameSpaceJump.cs, sits on a parking grid with every other: its place there says nothing of who is near it)
+        if (c.SpaceAway == 0 && LedgerSeesAt(c.WorldCom, LedgerRange))
             return true;
         foreach (var e in _escorts)
-            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { } ec && LedgerSeesAt(ec.WorldCom, LedgerRange))
+            if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceAway: 0 } ec && LedgerSeesAt(ec.WorldCom, LedgerRange))
                 return true;
         return false;
     }
@@ -274,7 +279,7 @@ public sealed partial class Game
         // for was at set-out (R1, V1 from the star; Tof its real time), flown at the leg's pace in play ticks (FromTick to ToTick).
         public bool Far;
         public int From, To;
-        public int Centre;
+        public int Centre, AtDef; // the body the transfer goes round, and the station it is bound for (StationMarkets.All)
         public Vec3d R1, V1, R2, A0;
         public double Tof;
         public long FromTick, ToTick;
@@ -470,7 +475,7 @@ public sealed partial class Game
         if (centre < 0)
             return null;
         var t = f.Ships.Time;
-        var trip = new LedgerTrip { Far = true, From = from, To = to, Centre = centre, Station = StationBodyOf(def), Accel = 1, Start = t.Ns, Last = t.Ns };
+        var trip = new LedgerTrip { Far = true, From = from, To = to, Centre = centre, AtDef = def, Station = StationBodyOf(def), Accel = 1, Start = t.Ns, Last = t.Ns };
         sys.StateOf(centre, t, out var cp, out var cv);
         f.Ships.RelativeOf(i, out var prim, out var sr0, out var sv0);
         sys.StateOf(prim, t, out var pp, out var pv);
@@ -612,9 +617,15 @@ public sealed partial class Game
         if (!UniversalKepler.Propagate(sys.Bodies[trip.Centre].Mu, trip.R1, trip.V1, u * trip.Tof, out _, out var v))
             return;
         f.Ships.RelativeOf(i, out var p, out var r, out _);
-        sys.StateOf(p, f.Ships.Time, out var bp, out _);
-        sys.StateOf(trip.Centre, f.Ships.Time, out _, out var cv);
-        LedgerPose(f, run, i, bp + r, cv + v, p);
+        var t = f.Ships.Time;
+        sys.StateOf(p, t, out var bp, out _);
+        sys.StateOf(trip.Centre, t, out _, out var cv);
+        // The conic's speed mid-route, the planet's it left near the start and its place's by the station near the end (the route's own
+        // braking: met close to the station, it doesn't go on past it at the transfer's arrival speed).
+        sys.StateOf(trip.From, t, out _, out var av);
+        LedgerFarEnd(f, trip, run, StationMarkets.All[trip.AtDef], trip.To, out var endVel);
+        var mid = 4 * u * (1 - u);
+        LedgerPose(f, run, i, bp + r, (cv + v) * mid + (av * (1 - u) + endVel * u) * (1 - mid), p);
     }
 
     /// <summary>
