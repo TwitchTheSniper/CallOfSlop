@@ -30,7 +30,7 @@ public sealed partial class ZeroDayWorks
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
                 Station(east, -119, east - 10, -117, 5, 9, 3, paint);
                 Oven(east - 6, -137, east - 10, 5, 9, 3, paint);
-                Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 9);
+                Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
                 // Four Industrial arms on the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns).
                 foreach (var z in new[] { -127f, -133f, -143f, -149f })
                     Arm("Industrial Loader Arm", east, z);
@@ -46,7 +46,7 @@ public sealed partial class ZeroDayWorks
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, padAcross: 6, cutAlong: 0);
             Station(69, -101, 53, -99, 8, 8, 6, LineD);
             Oven(61, -119, 53, 8, 8, 6, LineD);
-            Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 26);
+            Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
             Arm("Plasma Loader Arm", 52, -118); // (two Plasma arms at the station's south corners, either side of the oven's Core)
             Arm("Plasma Loader Arm", 63, -118);
         }
@@ -113,6 +113,33 @@ public sealed partial class ZeroDayWorks
             // ---- The Sheet Extruder: its Core at the die's east end, Die Blocks welded west, Run-out Tables south of every cell. --------------
             // Everything after it is welded on in a chain from its tables (a table's far end is a quarter metre off the floor's 2 m grid).
             var tableEnds = SheetExtruder(x0 + 2 * dieCells, dieCells, tables, paint);
+            VPart[,] run;
+            if (bedAlong == 0)
+            {
+                // No former (bay 3's walls line): the sheet runs off the tables straight onto the pad's run.
+                run = new VPart[bedAcross, 2];
+                for (var i = 0; i < bedAcross; i++)
+                    run[i, 0] = Paint(Onto(tableEnds[dieCells - 1 - i], "roller", "Roller Tile", "-z table"), paint);
+                Chain(run, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
+            }
+            else
+                run = FormerStage(tableEnds, dieCells, bedAcross, bedAlong, tables, paint);
+            if (cutAlong == 0)
+            {
+                // Line D: the skins wait on a pad two rows deep for the crane (it sends nowhere: the station's crane order takes them).
+                var skins = new VPart[bedAcross, 2];
+                for (var i = 0; i < bedAcross; i++)
+                    skins[i, 0] = Paint(Onto(run[i, 1], "+z low", "Pad Tile", "-z"), Stock);
+                Chain(skins, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: false);
+                Stack(skins[0, 0], "top", 1);
+                return;
+            }
+            CutterStage(run, bedAcross, padAcross, cutAlong, paint);
+        }
+
+        /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
+        private VPart[,] FormerStage(VPart[] tableEnds, int dieCells, int bedAcross, int bedAlong, int tables, string paint)
+        {
             // The feed run from the tables to the former: as wide as the die, rows down to the former's Piece in (its tiles butted on the tables).
             var feedRows = (int)MathF.Round((ExtruderCoreZ - 0.75f - 8 * tables - (FormerZ + 1)) / 2);
             var feed = new VPart[dieCells, feedRows];
@@ -142,17 +169,12 @@ public sealed partial class ZeroDayWorks
             for (var i = 0; i < bedAcross; i++)
                 run[i, 0] = Paint(Onto(outs[i, 0], "+z", "Roller Tile", "-z"), paint);
             Chain(run, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: false);
-            if (cutAlong == 0)
-            {
-                // Line D: the skins wait on a pad two rows deep for the crane (it sends nowhere: the station's crane order takes them).
-                var skins = new VPart[bedAcross, 2];
-                for (var i = 0; i < bedAcross; i++)
-                    skins[i, 0] = Paint(Onto(run[i, 1], "+z low", "Pad Tile", "-z"), Stock);
-                Chain(skins, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: false);
-                Stack(skins[0, 0], "top", 1);
-                return;
-            }
+            return run;
+        }
 
+        /// <summary>The skin pad turned east off a run, its feed tile and the Laser Cutter with its bed, Out Tables and pick runs.</summary>
+        private void CutterStage(VPart[,] run, int bedAcross, int padAcross, int cutAlong, string paint)
+        {
             // The pad: two tiles along its flow (east), padAcross rows south; turned East, its own +z is east and its own +x south.
             var pad = new VPart[2, padAcross];
             pad[0, 0] = Paint(Onto(run[0, 1], "+z low", "Pad Tile", "-x"), Stock);
