@@ -1067,6 +1067,8 @@ public sealed class Assembling : IPartGenerator
         ("Containers", "Heavy Container 1m", null),
         ("Containers", "Heavy Container 2m", null),
         ("Containers", "Heavy Container 3m", null),
+        // (the modular cockpit's console bays, faceplates and panel instruments, Karl 2026-11-22: CockpitParts; after the dressing: AfterCloche)
+        .. CockpitParts.Names.Select(n => ((string?)"Cockpit", (string?)n, (PyDict?)null)),
     ];
 
     /// <summary>
@@ -1278,7 +1280,7 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames];
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

@@ -706,6 +706,164 @@
       }
     },
     {
+      "part": "Console Bay 5x12",
+      "on": 14,
+      "socket": "dashP",
+      "by": "bc",
+      "spin": 1
+    },
+    {
+      "part": "Console Plug 5x12",
+      "on": 109,
+      "socket": "module",
+      "by": "module",
+      "spin": 2
+    },
+    {
+      "part": "Panel Speedometer",
+      "on": 110,
+      "socket": "c1.2",
+      "by": "back"
+    },
+    {
+      "part": "Panel Altimeter",
+      "on": 110,
+      "socket": "c1.6",
+      "by": "back"
+    },
+    {
+      "part": "Panel Compass",
+      "on": 110,
+      "socket": "c1.9",
+      "by": "back"
+    },
+    {
+      "part": "Panel Toggle Switch",
+      "on": 110,
+      "socket": "c4.1",
+      "by": "-y",
+      "config": {
+        "seatFn": 1,
+        "latched": true
+      }
+    },
+    {
+      "part": "Panel Toggle Switch",
+      "on": 110,
+      "socket": "c4.3",
+      "by": "-y",
+      "config": {
+        "seatFn": 2,
+        "latched": true
+      }
+    },
+    {
+      "part": "Panel Rocker Switch",
+      "on": 110,
+      "socket": "c4.7",
+      "by": "-y",
+      "config": {
+        "seatFn": 3,
+        "latched": true
+      }
+    },
+    {
+      "part": "Panel Rocker Switch",
+      "on": 110,
+      "socket": "c4.9",
+      "by": "-y",
+      "config": {
+        "seatFn": 4,
+        "latched": true
+      }
+    },
+    {
+      "part": "Console Bay 5x8",
+      "on": 14,
+      "socket": "dashC",
+      "by": "bc",
+      "spin": 1
+    },
+    {
+      "part": "Console Plug 5x8",
+      "on": 118,
+      "socket": "module",
+      "by": "module",
+      "spin": 2
+    },
+    {
+      "part": "Panel Push Button",
+      "on": 119,
+      "socket": "c2.2",
+      "by": "-y",
+      "config": {
+        "seatFn": 6,
+        "latched": true
+      }
+    },
+    {
+      "part": "Panel Rocker Switch",
+      "on": 119,
+      "socket": "c2.5",
+      "by": "-y",
+      "config": {
+        "seatFn": 5,
+        "latched": true
+      }
+    },
+    {
+      "part": "Console Bay 5x12",
+      "on": 14,
+      "socket": "dashS",
+      "by": "bc",
+      "spin": 1
+    },
+    {
+      "part": "Console Plug 5x12",
+      "on": 122,
+      "socket": "module",
+      "by": "module",
+      "spin": 2
+    },
+    {
+      "part": "Panel Speedometer",
+      "on": 123,
+      "socket": "c1.2",
+      "by": "back"
+    },
+    {
+      "part": "Panel Altimeter",
+      "on": 123,
+      "socket": "c1.6",
+      "by": "back"
+    },
+    {
+      "part": "Panel Compass",
+      "on": 123,
+      "socket": "c1.9",
+      "by": "back"
+    },
+    {
+      "part": "Panel Push Button",
+      "on": 123,
+      "socket": "c4.3",
+      "by": "-y",
+      "config": {
+        "seatFn": 6,
+        "latched": true
+      }
+    },
+    {
+      "part": "Panel Toggle Switch",
+      "on": 123,
+      "socket": "c4.7",
+      "by": "-y",
+      "config": {
+        "seatFn": 5,
+        "latched": true
+      }
+    },
+    {
       "part": "Shell Control Chair",
       "on": 14,
       "socket": "linkChair",
@@ -960,36 +1118,36 @@
       108
     ],
     [
-      133,
-      129
+      153,
+      149
     ],
     [
-      133,
-      130
+      153,
+      150
     ],
     [
-      133,
-      131
+      153,
+      151
     ],
     [
-      133,
-      132
+      153,
+      152
     ],
     [
-      138,
-      134
+      158,
+      154
     ],
     [
-      138,
-      135
+      158,
+      155
     ],
     [
-      138,
-      136
+      158,
+      156
     ],
     [
-      138,
-      137
+      158,
+      157
     ]
   ],
   "links": [

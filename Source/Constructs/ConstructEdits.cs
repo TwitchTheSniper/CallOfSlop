@@ -1215,6 +1215,16 @@ public sealed partial class ConstructEdits
             ref var lp = ref c.Parts[part];
             if (lp.Broken)
                 return $"the {d.Name} is wrecked";
+            if (d.Logic is CLogic.Button or CLogic.Switch && CockpitFns.Of(lp, d) is var fn and not SeatFn.None)
+            {
+                // (a cockpit switch linked to the seat, CockpitFns.cs: worked from a seat of this craft, as the seat's keys are; the
+                // reactor and the thrusters only from the pilot's seat, as their keys)
+                if (h.SeatBody != c.Id)
+                    return "sit at the console to work it";
+                if (fn is SeatFn.Reactor or SeatFn.Thrusters && h.SeatPart != c.DriveSeat)
+                    return "only the pilot's seat shuts the ship down";
+                return CockpitFns.Press(world, c, ref lp, fn);
+            }
             switch (d.Logic)
             {
                 case CLogic.Button:

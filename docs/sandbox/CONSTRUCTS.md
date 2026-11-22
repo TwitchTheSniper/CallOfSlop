@@ -237,6 +237,10 @@ Storage volumes, physical storage, modular shelves, the Smart Terminal, the Inve
 - The Inventory Beacon
 - In-wall bays (Karl, 2026-11-20)
 
+## [Modular cockpits](constructs/cockpits.md)
+
+Console bays (the cell class of module socket, 10 cm cells), their faceplates and panel instruments, the seat link (a switch's Function, MASTER CAUTION), working a dash from the seat, the Roamer's dash.
+
 ## [Big systems](constructs/big-systems.md), 20 KB
 
 Doors and event doors, large systems (motherships, carriers), carrier work.

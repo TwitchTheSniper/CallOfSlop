@@ -195,6 +195,10 @@ four lifting lugs outside its top, so a part as wide as the top stands between t
 Collision is three hidden boxes per disc (a square and a cross inside the circle). Rating, room and the flush, Well or Opening cut still go
 by the square footprint: the hole a round socket cuts is square (`HullHoles` cuts rectangles; a round hole is later).
 
+### 2.8 The cell class (console bays)
+
+A socket or plug with `"cells": true` counts its footprint in 10 cm cells, not metres (1 to 40 a side): the Console Bays and Console Plugs of the modular cockpit (`docs/sandbox/constructs/cockpits.md`). The same styles, kinds, keying, pass-throughs and checks, at 5 cm depth and room steps, fitted by hand only, never chosen by a faction.
+
 ## 3. Fitting checks: clearance and collision
 
 ### 3.1 The socket's column (at placing and at every rebuild)

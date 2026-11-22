@@ -50,8 +50,8 @@ public partial class BlueprintScript
         var bp = ConstructBuild.FindBlueprint(name) ?? throw new VehicleKitException($"no blueprint named \"{name}\"");
         if (bp.Module is not { } mb)
             throw new VehicleKitException($"the {name} blueprint isn't a module design (it has no \"module\" block)");
-        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L || plate.Def.ModRound != mb.Round)
-            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L, mb.Round)}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
+        if (plate.Def.ModPart != ModPart.Socket || plate.Def.ModW != mb.W || plate.Def.ModL != mb.L || plate.Def.ModRound != mb.Round || plate.Def.ModCells != mb.Cells)
+            throw new VehicleKitException($"the {name} is {ModuleSocketTable.SizeText(mb.W, mb.L, mb.Round)}{(mb.Cells ? " cell" : "")}: it goes on a Module Socket of that size, not a {plate.Def.Name}");
         if (_dugSockets?.Contains(plate) == true)
             throw new VehicleKitException($"the {name}'s socket is dug (Flush, Well or Opening): a generator builds modules onto Proud sockets only, for now");
         if (bp.Uses.Count > 0 || bp.StepWeld.Any(x => x != null) || bp.StepAt.Any(x => x != null))
