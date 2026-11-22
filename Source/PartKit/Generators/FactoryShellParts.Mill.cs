@@ -51,14 +51,19 @@ public sealed partial class FactoryShellParts
         }
     }
 
-    /// <summary>Hidden solid boxes in <paramref name="n"/> steps under a slope (what the build rules and feet see).</summary>
-    private static void Steps(Part p, double x0, double x1, double z0, double y0, double z1, double y1, double thick, int n)
+    /// <summary>
+    /// Hidden solid boxes in steps about 1 m long over a slope whose top runs from (z0, y0) to (z1, y1): each step's underside is the
+    /// slope's height at its higher end, so no step reaches under the slope into what the part lies on (a truss's verticals and chord);
+    /// what the build rules and feet see is a stair at most 0.3 m proud of the drawn sheet.
+    /// </summary>
+    private static void Steps(Part p, double x0, double x1, double z0, double y0, double z1, double y1, double thick)
     {
+        var n = Math.Max(1, (int)Math.Ceiling(Math.Abs(z1 - z0)));
         for (var k = 0; k < n; k++)
         {
             double a = z0 + (z1 - z0) * k / n, b = z0 + (z1 - z0) * (k + 1) / n;
-            var y = Math.Min(y0 + (y1 - y0) * k / n, y0 + (y1 - y0) * (k + 1) / n); // (the step's top at the slope's lower end: never over it)
-            p.Add(Box([x0, y - thick, Math.Min(a, b)], [x1, y, Math.Max(a, b)], hidden: true));
+            var y = Math.Max(y0 + (y1 - y0) * k / n, y0 + (y1 - y0) * (k + 1) / n);
+            p.Add(Box([x0, y, Math.Min(a, b)], [x1, y + thick, Math.Max(a, b)], hidden: true));
         }
     }
 
@@ -144,7 +149,11 @@ public sealed partial class FactoryShellParts
         var p = new Part($"Roof Truss Half {M(l)} m", Small, "Factory shell", $"Half of a {M(2 * l)} m gabled roof truss, eave or valley to ridge. Join two at the ridge, chain them across a shed's spans, seat the ends on Eaves Posts.", color: Truss, group: "Building");
         p.Add(Box([-w, 0, 0], [w, c, l])); // the bottom chord
         Lean(p, -w, w, 0, Top(0) - c / 2, l, Top(l) - c / 2, c, Truss); // the top chord
-        Steps(p, -w, w, 0, Top(0), l, Top(l), c, Math.Max(2, (int)Math.Round(l / 4)));
+        for (int k = 0, n4 = Math.Max(2, (int)Math.Round(l / 4)); k < n4; k++) // (hidden steps under the top chord's line, each topped at its lower end: a sheet's steps stand over them)
+        {
+            double a = l * k / n4, b = l * (k + 1) / n4;
+            p.Add(Box([-w, Top(a) - c, a], [w, Top(a), b], hidden: true));
+        }
         var n = Math.Max(3, (int)Math.Round(l / 2.5));
         var zs = Enumerable.Range(0, n + 1).Select(i => i * l / n).ToArray();
         zs[0] = 0.12; zs[n] = l - 0.12; // (the end posts inside the chords' ends)
@@ -152,8 +161,9 @@ public sealed partial class FactoryShellParts
         {
             var z = zs[i];
             p.Add(Box([-0.07, c - 0.003, z - 0.06], [0.07, Top(z - 0.06) - c + 0.003, z + 0.06])); // a vertical
-            p.Add(Box([-w - 0.012, 0.02, z - 0.2], [-w, c + 0.15, z + 0.2], Trim, detail: true)); // gussets either side at its foot
-            p.Add(Box([w, 0.02, z - 0.2], [w + 0.012, c + 0.15, z + 0.2], Trim, detail: true));
+            double g0 = Math.Max(0.01, z - 0.2), g1 = Math.Min(l - 0.01, z + 0.2); // (inside the chord's ends: a joined half's gussets meet none of these)
+            p.Add(Box([-w - 0.012, 0.02, g0], [-w, c + 0.15, g1], Trim, detail: true)); // gussets either side at its foot
+            p.Add(Box([w, 0.02, g0], [w + 0.012, c + 0.15, g1], Trim, detail: true));
         }
         for (var i = 0; i < n; i++)
         {
@@ -184,7 +194,7 @@ public sealed partial class FactoryShellParts
             color: Roof, group: "Building");
         double Y(double z) => Pitch * z + lift; // (the sheet's underside)
         Lean(p, 0.004, bay - 0.004, z0, Y(z0) + t / 2, z1, Y(z1) + t / 2, t, Roof);
-        Steps(p, 0.004, bay - 0.004, z0, Y(z0) + t, z1, Y(z1) + t, t, Math.Max(2, (int)Math.Round((z1 - z0) / 5)));
+        Steps(p, 0.004, bay - 0.004, z0, Y(z0), z1, Y(z1), t);
         var ribs = (int)Math.Round(bay / 0.8);
         for (var k = 0; k < ribs; k++)
         {
@@ -278,7 +288,7 @@ public sealed partial class FactoryShellParts
         }
         foreach (var y in new[] { 0.6, h - 0.6 })
             p.Add(Box([xo, y - 0.08, 0.05], [xo + 0.08, y + 0.08, bay - 0.05], Trim, detail: true)); // a girt
-        p.Add(Box([xi - 0.035, h - 0.06, 0.003], [xo, h - 0.003, bay - 0.003], Trim, detail: true)); // the top flashing
+        p.Add(Box([xi - 0.035, h - 0.06, 0.008], [xo - 0.005, h + 0.004, bay - 0.008], Trim, detail: true)); // the top flashing
         p.Sock("back", [0, 1, 0], "+x");
         p.Stats(bay * h * 12, bay * h * 60, 4);
         return p;
@@ -298,10 +308,10 @@ public sealed partial class FactoryShellParts
         for (var k = 0; k < strips; k++)
         {
             double a = k * l / strips, b = (k + 1) * l / strips;
-            p.Add(Box([x0, y0, a + 0.003], [x1, Line(a) + 0.05, b - 0.003])); // a strip, its top at its low edge's roof line
-            p.Add(Box([x1, y0 + 0.004, b - 0.06], [x1 + 0.025, Line(a) + 0.04, b + 0.06], CladRib, detail: true)); // the rib at its seam
+            p.Add(Box([x0, y0, a + 0.003], [x1, Line(b) + 0.02, b - 0.003])); // a strip, its top at its high edge's roof line (the barge board covers the step)
+            p.Add(Box([x1, y0 + 0.004, b - 0.06], [x1 + 0.025, Line(b) + 0.01, b + 0.06], CladRib, detail: true)); // the rib at its seam
         }
-        Lean(p, x0 - 0.02, x1 + 0.04, 0, Line(0) + 0.1, l, Line(l) + 0.1, 0.35, Trim); // the barge board along the roof line
+        Lean(p, x0 - 0.02, x1 + 0.04, 0, Line(0) + 0.15, l, Line(l) + 0.15, 0.5, Trim); // the barge board along the roof line (0.1 m under it to 0.4 m over)
         p.Add(Box([x0 - 0.06, y0, -0.06], [x0, Line(0) + 0.05, 0.06], Trim, detail: true)); // the girt post at the low end
         p.Add(Box([0, -0.1, 0], [x0, 0.1, 0.1], hidden: true)); // (the cleat its socket sits on)
         p.Sock("rest", [0, 0, 0], "-x");
@@ -309,6 +319,9 @@ public sealed partial class FactoryShellParts
         p.Stats(area * 12, area * 60, 4);
         return p;
     }
+
+    /// <summary>The shed's part names in the order written: Assembling's Tail and AfterCloche list them so (saved recipe numbers keep).</summary>
+    public static IReadOnlyList<string> MillShedNames => MillShedParts().Select(e => (string)e.Item2.D["name"]!).ToList();
 
     private static IEnumerable<(string, Part)> MillShed() =>
         MillShedParts().Select(e => (e.Item1, e.Item2.Set(("collider", "boxes")))); // (the leaning looks are drawn only: hidden steps collide)
