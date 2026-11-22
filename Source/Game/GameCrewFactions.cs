@@ -322,6 +322,7 @@ public sealed partial class Game : IPowerSight
     private void CrewArrive(Player p, WorldPlayer rec)
     {
         TabsArrive(p, rec);
+        TrespassArrive(p.Id); // (GameTrespass.cs)
         for (var f = 0; f < FactionTable.MaxStory; f++)
             _rel.MetPlayer[p.Id * FactionTable.MaxStory + f] = false;
         if (!CrewStandingOn)

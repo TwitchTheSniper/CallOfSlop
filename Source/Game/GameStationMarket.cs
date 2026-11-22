@@ -577,6 +577,7 @@ public sealed partial class Game
     private void StationMarketTick()
     {
         StationMoorsAdopt(); // (a loaded world's moorings, once its bodies are in: GameStationSave.cs)
+        TrespassTick(); // (what players' constructs mined on a held planet: GameTrespass.cs)
         StationNeedsTick();
         foreach (var c in Constructs.Bodies)
             if (c.IsStation && !c.Wreck)

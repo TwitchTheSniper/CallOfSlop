@@ -113,6 +113,7 @@ public sealed partial class Game
             {
                 hp.Material = m;
                 hp.Amount += got;
+                Trespass(p.Id, m, got); // (mining on a planet a power holds: GameTrespass.cs)
                 return;
             }
             why = DrillWhy.WorkedOut;

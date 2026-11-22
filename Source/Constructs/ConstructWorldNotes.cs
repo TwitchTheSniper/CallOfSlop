@@ -68,10 +68,13 @@ public sealed partial class ConstructWorld
 
     public int YieldCount;
 
+    /// <summary>Does the game read the yields (the host: trespass on held planets, Game/GameTrespass.cs)? Off, and the story off: nothing is summed.</summary>
+    public bool YieldsOn;
+
     /// <summary>Bulk a player's construct gathered or refined (what went into the bin). Nobody's construct, or no story: nothing.</summary>
     public void Yield(CYieldKind kind, Construct c, byte material, int units)
     {
-        if (!NotesOn || units <= 0 || c.Owner == 255)
+        if (!NotesOn && !YieldsOn || units <= 0 || c.Owner == 255)
             return;
         for (var i = 0; i < YieldCount; i++)
         {
