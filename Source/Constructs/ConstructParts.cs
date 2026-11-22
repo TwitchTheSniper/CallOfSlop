@@ -967,7 +967,7 @@ public sealed partial class ConstructPartDef
     public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? DataIn.Length * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
-        PartRole.Door => Door != null ? 3 : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs)
+        PartRole.Door => Door != null ? 3 * ModuleSockets.DataWires : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs), several controls each (wires on one port add up)
         PartRole.AmmoSwitch => 1, // which feed goes on
         PartRole.Leg => 2, // a Driving Module's drive link: the seat walks it (ConstructWalk.cs)
         PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
