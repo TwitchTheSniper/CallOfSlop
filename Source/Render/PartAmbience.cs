@@ -195,9 +195,9 @@ public static class PartAmbience
                 Gather(c);
             if (c.AmbParts.Length == 0)
                 continue;
-            var d2 = Vector3.DistanceSquared(c.Pos, eye);
-            if (d2 > (Range + 30f) * (Range + 30f))
-                continue; // (a body's parts are within 30 m of its origin)
+            var d2 = Vector3.DistanceSquared(c.WorldCom, eye);
+            if (d2 > (Range + c.Radius) * (Range + c.Radius))
+                continue; // (every part is within Radius of the centre of mass)
             foreach (var i in c.AmbParts)
             {
                 if (c.Parts[i].Broken || !table.TryGetValue(c.DefOf(i).Name, out var s))

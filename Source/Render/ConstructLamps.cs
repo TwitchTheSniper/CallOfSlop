@@ -69,8 +69,8 @@ public static class ConstructLamps
             if (c.LampParts.Length == 0)
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            if (Vector3.DistanceSquared(pos, eye) > (reach + 30f) * (reach + 30f))
-                continue; // (a body's parts are within 30 m of its origin)
+            if (Vector3.DistanceSquared(c.WorldCom, eye) > (reach + c.Radius) * (reach + c.Radius))
+                continue; // (every part is within Radius of the centre of mass: a 200 m works is lit at its far end too)
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             foreach (var i in c.LampParts)
             {
