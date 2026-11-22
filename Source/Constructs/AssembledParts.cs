@@ -15,7 +15,6 @@ public static class AssembledParts
 {
     private const int ChoiceBase = 10_000; // (a made recipe's "choice": past any table's list, so an Assembler's batch restarts when its head order's kind changes)
     private static readonly Dictionary<ushort, (ConstructPartDef Def, AssembleRecipe? Recipe)> Made = new();
-    private static int _next;
 
     /// <summary>Is this a key an Assembler makes by: an Ordnance Rack's shape or an ordnance design?</summary>
     public static bool IsName(string? name) => name != null && (name.StartsWith(ModularRack.Prefix, StringComparison.Ordinal) || name.StartsWith(Ordnance.Prefix, StringComparison.OrdinalIgnoreCase));
@@ -40,7 +39,7 @@ public static class AssembledParts
                 return have.Recipe;
             var r = Make(d);
             if (r != null)
-                r.Choice = ChoiceBase + ++_next;
+                r.Choice = ChoiceBase + (int)(Fnv(d.Name) & 0x3fff_ffff); // (from its key, so a saved batch's progress keeps after a load)
             Made[id] = (d, r);
             return r;
         }
@@ -108,6 +107,14 @@ public static class AssembledParts
         foreach (var (p, _) in parts)
             r.Needs |= NeedOf(p.Name);
         return r;
+    }
+
+    private static uint Fnv(string key)
+    {
+        var h = 2166136261u;
+        foreach (var ch in key)
+            h = (h ^ ch) * 16777619u;
+        return h;
     }
 
     private static byte NeedOf(string input) => input switch
