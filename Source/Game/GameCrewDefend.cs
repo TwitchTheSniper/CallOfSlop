@@ -189,7 +189,7 @@ public sealed partial class Game
             Crew.Leave(m, CrewState.Fighting);
             _guards[bp.Id].Uid = 0; // (a new boarding starts its stages afresh)
             if (SandboxHands.Hand(bp.Id).Seated)
-                SandboxStand(bp, teleport: true); // (up from the couch or the gun)
+                CrewStandUp(bp); // (up from the couch or the gun)
             stood++;
         }
         var fighters = 0;

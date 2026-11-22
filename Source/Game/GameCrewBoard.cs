@@ -156,7 +156,7 @@ public sealed partial class Game
     private void CrewSurrender(int m)
     {
         if (Crew.Player[m] != 0 && Players.TryGetValue((byte)(Crew.Player[m] - 1), out var bp))
-            SandboxStand(bp, teleport: true);
+            CrewStandUp(bp);
         Crew.Nav.End(Crew.Nav.WalkerOf(m)); // (a fighter stops where it is)
         Crew.Leave(m, CrewState.Surrendered);
     }
@@ -326,7 +326,7 @@ public sealed partial class Game
         if (who < 0)
             return;
         if (Crew.Player[who] != 0 && Players.TryGetValue((byte)(Crew.Player[who] - 1), out var bp))
-            SandboxStand(bp, teleport: true);
+            CrewStandUp(bp);
         Crew.Leave(who, CrewState.Scuttling);
         s.ScPart = (short)point;
         s.ScTag = c.Parts[point].Tag;

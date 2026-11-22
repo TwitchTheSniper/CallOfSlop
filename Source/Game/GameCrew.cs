@@ -168,7 +168,7 @@ public sealed partial class Game : ICrewHost
         if (who == 255 || !Crew.IsBody[who] || !Players.TryGetValue((byte)who, out var p))
             return false;
         Crew.StandAside(p.CrewSlot);
-        SandboxStand(p, teleport: true);
+        CrewStandUp(p);
         if (c.Driver == who)
             SandboxHands.StopDriving(c);
         Console.WriteLine($"[crew] construct {c.Id}: {p.Name} stood up from seat {part} for a player");
@@ -210,6 +210,22 @@ public sealed partial class Game : ICrewHost
         ConstructRide.End(ref p.Sim, null, c, 0, Vector3.Zero, frame: true); // (the ship's own frame, as a person rides it: CrewNav's walks need it)
         for (var i = 0; i < Player.HistorySize; i++)
             p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw }; // (a sleeping body isn't woken to place its crew)
+    }
+
+    /// <summary>
+    /// A crew body up out of its seat: onto its ship's walk graph, indoors (<see cref="CrewWorld.StandNode"/>); with no graph or spot, the players' stand.
+    /// (Karl, 2026-11-22: surrendered crew stood up through the walls onto a freighter's spine and its cab roof in orbit.)
+    /// </summary>
+    private void CrewStandUp(Player p)
+    {
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (h.Seated && p.CrewSlot >= 0 && Constructs.Get(h.SeatBody) is { } c && h.SeatPart < c.PartCount && Crew.ShipOf(c.Id) is { } s
+            && CrewWorld.StandNode(s, c.ToLocal(ConstructEdits.SeatFeet(c, h.SeatPart))) is var n and >= 0)
+        {
+            CrewStandAt(p, c, s.Nav!.NodePos(n));
+            return;
+        }
+        SandboxStand(p, teleport: true);
     }
 
     /// <summary>A crew body into a seat, out of any it was in (no reach: the crew's timed walk got it there).</summary>
