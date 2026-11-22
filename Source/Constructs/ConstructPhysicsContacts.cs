@@ -165,6 +165,8 @@ public static partial class ConstructPhysics
     {
         if (a.Hull < 0 && b.Hull < 0)
             return ConstructNarrow.BoxBox(a, b, margin, _cand, n);
+        if (!ConstructNarrow.Overlapping(a, b, -margin))
+            return n; // (a hull sits inside its leaf's box: boxes further apart than the margin give no point, and moving each hull into the world costs 2-3 us; 2026-11-22)
         if (a.Hull >= 0)
             _sa.FromHull(ca.Hulls[a.Hull], fa);
         else

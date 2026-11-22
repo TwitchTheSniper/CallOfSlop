@@ -44,6 +44,7 @@ public static class ConstructBores
     /// <summary>Bores cut real holes through the parts they cross (false: scorch marks only; --no-bore-holes).</summary>
     public static bool Holes = true;
     public const int HoleEvery = 12; // ticks between cuts (a body is rebuilt at most this often by holes: 5 a second)
+    public const double HoleBudgetMs = 2; // ms of holed parts made in one cut at most, the first always made (server only, so a clock is fine)
     public const int MaxWaiting = 256; // holes waiting at most (more in one fifth of a second are left as scorch marks)
     public const int MaxHoleParts = 12; // parts one shot holes at most (each a new holed def and its share of the body's rebuild)
     public const float HoleScale = 1f; // the hole's half size, as a share of the calibre (the mark's radius)
@@ -225,8 +226,13 @@ public static class ConstructBores
         var list = world.HolesWaiting;
         if (list.Count == 0 || tick % HoleEvery != 0)
             return;
-        foreach (var (id, part, key, hole) in list)
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var done = 0;
+        for (; done < list.Count; done++)
         {
+            if (done > 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= HoleBudgetMs)
+                break; // (the rest wait for the next cut: a broadside's holes all made in one tick took 8-28 ms, 2026-11-22)
+            var (id, part, key, hole) = list[done];
             if (world.Get(id) is not { } body || part >= body.PartCount || body.Parts[part].Pos != key || body.Parts[part].Broken)
                 continue; // (it broke off or was renumbered meanwhile: no hole)
             var d = body.DefOf(part);
@@ -239,7 +245,7 @@ public static class ConstructBores
             if (Trace)
                 Console.WriteLine(FormattableString.Invariant($"    holed {HullHoles.BaseOf(d).Name}: {hole.HalfW * 200:0} cm square, {hole.Depth:0.00} m deep"));
         }
-        list.Clear();
+        list.RemoveRange(0, done);
     }
 
     /// <summary>Two directions square to <paramref name="dir"/> and to each other, the same on every PC (a hole's up and across).</summary>

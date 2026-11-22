@@ -284,15 +284,19 @@ public static partial class ConstructPhysics
         FrameLead(n);
         ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
+        AllocProfile.Mark("p: body contacts");
         BodyContacts(world, n, dt);
+        AllocProfile.Mark("p: rows");
         CouplingRows(world, n, dt);
         ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
         if (world.BeamCount > 0)
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
         Lap(2, ref t0);
+        AllocProfile.Mark("p: solve");
         Solve(dt);
         Lap(3, ref t0);
+        AllocProfile.Mark("p: integrate");
         if (_anyHeld)
             HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
         ConnectorLoads(world, dt);
