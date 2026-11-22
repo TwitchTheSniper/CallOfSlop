@@ -24,21 +24,26 @@ public sealed partial class ZeroDayWorks
             Paint(Stand("Steel Wide Stair 3 m", SocketAt(ground[0, 0], "t7_15"), South, ground[0, 0], "b0_0"), Steel); // (the house's: up the west side, south)
             var upper = Panels(Paint(Stand("Steel Wide Stair Floor", SocketAt(legs[0], "t0_0"), Up, legs[0], "b0_0"), Office), 6, 12);
             var room = Corners(upper, 6, 12, "Steel Window Corner", Glazing);
-            Walls(upper, 6, 12, Glazing, south: ["Steel Window Wall 2 m"], east: ["Steel Window Wall 4 m", "Steel Window Wall 4 m"],
+            var glass = Walls(upper, 6, 12, Glazing, south: ["Steel Window Wall 2 m"], east: ["Steel Window Wall 4 m", "Steel Window Wall 4 m"],
                 north: ["Steel Window Wall 2 m"], west: ["Steel Window Wall 4 m", "Steel Window Wall 4 m"]);
             Panels(Paint(Stand("Steel Floor 4x4 m", SocketAt(room[0], "t0_0"), Up, room[0], "b0_0"), Office), 6, 12);
+            FurnishControl(upper, glass);
 
             // ---- The repair shop, spare parts and maintenance rooms, north to south. ----
+            var kinds = new[] { "repair", "spares", "maintenance" };
+            var n = 0;
             foreach (var (z0, l, roof, open) in new[] { (-179f, 16, false, true), (-188f, 8, true, false), (-197f, 8, true, false) })
             {
                 var floor = Panels(On("Steel Floor 4x4 m", 74, z0, Up, "b0_0", Office), 10, l);
                 var c = Corners(floor, 10, l, "Steel Wall Corner", Office);
-                string[] side = l == 16 ? ["Steel Wall 4 m", "Steel Door Wall 2 m", "Steel Wall 2 m", "Steel Wall 4 m"] : ["Steel Door Wall 2 m", "Steel Wall 2 m"];
+                string[] side = l == 16 ? ["Steel Wall 4 m", "Steel Door Wall 2 m", "Steel Wall 2 m", "Steel Wall 4 m"]
+                    : ["Steel Door Wall 2 m", "Steel Wall 2 m"];
                 string[] blank = l == 16 ? ["Steel Wall 4 m", "Steel Wall 4 m", "Steel Wall 4 m"] : ["Steel Wall 4 m"];
-                Walls(floor, 10, l, Office, south: ["Steel Wall 4 m", "Steel Wall 2 m"], east: side,
+                var walls = Walls(floor, 10, l, Office, south: ["Steel Wall 4 m", "Steel Wall 2 m"], east: side,
                     north: open ? [] : ["Steel Wall 4 m", "Steel Wall 2 m"], west: blank);
                 if (roof)
                     Panels(Paint(Stand("Steel Floor 4x4 m", SocketAt(c[0], "t0_0"), Up, c[0], "b0_0"), Office), 10, l);
+                Furnish(kinds[n++], floor, walls);
             }
         }
 
@@ -91,16 +96,19 @@ public sealed partial class ZeroDayWorks
         /// Walls between a storey's corners, each side's pieces in order from its south (or west) end: the south and north sides run east,
         /// the east and west sides north. A door wall gets its hinge and a steel leaf.
         /// </summary>
-        private void Walls(VPart[,] g, int w, int l, string paint, string[] south, string[] east, string[] north, string[] west)
+        private Dictionary<char, List<VPart>> Walls(VPart[,] g, int w, int l, string paint, string[] south, string[] east, string[] north, string[] west)
         {
             int cw = 4 * w - 1, cl = 4 * l - 1;
-            foreach (var (pieces, alongX, fixedCell, o) in new[] { (south, true, 0, Up), (north, true, cl, Up), (west, false, 0, West), (east, false, cw, West) })
+            var sides = new Dictionary<char, List<VPart>>();
+            foreach (var (side, pieces, alongX, fixedCell, o) in new[] { ('s', south, true, 0, Up), ('n', north, true, cl, Up), ('w', west, false, 0, West), ('e', east, false, cw, West) })
             {
                 var at = 8; // (past the corner's 2 m arm)
+                sides[side] = new List<VPart>();
                 foreach (var piece in pieces)
                 {
                     var (p, s) = alongX ? Cell(g, at, fixedCell) : Cell(g, fixedCell, at);
                     var wall = Paint(Stand(piece, SocketAt(p, s), o, p, "b0"), paint);
+                    sides[side].Add(wall);
                     if (piece.Contains("Door"))
                         Paint(Onto(Onto(wall, "hinge", "Door Hinge", "base"), "leaf", "Bulkhead Door 1.5x2.25 m", "hang"), Steel);
                     at += piece.Contains("4 m") ? 16 : 8;
@@ -108,6 +116,7 @@ public sealed partial class ZeroDayWorks
                 if (pieces.Length > 0 && at != (alongX ? cw : cl) - 7)
                     throw new VehicleKitException($"a room side of {(alongX ? w : l)} m: its walls end at cell {at}, the corner's arm at {(alongX ? cw : cl) - 7}");
             }
+            return sides;
         }
     }
 }
