@@ -13,6 +13,16 @@ public enum FoliageType : byte
     Trunk, // a drawn trunk for trees with no solid box (a Sandbox world's forests: ResourceField.cs); not placed by map files
     Stump, // what a felled tree of those forests leaves (a low cut trunk, not solid); not placed by map files
     Outcrop, // a rock showing an underground deposit (a Sandbox world's veins: ResourceOutcrops.cs); not placed by map files
+    // (2026-11-22, planet biomes: docs/planets/BIOMES.md. New kinds go on the end.)
+    Birch, // a tall thin broadleaf with a narrow, high canopy (its pale trunk is a Trunk instance)
+    Spruce, // a narrow, very tall conifer: many short tiers down to the ground
+    ScotsPine, // a long bare trunk with a flat, broken crown at the top
+    Heather, // a low woody cushion, ankle to knee high
+    Reed, // a stand of tall thin stems (wet ground)
+    Bracken, // a waist-high fern with broad flat fronds
+    Boulder, // a loose rock lying on the ground (no deposit under it)
+    Scree, // a scatter of small flat stones
+    Stem, // a planet tree's thin trunk, 1 unit tall (PlanetFlora.cs); not placed by map files
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>
@@ -191,10 +201,10 @@ public static class Foliage
     public static readonly Vector3 ShrubGreen = new(0.31f, 0.47f, 0.20f);
     public static readonly Vector3 PineGreen = new(0.17f, 0.35f, 0.19f);
 
-    public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine;
+    public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine or FoliageType.Birch or FoliageType.Spruce or FoliageType.ScotsPine;
 
     /// <summary>Types only a world's resource field draws: map files can't place them.</summary>
-    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop;
+    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem;
 
     /// <summary>
     /// Built-in foliage allowance per surface (fraction of the normal density that may grow there, 0 to 1). Box and mesh
@@ -224,7 +234,7 @@ public static class Foliage
     /// </summary>
     public static float AllowanceFactor(FoliageType t) => t switch
     {
-        FoliageType.Grass or FoliageType.Shrub => 1f,
+        FoliageType.Grass or FoliageType.Shrub or FoliageType.Heather or FoliageType.Reed or FoliageType.Bracken or FoliageType.Scree => 1f,
         FoliageType.Bush => 0.5f,
         _ => 0f,
     };
@@ -234,7 +244,11 @@ public static class Foliage
         FoliageType.Grass => GrassGreen,
         FoliageType.Bush => BushGreen,
         FoliageType.Shrub => ShrubGreen,
-        FoliageType.Pine => PineGreen,
+        FoliageType.Pine or FoliageType.Spruce or FoliageType.ScotsPine => PineGreen,
+        FoliageType.Heather => new Vector3(0.42f, 0.27f, 0.36f),
+        FoliageType.Reed => new Vector3(0.5f, 0.52f, 0.3f),
+        FoliageType.Bracken => new Vector3(0.38f, 0.5f, 0.2f),
+        FoliageType.Boulder or FoliageType.Scree => new Vector3(0.45f, 0.44f, 0.42f),
         _ => Map.Leaf,
     };
 
@@ -243,6 +257,10 @@ public static class Foliage
     {
         FoliageType.Tree => (5f, 8f),
         FoliageType.Pine => (6f, 10f),
+        FoliageType.Birch => (8f, 14f),
+        FoliageType.Spruce => (12f, 22f),
+        FoliageType.ScotsPine => (10f, 18f),
+        FoliageType.Boulder => (0.6f, 2.2f),
         _ => (0.8f, 1.25f),
     };
 
@@ -252,7 +270,7 @@ public static class Foliage
     public static float TrunkWidth(float h) => Round2(Math.Clamp(0.07f * h + 0.1f, 0.35f, 0.9f));
 
     /// <summary>Trunk height: up into the canopy, so the box ends where the leaves hide it.</summary>
-    public static float TrunkHeight(FoliageType t, float h) => Round2(h * (t == FoliageType.Pine ? 0.5f : 0.62f));
+    public static float TrunkHeight(FoliageType t, float h) => Round2(h * (t is FoliageType.Pine or FoliageType.Spruce ? 0.5f : t == FoliageType.ScotsPine ? 0.8f : 0.62f));
 
     public static Box TrunkBox(FoliageType t, Vector3 pos, float h)
     {
@@ -276,7 +294,7 @@ public static class Foliage
         return t switch
         {
             FoliageType.Grass => q switch { FoliageQuality.Low => 0.4f, FoliageQuality.Medium => 0.7f, _ => 1f },
-            FoliageType.Shrub => q switch { FoliageQuality.Low => 0.6f, FoliageQuality.Medium => 0.85f, _ => 1f },
+            FoliageType.Shrub or FoliageType.Heather or FoliageType.Reed or FoliageType.Scree => q switch { FoliageQuality.Low => 0.6f, FoliageQuality.Medium => 0.85f, _ => 1f },
             _ => q switch { FoliageQuality.Low => 0.7f, _ => 1f },
         };
     }
@@ -299,7 +317,8 @@ public static class Foliage
         {
             FoliageType.Grass => FadeGrass[i],
             FoliageType.Shrub => FadeShrub[i],
-            FoliageType.Bush => FadeBush[i],
+            FoliageType.Bush or FoliageType.Bracken => FadeBush[i],
+            FoliageType.Heather or FoliageType.Reed or FoliageType.Scree => FadeShrub[i],
             _ => NoFade,
         };
     }
@@ -315,7 +334,8 @@ public static class Foliage
         {
             FoliageType.Grass => LodGrass[i],
             FoliageType.Shrub => LodShrub[i],
-            FoliageType.Bush => LodBush[i],
+            FoliageType.Bush or FoliageType.Bracken => LodBush[i],
+            FoliageType.Heather or FoliageType.Reed or FoliageType.Scree => LodShrub[i],
             _ => LodTree[i],
         };
     }

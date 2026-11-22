@@ -476,7 +476,8 @@ public sealed unsafe partial class PlanetRenderer
                 : slope >= surf.DirtSlope ? TerrainMaterial.Dirt
                 : surf.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
                 : TerrainMaterial.Grass;
-            var (col, rock) = TerrainData.ColourOf(surf, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+            var here = pl.Biomes is { } bio ? bio.SurfaceAt(surf, up.X, up.Y, up.Z, pl.Radius, h, slope) : surf; // (the biomes' ground: PlanetBiomes.cs)
+            var (col, rock) = TerrainData.ColourOf(here, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
             // Hollows darken with how far they sit below their neighbours (a cheap cavity term): a crevasse reads as a
             // crack going down into shadow, not a strip of lit wall, and gullies and dips get a little depth.
             var cavity = (float)((wh[k - 1] + wh[k + 1] + wh[k - Apron] + wh[k + Apron]) * 0.25 - h) / cellSize;
