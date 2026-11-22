@@ -619,6 +619,14 @@ public static partial class ConstructLifters
     public static float WristLift(ConstructPartDef? d) =>
         d == null ? SafeLift : ((d.BoundsMax - d.BoundsMin) * 0.5f).Length() + SafeLift;
 
+    /// <summary>
+    /// The same over a piece's origin, for what poses a carry by its origin (l.From and l.To: <see cref="Ticks"/>, the carry height,
+    /// a crane's legs, a cab's clamp): <see cref="WristLift"/> plus the middle's height over the origin, so an upright piece's wrist
+    /// stands where the reach checks put it (the merge review, 2026-11-22: a piece whose origin is under its middle rose past the bridge).
+    /// </summary>
+    public static float OriginLift(ConstructPartDef? d) =>
+        d == null ? SafeLift : MathF.Max(SafeLift, WristLift(d) + (d.BoundsMin.Y + d.BoundsMax.Y) * 0.5f);
+
     /// <summary>Does a part fit the hand: its mass and its size (the longest side against the length, the next against across)?</summary>
     public static bool Carries(LifterDef ld, ConstructPartDef d)
     {
@@ -681,7 +689,7 @@ public static partial class ConstructLifters
                 l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
                 Begin(l);
@@ -866,7 +874,7 @@ public static partial class ConstructLifters
                 l.ToRot = rot;
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
-                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
+                l.Dur = Ticks(ld, l.From, l.To, true, OriginLift(d), l.Rise);
                 Begin(l);
                 (l.State, l.ToHold, l.Why, l.Moved, l.Fitted) = (LiftState.Carry, true, LiftWhy.PutBack, true, false);
                 (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (sc.Id, t, -1, null, null);
@@ -1051,7 +1059,7 @@ public static partial class ConstructLifters
         if (ld.Bridge)
         {
             // A crane: hoist, travel and traverse together in a straight line at the carry height, lower (arms-and-cranes.md 3.3).
-            BridgeLegs(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
+            BridgeLegs(ld, from, to, l.Def != 0 ? OriginLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
             var tu = bu / ld.Hoist;
             if (sec < tu)
                 return new Vector3(from.X, from.Y + sec * ld.Hoist, from.Z);
@@ -1068,7 +1076,7 @@ public static partial class ConstructLifters
             var dn = sec * ld.Hoist;
             return dn < bd ? new Vector3(to.X, bh - dn, to.Z) : to;
         }
-        var h = CarryY(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
+        var h = CarryY(ld, from, to, l.Def != 0 ? OriginLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
         var up = MathF.Max(0, h - from.Y);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
