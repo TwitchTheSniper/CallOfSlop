@@ -66,6 +66,10 @@ public sealed partial class ZeroDayWorks : IPartGenerator
                 Group = "Factories",
             };
             s.Lay();
+            // A body past Construct.MaxLinks drops every later link without a word (welds included, so machines lose their beds):
+            // fail here, with room kept for what players add.
+            if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
+                throw new VehicleKitException($"Zero Day Works: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
             return s;
         }
 

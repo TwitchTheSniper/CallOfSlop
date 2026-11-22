@@ -7,7 +7,8 @@ public sealed partial class ZeroDayWorks
     private sealed partial class Script
     {
         // The materials row (doc "Materials row"), under the annex roof, z -24 to -40: raw stock bunkers on the north row, the refiners
-        // beside them, the refined bins on the south row where the extruders' chutes start. Creative fills the raw bunkers.
+        // beside them, the refined bins on the south row where the extruders' chutes start. A bunker takes any stock: players tip each raw
+        // bunker's own load in (the names below say which).
         public const float RawRow = -29f, BinRow = -37f;
 
         /// <summary>The refined bins by material: steel, metal, copper, glass, planks. Later areas chute from them.</summary>
@@ -18,11 +19,11 @@ public sealed partial class ZeroDayWorks
         private void LayMaterials()
         {
             // Raw stock, west end: three ore bunkers (one ore each) and bunkers of stone and wood for the Foundry and the Sawmill.
-            var iron = Raw("Ore Bunker 6 m", "iron ore", 5f);
-            var copperOre = Raw("Ore Bunker 6 m", "copper ore", 13f);
-            var sand = Raw("Ore Bunker 6 m", "sand", 19f);
-            var stone = Raw("Ore Bunker 4 m", "stone", 25f);
-            var wood = Raw("Ore Bunker 4 m", "wood", 89f);
+            var iron = Raw("Ore Bunker 6 m", 5f) /* iron ore */;
+            var copperOre = Raw("Ore Bunker 6 m", 13f) /* copper ore */;
+            var sand = Raw("Ore Bunker 6 m", 19f) /* sand */;
+            var stone = Raw("Ore Bunker 4 m", 25f) /* stone */;
+            var wood = Raw("Ore Bunker 4 m", 89f) /* wood */;
 
             // Three Smelters (iron ore to metal, copper ore to copper at tier 2, sand to glass), the Foundry (metal and stone to steel),
             // the Sawmill (wood to planks) and the Recycler, each over the bin it fills.
@@ -46,12 +47,8 @@ public sealed partial class ZeroDayWorks
             Chute(sawmill, Bin("planks", 81f));
         }
 
-        /// <summary>A raw stock bunker on the north row at x, its material set for creative's fill.</summary>
-        private VPart Raw(string part, string material, float x)
-        {
-            var b = On(part, x, RawRow, Up, paint: Stock, finish: "concrete");
-            return b;
-        }
+        /// <summary>A raw stock bunker on the north row at x.</summary>
+        private VPart Raw(string part, float x) => On(part, x, RawRow, Up, paint: Stock, finish: "concrete");
 
         private VPart Refiner(string part, float x) => On(part, x, RawRow, Up, paint: Refining);
 
