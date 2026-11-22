@@ -29,6 +29,9 @@ public static class CockpitFns
     public static Func<Construct, bool>? CrewHoldsFire;
     public static Func<Construct, byte, bool, string?>? CrewOrderFire;
 
+    /// <summary>A Console Drawer's tray (cockpits phase 6; the part kit's CockpitParts.TrayName): F on it from a seat in reach slides it.</summary>
+    public static bool IsDrawer(ConstructPartDef d) => d.Door != null && d.Name.StartsWith("Console Drawer Tray", StringComparison.Ordinal);
+
     /// <summary>A crew order: given only from the command seat (the drive seat on a craft with no Command seat).</summary>
     public static bool IsOrder(SeatFn fn) => fn == SeatFn.HoldFire;
 

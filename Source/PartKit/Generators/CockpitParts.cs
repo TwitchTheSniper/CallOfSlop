@@ -23,7 +23,13 @@ public sealed class CockpitParts : IPartGenerator
 
     /// <summary>The shipped sizes, cells (W <= L): plain ones, then the Roamer dash's (glareshield 1x30, wings 3x6, side panels 5x12, centre 5x8, overhead 4x10).</summary>
     public static readonly (int W, int L)[] Sizes =
-        [(1, 4), (1, 10), (2, 2), (2, 4), (3, 3), (4, 4), (4, 6), (6, 6), (6, 10), (1, 30), (3, 6), (5, 12), (5, 8), (4, 10)];
+        [(1, 4), (1, 10), (2, 2), (2, 4), (3, 3), (4, 4), (4, 6), (6, 6), (6, 10), (1, 30), (3, 6), (5, 12), (5, 8), (4, 10), (2, 6), (2, 8)];
+
+    /// <summary>The Console Drawers (phase 6): a 2 x L cell footprint (the hole 20 cm high, L cells wide) and a tray D cells deep.</summary>
+    public static readonly (int L, int D)[] Drawers = [(2, 2), (4, 3), (6, 3), (8, 4)];
+
+    /// <summary>A drawer tray's part name (the game knows a drawer by it: CockpitFns.IsDrawer).</summary>
+    public const string TrayName = "Console Drawer Tray";
 
     private const double C = ModuleSocketsCell;
     private const double ModuleSocketsCell = 0.1; // (ModuleSockets.Cell: the part kit doesn't reference the game)
@@ -113,6 +119,81 @@ public sealed class CockpitParts : IPartGenerator
         return p;
     }
 
+    // ---- Console Drawers (phase 6: pull-outs and pop-ups) --------------------------------------------------------------------------
+    // A drawer is a module of a 2 x L Console Bay set to Opening: its case (the plug) is a sleeve back into the hole behind the bay's
+    // face, and its tray an event door that slides out along the socket's normal. Instruments go on the tray's deck (its +x face), each
+    // on the tray alone, so they ride it (Construct.Doors.cs: MaxDoorLeaf). In a wall it pulls out like a keyboard tray; in a desk it
+    // rises like a pop-up screen. Wired from a seat (on while someone sits) it comes out when the seat is taken.
+
+    private const double DrSleeve = 0.018, DrWall = 0.0104, DrDeckX = 0.032, DrDeckT = 0.012;
+
+    private static double DrFront => Back + 0.0045; // the tray's front plate's back face, shut (just in front of the sleeve's ends)
+
+    private static double DrDeckBack(int d) => DrFront - d * C - 0.02;
+
+    /// <summary>How far a drawer's tray runs out (m).</summary>
+    public static double DrawerTravel(int d) => d * C + 0.015;
+
+    private static Part DrawerCase(int l, int d)
+    {
+        const int w = 2;
+        var p = new Part($"Console Drawer Case 2x{l}", Small, "Console bays",
+            $"A pull-out console's case for a 2x{l} Console Bay set to Opening (Depth at least {Py.G(Math.Round(d * C + 0.05, 2))} m): hang a Console Drawer Tray 2x{l} on it, put panel instruments on the tray, fit it by hand.",
+            role: "frame", tool: "wrench", color: BezelC, group: Group);
+        var (ex0, ex1, ez0, ez1) = Edges(w, l);
+        double cx = (w - 1) * 0.5 * C, cz = (l - 1) * 0.5 * C;
+        // The bezel round the hole, in front of the bay's face (its middle open: the tray's front plate shuts it).
+        double by0 = Back + 0.004, by1 = Back + 0.014;
+        p.Add(Box([ex0 + Inset, by0, ez0 + Inset], [ex1 - Inset, by1, ez0 + Rim], RimC));
+        p.Add(Box([ex0 + Inset, by0, ez1 - Rim], [ex1 - Inset, by1, ez1 - Inset], RimC));
+        p.Add(Box([ex0 + Inset, by0, ez0 + Rim], [ex0 + Rim, by1, ez1 - Rim], RimC));
+        p.Add(Box([ex1 - Rim, by0, ez0 + Rim], [ex1 - Inset, by1, ez1 - Rim], RimC));
+        // The sleeve back into the hole, inside the bay's rim, and its back plate.
+        double back = DrDeckBack(d) - 0.022, sy1 = Back + 0.0035;
+        double ix0 = ex0 + DrSleeve, ix1 = ex1 - DrSleeve, iz0 = ez0 + DrSleeve, iz1 = ez1 - DrSleeve;
+        p.Add(Box([ix0, back, iz0], [ix0 + DrWall, sy1, iz1], BezelC));
+        p.Add(Box([ix1 - DrWall, back, iz0], [ix1, sy1, iz1], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz0], [ix1 - DrWall, sy1 - 0.002, iz0 + DrWall], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz1 - DrWall], [ix1 - DrWall, sy1 - 0.002, iz1], BezelC));
+        p.Add(Box([ix0 + DrWall, back, iz0 + DrWall], [ix1 - DrWall, back + DrWall, iz1 - DrWall], BezelC));
+        // The tray's catch: a tab on the back plate, its face where the tray's back block meets it.
+        double tx = ex0 + DrDeckX + DrDeckT + 0.006, tb = DrDeckBack(d);
+        p.Add(Box([tx - 0.006, back + DrWall, cz - 0.006], [tx + 0.006, tb, cz + 0.006], BezelC));
+        p.Sock("tray", [tx, tb, cz], "+y");
+        p.Add(Box([cx - 0.006, Back, cz - 0.006], [cx + 0.006, Back + 0.012, cz + 0.006], hidden: true)); // (the socket's solid face)
+        p.Sock("module", [cx, Back, cz], "-y", kind: "module");
+        var area = w * l * C * C;
+        p.Stats(0.6 + area * 14, 25 + area * 100, 0, seconds: 1.0);
+        p.Set(("onBreak", "detach"), ("modulePlug", Kw(("w", w), ("l", l), ("cells", true))));
+        return p;
+    }
+
+    private static Part DrawerTray(int l, int d)
+    {
+        const int w = 2;
+        var p = new Part($"{TrayName} 2x{l}", Small, "Console bays",
+            $"A pull-out console's tray, {l - 1} by {d} cells of panel instruments on its deck: hung on a Console Drawer Case 2x{l}, F slides it out and back. Wired from a seat, it comes out while someone sits there.",
+            role: "door", tool: "wrench", color: FaceC, group: Group);
+        var (ex0, ex1, ez0, ez1) = Edges(w, l);
+        double cz = (l - 1) * 0.5 * C;
+        // The front plate, filling the bezel's opening when shut, with a pull along it.
+        p.Add(Box([ex0 + Rim + 0.002, DrFront, ez0 + Rim + 0.002], [ex1 - Rim - 0.002, DrFront + 0.012, ez1 - Rim - 0.002], FaceC));
+        p.Add(Box([ex0 + 0.07, DrFront + 0.012, cz - 0.04], [ex0 + 0.086, DrFront + 0.028, cz + 0.04], RimC, detail: true));
+        // The deck behind it, and the back block it hangs by.
+        double x0 = ex0 + DrDeckX, x1 = x0 + DrDeckT, z0 = ez0 + DrSleeve + DrWall + 0.003, z1 = ez1 - DrSleeve - DrWall - 0.003, yb = DrDeckBack(d);
+        p.Add(Box([x0, yb, z0], [x1, DrFront - 0.0005, z1], FaceTopC));
+        p.Add(Box([x1, yb, cz - 0.006], [x1 + 0.012, yb + 0.012, cz + 0.006], FaceC));
+        p.Sock("hang", [x1 + 0.006, yb, cz], "-y");
+        // A Small socket on each cell of the deck: L - 1 across (a housing is a whole cell, and the sleeve takes 3 cm a side), D deep.
+        for (var j = 0; j < l - 1; j++)
+            for (var i = 0; i < d; i++)
+                p.Sock($"c{j}.{i}", [x1, DrFront - 0.004 - (i + 0.5) * C, (j + 0.5) * C], "+x");
+        var area = w * l * C * C;
+        p.Stats(0.4 + area * 10, 20 + area * 90, 0, seconds: 1.0);
+        p.Set(("onBreak", "detach"), ("door", Kw(("kind", "slide"), ("axis", "+y"), ("travel", Py.Round(DrawerTravel(d), 3)), ("seconds", 0.6), ("hang", "hang"))));
+        return p;
+    }
+
     /// <summary>The shipped parts' names, in their file order: Assembling's Tail and AfterCloche take them one by one.</summary>
     public static IReadOnlyList<string> Names => [.. Parts().Select(e => (string)e.Item2.D["name"]!)];
 
@@ -123,6 +204,11 @@ public sealed class CockpitParts : IPartGenerator
         {
             parts.Add(("", Bay(w, l)));
             parts.Add(("", Plug(w, l)));
+        }
+        foreach (var (l, d) in Drawers)
+        {
+            parts.Add(("", DrawerCase(l, d)));
+            parts.Add(("", DrawerTray(l, d)));
         }
         parts.AddRange(ControlParts.PanelInstruments());
         return parts;

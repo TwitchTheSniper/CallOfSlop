@@ -105,6 +105,27 @@ public static partial class Program
     /// Seated: a switch or button in reach of the seat (a cockpit's dash, cockpits.md "Working it from the seat"): the use key presses it
     /// (CActKind.Use, as standing), and the look line says what it is and what it works. True when the press went to it.
     /// </summary>
+    /// <summary>Seated: F on a Console Drawer's tray in reach slides it out or back (cockpits phase 6), as standing.</summary>
+    private static bool DrawerSeated(Game g, Construct c, int part)
+    {
+        ConstructRender.AimBody = c;
+        ConstructRender.AimPart = part;
+        ConstructRender.AimRefused = false;
+        ConstructRender.AimHands = true;
+        var open = ConstructDoors.TargetOpen(c, part);
+        var lookKey = HashCode.Combine(c.Id, part, open, SandboxKeys.Stamp, 7);
+        if (lookKey != _cpSwKey)
+        {
+            _cpSwKey = lookKey;
+            _cpSwText = SandboxKeys.Line(LogicText.Name(c, part), open ? "out" : "in", null, SandboxKeys.Do(SandboxKeys.Use, open ? "slide in" : "slide out"));
+        }
+        g.SandboxLookText = _cpSwText;
+        if (!Pressed(GameAction.Interact))
+            return false;
+        g.SandboxSend(CActKind.Use, body: c.Id, part: (ushort)part);
+        return true;
+    }
+
     private static bool SwitchSeated(Game g, bool aimed, in ConstructHit hit)
     {
         if (!aimed || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Part < 0 || hit.Part >= hit.Body.PartCount || hit.Distance > ConstructBuild.UseReach)
@@ -112,6 +133,8 @@ public static partial class Program
         var c = hit.Body;
         var d = c.DefOf(hit.Part);
         ref var p = ref c.Parts[hit.Part];
+        if (CockpitFns.IsDrawer(d) && !p.Broken)
+            return DrawerSeated(g, c, hit.Part);
         if (d.Logic is not (CLogic.Button or CLogic.Switch) || p.Broken)
             return false;
         var fn = CockpitFns.Of(p, d);
