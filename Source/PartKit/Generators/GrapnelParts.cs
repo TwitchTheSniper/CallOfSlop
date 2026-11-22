@@ -57,7 +57,7 @@ public sealed class GrapnelParts : IPartGenerator
     private const double BayHx = 2.75, BayZ0 = -3.65, BayZ1 = 3.65, BayIn = 3.4, BayTop = 3.9;
     /// <summary>The standard container ("Standard Container 2m", three 2x2x2 m parts in a row): across, up, along; where its middle
     /// stands off the centreline, and the hold floor's twist-lock pads under its corner castings.</summary>
-    private const double CtW = 2.5, CtH = 2.5, CtL = 6.5, CtX = 1.4, LockH = 0.06, CastX = 1.165, CastZ = 3.165;
+    private const double CtW = 2.5, CtL = 6.5, CtX = 1.4, LockH = 0.06, CastX = 1.165, CastZ = 3.165;
     public const string ContainerName = "Standard Container 2m";
 
     /// <summary>The hull's stations (the hull pieces are cut at them).</summary>
@@ -253,14 +253,6 @@ public sealed class GrapnelParts : IPartGenerator
     /// <summary>A chine rail: a faceted bar along profile point i (1..3) on side s from za to zb, w wide each way and h proud.</summary>
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, string color) => Chine(p, i, s, za, zb, w, h, w, h, color);
 
-    /// <summary>A shoulder block: a big chine rail whose ends rake down to a smaller section over rake metres.</summary>
-    private static void Shoulder(Part p, int i, int s, double za, double zb, double w, double h, double rake, string color)
-    {
-        Chine(p, i, s, za, za + rake, w * 0.55, h * 0.3, w, h, color);
-        Chine(p, i, s, za + rake + 0.004, zb - rake - 0.004, w, h, w, h, color == Armour ? Armour2 : Armour);
-        Chine(p, i, s, zb - rake, zb, w, h, w * 0.55, h * 0.3, color);
-    }
-
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, double w2, double h2, string color)
     {
         double[][] Ring(double z, double w, double h)
@@ -453,22 +445,6 @@ public sealed class GrapnelParts : IPartGenerator
         var a = Math.PI / n + i * 2 * Math.PI / n;
         return new[] { Py.Round(cx + rx * Math.Cos(a), 4), Py.Round(cy + ry * Math.Sin(a), 4), z };
     })];
-
-    /// <summary>Hidden boxes for the void between the skin and the rooms, both sides: x from xin (the rooms' outer face; 0: one box across the
-    /// middle) out to the skin less a margin, y and z bands.</summary>
-    private static void Void(Part p, double za, double zb, double ya, double yb, double xin)
-    {
-        var xo = Math.Floor((new[] { SkinHalf(za, ya), SkinHalf(za, yb), SkinHalf(zb, ya), SkinHalf(zb, yb) }.Min() - 0.06) * 100) / 100;
-        if (xo < xin + 0.08)
-            return;
-        za += 0.004; // (no face shared with the neighbouring band's boxes)
-        zb -= 0.004;
-        if (xin <= 0)
-            Hidden(p, Cx - xo, ya, za, Cx + xo, yb, zb);
-        else
-            foreach (var s in new[] { -1, 1 })
-                Hidden(p, Cx + s * xin, ya, za, Cx + s * xo, yb, zb);
-    }
 
     // ---- rooms: floors, walls, doors
 
@@ -823,7 +799,7 @@ public sealed class GrapnelParts : IPartGenerator
         foreach (var s in new[] { -1, 1 })
             RcsPad(p, "rcsUp" + (s < 0 ? "L" : "R"), Cx + s * 1.2, Top(BowRcsZ), BowRcsZ, "+y", 0.056); // (its top clear of the roof's rib)
         // The void over the ceilings (beside the bay, from its walls out).
-        foreach (var (i, za, zb) in BandsIn(ZCk, ZEngEnd))
+        foreach (var (_, za, zb) in BandsIn(ZCk, ZEngEnd))
         {
             var bay = za >= BayZ0 - 1e-6 && zb <= BayZ1 + 1e-6;
             var floor = za >= ZEng - 1e-6 ? ERoof : za >= ZCabEnd - 1e-6 ? SRoof : CRoof;

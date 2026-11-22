@@ -531,12 +531,7 @@ public sealed class MinerParts : IPartGenerator
     private static Part Big(string name, string desc, string role = "frame", string color = Skin) =>
         new(name, Small, Section, desc, role: role, tool: "welder", material: "steel", color: color, group: Group);
 
-    // ---- the drill well: an opening through the drill bay's floor and the keel; four drills hang over it on rams
-
-    private static readonly Rect Well = new(Cx - 1.75, 12.15, Cx + 1.75, 15.85); // (its rail leaves a standing landing inside both bulkhead doors)
-    private const double WellLeaf = 1.9, WellDoorZ0 = 12.1 - WellLeaf, WellDoorZ1 = 15.9 + WellLeaf; // the cargo doors' leaves (each covers half the well) and how far their rails run
-    private static readonly double[] DrillZ = [12.6, 15.4]; // the gantry beams over the well (a pair of rams on each)
-    private const double DrillX = 0.6, GantryY = 2.95; // the rams either side of the centreline, hung under the beams
+    private const double WellLeaf = 1.9; // the drill well's cargo doors' leaves along the ship (each covers half the well)
 
     // ---- the keel: the flat underside with the well through it, the fuel under the lower deck, the legs
 
@@ -1940,7 +1935,7 @@ public sealed class MinerParts : IPartGenerator
         var st = new Dictionary<string, int>();
         foreach (var name in structure)
             st[name] = st.Count == 0 ? bp.First(name) : bp.Put(name, zero, 0);
-        int keel = st["Magpie Keel"], bow = st["Magpie Bow"], work = st["Magpie Workshop Deck"], bay = st["Magpie Drill Bay"], eng = st["Magpie Engine Deck"],
+        int keel = st["Magpie Keel"], work = st["Magpie Workshop Deck"], bay = st["Magpie Drill Bay"], eng = st["Magpie Engine Deck"],
             uf = st["Magpie Bridge Deck"], ua = st["Magpie Mess Deck"], stern = st["Magpie Stern"];
         int[] hoppers = [st["Magpie Ore Hopper L"], st["Magpie Ore Hopper R"]], nacelles = [st["Magpie Nacelle L"], st["Magpie Nacelle R"]];
         // Flight: a drive on each nacelle's tail, lift jets under the hoppers and the nacelles, retro jets in the bow's cheeks, the legs.

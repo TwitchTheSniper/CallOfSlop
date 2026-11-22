@@ -1170,14 +1170,6 @@ public sealed class ClocheParts : IPartGenerator
 
     // ---- the blueprint
 
-    private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
-    {
-        bp.Steps[step]["paint"] = paint;
-        if (finish != null)
-            bp.Steps[step]["finish"] = finish;
-        return step;
-    }
-
     private static PyDict Blueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
         var bp = new BuildingParts.Blueprint(ShipName, "The farmers' greenhouse ship: a long red hull with dark ribs, two glass barrel-vault greenhouses full of grow beds on its roof, a cream bus-fronted cab on the bow with a railed walk on its roof, cream and red water tanks on its flanks and a nacelle each side of the taller aft block. Inside, the entry room behind the cab, a grow hall of rack towers, the engine room aft, and a ladder up into each greenhouse. Sixteen lift jets under the belly hold it up and the two nacelle drives push it along.", defs, maxSteps: 220);

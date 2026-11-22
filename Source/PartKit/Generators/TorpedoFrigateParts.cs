@@ -1216,7 +1216,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     private static readonly (double Y, double Z) ShuttleCom = (1.3, 0.3);
 
     /// <summary>The spine's top (facet 5) from za to zb with a rectangular hole cut in it: four plates round the hole.</summary>
-    private static void FacetHole(Part p, int k, double za, double zb, Rect h, string color, string finish)
+    private static void FacetHole(Part p, double za, double zb, Rect h, string color, string finish)
     {
         var dz = FacetStagger;
         double Y(double z) => At(za)[4].Y + (At(zb)[4].Y - At(za)[4].Y) * (z - za) / (zb - za);
@@ -1236,7 +1236,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         for (var i = 0; i < zs.Length - 1; i++)
         {
             if (zs[i] <= ShuttleShaftWide.Z0 && zs[i + 1] >= ShuttleShaftWide.Z1)
-                FacetHole(p, 5, zs[i], zs[i + 1], ShuttleShaftWide, Armour, "plated steel"); // (the shuttle's shaft through the roof plate)
+                FacetHole(p, zs[i], zs[i + 1], ShuttleShaftWide, Armour, "plated steel"); // (the shuttle's shaft through the roof plate)
             else
                 Facet(p, 5, 1, zs[i], zs[i + 1], Armour, "plated steel");
             Slab(p, 5, 1, zs[i], zs[i + 1], 0.04, 0.96, 0.05, 0.3, 0.02, 0.1, 0.05, Armour2);
