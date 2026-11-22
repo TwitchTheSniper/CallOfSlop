@@ -425,6 +425,7 @@ public static partial class ConstructPhysics
             if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
+                c.OnRail = false; // (stepped here: the physics' again, ConstructRails.cs)
                 _sim.Add(c);
             }
         }
@@ -444,7 +445,8 @@ public static partial class ConstructPhysics
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
                 b.SimMark = stamp;
-                b.OnRail = false; // (something it may meet: the physics' again, from its true pose and speed, ConstructRails.cs)
+                if (Pass == 0 || InPass(b))
+                    b.OnRail = false; // (something it may meet: the physics' again, from its true pose and speed, ConstructRails.cs; another pass's body is a fixed obstacle here, not stepped, so it stays on its rail)
             }
         }
         for (var k = 0; k < world.CouplingCount; k++)
@@ -453,7 +455,7 @@ public static partial class ConstructPhysics
             if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp) && (Pass == 0 || InPass(a) && InPass(b)))
             {
                 a.SimMark = b.SimMark = stamp;
-                a.OnRail = b.OnRail = false;
+                a.OnRail = b.OnRail = false; // (both in this pass: stepped here)
             }
         }
         MarkConnectors(world, stamp);

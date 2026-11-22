@@ -32,7 +32,6 @@ public static class ConstructRails
     public static int Count { get; private set; }
 
     private static long _tick;
-    private static readonly List<Construct> _near = new(64);
 
     /// <summary>
     /// Server, each tick right after the physics: the rail bodies stepped, a slice of the bodies checked. After it, so each body
@@ -51,6 +50,7 @@ public static class ConstructRails
             return;
         }
         var ground = World.Map?.Planetoid;
+        Index(world);
         var n = 0;
         var slice = (int)(_tick % Every);
         foreach (var c in world.Bodies)
@@ -59,12 +59,12 @@ public static class ConstructRails
             if (c.OnRail)
             {
                 ConstructPhysics.RailStep(c, dt);
-                if (!StillOn(world, c, planet, ground, check))
-                    c.OnRail = false; // (the physics' from the next tick)
+                if (!StillOn(world, c, planet, ground, check) || Meets(world, c, dt))
+                    c.OnRail = false; // (the physics' from the next tick, which steps it with what it meets)
                 else
                     n++;
             }
-            else if (check && !c.Asleep && Eligible(world, c) && Clear(world, c, planet, ground))
+            else if (check && !c.Asleep && Eligible(world, c) && Clear(world, c, planet, ground) && !Meets(world, c, dt))
             {
                 c.OnRail = true; // (the physics stepped it this tick: the rail from the next)
                 n++;
@@ -75,10 +75,90 @@ public static class ConstructRails
             world.GridMoved(); // (they moved: the broadphase is built again when next asked)
     }
 
+    // ---- What a rail body could meet: a coarse hash of every body's centre, made once a tick (the broadphase's 8 m cells
+    // made each rail body's look a hundred buckets, 3 ms a tick for 660 of them) ----------------------------------------------
+
+    /// <summary>Metres a side of the hash's cells; a body wider than half of it is looked at by every rail body (<see cref="_big"/>).</summary>
+    private const float HashCell = 64;
+
+    private static readonly Dictionary<long, int> _head = new(1024);
+    private static int[] _next = new int[256];
+    private static Construct[] _items = new Construct[256];
+    private static readonly List<Construct> _big = new(16);
+    private static float _top;
+
+    private static long Key(int x, int y, int z) => ((long)(x & 0x1FFFFF) << 42) | ((long)(y & 0x1FFFFF) << 21) | (uint)(z & 0x1FFFFF);
+
+    private static int CellOf(float v) => (int)MathF.Floor(v / HashCell);
+
+    private static void Index(ConstructWorld world)
+    {
+        _head.Clear();
+        _big.Clear();
+        var bodies = world.Bodies;
+        if (_items.Length < bodies.Count)
+        {
+            _items = new Construct[bodies.Count * 2]; // (only when the world holds more bodies than ever before)
+            _next = new int[bodies.Count * 2];
+        }
+        var top = 0f;
+        for (var i = 0; i < bodies.Count; i++)
+        {
+            var c = bodies[i];
+            top = MathF.Max(top, c.Vel.LengthSquared());
+            _items[i] = c;
+            if (c.Radius > HashCell * 0.5f)
+            {
+                _big.Add(c);
+                _next[i] = -2;
+                continue;
+            }
+            var at = c.WorldCom;
+            var key = Key(CellOf(at.X), CellOf(at.Y), CellOf(at.Z));
+            _next[i] = _head.TryGetValue(key, out var first) ? first : -1;
+            _head[key] = i;
+        }
+        _top = MathF.Sqrt(top);
+    }
+
+    /// <summary>
+    /// Could anything meet it before the next tick is done? Each tick, so a rail body never closes on another rail body, a
+    /// station or a ship unseen: what is within its sphere, a tick and a half of its speed and the fastest body's, and a tick
+    /// more for the hash's centres (made before this tick's rail steps). The physics' own list takes it back too (SimList).
+    /// </summary>
+    private static bool Meets(ConstructWorld world, Construct c, float dt)
+    {
+        var at = c.WorldCom;
+        var ahead = 1.5f * dt; // (a tick of closing, and half again: what it finds is the physics' from the next tick, which meets it with its own speed margin)
+        var look = c.Radius + (c.Vel.Length() + _top) * ahead + _top * dt + ConstructWorld.GridMargin;
+        foreach (var o in _big)
+            if (o != c && Close(c, o, at, ahead))
+                return true;
+        var q = look + HashCell * 0.5f; // (the others' own radius: at most half a cell)
+        int x0 = CellOf(at.X - q), x1 = CellOf(at.X + q), y0 = CellOf(at.Y - q), y1 = CellOf(at.Y + q), z0 = CellOf(at.Z - q), z1 = CellOf(at.Z + q);
+        for (var x = x0; x <= x1; x++)
+            for (var y = y0; y <= y1; y++)
+                for (var z = z0; z <= z1; z++)
+                {
+                    if (!_head.TryGetValue(Key(x, y, z), out var i))
+                        continue;
+                    for (; i >= 0; i = _next[i])
+                        if (_items[i] != c && Close(c, _items[i], at, ahead))
+                            return true;
+                }
+        return false;
+    }
+
+    private static bool Close(Construct c, Construct o, Vector3 at, float ahead)
+    {
+        var reach = c.Radius + o.Radius + (c.Vel - o.Vel).Length() * ahead + _top * World.TickDt + ConstructWorld.GridMargin;
+        return Vector3.DistanceSquared(o.WorldCom, at) < reach * reach;
+    }
+
     /// <summary>Can this body ride a rail: free, alone, with nothing on it that runs?</summary>
     private static bool Eligible(ConstructWorld world, Construct c)
     {
-        if (c.Asleep || c.Anchored || c.Dirty || c.CarriedBy != 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.SpaceShip != 0 || c.FramePending || c.Framed || c.Frame != 0
+        if (c.Asleep || c.Anchored || c.Dirty || c.CarriedBy != 0 || c.CargoCount > 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.SpaceShip != 0 || c.FramePending || c.Framed || c.Frame != 0
             || c.HeldBy != 0 || c.HeldNear != 0 || c.LooseFrom != 0 || c.RecoilCount > 0 || c.AeroFlying)
             return false;
         if (c.JointCount > 0 || c.WheelCount + c.SpringCount + c.CellCount + c.SurfaceCount + c.RotorCount > 0)
@@ -96,7 +176,7 @@ public static class ConstructRails
         return true;
     }
 
-    /// <summary>High enough, no person near, and nothing it could meet before its next check.</summary>
+    /// <summary>High enough over the ground, and no person near.</summary>
     private static bool Clear(ConstructWorld world, Construct c, PointGravity planet, Planetoid? ground)
     {
         var at = c.WorldCom;
@@ -112,24 +192,8 @@ public static class ConstructRails
         for (var k = 0; k < world.PeopleCount; k++)
             if (Vector3.DistanceSquared(world.People[k], at) < (PersonRange + c.Radius) * (PersonRange + c.Radius))
                 return false;
-        // Anything within the reach of the two bodies' closing speed over the check's interval, and a margin: a station, a ship,
-        // another rail body (both are checked, so two on rails never close on each other unseen; what the physics steps takes a
-        // rail body back itself when it comes near, SimList).
-        var look = c.Radius + MaxOther + 2 * c.Vel.Length() * span + 20;
-        world.Near(at, look, _near);
-        foreach (var o in _near)
-        {
-            if (o == c)
-                continue;
-            var reach = c.Radius + o.Radius + (c.Vel - o.Vel).Length() * span + 20;
-            if (Vector3.DistanceSquared(o.WorldCom, at) < reach * reach)
-                return false;
-        }
         return true;
     }
-
-    /// <summary>Radius assumed for what the broadphase is asked round a body (a big ship's: what is bigger still meets it in the reach test).</summary>
-    private const float MaxOther = 150;
 
     private static bool StillOn(ConstructWorld world, Construct c, PointGravity planet, Planetoid? ground, bool check)
     {

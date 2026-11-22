@@ -286,8 +286,10 @@ same gravity, damping, speed limit and turn as `Integrate`, with no contacts, no
 Its pose and speed stay true every tick, so the network, saves, rays and the broadphase see an ordinary moving body.
 
 - **On and off.** A slice of the bodies is checked each tick (`Every` = 30, every half second each). It goes on after the
-  physics stepped it, and comes off when the physics' list takes it (anything stepped comes within reach: `SimList`), on
-  `Wake` (a hit, a tool), below half the floor (`RailLow`), or at a check that fails; it takes that tick's rail step first,
+  physics stepped it, and comes off when anything could meet it within a tick and a half (each rail body looks
+  each tick, as far as its own and the fastest body's speed reach, in a hash of 64 m cells made once a tick: `Meets`; the
+  broadphase's 8 m cells made that 100 buckets a body, 3 ms a tick), when
+  the physics' list takes it (`SimList`), on `Wake` (a hit, a tool), below half the floor (`RailLow`), or at a check that fails; it takes that tick's rail step first,
   so no body moves twice or not at all in a tick. Off when the world is small (`!UseGrid`), has no point gravity or no
   person, and with `--no-rails`.
 - **Measured** (`--stress-check --wrecks 1000 --haulers 50 --seconds 20`, cloud box; Cargo Pods, Racks and Limpets break
@@ -296,13 +298,12 @@ Its pose and speed stay true every tick, so the network, saves, rays and the bro
 | | tick (mean) | physics | per body |
 | --- | --- | --- | --- |
 | Before (PR 520 baseline) | 11 to 13 ms | 3.5 to 4.7 ms | 11 us |
-| Cargo scan fixed, `--no-rails` | 7.4 ms | 3.1 ms | 7.1 us |
-| Rails on, person far | 5.3 ms | 1.1 ms + rails 0.85 | 5.1 us |
-| Rails on, person on the ground under the orbits | 4.9 ms | 1.1 ms + rails 0.82 | 4.7 us |
+| Cargo scan fixed, `--no-rails` | 7.0 to 7.4 ms | 2.4 to 3.1 ms | 6.6 to 7.1 us |
+| Rails on, person far | 5.2 ms | 1.5 ms + rails 1.4 | 4.9 us |
 
   300 Limpet wrecks alone: 5.5 ms to 1.0 ms a tick. Steady ticks allocate nothing.
 - **The cargo scan** cost 2 to 3 ms of that: ten times a second every body with logic walked every body to count its
-  cargo (`ConstructCargo.Scan`, now the last refresh's `CargoCount`), and the refresh walked every carried body for every
+  cargo (`ConstructCargo.Scan`, now one walk that counts for every carrier), and the refresh walked every carried body for every
   body with logic (now a stamp on each carrier). `--stress-check`'s "ConstructLift" bucket was everything after the lift
   step; it is split now ("after: Cargo" and the rest).
 - **Not done.** Haulers and stations (the next step: on the economy's consignment model, as legs of a route resolved out

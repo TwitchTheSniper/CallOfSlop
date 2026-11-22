@@ -338,8 +338,8 @@ public sealed partial class Construct
     public CCargoMass[] Cargo = []; // (grows by doubling to ConstructCargo.MaxPerConstruct as it carries more: a loose block pays nothing)
     public int CargoCount;
 
-    /// <summary>The cargo refresh's stamp when this body last carried something (ConstructCargo.Refresh).</summary>
-    public int CargoStamp;
+    /// <summary>The cargo scan's or refresh's stamp when this body last carried something, and how many it carried at the scan (ConstructCargo).</summary>
+    public int CargoStamp, CarriedNow;
     public float CargoMass; // what Cargo adds up to (kg)
 
     // Pose: the body frame's origin and turn in the world.

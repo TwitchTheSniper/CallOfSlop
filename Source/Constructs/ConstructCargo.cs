@@ -357,12 +357,21 @@ public static class ConstructCargo
             if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } c && VolumeOf(c, b) is var v and >= 0 && !Inside(c, v, b.WorldCom, LeaveMargin))
                 Release(world, b);
         }
+        // Each carrier's count, in one walk (a walk of every body for each body with logic cost 2-3 ms a tick in a world of 2,000).
+        var scan = ++_stamp;
+        foreach (var b in bodies)
+            if (b.CarriedBy != 0 && world.Get(b.CarriedBy) is { } carrier)
+            {
+                if (carrier.CargoStamp != scan)
+                    (carrier.CargoStamp, carrier.CarriedNow) = (scan, 0);
+                carrier.CarriedNow++;
+            }
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
             if (c.CarriedBy != 0 || !c.HasLogic)
                 continue; // (no cargo in cargo; a volume is a logic part: thousands of bodies without logic cost a test each)
-            var carried = c.CargoCount; // (as the last refresh counted it, which runs every tick the cargo changed: a walk of every body for each body with logic cost 2-3 ms a tick in a world of 2,000)
+            var carried = c.CargoStamp == scan ? c.CarriedNow : 0;
             for (var part = 0; part < c.PartCount; part++)
             {
                 ref var p = ref c.Parts[part];
