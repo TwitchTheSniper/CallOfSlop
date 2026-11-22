@@ -67,6 +67,9 @@ A hull that breaks a rule writes **nothing**: the run fails with every problem l
   the tumblehome and upper chine behind the nose too, a ceiling and an overhead under the roof, a bulkhead face over the back wall
   with the trade board. Sealed: the nose plated with a sensor band, a camera and a bumper; inside, a screen wall, desks either side
   of the flight computer, lined walls and a ceiling, 2.9 m across and 2.3 m high (the generator checks it fits the nose).
+- **Beading**: every glass pane is framed on all four edges: a dark bead along each corner the glass meets (the sill, the chines,
+  the roof's edge), across the cap's foot and down its middle, the ribs at its ends. Panels beside the cockpit's back wall close
+  its corners, so the side glass shows no bare hull.
 - **Ribs** are mitred at every corner on the bisector; neighbours alternate shallow and deep and the shallow one runs 1.5 cm into
   the deep one, so no end pokes out past a corner (the clipping Karl saw through the glass) and no two faces share a plane.
 - **Pieces**: keel, port side, starboard side and roof cut at every station, plus the nose, the cab's and engineering's walls and

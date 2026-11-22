@@ -342,6 +342,26 @@ public sealed class TraderHauler
             [Pt3(zb, d0, -0.05), Pt3(zb, d0, 0.05), Pt3(zb, d1, 0.05), Pt3(zb, d1, -0.05)], color, "painted steel");
     }
 
+    /// <summary>A glass pane's beading along the corner k (2 to 4) of side s from za to zb: a dark strip seated over the joint, its ends
+    /// buried in the ribs at the stations, so every pane is framed on all four edges.</summary>
+    private void Bead(double za, double zb, int k, int s)
+    {
+        za += RibAt(za) ? 0.03 : 0.004;
+        zb -= RibAt(zb) ? 0.03 : 0.004;
+        var n1 = Out(k - 1, s);
+        var n2 = Out(k, s);
+        var n = HullPieces.Unit(HullPieces.Add(n1, n2));
+        var along = HullPieces.Unit(HullPieces.Sub(n2, n1));
+        double[] Pt3(double z, double d, double w)
+        {
+            var q = Q(z, k, s);
+            return [q[0] + n[0] * d + along[0] * w, q[1] + n[1] * d + along[1] * w, z];
+        }
+        double d0 = HullPieces.T / 2 + 0.004, d1 = d0 + 0.03, w = k == 4 ? 0.04 : 0.035;
+        _hp.Prism([Pt3(za, d0, -w), Pt3(za, d0, w), Pt3(za, d1, w), Pt3(za, d1, -w)],
+            [Pt3(zb, d0, -w), Pt3(zb, d0, w), Pt3(zb, d1, w), Pt3(zb, d1, -w)], Dark, "painted steel");
+    }
+
     /// <summary>The void between the rooms and the skin as hidden boxes (rounds stop at the skin): side s from x xin, sliced a metre at most along z.</summary>
     private void Void(double za, double zb, double ya, double yb, double xin, int s)
     {
@@ -555,13 +575,14 @@ public sealed class TraderHauler
             RibSeg(0, Roof, 0, Dark);
             if (open)
             {
-                // Glazing bars down the windscreen and across the cap.
+                // Beading round every pane: along each corner the glass meets (the sill, the chines, the roof's edge), across the
+                // cap's foot and down its middle; the ribs frame the panes' ends.
                 foreach (var s in new[] { -1, 1 })
-                {
-                    Slab(0, z1, 2, s, 0.03, 0.97, 0.48, 0.52, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
-                    Slab(0, z1, 3, s, 0.03, 0.97, 0.0, 0.04, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
-                }
-                _hp.Detail(-0.03, 0.96, -0.02, 0.03, sec.Top - 0.1, -0.004, Dark, "painted steel");
+                    for (var k = 2; k <= 4; k++)
+                        Bead(0, z1, k, s);
+                var cx = Half(sec, 0.954) + 0.03;
+                _hp.Detail(-cx, 0.93, -0.035, cx, 0.98, -0.012, Dark, "painted steel");
+                _hp.Detail(-0.03, 0.96, -0.02, 0.03, sec.Top + 0.03, -0.004, Dark, "painted steel");
             }
             else
             {
@@ -607,6 +628,13 @@ public sealed class TraderHauler
         foreach (var s in new[] { -1, 1 })
             _hp.In(Side(b, s), () => Void(z1, _zCkW - 0.125, 0, 0.95, 1.6, s));
         Skin_(b, (f, s) => open && f is 2 or 3, belly: true);
+        if (open)
+            foreach (var s in new[] { -1, 1 })
+                _hp.In(Side(b, s), () =>
+                {
+                    for (var k = 2; k <= 4; k++)
+                        Bead(z1, _zCkW, k, s);
+                });
         _hp.In(Keel(b), () => _hp.Solid(-Lw - 0.25, 0, _zCkW - 0.125, Lw + 0.25, Ft, _zCkW, Deck, "painted deck plate"));
         _hp.In(nose, () =>
         {
@@ -662,6 +690,22 @@ public sealed class TraderHauler
         foreach (var y in Enumerable.Reverse(ys))
             face.Add([-(Half(sec, y) - 0.1), y, 0]);
         _hp.Prism([.. face.Select(q => new[] { q[0], q[1], zf })], [.. face.Select(q => new[] { q[0], q[1], za })], Wall, "painted plating");
+        // Beside the back wall, out to the hull from the console's top to the wall's top: the cockpit's corners closed, so the side
+        // glass shows no bare hull in the cab's void behind them.
+        foreach (var s in new[] { -1, 1 })
+        {
+            double xw = Lw + 0.25 + 0.004, yl = Ft - 0.02;
+            var ych = sec.Y0 + sec.C0;
+            var side = new List<double[]> { new[] { xw, yl, 0.0 }, new[] { xw, y0, 0.0 }, new[] { Half(sec, y0) - 0.1, y0, 0.0 } };
+            if (sec.Yb > yl && sec.Yb < y0)
+                side.Add([Half(sec, sec.Yb) - 0.1, sec.Yb, 0]);
+            if (ych > yl && ych < y0)
+                side.Add([Half(sec, ych) - 0.1, ych, 0]);
+            side.Add([Half(sec, yl) - 0.1, yl, 0]);
+            if (side.Min(q => q[0]) < xw - 1e-6 || Half(sec, y0) - 0.1 < xw + 0.05)
+                continue;
+            _hp.Prism([.. side.Select(q => new[] { s * q[0], q[1], zf })], [.. side.Select(q => new[] { s * q[0], q[1], za })], Wall, "painted plating");
+        }
         _hp.Detail(-0.6, CCeil + 0.15, zf - 0.012, 0.6, CCeil + 0.45, zf - 0.002, "#78c8e8", glow: true); // (the trade board: prices at the markets on the route)
     }
 
