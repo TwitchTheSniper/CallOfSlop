@@ -117,6 +117,7 @@ def plant(type, density, size=None, color=None, **more):
 CALEDON_BIOMES = {
     "seed": 4, "tempPole": 7, "tempEquator": 17, "lapse": 6.5, "tempNoise": 2.5, "tempScale": 2600,
     "wetScale": 2200, "wetLow": -60, "wetLowEdge": 160, "wetLowAdd": 0.3,
+    "clumps": 0.9, "clumpScale": 80,  # (Sean, 2026-11-22: thickets, glades and clearings, not even cover)
     "list": [
         {"name": "bog", "wet": [0.78, 3], "height": [-600, 420], "slope": 9, "grass": "#5c5a36", "dirt": "#4a3f2d",
          "plants": [plant("reed", 0.12, (0.8, 1.3), "#8a8a4a", patch=0.6, patchScale=18, slope=8),

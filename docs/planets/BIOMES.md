@@ -41,6 +41,9 @@ ground colour blends and the plants mix. Where none holds the world's own surfac
 - A plant: `type`, `density` (per square metre at High foliage), `size` (trees: height in metres; others: a scale),
   `color`, `bark` (trees), `jitter` (each plant's colour strays this much), `patch` and `patchScale` (0 even; 1 in clumps
   that wide with bare ground between) and `slope` (the steepest ground it grows on).
+- `clumps` (0 to 1, default 0.75) and `clumpScale` (m, default 90): every plant's density swells and thins together over
+  the land (Sean, 2026-11-22), from open glades and clearings to thickets about twice as thick, so cover isn't even. Caledon
+  uses 0.9 and 80 m. A plant's own `patch` clumps it on top of that.
 - `clearFlats` (on by default) keeps the world's `flatten` places bare: the landing ground and the kept sites.
 - At most 12 biomes, 12 plants each; a plant's density is capped by its layer (below). Bad values are refused with the reason.
 
@@ -53,7 +56,8 @@ ground colour blends and the plants mix. Where none holds the world's own surfac
 | Trees and rocks | tree (oak-like), birch, pine, spruce, scotspine, boulder | 4.5 m | trees 300 / 450 / 700 m, boulders 0.6 of that |
 
 Each layer has a lattice of sample points on the six faces' grids, each jittered by its own hash. A point takes a plant from
-the biomes under it, each plant's chance its density times its biome's weight (times its patch noise), or nothing. A point
+the biomes under it, each plant's chance its density times its biome's weight, the land's swell (`clumps`) and its own
+patch noise, or nothing. A point
 whose ground is dug grows nothing (the cells round it are made again within 2 s of the dig).
 
 Trees are drawn as a canopy and a thin **stem** (`FoliageType.Stem`, in the tree's bark colour). Beyond the trees' reach a
@@ -64,9 +68,11 @@ forest is its biome's darker ground colour.
 Sean (2026-11-22): **trees are solid near constructs, and only there**; people walk through them, and underbrush and rocks
 never collide. The construct contacts ask `PlanetFlora.GatherTrunks` for the trees round each body group
 (`ConstructPhysicsContacts`, after the planet's ground): each trunk is a box standing along "up", as tall as its stem.
-Only the tree layer's points round the box are asked, through a cache (32,768 points), so a vehicle in a forest costs a
-few lookups a tick; a body more than about 90 m across asks nothing (its pieces would). A box over a cube face's edge
-sees only one face's trees.
+Only the tree layer's points round the box are asked, through a direct-mapped cache (16,384 points, cleared when the
+ground is dug), so a vehicle in a forest costs a few lookups a tick; a group more than about 90 m across meets no trees
+(a `[flora]` line says so once). A box over a cube face's edge sees only one face's trees. Plants on dug ground: the
+simulation asks the dug ground itself; the drawing's workers don't read it (it changes on the main thread), and a cell's
+plants on dug ground are folded away as it uploads.
 
 ## What it costs
 

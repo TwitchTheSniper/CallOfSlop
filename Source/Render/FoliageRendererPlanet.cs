@@ -379,6 +379,14 @@ public sealed unsafe partial class FoliageRenderer
             c.Vbo = _spare.Count > 0 ? _spare.Pop() : GenBuffer();
             c.HasVbo = true;
         }
+        if (_flPlanet is { DugVersion: not 0, Flora: { } flora })
+        {
+            // Plants on dug ground fold away (scale 0): the dug ground is read here, on the main thread, never by the workers.
+            var d = b.Data;
+            for (var o = 0; o < d.Length; o += FoliageBatches.FloatsPerInstance)
+                if (flora.IsDug(new Vector3(d[o], d[o + 1], d[o + 2])))
+                    d[o + 3] = 0;
+        }
         Native.glBindBuffer(GL_ARRAY_BUFFER, c.Vbo);
         fixed (float* p = b.Data)
             Native.glBufferData(GL_ARRAY_BUFFER, b.Data.Length * sizeof(float), p, GL_STATIC_DRAW);

@@ -118,8 +118,12 @@ public sealed class PlanetFlora
 
     [ThreadStatic] private static float[]? _w;
 
-    /// <summary>What grows at sample point (a, b) of a layer on a face, if anything. Deterministic, any thread.</summary>
-    public bool At(int layer, int face, int a, int b, out Plant plant)
+    /// <summary>
+    /// What grows at sample point (a, b) of a layer on a face, if anything. Deterministic, any thread when
+    /// <paramref name="dug"/> is false; with it (the simulation's thread only: the dug ground is changed there) a point on
+    /// dug ground grows nothing. The drawing's workers leave it out and hide dug plants as they upload (<see cref="IsDug"/>).
+    /// </summary>
+    public bool At(int layer, int face, int a, int b, out Plant plant, bool dug = false)
     {
         plant = default;
         var max = _layerMax[layer];
@@ -128,7 +132,7 @@ public sealed class PlanetFlora
         var key = Foliage.Hash((uint)(Biomes.Seed * 7919) ^ Foliage.Hash((uint)(face * 3 + layer) ^ Foliage.Hash((uint)a * 0x9E3779B1u ^ Foliage.Hash((uint)b))));
         var r = Unit(key);
         var area = Spacing[layer] * Spacing[layer];
-        if (r >= max * area)
+        if (r >= max * area * (1 + Biomes.Clumps * (PlanetBiomes.MaxVigour - 1)))
             return false; // (nothing anywhere grows this thick: the cheap answer, before any height is asked)
         var k2 = Foliage.Hash(key + 1);
         var k3 = Foliage.Hash(key + 2);
@@ -143,7 +147,7 @@ public sealed class PlanetFlora
         foreach (var (cd, cos) in _clear)
             if (Vector3.Dot(cd, dir) > cos)
                 return false;
-        if (pl.IsDugAt(dir))
+        if (dug && pl.IsDugAt(dir))
             return false;
         var h = pl.HeightAt(x, y, z);
         // The slope, across one grid cell each way.
@@ -163,6 +167,9 @@ public sealed class PlanetFlora
         if (Biomes.Weights(x, y, z, rad, (float)h, slope, w) <= 0)
             return false;
         var list = Biomes.List;
+        var vigour = Biomes.Vigour(x, y, z, rad); // (thickets and clearings, shared by every plant)
+        if (vigour <= 0.01f)
+            return false;
         var acc = 0f;
         for (var bi = 0; bi < list.Count; bi++)
         {
@@ -176,9 +183,9 @@ public sealed class PlanetFlora
                 if (p.Patch > 0)
                 {
                     var nz = Planetoid.Noise3(x * rad / p.PatchScale, y * rad / p.PatchScale, z * rad / p.PatchScale, p.Seed + 3001);
-                    d *= Math.Clamp(1 - p.Patch + p.Patch * (float)(nz * 1.6 + 0.6), 0f, 2f);
+                    d *= Math.Clamp(1 - p.Patch + p.Patch * (float)(nz * 2.4 + 1.0), 0f, 2.5f); // (about 0 to 2.2: clumps of this plant, bare between)
                 }
-                acc += w[bi] * d * area;
+                acc += w[bi] * d * vigour * area;
                 if (r >= acc)
                     continue;
                 var k4 = Foliage.Hash(key + 3);
@@ -202,20 +209,36 @@ public sealed class PlanetFlora
 
     private static float Unit(uint h) => (h >> 8) * (1f / 16777216f);
 
+    /// <summary>Is a plant's foot on dug ground? (The simulation's thread only.)</summary>
+    public bool IsDug(Vector3 foot)
+    {
+        var rel = foot - Planet.Center;
+        var len = rel.Length();
+        return len > 1 && Planet.IsDugAt(rel / len);
+    }
+
     // ---- Trunks for constructs ------------------------------------------------------------------------------------
 
     /// <summary>The tallest tree a planet grows (metres): sizes are capped at 40 by the map file.</summary>
     public const float MaxTreeHeight = 40;
 
-    private readonly object _lock = new();
-    private readonly Dictionary<long, (bool Tree, Plant P)> _trunks = new();
-    private const int MaxCachedTrunks = 32768;
+    // A direct-mapped cache of the tree layer's points (key, then whether a tree stands there and its plant): no
+    // allocation, a fixed size, and a miss only costs the one point. Cleared when the dug ground changes.
+    private const int CacheBits = 14;
+    private readonly long[] _trunkKey = new long[1 << CacheBits];
+    private readonly Plant[] _trunkPlant = new Plant[1 << CacheBits];
+    private readonly bool[] _trunkTree = new bool[1 << CacheBits];
+    private int _trunkDug = -1;
+    private bool _bigLogged;
+
+    /// <summary>The most tree-layer points one question asks (about 90 m across): a bigger box asks none, once logged.</summary>
+    private const int MaxPoints = 400;
 
     /// <summary>
     /// The solid trunks of the trees whose points lie round <paramref name="min"/>..<paramref name="max"/>, as boxes standing
     /// along "up" (<see cref="ShapeKind.Trunk"/>). Sean (2026-11-22): trees are solid only near constructs, so only the
-    /// construct contacts ask this; people walk through them. One face's points only (a box over a cube edge misses the far
-    /// face's trees).
+    /// construct contacts ask this (the simulation's thread); people walk through them. One face's points only (a box over
+    /// a cube edge misses the far face's trees), and a group more than about 90 m across meets no trees (logged once).
     /// </summary>
     public void GatherTrunks(Vector3 min, Vector3 max, List<ContactShape> into)
     {
@@ -230,30 +253,37 @@ public sealed class PlanetFlora
         var len = rel.Length();
         if (len < 1)
             return;
+        if (pl.DugVersion != _trunkDug)
+        {
+            Array.Clear(_trunkKey); // (keys are stored + 1: 0 is empty)
+            _trunkDug = pl.DugVersion;
+        }
         pl.Locate(rel.X / len, rel.Y / len, rel.Z / len, out var face, out var fi, out var fj);
         var s = _step[2];
         var reach = (half + 1.5) / _cell / s; // (in points; a trunk is at most about 1 m thick)
         int a0 = (int)Math.Floor(fi / s - reach), a1 = (int)Math.Floor(fi / s + reach);
         int b0 = (int)Math.Floor(fj / s - reach), b1 = (int)Math.Floor(fj / s + reach);
-        if ((long)(a1 - a0 + 1) * (b1 - b0 + 1) > 400)
-            return; // (a body so big it spans more than 90 m: its pieces ask for themselves)
+        if ((long)(a1 - a0 + 1) * (b1 - b0 + 1) > MaxPoints)
+        {
+            if (!_bigLogged)
+                Console.WriteLine($"[flora] a construct group {half * 2:0} m across meets no planet trees (at most about {Math.Sqrt(MaxPoints) * Spacing[2]:0} m)");
+            _bigLogged = true;
+            return;
+        }
         var across = PointsAcross(2);
         for (var b = Math.Max(b0, 0); b <= Math.Min(b1, across - 1); b++)
         for (var a = Math.Max(a0, 0); a <= Math.Min(a1, across - 1); a++)
         {
             var key = ((long)face << 56) | ((long)a << 28) | (uint)b;
-            (bool Tree, Plant P) hit;
-            lock (_lock)
-                if (!_trunks.TryGetValue(key, out hit))
-                {
-                    hit.Tree = At(2, face, a, b, out hit.P) && Foliage.IsTree(hit.P.Type);
-                    if (_trunks.Count >= MaxCachedTrunks)
-                        _trunks.Clear();
-                    _trunks[key] = hit;
-                }
-            if (!hit.Tree)
+            var slot = (int)(Foliage.Hash((uint)key ^ Foliage.Hash((uint)(key >> 28))) & ((1 << CacheBits) - 1));
+            if (_trunkKey[slot] != key + 1)
+            {
+                _trunkTree[slot] = At(2, face, a, b, out _trunkPlant[slot], dug: true) && Foliage.IsTree(_trunkPlant[slot].Type);
+                _trunkKey[slot] = key + 1;
+            }
+            if (!_trunkTree[slot])
                 continue;
-            var box = TrunkBox(hit.P);
+            var box = TrunkBox(_trunkPlant[slot]);
             box.Bounds(out var lo, out var hi);
             if (hi.X < min.X || lo.X > max.X || hi.Y < min.Y || lo.Y > max.Y || hi.Z < min.Z || lo.Z > max.Z)
                 continue;

@@ -66,6 +66,30 @@ public sealed class PlanetBiomes
     /// <summary>Soft edges: degrees of temperature, wetness and metres of height over which a biome fades out.</summary>
     public float TempSoft = 2, WetSoft = 0.06f, HeightSoft = 40;
 
+    /// <summary>
+    /// How strongly every plant's density swells and thins over the land, 0 to 1 (Sean, 2026-11-22: "higher density
+    /// areas with more or less foliage"): thickets, open glades and clearings <see cref="ClumpScale"/> m across, shared by
+    /// all the plants, so a glade is open of trees and brush alike. 0: even cover.
+    /// </summary>
+    public float Clumps = 0.75f;
+
+    public float ClumpScale = 90;
+
+    /// <summary>
+    /// The density's swell at a place: about 0 (a clearing) to <see cref="MaxVigour"/> (a thicket). Two octaves of noise,
+    /// <see cref="ClumpScale"/> and a third of it, pushed apart so the open and thick ground is common, not the middle.
+    /// </summary>
+    public float Vigour(double x, double y, double z, double radius)
+    {
+        if (Clumps <= 0)
+            return 1;
+        var n = Planetoid.Fbm3(x * radius, y * radius, z * radius, ClumpScale, 2, 0.45, 3, Seed + 131); // (about -0.6 to 0.6)
+        var v = 1 + 2.2f * (float)n; // (spread: under 0 is a clearing)
+        return 1 + Clumps * (Math.Clamp(v, 0f, MaxVigour) - 1);
+    }
+
+    public const float MaxVigour = 2.2f;
+
     /// <summary>Keep the kept flat places (the <c>flatten</c> features) clear of plants.</summary>
     public bool ClearFlats = true;
 
@@ -199,6 +223,8 @@ public sealed class PlanetBiomes
                 case "tempsoft": p.TempSoft = (float)Num(v, where, "tempSoft", 0.1, 50); break;
                 case "wetsoft": p.WetSoft = (float)Num(v, where, "wetSoft", 0.01, 1); break;
                 case "heightsoft": p.HeightSoft = (float)Num(v, where, "heightSoft", 1, 5000); break;
+                case "clumps": p.Clumps = (float)Num(v, where, "clumps", 0, 1); break;
+                case "clumpscale": p.ClumpScale = (float)Num(v, where, "clumpScale", 5, 5000); break;
                 case "clearflats": p.ClearFlats = v.ValueKind == JsonValueKind.True ? true : v.ValueKind == JsonValueKind.False ? false : throw new MapFileException($"{where}.clearFlats should be true or false"); break;
                 case "list":
                     if (v.ValueKind != JsonValueKind.Array)
@@ -208,7 +234,7 @@ public sealed class PlanetBiomes
                         p.List.Add(ParseBiome(b, $"{where}.list[{k++}]", p.List.Count));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: seed, tempPole, tempEquator, lapse, tempNoise, tempScale, wetScale, wetLow, wetLowEdge, wetLowAdd, tempSoft, wetSoft, heightSoft, clearFlats, list)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: seed, tempPole, tempEquator, lapse, tempNoise, tempScale, wetScale, wetLow, wetLowEdge, wetLowAdd, tempSoft, wetSoft, heightSoft, clumps, clumpScale, clearFlats, list)");
             }
         }
         if (p.List.Count is 0 or > MaxBiomes)
@@ -321,7 +347,7 @@ public sealed class PlanetBiomes
     public void Mix(Action<float> mix)
     {
         mix(Seed); mix(TempPole); mix(TempEquator); mix(Lapse); mix(TempNoise); mix(TempScale);
-        mix(WetScale); mix(WetLow); mix(WetLowEdge); mix(WetLowAdd); mix(ClearFlats ? 1 : 0);
+        mix(WetScale); mix(WetLow); mix(WetLowEdge); mix(WetLowAdd); mix(ClearFlats ? 1 : 0); mix(Clumps); mix(ClumpScale);
         foreach (var b in List)
         {
             mix(b.TempMin); mix(b.TempMax); mix(b.WetMin); mix(b.WetMax); mix(b.HeightMin); mix(b.HeightMax); mix(b.SlopeMax);

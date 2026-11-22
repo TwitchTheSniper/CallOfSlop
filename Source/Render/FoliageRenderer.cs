@@ -57,9 +57,9 @@ public sealed unsafe partial class FoliageRenderer
         {
             vec3 ip = iPosScale.xyz;
             float s = iPosScale.w;
-            bool round = uPlanet.w > 0.5;
-            float h = Hash(round ? ip.xz + ip.yy * vec2(0.37, 0.71) : ip.xz);
-            float d = round ? distance(uCam, ip) : distance(uCam.xz, ip.xz);
+            bool onPlanet = uPlanet.w > 0.5;
+            float h = Hash(onPlanet ? ip.xz + ip.yy * vec2(0.37, 0.71) : ip.xz);
+            float d = onPlanet ? distance(uCam, ip) : distance(uCam.xz, ip.xz);
 
             // Density falloff: every plant has its own cutoff between fade start and end, then dithers out over a band.
             float cutoff = mix(uFade.x, uFade.y, h);
@@ -84,12 +84,12 @@ public sealed unsafe partial class FoliageRenderer
             vec3 n = vec3(aNormal.x * c - aNormal.z * sn, aNormal.y, aNormal.x * sn + aNormal.z * c);
 
             // Wind: a steady lean plus two gust waves travelling across the map, strongest at the tips.
-            float phase = dot(ip.xz, vec2(0.11, 0.07)) + (round ? ip.y * 0.09 : 0.0) + h * 2.0;
+            float phase = dot(ip.xz, vec2(0.11, 0.07)) + (onPlanet ? ip.y * 0.09 : 0.0) + h * 2.0;
             float gust = sin(uTime * 1.3 - phase) * 0.6 + sin(uTime * 2.7 - phase * 1.7) * 0.3;
             float bend = aSwayShade.x * aSwayShade.x * uMat.y * s * (0.4 + gust);
             p.xz += normalize(vec2(1.0, 0.45)) * bend;
 
-            if (round)
+            if (onPlanet)
             {
                 // The plant's own frame: "up" from the planetoid's centre, any two sideways axes round it.
                 vec3 up = normalize(ip - uPlanet.xyz);

@@ -53,6 +53,8 @@
       "wetLow": -60,
       "wetLowEdge": 160,
       "wetLowAdd": 0.3,
+      "clumps": 0.9,
+      "clumpScale": 80,
       "list": [
         {
           "name": "bog",
