@@ -11,7 +11,7 @@ public sealed partial class ZeroDayWorks
         public static readonly float[] RailX = [1f, 31f, 51f, 71f, 95f];
 
         public const int ColumnMasts = 9; // 18 m: line D's 12 m oven and station masts stand under the hook (1.6 m under the rails' top)
-        public const float RailNorth = ExtruderZ - 1f, RailSouth = -187f; // the runs' first and last block centres: 148 m, the extruder strip included
+        public const float RailNorth = ExtruderZ - 1f, RailSouth = -197f; // the runs' first and last block centres: 158 m, from the extruder strip to the south wall
         public const int ColumnEvery = 4; // a column every 4 rail blocks (8 m, the siding's pilaster lines)
         public static float RailFoot => FloorY + 2 * ColumnMasts;
 

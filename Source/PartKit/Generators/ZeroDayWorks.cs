@@ -29,9 +29,10 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         {
         }
 
-        public const float FloorY = 0.3f; // the Foundations' tops
-        public const int TilesX = 48; // 2 m Foundations across: 96 m
-        public const float SiteLong = 239f;
+        public const float FloorY = 0.3f; // the floor slabs' tops
+        public const float Slab = 8f; // the Works Floor Slab's side
+        public const int SlabsX = 12, SlabsZ = 30; // 96 x 240 m
+        public const float SiteLong = SlabsZ * Slab;
 
         // The site's bands, north to south (z of each band's north edge; doc "Top-down layout" and "Exterior").
         public const float GenHallZ = 0f; // the generator hall and its fuel yard: 24 m
@@ -53,8 +54,8 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         public static readonly Orient East = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitX); // own +z east
         public static readonly Orient West = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitX); // own +z west
 
-        /// <summary>The site's floor tiles by cell (i east, j south): null where no tile is laid.</summary>
-        private readonly VPart?[,] _tiles = new VPart?[TilesX, (int)(SiteLong / 2)];
+        /// <summary>The site's floor slabs (i east, j south): null where none is laid.</summary>
+        private readonly VPart?[,] _tiles = new VPart?[SlabsX, SlabsZ];
 
         public static Script Build()
         {
@@ -75,26 +76,36 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayFloor();
             LayFrame();
             LayMaterials();
+            LayArmourLines();
         }
 
-        /// <summary>The floor: 2 m Foundations over the whole site, concrete, walkway lanes painted.</summary>
+        /// <summary>
+        /// The floor: Works Floor Slabs (8 x 8 m, 0.3 m thick, a top socket every metre) over the whole site. A part stands on a whole metre;
+        /// the 2 m machine cells' middles are the odd metres.
+        /// </summary>
         private void LayFloor()
         {
-            var rows = _tiles.GetLength(1);
-            for (var j = 0; j < rows; j++)
-                for (var i = 0; i < TilesX; i++)
+            for (var j = 0; j < SlabsZ; j++)
+                for (var i = 0; i < SlabsX; i++)
                 {
-                    var at = V(1 + 2 * i, 0.15f, -1 - 2 * j);
-                    var t = i == 0 && j == 0 ? Root("Foundation", at, Up) : Put("Foundation", at, Up, on: i > 0 ? _tiles[i - 1, j] : _tiles[i, j - 1]);
+                    var at = V(Slab * (i + 0.5f), 0.15f, -Slab * (j + 0.5f));
+                    var t = i == 0 && j == 0 ? Root("Works Floor Slab 8 m", at, Up) : Put("Works Floor Slab 8 m", at, Up, on: i > 0 ? _tiles[i - 1, j] : _tiles[i, j - 1]);
                     _tiles[i, j] = t;
                     Paint(t, Floor);
                     Finish(t, "concrete");
                 }
         }
 
-        /// <summary>The floor tile under (x, z).</summary>
+        /// <summary>The floor slab under (x, z).</summary>
         private VPart Tile(float x, float z) =>
-            _tiles[(int)MathF.Floor(x / 2), (int)MathF.Floor(-z / 2)] ?? throw new VehicleKitException($"no floor at ({x}, {z})");
+            _tiles[(int)MathF.Floor(x / Slab), (int)MathF.Floor(-z / Slab)] ?? throw new VehicleKitException($"no floor at ({x}, {z})");
+
+        /// <summary>Paints a part and hands it back.</summary>
+        private new VPart Paint(VPart p, string colour)
+        {
+            base.Paint(p, colour);
+            return p;
+        }
 
         /// <summary>A part standing on the floor by its own socket <paramref name="by"/> at (x, z).</summary>
         private VPart On(string part, float x, float z, Orient o, string by = "bottom", string? paint = null, string? finish = null)

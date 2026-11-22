@@ -1057,6 +1057,8 @@ public sealed class Assembling : IPartGenerator
         // (the Small bridge crane, for small container ships, Sean 2026-11-22: LifterParts; after the Cloche's rows: AfterCloche)
         ("Lifters/SmallCranes", "Crane Rail Small 1 m", null),
         ("Lifters/SmallCranes", "Small Crane Bridge", null),
+        // (the Zero Day works' floor, Sean 2026-11-22: FactoryShellParts; after the small crane: AfterCloche)
+        ("Factory/Floor", "Works Floor Slab 8 m", Rec("Works Floor Slab 8 m", 120, m: [("concrete", 1600), ("steel", 160)])),
     ];
 
     /// <summary>
@@ -1268,7 +1270,7 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge"];
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i
