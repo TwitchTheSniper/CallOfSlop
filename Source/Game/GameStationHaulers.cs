@@ -575,7 +575,8 @@ public sealed partial class Game
             if (sb.Dirty)
                 sb.Rebuild();
             var gap = sb.WorldCom - c.WorldCom;
-            if (gap.Length() > HaulDockFrom)
+            var along = c.Vel.LengthSquared() > 1 ? MathF.Abs(Vector3.Dot(gap, Vector3.Normalize(c.Vel))) : gap.Length();
+            if (gap.Length() > HaulDockFrom && (along > HaulDockFrom || gap.Length() > HaulDockFrom + HaulPhaseBy * 1.5f)) // (along its way: on a circle under or over, it passes the station a circle's step off, so it docks from there, 2026-11-22: it swapped circles for ever)
             {
                 var stR = (sb.WorldCom - gp.Center).Length();
                 var ahead = Vector3.Dot(gap, c.Vel) > 0;

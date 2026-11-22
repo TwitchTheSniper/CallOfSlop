@@ -261,7 +261,7 @@ public sealed partial class Game
         if (ship.MooredTo == 0)
             return;
         Log($"[station] construct {ship.Id} cast off from construct {ship.MooredTo}");
-        ship.MoorAway = ship.MooredTo; // (lying slow in the berth's box still, it isn't moored again until it has flown out of it)
+        ship.MoorAway = ship.MooredTo; // (lying slow in the berth's box still, it isn't moored again by the berths or their arms until it has flown clear of the station)
         ship.MoorAwayPart = ship.MoorPart;
         ship.MooredTo = 0;
         ship.DockAway = Constructs.CarrierClock + ConstructCarrier.AwayTicks;
@@ -363,16 +363,18 @@ public sealed partial class Game
                 var centre = t + Vector3.Transform(mid, q);
                 foreach (var b in Constructs.Bodies)
                 {
-                    if (b.SpaceShip == 0 || b == st || b.MooredTo != 0 || Vector3.DistanceSquared(b.WorldCom, st.WorldCom) > reach * reach)
+                    if (b.SpaceShip == 0 || b == st || b.MooredTo != 0)
                         continue;
+                    if (Vector3.DistanceSquared(b.WorldCom, st.WorldCom) > reach * reach)
+                    {
+                        if (b.MoorAway == st.Id)
+                            b.MoorAway = 0; // (it has flown clear of the station it was cast off from: out of its clamp arms' reach too)
+                        continue;
+                    }
                     var r = half.Length() + b.Radius;
                     var away = b.MoorAway == st.Id && b.MoorAwayPart == part;
                     if (Vector3.DistanceSquared(b.WorldCom, centre) > r * r)
-                    {
-                        if (away)
-                            b.MoorAway = 0; // (it has left the berth it was cast off from)
-                        continue;
-                    }
+                        continue; // (a ship cast off here stays let alone until it is clear of the station, not only of its berth's box: a clamp arm took a hauler setting out slowly back in, 2026-11-22)
                     if (away || !StationMoorable(st, b, d) || !BerthFits(st, part, b, out _) || NavOf(b.Id) is { Kind: NavKind.Dock })
                         continue; // (one under a Dock order is moored by its order: GameNavDock.cs)
                     if ((b.Vel - st.PointVel(b.WorldCom)).Length() > MathF.Max(NavDockSlow, d.DockSettle) || !ConstructCargo.MostlyInside(st, part, b) || !NavDockFree(Constructs, st, part, b))

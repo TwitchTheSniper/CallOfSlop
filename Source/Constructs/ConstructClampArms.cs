@@ -192,7 +192,7 @@ public static class ConstructClampArms
     /// <summary>
     /// A ship the arm may reach for: in space, free, slow against the station, its hull within reach of the shoulder, and one its berth
     /// would take (GameStations.StationMoorable). The host alone knows a ship's flight and when it was cast off: a ship just cast off from
-    /// this station isn't reached for until it has left the berth it lay in (MoorAway, cleared by StationMoorScan) and the docks' wait is over.
+    /// this station isn't reached for until it has flown clear of the station (MoorAway, cleared by StationMoorStep) and the docks' wait is over.
     /// </summary>
     private static bool Reachable(ConstructWorld world, Construct st, int berth, Construct b, Vector3 shoulder, float reach, bool host) =>
         b != st && !b.IsStation && !b.Wreck && b.CarriedBy == 0 && b.PartCount > 0
