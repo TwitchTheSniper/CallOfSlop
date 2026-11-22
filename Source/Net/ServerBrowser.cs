@@ -733,7 +733,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      bound for it as text lines after its moorings.
     // 435: hand-offs toward a building station (Sean 2026-11-22): a lifter's carry may end at a run's start (LiftPointKind.RunStart, a
     //      new byte in the lift word's put kind), which 434 can't read.
-    public const ushort ProtocolVersion = 435;
+    // 436: an Assembler's order for a run-time Ordnance Rack or ordnance design goes by its key as a named order (AssembledParts), which
+    //      435 refuses as a bad panel order; and 5 die patterns and 18 presets for the ship works in Pressing.json.
+    public const ushort ProtocolVersion = 436;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

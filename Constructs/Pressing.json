@@ -956,6 +956,46 @@
      "blanks": [
       "hollow"
      ]
+    },
+    {
+     "id": "drivecore",
+     "like": "Drive Core XS",
+     "label": "drive core",
+     "preset": "hollow 85x80x110 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "fuelpump",
+     "like": "Fuel Pump M",
+     "label": "fuel pump",
+     "preset": "hollow 220x190x100 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "exchanger",
+     "like": "Coolant Exchanger L",
+     "label": "coolant exchanger",
+     "preset": "hollow 230x220x115 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "capacitor",
+     "like": "Capacitor Bank S",
+     "label": "capacitor bank",
+     "preset": "solid 80x110x70 steel",
+     "auto": false,
+     "blanks": [
+      "solid"
+     ]
     }
    ]
   },
@@ -3124,6 +3164,25 @@
      "like": "Free Swivel 1x1",
      "label": "free swivel",
      "preset": "solid 25x25x25 steel",
+     "auto": false,
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     }
+    },
+    {
+     "id": "turretring",
+     "like": "Turret Ring S",
+     "label": "turret ring",
+     "preset": "solid 100x100x95 steel",
      "auto": false,
      "body": "like",
      "along": "y",
@@ -8532,6 +8591,36 @@
    "blank": "hollow 50x70x225 steel"
   },
   {
+   "part": "Drive Core XS",
+   "die": "housing",
+   "pattern": "drivecore",
+   "blank": "hollow 85x80x110 steel"
+  },
+  {
+   "part": "Fuel Pump M",
+   "die": "housing",
+   "pattern": "fuelpump",
+   "blank": "hollow 220x190x100 steel"
+  },
+  {
+   "part": "Coolant Exchanger L",
+   "die": "housing",
+   "pattern": "exchanger",
+   "blank": "hollow 230x220x115 steel"
+  },
+  {
+   "part": "Capacitor Bank S",
+   "die": "housing",
+   "pattern": "capacitor",
+   "blank": "solid 80x110x70 steel"
+  },
+  {
+   "part": "Turret Ring S",
+   "die": "actuator",
+   "pattern": "turretring",
+   "blank": "solid 100x100x95 steel"
+  },
+  {
    "part": "Brace 1:2 1x2 m",
    "die": "bracket",
    "pattern": "brace12",
@@ -9286,6 +9375,54 @@
    "die": "housing",
    "pattern": "podhousing",
    "blank": "hollow 125x180x565 steel"
+  },
+  {
+   "part": "Drive Core S",
+   "die": "housing",
+   "pattern": "drivecore",
+   "blank": "hollow 145x145x180 steel"
+  },
+  {
+   "part": "Drive Core M",
+   "die": "housing",
+   "pattern": "drivecore",
+   "blank": "hollow 195x200x260 steel"
+  },
+  {
+   "part": "Drive Core L",
+   "die": "housing",
+   "pattern": "drivecore",
+   "blank": "hollow 245x250x320 steel"
+  },
+  {
+   "part": "Fuel Pump L",
+   "die": "housing",
+   "pattern": "fuelpump",
+   "blank": "hollow 285x245x130 steel"
+  },
+  {
+   "part": "Capacitor Bank M",
+   "die": "housing",
+   "pattern": "capacitor",
+   "blank": "solid 140x170x110 steel"
+  },
+  {
+   "part": "Capacitor Bank L",
+   "die": "housing",
+   "pattern": "capacitor",
+   "blank": "solid 200x230x150 steel"
+  },
+  {
+   "part": "Turret Ring M",
+   "die": "actuator",
+   "pattern": "turretring",
+   "blank": "solid 160x160x140 steel"
+  },
+  {
+   "part": "Turret Ring L",
+   "die": "actuator",
+   "pattern": "turretring",
+   "blank": "solid 240x240x200 steel"
   }
  ]
 }

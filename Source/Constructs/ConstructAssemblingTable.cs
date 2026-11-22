@@ -68,8 +68,8 @@ public sealed class AssemblingTable
     public string Problem = "";
     public Dictionary<ushort, AssembleRecipe> ByOutput = new(); // the recipe that makes a part (one recipe a part): work orders find theirs here
 
-    /// <summary>The recipe that makes a part, or null.</summary>
-    public AssembleRecipe? Of(ushort part) => ByOutput.TryGetValue(part, out var r) ? r : null;
+    /// <summary>The recipe that makes a part, or null: a run-time Ordnance Rack's or ordnance design's is made from its key (AssembledParts.cs).</summary>
+    public AssembleRecipe? Of(ushort part) => ByOutput.TryGetValue(part, out var r) ? r : Extrusion.IsRuntimeId(part) && Recipes.Length > 0 ? AssembledParts.RecipeOf(part) : null;
 
     /// <summary>
     /// A part that left the Assembler for a press (Press phase 5: a die presses it from a standard blank, a preset of Pressing.json, and no
