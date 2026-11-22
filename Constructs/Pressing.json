@@ -661,6 +661,39 @@
      "blanks": [
       "plate"
      ]
+    },
+    {
+     "id": "podbrace",
+     "like": "Leg Pod Brace S",
+     "label": "leg pod brace",
+     "preset": "solid 10x10x10 steel",
+     "auto": false,
+     "body": "like",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "podfoot",
+     "like": "Leg Pod Foot S",
+     "label": "leg pod foot",
+     "preset": "solid 20x40x50 steel",
+     "auto": false,
+     "body": "like",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "podstrut",
+     "like": "Leg Pod Strut S",
+     "label": "leg pod strut",
+     "preset": "solid 10x10x15 steel",
+     "auto": false,
+     "body": "like",
+     "blanks": [
+      "solid"
+     ]
     }
    ]
   },
@@ -912,6 +945,17 @@
      "like": "Housing 0.5 m",
      "label": "housing",
      "preset": "hollow 45x45x50 metal"
+    },
+    {
+     "id": "podhousing",
+     "like": "Leg Pod Housing S",
+     "label": "leg pod housing",
+     "preset": "hollow 50x70x225 steel",
+     "auto": false,
+     "body": "like",
+     "blanks": [
+      "hollow"
+     ]
     }
    ]
   },
@@ -1422,6 +1466,22 @@
        "look": "dark"
       }
      ]
+    },
+    {
+     "id": "canopyport",
+     "like": "Leg Pod Canopy Port S",
+     "label": "pod canopy port",
+     "preset": "plate 30x10x180 steel",
+     "auto": false,
+     "body": "like"
+    },
+    {
+     "id": "canopystbd",
+     "like": "Leg Pod Canopy Stbd S",
+     "label": "pod canopy stbd",
+     "preset": "plate 30x10x180 steel",
+     "auto": false,
+     "body": "like"
     }
    ]
   },
@@ -4497,6 +4557,17 @@
      "auto": false,
      "blanks": [
       "c-channel"
+     ]
+    },
+    {
+     "id": "podcarriage",
+     "like": "Leg Pod Carriage S",
+     "label": "leg pod carriage",
+     "preset": "solid 10x10x55 steel",
+     "auto": false,
+     "body": "like",
+     "blanks": [
+      "solid"
      ]
     }
    ]
@@ -8419,6 +8490,48 @@
    "blank": "c-channel 25x25x100 steel"
   },
   {
+   "part": "Leg Pod Brace S",
+   "die": "bracket",
+   "pattern": "podbrace",
+   "blank": "solid 10x10x10 steel"
+  },
+  {
+   "part": "Leg Pod Foot S",
+   "die": "bracket",
+   "pattern": "podfoot",
+   "blank": "solid 20x40x50 steel"
+  },
+  {
+   "part": "Leg Pod Strut S",
+   "die": "bracket",
+   "pattern": "podstrut",
+   "blank": "solid 10x10x15 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Port S",
+   "die": "plate",
+   "pattern": "canopyport",
+   "blank": "plate 30x10x180 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Stbd S",
+   "die": "plate",
+   "pattern": "canopystbd",
+   "blank": "plate 30x10x180 steel"
+  },
+  {
+   "part": "Leg Pod Carriage S",
+   "die": "beam",
+   "pattern": "podcarriage",
+   "blank": "solid 10x10x55 steel"
+  },
+  {
+   "part": "Leg Pod Housing S",
+   "die": "housing",
+   "pattern": "podhousing",
+   "blank": "hollow 50x70x225 steel"
+  },
+  {
    "part": "Brace 1:2 1x2 m",
    "die": "bracket",
    "pattern": "brace12",
@@ -9047,6 +9160,132 @@
    "die": "beam",
    "pattern": "channel",
    "blank": "c-channel 25x25x200 steel"
+  },
+  {
+   "part": "Leg Pod Brace M",
+   "die": "bracket",
+   "pattern": "podbrace",
+   "blank": "solid 10x10x15 steel"
+  },
+  {
+   "part": "Leg Pod Brace L",
+   "die": "bracket",
+   "pattern": "podbrace",
+   "blank": "solid 15x15x15 steel"
+  },
+  {
+   "part": "Leg Pod Brace XL",
+   "die": "bracket",
+   "pattern": "podbrace",
+   "blank": "solid 15x15x20 steel"
+  },
+  {
+   "part": "Leg Pod Foot M",
+   "die": "bracket",
+   "pattern": "podfoot",
+   "blank": "solid 25x65x75 steel"
+  },
+  {
+   "part": "Leg Pod Foot L",
+   "die": "bracket",
+   "pattern": "podfoot",
+   "blank": "solid 35x85x100 steel"
+  },
+  {
+   "part": "Leg Pod Foot XL",
+   "die": "bracket",
+   "pattern": "podfoot",
+   "blank": "solid 45x105x125 steel"
+  },
+  {
+   "part": "Leg Pod Strut M",
+   "die": "bracket",
+   "pattern": "podstrut",
+   "blank": "solid 15x15x25 steel"
+  },
+  {
+   "part": "Leg Pod Strut L",
+   "die": "bracket",
+   "pattern": "podstrut",
+   "blank": "solid 20x20x30 steel"
+  },
+  {
+   "part": "Leg Pod Strut XL",
+   "die": "bracket",
+   "pattern": "podstrut",
+   "blank": "solid 25x25x40 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Port M",
+   "die": "plate",
+   "pattern": "canopyport",
+   "blank": "plate 45x10x270 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Port L",
+   "die": "plate",
+   "pattern": "canopyport",
+   "blank": "plate 55x10x360 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Port XL",
+   "die": "plate",
+   "pattern": "canopyport",
+   "blank": "plate 70x10x450 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Stbd M",
+   "die": "plate",
+   "pattern": "canopystbd",
+   "blank": "plate 45x10x270 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Stbd L",
+   "die": "plate",
+   "pattern": "canopystbd",
+   "blank": "plate 55x10x360 steel"
+  },
+  {
+   "part": "Leg Pod Canopy Stbd XL",
+   "die": "plate",
+   "pattern": "canopystbd",
+   "blank": "plate 70x10x450 steel"
+  },
+  {
+   "part": "Leg Pod Carriage M",
+   "die": "beam",
+   "pattern": "podcarriage",
+   "blank": "solid 10x20x85 steel"
+  },
+  {
+   "part": "Leg Pod Carriage L",
+   "die": "beam",
+   "pattern": "podcarriage",
+   "blank": "solid 15x25x110 steel"
+  },
+  {
+   "part": "Leg Pod Carriage XL",
+   "die": "beam",
+   "pattern": "podcarriage",
+   "blank": "solid 15x30x140 steel"
+  },
+  {
+   "part": "Leg Pod Housing M",
+   "die": "housing",
+   "pattern": "podhousing",
+   "blank": "hollow 75x110x340 steel"
+  },
+  {
+   "part": "Leg Pod Housing L",
+   "die": "housing",
+   "pattern": "podhousing",
+   "blank": "hollow 100x145x450 steel"
+  },
+  {
+   "part": "Leg Pod Housing XL",
+   "die": "housing",
+   "pattern": "podhousing",
+   "blank": "hollow 125x180x565 steel"
   }
  ]
 }

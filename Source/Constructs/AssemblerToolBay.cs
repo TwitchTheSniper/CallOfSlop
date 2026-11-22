@@ -64,6 +64,36 @@ public static class AssemblerToolBay
         return Dock(world, c, core, tool, place: false);
     }
 
+    /// <summary>
+    /// Where the tool block a Core wants waits, for its look line: the store a chute into the Core takes from that holds one (the rack
+    /// a chute swap would take it from), else any store on the Core's body that holds one; null when none does. Look line only (not a tick).
+    /// </summary>
+    public static string? HeldIn(ConstructWorld world, Construct c, int core)
+    {
+        if ((uint)core >= (uint)c.PartCount || Wanted(c, core) is not (> 0 and var want))
+            return null;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Chute && r.To == core && Holds(world, c, r.Source, want))
+                return c.DefOf(r.Source).Name;
+        }
+        for (var p = 0; p < c.PartCount; p++)
+            if (p != core && Holds(world, c, p, want))
+                return c.DefOf(p).Name;
+        return null;
+    }
+
+    private static bool Holds(ConstructWorld world, Construct c, int part, byte want)
+    {
+        if ((uint)part >= (uint)c.PartCount || world.StoreOf(c, part) is not { } st)
+            return false;
+        for (var k = 0; k < st.SlotCount; k++)
+            if (st.Count[k] > 0 && ConstructParts.Get(st.Def[k]) is { BlockRole: BlockRole.Tool } t && t.BlockTool == want)
+                return true;
+        return false;
+    }
+
     /// <summary>The swaps the chutes started, done now (the start of the Assemblers' step, every tick).</summary>
     public static void Deliver(ConstructWorld world)
     {
