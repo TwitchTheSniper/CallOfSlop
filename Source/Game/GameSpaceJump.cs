@@ -54,7 +54,7 @@ public sealed partial class Game
                 continue;
             if (c.Dirty)
                 c.Rebuild();
-            var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt) : Vector3.Zero;
+            var force = c.ThrusterCount > 0 && !c.LedgerCoast ? ConstructPhysics.SpaceThrust(c, dt) : Vector3.Zero; // (on a ledger route its pose is the route's: GameHaulLedger.cs)
             var a = c.Mass > 0 ? Vec3d.From(force) / c.Mass : Vec3d.Zero;
             f.Ships.Thrust[i] = AwayRot.Rotate(a);
         }
