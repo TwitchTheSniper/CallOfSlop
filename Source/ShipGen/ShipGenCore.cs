@@ -8,8 +8,17 @@ namespace CallOfSlop.PartKit.ShipGen;
 // A faction's generator (TraderHauler, ...) has its own architecture and look and uses these; everything here is per run, so two
 // hulls made one after the other share nothing.
 
-/// <summary>What a hull is made for: the faction, the job, the seed, and the shipped name it goes out under (if any).</summary>
-public sealed record ShipBrief(string Faction, string Job, int Seed, string? Name = null);
+/// <summary>What a hull is made for: the faction, the job, the seed, and the shipped name it goes out under (if any). Cockpit, when
+/// set, overrides the job's own choice of cockpit room.</summary>
+public sealed record ShipBrief(string Faction, string Job, int Seed, string? Name = null, CockpitKind? Cockpit = null);
+
+/// <summary>
+/// The cockpit is a room, one of two kinds (Karl, 2026-11-22). <b>Open</b>: a glass canopy, the hull itself as the room's wall above
+/// the sill, laid out inside (consoles along the sides under the glass, lined walls, an overhead) so nothing bare shows through
+/// the glass. <b>Sealed</b>: a room inside the hull with no glass at all, flying on screens (a combat ship's: nothing to shoot
+/// through); the nose outside is plated.
+/// </summary>
+public enum CockpitKind { Open, Sealed }
 
 /// <summary>Every choice a run made, in the order made, with its stage and why: what the report page and the gallery show.</summary>
 public sealed class ChoiceReport

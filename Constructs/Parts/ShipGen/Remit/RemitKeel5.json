@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Remit Keel 5",
+  "description": "A length of the Remit Hauler's keel: the deck there, the tankage under it, the belly plating and the mounts on it.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 270.0,
+  "health": 750,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5d6266",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        -0.125,
+        -5.45
+      ],
+      "max": [
+        0.675,
+        0.125,
+        -5.15
+      ],
+      "color": "#5d6266",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -1.005,
+        -0.475,
+        -5.446
+      ],
+      "max": [
+        0.755,
+        -0.125,
+        -5.154
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.625,
+        0.128,
+        -5.35
+      ],
+      "max": [
+        0.375,
+        0.14,
+        -5.25
+      ],
+      "color": "#3d4144",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -1.025,
+        -0.545,
+        -5.4475
+      ],
+      "max": [
+        0.775,
+        -0.505,
+        -5.1565
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -1.025,
+          -0.505,
+          -5.4475
+        ],
+        [
+          -1.025,
+          -0.545,
+          -5.4475
+        ],
+        [
+          0.775,
+          -0.505,
+          -5.4475
+        ],
+        [
+          0.775,
+          -0.545,
+          -5.4475
+        ],
+        [
+          0.775,
+          -0.505,
+          -5.1565
+        ],
+        [
+          0.775,
+          -0.545,
+          -5.1565
+        ],
+        [
+          -1.025,
+          -0.505,
+          -5.1565
+        ],
+        [
+          -1.025,
+          -0.545,
+          -5.1565
+        ]
+      ],
+      "finish": "plated steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.005,
+        -5.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.925,
+        -0.005,
+        -5.295
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.675,
+        -0.005,
+        -5.295
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        -0.005,
+        -5.15
+      ],
+      "dir": "+z"
+    }
+  ]
+}

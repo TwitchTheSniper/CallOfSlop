@@ -13,7 +13,7 @@ Each faction has its own generator with its own architecture and look; they shar
 
 | Faction | Generator | Job | Shipped hulls |
 | --- | --- | --- | --- |
-| Traders | `Source/ShipGen/TraderHauler.cs` | carry goods between markets | Tithe Hauler (seed 1), Tender Hauler (seed 7) |
+| Traders | `Source/ShipGen/TraderHauler.cs` | carry goods between markets | Tithe Hauler (seed 1), Tender Hauler (seed 7), Remit Hauler (seed 3, sealed cockpit) |
 
 ## Running it
 
@@ -39,7 +39,10 @@ A hull that breaks a rule writes **nothing**: the run fails with every problem l
 
 ## The contract (Source/ShipGen/ShipGenCore.cs)
 
-- `ShipBrief`: faction, job, seed, optional name.
+- `ShipBrief`: faction, job, seed, optional name, optional cockpit kind (overrides the job's own).
+- `CockpitKind`: the cockpit is a room of one of two kinds (Karl, 2026-11-22). **Open**: a glass canopy, laid out inside so nothing
+  bare shows through the glass; under the sill and over the bulkhead the hull is the room's wall (the one place hull-as-interior is
+  allowed). **Sealed**: a room inside the hull with no glass, flying on screens and a nose camera (combat ships' kind).
 - `Dice`: one stream per subject (`name`, `layout`, `hull`, `drive`, `dress`), each seeded from the seed and its name, so a
   change in how the dress is rolled never moves the layout. Every roll is recorded in the report with its range and why.
 - `ChoiceReport`: the choices, the notes and the problems, written as Markdown.
@@ -49,7 +52,7 @@ A hull that breaks a rule writes **nothing**: the run fails with every problem l
 
 ## The Traders hauler
 
-- **Architecture** (fixed by the job): a tall crew cab under a glass nose (cockpit, bunk room, head, trade office, galley, airlock
+- **Architecture** (fixed by the job): a tall crew cab under a glass nose (or a plated one over a sealed cockpit) (cockpit, bunk room, head, trade office, galley, airlock
   over a boarding shaft, stores), a neck to a thin walkable spine with container cradles off its flanks, a neck to a squat, wide
   engineering block, a short stern, and a drive nacelle on a pylon either side of engineering. One deck all along.
 - **Rolled**: 2 to 4 bays, containers 1 or 2 high, the tumblehome, the nose, the cab's beam and chines, the spine's and
@@ -59,6 +62,13 @@ A hull that breaks a rule writes **nothing**: the run fails with every problem l
   hull's tumblehome, 45 degree upper chine, flat roof), so every facet between two stations is a flat trapezoid. Ribs stand
   proud at each station where the hull doesn't step in; plates stop short of them, and neighbouring facets' ends and ribs are
   staggered so no two faces share a plane.
+- **Cockpit**: open by default (a trader lands and docks by eye). Open: the dash across the bow, a console down each side from
+  the dash to the back wall with its desk sloping up to the sill at the glass's foot (screens, switches, a padded sill), glass on
+  the tumblehome and upper chine behind the nose too, a ceiling and an overhead under the roof, a bulkhead face over the back wall
+  with the trade board. Sealed: the nose plated with a sensor band, a camera and a bumper; inside, a screen wall, desks either side
+  of the flight computer, lined walls and a ceiling, 2.9 m across and 2.3 m high (the generator checks it fits the nose).
+- **Ribs** are mitred at every corner on the bisector; neighbours alternate shallow and deep and the shallow one runs 1.5 cm into
+  the deep one, so no end pokes out past a corner (the clipping Karl saw through the glass) and no two faces share a plane.
 - **Pieces**: keel, port side, starboard side and roof cut at every station, plus the nose, the cab's and engineering's walls and
   the stern: a hit takes a panel, not a deck. The cab's and engineering's keel bands are the lift jets' fuel tanks.
 - **Slots**: `pilot`, `copilot` and `computer` floor sockets in the cockpit; a keyed 2x2 engine Module Socket on each nacelle's

@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Remit Keel 4",
+  "description": "A length of the Remit Hauler's keel: the deck there, the tankage under it, the belly plating and the mounts on it.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1440.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5d6266",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        -0.125,
+        -7.05
+      ],
+      "max": [
+        0.675,
+        0.125,
+        -5.45
+      ],
+      "color": "#5d6266",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        -2.055,
+        -0.475,
+        -7.046
+      ],
+      "max": [
+        1.805,
+        -0.125,
+        -6.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.005,
+        -0.475,
+        -6.25
+      ],
+      "max": [
+        0.755,
+        -0.125,
+        -5.454
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.625,
+        0.128,
+        -6.85
+      ],
+      "max": [
+        0.375,
+        0.14,
+        -5.65
+      ],
+      "color": "#3d4144",
+      "detail": true,
+      "finish": "painted grating"
+    },
+    {
+      "min": [
+        -2.7181,
+        -0.9428,
+        -7.0484
+      ],
+      "max": [
+        2.4681,
+        -0.5062,
+        -5.4476
+      ],
+      "color": "#3b3f44",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -2.7181,
+          -0.904,
+          -7.0484
+        ],
+        [
+          -2.7181,
+          -0.9428,
+          -7.0386
+        ],
+        [
+          2.4681,
+          -0.904,
+          -7.0484
+        ],
+        [
+          2.4681,
+          -0.9428,
+          -7.0386
+        ],
+        [
+          0.7777,
+          -0.5062,
+          -5.4574
+        ],
+        [
+          0.7777,
+          -0.545,
+          -5.4476
+        ],
+        [
+          -1.0277,
+          -0.5062,
+          -5.4574
+        ],
+        [
+          -1.0277,
+          -0.545,
+          -5.4476
+        ]
+      ],
+      "finish": "plated steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.005,
+        -7.05
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.525,
+        -0.125,
+        -6.645
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        1.275,
+        -0.125,
+        -6.645
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        -0.005,
+        -5.45
+      ],
+      "dir": "+z"
+    }
+  ]
+}

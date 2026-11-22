@@ -11,6 +11,7 @@ Every line below is a choice the generator made, the stage that made it and why.
 
 - Job: carry standard containers between markets, with a crew of four living aboard for weeks (bunks, a head, a galley, a trade office, an airlock).
 - Sold as a hull with its slots, proved by a reference fit: two flight couches and a flight computer, a keyed 2x2 engine socket on each nacelle (a 600 kN drive and its Drive Core inside), a 2x2 reactor socket in engineering, a 1x1 sensor socket on the roof.
+- Cockpit: open, under a glass canopy (the job's own choice: a trader lands at markets and docks by eye).
 
 ## Layout
 
@@ -19,7 +20,7 @@ Every line below is a choice the generator made, the stage that made it and why.
 | Cargo bays | 2 (from 2 to 4) | each bay a container a side: 2 is a short-haul feeder, 4 a long-haul trunk ship |
 | Containers stacked a side | 1 (from 1 to 2) | two high doubles the cargo but hangs the lower box under the keel line (still clear of the ground) |
 
-- Zones from the bow: glass nose and cockpit 0 to 4.3 m, the crew cab to 15.425 m, a neck, the spine with 2 bays 17.025 to 32.825 m, a neck, engineering 34.425 to 43.175 m, the stern to 44.575 m.
+- Zones from the bow: glass nose and open cockpit 0 to 4.3 m, the crew cab to 15.425 m, a neck, the spine with 2 bays 17.025 to 32.825 m, a neck, engineering 34.425 to 43.175 m, the stern to 44.575 m.
 - Cargo: 4 standard containers (2 bays, one cradle a side each, 1 high), hung off the spine's flanks with their hatches outboard, so a crane or a shell takes them out sideways.
 - One deck all along (its top 0.25 m up), so the crew walk from the cockpit to the engines without a step: cab, spine corridor, engineering.
 
@@ -28,7 +29,7 @@ Every line below is a choice the generator made, the stage that made it and why.
 | Choice | Value | Why |
 | --- | --- | --- |
 | Tumblehome | 0.08 (from 0.06 to 0.16) | how far the upper sides lean in per metre: the Traders' cab reads taller the more it leans |
-| Nose length | 2.5 (from 2.4 to 3) | the glass nose's taper from the windscreen to the cab's full section |
+| Nose length | 2.5 (from 2.4 to 3) | the nose's taper from the bow to the cab's full section |
 | Cockpit depth behind the nose | 1.8 (from 1.4 to 2) | room behind the couches; the cockpit's back wall is the cab's first frame |
 | Cab half beam | 3.85 (from 3.65 to 3.95) | the cab's rooms are 6 m across inside; the rest is void and frame |
 | Cab upper chine | 3.15 (from 3.15 to 3.45) | where the tall sides turn in to the roof: a higher chine is a boxier cab |
@@ -39,6 +40,7 @@ Every line below is a choice the generator made, the stage that made it and why.
 
 ## Inside
 
+- Cockpit (open): the dash across the bow; a console down each side from the dash to the back wall, its desk sloping up to the sill at the glass's foot with screens and switches on it; a ceiling and an overhead panel under the roof behind the nose; a bulkhead face over the back wall with the trade board. Under the sill and over the bulkhead the hull is the room's wall, finished; nothing bare shows through the glass.
 - Cab: the cockpit (two couches and the flight computer behind the dash), then a corridor; to port the bunk room, the head and the trade office (its computer and two server racks: the market's books), to starboard the galley, the airlock over the boarding shaft (belly hatch, ladder, MMU dock, two suit lockers) and the stores (life support, oxygen).
 - Spine: a 1.6 m corridor inside the hull itself (its lining is the wall, a length a band), a handrail and the ship's pipes down it, a lamp in each band's ceiling; doors at both ends.
 - Engineering: the reactor socket with its plant, the Engineer's Panel, the Power Board, three batteries, a suit locker and a Pressure Locker for the walk out to the nacelles, a tool rack; the fuel manifolds up the walls to the pylons.

@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.ShipGen;
 
 /// <summary>
 /// The Traders' hauler (docs/sandbox/shipgen/README.md): the first hull of the procedural generator, for the Traders' first job,
-/// carrying goods between markets. Its architecture is the faction's, not a kit's: a tall crew cab with a glass cockpit at the bow,
+/// carrying goods between markets. Its architecture is the faction's, not a kit's: a tall crew cab with a cockpit at the bow (open or sealed),
 /// a thin walkable spine with container cradles hung off its flanks, a squat engineering block aft and a drive nacelle on a pylon
 /// either side of it. The dice choose how many cargo bays, how high the containers stack, the hull's lines (its sections, its
 /// tumblehome, the nose), where the nacelles sit and how it is painted; the job fixes the rooms (a cockpit, bunks, a head, the trade
@@ -72,6 +72,7 @@ public sealed class TraderHauler
     private readonly int _bays, _stack;
     private readonly double _k; // the tumblehome's slope (x in per m up)
     private readonly double _noseLen, _ckLen;
+    private readonly CockpitKind _cockpit;
     private readonly Sec _nose, _cab, _spine, _eng, _transom;
     private readonly double _nacX, _nacY, _nacF, _nacTank, _nacTailOver;
     private readonly string _livery;
@@ -98,6 +99,10 @@ public sealed class TraderHauler
         // ---- Brief: what the job asks for.
         _rep.Note("Brief", "Job: carry standard containers between markets, with a crew of four living aboard for weeks (bunks, a head, a galley, a trade office, an airlock).");
         _rep.Note("Brief", "Sold as a hull with its slots, proved by a reference fit: two flight couches and a flight computer, a keyed 2x2 engine socket on each nacelle (a 600 kN drive and its Drive Core inside), a 2x2 reactor socket in engineering, a 1x1 sensor socket on the roof.");
+        _cockpit = brief.Cockpit ?? CockpitKind.Open;
+        _rep.Note("Brief", _cockpit == CockpitKind.Open
+            ? "Cockpit: open, under a glass canopy" + (brief.Cockpit == null ? " (the job's own choice: a trader lands at markets and docks by eye)." : " (asked for in the brief).")
+            : "Cockpit: sealed, a room inside the hull flying on screens and a nose camera" + (brief.Cockpit == null ? "." : " (asked for in the brief: a hull for routes where the glass would be shot at)."));
         var name = _dice.Stream("name", "Brief");
         Word = brief.Name ?? name.Pick("Class name", ["Tally", "Ledger", "Tender", "Remit", "Bursar", "Quire", "Folio", "Tithe"], s => s, "a Traders' word for the books; the class is known by it");
         ShipName = $"{Word} Hauler";
@@ -112,7 +117,7 @@ public sealed class TraderHauler
         // ---- Hull: the sections and the nose.
         var hull = _dice.Stream("hull", "Hull");
         _k = hull.Range("Tumblehome", 0.06, 0.16, 0.01, "how far the upper sides lean in per metre: the Traders' cab reads taller the more it leans");
-        _noseLen = hull.Range("Nose length", 2.4, 3.0, 0.05, "the glass nose's taper from the windscreen to the cab's full section");
+        _noseLen = hull.Range("Nose length", 2.4, 3.0, 0.05, "the nose's taper from the bow to the cab's full section");
         _ckLen = hull.Range("Cockpit depth behind the nose", 1.4, 2.0, 0.05, "room behind the couches; the cockpit's back wall is the cab's first frame");
         var cabW = hull.Range("Cab half beam", 3.65, 3.95, 0.05, "the cab's rooms are 6 m across inside; the rest is void and frame");
         var cabUp = hull.Range("Cab upper chine", 3.15, 3.45, 0.05, "where the tall sides turn in to the roof: a higher chine is a boxier cab");
@@ -149,7 +154,7 @@ public sealed class TraderHauler
         _zEng = _zSp1 + 1.6;
         _zEngEnd = _zEng + EngLen + 0.25; // (the fore wall's fore face to the aft wall's aft face)
         _zStern = _zEngEnd + 1.4;
-        _rep.Note("Layout", $"Zones from the bow: glass nose and cockpit 0 to {Fmt(_zCkW)} m, the crew cab to {Fmt(_zCabEnd)} m, a neck, the spine with {_bays} bays {Fmt(_zSp0)} to {Fmt(_zSp1)} m, a neck, engineering {Fmt(_zEng)} to {Fmt(_zEngEnd)} m, the stern to {Fmt(_zStern)} m.");
+        _rep.Note("Layout", $"Zones from the bow: {(_cockpit == CockpitKind.Open ? "glass nose and open cockpit" : "plated nose and sealed cockpit")} 0 to {Fmt(_zCkW)} m, the crew cab to {Fmt(_zCabEnd)} m, a neck, the spine with {_bays} bays {Fmt(_zSp0)} to {Fmt(_zSp1)} m, a neck, engineering {Fmt(_zEng)} to {Fmt(_zEngEnd)} m, the stern to {Fmt(_zStern)} m.");
         _rep.Note("Layout", $"Cargo: {_bays * 2 * _stack} standard containers ({_bays} bays, one cradle a side each, {_stack} high), hung off the spine's flanks with their hatches outboard, so a crane or a shell takes them out sideways.");
         _rep.Note("Layout", "One deck all along (its top 0.25 m up), so the crew walk from the cockpit to the engines without a step: cab, spine corridor, engineering.");
 
@@ -287,19 +292,33 @@ public sealed class TraderHauler
         _hp.Prism(lo, hi, color, finish, glow);
     }
 
-    /// <summary>A rib's segment on facet f at station z: proud of the plates, its ends run past the corners (neighbours differ in depth).</summary>
+    /// <summary>
+    /// A rib's segment on facet f at station z, proud of the plates. Its ends are mitred on the bisector of the corner they meet, so
+    /// nothing runs past a corner (the old ends ran 5 cm straight on and poked out through the next facet's rib: the beading Karl saw
+    /// clip, 2026-11-22). Neighbours alternate shallow and deep; a shallow one runs 1.5 cm past the mitre into its deep neighbour,
+    /// which it stays inside, so the joint is closed and no two faces share a plane. The keel has no rib: there the end is just mitred.
+    /// </summary>
     private void RibSeg(double z, int f, int s, string color)
     {
         var (a, b) = Edge(z, f, s);
         var dir = HullPieces.Unit(HullPieces.Sub(b, a));
-        a = HullPieces.Add(a, dir, -0.05);
-        b = HullPieces.Add(b, dir, 0.05);
         var n = Out(f, s);
         var even = f == Roof || f % 2 == 0;
         double din = HullPieces.T / 2 + 0.006, dout = din + (even ? 0.07 : 0.085), hw = even ? 0.09 : 0.0935; // (neighbours differ in depth and width)
-        double[] P(double[] q, double d, double dz) => [q[0] + n[0] * d, q[1] + n[1] * d, q[2] + dz];
-        _hp.Prism([P(a, din, -hw), P(b, din, -hw), P(b, dout, -hw), P(a, dout, -hw)],
-            [P(a, din, hw), P(b, din, hw), P(b, dout, hw), P(a, dout, hw)], color, "dirty steel");
+        // The facets either side: at A the one below (the keel's under facet 0), at B the one above (the roof over facet 3).
+        var (fa, sa) = f switch { Roof => (3, -1), Belly => (0, -1), 0 => (Belly, s), _ => (f - 1, s) };
+        var (fb, sb) = f switch { Roof => (3, 1), Belly => (0, 1), 3 => (Roof, s), _ => (f + 1, s) };
+        double[] End(double[] c, int fn, int sn, double d, double away)
+        {
+            var m = Out(fn, sn);
+            var cos = n[0] * m[0] + n[1] * m[1];
+            var k = d / (1 + cos);
+            var ext = even && fn != Belly ? 0.015 : 0.0;
+            return [c[0] + (n[0] + m[0]) * k + dir[0] * away * ext, c[1] + (n[1] + m[1]) * k + dir[1] * away * ext, c[2]];
+        }
+        double[] P(double[] q, double dz) => [q[0], q[1], q[2] + dz];
+        double[] ai = End(a, fa, sa, din, -1), ao = End(a, fa, sa, dout, -1), bi = End(b, fb, sb, din, 1), bo = End(b, fb, sb, dout, 1);
+        _hp.Prism([P(ai, -hw), P(bi, -hw), P(bo, -hw), P(ao, -hw)], [P(ai, hw), P(bi, hw), P(bo, hw), P(ao, hw)], color, "dirty steel");
     }
 
     /// <summary>A chine rail along the corner k (1 or 3) of side s from za to zb: a strip standing off both plates, stopped short of the ribs.</summary>
@@ -364,6 +383,8 @@ public sealed class TraderHauler
         Must("spine", _zCabEnd, _zEng, Sw + SLine, 0, SRoof);
         Must("engineering", _zEng, _zEngEnd, Ew + 0.25, 0, ERoof);
         Must("cockpit", _noseLen * 0.4, _zCkW - 0.125, 1.6, 0, 0.95);
+        if (_cockpit == CockpitKind.Sealed)
+            Must("sealed cockpit", SealedFront - 0.1, _zCkW - 0.125, 1.55, Ft, Ft + 2.4);
     }
 
     // ---- the pieces, zone by zone
@@ -488,17 +509,23 @@ public sealed class TraderHauler
 
     private void NoseAndCockpit()
     {
-        var nose = _hp.Piece("Nose", $"The {ShipName}'s glass nose: the windscreen, the bumper ring round it and the cockpit's dash.", Glass);
+        var open = _cockpit == CockpitKind.Open;
+        var nose = _hp.Piece("Nose", open
+            ? $"The {ShipName}'s glass nose and open cockpit: the windscreen, the bumper ring round it, the dash, the side consoles under the glass and the overhead."
+            : $"The {ShipName}'s plated nose and sealed cockpit: the nose cap with its camera, and the cockpit room inside, its screen wall, desks, walls and ceiling.", open ? Glass : Skin);
         double z1 = _noseLen;
-        // The nose band: glass over the beam, the cap at the bow split at the dash's height, a bumper ring round it.
+        // The nose band: glass over the beam (open) or plating all round (sealed), the cap at the bow, a bumper ring round it.
         _hp.In(nose, () =>
         {
             foreach (var s in new[] { -1, 1 })
                 for (var f = 0; f < 4; f++)
-                    Facet(0, z1, f, s, f >= 2 ? Glass : ColourOf(f, 0), f >= 2 ? "glass" : "painted plating", f >= 2);
-            Facet(0, z1, Roof, 0, Glass, "glass", true);
+                {
+                    var g = open && f >= 2;
+                    Facet(0, z1, f, s, g ? Glass : ColourOf(f, 0), g ? "glass" : "painted plating", g);
+                }
+            Facet(0, z1, Roof, 0, open ? Glass : ColourOf(Roof, 0), open ? "glass" : "painted plating", open);
             Facet(0, z1, Belly, 0, ColourOf(Belly, 0), "plated steel");
-            // The cap: under the beam skin, over it glass, both a hair aft of z 0 (the bumper ring is at the bow).
+            // The cap: under the beam skin, over it glass (or all skin), a hair aft of z 0 (the bumper ring is at the bow).
             var sec = At(0);
             double[][] Ring(double y0, double y1)
             {
@@ -515,44 +542,215 @@ public sealed class TraderHauler
                 var left = right.AsEnumerable().Reverse().Select(q => new[] { -q[0], q[1], q[2] });
                 return [.. right, .. left];
             }
-            _hp.Plate(Ring(sec.Y0, 0.95), ColourOf(1, 0), "painted plating");
-            _hp.Plate(Ring(0.954, sec.Top), Glass, "glass", glass: true);
+            if (open)
+            {
+                _hp.Plate(Ring(sec.Y0, 0.95), ColourOf(1, 0), "painted plating");
+                _hp.Plate(Ring(0.954, sec.Top), Glass, "glass", glass: true);
+            }
+            else
+                _hp.Plate(Ring(sec.Y0, sec.Top), ColourOf(1, 0), "painted plating");
             for (var f = 0; f < 4; f++)
                 foreach (var s in new[] { -1, 1 })
                     RibSeg(0, f, s, f == 1 ? Hazard : Dark);
             RibSeg(0, Roof, 0, Dark);
-            // Glazing bars down the windscreen and across the cap.
-            foreach (var s in new[] { -1, 1 })
+            if (open)
             {
-                Slab(0, z1, 2, s, 0.01, 0.99, 0.48, 0.52, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
-                Slab(0, z1, 3, s, 0.01, 0.99, 0.0, 0.04, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
+                // Glazing bars down the windscreen and across the cap.
+                foreach (var s in new[] { -1, 1 })
+                {
+                    Slab(0, z1, 2, s, 0.03, 0.97, 0.48, 0.52, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
+                    Slab(0, z1, 3, s, 0.03, 0.97, 0.0, 0.04, HullPieces.T / 2 + 0.003, HullPieces.T / 2 + 0.03, Dark, "painted steel");
+                }
+                _hp.Detail(-0.03, 0.96, -0.02, 0.03, sec.Top - 0.1, -0.004, Dark, "painted steel");
             }
-            _hp.Detail(-0.03, 0.96, -0.02, 0.03, sec.Top - 0.02, -0.004, Dark, "painted steel");
-            // The cockpit floor, the dash, the glass's backing (what stops a body at the glass), the void under the dash.
+            else
+            {
+                // The nose camera the sealed cockpit flies by, in a dark sensor band across the cap: an armoured housing, its lens, a nav
+                // lamp each side; a hazard-striped bumper under it where the glass would be on an open nose.
+                var bw = Math.Floor((Half(sec, 1.85) - 0.2) * 100) / 100;
+                _hp.Detail(-bw, 1.4, -0.03, bw, 1.9, -0.012, Dark, "painted steel");
+                _hp.Detail(-0.3, 1.45, -0.08, 0.3, 1.85, -0.025, Frame, "painted steel");
+                var hw0 = Math.Floor((Half(sec, 0.95) - 0.25) * 100) / 100;
+                for (var i = 0; i * 0.3 < 2 * hw0 - 0.15; i++)
+                    _hp.Detail(-hw0 + i * 0.3, 0.8, -0.03, Math.Min(-hw0 + i * 0.3 + 0.15, hw0), 0.95, -0.012, i % 2 == 0 ? Hazard : Dark, "hazard paint");
+                _hp.Detail(-0.12, 1.55, -0.093, 0.12, 1.75, -0.075, "#1a2a38", "glass");
+                _hp.Detail(-0.05, 1.62, -0.098, 0.05, 1.68, -0.09, "#40d0ff", glow: true);
+                foreach (var s in new[] { -1, 1 })
+                    _hp.Detail(s * 0.55, 1.6, -0.045, s * 0.75, 1.7, -0.025, s < 0 ? Red : Green, glow: true);
+            }
+            // The cockpit floor and the void ahead of the cockpit.
             _hp.Solid(-1.6, 0, 0.5, 1.6, Ft, z1, Deck, "painted deck plate");
-            _hp.Solid(-1.45, Ft, 0.5, 1.45, 0.95, 0.95, Dark, "plastic");
-            foreach (var (x0, x1, col) in new[] { (-1.25, -0.4, "#78c8e8"), (-0.3, 0.3, "#60e090"), (0.4, 1.25, "#78c8e8") })
-                _hp.Detail(x0, 0.953, 0.55, x1, 0.969, 0.9, col, glow: true);
-            for (var i = 0; i < 9; i++)
-                _hp.Detail(-0.8 + i * 0.2, 0.6, 0.952, -0.72 + i * 0.2, 0.68, 0.965, i % 3 == 0 ? Hazard : Paper, "plastic");
             Fill(0, 0.5, sec.Y0 + 0.05, 1.9);
-            Backing(0.5, z1, _ => nose, nose);
+            if (open)
+            {
+                // The dash across the bow, its screens and dials; the glass's backing (what stops a body at the glass), the void under the dash.
+                _hp.Solid(-1.45, Ft, 0.5, 1.45, 0.95, 0.95, Dark, "plastic");
+                foreach (var (x0, x1, col) in new[] { (-1.25, -0.4, "#78c8e8"), (-0.3, 0.3, "#60e090"), (0.4, 1.25, "#78c8e8") })
+                    _hp.Detail(x0, 0.953, 0.55, x1, 0.969, 0.9, col, glow: true);
+                for (var i = 0; i < 9; i++)
+                    _hp.Detail(-0.8 + i * 0.2, 0.6, 0.952, -0.72 + i * 0.2, 0.68, 0.965, i % 3 == 0 ? Hazard : Paper, "plastic");
+                Backing(0.5, z1, _ => nose, nose);
+            }
             Void(0.5, z1, 0, 0.95, 1.6, -1);
             Void(0.5, z1, 0, 0.95, 1.6, 1);
         });
-        // The band behind the nose: the cockpit's side glass over the cab's livery, its floor, the backing, the voids.
+        // The band behind the nose: the cockpit's side glass (open: the tumblehome and the upper chine) over the cab's livery, its floor, the voids.
         var b = 1;
         _hp.In(nose, () =>
         {
             _hp.Solid(-1.6, 0, z1, 1.6, Ft, _zCkW - 0.125, Deck, "painted deck plate");
             Fill(z1, _zCkW - 0.125, KeelY + 0.05, 0);
         });
-        Backing(z1, _zCkW - 0.125, s => Side(b, s), RoofP(b));
+        if (open)
+            Backing(z1, _zCkW - 0.125, s => Side(b, s), RoofP(b));
         _hp.In(RoofP(b), () => Fill(_zCkW - 0.125, _zCkW, CCeil, Math.Min(At(_zCkW - 0.125).Top, At(_zCkW).Top) - 0.06, 0)); // (over the cockpit's back wall)
         foreach (var s in new[] { -1, 1 })
             _hp.In(Side(b, s), () => Void(z1, _zCkW - 0.125, 0, 0.95, 1.6, s));
-        Skin_(b, (f, s) => f == 3, belly: true);
+        Skin_(b, (f, s) => open && f is 2 or 3, belly: true);
         _hp.In(Keel(b), () => _hp.Solid(-Lw - 0.25, 0, _zCkW - 0.125, Lw + 0.25, Ft, _zCkW, Deck, "painted deck plate"));
+        _hp.In(nose, () =>
+        {
+            if (open)
+                OpenCockpit(z1);
+            else
+                SealedCockpit();
+        });
+    }
+
+    // The open cockpit's layout: everything the glass shows is finished. Consoles run down both sides from the dash to the back wall,
+    // their sloped desks rising to the sill at the glass's foot; a ceiling and an overhead under the plated roof; a bulkhead face over
+    // the back wall up to the roof. Under the sill and over the bulkhead the hull is the room's wall (Karl, 2026-11-22: the open cockpit
+    // is where the hull may be the interior).
+    private const double ConsoleX = 1.47, DeskY = 1.05; // the consoles' inner face (clear of the dash's end) and their desks' inner edge
+
+    private void OpenCockpit(double z1)
+    {
+        double back = _zCkW - 0.125;
+        // One console a band each side (the loft is straight within a band, so each is one convex solid); a frame strip over the joint.
+        foreach (var s in new[] { -1, 1 })
+        {
+            Console_(0.506, z1 - 0.002, s, 0);
+            Console_(z1 + 0.002, back - 0.004, s, 0.004);
+            double[][] J(double z) => ConsoleSection(z, s, 0.004, 0.006);
+            _hp.Prism(J(z1 - 0.025), J(z1 + 0.025), Frame, "painted steel");
+        }
+        // The ceiling under the plated roof of the band behind the nose, a light strip down it, the overhead between the couches.
+        var top = Math.Min(At(z1).Top, At(back).Top) - 0.12;
+        var tw = Math.Floor((Pt(At(back), 4).X - 0.12) * 100) / 100;
+        _hp.Detail(-tw, top - 0.025, z1 + 0.06, tw, top - 0.004, back - 0.006, Ceil, "painted plating");
+        double oy = top - 0.025, oz0 = back - 1.7, oz1 = back - 0.5;
+        var overhead = oz0 > z1 + 0.2;
+        if (Math.Min(overhead ? oz0 - 0.1 : back - 0.3, back - 0.3) - (z1 + 0.4) > 0.3)
+            CeilStrip(-0.1, 0.1, z1 + 0.4, overhead ? oz0 - 0.1 : back - 0.3, oy);
+        if (overhead)
+        {
+            _hp.Detail(-0.45, oy - 0.22, oz0, 0.45, oy - 0.003, oz1, Frame, "plastic");
+            for (var i = 0; i < 6; i++)
+                _hp.Detail(-0.36 + i * 0.13, oy - 0.236, oz0 + 0.2, -0.28 + i * 0.13, oy - 0.218, oz0 + 0.5, i % 3 == 1 ? Hazard : Paper, "plastic");
+            _hp.Detail(-0.3, oy - 0.234, oz0 + 0.65, 0.3, oy - 0.218, oz1 - 0.15, "#78c8e8", glow: true);
+        }
+        // The bulkhead's face over the back wall, from the wall's top to the ceiling, following the section.
+        var sec = At(back);
+        double y0 = CCeil + 0.004, y1 = top - 0.03, zf = back - 0.009, za = back - 0.005;
+        var ys = new List<double> { y0 };
+        if (sec.Y3 > y0 && sec.Y3 < y1)
+            ys.Add(sec.Y3);
+        ys.Add(y1);
+        var face = new List<double[]>();
+        foreach (var y in ys)
+            face.Add([Half(sec, y) - 0.1, y, 0]);
+        foreach (var y in Enumerable.Reverse(ys))
+            face.Add([-(Half(sec, y) - 0.1), y, 0]);
+        _hp.Prism([.. face.Select(q => new[] { q[0], q[1], zf })], [.. face.Select(q => new[] { q[0], q[1], za })], Wall, "painted plating");
+        _hp.Detail(-0.6, CCeil + 0.15, zf - 0.012, 0.6, CCeil + 0.45, zf - 0.002, "#78c8e8", glow: true); // (the trade board: prices at the markets on the route)
+    }
+
+    /// <summary>A side console's section at z (side s): its inner face at ConsoleX, a desk sloping from DeskY up to the sill at the glass's
+    /// foot, its outer side down the hull's inside; grown by d all round and moved in by dx.</summary>
+    private double[][] ConsoleSection(double z, int s, double dx, double d)
+    {
+        var sec = At(z);
+        var sill = sec.Yb;
+        double xi = ConsoleX + dx - d, yt = Math.Min(DeskY, sill - 0.1) + d, yb = Ft - 0.03 - d;
+        var gap = HullPieces.T / 2 + 0.025 - d;
+        var pts = new List<(double X, double Y)> { (xi, yb), (xi, yt), (Half(sec, sill) - gap, sill - 0.005 + d) };
+        var ych = sec.Y0 + sec.C0;
+        if (ych > yb + 0.02 && ych < sill - 0.02)
+            pts.Add((Half(sec, ych) - gap, ych));
+        pts.Add((Half(sec, yb) - gap, yb));
+        return [.. pts.Select(p => new[] { s * p.X, p.Y, z })];
+    }
+
+    /// <summary>A side console from za to zb: its body, the desk's dark top with its screens, the sill along the glass's foot.</summary>
+    private void Console_(double za, double zb, int s, double dx)
+    {
+        _hp.Prism(ConsoleSection(za, s, dx, 0), ConsoleSection(zb, s, dx, 0), WallLow, "painted plating");
+        // The desk: a slab on the slope from its inner edge up to the sill, the screens on it, the sill's padded strip.
+        double[] OnDesk(double z, double t, double d)
+        {
+            var sec = At(z);
+            var sill = sec.Yb;
+            double xi = ConsoleX + dx, yt = Math.Min(DeskY, sill - 0.1), xo = Half(sec, sill) - (HullPieces.T / 2 + 0.025), yo = sill - 0.005;
+            double ex = xo - xi, ey = yo - yt, l = Math.Sqrt(ex * ex + ey * ey);
+            double nx = -ey / l, ny = ex / l; // (the slope's normal, up and inboard)
+            return [s * (xi + ex * t + nx * d), yt + ey * t + ny * d, z];
+        }
+        void Pad(double z0, double z1, double t0, double t1, double d0, double d1, string col, string? finish, bool glow = false)
+        {
+            double[][] lo = [OnDesk(z0, t0, d0), OnDesk(z0, t1, d0), OnDesk(z1, t1, d0), OnDesk(z1, t0, d0)];
+            double[][] hi = [OnDesk(z0, t0, d1), OnDesk(z0, t1, d1), OnDesk(z1, t1, d1), OnDesk(z1, t0, d1)];
+            _hp.Prism(lo, hi, col, finish ?? "plastic", glow);
+        }
+        Pad(za + 0.03, zb - 0.03, 0.04, 0.86, 0.003, 0.012, Frame, "plastic");
+        Pad(za + 0.01, zb - 0.01, 0.88, 1.0, 0.003, 0.03, Dark, "rubber");
+        var n = Math.Max(1, (int)Math.Floor((zb - za - 0.1) / 0.9));
+        var w = (zb - za - 0.1) / n;
+        for (var i = 0; i < n; i++)
+        {
+            double a = za + 0.05 + i * w + 0.08, c = za + 0.05 + (i + 1) * w - 0.08;
+            if (c - a < 0.2)
+                continue;
+            Pad(a, c, 0.25, 0.75, 0.014, 0.022, (i + (s > 0 ? 1 : 0)) % 2 == 0 ? "#78c8e8" : "#60e090", null, glow: true);
+            Pad(a, a + Math.Min(0.25, (c - a) / 3), 0.08, 0.2, 0.014, 0.024, Hazard, "plastic");
+        }
+    }
+
+    // The sealed cockpit: a room inside the hull with no glass (a combat ship's kind). A screen wall ahead (the nose camera's picture
+    // and the instruments), desks either side of the flight computer, lined walls and a ceiling; the nose ahead of the room is void.
+    private double SealedFront => Math.Round(_zCkW - 2.75, 3);
+
+    private void SealedCockpit()
+    {
+        double zf = SealedFront, back = _zCkW - 0.125, hw = 1.55, ceil = Ft + 2.3, th = 0.1;
+        // The walls: the screen wall ahead, the sides, the ceiling (pale office walls over a blue dado, as in the cab).
+        _hp.Solid(-hw, Ft, zf - th, hw, ceil + th, zf, Wall, "painted plating");
+        foreach (var s in new[] { -1, 1 })
+        {
+            _hp.Solid(s * (hw - th), Ft, zf, s * hw, ceil, back, Wall, "painted plating");
+            _hp.Detail(s * (hw - th - 0.014), Ft, zf + 0.004, s * (hw - th - 0.002), Ft + 0.9, back - 0.004, WallLow, "painted plating");
+            _hp.Detail(s * (hw - th - 0.018), Ft + 0.9, zf + 0.004, s * (hw - th - 0.001), Ft + 0.95, back - 0.004, WallTrim, "painted steel");
+        }
+        _hp.Solid(-hw, ceil, zf, hw, ceil + th, back, Ceil, "painted plating");
+        CeilStrip(-0.12, 0.12, zf + 0.3, back - 0.3, ceil);
+        // The screen wall: the camera's picture over the middle, the instruments either side, a strip of status lamps under them.
+        double sz = zf + 0.003, sz1 = zf + 0.016;
+        _hp.Detail(-1.35, Ft + 0.95, zf + 0.002, 1.35, ceil - 0.15, zf + 0.008, Dark, "plastic");
+        _hp.Detail(-0.7, Ft + 1.05, sz + 0.006, 0.7, Ft + 1.95, sz1 + 0.004, "#40d0ff", glow: true);
+        foreach (var s in new[] { -1, 1 })
+        {
+            _hp.Detail(s * 0.8, Ft + 1.35, sz + 0.006, s * 1.25, Ft + 1.95, sz1 + 0.004, "#78c8e8", glow: true);
+            _hp.Detail(s * 0.8, Ft + 1.05, sz + 0.006, s * 1.25, Ft + 1.28, sz1 + 0.004, "#60e090", glow: true);
+        }
+        for (var i = 0; i < 11; i++)
+            _hp.Detail(-1.0 + i * 0.2, Ft + 0.985, sz + 0.006, -0.94 + i * 0.2, Ft + 1.015, sz1, i % 4 == 0 ? Red : i % 2 == 0 ? Hazard : "#60e090", glow: true);
+        // The desks either side of the flight computer, their tops' screens and switches.
+        foreach (var s in new[] { -1, 1 })
+        {
+            _hp.Solid(s * 0.5, Ft, zf, s * 1.4, Ft + 0.75, zf + 0.55, Dark, "plastic");
+            _hp.Detail(s * 0.6, Ft + 0.753, zf + 0.08, s * 1.3, Ft + 0.766, zf + 0.4, "#78c8e8", glow: true);
+            for (var i = 0; i < 4; i++)
+                _hp.Detail(s * (0.62 + i * 0.17), Ft + 0.753, zf + 0.44, s * (0.7 + i * 0.17), Ft + 0.77, zf + 0.5, i % 2 == 0 ? Hazard : Paper, "plastic");
+        }
     }
 
     /// <summary>The glass's backing over the dash from za to zb: thin hidden walls just inside the side glass and a hidden ceiling under the roof glass.</summary>
@@ -671,8 +869,9 @@ public sealed class TraderHauler
             DoorSock("doorGalley", false, R(1.025), 0.875);
             DoorSock("doorAirlock", false, R(7.025), 0.875);
             DoorSock("doorStores", false, R(9.125), 0.875);
-            _hp.Sock("lampCkL", -1.4, Ft + 2.2, R(-0.125), "-z");
-            _hp.Sock("lampCkR", 1.4, Ft + 2.2, R(-0.125), "-z");
+            double lx = _cockpit == CockpitKind.Open ? 1.4 : 1.0, ly = _cockpit == CockpitKind.Open ? 2.2 : 1.95; // (under the sealed room's ceiling)
+            _hp.Sock("lampCkL", -lx, Ft + ly, R(-0.125), "-z");
+            _hp.Sock("lampCkR", lx, Ft + ly, R(-0.125), "-z");
             _hp.Sock("switchCk", 1.1, Ft + 1.3, R(-0.125), "-z");
             _hp.Sock("lockerBunk", -1.5, Ft + 0.125, R(0.125), "+z");
             _hp.Sock("lampBunk", -Lw, Ft + 2.2, R(2.225), "+x");
@@ -719,6 +918,9 @@ public sealed class TraderHauler
             _hp.Sock("server0", -2.675, Ft, R(10.225), "+y");
             _hp.Sock("server1", -1.975, Ft, R(10.225), "+y");
         });
+        _rep.Note("Inside", _cockpit == CockpitKind.Open
+            ? "Cockpit (open): the dash across the bow; a console down each side from the dash to the back wall, its desk sloping up to the sill at the glass's foot with screens and switches on it; a ceiling and an overhead panel under the roof behind the nose; a bulkhead face over the back wall with the trade board. Under the sill and over the bulkhead the hull is the room's wall, finished; nothing bare shows through the glass."
+            : $"Cockpit (sealed): a room {Fmt(_zCkW - 0.125 - SealedFront)} m deep inside the hull, 2.9 m across and 2.3 m high: a screen wall ahead (the nose camera's picture and the instruments), desks either side of the flight computer, walls lined like the cab's and a ceiling with a light strip. The nose ahead of it is void.");
         _rep.Note("Inside", "Cab: the cockpit (two couches and the flight computer behind the dash), then a corridor; to port the bunk room, the head and the trade office (its computer and two server racks: the market's books), to starboard the galley, the airlock over the boarding shaft (belly hatch, ladder, MMU dock, two suit lockers) and the stores (life support, oxygen).");
     }
 
@@ -845,7 +1047,7 @@ public sealed class TraderHauler
         foreach (var s in new[] { -1, 1 })
             _hp.In(Side(BandOf(pz), s), () =>
             {
-                _hp.Solid(s * (Ew + 0.25), _nacY - 0.25, pz - 1.0, s * _eng.W, _nacY + 0.25, pz + 1.0, Frame, "dirty steel");
+                _hp.Solid(s * (Ew + 0.25), _nacY - 0.253, pz - 1.0, s * _eng.W, _nacY + 0.253, pz + 1.0, Frame, "dirty steel"); // (0.253: never level with the wall's dado at 1.0 m)
                 _hp.Sock(s < 0 ? "nacL" : "nacR", s * _eng.W, _nacY, pz, s < 0 ? "-x" : "+x");
             });
         _rep.Note("Inside", "Engineering: the reactor socket with its plant, the Engineer's Panel, the Power Board, three batteries, a suit locker and a Pressure Locker for the walk out to the nacelles, a tool rack; the fuel manifolds up the walls to the pylons.");
@@ -1401,7 +1603,7 @@ public sealed class TraderHauler
 
     private PyDict Blueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, $"A Traders hauler for carrying goods between markets, made by the ship generator (seed {_brief.Seed}): a crew cab under a glass nose, a walkable spine with {_bays * 2 * _stack} standard containers in cradles off its flanks, an engineering block aft and two drive nacelles on pylons. Bunks, a head, a trade office, a galley, an airlock over the boarding shaft and the stores in the cab; the plant, the panel and the lockers in engineering. Its slots carry the reference fit: two couches, a drive on each nacelle's engine socket, the plant on the reactor socket, a sensor on the roof.", defs, maxSteps: 700);
+        var bp = new BuildingParts.Blueprint(ShipName, $"A Traders hauler for carrying goods between markets, made by the ship generator (seed {_brief.Seed}): a crew cab under {(_cockpit == CockpitKind.Open ? "a glass nose" : "a plated nose over a sealed cockpit")}, a walkable spine with {_bays * 2 * _stack} standard containers in cradles off its flanks, an engineering block aft and two drive nacelles on pylons. Bunks, a head, a trade office, a galley, an airlock over the boarding shaft and the stores in the cab; the plant, the panel and the lockers in engineering. Its slots carry the reference fit: two couches, a drive on each nacelle's engine socket, the plant on the reactor socket, a sensor on the roof.", defs, maxSteps: 700);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();

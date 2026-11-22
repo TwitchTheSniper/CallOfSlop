@@ -22,6 +22,7 @@ public sealed class ShipGenParts : IPartGenerator
     [
         new("Traders", "trade between markets", 1),
         new("Traders", "trade between markets", 7),
+        new("Traders", "trade between markets", 3, Cockpit: CockpitKind.Sealed), // (the sealed cockpit, Karl 2026-11-22: a room inside the hull)
     ];
 
     public void Make(PartOutput o)

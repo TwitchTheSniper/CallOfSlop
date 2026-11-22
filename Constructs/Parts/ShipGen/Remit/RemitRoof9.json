@@ -1,0 +1,186 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Remit Roof 9",
+  "description": "A length of the Remit Hauler's roof: the plating, the ceiling under it and the void between.",
+  "group": "Ship",
+  "section": "Trader hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 480.0,
+  "health": 1920,
+  "armour": 20,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.925,
+        2.475,
+        10.35
+      ],
+      "max": [
+        0.675,
+        2.725,
+        11.95
+      ],
+      "color": "#b4b6b2",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.835,
+        2.725,
+        10.354
+      ],
+      "max": [
+        0.585,
+        3.165,
+        11.15
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.025,
+        2.725,
+        11.15
+      ],
+      "max": [
+        1.775,
+        3.165,
+        11.946
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.225,
+        2.447,
+        10.85
+      ],
+      "max": [
+        -0.025,
+        2.472,
+        11.65
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -2.8669,
+        3.2055,
+        10.3457
+      ],
+      "max": [
+        2.6169,
+        3.5937,
+        11.9503
+      ],
+      "color": "#c4bca3",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.8445,
+          3.2445,
+          10.3457
+        ],
+        [
+          -0.8445,
+          3.2055,
+          10.3543
+        ],
+        [
+          0.5945,
+          3.2445,
+          10.3457
+        ],
+        [
+          0.5945,
+          3.2055,
+          10.3543
+        ],
+        [
+          2.6169,
+          3.5937,
+          11.9417
+        ],
+        [
+          2.6169,
+          3.5546,
+          11.9503
+        ],
+        [
+          -2.8669,
+          3.5937,
+          11.9417
+        ],
+        [
+          -2.8669,
+          3.5546,
+          11.9503
+        ]
+      ],
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampSp9",
+      "at": [
+        0.175,
+        2.475,
+        11.155
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        2.595,
+        10.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.505,
+        2.725,
+        11.545
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        1.255,
+        2.725,
+        11.545
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.555,
+        11.95
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        -0.125,
+        2.675,
+        11.95
+      ],
+      "dir": "+z"
+    }
+  ]
+}
