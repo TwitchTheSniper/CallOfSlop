@@ -13,12 +13,13 @@ public sealed partial class ZeroDayWorks
         // engine-kit sets with 1 MW heads became three plants, which all feed the one circuit), fuel from two Medium Fluid Bunkers by pipe,
         // and four battery banks. The frame is the circuit: every part the floor's links reach is on it.
         //
-        // The yard: the one big Building Station (a 30 x 12 bay, 8-mast corners) under a yard crane on 22 m gantry columns, its rails
+        // The yard: the one big Building Station (a 30 x 9 bay, 8-mast corners, its two pick pads south of it) under a yard crane on 22 m gantry columns, its rails
         // running east-west on the yard's north and south edges (a 32 m span); a staging pad and the fittings pick pad east of the
-        // station's Core; Plasma Loader Arms along the bay's south side between the columns.
+        // station's Core.
         public const float YardRailNorth = -199f, YardRailSouth = -231f; // the two runs' lines (z): a 32 m span
         public const float YardRailWest = 3f, YardRailEast = 93f; // the runs' first and last block centres (x)
         public const int YardMasts = 10; // 20 m: the bay's 16 m corner masts stand under the hook, and the Core clears the shed's last truss (22.8 m)
+        public const int BayAcross = 9, YardPadRows = 6; // the yard bay's cells across (18 m: the frigate's 16.4 m beam) and its pick pads' rows south of it
         public static float YardRailFoot => FloorY + 2 * YardMasts;
 
         private VPart? _yardStation, _yardCrane;
@@ -87,11 +88,12 @@ public sealed partial class ZeroDayWorks
             _yardCrane = Paint(Stand("Crane Core", V(YardRailWest + 2, YardRailFoot + 0.5f, YardRailNorth + 1), turned, runs[0][1], "+x"), Crane);
             Config(_yardCrane, ("carryHeight", 1.5));
 
-            // ---- The yard's Building Station: a 30 x 12 bay (x 17 to 75, z -203 to -225), 8 Mast Blocks on each corner, its Core on the bay's
-            // north side between two of the crane's columns (x 52 to 58), turned so the bay runs along it: a station builds a blueprint's
+            // ---- The yard's Building Station: a 30 x 9 bay (x 16 to 76, z -200 to -218), 8 Mast Blocks on each corner, its Core on the bay's
+            // north side on the north run's line between two of the crane's columns (x 51 and 67: the bay and its pick pads south of it
+            // then fill the crane's 32 m span), turned so the bay runs along it: a station builds a blueprint's
             // length along its Core (the bay's "along"), and the frigate's 51 m must lie east-west in the 60 m (with the Core east of the bay,
             // facing south, the bay was 60 m across and 24 m along, and the frigate didn't fit).
-            _yardStation = Station(55, -201, 17, -203, 30, 12, 8, General, East);
+            _yardStation = Station(55, YardRailNorth, 17, YardRailNorth - 2, 30, BayAcross, 8, General, East);
             // ---- The yard Assembler, west of the bay (x 0 to 14, z -202 to -224): the frigate's big pieces (decks 5 x 9 cells, the spine 3 x
             // 11, bow and stern 8 m high) need a 6 x 11 bed with 10 m masts; the bay-3 Assembler's 4 x 4 makes the rest. Under the yard
             // crane, which lifts what it makes to the station.
@@ -103,12 +105,11 @@ public sealed partial class ZeroDayWorks
                 var (to, tf) = PortOf(big, "Chute in");
                 var a1 = from + ff;
                 var b1 = to + tf;
-                // (south down the bin's own x over the bays, west along the yard's north edge, then in: clear of the shed's west columns)
-                // (and past the yard crane's north columns, every 8 m from x 3, between two of them)
-                var gap = 7f + 8f * MathF.Round((a1.X - 7f) / 8f);
+                // (south down the bin's own x over the bays, off a column row, to z -195, between the shed's last columns (z -197) and
+                // the bays' (z -189); west there to x 7, south between the yard crane's first two north columns, then in)
                 var lane = RailX.FirstOrDefault(r => MathF.Abs(r - a1.X) < 1.5f, float.NaN) is var rx && float.IsNaN(rx) ? a1.X : rx - 2f; // (off a column row)
                 Link("chute", _bins[m], big, "Chute out", "Chute in", Stock, false, null,
-                    Cut(from, a1, V(a1.X, up, a1.Z), V(lane, up, a1.Z), V(lane, up, -195f), V(gap, up, -195f), V(gap, up, -201.2f), V(b1.X, up, -201.2f), V(b1.X, up, b1.Z), b1));
+                    Cut(from, a1, V(a1.X, up, a1.Z), V(lane, up, a1.Z), V(lane, up, -195f), V(7f, up, -195f), V(7f, up, -201.2f), V(b1.X, up, -201.2f), V(b1.X, up, b1.Z), b1));
                 up += 0.5f;
             }
             YardOrders(_yardStation, big);
@@ -124,17 +125,20 @@ public sealed partial class ZeroDayWorks
             _stores.Add(("fittings pick", pick[0, 0]));
             Arm("Plasma Loader Arm", 81, -229); // (at the pick pad's foot)
 
-            // ---- Plasma Loader Arms along the bay's south side, one between each pair of the south run's columns (from x 21: the yard
-            // Assembler's bed and masts stand west of the bay).
-            for (var x = YardRailWest + 2 + 4 * ColumnEvery; x + 3.6f < 80f; x += 2 * ColumnEvery)
-                Arm("Plasma Loader Arm", x, -231);
+            // ---- The station's own pick pads, south of the bay under both cranes (a station takes a pad wholly past its bay's side,
+            // within the bay's length: ConstructStationPads): two pads of 10 x 6 tiles (20 x 12 m: a deck's 18 x 10 lies on one), Mast
+            // Blocks on their corners for the bow's and stern's 8 m. The yard crane lays the yard Assembler's big pieces on them and
+            // the station's own arms fit them from there (the arms the doc had along the bay's south side are the station's own).
+            const float PadZ = YardRailNorth - 2 * (BayAcross + 1); // (the first row's middle: the cell after the bay's last)
+            foreach (var x0 in new[] { 21f, 49f })
+            {
+                var pad = Tiles("Pad Tile", x0, PadZ, 10, YardPadRows, South, Stock);
+                foreach (var c in Corners(pad))
+                    Stack(c, "top", 4);
+                _stores.Add(($"yard pick {x0:0}", pad[0, 0]));
+            }
         }
 
-        /// <summary>
-        /// What the yard's station orders through: a Line Console (started) in bay 3 by the block Assembler, its Run wired to the Assembler,
-        /// the four Presses and the yard Assembler, its wire into the station's Orders port carried south over the fittings run at 6 m; and the link stock (copper
-        /// for wires, steel for pipes) in two Materials Bins beside the Core, chuted into it (a bin takes any material: a player fills them).
-        /// </summary>
         /// <summary>A link's nodes through <paramref name="pts"/> from <paramref name="from"/>, each straight cut into spans of at most <see cref="SegmentMax"/>.</summary>
         private static Vector3[] Cut(Vector3 from, params Vector3[] pts)
         {
@@ -152,6 +156,11 @@ public sealed partial class ZeroDayWorks
             return nodes.ToArray();
         }
 
+        /// <summary>
+        /// What the yard's station orders through: a Line Console (started) in bay 3 by the block Assembler, its Run wired to the Assembler,
+        /// the four Presses and the yard Assembler, its wire into the station's Orders port carried south over the fittings run at 6 m; and the link stock (copper
+        /// for wires, steel for pipes) in two Materials Bins east of the Core, chuted into it (a bin takes any material: a player fills them).
+        /// </summary>
         private void YardOrders(VPart station, VPart big)
         {
             const float up = 6f;
@@ -175,9 +184,9 @@ public sealed partial class ZeroDayWorks
             var c1 = ci + cf;
             foreach (var x in new[] { 61f, 63f })
             {
-                var bin = On("Materials Bin", x, -201f, Up, paint: Stock);
+                var bin = On("Materials Bin", x, YardRailNorth, Up, paint: Stock);
                 var top = SocketAt(bin, "bottom") + new Vector3(0, bin.Def.BoundsMax.Y + 0.2f, 0);
-                Link("chute", bin, station, null, "Chute in", Stock, false, null, Cut(top, V(top.X, 3f, top.Z), V(c1.X, 3f, top.Z), V(c1.X, 3f, c1.Z), c1));
+                Link("chute", bin, station, null, "Chute in", Stock, false, null, Cut(top, V(top.X, 3f, top.Z), V(top.X, 3f, top.Z + 2f), V(c1.X, 3f, top.Z + 2f), V(c1.X, 3f, c1.Z), c1)); // (north round the crane's column at x 59)
             }
         }
     }

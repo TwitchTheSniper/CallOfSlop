@@ -74,6 +74,11 @@ public static class StationCheck
             Console.WriteLine($"--station-check: no blueprint named \"{build}\"");
             return 1;
         }
+        {
+            Span<ushort> pads = stackalloc ushort[8];
+            var np = ConstructStation.OwnPads(c, t, pads);
+            Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} fitting arms, {np} pick pads under its crane{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0})"))}");
+        }
         Console.WriteLine($"  station: part {t}; the bill of {target.Name} as its panel shows it before Start:");
         var preview = new StationPreview();
         preview.Begin(target);
@@ -168,6 +173,10 @@ public static class StationCheck
         foreach (var b in w.Bodies)
             if (b != c)
                 Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");
+        if (args.Contains("--lifters"))
+            for (var i = 0; i < c.PartCount; i++)
+                if (ConstructLifters.DefOf(c, i) != null)
+                    Console.WriteLine($"  lifter {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {ConstructLifters.Look(w, c, i)}");
         Console.WriteLine($"  power: on {c.PowerOn}, mains off {c.MainsOff}, draw {c.PowerUse:0} W, plant {c.PlantOut:0.0} kW");
         if (c.Parts[t].Station is not { } j)
         {
