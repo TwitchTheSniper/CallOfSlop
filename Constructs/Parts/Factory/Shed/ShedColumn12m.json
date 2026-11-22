@@ -1,0 +1,238 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shed Column 12 m",
+  "description": "A tall steel H column for a shed's end walls: stand it on the floor and hang Wall Sheets on its sides.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2826.0,
+  "health": 2220,
+  "armour": 18,
+  "material": "steel",
+  "color": "#4a5058",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        0.0,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        12.0,
+        -0.15
+      ]
+    },
+    {
+      "min": [
+        -0.2,
+        0.0,
+        0.15
+      ],
+      "max": [
+        0.2,
+        12.0,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.025,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        0.025,
+        11.996,
+        0.15
+      ]
+    },
+    {
+      "min": [
+        -0.35,
+        0.003,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        0.03,
+        0.35
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.21,
+        11.98,
+        -0.21
+      ],
+      "max": [
+        0.21,
+        11.998,
+        0.21
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.19,
+        4.0,
+        -0.147
+      ],
+      "max": [
+        0.19,
+        4.02,
+        0.147
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.19,
+        8.0,
+        -0.147
+      ],
+      "max": [
+        0.19,
+        8.02,
+        0.147
+      ],
+      "color": "#3a3f46",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "head",
+      "at": [
+        0.0,
+        12.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        0.2,
+        1.0,
+        0.17
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -0.2,
+        1.0,
+        0.17
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        0.0,
+        1.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        0.0,
+        1.0,
+        -0.2
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x5",
+      "at": [
+        0.2,
+        5.0,
+        0.17
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x5",
+      "at": [
+        -0.2,
+        5.0,
+        0.17
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z5",
+      "at": [
+        0.0,
+        5.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z5",
+      "at": [
+        0.0,
+        5.0,
+        -0.2
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x9",
+      "at": [
+        0.2,
+        9.0,
+        0.17
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x9",
+      "at": [
+        -0.2,
+        9.0,
+        0.17
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z9",
+      "at": [
+        0.0,
+        9.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z9",
+      "at": [
+        0.0,
+        9.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

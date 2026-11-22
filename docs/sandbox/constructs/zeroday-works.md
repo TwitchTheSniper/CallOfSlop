@@ -34,3 +34,15 @@ takes about 2 minutes on the cloud box.
 **Known.** `--check-vehicle` (about 4 minutes) finds about 290 coplanar pairs between parts, all small detail boxes where two
 machines' cells meet on the 2 m grid (a Mast Block's stripe against a Roller Tile's or a Laser Bed Block's edge detail). They come
 from the parts' own details sitting on their cell faces, not from the layout, so they are fixed in those parts' generators.
+
+## The shed's shell parts
+
+The steel shed over the bays is built from part kit generator `factory_shell` (`Source/PartKit/Generators/FactoryShellParts.Mill.cs`), parts in `Constructs/Parts/Factory/Shed`, section "Factory shell". Nothing places them yet: the works generator does that.
+
+- **Why the roof isn't carried by the inner rows.** A Hall Crane's bridge is drawn up to 2.62 m over its rails' top, and the bays on either side of x 31, 51 and 71 share one rail, so nothing can stand on an inner rail line under that height. The roof is one chain of half trusses from wall to wall, its bottom chord level 4 m over the rail sockets (y 22.8 on the works), carried only by Eaves Posts on the two outer rows. A construct has no load paths, so a 96 m chain holds like a 30 m one.
+- **Eaves Post.** Its "rail" socket goes on an outer Crane Rail Block's outer side (the -x of the west row, the +x of the east row), one per mast column (every 8 m). The "seat" on its bracket is over the rail's centre line, 4 m over the socket; its "wall" socket on the outer face takes a "Wall Sheet 8x3 m Eaves".
+- **Roof Truss Half 10, 12, 15, 16, 20 m.** Low end at z 0 (an eave or a valley), ridge at z = L, pitch 0.3 (rise 0.3 m a metre), 1.2 m deep at the low end. Two halves join ridge to ridge ("ridge" to "ridge") and valley to valley ("low" to "low"); "seat" sits on an Eaves Post. On the works: 15+15 over bay 1 (x 1 to 31), 20+20 over bay 2 (31 to 71, the ridge over the 51 rail), 12+12 over bay 3 (71 to 95). Ridges come out at y 28.5, 30.0 and 27.6.
+- **Roof Slope WxL m Eaves / Valley** (W 8 or 4): sheeting a truss bay wide along +x, "rest" on a truss's "topLow". Eaves ones overhang the low end by 2 m (over the wall); valley ones stop 0.3 m short, inside a **Valley Gutter** set on the valley's "topLow".
+- **Ridge Cap** or **Ridge Monitor** (the louvred vent the doc shows) on a truss's "topRidge".
+- **Wall Sheet WxH m** (W 8 or 4, H 4, 3, 2): cladding 0.5 m off the face its "back" socket is on, the foot 1 m under that socket. On the side walls they hang on the masts' outer sockets (every 2 m up, so 4 m sheets stack from the floor to 20.3 m), then the Eaves sheet on the post closes 20.3 to 23.3 m under the overhang.
+- **Shed Column 12, 16, 20, 22.5 m** for the end walls: wall sockets every 4 m (1, 5, 9 ... m) on all faces; the 22.5 m one stands on the 0.3 m floor right under a gable truss's bottom chord. **Gable Sheet L m** on a truss's "+x" or "-x" closes the triangle above, in line with Wall Sheets on columns standing under the truss's line.
