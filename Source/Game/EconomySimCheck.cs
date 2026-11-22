@@ -88,6 +88,17 @@ public static class EconomySimCheck
             File.WriteAllText(outPath, sb.ToString());
             Console.WriteLine($"[economy-sim] hour {hour:0.0} of {hours:0.0} after {wall.Elapsed.TotalMinutes:0.0} min");
         }
+        sb.Append("== parts at the end, by station\n");
+        for (var d = 0; d < all.Length; d++)
+        {
+            if (all[d].Parts.Length == 0)
+                continue;
+            var m = g.EconomySimMarket(d);
+            sb.Append($"  {all[d].Name}:");
+            for (var j = 0; j < all[d].Parts.Length && all[d].Goods.Length + j < m.Length; j++)
+                sb.Append($" {ConstructParts.Def(all[d].Parts[j].Part)?.Name ?? "?"} {m[all[d].Goods.Length + j]};");
+            sb.Append('\n');
+        }
         sb.Append("== lines empty or full at the hourly looks\n");
         for (var d = 0; d < all.Length; d++)
             for (var k = 0; k < low[d].Length; k++)

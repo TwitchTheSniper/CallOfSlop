@@ -11,7 +11,7 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     public const int MaxSupplyLines = 10;
-    private const long LateAfter = 30L * 60 * World.TickRate; // (half an hour of play: a leg between planets takes ten minutes or so)
+    private const long LateAfter = 60L * 60 * World.TickRate; // (an hour of play: a leg between planets takes 20 to 40 minutes, GameStationHaulers.HaulFarMinutes)
     private long[] _routeArrived = [];
     private bool[] _routeHadHauler = [];
     private readonly List<string> _linesBuf = new(MaxSupplyLines);

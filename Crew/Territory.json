@@ -5,7 +5,7 @@
   // outposts are built as buildings. "at" is latitude and longitude in degrees on a planetoid (x and z on a flat map). Holders name a power, or a kind
   // (its first power). A site's "goods" (Karl, 2026-11-22: territory pays in goods only) are units an hour of each material it sends its holder's
   // nearest station that trades it (one over that planet, else the one most short of it), and that is all a site earns: a kind's "income" is no
-  // longer paid. A power with no station (the Raiders) gets nothing from its sites; it lives on loot. The "far" numbers move, fight and set down the groups nobody sees (section 8).
+  // longer paid. Caledon Port's wood and Slopolis Watch's stone and sand feed the flat-pack works' stand-in chain at Slopolis Exchange (2026-11-22). A power with no station (the Raiders) gets nothing from its sites; it lives on loot. The "far" numbers move, fight and set down the groups nobody sees (section 8).
   "format": "call-of-slop-npc-territory/1",
   "majority": 0.5,
   "kinds": {
@@ -23,9 +23,9 @@
   "planets": {
     "Glacier": [
       { "name": "Glacier Spaceport", "kind": "spaceport", "at": [20, 30], "holder": "Militia" },
-      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia", "goods": { "iron ore": 800, "ice": 500 } },
+      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia", "goods": { "iron ore": 16000, "ice": 500 } },
       { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders", "goods": { "iron ore": 600, "ice": 500 } },
-      { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders", "goods": { "copper ore": 300 } },
+      { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders", "goods": { "copper ore": 2000 } },
       { "name": "Drift Camp", "kind": "outpost", "at": [-40, -100], "holder": "Raiders" }
     ],
     "Rime": [ { "name": "Rime Mine", "kind": "mine", "at": [0, 0], "holder": "Militia", "goods": { "iron ore": 400 } } ],
@@ -37,16 +37,16 @@
     ],
     "Slopolis": [
       { "name": "Slopolis Port", "kind": "spaceport", "at": [0, 0], "holder": "Traders" },
-      { "name": "Slopolis Watch", "kind": "outpost", "at": [30, 90], "holder": "Traders" }
+      { "name": "Slopolis Watch", "kind": "outpost", "at": [30, 90], "holder": "Traders", "goods": { "stone": 400, "sand": 1200 } }
     ],
     "Cinder": [
-      { "name": "Ash Refinery", "kind": "refinery", "at": [15, 20], "holder": "Traders", "goods": { "hydrogen": 1400, "helium": 300, "oxidiser": 300 } },
+      { "name": "Ash Refinery", "kind": "refinery", "at": [15, 20], "holder": "Traders", "goods": { "hydrogen": 4000, "helium": 300, "oxidiser": 300 } },
       { "name": "Ember Mine", "kind": "mine", "at": [-25, -60], "holder": "Traders", "goods": { "iron ore": 400 } },
-      { "name": "Slag Mine", "kind": "mine", "at": [45, 120], "holder": "Traders", "goods": { "copper ore": 500 } },
+      { "name": "Slag Mine", "kind": "mine", "at": [45, 120], "holder": "Traders", "goods": { "copper ore": 1500 } },
       { "name": "Cinder Watch", "kind": "outpost", "at": [-5, 170], "holder": "Militia" }
     ],
     "Caledon": [
-      { "name": "Caledon Port", "kind": "spaceport", "at": [25, 0], "holder": "Traders" },
+      { "name": "Caledon Port", "kind": "spaceport", "at": [25, 0], "holder": "Traders", "goods": { "wood": 1000 } },
       { "name": "Heather Mine", "kind": "mine", "at": [-15, 70], "holder": "Militia", "goods": { "copper ore": 300 } },
       { "name": "Glen Post", "kind": "outpost", "at": [50, -80], "holder": "Militia" },
       { "name": "Strath Farm", "kind": "outpost", "at": [-30, 30], "holder": "Farmers", "goods": { "dirt": 150 } },
