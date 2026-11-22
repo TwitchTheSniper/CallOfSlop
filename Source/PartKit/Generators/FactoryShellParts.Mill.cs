@@ -174,7 +174,7 @@ public sealed partial class FactoryShellParts
         p.Sock("ridge", [0, 0.12, l], "+z");
         p.Sock("seat", [0, 0, 0], "-y");
         p.Sock("topLow", [0, Top(0), 0], "+y");
-        p.Add(Box([-0.1, Top(l) - 0.05, l - 0.2], [0.1, Top(l), l], hidden: true)); // (the ridge socket's face)
+        p.Add(Box([-0.1, Top(l) - 0.05, l - 0.05], [0.1, Top(l), l], hidden: true)); // (the ridge socket's face: short, past the end of a slope on the truss, z1 = l - 0.06)
         p.Sock("topRidge", [0, Top(l), l], "+y");
         p.Sock("+x", [w, 0.12, 0], "+x");
         p.Sock("-x", [-w, 0.12, 0], "-x");
@@ -240,7 +240,7 @@ public sealed partial class FactoryShellParts
             var zo = s * half;
             double za = Math.Min(zo, zo + s * t), zb = Math.Max(zo, zo + s * t);
             foreach (var x in Enumerable.Range(0, (int)(bay / 2) + 1).Select(i => Math.Clamp(i * 2.0, 0.06, bay - 0.06)))
-                p.Add(Box([x - 0.05, foot, za - 0.03], [x + 0.05, top, zb + 0.03], Trim)); // a post
+                p.Add(Box([x - 0.05, foot, za - 0.03], [x + 0.05, top, zb + 0.03], Trim, detail: true)); // a post (a look: it stands on the slopes, whose solid steps rise over the drawn sheet)
             for (var y = foot + 0.15; y < top - 0.1; y += 0.18)
                 Lean(p, 0.06, bay - 0.06, s < 0 ? za - 0.12 : za, s < 0 ? y - 0.06 : y, s < 0 ? zb : zb + 0.12, s < 0 ? y : y - 0.06, 0.03, Louvre); // a louvre blade, leaning out
             p.Add(Box([0.003, top - 0.12, za], [bay - 0.003, top, zb], Trim, detail: true)); // the top rail
