@@ -806,8 +806,8 @@ and a wire leaving a plate's Data k the first wire into the plug's (`ModuleSocke
 thruster standing on the module's plug (`ConstructWorks.FindMount`, `ModuleSockets.EngineMountOf`). Shipped adapters written by
 the part kit (`Constructs/Blueprints/ModuleAdapter*.json`: 2x2 to 1x1 and 1x2, 3x3 to 1x1 and 2x2). Plugs gained a Small socket
 in each metre cell's middle (`s0.0`). **The Modules tab: decided not to build a tab of its own**: the Blueprints tab marks module
-designs ("module 2x2 engine", the filter finds them) and lists the modules in the world and where each is, which is what the
-design asked of the Modules tab; Creative fitting from nothing is the Blueprints tab's place-and-F. Tried: a tank's pipe through a
+designs ("module 2x2 engine", the filter finds them), which is what the design asked of the Modules tab (its list of the modules
+in the world and where each is was removed, Sean 2026-11-22: it grows too long); Creative fitting from nothing is the Blueprints tab's place-and-F. Tried: a tank's pipe through a
 fitted 1x1 engine module to an RCS thruster; an Ammo Container's feed through a fitted 1x1 module to an AA Gun ("fed Ammo
 Container"); a Lever's wire into the plate's Data 1 and the plug's Data 1 wired to a Lamp on the module: the lever on, the lamp on.
 
