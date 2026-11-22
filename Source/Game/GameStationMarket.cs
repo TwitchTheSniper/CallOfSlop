@@ -256,11 +256,18 @@ public static class StationMarkets
                 {
                     if (parts[k].Make <= 0)
                         continue;
+                    // (a part's inputs come from the part kit's recipes, which change under the file: a part it can't make from its goods is left
+                    // unmade with a log line, so a regenerated recipe never takes every station's market down with it)
                     var pd = ConstructParts.Def(parts[k].Part);
                     var sum = new Dictionary<byte, float>();
                     ControllerRules.PartGoods(pd, 1, 0, sum);
-                    if (sum.Count == 0)
-                        throw new FormatException($"{d.Name}: it makes \"{pd.Name}\", which has no Assembling recipe to make it from");
+                    var missing = sum.Keys.Where(x => sum[x] > 0 && !goods.Any(g => g.Material == x)).Select(x => RecyclingTable.Current.NameOf(x)).ToArray();
+                    if (sum.Count == 0 || missing.Length > 0)
+                    {
+                        Console.WriteLine($"[stations] {d.Name} makes no \"{pd.Name}\": " + (sum.Count == 0 ? "it has no Assembling recipe" : $"it is made from {string.Join(", ", missing)}, which the station doesn't trade"));
+                        parts[k] = parts[k] with { Make = 0 };
+                        continue;
+                    }
                     parts[k] = parts[k] with { From = [.. sum.Where(x => x.Value > 0).Select(x => Input(RecyclingTable.Current.NameOf(x.Key), x.Value, $"\"{pd.Name}\""))] };
                 }
                 d.Goods = [.. goods];
