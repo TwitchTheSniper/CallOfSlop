@@ -23,8 +23,8 @@
   "planets": {
     "Glacier": [
       { "name": "Glacier Spaceport", "kind": "spaceport", "at": [20, 30], "holder": "Militia" },
-      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia", "goods": { "iron ore": 800 } },
-      { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders", "goods": { "iron ore": 600 } },
+      { "name": "Icefall Refinery", "kind": "refinery", "at": [-10, 80], "holder": "Militia", "goods": { "iron ore": 800, "ice": 500 } },
+      { "name": "North Rime Mine", "kind": "mine", "at": [35, -40], "holder": "Traders", "goods": { "iron ore": 600, "ice": 500 } },
       { "name": "Crevasse Mine", "kind": "mine", "at": [5, 140], "holder": "Traders", "goods": { "copper ore": 300 } },
       { "name": "Drift Camp", "kind": "outpost", "at": [-40, -100], "holder": "Raiders" }
     ],
@@ -49,6 +49,7 @@
       { "name": "Caledon Port", "kind": "spaceport", "at": [25, 0], "holder": "Traders" },
       { "name": "Heather Mine", "kind": "mine", "at": [-15, 70], "holder": "Militia", "goods": { "copper ore": 300 } },
       { "name": "Glen Post", "kind": "outpost", "at": [50, -80], "holder": "Militia" },
+      { "name": "Strath Farm", "kind": "outpost", "at": [-30, 30], "holder": "Farmers", "goods": { "dirt": 150 } },
       { "name": "Loch Post", "kind": "outpost", "at": [-40, 140], "holder": "Militia" }
     ],
     "Cairn": [ { "name": "Cairn Mine", "kind": "mine", "at": [0, 0], "holder": "Traders", "goods": { "gold ore": 80, "levite ore": 20 } } ],

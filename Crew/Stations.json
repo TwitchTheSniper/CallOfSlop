@@ -33,7 +33,7 @@
     "iron ore": 0.15, "copper ore": 0.25, "gold ore": 1.1, "levite ore": 2,
     "metal": 0.65, "steel": 1.2, "copper": 0.8, "gold": 3, "bronze": 1, "levite": 6,
     "glass": 0.3, "rubber": 0.4, "cloth": 0.3, "laminate": 0.6, "circuits": 3.75,
-    "hydrogen": 0.4, "helium": 0.6, "oxidiser": 0.4, "ammo": 1.8, "produce": 0.5
+    "hydrogen": 0.4, "helium": 0.6, "oxidiser": 0.4, "ammo": 1.8, "produce": 0.5, "water": 0.15, "ice": 0.1
   },
   // The Traders' first supply lines (phase 2; the ships are placeholders until Karl's Traders ships are in: change "ship" to swap one in).
   // Convoys (phase 3): "needs": true also loads any good the far station is short of that this one sells, most needed first (a listed good
@@ -50,7 +50,10 @@
     // Hexkey Orbital's supply (Karl, 2026-11-21): furniture from the flat-pack works at Slopolis Exchange, in the ship's Storage Volumes, by what
     // the store is short of ("parts": true), in the Packet Spine Freighter's standard containers (Karl, 2026-11-21: the new Traders ship as the placeholder).
     { "power": "Traders", "ship": "Packet Spine Freighter", "count": 1, "from": "Slopolis Exchange", "to": "Hexkey Orbital", "goods": [], "back": [], "wait": 30, "parts": true,
-      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } }
+      "escort": { "ship": "Zero Day Frigate", "count": 1, "gap": 150 } },
+    // The Farmers' food runs (economy step 6): produce out to the Highport and Glacier Watch, water home (no escorts: the Farmers don't fight).
+    { "power": "Farmers", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Granary", "to": "Caledon Highport", "goods": ["produce"], "back": ["water"], "wait": 30 },
+    { "power": "Farmers", "ship": "Magpie Mining Ship", "count": 1, "from": "Caledon Granary", "to": "Glacier Watch", "goods": ["produce"], "back": ["water"], "wait": 30 }
   ],
   "stations": [
     {
@@ -69,7 +72,11 @@
         { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 6000, "most": 60000, "uses": 600, "want": 20000 },
         { "good": "metal", "buy": 0.5, "sell": 0.8, "stock": 3000, "most": 30000 },
         { "good": "steel", "buy": 1.05, "sell": 1.4, "stock": 4000, "most": 30000, "uses": 200, "want": 8000 },
-        { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000, "uses": 20, "want": 1500 }
+        { "good": "circuits", "buy": 3, "sell": 4.5, "stock": 500, "most": 5000, "uses": 20, "want": 1500 },
+        // food and water (economy step 6, Karl 2026-11-22): its crews eat produce from the Farmers' granary and drink water it melts from Glacier's ice
+        { "good": "ice", "buy": 0.08, "sell": 0.12, "stock": 3000, "most": 40000, "want": 8000 },
+        { "good": "water", "buy": 0.12, "sell": 0.18, "stock": 3000, "most": 30000, "uses": 150, "makes": 400, "from": { "ice": 1 }, "want": 8000 },
+        { "good": "produce", "buy": 0.45, "sell": 0.65, "stock": 1500, "most": 10000, "uses": 120, "want": 3000 }
       ],
       // Parts (physical: taken into your inventory one at a time, and every one you carry traded at once), priced from their value.
       "parts": [
@@ -98,7 +105,10 @@
         { "good": "steel", "buy": 0.6, "sell": 0.85, "stock": 20000, "most": 60000, "makes": 400, "from": { "iron ore": 3 } },
         { "good": "metal", "buy": 0.45, "sell": 0.7, "stock": 6000, "most": 30000 },
         { "good": "ammo", "buy": 1.5, "sell": 2.2, "stock": 3000, "most": 10000 },
-        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 8000, "most": 40000, "uses": 200 }
+        { "good": "hydrogen", "buy": 0.3, "sell": 0.45, "stock": 8000, "most": 40000, "uses": 200 },
+        { "good": "ice", "buy": 0.07, "sell": 0.1, "stock": 4000, "most": 40000, "want": 8000 },
+        { "good": "water", "buy": 0.1, "sell": 0.15, "stock": 4000, "most": 30000, "uses": 100, "makes": 300, "from": { "ice": 1 }, "want": 8000 },
+        { "good": "produce", "buy": 0.5, "sell": 0.7, "stock": 1000, "most": 8000, "uses": 80, "want": 2000 }
       ]
     },
     {
@@ -134,6 +144,8 @@
         { "good": "copper ore", "buy": 0.3, "sell": 0.4, "stock": 4000, "most": 80000, "want": 20000 },
         { "good": "gold ore", "buy": 1.2, "sell": 1.6, "stock": 400, "most": 10000, "want": 2000 },
         { "good": "hydrogen", "buy": 0.4, "sell": 0.55, "stock": 4000, "most": 30000, "uses": 300, "want": 10000 },
+        { "good": "water", "buy": 0.15, "sell": 0.22, "stock": 1500, "most": 10000, "uses": 60, "want": 3000 },
+        { "good": "produce", "buy": 0.55, "sell": 0.75, "stock": 600, "most": 5000, "uses": 50, "want": 1500 },
         { "good": "circuits", "buy": 2.6, "sell": 3.8, "stock": 1500, "most": 8000, "makes": 60, "from": { "copper ore": 13, "gold ore": 0.8 } },
         { "good": "copper", "buy": 0.7, "sell": 1, "stock": 2000, "most": 20000, "want": 6000 },
         { "good": "steel", "buy": 1.1, "sell": 1.5, "stock": 1000, "most": 10000, "want": 6000 },
@@ -414,6 +426,22 @@
         { "part": "Container Cradle 2x2", "stock": 5, "most": 40, "want": 16, "uses": 0.1 },
         { "part": "Container Corner Clamp", "stock": 2, "most": 40, "want": 16, "uses": 0.3 },
         { "part": "Worn Ladder", "stock": 6, "most": 40, "want": 16, "uses": 0.2 }
+      ]
+    },
+    {
+      // The Farmers' granary over Caledon (economy step 6, Karl 2026-11-22: "a reason to exist" for the Farmers): it grows produce from water
+      // and fertiliser (dirt, a stand-in until a fertiliser good exists) and sells it to every crewed station by its haulers. Its water comes
+      // back on those runs from the stations that melt Glacier's ice. Built from the Highport's blueprint for now, 25 km up.
+      "name": "Caledon Granary",
+      "power": "Farmers",
+      "planet": "Caledon",
+      "blueprint": "Caledon Highport",
+      "orbit": 25,
+      "goods": [
+        { "good": "produce", "buy": 0.3, "sell": 0.45, "stock": 4000, "most": 30000, "makes": 400, "from": { "water": 2, "dirt": 0.25 } },
+        { "good": "water", "buy": 0.16, "sell": 0.24, "stock": 6000, "most": 40000, "want": 16000 },
+        { "good": "dirt", "buy": 0.02, "sell": 0.03, "stock": 2000, "most": 20000, "want": 4000 },
+        { "good": "hydrogen", "buy": 0.35, "sell": 0.5, "stock": 2000, "most": 10000, "uses": 40, "want": 4000 }
       ]
     }
   ]
