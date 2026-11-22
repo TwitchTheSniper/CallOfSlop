@@ -455,7 +455,7 @@ public sealed class CrewNav
                     c.SegPose(lp.Seg, out var sq, out var st);
                     var cx = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
                     var stand = World.PlayerRadius + 0.12f;
-                    var foot = st + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, d.BoundsMin.Y, d.BoundsMin.Z - stand)), sq);
+                    var foot = st + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, d.LadderFoot, d.BoundsMin.Z - stand)), sq);
                     var top = st + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, d.LadderTop, d.BoundsMax.Z + stand)), sq);
                     var a = NearestNode(g, foot, 0.6f, 0.8f);
                     var b = NearestNode(g, top, 0.6f, 0.8f);
@@ -1003,8 +1003,7 @@ public sealed class CrewNav
         // A ladder: climb it from its end (the game's own climb).
         if (WLadder[w * MaxPts + WAt[w]] is var lad and >= 0 && s.RideClimb == 0 && d < 1.6f)
         {
-            if (ConstructRide.HatchOver(c, lad) is var lid and >= 0 && !ConstructDoors.TargetOpen(c, lid) && c.DoorOf(lid) is var lk and >= 0)
-                ConstructDoors.Command(world, c, lk, true); // (a deck hatch shut over its shaft: the crew opens it, then climbs once it rests open)
+            ConstructRide.OpenWay(world, c, lad); // (a ladder in a shaft: the crew opens its hatches and lowers its sections, then climbs once they rest open)
             if (ConstructRide.ClimbLadder(ref s, c, lad, World.HeightOf(Stance.Stand), frame: true) == null)
             {
                 WAt[w]++;

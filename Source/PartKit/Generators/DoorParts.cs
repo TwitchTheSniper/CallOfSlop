@@ -246,7 +246,7 @@ public sealed class DoorParts : IPartGenerator
     // hole against the outboard wall, its top under the floor, and the hole takes one of these: a lid level with the deck, so a shut
     // hatch is floor to walk over. It hangs by its hull-side edge and swings down a quarter turn into the shaft, standing against
     // the hull side of it, clear of the ladder on the hole's fore or aft edge. F (from above or below) works it, and F on the ladder
-    // under a shut one opens it first (ConstructRide.HatchOver). The floor round the hole carries the coaming (DeckHatchRim).
+    // under a shut one opens it first (ConstructRide.NextLid, OpenWay). The floor round the hole carries the coaming (DeckHatchRim).
 
     /// <summary>A deck hatch's lid: its thickness (its top is the deck's top) and the gap round it in its hole.</summary>
     public const double HatchThick = 0.05, HatchGap = 0.01;

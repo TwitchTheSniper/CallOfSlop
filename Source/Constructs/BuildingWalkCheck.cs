@@ -340,7 +340,7 @@ public static class BuildingWalkCheck
             c.WorldFrame(lp.Seg, out var lq, out var lt);
             var stand = World.PlayerRadius + 0.12f;
             var cx = (ld.BoundsMin.X + ld.BoundsMax.X) * 0.5f;
-            var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.BoundsMin.Y + 0.02f, ld.BoundsMin.Z - stand)), lq);
+            var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderFoot + 0.02f, ld.BoundsMin.Z - stand)), lq);
             var topAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderTop + 0.02f, ld.BoundsMax.Z + stand)), lq);
             // (the spot itself, else the nearest that fits within the climb's exit search, ConstructRideLadder.LadderExit)
             (int, int) NodeAt(Vector3 at)
