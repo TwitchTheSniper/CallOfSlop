@@ -88,6 +88,8 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayPower();
             LayYard();
             LayShell();
+            LayWalks();
+            LayRooms();
         }
 
         /// <summary>
