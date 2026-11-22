@@ -222,6 +222,10 @@ Refining, grow beds (hydroponics on water), extrusion, the Wheel Former, the Pre
 - Lifters (the Loader Arm in five tiers: a Building Station's extra hands; settings, ports, the reach view, saves)
 - Production Showcase
 
+## [The Zero Day works](constructs/zeroday-works.md)
+
+The factory blueprint that builds the Zero Day frigate (generator `zeroday_works`): its coordinates, its areas and what each holds so far.
+
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB
 
 Storage volumes, physical storage, modular shelves, the Smart Terminal, the Inventory Beacon, in-wall bays.
