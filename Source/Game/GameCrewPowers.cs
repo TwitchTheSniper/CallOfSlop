@@ -256,11 +256,10 @@ public sealed partial class Game : IPowerHost
         }
         if (bestD < 0)
         {
-            if (_siteGoodsLost.Add(power * 256 + material))
+            if (_siteGoodsLost.Add(power * 256 + material)) // (once a game for a power and a material: a station that fills and frees room an hour says it once)
                 Log($"[powers] {CrewPowers.Of(power)?.Name}: its sites' {RecyclingTable.Current.NameOf(material)} has no station of its with room to take it: left in the ground");
             return 0;
         }
-        _siteGoodsLost.Remove(power * 256 + material);
         var mk = MarketOfDef(bestD);
         var took = Math.Min(units, all[bestD].Goods[bestK].Most - mk.Stock[bestK]);
         mk.Stock[bestK] += took;
