@@ -256,9 +256,9 @@ public static class ModuleCut
                 continue;
             if (!c.Rigid(c.Parts[j].Seg))
                 return new Plan(cuts, j, $"the {d.Name} (part {j}) is on a joint", 0, 0, 0);
-            if (Array.Exists(HullHoles.HolesOf(d), h => h.Text == local.Text))
+            if (Array.Exists(HullHoles.HolesOf(d), h => h.TunnelText == local.TunnelText))
                 continue; // (cut already: this well's hole)
-            if (HullHoles.WithHole(d, local) is { } holed)
+            if (HullHoles.WithHole(d, local, recut: true) is { } holed)
             {
                 cuts.Add((j, holed));
                 // The hull's thickness here: the part's extent along the normal inside the well.
@@ -323,19 +323,19 @@ public static class ModuleCut
             Slug(world, c, s, face, n, lost);
     }
 
-    /// <summary>The well's liner: a seal sleeve on part <paramref name="part"/>, from the surface down to the plate's face.</summary>
+    /// <summary>
+    /// The well's liner: the hole in part <paramref name="part"/> (the one nearest the surface) lined from the surface down to the plate's
+    /// face, four walls through the hull's thickness (<see cref="HullHoles.Hole.WithLining"/>: on the hole's own entry, so a deck with two
+    /// wells keeps its key short enough for both liners, Sean 2026-11-22).
+    /// </summary>
     private static void Liner(Construct c, int part, in CModSocket s, Vector3 face, Vector3 n, Vector3 across, Vector3 up)
     {
         Freeform.PartWorld(c, part, out var pos, out var rot);
         var iq = Quaternion.Conjugate(rot);
-        Vector3 L(Vector3 w) => Vector3.Transform(w - pos, iq);
-        Vector3 D(Vector3 w) => Vector3.Transform(w, iq);
-        var hw = s.W * 0.5f + LinerGap;
-        var hl = s.L * 0.5f + LinerGap;
-        Tunnel(c, s, face, n, out _, out _, out var a, out var b);
-        var v = HullHoles.Sleeve.Of(L(a), D(across), D(up), hw, hl, L(b), D(across), D(up), hw, hl);
+        Tunnel(c, s, face, n, out var mouth, out var len, out var a, out var b);
+        var local = HullHoles.Hole.Of(Vector3.Transform(mouth - pos, iq), Vector3.Transform(-n, iq), Vector3.Transform(up, iq), s.W * 0.5f + Margin, s.L * 0.5f + Margin, len);
         var d = c.DefOf(part);
-        if (HullHoles.WithSleeve(d, v) is not { } lined)
+        if (HullHoles.WithLining(d, local.TunnelText, Vector3.Dot(a - mouth, -n), Vector3.Dot(b - mouth, -n), Margin - LinerGap) is not { } lined)
         {
             Console.WriteLine($"[modules] construct {c.Id}: the well of socket part {s.Plate} has no liner: the {HullHoles.Shown(d)} can't take one ({HullHoles.LastRefusal})");
             return;

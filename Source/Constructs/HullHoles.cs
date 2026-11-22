@@ -59,7 +59,36 @@ public static class HullHoles
             }
         }
 
-        public string Text => string.Create(CultureInfo.InvariantCulture, $"{X},{Y},{Z},{Dx},{Dy},{Dz},{Ux},{Uy},{Uz},{W},{H},{L}");
+        /// <summary>
+        /// A lined hole (a socket's well, Sean 2026-11-22: the cut's sides through the hull's thickness): four walls from <see cref="LineFrom"/>
+        /// to <see cref="LineTo"/> cm down the tunnel, their inner faces <see cref="LineIn"/> cm inside its sides, <see cref="Sleeve.Wall"/> thick.
+        /// Three more numbers on the hole's own entry, where a separate <see cref="Sleeve"/> took some 80 characters and pushed a deck with
+        /// a second well past <see cref="ConstructParts.MaxRuntimeName"/>. <see cref="LineIn"/> 0: not lined.
+        /// </summary>
+        public ushort LineFrom { get; init; }
+        public ushort LineTo { get; init; }
+        public ushort LineIn { get; init; }
+        public bool Lined => LineIn > 0 && LineTo > LineFrom;
+
+        /// <summary>The tunnel alone (no lining): what says two entries are the same cut.</summary>
+        public string TunnelText => string.Create(CultureInfo.InvariantCulture, $"{X},{Y},{Z},{Dx},{Dy},{Dz},{Ux},{Uy},{Uz},{W},{H},{L}");
+
+        public string Text => Lined ? string.Create(CultureInfo.InvariantCulture, $"{TunnelText},{LineFrom},{LineTo},{LineIn}") : TunnelText;
+
+        /// <summary>This hole lined from <paramref name="from"/> to <paramref name="to"/> m down it, the walls' inner faces <paramref name="inset"/> m inside its sides.</summary>
+        public Hole WithLining(float from, float to, float inset)
+        {
+            static ushort C(float v) => (ushort)Math.Clamp((int)MathF.Round(v * 100), 0, 4000);
+            var a = C(MathF.Max(from, 0));
+            var b = C(MathF.Min(to, Depth + 2f));
+            var i = (ushort)Math.Clamp((int)MathF.Round(inset * 100), 1, Math.Max(1, Math.Min(W, H) - 1));
+            return b > a ? this with { LineFrom = a, LineTo = b, LineIn = i } : this;
+        }
+
+        /// <summary>Do this and <paramref name="o"/> start at one mouth and run down one line at one size (a socket's well cut again at another depth)?</summary>
+        public bool SameLine(in Hole o) =>
+            Dx == o.Dx && Dy == o.Dy && Dz == o.Dz && Ux == o.Ux && Uy == o.Uy && Uz == o.Uz && W == o.W && H == o.H
+            && Math.Abs(X - o.X) <= 1 && Math.Abs(Y - o.Y) <= 1 && Math.Abs(Z - o.Z) <= 1;
 
         public static Hole Of(Vector3 origin, Vector3 dir, Vector3 up, float halfW, float halfH, float depth)
         {
@@ -75,10 +104,10 @@ public static class HullHoles
         {
             h = default;
             var f = s.Split(',');
-            if (f.Length != 12)
+            if (f.Length is not (12 or 15))
                 return false;
-            Span<int> v = stackalloc int[12];
-            for (var i = 0; i < 12; i++)
+            Span<int> v = stackalloc int[15];
+            for (var i = 0; i < f.Length; i++)
                 if (!int.TryParse(f[i], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v[i]))
                     return false;
             for (var i = 3; i < 9; i++)
@@ -92,6 +121,12 @@ public static class HullHoles
             if (Math.Abs(v[0]) > 40000 || Math.Abs(v[1]) > 40000 || Math.Abs(v[2]) > 40000)
                 return false;
             h = new Hole(v[0], v[1], v[2], (short)v[3], (short)v[4], (short)v[5], (short)v[6], (short)v[7], (short)v[8], (ushort)v[9], (ushort)v[10], (ushort)v[11]);
+            if (f.Length == 15)
+            {
+                if (v[12] < 0 || v[13] <= v[12] || v[13] > 4000 || v[14] < 1 || v[14] >= Math.Min(v[9], v[10]))
+                    return false;
+                h = h with { LineFrom = (ushort)v[12], LineTo = (ushort)v[13], LineIn = (ushort)v[14] };
+            }
             return true;
         }
     }
@@ -250,18 +285,64 @@ public static class HullHoles
     /// <paramref name="d"/> with one more hole (made the first time its key is asked for). Null: the part can't take holes, or has all it
     /// may, or the hole misses it, or the cut would pass a limit (<see cref="LastRefusal"/> says which).
     /// </summary>
-    public static ConstructPartDef? WithHole(ConstructPartDef d, Hole h)
+    public static ConstructPartDef? WithHole(ConstructPartDef d, Hole h, bool recut = false)
     {
         var b = BaseOf(d);
         var had = HolesOf(d);
         var sleeves = SleevesOf(d);
         if (Refusal(b) is { } why)
             return Refuse(why);
+        // A socket's well cut again (recut: ModuleCut only): a hole from the same mouth down the same line at the same size is this cut
+        // made before at another depth, so the new one takes its place, with the liner the well had then (a separate sleeve down that
+        // line, before lined holes); a socket cut again doesn't pile entries onto the part until its key is too long for its liner
+        // (Sean, 2026-11-22). Never for bores or breaches: a second round or pod down one line keeps the first one's hole.
+        if (recut && Array.Exists(had, o => o.SameLine(h)))
+        {
+            sleeves = Array.FindAll(sleeves, v => !Array.Exists(had, o => o.SameLine(h) && LinesSleeve(o, v)));
+            had = Array.FindAll(had, o => !o.SameLine(h));
+        }
         if (had.Length + sleeves.Length >= MaxHoles)
             return Refuse($"{MaxHoles} holes already");
         if (!Reaches(d, h))
             return Refuse(Misses);
         return MakeKey(KeyOf(b, [.. had, h], sleeves));
+    }
+
+    /// <summary>
+    /// <paramref name="d"/> with its hole <paramref name="tunnel"/> (by <see cref="Hole.TunnelText"/>) lined from <paramref name="from"/> to
+    /// <paramref name="to"/> m down it, the walls' inner faces <paramref name="inset"/> m inside its sides. Null: no such hole, or the key
+    /// would be too long (<see cref="LastRefusal"/>).
+    /// </summary>
+    public static ConstructPartDef? WithLining(ConstructPartDef d, string tunnel, float from, float to, float inset)
+    {
+        var b = BaseOf(d);
+        var had = (Hole[])HolesOf(d).Clone();
+        var k = Array.FindIndex(had, o => o.TunnelText == tunnel);
+        if (k < 0)
+            return Refuse("it has no such hole");
+        var lined = had[k].WithLining(from, to, inset);
+        if (!lined.Lined)
+            return Refuse("the lining would be empty");
+        if (lined == had[k])
+        {
+            LastRefusal = null;
+            return d;
+        }
+        had[k] = lined;
+        return MakeKey(KeyOf(b, had, SleevesOf(d)));
+    }
+
+    /// <summary>Is sleeve <paramref name="v"/> a liner down hole <paramref name="h"/> (both its ends on the hole's middle line)?</summary>
+    private static bool LinesSleeve(in Hole h, in Sleeve v)
+    {
+        var d = h.Dir;
+        foreach (var m in (Vector3[])[new Vector3(v.Ax, v.Ay, v.Az) / 100f, new Vector3(v.Bx, v.By, v.Bz) / 100f])
+        {
+            var rel = m - h.Origin;
+            if ((rel - d * Vector3.Dot(rel, d)).LengthSquared() > 0.015f * 0.015f)
+                return false;
+        }
+        return true;
     }
 
     /// <summary><paramref name="d"/> with a seal sleeve as well (<see cref="Sleeve"/>). Null: it can't take one (<see cref="LastRefusal"/>).</summary>
@@ -496,6 +577,19 @@ public static class HullHoles
                         skinMin = Vector3.Min(skinMin, at.Center - at.Half);
                         skinMax = Vector3.Max(skinMax, at.Center + at.Half);
                     }
+            var lined = false;
+            foreach (var h in holes)
+                if (h.Lined)
+                {
+                    lined = true;
+                    var v = LiningOf(h);
+                    for (var k = 0; k < 4; k++)
+                        if (SleeveWall(look, v, k, list) is { } at)
+                        {
+                            skinMin = Vector3.Min(skinMin, at.Center - at.Half);
+                            skinMax = Vector3.Max(skinMax, at.Center + at.Half);
+                        }
+                }
             if (list.Count > ConstructParts.MaxBoxes)
             {
                 LastRefusal = $"over {ConstructParts.MaxBoxes} boxes";
@@ -523,7 +617,7 @@ public static class HullHoles
             d.Hulls = null; // (made again from the cut boxes on first use: ConvexHull.Of)
             d.HullCovers = null;
             d.HullSkin = null;
-            if (sleeves.Length > 0)
+            if (sleeves.Length > 0 || lined)
                 (d.HasSkin, d.SkinMin, d.SkinMax) = (true, skinMin, skinMax); // (the sleeve's walls are hull plates: they collide)
             d.Mass = Math.Clamp(b.Mass * SolidVolume(boxes, solid) / MathF.Max(SolidVolume(b.Boxes, b.SolidBoxes), 1e-6f), b.Mass * 0.1f, b.Mass);
             d.PhysicsOnly = true;
@@ -576,6 +670,15 @@ public static class HullHoles
             Console.WriteLine($"[holes] a seal sleeve's wall {k} couldn't be made: left out");
             return null;
         }
+    }
+
+    /// <summary>A lined hole's lining as the sleeve it draws: straight down the tunnel, its inner faces <see cref="Hole.LineIn"/> inside its sides.</summary>
+    private static Sleeve LiningOf(in Hole h)
+    {
+        var t = new Tunnel(h);
+        var inset = h.LineIn / 100f;
+        float w = MathF.Max(t.W - inset, 0.01f), hh = MathF.Max(t.H - inset, 0.01f);
+        return Sleeve.Of(t.O + t.D * (h.LineFrom / 100f), t.U, t.V, w, hh, t.O + t.D * (h.LineTo / 100f), t.U, t.V, w, hh);
     }
 
     private static readonly Vector3 SleeveColour = new(0.11f, 0.12f, 0.125f); // (the gasket's black rubber)
