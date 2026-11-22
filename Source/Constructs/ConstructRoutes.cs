@@ -1162,7 +1162,7 @@ public static partial class ConstructRoutes
             if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
                 continue;
             if (NodeSinks(c, pts[i], radius, frame: frame, walls: walls) is { } inside)
-                return $"that node would sink into the {c.DefOf(inside).Name}: place it on the surface";
+                return $"that node would sink into the {c.DefOf(inside).Name} (node {i} at {pts[i].X:0.0} {pts[i].Y:0.0} {pts[i].Z:0.0}): place it on the surface";
         }
         // Segments don't pass through solid parts (the output and input themselves excepted on the end segments, where it
         // plugs in), outside the grace.
@@ -1179,7 +1179,7 @@ public static partial class ConstructRoutes
             var skipA = i == 1 ? hosts[0] : -1;
             var skipB = closed && i == n - 1 && !half ? hosts[n - 1] : -1; // (a half shaft ends on the hub: the rest of its suspension, the mount, is in the way like any part)
             if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB, frame, walls) is { } wall)
-                return $"it would pass through the {c.DefOf(wall).Name}: route it round (or through an opening)";
+                return $"it would pass through the {c.DefOf(wall).Name} (segment {i}, {a.X:0.0} {a.Y:0.0} {a.Z:0.0} to {b.X:0.0} {b.Y:0.0} {b.Z:0.0}): route it round (or through an opening)";
         }
         // The type's angle rule.
         var prev = type == RouteType.Shaft && !junctionStart ? PortDirIn(c, hosts[0], fromPort, inRest) : Vector3.Zero;
