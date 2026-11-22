@@ -724,13 +724,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      (part ids shift) and three Assembling rows at the end of the table.
     // 430: more Assembler parts to the press (Sean 2026-11-22): 160 Assembling rows removed (recipe indices shift) and 55 die patterns
     //      and their presets added to Pressing.json, so a peer's recipe numbers and pressed keys differ from 429's.
-<<<<<<< HEAD
-    // 431: the Small bridge crane (Sean 2026-11-22): new parts Crane Rail Small 1 m and Small Crane Bridge (part ids shift) and their
-    //      two Assembling rows at the end of the table.
-=======
     // 431: leg pod parts to the press (Sean 2026-11-22): 28 Assembling rows removed, 7 die patterns and their presets added.
->>>>>>> origin/main
-    public const ushort ProtocolVersion = 431;
+    // 432: the Small bridge crane (Sean 2026-11-22): new parts Crane Rail Small 1 m and Small Crane Bridge (part ids shift) and their
+    //      two Assembling rows at the end of the table; Crane Rail Blocks are "craneRail": "hall".
+    public const ushort ProtocolVersion = 432;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
