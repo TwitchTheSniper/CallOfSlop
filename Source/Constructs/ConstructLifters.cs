@@ -878,7 +878,7 @@ public static partial class ConstructLifters
                 var inv = Quaternion.Conjugate(lr);
                 l.From = Pose(ld, l, l.Age, out var rot);
                 l.FromRot = rot;
-                l.To = Vector3.Transform(hold - lp, inv);
+                l.To = Vector3.Transform(hold - lp, inv) - Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rot); // (HoldPick's point is the piece's middle: To is its origin)
                 l.ToRot = rot;
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
