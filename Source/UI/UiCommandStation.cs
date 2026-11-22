@@ -32,6 +32,7 @@ public sealed partial class Ui
         public ushort Ship; // the moored ship the local player is aboard (0: none)
         public string ShipLine, SellLabel;
         public bool CanSell;
+        public bool ForSale; // the station is for sale: aboard a ship moored here, BUY THIS STATION (your faction buys it: GameStationLife.cs)
     }
 
     private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   VALUE A UNIT";
@@ -47,6 +48,7 @@ public sealed partial class Ui
         k.GoodCount = 0;
         k.Ship = 0;
         k.CanSell = false;
+        k.ForSale = false;
         var inv = CultureInfo.InvariantCulture;
         if (!g.StationMarketsHere.TryGetValue(c.Id, out var m) || m.Def >= StationMarkets.All.Length)
         {
@@ -57,8 +59,10 @@ public sealed partial class Ui
         }
         var power = Game.StationPower(m);
         var me = g.Local;
-        k.Held = (CrewPowers.Of(power)?.Name ?? "NOBODY").ToUpperInvariant();
-        k.Trades = power == 0 || me == null || g.CrewStanding(power, me.Id) >= 0;
+        var sdef = StationMarkets.All[m.Def];
+        k.Held = (sdef.Owner.Length > 0 ? sdef.Owner : CrewPowers.Of(power)?.Name ?? "NOBODY").ToUpperInvariant();
+        k.Trades = sdef.Owner.Length > 0 ? me != null && g.StationMember(m, me) : power == 0 || me == null || g.CrewStanding(power, me.Id) >= 0;
+        k.ForSale = sdef.State == MarketState.ForSale;
         var rate = me == null ? 1 : g.StandingRate(power, me.Id); // (how its power sees you moves its prices to you: Game.StandingRate)
         var pct = (int)Math.Round((rate - 1) * 100);
         k.Trade = !k.Trades ? "WON'T TRADE WITH YOU" : pct == 0 ? "TRADES WITH YOU" : string.Create(inv, $"TRADES WITH YOU, PRICES {(pct > 0 ? "BETTER" : "WORSE")} BY {Math.Abs(pct)}%");
@@ -141,7 +145,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 540 * _scale; // (room for a part row's SELL beside its BUY)
         var line = 19 * _scale;
-        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + t.Lines.Count + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
+        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + t.Lines.Count + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? t.ForSale ? 5 : 3 : 1);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + rows * line + 60 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdStation);
@@ -213,6 +217,12 @@ public sealed partial class Ui
             if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 290 * _scale, y + 24 * _scale), t.SellLabel, t.CanSell ? CmdGreen : CmdDim, fade) && t.CanSell)
                 g.SandboxFaction(FactionOp.StationSell, t.Ship);
             y += 30 * _scale;
+            if (t.ForSale)
+            {
+                if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 290 * _scale, y + 24 * _scale), "BUY THIS STATION FOR YOUR FACTION", CmdAmber, fade))
+                    g.SandboxFaction(FactionOp.StationPurchase, t.Ship);
+                y += 30 * _scale;
+            }
         }
         else
             Row(dl, "DOCKING", "PICK A SHIP, THEN RIGHT CLICK HERE TO DOCK", CmdAmber, ref y);

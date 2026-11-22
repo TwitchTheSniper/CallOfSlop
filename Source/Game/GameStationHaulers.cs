@@ -648,6 +648,16 @@ public sealed partial class Game
             run.Since = ServerTick; // (when its Dock order was given)
         var why = dock ? NavApply(s, c, NavKind.Dock, 0, Vec3d.Zero, 0, 255, h.Power + " hauler", null, out _, st)
             : NavApply(s, c, NavKind.Orbit, planet, Vec3d.Zero, radius, 255, h.Power + " hauler", null, out _);
+        if (dock && why != null && StandoffFree(def))
+        {
+            // (no berth for it, and the station grew standoff berths: it trades from beside it, GameStationLife.cs)
+            run.Stage = HaulStage.Orbiting;
+            run.Since = ServerTick;
+            RouteArrived(run.Route);
+            HaulSay(run, c, $"trades from a standoff berth beside {d.Name}");
+            HaulTrade(run, c, h, def, MarketOfDef(def));
+            return;
+        }
         run.RetryAt = ServerTick + 30 * World.TickRate; // (an order that ends short of its station is given again after this)
         HaulSay(run, c, why != null ? $"can't set out for {d.Name}: {why}"
             : dock ? $"docks at {d.Name}"
@@ -875,6 +885,10 @@ public sealed partial class Game
             unloaded += n;
         if (own && unloaded > 0)
         {
+            double moved = 0;
+            for (var k = 0; k < sold.Length; k++)
+                moved += sold[k] * (double)TradeValues.Of(StationMarkets.All[def].Goods[k].Material);
+            StationGain(m, moved * StationLife.HubShare); // (a hub moves its own power's goods for nothing: its ledger counts a share of their value)
             StationsVersion++;
             Log($"[haul] construct {c.Id} ({h.Power}) unloaded {StationGoodsText(m, sold)} at its own {where}");
         }

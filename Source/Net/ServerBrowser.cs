@@ -743,7 +743,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      steps, goods) and every listed station's power and state, which 438 reads as markets.
     // 440: cockpit command stations (cockpits.md "Command stations"): every seat has a Station setting (its Setting, 0-5), crew jobs and
     //      station kinds for them (the roster's job byte), and the "Crew hold fire" Function.
-    public const ushort ProtocolVersion = 440;
+    // 441: the Zero Day's Limpet shaft under a flush Deck Hatch 1.1 m with its own ladder (Karl 2026-11-22): new part files move
+    //      part ids; a ladder climbs on through two open docking hatches into the docked craft's ladder (ConstructRide.Chained).
+    // 442: stations come and go, part 2: Msg.Stations' station entries carry an owner (a player faction), storage and berth growth;
+    //      FactionOp.StationPurchase (u16 ship) at its end.
+    public const ushort ProtocolVersion = 442;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

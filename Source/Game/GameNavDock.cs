@@ -140,6 +140,8 @@ public sealed partial class Game
             return "It is moored at a station: give it another order to cast off";
         StationLanes(t); // (a station's berths' ways in, once: GameStations.cs)
         port = NavDockFor(Constructs, t, c, NavOrders);
+        if (port < 0 && t.IsStation)
+            StationRefused(t); // (turned away: a station that keeps turning ships away grows a berth, GameStationLife.cs)
         return port >= 0 ? null : t.IsStation && NavDockNoFit(Constructs, t, c) ? $"No berth on {t.DisplayName()} fits it" : "No port available on " + t.DisplayName();
     }
 

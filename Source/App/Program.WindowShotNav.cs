@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto" or "moorclear" or "stationsell" or "stationbuy" or "stationsellpart" or "market";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles" or "letgo" or "orbit" or "boardwalk" or "cmdboard" or "mouse" or "ram" or "gapto" or "moorclear" or "stationsell" or "stationbuy" or "stationsellpart" or "stationpurchase" or "stationforsale" or "market";
 
     /// <summary>"order dock N": the picked craft docks with the Nth craft on the map (as cmdpick counts them).</summary>
     private static string? WsDockOrder(Game g, int n)
@@ -271,6 +271,14 @@ public static unsafe partial class Program
                 // "stationbuy K": the Kth good of the station the picked craft is moored at bought into it, as the card's BUY sends it.
                 g.SandboxFaction(FactionOp.StationBuy, Ui.CommandPicked, words.Length > 0 && int.TryParse(words[0], out var sbk) ? sbk : 0);
                 return true;
+            case "stationpurchase":
+                // "stationpurchase": your faction buys the station for sale the picked craft is moored at, as the card's BUY THIS STATION sends it.
+                g.SandboxFaction(FactionOp.StationPurchase, Ui.CommandPicked);
+                return true;
+            case "stationforsale" when g.IsServer:
+                // (a test state: the station the picked craft is moored at goes up for sale now, as a losing one would; "stationforsale pay": and its price goes on your tab with its power)
+                WsSay($"[market] stationforsale: {g.StationForSaleTest(Ui.CommandPicked, words.Length > 0 && words[0] == "pay" ? g.Local : null)}");
+                return true;
             case "stationsellpart":
                 // "stationsellpart K": every one of the Kth entry (past the goods: a part) of the picked craft's station that the player carries, traded, as the card's SELL sends it.
                 g.SandboxFaction(FactionOp.StationSellPart, Ui.CommandPicked, words.Length > 0 && int.TryParse(words[0], out var spk) ? spk : 0);
@@ -280,7 +288,7 @@ public static unsafe partial class Program
                 foreach (var m in g.StationMarketsHere.Values)
                 {
                     var def = StationMarkets.All[m.Def];
-                    WsSay($"[market] {def.Name} (construct {m.Body}, {def.Power}): " + string.Join(", ", def.Goods.Select((gd, i) => $"{RecyclingTable.Current.NameOf(gd.Material)} {m.Stock[i]}"))
+                    WsSay($"[market] {def.Name} (construct {m.Body}, {def.Power}, {def.State}{(def.Owner.Length > 0 ? ", held by " + def.Owner : "")}, storage {def.Storage}, berths {def.Berths}): " + string.Join(", ", def.Goods.Select((gd, i) => $"{RecyclingTable.Current.NameOf(gd.Material)} {m.Stock[i]}"))
                         + "; parts: " + string.Join(", ", def.Parts.Select((pt, j) => $"{ConstructParts.Def(pt.Part)?.Name} {(def.Goods.Length + j < m.Stock.Length ? m.Stock[def.Goods.Length + j] : -1)} (pays {pt.Buy:0.0}, asks {pt.Sell:0.0})"))
                         + $"; moored: {string.Join(", ", m.Moored.Select(x => $"{x.Ship}@{x.Part}"))}");
                 }

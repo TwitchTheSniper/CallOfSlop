@@ -38,26 +38,44 @@ public static class LadderCheck
             c.Pos += new Vector3(0, 30f, 0); // (clear of the yard's ground)
             c.PrevPos = c.Pos;
             c.Rebuild();
-            for (var i = 0; i < c.PartCount; i++)
+            ConstructRide.Bodies = w; // (a ladder on through a dock finds the docked craft's: ConstructRide.Chained)
+            foreach (var b in w.Bodies)
             {
-                var d = c.Parts[i].D;
-                if (d.LadderTop <= 0)
+                if (b.CarriedBy != c.Id)
                     continue;
-                ladders++;
-                if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
-                    ConstructDoors.Settle(c, c.DoorOf(i), true);
-                for (var k = ConstructRide.NextLid(c, i); k >= 0; k = ConstructRide.NextLid(c, i, k + 1)) // (a ladder in a shaft: climbed with its hatches open and its sections down, as F on it leaves them)
+                ConstructCargo.Follow(c, b); // (the craft it carries, where its dock holds them)
+                b.Rebuild();
+                foreach (var body in new[] { b, c }) // (docked: both docking hatches open, as the dock leaves them)
+                    for (var k = 0; body.EnsureDoors() && k < body.DoorCount; k++)
+                        if (body.Parts[body.Doors[k].Part].D.Door is { Dock: true })
+                            ConstructDoors.Settle(body, k, true);
+            }
+            var top = c;
+            foreach (var cb in w.Bodies.Where(b => b == top || b.CarriedBy == top.Id).ToList()) // (the craft it carries too: their ladders on through a dock)
+            {
+                c = cb;
+                for (var i = 0; i < c.PartCount; i++)
                 {
-                    var lid = c.Doors[k].Part;
-                    c.SolidBox(lid, 0, out var lc, out var lh);
-                    var landing = c.Parts[i].Pos.Y + d.LadderTop;
-                    Console.WriteLine($"    through {c.Parts[lid].D.Name} #{lid}, its top {lc.Y + lh.Y - landing:+0.000;-0.000} m from the landing");
+                    var d = c.Parts[i].D;
+                    if (d.LadderTop <= 0)
+                        continue;
+                    ladders++;
+                    if (Game.LadderOnShutDoor(c, i)) // (one stowed on a shut door's leaf, the Dray's belly hatch: climbed with that door open, as F leaves it)
+                        ConstructDoors.Settle(c, c.DoorOf(i), true);
+                    for (var k = ConstructRide.NextLid(c, i); k >= 0; k = ConstructRide.NextLid(c, i, k + 1)) // (a ladder in a shaft: climbed with its hatches open and its sections down, as F on it leaves them)
+                    {
+                        var lid = c.Doors[k].Part;
+                        c.SolidBox(lid, 0, out var lc, out var lh);
+                        var landing = c.Parts[i].Pos.Y + d.LadderTop;
+                        Console.WriteLine($"    through {c.Parts[lid].D.Name} #{lid}, its top {lc.Y + lh.Y - landing:+0.000;-0.000} m from the landing");
+                    }
+                    ConstructRide.SettleWay(c, i);
+                    var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
+                    static bool Docked(string? why) => why == null || why.StartsWith("the docking hatch is shut"); // (a ladder through a dock: climbed only with a craft docked there)
+                    var ok = Docked(up) && Docked(down) && (up == null || down == null);
+                    bad += ok ? 0 : 1;
+                    Console.WriteLine($"{bp.Name}{(c == top ? "" : $" (docked craft {c.Id})")}: {d.Name} #{i}: up {up ?? "ok"}, down {down ?? "ok"}");
                 }
-                ConstructRide.SettleWay(c, i);
-                var (up, down) = (Try(w, c, i, false), Try(w, c, i, true));
-                var ok = up == null && down == null;
-                bad += ok ? 0 : 1;
-                Console.WriteLine($"{bp.Name}: {d.Name} #{i}: up {up ?? "ok"}, down {down ?? "ok"}");
             }
         }
         Console.WriteLine($"ladder check: {ladders} ladder(s), {bad} refused");
