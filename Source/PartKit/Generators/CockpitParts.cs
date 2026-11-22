@@ -194,6 +194,73 @@ public sealed class CockpitParts : IPartGenerator
         return p;
     }
 
+    // ---- Console Arc Desks (phase 6: curved consoles) ------------------------------------------------------------------------------
+    // A desk top bent round a seat: level facets on an arc about the part's origin (where the seat goes). A shaped box is a look, so each
+    // facet has a hidden solid box inside it whose top is the facet's: Console Bays go on it with the attach tool's socket weld (a face
+    // point, turned to the facet's angle). The bays stay flat, the desk carries the curve (the storyboard's frame 9, "wraparound").
+
+    /// <summary>The shipped arcs: inner radius (m), sweep (degrees), facets.</summary>
+    public static readonly (double R, int Sweep, int N)[] Arcs = [(0.6, 90, 3), (0.7, 120, 4), (0.8, 180, 6)];
+
+    private const double ArcDepth = 0.45, ArcTop = 0.72, ArcRake = 0.0, ArcT = 0.04, ArcGap = 0.003;
+
+    private static double[] ArcPt(double r, double a, double y) => [r * Math.Sin(a), y, r * Math.Cos(a)];
+
+    private static void ArcHull(Part p, IEnumerable<double[]> pts, string col)
+    {
+        var all = pts.Select(q => q.Select(x => Py.Round(x, 4)).ToArray()).ToList();
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => all.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => all.Max(q => q[k]))];
+        p.Add(Box(mn, mx, col, detail: true, shape: Kw(("shape", "hull"), ("points", all.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()))));
+    }
+
+    private static Part ArcDesk(double r, int sweep, int n)
+    {
+        var name = $"Console Arc Desk R{Py.G(r)} {sweep}";
+        var p = new Part(name, Small, "Console bays",
+            $"A curved console desk, {Py.G(r)} m round its middle (set a seat there) over {sweep} degrees, in {n} raked facets: weld Console Bays onto the facets with the attach tool, at each facet's angle.",
+            role: "frame", tool: "welder", color: BezelC, group: Group);
+        double ro = r + ArcDepth, half = sweep * Math.PI / 360, step = 2 * half / n;
+        for (var k = 0; k < n; k++)
+        {
+            // (each facet stops ArcGap short of its neighbour, so no two share an end face; the thickness alternates by 2 mm too)
+            double a0 = -half + k * step + ArcGap / r, a1 = -half + (k + 1) * step - ArcGap / r, t = ArcT + (k % 2) * 0.002;
+            double yi = ArcTop, yo = ArcTop + ArcRake;
+            ArcHull(p, [ArcPt(r, a0, yi), ArcPt(r, a1, yi), ArcPt(ro, a0, yo), ArcPt(ro, a1, yo),
+                ArcPt(r, a0, yi - t), ArcPt(r, a1, yi - t), ArcPt(ro, a0, yo - t), ArcPt(ro, a1, yo - t)], k % 2 == 0 ? FaceC : FaceTopC);
+            // The facet's solid: a square inside it (hidden), its top the facet's top, so a face-point weld lands on the drawn face.
+            {
+                double rm = (r + ro) / 2, am0 = (a0 + a1) / 2, wTan = (a1 - a0) * r, th = Math.Abs(am0) % (Math.PI / 2);
+                var side = Math.Min(wTan, ArcDepth) / (Math.Cos(th) + Math.Sin(th)) - 0.01;
+                var mid = ArcPt(rm, am0, 0);
+                p.Add(Box([mid[0] - side / 2, yi - t, mid[2] - side / 2], [mid[0] + side / 2, yi, mid[2] + side / 2], hidden: true));
+            }
+            // A modesty panel under the far edge of every facet, and a foot under every other one.
+            double am = (a0 + a1) / 2, rp = ro - 0.03;
+            // (its foot 4 mm off the floor plane the feet stand on)
+            ArcHull(p, [ArcPt(rp, a0, 0.004), ArcPt(rp, a1, 0.004), ArcPt(rp, a0, yo - t - 0.004), ArcPt(rp, a1, yo - t - 0.004),
+                ArcPt(rp - 0.02, a0, 0.004), ArcPt(rp - 0.02, a1, 0.004), ArcPt(rp - 0.02, a0, yo - t - 0.004), ArcPt(rp - 0.02, a1, yo - t - 0.004)], BezelC);
+        }
+        // Feet: square pads under the panels at the middle and both ends, on the floor's grid by their -y sockets.
+        var feet = new List<double> { 0 };
+        if (n > 2)
+        {
+            feet.Add(-half + step / 2);
+            feet.Add(half - step / 2);
+        }
+        var f = 0;
+        foreach (var a in feet)
+        {
+            var c = ArcPt(ro - 0.04, a, 0);
+            double fx = Py.Round(c[0], 2), fz = Py.Round(c[2], 2);
+            p.Add(Box([fx - 0.06, 0.0, fz - 0.06], [fx + 0.06, 0.02, fz + 0.06], RimC));
+            p.Sock($"foot{f++}", [fx, 0.0, fz], "-y");
+        }
+        var mass = 8 + sweep * r * 0.08;
+        p.Stats(mass, 60 + sweep * r, 0, seconds: 2.0);
+        return p;
+    }
+
     /// <summary>The shipped parts' names, in their file order: Assembling's Tail and AfterCloche take them one by one.</summary>
     public static IReadOnlyList<string> Names => [.. Parts().Select(e => (string)e.Item2.D["name"]!)];
 
@@ -210,6 +277,8 @@ public sealed class CockpitParts : IPartGenerator
             parts.Add(("", DrawerCase(l, d)));
             parts.Add(("", DrawerTray(l, d)));
         }
+        foreach (var (r, sweep, n) in Arcs)
+            parts.Add(("", ArcDesk(r, sweep, n)));
         parts.AddRange(ControlParts.PanelInstruments());
         return parts;
     }

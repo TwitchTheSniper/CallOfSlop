@@ -1,6 +1,6 @@
 # Modular cockpits
 
-Karl, 2026-11-22: buttons, screens, gauges, levers and lamps mount on consoles and on the hull with the same mounting system as the in-wall bays (module sockets with their styles), and a cockpit is linked to its seat, so a seat's state (dampeners off and so on) shows on the dash. The storyboard is the Artifact https://claude.ai/artifact/R99CRAFv1fxTaH9MGc6w1m and the plan the Claude Doc https://claude.ai/artifact/HxJ53EmqN1uUDpkPtdBNxS. Phases 1 to 3 are built (below); phases 4 to 6 (command stations and crew kinds, ShipGen's console slots and command rooms, curved bays and pop-up screens) are not.
+Karl, 2026-11-22: buttons, screens, gauges, levers and lamps mount on consoles and on the hull with the same mounting system as the in-wall bays (module sockets with their styles), and a cockpit is linked to its seat, so a seat's state (dampeners off and so on) shows on the dash. The storyboard is the Artifact https://claude.ai/artifact/R99CRAFv1fxTaH9MGc6w1m and the plan the Claude Doc https://claude.ai/artifact/HxJ53EmqN1uUDpkPtdBNxS. Phases 1 to 3 are built, and of the rest phase 4 (command stations) and phase 6 (Console Drawers, curved desks). Phase 5 (ShipGen's console slots and command rooms) waits for the ship generator to be merged (Karl, 2026-11-22: it is still in design).
 
 **The captain (Karl, 2026-11-22):** crews are coming and the player as captain coordinates them. The captain's station gives crew orders and repeats other stations' pages read only; it does not work their controls. To work a station, sit at it.
 
@@ -33,3 +33,25 @@ Seated, the use key (F) on a switch or button in reach of the seat presses it (`
 Three bays across the desk top (`RoamerParts.DashBays`, the blueprint's `Dash`): the pilot's 5x12 (speedometer, altimeter, compass; Dampeners and Mouse steering toggles, Reactor and Thrusters rockers), the centre 5x8 (MASTER CAUTION, Landing legs) and the co-pilot's 5x12 (the same three instruments, MASTER CAUTION and Landing legs), each turned with its long side across the ship and its switches on the seat's side. The desk reaches forward of the cockpit's front wall, so that hidden wall starts above the bays' room over the desk (`DashWallFoot`); `--check-building Roamer` reaches every switch.
 
 Tried: `--window-shot` seated in the pilot's couch, F on the Dampeners switch turned the dampeners off (the seat panel's lamp and the switch both went off). Not tried: a joined client, the Function on a switch a player builds by hand, Flush or Well console bays dug into a dash.
+
+## Command stations (phase 4)
+
+Every seat part with no setting of its own is given a **Station** setting (`CockpitStations.cs`; its `CPart.Setting`, so it saves, travels with the body and the linking tool's reload key cycles it): Auto, Command, Navigation, Sensors, Damage control, Comms. Auto is as before: the drive seat is the helm, a seat that works a gun the gun seat, any other a couch.
+
+- **Crews man them.** `CrewWorld.Scan` makes a station seat a crew station of its kind (`CrewStationKind.Command` to `Comms`, jobs `Officer`, `Navigator`, `Sensors`, `DamageControl`, `Signals`), filled after the helm (Command) and after the guns and works (the rest), before the couches. Its member sits in it as at the helm. They do nothing more yet: what a navigator or a sensors hand does is for the crew work to come.
+- **The command seat** is the first seat set to Command, or the drive seat on a craft with none (`CockpitStations.Commands`). Its seat panel adds COMMAND (the crew holding fire or not), STATIONS (every station seat and whether a person, a crew body or a stand-in mans it) and, away from the helm, HELM read only (dampeners, mouse steering, reactor, thrusters, legs, as lamps with no keys). The captain orders and watches; to work a station's controls, sit at it. The status line at a station seat names it ("Command station").
+- **Crew orders from the dash.** A switch's Function "Crew hold fire" shows whether the craft's own crew holds fire and a press gives the order (the same as the Crew window's Hold fire / Fire at will); it is worked only from the command seat ("crew orders are given from the command seat").
+
+## Console Drawers (phase 6: pull-outs and pop-ups)
+
+A **Console Drawer Case 2xL** (L 2, 4, 6, 8) is the module of a 2xL Console Bay set to **Opening**: a sleeve back into the hole behind the bay's face (set the bay's Depth to at least the tray's depth plus 5 cm). A **Console Drawer Tray 2xL** hangs on the case (its `tray` socket) and is an event door that slides out along the socket's normal (`CockpitParts.DrawerTravel`: D cells and 1.5 cm). Its deck has (L-1) x D Small sockets for panel instruments (D 2, 3, 3, 4), and each instrument on the tray alone rides it (`Construct.MaxDoorLeaf`, now 32). In a wall it pulls out like a keyboard tray, in a desk it rises like a pop-up screen.
+
+- F on the tray slides it out and back, standing or from a seat in reach (`Program.DrawerSeated`); F on an instrument on it works the instrument.
+- **Pop-up when the seat is taken:** wire the seat to the tray (a seat's output is on while someone sits), and the door's input runs it out and back.
+- An instrument is a whole cell: a Dial Gauge (two cells) doesn't fit a drawer.
+
+## Console Arc Desks (phase 6: curved consoles)
+
+**Console Arc Desk R0.6 90, R0.7 120 and R0.8 180**: a desk top bent round a seat set at the part's origin, in 3, 4 or 6 level facets with a modesty panel under each and feet on the floor grid. The facets are looks (a shaped box), each with a hidden solid box inside whose top is the facet's: weld Console Bays onto them with the attach tool's socket weld (a face point), turned to the facet's angle. The bays stay flat; the desk carries the curve. Not done: bays that bend themselves, curved screens, sealed hull instruments.
+
+Tried (phases 4 and 6): `--window-shot` seated at a Roamer couch set to Command (the COMMAND, STATIONS and HELM read-only sections); a drawer spawned on its own, F slid the tray out with its instruments on it, and F flipped the toggle on the open tray. Not tried: a crew manning a station seat, the drawer in a bay dug into a wall, a joined client, an arc desk with bays welded on.
