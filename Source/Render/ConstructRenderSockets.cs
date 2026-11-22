@@ -57,7 +57,7 @@ public static partial class ConstructRender
         var hide = ModuleSockets.HideSet(c, s.Plate);
         // The lock's knob (not on a Wall Bay Socket, which has no side controls); with the plate not drawn (a dug socket's module
         // fills its frame), its eject button too, so it is still there to press.
-        if (!hide && !d.ModNoHide)
+        if (!hide && !d.ModNoHide && !d.ModCells) // (a console bay has no side controls)
         {
             var locked = ModuleSockets.Locked(c, s.Plate);
             Freeform.PartWorld(c, s.Plate, out var pp, out var pq);

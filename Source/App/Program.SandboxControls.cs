@@ -114,11 +114,13 @@ public static partial class Program
         ref var p = ref c.Parts[hit.Part];
         if (d.Logic is not (CLogic.Button or CLogic.Switch) || p.Broken)
             return false;
+        var fn = CockpitFns.Of(p, d);
+        if (fn == SeatFn.None)
+            return false; // (only a switch linked to the seat: F on any other still gets up)
         ConstructRender.AimBody = c;
         ConstructRender.AimPart = hit.Part;
         ConstructRender.AimRefused = false;
         ConstructRender.AimHands = true;
-        var fn = CockpitFns.Of(p, d);
         var lookKey = HashCode.Combine(p.Def, (int)fn, p.Out >= 0.5f, SandboxKeys.Stamp, c.Id, hit.Part);
         if (lookKey != _cpSwKey)
         {

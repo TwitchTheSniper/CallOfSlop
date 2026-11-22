@@ -22,11 +22,11 @@ A panel switch or button has a **Function** setting (`CfgKey.SeatFn`, the old un
 - **A press works it** through the same toggles as the seat's keys (`CockpitFns.Press`: `ConstructFlight.ToggleDampeners`, `ToggleMouseSteer`, `ConstructShutdown.ToggleReactor`, `ToggleThrusters`, `ConstructDoors.ToggleGear`).
 - **MASTER CAUTION** is lit while a caution is on that wasn't acknowledged (dampeners off, the reactor down, the thrusters down: `CockpitFns.Cautions`); a press acknowledges them (kept in the part's `Count`), and a new caution lights it again.
 
-The state is the craft's: these are ship-wide states, so a switch on any console of the craft shows and works them. Seat-specific links (a station's own pages, crew stations) are phase 4.
+The state is the craft's: these are ship-wide states, so a switch on any console of the craft shows them. It is worked only from a seat of that craft ("sit at the console to work it"), and Reactor and Thrusters only from the pilot's seat (the drive seat), as the seat's own keys: a passenger or a boarder can't shut the ship down from the dash. Seat-specific links (a station's own pages, crew stations) are phase 4.
 
 ## Working it from the seat
 
-Seated, the use key (F) on a switch or button in reach of the seat presses it (`Program.SwitchSeated`, `CActKind.Use` as when standing); the look line names what it works and its state. F on nothing in reach still gets up. (The plan doc asks Karl whether a mouse click should press too.)
+Seated, the use key (F) on a switch or button in reach of the seat presses it (`Program.SwitchSeated`, `CActKind.Use` as when standing); the look line names what it works and its state. Only a switch with a Function takes F: F on a plain switch, or on nothing in reach, still gets up. (The plan doc asks Karl whether a mouse click should press too.)
 
 ## The Roamer's dash
 

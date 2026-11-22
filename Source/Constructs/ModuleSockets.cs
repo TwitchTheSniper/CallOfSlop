@@ -984,7 +984,7 @@ public static class ModuleSockets
                 : $"the {part} goes {down:0.00} m past the well's floor ({s.Behind:0.00} m deep): set Depth {MathF.Ceiling(down / ModuleSocketTable.Current.StepOf(s.Cells)) * ModuleSocketTable.Current.StepOf(s.Cells):0.00} m more";
         return s.Style == ModStyle.Flush
             ? $"the {part} stands {up:0.00} m out of the flush well: a flush module ends level with the hull (set Depth {MathF.Ceiling(up / ModuleSocketTable.Current.StepOf(s.Cells)) * ModuleSocketTable.Current.StepOf(s.Cells):0.00} m more, or use a Well socket)"
-            : $"the {part} sticks out {up:0.00} m over the socket's room ({s.Height:0.##} m over the face): set Room above {MathF.Ceiling(up / ModuleSocketTable.Current.AboveStep) * ModuleSocketTable.Current.AboveStep:0.##} m more";
+            : $"the {part} sticks out {up:0.00} m over the socket's room ({s.Height:0.##} m over the face): set Room above {MathF.Ceiling(up / (s.Cells ? ModuleSocketTable.CellStep : ModuleSocketTable.Current.AboveStep)) * (s.Cells ? ModuleSocketTable.CellStep : ModuleSocketTable.Current.AboveStep):0.##} m more";
     }
 
     /// <summary>

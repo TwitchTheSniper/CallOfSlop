@@ -709,7 +709,7 @@ public static class ModuleGuide
                 continue;
             foreach (var s in c.ModSockets)
                 if (!s.Stand && s.Module < 0 && ModuleSockets.Matches(s, pd)
-                    && Vector3.Distance(c.SegToWorld(c.Parts[s.Plate].Seg, c.Parts[s.Plate].Pos), plugAt) < CatchRange + 0.5f + s.W + s.L)
+                    && Vector3.Distance(c.SegToWorld(c.Parts[s.Plate].Seg, c.Parts[s.Plate].Pos), plugAt) < CatchRange + 0.5f + s.Wm + s.Lm)
                     return true;
         }
         return false;
