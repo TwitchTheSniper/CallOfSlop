@@ -303,6 +303,8 @@ public static unsafe partial class Program
             return RouteEndsProbe.Cli(args); // how auto-routed links leave and arrive at their ports: turns and short legs by the ends (RouteEndsProbe.cs)
         if (args.Any(a => a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)))
             return HullLoft.DressCli([.. args.SkipWhile(a => !a.Equals("--dress-skin", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a plain skin's dress plan, its subparts and the built dress (HullLoft.Dress.cs)
+        if (args.Any(a => a.Equals("--handoff-check", StringComparison.OrdinalIgnoreCase)))
+            return HandOffCheck.Cli(args); // a station's parts handed on by lifters and Roller Tile runs to its pick pad, headless (ConstructLifterHandOff.cs)
         if (args.Any(a => a.Equals("--pack-check", StringComparison.OrdinalIgnoreCase)))
             return PackCheck.Cli(args); // welded groups on a pad, packed as one kind and back out as the group (PackedGroups.cs)
         if (args.Any(a => a.Equals("--bake-check", StringComparison.OrdinalIgnoreCase)))
