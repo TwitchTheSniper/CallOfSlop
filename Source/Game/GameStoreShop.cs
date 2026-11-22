@@ -456,8 +456,8 @@ public sealed partial class Game
                 (lines, sum) = (lines + 1, sum + x.Price);
         if (lines == 0)
             return true;
-        var cost = (long)MathF.Ceiling(sum);
         var power = StationPower(m);
+        var cost = (long)Math.Ceiling(sum / StandingRate(power, p.Id)); // (a friend pays less: StandingRate)
         var name = StationName(st);
         string how;
         string? cant;

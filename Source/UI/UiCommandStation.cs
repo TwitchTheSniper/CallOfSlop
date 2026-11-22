@@ -59,7 +59,9 @@ public sealed partial class Ui
         var me = g.Local;
         k.Held = (CrewPowers.Of(power)?.Name ?? "NOBODY").ToUpperInvariant();
         k.Trades = power == 0 || me == null || g.CrewStanding(power, me.Id) >= 0;
-        k.Trade = k.Trades ? "TRADES WITH YOU" : "WON'T TRADE WITH YOU";
+        var rate = me == null ? 1 : g.StandingRate(power, me.Id); // (how its power sees you moves its prices to you: Game.StandingRate)
+        var pct = (int)Math.Round((rate - 1) * 100);
+        k.Trade = !k.Trades ? "WON'T TRADE WITH YOU" : pct == 0 ? "TRADES WITH YOU" : string.Create(inv, $"TRADES WITH YOU, PRICES {(pct > 0 ? "BETTER" : "WORSE")} BY {Math.Abs(pct)}%");
         k.Tab = me == null || power == 0 ? "" : g.TabUnlimited ? "UNLIMITED (CREATIVE)" : string.Create(inv, $"THEY OWE YOU {g.TabOf(me.Id, power):N0}");
         var goods = StationMarkets.All[m.Def].Goods;
         for (var i = 0; i < goods.Length && i < m.Stock.Length && k.GoodCount < k.Goods.Length; i++)
@@ -68,7 +70,7 @@ public sealed partial class Ui
             var full = goods[i].Buy > 0 && m.Stock[i] >= goods[i].Most;
             k.Buys[k.GoodCount] = k.Trades && goods[i].Sell > 0 && m.Stock[i] > 0;
             k.Sells[k.GoodCount] = false;
-            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : m.BuyAt(i).ToString("0.00", inv)),6}   {m.SellAt(i),6:0.00}{(m.Short(i) ? "  SHORT" : "")}");
+            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : (m.BuyAt(i) * rate).ToString("0.00", inv)),6}   {m.SellAt(i) / rate,6:0.00}{(m.Short(i) ? "  SHORT" : "")}");
         }
         // Its needs (Karl, 2026-11-20): what it makes and uses an hour; a good it uses and is short of is marked SHORT above, and pays more.
         var makes = new System.Text.StringBuilder();
@@ -108,7 +110,7 @@ public sealed partial class Ui
             var full = parts[j].Buy > 0 && m.Stock[i] >= parts[j].Most;
             k.Buys[k.GoodCount] = k.Trades && parts[j].Sell > 0 && m.Stock[i] > 0;
             k.Sells[k.GoodCount] = k.Trades && parts[j].Buy > 0 && !full && aboard != null && g.StationShipParts(aboard, parts[j].Part) > 0;
-            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : parts[j].Buy.ToString("0.0", inv)),6}   {parts[j].Sell,6:0.0}");
+            k.Goods[k.GoodCount++] = string.Create(inv, $"{name,-12}{m.Stock[i],9:N0}   {(full ? "FULL" : (parts[j].Buy * rate).ToString("0.0", inv)),6}   {parts[j].Sell / rate,6:0.0}");
         }
         // Aboard a ship moored here: what the station would pay for its bins.
         if (me == null)
@@ -118,7 +120,7 @@ public sealed partial class Ui
             if (g.Constructs.Get(ship) is not { } s || !g.StationAboard(me, s))
                 continue;
             k.Ship = ship;
-            var value = g.StationOffer(m, s, out var units);
+            var value = g.StationOffer(m, s, out var units) * rate;
             k.ShipLine = "YOU ARE ABOARD " + CmdName(s) + ", DOCKED HERE";
             k.CanSell = k.Trades && units > 0;
             k.SellLabel = !k.Trades ? "THEY WON'T BUY FROM YOU"
