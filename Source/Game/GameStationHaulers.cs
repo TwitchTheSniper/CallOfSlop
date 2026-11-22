@@ -904,12 +904,21 @@ public sealed partial class Game
         {
             var k = pick[i];
             var spare = Array.IndexOf(listed, goods[k].Material) >= 0 ? m.Stock[k] : Math.Max(0, m.Stock[k] - Keeps(goods[k]));
-            var afford = own ? Math.Max(0, m.Stock[k] - Keeps(goods[k])) : pw is { Fallen: false } ? Math.Min(spare, m.Afford(k, Math.Max(0, pw.Stock - cost))) : 0; // (priced across the stock the load moves; at its own station, what it has past what it keeps, as a consignment takes)
-            if (afford < HaulLeastLot)
+            var afford = own ? Math.Max(0, m.Stock[k] - (h.Builder ? Keeps(goods[k]) / 2 : Keeps(goods[k]))) : pw is { Fallen: false } ? Math.Min(spare, m.Afford(k, Math.Max(0, pw.Stock - cost))) : 0; // (priced across the stock the load moves; at its own station, what it has past what it keeps, as a consignment takes)
+            if (h.Builder && fk_(k) is var bk and >= 0)
+                afford = Math.Min(afford, Math.Max(0, fg[bk].Most - fm.Stock[bk])); // (a builder takes what its site's bill still lacks, and dips into half its station's reserve for it: GameStationLife.cs)
+            if (afford < HaulLeastLot && !(h.Builder && afford > 0 && fk_(k) is var lk and >= 0 && afford >= fg[lk].Most - fm.Stock[lk]))
                 continue; // (a handful isn't worth a bin: what its power can afford of it, or the station has)
             var n = StationLoadCargo(m, c, k, afford, out var paid, own);
             bought[k] += n;
             cost += paid;
+        }
+        int fk_(int k)
+        {
+            for (var j = 0; j < fg.Length; j++)
+                if (fg[j].Material == goods[k].Material)
+                    return j;
+            return -1;
         }
         if (h.Parts)
         {

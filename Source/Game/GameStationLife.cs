@@ -501,7 +501,7 @@ public sealed partial class Game
             Log($"[station] {name}: builders run from {StationMarkets.All[src].Name} with {string.Join(", ", mats.Select(x => RecyclingTable.Current.NameOf(x)))}");
         }
         StationsVersion++;
-        Log(FormattableString.Invariant($"[station] {power} lays {name} ({kd.Name}, {def.Orbit / 1000:0} km up round {planet}): its bill is {value:0} (value), {bp.Steps.Count} steps; labour {labour:0}")
+        Log(FormattableString.Invariant($"[station] {power} lays {name} ({kd.Name}, {def.Orbit / 1000:0} km up round {planet}): its bill is {value:0} (value: {string.Join(", ", goods.Select(g => $"{g.Most} {RecyclingTable.Current.NameOf(g.Material)}"))}), {bp.Steps.Count} steps; labour {labour:0}")
             + (left.Count > 0 ? $"; none of its stations sells {string.Join(", ", left)}, so the site goes without" : ""));
         return true;
     }

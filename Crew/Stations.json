@@ -74,7 +74,7 @@
   "stationRules": {
     "payback": 72, "window": 6, "saleAfter": 6, "closeAfter": 6, "salvageFor": 6, "saleListed": true,
     "builders": 2, "builderShip": "Magpie Mining Ship", "haulSave": 0.1, "labourShare": 0.05, "salePrice": 0.5, "salvageShare": 0.25,
-    "billScale": 1, "maxNew": 8, "upkeep": { "hydrogen": 40 }, "labour": 10
+    "billScale": 0.25, "maxNew": 8, "upkeep": { "hydrogen": 40 }, "labour": 10
   },
   // "kinds": the stations a power can put up. "blueprint" it is built from, "orbit" km over its planet (4 km more for each station there
   // already), "goods" as a station's (its stock to start once open), "upkeep" and "labour" (else the rules'), "expect" (value an hour it is
