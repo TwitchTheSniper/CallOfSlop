@@ -801,8 +801,8 @@ public static partial class ConstructPhysics
         // frame's own changes of motion wake them, ConstructFrames.Carry)
         var framePair = a.Frame == b.Id || b.Frame == a.Id;
         var same = a.Frame != 0 && a.Frame == b.Frame;
-        var moving = !framePair && _dyn[ia] && ((same ? a.Vel - a.FrameV : a.Vel).LengthSquared() >= StillSpeed2 || (same ? a.AngVel - a.FrameW : a.AngVel).LengthSquared() >= StillSpeed2);
-        var movingB = !framePair && _dyn[ib] && ((same ? b.Vel - b.FrameV : b.Vel).LengthSquared() >= StillSpeed2 || (same ? b.AngVel - b.FrameW : b.AngVel).LengthSquared() >= StillSpeed2);
+        var moving = !framePair && _dyn[ia] && MovesToWake(a, same);
+        var movingB = !framePair && _dyn[ib] && MovesToWake(b, same);
         for (var k = 0; k < n; k++)
         {
             ref var p = ref _cand[k];
