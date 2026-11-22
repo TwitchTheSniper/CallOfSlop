@@ -20,12 +20,14 @@ public sealed partial class Game
         public ushort Ship; // aboard this hauler (0: waiting at At)
         public int Next; // the station it is on its way to aboard Ship
         public long Since; // when it was made (ticks)
+        public long Waits; // when it last got off at a station (ticks)
+        public int Route; // the hauler route it rides (with Ship)
     }
 
-    private const int MaxConsignments = 32, ConsignMost = 2000, ConsignLeast = 50;
+    private const int MaxConsignments = 32, ConsignMost = 2000, ConsignLeast = 50, ConsignWaitMost = 2 * 60 * 60 * World.TickRate; // (a consignment waiting longer than two hours of play goes back into its station's stock)
     private const float ConsignFee = 0.05f, ConsignForeign = 2f; // the space's price, a share of the goods' value a hop; another power's route counts this many hops
     private readonly List<Consignment> _consigns = new(MaxConsignments);
-    private readonly int[] _routeDist = new int[256], _routeVia = new int[256];
+    private int[] _routeDist = [], _routeVia = [];
 
     /// <summary>Host, once a minute (the needs step): new consignments for shortages no route answers straight, and those aboard a lost hauler lost.</summary>
     private void ConsignTick()
@@ -33,9 +35,15 @@ public sealed partial class Game
         for (var i = _consigns.Count - 1; i >= 0; i--)
         {
             var cn = _consigns[i];
-            if (cn.Ship != 0 && (Constructs.Get(cn.Ship) is not { Wreck: false } || !HaulsHas(cn.Ship)))
+            if (cn.Ship != 0 && HaulerLost(cn))
             {
                 Log($"[consign] {cn.Units} {RecyclingTable.Current.NameOf(cn.Material)} for {StationMarkets.All[cn.To].Name} were lost with hauler {cn.Ship}");
+                _consigns.RemoveAt(i);
+            }
+            else if (cn.Ship == 0 && ServerTick - cn.Waits > ConsignWaitMost)
+            {
+                var back = ConsignStock(cn.At, cn.Material, cn.Units);
+                Log($"[consign] {cn.Units} {RecyclingTable.Current.NameOf(cn.Material)} for {StationMarkets.All[cn.To].Name} waited too long at {StationMarkets.All[cn.At].Name}: {back} go back into its stock{(back < cn.Units ? ", the rest is lost (it is full or doesn't trade it)" : "")}");
                 _consigns.RemoveAt(i);
             }
         }
@@ -87,12 +95,42 @@ public sealed partial class Game
         return false;
     }
 
-    private bool HaulsHas(ushort ship)
+    /// <summary>
+    /// Is the hauler a consignment rides lost? Only where its route's haulers are (they were taken up in this world): a landing leaves them in
+    /// the world behind, and a body of the same id elsewhere is not it. Lost: the route's haulers are here and it is not one of them, or a wreck.
+    /// </summary>
+    private bool HaulerLost(in Consignment cn)
     {
+        if (_haulAdopt)
+            return false; // (the haulers of a world just loaded aren't taken up yet)
+        var routeHere = false;
         foreach (var r in _hauls)
-            if (r.Ship == ship)
-                return true;
-        return false;
+        {
+            if (r.Route != cn.Route)
+                continue;
+            if (r.Ship == cn.Ship)
+                return Constructs.Get(cn.Ship) is not { Wreck: false };
+            routeHere = true;
+        }
+        return routeHere;
+    }
+
+    /// <summary>Host: <paramref name="units"/> of <paramref name="mat"/> into station <paramref name="def"/>'s stock, up to its most. Returns what went in.</summary>
+    private int ConsignStock(int def, byte mat, int units)
+    {
+        if (_marketByDef.Length <= def || _marketByDef[def] is not { } m)
+            return 0;
+        var goods = StationMarkets.All[def].Goods;
+        for (var k = 0; k < goods.Length && k < m.Stock.Length; k++)
+            if (goods[k].Material == mat)
+            {
+                var put = Math.Clamp(goods[k].Most - m.Stock[k], 0, units);
+                m.Stock[k] += put;
+                if (put > 0 && m.Body != 0)
+                    StationsVersion++;
+                return put;
+            }
+        return 0;
     }
 
     /// <summary>A consignment of station <paramref name="to"/>'s short good <paramref name="k"/> from the nearest station with some to spare that it can be routed from.</summary>
@@ -143,7 +181,7 @@ public sealed partial class Game
         src.Stock[bestK] -= units;
         if (src.Body != 0)
             StationsVersion++;
-        _consigns.Add(new Consignment { Owner = owner, Material = mat, Units = units, From = best, To = to, At = best, Since = ServerTick });
+        _consigns.Add(new Consignment { Owner = owner, Material = mat, Units = units, From = best, To = to, At = best, Since = ServerTick, Waits = ServerTick });
         Log($"[consign] {CrewPowers.Of(owner)?.Name}: {units} {RecyclingTable.Current.NameOf(mat)} from {all[best].Name} to {all[to].Name}, route cost {bestDist} (2 a hop on its own routes, {2 * ConsignForeign:0} on another power's)");
     }
 
@@ -158,7 +196,9 @@ public sealed partial class Game
     private void RouteFrom(int target, byte owner)
     {
         var all = StationMarkets.All;
-        var n = Math.Min(all.Length, _routeDist.Length);
+        var n = all.Length;
+        if (_routeDist.Length < n)
+            (_routeDist, _routeVia) = (new int[n], new int[n]); // (once, the first time: the station list is fixed after load)
         for (var i = 0; i < n; i++)
             (_routeDist[i], _routeVia[i]) = (int.MaxValue, -1);
         _routeDist[target] = 0;
@@ -188,7 +228,7 @@ public sealed partial class Game
     }
 
     /// <summary>Host, a hauler at station <paramref name="def"/> (HaulTrade): consignments aboard it get off here, and those here routed on to <paramref name="next"/> get on.</summary>
-    private void ConsignAtStation(Construct c, StationHaulerDef h, int def, int next)
+    private void ConsignAtStation(Construct c, int route, StationHaulerDef h, int def, int next)
     {
         if (_consigns.Count == 0)
             return;
@@ -196,22 +236,15 @@ public sealed partial class Game
         for (var i = _consigns.Count - 1; i >= 0; i--)
         {
             var cn = _consigns[i];
-            if (cn.Ship != c.Id || cn.Next != def)
+            if (cn.Ship != c.Id || cn.Route != route || cn.Next != def)
                 continue;
             cn.Ship = 0;
             cn.At = def;
+            cn.Waits = ServerTick;
             if (def == cn.To)
             {
-                if (_marketByDef.Length > def && _marketByDef[def] is { } m)
-                    for (var k = 0; k < all[def].Goods.Length; k++)
-                        if (all[def].Goods[k].Material == cn.Material)
-                        {
-                            m.Stock[k] = Math.Min(all[def].Goods[k].Most, m.Stock[k] + cn.Units);
-                            if (m.Body != 0)
-                                StationsVersion++;
-                            break;
-                        }
-                Log($"[consign] {cn.Units} {RecyclingTable.Current.NameOf(cn.Material)} from {all[cn.From].Name} delivered to {all[def].Name} after {(ServerTick - cn.Since) / (60.0 * World.TickRate):0} min");
+                var put = ConsignStock(def, cn.Material, cn.Units);
+                Log($"[consign] {cn.Units} {RecyclingTable.Current.NameOf(cn.Material)} from {all[cn.From].Name} delivered to {all[def].Name} after {(ServerTick - cn.Since) / (60.0 * World.TickRate):0} min{(put < cn.Units ? $" ({cn.Units - put} lost: its stock is full)" : "")}");
                 _consigns.RemoveAt(i);
                 continue;
             }
@@ -220,7 +253,7 @@ public sealed partial class Game
         }
         var aboard = 0;
         foreach (var cn in _consigns)
-            aboard += cn.Ship == c.Id ? 1 : 0;
+            aboard += cn.Ship == c.Id && cn.Route == route ? 1 : 0;
         var operatorPower = CrewPowers.Find(h.Power);
         for (var i = 0; i < _consigns.Count; i++)
         {
@@ -245,6 +278,7 @@ public sealed partial class Game
                 }
             }
             cn.Ship = c.Id;
+            cn.Route = route;
             cn.Next = next;
             _consigns[i] = cn;
             aboard++;
@@ -259,7 +293,7 @@ public sealed partial class Game
         foreach (var cn in _consigns)
             w.Str(CrewPowers.Of(cn.Owner)?.Name ?? "").Str(RecyclingTable.Current.NameOf(cn.Material)).I32(cn.Units)
                 .Str(StationMarkets.All[cn.From].Name).Str(StationMarkets.All[cn.To].Name).Str(StationMarkets.All[cn.At].Name).U16(cn.Ship)
-                .Str(cn.Ship != 0 ? StationMarkets.All[cn.Next].Name : "");
+                .Str(cn.Ship != 0 ? StationMarkets.All[cn.Next].Name : "").I32(cn.Route);
     }
 
     /// <summary>Host, loading: the saved consignments, by name; one whose power, good or stations are gone is dropped with a log line.</summary>
@@ -276,9 +310,10 @@ public sealed partial class Game
             string from = s.Str(), to = s.Str(), at = s.Str();
             var ship = s.U16();
             var next = s.Str();
+            var route = s.I32();
             var cn = new Consignment { Owner = CrewPowers.Find(owner), Material = RecyclingTable.Current.IdOf(mat), Units = units, From = StationMarkets.Find(from),
-                To = StationMarkets.Find(to), At = StationMarkets.Find(at), Ship = ship, Next = ship != 0 ? StationMarkets.Find(next) : 0, Since = ServerTick };
-            if (cn.Owner == 0 || cn.Material == 0 || units <= 0 || cn.From < 0 || cn.To < 0 || cn.At < 0 || cn.Next < 0 || _consigns.Count >= MaxConsignments)
+                To = StationMarkets.Find(to), At = StationMarkets.Find(at), Ship = ship, Next = ship != 0 ? StationMarkets.Find(next) : 0, Since = ServerTick, Waits = ServerTick, Route = route };
+            if (cn.Owner == 0 || cn.Material == 0 || units <= 0 || cn.From < 0 || cn.To < 0 || cn.At < 0 || cn.Next < 0 || ship != 0 && (route < 0 || route >= StationMarkets.Haulers.Length) || _consigns.Count >= MaxConsignments)
             {
                 Log($"[consign] a saved consignment of {units} {mat} for {to} is dropped: its power, good or stations are gone");
                 continue;
