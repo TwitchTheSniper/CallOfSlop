@@ -66,6 +66,8 @@ public static partial class Program
             outArgs.Add("--survival");
         if (calm)
             outArgs.Add("--calm");
+        if ((string?)spec["blueprint"] is { Length: > 0 } bp)
+            outArgs.AddRange(["--blueprint", bp]); // (a spots file about one build: tools/bench/factory.json)
         if ((string?)spec["start"] is { Length: > 0 } start)
             outArgs.AddRange(["--start", start]);
         // Everything else the caller gave (--save-dir, --gl41 ...), past the bench's own flags.
@@ -137,6 +139,10 @@ public static partial class Program
             s.Extra["cOcclusionTested"] = ConstructRender.LastOccTested;
             s.Extra["cCulled"] = ConstructRender.LastCulled;
             s.Extra["cFar"] = ConstructRender.LastLod;
+            // The shadow and dark-interior passes' boxes last frame (each pass draws only the caster cells it reaches: SunShadows.DrawCells).
+            s.Extra["sunBoxes"] = SunShadows.LastBoxes;
+            s.Extra["roomBoxes"] = RoomShade.LastBoxes;
+            s.Extra["lampBoxes"] = LampShadows.LastBoxes;
         }
         WsSay(PerfBench.Line(s));
         if (s.FrameSections.Length > 0)
