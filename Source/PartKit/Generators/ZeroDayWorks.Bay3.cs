@@ -29,7 +29,8 @@ public sealed partial class ZeroDayWorks
 
             // ---- Four Presses (3 x 4 beds, the shells one block high: a 2 m swing strip north and south of each) in two rows. ---------
             // Each starts with a die (the yard's frigate wants ten families; four presses hold four: the Gear Set kits, the Circuit Boards,
-            // the buttons and switches, the leg pods' brackets). A press doesn't swap its die for an order yet: the rest wait on that.
+            // the buttons and switches, the leg pods' brackets). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
+            // aren't chuted to the presses yet, so the other families wait on that.
             var dies = new Queue<string>(["Gear Die", "Board Die", "Button Die", "Bracket Die"]);
             foreach (var z in new[] { -103f, -117f })
                 foreach (var x in new[] { 75f, 86f })
