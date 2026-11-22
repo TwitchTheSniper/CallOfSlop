@@ -276,6 +276,39 @@ ticks for half a second. A blast with nothing to walk costs a hundredth of a mil
 the effect's particles cost nothing measurable beside the 100 ms frames; its births are 0 bytes (the pool's), checked on
 the 4.6 and 4.1 paths.
 
+## Free bodies on rails (`ConstructRails.cs`, 2026-11-22)
+
+Karl: far things should become data, so a world can hold hundreds of wrecks and haulers for a long time. The first step
+takes free bodies round a planet out of the physics. A body falling free, touching nothing, with nothing running on it (a
+wreck, a lost crate: `ConstructRails.Eligible`), at least `Floor` (300 m) over the ground under it (the features' smooth
+height, `Planetoid.RoughAltitude`) and `PersonRange` (300 m) from every person, is moved by `ConstructPhysics.RailStep`: the
+same gravity, damping, speed limit and turn as `Integrate`, with no contacts, no list, no logic or power (`ConstructFar.LogicDue`).
+Its pose and speed stay true every tick, so the network, saves, rays and the broadphase see an ordinary moving body.
+
+- **On and off.** A slice of the bodies is checked each tick (`Every` = 30, every half second each). It goes on after the
+  physics stepped it, and comes off when the physics' list takes it (anything stepped comes within reach: `SimList`), on
+  `Wake` (a hit, a tool), below half the floor (`RailLow`), or at a check that fails; it takes that tick's rail step first,
+  so no body moves twice or not at all in a tick. Off when the world is small (`!UseGrid`), has no point gravity or no
+  person, and with `--no-rails`.
+- **Measured** (`--stress-check --wrecks 1000 --haulers 50 --seconds 20`, cloud box; Cargo Pods, Racks and Limpets break
+  into 1,916 bodies, 664 of them go on rails, the uncrewed Drays and their containers stay in the physics):
+
+| | tick (mean) | physics | per body |
+| --- | --- | --- | --- |
+| Before (PR 520 baseline) | 11 to 13 ms | 3.5 to 4.7 ms | 11 us |
+| Cargo scan fixed, `--no-rails` | 7.4 ms | 3.1 ms | 7.1 us |
+| Rails on, person far | 5.3 ms | 1.1 ms + rails 0.85 | 5.1 us |
+| Rails on, person on the ground under the orbits | 4.9 ms | 1.1 ms + rails 0.82 | 4.7 us |
+
+  300 Limpet wrecks alone: 5.5 ms to 1.0 ms a tick. Steady ticks allocate nothing.
+- **The cargo scan** cost 2 to 3 ms of that: ten times a second every body with logic walked every body to count its
+  cargo (`ConstructCargo.Scan`, now the last refresh's `CargoCount`), and the refresh walked every carried body for every
+  body with logic (now a stamp on each carrier). `--stress-check`'s "ConstructLift" bucket was everything after the lift
+  step; it is split now ("after: Cargo" and the rest).
+- **Not done.** Haulers and stations (the next step: on the economy's consignment model, as legs of a route resolved out
+  of sight); bodies asleep in orbit (Cargo Pod pieces sleep at orbital speed and hang in the sky: not changed); far bodies
+  that are not on a planet's gravity.
+
 ## The inventory
 
 Grouped by class; the rows changed in this audit come first in each group. "What it protects" is the code's own comment
