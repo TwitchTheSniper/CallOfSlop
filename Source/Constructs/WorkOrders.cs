@@ -108,7 +108,7 @@ public static class WorkOrders
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (d.IsPress)
-            return PressRefusal(c, part, d, o);
+            return PressRefusal(world, c, part, d, o);
         if (d.IsPanelFormer)
             return ConstructPanelFormer.Refusal(world, c, part, d, o);
         if (o.IsPressed)
@@ -207,7 +207,7 @@ public static class WorkOrders
     /// A Press's side (Press phase 4): a pressed key, or a catalogue part that is a preset, whose die is the one fitted and whose blank is
     /// inside the press's across. The order sets what the press makes: its bays take only the order's blank (ConstructPress.SizedRefusal).
     /// </summary>
-    private static string? PressRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    private static string? PressRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (Pressed.SpecOf(o) is not { } spec)
             return o.IsPiece ? $"the {d.Name} presses parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order"
@@ -215,10 +215,11 @@ public static class WorkOrders
                 : $"no die presses the {ConstructParts.Def(o.Part).Name}";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
-        if (ConstructPress.SizedDieOf(PressTable.Current, c, part) is not { } die)
-            return $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die";
-        if (!ReferenceEquals(die, spec.Die))
-            return $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die";
+        // A die it doesn't hold is fine when a chute into it comes from a rack that holds one: it swaps to it for this order (PressDieSwap.cs).
+        var die = ConstructPress.SizedDieOf(PressTable.Current, c, part);
+        if (!ReferenceEquals(die, spec.Die) && !ConstructPress.DieRackOf(world, c, part, spec.Die, out _, out _))
+            return die == null ? $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)"
+                : $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)";
         var across = Pressed.Across(spec.Blank);
         if (!ConstructPress.Fits(c, part, spec.Blank))
             return $"the blank is {across / 100f:0.00} m across and {Math.Max(spec.Blank.W, spec.Blank.H) / 100f:0.00} m wide, {ConstructPress.TooBig(c, part)}";

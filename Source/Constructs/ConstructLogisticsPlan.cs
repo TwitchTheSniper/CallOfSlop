@@ -81,10 +81,12 @@ public static class ConstructLogisticsPlan
     /// </summary>
     private static int PressInputs(Construct c, int m, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
     {
-        if (ConstructParts.Get(product) is not { } pd || ConstructPress.SizedDieOf(PressTable.Current, c, m) is not { } die)
+        // (the order's die, fitted or not: a press with a chute from a rack holding it swaps to it for the order, PressDieSwap.cs, and
+        // the queue took the order only if it holds that die or can swap to it, so the blank is asked now, not once the die is in)
+        if (ConstructParts.Get(product) is not { } pd)
             return 0;
         var key = Pressed.IsName(pd.Name) ? pd.Name : PressTable.Current.PresetKeyOf(pd);
-        if (key == null || Pressed.SpecOf(key) is not { } spec || !ReferenceEquals(spec.Die, die) || Extrusion.Def(spec.Blank) is not { } blank)
+        if (key == null || Pressed.SpecOf(key) is not { } spec || Extrusion.Def(spec.Blank) is not { } blank)
             return 0;
         var n = 0;
         var inBays = 0;
