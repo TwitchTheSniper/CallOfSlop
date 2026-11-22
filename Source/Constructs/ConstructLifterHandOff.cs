@@ -42,6 +42,13 @@ public static partial class ConstructLifters
         _leadN = 0;
         if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0)
             return;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        LeadsWork(world);
+        LifterProbe.Cost(ref LifterProbe.LeadCost, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+    }
+
+    private static void LeadsWork(ConstructWorld world)
+    {
         // Hop 0: each pick pad a station's arm (or its own crane) fits from.
         int si = 0, t = -1;
         while (NextStation(world, ref si, ref t, out var sc, out _, out _))
@@ -55,8 +62,8 @@ public static partial class ConstructLifters
                     var l = lb.Lifts[i];
                     if (l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld)
                         continue;
-                    if (l.Points == null || world.LiftTick - l.PointsAt >= PointEvery)
-                        FindPoints(world, c, l, ld);
+                    if (l.Points == null)
+                        FindPoints(world, c, l, ld); // (just loaded or placed; else its own looks keep them, every 2 s)
                     for (var k = 0; k < l.PointN && _leadN < MaxLeads; k++)
                     {
                         ref readonly var pt = ref l.Points![k];
@@ -159,7 +166,7 @@ public static partial class ConstructLifters
     }
 
     /// <summary>The lead at a point (the fewest hops) whose station lacks this kind (<paramref name="lacking"/>: else any), or -1.</summary>
-    private static int LeadAt(ConstructWorld world, ushort body, int part, LiftPointKind kind, ConstructPartDef d, ushort padHandle = 0, bool lacking = true)
+    private static int LeadAt(ConstructWorld world, ushort body, int part, LiftPointKind kind, ConstructPartDef d, ushort padHandle = 0, bool lacking = true, int self = 0)
     {
         var best = -1;
         for (var e = 0; e < _leadN; e++)
@@ -169,7 +176,7 @@ public static partial class ConstructLifters
                 continue;
             if (padHandle != 0 && (world.Get(ld.PadBody) is not { } pb || ld.Pad >= pb.PartCount || pb.Parts[ld.Pad].Store != padHandle))
                 continue;
-            if (!lacking || LeadLack(world, ld, d) > 0)
+            if (!lacking || LeadLack(world, ld, d) + self > 0)
                 best = e;
         }
         return best;
@@ -207,7 +214,7 @@ public static partial class ConstructLifters
             ref readonly var pt = ref l.Points![k];
             if (k == skip || pt.Kind is not (LiftPointKind.Rack or LiftPointKind.RunStart) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount)
                 continue;
-            var e = LeadAt(world, pt.Body, pt.Part, pt.Kind, d, padHandle);
+            var e = LeadAt(world, pt.Body, pt.Part, pt.Kind, d, padHandle, self: padHandle != 0 ? 1 : 0); // (a rider bound for the pad counts itself among those riding there)
             if (e < 0 || _leads[e].Hops >= bestHops)
                 continue;
             Vector3 p;

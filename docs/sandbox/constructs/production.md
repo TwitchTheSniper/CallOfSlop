@@ -1846,7 +1846,7 @@ lifter at the run's end takes it to the pad, or on to the next lead. A pick pad 
 big for the hold), and a part landing on it counts for the station's order as a large part always has. A piece already on a station's
 pick pad is never handed on, a damaged or painted piece is never put on a run, and a lifter set to Station only or Off hands nothing
 on. A lifter has up to 32 points now (16 before). `--handoff-check [BLUEPRINT] [--seconds S] [--points]` tries it headless: a small
-station builds Storage Corner from a stock pad 40 m away, through an arm, a run, an arm, a run and the station's arm. Not yet: a
+station builds Storage Corner from a stock pad 40 m away, through an arm, a run, an arm, a run and the station's arm (it prints the leads' cost too). A run's start is not a hand order's put point (only hand-offs use it). Not yet: a
 station's own conveyor fetch from a store doesn't cross lifters (the store's pieces go by hand-off instead), and the logistics map
 has no edge for a run's start or end (a Router doesn't route by them).
 

@@ -149,6 +149,7 @@ public static class HandOffCheck
         else
             steps = need;
         Say(j.State != StationState.Building, $"the build finished ({j.State}; {steps} of {need} parts fitted)");
+        Console.WriteLine(LifterProbe.LeadCost.Text("leads"));
         Console.WriteLine(fails == 0 ? "handoff-check: ok" : $"handoff-check: {fails} failure(s)");
         return fails;
     }

@@ -58,7 +58,7 @@ public static partial class ConstructLifters
     public static bool Picks(LiftPointKind k) => k is LiftPointKind.Rack or LiftPointKind.Out;
 
     /// <summary>Can a hand order put to this kind of point?</summary>
-    public static bool Puts(LiftPointKind k) => k is not (LiftPointKind.Out or LiftPointKind.None or LiftPointKind.RunEnd);
+    public static bool Puts(LiftPointKind k) => k is not (LiftPointKind.Out or LiftPointKind.None or LiftPointKind.RunEnd or LiftPointKind.RunStart); // (a run's start takes only hand-offs: ConstructLifterHandOff.cs)
 
     /// <summary>Server: the idle lifter's first look. True when an order's carry began.</summary>
     private static bool OrderCarry(ConstructWorld world, Construct c, CLift l, LifterDef ld)
