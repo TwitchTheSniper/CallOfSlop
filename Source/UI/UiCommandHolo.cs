@@ -152,7 +152,7 @@ public sealed partial class Ui
                 var part = c.Doors[k].Part;
                 if (part < 0 || part >= c.PartCount)
                     continue;
-                c.PartBounds(part, out var mn, out var mx);
+                ModuleSockets.RestBounds(c, part, out var mn, out var mx); // (rest frame: a door on a freeform weld too)
                 var lit = boarding && _cmdBoardSeal && part == _cmdBoardHoverPart;
                 CmdHoloBox(dl, cr.At, ax, mn - com, mx - com, CmdGreen, (lit ? 1f : boarding && _cmdBoardSeal ? 0.75f : 0.45f) * fade, lit ? 2f : 1f);
             }
