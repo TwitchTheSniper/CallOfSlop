@@ -61,7 +61,7 @@ public static partial class ConstructPress
     private static readonly List<Construct> _near = new(32);
 
     /// <summary>A chute's delivery, done at the start of the next step: a chute moves inside the routes' own loop, where parts can't come and go.</summary>
-    public readonly record struct Feed(ushort FromBody, ushort FromPart, ushort ToBody, ushort ToPart, ushort Die);
+    public readonly record struct Feed(ushort FromBody, ushort FromPart, ushort ToBody, ushort ToPart, ushort Die, bool Swap = false); // (Swap: a die for the head order, the old one back to its rack: PressDieSwap.cs)
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
@@ -980,8 +980,10 @@ public static partial class ConstructPress
             Queue(world, new Feed(cf.Id, (ushort)from, ct.Id, (ushort)to, ConstructParts.None));
             return true;
         }
+        if (ChuteSwap(world, cf, from, src, ct, to))
+            return true; // (the die its head order needs, from a rack: swapped in at the next step)
         var d = ct.DefOf(to);
-        if (d.PressDieSocket >= 0 && DieIn(ct, to) < 0)
+        if (d.PressDieSocket >= 0 && DieIn(ct, to) < 0 && DieWanted(ct, to) == null) // (a press with an order takes only its order's die: ChuteSwap)
             for (var s = 0; s < src.SlotCount; s++)
                 if (ConstructParts.Get(src.Def[s]) is { IsPressDie: true } die && DieClassOf(die) == d.Sockets[d.PressDieSocket].Class && world.TakeOut(cf, from, s) is { } moved)
                 {
@@ -1020,15 +1022,20 @@ public static partial class ConstructPress
 
     private static void Deliver(ConstructWorld world, IWorldQuery query, in Feed f)
     {
-        if (world.Get(f.ToBody) is not { } to)
-            return;
-        if (to.Dirty)
+        var to = world.Get(f.ToBody);
+        if (to is { Dirty: true })
             to.Rebuild();
-        if (f.ToPart >= to.PartCount || !to.Parts[f.ToPart].D.IsPress || world.StoreOf(to, f.ToPart) is not { } st)
+        if (to == null || f.ToPart >= to.PartCount || !to.Parts[f.ToPart].D.IsPress || world.StoreOf(to, f.ToPart) is not { } st)
+        {
+            if (f.Swap && ConstructParts.Get(f.Die) is { } lost)
+                SwapBack(world, f, lost); // (the press went: the die goes back on its rack)
             return;
+        }
         if (f.Die != ConstructParts.None)
         {
-            if (ConstructParts.Get(f.Die) is { } die && (DieIn(to, f.ToPart) >= 0 || !FitDie(world, to, f.ToPart, die)))
+            if (f.Swap && ConstructParts.Get(f.Die) is { } swapped)
+                DeliverSwap(world, to, f, swapped);
+            else if (ConstructParts.Get(f.Die) is { } die && (DieIn(to, f.ToPart) >= 0 || !FitDie(world, to, f.ToPart, die)))
                 world.TrayAdd(st, to.Parts[f.ToPart].D, die); // (the slot filled meanwhile: it isn't lost)
             return;
         }
@@ -1481,6 +1488,8 @@ public static partial class ConstructPress
                 : "");
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
+        if (!p.Broken && !st.Busy && DieWanted(c, part) is { } wanted)
+            problem = $"its order needs the {wanted.Family} Die: a chute from a Die Rack holding one swaps it in"; // (PressDieSwap.cs)
         string? action = null;
         if (near)
         {
