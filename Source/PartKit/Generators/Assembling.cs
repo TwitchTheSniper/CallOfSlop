@@ -1063,6 +1063,10 @@ public sealed class Assembling : IPartGenerator
         .. FactoryShellParts.MillShedNames.Select(n => ((string?)"Factory/Shed", (string?)n, (PyDict?)null)),
         // (the Zero Day works' steel-mill dressing, Sean 2026-11-22: FactoryShellParts.Dressing; after the shed: AfterCloche)
         .. FactoryShellParts.MillDressingNames.Select(n => ((string?)"Factory/Dressing", (string?)n, (PyDict?)null)),
+        // (heavy cargo containers, Karl 2026-11-22: a store's heavy furniture rides in them; ContainerParts, after the works' dressing)
+        ("Containers", "Heavy Container 1m", null),
+        ("Containers", "Heavy Container 2m", null),
+        ("Containers", "Heavy Container 3m", null),
     ];
 
     /// <summary>
