@@ -359,7 +359,7 @@ public sealed class LifterParts : IPartGenerator
         p.Sock("+x", [1, 0.5, 0], "+x");
         p.Sock("-x", [-1, 0.5, 0], "-x");
         p.Stats(1400, 3000, 10, 12);
-        p.Set(("craneRail", true), ("centreSockets", false), ("collider", "boxes"));
+        p.Set(("craneRail", "hall"), ("centreSockets", false), ("collider", "boxes")); // ("hall": a Crane Core's rails, never a Small Crane Bridge's)
         return p;
     }
 

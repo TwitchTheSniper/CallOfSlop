@@ -49,6 +49,16 @@ public static class TradeValues
     /// <summary>One part of def <paramref name="d"/>.</summary>
     public static float Part(ConstructPartDef d) => PartAt(d, 0, out _);
 
+    /// <summary>What pressing a catalogue part takes, as units of its cheapest preset's blank material (<see cref="PressTable.CostCapOf"/>, the blank and its bay 2 kit as mass), or (null, 0) when no die presses it.</summary>
+    internal static (byte? Material, float Units) PressedUnits(ConstructPartDef d)
+    {
+        var t = PressTable.Current;
+        if (t.CostCapOf(d) is not (> 0 and var kg) || t.PresetKeyOf(d) is not { } key || Pressed.SpecOf(key) is not { } spec)
+            return (null, 0);
+        var mat = spec.Blank.Material;
+        return (mat, kg / MathF.Max(RecyclingTable.MinKgPerUnit, RecyclingTable.Current.WeightOf(mat)));
+    }
+
     private static float PartAt(ConstructPartDef d, int depth, out bool cut)
     {
         cut = false;
@@ -73,6 +83,8 @@ public static class TradeValues
             }
             v = MathF.Max(0.01f, sum * Work);
         }
+        else if (PressedUnits(d) is ({ } mat, > 0 and var units)) // (a pressed part has no Assembler row: its preset's blank and kit, as units of the blank's material)
+            v = MathF.Max(0.01f, Of(mat) * units * Work);
         if (!cut || depth == 0)
             _parts[d.Id] = v;
         return v;

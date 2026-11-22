@@ -185,7 +185,7 @@ public static partial class ConstructLifters
         for (var i = 0; i < c.PartCount && m < x.Length; i++)
         {
             var d = c.DefOf(i);
-            if (!d.CraneRail || d.Class != cls || c.Parts[i].Broken)
+            if (!d.CraneRail || d.Class != cls || d.HallRail != own.Hall || c.Parts[i].Broken) // (a Small Crane Bridge and a Crane Core are both Small: each keeps to its own rails)
                 continue;
             Freeform.PartWorld(c, i, out var rp, out var rr);
             var q = inv * rr;
