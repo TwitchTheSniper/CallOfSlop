@@ -14,6 +14,7 @@ public sealed partial class ZeroDayWorks
         // skins wait on their pad for the crane and its Building Station, which builds each end before the oven bakes it.
 
         private readonly List<VPart> _stations = new();
+        private readonly List<VPart> _ovens = new(), _ovenMasts = new(); // (each oven's Core; the foot Mast Block on each bed corner)
 
         public const float ExtruderCoreZ = -43f; // an Extruder Core's centre: its die's foot (outBed, 0.75 m south) at z -44, so 16 m of Run-out Tables end at -60
         public const float FormerZ = -69f; // the Panel Former Cores: their Piece in (-z, 1 m north) on the last row of the feed run
@@ -74,7 +75,12 @@ public sealed partial class ZeroDayWorks
             var core = On("Bake Oven", coreX, coreZ, South, paint: paint);
             var bed = Tiles("Oven Bed Block", bedX0, coreZ - 2, across, along, South, paint);
             foreach (var c in Corners(bed))
-                Stack(c, "top", masts);
+            {
+                var first = Stack(c, "top", 1);
+                _ovenMasts.Add(first); // (the heat shields and gauges hang on it: Dressing)
+                Stack(first, "top", masts - 1);
+            }
+            _ovens.Add(core);
             return core;
         }
 

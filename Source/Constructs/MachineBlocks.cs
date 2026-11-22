@@ -463,6 +463,7 @@ public static class MachineBlocks
                 var old = c.BlockAsmOf.Length;
                 Array.Resize(ref c.BlockAsmOf, Math.Max(n, old * 2));
                 Array.Resize(ref c.BlockJoined, c.BlockAsmOf.Length);
+                Array.Resize(ref c.BlockCellOf, c.BlockAsmOf.Length); // (all three grow together: Build sizes them by BlockAsmOf alone, and a Core's cell went past the end once bare Mast Blocks seamed)
                 Array.Fill(c.BlockAsmOf, (short)-1, old, c.BlockAsmOf.Length - old);
             }
             byte mask = 0;

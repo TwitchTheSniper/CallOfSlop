@@ -1,3 +1,4 @@
+using System.Numerics;
 using CallOfSlop.VehicleKit;
 
 namespace CallOfSlop.PartKit.Generators;
@@ -8,9 +9,9 @@ public sealed partial class ZeroDayWorks
     {
         // Dressing (doc "Dressing: steel-mill details"): the rooms' furniture, a High-Bay Pendant under each truss half, and on the shed's columns
         // Hall Floodlights (on every second column, about 11 m up, under the crane rails, facing the lines; staggered so each bay is lit
-        // from both sides), Deck Signs at head height and a Fire Point every 32 m. Not laid yet: the Lagged Main, the ovens' heat shields,
-        // gauge clusters and bottle cages, the Foundry's ladle stand and slag pots, the cranes' Amber Beacons (a Crane Core has no top
-        // socket), pipe banks, cable trays, floor markings and the yard's lights.
+        // from both sides), Deck Signs at head height and a Fire Point every 32 m; the Lagged Main along the west wall, the cranes' Amber
+        // Beacons, the ovens' heat shields, gauge clusters and bottle cages, the Foundry's ladle stand and slag pots, and floor markings
+        // down bays 1 and 3. Not laid yet: pipe banks, cable trays and the yard's lights.
         //
         // Furniture stands against a wall by its "wall" socket (buildings.md "Laying out a building"), on the wall's inside face: a
         // south or east wall's "k" side, a north or west wall's "f" side, clear of the posts where walls meet (so a 2 m wall takes
@@ -105,6 +106,39 @@ public sealed partial class ZeroDayWorks
                         Dress(masts[0], f, "Fire Point", Power);
                 }
             }
+            // The Lagged Main: a steam main along the west wall, on the west columns' inner faces about 7 m up (mast 3): a 6 m piece
+            // on each column and a 2 m piece on its south end, so the run is unbroken from column to column.
+            foreach (var ((run, k), masts) in _columns.Where(x => x.Key.Run == 0).OrderBy(x => x.Key.K))
+                if (DressAlong(masts[3], "+x", "Lagged Main 6 m", Power, Vector3.UnitZ) is { } main)
+                    Dress(main, SocketAt(main, "-x").Z < SocketAt(main, "+x").Z ? "-x" : "+x", "Lagged Main 2 m", Power, "-x");
+            // The cranes' Amber Beacons on their Cores' tops (they spin while lit).
+            foreach (var crane in _cranes.Append(_yardCrane!))
+                Dress(crane, "top", "Amber Beacon", Lane, "bottom");
+            // The ovens: a Heat Shield and a Gauge Cluster on each bed corner's foot mast (the faces a shield fits: along the bed's
+            // sides, clear of its neighbours), and a Gas Bottle Cage on the floor beside each oven's Core.
+            foreach (var m in _ovenMasts)
+            {
+                var shield = false;
+                foreach (var f in new[] { "+z", "-z", "+x", "-x" })
+                    if (!shield)
+                        shield = Dress(m, f, "Heat Shield", Steel);
+                    else if (Dress(m, f, "Gauge Cluster", Furniture))
+                        break;
+            }
+            foreach (var oven in _ovens)
+            {
+                var at = SocketAt(oven, oven.Def.Sockets[0].Name);
+                FloorTry("Gas Bottle Cage", Power, (at.X + 3, at.Z), (at.X - 3, at.Z), (at.X + 3, at.Z + 2), (at.X - 3, at.Z + 2));
+            }
+            // The Foundry's ladle stand and two slag pots, on the floor between the raw row and the bins (z -33), beside the Foundries.
+            const float Between = (RawRow + BinRow) * 0.5f;
+            FloorTry("Ladle Stand", Steel, (60, Between), (54, Between), (66, Between), (60, Between + 0.5f));
+            FloorTry("Slag Pot", Steel, (54, Between), (66, Between), (52, Between), (68, Between));
+            FloorTry("Slag Pot", Steel, (66, Between), (68, Between), (52, Between), (70, Between));
+            // Floor markings: lane markings down bay 1's and bay 3's aisles every 8 m, an arrow south every 32 m (the flow).
+            foreach (var x in new[] { 14f, 85f })
+                for (var z = -50f; z > -194f; z -= 8f)
+                    FloorTry(z % 32 == -18 ? "Floor Arrow" : "Lane Marking", Lane, (x, z));
             // A High-Bay Pendant under the middle of every truss half (two rows a span, one every 8 m along the shed), 0.7 m under
             // the chord, clear over the crane bridges.
             foreach (var h in _trusses.Values.SelectMany(x => x))
@@ -113,19 +147,49 @@ public sealed partial class ZeroDayWorks
 
         /// <summary>A placing refused for want of room (something in the way, or a face on another's), which a leg or dressing may
         /// skip; anything else (a part or socket renamed, a cap reached) still throws.</summary>
-        private static bool Refused(VehicleKitException e) => e.Message.Contains(" is in the way") || e.Message.Contains(": z-fighting: ");
+        private static bool Refused(VehicleKitException e) => e.Message.Contains(" is in the way") || e.Message.Contains(": z-fighting: ") || e.Message.EndsWith("something is already attached there");
 
-        /// <summary>Dressing on a socket where it fits (clear of what is there and of z-fighting), else left out.</summary>
-        private void Dress(VPart on, string socket, string part, string paint, string by = "back")
+        /// <summary>Dressing on a socket where it fits (clear of what is there and of z-fighting), else left out. Whether it went on.</summary>
+        private bool Dress(VPart on, string socket, string part, string paint, string by = "back")
         {
             try
             {
                 Paint(Onto(on, socket, part, by, clear: true), paint);
+                return true;
             }
             catch (VehicleKitException e) when (Refused(e))
             {
-                // (a bed's edge, a wall sheet or a chute there)
+                return false; // (a bed's edge, a wall sheet or a chute there)
             }
+        }
+
+        /// <summary>Dressing whose own x runs along <paramref name="axis"/> (a pipe along a wall): the first quarter turn that does and fits, or null.</summary>
+        private VPart? DressAlong(VPart on, string socket, string part, string paint, Vector3 axis, string by = "back")
+        {
+            for (var spin = 0; spin < 4; spin++)
+                try
+                {
+                    return Paint(Onto(on, socket, part, by, spin, clear: true,
+                        veto: (_, g) => MathF.Abs(Vector3.Dot(Rot24.Apply(g.Rot, Vector3.UnitX), axis)) > 0.9f ? null : "turned across"), paint);
+                }
+                catch (VehicleKitException e) when (Refused(e) || e.Message.EndsWith("turned across"))
+                {
+                }
+            return null;
+        }
+
+        /// <summary>A free-standing piece on the floor (turned Up) at the first of <paramref name="spots"/> where it fits, else left out.</summary>
+        private void FloorTry(string part, string paint, params (float X, float Z)[] spots)
+        {
+            foreach (var (x, z) in spots)
+                try
+                {
+                    Paint(Stand(part, V(x, FloorY, z), Up, Tile(x, z), "bottom"), paint);
+                    return;
+                }
+                catch (VehicleKitException e) when (Refused(e) || e.Message.Contains(": no socket takes a ")) // (a machine stands on that floor socket)
+                {
+                }
         }
     }
 }
