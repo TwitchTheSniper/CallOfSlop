@@ -66,6 +66,7 @@ public static partial class ConstructRender
         public int WalkedCount, Boxes;
         public int[] Extra = []; // merged parts whose stored parts or glass panes are drawn alone each frame
         public int ExtraCount;
+        public int[] ExtraClass = []; // a merged machine block's biggest work box's size class (FarGlow)
         public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: always drawn (it moves, burns or smokes)
     }
 
@@ -421,10 +422,14 @@ public static partial class ConstructRender
         set.Boxes = total;
         Grow(ref set.WalkedSphere, set.WalkedCount);
         Grow(ref set.ExtraSphere, set.ExtraCount);
+        Grow(ref set.ExtraClass, set.ExtraCount);
         for (var k = 0; k < set.WalkedCount; k++)
             set.WalkedSphere[k] = WalkSphere(c, set.Walked[k]);
         for (var k = 0; k < set.ExtraCount; k++)
+        {
             set.ExtraSphere[k] = WalkSphere(c, set.Extra[k]);
+            set.ExtraClass[k] = WorkClass(c.Parts[set.Extra[k]].D);
+        }
         var on = gfx != null && total >= MergeMinBoxes;
         if (!on)
         {
@@ -811,7 +816,7 @@ public static partial class ConstructRender
             if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
                 n += DrawPanes(gfx, c, i, body, alpha); // (not while its chunk waits its rebuild: DrawPart drew its panes above)
             if (_defWork.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken)
-                && !(cull && c.Parts[i].D.WorkGlowOnly && FarGlow(in set.ExtraSphere[k], in body, origin)))
+                && !(cull && c.Parts[i].D.WorkGlowOnly && FarGlow(in set.ExtraSphere[k], set.ExtraClass[k], in body, origin)))
             {
                 _workOnly = true; // (its work boxes and status lamp, at the machine's state; the rest is in its chunk)
                 n += DrawPart(gfx, world, c, i, body, alpha, 1f);
@@ -825,15 +830,28 @@ public static partial class ConstructRender
     }
 
     /// <summary>
-    /// Is a merged machine block's glow-only work (a Mast Block's corner lamps) so far off that the far detail level leaves boxes
-    /// its size out (under 25 cm: <see cref="DetailAt"/> below class 2)? Then it isn't drawn: from there a lamp is under a pixel.
+    /// Is a merged machine block's glow-only work (a Mast Block's corner lamps) so far off that the far detail level leaves
+    /// out boxes of its biggest work box's size class (<paramref name="cls"/>, <see cref="DetailAt"/>)? Then it isn't drawn:
+    /// from there it is under a pixel, as the chunk's own boxes that size are.
     /// </summary>
-    private static bool FarGlow(in Vector4 sphere, in Matrix4x4 body, Vector3 origin)
+    private static bool FarGlow(in Vector4 sphere, int cls, in Matrix4x4 body, Vector3 origin)
     {
         if (sphere.W < 0)
             return false;
         var at = Vector3.Transform(new Vector3(sphere.X, sphere.Y, sphere.Z), body) + origin;
-        return DetailAt(Vector3.Distance(at, _lodEye) - sphere.W) < 2;
+        return DetailAt(Vector3.Distance(at, _lodEye) - sphere.W) < cls;
+    }
+
+    /// <summary>The size class of a type's biggest work box or status lamp (its smallest class number), or the last class when it has none.</summary>
+    private static int WorkClass(ConstructPartDef d)
+    {
+        var cls = LodClasses - 1;
+        if (!_defWork.Contains(d))
+            return cls;
+        for (var b = 0; b < d.Boxes.Length; b++)
+            if (!d.Boxes[b].Hidden && WorkBox(d, b))
+                cls = Math.Min(cls, SizeClass(in d.Boxes[b], false));
+        return cls;
     }
 
     /// <summary>A merged part's glass panes, as <see cref="DrawPart"/> draws them (its opaque boxes are in its chunk).</summary>
