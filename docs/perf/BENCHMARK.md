@@ -78,6 +78,11 @@ time something new, add a `PerfArea` (and its name and parent in `Perf.cs`) and 
 
 ## Spots files
 
+`tools/bench/factory.json` (`--bench factory`) measures one big build rather than a world: its `"blueprint"` (the Zero Day
+Works) is spawned in front of the player on the Proving Ground in creative, and its spots view `body big` (the body with the
+most parts). Each spot's `world` also records the shadow passes' boxes (`sunBoxes`, `roomBoxes`, `lampBoxes`) and the caster
+cells they skipped (`casterCellsSkipped`).
+
 `tools/bench/*.json`: `map`, `survival`, `calm`, `start` (a story start), `size`, `settle`, `frames`, and `spots`, each a
 `name` and a `view` in the window tool's tour form `TARGET | DIST,UP,BEARING` (Program.WindowShotTour.cs: `geo LAT,LON`,
 `body N` or `X,Y,Z`; the eye DIST m out on a compass bearing
