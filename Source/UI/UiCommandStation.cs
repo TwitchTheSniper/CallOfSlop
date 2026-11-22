@@ -27,6 +27,7 @@ public sealed partial class Ui
         public bool[] Sells; // a part by its row: does the local player carry one the station takes (goods' rows: false)
         public string Tab; // what the station's power owes the local player
         public string Makes, Uses; // its needs: what it makes and uses (Crew/Stations.json "makes", "uses"; "" for none)
+        public List<string> Lines; // its supply lines and the consignments bound for it (Game.StationLines; economy step 10)
         public int GoodCount;
         public ushort Ship; // the moored ship the local player is aboard (0: none)
         public string ShipLine, SellLabel;
@@ -35,7 +36,7 @@ public sealed partial class Ui
 
     private static readonly string MarketHead = $"{"GOOD",-12}{"STOCK",9}   {"BUYS",6}   {"SELLS",6}   VALUE A UNIT";
 
-    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxListed], Buys = new bool[StationMarkets.MaxListed], Sells = new bool[StationMarkets.MaxListed], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "" };
+    private CmdStationText _cmdStation = new() { Held = "", Trade = "", Goods = new string[StationMarkets.MaxListed], Buys = new bool[StationMarkets.MaxListed], Sells = new bool[StationMarkets.MaxListed], Tab = "", Makes = "", Uses = "", ShipLine = "", SellLabel = "", Lines = new(Game.MaxSupplyLines) };
 
     private void CmdStationRead(Game g, Construct c, double now)
     {
@@ -82,6 +83,13 @@ public sealed partial class Ui
         }
         k.Makes = makes.ToString();
         k.Uses = uses.ToString();
+        if (g.IsServer)
+            g.StationLines(m.Def, k.Lines);
+        else
+        {
+            k.Lines.Clear();
+            k.Lines.AddRange(m.Lines);
+        }
         // Its parts (Karl, 2026-11-20: parts are physical and carry a value): BUY takes one into a Storage Volume of the moored ship you are
         // aboard, SELL trades every one its stores hold.
         var parts = StationMarkets.All[m.Def].Parts;
@@ -131,7 +139,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 540 * _scale; // (room for a part row's SELL beside its BUY)
         var line = 19 * _scale;
-        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
+        var rows = 6 + (t.Tab.Length > 0 ? 1 : 0) + (t.Makes.Length > 0 ? 1 : 0) + (t.Uses.Length > 0 ? 1 : 0) + t.Lines.Count + (k.Orbit.Length > 0 ? 1 : 0) + (t.GoodCount > 0 ? t.GoodCount + 2 : 0) + (t.Ship != 0 ? 3 : 1);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + rows * line + 60 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdStation);
@@ -166,6 +174,12 @@ public sealed partial class Ui
             Row(dl, "MAKES", t.Makes, CmdGreen, ref y);
         if (t.Uses.Length > 0)
             Row(dl, "USES", t.Uses, CmdAmber, ref y);
+        for (var i = 0; i < t.Lines.Count; i++) // (its supply lines and what is on its way: a cut line shows in time to do something about it)
+        {
+            var ln = t.Lines[i];
+            Row(dl, i == 0 ? "SUPPLY" : "", ln, ln.EndsWith("CUT", StringComparison.Ordinal) ? CmdRed : ln.EndsWith("LATE", StringComparison.Ordinal) ? CmdAmber
+                : ln.EndsWith("RUNNING", StringComparison.Ordinal) ? CmdGreen : CmdCyan, ref y);
+        }
         if (t.GoodCount > 0)
         {
             y += 6 * _scale;
