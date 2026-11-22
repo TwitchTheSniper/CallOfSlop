@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--battle-check [SHIP] [--idle --ground [--map NAME] [--nuke DIST [--rounds N] [--show K]]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
+/// <c>--battle-check [SHIP] [--trace] [--idle --ground [--map NAME] [--nuke DIST [--rounds N] [--show K]]] [--shots N] [--per-tick K] [--gun NAME] [--range M] [--seed S] [--focus F] [--blasts N [--blast-damage D] [--blast-radius R]]</c>: a capital ship under railgun
 /// fire, headless (docs/sandbox/design/capital-battles.md). The ship (default the Zero Day) is built on the Proving Ground and
 /// held still in the air; a Zero Day (for its railgun) is held far off; then N shots are fired at it from its broadside, K in a
 /// tick, each at a random point on its middle, through the real round (<see cref="ConstructWeapons.ShotFrom"/>), and a world
@@ -258,9 +258,27 @@ public static class BattleCheck
             if (w.Get(ship.Id) is { Dirty: true } live)
                 live.Rebuild();
             rebuildMs += sw.Elapsed.TotalMilliseconds;
+            var trace = args.Contains("--trace"); // (where a slow tick goes: the physics' parts and the marked sections)
+            if (trace)
+            {
+                AllocProfile.On = true;
+                AllocProfile.Reset();
+                Array.Clear(ConstructPhysics.PartMs);
+                AllocProfile.Mark("c: tick start");
+            }
             sw.Restart();
             w.Step(World.Query, dt);
             var t = sw.Elapsed.TotalMilliseconds;
+            if (trace)
+            {
+                AllocProfile.Stop();
+                AllocProfile.On = false;
+                if (t > 8)
+                {
+                    var pm = ConstructPhysics.PartMs;
+                    Console.WriteLine($"volley {v}: tick {t:0.0} ms, bodies {w.Bodies.Count}; physics list {pm[0]:0.00}, bodies {pm[1]:0.00}, contacts {pm[2]:0.00}, solve {pm[3]:0.00}, rest {pm[4]:0.00}; sections {AllocProfile.TopTime(7, 1)}");
+                }
+            }
             MarkBores(w);
             tickMs += t;
             worstTick = Math.Max(worstTick, t + r);
