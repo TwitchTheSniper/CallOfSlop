@@ -611,7 +611,7 @@ public static class ConstructAssembling
 
     public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, bool queued = false) => Status(d, st, r, AsmFit.Free, queued);
 
-    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool queued = false)
+    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool queued = false, string? toolIn = null)
     {
         var names = RecyclingTable.Current;
         var doing = st.Held ? Program.HeldLook
@@ -622,7 +622,9 @@ public static class ConstructAssembling
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
                 AsmState.NeedsModule => $" - the {r!.Name} needs {AsmFit.ModuleWords(fit.Missing(r))} on the Core",
                 AsmState.TooBig => $" - the {r!.Name} {fit.TooBigWhy(r.Output)}",
-                AsmState.NeedsTool => $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: dock one on a free side of the Core, or chute one in from a Block Rack",
+                AsmState.NeedsTool => toolIn != null
+                    ? $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: one is on the {toolIn} (chute it in from there, or dock it on a free side of the Core)"
+                    : $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: dock one on a free side of the Core, or chute one in from a Block Rack",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
@@ -671,7 +673,7 @@ public static class ConstructAssembling
     public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false) =>
         Look(d, st, r, AsmFit.Free, near, inv, held, queued);
 
-    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false)
+    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, in AsmFit fit, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false, string? toolIn = null)
     {
         var names = RecyclingTable.Current;
         var tip = TipMaterial(inv, d, st, r);
@@ -687,7 +689,7 @@ public static class ConstructAssembling
         var holds = st.MixN == 0 && st.KindN == 0 ? "" : $"in {Holds(st)}";
         var tray = st.Items > 0 ? $"tray {st.Items}" : "";
         var state = holds.Length > 0 && tray.Length > 0 ? $"{holds}, {tray}" : holds + tray;
-        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r, fit, queued)}{act}";
+        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r, fit, queued, toolIn)}{act}";
     }
 
     /// <summary>The first part in the tray, or null.</summary>
