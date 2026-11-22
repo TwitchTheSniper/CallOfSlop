@@ -90,7 +90,7 @@ public sealed class TugParts : IPartGenerator
     /// <summary>The catwalk outboard of the chords: its outer edge (the rail).</summary>
     private const double WalkX = TW + 0.75;
     /// <summary>The standard container (the Satchel's numbers): across, up, along, its twist locks' pads and its corner castings.</summary>
-    private const double CtW = 2.5, CtH = 2.5, CtL = 6.5, LockH = 0.06, CastX = 1.165, CastZ = 3.165;
+    private const double LockH = 0.06, CastX = 1.165, CastZ = 3.165;
     public const string ContainerName = "Standard Container 2m";
 
     // ---- flying it: four drive nacelles, lift jets under the head, legs under the head and the end car, attitude jets at both ends.
@@ -270,14 +270,6 @@ public sealed class TugParts : IPartGenerator
     /// <summary>A chine rail: a faceted bar along profile point i (1..3) on side s from za to zb, w wide each way and h proud.</summary>
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, string color) => Chine(p, i, s, za, zb, w, h, w, h, color);
 
-    /// <summary>A shoulder block: a big chine rail whose ends rake down to a smaller section over rake metres.</summary>
-    private static void Shoulder(Part p, int i, int s, double za, double zb, double w, double h, double rake, string color)
-    {
-        Chine(p, i, s, za, za + rake, w * 0.55, h * 0.3, w, h, color);
-        Chine(p, i, s, za + rake + 0.004, zb - rake - 0.004, w, h, w, h, color == Armour ? Armour2 : Armour);
-        Chine(p, i, s, zb - rake, zb, w, h, w * 0.55, h * 0.3, color);
-    }
-
     private static void Chine(Part p, int i, int s, double za, double zb, double w, double h, double w2, double h2, string color)
     {
         double[][] Ring(double z, double w, double h)
@@ -436,56 +428,6 @@ public sealed class TugParts : IPartGenerator
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
         return P(cx + r * Math.Cos(a), y, cz + r * Math.Sin(a));
     })];
-
-    /// <summary>A ring of n points round axis (0 x, 1 y, 2 z) through c, radius r, at a along the axis; map turns each point into the part's frame.</summary>
-    private static double[][] RingAx(double[] c, int axis, double r, double a, int n, Func<double[], double[]> map) => [.. Enumerable.Range(0, n).Select(i =>
-    {
-        var an = Math.PI / n + i * 2 * Math.PI / n;
-        int u = (axis + 1) % 3, v = (axis + 2) % 3;
-        var q = (double[])c.Clone();
-        q[axis] = a;
-        q[u] += r * Math.Cos(an);
-        q[v] += r * Math.Sin(an);
-        return map(q);
-    })];
-
-    /// <summary>A drawn tank: a cylinder of radius r along axis from a0 to a1, its ends domed over dome metres, hoop bands round it.</summary>
-    private static void DrawTank(Part p, double[] c, int axis, double r, double a0, double a1, double dome, int hoops, string col, string band, Func<double[], double[]> map)
-    {
-        const int n = 16;
-        double[][] R(double rr, double a) => RingAx(c, axis, rr, a, n, map);
-        Prism(p, R(r * 0.55, a0), R(r, a0 + dome), col, "worn paint");
-        Prism(p, R(r, a0 + dome + 0.003), R(r, a1 - dome - 0.003), col, "worn paint");
-        Prism(p, R(r, a1 - dome), R(r * 0.55, a1), col, "worn paint");
-        for (var i = 0; i < hoops; i++)
-        {
-            var a = a0 + dome + 0.4 + i * (a1 - a0 - 2 * dome - 0.8) / Math.Max(1, hoops - 1);
-            Prism(p, R(r + 0.025, a - 0.06), R(r + 0.025, a + 0.06), band, "dirty steel");
-        }
-    }
-
-    /// <summary>A ring of n points round an axis along z at (cx, cy), radius rx by ry, at z (unshifted part-local metres).</summary>
-    private static double[][] RingZ(double cx, double cy, double rx, double ry, double z, int n) => [.. Enumerable.Range(0, n).Select(i =>
-    {
-        var a = Math.PI / n + i * 2 * Math.PI / n;
-        return new[] { Py.Round(cx + rx * Math.Cos(a), 4), Py.Round(cy + ry * Math.Sin(a), 4), z };
-    })];
-
-    /// <summary>Hidden boxes for the void between the skin and the rooms, both sides: x from xin (the rooms' outer face; 0: one box across the
-    /// middle) out to the skin less a margin, y and z bands.</summary>
-    private static void Void(Part p, double za, double zb, double ya, double yb, double xin)
-    {
-        var xo = Math.Floor((new[] { SkinHalf(za, ya), SkinHalf(za, yb), SkinHalf(zb, ya), SkinHalf(zb, yb) }.Min() - 0.06) * 100) / 100;
-        if (xo < xin + 0.08)
-            return;
-        za += 0.004; // (no face shared with the neighbouring band's boxes)
-        zb -= 0.004;
-        if (xin <= 0)
-            Hidden(p, Cx - xo, ya, za, Cx + xo, yb, zb);
-        else
-            foreach (var s in new[] { -1, 1 })
-                Hidden(p, Cx + s * xin, ya, za, Cx + s * xo, yb, zb);
-    }
 
     // ---- rooms: floors, walls, doors
 
@@ -647,16 +589,6 @@ public sealed class TugParts : IPartGenerator
 
     /// <summary>The volume a part's rooms take (with their walls): what SplitDeck calls inside; outside it is hull.</summary>
     private static void Room(Part p, Rect r, double y0, double y1) => (Rooms.TryGetValue(p, out var rs) ? rs : Rooms[p] = []).Add((r, y0, y1));
-
-    /// <summary>Draws with draw() and gives every box it adds to the part's last wall run (a rail, a pipe, a frame on its face).</summary>
-    private static void OnWall(Part p, Action draw)
-    {
-        var n = p.Boxes.Count;
-        draw();
-        var w = Walls[p].Count - 1;
-        for (var i = n; i < p.Boxes.Count; i++)
-            Stuck[p.Boxes[i]] = w;
-    }
 
     /// <summary>The Traders' livery on a band of the upper side (facet 3): a corporate-blue stripe along its foot with a yellow pinstripe
     /// over it.</summary>

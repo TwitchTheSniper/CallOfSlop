@@ -300,7 +300,7 @@ public sealed class DibberParts : IPartGenerator
     }
 
     /// <summary>Draws a facet whole, or a diagonal one in two halves with a seam between (so each half goes to its own quarter).</summary>
-    private static void Halves(Part p, int k, Action<double, double> draw)
+    private static void Halves(int k, Action<double, double> draw)
     {
         if (k % 2 == 0)
             draw(0, 1);
@@ -465,10 +465,10 @@ public sealed class DibberParts : IPartGenerator
                 continue;
             }
             var d = k % 2 == 1 ? Scratch() : p;
-            Halves(d, k, (ua, ub) => Facet(d, k, y0, y1, Cream, "painted plating", ua, ub));
+            Halves(k, (ua, ub) => Facet(d, k, y0, y1, Cream, "painted plating", ua, ub));
             Panels(d, k, y0, y1, 0.72, 1.62, 0);
             Panels(d, k, y0, y1, 1.7, k == 6 ? RcsYFore - RcsPadW / 2 - 0.06 : 2.76, 1);
-            Halves(d, k, (ua, ub) => Lining(d, k, LIn, Ft, Mid0, ua, ub));
+            Halves(k, (ua, ub) => Lining(d, k, LIn, Ft, Mid0, ua, ub));
             if (d != p)
                 Deal(d, q);
         }
@@ -537,7 +537,7 @@ public sealed class DibberParts : IPartGenerator
         for (var k = 0; k < 8; k++)
         {
             var p = k % 2 == 1 ? Scratch() : q[k / 2];
-            Halves(p, k, (ua, ub) => Facet(p, k, y0, y1, Cream, "painted plating", ua, ub));
+            Halves(k, (ua, ub) => Facet(p, k, y0, y1, Cream, "painted plating", ua, ub));
             if (k % 2 == 0)
             {
                 Panels(p, k, y0, y1, 2.95, band0 - 0.05, k);
@@ -550,7 +550,7 @@ public sealed class DibberParts : IPartGenerator
                 FStrip(p, k, y0, y1, 0.0, 0.2, band0, band1, 0.052, Orange, "worn paint");
                 FStrip(p, k, y0, y1, 0.8, 1.0, band0, band1, 0.052, Orange, "worn paint");
             }
-            Halves(p, k, (ua, ub) => Lining(p, k, UIn, Mid1, Roof0, ua, ub));
+            Halves(k, (ua, ub) => Lining(p, k, UIn, Mid1, Roof0, ua, ub));
             if (k % 2 == 1)
                 Deal(p, q);
         }
