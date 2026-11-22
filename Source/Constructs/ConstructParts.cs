@@ -359,7 +359,7 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// "bare": true: the other way round, drawn only while its part is NOT a cell of a block machine: a Mast Block's solid stepped column,
     /// what a bare column of masts (a shed's pillar, a crane's column) shows in place of its lattice.
     /// </summary>
-    public bool Bare { get; init; }
+    public bool Bare { get; init; } // (ghosts, the selection, stored items and the preview draw a part as a machine's cell: they skip these)
 
     /// <summary>Is this box hidden on a block machine's cell whose welded faces are <paramref name="joined"/>?</summary>
     public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Bare && (joined & MachineBlocks.InMachine) != 0 || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);

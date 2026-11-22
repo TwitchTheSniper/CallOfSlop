@@ -113,7 +113,7 @@ public static partial class ConstructRender
             for (var b = 0; b < d.Boxes.Length && _selBoxCount < n; b++)
             {
                 ref readonly var box = ref d.Boxes[b];
-                if (box.Hidden)
+                if (box.Hidden || box.Bare)
                     continue;
                 var k = _selBoxCount++;
                 _selBoxes[k] = Matrix4x4.CreateScale(1.005f) * box.Model(p.Rot, p.Pos + Rot24.Apply(p.Rot, box.Center));

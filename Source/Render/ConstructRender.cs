@@ -830,7 +830,7 @@ public static partial class ConstructRender
         var drawn = 0;
         foreach (ref readonly var box in d.Boxes.AsSpan())
         {
-            if (box.Hidden)
+            if (box.Hidden || box.Bare)
                 continue;
             gfx.Draw(box.Model(rot, at + Rot24.Apply(rot, box.Center)) * frame, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;
@@ -1089,7 +1089,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
                     ref readonly var box = ref d.Boxes[b];
-                    if (box.Hidden)
+                    if (box.Hidden || box.Bare)
                         continue;
                     ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out _);
                     if (box.IsGlass && QueueGlass(box.Model(turn, centre) * seg * body, box.Color * shade, box.Glass, box.Shape))
@@ -1503,7 +1503,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden || box.Detail && AidCount > 16)
+                    if (box.Hidden || box.Bare || box.Detail && AidCount > 16)
                         continue;
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, g.Pos + Rot24.Apply(g.Rot, box.Center)) * m, GhostBoxColour(in box, g.Ok), 0.3f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
@@ -1557,7 +1557,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden)
+                    if (box.Hidden || box.Bare)
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
