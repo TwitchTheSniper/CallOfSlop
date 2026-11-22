@@ -1,0 +1,1044 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Knacker Breaker",
+  "description": "The Salvagers' breaker: two open truss jaws 18 m long hold a wreck's section while its crew cut it up, the Recycler on the sorting floor breaks the pieces into material, and four containers on the flank racks take it home, one material each. The bridge looks down between the jaws; a crew pod with four bunks and the belly hatch behind; two engines in lime-strapped cradles.",
+  "steps": [
+    {
+      "part": "Knacker Keel"
+    },
+    {
+      "part": "Knacker Root",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Rack Port",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Rack Stbd",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Keel 1",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Keel 3",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Keel 4",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Keel 5",
+      "on": 1,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Wall 1",
+      "on": 1,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Wall 2",
+      "on": 1,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Wall 3",
+      "on": 1,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Port 1",
+      "on": 1,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Port 2",
+      "on": 1,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Port 3",
+      "on": 1,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Port 4",
+      "on": 1,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Stbd 1",
+      "on": 1,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Stbd 2",
+      "on": 1,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Stbd 3",
+      "on": 1,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Root Hull Stbd 4",
+      "on": 1,
+      "socket": "j15",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod",
+      "on": 1,
+      "socket": "j16",
+      "by": "j3"
+    },
+    {
+      "part": "Knacker Pod Hull Port 5",
+      "on": 1,
+      "socket": "j17",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Pod Hull Stbd 5",
+      "on": 1,
+      "socket": "j18",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Bow",
+      "on": 1,
+      "socket": "j19",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Keel 6",
+      "on": 2,
+      "socket": "j2",
+      "by": "j3"
+    },
+    {
+      "part": "Knacker Keel 7",
+      "on": 2,
+      "socket": "j3",
+      "by": "j3"
+    },
+    {
+      "part": "Knacker Root Ceiling",
+      "on": 8,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 1",
+      "on": 10,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 3",
+      "on": 10,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 2",
+      "on": 19,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 4",
+      "on": 19,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 5",
+      "on": 19,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Hull Port 6",
+      "on": 19,
+      "socket": "j10",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Pod Hull Port 7",
+      "on": 19,
+      "socket": "j11",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Pod Hull Stbd 6",
+      "on": 19,
+      "socket": "j13",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Pod Hull Stbd 7",
+      "on": 19,
+      "socket": "j14",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Pod Ceiling",
+      "on": 20,
+      "socket": "j5",
+      "by": "j5"
+    },
+    {
+      "part": "Knacker Roof 5",
+      "on": 20,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Knacker Jaw Port",
+      "on": 22,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Jaw Stbd",
+      "on": 22,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof",
+      "on": 25,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof 1",
+      "on": 25,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof 3",
+      "on": 25,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof 4",
+      "on": 25,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Pod Wall 6",
+      "on": 28,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof 6",
+      "on": 35,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Roof 7",
+      "on": 35,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Knacker Stern",
+      "on": 43,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 10,
+      "socket": "doorRoot",
+      "by": "hang",
+      "paint": "#2f3438",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 30,
+      "socket": "doorPod",
+      "by": "hang",
+      "paint": "#1f4e8c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 1,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Knacker Flight Computer",
+      "on": 1,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true,
+        "pitchDamping": 200
+      }
+    },
+    {
+      "part": "Recycler",
+      "on": 1,
+      "socket": "recycler",
+      "by": "bottom",
+      "paint": "#c4dc2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 1,
+      "socket": "bin0",
+      "by": "bottom",
+      "paint": "#8a4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 1,
+      "socket": "bin1",
+      "by": "bottom",
+      "paint": "#b87333",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 1,
+      "socket": "bin2",
+      "by": "bottom",
+      "paint": "#c9cdd1",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 1,
+      "socket": "bin3",
+      "by": "bottom",
+      "paint": "#5a6e3a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 9,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Power Board",
+      "on": 9,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 9,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Life Support Unit",
+      "on": 10,
+      "socket": "lifeSupport",
+      "by": "wall"
+    },
+    {
+      "part": "Oxygen Tank",
+      "on": 10,
+      "socket": "o2Tank",
+      "by": "wall"
+    },
+    {
+      "part": "Bunk",
+      "on": 19,
+      "socket": "bunkL0",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 19,
+      "socket": "bunkL1",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 19,
+      "socket": "bunkR0",
+      "by": "bottom"
+    },
+    {
+      "part": "Bunk",
+      "on": 19,
+      "socket": "bunkR1",
+      "by": "bottom"
+    },
+    {
+      "part": "Knacker Belly Hatch",
+      "on": 19,
+      "socket": "boarding",
+      "by": "hang"
+    },
+    {
+      "part": "Knacker Boarding Ladder",
+      "on": 66,
+      "socket": "ladder",
+      "by": "foot",
+      "paint": "#c4dc2e",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 30,
+      "socket": "switchHatch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Knacker Power Plant",
+      "on": 19,
+      "socket": "plant",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 19,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 19,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Space Suit Locker",
+      "on": 29,
+      "socket": "suit",
+      "by": "wall"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 2,
+      "socket": "lock00",
+      "by": "foot.0",
+      "paint": "#8a4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 73,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#8a4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 73,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#8a4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 73,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 73,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 73,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 2,
+      "socket": "lock10",
+      "by": "foot.0",
+      "paint": "#b87333",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 79,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#b87333",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 79,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#b87333",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 79,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 79,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 79,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 3,
+      "socket": "lock00",
+      "by": "foot.0",
+      "paint": "#c9cdd1",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 85,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#c9cdd1",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 85,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#c9cdd1",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 85,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 85,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 85,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Standard Container 2m",
+      "on": 3,
+      "socket": "lock10",
+      "by": "foot.0",
+      "paint": "#5a6e3a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 91,
+      "socket": "hatch",
+      "by": "hang",
+      "paint": "#5a6e3a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Standard Container 2m Hatch",
+      "on": 91,
+      "socket": "hatch.1",
+      "by": "hang",
+      "paint": "#5a6e3a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 91,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 91,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Container Cradle 2x2",
+      "on": 91,
+      "socket": "slot2",
+      "by": "base"
+    },
+    {
+      "part": "Knacker Drive",
+      "on": 46,
+      "socket": "drive0",
+      "by": "mount"
+    },
+    {
+      "part": "Knacker Drive",
+      "on": 46,
+      "socket": "drive1",
+      "by": "mount"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 46,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 46,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 40,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 24,
+      "socket": "rcsDownAftL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 11,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 22,
+      "socket": "rcsFwdL",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 46,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 46,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 40,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 4,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 24,
+      "socket": "rcsDownAftR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 15,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 22,
+      "socket": "rcsFwdR",
+      "by": "base",
+      "paint": "#26292b",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 4,
+      "socket": "lift0",
+      "by": "top"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 4,
+      "socket": "lift1",
+      "by": "top"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 5,
+      "socket": "lift2",
+      "by": "top"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 5,
+      "socket": "lift3",
+      "by": "top"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 23,
+      "socket": "lift4",
+      "by": "top"
+    },
+    {
+      "part": "Knacker Lift Jet",
+      "on": 23,
+      "socket": "lift5",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 4,
+      "socket": "leg0",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 119,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 119,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 4,
+      "socket": "leg1",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 122,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 122,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 6,
+      "socket": "leg2",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 125,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 125,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 6,
+      "socket": "leg3",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 128,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 128,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 24,
+      "socket": "leg4",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 131,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 131,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Mount",
+      "on": 24,
+      "socket": "leg5",
+      "by": "top"
+    },
+    {
+      "part": "Ram Leg Strut",
+      "on": 134,
+      "socket": "leg",
+      "by": "hang"
+    },
+    {
+      "part": "Ram Leg Foot",
+      "on": 134,
+      "socket": "foot",
+      "by": "hang"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampRL0",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampRL1",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampRR0",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 25,
+      "socket": "lampRR1",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 10,
+      "socket": "switchRoot",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 26,
+      "socket": "lampCL",
+      "by": "back",
+      "config": {
+        "colour": "#ffb060"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 27,
+      "socket": "lampCR",
+      "by": "back",
+      "config": {
+        "colour": "#ffb060"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 26,
+      "socket": "switchCrew",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 28,
+      "socket": "lampUL",
+      "by": "back",
+      "config": {
+        "colour": "#d0e8ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 29,
+      "socket": "lampUR",
+      "by": "back",
+      "config": {
+        "colour": "#d0e8ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 30,
+      "socket": "switchUtil",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      49,
+      51
+    ],
+    [
+      68,
+      66
+    ],
+    [
+      141,
+      137
+    ],
+    [
+      141,
+      138
+    ],
+    [
+      141,
+      139
+    ],
+    [
+      141,
+      140
+    ],
+    [
+      144,
+      142
+    ],
+    [
+      144,
+      143
+    ],
+    [
+      147,
+      145
+    ],
+    [
+      147,
+      146
+    ]
+  ],
+  "conduit": true
+}

@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Knacker Root Wall 3",
+  "description": "A wall of the Knacker's root, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Knacker breaker",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 332.2,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#9a9e98",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -4.875,
+        0.125,
+        6.75
+      ],
+      "max": [
+        -0.875,
+        2.525,
+        7.0
+      ],
+      "color": "#9a9e98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.875,
+        2.375,
+        6.75
+      ],
+      "max": [
+        0.625,
+        2.525,
+        7.0
+      ],
+      "color": "#9a9e98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.825,
+        0.128,
+        6.738
+      ],
+      "max": [
+        -0.925,
+        0.875,
+        7.012
+      ],
+      "color": "#3b4146",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.945,
+        0.127,
+        6.73
+      ],
+      "max": [
+        -0.878,
+        2.445,
+        7.02
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.628,
+        0.127,
+        6.73
+      ],
+      "max": [
+        0.695,
+        2.445,
+        7.02
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.875,
+        2.378,
+        6.73
+      ],
+      "max": [
+        0.625,
+        2.445,
+        7.02
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.625,
+        0.125,
+        6.75
+      ],
+      "max": [
+        4.625,
+        2.525,
+        7.0
+      ],
+      "color": "#9a9e98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.675,
+        0.128,
+        6.738
+      ],
+      "max": [
+        4.575,
+        0.875,
+        7.012
+      ],
+      "color": "#3b4146",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorRoot",
+      "at": [
+        -0.875,
+        1.25,
+        6.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lifeSupport",
+      "at": [
+        2.475,
+        0.25,
+        6.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "o2Tank",
+      "at": [
+        3.575,
+        0.25,
+        6.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "switchRoot",
+      "at": [
+        1.175,
+        1.425,
+        6.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        -2.875,
+        0.125,
+        6.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -4.745,
+        1.325,
+        6.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        4.495,
+        1.325,
+        6.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -2.745,
+        1.325,
+        7.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.495,
+        1.325,
+        7.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        -3.115,
+        1.855,
+        7.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j6",
+      "at": [
+        2.865,
+        1.855,
+        7.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

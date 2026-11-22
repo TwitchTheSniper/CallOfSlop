@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Knacker Belly Hatch",
+  "description": "The Knacker's belly hatch: a plate that shuts the boarding shaft under the crew pod. F (or the utility room's switch) slides it down to the ground, and the boarding ladder standing on it comes down with it.",
+  "group": "Ship",
+  "section": "Knacker breaker",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "-y",
+    "travel": 1.993,
+    "seconds": 4.0,
+    "hang": "hang"
+  },
+  "mass": 500.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#2f3438",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.595,
+        -0.637,
+        -1.27
+      ],
+      "max": [
+        0.595,
+        -0.557,
+        -0.035
+      ],
+      "color": "#2f3438",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.65,
+        -1.12
+      ],
+      "max": [
+        0.495,
+        -0.634,
+        -1.0148
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.65,
+        -0.8862
+      ],
+      "max": [
+        0.495,
+        -0.634,
+        -0.7811
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.65,
+        -0.6525
+      ],
+      "max": [
+        0.495,
+        -0.634,
+        -0.5473
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.495,
+        -0.65,
+        -0.4187
+      ],
+      "max": [
+        0.495,
+        -0.634,
+        -0.3136
+      ],
+      "color": "#c4dc2e",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.565,
+        -0.555,
+        -1.24
+      ],
+      "max": [
+        -0.465,
+        -0.497,
+        -0.065
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.465,
+        -0.555,
+        -1.24
+      ],
+      "max": [
+        0.565,
+        -0.497,
+        -0.065
+      ],
+      "color": "#26292b",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3,
+        -0.557,
+        -0.03
+      ],
+      "max": [
+        0.3,
+        0.115,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        -0.553,
+        -0.028
+      ],
+      "max": [
+        0.28,
+        0.105,
+        -0.004
+      ],
+      "color": "#26292b",
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "ladder",
+      "at": [
+        0.0,
+        -0.557,
+        -0.13
+      ],
+      "dir": "+y"
+    }
+  ]
+}

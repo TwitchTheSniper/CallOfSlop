@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Knacker Pod Wall 4",
+  "description": "A wall of the Knacker's pod, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Knacker breaker",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 233.3,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#9a9e98",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.375,
+        0.125,
+        11.7
+      ],
+      "max": [
+        2.625,
+        2.525,
+        14.95
+      ],
+      "color": "#9a9e98",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.363,
+        0.128,
+        11.75
+      ],
+      "max": [
+        2.637,
+        0.875,
+        14.9
+      ],
+      "color": "#3b4146",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "suit",
+      "at": [
+        2.375,
+        0.25,
+        14.425
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampUR",
+      "at": [
+        2.375,
+        2.175,
+        12.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        2.495,
+        0.125,
+        14.185
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.495,
+        1.325,
+        11.7
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.495,
+        1.325,
+        14.95
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.495,
+        2.525,
+        13.325
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.625,
+        1.855,
+        13.325
+      ],
+      "dir": "+x"
+    }
+  ]
+}
