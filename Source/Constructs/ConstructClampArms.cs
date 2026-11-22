@@ -266,8 +266,8 @@ public static class ConstructClampArms
             if (p.Broken || p.D.Door is not { Dock: true })
                 continue;
             var shut = ConstructDoors.ShutPos(ship, i);
-            var pw = ship.SegToWorld(p.Seg, shut);
-            var up = Vector3.Normalize(ship.SegToWorld(p.Seg, shut + Rot24.Apply(p.Rot, Vector3.UnitY)) - pw);
+            var pw = ship.ToWorld(shut); // (ShutPos is in the rest frame: a hatch on a freeform weld too)
+            var up = Vector3.Normalize(ship.ToWorld(shut + ship.DirToRest(p.Seg, Rot24.Apply(p.Rot, Vector3.UnitY))) - pw);
             var d = Vector3.DistanceSquared(pw, shoulder);
             if (Vector3.Dot(up, shoulder - pw) <= 0 || d >= bestD)
                 continue; // (a hatch facing away from the arm, or farther than one found)

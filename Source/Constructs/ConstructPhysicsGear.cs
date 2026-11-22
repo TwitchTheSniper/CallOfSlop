@@ -21,7 +21,7 @@ public static partial class ConstructPhysics
     private static Vector3 Sole(Construct c, int part)
     {
         c.PartBounds(part, out var mn, out var mx);
-        return new Vector3((mn.X + mx.X) * 0.5f, mn.Y, (mn.Z + mx.Z) * 0.5f);
+        return c.ToRest(c.Parts[part].Seg, new Vector3((mn.X + mx.X) * 0.5f, mn.Y, (mn.Z + mx.Z) * 0.5f)); // (a foot on a freeform weld: from its weld's frame)
     }
 
     /// <summary>Server, each tick of a moving body with sprung landing feet: each lowered foot's spring on what is under it.</summary>
