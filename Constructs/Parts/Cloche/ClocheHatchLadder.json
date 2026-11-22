@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cloche Hatch Ladder",
-  "description": "The ladder from the Cloche's grow hall up through the roof into a greenhouse. F climbs it.",
+  "description": "The ladder from the Cloche's grow hall up through the roof, under a deck hatch, into a greenhouse. F climbs it.",
   "group": "Ship",
   "section": "Cloche greenhouse ship",
   "role": "frame",
@@ -23,7 +23,7 @@
       ],
       "max": [
         0.3,
-        6.2,
+        5.24,
         -0.005
       ],
       "hidden": true
@@ -36,7 +36,7 @@
       ],
       "max": [
         -0.22,
-        6.202,
+        5.242,
         -0.12
       ],
       "color": "#2e302e",
@@ -51,7 +51,7 @@
       ],
       "max": [
         0.28,
-        6.202,
+        5.242,
         -0.12
       ],
       "color": "#2e302e",
@@ -346,12 +346,12 @@
     {
       "min": [
         -0.3,
-        6.15,
+        5.19,
         -0.19
       ],
       "max": [
         0.3,
-        6.2,
+        5.24,
         -0.11
       ],
       "color": "#e3b021",

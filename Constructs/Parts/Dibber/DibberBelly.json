@@ -1468,48 +1468,96 @@
     },
     {
       "min": [
-        -0.825,
-        0.197,
-        0.975
+        -0.795,
+        0.1905,
+        1.005
       ],
       "max": [
-        0.575,
-        0.207,
-        1.071
+        0.545,
+        0.2065,
+        1.072
       ],
-      "color": "#e8b317",
+      "color": "#d8a428",
       "detail": true,
-      "finish": "hazard paint"
+      "finish": "hazard paint",
+      "paintable": false
     },
     {
       "min": [
-        -0.825,
-        0.197,
-        1.071
+        -0.725,
+        0.193,
+        1.05
       ],
       "max": [
-        -0.729,
-        0.207,
-        1.975
+        0.475,
+        0.209,
+        1.067
       ],
-      "color": "#e8b317",
+      "color": "#155a64",
       "detail": true,
-      "finish": "hazard paint"
+      "paintable": false
     },
     {
       "min": [
-        0.479,
-        0.197,
-        1.071
+        -0.795,
+        0.1905,
+        1.073
       ],
       "max": [
-        0.575,
-        0.207,
+        -0.728,
+        0.2065,
+        1.977
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.75,
+        0.193,
+        1.075
+      ],
+      "max": [
+        -0.733,
+        0.209,
         1.975
       ],
-      "color": "#e8b317",
+      "color": "#155a64",
       "detail": true,
-      "finish": "hazard paint"
+      "paintable": false
+    },
+    {
+      "min": [
+        0.478,
+        0.1905,
+        1.073
+      ],
+      "max": [
+        0.545,
+        0.2065,
+        1.977
+      ],
+      "color": "#d8a428",
+      "detail": true,
+      "finish": "hazard paint",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.483,
+        0.193,
+        1.075
+      ],
+      "max": [
+        0.5,
+        0.209,
+        1.975
+      ],
+      "color": "#155a64",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [
@@ -4403,10 +4451,28 @@
       "name": "boarding",
       "at": [
         -0.125,
-        0.05,
-        1.975
+        0.072,
+        1.075
       ],
-      "dir": "-z"
+      "dir": "+z"
+    },
+    {
+      "name": "deckHatch",
+      "at": [
+        -0.725,
+        0.172,
+        1.525
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "bellyHatch",
+      "at": [
+        -0.125,
+        -0.025,
+        1.075
+      ],
+      "dir": "+z"
     },
     {
       "name": "pilot",

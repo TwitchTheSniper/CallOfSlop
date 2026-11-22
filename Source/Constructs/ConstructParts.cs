@@ -531,6 +531,7 @@ public sealed partial class ConstructPartDef
     public bool ShellBodyFits => ToolDock && ToolDockFits == "Robot Shell"; // (a Robot Shell Dock: its shell is woken where it hangs, ConstructShell.Docked)
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
     public float LadderTop; // a vertical ladder ("ladder": its landing's height in the part's frame, m; 0: not one): Use climbs it up or down (ConstructRide.ClimbLadder)
+    public float LadderFoot; // a vertical ladder's foot, the part's frame ("ladderFoot", m; else the bottom of its solid boxes): a boarding shaft's fixed flight reaches the ground through its sections (ConstructRide.LadderLine)
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
@@ -966,7 +967,7 @@ public sealed partial class ConstructPartDef
     public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? DataIn.Length * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
-        PartRole.Door => Door != null ? 3 : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs)
+        PartRole.Door => Door != null ? 3 * ModuleSockets.DataWires : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs), several controls each (wires on one port add up)
         PartRole.AmmoSwitch => 1, // which feed goes on
         PartRole.Leg => 2, // a Driving Module's drive link: the seat walks it (ConstructWalk.cs)
         PartRole.Hitch => IsCargoWinch ? 3 : IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
@@ -1441,7 +1442,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
+        "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
         "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -1793,6 +1794,7 @@ public static partial class ConstructParts
             d.BoundsMin = Vector3.Min(d.BoundsMin, b.Center - b.Half);
             d.BoundsMax = Vector3.Max(d.BoundsMax, b.Center + b.Half);
         }
+        d.LadderFoot = d.LadderTop <= 0 ? 0f : Opt(root, "ladderFoot") is { } foot ? Num(foot, file, "ladderFoot") : d.BoundsMin.Y; // (a ladder's foot: below its boxes for a boarding shaft's flight, whose sections run on down to the ground)
 
         // Sockets: each on a face of the part's bounds, facing out of it.
         if (Opt(root, "sockets") is not { ValueKind: JsonValueKind.Array } sockets || sockets.GetArrayLength() == 0)

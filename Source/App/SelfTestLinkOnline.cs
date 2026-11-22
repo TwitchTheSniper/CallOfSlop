@@ -464,7 +464,7 @@ public static partial class SelfTest
                 if (Program.LinkTestPicker.IsOpen)
                 {
                     for (var i = 0; i < Program.LinkTestPickCount; i++)
-                        if (Program.LinkTestPicker.Items[i].Enabled)
+                        if (Program.LinkTestPicker.Items[i].Enabled && !Program.LinkTestPickIn(i)) // (an output: an input starts the link from the other end)
                         {
                             Program.LinkTestHover(i);
                             break;

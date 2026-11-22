@@ -476,18 +476,40 @@
       "by": "wall"
     },
     {
-      "part": "Grapnel Belly Hatch",
+      "part": "Grapnel Boarding Ladder",
       "on": 1,
       "socket": "boarding",
+      "by": "back"
+    },
+    {
+      "part": "Grapnel Ladder Section 1",
+      "on": 76,
+      "socket": "section1",
       "by": "hang"
     },
     {
-      "part": "Grapnel Boarding Ladder",
+      "part": "Grapnel Ladder Section 2",
       "on": 76,
-      "socket": "ladder",
-      "by": "foot",
-      "paint": "#2f3134",
-      "finish": "painted steel"
+      "socket": "section2",
+      "by": "hang"
+    },
+    {
+      "part": "Grapnel Ladder Section 3",
+      "on": 76,
+      "socket": "section3",
+      "by": "hang"
+    },
+    {
+      "part": "Grapnel Belly Hatch",
+      "on": 0,
+      "socket": "bellyHatch",
+      "by": "hang"
+    },
+    {
+      "part": "Deck Hatch 1.25x1.15 m",
+      "on": 1,
+      "socket": "deckHatch",
+      "by": "hang"
     },
     {
       "part": "Bakelite Switch",
@@ -555,7 +577,7 @@
     },
     {
       "part": "Manned Manoeuvring Unit",
-      "on": 87,
+      "on": 91,
       "socket": "mmu",
       "by": "mount"
     },
@@ -579,7 +601,7 @@
     },
     {
       "part": "Fuel Pump M",
-      "on": 91,
+      "on": 95,
       "socket": "back",
       "by": "front"
     },
@@ -597,7 +619,7 @@
     },
     {
       "part": "Fuel Pump M",
-      "on": 94,
+      "on": 98,
       "socket": "back",
       "by": "front"
     },
@@ -789,37 +811,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 120,
+      "on": 124,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 120,
+      "on": 124,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 120,
+      "on": 124,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 120,
+      "on": 124,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 124,
+      "on": 128,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 120,
+      "on": 124,
       "socket": "foot",
       "by": "hang"
     },
@@ -831,37 +853,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 127,
+      "on": 131,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 127,
+      "on": 131,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 127,
+      "on": 131,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 127,
+      "on": 131,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 131,
+      "on": 135,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 127,
+      "on": 131,
       "socket": "foot",
       "by": "hang"
     },
@@ -873,37 +895,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 134,
+      "on": 138,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 134,
+      "on": 138,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 134,
+      "on": 138,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 134,
+      "on": 138,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 138,
+      "on": 142,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 134,
+      "on": 138,
       "socket": "foot",
       "by": "hang"
     },
@@ -915,37 +937,37 @@
     },
     {
       "part": "Leg Pod Canopy Port S",
-      "on": 141,
+      "on": 145,
       "socket": "canopyL",
       "by": "hang"
     },
     {
       "part": "Leg Pod Canopy Stbd S",
-      "on": 141,
+      "on": 145,
       "socket": "canopyR",
       "by": "hang"
     },
     {
       "part": "Leg Pod Strut S",
-      "on": 141,
+      "on": 145,
       "socket": "strut",
       "by": "hang"
     },
     {
       "part": "Leg Pod Carriage S",
-      "on": 141,
+      "on": 145,
       "socket": "carriage",
       "by": "hang"
     },
     {
       "part": "Leg Pod Brace S",
-      "on": 145,
+      "on": 149,
       "socket": "brace",
       "by": "hang"
     },
     {
       "part": "Leg Pod Foot S",
-      "on": 141,
+      "on": 145,
       "socket": "foot",
       "by": "hang"
     },
@@ -959,7 +981,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 148,
+      "on": 152,
       "socket": "hatch",
       "by": "hang",
       "paint": "#8a4a2a",
@@ -967,7 +989,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 148,
+      "on": 152,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#8a4a2a",
@@ -975,19 +997,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 148,
+      "on": 152,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 148,
+      "on": 152,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 148,
+      "on": 152,
       "socket": "slot2",
       "by": "base"
     },
@@ -1001,7 +1023,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 154,
+      "on": 158,
       "socket": "hatch",
       "by": "hang",
       "paint": "#5f6b73",
@@ -1009,7 +1031,7 @@
     },
     {
       "part": "Standard Container 2m Hatch",
-      "on": 154,
+      "on": 158,
       "socket": "hatch.1",
       "by": "hang",
       "paint": "#5f6b73",
@@ -1017,19 +1039,19 @@
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 154,
+      "on": 158,
       "socket": "slot0",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 154,
+      "on": 158,
       "socket": "slot1",
       "by": "base"
     },
     {
       "part": "Container Cradle 2x2",
-      "on": 154,
+      "on": 158,
       "socket": "slot2",
       "by": "base"
     },
@@ -1238,20 +1260,16 @@
       62
     ],
     [
-      78,
-      76
+      82,
+      80
     ],
     [
-      162,
-      160
+      82,
+      81
     ],
     [
-      162,
-      161
-    ],
-    [
-      164,
-      163
+      166,
+      164
     ],
     [
       166,
@@ -1262,16 +1280,24 @@
       167
     ],
     [
-      181,
-      178
+      170,
+      169
     ],
     [
-      181,
-      179
+      172,
+      171
     ],
     [
-      181,
-      180
+      185,
+      182
+    ],
+    [
+      185,
+      183
+    ],
+    [
+      185,
+      184
     ]
   ],
   "conduit": true

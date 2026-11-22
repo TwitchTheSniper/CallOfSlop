@@ -250,6 +250,9 @@ one pipe. Blueprints no longer write it. On the wire the type byte of a link is 
 nibble that held the style is masked off when read.
 
 **Routing** (the linking tool): Fire on a device (a picker of ALL its ports, every type, by name: "Fuel in", "Drive out"; the port picked gives the link's type; a one-port device gets a one-option picker too; [Link type from the port](flight.md#link-type-from-the-port-at01)); each
+(**starting at an input**, Karl 2026-11-22: picking a free input, say a ramp's Toggle, keeps it and asks for the device the link
+comes from; Fire on that, pick its output, and the end picker opens on the kept input with the route found, so a second control
+for a device is two clicks on the device and one on the button; an event door takes four wires on each of its ports, which add up);
 Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
 along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
 nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason

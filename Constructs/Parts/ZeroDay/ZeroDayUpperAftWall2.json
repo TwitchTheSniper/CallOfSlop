@@ -512,14 +512,14 @@
     },
     {
       "min": [
-        9.8545,
+        9.8544,
         3.378,
         37.879
       ],
       "max": [
         9.885,
         3.672,
-        40.671
+        39.251
       ],
       "color": "#30353b",
       "detail": true,
@@ -690,44 +690,6 @@
         9.885,
         5.96,
         38.07
-      ],
-      "color": "#2a2e33",
-      "detail": true,
-      "shape": "bevel",
-      "radius": 0.3,
-      "edges": "long",
-      "front": "+y",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.825,
-        3.378,
-        39.2633
-      ],
-      "max": [
-        9.885,
-        5.96,
-        39.3533
-      ],
-      "color": "#2a2e33",
-      "detail": true,
-      "shape": "bevel",
-      "radius": 0.3,
-      "edges": "long",
-      "front": "+y",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.825,
-        3.378,
-        40.5467
-      ],
-      "max": [
-        9.885,
-        5.96,
-        40.6367
       ],
       "color": "#2a2e33",
       "detail": true,
@@ -954,7 +916,7 @@
     },
     {
       "min": [
-        9.8566,
+        9.85,
         3.712,
         39.3933
       ],
@@ -965,82 +927,9 @@
       ],
       "color": "#4b5359",
       "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8321,
-        3.852,
-        39.5133
-      ],
-      "max": [
-        9.885,
-        4.268,
-        40.3867
-      ],
-      "color": "#1c1f23",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8418,
-        3.902,
-        39.5333
-      ],
-      "max": [
-        9.885,
-        3.937,
-        40.3667
-      ],
-      "color": "#4b5359",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8416,
-        3.997,
-        39.5333
-      ],
-      "max": [
-        9.885,
-        4.032,
-        40.3667
-      ],
-      "color": "#4b5359",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8418,
-        4.092,
-        39.5333
-      ],
-      "max": [
-        9.885,
-        4.127,
-        40.3667
-      ],
-      "color": "#4b5359",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.8419,
-        4.187,
-        39.5333
-      ],
-      "max": [
-        9.885,
-        4.222,
-        40.3667
-      ],
-      "color": "#4b5359",
-      "detail": true,
-      "finish": "painted steel"
+      "shape": "bevel",
+      "radius": 0.4,
+      "finish": "painted plating"
     },
     {
       "min": [

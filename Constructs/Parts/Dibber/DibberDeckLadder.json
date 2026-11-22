@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dibber Deck Ladder",
-  "description": "The ladder from the Dibber's cockpit up through the floor to the systems deck. F climbs it.",
+  "description": "The ladder from the Dibber's cockpit up through the floor, under a deck hatch, to the systems deck. F climbs it.",
   "group": "Ship",
   "section": "Dibber lander",
   "role": "frame",
@@ -22,7 +22,7 @@
       ],
       "max": [
         0.3,
-        3.7,
+        2.74,
         -0.005
       ],
       "hidden": true
@@ -35,7 +35,7 @@
       ],
       "max": [
         -0.22,
-        3.702,
+        2.742,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -66,21 +66,6 @@
       "max": [
         -0.23,
         1.86,
-        -0.01
-      ],
-      "color": "#2e302d",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        -0.27,
-        3.0,
-        -0.12
-      ],
-      "max": [
-        -0.23,
-        3.06,
         -0.01
       ],
       "color": "#2e302d",
@@ -95,7 +80,7 @@
       ],
       "max": [
         0.28,
-        3.702,
+        2.742,
         -0.12
       ],
       "color": "#9aa0a4",
@@ -126,21 +111,6 @@
       "max": [
         0.27,
         1.86,
-        -0.01
-      ],
-      "color": "#2e302d",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        0.23,
-        3.0,
-        -0.12
-      ],
-      "max": [
-        0.27,
-        3.06,
         -0.01
       ],
       "color": "#2e302d",
@@ -270,7 +240,7 @@
     {
       "min": [
         -0.22,
-        2.68,
+        2.678,
         -0.165
       ],
       "max": [
@@ -285,12 +255,12 @@
     {
       "min": [
         -0.29,
-        3.64,
+        2.68,
         -0.19
       ],
       "max": [
         0.29,
-        3.7,
+        2.74,
         -0.11
       ],
       "color": "#e8b317",

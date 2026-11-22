@@ -1243,6 +1243,8 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
+                if (Constructs.Get(body) is { } lh && part < lh.PartCount && lh.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lh, part) && ConstructRide.OpenWay(Constructs, lh, part))
+                    return ""; // (a ladder in a shaft: its shut deck hatch, belly door or stowed sections open on F, and F again climbs it)
                 if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lc, part))
                     return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
