@@ -7,7 +7,10 @@
   "think": { "seconds": 5 },
   "world": { "maxBodies": 24, "spawnFromPeople": 600, "dockFromPeople": 400, "dockRange": 150 },
   "places": { "near": 1200, "far": 2200, "razeSeconds": 180, "razeRange": 300 },
-  "cost": { "perUnit": 1, "buildSecondsScale": 0.05, "minBuildSeconds": 8, "repairShare": 1 },
+  // "goods": the share of a ship's materials (its parts' recipes down to bulk materials) its power takes from the stock of the stations it holds as it
+  // builds or repairs one (Karl, 2026-11-22: "ships use goods from stations"); a material none of its stations trades isn't taken, and a power whose
+  // stations are short of one waits (so cutting its supply lines starves its yards). 0: none taken.
+  "cost": { "perUnit": 1, "buildSecondsScale": 0.05, "minBuildSeconds": 8, "repairShare": 1, "goods": 1 },
   "missions": {
     "convoyEveryMinutes": 4,
     "cargoValue": 900,

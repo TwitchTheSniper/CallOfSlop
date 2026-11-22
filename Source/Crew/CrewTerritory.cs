@@ -316,7 +316,7 @@ public sealed partial class PowerControllers
             if (s.State != PowerShipState.Hangar || s.Role != role)
                 continue;
             var repair = (1 - s.Hull) * Bills[s.Bp].Units * Rules.RepairShare;
-            if (p.Stock < repair)
+            if (p.Stock < repair || !TakeGoods(a, s.Bp, (1 - s.Hull) * Rules.RepairShare))
                 continue;
             p.Stock -= repair;
             p.Spent += repair;
@@ -330,7 +330,7 @@ public sealed partial class PowerControllers
                 continue;
             var bp = list[(p.Bought + n) % list.Length];
             var bill = Bills[bp];
-            if (p.Stock < bill.Units)
+            if (p.Stock < bill.Units || !TakeGoods(a, bp, 1))
                 break;
             p.Stock -= bill.Units;
             p.Spent += bill.Units;
