@@ -727,7 +727,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 431: leg pod parts to the press (Sean 2026-11-22): 28 Assembling rows removed, 7 die patterns and their presets added.
     // 432: the Small bridge crane (Sean 2026-11-22): new parts Crane Rail Small 1 m and Small Crane Bridge (part ids shift) and their
     //      two Assembling rows at the end of the table; Crane Rail Blocks are "craneRail": "hall".
-    public const ushort ProtocolVersion = 432;
+    // 433: lined holes (Sean 2026-11-22): a holed part's key may give a hole three more numbers, its lining (a socket well's walls), which
+    //      432 refuses; a socket's well cut again replaces its old hole.
+    public const ushort ProtocolVersion = 433;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

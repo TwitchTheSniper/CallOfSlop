@@ -773,8 +773,11 @@ plans the cut as a tunnel the footprint plus 7 cm a side from 5 cm over the surf
 reaches becomes its holed part (`HullHoles`, the breaching cutter's cut: plain boxes and lofted hull facets alike, so the main ships'
 lofted hulls can be cut, which answers 18.1 better than the default); a part wholly inside the well burns away; one that can't be
 holed (a machine, a joint's part, a part made at run time such as a formed panel or an extruded plate) blocks the socket and is named
-on its look line. The part nearest the surface takes the well's liner (a `HullHoles` seal sleeve, 5 cm walls 1 cm outside the
-footprint, from 3 mm over the surface to 3 mm over the plate). Time and power from the table (2 s a metre of outline per 10 cm of
+on its look line. The part nearest the surface takes the well's liner (5 cm walls 1 cm outside the
+footprint, from 3 mm over the surface to 3 mm over the plate), written on its hole's own entry in the holed key (a lined hole: three
+more numbers, `HullHoles.Hole.WithLining`; a separate seal sleeve was some 80 characters, and a deck with a second well or a well cut
+again ran past the key's 240 and lost its liner, so the cut showed no sides: Sean, 2026-11-22). A well cut again at another depth
+replaces its old hole (one down the same line at the same size) and an old sleeve liner down it, so re-cuts don't pile up. Time and power from the table (2 s a metre of outline per 10 cm of
 hull, 4 kW a metre of the mean side, `Construct.ModCutWatts` in the circuit's draw); no power, it waits; Creative at once (the window
 verb `timed` makes a Creative world wait as Survival does). Survival drops the metal cut out as a loose steel plate (none when it would
 weigh more than what was lost). The plate's hidden `ModCut` setting (the job's seconds) tells every peer to draw the ring: four heads
