@@ -1252,6 +1252,7 @@ public sealed class CrewWorld
         if (g == null || s.NavBuild == g.Build)
             return;
         s.NavBuild = g.Build;
+        var helmNode = -1; // (the helm is the first station: AddStation in Scan)
         for (var st = 0; st < s.StCount; st++)
         {
             int part = s.StPart[st];
@@ -1260,18 +1261,39 @@ public sealed class CrewWorld
                 s.StNode[st] = -1;
                 continue;
             }
-            Vector3 at;
             if (Standing(s.StKind[st]))
-                at = PartFoot(c, part);
+            {
+                // A standing place by a part outside the hull (a spotter by a capital gun on the spine, a hauler by a dock on the roof) is
+                // no place for a body: on a craft whose helm is indoors, its spot is indoors too and on the helm's decks, else it stays a record.
+                var at = PartFoot(c, part);
+                var indoors = helmNode >= 0 && CrewNav.Covered(g, helmNode);
+                s.StNode[st] = CrewNav.NearestNode(g, at, CrewNav.Reach + 1f, inComp: indoors ? g.Comp[helmNode] : -1, indoors: indoors);
+                if (s.StNode[st] < 0 && indoors && CrewNav.NearestNode(g, at, CrewNav.Reach + 1f) >= 0)
+                    Events.Add($"construct {c.Id}: its {StationName(s.StKind[st])} at part {part} is outside the hull: no body there (a record)");
+            }
             else
-                at = c.ToLocal(ConstructEdits.SeatFeet(c, part));
-            s.StNode[st] = CrewNav.NearestNode(g, at, CrewNav.Reach + (Standing(s.StKind[st]) ? 1f : 0f));
+                s.StNode[st] = CrewNav.NearestNode(g, c.ToLocal(ConstructEdits.SeatFeet(c, part)), CrewNav.Reach);
+            if (st == s.Helm)
+                helmNode = s.StNode[st];
         }
         s.SeatsDirty = true;
     }
 
     /// <summary>Station <paramref name="st"/>'s spot on the walk graph (-1: none, or no graph built).</summary>
     private static int NodeOf(CrewShip s, int st) => s.Nav != null && s.NavBuild == s.Nav.Build && st >= 0 && st < s.StCount ? s.StNode[st] : -1;
+
+    /// <summary>
+    /// Where a bodied member stands up from a seat at <paramref name="rest"/> (rest frame): the walk graph's nearest spot, indoors and on the helm's decks
+    /// when the helm is indoors (a plain stand on a moving ship looks through walls for a deck and could put it on the hull). -1: no graph or no spot.
+    /// </summary>
+    public static int StandNode(CrewShip s, Vector3 rest)
+    {
+        if (s.Nav is not { Ready: true } g || s.NavBuild != g.Build)
+            return -1;
+        var helm = NodeOf(s, s.Helm);
+        var indoors = helm >= 0 && CrewNav.Covered(g, helm);
+        return CrewNav.NearestNode(g, rest, CrewNav.Reach + 1f, 1.5f, indoors ? g.Comp[helm] : -1, indoors);
+    }
 
     /// <summary>Member <paramref name="m"/> can walk to station <paramref name="st"/>: no graph, or a spot unknown, says yes; else the same connected part.</summary>
     private bool Reaches(CrewShip s, int m, int st)

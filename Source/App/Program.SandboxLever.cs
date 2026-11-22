@@ -318,6 +318,7 @@ public static partial class Program
         }
         var took = LeverFrame(g, in h, aimed, hit, eye, now, false, false);
         took |= !_lvHeld && ControlFrame(g, me, in h, aimed, hit, false);
+        took |= !_lvHeld && !took && SwitchSeated(g, aimed, hit); // (a dash switch or button in reach of the seat: Program.SandboxControls.cs)
         if (_lvHeld)
             return true;
         if (_lvAimed)

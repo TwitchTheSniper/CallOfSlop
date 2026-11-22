@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--stress-check [--map NAME] [--wrecks N] [--wreck "A,B,..."] [--haulers K] [--hauler NAME] [--alt M] [--seconds S] [--person far|near|none] [--every S]</c>:
+/// <c>--stress-check [--map NAME] [--wrecks N] [--wreck "A,B,..."] [--haulers K] [--hauler NAME] [--alt M] [--seconds S] [--person far|near|none] [--every S] [--no-rails]</c>:
 /// what a busy, long-lived world costs, headless. N loose wrecks (copies of the named blueprints, marked as wrecks) and K uncrewed haulers are
 /// put in circular orbits round the map's planet (default Caledon), each at its own height and phase, spinning a little, and the world is stepped
 /// for S seconds. Every few seconds it prints the tick (mean and worst), how many bodies are awake, how many the physics stepped, and the step's
@@ -26,6 +26,7 @@ public static class StressCheck
         var every = Math.Max(1, int.Parse(Arg("--every", "5"), inv));
         var person = Arg("--person", "near").ToLowerInvariant();
         var rng = new Random(int.Parse(Arg("--seed", "1"), inv));
+        ConstructRails.On = !args.Contains("--no-rails"); // (free bodies on rails: ConstructRails.cs)
         if (Maps.Find(Arg("--map", "Caledon")) is not { } map)
         {
             Console.WriteLine("stress: no such map");
@@ -124,7 +125,7 @@ public static class StressCheck
                 }
                 var sm = w.StepMs;
                 var pm = ConstructPhysics.PartMs;
-                Console.WriteLine(FormattableString.Invariant($"stress {t / World.TickRate} s: tick {sum / ticks:0.00} ms (worst {worst:0.0}); bodies {w.Bodies.Count}, awake {awake}, stepped {simSum / (double)ticks:0}, far {ConstructFar.LastFar}, fallen low {low}, gone {gone}; step parts {string.Join(" ", sm.Select(x => (x / ticks).ToString("0.00", inv)))}; physics (list, bodies, contacts, solve, rest) {string.Join(" ", pm.Select(x => (x / ticks).ToString("0.00", inv)))}"));
+                Console.WriteLine(FormattableString.Invariant($"stress {t / World.TickRate} s: tick {sum / ticks:0.00} ms (worst {worst:0.0}); bodies {w.Bodies.Count}, awake {awake}, stepped {simSum / (double)ticks:0}, far {ConstructFar.LastFar}, on rails {ConstructRails.Count}, fallen low {low}, gone {gone}; step parts {string.Join(" ", sm.Select(x => (x / ticks).ToString("0.00", inv)))}; physics (list, bodies, contacts, solve, rest) {string.Join(" ", pm.Select(x => (x / ticks).ToString("0.00", inv)))}"));
                 sum = worst = 0;
                 simSum = 0;
                 ticks = 0;

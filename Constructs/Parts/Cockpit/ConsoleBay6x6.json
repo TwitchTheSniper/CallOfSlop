@@ -1,0 +1,212 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Console Bay 6x6",
+  "description": "A 6x6 cell console bay (10 cm cells): a Console Plug of its size fits it, by hand. Proud, Flush, Well or Opening, like any module socket.",
+  "group": "Cockpit",
+  "section": "Console bays",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 8.2,
+  "health": 73,
+  "armour": 0,
+  "material": "steel",
+  "color": "#2b2f35",
+  "attachSeconds": 1.0,
+  "onBreak": "detach",
+  "moduleSocket": {
+    "w": 6,
+    "l": 6,
+    "cells": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        -0.035,
+        -0.05
+      ],
+      "max": [
+        0.55,
+        -0.0122,
+        -0.034
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.035,
+        0.534
+      ],
+      "max": [
+        0.55,
+        -0.0122,
+        0.55
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.035,
+        -0.034
+      ],
+      "max": [
+        -0.034,
+        -0.0122,
+        0.534
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        0.534,
+        -0.035,
+        -0.034
+      ],
+      "max": [
+        0.55,
+        -0.0122,
+        0.534
+      ],
+      "color": "#2b2f35"
+    },
+    {
+      "min": [
+        -0.034,
+        -0.035,
+        -0.034
+      ],
+      "max": [
+        0.534,
+        -0.0122,
+        0.534
+      ],
+      "color": "#2b2f35",
+      "detail": true,
+      "middle": true
+    },
+    {
+      "min": [
+        -0.048,
+        -0.0122,
+        -0.048
+      ],
+      "max": [
+        0.548,
+        -0.002,
+        -0.034
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        -0.048,
+        -0.0122,
+        0.534
+      ],
+      "max": [
+        0.548,
+        -0.002,
+        0.548
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        -0.048,
+        -0.0122,
+        -0.034
+      ],
+      "max": [
+        -0.034,
+        -0.002,
+        0.534
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        0.534,
+        -0.0122,
+        -0.034
+      ],
+      "max": [
+        0.548,
+        -0.002,
+        0.534
+      ],
+      "color": "#3f454d"
+    },
+    {
+      "min": [
+        0.244,
+        -0.012,
+        0.244
+      ],
+      "max": [
+        0.256,
+        0.0,
+        0.256
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "module",
+      "at": [
+        0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "+y",
+      "kind": "module"
+    },
+    {
+      "name": "bc",
+      "at": [
+        0.25,
+        -0.035,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b0.0",
+      "at": [
+        0.0,
+        -0.035,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b1.0",
+      "at": [
+        0.5,
+        -0.035,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b0.1",
+      "at": [
+        0.0,
+        -0.035,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b1.1",
+      "at": [
+        0.5,
+        -0.035,
+        0.5
+      ],
+      "dir": "-y"
+    }
+  ]
+}

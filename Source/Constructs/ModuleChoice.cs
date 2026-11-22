@@ -297,7 +297,7 @@ public static class ModuleChoice
         var list = new List<ModuleCandidate>();
         foreach (var mb in ConstructBuild.Blueprints)
         {
-            if (mb.Module == null)
+            if (mb.Module == null || mb.Module.Cells) // a console faceplate isn't a ship module to choose
                 continue;
             var cw = new ConstructWorld { CreativeRecycling = true };
             if (ConstructBuild.Build(cw, mb, Vector3.Zero, Quaternion.Identity, out var mwhy) is not { } mc)
@@ -420,7 +420,7 @@ public static class ModuleChoice
         }
         var all = Shipped(Console.WriteLine);
         Console.WriteLine($"{bp.Name} for {faction.Name} (seed {seed}): {ship.ModSockets.Length} sockets, {all.Length} module designs; ship {sum.Mass / 1000:0.#} t, makes {sum.MadeKw:0} kW, draws {sum.DrawW / 1000:0.#} kW, {sum.Thrust / 1000:0} kN, {sum.Guns} guns");
-        var free = Enumerable.Range(0, ship.ModSockets.Length).Where(k => !ship.ModSockets[k].Stand && ship.ModSockets[k].Module < 0).ToArray();
+        var free = Enumerable.Range(0, ship.ModSockets.Length).Where(k => !ship.ModSockets[k].Stand && !ship.ModSockets[k].Cells && ship.ModSockets[k].Module < 0).ToArray();
         var slots = free.Select(k => new ModuleSlot(ship.ModSockets[k].W, ship.ModSockets[k].L, ship.ModSockets[k].Kind, ship.ModSockets[k].Round)).ToArray();
         var picks = Fill(wants, slots, all, ref sum, new Random(seed), Console.WriteLine);
         for (var i = 0; i < free.Length; i++)

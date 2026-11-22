@@ -619,8 +619,24 @@ public sealed class CrewNav
         return k;
     }
 
-    /// <summary>The node nearest <paramref name="rest"/> (rest frame) within <paramref name="across"/> m across and <paramref name="below"/> m below or 0.6 m above; -1: none.</summary>
-    public static int NearestNode(CrewNavGraph g, Vector3 rest, float across = Reach, float below = 1.5f)
+    /// <summary>How far over a spot's head (m) a ceiling or a roof of the body makes the spot indoors.</summary>
+    public const float CoverReach = 6f;
+
+    /// <summary>
+    /// Node <paramref name="n"/> is indoors: something of the body over its head within <see cref="CoverReach"/> (a deck's ceiling, a cab's roof).
+    /// A spot on top of the hull has nothing over it (Karl, 2026-11-22: crew bodied on a freighter's spine and its cab roof in orbit).
+    /// </summary>
+    public static bool Covered(CrewNavGraph g, int n)
+    {
+        var p = g.NodePos(n);
+        return Solid(g, p.X, p.Z, g.Top[n] + World.PlayerHeight, g.Top[n] + CoverReach);
+    }
+
+    /// <summary>
+    /// The node nearest <paramref name="rest"/> (rest frame) within <paramref name="across"/> m across and <paramref name="below"/> m below or 0.6 m above; -1: none.
+    /// <paramref name="inComp"/> (0 or more): only a node in that connected part; <paramref name="indoors"/>: only a <see cref="Covered"/> one.
+    /// </summary>
+    public static int NearestNode(CrewNavGraph g, Vector3 rest, float across = Reach, float below = 1.5f, int inComp = -1, bool indoors = false)
     {
         if (g.Nx == 0)
             return -1;
@@ -640,6 +656,8 @@ public sealed class CrewNav
                     var dy = g.Top[k] - rest.Y;
                     if (dy < -below || dy > 0.6f)
                         continue;
+                    if (inComp >= 0 && g.Comp[k] != inComp || indoors && !Covered(g, k))
+                        continue; // (outside: on the hull, or cut off from the helm's decks)
                     var p = g.NodePos(k);
                     var d = (p.X - rest.X) * (p.X - rest.X) + (p.Z - rest.Z) * (p.Z - rest.Z) + dy * dy * 0.5f;
                     if (d > across * across)

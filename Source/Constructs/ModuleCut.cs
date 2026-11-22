@@ -225,8 +225,8 @@ public static class ModuleCut
         Frame(c, s.Plate, out var face, out var n, out var across, out var up);
         var depth = s.Depth;
         Tunnel(c, s, face, n, out var mouth, out var len, out _, out _);
-        var halfW = s.W * 0.5f + Margin;
-        var halfL = s.L * 0.5f + Margin;
+        var halfW = s.Wm * 0.5f + Margin;
+        var halfL = s.Lm * 0.5f + Margin;
         // The candidates: parts near the tunnel's box in the rest frame (the plate is on the body's own frame).
         var inv = Quaternion.Conjugate(c.Rot);
         Vector3 R(Vector3 w) => Vector3.Transform(w - c.Pos, inv);
@@ -281,9 +281,9 @@ public static class ModuleCut
             return new Plan(cuts, j, $"in the way: the {HullHoles.Shown(d)} (part {j}) can't be cut ({why})", 0, 0, 0);
         }
         thick = MathF.Max(thick, 0.01f);
-        var outline = 2f * (s.W + s.L);
+        var outline = 2f * (s.Wm + s.Lm);
         var seconds = t.CutSecondsPerMetrePer10cm * outline * MathF.Ceiling(thick / 0.1f - 0.001f);
-        var watts = t.CutWattsPerMetre * (s.W + s.L) * 0.5f;
+        var watts = t.CutWattsPerMetre * (s.Wm + s.Lm) * 0.5f;
         return new Plan(cuts, -1, "", thick, seconds, watts);
     }
 
@@ -318,7 +318,7 @@ public static class ModuleCut
         c.Dirty = true;
         world.StructureDirty.Add(c.Id);
         c.Wake();
-        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} {(s.Style == ModStyle.Through ? "opening" : "well")}, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
+        world.Events.Add(FormattableString.Invariant($"construct {c.Id}: socket part {s.Plate} cut its {ModuleSocketTable.SizeText(s)} {(s.Style == ModStyle.Through ? "opening" : "well")}, {s.Depth:0.##} m deep, through {plan.Cuts.Count} parts"));
         if ((!world.Creative || world.TimedMachines) && lost > 1f)
             Slug(world, c, s, face, n, lost);
     }
@@ -333,7 +333,7 @@ public static class ModuleCut
         Freeform.PartWorld(c, part, out var pos, out var rot);
         var iq = Quaternion.Conjugate(rot);
         Tunnel(c, s, face, n, out var mouth, out var len, out var a, out var b);
-        var local = HullHoles.Hole.Of(Vector3.Transform(mouth - pos, iq), Vector3.Transform(-n, iq), Vector3.Transform(up, iq), s.W * 0.5f + Margin, s.L * 0.5f + Margin, len);
+        var local = HullHoles.Hole.Of(Vector3.Transform(mouth - pos, iq), Vector3.Transform(-n, iq), Vector3.Transform(up, iq), s.Wm * 0.5f + Margin, s.Lm * 0.5f + Margin, len);
         var d = c.DefOf(part);
         if (HullHoles.WithLining(d, local.TunnelText, Vector3.Dot(a - mouth, -n), Vector3.Dot(b - mouth, -n), Margin - LinerGap) is not { } lined)
         {
@@ -347,9 +347,9 @@ public static class ModuleCut
     private static void Slug(ConstructWorld world, Construct c, in CModSocket s, Vector3 face, Vector3 n, float kg)
     {
         const float Steel = 7850f;
-        var cm = kg / (Steel * s.W * s.L) * 100f; // (a plate section is a quarter of its height thick: HullLoft.StockMm)
+        var cm = kg / (Steel * s.Wm * s.Lm) * 100f; // (a plate section is a quarter of its height thick: HullLoft.StockMm)
         var h = Math.Clamp((int)MathF.Round(cm * 4 / Extrusion.StepCm) * Extrusion.StepCm, Extrusion.MinSectionCm, 200);
-        var name = FormattableString.Invariant($"{Extrusion.Prefix}plate {s.W * 100}x{h}x{s.L * 100} steel");
+        var name = FormattableString.Invariant($"{Extrusion.Prefix}plate {MathF.Round(s.Wm * 100)}x{h}x{MathF.Round(s.Lm * 100)} steel");
         if (Extrusion.ParseKey(name) is not { } k || Extrusion.Def(k) is not { } def)
         {
             Console.WriteLine($"[modules] construct {c.Id}: the slug of socket part {s.Plate}'s well ({kg:0} kg) is dropped: no piece \"{name}\"");
@@ -403,7 +403,7 @@ public static class ModuleCut
             return null;
         var total = ConstructConfig.Get(c.Parts[s.Plate], c.DefOf(s.Plate), CfgKey.ModCut, 0);
         if (total > 0)
-            return FormattableString.Invariant($"{(s.Style == ModStyle.Through ? "punching its opening" : "cutting its well")}, {Math.Clamp(sinceSeen / total, 0, 0.99) * 100:0}% ({ModuleSocketTable.Current.CutWattsPerMetre * (s.W + s.L) * 0.5f / 1000:0.#} kW)");
+            return FormattableString.Invariant($"{(s.Style == ModStyle.Through ? "punching its opening" : "cutting its well")}, {Math.Clamp(sinceSeen / total, 0, 0.99) * 100:0}% ({ModuleSocketTable.Current.CutWattsPerMetre * (s.Wm + s.Lm) * 0.5f / 1000:0.#} kW)");
         if (s.InTheWay < 0 || s.Module >= 0)
             return null;
         var d = c.DefOf(s.InTheWay);

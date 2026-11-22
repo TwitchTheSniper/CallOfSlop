@@ -109,6 +109,8 @@ public static unsafe partial class Program
         if (!g.ThirdPersonSeatPoint(out var point, out _, out _, out _, out _, out _))
             return;
         var camPos = point - f * (ThirdPerson.SeatDist * ThirdPerson.PullRatio); // (the camera as the orbit has moved it since the last frame)
+        if (g.LocalTurretEye(out var turretEye))
+            eye = turretEye; // (a turret's station aims from the turret's camera, as the server does: ConstructWeapons.SeatEye)
         var target = GunnerAimTarget(g, me, c, h.SeatPart, camPos, f, eye);
         if (GravityFrames.Curved && (target - eye).LengthSquared() > 1e-6f)
         {
@@ -254,6 +256,14 @@ public static unsafe partial class Program
             ideal = from - f * ThirdPerson.SeatDist;
         }
         cam = ThirdPerson.Pull(q, from, ideal);
+        if (ThirdPerson.Seated && _game.LocalTurret(out var turretBody, out _, out _))
+        {
+            // Round a turret the orbit starts outside the hull, so it stops at its own ship too (round the whole ship it starts inside and looks through it).
+            var way = cam - from;
+            var len = way.Length();
+            if (len > 1e-3f && _game.Constructs.Raycast(from, way / len, len, out var hullHit, only: turretBody) && hullHit.Distance < len)
+                cam = from + way / len * MathF.Max(0f, hullHit.Distance - ThirdPerson.CameraRadius);
+        }
         var want = Vector3.Distance(from, ideal);
         ThirdPerson.PullRatio = want > 1e-3f ? Math.Clamp(Vector3.Distance(from, cam) / want, 0f, 1f) : 1f;
         ThirdPerson.Cam = cam;

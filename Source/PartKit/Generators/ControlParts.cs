@@ -156,7 +156,7 @@ public sealed class ControlParts : IPartGenerator
     }
 
     /// <summary>A rotary knob with stops, or a slider: an Analog Lever by another shape (AnalogLever.cs).</summary>
-    private static (string, Part) Analog(string name, string section, string rig, int s = 1, double snap = 0.0, string tool = "wrench", double mass = 3, Cls? cls = null, double health = 40, int armour = 1)
+    private static (string, Part) Analog(string name, string section, string rig, double s = 1, double snap = 0.0, string tool = "wrench", double mass = 3, Cls? cls = null, double health = 40, int armour = 1)
     {
         var desc = rig == "knob" ? "A knob with stops, 0 to 1." : "A slider, 0 to 1.";
         var cfg = Config();
@@ -184,7 +184,7 @@ public sealed class ControlParts : IPartGenerator
     }
 
     /// <summary>A switch or button with a part of it that moves: a toggle's bat, a rocker's plate, a mushroom's cap.</summary>
-    private static (string, Part) Toggle(string name, string kind, string shape, int s = 1, string tool = "wrench", double mass = 2, Cls? cls = null, double health = 40, int armour = 1, List<object?>? config = null)
+    private static (string, Part) Toggle(string name, string kind, string shape, double s = 1, string tool = "wrench", double mass = 2, Cls? cls = null, double health = 40, int armour = 1, List<object?>? config = null)
     {
         config ??= LatchCfg();
         double h = 0.1 * s, t = 0.05 * s;
@@ -311,6 +311,49 @@ public sealed class ControlParts : IPartGenerator
             foreach (var n in new[] { 4, 8 })
                 o.Add(Screen($"{pre}Light Bank {n}", "logic.lamps", "A labelled lamp for each of its inputs. Type the labels, comma-separated.", 0.5 * s, 0.09 * n * s, n, cls, tool, mass, hp, ar, logic: [("ports", n), ("text", 1)]));
         }
+        return o;
+    }
+
+    /// <summary>
+    /// The panel-size instruments (docs/sandbox/constructs/cockpits.md): the hand controls and screens cut down to sit on a Console Plug's
+    /// 10 cm cells. Switches, buttons, knobs and sliders at half the small size (a 10 cm housing, one cell), screens at 0.4 (a readout two
+    /// cells by one, a dial two by two), a throttle lever at 0.7. Written by the cockpit generator (CockpitParts) to its own folder.
+    /// </summary>
+    public static List<(string, Part)> PanelInstruments()
+    {
+        const string sec = "Cockpit instruments";
+        List<object?> Readout() => Py.L(Decimals, Unit);
+        List<object?> Scale() => Py.L(Decimals, Unit, Low, High);
+        List<object?> Plot() => Py.L(Low, High, Ramp);
+        const double s = 0.4;
+        // (Function: what of the seat it works and shows, CockpitFns.cs; the options come from the game)
+        var fn = D(("key", "seatFn"), ("label", "Function"), ("group", "Cockpit"), ("default", 0),
+            ("tooltip", "Linked to the craft's seat controls: it works that and shows its state (dampeners, reactor, landing legs...). None: a plain switch."));
+        var o = new List<(string, Part)>
+        {
+            Toggle("Panel Toggle Switch", "switch", "toggle", s: 0.5, mass: 0.3, config: [.. LatchCfg(), fn]),
+            Toggle("Panel Rocker Switch", "switch", "rocker", s: 0.5, mass: 0.3, config: [.. LatchCfg(), fn]),
+            Toggle("Panel Push Button", "button", "mushroom", s: 0.5, mass: 0.3, config: [.. ButtonCfg(), fn]),
+            Analog("Panel Rotary Knob", sec, "knob", s: 0.5, snap: 0.1, mass: 0.3),
+            Analog("Panel Slider", sec, "slide", s: 0.5, mass: 0.3),
+            Lever("Panel Throttle Lever", Small, 0.7, 0.8, 30, 1, "wrench"),
+            Screen("Panel Number Readout", "logic.readout", "Shows the number wired into it.", 0.5 * s, 0.25 * s, 1, mass: 0.5, config: Readout(), section: sec),
+            Screen("Panel Bar Gauge", "logic.bar", "A bar across the whole screen, from its min to its max.", 0.5 * s, 0.25 * s, 1, mass: 0.5, config: Plot(), section: sec),
+            Screen("Panel Tall Bar Gauge", "logic.barv", "A bar up the whole screen, from its min to its max.", 0.25 * s, 0.5 * s, 2, mass: 0.5, config: Plot(), section: sec),
+            Screen("Panel Dial Gauge", "logic.dial", "A needle, from its min to its max.", 0.5 * s, 0.5 * s, 4, mass: 0.5, config: Scale(), section: sec),
+            Screen("Panel Graph Screen", "logic.graph", "The number wired into it over the last 30 s. Min and max the same: it fits the line.", 1.0 * s, 0.5 * s, 4, mass: 0.8, config: Plot(), section: sec),
+            Screen("Panel Text Screen", "logic.sign", "Says what you type. A wire on it switches to its second message.", 1.0 * s, 0.5 * s, 3, mass: 0.8, section: sec, logic: ("text", 2)),
+            Screen("Panel Compass", "logic.compass", "The way you face looking at it. No wiring.", 0.5 * s, 0.25 * s, 2, mass: 0.5, kind: "instrument", section: sec),
+            Screen("Panel Altimeter", "logic.altimeter", "How high it is. No wiring.", 0.5 * s, 0.25 * s, 1, mass: 0.5, kind: "instrument", section: sec,
+                config: Py.L(With(Decimals, ("default", 0)), With(Unit, ("default", 1)))),
+            Screen("Panel Speedometer", "logic.speedometer", "How fast its construct goes. No wiring.", 0.5 * s, 0.5 * s, 4, mass: 0.5, kind: "instrument", section: sec,
+                config: Py.L(D(("key", "units"), ("label", "Units"), ("group", "General"), ("options", Py.L("m/s", "km/h", "mph")), ("default", 1), ("tooltip", "What it reads in.")), With(Low, ("default", 0)), With(High, ("default", 120)))),
+            Screen("Panel Lamp Strip 4", "logic.lamps", "A labelled lamp for each of its inputs. Type the labels, comma-separated.", 0.5 * s, 0.09 * 4 * s, 4, mass: 0.5, section: sec, logic: [("ports", 4), ("text", 1)]),
+            Screen("Panel Lamp Strip 8", "logic.lamps", "A labelled lamp for each of its inputs. Type the labels, comma-separated.", 0.5 * s, 0.09 * 8 * s, 8, mass: 0.6, section: sec, logic: [("ports", 8), ("text", 1)]),
+            Screen("Panel Wide Screen", "logic.graph", "A wide screen two cells high: the number wired into it over the last 30 s.", 2.0 * s, 0.5 * s, 4, mass: 1.2, config: Plot(), section: sec),
+        };
+        foreach (var (_, p) in o)
+            p.D["section"] = sec;
         return o;
     }
 

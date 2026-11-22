@@ -20,6 +20,8 @@ public sealed partial class ConstructPartDef
     public bool ModNoHide; // "moduleSocket": {"hide": false}: no Hide connector setting (a plate that is a whole wall section: the Wall Bay Socket)
     public float ModStandAbove; // "moduleSocket": {"stand": true, "above": m}: a stand's room height when its own part roofs it (a container's cradle); 0: the table's default
     public int ModSocket = -1; // its Module socket's index (the plate's face, +y; the plug's, -y)
+    public bool ModCells; // "cells": true: a cell-class plate or plug (a Console Bay or Console Plug, cockpits.md): W and L count 10 cm cells, not metres
+    public float ModUnit => ModCells ? ModuleSockets.Cell : 1f; // metres a W or L step is
     public byte ModData; // its data pass-through ports, "Data 1".."Data n" both ways (2 at 1x1 and 1xN, 4 from 2x2; a stand none): ModuleSockets.PassWires
 }
 
@@ -29,6 +31,10 @@ public struct CModSocket
     public ushort Plate; // the plate part
     public byte W, L;
     public bool Round; // a round plate: takes only a round plug of its diameter W
+    public bool Cells; // a cell-class plate (a Console Bay): W and L count 10 cm cells (ModuleSockets.Cell)
+    public readonly float U => Cells ? ModuleSockets.Cell : 1f; // metres a W or L step is
+    public readonly float Wm => W * U; // the footprint across, m
+    public readonly float Lm => L * U; // and along, m
     public ModKind Kind;
     public ModStyle Style;
     public bool Keyed, Stand;
@@ -71,6 +77,8 @@ public static class ModuleSockets
 {
     public const int MaxSockets = 64; // a construct's sockets the rebuild tracks (more are listed but have no room check: logged)
     public const float Grid = 0.01f;
+    public const float Cell = 0.1f; // m: a cell-class footprint's step (a Console Bay's, cockpits.md)
+    public const int MostCells = 40; // a cell-class footprint's longest side, cells
     public const string PlateName = "Module Socket", PlugName = "Module Plug", StandName = "Module Stand";
     public const float FlushStand = 0.004f; // m: a flush module's face stands this far proud of the surface at most (its detail; z-fighting rule)
     public const float FlushTolerance = 0.01f; // m: a flush module fits when its face is within this of the well's depth (the 1 cm grid)
@@ -92,15 +100,21 @@ public static class ModuleSockets
             throw new ConstructPartException($"{file}: a part is a Module Socket or a Module Plug, not both");
         var e = (plate ?? plug)!.Value;
         var key = plate != null ? "moduleSocket" : "modulePlug";
-        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above", "hide", "round"] : ["w", "l", "round"], $"{file}, {key}");
+        ConstructParts.Known(e, plate != null ? ["w", "l", "stand", "above", "hide", "round", "cells"] : ["w", "l", "round", "cells"], $"{file}, {key}");
         var w = (int)ConstructParts.Num(ConstructParts.Need(e, "w", $"{file}, {key}"), file, key + ".w");
         var l = (int)ConstructParts.Num(ConstructParts.Need(e, "l", $"{file}, {key}"), file, key + ".l");
-        if (!ModuleSocketTable.ValidSize(w, l))
-            throw new ConstructPartException($"{file}: \"{key}\" is {w} x {l}: whole metres, 1 <= w <= l <= {ModuleSocketTable.MostSide}");
+        var cells = ConstructParts.Opt(e, "cells") is { ValueKind: JsonValueKind.True };
+        if (cells ? !ModuleSocketTable.ValidCells(w, l) : !ModuleSocketTable.ValidSize(w, l))
+            throw new ConstructPartException(cells
+                ? $"{file}: \"{key}\" is {w} x {l} cells: 1 <= w <= l <= {MostCells}"
+                : $"{file}: \"{key}\" is {w} x {l}: whole metres, 1 <= w <= l <= {ModuleSocketTable.MostSide}");
         d.ModPart = plate != null ? ModPart.Socket : ModPart.Plug;
         d.ModW = (byte)w;
         d.ModL = (byte)l;
+        d.ModCells = cells;
         d.ModRound = ConstructParts.Opt(e, "round") is { ValueKind: JsonValueKind.True };
+        if (cells && (d.ModRound || ConstructParts.Opt(e, "stand") != null))
+            throw new ConstructPartException($"{file}: a cell-class \"{key}\" is square-cornered and no stand");
         if (d.ModRound && w != l)
             throw new ConstructPartException($"{file}: a round \"{key}\" is as wide as it is long (its diameter): {w} x {l}");
         d.ModStand = plate != null && ConstructParts.Opt(e, "stand") is { ValueKind: JsonValueKind.True };
@@ -110,8 +124,8 @@ public static class ModuleSockets
             if (!d.ModStand)
                 throw new ConstructPartException($"{file}: \"moduleSocket.above\" is a stand's (a plate's room comes from its settings)");
             d.ModStandAbove = (float)ConstructParts.Num(ab, file, key + ".above");
-            if (d.ModStandAbove < 0.5f * w || d.ModStandAbove > ModuleSocketTable.DefaultAbove(w))
-                throw new ConstructPartException($"{file}: \"moduleSocket.above\" is {d.ModStandAbove} m: from half the stand's width to the default {ModuleSocketTable.DefaultAbove(w)} m");
+            if (d.ModStandAbove < 0.5f * w || d.ModStandAbove > ModuleSocketTable.DefaultAbove(w, false))
+                throw new ConstructPartException($"{file}: \"moduleSocket.above\" is {d.ModStandAbove} m: from half the stand's width to the default {ModuleSocketTable.DefaultAbove(w, false)} m");
         }
         var faces = plate != null ? ConstructParts.DirOf("+y", file, key) : ConstructParts.DirOf("-y", file, key);
         for (var s = 0; s < d.Sockets.Length; s++)
@@ -121,8 +135,8 @@ public static class ModuleSockets
                     throw new ConstructPartException($"{file}: a {(plate != null ? "plate" : "plug")} has one \"module\" socket");
                 if (d.Sockets[s].Dir != faces)
                     throw new ConstructPartException($"{file}: the \"module\" socket faces {(plate != null ? "+y (out of the plate)" : "-y (out of the plug)")}");
-                if (MathF.Abs(d.Sockets[s].At.X - Centre(w)) > 0.006f || MathF.Abs(d.Sockets[s].At.Z - Centre(l)) > 0.006f)
-                    throw new ConstructPartException($"{file}: the \"module\" socket stands in the footprint's middle ({Centre(w):0.##}, {Centre(l):0.##})");
+                if (MathF.Abs(d.Sockets[s].At.X - Centre(w, d.ModUnit)) > 0.006f || MathF.Abs(d.Sockets[s].At.Z - Centre(l, d.ModUnit)) > 0.006f)
+                    throw new ConstructPartException($"{file}: the \"module\" socket stands in the footprint's middle ({Centre(w, d.ModUnit):0.###}, {Centre(l, d.ModUnit):0.###})");
                 d.ModSocket = s;
             }
         if (d.ModSocket < 0)
@@ -196,8 +210,8 @@ public static class ModuleSockets
     /// <summary>Which of a plate's side controls a point on it (its own frame) is at: 1 eject, 2 the lock slider, 0 neither.</summary>
     public static byte ControlNear(ConstructPartDef d, Vector3 local)
     {
-        if (d.ModPart != ModPart.Socket || d.ModStand || d.ModNoHide)
-            return 0; // (a Wall Bay Socket is a wall section: no side controls)
+        if (d.ModPart != ModPart.Socket || d.ModStand || d.ModNoHide || d.ModCells)
+            return 0; // (a Wall Bay Socket is a wall section, a Console Bay too small: no side controls)
         if (Vector3.Distance(local, ControlAt(d, EjectZ)) <= CtlReach)
             return 1;
         var a = ControlAt(d, LockZ0);
@@ -209,6 +223,9 @@ public static class ModuleSockets
 
     /// <summary>The footprint's middle along a side of n metres: the part's origin is the middle of its first metre cell.</summary>
     public static float Centre(int n) => (n - 1) * 0.5f;
+
+    /// <summary>The footprint's middle along a side of n steps of <paramref name="unit"/> m (a cell-class part's origin is the middle of its first cell).</summary>
+    public static float Centre(int n, float unit) => (n - 1) * 0.5f * unit;
 
     /// <summary>A plate's settings (kind, style, depth, above, keyed) and a plug's primary tag (ConstructConfig.Parse).</summary>
     public static void AddSettings(ConstructPartDef d, List<CConfigDef> list)
@@ -225,9 +242,9 @@ public static class ModuleSockets
                 Tooltip = "Any module of its size, or engines, reactors or turrets only (by the module's primary tag)." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModStyle), Id = CfgKey.ModStyle, Type = CfgType.Choice, Options = ModuleSocketTable.StyleLabels, Label = "Style", Group = "Module socket",
                 Tooltip = "Proud: the module stands on the plate. Flush and Well: the plate is a frame on the hull and digs a well Depth deep into what it is on; the module sits in it, level with the frame (Flush) or standing up out of it (Well). Opening: the plate is a frame with a hole, and punches through whatever it is on, Depth on behind it, so the module can retract into it." });
-            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModDepth), Id = CfgKey.ModDepth, Type = CfgType.Number, Min = t.DepthStep, Max = MathF.Max(t.DepthStep * 2, t.MostDepth(d.ModW)), Step = t.DepthStep, Default = t.DepthStep, Unit = "m",
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModDepth), Id = CfgKey.ModDepth, Type = CfgType.Number, Min = t.StepOf(d.ModCells), Max = MathF.Max(t.StepOf(d.ModCells) * 2, t.MostDepth(d.ModW, d.ModCells)), Step = t.StepOf(d.ModCells), Default = t.StepOf(d.ModCells), Unit = "m",
                 Label = "Depth", Group = "Module socket", Tooltip = "Flush and Well: how deep the well goes, from the frame's face to its floor (a flush module is this tall). Opening: how far the hole goes on behind the plate." });
-            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModAbove), Id = CfgKey.ModAbove, Type = CfgType.Number, Min = 0, Max = t.MostAbove(d.ModL), Step = t.AboveStep, Default = 0, Unit = "m",
+            Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModAbove), Id = CfgKey.ModAbove, Type = CfgType.Number, Min = 0, Max = t.MostAbove(d.ModL, d.ModCells), Step = d.ModCells ? ModuleSocketTable.CellStep : t.AboveStep, Default = 0, Unit = "m",
                 Label = "Room above", Group = "Module socket", Tooltip = "How tall a module may stand over the plate (0: twice its short side). Nothing of the ship may be in this room." });
             Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ModCut), Id = CfgKey.ModCut, Type = CfgType.Number, Hidden = true, Min = 0, Max = 100000, Default = 0, Unit = "s",
                 Label = "Cut", Group = "Module socket", Tooltip = "Not on the panel." });
@@ -407,14 +424,15 @@ public static class ModuleSockets
             ref var p = ref c.Parts[i];
             var s = new CModSocket
             {
-                Plate = (ushort)i, W = d.ModW, L = d.ModL, Round = d.ModRound, Stand = d.ModStand, Module = -1, InTheWay = -1,
+                Plate = (ushort)i, W = d.ModW, L = d.ModL, Round = d.ModRound, Cells = d.ModCells, Stand = d.ModStand, Module = -1, InTheWay = -1,
                 Kind = d.ModStand ? ModKind.Generic : (ModKind)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ModKind, 0), 0, ModuleSocketTable.KindNames.Length - 1),
                 Style = d.ModStand ? ModStyle.Proud : (ModStyle)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.ModStyle, 0), 0, ModuleSocketTable.StyleNames.Length - 1),
                 Keyed = !d.ModStand && ConstructConfig.Get(p, d, CfgKey.ModKeyed, 0) > 0.5f,
             };
             var above = d.ModStand ? d.ModStandAbove : ConstructConfig.Get(p, d, CfgKey.ModAbove, 0); // (a stand: its file's room, if it gives one)
-            s.Above = above > 0 ? above : ModuleSocketTable.DefaultAbove(d.ModW);
-            s.Depth = s.Style == ModStyle.Proud ? 0 : MathF.Max(ModuleSocketTable.Current.DepthStep, ConstructConfig.Get(p, d, CfgKey.ModDepth, ModuleSocketTable.Current.DepthStep));
+            s.Above = above > 0 ? above : ModuleSocketTable.DefaultAbove(d.ModW, d.ModCells);
+            var depthStep = ModuleSocketTable.Current.StepOf(d.ModCells);
+            s.Depth = s.Style == ModStyle.Proud ? 0 : MathF.Max(depthStep, ConstructConfig.Get(p, d, CfgKey.ModDepth, depthStep));
             // Every style but Proud digs into what the plate is welded to (module-sockets.md 2.3, Sean 2026-11-21): the plate stays on the
             // surface as a frame, and the room goes back through it and the well it cut. Flush and Well seat the module at the well's floor,
             // Depth behind the plate's face (the frame's thickness is part of it); an Opening punches Depth on behind the plate's back.
@@ -832,8 +850,9 @@ public static class ModuleSockets
         var d = c.DefOf(plate);
         ref var p = ref c.Parts[plate];
         var face = d.Sockets[d.ModSocket].At;
-        var lo = new Vector3(face.X - d.ModW * 0.5f - side, face.Y - below, face.Z - d.ModL * 0.5f - side);
-        var hi = new Vector3(face.X + d.ModW * 0.5f + side, face.Y + above, face.Z + d.ModL * 0.5f + side);
+        float hw = d.ModW * d.ModUnit * 0.5f, hl = d.ModL * d.ModUnit * 0.5f;
+        var lo = new Vector3(face.X - hw - side, face.Y - below, face.Z - hl - side);
+        var hi = new Vector3(face.X + hw + side, face.Y + above, face.Z + hl + side);
         var mid = p.Pos + Rot24.Apply(p.Rot, (lo + hi) * 0.5f);
         var half = Rot24.ApplyHalf(p.Rot, (hi - lo) * 0.5f);
         RestAabb(c, p.Seg, ref mid, ref half); // (the body's rest frame, as every part's bounds are compared)
@@ -925,15 +944,15 @@ public static class ModuleSockets
     }
 
     /// <summary>Does plug def <paramref name="plug"/> match socket <paramref name="s"/>'s size and shape (round or square)?</summary>
-    public static bool Matches(in CModSocket s, ConstructPartDef plug) => plug.ModW == s.W && plug.ModL == s.L && plug.ModRound == s.Round;
+    public static bool Matches(in CModSocket s, ConstructPartDef plug) => plug.ModW == s.W && plug.ModL == s.L && plug.ModRound == s.Round && plug.ModCells == s.Cells;
 
     /// <summary>A plug of this size and the plate's: null when they match, else why not.</summary>
     public static string? SizeRefusal(ConstructPartDef plate, ConstructPartDef plug)
     {
         if (plate.ModPart != ModPart.Socket || plug.ModPart != ModPart.Plug)
             return "a Module Plug goes on a Module Socket's face";
-        if (plate.ModW != plug.ModW || plate.ModL != plug.ModL || plate.ModRound != plug.ModRound)
-            return $"that's a {ModuleSocketTable.SizeText(plate.ModW, plate.ModL, plate.ModRound)} socket and a {ModuleSocketTable.SizeText(plug.ModW, plug.ModL, plug.ModRound)} module: sizes and shapes match exactly (an adapter module takes a smaller one)";
+        if (plate.ModW != plug.ModW || plate.ModL != plug.ModL || plate.ModRound != plug.ModRound || plate.ModCells != plug.ModCells)
+            return $"that's a {ModuleSocketTable.SizeText(plate)} socket and a {ModuleSocketTable.SizeText(plug)} module: sizes and shapes match exactly (an adapter module takes a smaller one)";
         return null;
     }
 
@@ -958,14 +977,14 @@ public static class ModuleSockets
                 side = MathF.Max(side, MathF.Max(under, over));
         }
         if (side >= up && side >= down)
-            return $"the {part} sticks out {side:0.00} m past the socket's side ({ModuleSocketTable.SizeText(s.W, s.L, s.Round)}): use a bigger socket";
+            return $"the {part} sticks out {side:0.00} m past the socket's side ({ModuleSocketTable.SizeText(s)}): use a bigger socket";
         if (down >= up)
             return s.Style == ModStyle.Proud
                 ? $"the {part} goes {down:0.00} m below the plate's face: a proud module stands on its plate"
-                : $"the {part} goes {down:0.00} m past the well's floor ({s.Behind:0.00} m deep): set Depth {MathF.Ceiling(down / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m more";
+                : $"the {part} goes {down:0.00} m past the well's floor ({s.Behind:0.00} m deep): set Depth {MathF.Ceiling(down / ModuleSocketTable.Current.StepOf(s.Cells)) * ModuleSocketTable.Current.StepOf(s.Cells):0.00} m more";
         return s.Style == ModStyle.Flush
-            ? $"the {part} stands {up:0.00} m out of the flush well: a flush module ends level with the hull (set Depth {MathF.Ceiling(up / ModuleSocketTable.Current.DepthStep) * ModuleSocketTable.Current.DepthStep:0.00} m more, or use a Well socket)"
-            : $"the {part} sticks out {up:0.00} m over the socket's room ({s.Height:0.##} m over the face): set Room above {MathF.Ceiling(up / ModuleSocketTable.Current.AboveStep) * ModuleSocketTable.Current.AboveStep:0.##} m more";
+            ? $"the {part} stands {up:0.00} m out of the flush well: a flush module ends level with the hull (set Depth {MathF.Ceiling(up / ModuleSocketTable.Current.StepOf(s.Cells)) * ModuleSocketTable.Current.StepOf(s.Cells):0.00} m more, or use a Well socket)"
+            : $"the {part} sticks out {up:0.00} m over the socket's room ({s.Height:0.##} m over the face): set Room above {MathF.Ceiling(up / (s.Cells ? ModuleSocketTable.CellStep : ModuleSocketTable.Current.AboveStep)) * (s.Cells ? ModuleSocketTable.CellStep : ModuleSocketTable.Current.AboveStep):0.##} m more";
     }
 
     /// <summary>
@@ -996,16 +1015,16 @@ public static class ModuleSockets
         if (m.Bridged)
             return "that module is welded to more than its plug's face";
         var t = ModuleSocketTable.Current;
-        if (m.Mass > t.MassRating(s.W, s.L))
-            return $"the module weighs {m.Mass / 1000f:0.#} t: a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} socket holds {t.MassRating(s.W, s.L) / 1000f:0.#} t";
-        if (m.Thrust > t.ThrustRating(s.W, s.L))
-            return $"the module pushes {m.Thrust / 1000f:0} kN: a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} socket takes {t.ThrustRating(s.W, s.L) / 1000f:0} kN";
+        if (m.Mass > t.MassRating(s))
+            return $"the module weighs {m.Mass / 1000f:0.#} t: a {ModuleSocketTable.SizeText(s)} socket holds {t.MassRating(s) / 1000f:0.#} t";
+        if (m.Thrust > t.ThrustRating(s))
+            return $"the module pushes {m.Thrust / 1000f:0} kN: a {ModuleSocketTable.SizeText(s)} socket takes {t.ThrustRating(s) / 1000f:0} kN";
         if (KindTag(s.Kind) is { } want && m.Primary != want)
             return $"this socket takes {TagName(want)} modules only: this one is {TagName(m.Primary)} ({TagsText(m.Tags)})";
         if (byHand && !creative)
         {
-            if (!t.HandSize(s.W, s.L))
-                return $"a {ModuleSocketTable.SizeText(s.W, s.L, s.Round)} module is fitted by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
+            if (!t.HandSize(s))
+                return $"a {ModuleSocketTable.SizeText(s)} module is fitted by a Module Fitter: by hand, up to {ModuleSocketTable.SizeText(t.HandUpToW, t.HandUpToL)}";
             if (m.Mass > lift)
                 return $"the module weighs {m.Mass / 1000f:0.#} t: by hand up to {lift / 1000f:0.#} t (a Module Fitter lifts more)";
         }
@@ -1078,10 +1097,10 @@ public static class ModuleSockets
             if (a.X < lo.X || a.Y < lo.Y || a.Z < lo.Z || b.X > hi.X || b.Y > hi.Y || b.Z > hi.Z)
                 return "keep it inside the socket's room: it would stick out of the module's room";
             var t = ModuleSocketTable.Current;
-            if (c.Modules[mi].Mass + def.Mass > t.MassRating(s.W, s.L))
-                return $"the module would weigh {(c.Modules[mi].Mass + def.Mass) / 1000f:0.#} t: the socket holds {t.MassRating(s.W, s.L) / 1000f:0.#} t";
-            if (def.Role == PartRole.Thruster && c.Modules[mi].Thrust + def.ThrustForce + def.AbForce > t.ThrustRating(s.W, s.L))
-                return $"the module would push more than its socket's {t.ThrustRating(s.W, s.L) / 1000f:0} kN";
+            if (c.Modules[mi].Mass + def.Mass > t.MassRating(s))
+                return $"the module would weigh {(c.Modules[mi].Mass + def.Mass) / 1000f:0.#} t: the socket holds {t.MassRating(s) / 1000f:0.#} t";
+            if (def.Role == PartRole.Thruster && c.Modules[mi].Thrust + def.ThrustForce + def.AbForce > t.ThrustRating(s))
+                return $"the module would push more than its socket's {t.ThrustRating(s) / 1000f:0} kN";
         }
         // Would its free sockets weld onto a part of another side (the module and the ship, or two modules)?
         var hits = Construct.PartScratch;
@@ -1135,7 +1154,7 @@ public static class ModuleSockets
         if (d.ModPart == ModPart.Socket && SocketOfPlate(c, part) is var si and >= 0)
         {
             var s = c.ModSockets[si];
-            var size = ModuleSocketTable.SizeText(s.W, s.L, s.Round);
+            var size = ModuleSocketTable.SizeText(s);
             if (ModuleFitters.LookText(c, part) is { } fitting)
                 return $"{size} {(s.Stand ? "stand" : "socket")}: {fitting}";
             if (s.Stand)
@@ -1165,7 +1184,7 @@ public static class ModuleSockets
     {
         var m = c.Modules[mi];
         var d = c.DefOf(m.Plug);
-        return $"{ModuleSocketTable.SizeText(d.ModW, d.ModL, d.ModRound)} module";
+        return $"{ModuleSocketTable.SizeText(d)} module";
     }
 
     public static string StatsText(in CModule m)

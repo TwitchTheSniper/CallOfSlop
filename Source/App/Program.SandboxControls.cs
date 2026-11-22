@@ -98,6 +98,43 @@ public static partial class Program
         g.SandboxLookText = _mlText;
     }
 
+    private static long _cpSwKey = -1;
+    private static string _cpSwText = "";
+
+    /// <summary>
+    /// Seated: a switch or button in reach of the seat (a cockpit's dash, cockpits.md "Working it from the seat"): the use key presses it
+    /// (CActKind.Use, as standing), and the look line says what it is and what it works. True when the press went to it.
+    /// </summary>
+    private static bool SwitchSeated(Game g, bool aimed, in ConstructHit hit)
+    {
+        if (!aimed || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Part < 0 || hit.Part >= hit.Body.PartCount || hit.Distance > ConstructBuild.UseReach)
+            return false;
+        var c = hit.Body;
+        var d = c.DefOf(hit.Part);
+        ref var p = ref c.Parts[hit.Part];
+        if (d.Logic is not (CLogic.Button or CLogic.Switch) || p.Broken)
+            return false;
+        var fn = CockpitFns.Of(p, d);
+        if (fn == SeatFn.None)
+            return false; // (only a switch linked to the seat: F on any other still gets up)
+        ConstructRender.AimBody = c;
+        ConstructRender.AimPart = hit.Part;
+        ConstructRender.AimRefused = false;
+        ConstructRender.AimHands = true;
+        var lookKey = HashCode.Combine(p.Def, (int)fn, p.Out >= 0.5f, SandboxKeys.Stamp, c.Id, hit.Part);
+        if (lookKey != _cpSwKey)
+        {
+            _cpSwKey = lookKey;
+            var what = fn == SeatFn.None ? (p.Out >= 0.5f ? "on" : "off") : $"{CockpitFns.Options[(int)fn].ToLowerInvariant()}: {(p.Out >= 0.5f ? fn == SeatFn.Caution ? "CAUTION" : "on" : fn == SeatFn.Caution ? "clear" : "off")}";
+            _cpSwText = SandboxKeys.Line(LogicText.Name(c, hit.Part), what, null, SandboxKeys.Do(SandboxKeys.Use, "press"));
+        }
+        g.SandboxLookText = _cpSwText;
+        if (!Pressed(GameAction.Interact))
+            return false;
+        g.SandboxSend(CActKind.Use, body: c.Id, part: (ushort)hit.Part);
+        return true;
+    }
+
     /// <summary>One frame of a key or sign under the crosshair. True when the use key's press went to it.</summary>
     private static bool ControlFrame(Game g, Player me, in SandboxHand h, bool aimed, in ConstructHit hit, bool join)
     {
