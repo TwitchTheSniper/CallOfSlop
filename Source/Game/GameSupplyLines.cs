@@ -39,7 +39,10 @@ public sealed partial class Game
     {
         var n = StationMarkets.Haulers.Length;
         if (_routeArrived.Length != n)
-            (_routeArrived, _routeHadHauler) = (new long[n], new bool[n]);
+        {
+            Array.Resize(ref _routeArrived, n); // (a route made in play goes on the end: the others keep what was seen, GameStationLife.cs)
+            Array.Resize(ref _routeHadHauler, n);
+        }
     }
 
     /// <summary>The lines of station <paramref name="def"/> into <paramref name="into"/>: the host words them; a client reads the host's.</summary>
@@ -51,6 +54,8 @@ public sealed partial class Game
         RoutesSized();
         var all = StationMarkets.All;
         var hs = StationMarkets.Haulers;
+        if (StationLifeLine(def) is { } life)
+            into.Add(life); // (building, for sale, closed, or its ledger: GameStationLife.cs)
         for (var r = 0; r < hs.Length && into.Count < MaxSupplyLines; r++)
         {
             var h = hs[r];
@@ -60,6 +65,8 @@ public sealed partial class Game
             var running = false;
             foreach (var run in _hauls)
                 running |= run.Route == r;
+            if (h.Count == 0 && !running)
+                continue; // (a route stopped: a site's builders done, a sale, a closing)
             var state = !running ? _routeHadHauler[r] ? "CUT" : "NOT SEEN HERE"
                 : _routeArrived[r] != 0 && ServerTick - _routeArrived[r] < LateAfter ? "RUNNING" : "LATE";
             into.Add($"{h.Power.ToUpperInvariant()} TO {other.ToUpperInvariant()}: {state}");

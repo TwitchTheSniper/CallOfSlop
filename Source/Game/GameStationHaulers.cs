@@ -136,8 +136,8 @@ public sealed partial class Game
         for (var d = 0; d < all.Length; d++)
         {
             var def = all[d];
-            if (def.Blueprint.Length == 0 || !def.Planet.Equals(e.System.Bodies[body].Name, StringComparison.OrdinalIgnoreCase))
-                continue;
+            if (def.Blueprint.Length == 0 || d >= StationMarkets.Listed || def.State == MarketState.Closed || !def.Planet.Equals(e.System.Bodies[body].Name, StringComparison.OrdinalIgnoreCase))
+                continue; // (one made in play: StationSiteTick; a dismantled one isn't put up again)
             foreach (var c in Constructs.Bodies)
                 if (c.IsStation && !c.Wreck)
                     StationMarketOf(c); // (a station this world kept has its market already)
@@ -285,6 +285,8 @@ public sealed partial class Game
                 _hauls.RemoveAt(i);
                 StationsVersion++; // (a supply line may be cut: the cards hear it, GameSupplyLines.cs)
             }
+            else if (routes[_hauls[i].Route].Count == 0 && _hauls[i].Stage != HaulStage.Going)
+                HaulRetire(i); // (its route stopped: it goes off it at a station, GameStationLife.cs)
         for (var ri = 0; ri < routes.Length; ri++)
         {
             if (ServerTick < _haulNext[ri])
@@ -523,7 +525,7 @@ public sealed partial class Game
         var st = StationBodyOf(def);
         var o = NavOf(c.Id);
         var planet = StationPlanet(s, d);
-        var here = st != 0 && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 }; // (the station is a body in this world's space)
+        var here = st != 0 && d.State != MarketState.Building && Constructs.Get(st) is { SpaceAway: 0, SpaceShip: not 0 }; // (the station is a body in this world's space; a site has no berth: its builders trade on its circle)
         var circling = !here && o is { Kind: NavKind.Orbit, Phase: NavPhase.Orbiting } && o.Body == planet;
         if (run.Stage == HaulStage.Going && (st != 0 && c.MooredTo == st || circling))
         {
@@ -834,8 +836,8 @@ public sealed partial class Game
 
     private void HaulTrade(HaulRun run, Construct c, StationHaulerDef h, int def, StationMarket? m)
     {
-        if (m == null)
-            return;
+        if (m == null || StationMarkets.All[def].State is MarketState.Closing or MarketState.Closed)
+            return; // (a closed station trades with nobody: the hauler goes off its stopped route here)
         var name = StationMarkets.All[def].Name;
         var where = run.Stage == HaulStage.Orbiting ? $"{name} (on its circle: the station is in another world)" : name;
         var pw = Controllers.Powers[CrewPowers.Find(h.Power)];

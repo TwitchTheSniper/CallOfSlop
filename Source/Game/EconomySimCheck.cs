@@ -55,12 +55,21 @@ public static class EconomySimCheck
             if ((t + 1) % perHour != 0 && t + 1 != total)
                 continue;
             var hour = (t + 1) / (double)perHour;
+            if (all.Length != StationMarkets.All.Length)
+            {
+                // (stations made in play: GameStationLife.cs)
+                (all, var was) = (StationMarkets.All, low.Length);
+                Array.Resize(ref low, all.Length);
+                Array.Resize(ref high, all.Length);
+                for (var d = was; d < all.Length; d++)
+                    (low[d], high[d]) = (new int[all[d].Goods.Length + all[d].Parts.Length], new int[all[d].Goods.Length + all[d].Parts.Length]);
+            }
             sb.Append($"== hour {hour:0.0} ({wall.Elapsed.TotalMinutes:0.0} min wall; space day {g.EconomySimSpaceDays():0.0})\n");
             for (var d = 0; d < all.Length; d++)
             {
                 var m = g.EconomySimMarket(d);
-                sb.Append($"  {all[d].Name} ({all[d].Power}):");
-                for (var k = 0; k < all[d].Goods.Length && k < m.Length; k++)
+                sb.Append($"  {all[d].Name} ({all[d].Power}{(g.EconomySimLife(d) is { } life ? ", " + life : "")}):");
+                for (var k = 0; k < all[d].Goods.Length && k < m.Length && k < low[d].Length; k++)
                 {
                     var gd = all[d].Goods[k];
                     sb.Append($" {RecyclingTable.Current.NameOf(gd.Material)} {m[k]}");
@@ -117,6 +126,9 @@ public static class EconomySimCheck
 
 public sealed partial class Game
 {
+    /// <summary>The economy sim: station <paramref name="def"/>'s life line (building, for sale, closed, its ledger), or null.</summary>
+    internal string? EconomySimLife(int def) => StationLifeLine(def);
+
     /// <summary>The economy sim: station <paramref name="def"/>'s stock by line (the host's market).</summary>
     internal int[] EconomySimMarket(int def) => MarketOfDef(def).Stock;
 

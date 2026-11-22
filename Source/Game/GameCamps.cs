@@ -25,8 +25,8 @@ public sealed partial class Game
     private static bool HasStation(byte power)
     {
         foreach (var d in StationMarkets.All)
-            if (CrewPowers.Find(d.Power) == power)
-                return true;
+            if (StationLife.Trades(d) && CrewPowers.Find(d.Power) == power)
+                return true; // (one being built, closing or gone doesn't count: GameStationLife.cs)
         return false;
     }
 
@@ -92,7 +92,7 @@ public sealed partial class Game
             double short_ = 0, lines = 0;
             for (var d = 0; d < all.Length; d++)
             {
-                if (!all[d].Planet.Equals(planet, StringComparison.OrdinalIgnoreCase) || _marketByDef.Length <= d || _marketByDef[d] is not { } m)
+                if (!StationLife.Trades(all[d]) || !all[d].Planet.Equals(planet, StringComparison.OrdinalIgnoreCase) || _marketByDef.Length <= d || _marketByDef[d] is not { } m)
                     continue;
                 for (var k = 0; k < all[d].Goods.Length; k++)
                 {

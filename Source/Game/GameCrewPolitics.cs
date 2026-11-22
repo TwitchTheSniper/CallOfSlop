@@ -303,7 +303,7 @@ public sealed partial class Game : IContractHost
             var seen = 0;
             for (var d = 0; d < all.Length; d++)
             {
-                if (CrewPowers.Find(all[d].Power) != power || _marketByDef.Length <= d || _marketByDef[d] is not { Body: not 0 } m)
+                if (!StationLife.Trades(all[d]) || CrewPowers.Find(all[d].Power) != power || _marketByDef.Length <= d || _marketByDef[d] is not { Body: not 0 } m)
                     continue;
                 for (var k = 0; k < all[d].Goods.Length; k++)
                 {

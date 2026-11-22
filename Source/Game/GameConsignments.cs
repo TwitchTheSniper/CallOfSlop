@@ -50,7 +50,7 @@ public sealed partial class Game
         var all = StationMarkets.All;
         for (var d = 0; d < all.Length && _consigns.Count < MaxConsignments; d++)
         {
-            if (_marketByDef.Length <= d || _marketByDef[d] is not { } m)
+            if (_marketByDef.Length <= d || _marketByDef[d] is not { } m || !StationLife.Trades(all[d]))
                 continue;
             var owner = CrewPowers.Find(all[d].Power);
             if (owner == 0)
@@ -79,6 +79,8 @@ public sealed partial class Game
     {
         foreach (var h in StationMarkets.Haulers)
         {
+            if (h.Count <= 0)
+                continue; // (a route stopped brings nothing)
             if (h.To == to && (Array.IndexOf(h.Goods, mat) >= 0 || h.Needs && Sells(h.From, mat)))
                 return true;
             if (h.From == to && Array.IndexOf(h.Back, mat) >= 0)
@@ -142,7 +144,7 @@ public sealed partial class Game
         int best = -1, bestK = -1, bestDist = int.MaxValue;
         for (var d = 0; d < all.Length; d++)
         {
-            if (d == to || _routeDist[d] == int.MaxValue || _marketByDef.Length <= d || _marketByDef[d] is not { } m)
+            if (d == to || _routeDist[d] == int.MaxValue || _marketByDef.Length <= d || _marketByDef[d] is not { } m || !StationLife.Trades(all[d]))
                 continue;
             var seller = CrewPowers.Find(all[d].Power);
             if (seller == 0 || seller != owner && _rel.Get(owner, seller) < 0)
@@ -198,7 +200,7 @@ public sealed partial class Game
         var all = StationMarkets.All;
         var n = all.Length;
         if (_routeDist.Length < n)
-            (_routeDist, _routeVia) = (new int[n], new int[n]); // (once, the first time: the station list is fixed after load)
+            (_routeDist, _routeVia) = (new int[n], new int[n]); // (grown when stations are made in play: GameStationLife.cs)
         for (var i = 0; i < n; i++)
             (_routeDist[i], _routeVia[i]) = (int.MaxValue, -1);
         _routeDist[target] = 0;
