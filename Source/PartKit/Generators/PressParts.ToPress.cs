@@ -80,6 +80,14 @@ public sealed partial class PressParts
         ("plate", "canopystbd", "Leg Pod Canopy Stbd S", "pod canopy stbd", "plate 30x10x180 steel", null),
         ("beam", "podcarriage", "Leg Pod Carriage S", "leg pod carriage", "solid 10x10x55 steel", ["solid"]),
         ("housing", "podhousing", "Leg Pod Housing S", "leg pod housing", "hollow 50x70x225 steel", ["hollow"]),
+        // Ship works (the Zero Day works' yard station found no maker for them, 2026-11-22; Karl, 2026-11-16: no Assembler recipes, the new
+        // production system makes them): a drive's cylinder sections and the capacitor are pressed housings, a turret ring a big turntable.
+        // Each pattern presses its catalogue sizes only (PressPattern.PresetsOnly: a stretched copy would keep its like's thrust, charge or race).
+        ("housing", "drivecore", "Drive Core XS", "drive core", "hollow 85x80x110 steel", ["hollow"]),
+        ("housing", "fuelpump", "Fuel Pump M", "fuel pump", "hollow 220x190x100 steel", ["hollow"]),
+        ("housing", "exchanger", "Coolant Exchanger L", "coolant exchanger", "hollow 230x220x115 steel", ["hollow"]),
+        ("housing", "capacitor", "Capacitor Bank S", "capacitor bank", "solid 80x110x70 steel", ["solid"]),
+        ("actuator", "turretring", "Turret Ring S", "turret ring", "solid 100x100x95 steel", ["solid"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -223,6 +231,14 @@ public sealed partial class PressParts
         ("Leg Pod Housing M", "housing", "podhousing", "hollow 75x110x340 steel"),
         ("Leg Pod Housing L", "housing", "podhousing", "hollow 100x145x450 steel"),
         ("Leg Pod Housing XL", "housing", "podhousing", "hollow 125x180x565 steel"),
+        ("Drive Core S", "housing", "drivecore", "hollow 145x145x180 steel"),
+        ("Drive Core M", "housing", "drivecore", "hollow 195x200x260 steel"),
+        ("Drive Core L", "housing", "drivecore", "hollow 245x250x320 steel"),
+        ("Fuel Pump L", "housing", "fuelpump", "hollow 285x245x130 steel"),
+        ("Capacitor Bank M", "housing", "capacitor", "solid 140x170x110 steel"),
+        ("Capacitor Bank L", "housing", "capacitor", "solid 200x230x150 steel"),
+        ("Turret Ring M", "actuator", "turretring", "solid 160x160x140 steel"),
+        ("Turret Ring L", "actuator", "turretring", "solid 240x240x200 steel"),
     ];
 
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
