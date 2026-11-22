@@ -66,7 +66,7 @@ public static class ConstructLogisticsPlan
     public static void Asked(ConstructWorld world, Construct c, CraftNet net, int t, in CraftOrder o, int m, int ask)
     {
         var panel = o.What.Name != null && (HullLoft.IsFormedName(o.What.Name) || HullLoft.IsCutName(o.What.Name)); // (a cut part: a Laser Cutter's, its blank asked by chain)
-        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed && !panel)
+        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed && !o.What.IsMade && !panel)
             return;
         var kind = o.What.IsPressed ? o.Def : panel ? (ushort)(ConstructParts.Find(o.What.Name!)?.Id ?? 0) : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
         if (kind == 0 || kind == ConstructParts.None)
@@ -494,6 +494,8 @@ public static class ConstructLogisticsPlan
                 return pressed;
             if (HullLoft.IsFormedName(d.Name))
                 return ConstructPanelFormer.Order(d.Name, n); // (a Laser Cutter's blank: a Panel Former's order, laser cutter phase 4)
+            if (AssembledParts.Order(d.Name, n) is { } made)
+                return made; // (a rack or an ordnance design: an Assembler's, by its key)
         }
         return new WorkOrder { Part = kind, Count = n };
     }
