@@ -519,6 +519,7 @@ public sealed partial class Game
         {
             run.Stage = circling ? HaulStage.Orbiting : HaulStage.Moored;
             run.Since = ServerTick;
+            RouteArrived(run.Route); // (its supply line runs: GameSupplyLines.cs)
             HaulTrade(run, c, h, def, st != 0 && c.MooredTo == st ? StationMarketOf(Constructs.Get(st)!) : MarketOfDef(def));
             return;
         }

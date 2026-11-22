@@ -346,6 +346,7 @@ public sealed partial class Game
         public double[] Frac = []; // host: what its needs used or made short of a whole unit, by good
         public double[] Owed = []; // host: what its making is owed short of a whole unit, by line (not saved: under one unit a line)
         public bool[] Stalled = []; // host: a line it makes that last stopped for want of an input (its log line is said once)
+        public string[] Lines = []; // a client: its supply lines and consignments bound for it, as the host last told (StationLines)
 
         /// <summary>
         /// How a good's prices stand against its stock (Karl, 2026-11-20: needs in the world): 1 at the stock it wants, up to 1.6 as it runs
@@ -567,6 +568,7 @@ public sealed partial class Game
             _consigns.Clear(); // (a new game: GameConsignments.cs)
             CampsReset(); // (GameCamps.cs)
         }
+        Array.Clear(_routeHadHauler); // (a route's haulers are seen again in the new world: GameSupplyLines.cs)
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
         _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)
         _haulAdopt = true;
@@ -615,7 +617,7 @@ public sealed partial class Game
         }
     }
 
-    /// <summary><see cref="Msg.Stations"/>: u8 n, each (u16 body, u8 def, u8 goods, each i32 stock, u8 moored, each (u16 ship, u16 berth)).</summary>
+    /// <summary><see cref="Msg.Stations"/>: u8 n, each (u16 body, u8 def, u8 goods, each i32 stock, u8 moored, each (u16 ship, u16 berth), u8 lines, each str).</summary>
     private void WriteStations(PacketWriter w)
     {
         w.Begin(Msg.Stations).U8((byte)Math.Min(255, StationMarketsHere.Count));
@@ -630,6 +632,10 @@ public sealed partial class Game
             w.U8((byte)Math.Min(255, m.Moored.Count));
             for (var k = 0; k < m.Moored.Count && k < 255; k++)
                 w.U16(m.Moored[k].Ship).U16(m.Moored[k].Part);
+            StationLines(m.Def, _linesBuf); // (its supply lines and consignments: GameSupplyLines.cs)
+            w.U8((byte)_linesBuf.Count);
+            foreach (var l in _linesBuf)
+                w.Str(l);
         }
     }
 
@@ -667,6 +673,13 @@ public sealed partial class Game
                 m.Moored.Add((ship, part));
                 if (Constructs.Get(ship) is { } c)
                     (c.MooredTo, c.MoorPart) = (m.Body, part);
+            }
+            if (r.Has(1))
+            {
+                var lines = Math.Min((int)r.U8(), MaxSupplyLines);
+                m.Lines = new string[lines];
+                for (var k = 0; k < lines && r.Has(2); k++)
+                    m.Lines[k] = r.Str();
             }
             if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length + StationMarkets.All[m.Def].Parts.Length == m.Stock.Length)
             {
