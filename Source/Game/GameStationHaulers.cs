@@ -193,6 +193,7 @@ public sealed partial class Game
         c.HaulAtTo = atTo;
         var r = new HaulRun { Ship = c.Id, Route = ri, AtTo = atTo, RetryAt = ServerTick + 5 * World.TickRate };
         _hauls.Add(r);
+        RouteSeen(r.Route); // (its supply line runs: GameSupplyLines.cs)
         Log($"[haul] construct {c.Id}, a {h.Ship} crewed by {h.Power} ({(crew != null ? Crew.Alive(crew) : 0)} aboard), sets out from {StationName(st)} on the run between {StationMarkets.All[h.From].Name} and {StationMarkets.All[h.To].Name}");
         EscortsAdopt(r); // (a lost hauler's escorts first)
         for (var k = EscortsOf(r); k < h.Escorts; k++)
@@ -233,6 +234,7 @@ public sealed partial class Game
             if (known)
                 continue;
             _hauls.Add(new HaulRun { Ship = c.Id, Route = c.HaulRoute, AtTo = c.HaulAtTo, RetryAt = ServerTick + 5 * World.TickRate, EscortNext = ServerTick + 60 * World.TickRate });
+            RouteSeen(c.HaulRoute);
             Log($"[haul] construct {c.Id} goes on hauling (route {c.HaulRoute}, bound for {StationMarkets.All[c.HaulAtTo ? StationMarkets.Haulers[c.HaulRoute].To : StationMarkets.Haulers[c.HaulRoute].From].Name})");
         }
     }
@@ -277,6 +279,7 @@ public sealed partial class Game
                 Log($"[haul] construct {_hauls[i].Ship} is gone: another sets out in a minute");
                 _haulNext[_hauls[i].Route] = Math.Max(_haulNext[_hauls[i].Route], ServerTick + 60 * World.TickRate);
                 _hauls.RemoveAt(i);
+                StationsVersion++; // (a supply line may be cut: the cards hear it, GameSupplyLines.cs)
             }
         for (var ri = 0; ri < routes.Length; ri++)
         {

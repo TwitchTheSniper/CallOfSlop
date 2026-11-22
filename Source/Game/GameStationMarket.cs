@@ -492,6 +492,7 @@ public sealed partial class Game
             }
         }
         HardshipTick(); // (each planet's hardship and the raider bands it forms: GameCamps.cs)
+        StationsVersion++; // (once a minute the cards hear the supply lines again: a line goes late with no other change, GameSupplyLines.cs)
         ConsignTick(); // (shortages no route answers straight: consignments routed over the haulers, GameConsignments.cs)
 
         // (a line's stock moved by an amount, whole units into the stock and the rest kept, inside 0 and its most)
@@ -568,7 +569,8 @@ public sealed partial class Game
             _consigns.Clear(); // (a new game: GameConsignments.cs)
             CampsReset(); // (GameCamps.cs)
         }
-        Array.Clear(_routeHadHauler); // (a route's haulers are seen again in the new world: GameSupplyLines.cs)
+        Array.Clear(_routeHadHauler);
+        Array.Clear(_routeArrived); // (a route's haulers are seen again in the new world: GameSupplyLines.cs)
         _hauls.Clear(); // (the haulers here went with the world left behind; this world's saved ones are taken up again: HaulAdopt)
         _escorts.Clear(); // (and their escorts: an id kept from the old world would name another body here)
         _haulAdopt = true;
@@ -678,8 +680,8 @@ public sealed partial class Game
             {
                 var lines = Math.Min((int)r.U8(), MaxSupplyLines);
                 m.Lines = new string[lines];
-                for (var k = 0; k < lines && r.Has(2); k++)
-                    m.Lines[k] = r.Str();
+                for (var k = 0; k < lines; k++)
+                    m.Lines[k] = r.Has(2) ? r.Str() : ""; // (a short packet leaves no hole)
             }
             if (m.Def < StationMarkets.All.Length && StationMarkets.All[m.Def].Goods.Length + StationMarkets.All[m.Def].Parts.Length == m.Stock.Length)
             {

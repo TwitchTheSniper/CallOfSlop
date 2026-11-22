@@ -23,6 +23,18 @@ public sealed partial class Game
         _routeArrived[route] = ServerTick == 0 ? 1 : ServerTick;
     }
 
+    /// <summary>Host: a hauler of route <paramref name="route"/> is out in this world (set out or taken up again).</summary>
+    private void RouteSeen(int route)
+    {
+        RoutesSized();
+        if (route < 0 || route >= _routeHadHauler.Length)
+            return;
+        _routeHadHauler[route] = true;
+        if (_routeArrived[route] == 0)
+            _routeArrived[route] = Math.Max(1, ServerTick); // (just set out: running until it is late)
+        StationsVersion++;
+    }
+
     private void RoutesSized()
     {
         var n = StationMarkets.Haulers.Length;
@@ -48,9 +60,6 @@ public sealed partial class Game
             var running = false;
             foreach (var run in _hauls)
                 running |= run.Route == r;
-            _routeHadHauler[r] |= running;
-            if (running && _routeArrived[r] == 0)
-                _routeArrived[r] = Math.Max(1, ServerTick); // (a hauler just set out: running until it is late)
             var state = !running ? _routeHadHauler[r] ? "CUT" : "NOT SEEN HERE"
                 : _routeArrived[r] != 0 && ServerTick - _routeArrived[r] < LateAfter ? "RUNNING" : "LATE";
             into.Add($"{h.Power.ToUpperInvariant()} TO {other.ToUpperInvariant()}: {state}");
