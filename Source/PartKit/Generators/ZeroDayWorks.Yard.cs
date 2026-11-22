@@ -18,7 +18,7 @@ public sealed partial class ZeroDayWorks
         // station's Core; Plasma Loader Arms along the bay's south side between the columns.
         public const float YardRailNorth = -199f, YardRailSouth = -231f; // the two runs' lines (z): a 32 m span
         public const float YardRailWest = 3f, YardRailEast = 93f; // the runs' first and last block centres (x)
-        public const int YardMasts = 11; // 22 m: the bay's 16 m corner masts stand under the hook
+        public const int YardMasts = 10; // 20 m: the bay's 16 m corner masts stand under the hook, and the Core clears the shed's last truss (22.8 m)
         public static float YardRailFoot => FloorY + 2 * YardMasts;
 
         private VPart? _yardStation, _yardCrane;
