@@ -77,7 +77,7 @@ public sealed partial class ZeroDayWorks
                 {
                     var masts = _columns[(run, k)];
                     for (var m = 0; m < masts.Count; m += 2)
-                        if (run != 0 || m + 2 < masts.Count) // (the west wall stops at 16.3 m: bay 1's Crane Core runs outside its rail there, 17.3 to 19.3 m)
+                        if (run != 0 || b > 0 || m + 2 < masts.Count) // (the west wall's first bay stops at 16.3 m: bay 1's Crane Core stands outside its rail there, 17.3 to 19.3 m)
                             Paint(Stand($"Wall Sheet {wide}x4 m", SocketAt(masts[m], face), o, masts[m], "back"), Cladding);
                     Paint(Stand($"Wall Sheet {wide}x3 m Eaves", SocketAt(posts[k], "wall"), o, posts[k], "back"), Cladding);
                 }
@@ -99,7 +99,9 @@ public sealed partial class ZeroDayWorks
                     var d = Def(gable);
                     var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
                     var face = SocketAt(h, "-x");
-                    var thick = d.BoundsMax.X + 0.006f;
+                    // Turned about, its own +x points at the truss: its origin goes out as far as puts the slab (own x 0.58 to 0.64) where a
+                    // stood sheet's is, 0.58 to 0.64 m outside the face (the hidden cleat then outside it, the ribs inside).
+                    var thick = 1.22f;
                     var origin = face + new Vector3(0, 0, north ? thick : -thick);
                     var centre = west ? origin + new Vector3(mid.Z, mid.Y, -mid.X) : origin + new Vector3(-mid.Z, mid.Y, mid.X);
                     Paint(Weld(gable, h, centre, west ? East : West, 0, 0, 0), Cladding);
