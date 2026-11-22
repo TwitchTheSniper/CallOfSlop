@@ -259,6 +259,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--stress-check", StringComparison.OrdinalIgnoreCase)))
+            return StressCheck.Cli(args); // hundreds of wrecks and haulers in orbit, headless: what an idle, busy world costs (Source/DevTools/StressCheck.cs)
         if (args.Any(a => a.Equals("--battle-check", StringComparison.OrdinalIgnoreCase)))
         {
             if (args.Any(a => a.Equals("--old-pierce", StringComparison.OrdinalIgnoreCase)))
