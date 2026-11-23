@@ -1225,10 +1225,15 @@ public static partial class ConstructRender
         var same = ok && boxes.Length > 0 && cap != null && set.ExtraCapN[k] == boxes.Length;
         for (var b = 0; same && b < boxes.Length; b++)
             same = Same(in cap![b], in boxes[b]);
-        if (cap == null || cap.Length < boxes.Length)
-            set.ExtraCap[k] = cap = new Renderer.Captured[Math.Max(boxes.Length, 4)]; // (once a block, grown to its most boxes)
-        boxes.CopyTo(cap);
-        set.ExtraCapN[k] = ok ? boxes.Length : 0;
+        if (!same)
+        {
+            // (kept only when it changed: a slow crane creeping under a millimetre a frame is compared with where its run of
+            // like frames began, so it stays awake rather than sleeping and jumping)
+            if (cap == null || cap.Length < boxes.Length)
+                set.ExtraCap[k] = cap = new Renderer.Captured[Math.Max(boxes.Length, 4)]; // (once a block, grown to its most boxes)
+            boxes.CopyTo(cap);
+            set.ExtraCapN[k] = ok ? boxes.Length : 0;
+        }
         var ch = set.Chunks[q];
         if (set.ExtraState[k] != 0)
         {
