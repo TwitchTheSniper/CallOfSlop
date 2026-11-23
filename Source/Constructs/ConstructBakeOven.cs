@@ -59,7 +59,7 @@ public sealed partial class ConstructWorld
 /// What can't be baked or un-baked is refused before the hood drops (<see cref="OvenStall.CantBake"/>, <see cref="OvenStall.NotBaked"/>).
 /// </para>
 /// </summary>
-public static class ConstructBakeOven
+public static partial class ConstructBakeOven
 {
     private const int Every = World.TickRate / 10; // a step is 0.1 s
     public const float HoodThick = 0.5f; // m: the hood's own height, taken off the masts' (drawing 19)
@@ -164,6 +164,7 @@ public static class ConstructBakeOven
         if (++world.OvenTicks < Every)
             return;
         world.OvenTicks = 0;
+        world.OvenLooks++;
         world.Hazards.Clear();
         var bodies = world.Bodies;
         for (var ci = 0; ci < bodies.Count; ci++)
@@ -199,6 +200,8 @@ public static class ConstructBakeOven
                 why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it waits to be lifted off, or the mode turned)
             else if (why == OvenStall.None && !powered)
                 why = OvenStall.NoPower;
+            if (powered && !held && !p.Broken && p.Orders is { Count: > 0 })
+                Kits(world, c, part, asm, bed, why, group); // (its orders: a kit built at a station and set on the bed, ConstructBakeOvenOrders.cs)
             if (why != OvenStall.None || held || p.Broken)
             {
                 SetStall(world, st, why);
@@ -282,6 +285,9 @@ public static class ConstructBakeOven
             return;
         }
         st.JobAmount = made.Id; // (the new body is the one that waits to be lifted off)
+        if (!unbake && made.PartCount > 0 && WorkOrders.HeadOf(c.Parts[part], out var head) && !head.IsPiece && head.Name == null
+            && Array.FindIndex(made.Parts, 0, made.PartCount, q => q.Def == head.Part) >= 0)
+            WorkOrders.Made(world, c, c.Parts[part].Orders); // (a kit of its head order baked into the part: one made, ConstructBakeOvenOrders.cs)
         Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-baked" : "baked")} construct {group.Id} into construct {made.Id} ({made.PartCount} parts)");
     }
 

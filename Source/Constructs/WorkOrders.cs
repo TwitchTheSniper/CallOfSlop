@@ -90,7 +90,7 @@ public static class WorkOrders
     // ---- Accepting --------------------------------------------------------------------------------------------------------
 
     /// <summary>A machine that can take orders: an Extruder, a Wheel, Fan, Airframe or Panel Former, an Assembler of any family, or a Press (not a Die Lathe).</summary>
-    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder || d.IsAssembler || d.IsPress && !d.IsLathe;
+    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder || d.IsAssembler || d.IsPress && !d.IsLathe || d.IsBakeOven; // (an oven: parts made from kits, ConstructBakeOvenOrders.cs)
 
     /// <summary>A Fan or an Airframe Former: its piece is made whole to its order's size (ConstructExtruder.GrowWhole).</summary>
     public static bool IsWholeFormer(ConstructPartDef d) => d.IsFanFormer || d.IsAirframeFormer;
@@ -106,6 +106,8 @@ public static class WorkOrders
             return $"the {d.Name} takes no orders";
         if (d.IsLaserCutter)
             return ConstructLaserCutter.Refusal(world, c, part, d, o);
+        if (d.IsBakeOven)
+            return ConstructBakeOven.OrderRefusal(c, part, d, o);
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (o.IsMade && !d.IsAssembler)
@@ -179,6 +181,8 @@ public static class WorkOrders
         var made = ConstructParts.Def(o.Part);
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
+        if (BakeKits.Has(made))
+            return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23)";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
             return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
         if (r.Machine != d.AsmMachine)

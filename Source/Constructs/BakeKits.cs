@@ -133,6 +133,22 @@ public static class BakeKits
             var paint = ConstructPaint.FromVector(b.Color);
             pieces.Add(new Piece(key, pos, rot, paint, ConstructFinish.Offered(b.Surface) ? ConstructFinish.Name(b.Surface) : ""));
         }
+        // The sections cored to weigh about what the part does (a solid kit of a 25 cm deck is three times its mass, past a hall crane's
+        // 20 t): one profile for every piece thick enough, the one whose fill is nearest the part's mass over the solid kit's.
+        float solid = 0;
+        foreach (var p in pieces)
+            solid += Extrusion.Def(p.Key)?.Mass ?? 0;
+        if (solid > d.Mass * 1.25f)
+        {
+            var want = d.Mass / solid;
+            var mask = ulong.MaxValue;
+            foreach (var pr in Extrusion.Presets)
+                if (pr.Id is "solid" or "wall" or "hollow" && MathF.Abs(Extrusion.Fill(pr.Mask) - want) < MathF.Abs(Extrusion.Fill(mask) - want))
+                    mask = pr.Mask;
+            for (var i = 0; i < pieces.Count; i++)
+                if (!Extrusion.IsSheet(pieces[i].Key) && pieces[i].Key with { Mask = mask } is var cored && Extrusion.KeyRefusal(cored) == null && Extrusion.Def(cored) != null)
+                    pieces[i] = pieces[i] with { Key = cored };
+        }
         if (pieces.Count < 2 || pieces.Count > BakedParts.MaxSubparts)
         {
             Console.WriteLine($"[bake kits] REFUSED {d.Name}: {pieces.Count} pieces (2 to {BakedParts.MaxSubparts})");
@@ -214,6 +230,10 @@ public static class BakeKits
             return bp;
         }
     }
+
+    /// <summary>A kit's blueprint by its name, <c>{part} kit</c> (null: not a kit's name).</summary>
+    public static ConstructBuild.Blueprint? FindPrint(string name) =>
+        name.EndsWith(KitSuffix, StringComparison.OrdinalIgnoreCase) && Names.Length > 0 && ConstructParts.Find(name[..^KitSuffix.Length]) is { } d ? BlueprintOf(d) : null;
 
     /// <summary>The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once.</summary>
     public static Hit? Target(string hash)

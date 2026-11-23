@@ -1911,7 +1911,40 @@ column on each corner of the bed. A welded group set on the bed bakes into one p
   where its subpart drew it, the design through the wire and a save, un-baking back to the same parts and a second bake to the same hash.
   In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
   `oven mode bake|unbake` turns the setting.
-- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md), a Piece out conveyor, and baking by order from a line.
+- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md) and a Piece out conveyor. Baking by order: [Bake kits](#bake-kits).
+
+### Bake kits (2026-11-23)
+
+Sean: "Large deck parts should be made through the extrusion chain in the factory, put together, and then baked in the oven, not made
+in an assembler." The parts listed in `Constructs/BakeKits.json` (the four Zero Day decks; other hull pieces wait on Sean) are made that
+way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOvenOrders.cs` (the oven's orders).
+
+- **The kit.** One extrusion for each solid, drawn box of the part (detail boxes, seams and markings, come with the bake): its longest
+  side the length (5 cm steps), the thinner of the others the height (a Sheet under 10 cm), painted and finished as the box, at the box's
+  place and grid turn. The sections are cored (hollow box or wall profile) to weigh about what the part does, so a hall crane's 20 t takes
+  a kit (a solid 25 cm deck is three times the part's mass); the baked part has the catalogue part's mass. The kit's blueprint,
+  `{part} kit`, is made at run time (the first piece the root, the rest welded freeform at their places), found by name as a shipped
+  one is (`ConstructStation.Find`, `Start`).
+- **The match.** `BakedParts.Bake` asks `BakeKits.Target` for the group's design hash first: every kit's design at each of the 24 turns
+  is worked out once. A kit comes out as the part itself, its own name, sockets, mass and look, turned as the kit lay and where it lay,
+  so a ship's blueprint, saves and fittings know it as before; anything else bakes to `Baked (#hash)` as ever. The design's origin is
+  now the group's solid middle taken from its bounds to the half centimetre (whole numbers), so a kit welded freeform a hair off its grid
+  hashes the same as the one worked out.
+- **Orders.** A Bake Oven takes orders (`WorkOrders.TakesOrders`) for kit parts only, in Bake mode; an Assembler refuses them ("a Bake
+  Oven's order"). For its head order, with its bed empty and no kit of it on the way, the oven starts the kit's blueprint at the idle,
+  powered Building Station on its own construct whose bay is nearest its bed and big enough; the station orders the kit's extrusions as
+  for any build. When the kit is done, a Loader Arm or crane reaching both the bay and the bed carries it onto the bed's middle (turned a
+  quarter if that is what lies on the clear cells) and lets it go; the oven bakes it, its order counts one, and a lifter takes the part
+  off the bed (the bed is the oven's Out point, as a block Assembler's is) to whoever wants it, or to storage. Once a second an oven, at
+  its 10 Hz step; the kit on the hook is the world's (`OvenKits`), not saved (a load mid-carry leaves the kit in the bay, carried again).
+  The oven's queue note says what it waits for (no free station, no lifter reaches both, the kit doesn't fit the bed).
+- **Trying it.** `--bake-kit [NAME;NAME...|all]` builds each kit from its blueprint and bakes it, then lays it at five other turns: it
+  must come out as the part, at the turn, where the kit lay. `--station-check "Zero Day Works" --oven-order PART [--oven-at X,Z]
+  [--kit-loose] [--kit-carry]` queues an order on a site's oven and runs it: `--kit-loose` sets the kit's pieces down in the station's
+  bay one by one (as a player drops them) instead of ordering them, `--kit-carry` sets the done kit on the bed (for a site whose cranes
+  don't reach both). On the works (2026-11-23) line C's oven took the order, its station built the Upper Deck Aft kit and the kit baked
+  into the deck in 11 s with both; without `--kit-carry` it waits: no crane reaches line C's station and oven both (the bay 2 crane's
+  rails end at z -137), and the yard's station doesn't reach the oven by its network. Those are the works layout's to give.
 
 ## Production Showcase
 

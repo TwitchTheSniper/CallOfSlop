@@ -714,6 +714,14 @@ public static class ConstructCrafting
 
     private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
+        if (ConstructParts.Get(part) is { } kd && BakeKits.Has(kd))
+        {
+            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs)
+            for (var i = 0; i < net.MachineN; i++)
+                if (c.DefOf(net.Machines[i]) is { IsBakeOven: true } od)
+                    return od.Name;
+            return null;
+        }
         if (AssemblingTable.Current.Of(part) is not { } r)
         {
             // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it)
