@@ -8,7 +8,7 @@ public sealed partial class ZeroDayWorks
     private sealed partial class Script
     {
         // The armour lines (doc "Armour-forming lines"), each north to south: its own Sheet Extruder at the head (the inline extruder strip),
-        // a roller run into its Panel Former's Piece in, the former's bed and Out Tables, a run onto a skin pad. Lines A to C then hand the skin
+        // a roller run onto its Panel Former's bed (the former's Core beside the bed's head), the bed and Out Tables, a run onto a skin pad. Lines A to C then hand the skin
         // east into a Laser Cutter (a cutter takes its blank by conveyor only, and its bed lies on its Core's +x side, so the pad is turned to
         // send east); the cut piece waits at a short run's end, where the bay's Hall Crane picks it. From there the crane carries each piece to
         // the dress station's bay, the dressed group to the Bake Oven's bed and the baked part to the line's stores. Line D has no cutter: its
@@ -18,7 +18,7 @@ public sealed partial class ZeroDayWorks
         private readonly List<VPart> _ovens = new(), _ovenMasts = new(); // (each oven's Core; the foot Mast Block on each bed corner)
 
         public const float ExtruderCoreZ = -43f; // an Extruder Core's centre: its die's foot (outBed, 0.75 m south) at z -44, so 16 m of Run-out Tables end at -60
-        public const float FormerZ = -69f; // the Panel Former Cores: their Piece in (-z, 1 m north) on the last row of the feed run
+        public const float FormerZ = -69f; // the row north of the Panel Formers' beds (their head row at z -71, their Cores beside it): the feed run's last row
 
         private readonly List<(string Line, VPart Store)> _stores = new();
 
@@ -147,24 +147,22 @@ public sealed partial class ZeroDayWorks
         /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
         private VPart[,] FormerStage(VPart[] tableEnds, int dieCells, int bedAcross, int bedAlong, int tables, string paint)
         {
-            // The feed run from the tables to the former: as wide as the die, rows down to the former's Piece in (its tiles butted on the tables).
-            var feedRows = (int)MathF.Round((ExtruderCoreZ - 0.75f - 8 * tables - (FormerZ + 1)) / 2);
+            // The feed run from the tables to the former's bed: as wide as the die, rows down to the bed's head (its tiles butted on the
+            // tables), so each blank rides off the run straight onto the bed (RollerRuns.Butted: the Core's Bed in), never through the Core.
+            var feedRows = (int)MathF.Round((ExtruderCoreZ - 0.75f - 8 * tables - (FormerZ - 1)) / 2);
             var feed = new VPart[dieCells, feedRows];
             for (var i = 0; i < dieCells; i++)
                 feed[i, 0] = Paint(Onto(tableEnds[dieCells - 1 - i], "roller", "Roller Tile", "-z table"), paint); // (west to east)
             Chain(feed, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
 
-            // ---- The Panel Former: Core, bed, a Mast Block on each bed corner (2 m more pin travel a level), Out Tables across the last row. --
-            var mid = (bedAcross - 1) / 2; // (the Core over the middle column, the west one of two middles)
-            var former = Paint(Onto(feed[Math.Min(mid, dieCells - 1), feedRows - 1], "+z", "Panel Former", "-z"), paint);
-            OrdersOnly(former);
+            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east, a Mast Block on each bed
+            // corner (2 m more pin travel a level), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ---------------
             var bed = new VPart[bedAcross, bedAlong];
-            bed[mid, 0] = Paint(Onto(former, "+z", "Bed Block", "-z"), paint);
-            for (var i = mid - 1; i >= 0; i--)
-                bed[i, 0] = Paint(Onto(bed[i + 1, 0], "+x", "Bed Block", "-x"), paint); // (South: own +x is west)
-            for (var i = mid + 1; i < bedAcross; i++)
-                bed[i, 0] = Paint(Onto(bed[i - 1, 0], "-x", "Bed Block", "+x"), paint);
+            for (var i = 0; i < bedAcross; i++)
+                bed[i, 0] = Paint(Onto(feed[i, feedRows - 1], "+z", "Bed Block", "-z"), paint);
             Chain(bed, "Bed Block", "+z", "-z", "-x", "+x", paint, rowZero: false);
+            var former = Paint(Onto(bed[bedAcross - 1, 0], "-x", "Panel Former", "+z"), paint); // (South: a block's own -x is east)
+            OrdersOnly(former);
             foreach (var c in Corners(bed))
                 Stack(c, "top", 1);
             var outs = new VPart[bedAcross, 1];

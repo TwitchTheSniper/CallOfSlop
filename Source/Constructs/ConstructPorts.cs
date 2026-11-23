@@ -23,10 +23,13 @@ public sealed class NamedPort
     public byte Byte = 255; // the port byte in a link
     public bool Implicit; // made by the loader, not listed in the part file
     public Vector2 Opening; // conveyor ports: the clear opening a piece passes (metres across, up): a conveyor is set within both ends' (ConstructConveyor.cs)
+    public bool OnBed; // a bed Core's "Bed in": its point is the middle of the machine's bed as built, not At (ConstructRoutes.PortPoint, MachineBlocks.BedMiddle)
 }
 
 public static partial class ConstructParts
 {
+    public const string BedInPort = "Bed in"; // a bed Core's port on its bed's middle (NamedPort.OnBed)
+
     private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute", "feed", "conveyor"];
 
     private static Vector2 Vec2(JsonElement e, string file, string what)
@@ -177,6 +180,11 @@ public static partial class ConstructParts
         if (d.IsPieceRack && !d.IsCraftTerminal && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMin.Y + 0.05f, d.BoundsMax.Z), Face = 4, Opening = d.RackSection, Implicit = true });
         // A part with conveyor ports both ways passes pieces on: a splitter or a join (ConstructConveyor.cs, "Junctions").
+        // A Panel Former's or a Laser Cutter's Core takes its blank onto its bed too: a Roller Tile run butted on the bed's side ends here
+        // (RollerRuns.Butted), so the piece rides off the run onto the bed, to its middle, never through the Core. Last, so every other
+        // port's byte stays as it was; it opens as the Core's Piece in does.
+        if (d.IsPanelFormer && d.BlockRole == BlockRole.Core && list.Find(x => x.Type == RouteType.Conveyor && x.In && x.Name == "Piece in") is { } pin)
+            list.Add(new NamedPort { Name = BedInPort, Type = RouteType.Conveyor, In = true, At = new Vector3(0, pin.At.Y, d.BoundsMax.Z), Face = 4, Opening = pin.Opening, Implicit = true, OnBed = true });
         d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && !d.IsPieceRack && !d.IsAssembler && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];

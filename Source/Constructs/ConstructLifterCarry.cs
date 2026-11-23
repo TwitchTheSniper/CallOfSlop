@@ -202,7 +202,7 @@ public static partial class ConstructLifters
             if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
                 && (InReach(ld, shoulder, lr, o, SafeLift, out _) || bed && BedSpot(b, i, ld, shoulder, lr)))
                 pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out };
-            if (d.IsAssembler || d.IsPanelFormer)
+            if (d.IsAssembler || d.IsPanelFormer && !(d.BlockRole == BlockRole.Core && RollerRuns.PortByte(d, ConstructParts.BedInPort) is var bi and >= 0 && ConveyorInto(b, i, (byte)bi))) // (a bed a run feeds isn't a crane's too)
                 TryIn(pts, ref n, b, i, d, d.IsAssembler ? LiftPointKind.Assembler : LiftPointKind.Former, 0, "Piece in", ld, shoulder, lr);
             else if (d.IsPress)
                 for (var bay = 0; bay < d.PressBays.Length && bay < 8; bay++)
