@@ -50,10 +50,31 @@ public sealed unsafe partial class FoliageRenderer
     private const int MaxBuilding = 2, UploadsPerFrame = 3, KeepFrames = 30;
 
     /// <summary>How far trees and big rocks are drawn, per quality (Low, Medium, High).</summary>
-    private static readonly float[] TreeReach = [300f, 450f, 700f];
+    private static readonly float[] TreeReach = [280f, 400f, 600f]; // (beyond: the far trees)
 
     /// <summary>How far monoliths are drawn, per quality (Low, Medium, High; Off draws them as Low: they are solid).</summary>
     private static readonly float[] RockReach = [1500f, 2200f, 3000f];
+
+    /// <summary>
+    /// Far trees (Sean, 2026-11-23: "improve far-off tree rendering ... so they don't pop in"): a cell kind of its own, four
+    /// times a tree cell across, holding one tree-layer point in <see cref="FarStride"/> squared as a wide cheap lump
+    /// (<see cref="FoliageType.FarBroadleaf"/>, <see cref="FoliageType.FarConifer"/>), drawn from where the near trees thin
+    /// out to <see cref="FarReach"/>. They are the same trees the near cells grow at those points.
+    /// </summary>
+    private const int FarLayer = PlanetFlora.Layers, FarStride = 3, FarCellTimes = 4;
+
+    /// <summary>How far the far trees are drawn, per quality (Low, Medium, High).</summary>
+    private static readonly float[] FarReach = [1200f, 1800f, 2500f];
+
+    /// <summary>Where the near trees start to thin out, as a share of their reach (the far trees come in over the same band).</summary>
+    private const float TreeFadeStart = 0.78f;
+
+    /// <summary>A layer's drawing cell in grid cells (the far trees' is four tree cells).</summary>
+    private static int GridOf(Planetoid pl, PlanetFlora flora, int layer) =>
+        layer == FarLayer ? Math.Min(flora.CellGrid[2] * FarCellTimes, pl.N) : flora.CellGrid[layer];
+
+    private static FoliageType FarOf(FoliageType t) =>
+        t is FoliageType.Pine or FoliageType.Spruce or FoliageType.ScotsPine ? FoliageType.FarConifer : FoliageType.FarBroadleaf;
 
     private readonly Dictionary<long, FloraCell> _cells = new();
     private readonly List<FloraCell> _cellList = new();
@@ -87,6 +108,8 @@ public sealed unsafe partial class FoliageRenderer
         var i = Math.Clamp((int)q - 1, 0, 2);
         if (Foliage.IsMonolith(t))
             return RockReach[i];
+        if (t is FoliageType.FarBroadleaf or FoliageType.FarConifer)
+            return FarReach[i];
         if (Foliage.IsTree(t) || t == FoliageType.Stem)
             return TreeReach[i];
         if (t == FoliageType.Boulder)
@@ -96,6 +119,8 @@ public sealed unsafe partial class FoliageRenderer
 
     private static float LayerReach(int layer, FoliageQuality q)
     {
+        if (layer == FarLayer)
+            return FarReach[Math.Clamp((int)q - 1, 0, 2)];
         var r = 0f;
         for (var t = 0; t < FoliageMeshes.TypeCount; t++)
             if (PlanetFlora.LayerOf((FoliageType)t) == layer)
@@ -165,6 +190,8 @@ public sealed unsafe partial class FoliageRenderer
         for (var layer = rocksOnly ? PlanetFlora.MonolithLayer : 0; layer < PlanetFlora.Layers; layer++)
             if (flora.Grows(layer))
                 WantCells(pl, flora, layer, LayerReach(layer, quality), up, cam, alt);
+        if (!rocksOnly && flora.Grows(2))
+            WantCells(pl, flora, FarLayer, LayerReach(FarLayer, quality), up, cam, alt);
 
         // Drop what isn't wanted; queue what is and needs making. (The workers' ends set Building and Ready under the lock.)
         Monitor.Enter(_cells);
@@ -220,15 +247,24 @@ public sealed unsafe partial class FoliageRenderer
             if (PlanetFlora.LayerOf(type) < 0 && type != FoliageType.Stem || rocksOnly && !Foliage.IsMonolith(type))
                 continue;
             var fadeEnd = PlanetReach(type, quality);
-            var fadeStart = fadeEnd * Foliage.FadeStartFraction;
+            var fadeStart = fadeEnd * (Foliage.IsTree(type) || type == FoliageType.Stem ? TreeFadeStart : Foliage.FadeStartFraction);
             var lodStart = Foliage.LodDistance(type, quality);
             var lodEnd = lodStart * 1.3f;
+            if (type is FoliageType.FarBroadleaf or FoliageType.FarConifer)
+            {
+                // (no near mesh: they come in, dithered, over the band where the near trees thin out)
+                var trees = TreeReach[Math.Clamp((int)quality - 1, 0, 2)];
+                lodStart = trees * TreeFadeStart;
+                lodEnd = trees * 0.97f;
+            }
             Native.glUniform4f(_locFade, fadeStart, fadeEnd, lodStart, lodEnd);
             var (sway, wrap) = Material(type);
             for (var lod = 0; lod < 2; lod++)
             {
                 Native.glUniform4f(_locMat, lod, sway, wrap, 0f);
                 var mesh = FoliageMeshes.Mesh(type, lod);
+                if (mesh.IndexCount == 0)
+                    continue;
                 foreach (var c in _cellList)
                 {
                     if (!c.HasVbo || c.Count[t] == 0)
@@ -263,7 +299,7 @@ public sealed unsafe partial class FoliageRenderer
     {
         if (alt > reach)
             return;
-        var g = flora.CellGrid[layer];
+        var g = GridOf(pl, flora, layer);
         var across = pl.N / g;
         var cellM = (float)(g * pl.Cell);
         var k = (int)MathF.Ceiling(reach / cellM) + 1;
@@ -333,9 +369,27 @@ public sealed unsafe partial class FoliageRenderer
     private static Built BuildCell(PlanetFlora flora, FoliageQuality quality, int layer, int face, int ci, int cj)
     {
         var lists = new List<PlanetFlora.Plant>[FoliageMeshes.TypeCount];
+        var total = 0;
+        if (layer == FarLayer)
+        {
+            // One tree-layer point in FarStride squared, as a far lump (the same tree its near cell grows there).
+            var g = Math.Min(flora.CellGrid[2] * FarCellTimes, flora.Planet.N);
+            var (fa0, fa1) = flora.PointsInCell(2, ci, g);
+            var (fb0, fb1) = flora.PointsInCell(2, cj, g);
+            for (var b = (fb0 + FarStride - 1) / FarStride * FarStride; b < fb1; b += FarStride)
+            for (var a = (fa0 + FarStride - 1) / FarStride * FarStride; a < fa1; a += FarStride)
+            {
+                if (!flora.At(2, face, a, b, out var p) || !Foliage.IsTree(p.Type))
+                    continue;
+                p.Type = FarOf(p.Type);
+                p.Color *= 0.92f; // (a mass of canopies is a little darker than one lit tree)
+                (lists[(int)p.Type] ??= new()).Add(p);
+                total++;
+            }
+            return Pack(lists, total);
+        }
         var (a0, a1) = flora.PointsInCell(layer, ci);
         var (b0, b1) = flora.PointsInCell(layer, cj);
-        var total = 0;
         for (var b = b0; b < b1; b++)
         for (var a = a0; a < a1; a++)
         {
@@ -354,6 +408,12 @@ public sealed unsafe partial class FoliageRenderer
                 total++;
             }
         }
+        return Pack(lists, total);
+    }
+
+    /// <summary>A cell's plants, by type, as instance data and bounds.</summary>
+    private static Built Pack(List<PlanetFlora.Plant>?[] lists, int total)
+    {
         var r = new Built { Data = new float[total * FoliageBatches.FloatsPerInstance], Total = total };
         var min = new Vector3(float.MaxValue);
         var max = new Vector3(float.MinValue);

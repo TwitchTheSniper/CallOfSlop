@@ -884,9 +884,9 @@
         "type": "flatten",
         "lat": 90,
         "lon": 0,
-        "radius": 70,
+        "radius": 175,
         "height": 60,
-        "edge": 150
+        "edge": 220
       }
     ]
   },
