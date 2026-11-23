@@ -46,7 +46,7 @@ public sealed partial class Game
             return;
         }
         wait = (byte)(World.TickRate - 1);
-        var g = ShipGravity.FeltG(p.Sim, Constructs, h.SeatBody, out var limit, (p.Eva & Eva.Suit) != 0);
+        var g = ShipGravity.FeltG(p.Sim, Constructs, h.SeatBody, h.SeatPart, out var limit, (p.Eva & Eva.Suit) != 0);
         if (g <= limit)
             return;
         var hurt = (int)MathF.Ceiling((g - limit) * ShipGravity.HarmPerG);

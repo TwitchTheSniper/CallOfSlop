@@ -23,7 +23,8 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   Under `FloatG` (0.15 g) a rider in the air drifts: the move keys, Jump up and Crouch down, at 2 m/s. On a floor they still
   walk (no gravity pulls them off it); a jump pushes off.
 - **Harm.** Once a second, a person past `HarmG` (6 g) takes `HarmPerG` (6) health for each g past it. A seat takes 2.5 times
-  as much (15 g), a space suit 1.3 times (both: 19.5 g). Death says "crushed by N g". Robot shells and bots are not hurt.
+  as much (15 g), a space suit 1.3 times (both: 19.5 g). A seat with its own rating (`"seat": {"g": N}`, `ConstructPartDef.SeatG`)
+  holds N g: the Crash Couch holds 40 (Sean, 2026-11-23). Death says "crushed by N g". Robot shells and bots are not hurt.
 - **Artificial gravity.** Inside a Gravity Generator's box the generator's down holds as before, under every rule.
 - **Loose bodies aboard** take the same rule: no deck pull (`ConstructFrames.Pull`); in space the flight's drive and hits reach
   them as before (`FreeFall`), in the bubble the world's pull and the hull's contacts give true physics.

@@ -140,16 +140,17 @@ public static class ShipGravity
     }
 
     /// <summary>How much a person feels now (g), and the limit before it hurts them: riding, seated, or neither (0).</summary>
-    public static float FeltG(in MoveState s, ConstructWorld w, ushort seatBody, out float limit, bool suit)
+    public static float FeltG(in MoveState s, ConstructWorld w, ushort seatBody, ushort seatPart, out float limit, bool suit)
     {
         limit = HarmG * (suit ? SuitFactor : 1f);
         if (Mode == ShipGravityMode.Deck)
             return 0;
         if (seatBody != 0)
         {
-            limit *= SeatFactor;
             if (w.Get(seatBody) is not { } seat)
                 return 0;
+            var rated = seatPart < seat.PartCount ? seat.DefOf(seatPart).SeatG : 0; // (a crash couch's own rating: "seat"."g")
+            limit = rated > 0 ? MathF.Max(rated, limit) : limit * SeatFactor;
             var body = seat.CarriedBy != 0 && w.Get(seat.CarriedBy) is { } carrier ? carrier : seat;
             return Active(body) ? body.Felt.Length() / G : 0;
         }
