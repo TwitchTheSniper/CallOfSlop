@@ -637,6 +637,8 @@ public static partial class ConstructRoutes
         }
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
             return np.OnBed && MachineBlocks.BedMiddle(c, part, out var bed) ? bed : // (a bed Core's Bed in: the bed's middle at a run's line)
+                t == RouteType.Conveyor && np.Out && np.Implicit && d.IsExtruder && ConstructExtruder.BlockDieOut(c, part, out var die)
+                    ? c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, die) : // (an Extruder Core's Piece out on a block die: under the die's middle, where its piece lies)
                 c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         if (t == RouteType.Data && DataSeat(d) is { } seat)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, seat * c.ScaleOf(part)); // (its middle is in the air: the link ends on the body)
