@@ -38,18 +38,22 @@ public static class StationRender
                 if (Vector3.DistanceSquared(eye, floor) > DrawNear * DrawNear)
                     continue;
                 DrawStation(gfx, c, t, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(floor), size, now,
-                    UnderRealCrane(c, floor + Vector3.Transform(Vector3.UnitY, rot)));
+                    UnderRealCrane(c, t));
             }
         }
     }
 
     /// <summary>
-    /// Does a real Bridge or Hall Crane on the station's body reach over this point (a metre over its bay's middle)? Then the station
+    /// Does a real Bridge or Hall Crane on the station's body reach a metre over its bay's middle? Then the station
     /// draws no crane of its own: its bridges stood parked in the way of the finished ship and clashed with the real crane (the Zero
     /// Day works' yard, Sean 2026-11-23). Reads the crane reach LifterRender keeps current; allocates nothing.
     /// </summary>
-    private static bool UnderRealCrane(Construct c, Vector3 at)
+    private static bool UnderRealCrane(Construct c, int t)
     {
+        if (c.CraneN == 0)
+            return false;
+        Freeform.PartWorld(c, t, out var sp, out var sr); // (the station in the cranes' own pose, the tick's, so a moving body doesn't flicker at a reach's edge)
+        var at = sp + Vector3.Transform(ConstructStation.BayFloor(c, t) + Vector3.UnitY, sr);
         for (var k = 0; k < c.CraneN; k++)
         {
             int part = c.CraneDefs[k].Part;
