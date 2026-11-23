@@ -348,7 +348,8 @@ public sealed unsafe partial class FoliageRenderer
         FoliageType.Tree or FoliageType.Birch => (0.012f, 0.3f),
         FoliageType.Reed => (0.15f, 0.6f),
         FoliageType.Bracken => (0.08f, 0.5f),
-        FoliageType.Heather => (0.02f, 0.4f),
+        FoliageType.Heather => (0.03f, 0.45f),
+        FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor => (0f, 0.1f),
         _ => (0.008f, 0.25f),
     };
 

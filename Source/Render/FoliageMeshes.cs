@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 17;
+    public const int TypeCount = 21;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -202,14 +202,22 @@ public static class FoliageMeshes
                 break;
 
             case FoliageType.Heather:
-                // A low woody cushion about 0.7 m across and 0.3 m high, its top broken by small lumps (far: one flat blob).
+                // A spray of short woody stems fanning out of one root, about 0.6 m across and 0.35 m high, widest at the
+                // flowering tips (near: 11 sprigs, far: 4). Sean (2026-11-23) read the old solid cushions as rocks.
                 if (lod == 0)
                 {
-                    Blob(new Vector3(0, 0.12f, 0), new Vector3(0.36f, 0.18f, 0.33f), 1, 101, 0.3f, 0f, 0.4f);
-                    Blob(new Vector3(0.22f, 0.1f, 0.12f), new Vector3(0.18f, 0.13f, 0.17f), 0, 103, 0.3f, 0f, 0.4f);
+                    for (var k = 0; k < 11; k++)
+                    {
+                        var a = k * 2.39996f;
+                        var off = new Vector3(MathF.Cos(a * 1.9f), 0, MathF.Sin(a * 1.9f)) * (0.03f + 0.025f * (k % 3));
+                        Blade(off, a, 0.03f, 0.13f + 0.03f * (k % 2), 0.24f + 0.05f * (k % 4), 0.14f + 0.05f * (k % 3));
+                    }
                 }
                 else
-                    Blob(new Vector3(0.04f, 0.11f, 0.02f), new Vector3(0.4f, 0.18f, 0.36f), 0, 101, 0.2f, 0f, 0.4f);
+                {
+                    for (var k = 0; k < 4; k++)
+                        Blade(Vector3.Zero, 0.3f + k * MathF.PI / 4, 0.1f, 0.42f, 0.3f, 0.08f);
+                }
                 break;
 
             case FoliageType.Reed:
@@ -254,6 +262,44 @@ public static class FoliageMeshes
                     Blob(new Vector3(MathF.Cos(a) * r, 0.02f, MathF.Sin(a) * r), new Vector3(0.13f, 0.05f, 0.1f) * (1f + 0.25f * (k % 3)), 0, 113 + k, 0.2f, 0f, 0f);
                 }
                 break;
+
+            case FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor:
+                // Big standing rocks: the same blocks the planet's solid boxes are made of (PlanetFlora.MonolithBoxes), each
+                // corner pulled in a little by its own hash so no two faces are flat or meet edge to edge. No sway.
+                var boxes = PlanetFlora.MonolithBoxes(t);
+                for (var k = 0; k < boxes.Length; k++)
+                    RockBlock(boxes[k].Mid, boxes[k].Half, (int)t * 64 + k);
+                break;
+        }
+    }
+
+    /// <summary>A rock block: a box whose eight corners are each pulled in up to 7% (flat faces, darker towards the foot).</summary>
+    private static void RockBlock(Vector3 mid, Vector3 half, int seed)
+    {
+        Span<Vector3> c = stackalloc Vector3[8];
+        for (var k = 0; k < 8; k++)
+        {
+            var sx = (k & 1) == 0 ? -1f : 1f;
+            var sy = (k & 2) == 0 ? -1f : 1f;
+            var sz = (k & 4) == 0 ? -1f : 1f;
+            float J(int axis) => 1f - 0.07f * ((Foliage.Hash((uint)(seed * 131 + k * 7 + axis)) >> 8) * (1f / 16777216f));
+            c[k] = mid + new Vector3(sx * half.X * J(0), sy * half.Y * (sy > 0 ? J(1) : 1f), sz * half.Z * J(2));
+        }
+        // Faces as corner quads, wound outwards: -X, +X, -Y, +Y, -Z, +Z.
+        ReadOnlySpan<int> q = [0, 4, 6, 2, 1, 3, 7, 5, 0, 1, 5, 4, 2, 6, 7, 3, 0, 2, 3, 1, 4, 5, 7, 6];
+        for (var f = 0; f < 6; f++)
+        {
+            Vector3 a = c[q[f * 4]], b = c[q[f * 4 + 1]], cc = c[q[f * 4 + 2]], d = c[q[f * 4 + 3]];
+            var n = Vector3.Cross(cc - a, b - d);
+            if (Vector3.Dot(n, (a + b + cc + d) * 0.25f - mid) < 0)
+                n = -n;
+            float Shade(Vector3 p) => 0.72f + 0.38f * Math.Clamp((p.Y + 3f) / 26f, 0f, 1f);
+            var ia = Vert(a, n, 0f, Shade(a));
+            var ib = Vert(b, n, 0f, Shade(b));
+            var ic = Vert(cc, n, 0f, Shade(cc));
+            var id = Vert(d, n, 0f, Shade(d));
+            Tri(ia, ib, ic);
+            Tri(ia, ic, id);
         }
     }
 

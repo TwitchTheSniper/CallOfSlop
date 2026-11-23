@@ -447,6 +447,18 @@ public sealed class PhysicsWorld : IWorldQuery
                 sub = 0;
             }
         }
+        var rockNormal = default(Vector3);
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet is { Flora: { } flora } && best > 0 && !filter.Ignores(ShapeKind.Terrain, 0))
+        {
+            var t = flora.RayRocks(o, d, best, out rockNormal);
+            if (t < best)
+            {
+                best = t;
+                kind = ShapeKind.Rock;
+                index = 0;
+                sub = 0;
+            }
+        }
         var trunkNormal = default(Vector3);
         if ((filter.Layers & QueryLayers.Trunks) != 0 && best > 0 && Forest is { } forest)
         {
@@ -500,6 +512,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
                 ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
                 ShapeKind.Trunk => trunkNormal,
+                ShapeKind.Rock => rockNormal,
                 _ => Geometry.BoxEntryNormal(_sweeps[index].Min, _sweeps[index].Max, o, d, best),
             };
         }
@@ -935,7 +948,10 @@ public sealed class PhysicsWorld : IWorldQuery
         if ((layers & QueryLayers.Terrain) != 0 && Terrain != null && !filter.Ignores(ShapeKind.Terrain, 0))
             AddTerrain(min, max, into);
         if ((layers & QueryLayers.Terrain) != 0 && Planet != null && !filter.Ignores(ShapeKind.Terrain, 0))
+        {
             Planet.Gather(min, max, into);
+            Planet.Flora?.GatherRocks(min, max, into); // (a planet's pillars and arches: PlanetFlora.cs)
+        }
         if ((layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             var boxes = MoverPhysics.At(_map!, filter.MoverTick);

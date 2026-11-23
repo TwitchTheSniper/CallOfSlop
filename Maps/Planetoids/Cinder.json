@@ -48,13 +48,14 @@
           "plants": [
             {
               "type": "boulder",
-              "density": 0.004,
+              "density": 0.002,
               "size": [
-                0.5,
-                2.6
+                0.25,
+                2.2
               ],
               "color": "#2a2424",
-              "slope": 45
+              "slope": 45,
+              "skew": 2.5
             },
             {
               "type": "scree",
@@ -67,6 +68,58 @@
               "slope": 42,
               "patch": 0.6,
               "patchScale": 30
+            },
+            {
+              "type": "pillar",
+              "density": 3e-06,
+              "size": [
+                0.7,
+                1.8
+              ],
+              "color": "#2a2424",
+              "slope": 24,
+              "patch": 0.8,
+              "patchScale": 1500,
+              "jitter": 0.08
+            },
+            {
+              "type": "arch",
+              "density": 1.5e-06,
+              "size": [
+                0.8,
+                1.8
+              ],
+              "color": "#2a2424",
+              "slope": 24,
+              "patch": 0.8,
+              "patchScale": 1500,
+              "jitter": 0.08
+            },
+            {
+              "type": "needle",
+              "density": 3e-06,
+              "size": [
+                0.6,
+                1.6
+              ],
+              "color": "#2a2424",
+              "slope": 24,
+              "patch": 0.8,
+              "patchScale": 1500,
+              "jitter": 0.08
+            },
+            {
+              "type": "tor",
+              "density": 4e-06,
+              "size": [
+                0.6,
+                1.6
+              ],
+              "color": "#2a2424",
+              "slope": 24,
+              "patch": 0.8,
+              "patchScale": 1500,
+              "jitter": 0.08
             }
           ]
         }

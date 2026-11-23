@@ -52,12 +52,16 @@ public sealed unsafe partial class FoliageRenderer
     /// <summary>How far trees and big rocks are drawn, per quality (Low, Medium, High).</summary>
     private static readonly float[] TreeReach = [300f, 450f, 700f];
 
+    /// <summary>How far monoliths are drawn, per quality (Low, Medium, High; Off draws them as Low: they are solid).</summary>
+    private static readonly float[] RockReach = [1500f, 2200f, 3000f];
+
     private readonly Dictionary<long, FloraCell> _cells = new();
     private readonly List<FloraCell> _cellList = new();
     private readonly List<FloraCell> _queue = new();
     private readonly Stack<GlBuffer> _spare = new();
     private Planetoid? _flPlanet;
     private FoliageQuality _flQuality;
+    private bool _flRocksOnly;
     private int _flFrame, _flBuilding, _flDug;
     private double _flDugAt;
     private Stats _flLog;
@@ -78,6 +82,8 @@ public sealed unsafe partial class FoliageRenderer
     private static float PlanetReach(FoliageType t, FoliageQuality q)
     {
         var i = Math.Clamp((int)q - 1, 0, 2);
+        if (Foliage.IsMonolith(t))
+            return RockReach[i];
         if (Foliage.IsTree(t) || t == FoliageType.Stem)
             return TreeReach[i];
         if (t == FoliageType.Boulder)
@@ -97,10 +103,19 @@ public sealed unsafe partial class FoliageRenderer
     /// <summary>Picks, builds and draws a planetoid's plants. The caller has checked the planet has biomes.</summary>
     private void DrawPlanetFlora(Planetoid pl, PlanetFlora flora, Renderer gfx, FoliageQuality quality, double now)
     {
-        if (quality == FoliageQuality.Off)
+        // Foliage Off still draws the monoliths (as Low): they are solid ground, not decoration.
+        var rocksOnly = quality == FoliageQuality.Off;
+        if (rocksOnly && !flora.Grows(PlanetFlora.MonolithLayer))
         {
             FreeFlora();
             return;
+        }
+        if (rocksOnly)
+            quality = FoliageQuality.Low;
+        if (rocksOnly != _flRocksOnly)
+        {
+            FreeFlora();
+            _flRocksOnly = rocksOnly;
         }
         if (!ReferenceEquals(pl, _flPlanet) || quality != _flQuality)
         {
@@ -127,7 +142,7 @@ public sealed unsafe partial class FoliageRenderer
                 c.Dirty = true;
         }
 
-        for (var layer = 0; layer < PlanetFlora.Layers; layer++)
+        for (var layer = rocksOnly ? PlanetFlora.MonolithLayer : 0; layer < PlanetFlora.Layers; layer++)
             if (flora.Grows(layer))
                 WantCells(pl, flora, layer, LayerReach(layer, quality), up, cam, alt);
 
@@ -182,7 +197,7 @@ public sealed unsafe partial class FoliageRenderer
         for (var t = 0; t < FoliageMeshes.TypeCount; t++)
         {
             var type = (FoliageType)t;
-            if (PlanetFlora.LayerOf(type) < 0 && type != FoliageType.Stem)
+            if (PlanetFlora.LayerOf(type) < 0 && type != FoliageType.Stem || rocksOnly && !Foliage.IsMonolith(type))
                 continue;
             var fadeEnd = PlanetReach(type, quality);
             var fadeStart = fadeEnd * Foliage.FadeStartFraction;
@@ -304,7 +319,7 @@ public sealed unsafe partial class FoliageRenderer
         for (var b = b0; b < b1; b++)
         for (var a = a0; a < a1; a++)
         {
-            if (!flora.At(layer, face, a, b, out var p) || p.Rand >= Foliage.DensityFor(p.Type, quality))
+            if (!flora.At(layer, face, a, b, out var p) || !Foliage.IsMonolith(p.Type) && p.Rand >= Foliage.DensityFor(p.Type, quality))
                 continue;
             (lists[(int)p.Type] ??= new()).Add(p);
             total++;
@@ -383,7 +398,8 @@ public sealed unsafe partial class FoliageRenderer
         {
             // Plants on dug ground fold away (scale 0): the dug ground is read here, on the main thread, never by the workers.
             var d = b.Data;
-            for (var o = 0; o < d.Length; o += FoliageBatches.FloatsPerInstance)
+            var rocks = b.Count.Length > 0 && b.Total > 0 && c.Layer == PlanetFlora.MonolithLayer; // (monoliths stand whatever is dug round them)
+            for (var o = 0; o < d.Length && !rocks; o += FoliageBatches.FloatsPerInstance)
                 if (flora.IsDug(new Vector3(d[o], d[o + 1], d[o + 2])))
                     d[o + 3] = 0;
         }

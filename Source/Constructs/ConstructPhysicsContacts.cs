@@ -290,6 +290,7 @@ public static partial class ConstructPhysics
                 // A planet's trees are solid only to constructs (Sean, 2026-11-22: people walk through them): PlanetFlora.cs.
                 _gather.Clear();
                 flora.GatherTrunks(mid - reach, mid + reach, _gather);
+                flora.GatherRocks(mid - reach, mid + reach, _gather); // (and its monoliths, solid to everything)
                 if (_gather.Count > 0)
                     n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n);
             }
