@@ -693,10 +693,11 @@ public static partial class ConstructRender
             : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
-        var pressStore = workPart >= 0 && c.Parts[workPart].D.IsPress ? world.StoreOf(c, workPart) : null;
+        // A Press Core has no work boxes of its own (Sean 2026-11-23: no clamshell on the control module), so its store is read here.
+        var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) : null;
         if (pressStore != null)
-            ConstructPress.StrokeUpdate(c, workPart, pressStore, Now); // (this peer's note of the stroke: when it began, what it presses and makes)
-        _pressStroke = working && pressStore != null ? ConstructPress.StrokeSeconds(pressStore, Now) : 0; // (a Press Core's leaves swing with its stroke)
+            ConstructPress.StrokeUpdate(c, i, pressStore, Now); // (this peer's note of the stroke: when it began, what it presses and makes)
+        var pressWorking = pressStore != null && ProductionLines.Working(world, c, i, pressStore, Now);
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
@@ -720,6 +721,8 @@ public static partial class ConstructRender
         ConstructPress.ShellPose shellPose = default;
         var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
         var shellStore = shellOn && !c.Parts[shellPose.Core].Broken ? world.StoreOf(c, shellPose.Core) : null;
+        if (shellStore != null)
+            ConstructPress.StrokeUpdate(c, shellPose.Core, shellStore, Now); // (once a frame per press: the Core may be culled while its housings show)
         var dieOpen = shellStore != null
             ? ConstructPress.DieOpen(shellStore, shellPose.Index, Now, ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), out _)
             : 1f; // (its round die's swing: stowed open, closing on the blank, shut while it is pressed, opening on the new part)
@@ -831,7 +834,7 @@ public static partial class ConstructRender
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
             drawn += DrawShellDie(gfx, in shellPose, dieOpen, ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null,
                 seg * body, shade, opacity);
-        else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && !p.Broken && PressBed(c, i, d, pressStore, working, out var onBed, out var bedAt))
+        else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && PressBed(c, i, d, pressStore, pressWorking, out var onBed, out var bedAt))
             drawn += DrawBlank(gfx, onBed, 0, bedAt, in p, seg * body, shade, opacity); // (the blank on the bed under the open dies, then the part they made)
         return drawn;
     }
@@ -919,8 +922,9 @@ public static partial class ConstructRender
             if (d > far)
                 (far, insert) = (d, box.Color);
         }
-        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len - 0.01f, r - 0.015f) * m, baseColour * shade, opacity, mode: 0, shape: DieLinerShape);
-        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len * 0.7f, r) * m, insert * shade, opacity, mode: 0, shape: DieLinerShape);
+        // (the rings' flat ends sit 3 and 6 mm inside the steel's: no shared planes)
+        gfx.Draw(Quarter(along, s.Up, s.Out, centre - (s.Up + s.Out) * 0.003f, len - 0.01f, r - 0.015f) * m, baseColour * shade, opacity, mode: 0, shape: DieLinerShape);
+        gfx.Draw(Quarter(along, s.Up, s.Out, centre - (s.Up + s.Out) * 0.006f, len * 0.7f, r) * m, insert * shade, opacity, mode: 0, shape: DieLinerShape);
         return 4;
     }
 
@@ -983,7 +987,6 @@ public static partial class ConstructRender
         for (var k = Fx.Share(3f * _fxDt); k > 0; k--)
             Fx.Emit(FxKind.Smoke, at + up * 0.05f, c.Vel + up * 0.6f, 0.08f, 0.9f);
     }
-    private static double _pressStroke; // seconds into the stroke of the Press being drawn (its Core's "hinge" leaves: ConstructPress.Openness)
     private static int _workCore = -1; // the machine whose work the part being drawn shows (its own, or its block machine's Core)
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
@@ -1005,17 +1008,7 @@ public static partial class ConstructRender
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
                 break;
             case BoxWork.Hinge:
-                {
-                    // A clamshell leaf: it swings open toward its axis and slams shut in the press's cycle (ConstructPressShells.cs), its turn about the hinge line.
-                    var open = ConstructPress.Openness(true, 0, _pressStroke); // (the Core's own small clamshell: its stroke's swing, as the shells')
-                    if (open > 0)
-                    {
-                        var up = Rot24.Apply(p.Rot, Vector3.UnitY);
-                        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
-                        model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(Vector3.Cross(up, axis)), open * box.RigTravel * MathF.PI / 180f) * Matrix4x4.CreateTranslation(pivot);
-                    }
-                    break;
-                }
+                break; // (a clamshell leaf: no part draws one now; a Press's housings turn their round dies, DrawShellDie)
             case BoxWork.Press:
                 // A Panel Former's upper platen: up while the pins set, down to press, held, then up (drawing 15; one stroke a cycle).
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * ConstructPanelFormer.PressAt(ConstructPanelFormer.Phase(Now))));
