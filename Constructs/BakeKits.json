@@ -3,6 +3,9 @@
   // Parts made from a kit of extrusions welded at a Building Station and baked whole in a Bake Oven, never assembled
   // (Sean, 2026-11-23: the large deck parts). Each part's kit is worked out from its solid boxes (BakeKits.cs).
   "material": "steel",
+  // (Sean, 2026-11-23: the decks, keel and hull pieces on line C, whose oven's bed is 7 x 13 cells; the walls on lines A and B, 5 x 9)
+  "bigBed": { "cells": 80, "prefixes": [ "Zero Day Lower Deck", "Zero Day Upper Deck", "Zero Day Keel", "Zero Day Spine", "Zero Day Stern",
+    "Zero Day Lower Fore Hull", "Zero Day Lower Aft Hull", "Zero Day Upper Fore Hull", "Zero Day Upper Aft Hull" ] },
   "parts": [
     "Zero Day Lower Deck Fore",
     "Zero Day Lower Deck Aft",

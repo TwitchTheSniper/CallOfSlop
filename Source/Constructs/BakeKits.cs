@@ -48,6 +48,22 @@ public static class BakeKits
     private static readonly Dictionary<string, Piece[]> Listed = new(StringComparer.OrdinalIgnoreCase); // (by part: the kit's pieces as listed)
     private static readonly object Gate = new();
 
+    private static int _bigBedCells;
+    private static string[] _bigBed = [];
+
+    /// <summary>
+    /// The least bed (2 m cells) an oven needs to bake this part: BakeKits.json "bigBed" (Sean, 2026-11-23: the frigate's decks, keel and hull
+    /// pieces on line C's big oven; its walls on lines A and B, whose smaller ovens a chain prefers). 0: any bed that holds it.
+    /// </summary>
+    public static int MinBedCells(ConstructPartDef d)
+    {
+        _ = Names; // (loaded)
+        foreach (var p in _bigBed)
+            if (d.Name.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                return _bigBedCells;
+        return 0;
+    }
+
     /// <summary>The parts made from kits (Constructs/BakeKits.json "parts").</summary>
     public static string[] Names
     {
@@ -71,6 +87,12 @@ public static class BakeKits
             if (root.TryGetProperty("material", out var m) && m.GetString() is { Length: > 0 } mat)
                 _material = mat;
             var list = new List<string>();
+            if (root.TryGetProperty("bigBed", out var bb))
+            {
+                _bigBedCells = bb.TryGetProperty("cells", out var cells) ? cells.GetInt32() : 0;
+                if (bb.TryGetProperty("prefixes", out var pre))
+                    _bigBed = [.. pre.EnumerateArray().Select(x => x.GetString()).OfType<string>().Where(x => x.Length > 0)];
+            }
             if (root.TryGetProperty("parts", out var ps))
                 foreach (var p in ps.EnumerateArray())
                     if (p.GetString() is { Length: > 0 } n)

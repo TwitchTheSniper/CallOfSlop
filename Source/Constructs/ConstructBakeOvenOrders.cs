@@ -39,6 +39,8 @@ public static partial class ConstructBakeOven
             return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
         if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
             return $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
+        if (BakeKits.MinBedCells(made) is var least and > 0 && asm.W * asm.L < least)
+            return $"the {made.Name} bakes on a bed of {least} cells or more (Constructs/BakeKits.json \"bigBed\"): this one has {asm.W * asm.L}";
         // The kit is built at the station nearest the oven whose bay holds it; that station orders the kit's pieces through a Line Console
         // wired into its Orders, so one with none would wait for ever (the works' line A oven took the yard's deck orders, 2026-11-23).
         var bp = BakeKits.BlueprintOf(made)!;
@@ -52,6 +54,8 @@ public static partial class ConstructBakeOven
             return $"no Building Station on this construct has a bay that holds the {made.Name} kit";
         if (!OrdersConsole(c, near) && AnyOrdersConsole(c, bp)) // (none has one: a plain station orders by its own links, as any build)
             return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
+        if (ConstructRollOut.RunOut(c, near) is var run and >= 0 && ConstructRollOut.OvenOf(c, run) is var rolls and >= 0 && rolls != part)
+            return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit rolls its kits to another oven"; // (the works' line A oven took a deck that only line C's station holds)
         if (OrdersConsole(c, near) && LineLacks(world, c, near, bp) is { } lacks)
             return $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
         return null;
