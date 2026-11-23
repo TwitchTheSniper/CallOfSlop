@@ -86,6 +86,33 @@ public static class StationCheck
                     keep.Add((bin, RecyclingTable.Current.IdOf(fm), pn));
                 Console.WriteLine($"  fill: {put} {fm} into the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz}");
             }
+        // --roll-tiles "X,Z;X,Z...": Roller Tiles welded onto the site (turned as its runs south are, at their height) before the run: a way
+        // out of a station's bay or into an oven's bed tried on a site that doesn't lay one (ConstructRollOut.cs).
+        if (Arg("--roll-tiles") is { } rollTiles)
+        {
+            RollerRuns.Sync(w, c);
+            var like = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsRollerTile && RollerRuns.RunOf(c, i) is var k and >= 0
+                && c.RouteNodes[c.Routes[k].Start + 1].Pos.Z < c.RouteNodes[c.Routes[k].Start].Pos.Z - 0.5f).FirstOrDefault(-1);
+            if (like < 0)
+                Console.WriteLine("  --roll-tiles: no Roller Tile run south on the site to copy");
+            else
+            {
+                foreach (var xz in rollTiles.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                    if (xz.Split(',') is [var rx, var rz] && float.TryParse(rx, out var tx) && float.TryParse(rz, out var tz))
+                    {
+                        var i = w.AddPart(c, c.DefOf(like), new Vector3(tx, c.Parts[like].Pos.Y, tz), c.Parts[like].Rot);
+                        c.Rebuild();
+                        ConstructBuild.AutoLink(w, c, i);
+                        Console.WriteLine($"  a Roller Tile welded at {tx}, {tz} (part {i})");
+                    }
+                c.Rebuild();
+                RollerRuns.Sync(w, c);
+                for (var k = 0; k < c.RouteCount; k++)
+                    for (var s2 = 0; s2 < c.PartCount; s2++)
+                        if (c.DefOf(s2).IsBuildStation && ConstructRollOut.RunOut(c, s2) == k)
+                            Console.WriteLine($"  run {k} rolls out of the bay of station {s2}" + (ConstructRollOut.OvenOf(c, k) is var ov and >= 0 ? $" into the bed of the Bake Oven {ov}" : ""));
+            }
+        }
         // The station: the one nearest the point given, else the one with the biggest bay.
         var t = -1;
         var best = float.MinValue;
