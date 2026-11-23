@@ -2029,6 +2029,10 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   kits bake at any turn), and line C's store has four masts a corner (an 8 m stack: the Stern's side skins stand 6.4 m). The listed
   kits are dressed at a Sandbox match's start (`BakeKits.Warm`, about 200 ms), not on the tick of the first bake or order, and a listed
   kit that can't be made leaves its part to the Assembler (`BakeKits.Has`).
+- **Rolled to the oven (line C).** Since roll-out and roll-in (below) line C's oven Core stands east of its bed's first row (it stood in
+  the row between the station's bay and the bed), and one Roller Tile in that row, under the bay's and the bed's middle, is the bay's way
+  out and the oven's way in: a finished kit rolls onto the bed with no crane. On the works an Upper Deck Aft baked in 314 s, the Upper
+  Fore Hull Port 3 in 174 s (324 s craned) and the Keel in 232 s (547 s).
 
 ## Production Showcase
 
