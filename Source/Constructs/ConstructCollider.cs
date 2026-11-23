@@ -821,7 +821,9 @@ public sealed partial class Construct
             if (_colliderStale || _collider == null)
             {
                 _collider ??= new ConstructCollider();
+                var b0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 _collider.Build(this);
+                ConstructSlowTick.Built(this, b0);
                 _colliderStale = false;
                 _colliderSerial = _editSerial;
             }
