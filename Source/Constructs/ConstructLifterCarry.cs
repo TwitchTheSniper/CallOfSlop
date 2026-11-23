@@ -38,6 +38,7 @@ public static partial class ConstructLifters
     public const int MaxPoints = 32; // a lifter's points (16 until 2026-11-22: a bay crane over four presses, an Assembler and its stores ran out)
     public const int PointEvery = 120; // ticks between looks for a lifter's points (2 s)
     public const int CarryLook = 6; // 10 Hz steps between an idle lifter's looks for a carry (about 1 s)
+    public const int RefuseHold = 30 * 60; // lift ticks a put point that refused this lifter's piece is passed over (30 s)
 
     /// <summary>The idle look for a carry (about once a second): true when one began.</summary>
     private static bool LookCarry(ConstructWorld world, Construct c, CLift l, LifterDef ld)
@@ -278,7 +279,8 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b) // (a damaged or painted piece is never made a count)
+            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b // (a damaged or painted piece is never made a count)
+                || RefusedNow(world, l, pt))
                 continue;
             if (pt.Kind == LiftPointKind.Rack && (fromPad || pt.Part >= b.PartCount || !b.DefOf(pt.Part).IsLayDownPad))
                 continue; // (a rack is a want only as a station's pick pad, and never from another pad)
@@ -287,7 +289,9 @@ public static partial class ConstructLifters
             Vector3 p;
             if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
             {
-                if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                // (a want with no room is no taker: a full pick pad said it wanted the piece and refused it at the end, 2026-11-23)
+                if (world.StoreOf(b, pt.Part) is not { } wst || ConstructConveyor.RackCheck(b, pt.Part, wst, d) != 0
+                    || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
                     continue;
             }
             else if (!PointAt(b, pt, out p))
@@ -308,7 +312,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
+            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
@@ -480,7 +484,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (pt.Kind is LiftPointKind.Out or LiftPointKind.RunEnd or LiftPointKind.None || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
+            if (pt.Kind is LiftPointKind.Out or LiftPointKind.RunEnd or LiftPointKind.None || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
                 || b.Parts[pt.Part].Store != dest || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             Vector3 p;
@@ -637,6 +641,7 @@ public static partial class ConstructLifters
         if (ok)
         {
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
+            l.RefusedAt = l.Refused2At = int.MinValue / 2; // (a put went in: what refused before may take the next piece)
             l.Moves++;
             l.Fitted = true;
             OrderPutDone(world, l); // (phase 7: a hand order's piece counts for it)
@@ -644,6 +649,13 @@ public static partial class ConstructLifters
             Back(c, l, ld, null, -1); // (the empty hand goes back to where it picked)
             l.ToKind = LiftPointKind.None;
             return;
+        }
+        // Remembered for a while (Sean, 2026-11-22: a Hall Crane carried a piece between two put points that each said they wanted it
+        // and then refused it at the end, for good): the next taker is another point, else the piece waits in the hand.
+        if (l.ToKind != LiftPointKind.None)
+        {
+            (l.Refused2, l.Refused2At) = (l.Refused, l.RefusedAt);
+            (l.Refused, l.RefusedAt) = (new LiftPoint { Body = l.StationBody, Part = l.ToPart, Kind = l.ToKind, Bay = l.ToBay }, world.LiftTick);
         }
         if (l.OrderId != 0 && l.Orders != null)
             for (var oi = 0; oi < l.OrderN; oi++)
@@ -655,6 +667,10 @@ public static partial class ConstructLifters
         (l.State, l.ToHold, l.Why, l.Age, l.From, l.FromRot, l.ToKind) = (LiftState.Stuck, false, LiftWhy.NoTaker, l.Dur, l.To, l.ToRot, LiftPointKind.None);
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} was refused; nothing in reach takes it (stuck)");
     }
+
+    /// <summary>Did this point refuse this lifter's piece at the end of a carry in the last <see cref="RefuseHold"/> ticks? (Not a want or a store for now.)</summary>
+    private static bool RefusedNow(ConstructWorld world, CLift l, in LiftPoint pt) =>
+        world.LiftTick - l.RefusedAt < RefuseHold && Same(l.Refused, pt) || world.LiftTick - l.Refused2At < RefuseHold && Same(l.Refused2, pt);
 
     /// <summary>Server: a piece in the hand to another taker in reach (a want, else storage). True when it set off.</summary>
     private static bool Redirect(ConstructWorld world, Construct c, CLift l, LifterDef ld, ConstructPartDef d)
