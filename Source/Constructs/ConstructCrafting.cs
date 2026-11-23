@@ -100,7 +100,8 @@ public sealed class CraftRow
 /// </summary>
 public static class ConstructCrafting
 {
-    public const int MaxOrders = 32; // open requests a terminal
+    public const int MaxOrders = 96; // open requests a terminal (32 until 2026-11-23: a station ordering in batches keeps many open, one a kind)
+    public const string HeldEarly = "held in a holding bay until the build nears its step";
     public const int StepEvery = 30; // ticks between steps (2 Hz)
     public const int DoneSteps = 120; // a finished order stays listed this long (60 s)
     private const ushort NoPart = ushort.MaxValue;
@@ -1253,6 +1254,12 @@ public static class ConstructCrafting
                     // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
                     state = CraftState.Collect;
                     note = $"too big for the tray: collect it at the {c.DefOf(net.Stores[s]).Name}";
+                    continue;
+                }
+                if (fits == 0 && !ConstructStation.Due(world, c, t, d, true))
+                {
+                    state = CraftState.Held;
+                    note = HeldEarly; // (a batched station's part ordered ahead: it waits in its holding bay until the build nears its step)
                     continue;
                 }
                 if (fits != 0)

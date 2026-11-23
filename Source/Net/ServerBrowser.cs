@@ -749,7 +749,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      FactionOp.StationPurchase (u16 ship) at its end.
     // 443: Roller Tile runs feed a Panel Former's or Laser Cutter's bed: their Cores gain an implicit conveyor "Bed in" (its point the bed's
     //      middle), and a Core beside its bed's corner may have its Out Tables on the bed's far end the other way (MachineBlocks.FindOut).
-    public const ushort ProtocolVersion = 443;
+    // 444: a terminal's (a Building Station's) open orders go to 96 (ConstructCrafting.MaxOrders, was 32): a client reads up to that many.
+    public const ushort ProtocolVersion = 444;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

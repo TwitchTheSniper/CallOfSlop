@@ -63,6 +63,11 @@ public sealed partial class StationJob
     public int KindN;
     public int[] KindWay = [], KindAhead = []; // (each look) what of a kind is held or on its way, handed to the ready steps in build order; how many of a kind are ordered ahead (a ready step's child whose parent part is coming)
     public bool[] StepComing = []; // (each look) a ready step whose own part is held or on its way
+    public int[] KindDue = []; // (each look, batched) how many of a kind may be in the hold or on their way to it: the rest wait in a holding bay
+    public bool Batched; // the network has a holding bay for the hold's parts (a Piece Rack with a road back): every part is ordered ahead in batches (Sean, 2026-11-23)
+    public bool PadBatched; // ...or pick pads its crane or arms fit from: the parts too big for the hold are (lifters keep the early ones in storage)
+    public int BayLooks; // looks until the holding bays are looked for again
+    public int ParkFail; // looks left with no new batch ordered: an early part found no holding bay with room
     public readonly CStore Sim = new(); // (each look) the hold's packing with everything on its way, for the order-ahead reservation
     public int[] StepKind = [], KindReady = [], KindOut = [], KindHave = []; // each step's kind; how many unfitted steps of a kind have their parent fitted (each look); parts a player took out of the hold by hand, not ordered again while a player is near; fitted and held last look
     public HashSet<ushort> SetAside = new(); // kinds a full hold moved out to a rack for a part that could be fitted (MakeRoomFor): not ordered again until a step can take them
@@ -420,6 +425,7 @@ public static partial class ConstructStation
         j.KindHave = new int[defs.Count];
         j.KindWay = new int[defs.Count];
         j.KindAhead = new int[defs.Count];
+        j.KindDue = new int[defs.Count];
         j.StepComing = new bool[bp.Steps.Count];
         j.KindLaid = new bool[defs.Count];
         for (var i = 0; i < defs.Count; i++)
@@ -534,8 +540,31 @@ public static partial class ConstructStation
                             firstOrder = k;
             }
         }
-        if (placed < OrdersAStep && lacking > 0)
-            OrderAhead(world, c, t, tray, j, ref placed);
+        if (--j.BayLooks <= 0)
+        {
+            j.BayLooks = BayEvery;
+            j.Batched = HasHoldingBay(world, c, t);
+            j.PadBatched = HasPickPads(world, c, t, j);
+        }
+        if (j.ParkFail > 0)
+            j.ParkFail--;
+        if (lacking > 0 && j.Batched)
+        {
+            // Batched (Sean, 2026-11-23: "make as many pieces as possible whenever it can"): the old ahead rule now says only what may
+            // come into the hold (KindDue); every other part is ordered at once in build-order batches and waits in a holding bay.
+            OrderAhead(world, c, t, tray, j, ref placed, batched: true);
+            if (j.ParkFail == 0)
+                OrderBatches(world, c, t, tray, j, near, false, ref placed);
+        }
+        else if (lacking > 0)
+        {
+            // No holding bay for the hold's parts: they keep the ahead rule ("order ahead, keep room"); the parts too big for the hold,
+            // which come to pick pads by crane or arm (and wait in storage when the pads are full), are ordered in batches all the same.
+            if (placed < OrdersAStep)
+                OrderAhead(world, c, t, tray, j, ref placed, batched: false);
+            if (j.PadBatched)
+                OrderBatches(world, c, t, tray, j, near, true, ref placed);
+        }
         if (j.Fitted >= j.Steps)
             return; // (its links: NextLink's own note)
         // The next part to fit can't come in (a full hold: at the door, or kept in a Router's storage): room is made by moving out what no
@@ -1625,11 +1654,15 @@ public static partial class ConstructStation
     /// and this part, still has room for the largest ready part not yet in it. A ready part is never kept out by parts ordered ahead; should
     /// a hold fill anyway (a hand, a stock), the door makes room by moving them out (<see cref="MakeRoomFor"/>).
     /// </summary>
-    private static void OrderAhead(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ref int placed)
+    private static void OrderAhead(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ref int placed, bool batched)
     {
         var q = c.Parts[t].Craft;
         for (var i = 0; i < j.KindN; i++)
-            j.KindWay[i] = ConstructCrafting.Holds(tray, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]) + Asked(q, j.KindDef[i]);
+        {
+            // (batched, everything is asked: what is on its way to the hold is what rides to it, the rest waits in a holding bay)
+            j.KindWay[i] = ConstructCrafting.Holds(tray, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]) + (batched ? RidingTo(c, t, tray, j.KindDef[i]) : Asked(q, j.KindDef[i]));
+            j.KindDue[i] = Math.Max(j.KindReady[i], j.KindWay[i]); // (ready parts are always due; what is held or riding in stays)
+        }
         Array.Clear(j.KindAhead);
         for (var s = j.Cursor; s < j.PartOf.Length; s++)
         {
@@ -1657,18 +1690,18 @@ public static partial class ConstructStation
                 reserve = rdp; // (the largest ready part not yet in the hold)
         var simReady = false;
         var items = tray.ItemCount;
-        for (var i = 0; i < j.KindN && placed < OrdersAStep; i++)
+        for (var i = 0; i < j.KindN && (batched || placed < OrdersAStep); i++)
         {
-            if (j.KindAhead[i] <= 0 || j.KindLaid[i] || j.SetAside.Contains(j.KindDef[i]) || ConstructParts.Get(j.KindDef[i]) is not { } d)
+            if (j.KindAhead[i] <= 0 || j.KindLaid[i] || !batched && j.SetAside.Contains(j.KindDef[i]) || ConstructParts.Get(j.KindDef[i]) is not { } d)
                 continue;
             var held = ConstructCrafting.Holds(tray, d.Id) + LiftHolds(world, c, t, d.Id);
-            var asked = Asked(q, d.Id);
+            var asked = batched ? RidingTo(c, t, tray, d.Id) : Asked(q, d.Id);
             var ahead = Math.Min(j.KindNeed[i] - j.KindFit[i], j.KindReady[i] + j.KindAhead[i] - j.KindOut[i]) - held - asked;
             if (ahead <= 0 || ConstructConveyor.RackCheck(c, t, tray, d, true) == 3)
                 continue; // (none more, or it can never fit: the ready rule says why when it is due)
             if (!simReady)
             {
-                if (!SimHold(world, c, t, tray, j, rd, ref items))
+                if (!SimHold(world, c, t, tray, j, rd, ref items, batched))
                     return; // (what is held and coming doesn't pack as it is: nothing is ordered ahead)
                 simReady = true;
             }
@@ -1681,7 +1714,9 @@ public static partial class ConstructStation
                 if (reserve != null && (items + 1 > rd.RackCount || ConstructRackPack.Place(rd, j.Sim, reserve, true, out _, out _) != 0))
                     break; // (this one would take the ready part's room: it waits)
             }
-            if (n > 0)
+            if (batched)
+                j.KindDue[i] = Math.Max(j.KindDue[i], held + asked + n); // (these may come in now: the hold has room for them and the next ready part)
+            else if (n > 0)
             {
                 placed++;
                 j.KindWhy[i] = ConstructCrafting.Place(world, c, t, OrderFor(d, n));
@@ -1691,8 +1726,124 @@ public static partial class ConstructStation
         }
     }
 
+    public const int BatchSteps = 24; // steps a batch orders, in build order
+    public const int BayEvery = 20; // looks between looks for holding bays (10 s)
+    public const int ParkPause = 60; // looks with no new batch after an early part found no holding bay with room (30 s)
+    private const int FailedPlacesALook = 8;
+
+    /// <summary>
+    /// Sequenced batches (Sean, 2026-11-23): the first <see cref="BatchSteps"/> unfitted steps, in the blueprint's order, whose parts are
+    /// neither held nor asked are ordered at once, whatever their parents; the next batch follows in the next look, so the machines work
+    /// through the whole build in its order without waiting for a fit. A part not due yet waits in a holding bay (<see cref="ParkEarly"/>,
+    /// and a rack's claimed part is sent on only when due: <see cref="Due"/>).
+    /// </summary>
+    private static void OrderBatches(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, bool near, bool bigOnly, ref int placed)
+    {
+        var q = c.Parts[t].Craft;
+        for (var i = 0; i < j.KindN; i++)
+            j.KindWay[i] = ConstructCrafting.Holds(tray, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]) + Asked(q, j.KindDef[i]);
+        Array.Clear(j.KindAhead); // (here: each kind's share of the batch)
+        var n = 0;
+        for (var s = j.Cursor; s < j.PartOf.Length && n < BatchSteps; s++)
+        {
+            if (j.PartOf[s] != -1 || j.StepKind[s] is not (var k and >= 0) || j.KindLaid[k] || ConstructStationTree.External(j, s))
+                continue; // (fitted or on a lifter's hook; laid from stock; another station's use)
+            if (bigOnly && (ConstructParts.Get(j.KindDef[k]) is not { } bd || !ConstructLifters.TooBigForHold(c, t, tray, bd)))
+                continue; // (a part for the hold: the ahead rule's)
+            if (j.KindWay[k] > 0)
+            {
+                j.KindWay[k]--; // (held or asked already)
+                continue;
+            }
+            j.KindAhead[k]++;
+            n++;
+        }
+        var failed = 0;
+        for (var i = 0; i < j.KindN && placed < OrdersAStep && failed < FailedPlacesALook && (q?.Count ?? 0) < ConstructCrafting.MaxOrders; i++)
+        {
+            if (j.KindAhead[i] <= 0 || near && j.KindOut[i] > 0 || ConstructParts.Get(j.KindDef[i]) is not { } d)
+                continue;
+            if ((j.KindWhy[i] = ConstructCrafting.Place(world, c, t, OrderFor(d, j.KindAhead[i]))) == null)
+                placed++;
+            else
+                failed++; // (nothing makes it: its reason is the note's; the batch goes on past it)
+            q = c.Parts[t].Craft;
+        }
+    }
+
+    /// <summary>Pieces of a kind riding the conveyors to the station's hold for its orders.</summary>
+    private static int RidingTo(Construct c, int t, CStore tray, ushort def)
+    {
+        if (c.Parts[t].Craft is not { Count: > 0 } q)
+            return 0;
+        var n = 0;
+        for (var k = 0; k < q.Count; k++)
+            if (!q.Items[k].Done && !q.Items[k].Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == def)
+                n += ConstructLogistics.RidingFor(c, tray.Handle, q.Items[k].Id);
+        return n;
+    }
+
+    /// <summary>
+    /// Server: may a part of this kind come into the station's hold now (batched: it is due, <see cref="StationJob.KindDue"/>)? With
+    /// <paramref name="riding"/> what rides to the hold counts as in it (a rack's claimed part about to be sent); without, the part at the
+    /// door is the first of them. True for any station not building batched.
+    /// </summary>
+    public static bool Due(ConstructWorld world, Construct c, int t, ConstructPartDef d, bool riding)
+    {
+        if (c.Parts[t].Station is not { State: StationState.Building, Batched: true } j || world.StoreOf(c, t) is not { } tray)
+            return true;
+        var k = KindOf(j, (ushort)d.Id);
+        if (k < 0 || k >= j.KindDue.Length || j.KindLaid[k])
+            return true;
+        if (j.KindReady[k] > ConstructCrafting.Holds(tray, d.Id))
+            return true; // (a step is ready for it now)
+        return j.KindDue[k] > ConstructCrafting.Holds(tray, d.Id) + LiftHolds(world, c, t, d.Id) + (riding ? RidingTo(c, t, tray, d.Id) : 0);
+    }
+
+    /// <summary>
+    /// Server, a piece at the door of a batched station's hold that isn't due yet: it goes into a holding bay instead (a Piece Rack on the
+    /// network with a road back), as a full hold moves spares out (<see cref="MakeRoomFor"/>), and counts as delivered; the build's
+    /// next batch claims it there as stock and it is sent on when due. False: it isn't early, or no bay has room (no new batch for a while).
+    /// </summary>
+    public static bool ParkEarly(ConstructWorld world, Construct c, int t, ConstructPartDef d)
+    {
+        if (c.Parts[t].Station is not { State: StationState.Building, Batched: true } j || Due(world, c, t, d, false))
+            return false;
+        var rack = RackFor(world, c, t, ConstructCrafting.NetOf(world, c, t), d, pads: false); // (never a pick pad: those are kept for the big parts)
+        if (rack < 0 || !world.RackPut(c, rack, d))
+        {
+            j.ParkFail = ParkPause;
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Pick pads the station's crane or a lifter fits from for it (its own, or a pad of an arm's that fits one of its kinds).</summary>
+    private static bool HasPickPads(ConstructWorld world, Construct c, int t, StationJob j)
+    {
+        if (HasOwnPad(c, t))
+            return true;
+        for (var i = 0; i < j.KindN; i++)
+            if (ConstructParts.Get(j.KindDef[i]) is { } d && ConstructLifters.HasPickPad(world, c, t, d))
+                return true;
+        return false;
+    }
+
+    /// <summary>A holding bay for early parts: a Piece Rack on the station's network (not a terminal, not a pad), with a road back to the hold.</summary>
+    private static bool HasHoldingBay(ConstructWorld world, Construct c, int t)
+    {
+        var net = ConstructCrafting.NetOf(world, c, t);
+        for (var s = 0; s < net.StoreN; s++)
+        {
+            var rack = net.Stores[s];
+            if (rack != t && c.DefOf(rack) is { IsPieceRack: true, IsCraftTerminal: false, IsLayDownPad: false } && ConstructCrafting.RouteTo(c, rack, t) != -1)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>The hold as it will be: its packing copied into the job's scratch store, with everything on its way packed in too. False: it doesn't all pack.</summary>
-    private static bool SimHold(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ConstructPartDef rd, ref int items)
+    private static bool SimHold(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ConstructPartDef rd, ref int items, bool batched)
     {
         ConstructRackPack.Ensure(rd, tray);
         var sim = j.Sim;
@@ -1707,7 +1858,7 @@ public static partial class ConstructStation
         var q = c.Parts[t].Craft;
         for (var i = 0; i < j.KindN; i++)
         {
-            var coming = Asked(q, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]);
+            var coming = (batched ? RidingTo(c, t, tray, j.KindDef[i]) : Asked(q, j.KindDef[i])) + LiftHolds(world, c, t, j.KindDef[i]);
             if (coming <= 0 || ConstructParts.Get(j.KindDef[i]) is not { } d)
                 continue;
             for (var n = 0; n < coming; n++)
@@ -1797,12 +1948,12 @@ public static partial class ConstructStation
     }
 
     /// <summary>A Piece Rack on the station's network with room for <paramref name="d"/> and a road back to the station (-1: none).</summary>
-    private static int RackFor(ConstructWorld world, Construct c, int t, CraftNet net, ConstructPartDef d)
+    private static int RackFor(ConstructWorld world, Construct c, int t, CraftNet net, ConstructPartDef d, bool pads = true)
     {
         for (var s = 0; s < net.StoreN; s++)
         {
             var rack = net.Stores[s];
-            if (rack != t && c.DefOf(rack) is { IsPieceRack: true, IsCraftTerminal: false } && world.StoreOf(c, rack) is { } rs
+            if (rack != t && c.DefOf(rack) is { IsPieceRack: true, IsCraftTerminal: false } rdf && (pads || !rdf.IsLayDownPad) && world.StoreOf(c, rack) is { } rs
                 && ConstructConveyor.RackCheck(c, rack, rs, d) == 0 && ConstructCrafting.RouteTo(c, rack, t) != -1)
                 return rack;
         }
