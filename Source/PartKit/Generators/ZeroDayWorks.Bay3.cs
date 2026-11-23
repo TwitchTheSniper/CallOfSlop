@@ -21,9 +21,8 @@ public sealed partial class ZeroDayWorks
         /// lift each one). Each Press's Piece out goes on a conveyor; the south row's run straight into two Large Conveyor Joins in the aisle
         /// between the rows, the north row's rise from the aisle north of them, cross over their beds at 6.5 m and drop into the same Joins.
         /// The Joins feed a Large Conveyor Router, whose three ways go over the bays at 7.5 m: into the block Assembler's Piece in, into the
-        /// yard station's Piece in 2 (south over bay 3's east side, west along the shed's south end, down by the station's Core) and into
-        /// a Piece Rack in the north aisle, the storage the Router sends what nobody ordered (or what is too wide for the way it was asked
-        /// down: the station's Piece in 2 is 0.5 m). A press with a Piece out conveyor puts every part it stamps on it, tagged for its order,
+        /// yard station's Piece in (south over bay 3's east side, west along the shed's south end, down by the station's Core: its Piece in 2
+        /// is where line D's transfer run ends) and into a Piece Rack in the north aisle, the storage the Router sends what nobody ordered. A press with a Piece out conveyor puts every part it stamps on it, tagged for its order,
         /// so its tray no longer waits for a crane. Laid after the yard (its station is one end).
         /// </summary>
         private void LayPressBelts()

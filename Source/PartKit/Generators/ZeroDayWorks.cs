@@ -69,28 +69,11 @@ public sealed partial class ZeroDayWorks : IPartGenerator
                 Group = "Factories",
             };
             s.Lay();
-            if (Environment.GetEnvironmentVariable("ZDW_DUMP") is { } dumpTo)
-                s.Dump(dumpTo);
             // A body past Construct.MaxLinks drops every later link without a word (welds included, so machines lose their beds):
             // fail here, with room kept for what players add.
             if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
                 throw new VehicleKitException($"Zero Day Works: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
             return s;
-        }
-
-        private void Dump(string path)
-        {
-            using var w = new StreamWriter(path);
-            for (var i = 0; i < Live.PartCount; i++)
-            {
-                ref var cp = ref Live.Parts[i];
-                var d = Live.DefOf(i);
-                var lo = FromRest(cp.Pos + Rot24.Apply(cp.Rot, d.BoundsMin));
-                var hi = FromRest(cp.Pos + Rot24.Apply(cp.Rot, d.BoundsMax));
-                var mn = Vector3.Min(lo, hi);
-                var mx = Vector3.Max(lo, hi);
-                w.WriteLine($"{i}\t{d.Name}\t{cp.Seg}\t{mn.X:0.00}\t{mn.Y:0.00}\t{mn.Z:0.00}\t{mx.X:0.00}\t{mx.Y:0.00}\t{mx.Z:0.00}");
-            }
         }
 
         public static Vector3 V(float x, float y, float z) => new(x, y, z);
