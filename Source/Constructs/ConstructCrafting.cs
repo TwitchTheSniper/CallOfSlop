@@ -1406,8 +1406,11 @@ public static class ConstructCrafting
         {
             if (c.Parts[i].Craft is not { } q)
                 continue;
-            w.U16((ushort)i).U8((byte)q.Count);
-            for (var k = 0; k < q.Count; k++)
+            w.U16((ushort)i);
+            var qat = w.Length;
+            w.U8(0);
+            var sent = 0;
+            for (var k = 0; k < q.Count && w.Length < w.Capacity / 2; k++, sent++) // (96 chained orders could pass the writer's buffer: the oldest go, the rest show as their stock and orders arrive)
             {
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
@@ -1425,6 +1428,7 @@ public static class ConstructCrafting
                     w.U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
                 }
             }
+            w.PatchU8(qat, (byte)sent);
             n++;
         }
         w.PatchU8(at, (byte)n);

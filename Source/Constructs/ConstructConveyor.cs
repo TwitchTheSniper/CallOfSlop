@@ -1183,7 +1183,7 @@ public static class ConstructConveyor
         {
             var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
             if (!(td.IsBuildStation && ConstructStation.ParkEarly(world, c, to, d)) // (a batched station's early part waits in a holding bay: it counts as delivered)
-                && !world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered)))
+                && !world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && (ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered) || ConstructStation.ParkEarly(world, c, to, d, full: true))))
                 return false; // (a station's full hold makes room for a part the build can fit now: ConstructStation.MakeRoomFor)
             if (td.IsCraftTerminal)
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
