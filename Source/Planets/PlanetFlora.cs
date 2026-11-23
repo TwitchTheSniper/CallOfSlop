@@ -381,6 +381,9 @@ public sealed class PlanetFlora
     /// <summary>The furthest any monolith block reaches from its foot, sideways or up, at scale 1 (metres).</summary>
     private const float MonolithReach = 25;
 
+    /// <summary>The solid box's share of a block's size: the drawn corners are pulled in 0 to 7% (FoliageMeshes.RockBlock).</summary>
+    private const float DrawnShare = 0.965f;
+
     /// <summary>A monolith's block as a world box: the plant's frame (as the foliage shader makes it), its yaw and scale.</summary>
     public static Obb RockObb(in Plant p, in RockBox b)
     {
@@ -392,7 +395,7 @@ public sealed class PlanetFlora
         var ax = ex * c + ez * sn; // (the mesh's +X after the shader's yaw)
         var az = ez * c - ex * sn;
         var m = b.Mid * p.Scale;
-        return new Obb(p.Pos + ax * m.X + up * m.Y + az * m.Z, b.Half * p.Scale, ax, up, az);
+        return new Obb(p.Pos + ax * m.X + up * m.Y + az * m.Z, b.Half * (p.Scale * DrawnShare), ax, up, az);
     }
 
     // The monolith points a question has met, per thread (players, shots and constructs ask from the simulation; a
@@ -423,57 +426,92 @@ public sealed class PlanetFlora
         return _rockHas![slot];
     }
 
-    /// <summary>The monolith points (on one face) whose rocks may reach a sphere round <paramref name="mid"/>; false if none can.</summary>
-    private bool RockRange(Vector3 mid, float half, out int face, out int a0, out int a1, out int b0, out int b1)
+    /// <summary>
+    /// The monolith points of face <paramref name="f"/> whose rocks may reach a sphere round <paramref name="mid"/>; false if
+    /// none can (callers ask all six faces: near a cube edge both faces' rocks count).
+    /// </summary>
+    private bool RockRange(Vector3 mid, float half, int f, out int a0, out int a1, out int b0, out int b1)
     {
-        face = a0 = a1 = b0 = b1 = 0;
+        a0 = a1 = b0 = b1 = 0;
         if (!Grows(MonolithLayer))
             return false;
         var pl = Planet;
-        var reach = MonolithReach * MaxMonolithScale;
-        if (pl.RoughAltitude(mid) > half + reach)
-            return false;
+        var reach = MonolithReach * MaxMonolithScale + half;
         var rel = mid - pl.Center;
         var len = rel.Length();
-        if (len < 1)
+        if (len < 1 || pl.RoughAltitude(mid) > reach)
             return false;
-        pl.Locate(rel.X / len, rel.Y / len, rel.Z / len, out face, out var fi, out var fj);
+        var dir = rel / len;
+        Planetoid.FaceBasis(f, out var fn, out var fu, out var fv);
+        var dn = Vector3.Dot(dir, fn);
+        if (dn < 0.5f)
+            return false; // (more than 60 degrees round from this face's middle: past its edge by far more than any reach)
         var s = _step[MonolithLayer];
-        var r = (half + reach) / _cell / s;
-        if (r > 8)
-            return false; // (a question over about 600 m: nothing asks one)
+        var r = reach / _cell / s * 1.5; // (the equiangular grid's cells shrink by under a third towards a face's edges)
+        if (r > 16)
+            return false; // (a question over about 600 m across: nothing asks one)
+        var n = Planet.N;
+        double fi = (Planetoid.Unwarp(Vector3.Dot(dir, fu) / dn) + 1) * 0.5 * n, fj = (Planetoid.Unwarp(Vector3.Dot(dir, fv) / dn) + 1) * 0.5 * n;
         var across = PointsAcross(MonolithLayer);
         a0 = Math.Max((int)Math.Floor(fi / s - r), 0);
         a1 = Math.Min((int)Math.Floor(fi / s + r), across - 1);
         b0 = Math.Max((int)Math.Floor(fj / s - r), 0);
         b1 = Math.Min((int)Math.Floor(fj / s + r), across - 1);
-        return true;
+        return a0 <= a1 && b0 <= b1;
     }
 
     /// <summary>
     /// The monoliths' blocks round <paramref name="min"/>..<paramref name="max"/> as boxes (<see cref="ShapeKind.Rock"/>,
     /// index = the point, sub = the block). Solid to everything: people, constructs and shots (PhysicsWorld, the construct
-    /// contacts). One face's points only.
+    /// contacts).
     /// </summary>
     public void GatherRocks(Vector3 min, Vector3 max, List<ContactShape> into)
     {
-        if (!RockRange((min + max) * 0.5f, (max - min).Length() * 0.5f, out var face, out var a0, out var a1, out var b0, out var b1))
-            return;
-        for (var b = b0; b <= b1; b++)
-        for (var a = a0; a <= a1; a++)
+        var mid = (min + max) * 0.5f;
+        var half = (max - min).Length() * 0.5f;
+        for (var f = 0; f < 6; f++)
         {
-            if (!RockAt(face, a, b, out var p))
+            if (!RockRange(mid, half, f, out var a0, out var a1, out var b0, out var b1))
                 continue;
-            var boxes = MonolithBoxes(p.Type);
-            for (var k = 0; k < boxes.Length; k++)
+            for (var b = b0; b <= b1; b++)
+            for (var a = a0; a <= a1; a++)
             {
-                var box = RockObb(p, boxes[k]);
-                box.Bounds(out var lo, out var hi);
-                if (hi.X < min.X || lo.X > max.X || hi.Y < min.Y || lo.Y > max.Y || hi.Z < min.Z || lo.Z > max.Z)
+                if (!RockAt(f, a, b, out var p))
                     continue;
-                into.Add(ContactShape.FromObb(box, new ShapeId(ShapeKind.Rock, (face << 24) ^ (a << 12) ^ b, k)));
+                var boxes = MonolithBoxes(p.Type);
+                for (var k = 0; k < boxes.Length; k++)
+                {
+                    var box = RockObb(p, boxes[k]);
+                    box.Bounds(out var lo, out var hi);
+                    if (hi.X < min.X || lo.X > max.X || hi.Y < min.Y || lo.Y > max.Y || hi.Z < min.Z || lo.Z > max.Z)
+                        continue;
+                    into.Add(ContactShape.FromObb(box, new ShapeId(ShapeKind.Rock, (f << 24) ^ (a << 12) ^ b, k)));
+                }
             }
         }
+    }
+
+    /// <summary>Does a box overlap any monolith block? (Placing parts and ghosts, a body or a point inside the world.)</summary>
+    public bool ObbInRock(in Obb box)
+    {
+        box.Bounds(out var min, out var max);
+        var mid = (min + max) * 0.5f;
+        var half = (max - min).Length() * 0.5f;
+        for (var f = 0; f < 6; f++)
+        {
+            if (!RockRange(mid, half, f, out var a0, out var a1, out var b0, out var b1))
+                continue;
+            for (var b = b0; b <= b1; b++)
+            for (var a = a0; a <= a1; a++)
+            {
+                if (!RockAt(f, a, b, out var p))
+                    continue;
+                foreach (var rb in MonolithBoxes(p.Type))
+                    if (Geometry.ObbOverlap(box, RockObb(p, rb)))
+                        return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>The nearest monolith block along a ray within <paramref name="maxDist"/>, or maxDist.</summary>
@@ -486,20 +524,23 @@ public sealed class PlanetFlora
         {
             var t1 = MathF.Min(t0 + 400f, best);
             var mid = o + d * ((t0 + t1) * 0.5f);
-            if (!RockRange(mid, (t1 - t0) * 0.5f, out var face, out var a0, out var a1, out var b0, out var b1))
-                continue;
-            for (var b = b0; b <= b1; b++)
-            for (var a = a0; a <= a1; a++)
+            for (var f = 0; f < 6; f++)
             {
-                if (!RockAt(face, a, b, out var p))
+                if (!RockRange(mid, (t1 - t0) * 0.5f, f, out var a0, out var a1, out var b0, out var b1))
                     continue;
-                foreach (var rb in MonolithBoxes(p.Type))
+                for (var b = b0; b <= b1; b++)
+                for (var a = a0; a <= a1; a++)
                 {
-                    var box = RockObb(p, rb);
-                    if (Geometry.RayObb(box, o, d, best) is { } t && t < best)
+                    if (!RockAt(f, a, b, out var p))
+                        continue;
+                    foreach (var rb in MonolithBoxes(p.Type))
                     {
-                        best = t;
-                        normal = Geometry.ObbEntryNormal(box, o, d, t);
+                        var box = RockObb(p, rb);
+                        if (Geometry.RayObb(box, o, d, best) is { } t && t < best)
+                        {
+                            best = t;
+                            normal = Geometry.ObbEntryNormal(box, o, d, t);
+                        }
                     }
                 }
             }
