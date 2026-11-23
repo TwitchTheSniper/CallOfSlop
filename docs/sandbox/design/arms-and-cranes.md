@@ -159,7 +159,10 @@ across, lower) now starts and stops on a sine-shaped push: its speed rises as (1
 (`ConstructLifters.LegTime`, `LegAt`). **Over what's in the way:** a loaded carry's rise is raised on the server, at the
 carry's start, so the piece's underside passes 0.3 m over the tallest box of any body along its run (its footprint at both
 end turns); what reaches past the hook's highest carry, what hangs over the piece at an end and what the piece lies in are
-left out (`ConstructLifterClear.cs`). The rise goes to clients in the lift word as before.
+left out (`ConstructLifterClear.cs`). The rise goes to clients in the lift word as before. **Onto and off a pad:** a crane
+(or arm) putting on a rack or pad lowers to the slot the rack will stack the piece in (`ConstructRackPack.NextOrigin`), and
+a pick lifts the top piece where it lies (`TopSlot`), not the pad's point nearest the shoulder; when that slot is out of
+reach it falls back to the nearest point as before (Sean, 2026-11-23).
 
 - **What is built.** **Crane Rail** sections joined end to end by `end-` and `end+` sockets make a run, as Linear rails do
   (in line within 2 cm and 3 degrees, at most 64 sections); two runs a span apart, on whatever the player stands them on
