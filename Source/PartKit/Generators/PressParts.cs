@@ -373,7 +373,7 @@ public sealed partial class PressParts : IPartGenerator
             }
             // Welded to a block of its press: the body runs on to the neighbour's under the deck, legs to legs (on a wall block it is
             // inside the lid, unseen).
-            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.007, deck - 0.008, MachineLook.Base)!.Update(("seamFill", side)));
+            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.012, deck - 0.008, MachineLook.Base)!.Update(("seamFill", side)));
             // Open: the deck's hazard edge, a row of bolts along the slab, two ribs and a kick band on the set-back body, and a dark
             // band just under the deck (its shadow line, which reads as the frame's depth).
             p.Add(BedBox(On(e - 0.004, e + 0.008, -e + 0.03, e - 0.03, 1.80, 1.90, MachineLook.Accent, "hazard paint"), side));
