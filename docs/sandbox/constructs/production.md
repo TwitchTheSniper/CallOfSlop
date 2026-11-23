@@ -1967,8 +1967,9 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   kits are alike bake into the one the oven's head order names (`BakeKits.Target`'s `want`). `--bake-kit` checks a listed kit's part
   origin against the kit frame's (its skins aren't the part box for box).
 - **On the works.** Line C's console wires the station's orders to its Panel Former as well as its Sheet Extruder, so the station's skin
-  orders go to the former. A formed skin meant for a station that is too long for the skin pad (or not its way) waits at the pad's edge
-  and the bay crane lifts it there (`RollerRuns.BedRunAt` takes a run onto a Lay-down Pad as well as one onto a bed). Line C's store,
+  orders go to the former. A formed skin meant for a station rides past the Laser Cutter as a deck's plate rides past the former: it
+  waits whole at the cutter bed's edge and the bay crane lifts it there (`ConstructConveyor.PastBed`; `RollerRuns.BedRunAt` also takes a
+  run onto a Lay-down Pad, where a skin too long for the pad or not its way waits at the pad's edge). Line C's store,
   the kit station's and the yard station's pick pad, is 18 x 12 m turned East (its hold 17.7 m long across the bay, a deck 17.25 m) with
   two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s
   `--station-check "Zero Day Works" --build "Zero Day Frigate"` run (2026-11-23): the Keel bands and the decks made and baked on line C
