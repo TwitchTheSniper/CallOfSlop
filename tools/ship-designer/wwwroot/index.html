@@ -385,7 +385,7 @@ renderer.domElement.addEventListener("pointerdown", ev => {
       select("room", r.object.userData.id);
       const room = S.rooms.find(x => x.id === r.object.userData.id);
       const at = deckPoint(ev);
-      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false };
+      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false, edges: edgesNear(room, at) };
       controls.enabled = false; dragFirst = true; return;
     }
     if (ev.shiftKey || drawing) {
@@ -412,8 +412,15 @@ window.addEventListener("pointermove", ev => {
     $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
   } else if (drag.what === "room") {
     const at = deckPoint(ev); if (!at || !drag.start) return;
-    const dx = Math.round((at.x - drag.start.x) * 4) / 4, dz = Math.round((at.z - drag.start.z) * 4) / 4, r = drag.room;
-    dragCmd({ op: "setRoom", id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
+    const dx = Math.round((at.x - drag.start.x) * 4) / 4, dz = Math.round((at.z - drag.start.z) * 4) / 4, r = drag.room, e = drag.edges;
+    if (e.any) {
+      // Grab an edge or a corner to size the room; the far side stays put, and it keeps at least a metre.
+      const b = { x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 };
+      if (e.x0) b.x0 = Math.min(r.x0 + dx, r.x1 - 1); if (e.x1) b.x1 = Math.max(r.x1 + dx, r.x0 + 1);
+      if (e.z0) b.z0 = Math.min(r.z0 + dz, r.z1 - 1); if (e.z1) b.z1 = Math.max(r.z1 + dz, r.z0 + 1);
+      dragCmd({ op: "setRoom", id: drag.id, ...b });
+      $("tip").textContent = `${fmt(b.x1 - b.x0)} x ${fmt(b.z1 - b.z0)} m`;
+    } else dragCmd({ op: "setRoom", id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
   } else if (drag.what === "draw") {
     const at = deckPoint(ev); if (!at) return;
     drag.end = at; drawPreview(drag.start, at);
@@ -457,6 +464,13 @@ function deckPoint(ev) {
   if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -dk.floor), pt)) return null;
   return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.z * 4) / 4 };
 }
+// Which edges of a room a deck point is on (within 45 cm, inside the room or just outside it).
+function edgesNear(r, at) {
+  if (!at) return { any: false };
+  const m = 0.45, inZ = at.z > r.z0 - m && at.z < r.z1 + m, inX = at.x > r.x0 - m && at.x < r.x1 + m;
+  const e = { x0: inZ && Math.abs(at.x - r.x0) < m, x1: inZ && Math.abs(at.x - r.x1) < m, z0: inX && Math.abs(at.z - r.z0) < m, z1: inX && Math.abs(at.z - r.z1) < m };
+  e.any = e.x0 || e.x1 || e.z0 || e.z1; return e;
+}
 let preview = null;
 function drawPreview(a, b) {
   clearPreview();
@@ -475,7 +489,10 @@ function hover(ev) {
   const hits = cast(ev);
   if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
-  else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) renderer.domElement.style.cursor = "move";
+  else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
+    const r = S.rooms.find(x => x.id === hits.find(h => h.object.userData.type === "room").object.userData.id), e = edgesNear(r, deckPoint(ev));
+    renderer.domElement.style.cursor = !e.any ? "move" : (e.x0 || e.x1) && (e.z0 || e.z1) ? "nwse-resize" : (e.x0 || e.x1) ? "ew-resize" : "ns-resize";
+  }
   else if (mode === "interior" && drawing) renderer.domElement.style.cursor = "crosshair";
 }
 
@@ -505,7 +522,14 @@ function paletteMove(ev) {
 function paletteDrop() {
   const p = paletteDrag; paletteDrag = null;
   if (p.id && p.off) { pending = null; cmd({ op: "delPiece", id: p.id }, true); select(null, 0); }
-  else { flush(); if (p.id) select("piece", p.id); }
+  else {
+    flush();
+    if (p.id) {
+      // An airlock comes with its chamber: an Airlock room behind it, in the same undo step.
+      if (CAT.pieces.find(k => k.name === p.kind)?.socket === "airlock") { const n = S.rooms.length, a = cmd({ op: "autoRoom", id: p.id }, true); if (!a.error) toast(S.rooms.length > n ? "Airlock placed, with an airlock room behind it." : "Airlock placed: it opens into the room already there.", true); }
+      select("piece", p.id);
+    }
+  }
   $("tip").textContent = tips[mode];
 }
 
@@ -516,7 +540,7 @@ function selectStation(hull, i) { sel.kind = "hull"; sel.id = hull; sel.station 
 const tips = {
   hull: "Click a hull to pick it and move it with the arrows. Drag a blue station ring along the ship. Shape a station's profile on the left.",
   pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
-  interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it.",
+  interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
 };
 let roomKind = "Cabin", drawing = true;
 
@@ -542,8 +566,8 @@ function leftPanel() {
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
-    const groups = [...new Set(CAT.pieces.map(p => p.group))];
-    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) open into a room inside."),
+    const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Place as a mirrored pair")));
     for (const g of groups) {
       const pal = el("div", { class: "pal" });
@@ -552,7 +576,7 @@ function leftPanel() {
         b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
         pal.append(b);
       }
-      L.append(el("div", { class: "sec" }, el("h2", {}, g), pal));
+      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
     }
   } else {
     const dsel = el("div", { class: "row" });
@@ -682,6 +706,7 @@ function inspector() {
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
+      k.socket ? el("div", { class: "row" }, el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPiece", id: p.id }); select(null, 0); } }, "Take off")));
   } else if (sel.kind === "room") {
     const r = S.rooms.find(r => r.id === sel.id); if (!r) return;
@@ -747,7 +772,7 @@ window.addEventListener("keydown", e => {
   } else if (e.key === "Escape") select(null, 0);
 });
 
-window.shipDesigner = { cmd, selectStation, select, setMode }; // (for a page test)
+window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls }; // (for a page test)
 function loop() { requestAnimationFrame(loop); flush(); controls.update(); renderer.render(scene, camera); }
 
 try {

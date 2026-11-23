@@ -283,6 +283,8 @@ public sealed class DesignEditor
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
                 return "";
             }
+            case "autoRoom":
+                return AutoRoom(P());
             case "delPiece":
                 d.Pieces.Remove(P());
                 return "";
@@ -345,6 +347,46 @@ public sealed class DesignEditor
             default:
                 return "unknown command " + op;
         }
+    }
+
+    /// <summary>
+    /// An airlock's chamber: an Airlock room 2.5 m square behind a socket on a side, on the deck its door opens onto, set in from the skin
+    /// until it fits (no room is made when one is already in reach).
+    /// </summary>
+    private string AutoRoom(Piece p)
+    {
+        var d = Design;
+        var kind = PieceKinds.Find(p.Kind)!;
+        var (at, n) = DesignScene.Spots(d, p).First();
+        if (Math.Abs(n[1]) > 0.7)
+            return "an airlock room goes behind a door in the side; on the belly or the roof, lay the room yourself";
+        var deck = d.Decks.FindIndex(k => at[1] >= k.Floor - 0.6 && at[1] <= k.Ceiling);
+        if (deck < 0)
+            return "the door is on no deck: move it down or up to a deck's height";
+        var dk = d.Decks[deck];
+        bool across = Math.Abs(n[0]) >= Math.Abs(n[2]);
+        var sgn = Math.Sign(across ? n[0] : n[2]);
+        for (var off = 0.25; off <= 3.01; off += 0.25)
+        {
+            double edge = Snap((across ? at[0] : at[2]) - sgn * off, 0.25), far = edge - sgn * 2.5, mid = Snap(across ? at[2] : at[0], 0.25);
+            var r = across ? new Room { X0 = edge, X1 = far, Z0 = mid - 1.25, Z1 = mid + 1.25 } : new Room { Z0 = edge, Z1 = far, X0 = mid - 1.25, X1 = mid + 1.25 };
+            r.Normalise();
+            var fits = true;
+            foreach (var y in new[] { dk.Floor + 0.05, dk.Ceiling - 0.02 })
+                foreach (var x in new[] { r.X0, r.X1 })
+                    foreach (var z in new[] { r.Z0, r.Z1 })
+                        fits &= d.Hulls.Any(h => h.Depth(x, y, z) >= 0.06);
+            if (!fits)
+                continue;
+            if (d.Rooms.Any(o => o.Deck == deck && Math.Min(r.X1, o.X1) - Math.Max(r.X0, o.X0) > 0.01 && Math.Min(r.Z1, o.Z1) - Math.Max(r.Z0, o.Z0) > 0.01))
+                return "";  // a room is already there: the airlock opens into it
+            r.Id = d.NewId();
+            r.Deck = deck;
+            r.Kind = "Airlock room";
+            d.Rooms.Add(r);
+            return "";
+        }
+        return $"no 2.5 m airlock room fits behind the {kind.Name} on deck {deck + 1}";
     }
 
     private static void SetBox(Room r, JsonObject o)

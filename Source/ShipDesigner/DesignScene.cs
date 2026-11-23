@@ -87,7 +87,36 @@ public static class DesignScene
         var cx = h.CopyX(copy);
         var (bx0, bx1, by0, by1, bz0, bz1) = h.Bounds();
         var cutters = d.Hulls.Where(o => o != h && (o.Cut || h.Cut) && Overlap(o.Bounds(), (bx0, bx1, by0, by1, bz0, bz1))).ToList();
-        bool Cut(double x, double y, double z) => cutters.Any(o => o.Depth(x, y, z) > 0.02);
+        // The openings the sockets on this copy cut through the skin (each a frame and its half sizes).
+        var holes = new List<(Place W, double Hx, double Hz, bool Round)>();
+        foreach (var p in d.Pieces)
+        {
+            if (p.Hull != h.Id || Math.Min(p.Copy, h.Copies - 1) != copy || PieceKinds.Find(p.Kind)?.Opening is not { } op)
+                continue;
+            var w = Where(h, p);
+            holes.Add((w, op.Hx, op.Hz, op.Round));
+            if (p.Mirror)
+            {
+                double[] F(double[] v) => [-v[0], v[1], v[2]];
+                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx, op.Hz, op.Round));
+            }
+        }
+        bool InHole(double x, double y, double z)
+        {
+            foreach (var (w, hx, hz, round) in holes)
+            {
+                double dx = x - w.O[0], dy = y - w.O[1], dz = z - w.O[2];
+                var ly = dx * w.Y[0] + dy * w.Y[1] + dz * w.Y[2];
+                if (Math.Abs(ly) > 0.8)
+                    continue;
+                var lx = dx * w.X[0] + dy * w.X[1] + dz * w.X[2];
+                var lz = dx * w.Z[0] + dy * w.Z[1] + dz * w.Z[2];
+                if (round ? lx * lx + lz * lz < hx * hx : Math.Abs(lx) < hx && Math.Abs(lz) < hz)
+                    return true;
+            }
+            return false;
+        }
+        bool Cut(double x, double y, double z) => InHole(x, y, z) || cutters.Any(o => o.Depth(x, y, z) > 0.02);
 
         var col = DesignMesh.Hex(h.Skin);
         var dark = DesignMesh.Hex("#3a3e44");
@@ -97,16 +126,20 @@ public static class DesignScene
             var a = h.Stations[i];
             var b = h.Stations[i + 1];
             var band = i % 2 == 0 ? 1.0 : 0.94;
-            var nz = cutters.Count == 0 ? 1 : Math.Clamp((int)Math.Ceiling((b.Z - a.Z) / 0.5), 1, 48);
+            // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
+            var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2);
+            var step = holed ? 0.2 : 0.5;
+            var cutting = holed || cutters.Count > 0;
+            var nz = !cutting ? 1 : Math.Clamp((int)Math.Ceiling((b.Z - a.Z) / step), 1, 80);
             foreach (var s in new[] { -1, 1 })
                 for (var k = 0; k < n - 1; k++)
                 {
                     var shade = DesignMesh.Tone(col, band * (k % 2 == 0 ? 1.0 : 0.9));
-                    Strip(skin, cx, h, (s * a.P[k].H, a.P[k].Y, a.Z), (s * a.P[k + 1].H, a.P[k + 1].Y, a.Z), (s * b.P[k].H, b.P[k].Y, b.Z), (s * b.P[k + 1].H, b.P[k + 1].Y, b.Z), shade, nz, cutters.Count > 0, Cut, s < 0);
+                    Strip(skin, cx, h, (s * a.P[k].H, a.P[k].Y, a.Z), (s * a.P[k + 1].H, a.P[k + 1].Y, a.Z), (s * b.P[k].H, b.P[k].Y, b.Z), (s * b.P[k + 1].H, b.P[k + 1].Y, b.Z), shade, nz, cutting, Cut, s < 0, step);
                 }
             // The keel (across the bottom) and the spine (across the top).
-            Strip(skin, cx, h, (-a.P[0].H, a.P[0].Y, a.Z), (a.P[0].H, a.P[0].Y, a.Z), (-b.P[0].H, b.P[0].Y, b.Z), (b.P[0].H, b.P[0].Y, b.Z), DesignMesh.Tone(dark, band), nz, cutters.Count > 0, Cut, false);
-            Strip(skin, cx, h, (a.P[n - 1].H, a.P[n - 1].Y, a.Z), (-a.P[n - 1].H, a.P[n - 1].Y, a.Z), (b.P[n - 1].H, b.P[n - 1].Y, b.Z), (-b.P[n - 1].H, b.P[n - 1].Y, b.Z), DesignMesh.Tone(col, band * 1.05), nz, cutters.Count > 0, Cut, false);
+            Strip(skin, cx, h, (-a.P[0].H, a.P[0].Y, a.Z), (a.P[0].H, a.P[0].Y, a.Z), (-b.P[0].H, b.P[0].Y, b.Z), (b.P[0].H, b.P[0].Y, b.Z), DesignMesh.Tone(dark, band), nz, cutting, Cut, false, step);
+            Strip(skin, cx, h, (a.P[n - 1].H, a.P[n - 1].Y, a.Z), (-a.P[n - 1].H, a.P[n - 1].Y, a.Z), (b.P[n - 1].H, b.P[n - 1].Y, b.Z), (-b.P[n - 1].H, b.P[n - 1].Y, b.Z), DesignMesh.Tone(col, band * 1.05), nz, cutting, Cut, false, step);
         }
         Cap(fore, cx, h, h.Stations[0], DesignMesh.Tone(col, 0.85), Cut);
         Cap(aft, cx, h, h.Stations[^1], DesignMesh.Tone(dark, 1.2), Cut);
@@ -118,10 +151,10 @@ public static class DesignScene
 
     /// <summary>One facet between two stations as a grid of quads (nz along, more across where cutting), leaving out those inside a cutter.</summary>
     private static void Strip(DesignMesh m, double cx, HullBody h, (double X, double Y, double Z) a0, (double X, double Y, double Z) a1, (double X, double Y, double Z) b0,
-        (double X, double Y, double Z) b1, (byte, byte, byte) col, int nz, bool cutting, Func<double, double, double, bool> cut, bool flip)
+        (double X, double Y, double Z) b1, (byte, byte, byte) col, int nz, bool cutting, Func<double, double, double, bool> cut, bool flip, double step = 0.5)
     {
         var across = Math.Sqrt(Math.Pow(a1.X - a0.X, 2) + Math.Pow(a1.Y - a0.Y, 2));
-        var nk = cutting ? Math.Clamp((int)Math.Ceiling(across / 0.5), 1, 16) : 1;
+        var nk = cutting ? Math.Clamp((int)Math.Ceiling(across / step), 1, 40) : 1;
         (double, double, double) Pt(double u, double v)
         {
             var px = a0.X + (a1.X - a0.X) * u + ((b0.X + (b1.X - b0.X) * u) - (a0.X + (a1.X - a0.X) * u)) * v;

@@ -8,6 +8,12 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
 {
     /// <summary>How far a socket may be from the room it opens into (the void between a room's wall and the skin, then a little).</summary>
     public double Reach => Socket switch { "dock" => 2.6, "cargo" => 2.6, _ => 2.2 };
+
+    /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
+    public (double Hx, double Hz, bool Round)? Opening => Socket switch
+    {
+        "airlock" => (1.15, 0.75, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false), _ => null,
+    };
 }
 
 public static class PieceKinds
@@ -89,31 +95,49 @@ public static class PieceKinds
             m.Box(-1.35, 0, 0.75, 1.35, 0.22, 0.95, Armour);
             m.Box(-1.35, 0, -0.75, -1.15, 0.22, 0.75, Armour);
             m.Box(1.15, 0, -0.75, 1.35, 0.22, 0.75, Armour);
-            m.Box(-1.15, 0, -0.75, 1.15, 0.08, 0.75, Gun);
-            m.Box(-1.2, 0.08, -0.05, 1.2, 0.12, 0.05, Amber);
+            m.Box(-1.15, -0.7, -0.75, 1.15, -0.62, 0.75, Gun); // the outer door, set in the well
+            m.Box(-1.2, -0.62, -0.05, 1.2, -0.58, 0.05, Amber);
             m.Box(0.9, 0.22, -0.9, 1.05, 0.3, -0.8, Glow);
+            Well(m, 1.15, 0.75, 1.2);
         }),
         new("Docking collar", "Sockets", "skin", "dock", "any room", "A docking collar for another ship or a station's clamp.", m =>
         {
             m.Frustum(0, 1.45, 0.7, 1.35, 16, Armour, cap1: false);
             m.Frustum(0.7, 1.55, 0.85, 1.55, 16, Amber);
             m.Frustum(0.8, 1.05, 0.88, 1.05, 16, Gun);
+            m.Frustum(-1.4, 1.05, 0, 1.05, 16, Gun, cap0: false, cap1: false);
         }),
         new("Cargo hatch", "Sockets", "skin", "cargo", "a cargo hold", "A 3 m cargo door. Opens into a cargo hold.", m =>
         {
             m.Box(-1.8, 0, -1.8, 1.8, 0.15, 1.8, Armour);
-            m.Box(-1.5, 0.15, -1.5, -0.03, 0.22, 1.5, Gun);
-            m.Box(0.03, 0.15, -1.5, 1.5, 0.22, 1.5, Gun);
+            m.Box(-1.5, -0.55, -1.5, -0.03, -0.48, 1.5, Gun);
+            m.Box(0.03, -0.55, -1.5, 1.5, -0.48, 1.5, Gun);
             m.Box(-1.8, 0.15, 1.6, 1.8, 0.2, 1.8, Amber);
             m.Box(-1.8, 0.15, -1.8, 1.8, 0.2, -1.6, Amber);
+            Well(m, 1.5, 1.5, 1.4);
         }),
         new("Boarding hatch", "Sockets", "skin", "shaft", "a room on the lowest deck", "A belly hatch over the boarding shaft's ladder (the boarding shaft kit).", m =>
         {
-            m.Box(-0.65, 0, -0.65, 0.65, 0.1, 0.65, Armour);
-            m.Box(-0.5, 0.1, -0.5, 0.5, 0.14, 0.5, Gun);
+            m.Box(-0.65, 0, -0.65, 0.65, 0.1, -0.5, Armour); m.Box(-0.65, 0, 0.5, 0.65, 0.1, 0.65, Armour); m.Box(-0.65, 0, -0.5, -0.5, 0.1, 0.5, Armour); m.Box(0.5, 0, -0.5, 0.65, 0.1, 0.5, Armour);
+            
             m.Box(-0.65, 0.1, 0.5, 0.65, 0.16, 0.65, Amber);
+            Well(m, 0.5, 0.5, 2.2);
+            // The boarding shaft's ladder: two rails and rungs up the shaft (its own frame's -Y is into the ship).
+            m.Box(-0.3, -2.2, 0.38, -0.25, 0, 0.43, Amber);
+            m.Box(0.25, -2.2, 0.38, 0.3, 0, 0.43, Amber);
+            for (var y = -2.0; y < 0; y += 0.3)
+                m.Box(-0.25, y, 0.39, 0.25, y + 0.04, 0.42, Gun);
         }),
     ];
+
+    /// <summary>A socket's well: four walls from the skin inward (its frame's -Y), so the cut opening shows a frame, not the void.</summary>
+    private static void Well(DesignMesh m, double hx, double hz, double depth)
+    {
+        m.Box(-hx - 0.06, -depth, -hz - 0.06, hx + 0.06, 0.02, -hz, Gun);
+        m.Box(-hx - 0.06, -depth, hz, hx + 0.06, 0.02, hz + 0.06, Gun);
+        m.Box(-hx - 0.06, -depth, -hz, -hx, 0.02, hz, Gun);
+        m.Box(hx, -depth, -hz, hx + 0.06, 0.02, hz, Gun);
+    }
 
     public static PieceKind? Find(string name) => Array.Find(All, k => k.Name == name);
 }
