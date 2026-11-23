@@ -159,6 +159,12 @@ public static class StationCheck
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
                         Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: queue {c.Parts[m].Orders?.Count ?? -1}, "
                             + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
+                // (and every Press and Extruder with orders: what it waits for, 2026-11-23)
+                if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
+                    foreach (var m in makers.Where(m => (c.DefOf(m).IsPress && !c.DefOf(m).IsLathe || c.DefOf(m).IsExtruder) && c.Parts[m].Orders is { Count: > 0 }))
+                        if (w.StoreOf(c, m) is { } pst)
+                            Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} part {m}: queue {c.Parts[m].Orders?.Count ?? -1}, "
+                                + (c.DefOf(m).IsPress ? ConstructPress.Look(c, m, pst, false, null, Vector3.Zero) : ConstructExtruder.Look(c, m, pst, false, new SandboxInventory())));
                 if (args.Contains("--trace") && k % World.TickRate == 0)
                     for (var i = 0; i < c.PartCount; i++)
                         if (ConstructLifters.DefOf(c, i) != null && ConstructLifters.Look(w, c, i) is var look && (!lifterLooks.TryGetValue(i, out var was) || was != look))
@@ -186,6 +192,13 @@ public static class StationCheck
         {
             var ol = c.Parts[m].Orders!;
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} queue: {string.Join("; ", Enumerable.Range(0, ol.Count).Select(k => $"{ol.Items[k].Count} x {(ol.Items[k].Part != ConstructParts.None ? ConstructParts.Def(ol.Items[k].Part).Name : ol.Items[k].Name ?? "a piece")} (made {ol.Items[k].Made})"))}");
+        }
+        // What still rides a conveyor at the end, and how far along (an ordered piece that never arrives: 2026-11-23).
+        for (var r = 0; r < c.ConveyedCount; r++)
+        {
+            var cr = c.Conveyed[r];
+            if (cr.Route < c.RouteCount)
+                Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on the conveyor from the {c.DefOf(c.Routes[cr.Route].Source).Name} to the {c.DefOf(c.Routes[cr.Route].To).Name}, {cr.At:0.00} m along, flags {cr.Flags}");
         }
         foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} holds {Holds(m)}; looks: "

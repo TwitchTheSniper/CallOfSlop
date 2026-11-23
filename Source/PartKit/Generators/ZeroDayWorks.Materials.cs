@@ -32,7 +32,7 @@ public sealed partial class ZeroDayWorks
             var smeltGlass = Refiner("Smelter", 49f);
             var foundry = Refiner("Foundry", 57f);
             var sawmill = Refiner("Sawmill", 81f);
-            _recycler = On("Recycler", 69f, RawRow, Up, paint: Refining);
+            _recycler = On("Recycler", 85f, RawRow, Up, paint: Refining); // (between the Sawmill and the wood bunker: x 69 is the laminate Foundry's)
 
             Chute(iron, smelt);
             Chute(copperOre, smeltCu);
@@ -56,6 +56,12 @@ public sealed partial class ZeroDayWorks
             Chute(_bins["planks"], rubber, 6.5f);
             Chute(sand, rubber, 7.5f);
             Chute(concrete, Bin("concrete", 63f));
+            // A fourth Foundry on laminate at x 69 (planks and glass): the presses' Button and Board dies take laminate blanks.
+            var laminate = Refiner("Foundry", 69f);
+            Config(laminate, ("recipe", 4));
+            Chute(_bins["planks"], laminate, 8f);
+            Chute(_bins["glass"], laminate, 8f);
+            Chute(laminate, Bin("laminate", 69f));
             Chute(rubber, Bin("rubber", 75f));
 
             // The stock yard in the generator hall (Sean, 2026-11-22: the ore bunkers were far too small for what the frigate takes; a 7 minute

@@ -28,9 +28,9 @@ public sealed partial class ZeroDayWorks
         private void LayPressBelts()
         {
             const float low = 6.5f, high = 7.5f;
-            var join = new[] { On("Large Conveyor Join", 75, -113, East, "-y.4.4", General2), On("Large Conveyor Join", 87, -113, East, "-y.4.4", General2) };
-            var router = On("Large Conveyor Router", 91, -113, East, "-y.4.4", General2);
-            var rack = On("Piece Rack", 77, -100, East, "-y.0.0", General2);
+            var join = new[] { On("Large Conveyor Join", 75, -114, East, "-y.4.4", General2), On("Large Conveyor Join", 87, -114, East, "-y.4.4", General2) };
+            var router = On("Large Conveyor Router", 91, -114, East, "-y.4.4", General2);
+            var rack = On("Piece Rack", 77, -98, East, "-y.0.0", General2);
             for (var k = 0; k < 2; k++)
             {
                 Belt(_presses[2 + k], "Piece out", join[k], "Piece in 2", null, General2); // (the south row: straight into the Join's south side)
@@ -93,22 +93,25 @@ public sealed partial class ZeroDayWorks
             // the buttons and switches, the leg pods' brackets). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
             // aren't chuted to the presses yet, so the other families wait on that.
             var dies = new Queue<string>(["Gear Die", "Board Die", "Button Die", "Bracket Die"]);
-            foreach (var z in new[] { -103f, -117f })
+            foreach (var z in new[] { -103f, -119f })
                 foreach (var x in new[] { 75f, 86f })
                 {
                     var press = Press(x, z);
-                    Onto(press, "dieslot", dies.Dequeue(), "mount"); // (in its own colours: the family's punch)
+                    var die = dies.Dequeue();
+                    Onto(press, "dieslot", die, "mount");
+                    _pressDies.Add(die); // (in its own colours: the family's punch)
                     _makers.Add(press);
                     _presses.Add(press);
                 }
+            FeedPresses(); // (each press's own Extruder, straight into its bay 1: ZeroDayWorks.PressFeed.cs)
             // Between the two columns of presses (x 82 to 85): the Die Racks and the Die Lathe, beside the beds, out of the swing strips.
-            foreach (var z in new[] { -105f, -109f, -118f, -122f })
+            foreach (var z in new[] { -105f, -109f, -117f, -125f })
                 On("Die Rack", 83, z, Up, "-y.0.0", General2);
-            On("Die Lathe", 83, -113, Up, "-y.0.0", General2);
+            On("Die Lathe", 83, -114, Up, "-y.0.0", General2);
 
             // ---- The block Assembler: Core at x 75, a 4 x 4 bed east of it, 2-block masts outside the bed's corners, a Gantry Carriage
             // a bed row, the Thruster Jig docked on its west side (its Tool Bay), three upgrade modules; the Block Rack east of the bed. ----
-            var asm = Assembler(75, -131);
+            var asm = Assembler(75, -132); // (its north masts 1 m clear of the south presses' shell swing: the presses moved south 2 m for the belt aisle, 2026-11-23)
             _makers.Add(asm);
             _blockAssembler = asm;
             // Its stock: a chute from each bin its frigate orders draw on (Orders pull their inputs from the stores chuted in), at 9.5 to
@@ -127,7 +130,7 @@ public sealed partial class ZeroDayWorks
             var (chuteIn, _) = PortOf(asm, "Chute in");
             Link("chute", rack, asm, null, "Chute in", General2, false, null,
                 [V(top.X, top.Y + 1, top.Z), V(top.X, 5f, top.Z), V(top.X - 7, 5f, top.Z), V(chuteIn.X, 5f, top.Z), V(chuteIn.X, 5f, chuteIn.Z), V(chuteIn.X, chuteIn.Y + 1, chuteIn.Z)]);
-            On("Sewing Table Block", 91, -131, Up, paint: General2); // (the other tool block, on the floor: a player shelves it on the rack, which a blueprint can't)
+            On("Sewing Table Block", 91, -132, Up, paint: General2); // (the other tool block, on the floor: a player shelves it on the rack, which a blueprint can't)
 
             // ---- The walls store (5 x 8) and the fittings store (4 x 8), side by side; the fittings run south from it to the yard. -------
             var walls = Tiles("Pad Tile", 73, -147, 5, 8, South, Stock);
