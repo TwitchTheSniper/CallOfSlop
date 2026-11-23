@@ -1226,6 +1226,23 @@ public static class ConstructConveyor
             Array.Copy(c.Conveyed, i + 1, c.Conveyed, i, c.ConveyedCount - i);
     }
 
+    /// <summary>Server: rider <paramref name="i"/> comes off its link as a loose body where it is, at rest on the link (a roll onto a Bake Oven's bed takes it: ConstructRollOut.cs). The body, or null.</summary>
+    internal static Construct? TakeOff(ConstructWorld world, Construct c, int i)
+    {
+        var r = c.Conveyed[i];
+        if (r.Route >= c.RouteCount || ConstructParts.Get(r.Def) is not { } d)
+            return null;
+        WorldPose(c, r.Route, r, d, out var centre, out var rot);
+        if (ConstructEdits.DropLoose(world, d, centre, rot) is not { } body)
+            return null;
+        Remove(c, i);
+        body.Owner = c.Owner;
+        ref var np = ref body.Parts[0];
+        np.Health = MathF.Max(1, d.Health * r.Health / 255f);
+        np.Paint = r.Paint;
+        return body;
+    }
+
     /// <summary>Rider <paramref name="i"/> comes off as a loose body where it is (its link's place, or where it last was), moving as the body moved.</summary>
     private static void Drop(ConstructWorld world, Construct c, int i, ConstructPartDef? d, int route)
     {

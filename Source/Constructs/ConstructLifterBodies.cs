@@ -108,8 +108,8 @@ public static partial class ConstructLifters
     /// </summary>
     public static bool CarryEnd(ConstructWorld world, Construct body, out Vector3 pos, out Quaternion rot)
     {
-        pos = body.Pos;
-        rot = body.Rot;
+        if (ConstructRollOut.SavedPose(world, body, out pos, out rot))
+            return true; // (rolling along a run: saved where its roll ends)
         foreach (var l in world.BodyCarries)
         {
             if (l.CarryBody != body.Id || world.Get(l.Body) is not { } c || l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld)
@@ -128,7 +128,7 @@ public static partial class ConstructLifters
         foreach (var l in world.BodyCarries)
             if (l.CarryBody == body && world.Get(l.Body) is { } c && l.Part < c.PartCount)
                 return c.DefOf(l.Part).Name;
-        return null;
+        return world.BodyRolls.Count > 0 && ConstructRollOut.Of(world, body) != null ? "Roller Tile run" : null; // (rolling out of a bay or onto a bed: ConstructRollOut.cs)
     }
 
     /// <summary>Server, every tick: each carried body posed on its hand; at the move's end it is set at its spot and the hand goes back.</summary>
