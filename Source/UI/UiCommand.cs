@@ -437,9 +437,15 @@ public sealed partial class Ui
 
     private bool _cmdOverPanel;
 
+    /// <summary>The panels' rectangles as last drawn (the craft labels, placed before the panels draw, keep off them).</summary>
+    private readonly float4[] _cmdPanels = new float4[16];
+    private int _cmdPanelCount;
+
     /// <summary>Marks a panel's rectangle: the map under it takes no clicks this frame.</summary>
     private void CmdPanelArea(float2 p0, float2 p1)
     {
+        if (_cmdPanelCount < _cmdPanels.Length)
+            _cmdPanels[_cmdPanelCount++] = new float4(p0.X, p0.Y, p1.X, p1.Y);
         var m = ImGui.GetMousePos();
         if (m.X >= p0.X && m.X < p1.X && m.Y >= p0.Y && m.Y < p1.Y)
             _cmdOverPanel = true;
@@ -529,9 +535,20 @@ public sealed partial class Ui
     // Bodies
     // ---------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Where the bodies' names were printed this frame, so the craft labels keep off them (CmdPlaceLabels).</summary>
+    private readonly float4[] _cmdBodyBox = new float4[64];
+    private int _cmdBodyBoxCount;
+
+    private void CmdBodyLabelBox(float4 box)
+    {
+        if (_cmdBodyBoxCount < _cmdBodyBox.Length)
+            _cmdBodyBox[_cmdBodyBoxCount++] = box;
+    }
+
     private void CmdBodies(ImDrawListPtr dl, Game g, SpaceSession s, float fade, double now)
     {
         var sys = s.System;
+        _cmdBodyBoxCount = 0;
         // Orbits first (under everything).
         for (var b = 1; b < sys.Count; b++)
         {
@@ -571,12 +588,15 @@ public sealed partial class Ui
             {
                 // (the star's name hangs down and to the left: its inner worlds' names stand up and to the right of it)
                 CmdLine(dl, at + new float2(-tag * 0.72f, tag * 0.72f), at + new float2(-tag - 16 * _scale, tag + 6 * _scale), tint, 0.6f * fade);
-                CmdText(dl, at + new float2(-tag - 20 * _scale, tag), 15, picked ? CmdWhite : tint, fade, name, 2);
+                var w = CmdText(dl, at + new float2(-tag - 20 * _scale, tag), 15, picked ? CmdWhite : tint, fade, name, 2);
+                CmdBodyLabelBox(new float4(at.X - tag - 20 * _scale - w, at.Y + tag, at.X - tag - 20 * _scale, at.Y + tag + 16 * _scale));
             }
             else if (r < _cvSize.Y * 0.8f)
             {
                 CmdLine(dl, at + new float2(tag * 0.72f, -tag * 0.72f), at + new float2(tag + 16 * _scale, -tag - 6 * _scale), tint, 0.6f * fade * open);
-                CmdText(dl, at + new float2(tag + 20 * _scale, -tag - 15 * _scale), body.Parent == 0 ? 15 : 12.5f, picked ? CmdWhite : tint, fade * open, name);
+                var px = body.Parent == 0 ? 15 : 12.5f;
+                var w = CmdText(dl, at + new float2(tag + 20 * _scale, -tag - 15 * _scale), px, picked ? CmdWhite : tint, fade * open, name);
+                CmdBodyLabelBox(new float4(at.X + tag + 20 * _scale, at.Y - tag - 15 * _scale, at.X + tag + 20 * _scale + w, at.Y - tag - 14 * _scale + px * _scale));
             }
         }
     }
@@ -719,6 +739,7 @@ public sealed partial class Ui
     private void CmdChrome(ImDrawListPtr dl, Game g, SpaceSession s, float fade, double now, string keyName)
     {
         _cmdOverPanel = false;
+        _cmdPanelCount = 0;
         var sys = s.System;
         CmdNames(sys);
         var pad = 22 * _scale;
