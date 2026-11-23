@@ -332,7 +332,7 @@ public sealed partial class PressParts : IPartGenerator
     /// read as one giant black box. A block is drawn by what it is, from its seams (MachineBlocks: "seam", "seamFill" on "-y"):
     /// <list type="bullet">
     /// <item><b>A bed block</b> (nothing of its press under it): a framed machine table: a deck slab with the tread plate and the hazard
-    /// edge, a leg at each corner and a body set well back under the deck. Welded to a block of its press, the bodies join legs to legs and
+    /// edge and a leg at each corner, in the press's paint, and a dark body set well back under the deck. Welded to a block of its press, the bodies join legs to legs and
     /// the edge goes, so a bed reads as one table.</item>
     /// <item><b>A wall block</b> (a block of its press under it: a clamshell segment, which the game swings about its hinge,
     /// ConstructPressShells.cs): a solid steel lid, unpainted so it never takes the bed's colour, with a dark cap, two stiffeners across
@@ -356,10 +356,10 @@ public sealed partial class PressParts : IPartGenerator
         PyDict BedBox(PyDict? box, string? side = null) => box!.Update(("seam", side == null ? "-y" : Py.L(side, "-y")));
         p.Add(BedBox(MachineLook.D([-e, deck, -e], [e, 1.957, e], Blue, paintable: true))); // (the deck slab)
         p.Add(BedBox(MachineLook.D([-e + 0.004, 1.957, -e + 0.004], [e - 0.004, 1.997, e - 0.004], Bed, "tread plate"))); // (the bed's top: the dark working tone)
-        p.Add(BedBox(MachineLook.D([-inset, 0.003, -inset], [inset, deck - 0.004, inset], Blue, paintable: true))); // (the body, set back between the legs)
+        p.Add(BedBox(MachineLook.D([-inset, 0.003, -inset], [inset, deck - 0.004, inset], MachineLook.Base))); // (the body, set back between the legs: dark, so the painted frame stands out)
         foreach (var x in new[] { -e, e - leg })
             foreach (var z in new[] { -e, e - leg })
-                p.Add(BedBox(MachineLook.D([x, 0.003, z], [x + leg, deck - 0.004, z + leg], MachineLook.Base))); // (a leg)
+                p.Add(BedBox(MachineLook.D([x, 0.003, z], [x + leg, deck - 0.004, z + leg], Blue, paintable: true))); // (a leg, in the press's paint as the deck is)
         foreach (var (side, axis, sign) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
             var u = axis == 0 ? 2 : 0;
@@ -373,15 +373,15 @@ public sealed partial class PressParts : IPartGenerator
             }
             // Welded to a block of its press: the body runs on to the neighbour's under the deck, legs to legs (on a wall block it is
             // inside the lid, unseen).
-            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.007, deck - 0.008, Blue, paint: true)!.Update(("seamFill", side)));
+            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.007, deck - 0.008, MachineLook.Base)!.Update(("seamFill", side)));
             // Open: the deck's hazard edge, a row of bolts along the slab, two ribs and a kick band on the set-back body, and a dark
             // band just under the deck (its shadow line, which reads as the frame's depth).
             p.Add(BedBox(On(e - 0.004, e + 0.008, -e + 0.03, e - 0.03, 1.80, 1.90, MachineLook.Accent, "hazard paint"), side));
             foreach (var c in new[] { -0.75, -0.25, 0.25, 0.75 })
                 p.Add(BedBox(On(e - 0.004, e + 0.022, c - 0.0175, c + 0.0175, 1.745, 1.78, MachineLook.Steel, "steel"), side));
             foreach (var c in new[] { -0.3, 0.3 })
-                p.Add(BedBox(On(inset - 0.004, inset + 0.04, c - 0.03, c + 0.03, 0.16, deck - 0.06, MachineLook.Base), side));
-            p.Add(BedBox(On(inset - 0.004, inset + 0.016, -inset + 0.004, inset - 0.004, 0.007, 0.14, MachineLook.Base), side));
+                p.Add(BedBox(On(inset - 0.004, inset + 0.04, c - 0.03, c + 0.03, 0.16, deck - 0.06, MachineLook.Steel, "steel"), side));
+            p.Add(BedBox(On(inset - 0.004, inset + 0.016, -inset + 0.004, inset - 0.004, 0.007, 0.14, MachineLook.Steel, "steel"), side));
             p.Add(BedBox(On(inset - 0.004, inset + 0.012, -inset + 0.004, inset - 0.004, deck - 0.05, deck - 0.012, Hose), side));
             // ---- A wall block (a block of its press under it: "seamFill": "-y"): the lid's hazard band round its foot ----
             var off = axis == 0 ? 0 : 0.004; // (the x sides' bands and the z sides' cross at the corners: their tops and feet a few mm apart)
