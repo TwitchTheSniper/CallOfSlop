@@ -42,6 +42,7 @@ public sealed class Settings
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
     public SurvivalDeath SandboxDeath = SurvivalDeath.Checkpoint; // survival's death rule for a new world (GameSandboxDeath.cs)
     public bool SandboxKeepPack; // ...and a death keeps the backpack
+    public ShipGravityMode SandboxShipGravity; // a new world's ship gravity rule (ShipGravity.cs)
     public int SandboxMaxBlast; // hosting Sandbox: the biggest blast's radius in metres (0: no limit but the engine's 2 km; the lobby room's Match tab, ConstructMegaBlast.cs)
     public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
@@ -465,6 +466,7 @@ public sealed class Settings
                     case "story_start": s.StoryStart = v.Trim(); break;
                     case "sandbox_death" when int.TryParse(v, out var sd): s.SandboxDeath = (SurvivalDeath)Math.Clamp(sd, 0, (int)SurvivalDeath.Permadeath); break;
                     case "sandbox_keep_pack": s.SandboxKeepPack = v == "1"; break;
+                    case "sandbox_ship_gravity" when int.TryParse(v, out var sg): s.SandboxShipGravity = (ShipGravityMode)Math.Clamp(sg, 0, (int)ShipGravityMode.Everywhere); break;
                     case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
                     case "sandbox_max_blast" when int.TryParse(v, out var sbl): s.SandboxMaxBlast = Math.Clamp(sbl, 0, (int)ConstructWorld.MegaMaxRadius); break;
                     case "sandbox_max_per_player" when int.TryParse(v, out var smp): s.SandboxMaxPerPlayer = Math.Clamp(smp, 0, 10000); break;
@@ -642,6 +644,7 @@ public sealed class Settings
                     $"story_start={StoryStart}",
                     $"sandbox_death={(int)SandboxDeath}",
                     $"sandbox_keep_pack={(SandboxKeepPack ? 1 : 0)}",
+                    $"sandbox_ship_gravity={(int)SandboxShipGravity}",
                     $"sandbox_max_bodies={SandboxMaxBodies}",
                     $"sandbox_max_blast={SandboxMaxBlast}",
                     $"sandbox_max_per_player={SandboxMaxPerPlayer}",

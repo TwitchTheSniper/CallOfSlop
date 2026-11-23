@@ -31,6 +31,7 @@ public static unsafe partial class Program
             game.SetSandboxSurvival(_settings.SandboxSurvival); // (Creative or Survival: GameSandboxSurvival.cs)
             game.SetStoryStart(_settings.PlayedStartId); // (which start a fresh world plays: GameStoryStart.cs)
             game.SetSandboxDeath(_settings.SandboxDeath, _settings.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+            game.SetSandboxShipGravity(_settings.SandboxShipGravity); // (felt gravity aboard: GameShipGravity.cs; a saved world's own replaces it)
         }
         _wasLobbyRoom = false;
         _roomLoadoutsOpen = false;

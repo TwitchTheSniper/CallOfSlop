@@ -16,6 +16,7 @@ public sealed class WorldMeta
     public long CreatedUtc, SavedUtc; // ticks
     public double PlayedSeconds;
     public int Bodies, Parts, Players;
+    public byte ShipGravity; // the ship gravity rule (ShipGravityMode, ShipGravity.cs); after Death, so an older file reads 0, deck gravity
     public byte Death; // survival's death rules (Game.DeathByte: respawn, last checkpoint or permadeath, and keep the backpack); after Players, so an older file reads 0, a plain respawn
 
     public void Write(SaveWriter w)
@@ -24,6 +25,7 @@ public sealed class WorldMeta
         w.U8((byte)(Survival ? 1 : 0)).U32(MapHash).I64(CreatedUtc).I64(SavedUtc).F64(PlayedSeconds);
         w.I32(Bodies).I32(Parts).I32(Players);
         w.U8(Death);
+        w.U8(ShipGravity);
     }
 
     public static WorldMeta Read(SaveReader r) => new()
@@ -40,6 +42,7 @@ public sealed class WorldMeta
         Parts = r.I32(),
         Players = r.I32(),
         Death = r.Has(1) ? r.U8() : (byte)0,
+        ShipGravity = r.Has(1) ? r.U8() : (byte)0,
     };
 }
 

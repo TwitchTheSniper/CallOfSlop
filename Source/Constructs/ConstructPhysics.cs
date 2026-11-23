@@ -158,6 +158,9 @@ public static partial class ConstructPhysics
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var bodies = SimList(world);
         _bodies = bodies;
+        if (query is PhysicsWorld { Planet: { Flora: not null } floraPlanet })
+            world.FloraClear.Update(world, floraPlanet); // (no trunks inside an anchored base: PlanetClearings.cs)
+        FloraClear = world.FloraClear;
         Lap(0, ref t0);
         var n = bodies.Count;
         for (var i = 0; i < n; i++)
@@ -1948,6 +1951,11 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             rel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         spinRel *= 0.985f;
+        if (ShipGravity.Mode != ShipGravityMode.Deck && ShipGravity.Settles(c, f))
+        {
+            rel *= 0.96f; // (0 g aboard with nobody near: it settles and sleeps, ShipGravity.cs)
+            spinRel *= 0.94f;
+        }
         var top = TopAt(air, c.AeroFlying);
         var v2 = rel.LengthSquared();
         if (v2 > top * top)

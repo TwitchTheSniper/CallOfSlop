@@ -202,6 +202,8 @@ public static partial class ConstructBakeOven
                 why = OvenStall.NoPower;
             if (powered && !held && !p.Broken && p.Orders is { Count: > 0 })
                 Kits(world, c, part, asm, bed, why, group); // (its orders: a kit built at a station and set on the bed, ConstructBakeOvenOrders.cs)
+            if (why == OvenStall.Empty && powered && !held && !p.Broken)
+                ConstructRollOut.RiderOnto(world, c, part); // (a piece waiting at the end of a run the oven takes rolls onto the bed: ConstructRollOut.cs)
             if (why != OvenStall.None || held || p.Broken)
             {
                 SetStall(world, st, why);

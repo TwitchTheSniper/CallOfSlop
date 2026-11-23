@@ -1762,6 +1762,15 @@ back over where it let go: the Zero Day keel's carry to its pad went from 94 s t
 [TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
 `logi net` marks a way "by a lifter".
 
+**Straight to the destination** (Sean, 2026-11-23: "parts should move directly to their destination if possible"; `ConstructLifterDirect.cs`).
+Production is made to order, not to a backlog, so a lifter in Auto that picks a made piece (a machine's out or tray, a run's end, a stock
+rack's piece) fits it at once when a building station has a ready, unclaimed step of that kind whose place the lifter reaches: the piece
+counts for the station's order as if it had landed in its hold, the step is claimed and the move ends in the station's own fit
+(`DirectStep`, `StartDirect`; log line "straight to step N"). Only a piece no ready step in reach takes goes on as before: a machine's
+input that wants it, the pick pad, a hand-off, else storage. A piece riding to a run's end bound only for storage (no order) tries a want
+or a hand-off in reach before the store it was riding to. On the Zero Day works line C's crane fitted a deck kit's 13 plates straight
+from the Panel Former's run (they had gone to the pick pad and back, one at a time: 4 in 1500 s before, the whole kit after).
+
 **The Bridge Crane** (phase 6, `ConstructCraneRails.cs`; notes `lifters-phase6-notes.md`) is a lifter of kind `bridge`: Crane Rail
 sections laid end to end in two runs a span apart on whatever the player stands them on (Medium Columns on an Adapter Medium to Small
 on a small floor), and a Crane Bridge bolted to the outer side of one run by its +x socket. Its reach is the box between the runs, under
@@ -1925,6 +1934,38 @@ column on each corner of the bed. A welded group set on the bed bakes into one p
   In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
   `oven mode bake|unbake` turns the setting.
 - **Not yet.** The no-collide socket hole on a baked part (hull-dress.md) and a Piece out conveyor. Baking by order: [Bake kits](#bake-kits).
+
+### Roll-out and roll-in (2026-11-23)
+
+Sean: "The oven should allow parts coming in to be rolled directly into it. Also, the construction station should be able to roll out,
+so it can push pieces it's finished constructing out into the conveying system." Code: `ConstructRollOut.cs`. Nothing new on the wire.
+
+- **A station's way out.** A Roller Tile run whose first tile is butted on a Building Station's bay (its line, run back 0.3 m past the
+  first tile, is over the bay's floor, and its last tile is outside the bay) is the bay's way out (`ConstructRollOut.RunOut`). When a
+  build is done (`Finish`) the station rolls it out at once: the body, held frozen (`HeldBy` the station's construct), lines up on the
+  run, rides along it at `ConstructConveyor.Speed` with its underside 2 cm over the run's line, and stops with its front at the run's
+  last tile, where it is let go (a blueprint's frozen base stays frozen). A body already at the run's end doesn't move. Repeat starts the
+  next build once the bay is clear, as before. Sub-jobs (their main station takes them) and Dress jobs never roll; a station tries once
+  a build (`StationJob.RolledBody`), so a body that can't roll stays for a crane or its driver.
+- **An oven's way in.** A run whose line, run on 0.3 m past its last tile, meets a Bake Oven's bed is taken by that oven
+  (`ConstructRollOut.OvenOf`). A body rolling along it waits at the run's end until the bed is empty with its hood up and no other kit is
+  bound there, then goes on onto the bed's middle as a crane sets a kit (`ConstructBakeOven.Landing`, a quarter turn if that is what
+  fits the clear cells), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
+  that oven rolls (the oven's `Kits` leaves it to the station rather than calling a lifter), and the oven counts it as on its way
+  (`OvenKits`) from the start of the roll. A piece riding a run the oven takes, waiting at its end while the bed is empty, comes off as
+  a loose body and rolls onto the bed the same way (`RiderOnto`), so a baked part can be sent in to be un-baked.
+- **The roll** is a carry, as a lifter's (`ConstructLifterBodies.cs`): the server poses the body every tick in the run's construct's
+  frame (a moving ship keeps it), clients see its poses; `CarryingBody` names a rolling body's carrier "Roller Tile run". A save mid-roll
+  keeps the body where its roll ends (the run's end, or the bed), let go (`ConstructRollOut.SavedPose`); the roll isn't saved, so a
+  kit saved on its way to an oven loads at the run's end, out of the bay, and the oven's order starts another kit (as a load mid-carry
+  does). A body that doesn't fit the bed is let go at the run's end and the oven's claim goes.
+- **Trying it.** `--station-check SITE ... --roll-tiles "X,Z;..."` welds Roller Tiles on the site before the run (turned and raised as
+  its runs south are) and names each way out it finds. On the works (2026-11-23): `--station-check "Zero Day Works" --oven-order
+  "Zero Day Upper Deck Aft" --oven-at 39,-160 --kit-loose --roll-tiles "31,-151"` (one tile in the row between line C's station bay and
+  its oven's bed, beside the oven's Core): the kit rolled out of the bay (7.4 s), onto the bed and baked at 40.5 s, no crane. The works
+  doesn't lay that tile: line C's oven Core stands in that row, so the kit passes through it (a layout matter for the works' threads).
+- **Not yet.** A body going on through a Turntable Tile to another run; the rollers turning under a rolling body (they turn for riders
+  only); a lifter putting a body on a run; the oven rolling its baked part out.
 
 ### Bake kits (2026-11-23)
 

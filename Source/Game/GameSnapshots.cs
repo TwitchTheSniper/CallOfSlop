@@ -128,7 +128,7 @@ public sealed partial class Game
             Position = p.Position, Velocity = p.Sim.Velocity, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
             Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
             RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp), RideOn = p.Sim.RideOn,
-            RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel,
+            RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel, RideFeltOn = p.Sim.RideFeltOn, RideFelt = p.Sim.RideFelt,
             RideLadder = p.Sim.RideClimb > 0 ? p.Sim.RideLadder : (byte)0, RideLadderPart = p.Sim.RideLadderPart, RideClimbNext = p.Sim.RideClimbNext, RideClimbLast = p.Sim.RideClimbLast,
             Worn = (p.Sim.Gear | p.Sim.Canopy | p.Sim.GearDelay) != 0, Gear = p.Sim.Gear, Canopy = p.Sim.Canopy, GearDelay = p.Sim.GearDelay, JetFuel = p.Sim.JetFuel, GearJump = p.Sim.GearJump,
         };
@@ -240,11 +240,14 @@ public sealed partial class Game
                     ownMove.RideClimbLast = ro.RideClimbLast;
                     ownMove.RideUp = ro.RideUp;
                     ownMove.RideVel = ro.RideVel;
+                    ownMove.RideFeltOn = ro.RideFeltOn; // (ship gravity: the server's pull for the replay, ShipGravity.cs)
+                    ownMove.RideFelt = ro.RideFelt;
                 }
                 else
                 {
                     ownMove.RideBody = 0;
                     ownMove.RideUp = default;
+                    ownMove.RideFeltOn = false;
                 }
                 if (_snapIn.Own is { } worn)
                 {

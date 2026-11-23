@@ -749,7 +749,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      FactionOp.StationPurchase (u16 ship) at its end.
     // 443: Roller Tile runs feed a Panel Former's or Laser Cutter's bed: their Cores gain an implicit conveyor "Bed in" (its point the bed's
     //      middle), and a Core beside its bed's corner may have its Out Tables on the bed's far end the other way (MachineBlocks.FindOut).
-    public const ushort ProtocolVersion = 443;
+    // 444: ship gravity (ShipGravity.cs, a world option): the Welcome and the lobby state end with its byte, and the owner's ride state
+    //      carries the felt pull (a flag byte, then a vector when on) after RideVel.
+    public const ushort ProtocolVersion = 444;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

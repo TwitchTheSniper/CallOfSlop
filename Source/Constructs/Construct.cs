@@ -385,6 +385,8 @@ public sealed partial class Construct
     internal bool FramePending => FrameNew && FrameLoaded;
     // Server: a ship out of the bubble: the acceleration its drive gave it this tick (game axes; GameSpaceLaunch.SpaceLaunchBefore).
     internal Vector3 SpaceAccel;
+    public bool FeltSpace; // server: its bubble pulls nothing where it is (ShipGravity.Update)
+    public Vector3 Felt; // server: the pull a rider aboard feels, world axes, filtered (ShipGravity.cs; zero with the rule off)
     // Server and client: loose bodies in this construct's frame at the last carry (most constructs: 0).
     internal int FrameRiders;
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.

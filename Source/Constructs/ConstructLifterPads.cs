@@ -222,12 +222,16 @@ public static partial class ConstructLifters
         at = default;
         rot = Quaternion.Identity;
         var pt = l.Points![pad];
-        if (!IsPickPad(world, pt, out var b) || world.StoreOf(b, pt.Part) is not { } st || !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out at))
+        if (!IsPickPad(world, pt, out var b) || world.StoreOf(b, pt.Part) is not { } st)
+            return false;
+        var slot = TopSlot(b, pt.Part, st, d, ld, shoulder, lr, out at); // (Sean 2026-11-23: off the piece where it lies, not the pad's corner)
+        if (!slot && !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out at))
             return false;
         if (!world.StationTake(b, pt.Part, st, d))
             return false;
         world.CraftChanged(b);
-        at.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+        if (!slot)
+            at.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
         Freeform.PartWorld(b, pt.Part, out _, out rot);
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: took a {d.Name} off the pick pad (body {b.Id} part {pt.Part}) for a station step");
         return true;
