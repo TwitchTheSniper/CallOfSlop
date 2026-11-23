@@ -199,7 +199,7 @@ public static partial class ConstructPress
     /// <summary>What blocks this press's shells, for the look line ("the shells' swing hits Conveyor"), or "".</summary>
     public static string SwingText(Construct c, int part) =>
         c.Parts[part].D.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var asm) && asm.Blocker >= 0 && asm.Blocker < c.PartCount
-            ? $"the dies' swing hits the {c.Parts[asm.Blocker].D.Name}: move it {(asm.L - 2) * c.Parts[part].D.BlockCell:0} m clear of the bed's middle"
+            ? $"the dies' swing hits the {c.Parts[asm.Blocker].D.Name}: keep {(asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f:0.#} m out from each housing's inner face clear, up to {(asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f * 1.415f:0.#} m over the bed"
             : "";
 
     /// <summary>
@@ -227,12 +227,14 @@ public static partial class ConstructPress
             if (tall <= 0)
                 continue;
             var reach = (asm.L - 2) * cell * 0.5f; // (the die's radius: open, it stands that far out from the housing's inner face)
-            var h = reach - cell; // (past the housing's outer face)
-            if (h <= Margin)
+            if (reach <= Margin)
                 continue;
+            // Its sweep: about its hinge (the housing's inner face, on the bed) from over the bed to out over the housing. Its far corner,
+            // reach * sqrt 2 from the hinge, passes straight over the hinge; past the hinge it reaches out at most its radius. Over the
+            // housing and past it, from the bed up to that corner's height (the housing's own blocks are skipped).
             var face = (edge + 0.5f * sgn) * cell;
-            var lo = new Vector3((asm.X0 - 0.5f) * cell + Margin, 0.5f * cell + Margin, sgn > 0 ? face + Margin : face - h);
-            var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + reach, sgn > 0 ? face + h : face - Margin);
+            var lo = new Vector3((asm.X0 - 0.5f) * cell + Margin, 0.5f * cell + Margin, sgn > 0 ? face + Margin : face - reach);
+            var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + reach * 1.415f, sgn > 0 ? face + reach : face - Margin);
             for (var j = 0; j < c.PartCount; j++)
             {
                 if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0

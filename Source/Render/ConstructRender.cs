@@ -889,7 +889,7 @@ public static partial class ConstructRender
             : Matrix4x4.CreateTranslation(-hinge) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(hinge);
         var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's; the stiffeners on the housing's top stop 12 mm under the die's flat face)
         gfx.Draw(Oriented(s, apex + (s.Up + s.Out) * (r * 0.5f), len, r, r) * turn * onBody, DieSteel * shade, opacity, mode: 0, shape: DieShape);
-        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.025f, len - 0.02f, 0.06f, 0.05f) * turn * onBody, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line)
+        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.029f, len - 0.02f, 0.06f, 0.05f) * turn * onBody, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line, 4 mm proud of its flat face)
         return 2;
     }
 
@@ -900,7 +900,7 @@ public static partial class ConstructRender
         if (!MachineBlocks.TryOf(c, core, out var asm) || asm.W == 0 || asm.L < 3)
             return false;
         ConstructPress.DieOpen(st, Math.Min(asm.W - 1, ConstructPress.RippleMax), Now, working, out var show);
-        var def = show == ConstructPress.BedShow.Blank ? st.StrokeBlank : show == ConstructPress.BedShow.Made ? st.StrokeMade : null;
+        var def = show == ConstructPress.BedShow.Blank ? st.StrokeBlank : show == ConstructPress.BedShow.Made ? (working ? st.StrokeLast : st.StrokeMade) : null; // (back to back, the dies open on the last stroke's part)
         if (def == null)
             return false;
         what = def;
