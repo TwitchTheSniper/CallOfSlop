@@ -113,7 +113,7 @@ public static class PartAmbience
     /// <summary>A body's parts that do something, gathered again after a rebuild (the only allocation).</summary>
     private static void Gather(Construct c)
     {
-        c.AmbStamp = c.RebuildStamp;
+        c.AmbStamp = c.StructStamp;
         var table = Table;
         var count = 0;
         if (table.Count > 0)
@@ -191,7 +191,7 @@ public static class PartAmbience
         {
             if (c.SpaceAway != 0)
                 continue;
-            if (c.AmbStamp != c.RebuildStamp)
+            if (c.AmbStamp != c.StructStamp)
                 Gather(c);
             if (c.AmbParts.Length == 0)
                 continue;
@@ -215,7 +215,7 @@ public static class PartAmbience
     }
 
     /// <summary>Is a live part still what it was (its body not rebuilt since the look round)?</summary>
-    private static bool Still(in Live l) => l.Body.AmbStamp == l.Body.RebuildStamp && l.Part < l.Body.PartCount && !l.Body.Parts[l.Part].Broken;
+    private static bool Still(in Live l) => l.Body.AmbStamp == l.Body.StructStamp && l.Part < l.Body.PartCount && !l.Body.Parts[l.Part].Broken;
 
     /// <summary>
     /// The frame's searchlight, before the lamps take what lights are left (<see cref="ConstructLamps.AddLights"/>): the

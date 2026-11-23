@@ -75,9 +75,9 @@ public static partial class ConstructStation
     /// <summary>The body's stations' pick pads, again when its parts changed (either peer).</summary>
     private static void Note(Construct c)
     {
-        if (c.StationPadStamp == c.RebuildStamp && c.StationPadParts == c.PartCount)
+        if (c.StationPadStamp == c.StructStamp && c.StationPadParts == c.PartCount)
             return;
-        (c.StationPadStamp, c.StationPadParts, c.StationPadN) = (c.RebuildStamp, c.PartCount, 0);
+        (c.StationPadStamp, c.StationPadParts, c.StationPadN) = (c.StructStamp, c.PartCount, 0);
         for (var a = 0; a < c.PieceRackCount; a++)
         {
             int t = c.PieceRacks[a];

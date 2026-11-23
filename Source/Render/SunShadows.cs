@@ -679,8 +679,8 @@ public static unsafe class SunShadows
         }
         else
             for (var i = 0; i < c.PartCount; i++)
-                if (c.DoorOfListed(i) < 0)
-                    AddPart(c, i, ref n, ref sv, ref groups);
+                if (c.DoorOfListed(i) < 0 && !c.Growing(i))
+                    AddPart(c, i, ref n, ref sv, ref groups); // (a piece growing on a die casts once it is cut or done: its length changes twice a second, Construct.GrowStamp)
         k.Count = n;
         SortCells(k, n, groups, sv);
         Native.glBindBuffer(GL_ARRAY_BUFFER, k.Vbo);

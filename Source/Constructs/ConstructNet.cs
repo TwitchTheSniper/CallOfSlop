@@ -1687,7 +1687,7 @@ public static partial class ConstructNet
     /// </summary>
     internal static ReadOnlySpan<ushort> Signals(Construct c)
     {
-        if (c.SigListStamp != c.RebuildStamp || c.SigListParts != c.PartCount || c.Dirty)
+        if (c.SigListStamp != c.StructStamp || c.SigListParts != c.PartCount || c.Dirty)
         {
             var n = 0;
             for (var i = 0; i < c.PartCount; i++)
@@ -1698,7 +1698,7 @@ public static partial class ConstructNet
                     c.SigList[n++] = (ushort)i;
                 }
             c.SigListCount = n;
-            c.SigListStamp = c.RebuildStamp;
+            c.SigListStamp = c.StructStamp;
             c.SigListParts = c.Dirty ? -1 : c.PartCount; // (a dirty body is walked again next time: its parts may change before the rebuild)
         }
         return c.SigList.AsSpan(0, c.SigListCount);

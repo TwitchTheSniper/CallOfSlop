@@ -203,6 +203,8 @@ public static partial class ConstructRender
     private static int MergeBoxes(Construct c, int i)
     {
         ref var p = ref c.Parts[i];
+        if (c.Growing(i))
+            return -1; // (a piece growing on a die: walked, drawn at its length now, so its new length plans nothing: Construct.GrowStamp)
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
         if (ModulePullLook.Walks(c, i))
@@ -297,7 +299,8 @@ public static partial class ConstructRender
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork && !d.WorkGlowOnly || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
             || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
             || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _) // (a Press's shell swings out past its welded cell)
-            || ModulePullLook.Walks(c, i)) // (a module rocking under the physics gun's pull)
+            || ModulePullLook.Walks(c, i) // (a module rocking under the physics gun's pull)
+            || c.Growing(i)) // (a piece growing on a die: longer each step than the sphere it had when the body was planned)
             return new Vector4(0, 0, 0, -1);
         c.PartBounds(i, out var mn, out var mx);
         var r = (mx - mn).Length() * 0.5f + (p.Store != 0 ? 2f : 0.25f); // (stored parts pile on its slots: room for them)
@@ -869,11 +872,11 @@ public static partial class ConstructRender
             _merges[c] = set = new MergeSet();
         set.Seen = _mergeFrame;
         var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
-        if (set.Stamp != c.RebuildStamp || set.Parts != c.PartCount || set.Doors != c.DoorEpoch) // (parts taken out and not yet rebuilt: the indices moved; the door list was built again)
+        if (set.Stamp != c.StructStamp || set.Parts != c.PartCount || set.Doors != c.DoorEpoch) // (parts taken out and not yet rebuilt: the indices moved; the door list was built again)
         {
             c.EnsureDoors();
             Plan(gfx, set, c);
-            set.Stamp = c.RebuildStamp;
+            set.Stamp = c.StructStamp;
             set.Parts = c.PartCount;
             set.Doors = c.DoorEpoch;
             set.Dyn = DynKey(c);

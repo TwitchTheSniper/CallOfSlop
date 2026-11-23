@@ -31,9 +31,9 @@ public static class ConstructBreach
     /// <summary>Does body <paramref name="b"/> have a breach part (counted once a rebuild, on the body)?</summary>
     private static bool HasAny(Construct b)
     {
-        if (b.BreachStamp != b.RebuildStamp)
+        if (b.BreachStamp != b.StructStamp)
         {
-            b.BreachStamp = b.RebuildStamp;
+            b.BreachStamp = b.StructStamp;
             b.BreachParts = 0;
             for (var i = 0; i < b.PartCount; i++)
                 if (b.DefOf(i).Breach != BreachKind.None)
