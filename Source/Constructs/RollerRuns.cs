@@ -14,7 +14,7 @@ public sealed partial class Construct
 /// +z end, as wide as its tiles across (<see cref="MaxAcross"/> at most), laid by the server as an ordinary conveyor link, so riders,
 /// saves and the wire are a conveyor's. It starts at what is butted on its in end (an Out Table, its machine's out table; a
 /// Turntable Tile; a Run-out Table, its Extruder's Piece out; any part with a Piece out there) or at its own first tile, and ends at what is butted on its out end (a machine's
-/// or a pad's Piece in, a Turntable Tile) or at its last tile, where pieces wait for a crane or go on along a conveyor linked from the
+/// or a pad's Piece in, a bed fed by conveyor: its Core's Bed in, a Turntable Tile) or at its last tile, where pieces wait for a crane or go on along a conveyor linked from the
 /// tile's Piece out. A conveyor linked into a tile's Piece in goes onto its run. A Turntable Tile passes a piece from the run that ends
 /// in it onto the others that start at it, in turn, never back the way it came.
 /// </summary>
@@ -267,6 +267,15 @@ public static class RollerRuns
         var best = 1.3f * 1.3f + across * across; // (within the run's half width and a little)
         var seed = c.MachineAsms[a].Core;
         var inv = MachineBlocks.Rot24Inverse(c.Parts[seed].Rot);
+        // Its out end meeting a bed fed by conveyor (a Panel Former's, a Laser Cutter's): the run ends on that Core's Bed in, whose point is
+        // the bed's middle, so the piece rides off the run straight onto the bed, never through the Core. By where the run's line goes on,
+        // not by welds: a Laser Cutter's bed lies half a tile off its feed's grid.
+        if (!wantOut && MachineBlocks.BedAt(c, end + Rot24.Apply(c.Parts[seed].Rot, ConstructParts.DirVector(dir)) * 0.25f) is var bc and >= 0
+            && PortByte(c.DefOf(bc), ConstructParts.BedInPort) is var bp and >= 0)
+        {
+            (part, port) = (bc, (byte)bp);
+            return true;
+        }
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.BlockAsmOf[i] != a || !c.Parts[i].D.IsRollerTile)
