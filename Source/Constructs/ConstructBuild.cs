@@ -368,7 +368,7 @@ public static class ConstructBuild
         var touching = _touching ??= new int[Construct.MaxParts]; // (one walk over the parts, in part order: no list a part)
         var touchingN = 0;
         var seg = c.Parts[i].Seg;
-        if (seg == 0 && c.PartCount >= Construct.TreeMinParts)
+        if (seg == 0 && c.PartCount >= Construct.TreeMinParts && c.MergeCount == 0) // (a merge rescales gun parts without refitting the tree: walk them all)
         {
             // A big body: the part tree's candidates (rest frame, which is segment 0's), tested as below and put back in part order,
             // so a socket links to the same part the full walk would find first (a 6,000-part works built in O(n log n), not O(n^2)).
@@ -1069,6 +1069,26 @@ public static class ConstructBuild
         return null;
     }
 
+    /// <summary>
+    /// Does step <paramref name="k"/> read anything a rebuild sets (so a weld's put-off rebuild runs first)? A step on a jointed or welded
+    /// segment (its frames), a turn chosen by the game ("auto"), and every part whose placing checks read the rebuilt body: modules and
+    /// their sockets, lift cells, burners, volumes, shell pods, magazines, gun parts and receivers, and what hangs on a joint.
+    /// Plain structure on the body's own segment (the works' thousands of blocks, slabs and sheets) needs none.
+    /// </summary>
+    private static bool WantsRebuild(Construct c, Blueprint bp, int k, int[] partOf)
+    {
+        var (name, on, _, _, spin) = bp.Steps[k];
+        if ((uint)on >= (uint)k || spin < 0 || ConstructParts.Find(name) is not { } d)
+            return true;
+        var target = partOf[on];
+        if (c.Parts[target].Seg != 0)
+            return true;
+        var td = c.DefOf(target);
+        return d.ModPart != ModPart.None || td.ModPart != ModPart.None || d.IsEnvelope || d.Role is PartRole.Burner or PartRole.GunPart or PartRole.Hinge or PartRole.Door
+            || d.IsReceiverGun || td.IsReceiverGun || td.HasJoint || d.HasJoint || d.IsTankVolume || d.IsVolumeStore || ConstructCargo.IsVolume(d) || d.ShellPod != null
+            || ConstructAmmo.IsMagazine(d);
+    }
+
     private static int CountFreeform(Construct c)
     {
         var n = 0;
@@ -1113,9 +1133,9 @@ public static class ConstructBuild
         bool weldRebuild = false, lastWeld = false; // (a weld step's rebuild, put off until a step needs it)
         for (var k = 0; k < bp.Steps.Count; k++)
         {
-            if (weldRebuild && k > 0 && (uint)bp.Steps[k].On < (uint)k && c.Parts[partOf[bp.Steps[k].On]].Seg != 0)
+            if (weldRebuild && k > 0 && WantsRebuild(c, bp, k, partOf))
             {
-                c.Rebuild(); // (this step goes on a jointed or welded segment: its frames as a rebuild leaves them)
+                c.Rebuild(); // (this step reads what a rebuild leaves: as the weld's own rebuild had it)
                 weldRebuild = false;
             }
             if (FitStep(world, c, bp, k, partOf, true) is { } refused)
