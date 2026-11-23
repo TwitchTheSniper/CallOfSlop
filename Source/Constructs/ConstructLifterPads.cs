@@ -15,7 +15,7 @@ public static partial class ConstructLifters
     /// <summary>A body whose parts changed: on the pads list while it has a Lay-down Pad (server).</summary>
     private static void NotePads(ConstructWorld world, Construct c)
     {
-        c.PadStamp = c.RebuildStamp;
+        c.PadStamp = c.StructStamp;
         c.PadPartCount = c.PartCount;
         var has = false;
         for (var i = 0; i < c.PartCount && !has; i++)
