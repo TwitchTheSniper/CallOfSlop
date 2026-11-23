@@ -277,7 +277,8 @@ public static partial class ConstructBakeOven
             Console.WriteLine($"[oven] construct {c.Id}: the group on the bed (construct {st.JobAmount}) went while the hood was down");
             return;
         }
-        var made = unbake ? BakedParts.Unbake(world, group) : BakedParts.Bake(world, group);
+        var want = WorkOrders.HeadOf(c.Parts[part], out var order) && !order.IsPiece && order.Name == null ? order.Part : (ushort)0; // (two parts with one kit: the one ordered)
+        var made = unbake ? BakedParts.Unbake(world, group) : BakedParts.Bake(world, group, want);
         if (made == null)
         {
             st.OvenFailed = true;

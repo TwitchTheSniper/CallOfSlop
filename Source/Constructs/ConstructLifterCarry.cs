@@ -99,8 +99,9 @@ public static partial class ConstructLifters
                 at = PartPoint(b, pt.Part, d.IsExtruder ? d.ExtDieAt : d.AsmOutAt + d.AsmOutDir * 0.6f);
                 return true;
             case LiftPointKind.RunEnd:
-                if (RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0))
-                    return false;
+                var run = RollerRuns.EndRunAt(b, pt.Part);
+                if (run < 0 && (run = RollerRuns.BedRunAt(b, pt.Part)) < 0)
+                    return false; // (a run's end with no way on, or a run into a bed, where pieces made for others wait: ConstructConveyor.PastBed)
                 b.WorldFrame(b.Parts[pt.Part].Seg, out var rq, out var rt);
                 at = rt + Vector3.Transform(b.RouteNodes[b.Routes[run].Start + 1].Pos, rq); // (the run's last node, over its end tile)
                 return true;
@@ -457,8 +458,11 @@ public static partial class ConstructLifters
         {
             var k = (j + l.OutTurn) % l.PointN; // (run ends take turns with the outs)
             var pt = l.Points![k];
-            if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b || RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0)
-                || RollerRuns.WaitingLead(b, run) is not (var lead and >= 0))
+            if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b)
+                continue;
+            var run = RollerRuns.EndRunAt(b, pt.Part);
+            var lead = run >= 0 ? RollerRuns.WaitingLead(b, run) : (run = RollerRuns.BedRunAt(b, pt.Part)) >= 0 ? RollerRuns.PassingLead(b, run) : -1;
+            if (lead < 0)
                 continue;
             var rider = b.Conveyed[lead];
             var d = ConstructParts.Def(rider.Def);

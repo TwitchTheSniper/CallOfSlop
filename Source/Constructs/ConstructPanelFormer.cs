@@ -485,6 +485,9 @@ public static class ConstructPanelFormer
         return -1;
     }
 
+    /// <summary>Does any queued order's panel take this blank (a run feeding the bed asks: ConstructConveyor.PastBed)?</summary>
+    internal static bool Takes(Construct c, int part, ConstructPartDef piece) => c.DefOf(part).IsLaserCutter ? ConstructLaserCutter.Takes(c, part, piece) : AnyOrderTakes(c, part, piece);
+
     /// <summary>Does any queued order's panel take this blank (bed or no bed)? A piece no order takes is never waited for.</summary>
     private static bool AnyOrderTakes(Construct c, int part, ConstructPartDef piece)
     {

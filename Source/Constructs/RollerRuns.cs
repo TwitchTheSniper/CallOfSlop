@@ -96,6 +96,40 @@ public static class RollerRuns
     }
 
     /// <summary>
+    /// The run whose last tile is <paramref name="tile"/> and that ends butted on a bed Core's Bed in (a Panel Former's or a Laser Cutter's
+    /// bed fed straight from the run): a piece made for another's order waits whole there for a crane (ConstructConveyor.PastBed). Its
+    /// conveyor, or -1. Either peer; allocates nothing.
+    /// </summary>
+    public static int BedRunAt(Construct c, int tile)
+    {
+        if ((uint)tile >= (uint)c.PartCount || !c.Parts[tile].D.IsRollerTile)
+            return -1;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
+                && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && IsRun(c, k))
+                return k; // (or onto a pad: a formed skin for a station's order waits at the pad's edge, too long for it or not its way)
+        }
+        return -1;
+    }
+
+    /// <summary>The lead rider of bed run <paramref name="route"/> when it rides past the bed and has come to its wait at the bed's edge, or -1.</summary>
+    public static int PassingLead(Construct c, int route)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (c.Conveyed[i].Route == route)
+            {
+                if (!ConstructConveyor.PassesBed(c, c.Routes[route].To, c.Conveyed[i]) || ConstructParts.Def(c.Conveyed[i].Def) is not { } d)
+                    return -1;
+                ConstructConveyor.Size(d, out _, out _, out var along);
+                var leg = System.Numerics.Vector3.Distance(ConstructRoutes.Point(c, route, c.Routes[route].Count - 1, out _), ConstructRoutes.Point(c, route, c.Routes[route].Count, out _));
+                return c.Conveyed[i].At >= ConstructConveyor.Length(c, route) - leg - along * 0.5f - 0.02f ? i : -1;
+            }
+        return -1;
+    }
+
+    /// <summary>
     /// The run that starts at Roller Tile <paramref name="tile"/>'s own Run start (nothing butted on its in end): where a lifter may put
     /// a piece onto it (ConstructLifters, LiftPointKind.RunStart; the hand-offs toward a station). Its conveyor, or -1. Either peer;
     /// allocates nothing.
