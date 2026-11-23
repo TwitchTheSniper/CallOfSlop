@@ -30,8 +30,14 @@ public sealed partial class ZeroDayWorks
                 ArmourLine(line, x0, paint, bedAcross: 3, bedAlong: 7, tables: 2, cutAlong: 7);
                 // The dress station (a small Building Station: Core east of a 5 x 9 bay, Mast Blocks 3 high on its corners), its Bake Oven,
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
-                Station(east, -119, east - 10, -117, 5, 9, 3, paint);
-                Oven(east - 6, -137, east - 10, 5, 9, 3, paint);
+                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint);
+                // The oven's Core east of its bed's first row, out of the two rows between the bay and the bed, where two Roller Tiles under
+                // both middles roll a finished kit onto the bed (ConstructRollOut.cs); its console runs the line for the station's kits, and
+                // the yard's orders reach the oven (Sean, 2026-11-23: the frigate's interior walls are made on lines A and B).
+                var oven = Oven(east, -139, east - 10, 5, 9, 3, paint, bedZ0: -139, facing: West);
+                Tiles("Roller Tile", east - 6, -135, 1, 2, South, paint);
+                LineOrders(station, _lineExtruders[line], east + 2, -115, paint, _lineFormers[line]);
+                _makers.Add(oven);
                 Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
                 // Four Industrial arms on the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns).
                 foreach (var z in new[] { -127f, -133f, -143f, -149f })

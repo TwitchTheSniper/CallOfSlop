@@ -24,7 +24,7 @@ public static partial class ConstructBakeOven
     private const int KitEvery = 10; // oven steps (1 s)
 
     /// <summary>Server: will this oven take the order? Null, or why not.</summary>
-    public static string? OrderRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    public static string? OrderRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (o.IsPiece || o.Name != null)
             return $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
@@ -52,6 +52,33 @@ public static partial class ConstructBakeOven
             return $"no Building Station on this construct has a bay that holds the {made.Name} kit";
         if (!OrdersConsole(c, near) && AnyOrdersConsole(c, bp)) // (none has one: a plain station orders by its own links, as any build)
             return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
+        if (OrdersConsole(c, near) && LineLacks(world, c, near, bp) is { } lacks)
+            return $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
+        return null;
+    }
+
+    /// <summary>
+    /// A kit's first piece kind that no machine on station <paramref name="t"/>'s network takes an order for (a laid part, a Hull Dress piece,
+    /// comes from steel at the station), or null. Allocates nothing past the network's cache.
+    /// </summary>
+    private static string? LineLacks(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp)
+    {
+        var net = ConstructCrafting.NetOf(world, c, t);
+        for (var k = 0; k < bp.Steps.Count; k++)
+        {
+            var name = bp.Steps[k].Part;
+            var seen = false;
+            for (var e = 0; e < k && !seen; e++)
+                seen = bp.Steps[e].Part == name;
+            if (seen || ConstructParts.Find(name) is not { } pd || ConstructStation.IsLaid(pd))
+                continue;
+            var o = ConstructStation.OrderFor(pd, 1);
+            var any = false;
+            for (var m = 0; m < net.MachineN && !any; m++)
+                any = !c.DefOf(net.Machines[m]).IsBakeOven && WorkOrders.Refusal(world, c, net.Machines[m], o) == null;
+            if (!any)
+                return pd.Name;
+        }
         return null;
     }
 

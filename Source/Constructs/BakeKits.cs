@@ -220,6 +220,16 @@ public static class BakeKits
                 if (!Extrusion.IsSheet(pieces[i].Key) && pieces[i].Key with { Mask = mask } is var cored && Extrusion.KeyRefusal(cored) == null && Extrusion.Def(cored) != null)
                     pieces[i] = pieces[i] with { Key = cored };
         }
+        if (pieces.Count == 1 && pieces[0].Key.L >= 2 * Extrusion.StepCm)
+        {
+            // One plate (a plain wall with no doorway): two lengths welded end to end, as a bake takes two or more subparts.
+            var p = pieces[0];
+            var l0 = p.Key.L / 2 / Extrusion.StepCm * Extrusion.StepCm;
+            var second = p.Pos + Rot24.Apply(p.Rot, new Vector3(0, 0, l0 / 100f));
+            second = new Vector3(MathF.Round(second.X * 100), MathF.Round(second.Y * 100), MathF.Round(second.Z * 100)) / 100f;
+            pieces[0] = p with { Key = p.Key with { L = (ushort)l0 } };
+            pieces.Add(p with { Key = p.Key with { L = (ushort)(p.Key.L - l0) }, Pos = second });
+        }
         if (pieces.Count < 2 || pieces.Count > BakedParts.MaxSubparts)
         {
             Console.WriteLine($"[bake kits] REFUSED {d.Name}: {pieces.Count} pieces (2 to {BakedParts.MaxSubparts})");
