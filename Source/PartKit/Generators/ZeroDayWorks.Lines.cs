@@ -42,7 +42,10 @@ public sealed partial class ZeroDayWorks
             // (the bay 20 m long, room for a deck's 17 m kit; the store 18 x 12 m, the kit station's pick pad and the yard station's: a deck's 10 m plates are
             // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
             var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
-            var ovenC = Oven(39, -155, 33, 7, 13, 3, LineC);
+            // The oven's Core east of its bed's first row (it stood in the row between the bay and the bed): a finished kit rolls out of the
+            // station's bay south along the Roller Tile in that row, straight onto the bed's middle (ConstructRollOut.cs), no crane.
+            var ovenC = Oven(47, -157, 33, 7, 13, 3, LineC, bedZ0: -157, facing: West);
+            Tiles("Roller Tile", 39, -155, 1, 1, South, LineC);
             Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 4); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south; four masts a corner, an 8 m stack: the Stern's side skins stand 6.4 m)
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
@@ -101,10 +104,10 @@ public sealed partial class ZeroDayWorks
         private VPart Arm(string part, float x, float z) => On(part, x, z, Up, "-y.0.0", Crane);
 
         /// <summary>A Bake Oven: its Core at (x, z) facing south, its bed south of it from column <paramref name="bedX0"/>, masts on the bed's corners.</summary>
-        private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, int masts, string paint)
+        private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, int masts, string paint, float? bedZ0 = null, Orient? facing = null)
         {
-            var core = On("Bake Oven", coreX, coreZ, South, paint: paint);
-            var bed = Tiles("Oven Bed Block", bedX0, coreZ - 2, across, along, South, paint);
+            var core = On("Bake Oven", coreX, coreZ, facing ?? South, paint: paint);
+            var bed = Tiles("Oven Bed Block", bedX0, bedZ0 ?? coreZ - 2, across, along, South, paint);
             foreach (var c in Corners(bed))
             {
                 var first = Stack(c, "top", 1);
