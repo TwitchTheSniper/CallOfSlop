@@ -34,7 +34,8 @@ public static unsafe partial class PostFx
     private sealed class Foot
     {
         public uint Tex;
-        public int Stamp = -1, Parts = -1, Used;
+        public long Shape = -1; // (the body's boxes it was made from: ConstructShapeVersion.Both)
+        public int Used;
         public Vector4 Rect; // min x, min z, 1 / size x, 1 / size z (the body's frame)
         public Vector3 Min, Max; // the footprint box in the body's frame: the plan's rectangle, from the reach under the lowest box to its top
         public bool Empty;
@@ -228,13 +229,13 @@ public static unsafe partial class PostFx
         return x1 > x0 && y1 > y0;
     }
 
-    /// <summary>The body's footprint, made again when it is rebuilt.</summary>
+    /// <summary>The body's footprint, made again when its boxes change (ConstructShapeVersion), not on every rebuild.</summary>
     private static Foot FootOf(Construct c)
     {
         if (!Feet.TryGetValue(c.Id, out var f))
             Feet[c.Id] = f = new Foot();
         f.Used = _contactFrame;
-        if (f.Stamp != c.RebuildStamp || f.Parts != c.PartCount)
+        if (f.Shape != ConstructShapeVersion.Both(c))
             MakeFoot(c, f);
         return f;
     }
@@ -244,8 +245,7 @@ public static unsafe partial class PostFx
     // known a little past the hull.
     private static void MakeFoot(Construct c, Foot f)
     {
-        f.Stamp = c.RebuildStamp;
-        f.Parts = c.PartCount;
+        f.Shape = ConstructShapeVersion.Both(c);
         Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
         for (var i = 0; i < c.PartCount; i++)
         {

@@ -53,8 +53,14 @@ public static unsafe class SunShadows
     private sealed class Caster
     {
         public GlBuffer Vbo, Shapes;
-        public int Count, ShapeVerts, Stamp = -1, Parts = -1, Doors = -1, Used;
+        public int Count, ShapeVerts, Used;
+        public int MainVer = -1, DoorVer = -1; // (ConstructShapeVersion: what this list and Door's were made from)
         public float Radius;
+
+        // The door parts (each door and the leaves riding it) as a small list of their own, made again when a door starts or
+        // settles; this one holds every other part and is made again only when one of them changed (2026-11-23: a door on the
+        // Zero Day works made all of its 250,000 boxes again, a 40 ms frame).
+        public Caster? Door;
 
         // The boxes and shapes sorted by cell of the body's frame (CellSize), and each non-empty cell's slice and bounds, in
         // cell order: a pass that covers part of a big body (the sun's square, a lamp's reach) draws only the cells it reaches.
@@ -221,14 +227,18 @@ public static unsafe class SunShadows
         {
             var c = Picks[k].Body;
             var cast = CasterOf(c);
-            if (cast.Count == 0 && cast.ShapeVerts == 0)
+            if (cast.Count == 0 && cast.ShapeVerts == 0 && cast.Door is not { Count: > 0 } && cast.Door is not { ShapeVerts: > 0 })
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var mvp = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos - centre) * lightClip;
             Native.glUniformMatrix4fv(_lMvp, 1, false, &mvp.M11);
             var back = Quaternion.Conjugate(rot);
-            boxes += DrawCells(cast, Vector3.Transform(centre - pos, back), Vector3.Transform(dir, back), reach, -1, false);
+            var at = Vector3.Transform(centre - pos, back);
+            var along = Vector3.Transform(dir, back);
+            boxes += DrawCells(cast, at, along, reach, -1, false);
+            if (cast.Door != null)
+                boxes += DrawCells(cast.Door, at, along, reach, -1, false);
             bodies++;
         }
     }
@@ -321,7 +331,11 @@ public static unsafe class SunShadows
     }
 
     /// <summary>A body's caster boxes within <paramref name="reach"/> of <paramref name="at"/> (its own frame), into the bound depth target (<see cref="LampShadows"/>, the body's matrix set); the boxes drawn.</summary>
-    internal static int DrawNear(Construct c, Vector3 at, float reach, int selfLoc, bool self) => DrawCells(CasterOf(c), at, Vector3.Zero, reach, selfLoc, self);
+    internal static int DrawNear(Construct c, Vector3 at, float reach, int selfLoc, bool self)
+    {
+        var k = CasterOf(c);
+        return DrawCells(k, at, Vector3.Zero, reach, selfLoc, self) + (k.Door != null ? DrawCells(k.Door, at, Vector3.Zero, reach, selfLoc, self) : 0);
+    }
 
     /// <summary>Binds the depth program and its arrays (<see cref="RoomShade"/>'s passes); false when it can't be made.</summary>
     internal static bool BindDepthProgram()
@@ -503,9 +517,10 @@ public static unsafe class SunShadows
     private const float ShapeMinHalf = 0.12f;
 
     /// <summary>
-    /// The body's boxes at rest in its own frame (axis-aligned there: parts turn in quarter turns), made again on a rebuild and
-    /// whenever a door starts moving or settles (<see cref="Construct.DoorPoseStamp"/>): a settled door's parts sit at its pose
-    /// (shut or open), and a moving door is left out, so an open door lets the sun, the sky and lamps through.
+    /// The body's boxes at rest in its own frame (axis-aligned there: parts turn in quarter turns), in two lists: the door parts,
+    /// made again whenever a door starts moving or settles (<see cref="Construct.DoorPoseStamp"/>: a settled door's parts sit at
+    /// its pose, shut or open, and a moving door is left out, so an open door lets the sun, the sky and lamps through), and the
+    /// rest, made again only when one of those parts changed (<see cref="ConstructShapeVersion"/>), not on every rebuild.
     /// </summary>
     private static Caster CasterOf(Construct c)
     {
@@ -516,58 +531,50 @@ public static unsafe class SunShadows
             GlDebug.Label(GL_BUFFER, k.Vbo.Id, "SunShadows.caster");
         }
         k.Used = _frame;
-        if (k.Stamp == c.RebuildStamp && k.Parts == c.PartCount && k.Doors == c.DoorPoseStamp)
-            return k;
-        k.Stamp = c.RebuildStamp;
-        k.Parts = c.PartCount;
-        k.Doors = c.DoorPoseStamp;
+        var main = ConstructShapeVersion.Main(c);
+        var doors = ConstructShapeVersion.Doors(c);
+        if (k.MainVer != main)
+        {
+            k.MainVer = main;
+            Fill(k, c, false);
+        }
+        if (k.DoorVer != doors)
+        {
+            k.DoorVer = doors;
+            if (k.Door == null && c.DoorCount > 0)
+            {
+                k.Door = new Caster { Vbo = GenBuffer() };
+                GlDebug.Label(GL_BUFFER, k.Door.Vbo.Id, "SunShadows.doors");
+            }
+            if (k.Door != null)
+                Fill(k.Door, c, true);
+        }
+        return k;
+    }
+
+    /// <summary>One of <see cref="CasterOf"/>'s lists: the door parts at rest (a moving door left out) or every other part.</summary>
+    private static void Fill(Caster k, Construct c, bool doorParts)
+    {
         var n = 0;
         var sv = 0;
         var groups = 0;
-        var doors = c.DoorMovingCount > 0;
-        for (var i = 0; i < c.PartCount; i++)
+        if (doorParts)
         {
-            ref var part = ref c.Parts[i];
-            if (doors && c.MovingDoorOf(i) is var dk and >= 0 && ConstructDoors.IsMoving(c, c.Doors[dk].Part))
-                continue; // (a door on its way: out until it settles, when its parts are at the new pose)
-            foreach (var b in c.DefOf(i).Boxes)
+            for (var d = 0; d < c.DoorCount; d++)
             {
-                if (b.Hidden || b.Glass > 0f)
-                    continue;
-                if (b.Shape != 0 && MathF.Max(b.Half.X, MathF.Max(b.Half.Y, b.Half.Z)) >= ShapeMinHalf && PartShapes.Mesh(b.Shape) is { Length: > 0 } mesh)
-                {
-                    // A shape (a sloped hull plate, a wedge, a cylinder) casts as itself, not as the box it fills: a sloped plate's
-                    // box is a solid block round it, which hid the plate's own face from the sky and the sun (Karl, 2026-11-21: the
-                    // Zero Day's sides went black outside, the dark interiors taking them for a shut room).
-                    var verts = mesh.Length / PartShapes.FloatsPerVertex;
-                    if ((sv + verts) * 6 > _shapes.Length)
-                        Array.Resize(ref _shapes, Math.Max(_shapes.Length * 2, (sv + verts) * 6));
-                    for (var v = 0; v < verts; v++)
-                    {
-                        var m = v * PartShapes.FloatsPerVertex;
-                        var at = part.Pos + Rot24.Apply(part.Rot, b.ShapePoint(new Vector3(mesh[m], mesh[m + 1], mesh[m + 2])));
-                        var so = (sv + v) * 6;
-                        (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
-                    }
-                    if (groups == _grpFirst.Length)
-                    {
-                        Array.Resize(ref _grpFirst, groups * 2);
-                        Array.Resize(ref _grpCentre, groups * 2);
-                    }
-                    _grpFirst[groups] = sv;
-                    _grpCentre[groups++] = part.Pos + Rot24.Apply(part.Rot, b.Center);
-                    sv += verts;
-                    continue;
-                }
-                if ((n + 1) * 6 > _boxes.Length)
-                    Array.Resize(ref _boxes, _boxes.Length * 2); // (grows to the biggest body once)
-                var centre = part.Pos + Rot24.Apply(part.Rot, b.Center);
-                var half = Rot24.ApplyHalf(part.Rot, b.Half);
-                var o = n * 6;
-                (_boxes[o], _boxes[o + 1], _boxes[o + 2], _boxes[o + 3], _boxes[o + 4], _boxes[o + 5]) = (centre.X, centre.Y, centre.Z, half.X, half.Y, half.Z);
-                n++;
+                var dp = c.Doors[d].Part;
+                if (dp >= c.PartCount || ConstructDoors.IsMoving(c, dp))
+                    continue; // (a door on its way: out until it settles, when its parts are at the new pose)
+                AddPart(c, dp, ref n, ref sv, ref groups);
+                for (var m = 0; m < c.Doors[d].LeafCount; m++)
+                    if (c.Doors[d].LeafFirst + m < c.DoorLeafCount && c.DoorLeaves[c.Doors[d].LeafFirst + m] is var lp && lp < c.PartCount)
+                        AddPart(c, lp, ref n, ref sv, ref groups);
             }
         }
+        else
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DoorOfListed(i) < 0)
+                    AddPart(c, i, ref n, ref sv, ref groups);
         k.Count = n;
         SortCells(k, n, groups, sv);
         Native.glBindBuffer(GL_ARRAY_BUFFER, k.Vbo);
@@ -587,7 +594,49 @@ public static unsafe class SunShadows
                 Native.glBufferData(GL_ARRAY_BUFFER, sv * 24, p, GL_STATIC_DRAW);
         }
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
-        return k;
+    }
+
+    /// <summary>Part <paramref name="i"/>'s boxes and shapes onto the list being made (<see cref="_boxes"/>, <see cref="_shapes"/>).</summary>
+    private static void AddPart(Construct c, int i, ref int n, ref int sv, ref int groups)
+    {
+        ref var part = ref c.Parts[i];
+        foreach (var b in c.DefOf(i).Boxes)
+        {
+            if (b.Hidden || b.Glass > 0f)
+                continue;
+            if (b.Shape != 0 && MathF.Max(b.Half.X, MathF.Max(b.Half.Y, b.Half.Z)) >= ShapeMinHalf && PartShapes.Mesh(b.Shape) is { Length: > 0 } mesh)
+            {
+                // A shape (a sloped hull plate, a wedge, a cylinder) casts as itself, not as the box it fills: a sloped plate's
+                // box is a solid block round it, which hid the plate's own face from the sky and the sun (Karl, 2026-11-21: the
+                // Zero Day's sides went black outside, the dark interiors taking them for a shut room).
+                var verts = mesh.Length / PartShapes.FloatsPerVertex;
+                if ((sv + verts) * 6 > _shapes.Length)
+                    Array.Resize(ref _shapes, Math.Max(_shapes.Length * 2, (sv + verts) * 6));
+                for (var v = 0; v < verts; v++)
+                {
+                    var m = v * PartShapes.FloatsPerVertex;
+                    var at = part.Pos + Rot24.Apply(part.Rot, b.ShapePoint(new Vector3(mesh[m], mesh[m + 1], mesh[m + 2])));
+                    var so = (sv + v) * 6;
+                    (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
+                }
+                if (groups == _grpFirst.Length)
+                {
+                    Array.Resize(ref _grpFirst, groups * 2);
+                    Array.Resize(ref _grpCentre, groups * 2);
+                }
+                _grpFirst[groups] = sv;
+                _grpCentre[groups++] = part.Pos + Rot24.Apply(part.Rot, b.Center);
+                sv += verts;
+                continue;
+            }
+            if ((n + 1) * 6 > _boxes.Length)
+                Array.Resize(ref _boxes, _boxes.Length * 2); // (grows to the biggest body once)
+            var centre = part.Pos + Rot24.Apply(part.Rot, b.Center);
+            var half = Rot24.ApplyHalf(part.Rot, b.Half);
+            var o = n * 6;
+            (_boxes[o], _boxes[o + 1], _boxes[o + 2], _boxes[o + 3], _boxes[o + 4], _boxes[o + 5]) = (centre.X, centre.Y, centre.Z, half.X, half.Y, half.Z);
+            n++;
+        }
     }
 
     private static int[] _grpFirst = new int[64], _cellOf = new int[256], _cellCount = [], _cellAt = [];
@@ -721,16 +770,23 @@ public static unsafe class SunShadows
         foreach (var (id, k) in Casters)
             if (_frame - k.Used > 600)
             {
-                var b = k.Vbo;
-                Native.glDeleteBuffers(1, &b);
-                if (k.Shapes.Id != 0)
-                {
-                    var sb = k.Shapes;
-                    Native.glDeleteBuffers(1, &sb);
-                }
+                Free(k);
+                if (k.Door != null)
+                    Free(k.Door);
                 Gone.Add(id);
             }
         foreach (var id in Gone)
             Casters.Remove(id);
+    }
+
+    private static void Free(Caster k)
+    {
+        var b = k.Vbo;
+        Native.glDeleteBuffers(1, &b);
+        if (k.Shapes.Id != 0)
+        {
+            var sb = k.Shapes;
+            Native.glDeleteBuffers(1, &sb);
+        }
     }
 }

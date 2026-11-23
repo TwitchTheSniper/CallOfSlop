@@ -13,7 +13,8 @@ namespace CallOfSlop;
 /// keeps the lamp's light off it.
 /// <para>
 /// The cost is in the drawing of the maps, so they are kept: a slot's faces are drawn in its body's own frame, so a ship that
-/// flies, turns or rolls keeps them, and drawn again only when the body is rebuilt, a door on it starts or stops moving
+/// flies, turns or rolls keeps them, and drawn again only when the body's boxes change (<see cref="ConstructShapeVersion"/>, not every
+/// rebuild), a door on it starts or stops moving
 /// (<see cref="Construct.DoorPoseStamp"/>), another body near the lamp moves against it, or the lamp is new to the slot. At most
 /// <see cref="Budget"/> slots are drawn a frame, nearest first; a lamp whose slot has never been drawn lights unshadowed until it
 /// is. Read in the shader: four filtered compares a lamp a pixel. Off: nothing runs and the shader skips it.
@@ -68,10 +69,12 @@ public static unsafe class LampShadows
     private sealed class Slot
     {
         public Construct? Body;
-        public int BodyId, Part, Sub = -1, Stamp, Parts, Doors, Used = -1, Drawn = -1;
+        public int BodyId, Part, Sub = -1, Used = -1, Drawn = -1;
+        public long Shape; // (its body's boxes as drawn: ConstructShapeVersion.Both)
         public Vector3 Local;
         public int Others;
-        public readonly int[] OtherId = new int[MaxOthers], OtherStamp = new int[MaxOthers], OtherDoors = new int[MaxOthers];
+        public readonly int[] OtherId = new int[MaxOthers];
+        public readonly long[] OtherShape = new long[MaxOthers];
         public readonly Matrix4x4[] OtherRel = new Matrix4x4[MaxOthers];
     }
 
@@ -278,12 +281,12 @@ public static unsafe class LampShadows
     /// <summary>Whether slot <paramref name="sl"/> must be drawn again: new, its body rebuilt or a door moved, or the bodies near it changed or moved.</summary>
     private static bool Stale(Slot sl, Construct own, int others)
     {
-        if (sl.Drawn < 0 || sl.Stamp != own.RebuildStamp || sl.Parts != own.PartCount || sl.Doors != own.DoorPoseStamp || sl.Others != others)
+        if (sl.Drawn < 0 || sl.Shape != ConstructShapeVersion.Both(own) || sl.Others != others)
             return true;
         for (var k = 0; k < others; k++)
         {
             var c = Near[k]!;
-            if (sl.OtherId[k] != c.Id || sl.OtherStamp[k] != c.RebuildStamp || sl.OtherDoors[k] != c.DoorPoseStamp || !Close(sl.OtherRel[k], NearRel[k]))
+            if (sl.OtherId[k] != c.Id || sl.OtherShape[k] != ConstructShapeVersion.Both(c) || !Close(sl.OtherRel[k], NearRel[k]))
                 return true;
         }
         return false;
@@ -302,9 +305,9 @@ public static unsafe class LampShadows
     /// <summary>Draws slot <paramref name="s"/>'s six faces: its own body's boxes and the near ones', round the lamp, in the body's frame.</summary>
     private static void Draw(int s, Slot sl, Construct own, Vector3 local, int others)
     {
-        (sl.Stamp, sl.Parts, sl.Doors, sl.Others, sl.Drawn) = (own.RebuildStamp, own.PartCount, own.DoorPoseStamp, others, _frame);
+        (sl.Shape, sl.Others, sl.Drawn) = (ConstructShapeVersion.Both(own), others, _frame);
         for (var k = 0; k < others; k++)
-            (sl.OtherId[k], sl.OtherStamp[k], sl.OtherDoors[k], sl.OtherRel[k]) = (Near[k]!.Id, Near[k]!.RebuildStamp, Near[k]!.DoorPoseStamp, NearRel[k]);
+            (sl.OtherId[k], sl.OtherShape[k], sl.OtherRel[k]) = (Near[k]!.Id, ConstructShapeVersion.Both(Near[k]!), NearRel[k]);
         var toLamp = Matrix4x4.CreateTranslation(-local);
         for (var f = 0; f < 6; f++)
         {
