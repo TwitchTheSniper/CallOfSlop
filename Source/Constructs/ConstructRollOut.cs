@@ -37,7 +37,6 @@ public static class ConstructRollOut
         public Quaternion Rot, RotD; // its turn in the host's frame, and on the bed
         public byte Leg; // 0: A to B, 1: B to C, 2: waits at C for the bed, 3: C to D (turning to RotD)
         public float T; // metres along the leg
-        public bool Said; // the bed's refusal was logged
         public bool WasFrozen; // frozen before its roll (a blueprint's frozen base): it stays so where it is let go, unless on a bed
     }
 
@@ -261,6 +260,8 @@ public static class ConstructRollOut
     {
         if ((uint)r.Oven >= (uint)c.PartCount || !c.DefOf(r.Oven).IsBakeOven || world.StoreOf(c, r.Oven) is not { } st)
         {
+            if (world.OvenKits.TryGetValue(c.Id << 16 | r.Oven, out var was) && was == b.Id)
+                world.OvenKits.Remove(c.Id << 16 | r.Oven);
             r.Oven = -1; // (the oven went: let go at the run's end)
             r.Leg = 3;
             r.D = r.C;
@@ -275,10 +276,14 @@ public static class ConstructRollOut
         var (pos, rot) = (b.Pos, b.Rot);
         if (ConstructBakeOven.Landing(c, r.Oven, b, out var wp, out var wr) is { } no)
         {
-            if (!r.Said)
-                Console.WriteLine($"[rollout] body {b.Id} waits at the end of its run: it doesn't fit the {c.DefOf(r.Oven).Name} {r.Oven}'s bed: {no}");
-            r.Said = true;
-            return false;
+            // (it never fits: let go at the run's end, and the oven's claim goes, so the oven isn't held for ever and a player can take it)
+            Console.WriteLine($"[rollout] body {b.Id} is let go at the end of its run: it doesn't fit the {c.DefOf(r.Oven).Name} {r.Oven}'s bed: {no}");
+            if (world.OvenKits.TryGetValue(key, out var mine) && mine == b.Id)
+                world.OvenKits.Remove(key);
+            r.Oven = -1;
+            r.Leg = 3;
+            r.D = r.C;
+            return true;
         }
         (b.Pos, b.Rot) = (pos, rot);
         c.WorldFrame(0, out var q, out var o);
@@ -315,6 +320,10 @@ public static class ConstructRollOut
         b.Wake();
         world.StructureDirty.Add(b.Id);
     }
+
+    /// <summary>Is a body rolling and should it load frozen (a frozen base let go off a bed stays frozen)?</summary>
+    internal static bool SavedFrozen(ConstructWorld world, Construct b, bool frozen) =>
+        Of(world, b.Id) is { } r ? r.WasFrozen && !(r.Leg == 3 && r.Oven >= 0) : frozen;
 
     /// <summary>For a save made mid-roll: where the body's roll ends (the bed, or the run's end), so it loads there, let go.</summary>
     public static bool SavedPose(ConstructWorld world, Construct b, out Vector3 pos, out Quaternion rot)

@@ -1947,7 +1947,9 @@ so it can push pieces it's finished constructing out into the conveying system."
   a loose body and rolls onto the bed the same way (`RiderOnto`), so a baked part can be sent in to be un-baked.
 - **The roll** is a carry, as a lifter's (`ConstructLifterBodies.cs`): the server poses the body every tick in the run's construct's
   frame (a moving ship keeps it), clients see its poses; `CarryingBody` names a rolling body's carrier "Roller Tile run". A save mid-roll
-  keeps the body where its roll ends (the run's end, or the bed), let go (`ConstructRollOut.SavedPose`); the roll isn't saved.
+  keeps the body where its roll ends (the run's end, or the bed), let go (`ConstructRollOut.SavedPose`); the roll isn't saved, so a
+  kit saved on its way to an oven loads at the run's end, out of the bay, and the oven's order starts another kit (as a load mid-carry
+  does). A body that doesn't fit the bed is let go at the run's end and the oven's claim goes.
 - **Trying it.** `--station-check SITE ... --roll-tiles "X,Z;..."` welds Roller Tiles on the site before the run (turned and raised as
   its runs south are) and names each way out it finds. On the works (2026-11-23): `--station-check "Zero Day Works" --oven-order
   "Zero Day Upper Deck Aft" --oven-at 39,-160 --kit-loose --roll-tiles "31,-151"` (one tile in the row between line C's station bay and
