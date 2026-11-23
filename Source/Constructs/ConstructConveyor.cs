@@ -536,7 +536,55 @@ public static class ConstructConveyor
     /// <paramref name="seg"/> its span starts in: its origin and turn (x across, y up, z along the link).
     /// </summary>
     public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg, int via = -1, bool drawn = false)
+        => Pose(c, route, s, d, out origin, out rot, out seg, out _, via, drawn);
+
+    /// <summary>
+    /// A straight vertical segment (an elevator, Sean 2026-11-23: drawn as a lift shaft, RouteRender.Shaft, not a roller bed). As steep as
+    /// <see cref="RouteCurves.Tangent"/> takes a segment to be, so a shaft never has a vertical curve at either end; a slope is a roller bed.
+    /// </summary>
+    public static bool IsShaft(Vector3 way) => MathF.Abs(way.Y) > ShaftSteep;
+
+    public const float ShaftSteep = 0.995f;
+
+    /// <summary>
+    /// The level way a shaft's riders face and its frame is drawn by (rest frame, y zero): the nearest non-shaft segment's level way, back
+    /// along the link first (the way pieces came in), else on; else +z. <paramref name="i"/> is the shaft's segment (Point(i - 1) to Point(i)).
+    /// </summary>
+    public static Vector3 ShaftFacing(Construct c, int route, int i)
     {
+        var count = c.Routes[route].Count;
+        for (var j = i - 1; j >= 0; j--)
+            if (LevelWay(ConstructRoutes.Point(c, route, j - 1, out _), ConstructRoutes.Point(c, route, j, out _), out var f))
+                return f;
+        for (var j = i + 1; j <= count; j++)
+            if (LevelWay(ConstructRoutes.Point(c, route, j - 1, out _), ConstructRoutes.Point(c, route, j, out _), out var f))
+                return f;
+        return Vector3.UnitZ;
+    }
+
+    /// <summary>A segment's way flattened to level, when it is no shaft (and not too short to say).</summary>
+    public static bool LevelWay(Vector3 a, Vector3 b, out Vector3 way)
+    {
+        var d = b - a;
+        var len = d.Length();
+        way = Vector3.UnitZ;
+        if (len < 1e-3f || IsShaft(d / len))
+            return false;
+        var h = new Vector3(d.X, 0, d.Z);
+        if (h.LengthSquared() < 1e-6f)
+            return false;
+        way = Vector3.Normalize(h);
+        return true;
+    }
+
+    /// <summary>
+    /// As <see cref="Pose(Construct, int, float, ConstructPartDef, out Vector3, out Quaternion, out int, int, bool)"/>; <paramref name="shaft"/>
+    /// says the piece is in a straight vertical segment, where it rides level on a carriage (its underside on the line, facing
+    /// <see cref="ShaftFacing"/>) as a lift carries it, not standing on end against a roller bed.
+    /// </summary>
+    public static void Pose(Construct c, int route, float s, ConstructPartDef d, out Vector3 origin, out Quaternion rot, out int seg, out bool shaft, int via = -1, bool drawn = false)
+    {
+        shaft = false;
         var a = ConstructRoutes.Point(c, route, -1, out seg);
         var b = a;
         var count = c.Routes[route].Count;
@@ -547,7 +595,7 @@ public static class ConstructConveyor
             if (-s > lead)
             {
                 // Its middle is still on the conveyor it came off: as it was there.
-                Pose(c, via, Length(c, via) + s + lead, d, out origin, out rot, out seg, drawn: drawn);
+                Pose(c, via, Length(c, via) + s + lead, d, out origin, out rot, out seg, out shaft, drawn: drawn);
                 return;
             }
             // In the junction: along its lead-in, from the input's end through the junction's middle to here, turning from the
@@ -578,6 +626,12 @@ public static class ConstructConveyor
             mid = a + z * MathF.Min(s, segLen); // (before its start: on, back along its first segment)
             if (drawn && segLen > 1e-4f && count > 0) // (drawing only: the server's positions stay on the straight segments)
                 OnCurve(c, route, i, a, b, z, segLen, s, ref mid, ref z);
+            if (segLen > 1e-4f && IsShaft(z))
+            {
+                // In a lift shaft: level, facing the way the pieces came in (its timing and spacing stay the link's).
+                shaft = true;
+                z = ShaftFacing(c, route, i);
+            }
         }
         var up = Vector3.UnitY - z * z.Y;
         up = up.LengthSquared() > 1e-4f ? Vector3.Normalize(up) : Vector3.UnitX;
