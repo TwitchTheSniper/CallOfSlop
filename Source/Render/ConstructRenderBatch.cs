@@ -45,6 +45,9 @@ public static partial class ConstructRender
         public int MemberCount, Boxes;
         public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
         public byte[] SlotBox = [];
+        public Renderer.MergedMesh? Dorm; // its idle machine blocks' work boxes (ConstructRenderBatch: DormAfter)
+        public bool DormDirty, DormWake;
+        public byte[] SlotMask = []; // slot k's faces covered by another box of the chunk (bit 2 * axis + side, side 1 the + face: HideCovered)
         public bool Dirty = true, LookDue = true;
         public bool Lamps; // a member is a lamp: its looks are checked every check
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
@@ -67,7 +70,17 @@ public static partial class ConstructRender
         public int[] Extra = []; // merged parts whose stored parts or glass panes are drawn alone each frame
         public int ExtraCount;
         public int[] ExtraClass = []; // a merged machine block's biggest work box's size class (FarGlow)
-        public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: always drawn (it moves, burns or smokes)
+        public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: it moves (WalkedSeen)
+        public Vector4[] WalkedSeen = [], ExtraSeen = []; // a moving one's sphere as last drawn, in the body's frame (radius 0: not drawn yet)
+        public int[] WalkedDrawn = [], ExtraDrawn = []; // the frame (_mergeFrame) each walked part was last drawn in
+        public int[] WalkedChunk = []; // the chunk whose occlusion box holds it (-1: none, -2: not looked for yet)
+
+        // Idle machine blocks (DormAfter): each extra's work boxes as last drawn (in the body's frame), how many frames they stayed
+        // the same, whether they are awake (0), waiting to go into their chunk's Dorm mesh (2) or drawn from it (1), and that chunk.
+        public Renderer.Captured[][] ExtraCap = [];
+        public int[] ExtraCapN = [], ExtraSame = [], ExtraChunk = [];
+        public byte[] ExtraState = [];
+        public int ChunkMapStamp = -1;
     }
 
     private struct MergeDraw
@@ -78,6 +91,7 @@ public static partial class ConstructRender
         public bool Test; // drawn only where last frame's occlusion query saw its box (ConstructRenderOcclusion.cs)
         public bool Use; // the eye has hardly moved against this chunk since that query: its result still speaks for it
         public Vector3 Min, Max; // the query's box, in the frame
+        public Vector3 Eye; // the eye in the chunk's frame (the CPU query's answer is kept with it)
     }
 
     private static readonly Dictionary<Construct, MergeSet> _merges = new();
@@ -423,10 +437,26 @@ public static partial class ConstructRender
         Grow(ref set.WalkedSphere, set.WalkedCount);
         Grow(ref set.ExtraSphere, set.ExtraCount);
         Grow(ref set.ExtraClass, set.ExtraCount);
+        Grow(ref set.WalkedSeen, set.WalkedCount);
+        Grow(ref set.WalkedDrawn, set.WalkedCount);
+        Grow(ref set.WalkedChunk, set.WalkedCount);
         for (var k = 0; k < set.WalkedCount; k++)
+        {
             set.WalkedSphere[k] = WalkSphere(c, set.Walked[k]);
+            (set.WalkedSeen[k], set.WalkedDrawn[k], set.WalkedChunk[k]) = (Vector4.Zero, int.MinValue / 2, -2);
+        }
+        Grow(ref set.ExtraSeen, set.ExtraCount);
+        Grow(ref set.ExtraDrawn, set.ExtraCount);
+        Grow(ref set.ExtraCapN, set.ExtraCount);
+        Grow(ref set.ExtraSame, set.ExtraCount);
+        Grow(ref set.ExtraChunk, set.ExtraCount);
+        Grow(ref set.ExtraState, set.ExtraCount);
+        if (set.ExtraCap.Length < set.ExtraCount)
+            Array.Resize(ref set.ExtraCap, Math.Max(set.ExtraCount, set.ExtraCap.Length * 3 / 2));
+        set.ChunkMapStamp = -1; // (each extra's chunk is looked up again, and every chunk's idle mesh emptied: DormMap)
         for (var k = 0; k < set.ExtraCount; k++)
         {
+            (set.ExtraSeen[k], set.ExtraDrawn[k], set.ExtraCapN[k], set.ExtraSame[k], set.ExtraState[k]) = (Vector4.Zero, int.MinValue / 2, 0, 0, 0);
             set.ExtraSphere[k] = WalkSphere(c, set.Extra[k]);
             set.ExtraClass[k] = WorkClass(c.Parts[set.Extra[k]].D);
         }
@@ -434,7 +464,11 @@ public static partial class ConstructRender
         if (!on)
         {
             for (var k = 0; k < set.ChunkCount; k++)
+            {
                 gfx?.FreeMerged(set.Chunks[k].Gl);
+                if (set.Chunks[k].Dorm != null)
+                    gfx?.FreeMerged(set.Chunks[k].Dorm!);
+            }
             set.ChunkCount = 0;
             set.On = false;
             return total;
@@ -491,7 +525,11 @@ public static partial class ConstructRender
         }
         for (var k = 0; k < oldCount; k++)
             if (!_oldClaimed[k])
+            {
                 gfx!.FreeMerged(old[k].Gl);
+                if (old[k].Dorm != null)
+                    gfx.FreeMerged(old[k].Dorm!); // (its idle mesh with it: a kept chunk's is emptied by DormMap)
+            }
         if (chunks == old)
             Array.Clear(chunks);
         Array.Copy(made, chunks, entries);
@@ -550,9 +588,134 @@ public static partial class ConstructRender
             look[o] = tint.X;
             look[o + 1] = tint.Y;
             look[o + 2] = tint.Z;
-            look[o + 3] = code;
+            look[o + 3] = ch.SlotMask[s] == 0 ? code : code < 0 ? code - ch.SlotMask[s] * Renderer.MergeMaskStep : code + ch.SlotMask[s] * Renderer.MergeMaskStep; // (covered faces ride on the code: the shader drops them)
         }
         return n;
+    }
+
+    private static Vector3[] _bLo = [], _bHi = [];
+    private static bool[] _bOcc = [];
+    private static byte[] _bKind = []; // 0 a plain box, 1 a contoured shape, 2 left out already (a welded seam)
+    private static int[] _gStart = new int[513], _gItems = [], _gFill = new int[512];
+
+    /// <summary>Faces hidden and boxes left out by <see cref="HideCovered"/> in the chunks built so far (the bench, the F9 window).</summary>
+    public static long HiddenFaces, HiddenBoxes;
+
+    /// <summary>
+    /// The faces of a chunk's <paramref name="n"/> slots that lie inside another of its plain opaque boxes, with that box's
+    /// material beyond them, are marked in <see cref="MergeChunk.SlotMask"/> (the shader doesn't draw them); a slot whose six
+    /// faces are all covered is left out at no size, as a welded seam box is. On the Zero Day works a fifth of all faces and a
+    /// ninth of the boxes are inside others (2026-11-23). A face on another box's own face, both facing out, is never hidden, so
+    /// two boxes in one place still show. Allocates nothing once its scratch has grown.
+    /// </summary>
+    private static void HideCovered(MergeChunk ch, int n)
+    {
+        if (n < 2)
+            return;
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                lo = Vector3.Min(lo, _bLo[k]);
+                hi = Vector3.Max(hi, _bHi[k]);
+            }
+        if (lo.X > hi.X)
+            return;
+        // Occluders into an 8 x 8 x 8 grid over their bounds (a box into every cell it overlaps).
+        const int G = 8;
+        var cell = Vector3.Max((hi - lo) / G, new Vector3(0.01f));
+        Array.Clear(_gFill);
+        var items = 0;
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                Cells(_bLo[k], _bHi[k], lo, cell, out var a, out var b);
+                for (var x = a.X; x <= b.X; x++)
+                    for (var y = a.Y; y <= b.Y; y++)
+                        for (var z = a.Z; z <= b.Z; z++)
+                        {
+                            _gFill[(x * G + y) * G + z]++;
+                            items++;
+                        }
+            }
+        Grow(ref _gItems, items);
+        _gStart[0] = 0;
+        for (var q = 0; q < G * G * G; q++)
+        {
+            _gStart[q + 1] = _gStart[q] + _gFill[q];
+            _gFill[q] = _gStart[q];
+        }
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                Cells(_bLo[k], _bHi[k], lo, cell, out var a, out var b);
+                for (var x = a.X; x <= b.X; x++)
+                    for (var y = a.Y; y <= b.Y; y++)
+                        for (var z = a.Z; z <= b.Z; z++)
+                            _gItems[_gFill[(x * G + y) * G + z]++] = k;
+            }
+        const float e = 1e-4f;
+        var xf = _mergeXform;
+        for (var k = 0; k < n; k++)
+        {
+            var a0 = _bLo[k];
+            var a1 = _bHi[k];
+            if (_bKind[k] == 2)
+                continue;
+            var mask = 0;
+            for (var f = 0; f < 6; f++)
+            {
+                var ax = f >> 1;
+                var plus = (f & 1) != 0;
+                var pl = plus ? a1[ax] : a0[ax];
+                var mid = (a0 + a1) * 0.5f;
+                mid[ax] = pl;
+                if (mid.X < lo.X || mid.Y < lo.Y || mid.Z < lo.Z || mid.X > hi.X || mid.Y > hi.Y || mid.Z > hi.Z)
+                    continue;
+                var gx = Math.Clamp((int)((mid.X - lo.X) / cell.X), 0, G - 1);
+                var gy = Math.Clamp((int)((mid.Y - lo.Y) / cell.Y), 0, G - 1);
+                var gz = Math.Clamp((int)((mid.Z - lo.Z) / cell.Z), 0, G - 1);
+                var q = (gx * G + gy) * G + gz;
+                for (var t = _gStart[q]; t < _gStart[q + 1]; t++)
+                {
+                    var o = _gItems[t];
+                    if (o == k)
+                        continue;
+                    var b0 = _bLo[o];
+                    var b1 = _bHi[o];
+                    // (its material beyond the face, outward: a face on the other's own face facing the same way stays)
+                    if (plus ? pl < b0[ax] - e || pl >= b1[ax] - e : pl > b1[ax] + e || pl <= b0[ax] + e)
+                        continue;
+                    var o1 = ax == 0 ? 1 : 0;
+                    var o2 = ax == 2 ? 1 : 2;
+                    if (a0[o1] < b0[o1] - e || a1[o1] > b1[o1] + e || a0[o2] < b0[o2] - e || a1[o2] > b1[o2] + e)
+                        continue;
+                    mask |= 1 << f;
+                    break;
+                }
+            }
+            if (mask != 63 && _bKind[k] != 0)
+                mask = 0;
+            if (mask == 63)
+            {
+                var c = (a0 + a1) * 0.5f;
+                var x = k * Renderer.MergeXformFloats;
+                (xf[x], xf[x + 1], xf[x + 2], xf[x + 3], xf[x + 4], xf[x + 5], xf[x + 6], xf[x + 7], xf[x + 8], xf[x + 9], xf[x + 10], xf[x + 11]) = (0, 0, 0, c.X, 0, 0, 0, c.Y, 0, 0, 0, c.Z); // (inside others: kept at no size)
+                HiddenBoxes++;
+                mask = 0;
+            }
+            else
+                HiddenFaces += System.Numerics.BitOperations.PopCount((uint)mask);
+            ch.SlotMask[k] = (byte)mask;
+        }
+    }
+
+    private static void Cells(Vector3 b0, Vector3 b1, Vector3 lo, Vector3 cell, out (int X, int Y, int Z) a, out (int X, int Y, int Z) b)
+    {
+        const int G = 8;
+        a = (Math.Clamp((int)((b0.X - lo.X) / cell.X), 0, G - 1), Math.Clamp((int)((b0.Y - lo.Y) / cell.Y), 0, G - 1), Math.Clamp((int)((b0.Z - lo.Z) / cell.Z), 0, G - 1));
+        b = (Math.Clamp((int)((b1.X - lo.X) / cell.X), 0, G - 1), Math.Clamp((int)((b1.Y - lo.Y) / cell.Y), 0, G - 1), Math.Clamp((int)((b1.Z - lo.Z) / cell.Z), 0, G - 1));
     }
 
     /// <summary>
@@ -566,6 +729,11 @@ public static partial class ConstructRender
         Grow(ref _slotKey, n);
         Grow(ref ch.SlotPart, n);
         Grow(ref ch.SlotBox, n);
+        Grow(ref ch.SlotMask, n);
+        Grow(ref _bLo, n);
+        Grow(ref _bHi, n);
+        Grow(ref _bOcc, n);
+        Grow(ref _bKind, n);
         var keys = _slotKey;
         var s = 0;
         for (var k = 0; k < ch.MemberCount; k++)
@@ -619,13 +787,19 @@ public static partial class ConstructRender
             var m = box.Model(p.Rot, centre);
             if (p.D.IsOrdnance)
                 FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
-            if ((box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0))
+            var gone = (box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
+            if (gone)
                 m = Matrix4x4.CreateScale(0f) * Matrix4x4.CreateTranslation(centre); // (a block machine's seam box on a welded face: kept in the chunk at no size, so the counts stand: MachineBlocks.cs)
+            (_bLo[k], _bHi[k]) = (centre - half, centre + half);
+            _bKind[k] = (byte)(gone ? 2 : shape == 0 ? 0 : 1); // (a contoured shape is only ever left out whole: its triangles' normals aren't the cube's faces)
+            _bOcc[k] = !gone && shape == 0 && !box.Glow && !p.D.IsOrdnance && c.PartScale[i] <= 1; // (a plain opaque box that sits still: it may hide others' faces)
+            ch.SlotMask[k] = 0;
             var o = k * Renderer.MergeXformFloats;
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
             xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
             xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
         }
+        HideCovered(ch, s);
         gfx.UploadMergedXforms(gl, xf, s);
         var looks = FillLooks(c, ch); // (after the slots: it reads them, and it can grow the scratch)
         gfx.UploadMergedLooks(gl, _mergeLook, looks);
@@ -754,6 +928,8 @@ public static partial class ConstructRender
                     ch.LookDue = false;
                 }
             }
+            if (ch.Gl.CpuQuery.Id != 0)
+                gfx.PollCpuQuery(ch.Gl); // (the walked parts in its box go by its answer: WalkedHidden)
             ref var frame = ref _segFrame[ch.Seg];
             if (_segToken[ch.Seg] != _segTok)
             {
@@ -782,7 +958,13 @@ public static partial class ConstructRender
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max, Eye = ch.EyeAt };
+            if (ch.Dorm is { Slots: > 0 } dorm)
+            {
+                if (_mergeQueued == _mergeQueue.Length)
+                    Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2);
+                _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = dorm, Frame = frame, Detail = LodClasses - 1 }; // (its idle machine blocks' work boxes: not tested, its own boxes' test speaks for the chunk)
+            }
             LastMergedChunks++;
             var drawnSlots = ch.Gl.SlotsUpTo(detail);
             LastBatchBoxes += drawnSlots;
@@ -795,36 +977,124 @@ public static partial class ConstructRender
             var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
-            if (cull && OffScreen(in set.WalkedSphere[k], in body, origin))
+            // A part that moves is tested by where it was last drawn, a margin round it, and drawn anyway every WalkRefresh
+            // frames so that stays true; one that burns is always drawn (its flames leave from it seen or not).
+            var sphere = set.WalkedSphere[k];
+            var moves = sphere.W < 0;
+            if (moves)
+                sphere = set.WalkedSeen[k] is { W: > 0 } seen && c.Parts[i].Burn <= 0 && _mergeFrame - set.WalkedDrawn[k] < WalkRefresh + (k & 3)
+                    ? seen with { W = seen.W + WalkMargin } : new Vector4(0, 0, 0, -1);
+            _walkDetail = LodClasses - 1;
+            if (cull && sphere.W >= 0)
             {
-                LastWalkedCulled++;
-                continue;
+                if (OffScreen(in sphere, in body, origin))
+                {
+                    LastWalkedCulled++;
+                    continue;
+                }
+                if (WalkedHidden(gfx, set, k, in sphere))
+                {
+                    LastWalkedHidden++;
+                    continue;
+                }
+                _walkDetail = DetailAt(Vector3.Distance(Vector3.Transform(new Vector3(sphere.X, sphere.Y, sphere.Z), body) + origin, _lodEye) - sphere.W);
             }
             HostCut(gfx, c, i);
+            if (moves)
+                gfx.TrackBegin();
+            _fxEmitted = false;
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
+            _walkDetail = LodClasses - 1;
+            set.WalkedDrawn[k] = _mergeFrame;
+            if (moves && gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
+            {
+                var mid = Vector3.Transform((lo + hi) * 0.5f, toBody); // (drawn in the body's matrix: back into its frame, where the next frames test it)
+                set.WalkedSeen[k] = new Vector4(mid, _fxEmitted ? 0f : (hi - lo).Length() * 0.5f); // (smoking or sparking: drawn every frame, seen or not, as its plume rises past the walls)
+            }
         }
         LastBatchWalked += set.WalkedCount;
+        if (set.ChunkMapStamp != set.Stamp)
+            DormMap(gfx, c, set);
+        if (!Matrix4x4.Invert(body, out var invBody))
+            invBody = Matrix4x4.Identity;
         for (var k = 0; k < set.ExtraCount; k++)
         {
             // Merged parts that hold stored parts or have panes: only those drawn here.
             var i = set.Extra[k];
-            if (i >= c.PartCount || cull && OffScreen(in set.ExtraSphere[k], in body, origin))
+            if (i >= c.PartCount)
+                continue;
+            var sphere = set.ExtraSphere[k];
+            var moves = sphere.W < 0; // (a machine block's work: tested where it was last drawn, as walked parts that move are)
+            if (moves)
+                sphere = set.ExtraSeen[k] is { W: > 0 } seen && c.Parts[i].Burn <= 0 && _mergeFrame - set.ExtraDrawn[k] < WalkRefresh + (k & 3)
+                    ? seen with { W = seen.W + WalkMargin } : new Vector4(0, 0, 0, -1);
+            if (cull && OffScreen(in sphere, in body, origin))
                 continue;
             HostCut(gfx, c, i);
+            _fxEmitted = false;
+            if (moves)
+                gfx.TrackBegin();
             if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
                 n += DrawPanes(gfx, c, i, body, alpha); // (not while its chunk waits its rebuild: DrawPart drew its panes above)
+            var asleep = false;
             if (_defWork.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken)
                 && !(cull && c.Parts[i].D.WorkGlowOnly && FarGlow(in set.ExtraSphere[k], set.ExtraClass[k], in body, origin)))
             {
-                _workOnly = true; // (its work boxes and status lamp, at the machine's state; the rest is in its chunk)
-                n += DrawPart(gfx, world, c, i, body, alpha, 1f);
-                _workOnly = false;
+                var q = set.ExtraChunk[k];
+                var dormOk = DormOn && q >= 0 && q < set.ChunkCount && !set.Chunks[q].Dirty && set.Chunks[q].Seg == 0 && c.Parts[i].Burn <= 0;
+                _fxEmitted = false;
+                if (!dormOk && set.ExtraState[k] != 0)
+                {
+                    // (burning, or its chunk waits a rebuild: walked, out of the idle mesh)
+                    if (set.ExtraState[k] == 1 && q >= 0 && q < set.ChunkCount)
+                        (set.Chunks[q].DormDirty, set.Chunks[q].DormWake) = (true, true);
+                    (set.ExtraState[k], set.ExtraSame[k]) = (0, 0);
+                }
+                if (dormOk && set.ExtraState[k] == 1 && ((_mergeFrame + k) & (DormCheck - 1)) != 0)
+                {
+                    asleep = true; // (idle: its work boxes are in its chunk's idle mesh; looked at again every DormCheck frames)
+                    LastDormant++;
+                }
+                else
+                {
+                    _workOnly = true; // (its work boxes and status lamp, at the machine's state; the rest is in its chunk)
+                    var checking = dormOk && set.ExtraState[k] == 1; // (asleep, its check frame: looked at without drawing, as its idle mesh draws it)
+                    if (dormOk)
+                        gfx.CaptureBegin(in invBody, draw: !checking);
+                    var drew = DrawPart(gfx, world, c, i, body, alpha, 1f);
+                    if (dormOk && DormLook(gfx, set, k, q, _fxEmitted) && checking)
+                    {
+                        LastDormant++;
+                        asleep = true;
+                    }
+                    else if (checking)
+                        drew = DrawPart(gfx, world, c, i, body, alpha, 1f); // (woke: drawn as it is now; its chunk's idle mesh is made again without it this frame)
+                    n += drew;
+                    _workOnly = false;
+                }
             }
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
+            if (asleep)
+            {
+                if (moves)
+                    gfx.TrackEnd(out _, out _);
+                continue;
+            }
+            set.ExtraDrawn[k] = _mergeFrame;
+            if (moves)
+            {
+                if (gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
+                    set.ExtraSeen[k] = new Vector4(Vector3.Transform((lo + hi) * 0.5f, toBody), _fxEmitted ? 0f : (hi - lo).Length() * 0.5f); // (smoking: drawn every frame, its plume rises seen or not)
+                else
+                    set.ExtraSeen[k] = Vector4.Zero; // (nothing drawn: a far glow, a chunk still waiting)
+            }
         }
+        for (var q = 0; q < set.ChunkCount; q++)
+            if (set.Chunks[q].DormDirty && (set.Chunks[q].DormWake || _dormBudget-- > 0))
+                DormBuild(gfx, set, q);
         drawn += n;
         return true;
     }
@@ -903,9 +1173,10 @@ public static partial class ConstructRender
     private static void BeginMergedFrame(Renderer gfx)
     {
         _mergeBudget = MergeBudgetBoxes;
+        _dormBudget = DormBudget;
         _mergeQueued = 0;
         LastMergedChunks = LastMergedBuilt = LastMergedWaiting = 0;
-        LastLodDropped = LastWalkedCulled = 0;
+        LastLodDropped = LastWalkedCulled = LastWalkedHidden = LastDormant = 0;
         _lodEye = gfx.CameraPosition;
         _lodPixelsAt = MathF.Abs(gfx.Proj.M22) * gfx.ViewportHeight * 0.5f;
         OcclusionBegin(gfx);
@@ -913,9 +1184,213 @@ public static partial class ConstructRender
 
     private static Vector3 _lodEye;
 
-    /// <summary>Merged box slots the far detail level left out last frame, and walked parts skipped off screen (the F9 window, the bench).</summary>
+    /// <summary>Merged box slots the far detail level left out last frame, and walked parts skipped off screen and behind walls (the F9 window, the bench).</summary>
     public static int LastLodDropped { get; private set; }
     public static int LastWalkedCulled { get; private set; }
+    public static int LastWalkedHidden { get; private set; }
+
+    /// <summary>
+    /// Walked parts that move (machines' work, rigs, doors, joints): tested against the view by the sphere they were last drawn
+    /// in grown by <see cref="WalkMargin"/> metres, and drawn anyway at least every <see cref="WalkRefresh"/> frames (a few more,
+    /// spread by part) so that sphere stays true: at 8 frames a piece would have to move faster than 15 m/s to leave it.
+    /// </summary>
+    public const float WalkMargin = 1.5f;
+    public const int WalkRefresh = 8;
+
+    /// <summary>The smallest size class the walked part being drawn draws (the far detail level, as merged chunks have it; the last class: all).</summary>
+    private static int _walkDetail = LodClasses - 1;
+
+    // ---- Idle machine blocks (2026-11-23: on the Zero Day works their work boxes, walked one block at a time, were 4 ms of a 5 ms
+    // constructs pass, most of them standing still) ----------------------------------------------------------------------------
+
+    /// <summary>
+    /// A machine block whose work boxes (and status lamp) came out the same for <see cref="DormAfter"/> frames goes into its
+    /// chunk's idle mesh (<see cref="MergeChunk.Dorm"/>, drawn with the chunk in one call a shape) and isn't walked; every
+    /// <see cref="DormCheck"/> frames it is drawn again as before and compared, and if anything changed (it started working,
+    /// its lamp changed colour, it was painted) it leaves the idle mesh that frame. So a machine starts to move at most
+    /// DormCheck frames late. At most <see cref="DormBudget"/> chunks' idle meshes are made again a frame for blocks going idle;
+    /// a block waking always makes its chunk's again at once. <c>--no-idle-merge</c> turns it off.
+    /// </summary>
+    public static bool DormOn = true;
+    public const int DormAfter = 30, DormCheck = 8, DormBudget = 4;
+    private static int _dormBudget;
+
+    /// <summary>Machine blocks drawn from idle meshes last frame (the F9 window, the bench).</summary>
+    public static int LastDormant { get; private set; }
+
+    private static int[] _partChunk = [];
+    private static Renderer.Captured[] _dormScratch = [];
+    private static long[] _dormKey = [];
+
+    /// <summary>After a plan: each extra's chunk (the chunk its part is a member of), and every chunk's idle mesh emptied.</summary>
+    private static void DormMap(Renderer gfx, Construct c, MergeSet set)
+    {
+        set.ChunkMapStamp = set.Stamp;
+        Grow(ref _partChunk, c.PartCount);
+        Array.Fill(_partChunk, -1, 0, c.PartCount);
+        for (var q = 0; q < set.ChunkCount; q++)
+        {
+            var ch = set.Chunks[q];
+            for (var m = 0; m < ch.MemberCount; m++)
+                if (ch.Members[m] < c.PartCount)
+                    _partChunk[ch.Members[m]] = q;
+            if (ch.Dorm is { Slots: > 0 } dorm)
+                gfx.FreeMerged(dorm);
+            ch.DormDirty = ch.DormWake = false;
+        }
+        for (var k = 0; k < set.ExtraCount; k++)
+            set.ExtraChunk[k] = set.Extra[k] < c.PartCount ? _partChunk[set.Extra[k]] : -1;
+    }
+
+    /// <summary>
+    /// Extra <paramref name="k"/> was just drawn (or, asleep, only looked at) and captured: kept, compared with last time, and put
+    /// to sleep or woken. A block that made smoke or sparks this frame (<paramref name="emitted"/>) counts as changed: its plume
+    /// only rises while it is drawn. True when it is the same as before.
+    /// </summary>
+    private static bool DormLook(Renderer gfx, MergeSet set, int k, int q, bool emitted)
+    {
+        var ok = gfx.CaptureEnd(out var boxes);
+        var cap = set.ExtraCap[k];
+        var same = ok && !emitted && boxes.Length > 0 && cap != null && set.ExtraCapN[k] == boxes.Length;
+        for (var b = 0; same && b < boxes.Length; b++)
+            same = Same(in cap![b], in boxes[b]);
+        if (!same)
+        {
+            // (kept only when it changed: a slow crane creeping under a millimetre a frame is compared with where its run of
+            // like frames began, so it stays awake rather than sleeping and jumping)
+            if (cap == null || cap.Length < boxes.Length)
+                set.ExtraCap[k] = cap = new Renderer.Captured[Math.Max(boxes.Length, 4)]; // (once a block, grown to its most boxes)
+            boxes.CopyTo(cap);
+            set.ExtraCapN[k] = ok ? boxes.Length : 0;
+        }
+        var ch = set.Chunks[q];
+        if (set.ExtraState[k] != 0)
+        {
+            if (same)
+                return true;
+            // Woke: out of the idle mesh this very frame (it was drawn walked above), and awake until it settles again.
+            var wasIn = set.ExtraState[k] == 1;
+            (set.ExtraState[k], set.ExtraSame[k]) = (0, 0);
+            if (wasIn)
+                (ch.DormDirty, ch.DormWake) = (true, true);
+            return false;
+        }
+        set.ExtraSame[k] = same ? set.ExtraSame[k] + 1 : 0;
+        if (set.ExtraSame[k] >= DormAfter)
+        {
+            set.ExtraState[k] = 2; // (walked until its chunk's idle mesh is made again with it)
+            ch.DormDirty = true;
+        }
+        return same;
+    }
+
+    private static bool Same(in Renderer.Captured a, in Renderer.Captured b)
+    {
+        if (a.Shape != b.Shape || a.Code != b.Code || Vector3.DistanceSquared(a.Color, b.Color) > 1e-8f)
+            return false;
+        ref readonly var m = ref a.Model;
+        ref readonly var n = ref b.Model;
+        var turn = MathF.Abs(m.M11 - n.M11) + MathF.Abs(m.M12 - n.M12) + MathF.Abs(m.M13 - n.M13) + MathF.Abs(m.M21 - n.M21) + MathF.Abs(m.M22 - n.M22)
+            + MathF.Abs(m.M23 - n.M23) + MathF.Abs(m.M31 - n.M31) + MathF.Abs(m.M32 - n.M32) + MathF.Abs(m.M33 - n.M33);
+        var at = MathF.Abs(m.M41 - n.M41) + MathF.Abs(m.M42 - n.M42) + MathF.Abs(m.M43 - n.M43);
+        return turn < 1e-4f && at < 1e-3f; // (the body's matrix and back again rounds a little: under a millimetre is the same)
+    }
+
+    /// <summary>Chunk <paramref name="q"/>'s idle mesh made again from its extras that sleep (or wait to), sorted by shape.</summary>
+    private static void DormBuild(Renderer gfx, MergeSet set, int q)
+    {
+        var ch = set.Chunks[q];
+        (ch.DormDirty, ch.DormWake) = (false, false);
+        var n = 0;
+        for (var k = 0; k < set.ExtraCount; k++)
+            if (set.ExtraChunk[k] == q && set.ExtraState[k] != 0 && set.ExtraCap[k] is { } cap)
+            {
+                set.ExtraState[k] = 1;
+                Grow(ref _dormScratch, n + set.ExtraCapN[k]);
+                for (var b = 0; b < set.ExtraCapN[k]; b++)
+                    _dormScratch[n++] = cap[b];
+            }
+        ch.Dorm ??= new Renderer.MergedMesh();
+        var gl = ch.Dorm;
+        if (n == 0)
+        {
+            gl.Slots = gl.Groups = 0;
+            return;
+        }
+        Grow(ref _dormKey, n);
+        for (var b = 0; b < n; b++)
+            _dormKey[b] = (long)_dormScratch[b].Shape << 32 | (uint)b;
+        Array.Sort(_dormKey, 0, n);
+        Grow(ref _mergeXform, n * Renderer.MergeXformFloats);
+        Grow(ref _mergeLook, n * Renderer.MergeLookFloats);
+        var xf = _mergeXform;
+        var look = _mergeLook;
+        gl.Groups = 0;
+        gl.ClassCount = 1;
+        var last = -1;
+        for (var s = 0; s < n; s++)
+        {
+            ref readonly var box = ref _dormScratch[(int)(_dormKey[s] & 0xFFFFFFFF)];
+            if (box.Shape != last)
+            {
+                Grow(ref gl.GroupShape, gl.Groups + 1);
+                Grow(ref gl.GroupFirst, gl.Groups + 1);
+                Grow(ref gl.GroupCount, gl.Groups + 1);
+                Grow(ref gl.GroupClassEnd, gl.Groups + 1);
+                (gl.GroupShape[gl.Groups], gl.GroupFirst[gl.Groups], gl.GroupCount[gl.Groups]) = (box.Shape, s, 0);
+                gl.Groups++;
+                last = box.Shape;
+            }
+            gl.GroupCount[gl.Groups - 1]++;
+            gl.GroupClassEnd[gl.Groups - 1] = gl.GroupCount[gl.Groups - 1];
+            ref readonly var m = ref box.Model;
+            var o = s * Renderer.MergeXformFloats;
+            xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
+            xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
+            xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
+            var l = s * Renderer.MergeLookFloats;
+            (look[l], look[l + 1], look[l + 2], look[l + 3]) = (box.Color.X, box.Color.Y, box.Color.Z, box.Code);
+        }
+        gfx.UploadMergedXforms(gl, xf, n);
+        gfx.UploadMergedLooks(gl, look, n);
+    }
+
+    /// <summary>
+    /// Is walked part <paramref name="k"/> (its <paramref name="sphere"/> in the body's frame) inside a merged chunk's occlusion box
+    /// that the CPU query last found hidden, with the eye still where it was asked from? Then it isn't drawn: a part in a room
+    /// behind a wall costs nothing, as the room's merged boxes don't. Only chunks of the body's own frame (segment 0) hold parts.
+    /// </summary>
+    private static bool WalkedHidden(Renderer gfx, MergeSet set, int k, in Vector4 sphere)
+    {
+        if (!_occlusionUse)
+            return false;
+        var q = set.WalkedChunk[k];
+        if (q >= 0 && (q >= set.ChunkCount || !Holds(set.Chunks[q], in sphere)))
+            q = set.WalkedChunk[k] = -2;
+        if (q == -2)
+        {
+            q = -1;
+            for (var j = 0; j < set.ChunkCount && q < 0; j++)
+                if (set.Chunks[j].Seg == 0 && !set.Chunks[j].Dirty && Holds(set.Chunks[j], in sphere))
+                    q = j;
+            set.WalkedChunk[k] = q;
+        }
+        if (q < 0)
+            return false;
+        var ch = set.Chunks[q];
+        var m = ch.Gl;
+        return m.CpuHidden && m.CpuAt >= 0 && gfx.OcclusionFrame - m.CpuAt <= 6 && ch.EyeFrame == gfx.OcclusionFrame
+            && Vector3.DistanceSquared(ch.EyeAt, m.CpuEye) < 1f;
+    }
+
+    /// <summary>Does a chunk's occlusion box (its bounds and the query's pad) hold a sphere wholly?</summary>
+    private static bool Holds(MergeChunk ch, in Vector4 sphere)
+    {
+        var at = new Vector3(sphere.X, sphere.Y, sphere.Z);
+        var r = new Vector3(sphere.W);
+        return ch.Radius > 0 && Vector3.Min(at - r, ch.Min - new Vector3(OcclusionPad)) == ch.Min - new Vector3(OcclusionPad)
+            && Vector3.Max(at + r, ch.Max + new Vector3(OcclusionPad)) == ch.Max + new Vector3(OcclusionPad);
+    }
 
     /// <summary>The chunks queued this frame, in one run of the merged shader (opaque, so their order with the box batch doesn't matter).</summary>
     private static void FlushMerged(Renderer gfx)
@@ -953,7 +1428,11 @@ public static partial class ConstructRender
         {
             var s = _merges[c];
             for (var k = 0; k < s.ChunkCount; k++)
+            {
                 gfx.FreeMerged(s.Chunks[k].Gl);
+                if (s.Chunks[k].Dorm != null)
+                    gfx.FreeMerged(s.Chunks[k].Dorm!);
+            }
             _merges.Remove(c);
         }
         _mergeGone.Clear();

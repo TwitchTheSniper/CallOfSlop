@@ -58,6 +58,12 @@ public static unsafe class RoomShade
     public static float SignedBias => (RenderCaps.ReversedDepth ? -1f : 1f) * 0.05f / Depth;
 
     private static bool _ready, _broken;
+
+    /// <summary>The maps move with the camera in steps of this many metres: between steps the still bodies' maps are kept (<see cref="ShadowMapCache"/>).</summary>
+    public const float SnapStep = 1f;
+
+    private static readonly ShadowMapCache Cache = new();
+    private static int _stillBodies, _stillBoxes;
     private static GlFramebuffer _fbo;
     private static uint _tex;
 
@@ -106,21 +112,49 @@ public static unsafe class RoomShade
         Native.glDisable(GlCapability.CullFace);
         Native.glDisable(GlCapability.ScissorTest);
         int bodies = 0, boxes = 0;
+        // The maps are placed round the camera snapped to SnapStep (then to whole texels in each map's frame, so they don't
+        // shimmer): the still bodies' maps (Cache) stay right until the camera crosses a step or a still body changes.
+        var anchor = new Vector3(MathF.Round(cam.X / SnapStep) * SnapStep, MathF.Round(cam.Y / SnapStep) * SnapStep, MathF.Round(cam.Z / SnapStep) * SnapStep);
+        var stillKey = SunShadows.ClassifyPicks(n, alpha, blendTicks, out var moving);
+        var key = (stillKey * 31 + BitConverter.SingleToInt32Bits(anchor.X)) * 31 + BitConverter.SingleToInt32Bits(anchor.Y) ^ (long)BitConverter.SingleToInt32Bits(anchor.Z) << 24 | 1; // (never 0: no map yet)
+        var redraw = Cache.Ensure(Size, Layers, true) && key != Cache.Key;
+        if (redraw)
+            _stillBodies = _stillBoxes = 0;
         for (var i = 0; i < Layers; i++)
         {
-            // Each map's square snapped to whole texels in its own frame, so it doesn't shimmer as you move.
             var d = Dir(i);
             var up = MathF.Abs(d.Y) > 0.98f ? Vector3.UnitZ : Vector3.UnitY;
             var right = Vector3.Normalize(Vector3.Cross(up, d));
             var lup = Vector3.Cross(d, right);
-            double cr = Math.Round(Vector3.Dot(cam, right) / (double)texel) * texel, cu = Math.Round(Vector3.Dot(cam, lup) / (double)texel) * texel, cs = Vector3.Dot(cam, d);
+            double cr = Math.Round(Vector3.Dot(anchor, right) / (double)texel) * texel, cu = Math.Round(Vector3.Dot(anchor, lup) / (double)texel) * texel, cs = Vector3.Dot(anchor, d);
             var centre = new Vector3((float)(right.X * cr + lup.X * cu + d.X * cs), (float)(right.Y * cr + lup.Y * cu + d.Y * cs), (float)(right.Z * cr + lup.Z * cu + d.Z * cs));
             var view = Matrix4x4.CreateLookAt(d * (Depth * 0.5f), Vector3.Zero, up);
             Lookup[i] = Matrix4x4.CreateTranslation(cam - centre) * view * ortho * toMap;
-            Native.glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _tex, 0, i);
-            Native.glClear(GL_DEPTH_BUFFER_BIT);
-            SunShadows.DrawPicked(n, view * ortho * toClip, centre, d, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes); // (only the cells that reach the map's square)
+            if (redraw)
+            {
+                Cache.TargetStill(_fbo, i);
+                Native.glClear(GL_DEPTH_BUFFER_BIT);
+                SunShadows.DrawPicked(n, view * ortho * toClip, centre, d, Reach * 1.415f, alpha, blendTicks, ref _stillBodies, ref _stillBoxes, SunShadows.Which.Still); // (only the cells that reach the map's square)
+            }
+            if (moving > 0 || Cache.LiveDiffers || redraw)
+            {
+                Cache.CopyToLive(_tex, i);
+                if (moving > 0)
+                {
+                    Native.glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+                    Native.glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _tex, 0, i);
+                    SunShadows.DrawPicked(n, view * ortho * toClip, centre, d, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes, SunShadows.Which.Moving);
+                }
+            }
         }
+        if (redraw)
+        {
+            Cache.Key = key;
+            SunShadows.StillDrawn++;
+        }
+        Cache.LiveDiffers = moving > 0;
+        bodies += _stillBodies;
+        boxes += _stillBoxes;
         SunShadows.ClearPicks(n);
         Native.glBindVertexArray(default);
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);

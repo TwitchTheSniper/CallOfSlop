@@ -477,6 +477,8 @@ public static unsafe partial class Program
             LightGrid.BevelsForcedOff = true; // box edges drawn sharp whatever the Video setting (a before picture of edge bevels)
         if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
+        if (args.Any(a => a.Equals("--no-idle-merge", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.DormOn = false; // idle machine blocks walked every frame, not drawn from their chunk's idle mesh (ConstructRenderBatch.cs)
         if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
         if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
