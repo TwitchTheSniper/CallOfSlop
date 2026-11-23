@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-bake-kits/1",
+  // Parts made from a kit of extrusions welded at a Building Station and baked whole in a Bake Oven, never assembled
+  // (Sean, 2026-11-23: the large deck parts). Each part's kit is worked out from its solid boxes (BakeKits.cs).
+  "material": "steel",
+  "parts": [
+    "Zero Day Lower Deck Fore",
+    "Zero Day Lower Deck Aft",
+    "Zero Day Upper Deck Fore",
+    "Zero Day Upper Deck Aft"
+  ]
+}
