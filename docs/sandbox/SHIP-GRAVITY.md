@@ -6,7 +6,7 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
 
 | Rule | What a rider feels |
 | --- | --- |
-| **Deck gravity** (default, as before) | 1 g towards the deck's floor, wherever the ship is and whatever it does |
+| **Deck gravity** (default) | 1 g towards the deck's floor, wherever the ship is, and the hull's acceleration past 0.25 g on top (Karl, 2026-11-23): a hard burn pins you, a hard brake throws you forward |
 | **Felt in space** | ships in space (out of the bubble, or a bubble with no pull) have no deck gravity: at rest you float, a burn gives weight along it; on a planet, decks as before |
 | **Felt everywhere** | every vehicle, everywhere: the world's pull less the vehicle's acceleration (true physics): turns push you sideways, a parked ship pulls you the planet's way |
 
@@ -19,6 +19,11 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   (with the hull's turn throwing them outwards) into `MoveState.RideFelt`, in their segment's frame. The owner's snapshot
   carries it (protocol 444), so a client's replay steps with the server's value. In the mover the part along their down is
   the gravity; the rest is a push (sideways in a turn, up to the ceiling under hard braking).
+- **Deck gravity's inertia** (Karl, 2026-11-23: in a high-g burn riders still jumped about). `Construct.Felt` is worked out
+  under every rule; with deck gravity it is only the hull's acceleration (`-Accel`, or in space `-SpaceAccel`), and
+  `SetRider` puts the deck's 1 g along the rider's down plus that acceleration less `DeckFeltFrom` (0.25 g, faded in, so gentle
+  driving and a cruise feel as before) into `RideFelt`. The same moving rules below then slow and pin them. No harm with deck
+  gravity (Karl not asked).
 - **Moving.** Past `SlowG` (1.5 g) moving slows, down to a fifth at `PinG` (3 g), where a standing rider can't move or jump.
   Under `FloatG` (0.15 g) a rider in the air drifts: the move keys, Jump up and Crouch down, at 2 m/s. On a floor they still
   walk (no gravity pulls them off it); a jump pushes off.
