@@ -278,8 +278,11 @@ public static unsafe class SunShadows
     /// <summary>
     /// Fills <see cref="Picks"/> with the nearest bodies (at most <see cref="MaxBodies"/>) whose sphere comes within 1.5 x
     /// <paramref name="reach"/> of <paramref name="cam"/>, as ConstructRender draws them; returns how many. <see cref="RoomShade"/> shares it.
+    /// <paramref name="stillBySurface"/> (the dark interiors' far ring, which draws still bodies alone): a body moving this tick is left
+    /// out, and the nearest are those whose sphere is nearest, not their middle, so a 240 m works 100 m off isn't pushed out by a dozen
+    /// crates nearer the camera.
     /// </summary>
-    internal static int PickNear(ConstructWorld world, Vector3 cam, float reach, float alpha, bool blendTicks)
+    internal static int PickNear(ConstructWorld world, Vector3 cam, float reach, float alpha, bool blendTicks, bool stillBySurface = false)
     {
         // The nearest bodies whose sphere reaches the square (a ship 40 m off still shades the ground at your feet).
         var n = 0;
@@ -292,6 +295,13 @@ public static unsafe class SunShadows
             var r = reach * 1.5f + c.Radius;
             if (d2 > r * r)
                 continue;
+            if (stillBySurface)
+            {
+                if (blendTicks && (c.PrevPos != c.Pos || c.PrevRot != c.Rot))
+                    continue;
+                var gap = MathF.Max(MathF.Sqrt(d2) - c.Radius, 0f);
+                d2 = gap * gap;
+            }
             var k = n;
             if (n == MaxBodies)
             {

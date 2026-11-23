@@ -182,6 +182,8 @@ public sealed class CLift
     public uint WaitFrom; // the tick it stopped at while it waits (0: it runs): both peers pose it there (ConstructLifterPush.cs)
     public bool Moved; // a move has been made or heard (else the hand is drawn at its rest)
     public float Rise = ConstructLifters.CarryRise; // the carry height over the higher end, from its Carry height setting when the move began
+    public Vector3 Hand0; // (a loaded carry with Fetch) where the empty hand was when the carry began, in the lifter part's frame
+    public int Fetch; // ticks at a loaded carry's start that the empty hand travels from Hand0 to the piece (Sean 2026-11-23: no jump), the piece still where it lies; 0: none
     public LiftWhy Why; // what it waits on (the look line)
     public ushort Moves; // parts it has fitted since the world loaded (its Moved output)
     public ushort StationBody; // the station it works for in this move (0: none)
@@ -686,6 +688,7 @@ public static partial class ConstructLifters
                 ConstructStation.LiftClaim(j, k);
                 var inv = Quaternion.Conjugate(lr);
                 var place = j.Pos + Vector3.Transform(plan.At[k], j.Rot);
+                var hand = HandNow(ld, l);
                 l.Def = d.Id;
                 l.Paint = k < j.Bp.StepPaint.Count ? j.Bp.StepPaint[k] : 0;
                 l.From = Vector3.Transform(hold - Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, sr) - lp, inv);
@@ -698,6 +701,7 @@ public static partial class ConstructLifters
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
                 Begin(l);
+                Approach(ld, l, hand);
                 l.State = LiftState.Carry;
                 LifterProbe.CarriesHeard++; // (the host counts its own; a client counts what it hears)
                 l.Moved = true;
@@ -778,16 +782,12 @@ public static partial class ConstructLifters
     /// <summary>The empty hand's way back: from where the piece was to the hold it came from (or where it is, with no station).</summary>
     private static void Back(Construct c, CLift l, LifterDef ld, Construct? sc, int t)
     {
-        var endRot = l.ToRot;
-        var from = l.State == LiftState.Carry ? Pose(ld, l, l.Age, out endRot) : l.To;
+        // (the empty hand starts where it let go, over the piece's top middle, not at the piece's origin, and with no station goes back
+        // over where the piece's middle was: a ship section's origin is far off it; HandPose: and from the hand's own point while it fetched)
+        var from = l.State == LiftState.Carry ? HandPose(ld, l, l.Age) : l.To;
         var to = l.From;
         if (l.Def != 0 && ConstructParts.Get(l.Def) is { } pd)
-        {
-            // (the empty hand starts where it let go, over the piece's top middle, not at the piece's origin, and with no station goes back
-            // over where the piece's middle was: a ship section's origin is far off it)
-            from += Vector3.Transform(new Vector3((pd.BoundsMin.X + pd.BoundsMax.X) * 0.5f, pd.BoundsMax.Y, (pd.BoundsMin.Z + pd.BoundsMax.Z) * 0.5f), endRot);
             to += Vector3.Transform((pd.BoundsMin + pd.BoundsMax) * 0.5f, l.FromRot);
-        }
         if (sc != null && t >= 0 && t < sc.PartCount)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
@@ -1112,18 +1112,26 @@ public static partial class ConstructLifters
             rot = l.ToRot;
             return Vector3.Lerp(l.From, l.To, l.Dur > 0 ? Math.Clamp(age / l.Dur, 0, 1) : 1);
         }
+        if (l.Fetch > 0)
+        {
+            if (age < l.Fetch)
+            {
+                rot = l.FromRot; // (the hand is on its way: the piece lies where it was picked)
+                return l.From;
+            }
+            age -= l.Fetch;
+        }
         // A loaded move follows the piece's middle (2026-11-22: a ship section's origin is the ship's, so a path of its origin swung
         // the Zero Day keel 117 m round for a 55 m carry): the legs below are the middle's, and the origin is posed from it.
         var d = l.Def != 0 ? ConstructParts.Get(l.Def) : null;
         var mid = d == null ? Vector3.Zero : (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var at = PoseMiddle(ld, l, age, d, l.From + Vector3.Transform(mid, l.FromRot), l.To + Vector3.Transform(mid, l.ToRot), out rot);
+        var at = PoseMiddle(ld, l, age, d, l.Def != 0, l.From + Vector3.Transform(mid, l.FromRot), l.To + Vector3.Transform(mid, l.ToRot), out rot);
         return at - Vector3.Transform(mid, rot);
     }
 
     /// <summary>A carry's middle at <paramref name="age"/>: <paramref name="from"/> and <paramref name="to"/> are the piece's middle at the ends (an empty hand's own point).</summary>
-    private static Vector3 PoseMiddle(LifterDef ld, CLift l, float age, ConstructPartDef? d, Vector3 from, Vector3 to, out Quaternion rot)
+    private static Vector3 PoseMiddle(LifterDef ld, CLift l, float age, ConstructPartDef? d, bool loaded, Vector3 from, Vector3 to, out Quaternion rot)
     {
-        var loaded = l.Def != 0;
         var still = (loaded ? ld.Handle : ld.Handle * 0.25f) * 0.5f;
         var sec = age / World.TickRate - still;
         rot = l.FromRot;
@@ -1196,7 +1204,47 @@ public static partial class ConstructLifters
 
     /// <summary>Server: a move starts now.</summary>
     private static void Begin(CLift l) =>
-        (l.Start, l.Held, l.WaitFrom, l.Age, l.PlayerWait, l.PowerWait) = (Now, 0, 0u, 0, false, false);
+        (l.Start, l.Held, l.WaitFrom, l.Age, l.PlayerWait, l.PowerWait, l.Fetch) = (Now, 0, 0u, 0, false, false, 0);
+
+    /// <summary>Server: where the hand is now (lifter part frame), before a new move overwrites the old one: the empty hand's point, or over a held piece's top middle.</summary>
+    internal static Vector3 HandNow(LifterDef ld, CLift l) => l.Moved ? HandPose(ld, l, AgeAt(l, Now)) : RestOf(ld);
+
+    /// <summary>
+    /// Server, right after a loaded carry's <see cref="Begin"/>: the empty hand first travels from <paramref name="hand"/> (where it
+    /// was, <see cref="HandNow"/>) to the piece, on the same eased legs, and only then lifts it: no jump between jobs. The piece
+    /// stays where it lies meanwhile (<see cref="Pose"/>).
+    /// </summary>
+    internal static void Approach(LifterDef ld, CLift l, Vector3 hand)
+    {
+        var grip = GripOf(l);
+        if (l.Steered || Vector3.DistanceSquared(hand, grip) < 0.0025f)
+            return;
+        l.Hand0 = hand;
+        l.Fetch = Ticks(ld, hand, grip, false, SafeLift, l.Rise);
+        l.Dur = Math.Min(l.Dur + l.Fetch, ushort.MaxValue);
+    }
+
+    /// <summary>Is the empty hand still on its way to the piece <paramref name="age"/> ticks into a loaded carry (the piece lies where it was)?</summary>
+    public static bool Fetching(CLift l, float age) => l.Fetch > 0 && !l.Steered && l.State == LiftState.Carry && age < l.Fetch;
+
+    /// <summary>Where the empty hand takes hold of the piece: over its top middle at the pick (an empty move's point, as <see cref="Back"/> starts from).</summary>
+    private static Vector3 GripOf(CLift l)
+    {
+        if (l.Def == 0 || ConstructParts.Get(l.Def) is not { } d)
+            return l.From;
+        return l.From + Vector3.Transform(new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f), l.FromRot);
+    }
+
+    /// <summary>The hand's point (lifter part frame) <paramref name="age"/> ticks into the move: on its way to the piece while it fetches, else over the piece's top middle (empty: the move's own point).</summary>
+    public static Vector3 HandPose(LifterDef ld, CLift l, float age)
+    {
+        if (Fetching(l, age))
+            return PoseMiddle(ld, l, age, null, false, l.Hand0, GripOf(l), out _);
+        var o = Pose(ld, l, age, out var rot);
+        if (l.Def == 0 || ConstructParts.Get(l.Def) is not { } d)
+            return o;
+        return o + Vector3.Transform(new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f), rot);
+    }
 
     /// <summary>Server: the move stops where it is (a player in the way, no power); sent.</summary>
     internal static void Freeze(ConstructWorld world, CLift l, uint at)
@@ -1479,6 +1527,8 @@ public static partial class ConstructLifters
             w.U16((ushort)Math.Min(l.Dur, ushort.MaxValue)).U32(l.Start).U32(unchecked((uint)l.Held)).U32(l.WaitFrom); // (protocol 294: the move on the mover clock, and where it waits)
             w.U16(Cm(l.Rise)).U8((byte)l.Why).U16((ushort)(l.Step + 1)).U16(l.StationBody).U16(l.Moves); // (protocol 290: the look line's and the carry height)
             w.U8((byte)l.ToKind).U16(l.ToPart).U8(l.ToBay); // (protocol 296: a carry between points, its put point for the look line)
+            Vec(w, l.Hand0);
+            w.U16((ushort)Math.Clamp(l.Fetch, 0, ushort.MaxValue)); // (protocol 446: the empty hand's way to the piece first)
             WriteOrders(w, l); // (protocol 312: the hand orders)
         }
     }
@@ -1521,6 +1571,8 @@ public static partial class ConstructLifters
             var toKind = (LiftPointKind)r.U8();
             var toPart = r.U16();
             var toBay = r.U8();
+            var hand0 = new Vector3(FromCm(r.U16()), FromCm(r.U16()), FromCm(r.U16()));
+            int fetch = r.U16();
             if (lb == null || c == null || part >= c.PartCount || c.DefOf(part).Lifter == null)
             {
                 ReadOrders(ref r, null); // (protocol 312: read past)
@@ -1543,6 +1595,7 @@ public static partial class ConstructLifters
             l.Age = (int)AgeAt(l, MoverPhysics.Clock);
             (l.Rise, l.Why, l.Step, l.StationBody, l.Moves) = (rise, why, step, station, moves);
             (l.ToKind, l.ToPart, l.ToBay) = (toKind, toPart, toBay);
+            (l.Hand0, l.Fetch) = (hand0, fetch);
         }
     }
 
@@ -1826,7 +1879,7 @@ public static partial class LifterProbe
             foreach (var lb in world.LiftBodies)
                 for (var i = 0; i < lb.N; i++)
                     if (lb.Lifts[i] is { State: LiftState.Carry, WaitFrom: 0, Def: > 0 } pl && world.Get(lb.Body) is { } pc && pl.Part < pc.PartCount && ConstructLifters.DefOf(pc, pl.Part) is { } pld
-                        && ConstructLifters.AgeAt(pl, ConstructLifters.Now) < pl.Dur * 0.5f && ConstructLifterPush.PieceBox(pc, pl, pld, pl.Dur, out var pcen, out var phalf))
+                        && ConstructLifters.AgeAt(pl, ConstructLifters.Now) < pl.Fetch + (pl.Dur - pl.Fetch) * 0.5f && ConstructLifterPush.PieceBox(pc, pl, pld, pl.Dur, out var pcen, out var phalf))
                     {
                         info = $"{ConstructParts.Get(pl.Def)?.Name}: its put point, the piece's box {phalf.X * 2:0.00} x {phalf.Z * 2:0.00} m";
                         return new Vector3(pcen.X, pcen.Y - phalf.Y - 0.3f, pcen.Z);
@@ -1841,12 +1894,12 @@ public static partial class LifterProbe
                 if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
                 var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
-                if (age > l.Dur * 0.2f)
-                    continue;
+                if (age > l.Fetch + (l.Dur - l.Fetch) * 0.2f)
+                    continue; // (fractions of the carry itself, after the empty hand's way to the piece)
                 // The first point from 35 % on whose ground is clear of constructs (not on the build) and where the piece is at body height.
                 for (var f = 0.25f; f <= 0.95f; f += 0.05f)
                 {
-                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Dur * f, out var centre, out var half))
+                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Fetch + (l.Dur - l.Fetch) * f, out var centre, out var half))
                         break;
                     var ground = World.Map.GroundHeight(centre.X, centre.Z);
                     var feet = new Vector3(centre.X, ground + 0.5f, centre.Z); // (over a floor plate: the build, not the bay's floor, is what rules a point out)

@@ -1344,11 +1344,15 @@ public sealed partial class TerrainEdits : IDigGround
     /// (<paramref name="own"/>: a snowy world digs white, a red one red) with a touch of its dirt, and deeper down it
     /// turns towards its rock and darkens; darker still under cover. Shared with <see cref="PlanetEdits"/>.
     /// </summary>
-    public static (Vector3 Color, float Rock) DugShade(TerrainSurface sf, Vector3 own, float depth, bool covered)
+    public static (Vector3 Color, float Rock) DugShade(TerrainSurface sf, Vector3 own, float depth, bool covered) =>
+        DugShade(sf.Dirt, sf.Rock, own, depth, covered);
+
+    /// <summary><see cref="DugShade(TerrainSurface, Vector3, float, bool)"/> with the dirt and rock colours given (a planet's biomes there).</summary>
+    public static (Vector3 Color, float Rock) DugShade(Vector3 dirt, Vector3 rockCol, Vector3 own, float depth, bool covered)
     {
         var f = Math.Clamp(depth / DugDeep, 0f, 1f);
-        var near = Vector3.Lerp(own, sf.Dirt, DugDirt) * 0.92f;
-        var deep = Vector3.Lerp(own, sf.Rock, DugRock) * 0.78f;
+        var near = Vector3.Lerp(own, dirt, DugDirt) * 0.92f;
+        var deep = Vector3.Lerp(own, rockCol, DugRock) * 0.78f;
         var col = Vector3.Lerp(near, deep, f) * (covered ? 0.6f : 1f);
         return (col, Math.Clamp(0.25f + depth / 3f, 0.25f, 1f));
     }

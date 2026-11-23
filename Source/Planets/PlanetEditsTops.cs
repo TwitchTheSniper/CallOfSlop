@@ -18,6 +18,8 @@ public sealed partial class PlanetEdits
     private bool[] _coloursMade = [];
     // Per column: the ground's own colour there as built (made with the top colours), which dug faces start from.
     private Vector3[] _ownColour = [];
+    // Per column: the biomes' dirt and rock colours there (zero until made), which dug faces shade towards.
+    private Vector3[] _ownDirt = [], _ownRock = [];
 
     private int CellOrdinal(int first) => first / (Sub * Sub);
 
@@ -31,6 +33,8 @@ public sealed partial class PlanetEdits
         Array.Resize(ref _cornerBase, cells * vs * vs);
         Array.Resize(ref _topColour, _spans.Length);
         Array.Resize(ref _ownColour, _spans.Length);
+        Array.Resize(ref _ownDirt, _spans.Length);
+        Array.Resize(ref _ownRock, _spans.Length);
         Array.Resize(ref _coloursMade, cells);
     }
 
@@ -68,7 +72,8 @@ public sealed partial class PlanetEdits
             return;
         // The ground's own colour at the cell's corners, as the planetoid draws it, and across the cell between them.
         var dusting = (float)_p.Surface.Dusting;
-        Vector4 g00 = GroundColour(face, i, j), g10 = GroundColour(face, i + 1, j), g01 = GroundColour(face, i, j + 1), g11 = GroundColour(face, i + 1, j + 1);
+        Vector4 g00 = GroundColour(face, i, j, out var d00, out var r00), g10 = GroundColour(face, i + 1, j, out var d10, out var r10);
+        Vector4 g01 = GroundColour(face, i, j + 1, out var d01, out var r01), g11 = GroundColour(face, i + 1, j + 1, out var d11, out var r11);
         // Made ground's rim: a side that meets untouched ground fades into it across the cell, so a yard or an apron ends in
         // drifted snow instead of a stepped edge of black cells.
         var side = _pagesPerSide << SlotShift;
@@ -81,6 +86,8 @@ public sealed partial class PlanetEdits
             float u = (a + 0.5f) / Sub, v = (b + 0.5f) / Sub;
             var own = Vector4.Lerp(Vector4.Lerp(g00, g10, u), Vector4.Lerp(g01, g11, u), v);
             _ownColour[c] = new Vector3(own.X, own.Y, own.Z);
+            _ownDirt[c] = Vector3.Lerp(Vector3.Lerp(d00, d10, u), Vector3.Lerp(d01, d11, u), v);
+            _ownRock[c] = Vector3.Lerp(Vector3.Lerp(r00, r10, u), Vector3.Lerp(r01, r11, u), v);
             var (col, rock) = TopShade(c, own, _spans[c][_count[c] * 2 - 1]);
             if (dusting > 0 && _fillKind[c] != 0)
             {

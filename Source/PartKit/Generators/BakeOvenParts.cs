@@ -7,8 +7,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Bake Oven on the block system (design page drawing 19; MachineBlocks.cs, ConstructBakeOven.cs, BakeOvenRender.cs):
 /// Constructs/Parts/BakeOven. One Oven Core (the "Bake Oven": its screen, Mode, Run, power and status lamp, its burner stack and
 /// gas train) and any number of identical 2 x 2 m Oven Bed Blocks welded beside it, the bed being their largest full rectangle.
-/// The shared 2 m Mast Block stacks on the bed's four corner cells; the machine draws its hood, the hood's screw columns and its
-/// own bridge between those masts (BakeOvenRender.cs), so nothing here moves. A bed block's skirt, kerb, side panels and hazard
+/// The shared 2 m Mast Block stacks on the bed's four corner cells; the machine draws its hood and the hood's screw columns
+/// between those masts (BakeOvenRender.cs), so nothing here moves; it has no crane of its own. A bed block's skirt, kerb, side panels and hazard
 /// edge are "seam" boxes: drawn only on the machine's open edges, so a bed of blocks reads as one platen.
 /// </summary>
 public sealed class BakeOvenParts : IPartGenerator
@@ -43,7 +43,7 @@ public sealed class BakeOvenParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Bake Oven", Small, Section,
-            "An Oven Core: bakes a welded group of subparts set on its bed under a heavy hood. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m) and stack Mast Blocks on the bed's four corners: the shortest corner mast sets the clear height under the hood. Loaded from above, by a crane, a Lifter or the physics gun. The hood comes down on whatever is on the bed. Needs power.",
+            "An Oven Core: bakes a welded group of subparts set on its bed under a heavy hood. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m) and stack Mast Blocks on the bed's four corners: the shortest corner mast sets the clear height under the hood. It has no crane of its own: loaded and emptied by a hall crane, a Loader Arm, a Roller Tile run that meets the bed, or the physics gun. The hood comes down on whatever is on the bed. Needs power.",
             role: "storage", group: "Production", color: Body);
         const double e = 0.997, h = 1.997;
         // The cabinet: a plinth, the body sunk 6 cm between a corner post at each edge, a cornice on top.

@@ -28,6 +28,9 @@ public enum FoliageType : byte
     Arch, // two rock legs and a lintel, about 20 m across and 16 m high
     Needle, // a thin tapering rock spire about 24 m tall
     Tor, // a squat pile of weathered slabs about 9 m high
+    // (2026-11-23, Sean: "improve far-off tree rendering ... so they don't pop in". Planets only: FoliageRendererPlanet.cs.)
+    FarBroadleaf, // one in nine broadleaves and birches beyond the trees' reach, as a wide low lump standing for its neighbours
+    FarConifer, // the same for the pines and spruces: a wide low-sided cone
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>
@@ -209,7 +212,7 @@ public static class Foliage
     public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine or FoliageType.Birch or FoliageType.Spruce or FoliageType.ScotsPine;
 
     /// <summary>Types only a world's resource field draws: map files can't place them.</summary>
-    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem || IsMonolith(t);
+    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem or FoliageType.FarBroadleaf or FoliageType.FarConifer || IsMonolith(t);
 
     /// <summary>A planet's big standing rock (PlanetFlora.MonolithBoxes): solid, drawn even at foliage quality Off.</summary>
     public static bool IsMonolith(FoliageType t) => t is FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor;
