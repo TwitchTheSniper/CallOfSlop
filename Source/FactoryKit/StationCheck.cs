@@ -116,7 +116,7 @@ public static class StationCheck
         {
             Span<ushort> pads = stackalloc ushort[8];
             var np = ConstructStation.OwnPads(c, t, pads);
-            Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} fitting arms, {np} pick pads under its crane{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0})"))}");
+            Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} fitting arms, {np} pick pads under its crane{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0}, hold {ConstructPads.RackDef(c, p).RackHoldMax - ConstructPads.RackDef(c, p).RackHoldMin:0.#})"))}");
         }
         Console.WriteLine($"  station: part {t}; the bill of {target.Name} as its panel shows it before Start:");
         var preview = new StationPreview();
@@ -269,6 +269,11 @@ public static class StationCheck
                     whys[why] = list = [];
                 list.Add($"{j.KindNeed[i] - j.KindFit[i]} x {name}");
             }
+        for (var i = 0; i < j.KindN; i++)
+            if (j.KindWhy[i] != null && ConstructParts.Get(j.KindDef[i]) is { } kd && BakeKits.Has(kd))
+                for (var m = 0; m < c.PartCount; m++)
+                    if (c.DefOf(m).IsBakeOven)
+                        Console.WriteLine($"  the Bake Oven at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} on the {kd.Name}: {WorkOrders.Refusal(w, c, m, ConstructStation.OrderFor(kd, 1)) ?? "takes it"}");
         Console.WriteLine($"  kinds whose order was refused ({whys.Sum(x => x.Value.Count)}), by reason:");
         foreach (var (why, list) in whys.OrderByDescending(x => x.Value.Count))
             Console.WriteLine($"    {why}: {string.Join(", ", list)}");

@@ -30,7 +30,7 @@ public static partial class ConstructBakeOven
             return $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
         var made = ConstructParts.Def(o.Part);
         if (!BakeKits.Has(made) || BakeKits.BlueprintOf(made) == null)
-            return $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json lists";
+            return $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json and Constructs/BakeKits/ list";
         if (Unbaking(c.Parts[part], d))
             return $"the {d.Name} is set to Un-bake";
         if (o.Count is < 1 or > WorkOrders.MaxCount)

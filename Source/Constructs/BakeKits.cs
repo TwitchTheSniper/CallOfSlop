@@ -19,19 +19,33 @@ public static class BakeKits
     public const string Format = "call-of-slop-bake-kits/1";
     public const string KitSuffix = " kit";
 
-    /// <summary>One piece of a kit: the extrusion, where its origin sits in the part's frame and its turn, its paint and its finish's name.</summary>
-    public readonly record struct Piece(ExtrusionKey Key, Vector3 Pos, byte Rot, uint Paint, string Finish);
+    /// <summary>
+    /// One piece of a kit: the extrusion (or, with <paramref name="Name"/>, a run-time part by its key, such as a plain Hull Section a Panel
+    /// Former forms), where its origin sits in the part's frame and its turn, its paint and its finish's name.
+    /// </summary>
+    public readonly record struct Piece(ExtrusionKey Key, Vector3 Pos, byte Rot, uint Paint, string Finish, string? Name = null)
+    {
+        public string PartName => Name ?? Extrusion.Name(Key);
+
+        public ConstructPartDef? Def => Name != null ? ConstructParts.Find(Name) : Extrusion.Def(Key);
+    }
+
+    public const string ListFormat = "call-of-slop-bake-kit-list/1";
 
     /// <summary>A kit's design at one turn: the part it bakes into, the part's turn and its origin from the design's origin.</summary>
     public readonly record struct Hit(ConstructPartDef Part, byte Rot, Vector3 Offset);
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "BakeKits.json");
 
+    /// <summary>Kits a generator lists piece by piece (Constructs/BakeKits/*.json, format <see cref="ListFormat"/>): the Zero Day's keel, formed skins.</summary>
+    public static string ListFolder => Path.Combine(AppFolders.Data, "Constructs", "BakeKits");
+
     private static string[]? _names;
     private static string _material = "steel";
     private static readonly Dictionary<string, Piece[]?> Kits = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, ConstructBuild.Blueprint?> Prints = new(StringComparer.OrdinalIgnoreCase);
-    private static Dictionary<string, Hit>? _targets;
+    private static Dictionary<string, List<Hit>>? _targets;
+    private static readonly Dictionary<string, Piece[]> Listed = new(StringComparer.OrdinalIgnoreCase); // (by part: the kit's pieces as listed)
     private static readonly object Gate = new();
 
     /// <summary>The parts made from kits (Constructs/BakeKits.json "parts").</summary>
@@ -42,7 +56,7 @@ public static class BakeKits
             if (_names != null)
                 return _names;
             lock (Gate)
-                return _names ??= Load(FilePath);
+                return _names ??= [.. Load(FilePath).Concat(LoadLists(ListFolder)).Distinct(StringComparer.OrdinalIgnoreCase)];
         }
     }
 
@@ -70,6 +84,48 @@ public static class BakeKits
         }
     }
 
+    /// <summary>Every kit list in the folder (none: no folder): each kit's part and pieces, a bad file or kit refused with a reason.</summary>
+    private static List<string> LoadLists(string folder)
+    {
+        var names = new List<string>();
+        if (!Directory.Exists(folder))
+            return names;
+        foreach (var path in Directory.GetFiles(folder, "*.json").Order(StringComparer.Ordinal))
+            try
+            {
+                using var doc = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+                var root = doc.RootElement;
+                if (!root.TryGetProperty("format", out var f) || f.GetString() != ListFormat)
+                    throw new FormatException($"\"format\" must be \"{ListFormat}\"");
+                foreach (var k in root.GetProperty("kits").EnumerateArray())
+                {
+                    var part = k.GetProperty("part").GetString() ?? throw new FormatException("a kit with no \"part\"");
+                    var pieces = new List<Piece>();
+                    foreach (var q in k.GetProperty("pieces").EnumerateArray())
+                    {
+                        var at = q.GetProperty("at");
+                        var pos = new Vector3(MathF.Round(at[0].GetSingle() * 100), MathF.Round(at[1].GetSingle() * 100), MathF.Round(at[2].GetSingle() * 100)) / 100f; // (a part's place rounds to the centimetre)
+                        var rot = q.TryGetProperty("rot", out var r) ? r.GetByte() : (byte)0;
+                        var paint = q.TryGetProperty("paint", out var pa) && ConstructPaint.TryParse(pa.GetString(), out var pv) ? pv : 0u;
+                        var finish = q.TryGetProperty("finish", out var fi) ? fi.GetString() ?? "" : "";
+                        pieces.Add(new Piece(default, pos, rot, paint, finish, q.GetProperty("part").GetString() ?? throw new FormatException($"{part}: a piece with no \"part\"")));
+                    }
+                    if (rot24Bad(pieces) is { } bad)
+                        throw new FormatException($"{part}: {bad}");
+                    Listed[part] = [.. pieces];
+                    names.Add(part);
+                }
+            }
+            catch (Exception e) when (e is IOException or JsonException or FormatException or InvalidOperationException or KeyNotFoundException or UnauthorizedAccessException or IndexOutOfRangeException)
+            {
+                Console.WriteLine($"[bake kits] REFUSED {path}: {e.Message}");
+            }
+        return names;
+
+        static string? rot24Bad(List<Piece> ps) => ps.Count is < 2 or > BakedParts.MaxSubparts ? $"{ps.Count} pieces (2 to {BakedParts.MaxSubparts})"
+            : ps.FindIndex(p => p.Rot >= Rot24.Count) is var i and >= 0 ? $"piece {i}: turn {ps[i].Rot} (0 to {Rot24.Count - 1})" : null;
+    }
+
     /// <summary>Is this part made from a kit (baked, never assembled)?</summary>
     public static bool Has(ConstructPartDef d)
     {
@@ -90,7 +146,7 @@ public static class BakeKits
         {
             if (Kits.TryGetValue(d.Name, out var have))
                 return have;
-            var kit = Make(d);
+            var kit = Listed.TryGetValue(d.Name, out var listed) ? Resolve(d, listed) : Make(d);
             Kits[d.Name] = kit;
             return kit;
         }
@@ -162,13 +218,34 @@ public static class BakeKits
             Console.WriteLine($"[bake kits] REFUSED {d.Name}: {pieces.Count} pieces (2 to {BakedParts.MaxSubparts})");
             return null;
         }
-        // The biggest piece first: the kit's blueprint stands on it (step 0, unturned when it can be).
-        pieces.Sort((p, q) => Volume(q.Key).CompareTo(Volume(p.Key)));
+        Order(pieces);
+        return [.. pieces];
+    }
+
+    /// <summary>A listed kit: every piece's part known (null: one isn't, the log says which), the biggest first, as <see cref="Make"/> lays them.</summary>
+    private static Piece[]? Resolve(ConstructPartDef d, Piece[] listed)
+    {
+        var pieces = new List<Piece>(listed);
+        foreach (var p in pieces)
+            if (p.Def == null)
+            {
+                Console.WriteLine($"[bake kits] REFUSED {d.Name}: no such part as its piece {p.PartName}");
+                return null;
+            }
+        Order(pieces);
+        return [.. pieces];
+    }
+
+    /// <summary>The biggest piece first: the kit's blueprint stands on it (step 0, unturned when it can be).</summary>
+    private static void Order(List<Piece> pieces)
+    {
+        pieces.Sort((p, q) => Volume(q).CompareTo(Volume(p)));
         var first = pieces.FindIndex(p => p.Rot == 0);
         if (first > 0)
             (pieces[0], pieces[first]) = (pieces[first], pieces[0]);
-        return [.. pieces];
     }
+
+    private static float Volume(in Piece p) => p.Name == null ? Volume(p.Key) : p.Def is { } d ? (d.BoundsMax.X - d.BoundsMin.X) * (d.BoundsMax.Y - d.BoundsMin.Y) * (d.BoundsMax.Z - d.BoundsMin.Z) * 1e6f : 0;
 
     private static float Axis(Vector3 v, int a) => a == 0 ? v.X : a == 1 ? v.Y : v.Z;
     private static float Volume(in ExtrusionKey k) => (float)k.W * k.H * k.L;
@@ -208,7 +285,7 @@ public static class BakeKits
             for (var i = 0; i < kit.Length; i++)
             {
                 var p = kit[i];
-                sb.Append("  { \"part\": ").Append(JsonSerializer.Serialize(Extrusion.Name(p.Key)));
+                sb.Append("  { \"part\": ").Append(JsonSerializer.Serialize(p.PartName));
                 if (ConstructPaint.IsSet(p.Paint))
                     sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
                 if (p.Finish.Length > 0)
@@ -243,8 +320,11 @@ public static class BakeKits
     public static ConstructBuild.Blueprint? FindPrint(string name) =>
         name.EndsWith(KitSuffix, StringComparison.OrdinalIgnoreCase) && Names.Length > 0 && ConstructParts.Find(name[..^KitSuffix.Length]) is { } d ? BlueprintOf(d) : null;
 
-    /// <summary>The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once.</summary>
-    public static Hit? Target(string hash)
+    /// <summary>
+    /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
+    /// share a kit (the keel's bands where the hull runs straight): <paramref name="want"/>, the oven's order, picks between them.
+    /// </summary>
+    public static Hit? Target(string hash, ushort want = 0)
     {
         if (Names.Length == 0)
             return null;
@@ -252,7 +332,7 @@ public static class BakeKits
         {
             if (_targets == null)
             {
-                _targets = new Dictionary<string, Hit>(StringComparer.Ordinal);
+                _targets = new Dictionary<string, List<Hit>>(StringComparer.Ordinal);
                 foreach (var n in Names)
                 {
                     if (ConstructParts.Find(n) is not { } d || KitOf(d) is not { } kit)
@@ -264,14 +344,23 @@ public static class BakeKits
                     {
                         var subs = new (ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)[kit.Length];
                         for (var i = 0; i < kit.Length; i++)
-                            subs[i] = (Extrusion.Def(kit[i].Key)!, Rot24.Apply(r, kit[i].Pos), Rot24.Compose(r, kit[i].Rot), kit[i].Paint, kit[i].Finish);
+                            subs[i] = (kit[i].Def!, Rot24.Apply(r, kit[i].Pos), Rot24.Compose(r, kit[i].Rot), kit[i].Paint, kit[i].Finish);
                         var text = BakedParts.DesignText(subs, out var origin);
                         // The part's origin is the kit's frame's origin: turned by r, then measured from the design's origin.
-                        _targets.TryAdd(BakedParts.HashOf(text), new Hit(d, r, -origin));
+                        var hash2 = BakedParts.HashOf(text);
+                        if (!_targets.TryGetValue(hash2, out var hits))
+                            _targets[hash2] = hits = [];
+                        if (!hits.Exists(h => h.Part == d))
+                            hits.Add(new Hit(d, r, -origin)); // (a kit alike at two turns: the first turn)
                     }
                 }
             }
-            return _targets.TryGetValue(hash, out var hit) ? hit : null;
+            if (!_targets.TryGetValue(hash, out var list))
+                return null;
+            foreach (var h in list)
+                if (h.Part.Id == want)
+                    return h;
+            return list[0];
         }
     }
 }
@@ -302,7 +391,7 @@ public static class BakeKitCheck
             }
             Console.WriteLine($"{d.Name}: {kit.Length} pieces");
             foreach (var p in kit)
-                Console.WriteLine(FormattableString.Invariant($"  {Extrusion.Name(p.Key)} at {p.Pos.X:0.##},{p.Pos.Y:0.##},{p.Pos.Z:0.##} turn {p.Rot} {ConstructPaint.ToHex(p.Paint)} {p.Finish}"));
+                Console.WriteLine(FormattableString.Invariant($"  {p.PartName} at {p.Pos.X:0.##},{p.Pos.Y:0.##},{p.Pos.Z:0.##} turn {p.Rot} {ConstructPaint.ToHex(p.Paint)} {p.Finish}"));
             // Through the blueprint, as a station builds it.
             var world = new ConstructWorld();
             if (ConstructBuild.Build(world, bp, new Vector3(0, 20, 0), Quaternion.Identity, out var why) is not { } c)
@@ -310,7 +399,7 @@ public static class BakeKitCheck
                 Fail($"{d.Name}: the kit's blueprint didn't build: {why}");
                 continue;
             }
-            Expect(world, c, d, Rot24.Inverse(kit[0].Rot), "built from its blueprint"); // (the body's frame is its first piece's)
+            Expect(world, c, d, Rot24.Inverse(kit[0].Rot), Rot24.Apply(Rot24.Inverse(kit[0].Rot), -kit[0].Pos), "built from its blueprint"); // (the body's frame is its first piece's)
             // Laid at other turns (an oven bakes a kit whichever way it lies).
             foreach (byte t in new byte[] { 1, 5, 10, 17, 23 })
             {
@@ -318,21 +407,24 @@ public static class BakeKitCheck
                 var c2 = w2.Create(new Vector3(0, 20, 0), Quaternion.Identity)!;
                 foreach (var p in kit)
                 {
-                    var i = w2.AddPart(c2, Extrusion.Def(p.Key)!, Rot24.Apply(t, p.Pos), Rot24.Compose(t, p.Rot));
+                    var i = w2.AddPart(c2, p.Def!, Rot24.Apply(t, p.Pos), Rot24.Compose(t, p.Rot));
                     c2.Parts[i].Paint = p.Paint;
                     c2.Parts[i].Finish = ConstructFinish.Of(p.Finish);
                 }
                 c2.Rebuild();
-                Expect(w2, c2, d, t, $"laid at turn {t}");
+                Expect(w2, c2, d, t, Vector3.Zero, $"laid at turn {t}");
             }
         }
         Console.WriteLine(fails == 0 ? "bake kit check: passed" : $"bake kit check: {fails} failure(s)");
         return fails;
 
-        void Expect(ConstructWorld world, Construct c, ConstructPartDef d, byte turn, string how)
+        void Expect(ConstructWorld world, Construct c, ConstructPartDef d, byte turn, Vector3 origin, string how)
         {
+            // A box kit's solid bounds are its part's; a listed kit of formed skins isn't the part box for box (its plates are drawn shapes,
+            // its solids the voids behind them), so the part's origin is held to the kit frame's origin instead (both in the body's frame).
+            var listed = c.DefOf(0).IsNamedRuntime;
             var (lo, hi) = Solid(c);
-            if (BakedParts.Bake(world, c) is not { } b)
+            if (BakedParts.Bake(world, c, (ushort)d.Id) is not { } b)
             {
                 Fail($"{d.Name} {how}: bake refused: {BakedParts.LastRefusal}");
                 return;
@@ -346,8 +438,8 @@ public static class BakeKitCheck
                 return;
             }
             var (lo2, hi2) = Solid(b);
-            var off = MathF.Max(Vector3.Distance(lo, lo2), Vector3.Distance(hi, hi2));
-            Console.WriteLine(FormattableString.Invariant($"  {how}: {d.Name} at turn {b.Parts[i].Rot}, its solid bounds {off * 100:0.#} cm from the kit's"));
+            var off = listed ? Vector3.Distance(b.Parts[i].Pos, origin) : MathF.Max(Vector3.Distance(lo, lo2), Vector3.Distance(hi, hi2));
+            Console.WriteLine(FormattableString.Invariant($"  {how}: {d.Name} at turn {b.Parts[i].Rot}, its {(listed ? "origin" : "solid bounds")} {off * 100:0.#} cm from the kit's"));
             if (b.Parts[i].Rot != turn)
                 Fail($"{d.Name} {how}: turn {b.Parts[i].Rot}, not {turn}");
             if (off > 0.06f)
