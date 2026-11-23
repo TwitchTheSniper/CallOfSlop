@@ -94,6 +94,7 @@ public sealed partial class Construct
 public sealed partial class ConstructWorld
 {
     public IScoopGround? ScoopGround;
+    internal Construct? LastSpilled; // (the bundle SpillBundle made last: a caller names its origin once it spilled)
     internal int ScoopTicks, ScoopOps;
 
     /// <summary>Server: a bundle of spilled material, worth what went into it. False when the world has no room.</summary>
@@ -109,6 +110,7 @@ public sealed partial class ConstructWorld
         heap.Damaged = true;
         heap.Owner = 255;
         heap.Origin = origin ?? "spilled (a hopper, a miner or a tool)";
+        LastSpilled = heap;
         heap.Rebuild();
         return true;
     }
@@ -589,8 +591,10 @@ public static class ConstructScoops
             return;
         var at = from + down * 0.2f;
         var load = Math.Min(bundle, st.Amount);
-        if (world.SpillBundle(mat, load, at, c.PointVel(at), $"poured from body {c.Id}'s {c.DefOf(self).Name} (part {self}, {c.Vel.Length():0} m/s)"))
+        if (world.SpillBundle(mat, load, at, c.PointVel(at)))
         {
+            if (world.LastSpilled is { } poured)
+                poured.Origin = $"poured from body {c.Id}'s {c.DefOf(self).Name} (part {self}, {c.Vel.Length():0} m/s)"; // (made once it spilled, not on a refused try)
             world.Withdraw(c, self, load);
             pour = MathF.Max(0, pour - load);
             if (mark)
