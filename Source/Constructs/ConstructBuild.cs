@@ -251,7 +251,7 @@ public static class ConstructBuild
                 return true; // (the front of a merged receiver, beyond its members)
             var frame = c.FreeformCount > 0 ? c.FrameOf(seg < 0 ? 0 : seg) : 0;
             var hits = Construct.PartScratch; // (a big body: only the parts near the box; this runs per ghost, per frame)
-            var near = c.FreeformCount > 0 ? c.PartsInBox(new Vector3(float.MinValue), new Vector3(float.MaxValue), hits) : c.PartsInBox(bc - bh, bc + bh, hits);
+            var near = frame == 0 ? c.PartsInBox(bc - bh, bc + bh, hits) : c.PartsInBox(RestBox(c, frame, bc, bh, out var rmax), rmax, hits); // (the tree is in the rest frame: a freeform frame's box is turned into it)
             for (var hi = 0; hi < near; hi++)
             {
                 var i = hits[hi];
@@ -269,6 +269,20 @@ public static class ConstructBuild
             }
         }
         return false;
+    }
+
+    /// <summary>A box in freeform frame <paramref name="frame"/>'s own coordinates as a box in the body's rest frame (around it: the part tree's frame), its min; max out.</summary>
+    private static Vector3 RestBox(Construct c, int frame, Vector3 centre, Vector3 half, out Vector3 max)
+    {
+        c.RestPose(frame, out var q, out var t);
+        var mid = t + Vector3.Transform(centre, q);
+        var m = Matrix4x4.CreateFromQuaternion(q);
+        var e = new Vector3(
+            MathF.Abs(m.M11) * half.X + MathF.Abs(m.M21) * half.Y + MathF.Abs(m.M31) * half.Z,
+            MathF.Abs(m.M12) * half.X + MathF.Abs(m.M22) * half.Y + MathF.Abs(m.M32) * half.Z,
+            MathF.Abs(m.M13) * half.X + MathF.Abs(m.M23) * half.Y + MathF.Abs(m.M33) * half.Z) + new Vector3(0.01f); // (a centimetre round the turn's rounding)
+        max = mid + e;
+        return mid - e;
     }
 
     /// <summary>
@@ -354,6 +368,24 @@ public static class ConstructBuild
         var touching = _touching ??= new int[Construct.MaxParts]; // (one walk over the parts, in part order: no list a part)
         var touchingN = 0;
         var seg = c.Parts[i].Seg;
+        if (seg == 0 && c.PartCount >= Construct.TreeMinParts)
+        {
+            // A big body: the part tree's candidates (rest frame, which is segment 0's), tested as below and put back in part order,
+            // so a socket links to the same part the full walk would find first (a 6,000-part works built in O(n log n), not O(n^2)).
+            var near = _near ??= new int[Construct.MaxParts];
+            var nearN = c.PartsInBox(imn, imx, near);
+            for (var k = 0; k < nearN; k++)
+            {
+                var j = near[k];
+                if (j == i || c.Parts[j].Seg != seg)
+                    continue;
+                c.PartBounds(j, out var jmn, out var jmx);
+                if (jmn.X <= imx.X && jmx.X >= imn.X && jmn.Y <= imx.Y && jmx.Y >= imn.Y && jmn.Z <= imx.Z && jmx.Z >= imn.Z)
+                    touching[touchingN++] = j;
+            }
+            Array.Sort(touching, 0, touchingN);
+        }
+        else
         for (var j = 0; j < c.PartCount; j++)
         {
             if (j == i || c.Parts[j].Seg != seg)
@@ -392,6 +424,9 @@ public static class ConstructBuild
 
     [ThreadStatic]
     private static int[]? _touching; // (AutoLink's parts near the new one: the vehicle kit's thread builds too)
+
+    [ThreadStatic]
+    private static int[]? _near; // (AutoLink's tree query, before the bounds test)
 
     public const float WireReach = 8f; // the longest wire (between the two parts' centres)
 
@@ -930,15 +965,21 @@ public static class ConstructBuild
     /// and config): <see cref="BuildSteps"/>' step, and the Building Station's, which fits steps in any order once a step's parent
     /// (and the steps its "also" names) are in <paramref name="partOf"/> (ConstructStation.cs). The reason it refuses, or null.
     /// </summary>
-    public static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
+    public static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf) => FitStep(world, c, bp, k, partOf, false);
+
+    /// <summary>
+    /// <see cref="FitStep"/>; <paramref name="deferWeld"/>: a freeform weld step leaves its rebuild to the caller, who does it before the
+    /// next step that goes on a jointed or welded segment (<see cref="BuildSteps"/>: a works with 92 welds rebuilt its 6,000 parts 92 times).
+    /// </summary>
+    private static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf, bool deferWeld)
     {
-        var why = FitStepCore(world, c, bp, k, partOf);
+        var why = FitStepCore(world, c, bp, k, partOf, deferWeld);
         if (why == null && bp.Map != null)
             SubBlueprints.TagPart(c, bp.Map, k, partOf[k]); // (a use's part carries its use: the selector's frames, a save's uses)
         return why;
     }
 
-    private static string? FitStepCore(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
+    private static string? FitStepCore(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf, bool deferWeld)
     {
         var (name, on, sock, own, spin) = bp.Steps[k];
         if (ConstructParts.Find(name) is not { } def)
@@ -987,7 +1028,10 @@ public static class ConstructBuild
             }
             SetSetting(c, partOf[k], def, bp.StepSettings[k]);
             SetConfig(world, c, partOf[k], def, bp, k);
-            c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
+            if (deferWeld)
+                c.FreeformCount = CountFreeform(c); // (what the rebuild would count: the overlap tests compare by frame from now on)
+            else
+                c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
             return null;
         }
         if (def.Role == PartRole.GunPart)
@@ -1025,6 +1069,15 @@ public static class ConstructBuild
         return null;
     }
 
+    private static int CountFreeform(Construct c)
+    {
+        var n = 0;
+        for (var j = 0; j < c.JointCount; j++)
+            if (c.Joints[j].Freeform)
+                n++;
+        return n;
+    }
+
     /// <summary>Does step <paramref name="k"/> link only as the blueprint says (a flattened use may link the other way: <see cref="Blueprint.FlipExact"/>)?</summary>
     public static bool Exact(Blueprint bp, int k) => bp.ExactLinks != (bp.FlipExact?.Contains(k) ?? false);
 
@@ -1057,16 +1110,26 @@ public static class ConstructBuild
             yield break;
         }
         var partOf = new int[Math.Max(1, bp.Steps.Count)];
+        bool weldRebuild = false, lastWeld = false; // (a weld step's rebuild, put off until a step needs it)
         for (var k = 0; k < bp.Steps.Count; k++)
         {
-            if (FitStep(world, c, bp, k, partOf) is { } refused)
+            if (weldRebuild && k > 0 && (uint)bp.Steps[k].On < (uint)k && c.Parts[partOf[bp.Steps[k].On]].Seg != 0)
+            {
+                c.Rebuild(); // (this step goes on a jointed or welded segment: its frames as a rebuild leaves them)
+                weldRebuild = false;
+            }
+            if (FitStep(world, c, bp, k, partOf, true) is { } refused)
             {
                 run.Why = refused;
                 world.Remove(c);
                 yield break;
             }
+            lastWeld = k < bp.StepWeld.Count && bp.StepWeld[k] != null;
+            weldRebuild |= lastWeld;
             yield return k;
         }
+        if (lastWeld)
+            c.Rebuild(); // (a weld last: the body left rebuilt, as the weld's own rebuild left it)
         if (run.StepsOnly)
         {
             run.Body = c; // (the rest goes on in the world it joins: FinishBuild)
