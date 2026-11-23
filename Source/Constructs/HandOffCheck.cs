@@ -107,6 +107,19 @@ public static class HandOffCheck
                 for (var m = j.KindFit[i]; m < j.KindNeed[i]; m++, need++)
                     stocked += w.RackPut(stock, 0, d) ? 1 : 0;
         Console.WriteLine($"{j.Name}: {j.Steps} steps, {j.KindN} kinds, {need} parts to fit; {stocked} put on the stock pad");
+        // --pad-full: the pick pad filled with parts the build doesn't use, so no hand can put there: the pieces must wait, not go
+        // round a run for good (Sean, 2026-11-22: a Hall Crane moved a piece back and forth without end).
+        var padFull = args.Any(a => a.Equals("--pad-full", StringComparison.OrdinalIgnoreCase));
+        var junk = 0;
+        if (padFull)
+        {
+            // A second pick pad on arm C's other side, full too: a refused hand must not swing between the two.
+            var pad2 = Put("Lay-down Pad", x0 + 5.5f, 16);
+            foreach (var pp in new[] { pad, pad2 })
+                while (junk < 128 && w.RackPut(pp, 0, ConstructParts.Need("Bay Block")))
+                    junk++;
+        }
+        var carries0 = LifterProbe.Carries;
         Step(90);
         Console.WriteLine(ConstructLifters.LeadsText(w));
         if (args.Any(a => a.Equals("--points", StringComparison.OrdinalIgnoreCase)))
@@ -138,6 +151,14 @@ public static class HandOffCheck
         }
         if (args.Any(a => a.Equals("--points", StringComparison.OrdinalIgnoreCase)))
             Console.WriteLine("at the end: " + LifterProbe.Points(w).Replace(" [body", "\n [body"));
+        if (padFull)
+        {
+            // Each part goes at most stock -> run 1 -> run 2 and waits there (or in a hand): a few carries a part, not one every few seconds.
+            var carries = LifterProbe.Carries - carries0;
+            Say(carries <= 3 * need, $"with the pick pad full ({junk} Bay Blocks) the parts wait: {carries} carries in {seconds:0} s for {need} parts");
+            Console.WriteLine(fails == 0 ? "handoff-check: ok" : $"handoff-check: {fails} failure(s)");
+            return fails;
+        }
         Say(stockStore.ItemCount < stocked, $"the stock pad gave up its parts ({stocked - stockStore.ItemCount} of {stocked} taken)");
         Say(runs > 0, "pieces rode the runs");
         if (j.State == StationState.Building)

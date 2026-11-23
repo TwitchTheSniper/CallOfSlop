@@ -2313,6 +2313,8 @@ public static partial class ConstructRoutes
         if ((fd.IsBin || fd.IsTerminal) && td.IsBin && src.Amount > 0)
         {
             var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);
+            if (td.IsExtruder)
+                load = Math.Min(load, ConstructExtruder.ChuteRoom(ct, to, into, src.Material)); // (on orders: only its order's material, a little at a time)
             if (load <= 0)
                 return false;
             var put = td.IsRefiner ? world.Feed(ct, to, load, src.Material) : world.Deposit(ct, to, load, src.Material);

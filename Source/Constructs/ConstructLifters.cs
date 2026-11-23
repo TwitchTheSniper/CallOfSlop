@@ -212,6 +212,8 @@ public sealed class CLift
     public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
     public int OrderLook; // server: 10 Hz steps since its last look at its orders
     public ushort CarryBody; // server: a submodule body it carries (ConstructLifterBodies.cs; 0: none): the hand is empty, the body posed on it
+    public LiftPoint Refused, Refused2; // server: the last two put points that refused this lifter's piece at the end of a carry...
+    public int RefusedAt = int.MinValue / 2, Refused2At = int.MinValue / 2; // ...and the lift tick each did (ConstructLifterCarry.cs, RefusedNow)
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -838,6 +840,7 @@ public static partial class ConstructLifters
             ConstructBuild.PlaceNew(world, d, at, 0);
         }
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} {(lost ? "was set down: the lifter went" : "goes back: its step is no longer wanted")}");
+        ForgetRefused(l);
         if (lost || c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } lf)
         {
             l.State = LiftState.Idle;
@@ -904,6 +907,7 @@ public static partial class ConstructLifters
             world.CraftChanged(sc);
             world.StationOpened(sc);
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put its {d.Name} back into the station's hold");
+            ForgetRefused(l); // (the hand is empty: what refused that piece may take the next)
             Back(c, l, ld, sc, l.StationPart);
             return;
         }
