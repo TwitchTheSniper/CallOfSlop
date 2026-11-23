@@ -1010,9 +1010,8 @@ public static class ConstructConveyor
                 lengths[k] = MathF.Max(1e-3f, Length(c, k));
             var first = k != prevRoute;
             var end = lengths[k] - (tail[k] > 0 ? tail[k] + Gap : 0);
-            if (first)
-                end -= BedHold(world, c, k, along); // (a blank for a bed still busy waits whole on the run, not on the bed)
-            var limit = first ? end : prevBack - Gap;
+            var hold = lengths[k] - BedHold(world, c, k, along, first); // (a blank for a bed still busy waits whole on the run, not on the bed; only the lead goes onto it)
+            var limit = MathF.Min(first ? end : prevBack - Gap, hold);
             var at = MathF.Min(r.At + Speed * dt, limit);
             if (at > r.At)
                 r.At = at;
@@ -1068,17 +1067,17 @@ public static class ConstructConveyor
     }
 
     /// <summary>
-    /// A link onto a bed Core's Bed in (a Roller Tile run butted on a Panel Former's or a Laser Cutter's bed, RollerRuns.Butted) while a blank
-    /// already lies on that bed: how far short of its end the lead stops, so it waits whole on the run at the bed's edge. 0 otherwise. Either
-    /// peer (OnBed is on the wire); allocates nothing.
+    /// A link onto a bed Core's Bed in (a Roller Tile run butted on a Panel Former's or a Laser Cutter's bed, RollerRuns.Butted): how far short
+    /// of its end a piece stops, so it waits whole on the run at the bed's edge: the lead while a blank already lies on that bed, any other
+    /// always (one blank at a time rides onto the bed). 0 otherwise. Either peer (OnBed is on the wire); allocates nothing.
     /// </summary>
-    private static float BedHold(ConstructWorld world, Construct c, int k, float along)
+    private static float BedHold(ConstructWorld world, Construct c, int k, float along, bool lead)
     {
         ref readonly var r = ref c.Routes[k];
         if (r.To >= c.PartCount || r.Count == 0)
             return 0;
         var td = c.DefOf(r.To);
-        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true } || world.StoreOf(c, r.To) is not { OnBed: true })
+        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true } || lead && world.StoreOf(c, r.To) is not { OnBed: true })
             return 0;
         var leg = Vector3.Distance(ConstructRoutes.Point(c, k, r.Count - 1, out _), ConstructRoutes.Point(c, k, r.Count, out _));
         return leg + along * 0.5f;
