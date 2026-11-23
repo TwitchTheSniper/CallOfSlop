@@ -136,6 +136,8 @@ public static partial class Program
             s.Extra["cWalked"] = ConstructRender.LastBatchWalked;
             s.Extra["cWalkedOffScreen"] = ConstructRender.LastWalkedCulled;
             s.Extra["cFarDetailLeftOut"] = ConstructRender.LastLodDropped;
+            s.Extra["cWalkedHidden"] = ConstructRender.LastWalkedHidden;
+            s.Extra["cIdleMerged"] = ConstructRender.LastDormant;
             s.Extra["cOcclusionTested"] = ConstructRender.LastOccTested;
             s.Extra["cCulled"] = ConstructRender.LastCulled;
             s.Extra["cFar"] = ConstructRender.LastLod;

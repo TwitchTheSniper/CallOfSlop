@@ -1018,6 +1018,45 @@ public sealed unsafe partial class Renderer
         return scope;
     }
 
+    // ---- What is drawn, kept (ConstructRenderBatch's idle machine blocks: drawn as merged meshes while it stays the same) --------
+
+    /// <summary>One box as <see cref="Draw"/> was given it: its matrix (in <see cref="CaptureInto"/>'s frame), tint and look code (below zero: glowing), shape.</summary>
+    public struct Captured
+    {
+        public Matrix4x4 Model;
+        public Vector3 Color;
+        public float Code;
+        public int Shape;
+    }
+
+    private bool _capturing, _captureBad;
+    private Captured[] _captured = new Captured[64];
+    private int _capturedCount;
+    private Matrix4x4 _captureInto;
+
+    /// <summary>Starts keeping every <see cref="Draw"/> (drawn as well), each matrix times <paramref name="into"/> (the inverse of a body's matrix: its own frame).</summary>
+    public void CaptureBegin(in Matrix4x4 into) => (_capturing, _captureBad, _capturedCount, _captureInto) = (true, false, 0, into);
+
+    /// <summary>Stops keeping: the boxes drawn since <see cref="CaptureBegin"/>, or false when one can't be drawn as a merged slot (blended, see-through, cut open).</summary>
+    public bool CaptureEnd(out ReadOnlySpan<Captured> boxes)
+    {
+        _capturing = false;
+        boxes = _captured.AsSpan(0, _capturedCount);
+        return !_captureBad;
+    }
+
+    private void Capture(in Matrix4x4 model, Vector3 color, float alpha, int mode, float layer, int shape)
+    {
+        if (mode is not (0 or 2) || alpha < 1f || CutMode(mode) != mode || _tilted)
+        {
+            _captureBad = true;
+            return;
+        }
+        if (_capturedCount == _captured.Length)
+            Array.Resize(ref _captured, _captured.Length * 2); // (grows to the biggest part once)
+        _captured[_capturedCount++] = new Captured { Model = model * _captureInto, Color = color, Code = mode == 2 ? -1f : layer, Shape = shape };
+    }
+
     // ---- Bounds of what is drawn (ConstructRenderBatch's walked parts that move: where they were last drawn) -----------------
 
     private bool _tracking, _tracked;
@@ -1053,6 +1092,8 @@ public sealed unsafe partial class Renderer
     {
         if (_tracking)
             Track(in model);
+        if (_capturing)
+            Capture(in model, color, alpha, mode, surface > 0 ? surface : (float)material, shape);
         if (_tilted)
         {
             var tilted = model * _tilt;
