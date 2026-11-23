@@ -31,6 +31,9 @@ public static partial class ConstructPhysics
     private static readonly QueryFilter ShapesFilter = new(QueryLayers.World & ~QueryLayers.Trunks & ~QueryLayers.Terrain);
     private static readonly QueryFilter GroundFilter = new(QueryLayers.Terrain);
 
+    /// <summary>The stepping world's clearings (set each step by ConstructPhysics.Step): trunks inside a base don't count.</summary>
+    internal static PlanetClearings? FloraClear;
+
     /// <summary>A world's table (made at its first step, so no later tick allocates).</summary>
     private static WarmEntry[] WarmOf(ConstructWorld w) => w.WarmTable ??= new WarmEntry[WarmSize];
 
@@ -289,7 +292,8 @@ public static partial class ConstructPhysics
             {
                 // A planet's trees are solid only to constructs (Sean, 2026-11-22: people walk through them): PlanetFlora.cs.
                 _gather.Clear();
-                flora.GatherTrunks(mid - reach, mid + reach, _gather);
+                flora.GatherTrunks(mid - reach, mid + reach, _gather, FloraClear);
+                flora.GatherRocks(mid - reach, mid + reach, _gather); // (and its monoliths, solid to everything: the filters above leave them out with the trunks)
                 if (_gather.Count > 0)
                     n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n);
             }

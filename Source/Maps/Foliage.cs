@@ -23,6 +23,11 @@ public enum FoliageType : byte
     Boulder, // a loose rock lying on the ground (no deposit under it)
     Scree, // a scatter of small flat stones
     Stem, // a planet tree's thin trunk, 1 unit tall (PlanetFlora.cs); not placed by map files
+    // (2026-11-23, Sean: "monolith terrain pieces, big pillars, arches". Planets only, solid: PlanetFlora.MonolithBoxes.)
+    Pillar, // a stack of rock blocks about 23 m tall at scale 1
+    Arch, // two rock legs and a lintel, about 20 m across and 16 m high
+    Needle, // a thin tapering rock spire about 24 m tall
+    Tor, // a squat pile of weathered slabs about 9 m high
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>
@@ -204,7 +209,10 @@ public static class Foliage
     public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine or FoliageType.Birch or FoliageType.Spruce or FoliageType.ScotsPine;
 
     /// <summary>Types only a world's resource field draws: map files can't place them.</summary>
-    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem;
+    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem || IsMonolith(t);
+
+    /// <summary>A planet's big standing rock (PlanetFlora.MonolithBoxes): solid, drawn even at foliage quality Off.</summary>
+    public static bool IsMonolith(FoliageType t) => t is FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor;
 
     /// <summary>
     /// Built-in foliage allowance per surface (fraction of the normal density that may grow there, 0 to 1). Box and mesh
@@ -249,6 +257,7 @@ public static class Foliage
         FoliageType.Reed => new Vector3(0.5f, 0.52f, 0.3f),
         FoliageType.Bracken => new Vector3(0.38f, 0.5f, 0.2f),
         FoliageType.Boulder or FoliageType.Scree => new Vector3(0.45f, 0.44f, 0.42f),
+        FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor => new Vector3(0.48f, 0.46f, 0.43f),
         _ => Map.Leaf,
     };
 
@@ -260,7 +269,8 @@ public static class Foliage
         FoliageType.Birch => (8f, 14f),
         FoliageType.Spruce => (12f, 22f),
         FoliageType.ScotsPine => (10f, 18f),
-        FoliageType.Boulder => (0.6f, 2.2f),
+        FoliageType.Boulder => (0.3f, 1.8f),
+        FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor => (0.7f, 1.6f),
         _ => (0.8f, 1.25f),
     };
 

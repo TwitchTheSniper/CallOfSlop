@@ -162,6 +162,7 @@ public static class PlanetCli
                 var counts = new int[FoliageMeshes.TypeCount];
                 int mi = (int)Math.Round(cfi / flora.CellGrid[layer]), mj = (int)Math.Round(cfj / flora.CellGrid[layer]);
                 var cells = 0;
+                PlanetFlora.Plant? mono = null;
                 for (var cj = mj - 1; cj <= mj; cj++)
                 for (var ci = mi - 1; ci <= mi; ci++)
                 {
@@ -170,12 +171,27 @@ public static class PlanetCli
                     for (var b = b0; b < b1; b++)
                     for (var a = a0; a < a1; a++)
                         if (flora.At(layer, cf, a, b, out var pt))
+                        {
                             counts[(int)pt.Type]++;
+                            if (layer == PlanetFlora.MonolithLayer && mono == null)
+                                mono = pt;
+                        }
                     cells++;
                 }
                 var ms = sw.Elapsed.TotalMilliseconds / cells;
                 var what = string.Join(", ", Enumerable.Range(0, counts.Length).Where(k => counts[k] > 0).Select(k => $"{(FoliageType)k} {counts[k] / cells}"));
                 Console.WriteLine($"plants, layer {layer} ({flora.CellGrid[layer] * cell:0} m cells, a point each {PlanetFlora.Spacing[layer]} m): {ms:0.0} ms a cell; a cell at {pla:0.##}, {plo:0.##} holds {(what.Length > 0 ? what : "nothing")}");
+                if (mono is { } r)
+                {
+                    // Is it solid where it's drawn? A ray down onto it, and a small box at the side of its foot.
+                    var top = r.Pos + r.Up * 200;
+                    var t = flora.RayRocks(top, -r.Up, 400, out _);
+                    var shapes = new List<ContactShape>();
+                    var side = PlanetFlora.RockObb(r, PlanetFlora.MonolithBoxes(r.Type)[0]);
+                    var probe = side.Center + side.AxisX * side.Half.X;
+                    flora.GatherRocks(probe - Vector3.One, probe + Vector3.One, shapes);
+                    Console.WriteLine($"  a {r.Type} at scale {r.Scale:0.00}: a ray down meets it {200 - t:0.0} m over its foot; a box at its foot's side meets {shapes.Count} of its blocks");
+                }
             }
         }
 

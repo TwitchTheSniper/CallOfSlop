@@ -46,6 +46,9 @@ public enum ShapeKind : byte
 
     /// <summary>A generated tree's trunk (<see cref="ResourceField"/>; <see cref="ShapeId.Index"/> = its <see cref="ResourceField.TreeKey"/>).</summary>
     Trunk,
+
+    /// <summary>A block of a planetoid's monolith (PlanetFlora.GatherRocks: pillars, arches; <see cref="ShapeId.Sub"/> = the block). Asked with the terrain.</summary>
+    Rock,
 }
 
 /// <summary>Identifies one collision shape: its kind, an index in that kind's list and a sub-part (triangle, mover part).</summary>
