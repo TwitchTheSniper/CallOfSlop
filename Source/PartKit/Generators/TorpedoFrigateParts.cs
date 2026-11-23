@@ -1046,7 +1046,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         foreach (var i in Enumerable.Range(0, 6))
             Detail(p, Cx - 1.45 + i * 0.5, Ft1 + 2.45, ZStep + 0.02, Cx - 1.15 + i * 0.5, Ft1 + 2.55, ZStep + 0.035, i % 3 == 2 ? Amber : "#40e070", glow: true);
         CommandCentre(p);
-        CeilStrip(p, Cx - 0.4, Cx + 0.4, 9.6, 13.8, y1);
+        CeilStrip(p, Cx - 0.4, Cx + 0.4, 9.6, 13.1, y1); // (ends short of the captain's swing arms)
         CeilStrip(p, Cx - 2.2, Cx + 2.2, 17.2, 17.4, y1);
         CeilStrip(p, Cx - 0.25, Cx + 0.25, 20.4, 24.9, y1);
         // The hull band: the upper side and the upper chine, their armour, a chine rail along the upper chine.
@@ -1129,7 +1129,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     // and sensors to starboard, each under a swing-arm display, and the captain's couch stands on a 0.3 m dais aft to starboard, where
     // every screen on the bridge is in view; ops behind takes damage control and comms at a raked console on its starboard wall,
     // beside the forward gunnery station. The seats are Flight Couches set to their station (CockpitStations).
-    private const double BridgeDoor = Cx - 2.4; // (the bridge's door: its port edge; 1.5 m wide)
+    private const double BridgeDoor = Cx - 2.25; // (the bridge's door: its port edge; 1.5 m wide, it slides 1.48 m to port into the bulkhead, which ends at Cx - Uw - 0.25)
     private const double DaisX0 = Cx - 0.6, DaisX1 = Cx + UwF - 0.06, DaisZ0 = 13.45, DaisZ1 = ZStep - 0.26, DaisH = 0.3;
     private const double CicConsoleX = Cx + 2.85; // (ops' damage and comms console: its front edge; it runs to the starboard wall)
     private static readonly (string Name, double X, double Y, double Z)[] CicSeats =
