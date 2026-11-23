@@ -69,7 +69,7 @@ public sealed partial class Ui
             if (!CmdOn(cr.At, cr.Px + 40))
                 continue;
             var colour = picked ? CmdWhite : order != null ? CmdAmber : c.IsStation ? CmdStation : CmdCyan;
-            var hover = !_cmdOverPanel && (m - cr.At).Length() < MathF.Max(14 * _scale, MathF.Min(cr.Px, 90 * _scale));
+            var hover = CmdLabelHover(cr, m);
             var half = MathF.Max(13 * _scale, cr.Px * 1.08f);
             if (cr.Px > 20 * _scale)
                 CmdHoloDraw(dl, g, c, cr, picked ? CmdCyan : CmdDim, fade * (picked ? 1f : 0.8f), now);
@@ -110,16 +110,33 @@ public sealed partial class Ui
             }
             else if (hover)
                 CmdBrackets(dl, cr.At, half + 4 * _scale, CmdCyan, 0.8f * fade, 1f);
-            // Its name on a leader line, let down below any label placed before it (CmdPlaceLabels).
+            // Its name on a leader line, let down below any label placed before it (CmdPlaceLabels); none in a crowd.
             var off = half + 8 * _scale;
             var dy = _cmdLabelDy[k];
-            CmdLine(dl, cr.At + new float2(off * 0.7f, off * 0.7f), cr.At + new float2(off + 14 * _scale, off + 10 * _scale + dy), colour, 0.6f * fade);
-            CmdLine(dl, cr.At + new float2(off + 14 * _scale, off + 10 * _scale + dy), cr.At + new float2(off + 30 * _scale, off + 10 * _scale + dy), colour, 0.6f * fade);
-            CmdText(dl, cr.At + new float2(off + 34 * _scale, off + 3 * _scale + dy), picked ? 13.5f : 12, colour, fade, CmdName(c));
+            if (float.IsNaN(dy))
+                continue;
+            var tx = CmdLeader(dl, cr.At, off, dy, _cmdLabelSide[k], colour, fade, out var align);
+            CmdText(dl, new float2(tx, cr.At.Y + off + 3 * _scale + dy), picked ? 13.5f : 12, colour, fade, CmdName(c), align);
             if (c.IsStation)
-                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale + dy), 10, CmdStation, 0.85f * fade, CmdBerthLine(g, c, now));
+                CmdText(dl, new float2(tx, cr.At.Y + off + (picked ? 20 : 18) * _scale + dy), 10, CmdStation, 0.85f * fade, CmdBerthLine(g, c, now), align);
             else if (CommandCrewsOn && CmdCrewTag(g, c.Id, out var crewColour) is { } crewTag)
-                CmdText(dl, cr.At + new float2(off + 34 * _scale, off + (picked ? 20 : 18) * _scale + dy), 10, crewColour, 0.85f * fade, crewTag); // (UiCommandCrew.cs)
+                CmdText(dl, new float2(tx, cr.At.Y + off + (picked ? 20 : 18) * _scale + dy), 10, crewColour, 0.85f * fade, crewTag, align); // (UiCommandCrew.cs)
+        }
+
+        // Each crowd's one label, with a ring round it.
+        for (var gi = 0; gi < _cmdGroups; gi++)
+        {
+            if (_cmdGroupCount[gi] < CmdGroupMin)
+                continue;
+            ref var cr = ref _cmdCraft[_cmdGroupHead[gi]];
+            CmdRing(dl, cr.At, 22 * _scale, CmdCyan, 0.45f * fade, 1f, 8, 0.5f, (float)(now * 0.3));
+            var dy = _cmdGroupDy[gi];
+            if (float.IsNaN(dy))
+                continue;
+            var off = CmdLabelOff(cr);
+            var tx = CmdLeader(dl, cr.At, off, dy, _cmdGroupSide[gi], CmdCyan, fade, out var align);
+            CmdText(dl, new float2(tx, cr.At.Y + off + 3 * _scale + dy), 12, CmdCyan, fade, _cmdGroupName[gi].Text!, align);
+            CmdText(dl, new float2(tx, cr.At.Y + off + 18 * _scale + dy), 10, CmdDim, 0.85f * fade, _cmdGroupLine[gi].Text!, align);
         }
 
         // The player, when they aren't aboard something on the map.
@@ -139,74 +156,214 @@ public sealed partial class Ui
         }
     }
 
-    private readonly float[] _cmdLabelDy = new float[128];
-    private readonly int[] _cmdLabelOrder = new int[128];
-    private readonly float4[] _cmdLabelBox = new float4[128]; // min x, min y, max x, max y
+    private readonly float[] _cmdLabelDy = new float[128]; // NaN: no label of its own (in a group, or no room)
+    private readonly int[] _cmdLabelOrder = new int[256]; // a craft's index, or ~group
+    private readonly float4[] _cmdLabelBox = new float4[336]; // min x, min y, max x, max y: the bodies' names, then the labels placed
+
+    // Craft bunched on the screen (a crowd at a station) share one label until the zoom pulls them apart.
+    private const int CmdGroupMin = 3;
+    private readonly int[] _cmdGroupOf = new int[128]; // its group, -1 none
+    private readonly int[] _cmdGroupHead = new int[128]; // the group's first craft (its label hangs off it)
+    private readonly int[] _cmdGroupCount = new int[128];
+    private readonly int[] _cmdGroupStations = new int[128];
+    private readonly float[] _cmdGroupDy = new float[128]; // NaN: no room
+    private readonly CmdLabel[] _cmdGroupName = new CmdLabel[128];
+    private readonly CmdLabel[] _cmdGroupLine = new CmdLabel[128];
+    private int _cmdGroups;
 
     /// <summary>
-    /// Where each craft's label goes this frame, so that ships bunched together (a group at a station) don't print
-    /// over each other: labels are placed the picked one first, then from the top of the screen down, and each one
-    /// that would cover a placed label is let down below it on a longer leader line. Fills <see cref="_cmdLabelDy"/>;
-    /// no allocation (the texts are the cached ones the marks draw).
+    /// A label's leader line from a mark, down and out to <paramref name="side"/> (1 right, -1 left), let down
+    /// <paramref name="dy"/>; returns where its text starts (or ends, <paramref name="align"/> 2, on the left).
+    /// </summary>
+    private float CmdLeader(ImDrawListPtr dl, float2 at, float off, float dy, float side, Vector3 colour, float fade, out int align)
+    {
+        var bend = at + new float2(side * (off + 14 * _scale), off + 10 * _scale + dy);
+        CmdLine(dl, at + new float2(side * off * 0.7f, off * 0.7f), bend, colour, 0.6f * fade);
+        CmdLine(dl, bend, bend + new float2(side * 16 * _scale, 0), colour, 0.6f * fade);
+        align = side < 0 ? 2 : 0;
+        return at.X + side * (off + 34 * _scale);
+    }
+
+    private readonly float[] _cmdLabelSide = new float[128];
+    private readonly float[] _cmdGroupSide = new float[128];
+
+    /// <summary>The craft label's corner offset from its mark, as the marks draw it.</summary>
+    private float CmdLabelOff(in CmdCraft cr) => MathF.Max(13 * _scale, cr.Px * 1.08f) + 8 * _scale;
+
+    private bool CmdLabelHover(in CmdCraft cr, float2 m) =>
+        !_cmdOverPanel && (m - cr.At).Length() < MathF.Max(14 * _scale, MathF.Min(cr.Px, 90 * _scale));
+
+    /// <summary>
+    /// Where each label goes this frame. Small marks bunched together on the screen (a crowd at a station) are
+    /// grouped: three or more share one label ("14 CRAFT"), apart from the picked one and the one pointed at, until
+    /// the zoom pulls them apart. The rest are placed the picked one first, then from the top of the screen down;
+    /// one that would cover a placed label or a body's name is let down below it, or up above it, on a longer leader
+    /// line, never past a few rows and never into the bottom bar (hints, scale): with no room it isn't drawn (the
+    /// roster still lists it). Fills <see cref="_cmdLabelDy"/> and the groups; no allocation per frame.
     /// </summary>
     private void CmdPlaceLabels(Game g, double now)
     {
+        var m = ImGui.GetMousePos();
+        var near = 26 * _scale;
+        _cmdGroups = 0;
         var n = 0;
         for (var k = 0; k < _cmdCraftCount; k++)
         {
-            _cmdLabelDy[k] = 0;
+            _cmdLabelDy[k] = float.NaN;
+            _cmdGroupOf[k] = -1;
             ref var cr = ref _cmdCraft[k];
-            if (!CmdOn(cr.At, cr.Px + 40) || g.Constructs.Get(cr.Id) is null)
+            if (!CmdOn(cr.At, cr.Px + 40) || g.Constructs.Get(cr.Id) is not { } c)
                 continue;
-            // Picked first, then by height on the screen (insertion sort: at most 128).
-            var key = cr.Id == _cmdSel ? float.NegativeInfinity : cr.At.Y;
-            var i = n++;
-            while (i > 0 && (_cmdCraft[_cmdLabelOrder[i - 1]].Id == _cmdSel ? float.NegativeInfinity : _cmdCraft[_cmdLabelOrder[i - 1]].At.Y) > key)
+            _cmdLabelDy[k] = 0;
+            // Into the group of the first small mark near it (a hologram, or the picked one, stands alone).
+            if (cr.Id != _cmdSel && cr.Px <= 20 * _scale)
             {
-                _cmdLabelOrder[i] = _cmdLabelOrder[i - 1];
-                i--;
+                var gi = 0;
+                for (; gi < _cmdGroups; gi++)
+                    if ((_cmdCraft[_cmdGroupHead[gi]].At - cr.At).Length() < near)
+                        break;
+                if (gi == _cmdGroups)
+                {
+                    _cmdGroups++;
+                    _cmdGroupHead[gi] = k;
+                    _cmdGroupCount[gi] = 0;
+                    _cmdGroupStations[gi] = 0;
+                }
+                _cmdGroupOf[k] = gi;
+                _cmdGroupCount[gi]++;
+                if (c.IsStation)
+                    _cmdGroupStations[gi]++;
             }
-            _cmdLabelOrder[i] = k;
         }
 
-        var gap = 3 * _scale;
-        for (var j = 0; j < n; j++)
+        // What gets a label: each craft not in a crowd (or picked, or pointed at), and each crowd once.
+        for (var k = 0; k < _cmdCraftCount; k++)
         {
-            var k = _cmdLabelOrder[j];
-            ref var cr = ref _cmdCraft[k];
+            if (float.IsNaN(_cmdLabelDy[k]))
+                continue;
+            var gi = _cmdGroupOf[k];
+            var crowd = gi >= 0 && _cmdGroupCount[gi] >= CmdGroupMin;
+            if (crowd && !CmdLabelHover(_cmdCraft[k], m))
+                _cmdLabelDy[k] = float.NaN;
+            else
+                CmdLabelInsert(ref n, k, _cmdCraft[k].Id == _cmdSel ? float.NegativeInfinity : _cmdCraft[k].At.Y);
+            if (crowd && _cmdGroupHead[gi] == k)
+            {
+                _cmdGroupDy[gi] = 0;
+                CmdLabelInsert(ref n, ~gi, _cmdCraft[k].At.Y);
+                ref var name = ref _cmdGroupName[gi];
+                if (name.Stale(_cmdGroupCount[gi]))
+                    name.Text = _cmdGroupCount[gi] + " CRAFT";
+                ref var line = ref _cmdGroupLine[gi];
+                var ships = _cmdGroupCount[gi] - _cmdGroupStations[gi];
+                if (line.Stale(ships | (long)_cmdGroupStations[gi] << 16))
+                    line.Text = (ships == 0 ? "" : ships == 1 ? "1 SHIP    " : ships + " SHIPS    ")
+                                + (_cmdGroupStations[gi] == 0 ? "" : _cmdGroupStations[gi] == 1 ? "1 STATION    " : _cmdGroupStations[gi] + " STATIONS    ")
+                                + "ZOOM IN";
+            }
+        }
+
+        // The bodies' names and the panels (as last drawn) are in the way from the start.
+        var boxes = 0;
+        for (var b = 0; b < _cmdBodyBoxCount && boxes < _cmdLabelBox.Length; b++)
+            _cmdLabelBox[boxes++] = _cmdBodyBox[b];
+        for (var b = 0; b < _cmdPanelCount && boxes < _cmdLabelBox.Length; b++)
+            _cmdLabelBox[boxes++] = _cmdPanels[b];
+
+        var gap = 3 * _scale;
+        var top = _cvOrg.Y + 64 * _scale; // (the buttons and the view's scale)
+        var bottom = _cvOrg.Y + _cvSize.Y - 78 * _scale; // (the scale bar and the hints)
+        var reach = 150 * _scale; // (at most about five rows away from its mark)
+        for (var j = 0; j < n && boxes < _cmdLabelBox.Length; j++)
+        {
+            var item = _cmdLabelOrder[j];
+            var group = item < 0;
+            ref var cr = ref _cmdCraft[group ? _cmdGroupHead[~item] : item];
             var c = g.Constructs.Get(cr.Id)!;
-            var picked = cr.Id == _cmdSel;
-            var off = MathF.Max(13 * _scale, cr.Px * 1.08f) + 8 * _scale;
-            var w = Hud.TextWidth(CmdName(c), (picked ? 13.5f : 12) * _scale);
+            var picked = !group && cr.Id == _cmdSel;
+            var off = CmdLabelOff(cr);
+            string first;
+            string? second;
+            if (group)
+            {
+                first = _cmdGroupName[~item].Text!;
+                second = _cmdGroupLine[~item].Text!;
+            }
+            else
+            {
+                first = CmdName(c);
+                second = c.IsStation ? CmdBerthLine(g, c, now) : CommandCrewsOn ? CmdCrewTag(g, c.Id, out _) : null;
+            }
+            var w = Hud.TextWidth(first, (picked ? 13.5f : 12) * _scale);
             var h = (picked ? 15f : 14f) * _scale;
-            var second = c.IsStation ? CmdBerthLine(g, c, now) : CommandCrewsOn ? CmdCrewTag(g, c.Id, out _) : null;
             if (second != null)
             {
                 w = MathF.Max(w, Hud.TextWidth(second, 10 * _scale));
                 h = (picked ? 32f : 30f) * _scale;
             }
-            var x0 = cr.At.X + off + 30 * _scale;
+            // To the right of its mark, or to the left when that runs off the screen.
+            var side = cr.At.X + off + 36 * _scale + w > _cvOrg.X + _cvSize.X - 8 * _scale ? -1f : 1f;
+            var x0 = side > 0 ? cr.At.X + off + 30 * _scale : cr.At.X - off - 36 * _scale - w;
             var y0 = cr.At.Y + off + 3 * _scale;
-            var x1 = cr.At.X + off + 36 * _scale + w;
-            var dy = 0f;
-            for (var tries = 0; tries < 24; tries++)
+            var x1 = side > 0 ? cr.At.X + off + 36 * _scale + w : cr.At.X - off - 30 * _scale;
+            var dy = CmdLabelSlide(boxes, x0, x1, y0, h, gap, 1);
+            if (!(dy <= reach && y0 + dy + h <= bottom))
             {
-                var moved = false;
-                for (var b = 0; b < j; b++)
-                {
-                    ref var box = ref _cmdLabelBox[b];
-                    if (x0 < box.Z && x1 > box.X && y0 + dy < box.W && y0 + dy + h > box.Y)
-                    {
-                        dy = box.W + gap - y0;
-                        moved = true;
-                    }
-                }
-                if (!moved)
-                    break;
+                var up = CmdLabelSlide(boxes, x0, x1, y0, h, gap, -1);
+                dy = up >= -reach && y0 + up >= top ? up : picked ? MathF.Min(dy, bottom - h - y0) : float.NaN;
             }
-            _cmdLabelDy[k] = dy;
-            _cmdLabelBox[j] = new float4(x0, y0 + dy, x1, y0 + dy + h);
+            if (group)
+            {
+                _cmdGroupDy[~item] = dy;
+                _cmdGroupSide[~item] = side;
+            }
+            else
+            {
+                _cmdLabelDy[item] = dy;
+                _cmdLabelSide[item] = side;
+            }
+            if (!float.IsNaN(dy))
+                _cmdLabelBox[boxes++] = new float4(x0, y0 + dy, x1, y0 + dy + h);
         }
+    }
+
+    /// <summary>Into the placing order by <paramref name="key"/> (insertion sort: at most a few hundred).</summary>
+    private void CmdLabelInsert(ref int n, int item, float key)
+    {
+        if (n >= _cmdLabelOrder.Length)
+            return;
+        var i = n++;
+        while (i > 0 && CmdLabelKey(_cmdLabelOrder[i - 1]) > key)
+        {
+            _cmdLabelOrder[i] = _cmdLabelOrder[i - 1];
+            i--;
+        }
+        _cmdLabelOrder[i] = item;
+    }
+
+    private float CmdLabelKey(int item) =>
+        item < 0 ? _cmdCraft[_cmdGroupHead[~item]].At.Y : _cmdCraft[item].Id == _cmdSel ? float.NegativeInfinity : _cmdCraft[item].At.Y;
+
+    /// <summary>How far a label box must move down (<paramref name="dir"/> 1) or up (-1) to clear every box placed so far.</summary>
+    private float CmdLabelSlide(int boxes, float x0, float x1, float y0, float h, float gap, int dir)
+    {
+        var dy = 0f;
+        for (var tries = 0; tries < 32; tries++)
+        {
+            var moved = false;
+            for (var b = 0; b < boxes; b++)
+            {
+                ref var box = ref _cmdLabelBox[b];
+                if (x0 < box.Z && x1 > box.X && y0 + dy < box.W && y0 + dy + h > box.Y)
+                {
+                    dy = dir > 0 ? box.W + gap - y0 : box.Y - gap - h - y0;
+                    moved = true;
+                }
+            }
+            if (!moved)
+                return dy;
+        }
+        return float.NaN;
     }
 
     private readonly CmdLabel[] _cmdApsis = new CmdLabel[2];
