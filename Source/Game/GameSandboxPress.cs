@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Server: the Press's clamshell never stops for people (design page drawing 17b; ConstructPressShells.cs). Ten times a second, for
 /// each working Press with shells: a player between the shells as their segment slams shut is crushed, and one in a side's swing strip
-/// while that side's segment swings is struck and thrown out of it. The swing is the shells' own pose (the mover clock), so what a
+/// while that side's segment swings is struck and thrown out of it. The swing is the shells' own pose (the stroke's clock), so what a
 /// player sees hit them is what the server tests. Nothing runs while no press works; nothing allocates.
 /// </summary>
 public sealed partial class Game
@@ -19,8 +19,6 @@ public sealed partial class Game
     {
         if (ServerTick % PressCrushEvery != 0 || Players.Count == 0)
             return;
-        var tick = (double)ServerTick;
-        var before = tick - PressCrushEvery;
         foreach (var c in Constructs.Bodies)
         {
             if (c.MachineAsmCount == 0)
@@ -31,12 +29,13 @@ public sealed partial class Game
                 if (!c.Parts[core].D.IsPress || c.Parts[core].Broken || !ConstructPress.ShellSpace(c, core, out var mid, out var rot, out var lo, out var hi, out var strip)
                     || Constructs.StoreOf(c, core) is not { } st || !ProductionLines.Working(Constructs, c, core, st, now))
                     continue;
-                PressCrushPlayers(c, core, mid, rot, lo, hi, strip, tick, before, now);
+                var into = ConstructPress.StrokeSecondsServer(c, core, st); // (the stroke's own clock: the swing every peer draws)
+                PressCrushPlayers(c, core, mid, rot, lo, hi, strip, into, into - PressCrushEvery / (double)World.TickRate, now);
             }
         }
     }
 
-    private void PressCrushPlayers(Construct c, int core, Vector3 mid, byte rot, Vector3 lo, Vector3 hi, float strip, double tick, double before, double now)
+    private void PressCrushPlayers(Construct c, int core, Vector3 mid, byte rot, Vector3 lo, Vector3 hi, float strip, double into, double before, double now)
     {
         var un = Quaternion.Conjugate(Rot24.Quat(rot));
         var cell = c.Parts[core].D.BlockCell;
@@ -48,7 +47,7 @@ public sealed partial class Game
             if (at.X < lo.X || at.X > hi.X || at.Y < lo.Y - cell || at.Y > hi.Y)
                 continue;
             var index = Math.Clamp((int)MathF.Floor((at.X - lo.X) / cell), 0, 63);
-            double ph = ConstructPress.Phase(index, tick), was = ConstructPress.Phase(index, before);
+            double ph = ConstructPress.Phase(index, into), was = ConstructPress.Phase(index, before);
             if (at.Z > lo.Z && at.Z < hi.Z && at.Y > lo.Y)
             {
                 // Between the shells: crushed as they slam (the phase passed the slam since the last test).
@@ -64,7 +63,7 @@ public sealed partial class Game
             var outside = side < 0 ? lo.Z - cell - at.Z : at.Z - (hi.Z + cell);
             if (side == 0 || outside > strip || at.Y > lo.Y + strip)
                 continue;
-            var moving = ph < ConstructPress.SlamAt || ph is > ConstructPress.HoldTo and < ConstructPress.OpenTo;
+            var moving = ph is > 0 and < ConstructPress.OpenTo || ph is > ConstructPress.SlamFrom and < ConstructPress.SlamAt; // (swinging open, or slamming)
             if (!moving || now < _pressStruckAt[p.Id] + PressStrikeGrace)
                 continue;
             _pressStruckAt[p.Id] = now;
