@@ -751,7 +751,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      middle), and a Core beside its bed's corner may have its Out Tables on the bed's far end the other way (MachineBlocks.FindOut).
     // 444: ship gravity (ShipGravity.cs, a world option): the Welcome and the lobby state end with its byte, and the owner's ride state
     //      carries the felt pull (a flag byte, then a vector when on) after RideVel.
-    public const ushort ProtocolVersion = 444;
+    // 445: a lifter's lift record ends with Hand0 (3 x cm) and Fetch (u16 ticks): a loaded carry starts with the empty hand's way to
+    //      the piece, so a crane travels between jobs instead of jumping (Sean 2026-11-23).
+    public const ushort ProtocolVersion = 445;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -87,6 +87,7 @@ public static partial class ConstructLifters
         ConstructStation.LiftClaim(j, k);
         var inv = Quaternion.Conjugate(lr);
         var place = j.Pos + Vector3.Transform(plan.At[k], j.Rot);
+        var hand = HandNow(ld, l);
         l.OrderId = 0;
         l.Def = (ushort)d.Id;
         l.Paint = k < j.Bp!.StepPaint.Count ? j.Bp.StepPaint[k] : 0;
@@ -102,6 +103,7 @@ public static partial class ConstructLifters
         l.ToHold = false;
         l.ToKind = LiftPointKind.None;
         Begin(l);
+        Approach(ld, l, hand);
         l.State = LiftState.Carry;
         l.Moved = true;
         l.Fitted = false;
