@@ -145,7 +145,11 @@ public static class ConstructPlace
     /// Is the placement clear: of the map (<paramref name="q"/>, when given), of the players standing at
     /// <paramref name="feet"/> and of every construct's parts? Null, or why not (the ghost shows it in red).
     /// </summary>
-    public static string? Fits(ConstructWorld world, IWorldQuery? q, ConstructPartDef def, in FreePlacement fp, ReadOnlySpan<Vector3> feet, Construct? skip = null)
+    /// <summary>The body and part the last <see cref="Fits"/> refused for "another construct is in the way" (a log line names it).</summary>
+    public static ushort LastInWayBody;
+    public static int LastInWayPart = -1;
+
+    public static string? Fits(ConstructWorld world, IWorldQuery? q, ConstructPartDef def, in FreePlacement fp, ReadOnlySpan<Vector3> feet, Construct? skip = null, Construct? machine = null, int machineAsm = -1)
     {
         for (var b = 0; b < def.SolidBoxes; b++)
         {
@@ -170,12 +174,17 @@ public static class ConstructPlace
                 for (var ci = 0; ci < count; ci++)
                 {
                     var i = hits[ci];
+                    if (c == machine && c.Parts[i].D.BlockRole == BlockRole.Carriage && MachineBlocks.AsmOf(c, i) == machineAsm)
+                        continue; // (an Assembler's own Gantry Carriages build over its bed: what it sets down there is under their arms)
                     c.WorldFrame(c.Parts[i].Seg, out var cq, out var ct);
                     for (var k = 0; k < c.SolidCount(i); k++)
                     {
                         c.SolidBox(i, k, out var oc, out var oh);
                         if (Geometry.ObbOverlap(obb, new Obb(ct + Vector3.Transform(oc, cq), oh, cq)))
+                        {
+                            (LastInWayBody, LastInWayPart) = (c.Id, i);
                             return "another construct is in the way";
+                        }
                     }
                 }
             }
