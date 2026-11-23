@@ -1096,6 +1096,16 @@ public static class ConstructConveyor
             prevBack = r.At - along;
             i++;
         }
+        // Pieces that rolled across a bed onto its machine's out run (PassOn): put on after the loop, which reads the riders by index.
+        for (var t = 0; t < _throughN; t++)
+        {
+            var tr = _through[t];
+            if (ConstructParts.Def(tr.Def) is { } td)
+                WorldPose(c, tr.Route, tr, td, out tr.LastPos, out tr.LastRot);
+            Insert(c, tr);
+            changed = true;
+        }
+        _throughN = 0;
         // Leads at junctions go on, the one that waited longest first (a join takes its inputs in turn: Timer is the last served, plus one).
         for (var a = 0; a < nWaiting; a++)
             for (var b = a + 1; b < nWaiting; b++)
@@ -1133,9 +1143,10 @@ public static class ConstructConveyor
         if (r.To >= c.PartCount || r.Count == 0)
             return 0;
         var td = c.DefOf(r.To);
-        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true }
-            || lead && world.StoreOf(c, r.To) is not { OnBed: true } && !PassesBed(c, r.To, rider))
-            return 0; // (a piece made for another's order never goes onto the bed: it waits whole at its edge for the crane, PastBed)
+        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true })
+            return 0;
+        if (lead && world.StoreOf(c, r.To) is not { OnBed: true } && (!PassesBed(c, r.To, rider) || ConstructParts.Def(rider.Def) is { } rd && PassesThrough(c, r.To, rd)))
+            return 0; // (a piece made for another's order goes onto the bed only to roll on across it to the machine's out run, PassOn; else it waits whole at its edge for the crane, PastBed)
         var leg = Vector3.Distance(ConstructRoutes.Point(c, k, r.Count - 1, out _), ConstructRoutes.Point(c, k, r.Count, out _));
         return leg + along * 0.5f;
     }
@@ -1151,8 +1162,11 @@ public static class ConstructConveyor
         ref readonly var r = ref c.Routes[route];
         if (r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is not { OnBed: true }
             || !world.CraftOpen.Contains(c.Id) || ConstructPanelFormer.Takes(c, r.To, piece)
-            || r.Count != 2 || !ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host))
-            return; // (no crane picks at the run's end: it goes on onto the bed as before, never held there for ever)
+            || r.Count != 2)
+            return;
+        var crane = ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
+        if (!crane && !PassesThrough(c, r.To, piece))
+            return; // (no crane picks at the run's end and no out run to roll on to: it goes on onto the bed as before, never held there for ever)
         for (var t = 0; t < c.PartCount; t++)
         {
             if (c.Parts[t].Craft is not { Count: > 0 } q)
@@ -1162,6 +1176,8 @@ public static class ConstructConveyor
                 ref readonly var o = ref q.Items[k];
                 if (o.Asked > 0 && o.Where == maker && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
                 {
+                    if (!crane && !ThroughReaches(world, c, r.To, piece, t, 0))
+                        return; // (rolling on would leave it where nothing takes it to the order: onto the bed as before)
                     (rider.Dest, rider.Tag, rider.Flags) = (c.Parts[t].Store, o.Id, 0);
                     return;
                 }
@@ -1171,6 +1187,68 @@ public static class ConstructConveyor
 
     /// <summary>Does a piece on a run into bed Core <paramref name="to"/> ride past the bed (made for another's order: <see cref="PastBed"/>)? Either peer (a rider's Dest is on the wire).</summary>
     public static bool PassesBed(Construct c, int to, in CRider r) => r.Dest != 0 && to < c.PartCount && r.Dest != c.Parts[ConstructPads.Owner(c, to)].Store; // (a pad's tile: its owner's store)
+
+    /// <summary>
+    /// Can a piece of kind <paramref name="d"/> that rides past bed Core <paramref name="to"/>'s machine (<see cref="PassesBed"/>) roll on
+    /// across its bed onto the machine's out run (its Out Tables' run, the conveyor its made pieces go on), Sean 2026-11-23: "parts rolling
+    /// through from the extruder past the panel former, past the laser cutter, if the steps aren't needed, all the way to the building
+    /// station"? Only the link's size: either peer, allocates nothing.
+    /// </summary>
+    public static bool PassesThrough(Construct c, int to, ConstructPartDef d)
+    {
+        if (to >= c.PartCount || !c.DefOf(to).IsPanelFormer || Out(c, to) is not (>= 0 and var o))
+            return false;
+        Size(d, out var across, out var up, out var along);
+        return Fits(across, up, c.Routes[o]) && c.Routes[o].FirstCut > c.Routes[o].Count && along <= Length(c, o) + 0.01f;
+    }
+
+    /// <summary>
+    /// Server: does rolling a piece of kind <paramref name="d"/> on across bed Core <paramref name="to"/>'s machine bring it to where order
+    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, or a run's
+    /// end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
+    /// </summary>
+    private static bool ThroughReaches(ConstructWorld world, Construct c, int to, ConstructPartDef d, int holder, int depth)
+    {
+        if (depth > 4 || !PassesThrough(c, to, d) || Out(c, to) is not (>= 0 and var o))
+            return false;
+        ref readonly var r = ref c.Routes[o];
+        if (r.To < c.PartCount)
+        {
+            var end = ConstructPads.Owner(c, r.To);
+            if (end == holder || c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, end))
+                return true;
+            if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
+                return ThroughReaches(world, c, r.To, d, holder, depth + 1);
+        }
+        return r.Count == 2 && RollerRuns.IsRun(c, o) && ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
+    }
+
+    private static readonly CRider[] _through = new CRider[4];
+    private static int _throughN;
+
+    /// <summary>
+    /// Server, in the step: a piece at the end of a run onto a bed it only passes (<see cref="PassesThrough"/>) goes on at the start of the
+    /// machine's out run when there is room there, keeping its order, health and paint; put on after the step's loop. True when it went.
+    /// </summary>
+    private static bool PassOn(Construct c, int to, in CRider r, ConstructPartDef d)
+    {
+        if (_throughN >= _through.Length || c.ConveyedCount + _throughN >= Construct.MaxConveyed || Out(c, to) is not (>= 0 and var o))
+            return false;
+        Size(d, out _, out _, out var along);
+        if (LastOn(c, o) is >= 0 and var last && ConstructParts.Def(c.Conveyed[last].Def) is { } ld)
+        {
+            Size(ld, out _, out _, out var lastAlong);
+            if (c.Conveyed[last].At - lastAlong - Gap < along)
+                return false; // (the out run is full at its start: it waits on the bed)
+        }
+        for (var t = 0; t < _throughN; t++)
+            if (_through[t].Route == o)
+                return false;
+        var n = r;
+        (n.Route, n.At, n.ViaPlus1, n.Wait) = ((byte)o, along, 0, 0);
+        _through[_throughN++] = n;
+        return true;
+    }
 
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
     private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
@@ -1195,6 +1273,8 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
         {
+            if (PassesBed(c, c.Routes[route].To, r) && PassesThrough(c, to, d))
+                return PassOn(c, to, r, d); // (made for another's order: it rolls on across the bed, never into the machine)
             if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d, scrap: true))) // (extruded sheet into its bin; a cutter's blank onto its bed)
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
