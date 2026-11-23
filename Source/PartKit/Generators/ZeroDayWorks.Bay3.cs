@@ -8,7 +8,7 @@ public sealed partial class ZeroDayWorks
     private sealed partial class Script
     {
         // Bay 3, the general line (doc "Bay 3"), under the 24 m span (rails at x 71 and 95; clear x 73 to 93), north to south:
-        // the walls line (a 2-cell Sheet Extruder straight onto a pad that feeds a 2 x 9 Laser Cutter), the module Building Station and its
+        // the walls line (a 2-cell Sheet Extruder whose run goes straight onto a 2 x 9 Laser Cutter's bed), the module Building Station and its
         // stock pad, four Presses in two rows with their Die Racks and the Die Lathe between, the block Assembler with its Tool Bay and
         // Block Rack, then the walls and fittings stores.
         public const string General2 = "#3a9f99";
@@ -76,8 +76,8 @@ public sealed partial class ZeroDayWorks
 
         private void LayGeneralLine()
         {
-            // ---- The walls line: dies at x 73 and 75, the Core at 77; three Run-out Tables; the pad, the cutter at x 79, its bed to 81. ----
-            ArmourLine("W", 73, General, bedAcross: 2, bedAlong: 0, tables: 3, padAcross: 2, cutAlong: 9);
+            // ---- The walls line: dies at x 73 and 75, the Core at 77; three Run-out Tables; the cutter's bed at x 73 and 75, its Core at 77. --
+            ArmourLine("W", 73, General, bedAcross: 2, bedAlong: 0, tables: 3, cutAlong: 9);
 
             // ---- The module Building Station (a 5 x 6 bay west of its Core, masts 3 high) and its stock pad (3 x 4) south of it. ----------
             Station(93, -71, 83, -69, 5, 6, 3, General);
