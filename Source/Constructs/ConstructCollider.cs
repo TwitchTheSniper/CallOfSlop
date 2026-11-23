@@ -50,6 +50,7 @@ internal sealed partial class ConstructCollider
         public bool Scoop; // a box of a scoop: while its edge is in the ground the ground gives way to it (ConstructScoops.cs)
         public int Hull; // index in Hulls, -1: a plain box
         public int WheelIx; // this leaf is wheel WheelIx's cylinder, drawn wherever the hub is now (ConstructWheelShape.cs), and its bounds its whole travel; -1: no
+        public ushort Box; // which of its part's solid boxes (c.SolidBox) it is: a growing piece's leaves are reshaped in place by it (GrowPart)
     }
 
     public struct Node
@@ -155,6 +156,7 @@ internal sealed partial class ConstructCollider
                     continue;
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, rq, rt, turned, i, seg, wheel, -1);
+                Leaves[LeafCount - 1].Box = (ushort)b;
                 Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(p.D); // (a loose pod alone stands on its body)
                 any = true;
             }
@@ -358,6 +360,7 @@ internal sealed partial class ConstructCollider
             {
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
+                Leaves[LeafCount - 1].Box = (ushort)b;
                 Leaves[LeafCount - 1].NoGround = c.PartCount > 1 && b >= ConstructBuild.PlaceSolids(c.Parts[i].D);
             }
             if (boxes == 0)
@@ -718,6 +721,84 @@ internal sealed partial class ConstructCollider
 
     private bool _moveBad;
     private int _moveLeft;
+
+    /// <summary>
+    /// A piece growing on a die (Construct.RefreshShape) took a new size in place: its leaves, found under its old bounds
+    /// <paramref name="oldMin"/>..<paramref name="oldMax"/>, take its new solid boxes by their <see cref="Leaf.Box"/>, and the nodes
+    /// over them are refitted (MovePart's walk: the tree's depth, not its size). 2026-11-23: on the Zero Day works (6,200 parts)
+    /// each Extruder step built the whole collider again, 3-25 ms ten times a second while a piece grew. False when that isn't
+    /// safe (a hull, a wheel, a fused or jointed part, its box count changed, not every leaf found): build it again then.
+    /// </summary>
+    public bool GrowPart(Construct c, int part, Vector3 oldMin, Vector3 oldMax)
+    {
+        var boxes = c.SolidCount(part);
+        if (boxes == 0 || c.Parts[part].Seg != 0 || c.FuseRough(part) || c.Rides(part) || ConstructHulls.Of(c.Parts[part].D).Length > 0 || part < _wheelOf.Length && _wheelOf[part] >= 0)
+            return false;
+        var qc = (oldMin + oldMax) * 0.5f;
+        var qh = (oldMax - oldMin) * 0.5f + new Vector3(0.002f);
+        _growPart = part;
+        _growBoxes = boxes;
+        _growC = c;
+        _moveBad = false;
+        _moveLeft = boxes;
+        for (var g = 0; g < GroupCount && _moveLeft > 0; g++)
+            if (Groups[g].Seg == 0)
+                GrowIn(Groups[g].Root, qc, qh);
+        _growC = null;
+        return _moveLeft == 0 && !_moveBad;
+    }
+
+    private int _growPart, _growBoxes;
+    private Construct? _growC;
+
+    private int GrowIn(int node, Vector3 qc, Vector3 qh)
+    {
+        var n = Nodes[node];
+        var d = Vector3.Abs(n.Centre - qc) - n.Half - qh;
+        if (_moveLeft <= 0 || d.X > 0 || d.Y > 0 || d.Z > 0)
+            return 0;
+        var moved = 0;
+        Vector3 lo, hi;
+        if (n.Count > 0)
+        {
+            lo = new Vector3(float.MaxValue);
+            hi = new Vector3(float.MinValue);
+            for (var i = n.Start; i < n.Start + n.Count; i++)
+            {
+                ref var l = ref Leaves[i];
+                if (l.Part == _growPart && !l.Dead)
+                {
+                    if (l.Turned || l.WheelIx >= 0 || l.Hull >= 0 || l.Box >= _growBoxes)
+                        _moveBad = true;
+                    else
+                    {
+                        _growC!.SolidBox(_growPart, l.Box, out l.Centre, out l.Half);
+                        moved++;
+                        _moveLeft--;
+                    }
+                }
+                var e = Extent(l);
+                lo = Vector3.Min(lo, l.Centre - e);
+                hi = Vector3.Max(hi, l.Centre + e);
+            }
+        }
+        else
+        {
+            moved = GrowIn(n.Start, qc, qh) + GrowIn(n.Start + 1, qc, qh);
+            if (moved == 0)
+                return 0;
+            ref var a = ref Nodes[n.Start];
+            ref var b = ref Nodes[n.Start + 1];
+            lo = Vector3.Min(a.Centre - a.Half, b.Centre - b.Half);
+            hi = Vector3.Max(a.Centre + a.Half, b.Centre + b.Half);
+        }
+        if (moved == 0)
+            return 0;
+        ref var m = ref Nodes[node];
+        m.Centre = (lo + hi) * 0.5f;
+        m.Half = (hi - lo) * 0.5f;
+        return moved;
+    }
 
     private int MoveIn(int node, int part, Vector3 qc, Vector3 qh, Vector3 oldPos, Vector3 newPos, byte r)
     {

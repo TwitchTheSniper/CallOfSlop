@@ -25,9 +25,9 @@ public static unsafe partial class Program
         PostFx.ContactOn = _settings.ContactShadows; // (any Post effects level: one small pass per near body)
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
         ConstructRender.OcclusionSetting = _settings.HiddenCulling;
-        ConstructRender.ChunkLodSetting = _settings.FarDetail != VideoLevel.High;
+        ConstructRender.ChunkLodSetting = true; // (2026-11-23, Sean: far detail costs frames and shows little; High keeps boxes down to half a pixel)
         if (!ConstructRender.LodPixelsForced)
-            ConstructRender.LodPixels = _settings.FarDetail == VideoLevel.Low ? 2.5f : 1f;
+            ConstructRender.LodPixels = _settings.FarDetail switch { VideoLevel.Low => 3f, VideoLevel.Medium => 1.5f, _ => 0.5f };
     }
 
     private static bool _smokeNoFx;
