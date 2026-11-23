@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Extruder Plinth",
+  "description": "A 1 m concrete plinth for an Extruder Core or a Die Block: the machine on its top puts its Run-out Tables level with a Roller Tile run and the beds after it. Lay one under every cell of the die.",
+  "group": "Production",
+  "section": "Factory",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 9696.0,
+  "health": 4000,
+  "armour": 20,
+  "material": "concrete",
+  "color": "#8e8a80",
+  "attachSeconds": 2.5,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.985,
+        0.0,
+        -3.3
+      ],
+      "max": [
+        0.985,
+        0.96,
+        0.74
+      ]
+    },
+    {
+      "min": [
+        -0.997,
+        0.96,
+        -3.312
+      ],
+      "max": [
+        0.997,
+        1.0,
+        0.75
+      ],
+      "color": "#5c5a55"
+    },
+    {
+      "min": [
+        -0.991,
+        0.12,
+        0.737
+      ],
+      "max": [
+        0.991,
+        0.2,
+        0.753
+      ],
+      "color": "#f2b01e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.5,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

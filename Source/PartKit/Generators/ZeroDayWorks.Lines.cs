@@ -1,3 +1,4 @@
+using System.Numerics;
 using CallOfSlop.VehicleKit;
 
 namespace CallOfSlop.PartKit.Generators;
@@ -238,23 +239,55 @@ public sealed partial class ZeroDayWorks
         private VPart[] SheetExtruder(float coreX, int cells, int tables, string paint)
         {
             var ends = new VPart[cells];
-            var core = On("Extruder", coreX, ExtruderCoreZ, South, paint: paint);
+            // The machine stands on Extruder Plinths, 1 m up (Sean, 2026-11-22: "conveyor height differences"): a Run-out Table's top is level
+            // with its Extruder's foot, so on the floor its tables lay 0.7 m under the Roller Tiles' rollers and the beds the run feeds. Raised,
+            // the die's foot, the tables, the run and the next machine's bed are one level, and each table stands on legs to the floor.
+            var plinth = Finish2(On("Extruder Plinth", coreX, ExtruderCoreZ, South), "concrete");
+            var core = Paint(Stand("Extruder", SocketAt(plinth, "top"), South, plinth, "bottom"), paint);
             OrdersOnly(core);
             var cell = core;
             for (var k = 0; k < cells; k++)
             {
                 cell = Paint(Onto(cell, "+x", "Die Block", "-x"), paint); // (the die: Die Blocks only; the Core's own small die stays bare)
+                Finish2(On("Extruder Plinth", coreX - 2 * (k + 1), ExtruderCoreZ, South), "concrete");
                 var t = Onto(cell, "outBed", "Run-out Table", "in");
                 Paint(t, paint);
+                TableStand(t);
                 for (var n = 1; n < tables; n++)
                 {
                     t = Onto(t, "out", "Run-out Table", "in");
                     Paint(t, paint);
+                    TableStand(t);
                 }
                 ends[k] = t;
             }
             Chute(_bins["steel"], core, 9f);
             return ends;
+        }
+
+        private VPart Finish2(VPart p, string finish)
+        {
+            Finish(p, finish);
+            return p;
+        }
+
+        /// <summary>A Run-out Table Stand under a raised Run-out Table, welded on the floor slab under its middle (the table's foot is off the 2 m grid).</summary>
+        private void TableStand(VPart table)
+        {
+            var (lo, hi) = BoundsOf(table);
+            var d = Def("Run-out Table Stand");
+            var mid = (lo + hi) * 0.5f;
+            var centre = V(mid.X, FloorY + 0.003f + (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f, mid.Z);
+            Paint(Weld("Run-out Table Stand", Tile(mid.X, mid.Z), centre, South, 0, 0, 0), Steel);
+        }
+
+        /// <summary>A part's bounds in site coordinates (a part on the grid, not a freeform weld).</summary>
+        private (Vector3 Lo, Vector3 Hi) BoundsOf(VPart p)
+        {
+            ref var cp = ref Live.Parts[p.Index];
+            var a = FromRest(cp.Pos + Rot24.Apply(cp.Rot, p.Def.BoundsMin));
+            var b = FromRest(cp.Pos + Rot24.Apply(cp.Rot, p.Def.BoundsMax));
+            return (Vector3.Min(a, b), Vector3.Max(a, b));
         }
 
         /// <summary>

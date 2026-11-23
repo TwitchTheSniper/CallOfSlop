@@ -220,6 +220,7 @@ public sealed partial class FactoryShellParts : IPartGenerator
         }
         shell.AddRange(MillShed());
         shell.AddRange(MillDressing());
+        shell.AddRange(Plinths());
         WriteParts(o, Out,
         [
             .. shell,
