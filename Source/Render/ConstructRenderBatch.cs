@@ -464,7 +464,11 @@ public static partial class ConstructRender
         if (!on)
         {
             for (var k = 0; k < set.ChunkCount; k++)
+            {
                 gfx?.FreeMerged(set.Chunks[k].Gl);
+                if (set.Chunks[k].Dorm != null)
+                    gfx?.FreeMerged(set.Chunks[k].Dorm!);
+            }
             set.ChunkCount = 0;
             set.On = false;
             return total;
@@ -521,7 +525,11 @@ public static partial class ConstructRender
         }
         for (var k = 0; k < oldCount; k++)
             if (!_oldClaimed[k])
+            {
                 gfx!.FreeMerged(old[k].Gl);
+                if (old[k].Dorm != null)
+                    gfx.FreeMerged(old[k].Dorm!); // (its idle mesh with it: a kept chunk's is emptied by DormMap)
+            }
         if (chunks == old)
             Array.Clear(chunks);
         Array.Copy(made, chunks, entries);
@@ -994,6 +1002,7 @@ public static partial class ConstructRender
             HostCut(gfx, c, i);
             if (moves)
                 gfx.TrackBegin();
+            _fxEmitted = false;
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
@@ -1002,7 +1011,7 @@ public static partial class ConstructRender
             if (moves && gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
             {
                 var mid = Vector3.Transform((lo + hi) * 0.5f, toBody); // (drawn in the body's matrix: back into its frame, where the next frames test it)
-                set.WalkedSeen[k] = new Vector4(mid, (hi - lo).Length() * 0.5f);
+                set.WalkedSeen[k] = new Vector4(mid, _fxEmitted ? 0f : (hi - lo).Length() * 0.5f); // (smoking or sparking: drawn every frame, seen or not, as its plume rises past the walls)
             }
         }
         LastBatchWalked += set.WalkedCount;
@@ -1024,6 +1033,7 @@ public static partial class ConstructRender
             if (cull && OffScreen(in sphere, in body, origin))
                 continue;
             HostCut(gfx, c, i);
+            _fxEmitted = false;
             if (moves)
                 gfx.TrackBegin();
             if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
@@ -1033,7 +1043,15 @@ public static partial class ConstructRender
                 && !(cull && c.Parts[i].D.WorkGlowOnly && FarGlow(in set.ExtraSphere[k], set.ExtraClass[k], in body, origin)))
             {
                 var q = set.ExtraChunk[k];
-                var dormOk = DormOn && q >= 0 && q < set.ChunkCount && !set.Chunks[q].Dirty && set.Chunks[q].Seg == 0;
+                var dormOk = DormOn && q >= 0 && q < set.ChunkCount && !set.Chunks[q].Dirty && set.Chunks[q].Seg == 0 && c.Parts[i].Burn <= 0;
+                _fxEmitted = false;
+                if (!dormOk && set.ExtraState[k] != 0)
+                {
+                    // (burning, or its chunk waits a rebuild: walked, out of the idle mesh)
+                    if (set.ExtraState[k] == 1 && q >= 0 && q < set.ChunkCount)
+                        (set.Chunks[q].DormDirty, set.Chunks[q].DormWake) = (true, true);
+                    (set.ExtraState[k], set.ExtraSame[k]) = (0, 0);
+                }
                 if (dormOk && set.ExtraState[k] == 1 && ((_mergeFrame + k) & (DormCheck - 1)) != 0)
                 {
                     asleep = true; // (idle: its work boxes are in its chunk's idle mesh; looked at again every DormCheck frames)
@@ -1042,12 +1060,19 @@ public static partial class ConstructRender
                 else
                 {
                     _workOnly = true; // (its work boxes and status lamp, at the machine's state; the rest is in its chunk)
+                    var checking = dormOk && set.ExtraState[k] == 1; // (asleep, its check frame: looked at without drawing, as its idle mesh draws it)
                     if (dormOk)
-                        gfx.CaptureBegin(in invBody);
-                    n += DrawPart(gfx, world, c, i, body, alpha, 1f);
+                        gfx.CaptureBegin(in invBody, draw: !checking);
+                    var drew = DrawPart(gfx, world, c, i, body, alpha, 1f);
+                    if (dormOk && DormLook(gfx, set, k, q, _fxEmitted) && checking)
+                    {
+                        LastDormant++;
+                        asleep = true;
+                    }
+                    else if (checking)
+                        drew = DrawPart(gfx, world, c, i, body, alpha, 1f); // (woke: drawn as it is now; its chunk's idle mesh is made again without it this frame)
+                    n += drew;
                     _workOnly = false;
-                    if (dormOk)
-                        DormLook(gfx, set, k, q);
                 }
             }
             if (c.Parts[i].Store != 0)
@@ -1062,7 +1087,7 @@ public static partial class ConstructRender
             if (moves)
             {
                 if (gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
-                    set.ExtraSeen[k] = new Vector4(Vector3.Transform((lo + hi) * 0.5f, toBody), (hi - lo).Length() * 0.5f);
+                    set.ExtraSeen[k] = new Vector4(Vector3.Transform((lo + hi) * 0.5f, toBody), _fxEmitted ? 0f : (hi - lo).Length() * 0.5f); // (smoking: drawn every frame, its plume rises seen or not)
                 else
                     set.ExtraSeen[k] = Vector4.Zero; // (nothing drawn: a far glow, a chunk still waiting)
             }
@@ -1217,12 +1242,16 @@ public static partial class ConstructRender
             set.ExtraChunk[k] = set.Extra[k] < c.PartCount ? _partChunk[set.Extra[k]] : -1;
     }
 
-    /// <summary>Extra <paramref name="k"/> was just drawn and captured: kept, compared with last time, and put to sleep or woken.</summary>
-    private static void DormLook(Renderer gfx, MergeSet set, int k, int q)
+    /// <summary>
+    /// Extra <paramref name="k"/> was just drawn (or, asleep, only looked at) and captured: kept, compared with last time, and put
+    /// to sleep or woken. A block that made smoke or sparks this frame (<paramref name="emitted"/>) counts as changed: its plume
+    /// only rises while it is drawn. True when it is the same as before.
+    /// </summary>
+    private static bool DormLook(Renderer gfx, MergeSet set, int k, int q, bool emitted)
     {
         var ok = gfx.CaptureEnd(out var boxes);
         var cap = set.ExtraCap[k];
-        var same = ok && boxes.Length > 0 && cap != null && set.ExtraCapN[k] == boxes.Length;
+        var same = ok && !emitted && boxes.Length > 0 && cap != null && set.ExtraCapN[k] == boxes.Length;
         for (var b = 0; same && b < boxes.Length; b++)
             same = Same(in cap![b], in boxes[b]);
         if (!same)
@@ -1238,13 +1267,13 @@ public static partial class ConstructRender
         if (set.ExtraState[k] != 0)
         {
             if (same)
-                return;
+                return true;
             // Woke: out of the idle mesh this very frame (it was drawn walked above), and awake until it settles again.
             var wasIn = set.ExtraState[k] == 1;
             (set.ExtraState[k], set.ExtraSame[k]) = (0, 0);
             if (wasIn)
                 (ch.DormDirty, ch.DormWake) = (true, true);
-            return;
+            return false;
         }
         set.ExtraSame[k] = same ? set.ExtraSame[k] + 1 : 0;
         if (set.ExtraSame[k] >= DormAfter)
@@ -1252,6 +1281,7 @@ public static partial class ConstructRender
             set.ExtraState[k] = 2; // (walked until its chunk's idle mesh is made again with it)
             ch.DormDirty = true;
         }
+        return same;
     }
 
     private static bool Same(in Renderer.Captured a, in Renderer.Captured b)

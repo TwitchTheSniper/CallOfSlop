@@ -668,6 +668,7 @@ public static partial class ConstructRender
                 var at = Vector3.Transform(top, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
                 var up = Vector3.TransformNormal(Vector3.UnitY, onBody);
                 Fx.Flame(FxKind.Flame, at, up, c.Vel, MathF.Max(0.1f, w * 0.3f), 0.7f + w * 0.4f, 0.7f, _fxDt);
+                _fxEmitted = true;
                 for (var k = Fx.Share(5f * _fxDt); k > 0; k--)
                     Fx.Emit(FxKind.DarkSmoke, at + up * 0.3f, c.Vel + up * 1.6f, 0.2f + w * 0.2f, 2.2f);
             }
@@ -699,7 +700,10 @@ public static partial class ConstructRender
         _laserOn = working && d.BlockRole == BlockRole.Block && c.Parts[workPart].D.IsLaserCutter
             && ConstructLaserCutter.LookPose(c, i, workPart, Now, out _laserBridge, out _laserHead, out _laserActive, out laserTip); // (a Laser Cutter's bridge and heads follow the cut's outline)
         if (_laserOn && _laserActive && Fx.On)
+        {
+            _fxEmitted = true;
             LaserSparks(gfx, c, Vector3.Transform(laserTip, seg * body) + (gfx.Relative ? gfx.Origin : Vector3.Zero), Vector3.TransformNormal(Vector3.UnitY, seg * body));
+        }
         byte routerWay = 0, routerState = 0;
         var routerStuck = false;
         var routerFence = 0f;
@@ -905,6 +909,8 @@ public static partial class ConstructRender
     private static bool _workOnly; // DrawPart draws only the work boxes and status lamp (a merged machine block: ConstructRenderBatch.WorkSplits)
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
     private static float _hubRise; // a Grow Former's hub raised on its slide (m), for the part being drawn: its "slide" boxes and riding chuck
+    /// <summary>Set when DrawPart made particles (smoke, sparks, flames): ConstructRenderBatch keeps such a part drawn every frame.</summary>
+    internal static bool _fxEmitted;
     private static bool _laserOn, _laserActive; // a Laser Bed Block being drawn: its bridge and head move, its head the one cutting
     private static Vector3 _laserBridge, _laserHead; // ...how far (body frame)
 
@@ -980,6 +986,7 @@ public static partial class ConstructRender
                 model *= Matrix4x4.CreateTranslation(_laserBridge + _laserHead); // (a head rides the bridge, and along it)
                 break;
             case BoxWork.Smoke when Fx.On:
+                _fxEmitted = true;
                 var size = MathF.Max(0.12f, MathF.Min(box.Half.X, box.Half.Z) * 1.6f);
                 var top = Vector3.Transform(centre + Rot24.Apply(p.Rot, Vector3.UnitY) * Rot24.ApplyHalf(p.Rot, box.Half).Y, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
                 for (var k = Fx.Share(4f * MathF.Max(1f, size * 2f) * _fxDt); k > 0; k--)

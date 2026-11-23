@@ -1029,18 +1029,18 @@ public sealed unsafe partial class Renderer
         public int Shape;
     }
 
-    private bool _capturing, _captureBad;
+    private bool _capturing, _captureBad, _captureOnly;
     private Captured[] _captured = new Captured[64];
     private int _capturedCount;
     private Matrix4x4 _captureInto;
 
     /// <summary>Starts keeping every <see cref="Draw"/> (drawn as well), each matrix times <paramref name="into"/> (the inverse of a body's matrix: its own frame).</summary>
-    public void CaptureBegin(in Matrix4x4 into) => (_capturing, _captureBad, _capturedCount, _captureInto) = (true, false, 0, into);
+    public void CaptureBegin(in Matrix4x4 into, bool draw = true) => (_capturing, _captureBad, _captureOnly, _capturedCount, _captureInto) = (true, false, !draw, 0, into);
 
     /// <summary>Stops keeping: the boxes drawn since <see cref="CaptureBegin"/>, or false when one can't be drawn as a merged slot (blended, see-through, cut open).</summary>
     public bool CaptureEnd(out ReadOnlySpan<Captured> boxes)
     {
-        _capturing = false;
+        (_capturing, _captureOnly) = (false, false);
         boxes = _captured.AsSpan(0, _capturedCount);
         return !_captureBad;
     }
@@ -1093,7 +1093,11 @@ public sealed unsafe partial class Renderer
         if (_tracking)
             Track(in model);
         if (_capturing)
+        {
             Capture(in model, color, alpha, mode, surface > 0 ? surface : (float)material, shape);
+            if (_captureOnly)
+                return; // (only looked at: ConstructRenderBatch's idle block on its check frame, drawn by its idle mesh)
+        }
         if (_tilted)
         {
             var tilted = model * _tilt;

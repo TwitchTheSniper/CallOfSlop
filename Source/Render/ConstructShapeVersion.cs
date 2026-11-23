@@ -34,6 +34,10 @@ public static class ConstructShapeVersion
         return (long)c.ShapeMainVersion << 32 | (uint)c.ShapeDoorVersion;
     }
 
+    // Every version handed out is new across all bodies and worlds: caches are keyed by body id and version, and ids start again
+    // at 1 in each world, so a body loaded after a world change must not match the last world's body of the same id. Render only.
+    private static int _next;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static long Mix(long h, long v) => (h ^ v) * 0x100000001B3L + (h >> 29);
 
@@ -59,7 +63,7 @@ public static class ConstructShapeVersion
             if (main != c.ShapeMainHash || c.ShapeStamp < 0)
             {
                 c.ShapeMainHash = main;
-                c.ShapeMainVersion++;
+                c.ShapeMainVersion = ++_next;
             }
             if (doors != c.ShapeDoorHash || c.ShapeStamp < 0)
             {
@@ -70,7 +74,7 @@ public static class ConstructShapeVersion
             c.ShapeParts = c.PartCount;
         }
         if (doorsMoved)
-            c.ShapeDoorVersion++;
+            c.ShapeDoorVersion = ++_next;
         c.ShapeDoorPose = c.DoorPoseStamp;
     }
 }
