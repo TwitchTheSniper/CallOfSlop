@@ -383,7 +383,15 @@ public static partial class ConstructLifters
                 var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
                 if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
                     continue;
-                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt, lo.Parts[0].Health >= d.Health * 0.999f && lo.Parts[0].Paint == 0);
+                var asNew = lo.Parts[0].Health >= d.Health * 0.999f && lo.Parts[0].Paint == 0;
+                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt, asNew);
+                if (asNew && StoreLike(l, to) && DirectStep(world, c, l, ld, shoulder, lr, d, out var dsc, out var dt, out var dj) is var ds and >= 0)
+                {
+                    l.OutTurn = k + 1; // (straight to a station step that wants it: not by its pick pad)
+                    world.Remove(lo);
+                    StartDirect(world, c, l, ld, lp, lr, d, from, pr, dsc!, dt, dj!, ds);
+                    return true;
+                }
                 if (to < 0)
                     continue;
                 var health = (byte)Math.Clamp(255 * lo.Parts[0].Health / MathF.Max(1, d.Health), 1, 255);
@@ -410,6 +418,16 @@ public static partial class ConstructLifters
                     || ConstructCrafting.Available(world, st, (ushort)d.Id) <= 0 || !InReach(ld, shoulder, lr, outAt, WristLift(d), out _))
                     continue;
                 var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
+                var ds = DirectIf(StoreLike(l, to), world, c, l, ld, shoulder, lr, d, out var dsc, out var dt, out var dj);
+                if (ds >= 0 && ConstructCrafting.TakeOne(world, b, pt.Part, st, d))
+                {
+                    world.CraftChanged(b); // (straight to a station step that wants it: not by its pick pad)
+                    Wake(b, pt.Part);
+                    l.OutTurn = k + 1;
+                    Freeform.PartWorld(b, pt.Part, out _, out var dr);
+                    StartDirect(world, c, l, ld, lp, lr, d, outAt, dr, dsc!, dt, dj!, ds);
+                    return true;
+                }
                 if (to < 0 || !ConstructCrafting.TakeOne(world, b, pt.Part, st, d))
                     continue;
                 world.CraftChanged(b);
@@ -433,14 +451,18 @@ public static partial class ConstructLifters
                 if (ConstructCrafting.Available(world, st, def) <= 0 || ConstructParts.Get(def) is not { } d || !Carries(ld, d)) // (phase 5b: never what an order or a build has claimed)
                     continue;
                 var to = PutFor(world, l, ld, shoulder, lr, d, storage: false, skip: k, out var toAt);
-                if (to < 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out var from))
+                var ds = DirectIf(StoreLike(l, to), world, c, l, ld, shoulder, lr, d, out var dsc, out var dt, out var dj);
+                if (ds < 0 && to < 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out var from))
                     continue;
                 if (!world.StationTake(b, pt.Part, st, d))
                     continue;
                 world.CraftChanged(b);
                 from.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
                 Freeform.PartWorld(b, pt.Part, out _, out var rr);
-                StartCarry(world, c, l, ld, lp, lr, d, 255, 0, from, rr, to, toAt);
+                if (ds >= 0)
+                    StartDirect(world, c, l, ld, lp, lr, d, from, rr, dsc!, dt, dj!, ds); // (a stock piece straight to the station step, not by its pick pad)
+                else
+                    StartCarry(world, c, l, ld, lp, lr, d, 255, 0, from, rr, to, toAt);
                 return true;
             }
         }
@@ -472,14 +494,28 @@ public static partial class ConstructLifters
             if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
                 continue;
             var asNew = rider.Health == 255 && rider.Paint == 0;
-            var to = DestPoint(world, l, ld, shoulder, lr, d, rider.Dest, out var toAt);
+            // A rider bound only for storage (Sean, 2026-11-23: made pieces went to a store and then on to where they were wanted): a want
+            // or a hand-off in reach first, the store it was riding to only after.
+            var stored = rider.Dest == 0 || ((LogiFlags)rider.Flags & (LogiFlags.Storage | LogiFlags.Overflow)) == LogiFlags.Storage;
+            var to = -1;
+            Vector3 toAt = default;
+            if (stored && asNew)
+                to = PutFor(world, l, ld, shoulder, lr, d, storage: false, skip: k, out toAt);
+            if (to < 0)
+                to = DestPoint(world, l, ld, shoulder, lr, d, rider.Dest, out toAt);
             if (to < 0 && asNew && IsLeadPadHandle(world, b.Id, rider.Dest))
                 to = HandOffFor(world, l, ld, shoulder, lr, d, k, out toAt, rider.Dest); // (handed on toward its station's pick pad, out of this lifter's reach)
             if (to < 0)
                 to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out toAt, asNew);
-            if (to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
+            var ds = DirectIf(asNew && StoreLike(l, to), world, c, l, ld, shoulder, lr, d, out var dsc, out var dt, out var dj);
+            if (ds < 0 && to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
                 continue;
             l.OutTurn = k + 1;
+            if (ds >= 0)
+            {
+                StartDirect(world, c, l, ld, lp, lr, d, from, fromRot, dsc!, dt, dj!, ds); // (straight to the station step that wants it: not by its pick pad)
+                return true;
+            }
             StartCarry(world, c, l, ld, lp, lr, d, health, paint, from, fromRot, to, toAt);
             return true;
         }
