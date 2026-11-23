@@ -58,7 +58,7 @@ A lamp part may say how its light falls with a `"light"` block (Sean, 2026-11-23
 bulb lit nothing): `range` (m, up to 32), `strength` (times the plain lamp's, 0.1-4), and for a spot `cone` (half angle, degrees) with
 `dir` (the part's frame), plus `at` (where the light comes from; else the part's middle). A spot lights only inside its cone, soft at the
 edge, adds a little fill inside a wider cone (the light thrown back off its pool), shows a faint beam in the air (Video > Light beams) and
-counts as that much nearer to the eye when lamps are picked. The High-Bay Pendant (32 m, 40 degrees, straight down) and the Hall
+is picked by how near the eye is to its beam's axis (a long lamp that shines all round: by its extra range). The High-Bay Pendant (32 m, 40 degrees, straight down) and the Hall
 Floodlight (24 m, 45 degrees, down and out from its wall) have one; docs/render/LIGHTING.md "Spot lamps".
 
 **How paint treats a box.** A painted part's paintable boxes are drawn in the paint times the box's **tone**: its

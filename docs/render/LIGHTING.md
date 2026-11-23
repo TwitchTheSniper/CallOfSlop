@@ -157,8 +157,8 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   range (up to `ConstructLamps.MaxRange`, 32 m), strength and, for a spot, its cone. The block's `uDynSpot[32]` (after `uDynCol`) holds
   each light's direction and the cosine of its half angle (w under -1: all round). `DynLight(i, p, n)` in `Lighting.Glsl` is the one
   dynamic-light term for both modes: a spot lights inside its cone (soft over the outer 35% of the cone in cosine: about the outer fifth of a 40 degree half angle), plus `SpotFill` (0.14) unfaced inside a
-  cone 0.35 wider in cosine (the light its pool throws back), and reads its shadow only there. A long lamp counts its extra range nearer
-  in the pick (`ConstructLamps.Offer`), and a body's cull grows by its longest lamp (`Construct.LampReachMore`). A lamp's Colour and
+  cone 0.35 wider in cosine (the light its pool throws back), and reads its shadow only there. A long spot counts by the eye's distance
+  from its beam's axis in the pick, a long all-round lamp by its extra range (`ConstructLamps.Offer`), and a body's cull grows by its longest lamp (`Construct.LampReachMore`). A lamp's Colour and
   Brightness settings are its light's. Lamp shadow slots hold a lamp's own reach (`LampShadows.StoreOf`: 16 m, or a longer lamp's
   range; the shader reads 1 / it from the slot's first turn row's w), and a spot draws only the cube faces its wide cone reaches
   (`LampShadows.FacesFor`: a downward pendant skips its upward face). **Beams** (`LampBeams.cs`): each lit spot is drawn as a faint

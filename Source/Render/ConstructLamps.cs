@@ -96,8 +96,8 @@ public static class ConstructLamps
                 var d = c.DefOf(i);
                 if (d.Logic == CLogic.Lamp)
                 {
-                    if (d.Mains ? MainsLit(c, i) : p.Out >= 0.5f)
-                        Offer(c, i, 0, d.LightAt ?? (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(LampColour(c, i, d), DarkColour, dark), pos, rot, eye, keep, reach, ref n, d);
+                    if ((d.Mains ? MainsLit(c, i) : p.Out >= 0.5f) && LampColour(c, i, d) is var lc && lc != Vector3.Zero)
+                        Offer(c, i, 0, d.LightAt ?? (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(lc, DarkColour, dark), pos, rot, eye, keep, reach, ref n, d);
                     continue;
                 }
                 var sub = 0;
@@ -212,9 +212,21 @@ public static class ConstructLamps
         var rest = p.Pos + Rot24.Apply(p.Rot, local);
         var still = c.FrameOf(p.Seg) == 0;
         var world = still ? pos + Vector3.Transform(rest, rot) : c.SegToWorld(p.Seg, rest);
-        // A lamp that throws further (its part's "light" range) counts as that much nearer: a pendant 14 m up lights the floor round you.
-        var more = light != null && light.LightRange > _range ? light.LightRange - _range : 0f;
-        var dist = MathF.Max(Vector3.Distance(world, eye) - more, 0f);
+        // A lamp that throws further (its part's "light" range) counts by how near the eye is to what it lights: a spot by the eye's distance
+        // from its beam's axis (a pendant 21 m up lights the floor round you), anything else that much nearer. Not plainly by its extra range:
+        // a hall of pendants 25 m off then outranked a cabin's own lamps beside the eye (merge review).
+        var dist = Vector3.Distance(world, eye);
+        if (light != null && light.LightRange > _range)
+        {
+            if (light.LightCone > 0f)
+            {
+                var axis = still ? Vector3.Transform(Rot24.Apply(p.Rot, light.LightDir), rot) : Vector3.Normalize(c.SegToWorld(p.Seg, rest + Rot24.Apply(p.Rot, light.LightDir)) - world);
+                var t = Math.Clamp(Vector3.Dot(eye - world, axis), 0f, light.LightRange * 0.8f);
+                dist = Vector3.Distance(eye, world + axis * t);
+            }
+            else
+                dist = MathF.Max(dist - (light.LightRange - _range), 0f);
+        }
         if (dist > reach)
             return;
         var at = Math.Min(n, keep);
