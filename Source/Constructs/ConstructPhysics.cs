@@ -158,6 +158,9 @@ public static partial class ConstructPhysics
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var bodies = SimList(world);
         _bodies = bodies;
+        if (query is PhysicsWorld { Planet: { Flora: not null } floraPlanet })
+            world.FloraClear.Update(world, floraPlanet); // (no trunks inside an anchored base: PlanetClearings.cs)
+        FloraClear = world.FloraClear;
         Lap(0, ref t0);
         var n = bodies.Count;
         for (var i = 0; i < n; i++)

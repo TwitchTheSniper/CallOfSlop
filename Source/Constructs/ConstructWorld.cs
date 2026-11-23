@@ -87,6 +87,9 @@ public sealed partial class ConstructWorld
 
     public readonly List<Construct> Bodies = new(256);
 
+    /// <summary>On a planetoid: where its plants give way to this world's anchored bases (PlanetClearings.cs).</summary>
+    public readonly PlanetClearings FloraClear = new();
+
     /// <summary>Server: player ids that are crew bodies (Game.Crew.IsBody), whose seat at the controls isn't a person taking over.</summary>
     public bool[]? CrewBodies;
 

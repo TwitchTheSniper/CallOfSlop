@@ -191,10 +191,10 @@ public sealed unsafe partial class FoliageRenderer
     /// set up. Call after the opaque boxes. Builds (or frees) the GPU data when the map or quality changes; with
     /// quality Off or a map without foliage it does nothing at all.
     /// </summary>
-    public void Draw(Map map, Renderer gfx, FoliageQuality quality, double now)
+    public void Draw(Map map, Renderer gfx, FoliageQuality quality, double now, ConstructWorld? constructs = null)
     {
         if (map.Planetoid is { Flora: { } flora } planet && !_broken)
-            DrawPlanetFlora(planet, flora, gfx, quality, now); // (a planetoid's biomes: FoliageRendererPlanet.cs)
+            DrawPlanetFlora(planet, flora, gfx, quality, now, constructs); // (constructs: anchored bases clear the plants under them) // (a planetoid's biomes: FoliageRendererPlanet.cs)
         else
             FreeFlora();
         var field = map.Resources; // (a Sandbox world's forests: ResourceField.cs)

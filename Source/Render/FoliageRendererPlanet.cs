@@ -62,6 +62,9 @@ public sealed unsafe partial class FoliageRenderer
     private Planetoid? _flPlanet;
     private FoliageQuality _flQuality;
     private bool _flRocksOnly;
+    private PlanetClearings? _flClearOf;
+    private int _flClearVersion = -1;
+    private readonly List<Obb> _flClear = new(); // the clearings the uploaded cells were folded for
     private int _flFrame, _flBuilding, _flDug;
     private double _flDugAt;
     private Stats _flLog;
@@ -101,7 +104,7 @@ public sealed unsafe partial class FoliageRenderer
     }
 
     /// <summary>Picks, builds and draws a planetoid's plants. The caller has checked the planet has biomes.</summary>
-    private void DrawPlanetFlora(Planetoid pl, PlanetFlora flora, Renderer gfx, FoliageQuality quality, double now)
+    private void DrawPlanetFlora(Planetoid pl, PlanetFlora flora, Renderer gfx, FoliageQuality quality, double now, ConstructWorld? constructs)
     {
         // Foliage Off still draws the monoliths (as Low): they are solid ground, not decoration.
         var rocksOnly = quality == FoliageQuality.Off;
@@ -132,6 +135,23 @@ public sealed unsafe partial class FoliageRenderer
             return;
         var up = rel / camDist;
         var alt = camDist - (float)pl.Radius - (float)pl.HeightAt(up.X, up.Y, up.Z);
+
+        // Anchored bases (Sean, 2026-11-23): the cells round a clearing that came or went are made again, and fold its plants
+        // as they upload (PlanetClearings.cs).
+        if (constructs != null)
+            constructs.FloraClear.Update(constructs, pl);
+        var clear = constructs?.FloraClear;
+        if (!ReferenceEquals(clear, _flClearOf) || clear != null && clear.Version != _flClearVersion)
+        {
+            foreach (var c in _cellList)
+                if (c.Layer != PlanetFlora.MonolithLayer && (Touches(c, _flClear) || clear != null && Touches(c, clear.Boxes)))
+                    c.Dirty = true;
+            _flClear.Clear();
+            if (clear != null)
+                _flClear.AddRange(clear.Boxes);
+            _flClearOf = clear;
+            _flClearVersion = clear?.Version ?? -1;
+        }
 
         // Dug ground: build the cells again (the old ones draw until the new are ready).
         if (pl.DugVersion != _flDug && now - _flDugAt > 2)
@@ -403,6 +423,8 @@ public sealed unsafe partial class FoliageRenderer
                 if (flora.IsDug(new Vector3(d[o], d[o + 1], d[o + 2])))
                     d[o + 3] = 0;
         }
+        if (_flPlanet is { } here)
+            FoldClearings(b, c.Layer, here);
         Native.glBindBuffer(GL_ARRAY_BUFFER, c.Vbo);
         fixed (float* p = b.Data)
             Native.glBufferData(GL_ARRAY_BUFFER, b.Data.Length * sizeof(float), p, GL_STATIC_DRAW);
@@ -411,6 +433,61 @@ public sealed unsafe partial class FoliageRenderer
         c.Min = b.Min;
         c.Max = b.Max;
         c.Total = b.Total;
+    }
+
+    /// <summary>Does a cell's plants' box reach any of these clearings (with the widest margin)?</summary>
+    private static bool Touches(FloraCell c, List<Obb> boxes)
+    {
+        if (!c.Made)
+            return false;
+        var m = new Vector3(PlanetClearings.TreeMargin + 3);
+        foreach (var b in boxes)
+        {
+            b.Bounds(out var lo, out var hi);
+            if (hi.X + m.X >= c.Min.X && lo.X - m.X <= c.Max.X && hi.Y + m.Y >= c.Min.Y && lo.Y - m.Y <= c.Max.Y && hi.Z + m.Z >= c.Min.Z && lo.Z - m.Z <= c.Max.Z)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Folds away (scale 0) a built cell's plants whose foot stands in a clearing (the main thread).</summary>
+    private void FoldClearings(Built b, int layer, Planetoid pl)
+    {
+        if (_flClear.Count == 0 || b.Total == 0 || layer == PlanetFlora.MonolithLayer)
+            return;
+        var m = new Vector3(PlanetClearings.TreeMargin + 3);
+        var any = false;
+        foreach (var box in _flClear)
+        {
+            box.Bounds(out var lo, out var hi);
+            if (hi.X + m.X >= b.Min.X && lo.X - m.X <= b.Max.X && hi.Y + m.Y >= b.Min.Y && lo.Y - m.Y <= b.Max.Y && hi.Z + m.Z >= b.Min.Z && lo.Z - m.Z <= b.Max.Z)
+            {
+                any = true;
+                break;
+            }
+        }
+        if (!any)
+            return;
+        var d = b.Data;
+        for (var t = 0; t < FoliageMeshes.TypeCount; t++)
+        {
+            if (b.Count[t] == 0)
+                continue;
+            var type = (FoliageType)t;
+            var margin = Foliage.IsTree(type) || type == FoliageType.Stem ? PlanetClearings.TreeMargin : PlanetClearings.PlantMargin;
+            for (var i = 0; i < b.Count[t]; i++)
+            {
+                var o = (b.Start[t] + i) * FoliageBatches.FloatsPerInstance;
+                var foot = new Vector3(d[o], d[o + 1], d[o + 2]);
+                var up = Vector3.Normalize(foot - pl.Center);
+                foreach (var box in _flClear)
+                    if (PlanetClearings.Covers(box, foot, up, margin))
+                    {
+                        d[o + 3] = 0;
+                        break;
+                    }
+            }
+        }
     }
 
     /// <summary>Releases every planet cell (another world, quality Off, or a flat map).</summary>

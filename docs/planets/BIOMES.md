@@ -103,6 +103,16 @@ ground is dug), so a vehicle in a forest costs a few lookups a tick; a group mor
 simulation asks the dug ground itself; the drawing's workers don't read it (it changes on the main thread), and a cell's
 plants on dug ground are folded away as it uploads.
 
+## Bases clear the plants
+
+Sean (2026-11-23): "trees removed and foliage removed when a foundation is placed, or an object is anchored, so trees
+don't pop through buildings". Every anchored construct on a planet (a working foundation, or pinned) clears the plants
+whose foot stands in its box (`PlanetClearings.cs`): trees within 3 m of it sideways (their canopies), other plants within
+0.5 m, from 3 m under its bottom to its top. Each game keeps its own clearings from its own constructs (a joined client's
+from what it was sent), remade at most twice a second; the drawing builds the cells round a clearing that came or went
+again, and the construct contacts skip trunks inside one. Monoliths don't give way (a part can't be placed in one).
+Unanchoring or removing the base brings the plants back.
+
 ## What it costs
 
 - **Making cells** (worker threads, at most two at once, the nearest first): `--check-planetoid` prints the time a cell
@@ -121,7 +131,6 @@ its temperature, wetness and biomes; `--png` colours the picture with the biomes
 ## Not yet
 
 - Trees aren't felled for wood on planets (the flat maps' forests, ResourceField.cs, are a resource).
-- Plants grow through a construct standing on them (a base's floor): only dug ground clears them.
 - Bullets and tools don't hit trunks; only constructs do.
 - Mille (hollow) and Slopolis (a city) have no biomes; Redrock and the Dev worlds neither.
 - Monoliths cast no shadows (foliage isn't in the shadow pass), and dug ground round one leaves it standing.

@@ -283,7 +283,7 @@ public sealed class PlanetFlora
     /// construct contacts ask this (the simulation's thread); people walk through them. One face's points only (a box over
     /// a cube edge misses the far face's trees), and a group more than about 90 m across meets no trees (logged once).
     /// </summary>
-    public void GatherTrunks(Vector3 min, Vector3 max, List<ContactShape> into)
+    public void GatherTrunks(Vector3 min, Vector3 max, List<ContactShape> into, PlanetClearings? clear = null)
     {
         if (!Grows(2))
             return;
@@ -330,6 +330,8 @@ public sealed class PlanetFlora
             box.Bounds(out var lo, out var hi);
             if (hi.X < min.X || lo.X > max.X || hi.Y < min.Y || lo.Y > max.Y || hi.Z < min.Z || lo.Z > max.Z)
                 continue;
+            if (clear is { Boxes.Count: > 0 } && clear.AnyCovers(_trunkPlant[slot].Pos, _trunkPlant[slot].Up, 0.5f))
+                continue; // (cleared for an anchored base: PlanetClearings.cs)
             into.Add(ContactShape.FromObb(box, new ShapeId(ShapeKind.Trunk, (int)(key & 0x7FFFFFFF), face)));
         }
     }
