@@ -134,15 +134,21 @@ public static class BakeKits
             return false;
         foreach (var n in Names) // (no lambda: it is asked in looks that must not allocate)
             if (n.Equals(d.Name, StringComparison.OrdinalIgnoreCase))
-                return true;
+                return !IsListed(d.Name) || KitOf(d, true) != null; // (a listed kit that can't be made leaves its part to the Assembler: else nothing makes it)
         return false;
     }
 
-    /// <summary>A part's kit (null: it has none, or one of its boxes can't be made: the log says which).</summary>
-    public static Piece[]? KitOf(ConstructPartDef d)
+    private static bool IsListed(string name)
     {
-        if (!Has(d))
-            return null;
+        lock (Gate)
+            return Listed.ContainsKey(name);
+    }
+
+    /// <summary>A part's kit (null: it has none, or one of its boxes can't be made: the log says which).</summary>
+    public static Piece[]? KitOf(ConstructPartDef d) => Has(d) ? KitOf(d, true) : null;
+
+    private static Piece[]? KitOf(ConstructPartDef d, bool _)
+    {
         lock (Gate)
         {
             if (Kits.TryGetValue(d.Name, out var have))
@@ -227,7 +233,11 @@ public static class BakeKits
     private static Piece[]? Resolve(ConstructPartDef d, Piece[] listed)
     {
         // Dressed where its skins can be and the baked group stays within a part's boxes; else its skins plain (said once, in the log).
-        if (Expand(d, listed, true) is { } dressed)
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var dressed = Expand(d, listed, true);
+        if (sw.Elapsed.TotalMilliseconds > 4)
+            Console.WriteLine($"[bake kits] {d.Name}: dressing its kit took {sw.Elapsed.TotalMilliseconds:0.0} ms");
+        if (dressed != null)
             return dressed;
         Console.WriteLine($"[bake kits] {d.Name}: its kit is its skins plain, undressed (see the line above)");
         return Expand(d, listed, false);
@@ -370,6 +380,9 @@ public static class BakeKits
     /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
     /// share a kit (the keel's bands where the hull runs straight): <paramref name="want"/>, the oven's order, picks between them.
     /// </summary>
+    /// <summary>Every kit resolved and its hashes made now (a match's start), not on the tick of the first bake or order.</summary>
+    public static void Warm() => Target("");
+
     public static Hit? Target(string hash, ushort want = 0)
     {
         if (Names.Length == 0)
