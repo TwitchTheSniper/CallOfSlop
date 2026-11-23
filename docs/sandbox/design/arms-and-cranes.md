@@ -164,7 +164,7 @@ left out (`ConstructLifterClear.cs`). The rise goes to clients in the lift word 
 a pick lifts the top piece where it lies (`TopSlot`), not the pad's point nearest the shoulder; when that slot is out of
 reach it falls back to the nearest point as before (Sean, 2026-11-23). **No jump between jobs:** a loaded carry starts with
 the empty hand's own way from where it was (`CLift.Hand0`) to the piece, `Fetch` ticks on the same eased legs, the piece
-lying where it was meanwhile; then the carry as before (`ConstructLifters.Approach`, `HandPose`; protocol 445). It applies
+lying where it was meanwhile; then the carry as before (`ConstructLifters.Approach`, `HandPose`; protocol 446). It applies
 to arms as well as cranes, and to every carry start (a station step, a point to point carry, a straight fit).
 
 - **What is built.** **Crane Rail** sections joined end to end by `end-` and `end+` sockets make a run, as Linear rails do

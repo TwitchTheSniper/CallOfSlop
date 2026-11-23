@@ -1037,6 +1037,8 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Rooms shut inside ships and vehicles get no daylight: dark but for their own lamps. A little slower."u8);
             VideoLevelRow("Lamp shadows"u8, "lampshadows", ref s.LampShadows);
             ImGui.TextColored(Dim, "Walls, floors and shut doors keep a lamp's light in its own room. Low: off. Medium: the 8 nearest lamps. High: 12, with sharper edges."u8);
+            ImGui.Checkbox("Light beams"u8, ref s.LampBeams);
+            ImGui.TextColored(Dim, "Spot lamps (high-bay pendants, floodlights) show a faint cone of light in the air under them."u8);
 
             ImGui.Spacing();
             ImGui.Text("Big ships"u8);

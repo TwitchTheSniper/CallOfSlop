@@ -1528,7 +1528,7 @@ public static partial class ConstructLifters
             w.U16(Cm(l.Rise)).U8((byte)l.Why).U16((ushort)(l.Step + 1)).U16(l.StationBody).U16(l.Moves); // (protocol 290: the look line's and the carry height)
             w.U8((byte)l.ToKind).U16(l.ToPart).U8(l.ToBay); // (protocol 296: a carry between points, its put point for the look line)
             Vec(w, l.Hand0);
-            w.U16((ushort)Math.Clamp(l.Fetch, 0, ushort.MaxValue)); // (protocol 445: the empty hand's way to the piece first)
+            w.U16((ushort)Math.Clamp(l.Fetch, 0, ushort.MaxValue)); // (protocol 446: the empty hand's way to the piece first)
             WriteOrders(w, l); // (protocol 312: the hand orders)
         }
     }
