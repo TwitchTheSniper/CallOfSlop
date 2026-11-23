@@ -244,7 +244,7 @@ public sealed unsafe partial class FoliageRenderer
         for (var t = 0; t < FoliageMeshes.TypeCount; t++)
         {
             var type = (FoliageType)t;
-            if (PlanetFlora.LayerOf(type) < 0 && type != FoliageType.Stem || rocksOnly && !Foliage.IsMonolith(type))
+            if (PlanetFlora.LayerOf(type) < 0 && type is not (FoliageType.Stem or FoliageType.FarBroadleaf or FoliageType.FarConifer) || rocksOnly && !Foliage.IsMonolith(type))
                 continue;
             var fadeEnd = PlanetReach(type, quality);
             var fadeStart = fadeEnd * (Foliage.IsTree(type) || type == FoliageType.Stem ? TreeFadeStart : Foliage.FadeStartFraction);
