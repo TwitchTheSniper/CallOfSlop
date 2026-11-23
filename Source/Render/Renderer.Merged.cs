@@ -19,6 +19,12 @@ public sealed unsafe partial class Renderer
     /// <summary>Floats a slot's matrix and its look take.</summary>
     public const int MergeXformFloats = 12, MergeLookFloats = 4;
 
+    /// <summary>
+    /// A slot's covered faces (six bits: 2 x axis + side, side 1 the + face) ride on its look's code as whole steps of this
+    /// (away from zero: a glowing box's code is below zero); the vertex shader takes them off and drops those faces of the cube.
+    /// </summary>
+    public const float MergeMaskStep = 1024f;
+
     /// <summary>One draw group on the GPU (a construct segment's chunk now; a fused unit later).</summary>
     public sealed class MergedMesh
     {
@@ -153,6 +159,22 @@ public sealed unsafe partial class Renderer
                 flat out float vLayerI;
                 void main()
                 {
+                    // (faces another box covers: whole steps of 1024 on the code, ConstructRenderBatch.HideCovered; a plain box's cube
+                    // has one normal a face, so a dropped face's two triangles go wholly outside the view and are clipped)
+                    float codeA = abs(iLook.w);
+                    float maskF = floor(codeA / 1024.0);
+                    float code = sign(iLook.w) * (codeA - maskF * 1024.0);
+                    int mask = int(maskF);
+                    if (mask != 0)
+                    {
+                        vec3 an = abs(aNormal);
+                        int face = an.x > 0.5 ? (aNormal.x > 0.0 ? 1 : 0) : an.y > 0.5 ? (aNormal.y > 0.0 ? 3 : 2) : (aNormal.z > 0.0 ? 5 : 4);
+                        if ((mask & (1 << face)) != 0)
+                        {
+                            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                            return;
+                        }
+                    }
                     mat4 inst = mat4(vec4(iR0.xyz, 0.0), vec4(iR1.xyz, 0.0), vec4(iR2.xyz, 0.0), vec4(iR0.w, iR1.w, iR2.w, 1.0));
                     mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
@@ -165,10 +187,10 @@ public sealed unsafe partial class Renderer
                     vBody = (inst * vec4(aPos, 1.0)).xyz;
                     vBodyN = mat3(inst) * aNormal;
                     vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
-                    bool glow = iLook.w < 0.0;
+                    bool glow = code < 0.0;
                     vModeI = glow ? 2.0 : 0.0;
                     vColorI = vec4(iLook.rgb, glow ? uGlowAlpha : 1.0);
-                    vLayerI = glow ? 0.0 : iLook.w;
+                    vLayerI = glow ? 0.0 : code;
                     gl_Position = uViewProj * w;
                 }
                 """;

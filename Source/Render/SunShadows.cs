@@ -116,27 +116,31 @@ public static unsafe class SunShadows
     private static readonly Dictionary<int, PoseRec> Poses = new();
 
     /// <summary>
-    /// Marks each of the <paramref name="n"/> picked bodies still (drawn at the same pose for the last two frames) or moving, and returns
+    /// Marks each of the <paramref name="n"/> picked bodies still (the same ticked pose for the last two frames, and not moving
+    /// within the tick) or moving, and returns
     /// a key of the still ones (their ids, boxes and poses, in any order) and how many move.
     /// </summary>
     internal static long ClassifyPicks(int n, float alpha, bool blendTicks, out int moving)
     {
+        _ = alpha;
         long key = 0;
         moving = 0;
         for (var k = 0; k < n; k++)
         {
             var c = Picks[k].Body;
-            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            // (the pose as ticked, not as blended: a blend between two equal poses still moves by a rounding with the frame's alpha)
+            var pos = c.Pos;
+            var rot = c.Rot;
+            var still = !blendTicks || c.PrevPos == pos && c.PrevRot == rot;
             if (!Poses.TryGetValue(c.Id, out var r))
                 Poses[c.Id] = r = new PoseRec { Pos = pos, Rot = rot, Since = _frame, Seen = _frame };
             else if (r.Seen != _frame)
             {
                 r.Seen = _frame;
-                if (r.Pos != pos || r.Rot != rot)
+                if (r.Pos != pos || r.Rot != rot || !still)
                     (r.Pos, r.Rot, r.Since) = (pos, rot, _frame);
             }
-            PickStill[k] = _frame - r.Since >= 2;
+            PickStill[k] = still && _frame - r.Since >= 2;
             if (!PickStill[k])
             {
                 moving++;

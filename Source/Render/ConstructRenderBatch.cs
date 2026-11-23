@@ -45,6 +45,7 @@ public static partial class ConstructRender
         public int MemberCount, Boxes;
         public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
         public byte[] SlotBox = [];
+        public byte[] SlotMask = []; // slot k's faces covered by another box of the chunk (bit 2 * axis + side, side 1 the + face: HideCovered)
         public bool Dirty = true, LookDue = true;
         public bool Lamps; // a member is a lamp: its looks are checked every check
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
@@ -563,9 +564,134 @@ public static partial class ConstructRender
             look[o] = tint.X;
             look[o + 1] = tint.Y;
             look[o + 2] = tint.Z;
-            look[o + 3] = code;
+            look[o + 3] = ch.SlotMask[s] == 0 ? code : code < 0 ? code - ch.SlotMask[s] * Renderer.MergeMaskStep : code + ch.SlotMask[s] * Renderer.MergeMaskStep; // (covered faces ride on the code: the shader drops them)
         }
         return n;
+    }
+
+    private static Vector3[] _bLo = [], _bHi = [];
+    private static bool[] _bOcc = [];
+    private static byte[] _bKind = []; // 0 a plain box, 1 a contoured shape, 2 left out already (a welded seam)
+    private static int[] _gStart = new int[513], _gItems = [], _gFill = new int[512];
+
+    /// <summary>Faces hidden and boxes left out by <see cref="HideCovered"/> in the chunks built so far (the bench, the F9 window).</summary>
+    public static long HiddenFaces, HiddenBoxes;
+
+    /// <summary>
+    /// The faces of a chunk's <paramref name="n"/> slots that lie inside another of its plain opaque boxes, with that box's
+    /// material beyond them, are marked in <see cref="MergeChunk.SlotMask"/> (the shader doesn't draw them); a slot whose six
+    /// faces are all covered is left out at no size, as a welded seam box is. On the Zero Day works a fifth of all faces and a
+    /// ninth of the boxes are inside others (2026-11-23). A face on another box's own face, both facing out, is never hidden, so
+    /// two boxes in one place still show. Allocates nothing once its scratch has grown.
+    /// </summary>
+    private static void HideCovered(MergeChunk ch, int n)
+    {
+        if (n < 2)
+            return;
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                lo = Vector3.Min(lo, _bLo[k]);
+                hi = Vector3.Max(hi, _bHi[k]);
+            }
+        if (lo.X > hi.X)
+            return;
+        // Occluders into an 8 x 8 x 8 grid over their bounds (a box into every cell it overlaps).
+        const int G = 8;
+        var cell = Vector3.Max((hi - lo) / G, new Vector3(0.01f));
+        Array.Clear(_gFill);
+        var items = 0;
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                Cells(_bLo[k], _bHi[k], lo, cell, out var a, out var b);
+                for (var x = a.X; x <= b.X; x++)
+                    for (var y = a.Y; y <= b.Y; y++)
+                        for (var z = a.Z; z <= b.Z; z++)
+                        {
+                            _gFill[(x * G + y) * G + z]++;
+                            items++;
+                        }
+            }
+        Grow(ref _gItems, items);
+        _gStart[0] = 0;
+        for (var q = 0; q < G * G * G; q++)
+        {
+            _gStart[q + 1] = _gStart[q] + _gFill[q];
+            _gFill[q] = _gStart[q];
+        }
+        for (var k = 0; k < n; k++)
+            if (_bOcc[k])
+            {
+                Cells(_bLo[k], _bHi[k], lo, cell, out var a, out var b);
+                for (var x = a.X; x <= b.X; x++)
+                    for (var y = a.Y; y <= b.Y; y++)
+                        for (var z = a.Z; z <= b.Z; z++)
+                            _gItems[_gFill[(x * G + y) * G + z]++] = k;
+            }
+        const float e = 1e-4f;
+        var xf = _mergeXform;
+        for (var k = 0; k < n; k++)
+        {
+            var a0 = _bLo[k];
+            var a1 = _bHi[k];
+            if (_bKind[k] == 2)
+                continue;
+            var mask = 0;
+            for (var f = 0; f < 6; f++)
+            {
+                var ax = f >> 1;
+                var plus = (f & 1) != 0;
+                var pl = plus ? a1[ax] : a0[ax];
+                var mid = (a0 + a1) * 0.5f;
+                mid[ax] = pl;
+                if (mid.X < lo.X || mid.Y < lo.Y || mid.Z < lo.Z || mid.X > hi.X || mid.Y > hi.Y || mid.Z > hi.Z)
+                    continue;
+                var gx = Math.Clamp((int)((mid.X - lo.X) / cell.X), 0, G - 1);
+                var gy = Math.Clamp((int)((mid.Y - lo.Y) / cell.Y), 0, G - 1);
+                var gz = Math.Clamp((int)((mid.Z - lo.Z) / cell.Z), 0, G - 1);
+                var q = (gx * G + gy) * G + gz;
+                for (var t = _gStart[q]; t < _gStart[q + 1]; t++)
+                {
+                    var o = _gItems[t];
+                    if (o == k)
+                        continue;
+                    var b0 = _bLo[o];
+                    var b1 = _bHi[o];
+                    // (its material beyond the face, outward: a face on the other's own face facing the same way stays)
+                    if (plus ? pl < b0[ax] - e || pl >= b1[ax] - e : pl > b1[ax] + e || pl <= b0[ax] + e)
+                        continue;
+                    var o1 = ax == 0 ? 1 : 0;
+                    var o2 = ax == 2 ? 1 : 2;
+                    if (a0[o1] < b0[o1] - e || a1[o1] > b1[o1] + e || a0[o2] < b0[o2] - e || a1[o2] > b1[o2] + e)
+                        continue;
+                    mask |= 1 << f;
+                    break;
+                }
+            }
+            if (mask != 63 && _bKind[k] != 0)
+                mask = 0;
+            if (mask == 63)
+            {
+                var c = (a0 + a1) * 0.5f;
+                var x = k * Renderer.MergeXformFloats;
+                (xf[x], xf[x + 1], xf[x + 2], xf[x + 3], xf[x + 4], xf[x + 5], xf[x + 6], xf[x + 7], xf[x + 8], xf[x + 9], xf[x + 10], xf[x + 11]) = (0, 0, 0, c.X, 0, 0, 0, c.Y, 0, 0, 0, c.Z); // (inside others: kept at no size)
+                HiddenBoxes++;
+                mask = 0;
+            }
+            else
+                HiddenFaces += System.Numerics.BitOperations.PopCount((uint)mask);
+            ch.SlotMask[k] = (byte)mask;
+        }
+    }
+
+    private static void Cells(Vector3 b0, Vector3 b1, Vector3 lo, Vector3 cell, out (int X, int Y, int Z) a, out (int X, int Y, int Z) b)
+    {
+        const int G = 8;
+        a = (Math.Clamp((int)((b0.X - lo.X) / cell.X), 0, G - 1), Math.Clamp((int)((b0.Y - lo.Y) / cell.Y), 0, G - 1), Math.Clamp((int)((b0.Z - lo.Z) / cell.Z), 0, G - 1));
+        b = (Math.Clamp((int)((b1.X - lo.X) / cell.X), 0, G - 1), Math.Clamp((int)((b1.Y - lo.Y) / cell.Y), 0, G - 1), Math.Clamp((int)((b1.Z - lo.Z) / cell.Z), 0, G - 1));
     }
 
     /// <summary>
@@ -579,6 +705,11 @@ public static partial class ConstructRender
         Grow(ref _slotKey, n);
         Grow(ref ch.SlotPart, n);
         Grow(ref ch.SlotBox, n);
+        Grow(ref ch.SlotMask, n);
+        Grow(ref _bLo, n);
+        Grow(ref _bHi, n);
+        Grow(ref _bOcc, n);
+        Grow(ref _bKind, n);
         var keys = _slotKey;
         var s = 0;
         for (var k = 0; k < ch.MemberCount; k++)
@@ -632,13 +763,19 @@ public static partial class ConstructRender
             var m = box.Model(p.Rot, centre);
             if (p.D.IsOrdnance)
                 FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
-            if ((box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0))
+            var gone = (box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
+            if (gone)
                 m = Matrix4x4.CreateScale(0f) * Matrix4x4.CreateTranslation(centre); // (a block machine's seam box on a welded face: kept in the chunk at no size, so the counts stand: MachineBlocks.cs)
+            (_bLo[k], _bHi[k]) = (centre - half, centre + half);
+            _bKind[k] = (byte)(gone ? 2 : shape == 0 ? 0 : 1); // (a contoured shape is only ever left out whole: its triangles' normals aren't the cube's faces)
+            _bOcc[k] = !gone && shape == 0 && !box.Glow && !p.D.IsOrdnance && c.PartScale[i] <= 1; // (a plain opaque box that sits still: it may hide others' faces)
+            ch.SlotMask[k] = 0;
             var o = k * Renderer.MergeXformFloats;
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
             xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
             xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
         }
+        HideCovered(ch, s);
         gfx.UploadMergedXforms(gl, xf, s);
         var looks = FillLooks(c, ch); // (after the slots: it reads them, and it can grow the scratch)
         gfx.UploadMergedLooks(gl, _mergeLook, looks);
