@@ -745,7 +745,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      station kinds for them (the roster's job byte), and the "Crew hold fire" Function.
     // 441: the Zero Day's Limpet shaft under a flush Deck Hatch 1.1 m with its own ladder (Karl 2026-11-22): new part files move
     //      part ids; a ladder climbs on through two open docking hatches into the docked craft's ladder (ConstructRide.Chained).
-    public const ushort ProtocolVersion = 441;
+    // 442: stations come and go, part 2: Msg.Stations' station entries carry an owner (a player faction), storage and berth growth;
+    //      FactionOp.StationPurchase (u16 ship) at its end.
+    // 443: Roller Tile runs feed a Panel Former's or Laser Cutter's bed: their Cores gain an implicit conveyor "Bed in" (its point the bed's
+    //      middle), and a Core beside its bed's corner may have its Out Tables on the bed's far end the other way (MachineBlocks.FindOut).
+    public const ushort ProtocolVersion = 443;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

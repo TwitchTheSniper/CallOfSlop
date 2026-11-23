@@ -165,8 +165,87 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     {
         var dz = k % 2 == 1 ? FacetStagger : 0;
         double[] At2(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u < 0.5 ? FacetTrim : -FacetTrim)]); }
+        var from = p.Boxes.Count;
         Quad(p, At2(0, 0), At2(0, 1), At2(1, 1), At2(1, 0), color, finish, glass);
+        Skinned(p, from, k, s, za, zb, color, finish);
     }
+
+    // ---- bake kits (Sean, 2026-11-23: the keel and the hull pieces are extruded, formed, welded and baked, never assembled; the Keel's
+    // curved plates are bent on the Panel Former). Every skin plate a part draws is noted with its facet and band; once the parts are cut
+    // into pieces, each piece's kit is its skin as plain Hull Sections (a Panel Former forms each), written to Constructs/BakeKits.
+
+    /// <summary>A skin plate's facet (0 the keel flat, 1 to 4 the sides, 5 the spine), side and band, as <see cref="Facet"/> drew it.</summary>
+    private readonly record struct SkinPlate(int K, int S, double Za, double Zb, string Color, string Finish);
+
+    private static readonly Dictionary<PyDict, SkinPlate> Skins = new(ReferenceEqualityComparer.Instance); // (a box keeps its skin wherever a split moves it)
+
+    private static void Skinned(Part p, int from, int k, int s, double za, double zb, string color, string finish)
+    {
+        for (var i = from; i < p.Boxes.Count; i++)
+            Skins.TryAdd(p.Boxes[i], new SkinPlate(k, s, za, zb, color, finish));
+    }
+
+    private const string KitOut = "Constructs/BakeKits";
+    private const string KitsFor = "Zero Day Keel"; // (the keel's bands first, Sean's card 2026-11-23; the hull pieces follow with their dress step)
+
+    /// <summary>
+    /// Each structure piece with skin plates: its kit, one plain Hull Section a side and band, its facets the run of the hull's facets the piece
+    /// draws there (the section's profile is the station's half profile closed on the centreline: its facet 1 the keel flat's half, 2 to 5 the
+    /// sides, 6 the spine's half), placed at the band's station on the centreline, unturned, in the plate's paint and finish.
+    /// </summary>
+    private static string KitsJson(List<Part> structure)
+    {
+        var kits = new List<object?>();
+        foreach (var q in structure)
+        {
+            if (!((string)q.D["name"]!).StartsWith(KitsFor, StringComparison.Ordinal))
+                continue;
+            var cells = new List<(int Side, int F, double Za, double Zb, string Color, string Finish)>();
+            foreach (var b in q.Boxes)
+                if (Skins.TryGetValue(b, out var sk))
+                {
+                    if (sk.K is 0 or 5)
+                        foreach (var side in new[] { -1, 1 })
+                            cells.Add((side, sk.K == 0 ? 1 : 6, sk.Za, sk.Zb, sk.Color, sk.Finish));
+                    else
+                        cells.Add((sk.S, sk.K + 1, sk.Za, sk.Zb, sk.Color, sk.Finish));
+                }
+            if (cells.Count == 0)
+                continue;
+            var pieces = new List<object?>();
+            foreach (var g in cells.Distinct().GroupBy(c => (c.Side, c.Za, c.Zb)).OrderBy(g => g.Key.Za).ThenBy(g => g.Key.Side))
+            {
+                var fs = g.GroupBy(c => c.F).Select(f => f.First()).OrderBy(c => c.F).ToList();
+                for (int i = 1, start = 0; i <= fs.Count; i++)
+                    if (i == fs.Count || fs[i].F != fs[i - 1].F + 1)
+                    {
+                        var (za, zb) = (g.Key.Za, g.Key.Zb);
+                        var len = (int)Math.Round((zb - za) * 100);
+                        if (len < HullLoft.SectionMinCm || len > HullLoft.SectionMaxCm)
+                            throw new InvalidOperationException($"torpedo_frigate_parts: {q.D["name"]}'s skin from z {za} to {zb} is no hull section's length");
+                        static (int, int)[] Prof(double z)
+                        {
+                            var at = At(z);
+                            return [(0, Cm(at[0].Y)), .. at.Select(t => (Cm(t.H), Cm(t.Y))), (0, Cm(at[4].Y))];
+                        }
+                        var key = new HullLoft.SectionShape(len, fs[start].F, fs[i - 1].F, g.Key.Side, HullLoft.PlainStyle, 0, "", Prof(za), Prof(zb)).Key();
+                        pieces.Add(new PyDict
+                        {
+                            ["part"] = key,
+                            ["at"] = Py.L(Math.Round(Cx - H, 2), Math.Round(-H, 2), Math.Round(za - H, 2)), // (to the centimetre, as a part's place is: the 5 mm is the part's, not its kit's)
+                            ["paint"] = fs[start].Color,
+                            ["finish"] = fs[start].Finish,
+                        });
+                        start = i;
+                    }
+            }
+            kits.Add(new PyDict { ["part"] = q.D["name"], ["pieces"] = pieces });
+        }
+        var json = new PyDict { ["format"] = "call-of-slop-bake-kit-list/1", ["kits"] = kits };
+        return PyJson.Dumps(json, 2) + "\n";
+    }
+
+    private static int Cm(double m) => (int)Math.Round(m * 100);
 
     private const double FacetStagger = 0.006, FacetTrim = 0.0015; // (and each stops 1.5 mm short of its band's ends: a tapering band's plate leans past them)
 
@@ -566,9 +645,11 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         double[] Q(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u < 0.5 ? FacetTrim : -FacetTrim)]); }
         double u0 = (h.Z0 - za) / (zb - za), u1 = (h.Z1 - za) / (zb - za);
         var v1 = (Math.Abs(h.X1 - Cx) - Mid[k - 1].Item1) / (Mid[k].Item1 - Mid[k - 1].Item1);
+        var from = p.Boxes.Count;
         Quad(p, Q(0, 0), Q(0, 1), Q(u0, 1), Q(u0, 0), color, finish);
         Quad(p, Q(u1, 0), Q(u1, 1), Q(1, 1), Q(1, 0), color, finish);
         Quad(p, Q(u0, v1), Q(u0, 1), Q(u1, 1), Q(u1, v1), color, finish);
+        Skinned(p, from, k, s, za, zb, color, finish);
     }
     /// <summary>The Limpet's shaft (TorpedoFrigateLimpet.cs): from the passage by the airlock down through the keel into the pod's receiver, on the centreline.</summary>
     private const double LimpetLiningFoot = 0.18; // the Limpet shaft's lining stops this far over the keel: under it the docking hatch slides aft
@@ -587,8 +668,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             {
                 var y = At(za)[0].Y;
                 var hb = At(za)[0].H;
+                var from = p.Boxes.Count;
                 foreach (var r in Minus(Minus([new Rect(Cx - hb, za, Cx + hb, zb)], BellyHatch), LimpetShaft))
                     Plate(p, [P(r.X0, y, r.Z0), P(r.X1, y, r.Z0), P(r.X1, y, r.Z1), P(r.X0, y, r.Z1)], Armour, "plated steel");
+                Skinned(p, from, 0, 1, za, zb, Armour, "plated steel"); // (the flat with its holes: its kit's plate is whole, cut later)
             }
             else
                 Facet(p, 0, 1, za, zb, Armour, "plated steel");
@@ -2584,6 +2667,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     public void Make(PartOutput o)
     {
         Walls.Clear();
+        Skins.Clear();
         Floors.Clear();
         CladWall.Clear();
         SockOwner.Clear();
@@ -2600,6 +2684,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         structure.AddRange([Bow(), SternPart(), Sponson(-1), Sponson(1)]);
         Connect(structure);
         Structure = PlaceOrder(structure, "Zero Day Keel");
+        o.Own(KitOut);
+        o.File($"{KitOut}/ZeroDay.json", KitsJson(structure));
         List<Part> parts =
         [
             .. structure, Barbette(), Collar(), Bell(),

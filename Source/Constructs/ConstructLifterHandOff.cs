@@ -182,6 +182,19 @@ public static partial class ConstructLifters
         return best;
     }
 
+    /// <summary>Server: does a lifter fit station <paramref name="t"/>'s parts from a pick pad (a lead with no hops for it) whose hold takes <paramref name="d"/>? Allocates nothing.</summary>
+    public static bool HasPickPad(ConstructWorld world, Construct sc, int t, ConstructPartDef d)
+    {
+        if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0)
+            return false;
+        Leads(world);
+        for (var e = 0; e < _leadN; e++)
+            if (_leads[e].Hops == 0 && _leads[e].StBody == sc.Id && _leads[e].St == t && world.Get(_leads[e].PadBody) is { } pb && _leads[e].Pad < pb.PartCount
+                && ConstructRackPack.Fit(ConstructPads.RackDef(pb, _leads[e].Pad), d, out _, out _, out _))
+                return true; // (a pad too small for it says nothing for it: the station's note stands)
+        return false;
+    }
+
     /// <summary>Is this point a station's pick pad (a lead with no hops)? A piece there waits for the station's arm: it is never handed on.</summary>
     private static bool IsLeadPad(ConstructWorld world, in LiftPoint pt)
     {
@@ -212,7 +225,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind is not (LiftPointKind.Rack or LiftPointKind.RunStart) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount)
+            if (k == skip || pt.Kind is not (LiftPointKind.Rack or LiftPointKind.RunStart) || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount)
                 continue;
             var e = LeadAt(world, pt.Body, pt.Part, pt.Kind, d, padHandle, self: padHandle != 0 ? 1 : 0); // (a rider bound for the pad counts itself among those riding there)
             if (e < 0 || _leads[e].Hops >= bestHops)
@@ -223,7 +236,7 @@ public static partial class ConstructLifters
                 if (world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
                     continue;
             }
-            else if (!RunRoom(b, RollerRuns.StartRunAt(b, pt.Part), d) || Bound(world, l, pt) || !PointAt(b, pt, out p))
+            else if (RollerRuns.StartRunAt(b, pt.Part) is var run && (!RunRoom(b, run, d) || PicksEndOf(l, pt.Body, run, b) || Bound(world, l, pt) || !PointAt(b, pt, out p)))
                 continue;
             p.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
             if (!InReach(ld, shoulder, lr, p, lift, out _))
@@ -231,6 +244,20 @@ public static partial class ConstructLifters
             (best, bestHops, at) = (k, _leads[e].Hops, p);
         }
         return best;
+    }
+
+    /// <summary>
+    /// Does lifter <paramref name="l"/> itself pick at the end of run <paramref name="run"/> on body <paramref name="b"/>? A piece it put on
+    /// that run would come back to its own hand no nearer the station (Sean, 2026-11-22: a Hall Crane carried a piece round and round).
+    /// </summary>
+    private static bool PicksEndOf(CLift l, ushort body, int run, Construct b)
+    {
+        if (run < 0)
+            return false;
+        for (var k = 0; k < l.PointN; k++)
+            if (l.Points![k].Kind == LiftPointKind.RunEnd && l.Points[k].Body == body && RollerRuns.EndRunAt(b, l.Points[k].Part) == run)
+                return true;
+        return false;
     }
 
     /// <summary>Has run <paramref name="run"/> room at its start for one piece of this kind (as <see cref="ConstructConveyor.PutMade"/> asks)?</summary>

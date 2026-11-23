@@ -175,8 +175,16 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   table's top: in a line, the Extruder stands so its tables are at the 1 m work height, on a 0.7 m plinth over the floor the tiles stand on).
   A run butted on a Run-out Table is its Extruder's `Piece out` (`RollerRuns.Butted`, `ConstructExtruder.TableMachine`): the link starts at the
   die, so each cut piece is handed off whole (`ConstructConveyor.HandOff`) and rides from the die over the tables and on along the run. Butt
-  the run's out end on a Panel Former's or a Laser Cutter's back (their Cores' `-z` socket, on the Piece in) and the
-  Panel Former takes it as the blank of the order it fits (one blank a panel), a cutter onto its bed. Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
+  the run's out end against a Panel Former's or a Laser Cutter's **bed** (Sean, 2026-11-23: a whole extrusion goes from the rollers
+  onto the bed, never through the single-block Core) and the run ends on the Core's implicit **Bed in** port, whose point is the bed's
+  middle at the run's line (`NamedPort.OnBed`, `MachineBlocks.BedMiddle`, `BedAt`: found by where the run's line goes on past its
+  last tile, not by welds, so a Laser Cutter's bed half a tile off the run's grid is still met). The piece rides off the run onto the
+  bed to its middle, where the former takes it as the blank of the order it fits (one blank a panel), a cutter as its blank; while a
+  blank already lies on the bed, the next waits whole on the run at the bed's edge (`ConstructConveyor.BedHold`, either peer: `OnBed`
+  is on the wire). A run against the Core's back (its `-z` socket) still ends on its Piece in. `--machine-blocks NAME` prints how each
+  bed machine is fed. A Panel Former's Core may stand beside its bed's head corner, so the line runs straight from the run onto the bed:
+  its Out Tables then close the bed's far end the other way (`MachineBlocks.FindOut` takes that edge when the side across from the Core
+  has none). Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
   tiles, into a Panel Former's bin. A conveyor a player linked from the Extruder's Piece out keeps it, and the run then starts at its own first tile. Not tried: a joined client's view of the ride, a die wider than one table.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
   Former's blank link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`). The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
@@ -296,9 +304,10 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 
 Since the block-system rework (design page drawing 17b) the Press is one Core (2 m cell) and **Press Blocks** welded round it: the bed is the largest rectangle of blocks level with the Core (`CMachineAsm` X0, Z0, W along the Core's x, the flow; L along z), and its width and bites come from that rectangle. The Medium, Large and Capital presses are gone: a bigger press is more blocks. Code: `ConstructPressBlocks.cs` (sizes), `ConstructPressShells.cs` (the shells), `Game/GameSandboxPress.cs` (the crush test); parts from `--gen-parts press_parts`.
 
-- **Shells.** Blocks stacked on the bed's two long edges (z rows Z0 and Z0+L-1, L at least 2) are the shells: each wall column is one segment, hinged at the outer top edge of the bed block under it. The Core's own roof is two hinged leaves (box work `"hinge"`). While the press works the segments swing open flat out to their side and slam shut, one cycle every 3 s (`ShellCycle`), rippling down the bed 0.06 of a cycle a segment; the top block of each column draws a roof lip to the bed's centre line with red latch teeth. At rest they stand shut, where the blocks' collision is. The swing is drawn only, from the mover clock (`ConstructLifters.DrawTick`, the server tick on the server) and the line state: nothing on the wire.
-- **Swing strip.** Each side needs a clear strip as wide as its tallest column. At the machine's rebuild the first fixed part of the construct in a strip, not one of its own blocks, is kept as `CMachineAsm.Blocker`; the press stalls with "Shell swing blocked" (`PressStall.SwingBlocked`, a Fault on its line) and the look line names the part and how far to move it.
-- **No stopping for people.** At 10 Hz, for each working press, players are put in the Core's frame (`ShellSpace`): one between the shells as their segment's phase passes the slam (`SlamAt`) is crushed (killed); one in a side's strip while that side's segment is swinging is struck (35) and thrown out and up, at most once a second. Nothing allocates; nothing runs while no press works.
+- **Housings and round dies** (Sean, 2026-11-23, his second sketch). Blocks stacked on the bed's two long edges (z rows Z0 and Z0+L-1, L at least 2) are the housings: they stand still. On top of each wall column sits a **round die**: a solid quarter round, as long as the block, from the housing's inner face to the bed's centre line (radius `Gap`, (L-2) x 1 m), hinged at that face's outer edge. Shut, its curved face is up, its flat working face down, and the two sides' dies meet over the bed as a half round, a red strip on each leading edge; they stand over the bed by room for the stroke's taller piece and the die's face (`DieLift`: the blank or part's height, the face's depth and 3 cm, at most `MaxLift`, half the radius and 0.6 m), so the piece lies in the space between (Sean). Open, a die lies turned up and out over its housing, its working face toward the bed. The fitted die (the part in the Core's die socket) covers each die's working face, its look stretched to the face and only a few cm deep (`DieRelief`), so a bigger press shows a bigger die (Sean). The Core's own roof is two hinged leaves (box work `"hinge"`). **Each stroke closes them on the blank:** the blank lies on the bed under the open dies, they swing shut over it (SlamFrom to SlamAt, 0.75 to 1 s), rippling down the bed 0.05 s a segment (at most 8), and stay shut with the blank between them until the stroke ends and the part is made; then they open on the new part, which lies on the bed for 1.5 s. Back-to-back strokes open on the last part first (0.55 s). A stroke is never shorter than that (`StrokeMinSteps`, 1.5 s), and a creative one, which costs nothing, still takes `CreativeStrokeSteps` (2 s). At rest the dies stand open. The dies and the pieces on the bed are drawn only (the housings' cells are the collision): each peer notes a stroke's start when its store turns Busy or its progress falls back to the 0 each stroke sends at its start, and the stroke's end when Busy falls, and then names the blank in the ready bay and what the die will make of it (`ConstructPress.StrokeUpdate`, `DieOpen`; `ConstructRender.DrawShellDie`, `PressBed`); the crush test reads the stroke's work so far (`StrokeSecondsServer`). Nothing new on the wire.
+- **Bed and housing looks.** One Press Block draws by what it is, from its seams on `-y`: a bed block (nothing of its press under it) is a framed table (deck slab with the tread plate and hazard edge, a leg at each corner, the body set back under the deck); a wall block (a block of its press under it) is a solid unpainted steel housing (`Lid`, so a bed's paint never makes the press one black box) with a dark cap, two stiffeners (12 mm under an open die's face) and a hazard band round its foot. Its collision is still the whole cell (a hidden box).
+- **Swing strip.** A die sweeps about its hinge from over the bed to over its housing: its far corner passes `MaxLift` + reach x 1.41 over the bed, and past the hinge it reaches out its radius (beyond the housing's outer face on a bed over four blocks wide). At the machine's rebuild the first fixed part of the construct in that sweep, not one of its own blocks, is kept as `CMachineAsm.Blocker`; the press stalls with "Shell swing blocked" (`PressStall.SwingBlocked`, a Fault on its line) and the look line names the part and the space to keep clear. `--machine-blocks NAME` prints any blocked press.
+- **No stopping for people.** At 10 Hz, for each working press, players are put in the Core's frame (`ShellSpace`): one on the bed between the housings as their segment's phase passes the slam (`SlamAt`) is crushed (killed). Nothing allocates; nothing runs while no press works.
 - **Saves.** Old saved Medium, Large and Capital presses no longer load as presses, and their Assembling recipe rows went (recipes are saved by index within a family, so a saved Assembler on a later row of that family moves up; the Extruder rework did the same).
 
 ### Sized dies (the Press rework)
@@ -669,7 +678,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
 **Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
-Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches an arm (x2 a Feed Buffer); the tray is 4 slots of 12; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
+Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches an arm (x2 a Feed Buffer), and an Assembler on orders no more than its queued orders still need: materials for the head's part (`ConstructAssembling.OrderedBatches`: one Zero Day Keel takes 208 rubber, never 2,800), parts for every queued order that uses them (`PartRoom`, pooled); the tray is 4 slots of 12; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
 
 ## Build stations
 
@@ -963,6 +972,11 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   wheel rests, and the Reload key (R) sets it to the widest its ends and turns allow, sent at once (`RouteEditOp.Size`). The size
   change wakes the body: the machine retries the piece on its die at its next step. It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
+  A straight vertical segment (steeper than `ConstructConveyor.ShaftSteep`, the same steepness past which no vertical curve is
+  drawn) is a lift instead (Sean, 2026-11-23; `RouteRender.Shaft`): two mast rails in the paint either side of the line, open front
+  and back, with a dark chain and lugs inside, flanges outside and chevrons up their faces; a foot plate and a drive housing where
+  no shaft joins on. Its riders go up level on a carriage, facing the way of the nearest sloped or level segment
+  (`ConstructConveyor.ShaftFacing`), not standing on end; a slope keeps the roller bed. Timing and spacing are the link's as before.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
   1 m/s (`ConstructConveyor.Speed`; 0.5 until 2026-11-14, when the user found parts took too long: protocol 318), front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
@@ -1801,8 +1815,8 @@ rectangle holding the lowest-index tile. A run is one ordinary conveyor link alo
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
 out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
-its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
-or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
+its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile, a Panel Former's or Laser
+Cutter's bed: its Core's Bed in, "Extrusion" above) or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
 **Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
@@ -1856,6 +1870,15 @@ station builds Storage Corner from a stock pad 40 m away, through an arm, a run,
 station's own conveyor fetch from a store doesn't cross lifters (the store's pieces go by hand-off instead), and the logistics map
 has no edge for a run's start or end (a Router doesn't route by them).
 
+**A refused put isn't tried again at once** (Sean, 2026-11-23: a Zero Day works Hall Crane carried a piece back and forth for good).
+A pad or rack is a taker only while it has room for the piece (`RackCheck`), not only while it wants one. When a put point still
+refuses the piece at the end of the carry, the lifter remembers that point and the one before it (`CLift.Refused`, `Refused2`) and
+passes them over for 30 s (`ConstructLifters.RefuseHold`) in every choice of where a piece goes (a want, a rider's destination, a
+hand-off, storage): the piece goes to another taker or waits in the hand, stuck, and a put that goes in clears the memory. A lifter
+never hands a piece onto a run whose end it picks from itself (`PicksEndOf`): it would only come back to its own hand.
+`--handoff-check --pad-full` fills the pick pad and a second one beside the last arm with parts the build doesn't use and counts
+the carries (85 in 2 minutes before, 6 now).
+
 **Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
 any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
@@ -1901,7 +1924,56 @@ column on each corner of the bed. A welded group set on the bed bakes into one p
   where its subpart drew it, the design through the wire and a save, un-baking back to the same parts and a second bake to the same hash.
   In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
   `oven mode bake|unbake` turns the setting.
-- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md), a Piece out conveyor, and baking by order from a line.
+- **Not yet.** The no-collide socket hole on a baked part (hull-dress.md) and a Piece out conveyor. Baking by order: [Bake kits](#bake-kits).
+
+### Bake kits (2026-11-23)
+
+Sean: "Large deck parts should be made through the extrusion chain in the factory, put together, and then baked in the oven, not made
+in an assembler." The parts listed in `Constructs/BakeKits.json` (the four Zero Day decks) and in `Constructs/BakeKits/` (the Zero Day's keel bands) are
+made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOvenOrders.cs` (the oven's orders).
+
+- **The kit.** One extrusion for each solid, drawn box of the part (detail boxes, seams and markings, come with the bake): its longest
+  side the length (5 cm steps), the thinner of the others the height (a Sheet under 10 cm), painted and finished as the box, at the box's
+  place and grid turn. The sections are cored (hollow box or wall profile) to weigh about what the part does, so a hall crane's 20 t takes
+  a kit (a solid 25 cm deck is three times the part's mass); the baked part has the catalogue part's mass. The kit's blueprint,
+  `{part} kit`, is made at run time (the first piece the root, the rest welded freeform at their places), found by name as a shipped
+  one is (`ConstructStation.Find`, `Start`).
+- **The match.** `BakedParts.Bake` asks `BakeKits.Target` for the group's design hash first: every kit's design at each of the 24 turns
+  is worked out once. A kit comes out as the part itself, its own name, sockets, mass and look, turned as the kit lay and where it lay,
+  so a ship's blueprint, saves and fittings know it as before; anything else bakes to `Baked (#hash)` as ever. The design's origin is
+  now the group's solid middle taken from its bounds to the half centimetre (whole numbers), so a kit welded freeform a hair off its grid
+  hashes the same as the one worked out.
+- **Orders.** A Bake Oven takes orders (`WorkOrders.TakesOrders`) for kit parts only, in Bake mode; an Assembler refuses them ("a Bake
+  Oven's order"). For its head order, with its bed empty and no kit of it on the way, the oven starts the kit's blueprint at the idle,
+  powered Building Station on its own construct whose bay is nearest its bed and big enough; the station orders the kit's extrusions as
+  for any build. When the kit is done, a Loader Arm or crane reaching both the bay and the bed carries it onto the bed's middle (turned a
+  quarter if that is what lies on the clear cells) and lets it go; the oven bakes it, its order counts one, and a lifter takes the part
+  off the bed (the bed is the oven's Out point, as a block Assembler's is) to whoever wants it, or to storage. Once a second an oven, at
+  its 10 Hz step; the kit on the hook is the world's (`OvenKits`), not saved (a load mid-carry leaves the kit in the bay, carried again).
+  The oven's queue note says what it waits for (no free station, no lifter reaches both, the kit doesn't fit the bed).
+- **Trying it.** `--bake-kit [NAME;NAME...|all]` builds each kit from its blueprint and bakes it, then lays it at five other turns: it
+  must come out as the part, at the turn, where the kit lay. `--station-check "Zero Day Works" --oven-order PART [--oven-at X,Z]
+  [--kit-loose] [--kit-carry]` queues an order on a site's oven and runs it: `--kit-loose` sets the kit's pieces down in the station's
+  bay one by one (as a player drops them) instead of ordering them, `--kit-carry` sets the done kit on the bed (for a site whose cranes
+  don't reach both). On the works (2026-11-23) line C's oven took the order, its station built the Upper Deck Aft kit and the kit baked
+  into the deck in 11 s with both; without `--kit-carry` it waits: no crane reaches line C's station and oven both (the bay 2 crane's
+  rails end at z -137), and the yard's station doesn't reach the oven by its network. Those are the works layout's to give.
+- **Listed kits (the keel).** Sean, 2026-11-23: the Keel too is extruded and baked, its curved plates bent on the Panel Former (his card
+  answer). A generator may list a kit piece by piece in `Constructs/BakeKits/*.json` (format `call-of-slop-bake-kit-list/1`: each kit a
+  `part` and its `pieces`, each a `part` name, `at` in the part's frame to the centimetre, optional `rot`, `paint`, `finish`); a piece
+  may be any part found by name, such as a run-time plain Hull Section. The frigate generator notes every skin plate it draws (facet,
+  side and band) and writes each Keel band's kit: one plain Hull Section a side and band, its profile the station's half profile closed
+  on the centreline (facet 1 the keel flat's half, 2 to 5 the sides, 6 the spine's half), placed at the band's station. Two parts whose
+  kits are alike bake into the one the oven's head order names (`BakeKits.Target`'s `want`). `--bake-kit` checks a listed kit's part
+  origin against the kit frame's (its skins aren't the part box for box).
+- **On the works.** Line C's console wires the station's orders to its Panel Former as well as its Sheet Extruder, so the station's skin
+  orders go to the former. A formed skin meant for a station rides past the Laser Cutter as a deck's plate rides past the former: it
+  waits whole at the cutter bed's edge and the bay crane lifts it there (`ConstructConveyor.PastBed`; `RollerRuns.BedRunAt` also takes a
+  run onto a Lay-down Pad, where a skin too long for the pad or not its way waits at the pad's edge). Line C's store,
+  the kit station's and the yard station's pick pad, is 18 x 12 m turned East (its hold 17.7 m long across the bay, a deck 17.25 m) with
+  two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s
+  `--station-check "Zero Day Works" --build "Zero Day Frigate"` run (2026-11-23): the Keel bands and the decks made and baked on line C
+  and fitted hands-free, 15 of the frigate's 341 parts in.
 
 ## Production Showcase
 
@@ -2010,6 +2082,7 @@ with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the mach
 - **Orders-only machines.** A blueprint step may say `"ordersOnly": true`: the machine is built with an empty queue, so it waits for an
   order and never runs its own settings while its line is on (`BlueprintScript.OrdersOnly`, `ConstructBuild.SetConfig`). Every maker on
   the orders console is built so.
+- **What a chute brings a machine on orders.** An Extruder with a queue, even an empty one, takes by chute only its head order's material, up to `ConstructExtruder.OrderFill` (2,000 units, or eight steps of a big die's section; a Wheel, Fan or Airframe Former's order its whole bin), and nothing while no order waits; on its own settings it fills its whole bin. Idle line Extruders filled 32,000-unit bins from the Zero Day works' shared steel bin and the yard Assembler never saw steel (2026-11-22).
 - **Measured** (2026-11-14, host, creative, the window tool): Start to Done in under four minutes, 30 of 30 parts and 3 of 3 links; the
   server tick median 0.14 ms, worst 0.72 ms over the sampled frames while it built (`station measure`); the station's own step worst
   3.3 ms in one tick (its costing), 0.4 MB over the build. Notes: `docs/sandbox/design/showcase-new-notes.md`.

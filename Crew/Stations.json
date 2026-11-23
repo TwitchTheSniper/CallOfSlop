@@ -71,10 +71,17 @@
   // rest back to its power). A power builds over a planet it holds with no station of its where a kind's "expect" (value an hour) and the
   // hauling it saves, over "payback" hours, beat its bill (its blueprint's materials times "billScale") and labour ("labourShare" of the bill):
   // "builders" ships of "builderShip" a route bring the bill from its stations, and the site goes up step by step. "maxNew": stations made in play at most.
+  // Growth (Karl, 2026-11-22: "more berths when docking is refused, more storage when it keeps maxing out"): a station full (a good it buys at
+  // its most) or turning ships away for "growAfter" hours of the last stretch pays a "storageBill" or "berthBill" from its power's stations and
+  // grows: each good's most up "storageStep" of its first (up to "maxStorage" times), or a standoff berth (up to "maxBerths"): a hauler turned
+  // away at its berths trades from beside it. "hubShare": the share of the value of the goods its own power's haulers bring it that its
+  // ledger counts (a hub moves them for nothing). A station for sale may be bought by a player faction too (neutral or allied space).
   "stationRules": {
     "payback": 72, "window": 6, "saleAfter": 6, "closeAfter": 6, "salvageFor": 6, "saleListed": true,
     "builders": 2, "builderShip": "Magpie Mining Ship", "haulSave": 0.1, "labourShare": 0.05, "salePrice": 0.5, "salvageShare": 0.25, "saleBelow": 0.5, "holdAfter": 24,
-    "billScale": 0.25, "maxNew": 8, "upkeep": { "hydrogen": 40 }, "labour": 10
+    "billScale": 0.25, "maxNew": 8, "upkeep": { "hydrogen": 40 }, "labour": 10,
+    "hubShare": 0.05, "growAfter": 4, "storageStep": 0.25, "maxStorage": 4, "storageBill": { "steel": 300 },
+    "maxBerths": 4, "berthBill": { "steel": 200, "metal": 100 }
   },
   // "kinds": the stations a power can put up. "blueprint" it is built from, "orbit" km over its planet (4 km more for each station there
   // already), "goods" as a station's (its stock to start once open), "upkeep" and "labour" (else the rules'), "expect" (value an hour it is

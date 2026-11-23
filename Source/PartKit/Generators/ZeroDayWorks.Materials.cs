@@ -32,7 +32,7 @@ public sealed partial class ZeroDayWorks
             var smeltGlass = Refiner("Smelter", 49f);
             var foundry = Refiner("Foundry", 57f);
             var sawmill = Refiner("Sawmill", 81f);
-            _recycler = On("Recycler", 69f, RawRow, Up, paint: Refining);
+            _recycler = On("Recycler", 85f, RawRow, Up, paint: Refining); // (between the Sawmill and the wood bunker: x 69 is the laminate Foundry's)
 
             Chute(iron, smelt);
             Chute(copperOre, smeltCu);
@@ -56,7 +56,31 @@ public sealed partial class ZeroDayWorks
             Chute(_bins["planks"], rubber, 6.5f);
             Chute(sand, rubber, 7.5f);
             Chute(concrete, Bin("concrete", 63f));
+            // A fourth Foundry on laminate at x 69 (planks and glass): the presses' Button and Board dies take laminate blanks.
+            var laminate = Refiner("Foundry", 69f);
+            Config(laminate, ("recipe", 4));
+            Chute(_bins["planks"], laminate, 8f);
+            Chute(_bins["glass"], laminate, 8f);
+            Chute(laminate, Bin("laminate", 69f));
             Chute(rubber, Bin("rubber", 75f));
+
+            // The stock yard in the generator hall (Sean, 2026-11-22: the ore bunkers were far too small for what the frigate takes; a 7 minute
+            // run used most of the stone, which the steel and the concrete Foundries both draw on): eight 8 m bunkers (60,000 units each, a
+            // bin's most: ConstructStorage.MaxBulk) north of the materials row, each chuted into its raw bunker, which it tops up as the
+            // refiners draw it down (a chute moves bulk bin to bin while the far one has room). Two each for stone, iron ore and sand, one
+            // each for copper ore and wood: with the raw bunkers, 4 to 11 times the stock the row held. Full when spawned in creative.
+            var up = 8.5f;
+            foreach (var (x, z, to, stock) in new[]
+                     {
+                         (7f, -12f, iron, "iron ore"), (7f, -21f, iron, "iron ore"), (50f, -12f, stone, "stone"), (50f, -21f, stone, "stone"),
+                         (77f, -12f, sand, "sand"), (77f, -21f, sand, "sand"), (86f, -12f, copperOre, "copper ore"), (86f, -21f, wood, "wood"),
+                     })
+            {
+                var store = On("Ore Bunker 8 m", x, z, Up, paint: Stock, finish: "concrete");
+                Config(store, ("material", stock), ("fill", 100));
+                Chute(store, to, up);
+                up += 0.5f;
+            }
         }
 
         /// <summary>A raw stock bunker on the north row at x, full of its stock when spawned in creative (Sean, 2026-11-22: a works to try at once).</summary>

@@ -246,6 +246,50 @@ public static class MachineBlocks
         return p.D.BlockOrigin is { } org ? p.Pos + Rot24.Apply(p.Rot, org) : Middle(c, core);
     }
 
+    /// <summary>
+    /// The middle of Core <paramref name="core"/>'s bed (body frame) at a Roller Tile run's line over its foot (RollerRuns.RunY): where a
+    /// blank riding in at its "Bed in" ends (ConstructRoutes.PortPoint). False with no bed. Either peer; allocates nothing.
+    /// </summary>
+    public static bool BedMiddle(Construct c, int core, out Vector3 at)
+    {
+        at = default;
+        if ((uint)core >= (uint)c.PartCount || !TryOf(c, core, out var asm) || asm.W == 0 || asm.Core != core)
+            return false;
+        ref readonly var p = ref c.Parts[core];
+        var cell = p.D.BlockCell;
+        var local = Rot24.Apply(Rot24Inverse(p.Rot), CoreMid(c, core) - p.Pos);
+        local.X += (asm.X0 + (asm.W - 1) * 0.5f) * cell;
+        local.Z += (asm.Z0 + (asm.L - 1) * 0.5f) * cell;
+        local.Y = RollerRuns.RunY;
+        at = p.Pos + Rot24.Apply(p.Rot, local);
+        return true;
+    }
+
+    /// <summary>
+    /// The Core of a bed fed by conveyor (a Panel Former's, a Laser Cutter's) whose bed holds body point <paramref name="at"/> (within its
+    /// rectangle's outline, up to a cell over its foot), or -1. A run whose end meets a bed off its cells' grid (a Laser Cutter's 1 m Core
+    /// puts its bed half a tile off its feed's) still feeds it (RollerRuns.Butted). Server, at a run's laying; allocates nothing.
+    /// </summary>
+    public static int BedAt(Construct c, Vector3 at)
+    {
+        for (var a = 0; a < c.MachineAsmCount; a++)
+        {
+            ref readonly var asm = ref c.MachineAsms[a];
+            if (asm.W == 0 || (uint)asm.Core >= (uint)c.PartCount)
+                continue;
+            ref readonly var p = ref c.Parts[asm.Core];
+            if (!p.D.IsPanelFormer || p.D.BlockRole != BlockRole.Core)
+                continue;
+            var cell = p.D.BlockCell;
+            var rel = Rot24.Apply(Rot24Inverse(p.Rot), at - p.Pos);
+            var mid = Rot24.Apply(Rot24Inverse(p.Rot), CoreMid(c, asm.Core) - p.Pos);
+            float x = (rel.X - mid.X) / cell, z = (rel.Z - mid.Z) / cell;
+            if (x >= asm.X0 - 0.5f && x <= asm.X0 + asm.W - 0.5f && z >= asm.Z0 - 0.5f && z <= asm.Z0 + asm.L - 0.5f && rel.Y >= -0.1f && rel.Y <= cell)
+                return asm.Core;
+        }
+        return -1;
+    }
+
     /// <summary>Does this part's def take part in a block machine?</summary>
     public static bool Is(ConstructPartDef d) => d.BlockRole != BlockRole.None;
 
@@ -320,7 +364,12 @@ public static class MachineBlocks
         return asm.Out;
     }
 
-    /// <summary>The machine's far edge: the bed rectangle's side away from the Core, and the end cells (Out Tables) just past it.</summary>
+    /// <summary>
+    /// The machine's far edge: the bed rectangle's side away from the Core, and the end cells (Out Tables) just past it. A Core beside a
+    /// corner of its bed may close the far end of the bed's other way instead (Sean, 2026-11-23: a Panel Former's Core beside its bed's
+    /// head, so a roller run feeds the bed straight from the line ahead: RollerRuns.Butted): that edge is taken only when the side across
+    /// from the Core has no end cell.
+    /// </summary>
     private static void FindOut(Construct c, ref CMachineAsm asm, ReadOnlySpan<ushort> cells, ReadOnlySpan<sbyte> cx, ReadOnlySpan<sbyte> cz, ReadOnlySpan<byte> steps)
     {
         asm.Out = ushort.MaxValue;
@@ -332,6 +381,41 @@ public static class MachineBlocks
         // The Core is cell (0, 0), beside the rectangle on one side: the far edge is the other.
         byte side = z0 > 0 ? (byte)4 : z1 < 0 ? (byte)5 : x0 > 0 ? (byte)0 : (byte)1;
         asm.OutSide = side;
+        if (OutOn(c, ref asm, side, cells, cx, cz, steps))
+            return;
+        // Beside a corner: the far end of the bed's other way, away from the Core's row or column.
+        Span<byte> other = stackalloc byte[2];
+        var n = 0;
+        if (side is 4 or 5)
+        {
+            if (x0 == 0)
+                other[n++] = 0;
+            if (x1 == 0)
+                other[n++] = 1;
+        }
+        else
+        {
+            if (z0 == 0)
+                other[n++] = 4;
+            if (z1 == 0)
+                other[n++] = 5;
+        }
+        for (var i = 0; i < n; i++)
+            if (OutOn(c, ref asm, other[i], cells, cx, cz, steps))
+            {
+                asm.OutSide = other[i];
+                return;
+            }
+        asm.Out = ushort.MaxValue;
+        asm.OutCells = 0;
+    }
+
+    /// <summary>The end cells just past the bed's edge on side <paramref name="side"/>: sets Out and OutCells; true when there is one.</summary>
+    private static bool OutOn(Construct c, ref CMachineAsm asm, byte side, ReadOnlySpan<ushort> cells, ReadOnlySpan<sbyte> cx, ReadOnlySpan<sbyte> cz, ReadOnlySpan<byte> steps)
+    {
+        asm.Out = ushort.MaxValue;
+        asm.OutCells = 0;
+        int x0 = asm.X0, z0 = asm.Z0, x1 = asm.X0 + asm.W - 1, z1 = asm.Z0 + asm.L - 1;
         int lineAt = side switch { 4 => z1 + 1, 5 => z0 - 1, 0 => x1 + 1, _ => x0 - 1 }; // (the row or column of cells just past the edge)
         bool alongX = side is 4 or 5; // (the edge runs along x)
         var first = int.MaxValue;
@@ -354,6 +438,7 @@ public static class MachineBlocks
                 (first, asm.Out) = (a0, cells[k]);
         }
         asm.OutCells = (byte)Math.Min(covered, alongX ? asm.W : asm.L);
+        return asm.Out != ushort.MaxValue;
     }
 
     /// <summary>What the screen and the look line say of a machine's size: "bed 3 x 2 (6.0 x 4.0 m), 2 idle".</summary>
@@ -857,6 +942,9 @@ public static class MachineBlocks
             }
             Console.WriteLine($"[blocks] {bp.Name}: {c.PartCount} parts, {c.MachineAsmCount} block machines");
             Console.Write(Report(c));
+            for (var a = 0; a < c.MachineAsmCount; a++)
+                if (c.MachineAsms[a].Blocker >= 0)
+                    Console.WriteLine($"[blocks]   {c.DefOf(c.MachineAsms[a].Core).Name} (part {c.MachineAsms[a].Core}) blocked by the {c.DefOf(c.MachineAsms[a].Blocker).Name} (part {c.MachineAsms[a].Blocker})");
             // Seam parts outside any machine (a shed's pillars of Mast Blocks): how many, and how many of their look boxes are drawn.
             int lone = 0, drawn = 0, all = 0;
             for (var i = 0; i < c.PartCount; i++)
@@ -876,6 +964,16 @@ public static class MachineBlocks
             }
             if (lone > 0)
                 Console.WriteLine($"[blocks]   {lone} seam parts outside a machine: {drawn} of their {all} look boxes drawn");
+            // How each bed machine fed by conveyor gets its blank: a Roller Tile run onto its bed (Bed in) or into its Core (Piece in).
+            RollerRuns.Sync(world, c);
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                ref readonly var r = ref c.Routes[k];
+                if (r.Type != RouteType.Conveyor || r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || c.DefOf(r.To).BlockRole != BlockRole.Core)
+                    continue;
+                var port = ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort);
+                Console.WriteLine($"[blocks]   {c.DefOf(r.To).Name} (part {r.To}) fed {(RollerRuns.IsRun(c, k) ? "by a Roller Tile run" : "by a conveyor")} into its {port?.Name ?? "?"}, {ConstructConveyor.Length(c, k):0.0} m");
+            }
             for (var m = 0; m < c.MachineAsmCount; m++)
                 if (ConstructAssembling.FitOf(c, c.MachineAsms[m].Core) is { Limited: true } fit)
                     foreach (var part in (string[])["Bulkhead Light", "Engine", "Ship Battery Bank", "Leg Pod Housing XL"])

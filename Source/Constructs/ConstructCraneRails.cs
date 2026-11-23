@@ -23,6 +23,7 @@ public sealed partial class Construct
 public static partial class ConstructLifters
 {
     public const int MaxRailSections = 64;
+    public const int MaxRailParts = 512; // rail parts a crane's walk lists: its near run and what lies across its span
     public const float RailLine = 0.02f, RailEnds = 0.02f, RailDeg = 3f, FarRail = 0.1f;
     public const float MaxRun = 300f; // along the rails from the bridge (the lift word's cm fit in a short)
 
@@ -180,8 +181,9 @@ public static partial class ConstructLifters
         Freeform.PartWorld(c, part, out var bp, out var br);
         var inv = Quaternion.Conjugate(br);
         // Each section of this class in the bridge's frame: its top line's x and y, and its ends along z (those along +z only).
-        Span<float> x = stackalloc float[MaxRailSections * 2], y = stackalloc float[MaxRailSections * 2];
-        Span<float> z0 = stackalloc float[MaxRailSections * 2], z1 = stackalloc float[MaxRailSections * 2];
+        // (room for two runs of a works' 158 m: 2026-11-23, the list held 128 and a bay crane's far run was cut off at 98 m)
+        Span<float> x = stackalloc float[MaxRailParts], y = stackalloc float[MaxRailParts];
+        Span<float> z0 = stackalloc float[MaxRailParts], z1 = stackalloc float[MaxRailParts];
         var m = 0;
         var cos = MathF.Cos(RailDeg * MathF.PI / 180f);
         for (var i = 0; i < c.PartCount && m < x.Length; i++)

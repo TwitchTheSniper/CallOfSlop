@@ -14,7 +14,9 @@
     "ground": "#5b6a55",
     "sun": {
       "color": "#fff4dc",
-      "intensity": 0.85
+      "intensity": 0.85,
+      "disc": true,
+      "glow": 0.9
     },
     "clouds": {
       "coverage": 0.72,

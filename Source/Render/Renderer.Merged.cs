@@ -19,6 +19,12 @@ public sealed unsafe partial class Renderer
     /// <summary>Floats a slot's matrix and its look take.</summary>
     public const int MergeXformFloats = 12, MergeLookFloats = 4;
 
+    /// <summary>
+    /// A slot's covered faces (six bits: 2 x axis + side, side 1 the + face) ride on its look's code as whole steps of this
+    /// (away from zero: a glowing box's code is below zero); the vertex shader takes them off and drops those faces of the cube.
+    /// </summary>
+    public const float MergeMaskStep = 1024f;
+
     /// <summary>One draw group on the GPU (a construct segment's chunk now; a fused unit later).</summary>
     public sealed class MergedMesh
     {
@@ -42,6 +48,19 @@ public sealed unsafe partial class Renderer
         /// <summary>Its occlusion query (0: none yet) and the occlusion frame it was last issued in (ConstructRenderOcclusion.cs).</summary>
         internal GlQuery Query;
         internal int QueryFrame = -1;
+
+        /// <summary>
+        /// A second query the CPU reads (the parts walked one by one beside it: ConstructRenderBatch.cs): asked again only once its
+        /// last answer came, so it never waits and never loses an answer to a newer ask. <see cref="CpuHidden"/> is that answer,
+        /// from occlusion frame <see cref="CpuAt"/> (-1: none), asked with the eye at <see cref="CpuEye"/> (the group's own frame).
+        /// </summary>
+        internal GlQuery CpuQuery;
+        internal bool CpuPending, CpuVoid;
+        internal int CpuIssued;
+        internal Vector3 CpuAskedEye;
+        public bool CpuHidden;
+        public int CpuAt = -1;
+        public Vector3 CpuEye;
 
         /// <summary>Slots drawn at detail level <paramref name="detail"/> (the smallest size class drawn).</summary>
         public int SlotsUpTo(int detail)
@@ -140,6 +159,22 @@ public sealed unsafe partial class Renderer
                 flat out float vLayerI;
                 void main()
                 {
+                    // (faces another box covers: whole steps of 1024 on the code, ConstructRenderBatch.HideCovered; a plain box's cube
+                    // has one normal a face, so a dropped face's two triangles go wholly outside the view and are clipped)
+                    float codeA = abs(iLook.w);
+                    float maskF = floor(codeA / 1024.0);
+                    float code = sign(iLook.w) * (codeA - maskF * 1024.0);
+                    int mask = int(maskF);
+                    if (mask != 0)
+                    {
+                        vec3 an = abs(aNormal);
+                        int face = an.x > 0.5 ? (aNormal.x > 0.0 ? 1 : 0) : an.y > 0.5 ? (aNormal.y > 0.0 ? 3 : 2) : (aNormal.z > 0.0 ? 5 : 4);
+                        if ((mask & (1 << face)) != 0)
+                        {
+                            gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+                            return;
+                        }
+                    }
                     mat4 inst = mat4(vec4(iR0.xyz, 0.0), vec4(iR1.xyz, 0.0), vec4(iR2.xyz, 0.0), vec4(iR0.w, iR1.w, iR2.w, 1.0));
                     mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
@@ -152,10 +187,10 @@ public sealed unsafe partial class Renderer
                     vBody = (inst * vec4(aPos, 1.0)).xyz;
                     vBodyN = mat3(inst) * aNormal;
                     vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
-                    bool glow = iLook.w < 0.0;
+                    bool glow = code < 0.0;
                     vModeI = glow ? 2.0 : 0.0;
                     vColorI = vec4(iLook.rgb, glow ? uGlowAlpha : 1.0);
-                    vLayerI = glow ? 0.0 : iLook.w;
+                    vLayerI = glow ? 0.0 : code;
                     gl_Position = uViewProj * w;
                 }
                 """;
@@ -227,6 +262,8 @@ public sealed unsafe partial class Renderer
         m.Slots = slots;
         m.PointedAt = -1; // (the buffer may have been made again: point the attributes afresh)
         m.QueryFrame = -1; // (its bounds may have changed: last frame's query no longer speaks for it)
+        m.CpuAt = -1;
+        m.CpuVoid = m.CpuPending; // (an answer still on its way speaks for the old bounds)
     }
 
     /// <summary>A group's looks: one vec4 a slot (tint, material code; a code below zero: a glowing box).</summary>
@@ -407,7 +444,7 @@ public sealed unsafe partial class Renderer
     }
 
     /// <summary>Tests a group's box (<paramref name="min"/> to <paramref name="max"/> in <paramref name="frame"/>) against the depth drawn so far: next occlusion frame, <see cref="DrawMerged"/> with <c>occluded</c> draws it only if a sample passed.</summary>
-    public void QueryMerged(MergedMesh m, in Matrix4x4 frame, Vector3 min, Vector3 max)
+    public void QueryMerged(MergedMesh m, in Matrix4x4 frame, Vector3 min, Vector3 max, Vector3 eye = default)
     {
         if (!_occOn || m.Vao.Id == 0)
             return;
@@ -425,6 +462,37 @@ public sealed unsafe partial class Renderer
         Native.glEndQuery(target);
         m.QueryFrame = OcclusionFrame;
         OcclusionQueries++;
+        if (!m.CpuPending && Native.glGetQueryObjectuiv != null)
+        {
+            if (m.CpuQuery.Id == 0)
+            {
+                GlQuery q;
+                Native.glGenQueries(1, &q);
+                m.CpuQuery = q;
+            }
+            Native.glBeginQuery(target, m.CpuQuery);
+            Native.glDrawArrays(GL_TRIANGLES, 0, 36);
+            Native.glEndQuery(target);
+            (m.CpuPending, m.CpuVoid, m.CpuIssued, m.CpuAskedEye) = (true, false, OcclusionFrame, eye);
+            OcclusionQueries++;
+        }
+    }
+
+    /// <summary>Takes the CPU query's answer if it has come (never waits): <see cref="MergedMesh.CpuHidden"/> and its frame then hold it.</summary>
+    public void PollCpuQuery(MergedMesh m)
+    {
+        if (!m.CpuPending || m.CpuQuery.Id == 0 || Native.glGetQueryObjectuiv == null)
+            return;
+        int available;
+        Native.glGetQueryObjectiv(m.CpuQuery.Id, GL_QUERY_RESULT_AVAILABLE, &available);
+        if (available == 0)
+            return;
+        uint r;
+        Native.glGetQueryObjectuiv(m.CpuQuery.Id, GL_QUERY_RESULT, &r);
+        m.CpuPending = false;
+        if (m.CpuVoid)
+            return;
+        (m.CpuHidden, m.CpuAt, m.CpuEye) = (r == 0, m.CpuIssued, m.CpuAskedEye);
     }
 
     /// <summary>The bench, after a glFinish: did this frame's query of <paramref name="m"/> see any of it (false: hidden; null: not tested this frame)?</summary>
@@ -479,6 +547,13 @@ public sealed unsafe partial class Renderer
             Native.glDeleteQueries(1, &q);
             m.Query = default;
         }
+        if (m.CpuQuery.Id != 0)
+        {
+            var q = m.CpuQuery;
+            Native.glDeleteQueries(1, &q);
+            m.CpuQuery = default;
+        }
+        (m.CpuPending, m.CpuAt) = (false, -1);
         m.QueryFrame = -1;
         m.Vao = default;
         m.XformVbo = m.LookVbo = default;

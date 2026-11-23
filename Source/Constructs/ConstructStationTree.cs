@@ -429,7 +429,7 @@ public static partial class ConstructStationTree
 
     public static bool SubJobsOn(Construct c, int s) => ConstructConfig.Get(c.Parts[s], c.DefOf(s), CfgKey.SubJobs, 1) >= 0.5f;
 
-    private static bool Idle(ConstructWorld world, Construct c, int s)
+    internal static bool Idle(ConstructWorld world, Construct c, int s)
     {
         if (c.Parts[s].Station is not { } sj)
             return true;

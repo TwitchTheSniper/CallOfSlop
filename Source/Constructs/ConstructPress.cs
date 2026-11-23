@@ -520,14 +520,22 @@ public static partial class ConstructPress
         }
         var piece = PieceIn(c, part, bay);
         var blank = c.Parts[piece].D.ExKey with { Growing = false };
-        if (!world.CreativeRecycling)
+        // Every stroke takes time, in creative too (Sean, 2026-11-23: "the press frames were meant to close on the part to transform it"):
+        // the shells swing open over the blank, slam shut on it, and the part is made at the stroke's end, while they are shut. A
+        // stroke is never shorter than the shells' swing (StrokeMinSteps); a creative one takes CreativeStrokeSteps (it costs nothing).
+        var work = WorkOf(c, part);
+        var full = world.CreativeRecycling ? CreativeStrokeSteps * work
+            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+        if (st.JobTicks == 0)
+            MachineScreens.SetProgress(world, st, 0); // (a new stroke: sent at once, so every peer starts its shells' swing: StrokeAt)
+        ConstructGatherer.SetBusy(world, st, true);
+        st.JobTicks += work;
+        if (st.JobTicks < full)
         {
-            ConstructGatherer.SetBusy(world, st, true);
-            st.JobTicks += WorkOf(c, part);
-            if (st.JobTicks < SizedTicks(die, blank) * Bites(c, part, blank) * Milli) // (a blank longer than the bed goes in bites)
-                return false;
-            st.JobTicks = 0;
+            MachineScreens.SetProgress(world, st, (int)((long)st.JobTicks * 100 / full));
+            return false;
         }
+        st.JobTicks = 0;
         // The part: a preset is the catalogue part; anything else is made from its key (once a machine, then shared: Pressed.Parse).
         var output = preset ?? Pressed.Parse(Pressed.KeyOf(die, pattern!, blank));
         if (output == null)

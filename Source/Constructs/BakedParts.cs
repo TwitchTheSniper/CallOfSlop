@@ -472,10 +472,66 @@ public static partial class BakedParts
     public static string Shown(ConstructPartDef d) => IsBaked(d) ? "a baked part" : HullHoles.Shown(d);
 
     /// <summary>
+    /// A group's design text, its subparts placed and turned in one frame, and the design's origin in that frame (the group's solid middle
+    /// to the centimetre). The same group gives the same text wherever it stands, so a kit's text at each turn can be known before it is built.
+    /// </summary>
+    public static string DesignText(IReadOnlyList<(ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)> group, out Vector3 origin)
+    {
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        foreach (var g in group)
+            foreach (var b in g.Def.Boxes.AsSpan(0, g.Def.SolidBoxes))
+            {
+                var centre = g.Pos + Rot24.Apply(g.Rot, b.Center);
+                var half = Rot24.ApplyHalf(g.Rot, b.Half);
+                (lo, hi) = (Vector3.Min(lo, centre - half), Vector3.Max(hi, centre + half));
+            }
+        // (the bounds to the half centimetre first, in whole numbers: a group welded freeform sits a hair off its grid, and a middle on a
+        // half centimetre must not round one way here and the other way there)
+        origin = new Vector3(MidCm(lo.X, hi.X), MidCm(lo.Y, hi.Y), MidCm(lo.Z, hi.Z)) / 100f;
+        var subs = new List<Sub>(group.Count);
+        foreach (var g in group)
+        {
+            var rel = (g.Pos - origin) * 100;
+            subs.Add(new Sub(g.Def.Name, (int)MathF.Round(rel.X), (int)MathF.Round(rel.Y), (int)MathF.Round(rel.Z), g.Rot,
+                ConstructPaint.IsSet(g.Paint) ? g.Paint : 0, g.Finish));
+        }
+        return TextOf(subs);
+    }
+
+    private static int MidCm(float lo, float hi)
+    {
+        var sum = (long)MathF.Round(lo * 200) + (long)MathF.Round(hi * 200); // four times the middle, in cm
+        return (int)Math.Floor(sum / 4.0 + 0.5); // (halves up, not to even: the same group moved by whole centimetres keeps its hash; a group with a middle on a half centimetre may bake to a new hash after 2026-11-23)
+    }
+
+    /// <summary>A baked kit's body: the catalogue part where the kit's frame put it, the plates kept, the old body gone.</summary>
+    private static Construct? Swap(ConstructWorld world, Construct c, ConstructPartDef def, Vector3 at, byte rot, float share, List<Placed> plates, int count)
+    {
+        if (world.Create(c.Pos, c.Rot) is not { } nb)
+        {
+            LastRefusal = "the world is full";
+            return null;
+        }
+        var bi = world.AddPart(nb, def, at, rot);
+        if (bi < 0)
+        {
+            world.Remove(nb, quiet: true);
+            LastRefusal = "the world is full";
+            return null;
+        }
+        nb.Parts[bi].Health = Math.Clamp(def.Health * share, 1f, def.Health);
+        foreach (var p in plates)
+            Copy(world, c, p.Part, nb, p.Pos, p.Rot);
+        Settle(world, c, nb);
+        world.Events.Add($"construct {c.Id}: baked {count} pieces of its kit into {def.Name} -> construct {nb.Id}");
+        return nb;
+    }
+
+    /// <summary>
     /// Server: bakes body <paramref name="c"/> into a new body of one baked part (and its socket plates), where it stood. The old body goes.
     /// Null: it can't (<see cref="LastRefusal"/>). The design is kept in the world (sent to everyone with the next flush, before the body).
     /// </summary>
-    public static Construct? Bake(ConstructWorld world, Construct c)
+    public static Construct? Bake(ConstructWorld world, Construct c, ushort want = 0)
     {
         if (CanBake(c) is { } why)
         {
@@ -484,7 +540,6 @@ public static partial class BakedParts
         }
         var parts = new List<Placed>(c.PartCount);
         var plates = new List<Placed>();
-        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
         float health = 0, full = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -498,25 +553,17 @@ public static partial class BakedParts
             parts.Add(at);
             health += c.Parts[i].Health;
             full += d.Health;
-            foreach (var b in d.Boxes.AsSpan(0, d.SolidBoxes))
-            {
-                var centre = at.Pos + Rot24.Apply(at.Rot, b.Center);
-                var half = Rot24.ApplyHalf(at.Rot, b.Half);
-                (lo, hi) = (Vector3.Min(lo, centre - half), Vector3.Max(hi, centre + half));
-            }
         }
-        // The baked part's origin: the group's middle to the centimetre (where it sits in the new body).
-        var mid = (lo + hi) * 0.5f;
-        var origin = new Vector3(MathF.Round(mid.X * 100), MathF.Round(mid.Y * 100), MathF.Round(mid.Z * 100)) / 100f;
-        var subs = new List<Sub>(parts.Count);
-        foreach (var at in parts)
+        var group = new (ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)[parts.Count];
+        for (var k = 0; k < parts.Count; k++)
         {
-            ref var p = ref c.Parts[at.Part];
-            var rel = (at.Pos - origin) * 100;
-            subs.Add(new Sub(c.DefOf(at.Part).Name, (int)MathF.Round(rel.X), (int)MathF.Round(rel.Y), (int)MathF.Round(rel.Z), at.Rot,
-                ConstructPaint.IsSet(p.Paint) ? p.Paint : 0, ConstructFinish.Name(p.Finish)));
+            ref var p = ref c.Parts[parts[k].Part];
+            group[k] = (c.DefOf(parts[k].Part), parts[k].Pos, parts[k].Rot, p.Paint, ConstructFinish.Name(p.Finish));
         }
-        var text = TextOf(subs);
+        var text = DesignText(group, out var origin);
+        // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was.
+        if (BakeKits.Target(HashOf(text), want) is { } kit) // (want: the oven's order, when two parts share a kit)
+            return Swap(world, c, kit.Part, origin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
         if (Register(text) is not { } hash)
             return null;
         if (Parse(KeyOf(hash)) is not { } def)

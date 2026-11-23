@@ -36,6 +36,28 @@ public static class StationCheck
         using (place.In())
             c = job.Join(Vector3.Zero, 0, out var why) ?? throw new FactoryKitException($"{bp.Name} doesn't build: {why}");
         Console.WriteLine($"{bp.Name}: {c.PartCount} parts");
+        if (Arg("--parts-in") is { } box && box.Split(',') is [var bx0, var bz0, var bx1, var bz1]
+            && float.TryParse(bx0, out var px0) && float.TryParse(bz0, out var pz0) && float.TryParse(bx1, out var px1) && float.TryParse(bz1, out var pz1))
+        {
+            // --parts-in X0,Z0,X1,Z1: what stands on the floor there, a line per kind and its footprint (for laying a site out).
+            var lo = new Vector2(MathF.Min(px0, px1), MathF.Min(pz0, pz1));
+            var hi = new Vector2(MathF.Max(px0, px1), MathF.Max(pz0, pz1));
+            var kinds = new SortedDictionary<string, (int N, Vector2 Lo, Vector2 Hi)>();
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var d = c.DefOf(i);
+                if (d.Name.StartsWith("Works Floor Slab", StringComparison.Ordinal))
+                    continue;
+                c.PartBounds(i, out var a, out var b);
+                if (b.X < lo.X || a.X > hi.X || b.Z < lo.Y || a.Z > hi.Y)
+                    continue;
+                var key = $"{d.Name} @{MathF.Round((a.X + b.X) * 0.5f / 2) * 2:0}";
+                var f = (new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
+                kinds[key] = kinds.TryGetValue(key, out var e) ? (e.N + 1, Vector2.Min(e.Lo, f.Item1), Vector2.Max(e.Hi, f.Item2)) : (1, f.Item1, f.Item2);
+            }
+            foreach (var (k, e) in kinds)
+                Console.WriteLine($"  {e.N,4} x {k}: x {e.Lo.X:0.0}..{e.Hi.X:0.0}, z {e.Lo.Y:0.0}..{e.Hi.Y:0.0}");
+        }
         // --fill "X,Z,MATERIAL,N;...": bulk put straight into the store nearest each point (a bin a hauler would fill); with --keep, topped
         // up to that every second of the run (a refinery that keeps up).
         var keep = new List<(int Bin, int Material, int N)>();
@@ -82,9 +104,11 @@ public static class StationCheck
             Console.WriteLine("  no Building Station in it");
             return 1;
         }
+        if (Arg("--oven-order") is { } ovenOrder)
+            return OvenOrder(w, q, c, place, ovenOrder, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
         if (string.IsNullOrEmpty(build))
             return 0;
-        if (ConstructBuild.FindBlueprint(build) is not { } target)
+        if (ConstructStation.Find(build) is not { } target)
         {
             Console.WriteLine($"--station-check: no blueprint named \"{build}\"");
             return 1;
@@ -92,7 +116,7 @@ public static class StationCheck
         {
             Span<ushort> pads = stackalloc ushort[8];
             var np = ConstructStation.OwnPads(c, t, pads);
-            Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} fitting arms, {np} pick pads under its crane{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0})"))}");
+            Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} fitting arms, {np} pick pads under its crane{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0}, hold {ConstructPads.RackDef(c, p).RackHoldMax - ConstructPads.RackDef(c, p).RackHoldMin:0.#})"))}");
         }
         Console.WriteLine($"  station: part {t}; the bill of {target.Name} as its panel shows it before Start:");
         var preview = new StationPreview();
@@ -127,7 +151,7 @@ public static class StationCheck
                         reasons.Add($"{c.DefOf(m).Name}: {no}");
                     else
                     {
-                        maker = c.DefOf(m).Name;
+                        maker = $"{c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}";
                         break;
                     }
             var key = maker ?? string.Join(" | ", reasons.Where(r => !r.StartsWith("Extruder") && !r.StartsWith("Laser Cutter")));
@@ -159,6 +183,12 @@ public static class StationCheck
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
                         Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: queue {c.Parts[m].Orders?.Count ?? -1}, "
                             + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
+                // (and every Press and Extruder with orders: what it waits for, 2026-11-23)
+                if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
+                    foreach (var m in makers.Where(m => (c.DefOf(m).IsPress && !c.DefOf(m).IsLathe || c.DefOf(m).IsExtruder) && c.Parts[m].Orders is { Count: > 0 }))
+                        if (w.StoreOf(c, m) is { } pst)
+                            Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} part {m}: queue {c.Parts[m].Orders?.Count ?? -1}, "
+                                + (c.DefOf(m).IsPress ? ConstructPress.Look(c, m, pst, false, null, Vector3.Zero) : ConstructExtruder.Look(c, m, pst, false, new SandboxInventory())));
                 if (args.Contains("--trace") && k % World.TickRate == 0)
                     for (var i = 0; i < c.PartCount; i++)
                         if (ConstructLifters.DefOf(c, i) != null && ConstructLifters.Look(w, c, i) is var look && (!lifterLooks.TryGetValue(i, out var was) || was != look))
@@ -187,6 +217,13 @@ public static class StationCheck
             var ol = c.Parts[m].Orders!;
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} queue: {string.Join("; ", Enumerable.Range(0, ol.Count).Select(k => $"{ol.Items[k].Count} x {(ol.Items[k].Part != ConstructParts.None ? ConstructParts.Def(ol.Items[k].Part).Name : ol.Items[k].Name ?? "a piece")} (made {ol.Items[k].Made})"))}");
         }
+        // What still rides a conveyor at the end, and how far along (an ordered piece that never arrives: 2026-11-23).
+        for (var r = 0; r < c.ConveyedCount; r++)
+        {
+            var cr = c.Conveyed[r];
+            if (cr.Route < c.RouteCount)
+                Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on the conveyor from the {c.DefOf(c.Routes[cr.Route].Source).Name} to the {c.DefOf(c.Routes[cr.Route].To).Name}, {cr.At:0.00} m along, flags {cr.Flags}");
+        }
         foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} holds {Holds(m)}; looks: "
                 + (w.StoreOf(c, m) is { } ast ? ConstructAssembling.Look(c.DefOf(m), ast, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, AssemblerToolBay.HeldIn(w, c, m)) : ""));
@@ -196,6 +233,19 @@ public static class StationCheck
                 var bin = FillTarget(px, pz, fm);
                 Console.WriteLine($"  at the end the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz} holds {(bin < 0 ? "" : Holds(bin))}");
             }
+        // Every bin's stock at the end: where the bulk an Assembler waits for went (2026-11-22: the yard Assembler starved of steel).
+        foreach (var i in Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsBin && w.StoreOf(c, i) is { Amount: > 0 }))
+            Console.WriteLine($"  the {c.DefOf(i).Name} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0} holds {Holds(i)}");
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Orders is { Count: > 0 } mo)
+                for (var k = 0; k < mo.Count; k++)
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var cr = ref c.Conveyed[i];
+            ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+        }
         foreach (var b in w.Bodies)
             if (b != c)
                 Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");
@@ -219,6 +269,11 @@ public static class StationCheck
                     whys[why] = list = [];
                 list.Add($"{j.KindNeed[i] - j.KindFit[i]} x {name}");
             }
+        for (var i = 0; i < j.KindN; i++)
+            if (j.KindWhy[i] != null && ConstructParts.Get(j.KindDef[i]) is { } kd && BakeKits.Has(kd))
+                for (var m = 0; m < c.PartCount; m++)
+                    if (c.DefOf(m).IsBakeOven)
+                        Console.WriteLine($"  the Bake Oven at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} on the {kd.Name}: {WorkOrders.Refusal(w, c, m, ConstructStation.OrderFor(kd, 1)) ?? "takes it"}");
         Console.WriteLine($"  kinds whose order was refused ({whys.Sum(x => x.Value.Count)}), by reason:");
         foreach (var (why, list) in whys.OrderByDescending(x => x.Value.Count))
             Console.WriteLine($"    {why}: {string.Join(", ", list)}");
@@ -229,5 +284,125 @@ public static class StationCheck
                 Console.WriteLine($"    {cq.Items[k].What.Count} x {ConstructParts.Get(ConstructCrafting.KindOf(ref cq.Items[k]))?.Name ?? "?"}: {ConstructCrafting.StateText(c, cq.Items[k])}");
         }
         return preview.Unmade;
+    }
+
+    /// <summary>
+    /// <c>--oven-order PART [--oven-at X,Z]</c>: an order for a part made from a kit (BakeKits.cs) queued on the site's Bake Oven nearest the
+    /// point, then the site run: the kit started at a station, built, carried to the bed, baked and picked off. Reports each stage's time.
+    /// </summary>
+    private static int OvenOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds, bool trace,
+        List<(int Bin, int Material, int N)> keep, Func<int, int, byte, int> fill)
+    {
+        if (ConstructParts.Find(partName) is not { } d)
+        {
+            Console.WriteLine($"--oven-order: no part \"{partName}\"");
+            return 1;
+        }
+        var point = at?.Split(',') is [var xs, var zs] && float.TryParse(xs, out var x) && float.TryParse(zs, out var z) ? new Vector2(x, z) : Vector2.Zero;
+        var oven = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsBakeOven).OrderBy(i => Vector2.Distance(point, new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z))).FirstOrDefault(-1);
+        if (oven < 0)
+        {
+            Console.WriteLine("  no Bake Oven on the site");
+            return 1;
+        }
+        string? why;
+        using (place.In())
+            why = WorkOrders.Queue(w, c, oven, ConstructStation.OrderFor(d, 1));
+        Console.WriteLine($"  the Bake Oven at {c.Parts[oven].Pos.X:0}, {c.Parts[oven].Pos.Z:0} (part {oven}): order for the {d.Name}: {why ?? "taken"}");
+        if (why != null)
+            return 1;
+        var made = -1;
+        var lastStall = (byte)255;
+        var loose = Environment.GetCommandLineArgs().Contains("--kit-loose");
+        var carry = Environment.GetCommandLineArgs().Contains("--kit-carry");
+        var kit = BakeKits.KitOf(d) ?? [];
+        ushort lastLoose = 0;
+        var nextLoose = 0;
+        using (place.In())
+            for (var k = 0; k < seconds * World.TickRate && made < 0; k++)
+            {
+                MoverPhysics.Clock++;
+                w.Step(q, World.TickDt);
+                if (k % World.TickRate == 0)
+                    foreach (var (bin, mat, n) in keep)
+                        if (c.DefOf(bin).IsAssembler)
+                            fill(bin, n, (byte)mat);
+                        else if (w.StoreOf(c, bin) is { } st && (st.Amount == 0 || st.Material == mat) && st.Amount < n)
+                            w.Deposit(c, bin, n - st.Amount, (byte)mat);
+                if (w.StoreOf(c, oven) is { } ost && ost.Refused != lastStall)
+                {
+                    lastStall = ost.Refused;
+                    Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: oven: {ConstructBakeOven.StallText((OvenStall)ost.Refused)}");
+                }
+                if (trace && k % (10 * World.TickRate) == 0)
+                    for (var s = 0; s < c.PartCount; s++)
+                        if (c.Parts[s].Station is { } sj && sj.Name.EndsWith(BakeKits.KitSuffix, StringComparison.Ordinal))
+                            Console.WriteLine($"  {k / World.TickRate,6} s: station {s}: {ConstructStation.StateText(sj)}, {sj.Fitted}/{sj.Steps}: {sj.Note}");
+                if (loose && k % (World.TickRate / 2) == 0 && (lastLoose == 0 || w.Get(lastLoose) == null))
+                {
+                    // --kit-loose: the kit's pieces set down one by one in its station's bay (as a player drops them), not ordered.
+                    lastLoose = 0;
+                    for (var s = 0; s < c.PartCount && lastLoose == 0; s++)
+                        if (c.Parts[s].Station is { State: StationState.Building } sj && sj.Name.Equals(d.Name + BakeKits.KitSuffix, StringComparison.Ordinal) && nextLoose < kit.Length)
+                        {
+                            ConstructStation.Bay(c, s, out var floor, out _, out _);
+                            var pd = Extrusion.Def(kit[nextLoose].Key)!;
+                            var b = w.Create(floor + new Vector3(0, 1.5f, 0), Quaternion.Identity)!;
+                            w.AddPart(b, pd, -(pd.BoundsMin + pd.BoundsMax) * 0.5f, 0);
+                            b.Rebuild();
+                            lastLoose = b.Id;
+                            Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: {pd.Name} set down in the bay of station {s}");
+                            nextLoose++;
+                        }
+                }
+                if (carry && k % World.TickRate == 0 && w.StoreOf(c, oven) is { Refused: (byte)OvenStall.Empty })
+                    for (var s = 0; s < c.PartCount; s++)
+                        if (c.Parts[s].Station is { State: StationState.Done } sj && sj.Name.Equals(d.Name + BakeKits.KitSuffix, StringComparison.Ordinal)
+                            && w.Get(sj.Body) is { } kb && !ConstructStation.BayClearOf(w, c, s, kb) && ConstructLifters.CarryingBody(w, kb.Id) == null)
+                        {
+                            // --kit-carry: the kit set on the bed by the check, as a crane would set it (for a site whose cranes don't reach both).
+                            if (ConstructBakeOven.Landing(c, oven, kb, out var lp, out var lr) is { } no)
+                                Console.WriteLine($"  the kit doesn't land: {no}");
+                            else
+                            {
+                                kb.Pos = kb.PrevPos = lp;
+                                kb.Rot = kb.PrevRot = lr;
+                                kb.Vel = kb.AngVel = Vector3.Zero;
+                                kb.HeldBy = 0;
+                                kb.Wake();
+                                Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: the kit (body {kb.Id}) set on the oven's bed by hand");
+                            }
+                        }
+                if (c.Parts[oven].Orders is not { Count: > 0 })
+                    made = k;
+            }
+        Console.WriteLine(made >= 0 ? $"  the {d.Name} baked after {made / (float)World.TickRate:0.0} s" : $"  after {seconds} s the order is still open: {c.Parts[oven].Orders?.Note}");
+        for (var s = 0; s < c.PartCount; s++)
+            if (c.Parts[s].Station is { } sj && sj.Name.EndsWith(BakeKits.KitSuffix, StringComparison.Ordinal))
+            {
+                Console.WriteLine($"  station {s} at {c.Parts[s].Pos.X:0}, {c.Parts[s].Pos.Z:0}: {ConstructStation.StateText(sj)}, {sj.Fitted}/{sj.Steps}: {sj.Note}");
+                for (var kk = 0; kk < sj.KindN; kk++)
+                    Console.WriteLine($"    kind {ConstructParts.Get(sj.KindDef[kk])?.Name}: need {sj.KindNeed[kk]}, fitted {sj.KindFit[kk]}, ready {sj.KindReady[kk]}: {sj.KindWhy[kk] ?? "-"}");
+                if (c.Parts[s].Craft is { } cq)
+                    for (var k = 0; k < cq.Count; k++)
+                        Console.WriteLine($"    {cq.Items[k].What.Count} x {ConstructCrafting.NameOf(cq.Items[k].What)}: {ConstructCrafting.StateText(c, cq.Items[k])}");
+            }
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Orders is { Count: > 0 } mo)
+                for (var k = 0; k < mo.Count; k++)
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var cr = ref c.Conveyed[i];
+            ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+        }
+        foreach (var b in w.Bodies)
+            if (b != c)
+                Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");
+        for (var i = 0; i < c.PartCount; i++)
+            if (ConstructLifters.DefOf(c, i) is { } ld && (ld.Bridge || Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(c.Parts[oven].Pos.X, c.Parts[oven].Pos.Z)) < 60))
+                Console.WriteLine($"  lifter {i} {c.DefOf(i).Name} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0} (payload {ld.Payload:0} kg, mode {ConstructConfig.Get(c.Parts[i], c.DefOf(i), CfgKey.LiftMode, 0)}): {ConstructLifters.Look(w, c, i)}");
+        return made >= 0 ? 0 : 1;
     }
 }

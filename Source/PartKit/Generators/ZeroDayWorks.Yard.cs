@@ -166,7 +166,7 @@ public sealed partial class ZeroDayWorks
         private void YardOrders(VPart station, VPart big)
         {
             const float up = 6f;
-            var console = Paint(On("Line Console", 93, -127, West, paint: Rail), Rail);
+            var console = Paint(On("Line Console", 93, -130, West, paint: Rail), Rail);
             Config(console, ("startOn", 1));
             var at = SocketAt(console, "bottom");
             foreach (var m in _makers)

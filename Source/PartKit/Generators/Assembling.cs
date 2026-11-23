@@ -1073,6 +1073,9 @@ public sealed class Assembling : IPartGenerator
         // folders listed part by part: the Haywain's and the Dray's go by rule)
         .. new[] { ("Satchel", CourierParts.Shaft), ("Docket", TugParts.Shaft), ("Packet", FreighterParts.Shaft), ("Grapnel", GrapnelParts.Shaft),
             ("Dibber", DibberParts.Shaft) }.SelectMany(f => BoardingShaft.SectionNames(f.Item2).Select(n => ((string?)f.Item1, (string?)n, (PyDict?)null))),
+        // (the Zero Day works' plinths, Sean 2026-11-22: an Extruder raised level with its run; FactoryShellParts.Plinths, after everything: AfterCloche)
+        ("Factory/Plinths", "Extruder Plinth", Rec("Extruder Plinth", 40, m: [("concrete", 320), ("steel", 20)])),
+        ("Factory/Plinths", "Run-out Table Stand", Rec("Run-out Table Stand", 20, m: [("steel", 60)])),
     ];
 
     /// <summary>
@@ -1284,7 +1287,7 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names];
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

@@ -14,7 +14,7 @@ public sealed partial class Construct
 /// +z end, as wide as its tiles across (<see cref="MaxAcross"/> at most), laid by the server as an ordinary conveyor link, so riders,
 /// saves and the wire are a conveyor's. It starts at what is butted on its in end (an Out Table, its machine's out table; a
 /// Turntable Tile; a Run-out Table, its Extruder's Piece out; any part with a Piece out there) or at its own first tile, and ends at what is butted on its out end (a machine's
-/// or a pad's Piece in, a Turntable Tile) or at its last tile, where pieces wait for a crane or go on along a conveyor linked from the
+/// or a pad's Piece in, a bed fed by conveyor: its Core's Bed in, a Turntable Tile) or at its last tile, where pieces wait for a crane or go on along a conveyor linked from the
 /// tile's Piece out. A conveyor linked into a tile's Piece in goes onto its run. A Turntable Tile passes a piece from the run that ends
 /// in it onto the others that start at it, in turn, never back the way it came.
 /// </summary>
@@ -93,6 +93,40 @@ public static class RollerRuns
             if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == tile && !IsRunPort(d, c.Routes[k].FromPort))
                 return -1; // (it goes on along a conveyor linked from the tile's Piece out)
         return run;
+    }
+
+    /// <summary>
+    /// The run whose last tile is <paramref name="tile"/> and that ends butted on a bed Core's Bed in (a Panel Former's or a Laser Cutter's
+    /// bed fed straight from the run): a piece made for another's order waits whole there for a crane (ConstructConveyor.PastBed). Its
+    /// conveyor, or -1. Either peer; allocates nothing.
+    /// </summary>
+    public static int BedRunAt(Construct c, int tile)
+    {
+        if ((uint)tile >= (uint)c.PartCount || !c.Parts[tile].D.IsRollerTile)
+            return -1;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
+                && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && IsRun(c, k))
+                return k; // (or onto a pad: a formed skin for a station's order waits at the pad's edge, too long for it or not its way)
+        }
+        return -1;
+    }
+
+    /// <summary>The lead rider of bed run <paramref name="route"/> when it rides past the bed and has come to its wait at the bed's edge, or -1.</summary>
+    public static int PassingLead(Construct c, int route)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (c.Conveyed[i].Route == route)
+            {
+                if (!ConstructConveyor.PassesBed(c, c.Routes[route].To, c.Conveyed[i]) || ConstructParts.Def(c.Conveyed[i].Def) is not { } d)
+                    return -1;
+                ConstructConveyor.Size(d, out _, out _, out var along);
+                var leg = System.Numerics.Vector3.Distance(ConstructRoutes.Point(c, route, c.Routes[route].Count - 1, out _), ConstructRoutes.Point(c, route, c.Routes[route].Count, out _));
+                return c.Conveyed[i].At >= ConstructConveyor.Length(c, route) - leg - along * 0.5f - 0.02f ? i : -1;
+            }
+        return -1;
     }
 
     /// <summary>
@@ -267,6 +301,15 @@ public static class RollerRuns
         var best = 1.3f * 1.3f + across * across; // (within the run's half width and a little)
         var seed = c.MachineAsms[a].Core;
         var inv = MachineBlocks.Rot24Inverse(c.Parts[seed].Rot);
+        // Its out end meeting a bed fed by conveyor (a Panel Former's, a Laser Cutter's): the run ends on that Core's Bed in, whose point is
+        // the bed's middle, so the piece rides off the run straight onto the bed, never through the Core. By where the run's line goes on,
+        // not by welds: a Laser Cutter's bed lies half a tile off its feed's grid.
+        if (!wantOut && MachineBlocks.BedAt(c, end + Rot24.Apply(c.Parts[seed].Rot, ConstructParts.DirVector(dir)) * 0.25f) is var bc and >= 0
+            && PortByte(c.DefOf(bc), ConstructParts.BedInPort) is var bp and >= 0)
+        {
+            (part, port) = (bc, (byte)bp);
+            return true;
+        }
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.BlockAsmOf[i] != a || !c.Parts[i].D.IsRollerTile)

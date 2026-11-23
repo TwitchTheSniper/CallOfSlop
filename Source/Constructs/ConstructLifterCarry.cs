@@ -38,6 +38,7 @@ public static partial class ConstructLifters
     public const int MaxPoints = 32; // a lifter's points (16 until 2026-11-22: a bay crane over four presses, an Assembler and its stores ran out)
     public const int PointEvery = 120; // ticks between looks for a lifter's points (2 s)
     public const int CarryLook = 6; // 10 Hz steps between an idle lifter's looks for a carry (about 1 s)
+    public const int RefuseHold = 30 * 60; // lift ticks a put point that refused this lifter's piece is passed over (30 s)
 
     /// <summary>The idle look for a carry (about once a second): true when one began.</summary>
     private static bool LookCarry(ConstructWorld world, Construct c, CLift l, LifterDef ld)
@@ -87,11 +88,20 @@ public static partial class ConstructLifters
                 at = PartPoint(b, pt.Part, new Vector3((d.RackHoldMin.X + d.RackHoldMax.X) * 0.5f, d.RackHoldMin.Y, (d.RackHoldMin.Z + d.RackHoldMax.Z) * 0.5f));
                 return true;
             case LiftPointKind.Out:
+                if (d.IsBakeOven)
+                {
+                    // (an oven's out is its bed's middle)
+                    if (!OutZone.BedOf(b, pt.Part, out var toCore, out var bmin, out var bmax) || !Matrix4x4.Invert(toCore, out var core))
+                        return false;
+                    at = Vector3.Transform(new Vector3((bmin.X + bmax.X) * 0.5f, bmin.Y, (bmin.Z + bmax.Z) * 0.5f), core);
+                    return true;
+                }
                 at = PartPoint(b, pt.Part, d.IsExtruder ? d.ExtDieAt : d.AsmOutAt + d.AsmOutDir * 0.6f);
                 return true;
             case LiftPointKind.RunEnd:
-                if (RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0))
-                    return false;
+                var run = RollerRuns.EndRunAt(b, pt.Part);
+                if (run < 0 && (run = RollerRuns.BedRunAt(b, pt.Part)) < 0)
+                    return false; // (a run's end with no way on, or a run into a bed, where pieces made for others wait: ConstructConveyor.PastBed)
                 b.WorldFrame(b.Parts[pt.Part].Seg, out var rq, out var rt);
                 at = rt + Vector3.Transform(b.RouteNodes[b.Routes[run].Start + 1].Pos, rq); // (the run's last node, over its end tile)
                 return true;
@@ -163,14 +173,14 @@ public static partial class ConstructLifters
             if (i == self || b.Parts[i].Broken)
                 continue;
             var d = b.DefOf(i);
-            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile)
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile && !d.IsBakeOven)
                 continue;
             if (d.IsPieceRack && ConstructPads.IsMember(b, i))
                 continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
             ref readonly var p = ref b.Parts[i];
             var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
             Vector3 bedMin = default, bedMax = default;
-            var bed = d.IsAssembler && OutZone.BedOf(b, i, out _, out bedMin, out bedMax);
+            var bed = (d.IsAssembler || d.IsBakeOven) && OutZone.BedOf(b, i, out _, out bedMin, out bedMax);
             if (bed)
                 half = MathF.Max(half, Vector3.Max(Vector3.Abs(bedMin), Vector3.Abs(bedMax)).Length() + 0.5f); // (a block Assembler: its whole bed, measured from the Core)
             if (d.IsPieceRack && ConstructPads.RackDef(b, i) is var pd && !ReferenceEquals(pd, d))
@@ -196,12 +206,12 @@ public static partial class ConstructLifters
                     pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = d.IsCraftTerminal ? LiftPointKind.Tray : LiftPointKind.Rack };
                 continue;
             }
-            var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer;
+            var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer || d.IsBakeOven; // (an oven's bed: the part a kit baked into, ConstructBakeOvenOrders.cs)
             // A machine's Piece out with no conveyor on it; a block Assembler's is its bed too, where it leaves what it builds (LeaveOnBed).
             if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
                 && (InReach(ld, shoulder, lr, o, SafeLift, out _) || bed && BedSpot(b, i, ld, shoulder, lr)))
                 pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out };
-            if (d.IsAssembler || d.IsPanelFormer)
+            if (d.IsAssembler || d.IsPanelFormer && !(d.BlockRole == BlockRole.Core && RollerRuns.PortByte(d, ConstructParts.BedInPort) is var bi and >= 0 && ConveyorInto(b, i, (byte)bi))) // (a bed a run feeds isn't a crane's too)
                 TryIn(pts, ref n, b, i, d, d.IsAssembler ? LiftPointKind.Assembler : LiftPointKind.Former, 0, "Piece in", ld, shoulder, lr);
             else if (d.IsPress)
                 for (var bay = 0; bay < d.PressBays.Length && bay < 8; bay++)
@@ -278,7 +288,8 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b) // (a damaged or painted piece is never made a count)
+            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b // (a damaged or painted piece is never made a count)
+                || RefusedNow(world, l, pt))
                 continue;
             if (pt.Kind == LiftPointKind.Rack && (fromPad || pt.Part >= b.PartCount || !b.DefOf(pt.Part).IsLayDownPad))
                 continue; // (a rack is a want only as a station's pick pad, and never from another pad)
@@ -287,7 +298,9 @@ public static partial class ConstructLifters
             Vector3 p;
             if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
             {
-                if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                // (a want with no room is no taker: a full pick pad said it wanted the piece and refused it at the end, 2026-11-23)
+                if (world.StoreOf(b, pt.Part) is not { } wst || ConstructConveyor.RackCheck(b, pt.Part, wst, d) != 0
+                    || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
                     continue;
             }
             else if (!PointAt(b, pt, out p))
@@ -308,7 +321,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
+            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
@@ -445,8 +458,11 @@ public static partial class ConstructLifters
         {
             var k = (j + l.OutTurn) % l.PointN; // (run ends take turns with the outs)
             var pt = l.Points![k];
-            if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b || RollerRuns.EndRunAt(b, pt.Part) is not (var run and >= 0)
-                || RollerRuns.WaitingLead(b, run) is not (var lead and >= 0))
+            if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b)
+                continue;
+            var run = RollerRuns.EndRunAt(b, pt.Part);
+            var lead = run >= 0 ? RollerRuns.WaitingLead(b, run) : (run = RollerRuns.BedRunAt(b, pt.Part)) >= 0 ? RollerRuns.PassingLead(b, run) : -1;
+            if (lead < 0)
                 continue;
             var rider = b.Conveyed[lead];
             var d = ConstructParts.Def(rider.Def);
@@ -480,7 +496,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (pt.Kind is LiftPointKind.Out or LiftPointKind.RunEnd or LiftPointKind.None || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
+            if (pt.Kind is LiftPointKind.Out or LiftPointKind.RunEnd or LiftPointKind.None || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount
                 || b.Parts[pt.Part].Store != dest || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             Vector3 p;
@@ -508,6 +524,8 @@ public static partial class ConstructLifters
     private static bool MadeBy(Construct b, int part, ConstructPartDef d)
     {
         var md = b.DefOf(part);
+        if (md.IsBakeOven)
+            return BakeKits.Has(d); // (a part its kit baked into)
         if (md.IsAssembler)
             return AssemblingTable.Current.Of((ushort)d.Id) is { } r && r.Output == d && r.Machine == md.AsmMachine;
         if (md.IsPress && ConstructPress.SizedDieOf(PressTable.Current, b, part) is { } die)
@@ -560,7 +578,7 @@ public static partial class ConstructLifters
 
         public static OutZone Of(Construct b, int part, Vector3 outAt)
         {
-            if (part < b.PartCount && b.DefOf(part).IsAssembler && BedOf(b, part, out var toCore, out var min, out var max))
+            if (part < b.PartCount && (b.DefOf(part).IsAssembler || b.DefOf(part).IsBakeOven) && BedOf(b, part, out var toCore, out var min, out var max))
                 return new OutZone(outAt, true, toCore, min, max);
             return new OutZone(outAt, false, default, default, default);
         }
@@ -584,6 +602,17 @@ public static partial class ConstructLifters
         {
             toCore = default;
             (min, max) = (default, default);
+            if (part < b.PartCount && b.Parts[part].D.IsBakeOven)
+            {
+                // (an oven's bed: its clear height over the whole bed, ConstructBakeOven.Bed)
+                if (!MachineBlocks.TryOf(b, part, out var oasm) || oasm.W == 0 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
+                    return false;
+                var obed = new ConstructBakeOven.Bed(b, oasm);
+                var oo = b.Parts[part].D.BlockOrigin ?? Vector3.Zero;
+                min = new Vector3(oo.X + (obed.X0 - 0.5f) * obed.Cell, obed.Top, oo.Z + (obed.Z0 - 0.5f) * obed.Cell);
+                max = min + new Vector3(obed.W * obed.Cell, MathF.Max(obed.Clear, 0.5f), obed.L * obed.Cell);
+                return true;
+            }
             if (ConstructAssembling.FitOf(b, part) is not { Limited: true, W: > 0 } fit || !MachineBlocks.TryOf(b, part, out var asm)
                 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
                 return false;
@@ -637,6 +666,7 @@ public static partial class ConstructLifters
         if (ok)
         {
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
+            ForgetRefused(l); // (a put went in: what refused before may take the next piece)
             l.Moves++;
             l.Fitted = true;
             OrderPutDone(world, l); // (phase 7: a hand order's piece counts for it)
@@ -644,6 +674,13 @@ public static partial class ConstructLifters
             Back(c, l, ld, null, -1); // (the empty hand goes back to where it picked)
             l.ToKind = LiftPointKind.None;
             return;
+        }
+        // Remembered for a while (Sean, 2026-11-22: a Hall Crane carried a piece between two put points that each said they wanted it
+        // and then refused it at the end, for good): the next taker is another point, else the piece waits in the hand.
+        if (l.ToKind != LiftPointKind.None)
+        {
+            (l.Refused2, l.Refused2At) = (l.Refused, l.RefusedAt);
+            (l.Refused, l.RefusedAt) = (new LiftPoint { Body = l.StationBody, Part = l.ToPart, Kind = l.ToKind, Bay = l.ToBay }, world.LiftTick);
         }
         if (l.OrderId != 0 && l.Orders != null)
             for (var oi = 0; oi < l.OrderN; oi++)
@@ -655,6 +692,13 @@ public static partial class ConstructLifters
         (l.State, l.ToHold, l.Why, l.Age, l.From, l.FromRot, l.ToKind) = (LiftState.Stuck, false, LiftWhy.NoTaker, l.Dur, l.To, l.ToRot, LiftPointKind.None);
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} was refused; nothing in reach takes it (stuck)");
     }
+
+    /// <summary>The hand is empty again (a put, a stow into a hold, a drop): the points that refused its last piece are takers again.</summary>
+    private static void ForgetRefused(CLift l) => l.RefusedAt = l.Refused2At = int.MinValue / 2;
+
+    /// <summary>Did this point refuse this lifter's piece at the end of a carry in the last <see cref="RefuseHold"/> ticks? (Not a want or a store for now.)</summary>
+    private static bool RefusedNow(ConstructWorld world, CLift l, in LiftPoint pt) =>
+        world.LiftTick - l.RefusedAt < RefuseHold && Same(l.Refused, pt) || world.LiftTick - l.Refused2At < RefuseHold && Same(l.Refused2, pt);
 
     /// <summary>Server: a piece in the hand to another taker in reach (a want, else storage). True when it set off.</summary>
     private static bool Redirect(ConstructWorld world, Construct c, CLift l, LifterDef ld, ConstructPartDef d)

@@ -329,6 +329,9 @@ public static partial class ConstructLaserCutter
     /// Server: a piece at the end of a conveyor into a cutter's Piece in. Only the head order's blank is taken, and only onto an empty bed;
     /// anything else waits on the conveyor.
     /// </summary>
+    /// <summary>Does a queued order take this blank (a run feeding the bed asks: ConstructConveyor.PastBed)?</summary>
+    internal static bool Takes(Construct c, int part, ConstructPartDef piece) => OrderFor(c, part, piece) >= 0;
+
     public static bool TakeFromConveyor(ConstructWorld world, Construct c, int part, ConstructPartDef piece)
     {
         if (world.StoreOf(c, part) is not { JobAmount: 0 } st || OrderFor(c, part, piece) is not (var at and >= 0))

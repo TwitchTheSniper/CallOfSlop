@@ -11,7 +11,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    private const byte MarketsSaveVersion = 2; // 2: the stations' life first (GameStationLife.cs), its length before it
+    private const byte MarketsSaveVersion = 3; // 2: the stations' life first (GameStationLife.cs), its length before it; 3: each station's owner (a player faction) and growth
 
     /// <summary>Host: moorings read from a world, set once their ships and stations are in (<see cref="StationMoorsAdopt"/>).</summary>
     private readonly List<(ushort Ship, ushort Station, ushort Part, Vector3 At, Quaternion Rot)> _moorsLoaded = new();
@@ -97,7 +97,7 @@ public sealed partial class Game
         {
             var life = s.Bytes(s.I32());
             if (stock && life.Length > 0)
-                StationLifeRead(new SaveReader(life));
+                StationLifeRead(new SaveReader(life), v);
         }
         int stations = s.Count(6), kept = 0, dropped = 0;
         for (var i = 0; i < stations; i++)

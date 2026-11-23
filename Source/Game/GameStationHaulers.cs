@@ -40,6 +40,7 @@ public sealed partial class Game
         public bool Adopted; // taken up from a loaded world (HaulAdopt): a leg between planets it was on is not paid for twice
         public bool Ledger; // its last leg was taken on the ledger (nobody near): its escorts fly nothing (GameHaulLedger.cs)
         public long LedgerUntil; // on a ledger leg: when it gets there (0: not on one)
+        public bool RouteTried; // this leg's real route between planets was looked for and none fits (it isn't tried again each second)
         public LedgerTrip? Trip; // a ledger leg round one planet in play: its path, burns and coast in space time (GameHaulLedger.cs)
         public bool Flying; // this leg is flown from here on (a person saw it): it doesn't go on the ledger part way (GameHaulLedger.cs)
         public long LegAt; // when this leg began (0: not known), and its fuel then: a leg flown out of the bubble before the ledger takes it is not paid twice
@@ -578,6 +579,7 @@ public sealed partial class Game
             c.HaulAtTo = run.AtTo;
             run.Stage = HaulStage.Going;
             run.Flying = false; // (a new leg: the ledger may take it)
+            run.RouteTried = false;
             (run.LegAt, run.LegFuel) = (ServerTick, c.Fuel);
             run.RetryAt = 0;
             HaulStep(s, run, c);
@@ -594,6 +596,8 @@ public sealed partial class Game
         }
         if (run.FarUntil != 0)
         {
+            if (LedgerFarTake(s, run, c, def, d, planet))
+                return; // (out of everyone's sight: the rest on the real route, GameHaulLedger.cs)
             if (ServerTick >= run.FarUntil)
                 HaulFarArrive(s, run, c, def, d, planet, st, here);
             return;
@@ -644,6 +648,16 @@ public sealed partial class Game
             run.Since = ServerTick; // (when its Dock order was given)
         var why = dock ? NavApply(s, c, NavKind.Dock, 0, Vec3d.Zero, 0, 255, h.Power + " hauler", null, out _, st)
             : NavApply(s, c, NavKind.Orbit, planet, Vec3d.Zero, radius, 255, h.Power + " hauler", null, out _);
+        if (dock && why != null && StandoffFree(def))
+        {
+            // (no berth for it, and the station grew standoff berths: it trades from beside it, GameStationLife.cs)
+            run.Stage = HaulStage.Orbiting;
+            run.Since = ServerTick;
+            RouteArrived(run.Route);
+            HaulSay(run, c, $"trades from a standoff berth beside {d.Name}");
+            HaulTrade(run, c, h, def, MarketOfDef(def));
+            return;
+        }
         run.RetryAt = ServerTick + 30 * World.TickRate; // (an order that ends short of its station is given again after this)
         HaulSay(run, c, why != null ? $"can't set out for {d.Name}: {why}"
             : dock ? $"docks at {d.Name}"
@@ -871,6 +885,10 @@ public sealed partial class Game
             unloaded += n;
         if (own && unloaded > 0)
         {
+            double moved = 0;
+            for (var k = 0; k < sold.Length; k++)
+                moved += sold[k] * (double)TradeValues.Of(StationMarkets.All[def].Goods[k].Material);
+            StationGain(m, moved * StationLife.HubShare); // (a hub moves its own power's goods for nothing: its ledger counts a share of their value)
             StationsVersion++;
             Log($"[haul] construct {c.Id} ({h.Power}) unloaded {StationGoodsText(m, sold)} at its own {where}");
         }

@@ -544,6 +544,7 @@ public static partial class ConstructStation
         if (firstKind >= 0 && j.KindReady[firstKind] > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
             && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) is var rc and not 0)
             stuck = rc == 3 ? HasOwnPad(c, t) ? nd.Mass > LiftKg(c, t) ? $"too heavy for this station's crane ({nd.Mass / 1000f:0.#} t, it lifts {LiftKg(c, t) / 1000f:0.#} t): fit it by hand or with a Hall Crane" : null
+                : ConstructLifters.HasPickPad(world, c, t, nd) ? null // (a crane or an arm fits it from a pick pad: it comes there, as an order)
                 : "too long for this station's hold: lay a Lay-down Pad under its crane just past the bay, or fit it by hand"
                 : tray.ItemCount > 0 && !MakeRoomFor(world, c, t, nd) ? "hold full of parts no step fits yet, no rack with room: take one out" : null;
         for (var i = 0; i < j.KindN && stuck == null; i++)
@@ -623,7 +624,7 @@ public static partial class ConstructStation
 
     /// <summary>A blueprint by name: the shipped ones, then the host's own saved ones.</summary>
     public static ConstructBuild.Blueprint? Find(string name) =>
-        ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? Own(name);
+        ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? BakeKits.FindPrint(name) ?? Own(name);
 
     private static ConstructBuild.Blueprint? Own(string name)
     {
@@ -650,7 +651,7 @@ public static partial class ConstructStation
             return "the bay isn't clear: move what was built out of it first";
         if (name == HullLoft.DressJobName)
             return StartDress(world, c, t, repeat); // (the Dress job: each plain skin that comes in, ConstructStation.Dress.cs)
-        if ((ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name)) is { } bp)
+        if ((ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? BakeKits.FindPrint(name)) is { } bp) // (a bake kit's too: a Bake Oven's order, BakeKits.cs)
         {
             if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
                 return "that blueprint has no parts";

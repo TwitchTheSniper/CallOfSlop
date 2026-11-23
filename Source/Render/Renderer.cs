@@ -1018,12 +1018,86 @@ public sealed unsafe partial class Renderer
         return scope;
     }
 
+    // ---- What is drawn, kept (ConstructRenderBatch's idle machine blocks: drawn as merged meshes while it stays the same) --------
+
+    /// <summary>One box as <see cref="Draw"/> was given it: its matrix (in <see cref="CaptureInto"/>'s frame), tint and look code (below zero: glowing), shape.</summary>
+    public struct Captured
+    {
+        public Matrix4x4 Model;
+        public Vector3 Color;
+        public float Code;
+        public int Shape;
+    }
+
+    private bool _capturing, _captureBad, _captureOnly;
+    private Captured[] _captured = new Captured[64];
+    private int _capturedCount;
+    private Matrix4x4 _captureInto;
+
+    /// <summary>Starts keeping every <see cref="Draw"/> (drawn as well), each matrix times <paramref name="into"/> (the inverse of a body's matrix: its own frame).</summary>
+    public void CaptureBegin(in Matrix4x4 into, bool draw = true) => (_capturing, _captureBad, _captureOnly, _capturedCount, _captureInto) = (true, false, !draw, 0, into);
+
+    /// <summary>Stops keeping: the boxes drawn since <see cref="CaptureBegin"/>, or false when one can't be drawn as a merged slot (blended, see-through, cut open).</summary>
+    public bool CaptureEnd(out ReadOnlySpan<Captured> boxes)
+    {
+        (_capturing, _captureOnly) = (false, false);
+        boxes = _captured.AsSpan(0, _capturedCount);
+        return !_captureBad;
+    }
+
+    private void Capture(in Matrix4x4 model, Vector3 color, float alpha, int mode, float layer, int shape)
+    {
+        if (mode is not (0 or 2) || alpha < 1f || CutMode(mode) != mode || _tilted)
+        {
+            _captureBad = true;
+            return;
+        }
+        if (_capturedCount == _captured.Length)
+            Array.Resize(ref _captured, _captured.Length * 2); // (grows to the biggest part once)
+        _captured[_capturedCount++] = new Captured { Model = model * _captureInto, Color = color, Code = mode == 2 ? -1f : layer, Shape = shape };
+    }
+
+    // ---- Bounds of what is drawn (ConstructRenderBatch's walked parts that move: where they were last drawn) -----------------
+
+    private bool _tracking, _tracked;
+    private Vector3 _trackLo, _trackHi;
+
+    /// <summary>Starts gathering the bounds of every <see cref="Draw"/> (in the matrices' own space) until <see cref="TrackEnd"/>.</summary>
+    public void TrackBegin() => (_tracking, _tracked) = (true, false);
+
+    /// <summary>Stops gathering: the bounds of what was drawn since <see cref="TrackBegin"/>; false when nothing was.</summary>
+    public bool TrackEnd(out Vector3 lo, out Vector3 hi)
+    {
+        _tracking = false;
+        (lo, hi) = (_trackLo, _trackHi);
+        return _tracked;
+    }
+
+    private void Track(in Matrix4x4 model)
+    {
+        // (the unit cube round the middle: half its rows' lengths a side, as a sphere round it)
+        var r = 0.5f * MathF.Sqrt(new Vector3(model.M11, model.M12, model.M13).LengthSquared() + new Vector3(model.M21, model.M22, model.M23).LengthSquared() + new Vector3(model.M31, model.M32, model.M33).LengthSquared());
+        var at = model.Translation;
+        if (!_tracked)
+            (_trackLo, _trackHi, _tracked) = (at - new Vector3(r), at + new Vector3(r), true);
+        else
+            (_trackLo, _trackHi) = (Vector3.Min(_trackLo, at - new Vector3(r)), Vector3.Max(_trackHi, at + new Vector3(r)));
+    }
+
     /// <summary>
     /// Draws the unit cube transformed by <paramref name="model"/>, or with <paramref name="shape"/> &gt; 0 a weapon part's
     /// contoured shape inside it (<see cref="PartShapes"/>; uploaded into the box buffer the first time it's needed).
     /// </summary>
     public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, int shape = 0, float surface = 0)
     {
+        if (_tracking)
+            Track(in model);
+        if (_capturing)
+        {
+            Capture(in model, color, alpha, mode, surface > 0 ? surface : (float)material, shape);
+            if (_captureOnly)
+                return; // (only looked at: ConstructRenderBatch's idle block on its check frame, drawn by its idle mesh)
+        }
         if (_tilted)
         {
             var tilted = model * _tilt;

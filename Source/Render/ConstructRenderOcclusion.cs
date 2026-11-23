@@ -112,7 +112,7 @@ public static partial class ConstructRender
             {
                 ref var q = ref _mergeQueue[k];
                 if (q.Test)
-                    gfx.QueryMerged(q.Mesh, in q.Frame, q.Min - pad, q.Max + pad);
+                    gfx.QueryMerged(q.Mesh, in q.Frame, q.Min - pad, q.Max + pad, q.Eye);
             }
             gfx.EndOcclusion();
             gfx.Relative = rel;

@@ -668,6 +668,7 @@ public static partial class ConstructRender
                 var at = Vector3.Transform(top, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
                 var up = Vector3.TransformNormal(Vector3.UnitY, onBody);
                 Fx.Flame(FxKind.Flame, at, up, c.Vel, MathF.Max(0.1f, w * 0.3f), 0.7f + w * 0.4f, 0.7f, _fxDt);
+                _fxEmitted = true;
                 for (var k = Fx.Share(5f * _fxDt); k > 0; k--)
                     Fx.Emit(FxKind.DarkSmoke, at + up * 0.3f, c.Vel + up * 1.6f, 0.2f + w * 0.2f, 2.2f);
             }
@@ -692,13 +693,20 @@ public static partial class ConstructRender
             : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
+        var pressStore = workPart >= 0 && c.Parts[workPart].D.IsPress ? world.StoreOf(c, workPart) : null;
+        if (pressStore != null)
+            ConstructPress.StrokeUpdate(c, workPart, pressStore, Now); // (this peer's note of the stroke: when it began, what it presses and makes)
+        _pressStroke = working && pressStore != null ? ConstructPress.StrokeSeconds(pressStore, Now) : 0; // (a Press Core's leaves swing with its stroke)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
         _laserOn = working && d.BlockRole == BlockRole.Block && c.Parts[workPart].D.IsLaserCutter
             && ConstructLaserCutter.LookPose(c, i, workPart, Now, out _laserBridge, out _laserHead, out _laserActive, out laserTip); // (a Laser Cutter's bridge and heads follow the cut's outline)
         if (_laserOn && _laserActive && Fx.On)
+        {
+            _fxEmitted = true;
             LaserSparks(gfx, c, Vector3.Transform(laserTip, seg * body) + (gfx.Relative ? gfx.Origin : Vector3.Zero), Vector3.TransformNormal(Vector3.UnitY, seg * body));
+        }
         byte routerWay = 0, routerState = 0;
         var routerStuck = false;
         var routerFence = 0f;
@@ -711,8 +719,10 @@ public static partial class ConstructRender
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
         ConstructPress.ShellPose shellPose = default;
         var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
-        var shellTurn = shellOn ? ConstructPress.ShellTurn(shellPose, ConstructPress.Openness(!c.Parts[shellPose.Core].Broken && world.StoreOf(c, shellPose.Core) is { } shellStore
-            && ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), shellPose.Index, ConstructLifters.DrawTick)) : Matrix4x4.Identity;
+        var shellStore = shellOn && !c.Parts[shellPose.Core].Broken ? world.StoreOf(c, shellPose.Core) : null;
+        var dieOpen = shellStore != null
+            ? ConstructPress.DieOpen(shellStore, shellPose.Index, Now, ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), out _)
+            : 1f; // (its round die's swing: stowed open, closing on the blank, shut while it is pressed, opening on the new part)
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -728,6 +738,8 @@ public static partial class ConstructRender
                 continue; // (a block machine's skirt or cap on a face welded to its own machine, or a fill where none is: MachineBlocks.cs)
             if (box.Work == BoxWork.Beam && !(_laserOn && _laserActive))
                 continue; // (a Laser Cutter's beam: only under the head that is cutting)
+            if (_walkDetail < LodClasses - 1 && SizeClass(in box, lit) > _walkDetail)
+                continue; // (far off, a box under a pixel: the far detail level, as a merged chunk leaves it out)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {
@@ -782,8 +794,6 @@ public static partial class ConstructRender
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
                 model *= Matrix4x4.CreateTranslation(c.EngineShake); // (a big engine rocks on its mounts)
-            if (shellOn)
-                model *= shellTurn;
             model = model * wheel * (box.IsLeaf && leafMoves ? railSeg : box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
             if ((d.IsBeacon || d.IsTerminal) && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {
@@ -819,7 +829,10 @@ public static partial class ConstructRender
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
-            drawn += DrawShellLip(gfx, in p, d, in shellPose, shellTurn * seg * body, shade, opacity);
+            drawn += DrawShellDie(gfx, in shellPose, dieOpen, shellStore != null ? ConstructPress.DieLift(shellStore, shellPose.Gap) : 0.1f,
+                ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null, seg * body, shade, opacity);
+        else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && !p.Broken && PressBed(c, i, d, pressStore, working, out var onBed, out var bedAt))
+            drawn += DrawBlank(gfx, onBed, 0, bedAt, in p, seg * body, shade, opacity); // (the blank on the bed under the open dies, then the part they made)
         return drawn;
     }
 
@@ -861,28 +874,71 @@ public static partial class ConstructRender
         return drawn;
     }
 
-    private static readonly Vector3 ShellLip = new(0.133f, 0.149f, 0.169f), ShellLatch = new(0.82f, 0.16f, 0.12f);
+    private static readonly Vector3 DieSteel = new(0.46f, 0.48f, 0.51f), DieEdge = new(0.82f, 0.16f, 0.12f);
+    private static readonly ushort DieShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = 0, Angle = 90, Dir = 225, Segments = 8 });
 
     /// <summary>
-    /// A clamshell segment's roof lip (drawing 17b): from the top of its column's inner face out to the bed's centre line, where the
-    /// other side's meets it, with red latch teeth along its leading edge. Its own segment's turn goes with it (<paramref name="onBody"/>).
+    /// A Press housing's round die (Sean's sketch, 2026-11-23): a solid quarter round from the bed's centre line to the housing's inner face,
+    /// its flat working face down, standing <paramref name="lift"/> over the bed (room for the piece pressed: ConstructPress.DieLift), turned
+    /// <paramref name="open"/> of the way about its hinge (that face's outer edge) up and out, into its housing. The two sides' dies meet
+    /// over the bed as a half round; a red strip marks the leading edge. The fitted die (<paramref name="die"/>) covers the working face,
+    /// its look stretched to the face, so a bigger press shows a bigger die. Drawn only: the housing's cell is the collider.
     /// </summary>
-    private static int DrawShellLip(Renderer gfx, in CPart p, ConstructPartDef d, in ConstructPress.ShellPose s, in Matrix4x4 onBody, float shade, float opacity)
+    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, float lift, ConstructPartDef? die, in Matrix4x4 onBody, float shade, float opacity)
     {
-        const float Thick = 0.2f, Under = 0.004f;
-        var middle = p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f);
-        var reach = s.Gap - 0.005f; // (5 mm short of the centre: the two lips never share a face)
-        var inner = middle - s.Out * (s.Cell * 0.5f);
-        var lip = inner - s.Out * (reach * 0.5f) + s.Up * (s.Cell * 0.5f - Thick * 0.5f - Under);
-        gfx.Draw(Oriented(s, lip, s.Cell - 0.02f, Thick, reach) * onBody, ShellLip * shade, opacity);
-        var teeth = Math.Max(1, (int)(s.Cell / 0.5f));
-        for (var k = 0; k < teeth; k++)
+        var r = s.Gap - 0.008f; // (the two dies' flat faces 6 mm apart when shut; open, 5 mm proud of the housing's face)
+        var apex = s.Centre + s.Out * 0.003f + s.Up * lift;
+        var hinge = apex + s.Out * r;
+        var turn = open <= 0 ? Matrix4x4.Identity
+            : Matrix4x4.CreateTranslation(-hinge) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(hinge);
+        var m = turn * onBody;
+        var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's; the stiffeners on the housing's top stop 12 mm under the die's flat face)
+        gfx.Draw(Oriented(s, apex + (s.Up + s.Out) * (r * 0.5f), len, r, r) * m, DieSteel * shade, opacity, mode: 0, shape: DieShape);
+        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.029f, len - 0.02f, 0.06f, 0.05f) * m, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line, 4 mm proud of its flat face)
+        var drawn = 2;
+        if (die == null)
+            return drawn;
+        // The die's look on the working face: its x along the bed, its z out to the hinge, its up down off the face (into the room
+        // over the bed), its foot 3 mm under the face. Handed so the turn keeps its faces' winding.
+        Vector3 lo = die.BoundsMin, hi = die.BoundsMax, span = Vector3.Max(hi - lo, new Vector3(0.01f));
+        var sx = len * 0.96f / span.X;
+        var sz = r * 0.94f / span.Z;
+        var sy = MathF.Min(MathF.Min(sx, sz), ConstructPress.DieRelief(s.Gap) / span.Y);
+        var down = -s.Up;
+        var along = Vector3.Dot(Vector3.Cross(s.Along, down), s.Out) < 0 ? -s.Along : s.Along;
+        var middle = apex + s.Out * (r * 0.5f) - s.Up * 0.003f;
+        var frame = new Matrix4x4(
+            along.X * sx, along.Y * sx, along.Z * sx, 0,
+            down.X * sy, down.Y * sy, down.Z * sy, 0,
+            s.Out.X * sz, s.Out.Y * sz, s.Out.Z * sz, 0,
+            middle.X, middle.Y, middle.Z, 1);
+        var onFace = Matrix4x4.CreateTranslation(-new Vector3((lo.X + hi.X) * 0.5f, lo.Y, (lo.Z + hi.Z) * 0.5f)) * frame * m;
+        foreach (ref readonly var box in die.Boxes.AsSpan())
         {
-            var along = ((k + 0.5f) / teeth - 0.5f) * (s.Cell - 0.1f);
-            var at = inner - s.Out * (reach - 0.04f) + s.Up * (s.Cell * 0.5f - Thick - Under - 0.04f) + s.Along * along;
-            gfx.Draw(Oriented(s, at, 0.16f, 0.08f, 0.06f) * onBody, ShellLatch * shade, opacity);
+            if (box.Hidden || box.Bare)
+                continue;
+            gfx.Draw(box.Model(0, box.Center) * onFace, box.Color * shade, opacity, mode: 0, shape: box.Shape);
+            drawn++;
         }
-        return 1 + teeth;
+        return drawn;
+    }
+
+    /// <summary>What a Press shows on its bed now (<see cref="ConstructPress.DieOpen"/> of its last segment, the last to shut and open) and where, in the Core's own frame.</summary>
+    private static bool PressBed(Construct c, int core, ConstructPartDef d, CStore st, bool working, out ConstructPartDef what, out Vector3 at)
+    {
+        (what, at) = (null!, default);
+        if (!MachineBlocks.TryOf(c, core, out var asm) || asm.W == 0 || asm.L < 3)
+            return false;
+        ConstructPress.DieOpen(st, Math.Min(asm.W - 1, ConstructPress.RippleMax), Now, working, out var show);
+        var def = show == ConstructPress.BedShow.Blank ? st.StrokeBlank : show == ConstructPress.BedShow.Made ? (working ? st.StrokeLast : st.StrokeMade) : null; // (back to back, the dies open on the last stroke's part)
+        if (def == null)
+            return false;
+        what = def;
+        var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var foot = (def.BoundsMin + def.BoundsMax) * 0.5f;
+        foot.Y = def.BoundsMin.Y;
+        at = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, o.Y + 0.5f * d.BlockCell + 0.006f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell) - foot;
+        return true;
     }
 
     /// <summary>A unit box's model: <paramref name="along"/> by <paramref name="up"/> by <paramref name="out"/> metres on a shell's axes, centred at <paramref name="at"/>.</summary>
@@ -900,6 +956,8 @@ public static partial class ConstructRender
     private static bool _workOnly; // DrawPart draws only the work boxes and status lamp (a merged machine block: ConstructRenderBatch.WorkSplits)
     private static int _pieceCm; // the piece on the working machine's die (cm), for the part being drawn: its "ram" and "shear" boxes
     private static float _hubRise; // a Grow Former's hub raised on its slide (m), for the part being drawn: its "slide" boxes and riding chuck
+    /// <summary>Set when DrawPart made particles (smoke, sparks, flames): ConstructRenderBatch keeps such a part drawn every frame.</summary>
+    internal static bool _fxEmitted;
     private static bool _laserOn, _laserActive; // a Laser Bed Block being drawn: its bridge and head move, its head the one cutting
     private static Vector3 _laserBridge, _laserHead; // ...how far (body frame)
 
@@ -917,6 +975,7 @@ public static partial class ConstructRender
         for (var k = Fx.Share(3f * _fxDt); k > 0; k--)
             Fx.Emit(FxKind.Smoke, at + up * 0.05f, c.Vel + up * 0.6f, 0.08f, 0.9f);
     }
+    private static double _pressStroke; // seconds into the stroke of the Press being drawn (its Core's "hinge" leaves: ConstructPress.Openness)
     private static int _workCore = -1; // the machine whose work the part being drawn shows (its own, or its block machine's Core)
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
@@ -940,7 +999,7 @@ public static partial class ConstructRender
             case BoxWork.Hinge:
                 {
                     // A clamshell leaf: it swings open toward its axis and slams shut in the press's cycle (ConstructPressShells.cs), its turn about the hinge line.
-                    var open = ConstructPress.Openness(true, 0, ConstructLifters.DrawTick);
+                    var open = ConstructPress.Openness(true, 0, _pressStroke); // (the Core's own small clamshell: its stroke's swing, as the shells')
                     if (open > 0)
                     {
                         var up = Rot24.Apply(p.Rot, Vector3.UnitY);
@@ -974,6 +1033,7 @@ public static partial class ConstructRender
                 model *= Matrix4x4.CreateTranslation(_laserBridge + _laserHead); // (a head rides the bridge, and along it)
                 break;
             case BoxWork.Smoke when Fx.On:
+                _fxEmitted = true;
                 var size = MathF.Max(0.12f, MathF.Min(box.Half.X, box.Half.Z) * 1.6f);
                 var top = Vector3.Transform(centre + Rot24.Apply(p.Rot, Vector3.UnitY) * Rot24.ApplyHalf(p.Rot, box.Half).Y, onBody) + (gfx.Relative ? gfx.Origin : Vector3.Zero);
                 for (var k = Fx.Share(4f * MathF.Max(1f, size * 2f) * _fxDt); k > 0; k--)
