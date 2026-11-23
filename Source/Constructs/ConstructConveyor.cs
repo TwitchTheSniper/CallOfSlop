@@ -1010,6 +1010,8 @@ public static class ConstructConveyor
                 lengths[k] = MathF.Max(1e-3f, Length(c, k));
             var first = k != prevRoute;
             var end = lengths[k] - (tail[k] > 0 ? tail[k] + Gap : 0);
+            if (first)
+                end -= BedHold(world, c, k, along); // (a blank for a bed still busy waits whole on the run, not on the bed)
             var limit = first ? end : prevBack - Gap;
             var at = MathF.Min(r.At + Speed * dt, limit);
             if (at > r.At)
@@ -1063,6 +1065,23 @@ public static class ConstructConveyor
             if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
                 return j * 256 + ((k - (int)c.Routes[o].Timer + 256) & 255);
         return j * 256;
+    }
+
+    /// <summary>
+    /// A link onto a bed Core's Bed in (a Roller Tile run butted on a Panel Former's or a Laser Cutter's bed, RollerRuns.Butted) while a blank
+    /// already lies on that bed: how far short of its end the lead stops, so it waits whole on the run at the bed's edge. 0 otherwise. Either
+    /// peer (OnBed is on the wire); allocates nothing.
+    /// </summary>
+    private static float BedHold(ConstructWorld world, Construct c, int k, float along)
+    {
+        ref readonly var r = ref c.Routes[k];
+        if (r.To >= c.PartCount || r.Count == 0)
+            return 0;
+        var td = c.DefOf(r.To);
+        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true } || world.StoreOf(c, r.To) is not { OnBed: true })
+            return 0;
+        var leg = Vector3.Distance(ConstructRoutes.Point(c, k, r.Count - 1, out _), ConstructRoutes.Point(c, k, r.Count, out _));
+        return leg + along * 0.5f;
     }
 
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>

@@ -175,8 +175,16 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   table's top: in a line, the Extruder stands so its tables are at the 1 m work height, on a 0.7 m plinth over the floor the tiles stand on).
   A run butted on a Run-out Table is its Extruder's `Piece out` (`RollerRuns.Butted`, `ConstructExtruder.TableMachine`): the link starts at the
   die, so each cut piece is handed off whole (`ConstructConveyor.HandOff`) and rides from the die over the tables and on along the run. Butt
-  the run's out end on a Panel Former's or a Laser Cutter's back (their Cores' `-z` socket, on the Piece in) and the
-  Panel Former takes it as the blank of the order it fits (one blank a panel), a cutter onto its bed. Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
+  the run's out end against a Panel Former's or a Laser Cutter's **bed** (Sean, 2026-11-23: a whole extrusion goes from the rollers
+  onto the bed, never through the single-block Core) and the run ends on the Core's implicit **Bed in** port, whose point is the bed's
+  middle at the run's line (`NamedPort.OnBed`, `MachineBlocks.BedMiddle`, `BedAt`: found by where the run's line goes on past its
+  last tile, not by welds, so a Laser Cutter's bed half a tile off the run's grid is still met). The piece rides off the run onto the
+  bed to its middle, where the former takes it as the blank of the order it fits (one blank a panel), a cutter as its blank; while a
+  blank already lies on the bed, the next waits whole on the run at the bed's edge (`ConstructConveyor.BedHold`, either peer: `OnBed`
+  is on the wire). A run against the Core's back (its `-z` socket) still ends on its Piece in. `--machine-blocks NAME` prints how each
+  bed machine is fed. A Panel Former's Core may stand beside its bed's head corner, so the line runs straight from the run onto the bed:
+  its Out Tables then close the bed's far end the other way (`MachineBlocks.FindOut` takes that edge when the side across from the Core
+  has none). Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
   tiles, into a Panel Former's bin. A conveyor a player linked from the Extruder's Piece out keeps it, and the run then starts at its own first tile. Not tried: a joined client's view of the ride, a die wider than one table.
 - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel
   Former's blank link) names Die Blocks (how many across and up) or Run-out Tables (`ConstructExtruder.WideFix`, `LongFix`). The recipe picker says the die and the longest piece as built; the screen's length bar reads the grown cap.
@@ -1802,8 +1810,8 @@ rectangle holding the lowest-index tile. A run is one ordinary conveyor link alo
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
 out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
-its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile)
-or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
+its own first tile's **Run start** port, and ends at what is butted on its out end (a machine's or a pad's Piece in, a Turntable Tile, a Panel Former's or Laser
+Cutter's bed: its Core's Bed in, "Extrusion" above) or at its last tile's **Run end**, where pieces wait at the end for a crane, or go on along a conveyor linked from the tile's
 **Piece out**. A conveyor linked into any tile's **Piece in** puts its pieces on the run at its start (`ConstructConveyor.Pass`, `RollerRuns.RunOf`). A run butted on another run's tile doesn't join it: crossing runs meet at a Turntable Tile. Tiles on a freeform weld make no run, and a body keeps at most 128 runs laid. A run an even number of tiles wide
 uses the `+x` twins of the run ports, on the line between its middle tiles. Tiles have sockets at 0.5 m (an Out Table's) and at 0.1 m
 (a Pad Tile's), so a run welds to either. The rollers turn while a piece is on the run (`RollerRuns.Moving`). The **Turntable Tile** is
