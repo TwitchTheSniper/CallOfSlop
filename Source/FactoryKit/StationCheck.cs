@@ -86,7 +86,7 @@ public static class StationCheck
             return OvenOrder(w, q, c, place, ovenOrder, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
         if (string.IsNullOrEmpty(build))
             return 0;
-        if (ConstructBuild.FindBlueprint(build) is not { } target)
+        if (ConstructStation.Find(build) is not { } target)
         {
             Console.WriteLine($"--station-check: no blueprint named \"{build}\"");
             return 1;
@@ -129,7 +129,7 @@ public static class StationCheck
                         reasons.Add($"{c.DefOf(m).Name}: {no}");
                     else
                     {
-                        maker = c.DefOf(m).Name;
+                        maker = $"{c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}";
                         break;
                     }
             var key = maker ?? string.Join(" | ", reasons.Where(r => !r.StartsWith("Extruder") && !r.StartsWith("Laser Cutter")));
