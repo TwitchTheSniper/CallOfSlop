@@ -100,7 +100,8 @@ public sealed class CraftRow
 /// </summary>
 public static class ConstructCrafting
 {
-    public const int MaxOrders = 32; // open requests a terminal
+    public const int MaxOrders = 96; // open requests a terminal (32 until 2026-11-23: a station ordering in batches keeps many open, one a kind)
+    public const string HeldEarly = "held in a holding bay until the build nears its step";
     public const int StepEvery = 30; // ticks between steps (2 Hz)
     public const int DoneSteps = 120; // a finished order stays listed this long (60 s)
     private const ushort NoPart = ushort.MaxValue;
@@ -1255,6 +1256,12 @@ public static class ConstructCrafting
                     note = $"too big for the tray: collect it at the {c.DefOf(net.Stores[s]).Name}";
                     continue;
                 }
+                if (fits == 0 && !ConstructStation.Due(world, c, t, d, true))
+                {
+                    state = CraftState.Held;
+                    note = HeldEarly; // (a batched station's part ordered ahead: it waits in its holding bay until the build nears its step)
+                    continue;
+                }
                 if (fits != 0)
                 {
                     state = CraftState.Held;
@@ -1399,8 +1406,11 @@ public static class ConstructCrafting
         {
             if (c.Parts[i].Craft is not { } q)
                 continue;
-            w.U16((ushort)i).U8((byte)q.Count);
-            for (var k = 0; k < q.Count; k++)
+            w.U16((ushort)i);
+            var qat = w.Length;
+            w.U8(0);
+            var sent = 0;
+            for (var k = 0; k < q.Count && w.Length < w.Capacity / 2; k++, sent++) // (96 chained orders could pass the writer's buffer: the oldest go, the rest show as their stock and orders arrive)
             {
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
@@ -1418,6 +1428,7 @@ public static class ConstructCrafting
                     w.U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
                 }
             }
+            w.PatchU8(qat, (byte)sent);
             n++;
         }
         w.PatchU8(at, (byte)n);

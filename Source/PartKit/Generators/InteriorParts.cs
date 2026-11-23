@@ -506,6 +506,8 @@ public sealed partial class InteriorParts : IPartGenerator
         p.Add(B([-0.05, -0.12, 0.04], [0.05, 0.0, 0.42], Steel, false, ("finish", "steel"))); // arm
         p.Add(B([-0.45, -0.3, 0.3], [0.45, -0.1, 0.62], Darks, false, ("finish", "matte paint"))); // head
         p.Add(GlowBox([-0.42, -0.32, 0.33], [0.42, -0.3, 0.59]));
+        // (Sean 2026-11-23: a floodlight 11 m up a hall's column lit a 4.5 m ball round itself: a wide cone down and out from the wall)
+        p.D["light"] = new PyDict { ["range"] = 24, ["strength"] = 1.6, ["cone"] = 45, ["dir"] = Py.L(0, -1, 0.7), ["at"] = Py.L(0, -0.36, 0.46) };
         return MainsLamp(p, 120);
     }
 

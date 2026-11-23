@@ -561,6 +561,7 @@ public sealed partial class Construct
     public int BreachStamp = -1, BreachParts; // (ConstructBreach.cs: the hull grapples and cutters counted at this RebuildStamp)
     public int LampStamp = -1; // (phase 7b: LampParts was gathered at this RebuildStamp; ConstructLamps.cs)
     public int[] LampParts = []; // the parts that light the space round them (a lined bay's lamps, a Lamp logic part)
+    public float LampReachMore; // how much farther than a plain lamp its longest lamp throws (a part's "light" range), for the eye's distance cull
     public int AmbStamp = -1; // (PartAmbience.cs: AmbParts was gathered at this RebuildStamp)
     public int[] AmbParts = []; // the parts with something about them that moves or sounds (a chimney's smoke, a valve's steam, a searchlight, a tannoy)
     public int[] MainsFeed = []; // (interiors phase 11) by part, for mains lamps: the part whose wire switches it (-1: none, lit from the circuit alone); gathered with LampParts

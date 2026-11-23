@@ -649,6 +649,14 @@ public sealed partial class ConstructPartDef
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
     public (Vector3 At, Vector3 Colour)[] Lamps = [];
+    /// <summary>
+    /// A lamp's light (part file "light", Sean 2026-11-23: high-bay pendants 14 m up lit nothing, every lamp being a 4.5 m bulb): how far it
+    /// reaches (m; 0: <see cref="ConstructLamps.Range"/>), its strength (1: <see cref="ConstructLamps.Strength"/>), and for a spot its
+    /// direction in the part's frame and half angle (degrees; 0: all round), and where its light comes from (null: the part's middle).
+    /// </summary>
+    public float LightRange, LightStrength = 1f, LightCone;
+    public Vector3 LightDir;
+    public Vector3? LightAt;
     public int StatusBox = -1; // the status lamp ("status" on a box; ProductionLines), or -1
     public int[] UseBoxes = []; // the boxes the aim glow covers ("use" in the file, an Analog Lever's handle); none: the part's use region, or all of it
     public float IdleRpm, PeakRpm, MaxRpm; // engine: idle, where the curve peaks, the limiter
@@ -1449,7 +1457,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -2125,6 +2133,7 @@ public static partial class ConstructParts
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
         SmartRotation.ParseFaces(d, Opt(root, "faces"), Opt(root, "faceAxis"), file);
+        ParseLight(d, root, file);
         CockpitStations.Give(d); // (a seat's Station setting: CockpitStations.cs)
         ConstructConfig.Parse(d, root, file); // (last: it folds in the role's own choice and checks the keys fit the part)
         return d;
@@ -2428,6 +2437,31 @@ public static partial class ConstructParts
         d.GunBlastDamage = Opt(b, "blastDamage") is { } bd ? Num(bd, file, "gun.blastDamage") : d.GunDamage;
         Range(d.GunBlastDamage, 0, 100000, file, "gun.blastDamage");
         d.GunMuzzle = Vec(Need(b, "muzzle", bw), file, "gun.muzzle");
+    }
+
+    /// <summary>A lamp's "light" block: range (m), strength, cone (half angle, degrees), dir and at (in the part's frame).</summary>
+    private static void ParseLight(ConstructPartDef d, JsonElement root, string file)
+    {
+        if (Opt(root, "light") is not { } b)
+            return;
+        Known(b, ["range", "strength", "cone", "dir", "at"], file + ": light");
+        if (d.Logic != CLogic.Lamp)
+            throw new ConstructPartException($"{file}: only a lamp (logic kind lamp) has a \"light\"");
+        d.LightRange = Opt(b, "range") is { } r ? Num(r, file, "light.range") : 0f;
+        Range(d.LightRange, 0, ConstructLamps.MaxRange, file, "light.range");
+        d.LightStrength = Opt(b, "strength") is { } st ? Num(st, file, "light.strength") : 1f;
+        Range(d.LightStrength, 0.1f, 4f, file, "light.strength");
+        d.LightCone = Opt(b, "cone") is { } c ? Num(c, file, "light.cone") : 0f;
+        Range(d.LightCone, 0, 89, file, "light.cone");
+        if (d.LightCone > 0f)
+        {
+            var dir = Vec(Need(b, "dir", file + ": light (a cone)"), file, "light.dir");
+            if (dir.LengthSquared() < 1e-6f)
+                throw new ConstructPartException($"{file}: \"light.dir\" must not be [0, 0, 0]");
+            d.LightDir = Vector3.Normalize(dir);
+        }
+        if (Opt(b, "at") is { } at)
+            d.LightAt = Vec(at, file, "light.at");
     }
 
     private static readonly string[] LogicKinds = Enum.GetNames<CLogic>().Skip(1).Select(n => n.ToLowerInvariant()).ToArray();
