@@ -96,7 +96,7 @@ public static partial class ConstructLifters
         l.To = Vector3.Transform(place - lp, inv);
         l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
         l.Age = 0;
-        l.Rise = RiseOf(c, l.Part, ld);
+        l.Rise = ClearRise(world, c, l, ld, d);
         l.Dur = CarryTicks(ld, l, d);
         l.Why = LiftWhy.None;
         l.ToHold = false;

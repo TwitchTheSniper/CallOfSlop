@@ -74,6 +74,42 @@ public static partial class ConstructLifters
         return false;
     }
 
+    /// <summary>Where the next piece of a kind would lie on a rack or pad (its middle, world), as the rack would stack it now.</summary>
+    private static bool SlotFor(Construct b, int part, CStore st, ConstructPartDef d, out Vector3 at)
+    {
+        at = default;
+        part = ConstructPads.Owner(b, part);
+        if (!ConstructRackPack.NextOrigin(ConstructPads.RackDef(b, part), st, d, out var o))
+            return false;
+        at = PartPoint(b, part, o + (d.BoundsMin + d.BoundsMax) * 0.5f);
+        return true;
+    }
+
+    /// <summary>
+    /// Where a put onto a rack or pad lowers, in <see cref="RackSpot"/>'s terms (the hold's floor under the piece's middle, less the
+    /// 5 cm the callers add back): the slot the rack will stack the piece in when the hand reaches it there, else the nearest point.
+    /// </summary>
+    internal static bool PutSpot(Construct b, int part, CStore st, ConstructPartDef d, LifterDef ld, Vector3 shoulder, Quaternion lr, float lift, out Vector3 at)
+    {
+        if (SlotFor(b, part, st, d, out at) && InReach(ld, shoulder, lr, at, lift, out _))
+        {
+            at.Y -= (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+            return true;
+        }
+        return RackSpot(b, part, ld, shoulder, lr, lift, lift, out at);
+    }
+
+    /// <summary>The top piece of a kind's last stack on a rack or pad (its middle, world), when the hand reaches it: where a pick lifts from.</summary>
+    internal static bool TopSlot(Construct b, int part, CStore st, ConstructPartDef d, LifterDef ld, Vector3 shoulder, Quaternion lr, out Vector3 at)
+    {
+        at = default;
+        part = ConstructPads.Owner(b, part);
+        if (!ConstructRackPack.LastOf(st, (ushort)d.Id, out var slab, out var lane))
+            return false;
+        ConstructWorld.RackPieceAt(b, part, st, slab, lane, out at, out _);
+        return InReach(ld, shoulder, lr, at, SafeLift, out _) && InReach(ld, shoulder, lr, at, WristLift(d), out _);
+    }
+
     /// <summary>A point's place in the world: where a piece is put or picked (its middle, before the piece's own half height).</summary>
     public static bool PointAt(Construct b, in LiftPoint pt, out Vector3 at)
     {
@@ -300,7 +336,7 @@ public static partial class ConstructLifters
             {
                 // (a want with no room is no taker: a full pick pad said it wanted the piece and refused it at the end, 2026-11-23)
                 if (world.StoreOf(b, pt.Part) is not { } wst || ConstructConveyor.RackCheck(b, pt.Part, wst, d) != 0
-                    || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                    || !PutSpot(b, pt.Part, wst, d, ld, shoulder, lr, lift, out p))
                     continue;
             }
             else if (!PointAt(b, pt, out p))
@@ -325,7 +361,7 @@ public static partial class ConstructLifters
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
-            if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out var p))
+            if (!PutSpot(b, pt.Part, st, d, ld, shoulder, lr, lift, out var p))
                 continue;
             var dist = Vector3.DistanceSquared(p, shoulder) - StockTargets.Priority(b, pt.Part) * 1e4f;
             if (dist >= bestDist)
@@ -452,12 +488,16 @@ public static partial class ConstructLifters
                     continue;
                 var to = PutFor(world, l, ld, shoulder, lr, d, storage: false, skip: k, out var toAt);
                 var ds = DirectIf(StoreLike(l, to), world, c, l, ld, shoulder, lr, d, to, out var dsc, out var dt, out var dj);
-                if (ds < 0 && to < 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out var from))
+                if (ds < 0 && to < 0)
+                    continue;
+                var slot = TopSlot(b, pt.Part, st, d, ld, shoulder, lr, out var from);
+                if (!slot && !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out from))
                     continue;
                 if (!world.StationTake(b, pt.Part, st, d))
                     continue;
                 world.CraftChanged(b);
-                from.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+                if (!slot)
+                    from.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
                 Freeform.PartWorld(b, pt.Part, out _, out var rr);
                 if (ds >= 0)
                     StartDirect(world, c, l, ld, lp, lr, d, from, rr, dsc!, dt, dj!, ds); // (a stock piece straight to the station step, not by its pick pad)
@@ -538,7 +578,14 @@ public static partial class ConstructLifters
             Vector3 p;
             if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
             {
-                if (ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                if (ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0)
+                    continue;
+                if (pt.Kind == LiftPointKind.Rack && SlotFor(b, pt.Part, st, d, out p) && InReach(ld, shoulder, lr, p, lift, out _))
+                {
+                    at = p; // (Sean 2026-11-23: down where the piece will lie on the pad, not at the pad's corner nearest the crane)
+                    return k;
+                }
+                if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
                     continue;
             }
             else if (!Wants(world, b, pt, d) || Bound(world, l, pt) || !PointAt(b, pt, out p))
@@ -683,7 +730,7 @@ public static partial class ConstructLifters
         l.ToRot = Quaternion.Normalize(inv * toRot);
         l.From = Vector3.Transform(from - Vector3.Transform(mid, fromRot) - lp, inv);
         l.To = Vector3.Transform(toAt - Vector3.Transform(mid, toRot) - lp, inv);
-        l.Rise = RiseOf(c, l.Part, ld);
+        l.Rise = ClearRise(world, c, l, ld, d);
         l.Dur = CarryTicks(ld, l, d);
         Begin(l);
         (l.State, l.Why, l.ToHold, l.Moved, l.Fitted) = (LiftState.Carry, LiftWhy.Carrying, false, true, false);

@@ -23,6 +23,7 @@ public sealed class LifterDef
     // (worked out from the rail runs on each rebuild into a copy of the def for that part: ConstructLifters.DefOf), down to Down.
     public float Span; // "span": near rail to far rail (m)
     public float Hoist = 1; // "hoist": m/s up and down (Speed is the travel and traverse together)
+    public float Ramp; // "ramp" (a crane): seconds from standing to top speed on each leg, on a sine-shaped push (Sean 2026-11-23); 0: no easing
     public float Depth; // "depth": the hook's highest point under the rails' top line
     public float RunLo, RunHi; // (a copy's) the rails both runs share, along +z from Base
     public float AcrossMin, AcrossMax; // (a copy's) the reach across, from the file's "reach" (ReachMin and ReachMax become the box's horizontal radius)
@@ -41,7 +42,7 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall" or "ramp"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
@@ -63,6 +64,7 @@ public sealed class LifterDef
             d.Span = Num(e, "span", 1, 128, file);
             d.Hoist = Num(e, "hoist", 0.05f, 50, file);
             d.Depth = Num(e, "depth", 0, 32, file);
+            d.Ramp = e.TryGetProperty("ramp", out _) ? Num(e, "ramp", 0, 10, file) : 1.5f;
             d.Hall = e.TryGetProperty("hall", out var hl) && hl.ValueKind == JsonValueKind.True;
             (d.AcrossMin, d.AcrossMax) = (d.ReachMin, d.ReachMax);
             if (d.ReachMax > d.Span)
@@ -690,7 +692,7 @@ public static partial class ConstructLifters
                 l.To = Vector3.Transform(place - lp, inv);
                 l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
                 l.Age = 0;
-                l.Rise = RiseOf(c, l.Part, ld);
+                l.Rise = ClearRise(world, c, l, ld, d);
                 l.Dur = CarryTicks(ld, l, d);
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
@@ -884,7 +886,7 @@ public static partial class ConstructLifters
                 l.To = Vector3.Transform(hold - lp, inv) - Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, rot); // (HoldPick's point is the piece's middle: To is its origin)
                 l.ToRot = rot;
                 l.Age = 0;
-                l.Rise = RiseOf(c, l.Part, ld);
+                l.Rise = ClearRise(world, c, l, ld, d);
                 l.Dur = CarryTicks(ld, l, d);
                 Begin(l);
                 (l.State, l.ToHold, l.Why, l.Moved, l.Fitted) = (LiftState.Carry, true, LiftWhy.PutBack, true, false);
@@ -988,11 +990,11 @@ public static partial class ConstructLifters
         if (ld.Bridge)
         {
             BridgeLegs(ld, from, to, lift, rise, out _, out var up, out var across, out var down);
-            sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + across / ld.Speed + (up + down) / ld.Hoist;
+            sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + LegTime(across, ld.Speed, ld.Ramp) + LegTime(up, ld.Hoist, ld.Ramp) + LegTime(down, ld.Hoist, ld.Ramp);
         }
         else
             sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + PathLength(ld, from, to, lift, rise) / ld.Speed;
-        return Math.Clamp((int)MathF.Ceiling(sec * World.TickRate), Every, (ld.Bridge ? 600 : 60) * World.TickRate); // (a Capital crane crosses 64 m at 1 m/s and hoists 48 m at 0.5)
+        return Math.Clamp((int)MathF.Ceiling(sec * World.TickRate), Every, (ld.Bridge ? 600 : 60) * World.TickRate); // (a Capital crane crosses 128 m at 4 m/s and hoists 48 m at 1.5)
     }
 
     /// <summary>
@@ -1033,6 +1035,48 @@ public static partial class ConstructLifters
             d += MathF.Tau;
         return d;
     }
+
+    /// <summary>
+    /// A crane leg's seconds: <paramref name="d"/> m at top speed <paramref name="v"/>, reached in <paramref name="ramp"/> s on a
+    /// sine-shaped push (speed rises as (1 - cos)/2, so the push starts and ends at nothing) and shed the same way before the stop.
+    /// A leg too short for top speed peaks lower, the ramp shortened to fit.
+    /// </summary>
+    internal static float LegTime(float d, float v, float ramp)
+    {
+        if (d <= 0)
+            return 0;
+        if (ramp <= 0)
+            return d / v;
+        var both = v * ramp; // (the ramp up and the ramp down together: each covers v * ramp / 2)
+        return d >= both ? 2 * ramp + (d - both) / v : 2 * MathF.Sqrt(d * ramp / v);
+    }
+
+    /// <summary>How far along a leg (<see cref="LegTime"/>) the hook is <paramref name="t"/> s in.</summary>
+    internal static float LegAt(float d, float v, float ramp, float t)
+    {
+        if (t <= 0 || d <= 0)
+            return 0;
+        if (ramp <= 0)
+            return MathF.Min(d, t * v);
+        var total = LegTime(d, v, ramp);
+        if (t >= total)
+            return d;
+        float rp, vp;
+        if (d >= v * ramp)
+            (rp, vp) = (ramp, v);
+        else
+        {
+            rp = MathF.Sqrt(d * ramp / v);
+            vp = d / rp;
+        }
+        if (t < rp)
+            return Ramped(vp, rp, t);
+        if (t <= total - rp)
+            return vp * rp * 0.5f + vp * (t - rp);
+        return d - Ramped(vp, rp, total - t);
+    }
+
+    private static float Ramped(float vp, float rp, float t) => vp * 0.5f * (t - rp / MathF.PI * MathF.Sin(MathF.PI * t / rp));
 
     /// <summary>A crane's legs: the carry height, the hoist up, the straight run across (travel and traverse together), the lowering.</summary>
     private static void BridgeLegs(LifterDef ld, Vector3 from, Vector3 to, float lift, float rise, out float h, out float up, out float across, out float down)
@@ -1088,20 +1132,20 @@ public static partial class ConstructLifters
         {
             // A crane: hoist, travel and traverse together in a straight line at the carry height, lower (arms-and-cranes.md 3.3).
             BridgeLegs(ld, from, to, d != null ? WristLift(d) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
-            var tu = bu / ld.Hoist;
+            var tu = LegTime(bu, ld.Hoist, ld.Ramp);
             if (sec < tu)
-                return new Vector3(from.X, from.Y + sec * ld.Hoist, from.Z);
+                return new Vector3(from.X, from.Y + LegAt(bu, ld.Hoist, ld.Ramp, sec), from.Z);
             sec -= tu;
-            var ta = ba / ld.Speed;
+            var ta = LegTime(ba, ld.Speed, ld.Ramp);
             if (sec < ta && ba > 1e-4f)
             {
-                var f = sec / ta;
+                var f = LegAt(ba, ld.Speed, ld.Ramp, sec) / ba;
                 rot = Quaternion.Slerp(l.FromRot, l.ToRot, f);
                 return new Vector3(from.X + (to.X - from.X) * f, bh, from.Z + (to.Z - from.Z) * f);
             }
             sec -= ta;
             rot = l.ToRot;
-            var dn = sec * ld.Hoist;
+            var dn = LegAt(bd, ld.Hoist, ld.Ramp, sec);
             return dn < bd ? new Vector3(to.X, bh - dn, to.Z) : to;
         }
         var h = CarryY(ld, from, to, d != null ? WristLift(d) : SafeLift, l.Rise);

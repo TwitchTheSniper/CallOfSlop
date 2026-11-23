@@ -171,6 +171,28 @@ public static class ConstructRackPack
         return def;
     }
 
+    /// <summary>
+    /// Where the next piece of a kind would go (its own origin, the rack part's frame, unturned), as <see cref="Place"/> would put it now:
+    /// on its kind's lowest stack with room, else at the start of a new column. False: it wouldn't go in.
+    /// </summary>
+    public static bool NextOrigin(ConstructPartDef rd, CStore st, ConstructPartDef d, out Vector3 origin)
+    {
+        origin = default;
+        if (Place(rd, st, d, true, out var slab, out var lane) != 0 || !Fit(rd, d, out var lanes, out var layers, out var lenMm))
+            return false;
+        if (slab < st.SlabN && st.Slabs![slab].Def == d.Id && st.SlabLanes![slab * MaxLanes + lane] < st.Slabs[slab].Layers)
+        {
+            origin = Origin(rd, st.Slabs[slab], d, lane, st.SlabLanes[slab * MaxLanes + lane]);
+            return true;
+        }
+        var gap = (int)(GapZ * 1000);
+        var at = 0;
+        for (var i = 0; i < slab && i < st.SlabN; i++)
+            at = st.Slabs![i].Z0Mm + st.Slabs[i].LenMm + gap; // (Place's gap walk, up to the column it would go before)
+        origin = Origin(rd, new RackSlab { Def = d.Id, Z0Mm = (ushort)at, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers }, d, 0, 0);
+        return true;
+    }
+
     /// <summary>The stack of a kind to take from when none is aimed at: its last column's highest stack.</summary>
     public static bool LastOf(CStore st, ushort def, out int slab, out int lane)
     {
