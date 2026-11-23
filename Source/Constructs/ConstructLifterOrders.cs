@@ -105,12 +105,14 @@ public static partial class ConstructLifters
         {
             if (world.StoreOf(fb, o.From.Part) is not { } st || ConstructCrafting.Available(world, st, (ushort)d.Id) <= 0)
                 return LiftOrderWhy.NoPiece;
-            if (!RackSpot(fb, o.From.Part, ld, shoulder, lr, SafeLift, lift, out var at))
+            var slot = TopSlot(fb, o.From.Part, st, d, ld, shoulder, lr, out var at); // (off the piece where it lies)
+            if (!slot && !RackSpot(fb, o.From.Part, ld, shoulder, lr, SafeLift, lift, out at))
                 return LiftOrderWhy.Unreached;
             if (!world.StationTake(fb, o.From.Part, st, d))
                 return LiftOrderWhy.NoPiece;
             world.CraftChanged(fb);
-            at.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+            if (!slot)
+                at.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
             Freeform.PartWorld(fb, o.From.Part, out _, out var rr);
             StartCarry(world, c, l, ld, lp, lr, d, 255, 0, at, rr, to, toAt);
             return LiftOrderWhy.None;
@@ -162,7 +164,7 @@ public static partial class ConstructLifters
         {
             if (world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 return false;
-            if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out at))
+            if (!PutSpot(b, pt.Part, st, d, ld, shoulder, lr, lift, out at))
                 return false;
         }
         else

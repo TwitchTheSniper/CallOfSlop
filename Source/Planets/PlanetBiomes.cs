@@ -28,6 +28,23 @@ public sealed class BiomePlant
     /// <summary>The steepest ground it grows on (degrees).</summary>
     public float Slope = 32;
 
+    /// <summary>
+    /// The heights it grows at (metres; it thins out over the biomes' <see cref="PlanetBiomes.HeightSoft"/> outside them).
+    /// Sean (2026-11-23): pines don't grow in the lowlands, broadleaves don't grow on the mountains.
+    /// </summary>
+    public float HeightMin = -1e6f, HeightMax = 1e6f;
+
+    /// <summary>
+    /// 0 to 1: how much this kind of tree grows in stands of its own kind (Sean, 2026-11-23: "groups of one type of tree are
+    /// together"). Each kind has its own stand field over the land (<see cref="PlanetBiomes.StandScale"/> across); where
+    /// its field is the highest of the kinds that could grow there it is up to 1 + stand times as thick, elsewhere down to
+    /// 1 - stand. Kinds share the field by type, so a world's birches stand together whichever biome they are in.
+    /// </summary>
+    public float Stand;
+
+    /// <summary>1: sizes even over the range; more: small ones common, big ones rare (a size is min + range * u^skew).</summary>
+    public float Skew = 1;
+
     public int Seed;
 }
 
@@ -89,6 +106,13 @@ public sealed class PlanetBiomes
     }
 
     public const float MaxVigour = 2.2f;
+
+    /// <summary>How wide a stand of one kind of tree is (metres; <see cref="BiomePlant.Stand"/>).</summary>
+    public float StandScale = 260;
+
+    /// <summary>A kind of plant's stand field at a place (about -1 to 1; the same for every biome).</summary>
+    public float StandAt(FoliageType t, double x, double y, double z, double radius) =>
+        (float)Planetoid.Fbm3(x * radius, y * radius, z * radius, StandScale, 2, 0.5, 2.3, Seed * 13 + 701 + (int)t * 37);
 
     /// <summary>Keep the kept flat places (the <c>flatten</c> features) clear of plants.</summary>
     public bool ClearFlats = true;
@@ -225,6 +249,7 @@ public sealed class PlanetBiomes
                 case "heightsoft": p.HeightSoft = (float)Num(v, where, "heightSoft", 1, 5000); break;
                 case "clumps": p.Clumps = (float)Num(v, where, "clumps", 0, 1); break;
                 case "clumpscale": p.ClumpScale = (float)Num(v, where, "clumpScale", 5, 5000); break;
+                case "standscale": p.StandScale = (float)Num(v, where, "standScale", 10, 20000); break;
                 case "clearflats": p.ClearFlats = v.ValueKind == JsonValueKind.True ? true : v.ValueKind == JsonValueKind.False ? false : throw new MapFileException($"{where}.clearFlats should be true or false"); break;
                 case "list":
                     if (v.ValueKind != JsonValueKind.Array)
@@ -234,7 +259,7 @@ public sealed class PlanetBiomes
                         p.List.Add(ParseBiome(b, $"{where}.list[{k++}]", p.List.Count));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: seed, tempPole, tempEquator, lapse, tempNoise, tempScale, wetScale, wetLow, wetLowEdge, wetLowAdd, tempSoft, wetSoft, heightSoft, clumps, clumpScale, clearFlats, list)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: seed, tempPole, tempEquator, lapse, tempNoise, tempScale, wetScale, wetLow, wetLowEdge, wetLowAdd, tempSoft, wetSoft, heightSoft, clumps, clumpScale, standScale, clearFlats, list)");
             }
         }
         if (p.List.Count is 0 or > MaxBiomes)
@@ -294,7 +319,7 @@ public sealed class PlanetBiomes
             {
                 case "type":
                     var name = v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
-                    if (!Enum.TryParse<FoliageType>(name, true, out var t) || !Enum.IsDefined(t) || int.TryParse(name, out _) || t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop or FoliageType.Stem)
+                    if (!Enum.TryParse<FoliageType>(name, true, out var t) || !Enum.IsDefined(t) || int.TryParse(name, out _) || PlanetFlora.LayerOf(t) < 0)
                         throw new MapFileException($"{where}.type: no plant \"{name}\" (planets grow: {string.Join(", ", Enum.GetValues<FoliageType>().Where(x => PlanetFlora.LayerOf(x) >= 0))})");
                     p.Type = t;
                     typed = true;
@@ -307,8 +332,11 @@ public sealed class PlanetBiomes
                 case "patch": p.Patch = (float)Num(v, where, "patch", 0, 1); break;
                 case "patchscale": p.PatchScale = (float)Num(v, where, "patchScale", 1, 2000); break;
                 case "slope": p.Slope = (float)Num(v, where, "slope", 0, 90); break;
+                case "height": (p.HeightMin, p.HeightMax) = Pair(v, where, "height"); break;
+                case "stand": p.Stand = (float)Num(v, where, "stand", 0, 1); break;
+                case "skew": p.Skew = (float)Num(v, where, "skew", 0.2, 6); break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: type, density, size, color, bark, jitter, patch, patchScale, slope)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: type, density, size, color, bark, jitter, patch, patchScale, slope, height, stand, skew)");
             }
         }
         if (!typed)
@@ -317,8 +345,9 @@ public sealed class PlanetBiomes
             (p.SizeMin, p.SizeMax) = Foliage.DefaultSize(p.Type);
         if (!coloured)
             p.Color = Foliage.DefaultColor(p.Type);
-        if (p.SizeMin <= 0 || p.SizeMax < p.SizeMin || p.SizeMax > 40)
-            throw new MapFileException($"{where}.size is a range above 0, up to 40");
+        var biggest = PlanetFlora.LayerOf(p.Type) == PlanetFlora.MonolithLayer ? PlanetFlora.MaxMonolithScale : PlanetFlora.MaxTreeHeight;
+        if (p.SizeMin <= 0 || p.SizeMax < p.SizeMin || p.SizeMax > biggest)
+            throw new MapFileException($"{where}.size is a range above 0, up to {biggest} for a {p.Type}");
         var max = PlanetFlora.MaxDensity(PlanetFlora.LayerOf(p.Type));
         if (p.Density > max)
             throw new MapFileException($"{where}.density: a {p.Type} grows at most {max:0.###} a square metre");
@@ -347,13 +376,14 @@ public sealed class PlanetBiomes
     public void Mix(Action<float> mix)
     {
         mix(Seed); mix(TempPole); mix(TempEquator); mix(Lapse); mix(TempNoise); mix(TempScale);
-        mix(WetScale); mix(WetLow); mix(WetLowEdge); mix(WetLowAdd); mix(ClearFlats ? 1 : 0); mix(Clumps); mix(ClumpScale);
+        mix(WetScale); mix(WetLow); mix(WetLowEdge); mix(WetLowAdd); mix(ClearFlats ? 1 : 0); mix(Clumps); mix(ClumpScale); mix(StandScale);
         foreach (var b in List)
         {
             mix(b.TempMin); mix(b.TempMax); mix(b.WetMin); mix(b.WetMax); mix(b.HeightMin); mix(b.HeightMax); mix(b.SlopeMax);
             foreach (var p in b.Plants)
             {
                 mix((float)p.Type); mix(p.Density); mix(p.SizeMin); mix(p.SizeMax); mix(p.Slope); mix(p.Patch); mix(p.PatchScale);
+                mix(p.HeightMin); mix(p.HeightMax); mix(p.Stand); mix(p.Skew);
             }
         }
     }

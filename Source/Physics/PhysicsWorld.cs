@@ -447,6 +447,18 @@ public sealed class PhysicsWorld : IWorldQuery
                 sub = 0;
             }
         }
+        var rockNormal = default(Vector3);
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet is { Flora: { } flora } && best > 0 && !filter.Ignores(ShapeKind.Terrain, 0))
+        {
+            var t = flora.RayRocks(o, d, best, out rockNormal);
+            if (t < best)
+            {
+                best = t;
+                kind = ShapeKind.Rock;
+                index = 0;
+                sub = 0;
+            }
+        }
         var trunkNormal = default(Vector3);
         if ((filter.Layers & QueryLayers.Trunks) != 0 && best > 0 && Forest is { } forest)
         {
@@ -500,6 +512,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
                 ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
                 ShapeKind.Trunk => trunkNormal,
+                ShapeKind.Rock => rockNormal,
                 _ => Geometry.BoxEntryNormal(_sweeps[index].Min, _sweeps[index].Max, o, d, best),
             };
         }
@@ -626,6 +639,15 @@ public sealed class PhysicsWorld : IWorldQuery
         }
         if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.BodyInTrunk(feet, height, World.BodyRadius))
             return true;
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet?.Flora is { } rocks)
+        {
+            // (a planet's monolith: the body as a box standing along the planet's up)
+            var up = Vector3.Normalize(feet - Planet.Center);
+            var ex = Vector3.Normalize(Vector3.Cross(MathF.Abs(up.Y) < 0.95f ? Vector3.UnitY : Vector3.UnitX, up));
+            var r = World.BodyRadius;
+            if (rocks.ObbInRock(new Obb(feet + up * (height * 0.5f), new Vector3(r, height * 0.5f, r), ex, up, Vector3.Cross(ex, up))))
+                return true;
+        }
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
@@ -723,6 +745,8 @@ public sealed class PhysicsWorld : IWorldQuery
         }
         if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.PointInTrunk(point, radius))
             return true;
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet?.Flora is { } rocks && rocks.ObbInRock(new Obb(point, new Vector3(radius), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ)))
+            return true; // (a planet's monolith)
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
             if (!Terrain.HasVoids)
@@ -773,6 +797,8 @@ public sealed class PhysicsWorld : IWorldQuery
         }
         if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.ObbInTrunk(box, lo, hi))
             return true;
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet?.Flora is { } rocks && rocks.ObbInRock(box))
+            return true; // (a planet's monolith)
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
             if (Terrain.GroundBelow(box.Center.X, box.Center.Z, box.Center.Y) > box.Center.Y || Terrain.CeilingAbove(box.Center.X, box.Center.Z, box.Center.Y) < box.Center.Y)
@@ -936,6 +962,9 @@ public sealed class PhysicsWorld : IWorldQuery
             AddTerrain(min, max, into);
         if ((layers & QueryLayers.Terrain) != 0 && Planet != null && !filter.Ignores(ShapeKind.Terrain, 0))
             Planet.Gather(min, max, into);
+        if ((layers & QueryLayers.Trunks) != 0 && Planet?.Flora is { } flora && !filter.Ignores(ShapeKind.Terrain, 0))
+            flora.GatherRocks(min, max, into); // (a planet's pillars and arches, PlanetFlora.cs: with the trunks, so the
+                                               // construct contacts, whose filters leave trunks out, ask them once themselves)
         if ((layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             var boxes = MoverPhysics.At(_map!, filter.MoverTick);

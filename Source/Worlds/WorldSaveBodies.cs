@@ -177,8 +177,8 @@ public sealed partial class ConstructWorld
             b.HaulEscort = c.HaulEscort;
             b.Pos = c.Pos;
             b.Rot = c.Rot;
-            if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
-                (b.Pos, b.Rot) = (endPos, endRot); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
+            if (c.HeldBy != 0 && (BodyCarries.Count > 0 || BodyRolls.Count > 0) && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
+                (b.Pos, b.Rot, b.Frozen) = (endPos, endRot, BodyRolls.Count > 0 ? ConstructRollOut.SavedFrozen(this, c, b.Frozen) : b.Frozen); // (a submodule mid-carry is saved at its spot: the hand's carry isn't saved, ConstructLifterBodies.cs)
             if (c.GantryHold && c.HeldBy != 0 && ConstructGantry.SavedPose(this, c, out var downPos, out var downRot))
                 (b.Pos, b.Rot, b.Asleep) = (downPos, downRot, false); // (a shell a Shell Gantry's clamp holds up loads standing on the bay's floor: the clamp isn't saved)
             if (c.HeldBy != 0 && ModuleFitters.Holds(this, c.Id))

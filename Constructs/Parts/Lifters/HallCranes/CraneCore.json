@@ -55,9 +55,10 @@
       30.0,
       64.0
     ],
-    "speed": 1.5,
-    "hoist": 0.75,
-    "handle": 3.0
+    "speed": 5.0,
+    "hoist": 2.0,
+    "handle": 3.0,
+    "ramp": 2.0
   },
   "config": [
     {

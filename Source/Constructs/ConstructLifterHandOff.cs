@@ -233,7 +233,7 @@ public static partial class ConstructLifters
             Vector3 p;
             if (pt.Kind == LiftPointKind.Rack)
             {
-                if (world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                if (world.StoreOf(b, pt.Part) is not { } st || ConstructConveyor.RackCheck(b, pt.Part, st, d, ordered: true) != 0 || !PutSpot(b, pt.Part, st, d, ld, shoulder, lr, lift, out p))
                     continue;
             }
             else if (RollerRuns.StartRunAt(b, pt.Part) is var run && (!RunRoom(b, run, d) || PicksEndOf(l, pt.Body, run, b) || Bound(world, l, pt) || !PointAt(b, pt, out p)))

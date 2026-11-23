@@ -25,6 +25,7 @@ public enum StationOp : byte
 /// <summary>A Building Station's job (<see cref="CPart.Station"/>; ConstructStation.cs). The first block is what both peers hold.</summary>
 public sealed partial class StationJob
 {
+    public ushort RolledBody; // server: the done body the station last tried to roll out of its bay (ConstructRollOut.FromStation; not saved)
     public string Name = ""; // the blueprint, by name (never an index: the list shifts)
     public StationState State;
     public ushort Body; // the frozen construct it builds (0: none yet)
@@ -1492,6 +1493,8 @@ public static partial class ConstructStation
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
         Console.WriteLine($"[station] {j.Name}: done in {s:0.0} s ({j.Steps} parts, {j.Links} links); costing {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms");
         world.StationChanged(c);
+        if (j.Role != 1 && !Dresses(j))
+            ConstructRollOut.FromStation(world, c, t, j); // (a way out of the bay: the build rolls out along it now, ConstructRollOut.cs)
     }
 
     /// <summary>The costing's slice; at its end the bounds, the fit, the pose, the links' lengths and the kinds.</summary>
@@ -2096,6 +2099,8 @@ public static partial class ConstructStation
             j.OrderTicks = 0;
             if (j.Return.Count > 0)
                 GiveBack(world, c, t, j);
+            if (j.State == StationState.Done && j.Role != 1 && !Dresses(j) && world.BodyRolls.Count < 64)
+                ConstructRollOut.FromStation(world, c, t, j); // (done: rolled out of the bay along a Roller Tile run butted on it, ConstructRollOut.cs)
             if (j.State == StationState.Building && world.StoreOf(c, t) is { } hold && ConstructRecycler.Powered(world, c, t))
                 Orders(world, c, t, hold, j);
             if (j.State == StationState.Done && j.Repeat > 0 && Dresses(j) && BayClear(world, c, t, j) && ConstructRecycler.Powered(world, c, t))
@@ -2131,7 +2136,8 @@ public static partial class ConstructStation
             }
         }
         if (j.State != StationState.Building)
-            return j.Return.Count > 0 || j.State == StationState.Done && j.Repeat > 0;
+            return j.Return.Count > 0 || j.State == StationState.Done && j.Repeat > 0
+                || j.State == StationState.Done && j.Body != 0 && j.RolledBody != j.Body && j.Role != 1 && !Dresses(j) && ConstructRollOut.RunOut(c, t) >= 0; // (open until its build has rolled out)
         if (--j.FitTicks > 0)
             return true;
         j.FitTicks = OrderEvery; // (nothing to fit: look again in half a second)

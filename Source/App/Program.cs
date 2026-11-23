@@ -1257,7 +1257,7 @@ public static unsafe partial class Program
         if (!CameraFeeds.InPass) // (a camera's small picture does without both)
         {
             using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
-                FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
+                FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time, _game?.Constructs); // after the opaque boxes
             BenchPass(5);
             using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
                 DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
