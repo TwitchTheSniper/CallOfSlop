@@ -83,7 +83,7 @@ public sealed class CrewFittingsParts : IPartGenerator
         p.Add(Box([-0.12, 0.62, -0.2], [0.12, 0.66, 0.0], "#40c0e0", detail: true, shape: Kw(("glow", true))));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("wall", [-0.4, 0.125, 0], "-x"); // (its long side against a wall)
-        p.Set(("seat", Kw(("at", Py.L(0, 0.15, 0)), ("bunk", true))));
+        p.Set(("seat", Kw(("at", Py.L(0, 0.15, 0)), ("bunk", true), ("g", 40))));
         return p.Stats(90, 220, 4, 2.5);
     }
 
