@@ -177,11 +177,12 @@ public static unsafe class SkyRenderer
             // Sun: halo, then the disc.
             float sd = max(dot(dt, uSunPos), 0.0);
             col += uSunGlow * (pow(sd, 700.0) * 0.9 + (pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * (0.2 + 0.8 * uAir)) * above; // (the wide glow is the air's)
+            float sunDisc = 0.0;
             if (uSunDisc.w > 0.0)
             {
                 float aa = max(fwidth(sd), 1e-5);
-                float disc = smoothstep(uSunDisc.w - aa, uSunDisc.w + aa, sd) * above;
-                col = mix(col, max(col, uSunDisc.rgb), disc); // never darker than the glow round it
+                sunDisc = smoothstep(uSunDisc.w - aa, uSunDisc.w + aa, sd) * above;
+                col = mix(col, max(col, uSunDisc.rgb), sunDisc); // never darker than the glow round it
             }
 
             // Far bodies (a map in a star system, Source/Render/Sky/SpaceSky.cs): spheres lit from their own side, with
@@ -271,6 +272,9 @@ public static unsafe class SkyRenderer
                 cc += uSunDisc.rgb * (pow(sd, 10.0) * (1.0 - thick) * 0.35); // light through thin edges near the sun
                 cc = mix(cc, sky, (1.0 - smoothstep(0.0, 0.35, d.y)) * 0.55); // distance haze
                 col = mix(col, cc, a);
+                // The disc shows through the layer, dimmed by how thick the cloud in front is (Sean, 2026-11-23: the sun
+                // was a faint smudge behind Caledon's clouds); only a thick bank hides it.
+                col = mix(col, max(col, uSunDisc.rgb), sunDisc * a * (1.0 - thick) * 0.85);
 
                 vec2 p2 = d.xz / (d.y + 0.05) * (uCloud.z * 0.3) + uWind2;
                 float c2 = dot(texture(uNoise, vec2(p2.x * 0.8 + p2.y * 0.3, p2.y * 1.6)).gb, vec2(0.65, 0.35));
