@@ -34,6 +34,29 @@ public static partial class ConstructExtruder
             length = MathF.Min(MathF.Max(length, TablesReach(c, part)), MostLength(d));
     }
 
+    /// <summary>
+    /// Where a Roller Tile run off a block die's Run-out Tables starts (the Core's frame; ConstructRoutes.Point reads it for that run only,
+    /// a conveyor a player linked keeps the port's own point): its Piece out is the Core's own small die's, but a piece made on Die Blocks
+    /// lies across the whole die, so the run starts under that die's middle, at the die face, with the piece's underside on the line's bed
+    /// (ConstructConveyor.BedTop) as it lay on the die (<see cref="PieceY"/>, tables under it). Handed off there, the piece goes on straight
+    /// and level from where it was made, never turning toward the Core's corner first (Sean 2026-11-23). Walks no links: it is read per piece
+    /// per tick and frame. False: no block die.
+    /// </summary>
+    public static bool BlockDieOut(Construct c, int part, out Vector3 local)
+    {
+        local = default;
+        var d = c.Parts[part].D;
+        if (d.BlockRole != BlockRole.Core || !Sections(d) || d.IsGrowFormer || !MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0 || asm.Core != part)
+            return false;
+        var cell = d.BlockCell;
+        var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var size = Vector2.Min(new Vector2(asm.W * cell, asm.L * cell), d.ExtMaxSection);
+        var centreY = o.Y + (asm.Z0 + (asm.L - 1) * 0.5f) * cell;
+        var foot = centreY - size.Y * 0.5f + FootLift; // (the piece's underside on its tables: PieceY)
+        local = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * cell, foot - ConstructConveyor.BedTop, d.ExtDieAt.Z);
+        return true;
+    }
+
     /// <summary>How far past the die face the machine's Run-out Tables reach (m), joined to it, to its Die Blocks or to each other, and not broken.</summary>
     private static float TablesReach(Construct c, int part)
     {
