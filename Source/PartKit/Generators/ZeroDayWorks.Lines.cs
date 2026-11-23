@@ -8,9 +8,9 @@ public sealed partial class ZeroDayWorks
     private sealed partial class Script
     {
         // The armour lines (doc "Armour-forming lines"), each north to south: its own Sheet Extruder at the head (the inline extruder strip),
-        // a roller run onto its Panel Former's bed (the former's Core beside the bed's head), the bed and Out Tables, a run onto a skin pad. Lines A to C then hand the skin
-        // east into a Laser Cutter (a cutter takes its blank by conveyor only, and its bed lies on its Core's +x side, so the pad is turned to
-        // send east); the cut piece waits at a short run's end, where the bay's Hall Crane picks it. From there the crane carries each piece to
+        // a roller run onto its Panel Former's bed (the former's Core beside the bed's head), the bed and Out Tables, a short run. Lines A to C
+        // then run the skin straight on south onto a Laser Cutter's bed (a cutter takes its blank by conveyor only; its Core stands on the
+        // bed's long east side, so the gantry's legs stand along the long sides); the cut piece waits at a short run's end, where the bay's Hall Crane picks it. From there the crane carries each piece to
         // the dress station's bay, the dressed group to the Bake Oven's bed and the baked part to the line's stores. Line D has no cutter: its
         // skins wait on their pad for the crane and its Building Station, which builds each end before the oven bakes it.
 
@@ -27,7 +27,7 @@ public sealed partial class ZeroDayWorks
             // Bay 1 (x 2 to 30, the 30 m span): lines A and B side by side, the same line twice (a Hull Section key carries its side letter).
             foreach (var (line, x0, paint, east) in new[] { ("A", 5f, LineA, 13f), ("B", 19f, LineB, 27f) })
             {
-                ArmourLine(line, x0, paint, bedAcross: 3, bedAlong: 7, tables: 2, padAcross: 3, cutAlong: 7);
+                ArmourLine(line, x0, paint, bedAcross: 3, bedAlong: 7, tables: 2, cutAlong: 7);
                 // The dress station (a small Building Station: Core east of a 5 x 9 bay, Mast Blocks 3 high on its corners), its Bake Oven,
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
                 Station(east, -119, east - 10, -117, 5, 9, 3, paint);
@@ -38,14 +38,14 @@ public sealed partial class ZeroDayWorks
                     Arm("Industrial Loader Arm", east, z);
             }
             // Bay 2 west span (x 32 to 50): line C, the wide flat pieces.
-            ArmourLine("C", 33, LineC, bedAcross: 6, bedAlong: 12, tables: 1, padAcross: 6, cutAlong: 12);
+            ArmourLine("C", 33, LineC, bedAcross: 6, bedAlong: 12, tables: 1, cutAlong: 12);
             Station(47, -137, 33, -135, 7, 13, 3, LineC);
             Oven(39, -163, 33, 7, 13, 3, LineC);
             Stores("C", 33, -191, 6, 4, LineC, second: false, transferRows: 0);
             foreach (var z in new[] { -143f, -151f, -159f })
                 Arm("Industrial Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
-            ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, padAcross: 6, cutAlong: 0);
+            ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
             Station(69, -101, 53, -99, 8, 8, 6, LineD);
             Oven(61, -119, 53, 8, 8, 6, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
@@ -113,7 +113,7 @@ public sealed partial class ZeroDayWorks
         /// One armour line whose former's bed starts at column x <paramref name="x0"/> (its west column's centre, odd), its stages stacked
         /// south from the extruder strip. Bed sizes are in 2 m blocks, across (x) by along (z).
         /// </summary>
-        private void ArmourLine(string line, float x0, string paint, int bedAcross, int bedAlong, int tables, int padAcross, int cutAlong)
+        private void ArmourLine(string line, float x0, string paint, int bedAcross, int bedAlong, int tables, int cutAlong)
         {
             var dieCells = bedAcross; // (the sheet as wide as the bed: a Die Block a 2 m column)
 
@@ -141,7 +141,7 @@ public sealed partial class ZeroDayWorks
                 Stack(skins[0, 0], "top", 1);
                 return;
             }
-            CutterStage(run, bedAcross, padAcross, cutAlong, paint);
+            CutterStage(run, bedAcross, cutAlong, paint);
         }
 
         /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
@@ -169,7 +169,7 @@ public sealed partial class ZeroDayWorks
             for (var i = 0; i < bedAcross; i++)
                 outs[i, 0] = Paint(Onto(bed[i, bedAlong - 1], "+z", "Out Table", "-z"), paint);
 
-            // ---- A run to the skin pad, the pad turned to send east (its north edge takes the run). --------------------------------------------
+            // ---- A run on south: onto the Laser Cutter's bed (lines A to C), or line D's skin pad. ------------------------------------------------------
             var run = new VPart[bedAcross, 2];
             for (var i = 0; i < bedAcross; i++)
                 run[i, 0] = Paint(Onto(outs[i, 0], "+z", "Roller Tile", "-z"), paint);
@@ -177,35 +177,22 @@ public sealed partial class ZeroDayWorks
             return run;
         }
 
-        /// <summary>The skin pad turned east off a run, its feed tile and the Laser Cutter with its bed, Out Tables and pick runs.</summary>
-        private void CutterStage(VPart[,] run, int bedAcross, int padAcross, int cutAlong, string paint)
+        /// <summary>The Laser Cutter straight on a run's end: its bed, its Core on the bed's east side, Out Tables and pick runs.</summary>
+        private void CutterStage(VPart[,] run, int bedAcross, int cutAlong, string paint)
         {
-            // The pad: two tiles along its flow (east), padAcross rows south; turned East, its own +z is east and its own +x south.
-            var pad = new VPart[2, padAcross];
-            pad[0, 0] = Paint(Onto(run[0, 1], "+z low", "Pad Tile", "-x"), Stock);
-            for (var j = 1; j < padAcross; j++)
-                pad[0, j] = Paint(Onto(pad[0, j - 1], "+x", "Pad Tile", "-x"), Stock);
-            for (var j = 0; j < padAcross; j++)
-                pad[1, j] = Paint(Onto(pad[0, j], "+z", "Pad Tile", "-z"), Stock);
-            Stack(pad[0, 0], "top", 1);
-
-
-            // ---- The Laser Cutter: fed east from the pad by a one-tile run, its bed south of its Core, Out Tables on the far (south) edge. -----
-            var feedEast = new VPart[padAcross];
-            for (var j = 0; j < padAcross; j++)
-                feedEast[j] = Paint(Onto(pad[1, j], "+z", "Roller Tile", "-z low"), paint);
-            var cutter = Paint(Onto(feedEast[0], "+z", "Laser Cutter", "-z"), paint);
-            OrdersOnly(cutter);
+            // ---- The Laser Cutter (Sean, 2026-11-23: the gantry's legs on the long sides, the run feeding straight in): its bed welded on the
+            // run's last row, as wide as the run and cutAlong blocks south, so each blank rides off the rollers straight onto the bed's north
+            // (short) end (RollerRuns.Butted: the Core's Bed in). Its Core stands on the bed's long east side at the head row, so the bridge's
+            // rails run along the long sides, the bridge spans the bed's width with one head a column, parks over the in end and runs south.
             var cut = new VPart[bedAcross, cutAlong];
-            for (var j = 0; j < cutAlong; j++)
-            {
-                cut[0, j] = Paint(Onto(j == 0 ? cutter : cut[0, j - 1], "+x", "Laser Bed Block", "-x"), paint);
-                for (var i = 1; i < bedAcross; i++)
-                    cut[i, j] = Paint(Onto(cut[i - 1, j], "+z", "Laser Bed Block", "-z"), paint);
-            }
+            for (var i = 0; i < bedAcross; i++)
+                cut[i, 0] = Paint(Onto(run[i, run.GetLength(1) - 1], "+z", "Laser Bed Block", "-z"), paint);
+            Chain(cut, "Laser Bed Block", "+z", "-z", "-x", "+x", paint, rowZero: false);
+            var cutter = Paint(Onto(cut[bedAcross - 1, 0], "-x", "Laser Cutter", "+x"), paint); // (a block's own -x is east)
+            OrdersOnly(cutter);
             for (var i = 0; i < bedAcross; i++)
             {
-                var t = Paint(Onto(cut[i, cutAlong - 1], "+x", "Out Table", "-z"), paint);
+                var t = Paint(Onto(cut[i, cutAlong - 1], "+z", "Out Table", "-z"), paint);
                 // The pick run: two rows south of the table, no way on, so the cut piece waits at its end for the Hall Crane.
                 var r1 = Paint(Onto(t, "+z", "Roller Tile", "-z"), paint);
                 Paint(Onto(r1, "+z", "Roller Tile", "-z"), paint);
