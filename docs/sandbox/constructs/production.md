@@ -1762,6 +1762,15 @@ back over where it let go: the Zero Day keel's carry to its pad went from 94 s t
 [TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
 `logi net` marks a way "by a lifter".
 
+**Straight to the destination** (Sean, 2026-11-23: "parts should move directly to their destination if possible"; `ConstructLifterDirect.cs`).
+Production is made to order, not to a backlog, so a lifter in Auto that picks a made piece (a machine's out or tray, a run's end, a stock
+rack's piece) fits it at once when a building station has a ready, unclaimed step of that kind whose place the lifter reaches: the piece
+counts for the station's order as if it had landed in its hold, the step is claimed and the move ends in the station's own fit
+(`DirectStep`, `StartDirect`; log line "straight to step N"). Only a piece no ready step in reach takes goes on as before: a machine's
+input that wants it, the pick pad, a hand-off, else storage. A piece riding to a run's end bound only for storage (no order) tries a want
+or a hand-off in reach before the store it was riding to. On the Zero Day works line C's crane fitted a deck kit's 13 plates straight
+from the Panel Former's run (they had gone to the pick pad and back, one at a time: 4 in 1500 s before, the whole kit after).
+
 **The Bridge Crane** (phase 6, `ConstructCraneRails.cs`; notes `lifters-phase6-notes.md`) is a lifter of kind `bridge`: Crane Rail
 sections laid end to end in two runs a span apart on whatever the player stands them on (Medium Columns on an Adapter Medium to Small
 on a small floor), and a Crane Bridge bolted to the outer side of one run by its +x socket. Its reach is the box between the runs, under
