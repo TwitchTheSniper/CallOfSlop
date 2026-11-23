@@ -84,6 +84,7 @@ public sealed class CStore
     public byte StrokeSeen; // a Press: the Progress the drawing last saw, whether it was at work, when its stroke began and ended (ConstructRender.Now; never sent: ConstructPress.StrokeUpdate)
     public bool StrokeOn, StrokeFromRest; // ...the stroke began with the dies standing open
     public double StrokeSince, StrokeEnd, StrokeAt; // ...StrokeAt: the frame it was last looked at
+    public float StrokeTall; // a Press: the taller of the stroke's blank and part (m), which the shut dies leave room for over the bed (never sent)
     public ConstructPartDef? StrokeBlank, StrokeMade, StrokeLast; // ...the blank on the bed, the part it makes, the last stroke's part (drawn on the bed)
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)

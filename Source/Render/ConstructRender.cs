@@ -719,7 +719,8 @@ public static partial class ConstructRender
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
         ConstructPress.ShellPose shellPose = default;
         var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
-        var dieOpen = shellOn && !c.Parts[shellPose.Core].Broken && world.StoreOf(c, shellPose.Core) is { } shellStore
+        var shellStore = shellOn && !c.Parts[shellPose.Core].Broken ? world.StoreOf(c, shellPose.Core) : null;
+        var dieOpen = shellStore != null
             ? ConstructPress.DieOpen(shellStore, shellPose.Index, Now, ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), out _)
             : 1f; // (its round die's swing: stowed open, closing on the blank, shut while it is pressed, opening on the new part)
         for (var b = 0; b < d.Boxes.Length; b++)
@@ -828,7 +829,8 @@ public static partial class ConstructRender
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
-            drawn += DrawShellDie(gfx, in shellPose, dieOpen, seg * body, shade, opacity);
+            drawn += DrawShellDie(gfx, in shellPose, dieOpen, shellStore != null ? ConstructPress.DieLift(shellStore, shellPose.Gap) : 0.1f,
+                ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null, seg * body, shade, opacity);
         else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && !p.Broken && PressBed(c, i, d, pressStore, working, out var onBed, out var bedAt))
             drawn += DrawBlank(gfx, onBed, 0, bedAt, in p, seg * body, shade, opacity); // (the blank on the bed under the open dies, then the part they made)
         return drawn;
@@ -877,20 +879,48 @@ public static partial class ConstructRender
 
     /// <summary>
     /// A Press housing's round die (Sean's sketch, 2026-11-23): a solid quarter round from the bed's centre line to the housing's inner face,
-    /// curved face up, turned <paramref name="open"/> of the way about its hinge (the foot of that face) up and out, into its housing. The two
-    /// sides' dies meet over the bed as a half round; a red strip marks the leading edge. Drawn only: the housing's cell is the collider.
+    /// its flat working face down, standing <paramref name="lift"/> over the bed (room for the piece pressed: ConstructPress.DieLift), turned
+    /// <paramref name="open"/> of the way about its hinge (that face's outer edge) up and out, into its housing. The two sides' dies meet
+    /// over the bed as a half round; a red strip marks the leading edge. The fitted die (<paramref name="die"/>) covers the working face,
+    /// its look stretched to the face, so a bigger press shows a bigger die. Drawn only: the housing's cell is the collider.
     /// </summary>
-    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, in Matrix4x4 onBody, float shade, float opacity)
+    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, float lift, ConstructPartDef? die, in Matrix4x4 onBody, float shade, float opacity)
     {
         var r = s.Gap - 0.008f; // (the two dies' flat faces 6 mm apart when shut; open, 5 mm proud of the housing's face)
-        var apex = s.Centre + s.Out * 0.003f + s.Up * 0.004f; // (4 mm over the bed)
+        var apex = s.Centre + s.Out * 0.003f + s.Up * lift;
         var hinge = apex + s.Out * r;
         var turn = open <= 0 ? Matrix4x4.Identity
             : Matrix4x4.CreateTranslation(-hinge) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(hinge);
+        var m = turn * onBody;
         var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's; the stiffeners on the housing's top stop 12 mm under the die's flat face)
-        gfx.Draw(Oriented(s, apex + (s.Up + s.Out) * (r * 0.5f), len, r, r) * turn * onBody, DieSteel * shade, opacity, mode: 0, shape: DieShape);
-        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.029f, len - 0.02f, 0.06f, 0.05f) * turn * onBody, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line, 4 mm proud of its flat face)
-        return 2;
+        gfx.Draw(Oriented(s, apex + (s.Up + s.Out) * (r * 0.5f), len, r, r) * m, DieSteel * shade, opacity, mode: 0, shape: DieShape);
+        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.029f, len - 0.02f, 0.06f, 0.05f) * m, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line, 4 mm proud of its flat face)
+        var drawn = 2;
+        if (die == null)
+            return drawn;
+        // The die's look on the working face: its x along the bed, its z out to the hinge, its up down off the face (into the room
+        // over the bed), its foot 3 mm under the face. Handed so the turn keeps its faces' winding.
+        Vector3 lo = die.BoundsMin, hi = die.BoundsMax, span = Vector3.Max(hi - lo, new Vector3(0.01f));
+        var sx = len * 0.96f / span.X;
+        var sz = r * 0.94f / span.Z;
+        var sy = MathF.Min(MathF.Min(sx, sz), ConstructPress.DieRelief(s.Gap) / span.Y);
+        var down = -s.Up;
+        var along = Vector3.Dot(Vector3.Cross(s.Along, down), s.Out) < 0 ? -s.Along : s.Along;
+        var middle = apex + s.Out * (r * 0.5f) - s.Up * 0.003f;
+        var frame = new Matrix4x4(
+            along.X * sx, along.Y * sx, along.Z * sx, 0,
+            down.X * sy, down.Y * sy, down.Z * sy, 0,
+            s.Out.X * sz, s.Out.Y * sz, s.Out.Z * sz, 0,
+            middle.X, middle.Y, middle.Z, 1);
+        var onFace = Matrix4x4.CreateTranslation(-new Vector3((lo.X + hi.X) * 0.5f, lo.Y, (lo.Z + hi.Z) * 0.5f)) * frame * m;
+        foreach (ref readonly var box in die.Boxes.AsSpan())
+        {
+            if (box.Hidden || box.Bare)
+                continue;
+            gfx.Draw(box.Model(0, box.Center) * onFace, box.Color * shade, opacity, mode: 0, shape: box.Shape);
+            drawn++;
+        }
+        return drawn;
     }
 
     /// <summary>What a Press shows on its bed now (<see cref="ConstructPress.DieOpen"/> of its last segment, the last to shut and open) and where, in the Core's own frame.</summary>
