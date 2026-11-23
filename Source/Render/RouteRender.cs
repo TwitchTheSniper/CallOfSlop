@@ -104,7 +104,7 @@ public static class RouteRender
                         {
                             var dn = next - b;
                             var ln = dn.Length();
-                            if (ln > 1e-4f && ConstructRoutes.SegmentHealth(c, k, i + 1) > 0)
+                            if (ln > 1e-4f && ConstructRoutes.SegmentHealth(c, k, i + 1) > 0 && !(r.Type == RouteType.Conveyor && (RestShaft(c, k, i, out _) || RestShaft(c, k, i + 1, out _))))
                             {
                                 zNext = dn / ln;
                                 tEnd = RouteCurves.Tangent(r.Type, curveW, z, len, zNext, ln);
@@ -116,10 +116,19 @@ public static class RouteRender
                         if (r.Type == RouteType.Conveyor)
                         {
                             var bed = c == SizeBody && k == SizeRoute ? SizeW : r.ConvW / 100f;
-                            Conveyor(gfx, sa, sb, z, slen, bed, cut, r.Paint);
+                            var shaft = RestShaft(c, k, i, out var rising);
+                            if (shaft)
+                            {
+                                // A straight vertical segment: a lift shaft (Sean, 2026-11-23), its ends dressed where no shaft joins on.
+                                var nextShaft = i < r.Count && RestShaft(c, k, i + 1, out _);
+                                var prevShaft = i > 0 && RestShaft(c, k, i - 1, out _);
+                                Shaft(gfx, sa, sb, rising ? z : -z, rising, slen, bed, cut, r.Paint, ShaftFacing(c, k, i), prevShaft, nextShaft);
+                            }
+                            else
+                                Conveyor(gfx, sa, sb, z, slen, bed, cut, r.Paint);
                             n++;
-                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f && tStart <= 0f)
-                                ConveyorElbow(gfx, a, dirPrev, z, bed, r.Paint);
+                            if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f && tStart <= 0f && !shaft && !(i > 0 && RestShaft(c, k, i - 1, out _)))
+                                ConveyorElbow(gfx, a, dirPrev, z, bed, r.Paint); // (a shaft's foot and head close its joins)
                             if (tEnd > 0f)
                                 Curve(gfx, r.Type, b, z, zNext, tEnd, bed, radius, r.Paint);
                             dirPrev = z;
@@ -240,6 +249,131 @@ public static class RouteRender
             }
     }
 
+    private static readonly Vector3 ShaftChain = new(0.1f, 0.1f, 0.11f), ShaftMotor = new(0.24f, 0.26f, 0.27f);
+    private const float ShaftRail = 0.08f, ShaftDeep = 0.16f, ShaftLugPitch = 0.5f, ShaftFlangePitch = 1f;
+
+    /// <summary>How far a shaft's mast rails' middles stand out from its line, either side, for a link <paramref name="width"/> wide.</summary>
+    private static float ShaftSide(float width) => width * 0.5f + 0.074f; // (the masts' inner faces 4 mm past a joining bed's plate: no shared plane)
+
+    /// <summary>
+    /// A straight vertical conveyor segment (<see cref="ConstructConveyor.IsShaft"/>) drawn as a lift (Sean, 2026-11-23): two mast rails
+    /// in the paint either side of the line, open front and back so long pieces pass, each with a dark chain and lugs on its inner face,
+    /// stiffener flanges on its outer face and amber chevrons up its front and back faces pointing the way. Where no shaft joins on, a
+    /// foot plate under the lower end and a drive housing on the upper end. The riders go up level on carriages (DrawRiders).
+    /// <paramref name="facing"/> is the level way the shaft faces (its riders' way, <see cref="ShaftFacing"/>); the mast rails stand
+    /// across it, where a roller bed's side rails run, so a bed comes in between them.
+    /// </summary>
+    private static void Shaft(Renderer gfx, Vector3 a, Vector3 b, Vector3 up, bool rising, float len, float width, bool cut, uint paint, Vector3 facing, bool prevShaft, bool nextShaft)
+    {
+        var z = rising ? up : -up; // (the way the pieces go)
+        var x = Vector3.Cross(up, facing);
+        x = x.LengthSquared() > 1e-6f ? Vector3.Normalize(x) : Vector3.UnitX;
+        var y = Vector3.Cross(z, x); // (the front or back: the frame's handedness kept)
+        var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
+        var dim = cut ? 0.5f : 1f;
+        var rail = (paint != 0 ? ConstructPaint.ToVector(paint) : ConvRail) * dim;
+        var side = ShaftSide(width);
+        var lower = rising ? a : b;
+        var upper = rising ? b : a;
+        var footFree = rising ? !prevShaft : !nextShaft;
+        var headFree = rising ? !nextShaft : !prevShaft;
+        // The mast rails: from just under the foot (or the shaft below) to over the head (or the shaft above).
+        var bottom = footFree ? -0.13f : 0f;
+        var top = headFree ? 0.22f : 0f;
+        var railLen = len + (footFree ? 0.13f : 0f) + (headFree ? 0.22f : 0f);
+        var railMid = (lower + upper) * 0.5f + up * ((top + bottom) * 0.5f);
+        if (cut)
+        {
+            // Two dim stubs with a gap between them.
+            var gap = MathF.Min(0.3f, len * 0.3f);
+            var half = (len - gap) * 0.5f;
+            for (var e = -1; e <= 1; e += 2)
+            {
+                gfx.Draw(Matrix4x4.CreateScale(ShaftRail, ShaftDeep, half) * basis * Matrix4x4.CreateTranslation(a + z * (half * 0.5f) + x * (side * e)), rail);
+                gfx.Draw(Matrix4x4.CreateScale(ShaftRail, ShaftDeep, half) * basis * Matrix4x4.CreateTranslation(b - z * (half * 0.5f) + x * (side * e)), rail);
+            }
+            return;
+        }
+        var chain = Matrix4x4.CreateScale(0.02f, 0.05f, railLen) * basis;
+        var lug = Matrix4x4.CreateScale(0.03f, 0.07f, 0.05f) * basis;
+        var flange = Matrix4x4.CreateScale(0.034f, ShaftDeep + 0.04f, 0.05f) * basis;
+        for (var e = -1; e <= 1; e += 2)
+        {
+            gfx.Draw(Matrix4x4.CreateScale(ShaftRail, ShaftDeep, railLen) * basis * Matrix4x4.CreateTranslation(railMid + x * (side * e)), rail);
+            gfx.Draw(chain * Matrix4x4.CreateTranslation(railMid + x * ((side - ShaftRail * 0.5f - 0.012f) * e)), ShaftChain);
+            for (var s = ShaftLugPitch * 0.5f; s < len; s += ShaftLugPitch)
+                gfx.Draw(lug * Matrix4x4.CreateTranslation(lower + up * s + x * ((side - ShaftRail * 0.5f - 0.035f) * e)), ShaftChain);
+            for (var s = ShaftFlangePitch * 0.5f; s < len; s += ShaftFlangePitch)
+                gfx.Draw(flange * Matrix4x4.CreateTranslation(lower + up * s + x * ((side + ShaftRail * 0.5f + 0.015f) * e)), ConvPlate);
+        }
+        // Chevrons up (or down) the rails' front and back faces, the tip ahead.
+        var left = Matrix4x4.CreateScale(0.012f, 0.01f, 0.07f) * Matrix4x4.CreateRotationY(0.5f) * basis;
+        var right = Matrix4x4.CreateScale(0.012f, 0.01f, 0.07f) * Matrix4x4.CreateRotationY(-0.5f) * basis;
+        for (var s = MathF.Min(MarkPitch * 0.5f, len * 0.5f); s < len; s += MarkPitch)
+            for (var e = -1; e <= 1; e += 2)
+                for (var f = -1; f <= 1; f += 2)
+                {
+                    var at = a + z * s + x * (side * e) + y * ((ShaftDeep * 0.5f + 0.0055f) * f);
+                    gfx.Draw(left * Matrix4x4.CreateTranslation(at - x * 0.0145f), ConvMark);
+                    gfx.Draw(right * Matrix4x4.CreateTranslation(at + x * 0.0145f), ConvMark);
+                }
+        if (footFree)
+        {
+            // The foot: a plate under the lower end (under a bed coming in: its plate's underside is 9 cm under the line).
+            gfx.Draw(Matrix4x4.CreateScale(side * 2f + 0.2f, ShaftDeep + 0.24f, 0.04f) * basis * Matrix4x4.CreateTranslation(lower - up * 0.115f), ConvPlate);
+        }
+        if (headFree)
+        {
+            // The head: a cap on each mast's outer side at its top, a drive housing on one mast with its motor drum.
+            gfx.Draw(Matrix4x4.CreateScale(0.05f, ShaftDeep + 0.03f, 0.06f) * basis * Matrix4x4.CreateTranslation(upper + up * 0.19f + x * (side + ShaftRail * 0.5f + 0.022f)), ConvPlate);
+            gfx.Draw(Matrix4x4.CreateScale(0.05f, ShaftDeep + 0.03f, 0.06f) * basis * Matrix4x4.CreateTranslation(upper + up * 0.19f - x * (side + ShaftRail * 0.5f + 0.022f)), ConvPlate);
+            var housing = upper + up * 0.05f + x * (side + ShaftRail * 0.5f + 0.11f);
+            gfx.Draw(Matrix4x4.CreateScale(0.18f, ShaftDeep + 0.1f, 0.3f) * basis * Matrix4x4.CreateTranslation(housing), ShaftMotor);
+            gfx.Draw(Matrix4x4.CreateScale(0.11f, ShaftDeep - 0.02f, 0.16f) * basis * Matrix4x4.CreateTranslation(housing + x * 0.135f), rail);
+            gfx.Draw(Matrix4x4.CreateScale(0.012f, 0.06f, 0.06f) * basis * Matrix4x4.CreateTranslation(housing + x * 0.199f + up * 0.04f), ConvMark);
+        }
+    }
+
+    /// <summary>
+    /// Whether segment <paramref name="i"/> of a conveyor is a shaft, judged in its rest frame as the riders' pose is (a tilted ship's
+    /// shaft stays one), and whether it rises.
+    /// </summary>
+    private static bool RestShaft(Construct c, int route, int i, out bool rising)
+    {
+        var d = ConstructRoutes.LivePoint(c, route, i, out _) - ConstructRoutes.LivePoint(c, route, i - 1, out _);
+        var len = d.Length();
+        rising = d.Y > 0;
+        return len > 1e-4f && ConstructConveyor.IsShaft(d / len);
+    }
+
+    /// <summary>A shaft segment's level facing in the world this frame (<see cref="ConstructConveyor.ShaftFacing"/>, from the rest frame).</summary>
+    private static Vector3 ShaftFacing(Construct c, int route, int i)
+    {
+        var count = c.Routes[route].Count;
+        ConstructRoutes.LivePoint(c, route, i, out var seg);
+        var f = Vector3.UnitZ;
+        var found = false;
+        for (var j = i - 1; j >= 0 && !found; j--)
+            found = ConstructConveyor.LevelWay(ConstructRoutes.LivePoint(c, route, j - 1, out _), ConstructRoutes.LivePoint(c, route, j, out _), out f);
+        for (var j = i + 1; j <= count && !found; j++)
+            found = ConstructConveyor.LevelWay(ConstructRoutes.LivePoint(c, route, j - 1, out _), ConstructRoutes.LivePoint(c, route, j, out _), out f);
+        if (!found)
+            f = Vector3.UnitZ;
+        var w = Vector3.TransformNormal(f, SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0]);
+        return w.LengthSquared() > 1e-8f ? Vector3.Normalize(w) : Vector3.UnitZ;
+    }
+
+    /// <summary>The carriage a rider in a shaft goes up on: a deck under it to the mast rails' guides, and a frame under the deck.</summary>
+    private static void Carriage(Renderer gfx, Matrix4x4 level, Vector3 line, float width, float along)
+    {
+        var deep = Math.Clamp(along * 0.6f, 0.3f, ShaftDeep + 0.2f);
+        var side = ShaftSide(width);
+        var reach = (side - ShaftRail * 0.5f - 0.055f) * 2f; // (short of the lugs on the chains)
+        var up = new Vector3(level.M21, level.M22, level.M23);
+        gfx.Draw(Matrix4x4.CreateScale(reach, 0.035f, deep) * level * Matrix4x4.CreateTranslation(line + up * (ConstructConveyor.BedTop - 0.0225f)), ConvRoller);
+        gfx.Draw(Matrix4x4.CreateScale(reach - 0.08f, 0.06f, 0.06f) * level * Matrix4x4.CreateTranslation(line + up * (ConstructConveyor.BedTop - 0.07f)), ConvPlate);
+    }
+
     /// <summary>A conveyor's under-plate and side rails over <paramref name="len"/> about <paramref name="mid"/>.</summary>
     private static void Bed(Renderer gfx, Matrix4x4 basis, Vector3 x, Vector3 y, Vector3 mid, float len, float width, Vector3 rail, float dim)
     {
@@ -334,8 +468,17 @@ public static class RouteRender
             var front = MathF.Max(r.At, MathF.Min(r.At + ConstructConveyor.Speed * elapsed, limit));
             prevRoute = k;
             prevBack = front - along;
-            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, r.ViaPlus1 - 1, drawn: true);
-            var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
+            ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, out var shaft, r.ViaPlus1 - 1, drawn: true);
+            var frame = SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
+            var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * frame;
+            if (shaft)
+            {
+                // Up (or down) a lift shaft on a carriage: under the piece's underside, on the line (Pose's own sum backwards).
+                var middle = (d.BoundsMin + d.BoundsMax) * 0.5f;
+                var line = origin + Vector3.Transform(new Vector3(middle.X, d.BoundsMin.Y - ConstructConveyor.BedTop, middle.Z), rot);
+                Carriage(gfx, Matrix4x4.CreateFromQuaternion(rot) * new Matrix4x4(frame.M11, frame.M12, frame.M13, 0, frame.M21, frame.M22, frame.M23, 0, frame.M31, frame.M32, frame.M33, 0, 0, 0, 0, 1),
+                    Vector3.Transform(line, frame), c.Routes[k].ConvW / 100f, along);
+            }
             var paint = r.Paint != 0 ? ConstructPaint.ToVector(r.Paint) : Vector3.Zero;
             for (var bx = 0; bx < d.Boxes.Length; bx++)
             {
