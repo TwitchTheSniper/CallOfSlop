@@ -219,8 +219,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             foreach (var g in cells.Distinct().GroupBy(c => (c.Side, c.Za, c.Zb)).OrderBy(g => g.Key.Za).ThenBy(g => g.Key.Side))
             {
                 var fs = g.GroupBy(c => c.F).Select(f => f.First()).OrderBy(c => c.F).ToList();
+                var (pa, pb) = (Girths(g.Key.Za), Girths(g.Key.Zb));
                 for (int i = 1, start = 0; i <= fs.Count; i++)
-                    if (i == fs.Count || fs[i].F != fs[i - 1].F + 1)
+                    if (i == fs.Count || fs[i].F != fs[i - 1].F + 1 || Girth(pa, pb, fs[start].F, fs[i].F) > MaxSkinGirth)
                     {
                         var (za, zb) = (g.Key.Za, g.Key.Zb);
                         var len = (int)Math.Round((zb - za) * 100);
@@ -252,6 +253,34 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     }
 
     private static int Cm(double m) => (int)Math.Round(m * 100);
+
+    /// <summary>
+    /// A formed skin's blank is its girth long (the Panel Former unrolls the profile), and line C's Sheet Extruder makes a sheet as long as its
+    /// one Run-out Table (8 m): a skin round more facets than that is split into skins that each fit (the Stern's whole half profile is 18.8 m).
+    /// </summary>
+    private const double MaxSkinGirth = 7.9;
+
+    /// <summary>Each facet's width (index 1 to 6) at station z, from the half profile the kits close on the centreline, to the centimetre as the key is.</summary>
+    private static double[] Girths(double z)
+    {
+        var at = At(z);
+        var pts = new List<(double X, double Y)> { (0, Cm(at[0].Y) / 100.0) };
+        pts.AddRange(at.Select(t => (Cm(t.H) / 100.0, Cm(t.Y) / 100.0)));
+        pts.Add((0, Cm(at[4].Y) / 100.0));
+        var w = new double[pts.Count];
+        for (var k = 1; k < pts.Count; k++)
+            w[k] = Math.Sqrt((pts[k].X - pts[k - 1].X) * (pts[k].X - pts[k - 1].X) + (pts[k].Y - pts[k - 1].Y) * (pts[k].Y - pts[k - 1].Y));
+        return w;
+    }
+
+    /// <summary>The girth of facets <paramref name="f0"/> to <paramref name="f1"/> at the wider of a band's two ends.</summary>
+    private static double Girth(double[] a, double[] b, int f0, int f1)
+    {
+        double ga = 0, gb = 0;
+        for (var f = f0; f <= f1 && f < a.Length; f++)
+            (ga, gb) = (ga + a[f], gb + b[f]);
+        return Math.Max(ga, gb);
+    }
 
     private const double FacetStagger = 0.006, FacetTrim = 0.0015; // (and each stops 1.5 mm short of its band's ends: a tapering band's plate leans past them)
 
