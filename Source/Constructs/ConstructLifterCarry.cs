@@ -88,6 +88,14 @@ public static partial class ConstructLifters
                 at = PartPoint(b, pt.Part, new Vector3((d.RackHoldMin.X + d.RackHoldMax.X) * 0.5f, d.RackHoldMin.Y, (d.RackHoldMin.Z + d.RackHoldMax.Z) * 0.5f));
                 return true;
             case LiftPointKind.Out:
+                if (d.IsBakeOven)
+                {
+                    // (an oven's out is its bed's middle)
+                    if (!OutZone.BedOf(b, pt.Part, out var toCore, out var bmin, out var bmax) || !Matrix4x4.Invert(toCore, out var core))
+                        return false;
+                    at = Vector3.Transform(new Vector3((bmin.X + bmax.X) * 0.5f, bmin.Y, (bmin.Z + bmax.Z) * 0.5f), core);
+                    return true;
+                }
                 at = PartPoint(b, pt.Part, d.IsExtruder ? d.ExtDieAt : d.AsmOutAt + d.AsmOutDir * 0.6f);
                 return true;
             case LiftPointKind.RunEnd:
@@ -164,14 +172,14 @@ public static partial class ConstructLifters
             if (i == self || b.Parts[i].Broken)
                 continue;
             var d = b.DefOf(i);
-            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile)
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile && !d.IsBakeOven)
                 continue;
             if (d.IsPieceRack && ConstructPads.IsMember(b, i))
                 continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
             ref readonly var p = ref b.Parts[i];
             var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
             Vector3 bedMin = default, bedMax = default;
-            var bed = d.IsAssembler && OutZone.BedOf(b, i, out _, out bedMin, out bedMax);
+            var bed = (d.IsAssembler || d.IsBakeOven) && OutZone.BedOf(b, i, out _, out bedMin, out bedMax);
             if (bed)
                 half = MathF.Max(half, Vector3.Max(Vector3.Abs(bedMin), Vector3.Abs(bedMax)).Length() + 0.5f); // (a block Assembler: its whole bed, measured from the Core)
             if (d.IsPieceRack && ConstructPads.RackDef(b, i) is var pd && !ReferenceEquals(pd, d))
@@ -197,7 +205,7 @@ public static partial class ConstructLifters
                     pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = d.IsCraftTerminal ? LiftPointKind.Tray : LiftPointKind.Rack };
                 continue;
             }
-            var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer;
+            var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer || d.IsBakeOven; // (an oven's bed: the part a kit baked into, ConstructBakeOvenOrders.cs)
             // A machine's Piece out with no conveyor on it; a block Assembler's is its bed too, where it leaves what it builds (LeaveOnBed).
             if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
                 && (InReach(ld, shoulder, lr, o, SafeLift, out _) || bed && BedSpot(b, i, ld, shoulder, lr)))
@@ -512,6 +520,8 @@ public static partial class ConstructLifters
     private static bool MadeBy(Construct b, int part, ConstructPartDef d)
     {
         var md = b.DefOf(part);
+        if (md.IsBakeOven)
+            return BakeKits.Has(d); // (a part its kit baked into)
         if (md.IsAssembler)
             return AssemblingTable.Current.Of((ushort)d.Id) is { } r && r.Output == d && r.Machine == md.AsmMachine;
         if (md.IsPress && ConstructPress.SizedDieOf(PressTable.Current, b, part) is { } die)
@@ -564,7 +574,7 @@ public static partial class ConstructLifters
 
         public static OutZone Of(Construct b, int part, Vector3 outAt)
         {
-            if (part < b.PartCount && b.DefOf(part).IsAssembler && BedOf(b, part, out var toCore, out var min, out var max))
+            if (part < b.PartCount && (b.DefOf(part).IsAssembler || b.DefOf(part).IsBakeOven) && BedOf(b, part, out var toCore, out var min, out var max))
                 return new OutZone(outAt, true, toCore, min, max);
             return new OutZone(outAt, false, default, default, default);
         }
@@ -588,6 +598,17 @@ public static partial class ConstructLifters
         {
             toCore = default;
             (min, max) = (default, default);
+            if (part < b.PartCount && b.Parts[part].D.IsBakeOven)
+            {
+                // (an oven's bed: its clear height over the whole bed, ConstructBakeOven.Bed)
+                if (!MachineBlocks.TryOf(b, part, out var oasm) || oasm.W == 0 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
+                    return false;
+                var obed = new ConstructBakeOven.Bed(b, oasm);
+                var oo = b.Parts[part].D.BlockOrigin ?? Vector3.Zero;
+                min = new Vector3(oo.X + (obed.X0 - 0.5f) * obed.Cell, obed.Top, oo.Z + (obed.Z0 - 0.5f) * obed.Cell);
+                max = min + new Vector3(obed.W * obed.Cell, MathF.Max(obed.Clear, 0.5f), obed.L * obed.Cell);
+                return true;
+            }
             if (ConstructAssembling.FitOf(b, part) is not { Limited: true, W: > 0 } fit || !MachineBlocks.TryOf(b, part, out var asm)
                 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
                 return false;

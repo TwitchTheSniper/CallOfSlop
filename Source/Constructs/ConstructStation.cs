@@ -623,7 +623,7 @@ public static partial class ConstructStation
 
     /// <summary>A blueprint by name: the shipped ones, then the host's own saved ones.</summary>
     public static ConstructBuild.Blueprint? Find(string name) =>
-        ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? Own(name);
+        ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? BakeKits.FindPrint(name) ?? Own(name);
 
     private static ConstructBuild.Blueprint? Own(string name)
     {
@@ -650,7 +650,7 @@ public static partial class ConstructStation
             return "the bay isn't clear: move what was built out of it first";
         if (name == HullLoft.DressJobName)
             return StartDress(world, c, t, repeat); // (the Dress job: each plain skin that comes in, ConstructStation.Dress.cs)
-        if ((ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name)) is { } bp)
+        if ((ConstructBuild.FindBlueprint(name) ?? HullLoft.DressBlueprintOf(name) ?? BakeKits.FindPrint(name)) is { } bp) // (a bake kit's too: a Bake Oven's order, BakeKits.cs)
         {
             if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
                 return "that blueprint has no parts";

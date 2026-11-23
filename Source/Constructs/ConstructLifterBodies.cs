@@ -86,9 +86,9 @@ public static partial class ConstructLifters
             Console.WriteLine($"[lifter] {who} {l.Part} carries {(fitter ? "module" : "submodule")} body {body.Id} ({body.PartCount} parts, {body.Mass:0} kg) to {(fitter ? "its socket" : "its main station")}: {l.Dur / (float)World.TickRate:0.0} s");
             return true;
         }
-        why = heavy > 0 ? $"too heavy for {(heavy == 1 ? "the lifter" : "every lifter")} that could take it: {body.Mass:0} kg"
-            : big > 0 ? $"too big for the lifters' hands: {longest:0.0} m long"
-            : far > 0 ? fitter ? "no Module Fitter reaches both the module and the socket" : "no Loader Arm or Bridge Crane reaches both its station's bay and its spot" : "every lifter is busy";
+        why = far > 0 ? fitter ? "no Module Fitter reaches both the module and the socket" : "no Loader Arm or Bridge Crane reaches both its station's bay and its spot" // (one that could carry it but doesn't reach says more than the small ones)
+            : heavy > 0 ? $"too heavy for {(heavy == 1 ? "the lifter" : "every lifter")} that could take it: {body.Mass:0} kg"
+            : big > 0 ? $"too big for the lifters' hands: {longest:0.0} m long" : "every lifter is busy";
         return false;
     }
 
