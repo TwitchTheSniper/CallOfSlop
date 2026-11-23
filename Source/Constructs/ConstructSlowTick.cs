@@ -13,6 +13,9 @@ namespace CallOfSlop;
 public static class ConstructSlowTick
 {
     public const double LogMs = 50;
+
+    /// <summary>Off for the self-test (SelfTest.Run): its stress sections tick past the limit on purpose and count every byte a tick allocates.</summary>
+    public static bool On = true;
     private static readonly double[] _parts0 = new double[5];
     private static double _rebuildMs, _buildMs;
     private static int _rebuildBody, _rebuildParts, _buildBody, _buildParts, _builds, _rebuilds;
@@ -45,7 +48,7 @@ public static class ConstructSlowTick
     internal static void End(ConstructWorld w, long p0, long rails0, long p1)
     {
         var total = Ms(p0, p1);
-        if (total < LogMs || p1 - _lastLog < Stopwatch.Frequency)
+        if (!On || total < LogMs || p1 - _lastLog < Stopwatch.Frequency)
             return;
         _lastLog = p1;
         LogLine(w, total, Ms(rails0, p1));

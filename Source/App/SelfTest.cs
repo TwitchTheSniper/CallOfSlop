@@ -70,6 +70,7 @@ public static partial class SelfTest
     public static int Run(string? only = null, string? shard = null)
     {
         var path = AppFolders.LogPath("selftest.log");
+        ConstructSlowTick.On = false; // (the slow-tick log line allocates; stress sections pass its limit on purpose)
         // First pass: collect the section names without running anything, and resolve the filter against them.
         CollectNames();
         string[] picked = [];
