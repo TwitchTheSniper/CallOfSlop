@@ -65,6 +65,8 @@ public struct SnapOwn
     public ushort RideLadderPart;
     public Vector3 RideClimbNext, RideClimbLast;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
+    public bool RideFeltOn; // ship gravity (protocol 444): the pull they feel in the frame, the server's, for the replay (ShipGravity.cs)
+    public Vector3 RideFelt;
     public bool Worn; // what they wear follows (PilotGear.cs)
     public byte Gear, Canopy, GearDelay;
     public ushort JetFuel;
@@ -343,6 +345,9 @@ public static class Snapshot
         if (o.Ride)
         {
             w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).U8(o.RideOn).Vec(o.RideLocal).Vec(o.RideUp).Vec(o.RideVel);
+            w.U8((byte)(o.RideFeltOn ? 1 : 0)); // (protocol 444: ship gravity, ShipGravity.cs)
+            if (o.RideFeltOn)
+                w.Vec(o.RideFelt);
             if (o.RideClimb > 0)
             {
                 w.Vec(o.RideClimbTo).U8(o.RideLadder);
@@ -382,6 +387,15 @@ public static class Snapshot
                 return null;
             o.RideUp = r.Vec();
             o.RideVel = r.Vec();
+            if (!r.Has(1))
+                return null;
+            o.RideFeltOn = r.U8() != 0;
+            if (o.RideFeltOn)
+            {
+                if (!r.Has(12))
+                    return null;
+                o.RideFelt = r.Vec();
+            }
             if (o.RideClimb > 0)
             {
                 if (!r.Has(13 + SlowBytes))

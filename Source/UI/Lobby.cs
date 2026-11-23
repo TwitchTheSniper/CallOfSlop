@@ -236,6 +236,8 @@ public sealed partial class Ui
                         StartPicker(s);
                     if (s.SandboxSurvival && !savedWorld)
                         DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+                    if (!savedWorld && ShipGravityPicker(ref s.SandboxShipGravity))
+                        s.Save(); // (felt gravity aboard: ShipGravity.cs)
                     s.Bots = 0;
                     ImGui.Spacing();
                     var problem = savedWorld ? null : StartMapProblem(s);

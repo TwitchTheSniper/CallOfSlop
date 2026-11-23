@@ -68,13 +68,13 @@ public sealed partial class Game
     }
 
     /// <summary>A new world on a map; its file is made as play starts.</summary>
-    public static WorldSession WorldNew(string name, Map map, bool survival, byte death = 0)
+    public static WorldSession WorldNew(string name, Map map, bool survival, byte death = 0, ShipGravityMode shipGravity = ShipGravityMode.Deck)
     {
         var clean = WorldStore.CleanName(name);
         return new WorldSession
         {
             Folder = WorldStore.FolderFor(clean),
-            Meta = new WorldMeta { Name = clean, MapName = map.Name, Survival = survival, Death = death, CreatedUtc = DateTime.UtcNow.Ticks },
+            Meta = new WorldMeta { Name = clean, MapName = map.Name, Survival = survival, Death = death, ShipGravity = (byte)shipGravity, CreatedUtc = DateTime.UtcNow.Ticks },
         };
     }
 
@@ -89,6 +89,7 @@ public sealed partial class Game
             return;
         SandboxSurvivalOption = world.Meta.Survival;
         (SandboxDeathRule, SandboxKeepPack) = FromDeathByte(world.Meta.Death); // (the world's own death rules: GameSandboxDeath.cs)
+        ShipGravity.Mode = (ShipGravityMode)Math.Min((int)world.Meta.ShipGravity, (int)ShipGravityMode.Everywhere); // (the world's own ship gravity: GameShipGravity.cs)
         SandboxShareRules();
         world.Applied = !world.HasSave;
         world.SaveAtStart = !world.HasSave;
@@ -286,6 +287,7 @@ public sealed partial class Game
     {
         Name = m.Name, MapName = m.MapName, Build = m.Build, Survival = m.Survival, MapHash = m.MapHash, CreatedUtc = m.CreatedUtc,
         SavedUtc = m.SavedUtc, PlayedSeconds = m.PlayedSeconds, Bodies = m.Bodies, Parts = m.Parts, Players = m.Players,
+        Death = m.Death, ShipGravity = m.ShipGravity,
     };
 
     /// <summary>What a person has now, into their record.</summary>

@@ -1944,6 +1944,11 @@ public static partial class ConstructPhysics
         if (!c.AeroFlying)
             rel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         spinRel *= 0.985f;
+        if (ShipGravity.Mode != ShipGravityMode.Deck && ShipGravity.Settles(c, f))
+        {
+            rel *= 0.96f; // (0 g aboard with nobody near: it settles and sleeps, ShipGravity.cs)
+            spinRel *= 0.94f;
+        }
         var top = TopAt(air, c.AeroFlying);
         var v2 = rel.LengthSquared();
         if (v2 > top * top)

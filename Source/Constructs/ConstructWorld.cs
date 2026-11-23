@@ -1681,12 +1681,16 @@ public sealed partial class ConstructWorld
         // The ride frame first (ConstructRide.cs): a rider's feet follow their segment's pose exactly, and their velocity is
         // their own, relative to it. A climb in the frame (a vault, a grab-on) moves them on its own.
         var ride = ConstructRide.Begin(this, ref s, height, server, out var rideVel, out var climbing);
+        if (server && (ride == null || climbing || s.RideUp == Vector3.Zero))
+            s.RideFeltOn = false; // (ship gravity: not standing in a frame, nothing felt from one)
         if (climbing)
             return ride;
         if (ride != null && s.RideUp != Vector3.Zero)
         {
             // Contraption space: the frame step already met everything near (ConstructRideMove.cs).
             ConstructRide.AfterFrame(this, ref s, ride, rideVel, height, server, who);
+            if (server)
+                ShipGravity.SetRider(ref s, ride); // (what they feel next step: ShipGravity.cs)
             return s.Grounded ? ride : null;
         }
         var feetUp = GravityFrames.UpAt(s.Position); // (a planet's up: tilted a little from +Y away from the pole)
