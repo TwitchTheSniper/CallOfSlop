@@ -272,9 +272,11 @@ public static unsafe class SkyRenderer
                 cc += uSunDisc.rgb * (pow(sd, 10.0) * (1.0 - thick) * 0.35); // light through thin edges near the sun
                 cc = mix(cc, sky, (1.0 - smoothstep(0.0, 0.35, d.y)) * 0.55); // distance haze
                 col = mix(col, cc, a);
-                // The disc shows through the layer, dimmed by how thick the cloud in front is (Sean, 2026-11-23: the sun
-                // was a faint smudge behind Caledon's clouds); only a thick bank hides it.
-                col = mix(col, max(col, uSunDisc.rgb), sunDisc * a * (1.0 - thick) * 0.85);
+                // The disc and its bright core show through the layer, dimmed by how thick the cloud in front is (Sean,
+                // 2026-11-23: the sun was a faint smudge behind Caledon's clouds).
+                float through = a * (1.0 - 0.55 * thick);
+                col += uSunGlow * (pow(sd, 300.0) * 0.6 * through);
+                col = mix(col, max(col, uSunDisc.rgb), sunDisc * through);
 
                 vec2 p2 = d.xz / (d.y + 0.05) * (uCloud.z * 0.3) + uWind2;
                 float c2 = dot(texture(uNoise, vec2(p2.x * 0.8 + p2.y * 0.3, p2.y * 1.6)).gb, vec2(0.65, 0.35));
