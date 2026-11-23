@@ -13,6 +13,67 @@ public sealed partial class ZeroDayWorks
         // Block Rack, then the walls and fittings stores.
         public const string General2 = "#3a9f99";
 
+        private readonly List<VPart> _presses = new(); // (north row west, north row east, south row west, south row east)
+        private VPart? _blockAssembler;
+
+        /// <summary>
+        /// The presses' conveyors (Sean, 2026-11-22: the presses were meant to send their many small parts on by conveyor, not have a crane
+        /// lift each one). Each Press's Piece out goes on a conveyor; the south row's run straight into two Large Conveyor Joins in the aisle
+        /// between the rows, the north row's rise from the aisle north of them, cross over their beds at 6.5 m and drop into the same Joins.
+        /// The Joins feed a Large Conveyor Router, whose three ways go over the bays at 7.5 m: into the block Assembler's Piece in, into the
+        /// yard station's Piece in (south over bay 3's east side, west along the shed's south end, down by the station's Core: its Piece in 2
+        /// is where line D's transfer run ends) and into a Piece Rack in the north aisle, the storage the Router sends what nobody ordered. A press with a Piece out conveyor puts every part it stamps on it, tagged for its order,
+        /// so its tray no longer waits for a crane. Laid after the yard (its station is one end).
+        /// </summary>
+        private void LayPressBelts()
+        {
+            const float low = 6.5f, high = 7.5f;
+            var join = new[] { On("Large Conveyor Join", 75, -113, East, "-y.4.4", General2), On("Large Conveyor Join", 87, -113, East, "-y.4.4", General2) };
+            var router = On("Large Conveyor Router", 91, -113, East, "-y.4.4", General2);
+            var rack = On("Piece Rack", 77, -100, East, "-y.0.0", General2);
+            for (var k = 0; k < 2; k++)
+            {
+                Belt(_presses[2 + k], "Piece out", join[k], "Piece in 2", null, General2); // (the south row: straight into the Join's south side)
+                Belt(_presses[k], "Piece out", join[k], "Piece in 3", low, General2); // (the north row: up, over its own bed, down into the Join's north side)
+            }
+            Belt(join[0], "Piece out", join[1], "Piece in", low, General2, zFirst: false); // (over the Die Racks and the Lathe)
+            Belt(join[1], "Piece out", router, "Piece in", null, General2);
+            Belt(router, "Piece out 2", _blockAssembler!, "Piece in", high, General2, zFirst: true);
+            Belt(router, "Piece out 3", rack, "Piece in", high, General2, zFirst: false);
+            // (the yard: south along bay 3's east side at 7.5 m, west along the shed's last aisle, down beside the station's Core, between it
+            // and the yard crane's column at x 51, into its Piece in on its west end: its Piece in 2 is where line D's transfer run ends)
+            var (a, fa) = PortOf(router, "Piece out");
+            var (b, _) = PortOf(_yardStation!, "Piece in");
+            var a1 = a + fa;
+            var drop = V(b.X + 0.15f, b.Y + 0.25f, -197.9f);
+            Link("conveyor", router, _yardStation!, "Piece out", "Piece in", General2, false, null,
+                Cut(a, a1, V(a1.X, high, a1.Z), V(a1.X, high, -195.5f), V(drop.X, high, -195.5f), V(drop.X, high, drop.Z), drop));
+        }
+
+        /// <summary>
+        /// A conveyor from a part's port to another's: straight between the ports with <paramref name="height"/> null, else out of the first
+        /// port 1 m along its face, up to the height, along x then z (or z then x), and down 1 m off the second port.
+        /// </summary>
+        private void Belt(VPart from, string fromPort, VPart to, string toPort, float? height, string paint, bool zFirst = false)
+        {
+            var (a, fa) = PortOf(from, fromPort);
+            var (b, fb) = PortOf(to, toPort);
+            if (height is not { } h)
+            {
+                // (half a metre out of each port, square across between)
+                var o = a + fa * 0.5f;
+                var i = b + fb * 0.5f;
+                var mid = Vector3.Dot(fa, Vector3.UnitZ) != 0 ? V(i.X, i.Y, o.Z) : V(o.X, o.Y, i.Z);
+                Vector3[] pts = Vector3.Distance(mid, o) < 0.1f || Vector3.Distance(mid, i) < 0.1f ? [o, i] : [o, mid, i];
+                Link("conveyor", from, to, fromPort, toPort, paint, false, null, pts);
+                return;
+            }
+            var a1 = a + fa;
+            var b1 = b + fb;
+            var turn = zFirst ? V(a1.X, h, b1.Z) : V(b1.X, h, a1.Z);
+            Link("conveyor", from, to, fromPort, toPort, paint, false, null, Cut(a, a1, V(a1.X, h, a1.Z), turn, V(b1.X, h, b1.Z), b1));
+        }
+
         private void LayGeneralLine()
         {
             // ---- The walls line: dies at x 73 and 75, the Core at 77; three Run-out Tables; the pad, the cutter at x 79, its bed to 81. ----
@@ -38,6 +99,7 @@ public sealed partial class ZeroDayWorks
                     var press = Press(x, z);
                     Onto(press, "dieslot", dies.Dequeue(), "mount"); // (in its own colours: the family's punch)
                     _makers.Add(press);
+                    _presses.Add(press);
                 }
             // Between the two columns of presses (x 82 to 85): the Die Racks and the Die Lathe, beside the beds, out of the swing strips.
             foreach (var z in new[] { -105f, -109f, -118f, -122f })
@@ -48,6 +110,7 @@ public sealed partial class ZeroDayWorks
             // a bed row, the Thruster Jig docked on its west side (its Tool Bay), three upgrade modules; the Block Rack east of the bed. ----
             var asm = Assembler(75, -131);
             _makers.Add(asm);
+            _blockAssembler = asm;
             // Its stock: a chute from each bin its frigate orders draw on (Orders pull their inputs from the stores chuted in), at 9.5 to
             // 11.5 m over the bays, the Extruders' steel chutes at 9 m under them.
             var up = 9.5f;
