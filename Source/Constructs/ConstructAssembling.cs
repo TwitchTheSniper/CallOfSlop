@@ -142,6 +142,7 @@ public enum AsmBlock : byte
     ConveyorSmall, // the part is too wide for the conveyor out of its Piece out, and no tray slot takes it
     ConveyorFull, // no room at the start of that conveyor
     ConveyorCut, // that conveyor is cut
+    BedFull, // a block Assembler's bed holds what it made before, every place: it waits for a crane or an arm to lift them off
     COUNT,
 }
 
@@ -323,6 +324,19 @@ public static class ConstructAssembling
         }
     }
 
+    private static string? _leaveWhy; // (the last place's refusal in Leave: the log line when an output first can't leave)
+    private static ConstructWorld? _leaveWorld;
+    private static int _leavePart;
+
+    /// <summary>Why the last place refused, naming the part in the way when it was a construct's.</summary>
+    private static string LeaveWhy()
+    {
+        var why = _leaveWhy ?? "no place on its bed fits it";
+        if (why.StartsWith("another construct", StringComparison.Ordinal) && _leaveWorld?.Get(ConstructPlace.LastInWayBody) is { } b && ConstructPlace.LastInWayPart >= 0 && ConstructPlace.LastInWayPart < b.PartCount)
+            why += $" (body {b.Id} part {ConstructPlace.LastInWayPart}: {b.DefOf(ConstructPlace.LastInWayPart).Name})";
+        return why;
+    }
+
     private static void SetBlocked(ConstructWorld world, CStore st, AsmBlock why)
     {
         if (st.Blocked == (byte)why)
@@ -362,6 +376,8 @@ public static class ConstructAssembling
                 var why = Leave(world, query, c, part, recipe.Output, place);
                 if (why == AsmBlock.None)
                     continue;
+                if (st.Blocked != (byte)why && why is AsmBlock.OutputBlocked or AsmBlock.BedFull)
+                    Console.WriteLine($"[assembler] body {c.Id} part {part}: its {recipe.Output.Name} can't leave: {LeaveWhy()}");
                 SetBlocked(world, st, why);
                 return false;
             }
@@ -389,6 +405,7 @@ public static class ConstructAssembling
     {
         if (!world.HasRoom())
             return AsmBlock.WorldFull;
+        (_leaveWorld, _leaveWhy, _leavePart) = (world, null, part);
         ref var p = ref c.Parts[part];
         var d = p.D;
         if (FitOf(c, part) is { Limited: true, W: > 0 } fit && MachineBlocks.TryOf(c, part, out var asm))
@@ -409,7 +426,7 @@ public static class ConstructAssembling
         {
             var centre = at + dir * (deep + 0.05f) + new Vector3(0, half.Y + lift, 0);
             var fp = new FreePlacement { Pos = centre - Vector3.Transform(mid, rot), Rot = rot };
-            if (ConstructPlace.Fits(world, query, def, fp, feet) != null)
+            if ((_leaveWhy = ConstructPlace.Fits(world, query, def, fp, feet)) != null)
                 continue;
             if (ConstructBuild.PlaceNew(world, def, fp) is not { } made)
                 return AsmBlock.WorldFull;
@@ -440,6 +457,8 @@ public static class ConstructAssembling
         var rot = turned ? coreQ * Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2) : coreQ;
         var bedTop = d.BlockOrigin is { } org ? org.Y : 0f; // (the Core's cell middle is the bed layer's: its top is as far over it as the foot is under)
         var feet = world.PlayerSpots.AsSpan(0, world.PlayerSpotCount);
+        var own = MachineBlocks.AsmOf(c, part);
+        var madeOnly = true; // (every place refused for a loose piece lying on the bed: what it made before, waiting to be lifted)
         for (var k = 0; k < places; k++)
         {
             var at = (place + k) % places;
@@ -452,8 +471,11 @@ public static class ConstructAssembling
             var up = Vector3.Transform(Vector3.UnitY, coreQ);
             var centre = spot + up * half.Y;
             var fp = new FreePlacement { Pos = centre - Vector3.Transform(mid, rot), Rot = rot };
-            if (ConstructPlace.Fits(world, query, def, fp, feet) != null)
+            if ((_leaveWhy = ConstructPlace.Fits(world, query, def, fp, feet, null, c, own)) != null)
+            {
+                madeOnly &= MadeHere(world, c);
                 continue;
+            }
             if (ConstructBuild.PlaceNew(world, def, fp) is not { } made)
                 return AsmBlock.WorldFull;
             made.Owner = c.Owner;
@@ -461,8 +483,14 @@ public static class ConstructAssembling
             world.Events.Add($"construct {c.Id}: a {d.Name} built a {def.Name} on its bed (construct {made.Id})");
             return AsmBlock.None;
         }
-        return AsmBlock.OutputBlocked;
+        return madeOnly ? AsmBlock.BedFull : AsmBlock.OutputBlocked;
     }
+
+    /// <summary>Was the last place refused for a loose piece this machine's recipes make (one it made before, lying on the bed)?</summary>
+    private static bool MadeHere(ConstructWorld world, Construct c) =>
+        _leaveWhy != null && _leaveWhy.StartsWith("another construct", StringComparison.Ordinal) && ConstructPlace.LastInWayBody != c.Id
+        && world.Get(ConstructPlace.LastInWayBody) is { PartCount: 1, Anchored: false } lo
+        && AssemblingTable.Current.Of((ushort)lo.DefOf(0).Id) is { } r && r.Output == lo.DefOf(0) && r.Machine == c.DefOf(_leavePart).AsmMachine;
 
     private const int ArmDamage = 1; // per 60 Hz game tick in a working place (60 a second): its arm swinging and its weld (GameMachineHazards)
     private static int _family = -2;
@@ -707,6 +735,7 @@ public static class ConstructAssembling
         AsmBlock.ConveyorSmall => " - refused: the part is too wide for its conveyor: widen it",
         AsmBlock.ConveyorFull => " - blocked: its conveyor is full",
         AsmBlock.ConveyorCut => " - its conveyor is cut",
+        AsmBlock.BedFull => " - its bed is full of what it made: a crane or an arm must lift them off (to a station or a rack with room)",
         _ => " - something is in the way of its output",
     };
 
@@ -717,6 +746,7 @@ public static class ConstructAssembling
         AsmBlock.ConveyorSmall => "conveyor too small",
         AsmBlock.ConveyorFull => "conveyor full",
         AsmBlock.ConveyorCut => "conveyor cut",
+        AsmBlock.BedFull => "bed full",
         _ => "output blocked",
     };
 

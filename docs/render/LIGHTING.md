@@ -126,6 +126,12 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   `gLitAmb`: the rim light and sky reflections), down to 3% in a shut room; the share towards the sun scales the sun when the
   sun's own map is off. The gun's pass reads it at the eye. Lamps (dynamic lights) are not shaded by it: their own shadows are below. Block fields `uRoomVP[8]`,
   `uRoomC`, `uRoomQ` after `uKeyQ`. Settings > Video > Dark interiors; `--no-dark-interiors`.
+  **The far ring** (Sean 2026-11-23: the works shed was darkest in a bubble round him that followed him): past the 48 m square
+  every surface took the open sky's light, so the floor 25 m off was lit like day. A second set of eight maps (16-bit, 1024, a
+  192 m square, texture unit 23, `uRoomFar`) holds the still bodies alone; the shader blends from the near maps into it over the
+  near maps' outer 15% and fades to the sky only at its own edge. It moves in 16 m steps and is drawn one map a frame, each map
+  keeping its own centre, so a step or a changed body costs one extra depth pass a frame for eight frames. Block fields
+  `uRoomFarVP[8]` and `uRoomF` at the end; the gun's pass reads the near maps alone.
 - **Lamp shadows** (`LampShadows.cs`, Karl 2026-11-21: lamps lit the room beyond their wall). Each lamp `ConstructLamps` lights
   (the nearest few) is offered a slot; a slot holds six depth faces round the lamp (a 2D array of 16-bit depth on texture unit 22,
   `uLampShadow`, six layers a slot), drawn from its own body's boxes and any body near it, in the body's own frame, holding the
@@ -148,7 +154,9 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   nearest first, twice that many as candidates, then put in order by distance with a lamp the eye can't see (a construct ray
   from the eye, at the bodies' tick pose) counting `HiddenPenalty` (8 m) farther: the room you stand in first, the deck below
   and the rooms beside last. Rays are kept per lamp for 12 frames, at most 8 a frame, nearest first (60 lamps' rays a frame cost
-  3 ms on the cloud box).
+  3 ms on the cloud box). A long spot (a pendant) is tested at the point on its axis nearest the eye, what it lights there, not
+  at its bulb behind the trusses, and the penalty eases in and out over about 10 frames (Sean 2026-11-23: rays crossing roof
+  steel flipped lamps 8 m in the order at once, and the lit set and its shadow slots swapped every few frames: a flicker).
 - **Light strips light the room** (`ConstructLamps.StripLamps`, Karl 2026-11-21: a bright ceiling bar lit nothing round it). A part's
   pale, flat, downward glowing boxes (thin in y, at least 0.12 m2 and 0.6 m long) are a row of lamps, one every 1.8 m, 20 cm under
   the strip, lit unless the body's power is off.

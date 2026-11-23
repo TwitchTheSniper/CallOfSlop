@@ -50,7 +50,7 @@ public sealed partial class ConstructWorld
 /// 3.5 kW while it heats; the screws draw the Core's own power while the hood moves.
 /// <para>
 /// The hood drops on whatever is on the bed: anyone under it is crushed, and anyone inside while it is down is burned (machines never
-/// stop for people: hazard stripes and the HOT sign are the warning). The hood, its screw columns and the oven's own bridge are drawn
+/// stop for people: hazard stripes and the HOT sign are the warning). The hood and its screw columns are drawn
 /// by BakeOvenRender.cs from the phase byte; nothing new goes on the wire.
 /// </para>
 /// <para>

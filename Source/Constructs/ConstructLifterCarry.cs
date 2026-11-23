@@ -523,7 +523,7 @@ public static partial class ConstructLifters
             if (pt.Kind != LiftPointKind.RunEnd || world.Get(pt.Body) is not { } b)
                 continue;
             var run = RollerRuns.EndRunAt(b, pt.Part);
-            var lead = run >= 0 ? RollerRuns.WaitingLead(b, run) : (run = RollerRuns.BedRunAt(b, pt.Part)) >= 0 ? RollerRuns.PassingLead(b, run) : -1;
+            var lead = run >= 0 ? RollerRuns.WaitingLead(b, run) : (run = RollerRuns.BedRunAt(b, pt.Part)) >= 0 ? RollerRuns.PassingLead(world, b, run) : -1;
             if (lead < 0)
                 continue;
             var rider = b.Conveyed[lead];

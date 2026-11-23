@@ -7,8 +7,8 @@ namespace CallOfSlop;
 /// every peer has: the hood over the bed's clear cells, one section a bed row, each a pale steel roof hung under the mast tops with a
 /// dark rim, ribs and stiffeners, a vent box with a glowing slot on every other cell, and skirts that telescope down from its outer
 /// edges to the bed with hazard stripes round their foot; a screw column on the inner face of each corner mast with the yoke that
-/// drives the skirts riding it; and the oven's own bridge on the mast tops (two runway girders, the
-/// bridge with its end trucks, trolley, hoist and hook, parked at the bed's near end, its amber lamp flashing while the hood moves).
+/// drives the skirts riding it. The oven has no crane of its own: a hall crane, a Loader Arm or a roller run (ConstructRollOut.cs)
+/// loads and empties the bed.
 /// <para>
 /// The skirts drop in a quick ripple, row after row; while it bakes its seam and vents glow and the vents breathe heat haze;
 /// the bed's heated edge fades as it cools; then the hood lifts. All from the phase and the time since this peer saw it change, so a
@@ -19,7 +19,7 @@ public static class BakeOvenRender
 {
     public const float DrawNear = 150f;
     private static readonly Vector3 Hood = new(0.85f, 0.83f, 0.78f), HoodDark = new(0.62f, 0.6f, 0.56f), Dark = new(0.133f, 0.149f, 0.169f),
-        Steel = new(0.6f, 0.63f, 0.66f), Yellow = new(0.94f, 0.76f, 0.1f), Hot = new(1f, 0.5f, 0.12f), Black = new(0.08f, 0.08f, 0.09f), Amber = new(1f, 0.62f, 0.1f);
+        Steel = new(0.6f, 0.63f, 0.66f), Yellow = new(0.94f, 0.76f, 0.1f), Hot = new(1f, 0.5f, 0.12f), Black = new(0.08f, 0.08f, 0.09f);
     private const float CoolFade = 3f;
     private static double _last;
 
@@ -208,37 +208,6 @@ public static class BakeOvenRender
             Box(gfx, frame, Vector3.Min(new Vector3(inner.X, yy - 0.08f, inner.Y), reach - new Vector3(0, 0.08f, 0)) - new Vector3(0.06f, 0, 0.06f),
                 Vector3.Max(new Vector3(inner.X, yy + 0.08f, inner.Y), reach + new Vector3(0, 0.08f, 0)) + new Vector3(0.06f, 0, 0.06f), Dark);
         }
-        // ---- The oven's own bridge on the mast tops ----
-        var top = bed.MastTop + 0.004f;
-        float rx0 = X(bed.X0), rx1 = X(bed.X0 + bed.W - 1), rz0 = Z(bed.Z0) - half + 0.1f, rz1 = Z(bed.Z0 + bed.L - 1) + half - 0.1f;
-        for (var side = 0; side < 2; side++)
-        {
-            var rx = side == 0 ? rx0 : rx1;
-            Box(gfx, frame, new Vector3(rx - 0.2f, top, rz0), new Vector3(rx + 0.2f, top + 0.45f, rz1), Yellow); // (a runway girder)
-            Box(gfx, frame, new Vector3(rx - 0.06f, top + 0.45f, rz0), new Vector3(rx + 0.06f, top + 0.52f, rz1), Steel); // (its rail)
-            Box(gfx, frame, new Vector3(rx - 0.25f, top + 0.05f, rz0 - 0.02f), new Vector3(rx + 0.25f, top + 0.4f, rz0 + 0.1f), Dark); // (end stops)
-            Box(gfx, frame, new Vector3(rx - 0.25f, top + 0.05f, rz1 - 0.1f), new Vector3(rx + 0.25f, top + 0.4f, rz1 + 0.02f), Dark);
-        }
-        var pz = Z(bed.Z0) - 0.2f; // (parked over the near end's masts, clear of the hood)
-        var by0 = top + 0.52f;
-        for (var side = 0; side < 2; side++)
-        {
-            var rx = side == 0 ? rx0 : rx1;
-            Box(gfx, frame, new Vector3(rx - 0.3f, by0, pz - 0.9f), new Vector3(rx + 0.3f, by0 + 0.35f, pz + 0.9f), Dark); // (an end truck)
-        }
-        Box(gfx, frame, new Vector3(rx0, by0 + 0.35f, pz - 0.35f), new Vector3(rx1, by0 + 0.95f, pz - 0.05f), Yellow); // (the bridge's two girders)
-        Box(gfx, frame, new Vector3(rx0, by0 + 0.35f, pz + 0.05f), new Vector3(rx1, by0 + 0.95f, pz + 0.35f), Yellow);
-        var tx = (rx0 + rx1) * 0.5f;
-        Box(gfx, frame, new Vector3(tx - 0.6f, by0 + 0.95f, pz - 0.5f), new Vector3(tx + 0.6f, by0 + 1.35f, pz + 0.5f), Dark); // (the trolley)
-        Box(gfx, frame, new Vector3(tx - 0.3f, by0 + 1.35f, pz - 0.3f), new Vector3(tx + 0.4f, by0 + 1.6f, pz + 0.3f), Steel); // (its hoist drum's housing)
-        var hookY = by0 - 1.2f;
-        Box(gfx, frame, new Vector3(tx - 0.03f, hookY + 0.3f, pz - 0.12f), new Vector3(tx + 0.03f, by0 + 0.95f, pz - 0.06f), Steel); // (the ropes)
-        Box(gfx, frame, new Vector3(tx - 0.03f, hookY + 0.3f, pz + 0.06f), new Vector3(tx + 0.03f, by0 + 0.95f, pz + 0.12f), Steel);
-        Box(gfx, frame, new Vector3(tx - 0.2f, hookY, pz - 0.2f), new Vector3(tx + 0.2f, hookY + 0.3f, pz + 0.2f), Yellow); // (the hook block)
-        Stripes(gfx, frame, pz - 0.2f, pz + 0.2f, hookY + 0.05f, tx + 0.202f, false, true);
-        var moving = phase is OvenPhase.Drop or OvenPhase.Lift;
-        var lamp = moving && MathF.Sin((float)now * MathF.Tau * 1.5f) > 0 ? Amber : Amber * 0.25f;
-        gfx.Draw(Scale(new Vector3(tx - 0.1f, by0 + 1.6f, pz - 0.1f), new Vector3(tx + 0.1f, by0 + 1.75f, pz + 0.1f)) * frame, lamp, mode: moving ? 2 : 0);
     }
 
     /// <summary>Hazard stripes along a hood's foot: yellow and black blocks 0.25 m long, on a face at <paramref name="at"/> (along x when <paramref name="alongX"/>, else along z).</summary>

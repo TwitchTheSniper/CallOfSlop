@@ -301,6 +301,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--press-sweep", StringComparison.OrdinalIgnoreCase)))
             return PressSweep.Cli(args); // which Assembler recipes a Press could make instead (PressSweep.cs; Assembler PR 3): a list to approve
+        if (args.Any(a => a.Equals("--prepare-check", StringComparison.OrdinalIgnoreCase)))
+            return PrepareCheck.Cli(args); // a held spawn's Preparing time, headless: steps by part kind, measure, join (Source/DevTools/PrepareCheck.cs)
         if (args.Any(a => a.Equals("--machine-blocks", StringComparison.OrdinalIgnoreCase)))
             return MachineBlocks.Cli(args); // a blueprint's block machines: each Core's cells, bed rectangle and idle cells (MachineBlocks.cs)
         if (args.Any(a => a.Equals("--conduit-check", StringComparison.OrdinalIgnoreCase)))

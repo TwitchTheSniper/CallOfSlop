@@ -8,9 +8,10 @@ namespace CallOfSlop.PartKit.Generators;
 /// Panel Former"; MachineBlocks.cs). A Panel Former Core holds the machine's brain (screen and queue, Orders, Run, power, the offcut bin,
 /// Piece in, where one blank a panel comes in, and the in rollers); identical 2 x 2 m Bed Blocks welded on its far side make the bed, and an Out Table (OutTableParts) closes
 /// the bed's far end. The largest panel is the rectangle of blocks. Each Bed Block is a pin bed: a field of steel pins below that rise in a
-/// wave to the panel's shape, an upper platen above that comes down and presses the sheet over them (the renderer's "pin" and "press"
-/// work: ConstructPanelFormer.PinLift, PressAt). A block's skirts, posts, platen rims and side fittings are drawn only where no cell of its
-/// machine is welded ("seam"), so a bed of blocks reads as one machine: one platen, posts at its corners, one oil manifold down one side and
+/// wave to the panel's shape, an upper platen above that comes down and presses the sheet over them. All of that happens behind walls
+/// (Sean, 2026-11-23): between the lower bed and the crosshead a block is walled on every free side and nothing inside is drawn, so the
+/// panel's forming is hidden. A block's skirts, walls, corner pillars and side fittings are drawn only where no cell of its
+/// machine is welded ("seam"), so a bed of blocks reads as one machine: one closed box, pillars at its corners, one oil manifold down one side and
 /// a hazard edge round the outside. Born in the Machine look (look.md): three tones, bare steel working parts, white in, orange out.
 /// </summary>
 public sealed class PanelFormerParts : IPartGenerator
@@ -25,7 +26,6 @@ public sealed class PanelFormerParts : IPartGenerator
     private const double WorkY = OutTableParts.WorkY; // the pins' tops at rest and the in rollers' nip: the sheet's height on the bed
     private const double DeckY = 0.86; // the lower bed's deck the pins come up through
     private const double Head = 2.96; // the crosshead's underside
-    private const double PlatenLo = 2.4, PlatenHi = 2.62, PressTravel = 1.0, PinMost = 0.38; // (the platen's pins at 1.34 at the bottom of its stroke: clear of the risen bed pins)
     private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
     private const double OffX = -0.5, OffY = 2.8; // the Offcut port, on the bin's back wall
 
@@ -161,8 +161,8 @@ public sealed class PanelFormerParts : IPartGenerator
     }
 
     /// <summary>
-    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed (its pins come up through a steel deck), an upper platen
-    /// with its own pins under it on a hydraulic ram from the crosshead, and its own power. Welds to the Core, to another block's four sides,
+    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed and a crosshead, walled between on every free side
+    /// (the pins and platen inside are not drawn), and its own power. Welds to the Core, to another block's four sides,
     /// or to an Out Table.
     /// </summary>
     private static Part BedBlock()
@@ -171,7 +171,7 @@ public sealed class PanelFormerParts : IPartGenerator
             "Weld it on a Panel Former Core's front, or beside another Bed Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core, an Out Table on its far end; a block outside it idles.",
             group: "Production", color: Green);
         const double d = 0.07, rib = 0.13; // (the lower body's sides are sunk between ribs: its frame at the edges and a cross rib at the middle)
-        // Solid: the lower bed (a sunk body, framed by ribs) and the crosshead over it. Everything between is drawn (posts, platen, ram).
+        // Solid: the lower bed (a sunk body, framed by ribs) and the crosshead over it. Between them only the walls are drawn.
         p.Add(Box([-E + d, 0.003, -E + d], [E - d, DeckY, E - d]));
         foreach (var (a, b) in new[] { (-E, -E + rib), (-0.065, 0.065), (E - rib, E) })
         {
@@ -186,61 +186,24 @@ public sealed class PanelFormerParts : IPartGenerator
             (mn[n], mx[n]) = sg > 0 ? (E - d - 0.01, E - 0.004) : (-E + 0.004, -E + d + 0.01);
             p.Add(Fill(L(mn, mx, Green, paintable: true), side));
         }
-        // The deck over the lower bed: tread plate, screw heads, and the pins coming up through it.
-        p.Add(L([-E + 0.004, DeckY, -E + 0.004], [E - 0.004, DeckY + 0.014, E - 0.004], MachineLook.Steel, "tread plate"));
-        foreach (var x in new[] { -0.9, 0.9 })
-            foreach (var z in new[] { -0.9, 0.9 })
-                p.Add(L([x - 0.014, DeckY + 0.014, z - 0.014], [x + 0.014, DeckY + 0.026, z + 0.014], MachineLook.Base));
-        const double pitch = 0.36, ph = 0.065;
-        for (var i = -2; i <= 2; i++)
-            for (var k = -2; k <= 2; k++)
-            {
-                double x = i * pitch, z = k * pitch;
-                p.Add(MachineLook.Work(L([x - ph, 0.03, z - ph], [x + ph, WorkY - 0.005, z + ph], MachineLook.Steel, "steel"), "pin", "+y", PinMost)); // (they rise in a wave to the panel's shape)
-                p.Add(L([x - ph - 0.022, DeckY + 0.014, z - ph - 0.022], [x + ph + 0.022, DeckY + 0.032, z + ph + 0.022], MachineLook.Base)); // (its bushing in the deck)
-            }
-        // The upper platen: a slab with its own pins under it, its rims drawn on the bed's outside only; it comes down to press.
-        const double pe = 0.985;
-        p.Add(MachineLook.Work(L([-pe, PlatenLo, -pe], [pe, PlatenHi, pe], MachineLook.Steel, "steel"), "press", "-y", PressTravel));
-        for (var i = -1.5; i <= 1.5; i += 1)
-            for (var k = -1.5; k <= 1.5; k += 1)
-            {
-                double x = i * 0.45, z = k * 0.45;
-                p.Add(MachineLook.Work(L([x - 0.07, PlatenLo - 0.06, z - 0.07], [x + 0.07, PlatenLo + 0.004, z + 0.07], MachineLook.Steel, "steel"), "press", "-y", PressTravel));
-            }
-        foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
-        {
-            int u = 2 - n;
-            double[] mn = new double[3], mx = new double[3];
-            (mn[n], mx[n]) = sg > 0 ? (pe, pe + 0.014) : (-pe - 0.014, -pe);
-            (mn[u], mx[u]) = (-pe, pe);
-            (mn[1], mx[1]) = (PlatenLo + 0.05, PlatenHi - 0.05);
-            p.Add(Seam(MachineLook.Work(MachineLook.D(mn, mx, MachineLook.Accent, "hazard paint"), "press", "-y", PressTravel), side)); // (crush: it never stops for anyone on the bed)
-        }
-        // The ram: a cylinder on the crosshead, its gland under it, the rod down to the platen.
-        // (Under a Mast Block, which stands on the crosshead to deepen the stroke, the cylinder's head is the mast's: not drawn.)
+        // Closed (Sean, 2026-11-23): between the lower bed and the crosshead the block is walled on every free side, so nothing of the
+        // forming shows (no pins, platen or ram are drawn inside: what is hidden costs no draw). The panel being formed is hidden with it;
+        // the bed's two ends, welded to the Core and an Out Table, are closed by PanelFormerRender's end curtains.
+        // The ram's head on the crosshead stays (it's outside).
         p.Add(Seam(L([-0.22, H - 0.004, -0.22], [0.22, H + 0.52, 0.22], MachineLook.Base, shape: Cyl("+y", 16)), "+y"));
         p.Add(Seam(L([-0.25, H + 0.52, -0.25], [0.25, H + 0.58, 0.25], MachineLook.Steel, "steel", shape: Cyl("+y", 16)), "+y"));
         foreach (var (x, z) in new[] { (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2) })
             p.Add(Seam(L([x - 0.018, H + 0.58, z - 0.018], [x + 0.018, H + 0.61, z + 0.018], MachineLook.Base), "+y")); // (its head's bolts)
-        p.Add(L([-0.14, PlatenHi + 0.006, -0.14], [0.14, Head + 0.004, 0.14], MachineLook.Base, shape: Cyl("+y", 14)));
-        p.Add(MachineLook.Work(L([-0.09, PlatenHi - 0.005, -0.09], [0.09, PlatenHi + 1.05, 0.09], MachineLook.Steel, "steel", shape: Cyl("+y", 12)), "press", "-y", PressTravel));
         p.Add(L([0.3, H - 0.004, -0.04], [0.85, H + 0.06, 0.04], MachineLook.Steel, "steel")); // (its oil line along the crosshead)
-        // The corner posts: drawn only at the bed's outer corners (a post's two faces both free), the platen's guides.
+        // A corner pillar where two free sides meet (the bed's outer corners), closing the walls' corner.
         foreach (var (sx, xs) in new[] { (1, "+x"), (-1, "-x") })
             foreach (var (sz, zs) in new[] { (1, "+z"), (-1, "-z") })
             {
                 double[] X(double a, double b) => sx > 0 ? [a, b] : [-b, -a];
                 double[] Z(double a, double b) => sz > 0 ? [a, b] : [-b, -a];
-                var px = X(E - 0.15, E - 0.004);
-                var pz = Z(E - 0.15, E - 0.004);
-                p.Add(Seam(L([px[0], DeckY + 0.034, pz[0]], [px[1], Head - 0.004, pz[1]], MachineLook.Base), xs, zs));
-                var gx = X(E - 0.17, E - 0.15);
-                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], Head - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the platen)
-                var fx = X(E - 0.2, E - 0.004);
-                var fz = Z(E - 0.2, E - 0.004);
-                p.Add(Seam(L([fx[0], DeckY + 0.032, fz[0]], [fx[1], DeckY + 0.09, fz[1]], MachineLook.Base), xs, zs)); // (its foot plate)
-                p.Add(Seam(L([fx[0], Head - 0.06, fz[0]], [fx[1], Head - 0.002, fz[1]], MachineLook.Base), xs, zs)); // (its head plate)
+                var px = X(E - 0.06, E + 0.024);
+                var pz = Z(E - 0.06, E + 0.024);
+                p.Add(Seam(L([px[0], DeckY - 0.008, pz[0]], [px[1], Head + 0.014, pz[1]], MachineLook.Base), xs, zs));
             }
         // On each side, drawn while nothing of its machine is welded there: the skirt, the hazard edge along the bed's lip, louvres in the
         // sunk panels, bolts along the crosshead and a cable tray on it.
@@ -256,6 +219,13 @@ public sealed class PanelFormerParts : IPartGenerator
                 return L(mn, mx, colour, finish);
             }
             p.Add(Seam(Face(0, 0.014, -E, E, 0.003, 0.14, MachineLook.Base), side));
+            // The wall from the lower bed's lip to the crosshead, two stiffeners on it and a crush warning plate. It ends on the cell's
+            // edge (1 m), so two blocks' walls meet end to end with no slit and no overlap (a block painted another colour would flicker).
+            p.Add(Seam(Face(-0.03, 0.006, -E - 0.003, E + 0.003, DeckY - 0.01, Head + 0.012, Green, null)!.Update(("paintable", true)), side));
+            foreach (var t in new[] { -0.5, 0.5 })
+                p.Add(Seam(Face(0.006, 0.03, t - 0.04, t + 0.04, DeckY + 0.06, Head - 0.04, Trim, null)!.Update(("paintable", true)), side));
+            p.Add(Seam(Face(0.006, 0.018, -0.3, 0.3, 1.86, 2.1, MachineLook.Accent, "hazard paint"), side));
+            p.Add(Seam(Face(0.018, 0.03, -0.22, 0.22, 1.95, 2.01, MachineLook.Ink), side));
             p.Add(Seam(Face(0, 0.014, -E + 0.02, E - 0.02, DeckY - 0.12, DeckY - 0.02, MachineLook.Accent, "hazard paint"), side));
             foreach (var (a, b) in new[] { (-E + rib + 0.06, -0.065 - 0.06), (0.065 + 0.06, E - rib - 0.06) })
                 foreach (var y in new[] { 0.36, 0.46, 0.56 })

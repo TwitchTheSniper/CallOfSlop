@@ -215,7 +215,7 @@ public sealed partial class PressParts : IPartGenerator
         var c = Small;
         var k = c.Cell;
         const int n = CoreCells;
-        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces between two round dies that roll shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the housings the dies swing out of (1.6 m of daylight, 2 m more a block; a bed over four blocks wide needs a clear strip beside each side for its dies' overhang), and it works faster with every block. The dies never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
+        var p = new Part("Press", c, Section, "A Press Core, the press's control module: stamps parts out of extruded pieces between two round dies that roll shut over the blank. Alone it takes blanks up to 0.45 m across on its deck; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the housings the dies swing out of (1.6 m of daylight, 2 m more a block; a bed over four blocks wide needs a clear strip beside each side for its dies' reach), and it works faster with every block. The dies never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
             role: "storage", group: "Production", color: Blue);
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), y1 = c.Hi(n), z0 = c.Lo(), z1 = c.Hi(n);
         double mid = (x0 + x1) / 2, my = (y0 + y1) / 2, zm = (z0 + z1) / 2;
@@ -224,10 +224,10 @@ public sealed partial class PressParts : IPartGenerator
         var deck = cab + deckT; // (the bed: the die and the tray stand on it)
         var bayY = y0 + 0.6; // (the bays' sockets on the back: each Piece in 11 cm under, ConstructPorts.cs)
         var mk = 0.015;
-        // The cabinet and the deck: the only collision (the leaves are looks that swing).
+        // The cabinet and the deck: the only collision.
         p.Add(Box([x0, y0, z0], [x1, cab, z1]));
         p.Add(Box([x0 + rim, cab, z0 + rim], [x1 - rim, deck, z1 - rim], MachineLook.Base)!.Update(("paintable", false), ("finish", "tread plate")));
-        foreach (var px in new[] { x0, x1 - 0.06 }) // (a steel post up each corner to the cell's top: the Core fills its 2 m cell, and the leaves swing between them)
+        foreach (var px in new[] { x0, x1 - 0.06 }) // (a steel post up each corner to the cell's top: the Core fills its 2 m cell, its tray and die between them)
             foreach (var pz in new[] { z0, z1 - 0.06 })
                 p.Add(Box([px, cab, pz], [px + 0.06, y1, pz + 0.06], MachineLook.Steel)!.Update(("paintable", false), ("finish", "steel")));
         // The plinth and the cap band, front and back (a side's are seams: a Press Block welded there hides them).
@@ -246,37 +246,8 @@ public sealed partial class PressParts : IPartGenerator
                 p.Add(Seam(MachineLook.D([side == "+x" ? x1 - 0.004 : x0 - 0.02, ly, z0 + 0.45], [side == "+x" ? x1 + 0.02 : x0 + 0.004, ly + 0.04, z1 - 0.45], MachineLook.Base)!, side));
             }
         }
-        // The small clamshell on the deck: two leaves hinged along the deck's front and back edges, each a side plate and a roof half that
-        // meet over the die; they swing open flat out and slam shut while it works ("hinge": ConstructPressShells.cs), shut at rest.
-        foreach (var sg in new[] { -1, 1 })
-        {
-            var edge = sg < 0 ? z0 + rim : z1 - rim; // (the hinge line, over the deck's edge)
-            var inner = edge - sg * leafT;
-            var top = deck + leafH;
-            double[] pivot = [R3(mid), R3(deck), R3(edge)];
-            var axis = sg < 0 ? "-z" : "+z";
-            PyDict Leaf(double[] lo, double[] hi, string colour, string? finish = null, bool paintable = false)
-            {
-                var bx = MachineLook.Work(MachineLook.D(lo, hi, colour, finish, paintable), "hinge", axis, 95)!;
-                bx["pivot"] = Py.L(pivot[0], pivot[1], pivot[2]);
-                return bx;
-            }
-            double Zs(double a, double b) => Math.Min(a, b);
-            double Zb(double a, double b) => Math.Max(a, b);
-            p.Add(Leaf([x0 + 0.1, deck + 0.004, Zs(inner, edge)], [x1 - 0.1, top - 0.04, Zb(inner, edge)], Blue, paintable: true)); // (its side plate)
-            var tip = zm + sg * 0.003; // (3 mm short of the middle: the two roof halves never share a face)
-            p.Add(Leaf([x0 + 0.1, top - leafT, Zs(edge - sg * 0.04, tip)], [x1 - 0.1, top, Zb(edge - sg * 0.04, tip)], MachineLook.Base)); // (its roof half)
-            var outer = sg < 0 ? edge - 0.012 : edge + 0.012;
-            p.Add(Leaf([x0 + 0.12, top - 0.2, Zs(edge - sg * 0.004, outer)], [x1 - 0.12, top - 0.1, Zb(edge - sg * 0.004, outer)], MachineLook.Accent, "hazard paint")); // (a hazard band on its outer face)
-            foreach (var rx in new[] { mid - 0.55, mid, mid + 0.55 })
-                p.Add(Leaf([rx - 0.03, deck + 0.04, Zs(edge - sg * 0.004, outer + sg * 0.004)], [rx + 0.03, top - 0.22, Zb(edge - sg * 0.004, outer + sg * 0.004)], MachineLook.Base)); // (its ribs)
-            for (var t = 0; t < 4; t++) // (red latch teeth along the roof half's leading edge)
-            {
-                var tx = x0 + 0.3 + t * 0.47;
-                p.Add(Leaf([tx - 0.06, top - leafT - 0.05, Zs(tip - sg * 0.06, tip - sg * 0.006)], [tx + 0.06, top - leafT + 0.004, Zb(tip - sg * 0.06, tip - sg * 0.006)], "#c0392b"));
-            }
-            p.Add(MachineLook.D([x0 + 0.14, deck - 0.02, edge - 0.03], [x1 - 0.14, deck + 0.04, edge + 0.03], MachineLook.Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 10), ("front", "+x")))); // (its hinge pin, which stays)
-        }
+        // (No clamshell of its own, Sean 2026-11-23: the press is its bed's round dies; the Core is the control module, with its die
+        // on the deck.)
         // The front: the die screen (Panels), the status lamp over it, an orange band and arrow down to the Piece out, a run-off lip,
         // a pressure gauge, the maker's plate and corner bolts.
         p.Add(MachineLook.D([x0 + 0.12, y0 + 0.17, z1], [x1 - 0.12, y0 + 0.27, z1 + mk], MachineLook.Out));
@@ -301,7 +272,7 @@ public sealed partial class PressParts : IPartGenerator
             p.Add(MachineLook.D([hx - 0.012, y0 + 0.55, z0 - 0.055], [hx + 0.057, y0 + 0.61, z0 - 0.002], MachineLook.Steel, "steel"));
         }
         // Sockets: its feet (and blocks under it), the first Press Block of its bed beside it, the bays, the die on the deck.
-        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"), skip: ["+y"]); // (nothing stands on its clamshell)
+        BlockSockets(p, n, n, n, faces: "y", limit: Lim(3, "+y", "-y"), skip: ["+y"]); // (nothing stands on its deck: its die does)
         p.Sock("+x", [R3(x1), R3(my), R3(zm)], "+x");
         p.Sock("-x", [R3(x0), R3(my), R3(zm)], "-x");
         for (var i = 0; i < centres.Count; i++)
