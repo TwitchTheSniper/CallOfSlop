@@ -166,7 +166,7 @@ public static partial class SelfTest
         Line("meshes (triangles near/far): " + string.Join(", ", Enumerable.Range(0, FoliageMeshes.TypeCount)
             .Select(t => $"{(FoliageType)t} {FoliageMeshes.Triangles((FoliageType)t, 0)}/{FoliageMeshes.Triangles((FoliageType)t, 1)}")));
         for (var t = 0; t < FoliageMeshes.TypeCount; t++)
-            if (FoliageMeshes.Triangles((FoliageType)t, 1) > FoliageMeshes.Triangles((FoliageType)t, 0) || FoliageMeshes.Triangles((FoliageType)t, 1) == 0)
+            if (FoliageMeshes.Triangles((FoliageType)t, 0) > 0 && FoliageMeshes.Triangles((FoliageType)t, 1) > FoliageMeshes.Triangles((FoliageType)t, 0) || FoliageMeshes.Triangles((FoliageType)t, 1) == 0) // (far trees have only a far mesh)
                 Fail($"{(FoliageType)t}: far mesh isn't cheaper than the near one");
 
         // Hand-placed trees stand exactly where the file says, with a trunk.

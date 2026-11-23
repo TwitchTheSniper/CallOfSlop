@@ -1320,16 +1320,19 @@ public sealed partial class PlanetEdits : IDigGround
     private (Vector3 Color, float Rock) Shade(int c, float y, bool covered)
     {
         var sf = _p.Surface;
+        // (the biomes' dirt and rock at this column, made with the cell's top colours; the world's before they are)
+        var made = c < _ownDirt.Length && _ownDirt[c] != default;
+        var dirt = made ? _ownDirt[c] : sf.Dirt;
         if (_fillKind[c] == 0 || y < _fillLo[c] - 0.01f)
         {
             var own = c < _ownColour.Length ? _ownColour[c] : sf.Grass; // (made with the cell's top colours: EnsureColours)
-            return TerrainEdits.DugShade(sf, own, _orig[c] - y, covered);
+            return TerrainEdits.DugShade(dirt, made ? _ownRock[c] : sf.Rock, own, _orig[c] - y, covered);
         }
         var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
         {
             GroundKind.Stone => (sf.StoneFill, 1f),
             GroundKind.Sand => (sf.Sand, 0.2f),
-            _ => (sf.Dirt, 0.25f),
+            _ => (dirt, 0.25f),
         };
         return (col * (covered ? 0.6f : 1f), rock);
     }
@@ -1355,7 +1358,10 @@ public sealed partial class PlanetEdits : IDigGround
     /// does at a cell's corner (PlanetRenderer: the slope across the cells either side, not the finer slope right there),
     /// so untouched ground in a dug cell is the colour of the ground round it and a hole has no square patch about it.
     /// </summary>
-    private Vector4 GroundColour(int face, double fi, double fj)
+    private Vector4 GroundColour(int face, double fi, double fj) => GroundColour(face, fi, fj, out _, out _);
+
+    /// <summary><see cref="GroundColour(int, double, double)"/>, with the dirt and rock colours of the biomes there (dug faces shade towards them).</summary>
+    private Vector4 GroundColour(int face, double fi, double fj, out Vector3 dirt, out Vector3 rockCol)
     {
         _p.DirOf(face, fi, fj, out var x, out var y, out var z);
         var h = BaseAlt(x, y, z);
@@ -1378,7 +1384,11 @@ public sealed partial class PlanetEdits : IDigGround
             : TerrainMaterial.Grass;
         var local = new Vector3(MathF.Sqrt(MathF.Max(0, 1 - cs * cs)), cs, 0);
         double px = x * (_r + h), py = y * (_r + h), pz = z * (_r + h);
-        var (col, rock) = TerrainData.ColourOf(surf, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+        // (Sean, 2026-11-23: dug ground keeps the biomes' colours, as the planetoid's drawing does: PlanetRenderer.MakePage)
+        var here = _p.Biomes is { } bio ? bio.SurfaceAt(surf, x, y, z, _r, (float)h, slope) : surf;
+        dirt = here.Dirt;
+        rockCol = here.Rock;
+        var (col, rock) = TerrainData.ColourOf(here, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
         return new Vector4(col, Math.Clamp(rock, 0f, 1f));
     }
 }

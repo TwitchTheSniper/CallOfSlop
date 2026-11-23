@@ -1420,6 +1420,7 @@ public sealed partial class ConstructWorld
         c.WorldFrame(cp.Seg, out var q, out var t);
         var spilled = 0;
         var lost = 0;
+        string? origin = null;
         var box = cd.IsVolumeStore;
         var boxMid = Vector3.Zero;
         if (box)
@@ -1467,6 +1468,7 @@ public sealed partial class ConstructWorld
                         heap.Damaged = true;
                         heap.Owner = 255;
                         heap.Rebuild();
+                        heap.Origin = origin ??= $"spilled from body {c.Id}'s {cd.Name} (part {part}, {c.Vel.Length():0} m/s)"; // (once a spill, never on a steady tick)
                         spilled++;
                     }
                     else

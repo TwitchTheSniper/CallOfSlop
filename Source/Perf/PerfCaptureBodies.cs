@@ -46,7 +46,15 @@ public sealed class PerfCaptureBodies
         public string Name;
         public int Parts;
         public float Mass, TopSpeed;
+        public string? Origin; // what spilled it (Construct.Origin)
+        public float TopAlt, TopAir; // at its top speed: height over the planetoid's radius (0 off one) and the air's share there
+        public bool TopFramed; // riding another body's frame then
     }
+
+    /// <summary>A body's height over the planetoid's radius and the air's share there (0 and 1 off a planetoid).</summary>
+    private static (float Alt, float Air) Where(Construct c) =>
+        GravityFrames.Point is { } planet && World.Map.Planetoid is { } pl
+            ? (System.Numerics.Vector3.Distance(c.WorldCom, planet.Center) - (float)pl.Radius, ConstructAir.DragShare(c.WorldCom)) : (0f, 1f);
 
     private readonly Dictionary<ushort, Seen> _seen = new(MaxTracked);
     private long _sim0;
@@ -83,11 +91,19 @@ public sealed class PerfCaptureBodies
             {
                 s.Samples++;
                 s.Why |= why;
-                s.TopSpeed = MathF.Max(s.TopSpeed, c.Vel.Length());
+                if (c.Vel.Length() > s.TopSpeed)
+                {
+                    s.TopSpeed = c.Vel.Length();
+                    (s.TopAlt, s.TopAir) = Where(c);
+                    s.TopFramed = c.Framed;
+                }
                 _seen[c.Id] = s;
             }
             else if (_seen.Count < MaxTracked)
-                _seen[c.Id] = new Seen { Samples = 1, Why = why, Name = c.DefOf(0).Name, Parts = c.PartCount, Mass = c.Mass, TopSpeed = c.Vel.Length() };
+            {
+                var (alt, air) = Where(c);
+                _seen[c.Id] = new Seen { Samples = 1, Why = why, Name = c.DefOf(0).Name, Parts = c.PartCount, Mass = c.Mass, TopSpeed = c.Vel.Length(), Origin = c.Origin, TopAlt = alt, TopAir = air, TopFramed = c.Framed };
+            }
             else
                 Untracked++;
         }
@@ -155,7 +171,7 @@ public sealed class PerfCaptureBodies
                     reasons.Append(reasons.Length > 0 ? ", " : "").Append(WhyNames[b]);
             if (reasons.Length == 0)
                 reasons.Append("nothing: still, falling asleep");
-            sb.Append(c, $"    body {id} {s.Name} x{s.Parts}, {s.Mass:0} kg: awake {100.0 * s.Samples / Math.Max(1, Samples):0}%, top speed {s.TopSpeed:0.000} m/s; {reasons}\n");
+            sb.Append(c, $"    body {id} {s.Name} x{s.Parts}, {s.Mass:0} kg: awake {100.0 * s.Samples / Math.Max(1, Samples):0}%, top speed {s.TopSpeed:0.000} m/s (at {s.TopAlt:0} m over the radius, air {s.TopAir:0.00}{(s.TopFramed ? ", in a frame" : "")}); {reasons}{(s.Origin != null ? $"; {s.Origin}" : "")}\n");
         }
         if (_seen.Count > 20)
             sb.Append(c, $"    ... and {_seen.Count - 20} more\n");
