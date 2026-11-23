@@ -16,6 +16,7 @@ public static partial class ConstructLifters
     public const float Margin = 0.3f; // the piece's underside passes this far over the tallest thing in its way
     private const float Touch = 0.05f; // the footprint shrinks this much, so a part the piece sits against at an end is not in the way
     private const int ClearChunks = 32;
+    private const int MaxSplits = 8; // (a chunk whose leaves fill the buffer is halved this many times at most: 256 boxes)
 
     /// <summary>The rise for a loaded crane carry whose ends (From, To and their turns) are set: the part's carry height setting, or more to clear the way.</summary>
     internal static float ClearRise(ConstructWorld world, Construct c, CLift l, LifterDef ld, ConstructPartDef d)
@@ -69,7 +70,6 @@ public static partial class ConstructLifters
             {
                 b.WorldFrame(col.Groups[g].Seg, out var gq, out var gt);
                 var toLifter = Quaternion.Normalize(inv * gq); // (group frame into the lifter's)
-                var toGroup = Quaternion.Conjugate(toLifter);
                 var gOrigin = Vector3.Transform(gt - lp, inv); // (the group's origin in the lifter's frame)
                 for (var k = 0; k < n; k++)
                 {
@@ -77,32 +77,54 @@ public static partial class ConstructLifters
                     var z = from + (to - from) * ((float)(k + 1) / n);
                     var cMid = new Vector3((a.X + z.X) * 0.5f, (low + cap) * 0.5f, (a.Z + z.Z) * 0.5f);
                     var cHalf = new Vector3(MathF.Abs(z.X - a.X) * 0.5f + foot.X, (cap - low) * 0.5f, MathF.Abs(z.Z - a.Z) * 0.5f + foot.Z);
-                    // The chunk as a box in the group's frame (its bounds there).
-                    var gMid = Vector3.Transform(cMid - gOrigin, toGroup);
-                    var gHalf = AbsRot(toGroup, cHalf);
-                    var count = col.Collect(g, gMid, gHalf, found);
-                    for (var i = 0; i < count; i++)
-                    {
-                        ref var leaf = ref col.Leaves[found[i]];
-                        if (leaf.Dead || leaf.Stub || (b == own && leaf.Part == ownPart))
-                            continue;
-                        var lh = leaf.Turned ? Vector3.Abs(leaf.AX) * leaf.Half.X + Vector3.Abs(leaf.AY) * leaf.Half.Y + Vector3.Abs(leaf.AZ) * leaf.Half.Z : leaf.Half;
-                        var wc = gOrigin + Vector3.Transform(leaf.Centre, toLifter);
-                        var wh = AbsRot(toLifter, lh);
-                        var lo = wc - wh;
-                        var hi = wc + wh;
-                        if (hi.Y > cap || hi.Y <= best || hi.Y <= low)
-                            continue; // (too tall to clear, no taller than what's found, or under the piece's lowest end)
-                        if (MathF.Abs(wc.X - cMid.X) > wh.X + cHalf.X || MathF.Abs(wc.Z - cMid.Z) > wh.Z + cHalf.Z)
-                            continue; // (the tree's bounds reached the chunk, the box itself doesn't)
-                        if (Over(lo, hi, from, hf) || Over(lo, hi, to, ht) || Inside(lo, hi, from, hf) || Inside(lo, hi, to, ht))
-                            continue; // (it hangs over the piece where it is picked or put down, or is where the piece lies: the hoist goes past it anyway)
-                        best = hi.Y;
-                    }
+                    Scan(col, g, b == own ? ownPart : -1, gOrigin, toLifter, cMid, cHalf, from, to, hf, ht, low, cap, ref best, found, 0);
                 }
             }
         }
         return best;
+    }
+
+    /// <summary>
+    /// The boxes of group <paramref name="g"/> in one box of the run (lifter frame): the tallest that can be cleared raises
+    /// <paramref name="best"/>. A box whose leaves fill the buffer is halved along its longest side and each half looked at (a
+    /// big body, the frigate on its station, puts thousands of leaves in a chunk); still full at the deepest split, it says so.
+    /// </summary>
+    private static void Scan(ConstructCollider col, int g, int skipPart, Vector3 gOrigin, Quaternion toLifter, Vector3 cMid, Vector3 cHalf,
+        Vector3 from, Vector3 to, Vector3 hf, Vector3 ht, float low, float cap, ref float best, Span<int> found, int depth)
+    {
+        var toGroup = Quaternion.Conjugate(toLifter);
+        var count = col.Collect(g, Vector3.Transform(cMid - gOrigin, toGroup), AbsRot(toGroup, cHalf), found); // (the box's bounds in the group's frame)
+        if (count >= found.Length)
+        {
+            if (depth < MaxSplits)
+            {
+                var axis = cHalf.X >= cHalf.Y && cHalf.X >= cHalf.Z ? Vector3.UnitX : cHalf.Y >= cHalf.Z ? Vector3.UnitY : Vector3.UnitZ;
+                var half = cHalf - axis * (Vector3.Dot(cHalf, axis) * 0.5f);
+                var shift = axis * Vector3.Dot(half, axis);
+                Scan(col, g, skipPart, gOrigin, toLifter, cMid - shift, half, from, to, hf, ht, low, cap, ref best, found, depth + 1);
+                Scan(col, g, skipPart, gOrigin, toLifter, cMid + shift, half, from, to, hf, ht, low, cap, ref best, found, depth + 1);
+                return;
+            }
+            Console.WriteLine($"[lifter] carry clearance: over {found.Length} boxes in a {cHalf.X * 2:0.0} x {cHalf.Y * 2:0.0} x {cHalf.Z * 2:0.0} m box even split {MaxSplits} times; the tallest there may be missed");
+        }
+        for (var i = 0; i < count; i++)
+        {
+            ref var leaf = ref col.Leaves[found[i]];
+            if (leaf.Dead || leaf.Stub || leaf.Part == skipPart)
+                continue;
+            var lh = leaf.Turned ? Vector3.Abs(leaf.AX) * leaf.Half.X + Vector3.Abs(leaf.AY) * leaf.Half.Y + Vector3.Abs(leaf.AZ) * leaf.Half.Z : leaf.Half;
+            var wc = gOrigin + Vector3.Transform(leaf.Centre, toLifter);
+            var wh = AbsRot(toLifter, lh);
+            var lo = wc - wh;
+            var hi = wc + wh;
+            if (hi.Y > cap || hi.Y <= best || hi.Y <= low)
+                continue; // (too tall to clear, no taller than what's found, or under the piece's lowest end)
+            if (MathF.Abs(wc.X - cMid.X) > wh.X + cHalf.X || MathF.Abs(wc.Z - cMid.Z) > wh.Z + cHalf.Z || lo.Y > cMid.Y + cHalf.Y)
+                continue; // (the tree's bounds reached the box, the leaf itself doesn't)
+            if (Over(lo, hi, from, hf) || Over(lo, hi, to, ht) || Inside(lo, hi, from, hf) || Inside(lo, hi, to, ht))
+                continue; // (it hangs over the piece where it is picked or put down, or is where the piece lies: the hoist goes past it anyway)
+            best = hi.Y;
+        }
     }
 
     /// <summary>Does a box stand over the piece's footprint at an end (its underside at or over the piece's top there)?</summary>

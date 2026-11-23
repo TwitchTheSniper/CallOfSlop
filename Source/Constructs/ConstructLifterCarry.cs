@@ -85,6 +85,20 @@ public static partial class ConstructLifters
         return true;
     }
 
+    /// <summary>
+    /// Where a put onto a rack or pad lowers, in <see cref="RackSpot"/>'s terms (the hold's floor under the piece's middle, less the
+    /// 5 cm the callers add back): the slot the rack will stack the piece in when the hand reaches it there, else the nearest point.
+    /// </summary>
+    internal static bool PutSpot(Construct b, int part, CStore st, ConstructPartDef d, LifterDef ld, Vector3 shoulder, Quaternion lr, float lift, out Vector3 at)
+    {
+        if (SlotFor(b, part, st, d, out at) && InReach(ld, shoulder, lr, at, lift, out _))
+        {
+            at.Y -= (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
+            return true;
+        }
+        return RackSpot(b, part, ld, shoulder, lr, lift, lift, out at);
+    }
+
     /// <summary>The top piece of a kind's last stack on a rack or pad (its middle, world), when the hand reaches it: where a pick lifts from.</summary>
     internal static bool TopSlot(Construct b, int part, CStore st, ConstructPartDef d, LifterDef ld, Vector3 shoulder, Quaternion lr, out Vector3 at)
     {
@@ -322,7 +336,7 @@ public static partial class ConstructLifters
             {
                 // (a want with no room is no taker: a full pick pad said it wanted the piece and refused it at the end, 2026-11-23)
                 if (world.StoreOf(b, pt.Part) is not { } wst || ConstructConveyor.RackCheck(b, pt.Part, wst, d) != 0
-                    || !RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                    || !PutSpot(b, pt.Part, wst, d, ld, shoulder, lr, lift, out p))
                     continue;
             }
             else if (!PointAt(b, pt, out p))
@@ -347,7 +361,7 @@ public static partial class ConstructLifters
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
-            if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out var p))
+            if (!PutSpot(b, pt.Part, st, d, ld, shoulder, lr, lift, out var p))
                 continue;
             var dist = Vector3.DistanceSquared(p, shoulder) - StockTargets.Priority(b, pt.Part) * 1e4f;
             if (dist >= bestDist)
