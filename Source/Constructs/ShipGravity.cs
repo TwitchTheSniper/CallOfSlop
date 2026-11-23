@@ -143,6 +143,13 @@ public static class ShipGravity
         var l = s.RideFelt;
         var along = -Vector3.Dot(l, up);
         push = along > 0 ? l + up * along : l; // (what isn't down: sideways in a turn, up to the ceiling when they brake hard)
+        if (Mode == ShipGravityMode.Deck)
+        {
+            // Deck gravity holds them to the deck: the burn makes them heavier along their down (weak jumps, slow moving,
+            // pinned), never slides or lifts them (a turning or braking vehicle keeps its riders on their spots, as before).
+            along = l.Length();
+            push = Vector3.Zero;
+        }
         var g = l.Length() / G;
         if (g >= PinG)
         {
