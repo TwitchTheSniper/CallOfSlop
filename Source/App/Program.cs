@@ -387,8 +387,6 @@ public static unsafe partial class Program
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
             return Mods.CheckCli(args.SkipWhile(a => !a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"))); // mods: what they change and whether it loads (docs/mods/MODS.md)
-        if (args.Any(a => a.Equals("--check-winding", StringComparison.OrdinalIgnoreCase)))
-            return WindingCheck.Cli(); // every part shape's triangles: do they wind outwards, as back-face culling needs (Source/DevTools/WindingCheck.cs)
         if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))
             return PartTools.CheckAll(args.SkipWhile(a => !a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")));
         if (args.SkipWhile(a => !a.Equals("--export-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partDir)
@@ -479,8 +477,6 @@ public static unsafe partial class Program
             LightGrid.BevelsForcedOff = true; // box edges drawn sharp whatever the Video setting (a before picture of edge bevels)
         if (args.Any(a => a.Equals("--no-occlusion", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionOn = false; // merged chunks drawn whether or not something hides them (ConstructRenderOcclusion.cs)
-        if (args.Any(a => a.Equals("--no-merged-cull", StringComparison.OrdinalIgnoreCase)))
-            Renderer.MergedCull = false; // merged construct chunks drawn with both sides of every box, as before 2026-11-23 (Renderer.Merged.cs)
         if (args.Any(a => a.Equals("--no-idle-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.DormOn = false; // idle machine blocks walked every frame, not drawn from their chunk's idle mesh (ConstructRenderBatch.cs)
         if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))

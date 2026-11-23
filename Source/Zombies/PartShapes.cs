@@ -41,7 +41,6 @@ public static class PartShapes
     private static readonly object Gate = new();
     private static readonly Dictionary<string, ushort> Ids = new(StringComparer.Ordinal);
     private static readonly List<float[]> Meshes = [null!]; // id 0 = the renderer's own unit cube
-    private static readonly List<bool> OpenList = [false]; // (Orient: a mesh with an edge used once, seen from behind through its gap)
     private static readonly List<Matrix4x4[]> ProxyList = [[Matrix4x4.Identity]];
     private static readonly List<string> Kinds = ["box"];
     private static readonly List<string?> KeyOfId = [null]; // (a freed slot's key is gone from Ids)
@@ -102,7 +101,6 @@ public static class PartShapes
                     Ids.Remove(key);
                 KeyOfId[id] = null;
                 Meshes[id] = [];
-                OpenList[id] = false;
                 ProxyList[id] = ProxyList[0];
                 Kinds[id] = "box";
                 Free.Enqueue(id);
@@ -147,7 +145,6 @@ public static class PartShapes
                 return Hold(id);
         }
         var (mesh, proxies) = Generate(b);
-        var open = Orient(mesh);
         lock (Gate)
         {
             if (Ids.TryGetValue(key, out var id))
@@ -156,7 +153,6 @@ public static class PartShapes
             {
                 id = (ushort)Meshes.Count;
                 Meshes.Add(mesh);
-                OpenList.Add(open);
                 ProxyList.Add(proxies);
                 Kinds.Add(b.Shape);
                 KeyOfId.Add(key);
@@ -165,7 +161,6 @@ public static class PartShapes
             else if (Free.TryDequeue(out id))
             {
                 Meshes[id] = mesh;
-                OpenList[id] = open;
                 ProxyList[id] = proxies;
                 Kinds[id] = b.Shape;
                 KeyOfId[id] = key;
@@ -201,63 +196,6 @@ public static class PartShapes
     {
         lock (Gate)
             return id > 0 && id < Meshes.Count ? Meshes[id] : [];
-    }
-
-    /// <summary>
-    /// Is shape <paramref name="id"/> an open mesh (an edge only one triangle uses)? The construct pass culls back faces (2026-11-23:
-    /// half the triangles of every box were drawn and shaded from behind); an open mesh is drawn with culling off, as its inside
-    /// shows through its gap.
-    /// </summary>
-    public static bool IsOpen(int id)
-    {
-        lock (Gate)
-            return id > 0 && id < OpenList.Count && OpenList[id];
-    }
-
-    /// <summary>
-    /// Winds every triangle of <paramref name="mesh"/> (position, normal) counter-clockwise seen from the side its vertex normals
-    /// face, swapping two corners where the generator wound it the other way (2026-11-23, <c>--check-winding</c>: 2,307 of 8,720
-    /// shapes had triangles wound inwards: cylinders, bevels, tubes, wedges); the normals, which the lighting reads, are the truth.
-    /// True when the mesh is open (an edge used by one triangle only).
-    /// </summary>
-    internal static bool Orient(float[] mesh)
-    {
-        const int f = FloatsPerVertex;
-        var tris = mesh.Length / (3 * f);
-        Span<float> tmp = stackalloc float[f];
-        var edges = new Dictionary<(long, long), int>(tris * 3);
-        for (var t = 0; t < tris; t++)
-        {
-            var o = t * 3 * f;
-            var a = new Vector3(mesh[o], mesh[o + 1], mesh[o + 2]);
-            var b = new Vector3(mesh[o + f], mesh[o + f + 1], mesh[o + f + 2]);
-            var c = new Vector3(mesh[o + 2 * f], mesh[o + 2 * f + 1], mesh[o + 2 * f + 2]);
-            var n = new Vector3(mesh[o + 3] + mesh[o + f + 3] + mesh[o + 2 * f + 3], mesh[o + 4] + mesh[o + f + 4] + mesh[o + 2 * f + 4], mesh[o + 5] + mesh[o + f + 5] + mesh[o + 2 * f + 5]);
-            if (Vector3.Dot(Vector3.Cross(b - a, c - a), n) < 0)
-            {
-                mesh.AsSpan(o + f, f).CopyTo(tmp);
-                mesh.AsSpan(o + 2 * f, f).CopyTo(mesh.AsSpan(o + f, f));
-                tmp.CopyTo(mesh.AsSpan(o + 2 * f, f));
-            }
-            EdgeOf(edges, a, b);
-            EdgeOf(edges, b, c);
-            EdgeOf(edges, c, a);
-        }
-        foreach (var v in edges.Values)
-            if (v == 1)
-                return true;
-        return false;
-    }
-
-    private static long CornerKey(Vector3 p) => (long)MathF.Round(p.X * 1e4f) * 73856093L ^ (long)MathF.Round(p.Y * 1e4f) * 19349663L ^ (long)MathF.Round(p.Z * 1e4f) * 83492791L;
-
-    private static void EdgeOf(Dictionary<(long, long), int> edges, Vector3 a, Vector3 b)
-    {
-        var (ka, kb) = (CornerKey(a), CornerKey(b));
-        if (ka == kb)
-            return;
-        var k = ka < kb ? (ka, kb) : (kb, ka);
-        edges[k] = edges.GetValueOrDefault(k) + 1;
     }
 
     /// <summary>The shape's name ("wedge", "cylinder"...) for shape id <paramref name="id"/> ("box" for the cube).</summary>

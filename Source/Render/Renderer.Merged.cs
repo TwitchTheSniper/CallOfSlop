@@ -298,21 +298,7 @@ public sealed unsafe partial class Renderer
             UploadShapes(); // (every shape a group names is in the box buffer)
         _mergeOn = true;
         MergedUniforms(_mergeProgram, in _mLoc);
-        _mergeCull = MergedCull;
-        if (_mergeCull)
-        {
-            Native.glEnable(GlCapability.CullFace);
-            Native.glCullFace(GlFace.Back); // (every shape winds outwards: PartShapes.Orient; an open one is drawn with culling off)
-        }
     }
-
-    /// <summary>
-    /// The merged pass culls back faces (2026-11-23: it drew every box's far side too, half its triangles, shaded and then hidden).
-    /// Every merged slot's matrix is a turn and a size above zero (none mirrors), and every shape is wound outwards
-    /// (<see cref="PartShapes.Orient"/>). <c>--no-merged-cull</c> turns it off.
-    /// </summary>
-    public static bool MergedCull = true;
-    private bool _mergeCull;
 
     /// <summary>The merged program's per-frame uniforms: the camera, fog and glow mark. Leaves it bound.</summary>
     private void MergedUniforms(GlProgram program, in MergeLoc loc)
@@ -362,12 +348,7 @@ public sealed unsafe partial class Renderer
             if (m.PointedAt != m.GroupFirst[g])
                 PointMerged(m, m.GroupFirst[g]);
             PerfCounters.Draw(count, instances);
-            var open = _mergeCull && shape != 0 && PartShapes.IsOpen(shape);
-            if (open)
-                Native.glDisable(GlCapability.CullFace); // (an open mesh: its inside shows through its gap)
             Native.glDrawArraysInstanced(GL_TRIANGLES, first, count, instances);
-            if (open)
-                Native.glEnable(GlCapability.CullFace);
             MergedDraws++;
             slots += instances;
         }
@@ -543,9 +524,6 @@ public sealed unsafe partial class Renderer
         if (!_mergeOn)
             return;
         _mergeOn = false;
-        if (_mergeCull)
-            Native.glDisable(GlCapability.CullFace); // (the rest of the frame draws with it off)
-        _mergeCull = false;
         Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
         _program.Use();
         _vao.Bind();
