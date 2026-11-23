@@ -964,6 +964,11 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   wheel rests, and the Reload key (R) sets it to the widest its ends and turns allow, sent at once (`RouteEditOp.Size`). The size
   change wakes the body: the machine retries the piece on its die at its next step. It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
+  A straight vertical segment (steeper than `ConstructConveyor.ShaftSteep`, the same steepness past which no vertical curve is
+  drawn) is a lift instead (Sean, 2026-11-23; `RouteRender.Shaft`): two mast rails in the paint either side of the line, open front
+  and back, with a dark chain and lugs inside, flanges outside and chevrons up their faces; a foot plate and a drive housing where
+  no shaft joins on. Its riders go up level on a carriage, facing the way of the nearest sloped or level segment
+  (`ConstructConveyor.ShaftFacing`), not standing on end; a slope keeps the roller bed. Timing and spacing are the link's as before.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
   1 m/s (`ConstructConveyor.Speed`; 0.5 until 2026-11-14, when the user found parts took too long: protocol 318), front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
