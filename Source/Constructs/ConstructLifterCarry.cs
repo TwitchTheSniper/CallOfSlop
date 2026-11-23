@@ -641,7 +641,7 @@ public static partial class ConstructLifters
         if (ok)
         {
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
-            l.RefusedAt = l.Refused2At = int.MinValue / 2; // (a put went in: what refused before may take the next piece)
+            ForgetRefused(l); // (a put went in: what refused before may take the next piece)
             l.Moves++;
             l.Fitted = true;
             OrderPutDone(world, l); // (phase 7: a hand order's piece counts for it)
@@ -667,6 +667,9 @@ public static partial class ConstructLifters
         (l.State, l.ToHold, l.Why, l.Age, l.From, l.FromRot, l.ToKind) = (LiftState.Stuck, false, LiftWhy.NoTaker, l.Dur, l.To, l.ToRot, LiftPointKind.None);
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} was refused; nothing in reach takes it (stuck)");
     }
+
+    /// <summary>The hand is empty again (a put, a stow into a hold, a drop): the points that refused its last piece are takers again.</summary>
+    private static void ForgetRefused(CLift l) => l.RefusedAt = l.Refused2At = int.MinValue / 2;
 
     /// <summary>Did this point refuse this lifter's piece at the end of a carry in the last <see cref="RefuseHold"/> ticks? (Not a want or a store for now.)</summary>
     private static bool RefusedNow(ConstructWorld world, CLift l, in LiftPoint pt) =>

@@ -840,6 +840,7 @@ public static partial class ConstructLifters
             ConstructBuild.PlaceNew(world, d, at, 0);
         }
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} {(lost ? "was set down: the lifter went" : "goes back: its step is no longer wanted")}");
+        ForgetRefused(l);
         if (lost || c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } lf)
         {
             l.State = LiftState.Idle;
@@ -906,6 +907,7 @@ public static partial class ConstructLifters
             world.CraftChanged(sc);
             world.StationOpened(sc);
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put its {d.Name} back into the station's hold");
+            ForgetRefused(l); // (the hand is empty: what refused that piece may take the next)
             Back(c, l, ld, sc, l.StationPart);
             return;
         }
