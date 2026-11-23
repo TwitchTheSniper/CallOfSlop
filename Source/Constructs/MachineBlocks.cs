@@ -942,6 +942,9 @@ public static class MachineBlocks
             }
             Console.WriteLine($"[blocks] {bp.Name}: {c.PartCount} parts, {c.MachineAsmCount} block machines");
             Console.Write(Report(c));
+            for (var a = 0; a < c.MachineAsmCount; a++)
+                if (c.MachineAsms[a].Blocker >= 0)
+                    Console.WriteLine($"[blocks]   {c.DefOf(c.MachineAsms[a].Core).Name} (part {c.MachineAsms[a].Core}) blocked by the {c.DefOf(c.MachineAsms[a].Blocker).Name} (part {c.MachineAsms[a].Blocker})");
             // Seam parts outside any machine (a shed's pillars of Mast Blocks): how many, and how many of their look boxes are drawn.
             int lone = 0, drawn = 0, all = 0;
             for (var i = 0; i < c.PartCount; i++)
