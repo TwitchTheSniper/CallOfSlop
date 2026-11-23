@@ -59,13 +59,18 @@ ground colour blends and the plants mix. Where none holds the world's own surfac
 | --- | --- | --- | --- |
 | Ground cover | grass, heather, scree | 0.9 m | grass 22 / 38 / 60 m, heather and scree 45 / 70 / 110 m |
 | Brush | shrub (fern), bracken, reed, bush | 1.8 m | 45 to 150 m |
-| Trees and rocks | tree (oak-like), birch, pine, spruce, scotspine, boulder | 4.5 m | trees 300 / 450 / 700 m, boulders 0.6 of that |
+| Trees and rocks | tree (oak-like), birch, pine, spruce, scotspine, boulder | 4.5 m | trees 280 / 400 / 600 m (far trees beyond), boulders 0.6 of that |
 | Monoliths | pillar, arch, needle, tor | 40 m | 1500 / 2200 / 3000 m, and at Off as at Low |
 
 Each layer has a lattice of sample points on the six faces' grids, each jittered by its own hash. A point takes a plant from
 the biomes under it, each plant's chance its density times its biome's weight, the land's swell (`clumps`) and its own
 patch noise, or nothing. A point
 whose ground is dug grows nothing (the cells round it are made again within 2 s of the dig).
+
+**Far trees** (Sean, 2026-11-23: "so they don't pop in"): from where the near trees thin out (0.78 of their reach) to
+1.2 / 1.8 / 2.5 km, one tree-layer point in nine is drawn as a wide cheap lump (`FarBroadleaf`, a coarse leaf mass three
+canopies wide; `FarConifer`, a six-sided cone), standing for it and its neighbours. They are the same trees the near cells
+grow at those points, in their colours, made in cells four tree cells across.
 
 Trees are drawn as a canopy and a thin **stem** (`FoliageType.Stem`, in the tree's bark colour). Beyond the trees' reach a
 forest is its biome's darker ground colour.
@@ -102,6 +107,13 @@ ground is dug), so a vehicle in a forest costs a few lookups a tick; a group mor
 (a `[flora]` line says so once). A box over a cube face's edge sees only one face's trees. Plants on dug ground: the
 simulation asks the dug ground itself; the drawing's workers don't read it (it changes on the main thread), and a cell's
 plants on dug ground are folded away as it uploads.
+
+## Dug ground
+
+Dug, filled and smoothed ground on a world with biomes takes the biomes' colours (Sean, 2026-11-23): the undug tops of a
+dug cell are coloured as the planet's drawing colours its ground there, and its dug faces shade towards the biomes' dirt
+and rock there (`PlanetEdits.GroundColour`, `Shade`). A dirt fill is the biomes' dirt. (Ore deposits' tint isn't applied
+to dug cells.)
 
 ## Bases clear the plants
 

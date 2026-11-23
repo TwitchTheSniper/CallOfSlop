@@ -36,9 +36,9 @@ public static partial class ConstructLifters
         var ld = c.DefOf(part).Lifter;
         if (ld is not { Bridge: true })
             return ld;
-        if (c.CraneStamp != c.RebuildStamp || c.CranePartCount != c.PartCount)
+        if (c.CraneStamp != c.StructStamp || c.CranePartCount != c.PartCount)
         {
-            c.CraneStamp = c.RebuildStamp;
+            c.CraneStamp = c.StructStamp;
             c.CranePartCount = c.PartCount;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             var key = CraneKeyOf(c);
@@ -76,8 +76,11 @@ public static partial class ConstructLifters
                 continue;
             Freeform.PartWorld(c, part, out var bp, out var br);
             var at = Vector3.Transform(mid - bp, Quaternion.Conjugate(br));
-            var hook = Pose(ld, l, AgeNow(l), out var hookRot);
-            if (l.Def != 0 && ConstructParts.Get(l.Def) is { } hd)
+            var hookAge = AgeNow(l);
+            var hook = Pose(ld, l, hookAge, out var hookRot);
+            if (Fetching(l, hookAge))
+                hook = HandPose(ld, l, hookAge); // (the bridge goes to fetch the piece, which still lies where it was)
+            else if (l.Def != 0 && ConstructParts.Get(l.Def) is { } hd)
                 hook += Vector3.Transform((hd.BoundsMin + hd.BoundsMax) * 0.5f, hookRot); // (the bridge is over the piece's middle, not its origin)
             if (MathF.Abs(at.Z - hook.Z) < LampNear && at.X > ld.Base.X - 1.5f && at.X < ld.Base.X + ld.Span + 1.5f)
                 return true;

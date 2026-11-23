@@ -42,7 +42,7 @@ public static partial class ConstructRender
 
     private static void FindFlames(Construct c)
     {
-        c.FlameStamp = c.RebuildStamp;
+        c.FlameStamp = c.StructStamp;
         c.FlameCount = 0;
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
@@ -104,7 +104,7 @@ public static partial class ConstructRender
         var dt = _fxDt;
         if (dt <= 0)
             return;
-        if (c.FlameStamp != c.RebuildStamp)
+        if (c.FlameStamp != c.StructStamp)
             FindFlames(c);
         // Flames ride the body as drawn: each frame they move with it (Fx.Carrier), so at any speed they stay on their nozzles.
         var carrier = Fx.CarrierKept(c.Id, pos, rot); // (-1: none yet, taken at the first lit flame, so a body whose flames are out holds no slot; one just gone out keeps its slot until let go, so its last flames move with it)
