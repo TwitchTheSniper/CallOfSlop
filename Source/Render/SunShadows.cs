@@ -87,6 +87,68 @@ public static unsafe class SunShadows
     private static readonly Dictionary<int, Caster> Casters = new();
     private static readonly List<int> Gone = new();
     private static readonly Pick[] Picks = new Pick[MaxBodies];
+
+    // ---- The still bodies' map kept between frames (ShadowMapCache) -----------------------------------------------------------
+
+    /// <summary>Which picked bodies a pass draws: all, the still ones (into a kept map) or the moving ones (over its copy).</summary>
+    internal enum Which : byte { All, Still, Moving }
+
+    /// <summary>The map's square moves in steps of about this many metres (the still map is drawn again at each), and the sun is held while within this of the true one (a cosine: about 0.15 degrees).</summary>
+    public const float SnapStep = 2f, SunHold = 0.9999966f;
+
+    private static readonly ShadowMapCache Cache = new();
+    private static Vector3 _keySun;
+    private static int _stillBodies, _stillBoxes;
+
+    /// <summary>Times a still map was drawn (the sun's here and the dark interiors' in <see cref="RoomShade"/>): F9, the bench.</summary>
+    public static int StillDrawn;
+
+    /// <summary>Whether each picked body counts as still this frame (<see cref="ClassifyPicks"/>).</summary>
+    internal static readonly bool[] PickStill = new bool[MaxBodies];
+
+    private sealed class PoseRec
+    {
+        public Vector3 Pos;
+        public Quaternion Rot;
+        public int Since, Seen;
+    }
+
+    private static readonly Dictionary<int, PoseRec> Poses = new();
+
+    /// <summary>
+    /// Marks each of the <paramref name="n"/> picked bodies still (drawn at the same pose for the last two frames) or moving, and returns
+    /// a key of the still ones (their ids, boxes and poses, in any order) and how many move.
+    /// </summary>
+    internal static long ClassifyPicks(int n, float alpha, bool blendTicks, out int moving)
+    {
+        long key = 0;
+        moving = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var c = Picks[k].Body;
+            var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+            var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            if (!Poses.TryGetValue(c.Id, out var r))
+                Poses[c.Id] = r = new PoseRec { Pos = pos, Rot = rot, Since = _frame, Seen = _frame };
+            else if (r.Seen != _frame)
+            {
+                r.Seen = _frame;
+                if (r.Pos != pos || r.Rot != rot)
+                    (r.Pos, r.Rot, r.Since) = (pos, rot, _frame);
+            }
+            PickStill[k] = _frame - r.Since >= 2;
+            if (!PickStill[k])
+            {
+                moving++;
+                continue;
+            }
+            var h = Mix(Mix(Mix(Mix((long)c.Id * -7046029254386353131L, ConstructShapeVersion.Both(c)), BitConverter.SingleToInt32Bits(pos.X)), BitConverter.SingleToInt32Bits(pos.Y)), BitConverter.SingleToInt32Bits(pos.Z));
+            key += Mix(Mix(h, BitConverter.SingleToInt32Bits(rot.X) ^ (long)BitConverter.SingleToInt32Bits(rot.Y) << 32), BitConverter.SingleToInt32Bits(rot.Z) ^ (long)BitConverter.SingleToInt32Bits(rot.W) << 32); // (a sum: the picks' order doesn't matter)
+        }
+        return key;
+    }
+
+    private static long Mix(long h, long v) => (h ^ v) * 0x100000001B3L + (h >> 29);
     private static float[] _boxes = new float[6 * 256];
     private static float[] _shapes = new float[6 * 1024];
     private static bool _ready, _broken;
@@ -122,14 +184,19 @@ public static unsafe class SunShadows
             Clear(n);
             return;
         }
-        // The light's square: centred a little ahead of the camera, snapped to whole texels in the light's frame so it doesn't shimmer as you move.
+        // The light's square: centred a little ahead of the camera, snapped to whole texels in the light's frame so it doesn't shimmer
+        // as you move, and to steps of about SnapStep (along the light too), so the still bodies' map (Cache) stays right for a while.
+        // The sun's direction is the one the still map was drawn with while it is within SunHold of the true one.
+        if (Cache.Key != 0 && Vector3.Dot(sun, _keySun) > SunHold)
+            sun = _keySun;
         var up = MathF.Abs(sun.Y) > 0.98f ? Vector3.UnitZ : Vector3.UnitY;
         var right = Vector3.Normalize(Vector3.Cross(up, sun));
         var lup = Vector3.Cross(sun, right);
         var flat = new Vector3(fwd.X, 0f, fwd.Z);
         var ahead = cam + (flat.LengthSquared() > 1e-4f ? Vector3.Normalize(flat) * (Reach * 0.35f) : Vector3.Zero);
         var texel = Reach * 2f / Size;
-        double cr = Math.Round(Vector3.Dot(ahead, right) / (double)texel) * texel, cu = Math.Round(Vector3.Dot(ahead, lup) / (double)texel) * texel, cs = Vector3.Dot(ahead, sun);
+        var step = texel * MathF.Max(1f, MathF.Round(SnapStep / texel));
+        double cr = Math.Round(Vector3.Dot(ahead, right) / (double)step) * step, cu = Math.Round(Vector3.Dot(ahead, lup) / (double)step) * step, cs = Math.Round(Vector3.Dot(ahead, sun) / (double)SnapStep) * SnapStep;
         var centre = new Vector3((float)(right.X * cr + lup.X * cu + sun.X * cs), (float)(right.Y * cr + lup.Y * cu + sun.Y * cs), (float)(right.Z * cr + lup.Z * cu + sun.Z * cs));
         var view = Matrix4x4.CreateLookAt(sun * (Depth * 0.5f), Vector3.Zero, up);
         var ortho = Matrix4x4.CreateOrthographicOffCenter(-Reach, Reach, -Reach, Reach, 0f, Depth); // (z 0 at the eye, 1 at the far end)
@@ -157,12 +224,34 @@ public static unsafe class SunShadows
         Native.glDisable(GlCapability.Blend);
         Native.glDisable(GlCapability.CullFace);
         Native.glDisable(GlCapability.ScissorTest);
-        Native.glClear(GL_DEPTH_BUFFER_BIT); // (the game's clear depth: the far end either way)
         _prog.Use();
         Native.glBindVertexArray(_vao);
         int bodies = 0, boxes = 0;
-        DrawPicked(n, lightClip, centre, sun, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes);
-        (LastBodies, LastBoxes) = (bodies, boxes);
+        var stillKey = ClassifyPicks(n, alpha, blendTicks, out var moving);
+        var key = Mix(Mix(Mix(Mix(stillKey, BitConverter.SingleToInt32Bits(centre.X)), BitConverter.SingleToInt32Bits(centre.Y)), BitConverter.SingleToInt32Bits(centre.Z)),
+            BitConverter.SingleToInt32Bits(sun.X) ^ (long)BitConverter.SingleToInt32Bits(sun.Y) << 20 ^ (long)BitConverter.SingleToInt32Bits(sun.Z) << 40) | 1; // (never 0: no map yet)
+        if (key != Cache.Key)
+        {
+            // The still bodies into their own map, kept until something it was drawn from changes.
+            Cache.TargetStill(_fbo, 0);
+            Native.glClear(GL_DEPTH_BUFFER_BIT); // (the game's clear depth: the far end either way)
+            _stillBodies = _stillBoxes = 0;
+            DrawPicked(n, lightClip, centre, sun, Reach * 1.415f, alpha, blendTicks, ref _stillBodies, ref _stillBoxes, Which.Still);
+            Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _tex, 0);
+            (Cache.Key, Cache.LiveDiffers, _keySun) = (key, true, sun);
+            StillDrawn++;
+        }
+        if (moving > 0 || Cache.LiveDiffers)
+        {
+            Cache.CopyToLive(_tex, 0);
+            Cache.LiveDiffers = moving > 0;
+            if (moving > 0)
+            {
+                Native.glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+                DrawPicked(n, lightClip, centre, sun, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes, Which.Moving);
+            }
+        }
+        (LastBodies, LastBoxes) = (bodies + _stillBodies, boxes + _stillBoxes);
         Native.glBindVertexArray(default);
         Native.glBindBuffer(GL_ARRAY_BUFFER, default);
         Native.glColorMask(true, true, true, true);
@@ -221,10 +310,12 @@ public static unsafe class SunShadows
     /// an orthographic view along <paramref name="dir"/> that covers <paramref name="reach"/> m either side of the line through
     /// <paramref name="centre"/>: only the cells of each body that reach that line are drawn. The depth program and arrays must be bound.
     /// </summary>
-    internal static void DrawPicked(int n, Matrix4x4 lightClip, Vector3 centre, Vector3 dir, float reach, float alpha, bool blendTicks, ref int bodies, ref int boxes)
+    internal static void DrawPicked(int n, Matrix4x4 lightClip, Vector3 centre, Vector3 dir, float reach, float alpha, bool blendTicks, ref int bodies, ref int boxes, Which which = Which.All)
     {
         for (var k = 0; k < n; k++)
         {
+            if (which != Which.All && PickStill[k] != (which == Which.Still))
+                continue;
             var c = Picks[k].Body;
             var cast = CasterOf(c);
             if (cast.Count == 0 && cast.ShapeVerts == 0 && cast.Door is not { Count: > 0 } && cast.Door is not { ShapeVerts: > 0 })
@@ -503,6 +594,7 @@ public static unsafe class SunShadows
         var status = Native.glCheckFramebufferStatus(GL_FRAMEBUFFER);
         Native.glBindFramebuffer(GL_FRAMEBUFFER, Renderer.MainFbo);
         _size = Size;
+        Cache.Ensure(Size, 1, false);
         if (status != GL_FRAMEBUFFER_COMPLETE)
         {
             Console.WriteLine($"[shadows] sun shadows off: the depth map's framebuffer is incomplete (0x{status:x})");
@@ -777,6 +869,12 @@ public static unsafe class SunShadows
             }
         foreach (var id in Gone)
             Casters.Remove(id);
+        Gone.Clear();
+        foreach (var (id, r) in Poses)
+            if (_frame - r.Seen > 600)
+                Gone.Add(id);
+        foreach (var id in Gone)
+            Poses.Remove(id);
     }
 
     private static void Free(Caster k)
