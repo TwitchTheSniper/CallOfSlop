@@ -36,6 +36,28 @@ public static class StationCheck
         using (place.In())
             c = job.Join(Vector3.Zero, 0, out var why) ?? throw new FactoryKitException($"{bp.Name} doesn't build: {why}");
         Console.WriteLine($"{bp.Name}: {c.PartCount} parts");
+        if (Arg("--parts-in") is { } box && box.Split(',') is [var bx0, var bz0, var bx1, var bz1]
+            && float.TryParse(bx0, out var px0) && float.TryParse(bz0, out var pz0) && float.TryParse(bx1, out var px1) && float.TryParse(bz1, out var pz1))
+        {
+            // --parts-in X0,Z0,X1,Z1: what stands on the floor there, a line per kind and its footprint (for laying a site out).
+            var lo = new Vector2(MathF.Min(px0, px1), MathF.Min(pz0, pz1));
+            var hi = new Vector2(MathF.Max(px0, px1), MathF.Max(pz0, pz1));
+            var kinds = new SortedDictionary<string, (int N, Vector2 Lo, Vector2 Hi)>();
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var d = c.DefOf(i);
+                if (d.Name.StartsWith("Works Floor Slab", StringComparison.Ordinal))
+                    continue;
+                c.PartBounds(i, out var a, out var b);
+                if (b.X < lo.X || a.X > hi.X || b.Z < lo.Y || a.Z > hi.Y)
+                    continue;
+                var key = $"{d.Name} @{MathF.Round((a.X + b.X) * 0.5f / 2) * 2:0}";
+                var f = (new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
+                kinds[key] = kinds.TryGetValue(key, out var e) ? (e.N + 1, Vector2.Min(e.Lo, f.Item1), Vector2.Max(e.Hi, f.Item2)) : (1, f.Item1, f.Item2);
+            }
+            foreach (var (k, e) in kinds)
+                Console.WriteLine($"  {e.N,4} x {k}: x {e.Lo.X:0.0}..{e.Hi.X:0.0}, z {e.Lo.Y:0.0}..{e.Hi.Y:0.0}");
+        }
         // --fill "X,Z,MATERIAL,N;...": bulk put straight into the store nearest each point (a bin a hauler would fill); with --keep, topped
         // up to that every second of the run (a refinery that keeps up).
         var keep = new List<(int Bin, int Material, int N)>();
@@ -214,6 +236,16 @@ public static class StationCheck
         // Every bin's stock at the end: where the bulk an Assembler waits for went (2026-11-22: the yard Assembler starved of steel).
         foreach (var i in Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsBin && w.StoreOf(c, i) is { Amount: > 0 }))
             Console.WriteLine($"  the {c.DefOf(i).Name} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0} holds {Holds(i)}");
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Orders is { Count: > 0 } mo)
+                for (var k = 0; k < mo.Count; k++)
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var cr = ref c.Conveyed[i];
+            ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+        }
         foreach (var b in w.Bodies)
             if (b != c)
                 Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");
@@ -344,10 +376,22 @@ public static class StationCheck
             if (c.Parts[s].Station is { } sj && sj.Name.EndsWith(BakeKits.KitSuffix, StringComparison.Ordinal))
             {
                 Console.WriteLine($"  station {s} at {c.Parts[s].Pos.X:0}, {c.Parts[s].Pos.Z:0}: {ConstructStation.StateText(sj)}, {sj.Fitted}/{sj.Steps}: {sj.Note}");
+                for (var kk = 0; kk < sj.KindN; kk++)
+                    Console.WriteLine($"    kind {ConstructParts.Get(sj.KindDef[kk])?.Name}: need {sj.KindNeed[kk]}, fitted {sj.KindFit[kk]}, ready {sj.KindReady[kk]}: {sj.KindWhy[kk] ?? "-"}");
                 if (c.Parts[s].Craft is { } cq)
                     for (var k = 0; k < cq.Count; k++)
                         Console.WriteLine($"    {cq.Items[k].What.Count} x {ConstructCrafting.NameOf(cq.Items[k].What)}: {ConstructCrafting.StateText(c, cq.Items[k])}");
             }
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Orders is { Count: > 0 } mo)
+                for (var k = 0; k < mo.Count; k++)
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var cr = ref c.Conveyed[i];
+            ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+        }
         foreach (var b in w.Bodies)
             if (b != c)
                 Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");

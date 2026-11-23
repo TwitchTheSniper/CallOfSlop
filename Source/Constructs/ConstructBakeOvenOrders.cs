@@ -39,7 +39,32 @@ public static partial class ConstructBakeOven
             return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
         if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
             return $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
+        // The kit is built at the station nearest the oven whose bay holds it; that station orders the kit's pieces through a Line Console
+        // wired into its Orders, so one with none would wait for ever (the works' line A oven took the yard's deck orders, 2026-11-23).
+        var bp = BakeKits.BlueprintOf(made)!;
+        int near = -1;
+        var nearDist = float.MaxValue;
+        for (var s = 0; s < c.PartCount; s++)
+            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && Vector3.DistanceSquared(c.Parts[s].Pos, c.Parts[part].Pos) is var dist && dist < nearDist
+                && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null)
+                (near, nearDist) = (s, dist);
+        if (near < 0)
+            return $"no Building Station on this construct has a bay that holds the {made.Name} kit";
+        if (!OrdersConsole(c, near))
+            return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
         return null;
+    }
+
+    /// <summary>Is a Line Console wired into station <paramref name="t"/>'s Orders port (ConstructCrafting's network)?</summary>
+    private static bool OrdersConsole(Construct c, int t)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type == RouteType.Data && r.To == t && r.FedEnd && r.Source < c.PartCount && ProductionLines.IsConsole(c.DefOf(r.Source)))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Server, an oven's step with its hood up: its head order's kit started, carried and let go on the bed.</summary>

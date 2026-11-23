@@ -182,6 +182,18 @@ public static partial class ConstructLifters
         return best;
     }
 
+    /// <summary>Server: does a lifter fit station <paramref name="t"/>'s parts from a pick pad (a lead with no hops for it)? Allocates nothing.</summary>
+    public static bool HasPickPad(ConstructWorld world, Construct sc, int t)
+    {
+        if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0)
+            return false;
+        Leads(world);
+        for (var e = 0; e < _leadN; e++)
+            if (_leads[e].Hops == 0 && _leads[e].StBody == sc.Id && _leads[e].St == t)
+                return true;
+        return false;
+    }
+
     /// <summary>Is this point a station's pick pad (a lead with no hops)? A piece there waits for the station's arm: it is never handed on.</summary>
     private static bool IsLeadPad(ConstructWorld world, in LiftPoint pt)
     {

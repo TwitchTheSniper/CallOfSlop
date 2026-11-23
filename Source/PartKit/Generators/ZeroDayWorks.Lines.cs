@@ -39,10 +39,14 @@ public sealed partial class ZeroDayWorks
             }
             // Bay 2 west span (x 32 to 50): line C, the wide flat pieces.
             ArmourLine("C", 33, LineC, bedAcross: 6, bedAlong: 12, tables: 1, padAcross: 6, cutAlong: 12);
-            Station(47, -137, 33, -135, 7, 13, 3, LineC);
-            Oven(39, -163, 33, 7, 13, 3, LineC);
-            Stores("C", 33, -191, 6, 4, LineC, second: false, transferRows: 0);
-            foreach (var z in new[] { -143f, -151f, -159f })
+            // (the bay 20 m long, room for a deck's 17 m kit; the store 12 x 12 m, the kit station's pick pad too: a deck's 10 m plates are
+            // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
+            var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
+            var ovenC = Oven(39, -155, 33, 7, 13, 3, LineC);
+            Stores("C", 33, -185, 6, 6, LineC, second: false, transferRows: 0);
+            LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC);
+            _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
+            foreach (var z in new[] { -143f, -148f, -153f })
                 Arm("Industrial Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, padAcross: 6, cutAlong: 0);
@@ -65,6 +69,25 @@ public sealed partial class ZeroDayWorks
                 Stack(c, "top", masts);
             _stations.Add(core);
             return core;
+        }
+
+        private readonly Dictionary<string, VPart> _lineExtruders = new(); // (each armour line's Sheet Extruder Core)
+        private VPart? _lastSheet;
+
+        /// <summary>
+        /// What a line's own station orders through: a Line Console (started) at (<paramref name="x"/>, <paramref name="z"/>), its Run wired to
+        /// the line's Sheet Extruder and its wire into the station's Orders port, both carried at 6 m.
+        /// </summary>
+        private void LineOrders(VPart station, VPart extruder, float x, float z, string paint)
+        {
+            const float up = 6f;
+            var console = Paint(On("Line Console", x, z, West, paint: paint), paint);
+            Config(console, ("startOn", 1));
+            var at = SocketAt(console, "bottom");
+            var to = SocketAt(extruder, extruder.Def.Sockets[0].Name);
+            Link("data", console, extruder, null, "Run", paint, false, null, Cut(at, V(at.X, up, at.Z), V(at.X, up, to.Z), V(to.X, up, to.Z)));
+            var s = SocketAt(station, "-y.0.1");
+            Link("data", console, station, null, "Orders", paint, false, null, Cut(at, V(at.X, up, at.Z), V(s.X, up, at.Z), V(s.X, up, s.Z)));
         }
 
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
@@ -120,6 +143,7 @@ public sealed partial class ZeroDayWorks
             // ---- The Sheet Extruder: its Core at the die's east end, Die Blocks welded west, Run-out Tables south of every cell. --------------
             // Everything after it is welded on in a chain from its tables (a table's far end is a quarter metre off the floor's 2 m grid).
             var tableEnds = SheetExtruder(x0 + 2 * dieCells, dieCells, tables, paint);
+            _lineExtruders[line] = _lastSheet!;
             VPart[,] run;
             if (bedAlong == 0)
             {
@@ -243,6 +267,7 @@ public sealed partial class ZeroDayWorks
             var plinth = Finish2(On("Extruder Plinth", coreX, ExtruderCoreZ, South), "concrete");
             var core = Paint(Stand("Extruder", SocketAt(plinth, "top"), South, plinth, "bottom"), paint);
             OrdersOnly(core);
+            _lastSheet = core;
             var cell = core;
             for (var k = 0; k < cells; k++)
             {

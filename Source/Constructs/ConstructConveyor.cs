@@ -756,6 +756,8 @@ public static class ConstructConveyor
         };
         WorldPose(c, route, rider, piece, out rider.LastPos, out rider.LastRot);
         ConstructLogistics.AtSource(world, c, MachineBlocks.Owner(c, r.From), ref rider, piece); // (an order that asked this machine for it: its tray, when a Router is on the way)
+        if (rider.Dest == 0)
+            PastBed(world, c, route, MachineBlocks.Owner(c, r.From), ref rider, piece);
         Insert(c, rider);
         world.RemovePart(c, product);
         c.Wake();
@@ -1064,7 +1066,7 @@ public static class ConstructConveyor
                 lengths[k] = MathF.Max(1e-3f, Length(c, k));
             var first = k != prevRoute;
             var end = lengths[k] - (tail[k] > 0 ? tail[k] + Gap : 0);
-            var hold = lengths[k] - BedHold(world, c, k, along, first); // (a blank for a bed still busy waits whole on the run, not on the bed; only the lead goes onto it)
+            var hold = lengths[k] - BedHold(world, c, k, along, first, r); // (a blank for a bed still busy waits whole on the run, not on the bed; only the lead goes onto it)
             var limit = MathF.Min(first ? end : prevBack - Gap, hold);
             var at = MathF.Min(r.At + Speed * dt, limit);
             if (at > r.At)
@@ -1125,17 +1127,49 @@ public static class ConstructConveyor
     /// of its end a piece stops, so it waits whole on the run at the bed's edge: the lead while a blank already lies on that bed, any other
     /// always (one blank at a time rides onto the bed). 0 otherwise. Either peer (OnBed is on the wire); allocates nothing.
     /// </summary>
-    private static float BedHold(ConstructWorld world, Construct c, int k, float along, bool lead)
+    private static float BedHold(ConstructWorld world, Construct c, int k, float along, bool lead, in CRider rider)
     {
         ref readonly var r = ref c.Routes[k];
         if (r.To >= c.PartCount || r.Count == 0)
             return 0;
         var td = c.DefOf(r.To);
-        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true } || lead && world.StoreOf(c, r.To) is not { OnBed: true })
-            return 0;
+        if (!td.IsPanelFormer || ConstructRoutes.PortOf(td, RouteType.Conveyor, r.ToPort) is not { OnBed: true }
+            || lead && world.StoreOf(c, r.To) is not { OnBed: true } && !PassesBed(c, r.To, rider))
+            return 0; // (a piece made for another's order never goes onto the bed: it waits whole at its edge for the crane, PastBed)
         var leg = Vector3.Distance(ConstructRoutes.Point(c, k, r.Count - 1, out _), ConstructRoutes.Point(c, k, r.Count, out _));
         return leg + along * 0.5f;
     }
+
+    /// <summary>
+    /// Server, a piece made onto a run that feeds a bed (a Roller Tile run butted on a Panel Former's or a Laser Cutter's bed, RollerRuns.Butted):
+    /// when no order of the bed's machine takes it and a Crafting Terminal's or a station's order asked its maker for its kind, it rides for
+    /// that order (its tray and the order's id), so it waits whole at the bed's edge and the crane over the run takes it past the bed
+    /// (<see cref="BedHold"/>, RollerRuns.BedRunAt; Sean, 2026-11-23: a deck's plates bypass the forming station). Allocates nothing.
+    /// </summary>
+    private static void PastBed(ConstructWorld world, Construct c, int route, int maker, ref CRider rider, ConstructPartDef piece)
+    {
+        ref readonly var r = ref c.Routes[route];
+        if (r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is not { OnBed: true }
+            || !world.CraftOpen.Contains(c.Id) || ConstructPanelFormer.Takes(c, r.To, piece))
+            return;
+        for (var t = 0; t < c.PartCount; t++)
+        {
+            if (c.Parts[t].Craft is not { Count: > 0 } q)
+                continue;
+            for (var k = 0; k < q.Count; k++)
+            {
+                ref readonly var o = ref q.Items[k];
+                if (o.Asked > 0 && o.Where == maker && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
+                {
+                    (rider.Dest, rider.Tag, rider.Flags) = (c.Parts[t].Store, o.Id, 0);
+                    return;
+                }
+            }
+        }
+    }
+
+    /// <summary>Does a piece on a run into bed Core <paramref name="to"/> ride past the bed (made for another's order: <see cref="PastBed"/>)? Either peer (a rider's Dest is on the wire).</summary>
+    public static bool PassesBed(Construct c, int to, in CRider r) => r.Dest != 0 && to < c.PartCount && r.Dest != c.Parts[to].Store;
 
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
     private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
