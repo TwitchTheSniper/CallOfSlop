@@ -732,6 +732,10 @@ public static partial class ConstructRide
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl)
             : s.Grounded ? 14f : 3f;
         var gravity = World.Gravity * World.GravityScale;
+        var buttons = cmd.Buttons;
+        var feltPush = Vector3.Zero;
+        if (s.RideFeltOn && !MmuFloat)
+            gravity = ShipGravity.Rider(ref s, up, ref wish, ref speed, ref control, ref buttons, out feltPush); // (the ship's acceleration, not the deck's 1 g: ShipGravity.cs)
         if (MmuFloat)
         {
             s.RideVel += Vector3.Transform(MmuPush, Quaternion.Conjugate(q)); // (the pack's push, into the segment's frame)
@@ -757,8 +761,9 @@ public static partial class ConstructRide
         var m = SweptMover.Instance;
         var reach = s.RideVel.Length() * World.TickDt + World.StepHeight + SweptMover.SnapDown + SweptMover.MinStepForward + 0.5f;
         Gather(w, c, s.RideSeg, s.RideLocal, up, reach);
+        s.RideVel += feltPush * World.TickDt;
         m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, gravity,
-            cmd.Buttons, World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));
+            buttons, World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));
         _groundBody = null;
         _groundPart = -1;
         _wallBody = null;

@@ -152,7 +152,7 @@ public sealed partial class Ui
         if (saved != null && (pick = Game.WorldOpen(saved, out var why)) == null)
             _worldNote = why;
         if (newName.Length > 0)
-            pick = Game.WorldNew(newName, World.Map, game.SandboxSurvivalOption, game.SandboxDeathByte);
+            pick = Game.WorldNew(newName, World.Map, game.SandboxSurvivalOption, game.SandboxDeathByte, game.SandboxShipGravity);
         if (pick != null && !game.LobbySetWorld(pick, out var refused))
             _worldNote = refused;
         ImGui.Spacing();
@@ -195,9 +195,9 @@ public sealed partial class Ui
     }
 
     /// <summary>The world the Single player page picked (a new one goes on <paramref name="map"/>), once. Null: none.</summary>
-    public WorldSession? TakeSinglePlayerWorld(Map map, bool survival, byte death)
+    public WorldSession? TakeSinglePlayerWorld(Map map, bool survival, byte death, ShipGravityMode shipGravity)
     {
-        var world = _spWorld ?? (_spNewWorld.Length > 0 ? Game.WorldNew(_spNewWorld, map, survival, death) : null);
+        var world = _spWorld ?? (_spNewWorld.Length > 0 ? Game.WorldNew(_spNewWorld, map, survival, death, shipGravity) : null);
         _spWorld = null;
         _spNewWorld = "";
         _worlds = null;
