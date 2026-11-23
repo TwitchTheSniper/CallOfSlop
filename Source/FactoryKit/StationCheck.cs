@@ -386,6 +386,28 @@ public static class StationCheck
                 if (c.Parts[s].Craft is { } cq)
                     for (var k = 0; k < cq.Count; k++)
                         Console.WriteLine($"    {cq.Items[k].What.Count} x {ConstructCrafting.NameOf(cq.Items[k].What)}: {ConstructCrafting.StateText(c, cq.Items[k])}");
+                if (sj.Plan is { } plan)
+                {
+                    ConstructStation.Bay(c, s, out var bfl, out _, out var bsz);
+                    Console.WriteLine($"    job at {sj.Pos:0.00} turn {sj.Rot:0.00}, bay floor {bfl:0.00} size {bsz:0.0}, step 0 at {plan.At[0]:0.00} middle {plan.Centre[0]:0.00}");
+                }
+                if (sj.Plan is { } plan2)
+                    foreach (var lb in w.LiftBodies)
+                        if (w.Get(lb.Body) is { } ac)
+                            for (var li = 0; li < lb.N; li++)
+                                if (lb.Lifts[li] is { } l && ConstructLifters.DefOf(ac, l.Part) is { Bridge: true } ld)
+                                {
+                                    ConstructLifters.Frame(ac, l.Part, ld, out _, out var lr, out var sh);
+                                    for (var kk = sj.Cursor; kk < sj.PartOf.Length; kk++)
+                                    {
+                                        if (sj.PartOf[kk] != -1 || sj.StepKind[kk] < 0 || ConstructParts.Get(sj.KindDef[sj.StepKind[kk]]) is not { } sd)
+                                            continue;
+                                        var spot = sj.Pos + Vector3.Transform(plan2.Centre[kk], sj.Rot);
+                                        var rel = Vector3.Transform(spot - sh, Quaternion.Conjugate(lr));
+                                        Console.WriteLine($"    crane {l.Part}: step {kk} {sd.Name}: ready {ConstructStation.ReadyStep(sj, kk)}, carries {ConstructLifters.Carries(ld, sd)} ({sd.Mass:0} kg, {sd.BoundsMax - sd.BoundsMin:0.00}), reach {ConstructLifters.InReach(ld, sh, lr, spot, ConstructLifters.WristLift(sd), out _)} (rel {rel:0.0}, across {ld.AcrossMin:0.0}..{ld.AcrossMax:0.0}, run {ld.RunLo:0.0}..{ld.RunHi:0.0}, depth {ld.Depth:0.0}, down {ld.Down:0.0}, lift {ConstructLifters.WristLift(sd):0.0}), pad {ConstructLifters.PickPadHolding(w, l, sd.Id)}");
+                                        break;
+                                    }
+                                }
             }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)

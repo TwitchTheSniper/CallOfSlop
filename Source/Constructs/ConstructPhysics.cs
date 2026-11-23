@@ -162,7 +162,11 @@ public static partial class ConstructPhysics
         var n = bodies.Count;
         for (var i = 0; i < n; i++)
             if (bodies[i].Dirty)
+            {
+                var r0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
+                ConstructSlowTick.Rebuilt(bodies[i], r0);
+            }
         LayOutJoints(bodies, n);
         _contactCount = 0;
         _anyHeld = false;

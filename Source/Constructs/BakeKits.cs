@@ -23,7 +23,7 @@ public static class BakeKits
     /// One piece of a kit: the extrusion (or, with <paramref name="Name"/>, a run-time part by its key, such as a plain Hull Section a Panel
     /// Former forms), where its origin sits in the part's frame and its turn, its paint and its finish's name.
     /// </summary>
-    public readonly record struct Piece(ExtrusionKey Key, Vector3 Pos, byte Rot, uint Paint, string Finish, string? Name = null)
+    public readonly record struct Piece(ExtrusionKey Key, Vector3 Pos, byte Rot, uint Paint, string Finish, string? Name = null, string? Dress = null)
     {
         public string PartName => Name ?? Extrusion.Name(Key);
 
@@ -108,7 +108,8 @@ public static class BakeKits
                         var rot = q.TryGetProperty("rot", out var r) ? r.GetByte() : (byte)0;
                         var paint = q.TryGetProperty("paint", out var pa) && ConstructPaint.TryParse(pa.GetString(), out var pv) ? pv : 0u;
                         var finish = q.TryGetProperty("finish", out var fi) ? fi.GetString() ?? "" : "";
-                        pieces.Add(new Piece(default, pos, rot, paint, finish, q.GetProperty("part").GetString() ?? throw new FormatException($"{part}: a piece with no \"part\"")));
+                        var dress = q.TryGetProperty("dress", out var dr) ? dr.GetString() : null; // ("STYLE SALT EXTRAS": a plain skin dressed at the station before the bake)
+                        pieces.Add(new Piece(default, pos, rot, paint, finish, q.GetProperty("part").GetString() ?? throw new FormatException($"{part}: a piece with no \"part\""), dress));
                     }
                     if (rot24Bad(pieces) is { } bad)
                         throw new FormatException($"{part}: {bad}");
@@ -122,7 +123,7 @@ public static class BakeKits
             }
         return names;
 
-        static string? rot24Bad(List<Piece> ps) => ps.Count is < 2 or > BakedParts.MaxSubparts ? $"{ps.Count} pieces (2 to {BakedParts.MaxSubparts})"
+        static string? rot24Bad(List<Piece> ps) => ps.Count is < 1 or > BakedParts.MaxSubparts ? $"{ps.Count} pieces (1 to {BakedParts.MaxSubparts}; 2 once dressed)"
             : ps.FindIndex(p => p.Rot >= Rot24.Count) is var i and >= 0 ? $"piece {i}: turn {ps[i].Rot} (0 to {Rot24.Count - 1})" : null;
     }
 
@@ -133,15 +134,21 @@ public static class BakeKits
             return false;
         foreach (var n in Names) // (no lambda: it is asked in looks that must not allocate)
             if (n.Equals(d.Name, StringComparison.OrdinalIgnoreCase))
-                return true;
+                return !IsListed(d.Name) || KitOf(d, true) != null; // (a listed kit that can't be made leaves its part to the Assembler: else nothing makes it)
         return false;
     }
 
-    /// <summary>A part's kit (null: it has none, or one of its boxes can't be made: the log says which).</summary>
-    public static Piece[]? KitOf(ConstructPartDef d)
+    private static bool IsListed(string name)
     {
-        if (!Has(d))
-            return null;
+        lock (Gate)
+            return Listed.ContainsKey(name);
+    }
+
+    /// <summary>A part's kit (null: it has none, or one of its boxes can't be made: the log says which).</summary>
+    public static Piece[]? KitOf(ConstructPartDef d) => Has(d) ? KitOf(d, true) : null;
+
+    private static Piece[]? KitOf(ConstructPartDef d, bool _)
+    {
         lock (Gate)
         {
             if (Kits.TryGetValue(d.Name, out var have))
@@ -225,13 +232,62 @@ public static class BakeKits
     /// <summary>A listed kit: every piece's part known (null: one isn't, the log says which), the biggest first, as <see cref="Make"/> lays them.</summary>
     private static Piece[]? Resolve(ConstructPartDef d, Piece[] listed)
     {
-        var pieces = new List<Piece>(listed);
-        foreach (var p in pieces)
+        // Dressed where its skins can be and the baked group stays within a part's boxes; else its skins plain (said once, in the log).
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        var dressed = Expand(d, listed, true);
+        if (sw.Elapsed.TotalMilliseconds > 4)
+            Console.WriteLine($"[bake kits] {d.Name}: dressing its kit took {sw.Elapsed.TotalMilliseconds:0.0} ms");
+        if (dressed != null)
+            return dressed;
+        Console.WriteLine($"[bake kits] {d.Name}: its kit is its skins plain, undressed (see the line above)");
+        return Expand(d, listed, false);
+    }
+
+    private static Piece[]? Expand(ConstructPartDef d, Piece[] listed, bool dress)
+    {
+        var pieces = new List<Piece>(listed.Length * 8);
+        foreach (var p in listed)
+        {
             if (p.Def == null)
             {
                 Console.WriteLine($"[bake kits] REFUSED {d.Name}: no such part as its piece {p.PartName}");
                 return null;
             }
+            if (p.Dress == null || !dress)
+            {
+                pieces.Add(p with { Dress = null });
+                continue;
+            }
+            // A dressed skin: the skin and its dress subparts as the Building Station's dress blueprint lays them (HullLoft.Dress.cs), each
+            // subpart at the skin's own place and turn, in the blueprint's paint and finish.
+            var w = p.Dress.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var why = "STYLE SALT EXTRAS";
+            if (w.Length != 3 || !int.TryParse(w[1], NumberStyles.None, CultureInfo.InvariantCulture, out var salt)
+                || HullLoft.DressBlueprint(p.PartName, w[0], salt, w[2] == "-" ? "" : w[2], out why) is not { } bp)
+            {
+                Console.WriteLine($"[bake kits] {d.Name}: its piece {p.PartName} can't be dressed \"{p.Dress}\": {why}");
+                return null;
+            }
+            for (var s = 0; s < bp.Steps.Count; s++)
+            {
+                var paint = s < bp.StepPaint.Count && ConstructPaint.IsSet(bp.StepPaint[s]) ? bp.StepPaint[s] : s == 0 ? p.Paint : 0;
+                var finish = s < bp.StepFinish.Count && bp.StepFinish[s] != 0 ? ConstructFinish.Name(bp.StepFinish[s]) : s == 0 ? p.Finish : "";
+                pieces.Add(new Piece(default, p.Pos, p.Rot, paint, finish, bp.Steps[s].Part));
+            }
+        }
+        var boxes = 0;
+        foreach (var p in pieces)
+            boxes += p.Def?.Boxes.Length ?? 0;
+        if (boxes > ConstructParts.MaxBoxes)
+        {
+            Console.WriteLine($"[bake kits] {(dress ? "" : "REFUSED ")}{d.Name}: {(dress ? "dressed, " : "")}its kit is {boxes} boxes, at most {ConstructParts.MaxBoxes} bake into one part");
+            return null;
+        }
+        if (pieces.Count is < 2 or > BakedParts.MaxSubparts)
+        {
+            Console.WriteLine($"[bake kits] REFUSED {d.Name}: {pieces.Count} pieces dressed (2 to {BakedParts.MaxSubparts})");
+            return null;
+        }
         Order(pieces);
         return [.. pieces];
     }
@@ -324,6 +380,9 @@ public static class BakeKits
     /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
     /// share a kit (the keel's bands where the hull runs straight): <paramref name="want"/>, the oven's order, picks between them.
     /// </summary>
+    /// <summary>Every kit resolved and its hashes made now (a match's start), not on the tick of the first bake or order.</summary>
+    public static void Warm() => Target("");
+
     public static Hit? Target(string hash, ushort want = 0)
     {
         if (Names.Length == 0)

@@ -205,7 +205,10 @@ public sealed partial class Game
         if (!IsServer)
             return;
         if (SandboxOn)
+        {
             VehicleKit.VehicleGenJob.Warm(); // (once a process: the first faction vehicle's compile cost here, at the match's start, not on its ticks: VehicleSpawn.cs)
+            BakeKits.Warm(); // (once a process: dressing the listed kits, about 200 ms, here and not on the first bake's tick)
+        }
         if (had || SandboxOn)
         {
             ConstructNet.WriteClear(SbW);

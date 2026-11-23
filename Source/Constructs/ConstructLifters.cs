@@ -1579,7 +1579,7 @@ public static partial class ConstructStation
             var onPad = inHold ? -1 : ConstructLifters.PickPadHolding(world, l, def);
             if (!inHold && onPad < 0)
                 continue;
-            if (!ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.At[k], j.Rot), ConstructLifters.WristLift(d), out _))
+            if (!ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.Centre[k], j.Rot), ConstructLifters.WristLift(d), out _))
                 continue;
             pad = onPad;
             return k;

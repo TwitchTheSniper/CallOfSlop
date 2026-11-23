@@ -1514,12 +1514,19 @@ public static partial class ConstructStation
         }
         else
         {
-            if (FitRefusal(size, bay, BayCorner(c, t)) is { } no)
+            var lay = Quaternion.Identity;
+            if (FitRefusal(size, bay, BayCorner(c, t)) is { } no && !(bp.Name.EndsWith(BakeKits.KitSuffix, StringComparison.Ordinal) && LayTurn(bay, BayCorner(c, t), ref lo, ref size, out lay)))
             {
                 Fail(world, c, t, j, no);
                 return;
             }
+            j.Size = size;
             Place(j, floor, rot, lo, size);
+            if (lay != Quaternion.Identity)
+            {
+                j.Rot = Quaternion.Normalize(rot * lay); // (Place's point is the turned box's: the same point in the bay)
+                Console.WriteLine($"[station] {j.Name}: laid on its side to fit the bay ({size.X:0.0} x {size.Z:0.0} m, {size.Y:0.0} m high)");
+            }
             j.PartOf = new int[bp.Steps.Count];
             Array.Fill(j.PartOf, -1);
             j.LinkAt = 0;
@@ -1531,6 +1538,37 @@ public static partial class ConstructStation
         j.FitTicks = World.TickRate / 2;
         j.OrderTicks = OrderEvery;
         world.StationChanged(c);
+    }
+
+    /// <summary>
+    /// A kit too tall or long for the bay laid at another of the 24 turns that fits, the lowest first (a bake kit bakes at any turn:
+    /// BakeKitCheck lays them so; the Zero Day Stern's kit stands 9.3 m, a works bay 6 m). <paramref name="lo"/> and <paramref name="size"/>
+    /// become the turned box's, in the turned frame. False: no turn fits.
+    /// </summary>
+    private static bool LayTurn(Vector3 bay, float corner, ref Vector3 lo, ref Vector3 size, out Quaternion lay)
+    {
+        lay = Quaternion.Identity;
+        var best = float.MaxValue;
+        Vector3 bestLo = lo, bestSize = size;
+        for (byte r = 1; r < Rot24.Count; r++)
+        {
+            var q = Rot24.Quat(r);
+            var tlo = new Vector3(float.MaxValue);
+            var thi = new Vector3(float.MinValue);
+            for (var k = 0; k < 8; k++)
+            {
+                var p = Vector3.Transform(lo + new Vector3((k & 1) != 0 ? size.X : 0, (k & 2) != 0 ? size.Y : 0, (k & 4) != 0 ? size.Z : 0), q);
+                tlo = Vector3.Min(tlo, p);
+                thi = Vector3.Max(thi, p);
+            }
+            var ts = thi - tlo;
+            if (ts.Y < best - 0.01f && FitRefusal(ts, bay, corner) == null)
+                (best, lay, bestLo, bestSize) = (ts.Y, q, tlo, ts);
+        }
+        if (best == float.MaxValue)
+            return false;
+        (lo, size) = (bestLo, bestSize);
+        return true;
     }
 
     private static void Place(StationJob j, Vector3 floor, Quaternion rot, Vector3 lo, Vector3 size)

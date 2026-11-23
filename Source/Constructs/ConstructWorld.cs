@@ -2384,11 +2384,15 @@ public sealed partial class ConstructWorld
         StepPart(4);
         perf = Perf.Measure(PerfArea.ConstructPhysics);
         var p0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        ConstructSlowTick.Begin();
         AllocProfile.Mark("c: physics");
         ConstructFar.Physics(this, query, dt); // (every body, or the near ones then the far ones whose turn it is: ConstructFar.cs)
+        var r0 = System.Diagnostics.Stopwatch.GetTimestamp();
         AllocProfile.Mark("c: rails");
         ConstructRails.Step(this, query, dt); // (free bodies falling alone round a planet, out of the physics: ConstructRails.cs)
-        PhysicsMs += (System.Diagnostics.Stopwatch.GetTimestamp() - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        var p1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        PhysicsMs += (p1 - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        ConstructSlowTick.End(this, p0, r0, p1);
         AllocProfile.Mark("c: overload damage");
         OverloadDamage();
         AllocProfile.Mark("c: after physics");

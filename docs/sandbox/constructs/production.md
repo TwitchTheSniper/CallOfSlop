@@ -1974,6 +1974,20 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s
   `--station-check "Zero Day Works" --build "Zero Day Frigate"` run (2026-11-23): the Keel bands and the decks made and baked on line C
   and fitted hands-free, 15 of the frigate's 341 parts in.
+- **Dressed hull pieces.** Sean, 2026-11-23 ("go forward with the hull piece route"): every other frigate hull piece (the fore and aft
+  walls, spine and stern) is a listed kit too, its formed skins plus their Hull Dress. A listed piece with `dress` ("STYLE SALT EXTRAS",
+  the frigate's `it` and a salt from its band) is expanded at load through `HullLoft.DressBlueprint` into the skin and its dress
+  subparts, each at the skin's place and turn; the station lays the dress from linked steel. A kit over `ConstructParts.MaxBoxes`
+  dressed falls back to its plain skins (logged: the Stern), and one over it plain is not listed (the Bow stays assembled). The
+  generator keeps the Keel plain. A lifter judges its reach to a station step from the step's middle (`StationJob.LiftPlan.Centre`), as
+  `WristLift` is measured over the middle: a hull skin's origin is on the hull's axis, metres under its plate, and the crane refused a
+  10 m wall skin as "below its hook" while it sat on the pick pad. `--oven-order "Zero Day Upper Fore Hull Port 3"`: formed, fitted,
+  dressed and baked in 324 s. The generator splits a skin whose girth (its blank's length) passes line C's one 8 m Run-out Table
+  (`TorpedoFrigateParts.MaxSkinGirth`): the Stern's half profiles (18.8 m) became three skins a side and band, 12 in all, baked in
+  2433 s. A kit too tall or long for its station's bay is laid at the lowest of the 24 turns that fits (`ConstructStation.LayTurn`;
+  kits bake at any turn), and line C's store has four masts a corner (an 8 m stack: the Stern's side skins stand 6.4 m). The listed
+  kits are dressed at a Sandbox match's start (`BakeKits.Warm`, about 200 ms), not on the tick of the first bake or order, and a listed
+  kit that can't be made leaves its part to the Assembler (`BakeKits.Has`).
 
 ## Production Showcase
 

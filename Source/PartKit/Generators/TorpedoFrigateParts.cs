@@ -186,7 +186,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     }
 
     private const string KitOut = "Constructs/BakeKits";
-    private const string KitsFor = "Zero Day Keel"; // (the keel's bands first, Sean's card 2026-11-23; the hull pieces follow with their dress step)
+    private const string PlainKits = "Zero Day Keel"; // (Sean's card 2026-11-23: the keel's plates bent on the Panel Former, welded and baked; every other piece's skins are dressed first)
+    private static readonly string[] NoKit = ["Zero Day Bow"]; // (its skins are 592 boxes plain, past the 256 one baked part holds: it stays an Assembler's)
+    private const string KitStyle = "it"; // (the dress a hull piece's skins take at the Building Station before the bake: Constructs/DressStyles.json)
 
     /// <summary>
     /// Each structure piece with skin plates: its kit, one plain Hull Section a side and band, its facets the run of the hull's facets the piece
@@ -198,8 +200,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var kits = new List<object?>();
         foreach (var q in structure)
         {
-            if (!((string)q.D["name"]!).StartsWith(KitsFor, StringComparison.Ordinal))
+            if (NoKit.Contains((string)q.D["name"]!))
                 continue;
+            var plain = ((string)q.D["name"]!).StartsWith(PlainKits, StringComparison.Ordinal);
             var cells = new List<(int Side, int F, double Za, double Zb, string Color, string Finish)>();
             foreach (var b in q.Boxes)
                 if (Skins.TryGetValue(b, out var sk))
@@ -216,8 +219,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             foreach (var g in cells.Distinct().GroupBy(c => (c.Side, c.Za, c.Zb)).OrderBy(g => g.Key.Za).ThenBy(g => g.Key.Side))
             {
                 var fs = g.GroupBy(c => c.F).Select(f => f.First()).OrderBy(c => c.F).ToList();
+                var (pa, pb) = (Girths(g.Key.Za), Girths(g.Key.Zb));
                 for (int i = 1, start = 0; i <= fs.Count; i++)
-                    if (i == fs.Count || fs[i].F != fs[i - 1].F + 1)
+                    if (i == fs.Count || fs[i].F != fs[i - 1].F + 1 || Girth(pa, pb, fs[start].F, fs[i].F) > MaxSkinGirth)
                     {
                         var (za, zb) = (g.Key.Za, g.Key.Zb);
                         var len = (int)Math.Round((zb - za) * 100);
@@ -229,13 +233,16 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
                             return [(0, Cm(at[0].Y)), .. at.Select(t => (Cm(t.H), Cm(t.Y))), (0, Cm(at[4].Y))];
                         }
                         var key = new HullLoft.SectionShape(len, fs[start].F, fs[i - 1].F, g.Key.Side, HullLoft.PlainStyle, 0, "", Prof(za), Prof(zb)).Key();
-                        pieces.Add(new PyDict
+                        var piece = new PyDict
                         {
                             ["part"] = key,
                             ["at"] = Py.L(Math.Round(Cx - H, 2), Math.Round(-H, 2), Math.Round(za - H, 2)), // (to the centimetre, as a part's place is: the 5 mm is the part's, not its kit's)
                             ["paint"] = fs[start].Color,
                             ["finish"] = fs[start].Finish,
-                        });
+                        };
+                        if (!plain)
+                            piece["dress"] = $"{KitStyle} {((int)Math.Round(za * 10) % (HullLoft.SectionMaxSalt + 1) + HullLoft.SectionMaxSalt + 1) % (HullLoft.SectionMaxSalt + 1)} -"; // (the salt by the band: the panels differ along the hull)
+                        pieces.Add(piece);
                         start = i;
                     }
             }
@@ -246,6 +253,34 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
     }
 
     private static int Cm(double m) => (int)Math.Round(m * 100);
+
+    /// <summary>
+    /// A formed skin's blank is its girth long (the Panel Former unrolls the profile), and line C's Sheet Extruder makes a sheet as long as its
+    /// one Run-out Table (8 m): a skin round more facets than that is split into skins that each fit (the Stern's whole half profile is 18.8 m).
+    /// </summary>
+    private const double MaxSkinGirth = 7.9;
+
+    /// <summary>Each facet's width (index 1 to 6) at station z, from the half profile the kits close on the centreline, to the centimetre as the key is.</summary>
+    private static double[] Girths(double z)
+    {
+        var at = At(z);
+        var pts = new List<(double X, double Y)> { (0, Cm(at[0].Y) / 100.0) };
+        pts.AddRange(at.Select(t => (Cm(t.H) / 100.0, Cm(t.Y) / 100.0)));
+        pts.Add((0, Cm(at[4].Y) / 100.0));
+        var w = new double[pts.Count];
+        for (var k = 1; k < pts.Count; k++)
+            w[k] = Math.Sqrt((pts[k].X - pts[k - 1].X) * (pts[k].X - pts[k - 1].X) + (pts[k].Y - pts[k - 1].Y) * (pts[k].Y - pts[k - 1].Y));
+        return w;
+    }
+
+    /// <summary>The girth of facets <paramref name="f0"/> to <paramref name="f1"/> at the wider of a band's two ends.</summary>
+    private static double Girth(double[] a, double[] b, int f0, int f1)
+    {
+        double ga = 0, gb = 0;
+        for (var f = f0; f <= f1 && f < a.Length; f++)
+            (ga, gb) = (ga + a[f], gb + b[f]);
+        return Math.Max(ga, gb);
+    }
 
     private const double FacetStagger = 0.006, FacetTrim = 0.0015; // (and each stops 1.5 mm short of its band's ends: a tapering band's plate leans past them)
 
@@ -1030,8 +1065,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Plate(p, [P(Cx + x - 0.32, Ft1 + 0.875, ZFront + 0.5), P(Cx + x + 0.32, Ft1 + 0.875, ZFront + 0.5), P(Cx + x + 0.32, Ft1 + 1.04, ZFront + 0.16), P(Cx + x - 0.32, Ft1 + 1.04, ZFront + 0.16)], Screen, glow: true, thick: 0.015);
         Detail(p, Cx - 0.3, Ft1 + 0.86, ZFront + 0.3, Cx + 0.3, Ft1 + 0.88, ZFront + 0.45, Amber, glow: true);
         Detail(p, Cx - UwF + 0.1, Ft1 + 0.6, ZFront + 0.551, Cx + UwF - 0.1, Ft1 + 0.63, ZFront + 0.56, Glow, glow: true);
-        // The bulkhead between the bridge and ops (closing the step), and ops' aft bulkhead onto the corridor.
-        WallRun(p, true, Cx - Uw - 0.25, Cx + Uw + 0.25, ZStep - 0.125, y0, y1, Door(Cx - 0.75));
+        // The bulkhead between the bridge and ops (closing the step), its door to port so the captain's dais can stand aft on the bridge;
+        // and ops' aft bulkhead onto the corridor.
+        WallRun(p, true, Cx - Uw - 0.25, Cx + Uw + 0.25, ZStep - 0.125, y0, y1, Door(BridgeDoor));
         WallRun(p, true, Cx - Uw, Cx + Uw, 20.0, y0, y1, Door(Cx - 0.75));
         // The corridor's partitions, and the cabins either side: port two crew cabins, starboard the captain's cabin; the med bay aft.
         foreach (var s in new[] { -1, 1 })
@@ -1044,7 +1080,8 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Detail(p, Cx - 1.6, Ft1 + 2.35, ZStep + 0.004, Cx + 1.6, Ft1 + 2.85, ZStep + 0.02, "#1a3a60", glow: true);
         foreach (var i in Enumerable.Range(0, 6))
             Detail(p, Cx - 1.45 + i * 0.5, Ft1 + 2.45, ZStep + 0.02, Cx - 1.15 + i * 0.5, Ft1 + 2.55, ZStep + 0.035, i % 3 == 2 ? Amber : "#40e070", glow: true);
-        CeilStrip(p, Cx - 0.4, Cx + 0.4, 9.6, 13.8, y1);
+        CommandCentre(p);
+        CeilStrip(p, Cx - 0.4, Cx + 0.4, 9.6, 13.1, y1); // (ends short of the captain's swing arms)
         CeilStrip(p, Cx - 2.2, Cx + 2.2, 17.2, 17.4, y1);
         CeilStrip(p, Cx - 0.25, Cx + 0.25, 20.4, 24.9, y1);
         // The hull band: the upper side and the upper chine, their armour, a chine rail along the upper chine.
@@ -1085,7 +1122,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "copilot", Cx + 0.9, Ft1, 10.8, "+y");
         Sock(p, "computer", Cx, Ft1, 12.9, "+y");
         Sock(p, "gunModule", Cx, Ft1, 9.3, "+y");
-        Sock(p, "bridgeLocker", Cx - UwF, Ft1 + 0.125, 13.6, "+x");
+        Sock(p, "bridgeLocker", Cx - UwF, Ft1 + 0.125, 9.45, "+x"); // (forward on the port wall, clear of the navigator and the door)
+        foreach (var (name, x, y, z) in CicSeats)
+            Sock(p, name, x, y, z, "+y");
         // Ops: the forward gunnery station, a plot table with a CRT on it, the flare button.
         Sock(p, "gun", Cx - 0.3, Ft1, 16.3, "+y");
         Sock(p, "gunSeat", Cx - 0.3, Ft1, 17.3, "+y");
@@ -1101,7 +1140,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "couchCaptain", Cx + Uw, Ft1 + 0.125, 21.4, "-x");
         Sock(p, "deskCaptain", Cx + 2.4, Ft1 + 0.125, 24.75, "-z");
         Sock(p, "lockerCaptain", Cx + 1.125, Ft1 + 0.125, 21.0, "+x");
-        DoorSock(p, "doorBridge", true, Cx - 0.75, ZStep - 0.125, Ft1);
+        DoorSock(p, "doorBridge", true, BridgeDoor, ZStep - 0.125, Ft1);
         DoorSock(p, "doorOps", true, Cx - 0.75, 20.0, Ft1);
         DoorSock(p, "doorCabinA", false, 22.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorCaptain", false, 22.9, Cx + 1.0, Ft1);
@@ -1111,13 +1150,63 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Sock(p, "lampOpsR", Cx + Uw, Ft1 + 2.45, 16.6, "-x");
         Sock(p, "lampCabinA", Cx - Uw, Ft1 + 2.45, 23.6, "+x");
         Sock(p, "lampCaptain", Cx + Uw, Ft1 + 2.45, 23.6, "-x");
-        Sock(p, "switchBridge", Cx + 1.0, Ft1 + 1.3, ZStep - 0.25, "-z");
+        Sock(p, "switchBridge", BridgeDoor + 1.75, Ft1 + 1.3, ZStep - 0.25, "-z"); // (beside the door, on the bridge's side)
         Sock(p, "switchOps", Cx + 1.0, Ft1 + 1.3, 19.875, "-z");
         Sock(p, "switchCabins", Cx - 0.875, Ft1 + 1.3, 21.0, "+x");
         foreach (var (what, hx, z) in new[] { ("bridge", UwF, ZFront - 0.25), ("ops", Uw, ZStep), ("cabins", Uw, 25.0) })
             MustFit(what, z, hx + 0.25, Roof);
         MustFit("bridge floor", ZFront - 0.25, LwF + 0.25, Ft1);
         return p.Stats(16000, 36000, 30, 25.0);
+    }
+
+    // ---- the combat information centre (Karl, 2026-11-22: command rooms by ship size; the Militia's is a CIC, as the MCRN's): the
+    // bridge keeps the helm (the drive seat) and the weapons officer forward, a second row behind them takes the navigator to port
+    // and sensors to starboard, each under a swing-arm display, and the captain's couch stands on a 0.3 m dais aft to starboard, where
+    // every screen on the bridge is in view; ops behind takes damage control and comms at a raked console on its starboard wall,
+    // beside the forward gunnery station. The seats are Flight Couches set to their station (CockpitStations).
+    private const double BridgeDoor = Cx - 2.25; // (the bridge's door: its port edge; 1.5 m wide, it slides 1.48 m to port into the bulkhead, which ends at Cx - Uw - 0.25)
+    private const double DaisX0 = Cx - 0.6, DaisX1 = Cx + UwF - 0.06, DaisZ0 = 13.45, DaisZ1 = ZStep - 0.26, DaisH = 0.3;
+    private const double CicConsoleX = Cx + 2.85; // (ops' damage and comms console: its front edge; it runs to the starboard wall)
+    private static readonly (string Name, double X, double Y, double Z)[] CicSeats =
+    [
+        ("navSeat", Cx - 1.7, Ft1, 12.4), ("sensorSeat", Cx + 1.7, Ft1, 12.4), ("captainSeat", Cx + 0.95, Ft1 + DaisH, 13.95),
+        ("damageSeat", Cx + 2.15, Ft1, 18.45), ("commsSeat", Cx + 2.15, Ft1, 19.3),
+    ];
+
+    private static void CommandCentre(Part p)
+    {
+        // The dais: a steel step with a tread plate on top and a hazard edge along its front.
+        Solid(p, DaisX0, Ft1, DaisZ0, DaisX1, Ft1 + DaisH, DaisZ1, Console, "painted steel");
+        Detail(p, DaisX0 + 0.003, Ft1 + DaisH, DaisZ0 + 0.06, DaisX1 - 0.003, Ft1 + DaisH + 0.012, DaisZ1 - 0.003, "#2a2e33", "rubber matting");
+        Detail(p, DaisX0 + 0.003, Ft1 + DaisH, DaisZ0 + 0.003, DaisX1 - 0.003, Ft1 + DaisH + 0.012, DaisZ0 + 0.055, Hazard, "hazard paint");
+        Detail(p, DaisX0 + 0.05, Ft1 + 0.06, DaisZ0 - 0.016, DaisX1 - 0.05, Ft1 + 0.09, DaisZ0 - 0.004, Glow, glow: true); // (a step light)
+        // The swing-arm displays: the navigator's and sensors' in front of them, two either side of the captain.
+        SwingArm(p, Cx - 1.7, Ft1 + 1.1, 12.4 - 0.62, "#2a5878");
+        SwingArm(p, Cx + 1.7, Ft1 + 1.1, 12.4 - 0.62, "#3a6a50");
+        SwingArm(p, Cx + 0.95 - 0.52, Ft1 + DaisH + 1.12, 13.95 - 0.5, "#2a5878");
+        SwingArm(p, Cx + 0.95 + 0.52, Ft1 + DaisH + 1.12, 13.95 - 0.5, "#5a4a28");
+        // Ops' damage control and comms console: a raked desk against the starboard wall, a screen for each station on it and on the
+        // wall above (the hull's sections for damage control, the channels for comms).
+        double x1 = Cx + Uw - 0.003, z0 = 18.1, z1 = 19.8;
+        Solid(p, CicConsoleX, Ft1, z0, x1, Ft1 + 0.78, z1, Console, "plastic");
+        Plate(p, [P(CicConsoleX + 0.01, Ft1 + 0.78, z0 + 0.01), P(CicConsoleX + 0.01, Ft1 + 0.78, z1 - 0.01), P(x1 - 0.01, Ft1 + 0.98, z1 - 0.01), P(x1 - 0.01, Ft1 + 0.98, z0 + 0.01)], Console, "plastic");
+        foreach (var (z, col) in new[] { (18.45, Amber), (19.3, "#40e070") })
+        {
+            Plate(p, [P(CicConsoleX + 0.06, Ft1 + 0.805, z - 0.3), P(CicConsoleX + 0.06, Ft1 + 0.805, z + 0.3), P(x1 - 0.12, Ft1 + 0.955, z + 0.3), P(x1 - 0.12, Ft1 + 0.955, z - 0.3)], Screen, glow: true, thick: 0.015);
+            Detail(p, Cx + Uw - 0.03, Ft1 + 1.12, z - 0.36, Cx + Uw - 0.005, Ft1 + 1.72, z + 0.36, "#202428", "plastic");
+            Detail(p, Cx + Uw - 0.05, Ft1 + 1.17, z - 0.31, Cx + Uw - 0.042, Ft1 + 1.67, z + 0.31, col == Amber ? "#4a3a1c" : "#1c4a30", glow: true);
+            Detail(p, CicConsoleX + 0.2, Ft1 + 0.86, z - 0.05, CicConsoleX + 0.26, Ft1 + 0.88, z + 0.05, col, glow: true); // (the station's lamp)
+        }
+    }
+
+    /// <summary>A display on a swing arm from the ceiling: a post down, an elbow, the screen facing aft at (x, y, z) for the seat behind it.</summary>
+    private static void SwingArm(Part p, double x, double y, double z, string screen)
+    {
+        Detail(p, x - 0.06, Ceil1 - 0.02, z - 0.24, x + 0.06, Ceil1 - 0.005, z - 0.12, "#202428", "painted steel"); // (the ceiling plate)
+        Detail(p, x - 0.02, y + 0.2, z - 0.2, x + 0.02, Ceil1 - 0.02, z - 0.16, Frame, "painted steel");          // (the post, ahead of the screen)
+        Detail(p, x - 0.02, y + 0.16, z - 0.2, x + 0.02, y + 0.2, z - 0.02, Frame, "painted steel");              // (the elbow)
+        Detail(p, x - 0.27, y - 0.17, z - 0.02, x + 0.27, y + 0.17, z + 0.02, "#202428", "plastic");             // (the bezel)
+        Detail(p, x - 0.24, y - 0.145, z + 0.026, x + 0.24, y + 0.145, z + 0.034, screen, glow: true);
     }
 
     private static Part UpperAft()
@@ -2461,6 +2550,20 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         bp.Steps[fc]["config"] = flight;
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
+        // The combat information centre's stations (CommandCentre): each a Flight Couch set to its station, the captain's in the
+        // captain's blue; ops' two face the starboard console.
+        foreach (var (name, _, _, _) in CicSeats)
+        {
+            var ops = name is "damageSeat" or "commsSeat";
+            var seat = ops ? bp.HangTurned("Flight Couch", Holder(bp, uf, name), name, "bottom", BuildingParts.RY270) : Hang(bp, "Flight Couch", uf, name, "bottom");
+            bp.Steps[seat]["setting"] = (int)(name switch
+            {
+                "captainSeat" => SeatStation.Command, "navSeat" => SeatStation.Navigation, "sensorSeat" => SeatStation.Sensors,
+                "damageSeat" => SeatStation.Damage, _ => SeatStation.Comms,
+            });
+            if (name == "captainSeat")
+                Paint(bp, seat, "#2c3e58", "fabric");
+        }
         foreach (var (i, x, _) in LinkChairs)
             bp.HangTurned("Shell Control Chair", Holder(bp, uf, $"linkChair{i}"), $"linkChair{i}", "bottom", i == 0 ? BuildingParts.RY270 : BuildingParts.RY90);
         Paint(bp, Hang(bp, "Zero Day Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
