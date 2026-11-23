@@ -155,11 +155,14 @@ public static unsafe class Lighting
             vec4 uLampRows[96]; // each lamp shadow slot's world-to-body turn, three rows, the first's w 1 / the distance its maps hold (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
             vec4 uLampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / the maps' distance range; w: the normal offset a metre out (m)
             vec4 uLampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
+            mat4 uRoomFarVP[8]; // world less uRoomC to each far dark-interiors map's u, v and stored depth (RoomShade.cs, the far ring)
+            vec4 uRoomF;     // x: 1 while some far map is live; y: their normal offset (m); z: their signed depth bias; w: 1 while the near maps are live
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
         uniform sampler2D uSunShadow; // the sun shadow map's depth (SunShadows.cs; read only while uShadowQ.x is 1)
         uniform sampler2DArrayShadow uRoomShade; // the dark interiors' eight depth maps, compared in hardware (RoomShade.cs; read only while uRoomQ.x is 1)
+        uniform sampler2DArrayShadow uRoomFar; // ...and their far ring's (read only while uRoomF.x is 1)
         uniform sampler2DArrayShadow uLampShadow; // the lamps' cube faces, six layers a slot, compared in hardware (LampShadows.cs; read only while uLampQ.x is 1)
         uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
@@ -283,9 +286,20 @@ public static unsafe class Lighting
                 vec3 s = (uRoomVP[i] * q).xyz;
                 vec2 e = abs(s.xy - 0.5) * 2.0;
                 float edge = max(e.x, e.y);
-                float lit = 1.0;
-                if (edge < 1.0 && s.z > 0.0 && s.z < 1.0)
-                    lit = mix(texture(uRoomShade, vec4(s.xy, float(i), s.z - uRoomQ.w)), 1.0, smoothstep(0.85, 1.0, edge));
+                // Near the camera the fine map; towards its edge into the far ring (which fades to the sky only at its own edge), so
+                // the light doesn't brighten in a ring round the camera that follows it.
+                float t = uRoomF.w > 0.5 && edge < 1.0 && s.z > 0.0 && s.z < 1.0 ? smoothstep(0.85, 1.0, edge) : 1.0;
+                float lit = t < 1.0 ? texture(uRoomShade, vec4(s.xy, float(i), s.z - uRoomQ.w)) : 1.0;
+                float farLit = 1.0;
+                if (t > 0.0 && !probe && uRoomF.x > 0.5)
+                {
+                    vec3 f = (uRoomFarVP[i] * vec4(p - uRoomC.xyz + n * uRoomF.y, 1.0)).xyz;
+                    vec2 fe = abs(f.xy - 0.5) * 2.0;
+                    float fedge = max(fe.x, fe.y);
+                    if (fedge < 1.0 && f.z > 0.0 && f.z < 1.0)
+                        farLit = mix(texture(uRoomFar, vec4(f.xy, float(i), f.z - uRoomF.z)), 1.0, smoothstep(0.8, 1.0, fedge));
+                }
+                lit = mix(lit, farLit, t);
                 sa += lit * w;
                 wa += w;
                 ss += lit * wsun;

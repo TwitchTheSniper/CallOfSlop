@@ -100,6 +100,8 @@ public static unsafe class LightGrid
         public LampRowArray LampRows; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs)
         public Vector4 LampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / LampShadows.Store; w: the normal offset a metre out (m)
         public Vector4 LampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
+        public RoomArray RoomFarVP; // world (less RoomC) to each far dark-interiors map's u, v and stored depth (RoomShade.cs, the far ring)
+        public Vector4 RoomF;     // x: 1 while some far map is live; y: their normal offset (m); z: their signed depth bias; w: 1 while the near maps are live
     }
 
     /// <summary>Settings > Video > Materials: 0 Low (the classic light), 1 Medium, 2 High.</summary>
@@ -151,6 +153,7 @@ public static unsafe class LightGrid
         SetSampler(program, "uLitC\0"u8, UnitC);
         SetSampler(program, "uSunShadow\0"u8, SunShadows.Unit);
         SetSampler(program, "uRoomShade\0"u8, RoomShade.Unit);
+        SetSampler(program, "uRoomFar\0"u8, RoomShade.FarUnit);
         SetSampler(program, "uLampShadow\0"u8, LampShadows.Unit);
     }
 
@@ -365,6 +368,9 @@ public static unsafe class LightGrid
                 _block.RoomVP[i] = RoomShade.Lookup[i];
             _block.RoomC = new Vector4(RoomShade.Centre, RoomShade.NormalOffset);
             _block.RoomQ = new Vector4(1f, RoomShade.Floor, RoomShade.Probe ? 1f : 0f, RoomShade.SignedBias);
+            for (var i = 0; i < RoomShade.Layers; i++)
+                _block.RoomFarVP[i] = RoomShade.FarLookup[i];
+            _block.RoomF = new Vector4(RoomShade.FarLive ? 1f : 0f, RoomShade.FarNormalOffset, RoomShade.FarSignedBias, RoomShade.NearLive ? 1f : 0f);
         }
         else
             _block.RoomQ = Vector4.Zero;

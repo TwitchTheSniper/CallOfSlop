@@ -149,7 +149,7 @@ public static partial class ConstructLifters
     private static void SteerBegin(CLift l, Vector3 hand)
     {
         (l.From, l.To) = (hand, hand);
-        (l.Start, l.Dur, l.Held, l.WaitFrom, l.Age) = (Now, Every, 0, 0u, Every);
+        (l.Start, l.Dur, l.Held, l.WaitFrom, l.Age, l.Fetch) = (Now, Every, 0, 0u, Every, 0); // (a cab steers from where the hand is: no fetch leg left over)
     }
 
     /// <summary>The hand's place kept in the lifter's reach (its part frame; a piece's origin, its middle for the box).</summary>
@@ -183,6 +183,7 @@ public static partial class ConstructLifters
     private static void CabLeave(ConstructWorld world, Construct c, CLift l, LifterDef ld)
     {
         l.Steered = false;
+        l.Fetch = 0; // (the cab moved the hand: an old fetch leg's start no longer says where it was)
         l.PlayerWait = false;
         var hand = l.To;
         (l.From, l.FromRot) = (hand, l.ToRot);
@@ -407,7 +408,7 @@ public static partial class ConstructLifters
             ConstructCargo.Release(world, body);
         var at = Vector3.Transform(body.Pos - lp, inv);
         (l.From, l.To, l.FromRot, l.ToRot) = (at, at, Quaternion.Normalize(inv * body.Rot), Quaternion.Normalize(inv * body.Rot));
-        (l.Start, l.Dur, l.Age, l.State, l.Def) = (Now, Every, Every, LiftState.Carry, (ushort)0);
+        (l.Start, l.Dur, l.Age, l.State, l.Def, l.Fetch) = (Now, Every, Every, LiftState.Carry, (ushort)0, 0);
         l.CarryBody = body.Id;
         body.Frozen = true;
         body.HeldBy = c.Id;
@@ -432,7 +433,7 @@ public static partial class ConstructLifters
         }
         var at = Vector3.Transform(body.Pos - lp, inv);
         (l.From, l.To, l.FromRot, l.ToRot) = (at, at, Quaternion.Normalize(inv * body.Rot), Quaternion.Normalize(inv * body.Rot));
-        (l.Start, l.Dur, l.Age, l.State, l.Def) = (Now, Every, Every, LiftState.Carry, (ushort)0);
+        (l.Start, l.Dur, l.Age, l.State, l.Def, l.Fetch) = (Now, Every, Every, LiftState.Carry, (ushort)0, 0);
         l.CarryBody = body.Id;
         body.Frozen = true;
         body.HeldBy = c.Id;

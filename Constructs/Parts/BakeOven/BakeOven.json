@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bake Oven",
-  "description": "An Oven Core: bakes a welded group of subparts set on its bed under a heavy hood. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m) and stack Mast Blocks on the bed's four corners: the shortest corner mast sets the clear height under the hood. Loaded from above, by a crane, a Lifter or the physics gun. The hood comes down on whatever is on the bed. Needs power.",
+  "description": "An Oven Core: bakes a welded group of subparts set on its bed under a heavy hood. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m) and stack Mast Blocks on the bed's four corners: the shortest corner mast sets the clear height under the hood. It has no crane of its own: loaded and emptied by a hall crane, a Loader Arm, a Roller Tile run that meets the bed, or the physics gun. The hood comes down on whatever is on the bed. Needs power.",
   "group": "Production",
   "section": "Ovens",
   "role": "storage",
