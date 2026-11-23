@@ -39,7 +39,7 @@ public sealed class BuildStationParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Building Station", Small, "Extrusion",
-            "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay, up to 32 x 32 of them, and stack Mast Blocks on its corners for height. Its crane also picks pieces up to 14 t off a Lay-down Pad under its runway, just past the bay. Pick a blueprint on its screen. Needs power.",
+            "A Building Station's Core: builds a blueprint in its bay, part by part, from what its linked stores and machines send and what you bring by hand. Weld Bay Blocks beside it for the bay, up to 32 x 32 of them, and stack Mast Blocks on its corners for height. Its crane also picks pieces up to 14 t off a Lay-down Pad or Pad Tiles just past the bay's end or beside its long side. Pick a blueprint on its screen. Needs power.",
             role: "storage", tool: "welder", color: Body, group: "Production");
         const double x0 = -1, x1 = 1, z0 = -3, z1 = 3, top = 1.5; // (top: the hold's rails)
         // ---- The plinth: the Core stands on it, flush with the Bay Blocks' floor; a skirt and a hazard edge on the bay side.

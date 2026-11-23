@@ -439,7 +439,7 @@ public static partial class ConstructLifters
     public static void PadArrived(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
     {
         pad = ConstructPads.Owner(b, pad);
-        if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0 || !b.DefOf(pad).IsLayDownPad)
+        if (world.StationOpen.Count == 0 || !b.DefOf(pad).IsLayDownPad) // (no lifters at all: a station's own pad still counts, ServesPad)
             return;
         for (var pass = tag == 0 ? 1 : 0; pass < 2; pass++)
         {

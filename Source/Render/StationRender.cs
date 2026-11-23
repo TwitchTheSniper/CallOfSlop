@@ -86,9 +86,16 @@ public static class StationRender
             (xa, xb) = (-hx - 0.4f, hx + 0.4f);
         Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
         var padN = ConstructStation.OwnPads(c, t, pads);
+        float za = 0, zb = 0; // (how far the bridges reach out past the rails over a pick pad beside a long side: a cantilever)
         for (var p = 0; p < padN; p++)
             if (ConstructStation.PadInBay(c, t, pads[p], out var pm, out var ph))
             {
+                if (MathF.Abs(pm.Z) - ph.Z >= hz - 0.05f)
+                {
+                    za = MathF.Min(za, pm.Z - ph.Z);
+                    zb = MathF.Max(zb, pm.Z + ph.Z);
+                    continue;
+                }
                 xa = MathF.Min(xa, pm.X - ph.X - 0.4f);
                 xb = MathF.Max(xb, pm.X + ph.X + 0.4f);
             }
@@ -155,8 +162,8 @@ public static class StationRender
             var from = j != null && j.ArmOffPad[a] ? j.ArmPick[a] : hold with { Y = holdTop - 0.05f }; // (off a pick pad: the piece's top on its deck)
             var at = j == null ? park : Pose(j, a, park, from, hookUp, building, now, out carry);
             at.X = Math.Clamp(at.X, xa + 0.6f, xb - 0.6f);
-            at.Z = Math.Clamp(at.Z, -railZ + 0.7f, railZ - 0.7f);
-            DrawBridge(gfx, bay, at, top, railZ, RailH, carry > 0 && j != null ? j.ArmDef[a] : ushort.MaxValue, now, building && j != null && j.ArmTicks[a] > 0);
+            at.Z = Math.Clamp(at.Z, MathF.Min(-railZ, za) + 0.7f, MathF.Max(railZ, zb) - 0.7f);
+            DrawBridge(gfx, bay, at, top, railZ, MathF.Min(-railZ, za), MathF.Max(railZ, zb), RailH, carry > 0 && j != null ? j.ArmDef[a] : ushort.MaxValue, now, building && j != null && j.ArmTicks[a] > 0);
         }
     }
 
@@ -244,7 +251,7 @@ public static class StationRender
         Box(gfx, bay, new Vector3(x, top + railH * 0.5f, zRail), new Vector3(0.03f, railH - 0.1f, RailW - 0.04f), Steel); // (a stiffener on the web over it)
     }
 
-    private static void DrawBridge(Renderer gfx, Matrix4x4 bay, Vector3 hook, float top, float railZ, float RailH, ushort carried, double now, bool moving)
+    private static void DrawBridge(Renderer gfx, Matrix4x4 bay, Vector3 hook, float top, float railZ, float zLo, float zHi, float RailH, ushort carried, double now, bool moving)
     {
         var x = hook.X;
         var rail = top + RailH;
@@ -259,7 +266,8 @@ public static class StationRender
         }
         // Two girders across, a walkway grating on one, the drive motor at one end. A wide bay's girders are deeper (a box girder to 12 m,
         // a truss past it: a bottom chord, posts and diagonals, Sean 2026-11-21: the Zero Day's 24 m bay).
-        var span = 2 * railZ + RailW + 0.3f;
+        var span = zHi - zLo + RailW + 0.3f; // (rail to rail, or on out over a pick pad beside the bay: a cantilever)
+        var zc = (zLo + zHi) * 0.5f;
         var Girder = Math.Clamp(0.5f + (span - 8f) * 0.05f, 0.5f, 1.4f);
         var gy = rail + 0.35f + Girder * 0.5f;
         var truss = span > 12f;
@@ -269,34 +277,34 @@ public static class StationRender
             var gx = x + g * 0.34f;
             if (!truss)
             {
-                Box(gfx, bay, new Vector3(gx, gy, 0), new Vector3(0.26f, Girder, span), Yellow);
+                Box(gfx, bay, new Vector3(gx, gy, zc), new Vector3(0.26f, Girder, span), Yellow);
                 for (var r = 1; r < ribs; r++)
-                    Box(gfx, bay, new Vector3(gx, gy - 0.02f, -span * 0.5f + span * r / ribs), new Vector3(0.276f, Girder - 0.08f, 0.06f), Dark);
+                    Box(gfx, bay, new Vector3(gx, gy - 0.02f, zc - span * 0.5f + span * r / ribs), new Vector3(0.276f, Girder - 0.08f, 0.06f), Dark);
             }
             else
             {
                 // The truss: a top chord (the trolley's rail), a bottom chord, a post every 2 m or so and a diagonal in each bay, all yellow.
                 float yt = gy + Girder * 0.5f - 0.12f, yb = gy - Girder * 0.5f + 0.12f;
-                Box(gfx, bay, new Vector3(gx, yt, 0), new Vector3(0.26f, 0.24f, span), Yellow);
-                Box(gfx, bay, new Vector3(gx, yb, 0), new Vector3(0.22f, 0.24f, span - 0.6f), Yellow);
+                Box(gfx, bay, new Vector3(gx, yt, zc), new Vector3(0.26f, 0.24f, span), Yellow);
+                Box(gfx, bay, new Vector3(gx, yb, zc), new Vector3(0.22f, 0.24f, span - 0.6f), Yellow);
                 for (var r = 0; r <= ribs; r++)
                 {
-                    var rz = -span * 0.5f + 0.3f + (span - 0.6f) * r / ribs;
+                    var rz = zc - span * 0.5f + 0.3f + (span - 0.6f) * r / ribs;
                     Box(gfx, bay, new Vector3(gx, gy, rz), new Vector3(0.18f, Girder - 0.36f, 0.14f), Yellow);
                     if (r < ribs)
                     {
-                        var nz = -span * 0.5f + 0.3f + (span - 0.6f) * (r + 1) / ribs;
+                        var nz = zc - span * 0.5f + 0.3f + (span - 0.6f) * (r + 1) / ribs;
                         var up = (r & 1) == 0;
                         Beam(gfx, bay, new Vector3(gx, up ? yb : yt, rz), new Vector3(gx, up ? yt : yb, nz), 0.12f, Yellow);
                     }
                 }
                 // Its ends drop to the end trucks: a solid plate over the last metre each side.
                 for (var e = -1; e <= 1; e += 2)
-                    Box(gfx, bay, new Vector3(gx, gy, e * (span * 0.5f - 0.5f)), new Vector3(0.24f, Girder, 1.0f), Yellow);
+                    Box(gfx, bay, new Vector3(gx, gy, zc + e * (span * 0.5f - 0.5f)), new Vector3(0.24f, Girder, 1.0f), Yellow);
             }
-            Box(gfx, bay, new Vector3(gx, gy + Girder * 0.5f + 0.012f, 0), new Vector3(0.3f, 0.024f, span + 0.004f), Dark); // (the top flange)
+            Box(gfx, bay, new Vector3(gx, gy + Girder * 0.5f + 0.012f, zc), new Vector3(0.3f, 0.024f, span + 0.004f), Dark); // (the top flange)
         }
-        Box(gfx, bay, new Vector3(x - 0.62f, gy + Girder * 0.5f - 0.03f, 0), new Vector3(0.5f, 0.04f, span - 0.4f), Dark); // (the walkway)
+        Box(gfx, bay, new Vector3(x - 0.62f, gy + Girder * 0.5f - 0.03f, zc), new Vector3(0.5f, 0.04f, span - 0.4f), Dark); // (the walkway)
         Box(gfx, bay, new Vector3(x + 0.62f, rail + 0.55f, railZ - 0.2f), new Vector3(0.36f, 0.36f, 0.5f), Dark); // (the drive motor)
         Box(gfx, bay, new Vector3(x + 0.62f, rail + 0.55f, railZ - 0.47f), new Vector3(0.2f, 0.2f, 0.04f), Steel);
         // The trolley on the girders over the hook, its hoist drum and a beacon that turns while the arm moves (it never stops for anyone under it).

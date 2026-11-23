@@ -38,6 +38,7 @@ public sealed partial class ZeroDayWorks
             }
             Belt(join[0], "Piece out", join[1], "Piece in", low, General2, zFirst: false); // (over the Die Racks and the Lathe)
             Belt(join[1], "Piece out", router, "Piece in", null, General2);
+            LaySmallPressBelts(join[0]); // (into the first Join's free west side: ZeroDayWorks.SmallPresses.cs)
             Belt(router, "Piece out 2", _blockAssembler!, "Piece in", high, General2, zFirst: true);
             Belt(router, "Piece out 3", rack, "Piece in", high, General2, zFirst: false);
             // (the yard: south along bay 3's east side at 7.5 m, west along the shed's last aisle, down beside the station's Core, between it
@@ -89,10 +90,11 @@ public sealed partial class ZeroDayWorks
             Arm("Plasma Loader Arm", 89, -93);
 
             // ---- Four Presses (3 x 4 beds, the shells one block high: a 2 m swing strip north and south of each) in two rows. ---------
-            // Each starts with a die (the yard's frigate wants ten families; four presses hold four: the Gear Set kits, the Circuit Boards,
-            // the buttons and switches, the leg pods' brackets). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
+            // Each starts with a die (the yard's frigate wants ten families; four presses hold four: the leg pods' canopy plates, the
+            // housings, the buttons and switches, the leg pods' brackets; the Circuit Boards and Gear Sets have their own small presses,
+            // ZeroDayWorks.SmallPresses.cs). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
             // aren't chuted to the presses yet, so the other families wait on that.
-            var dies = new Queue<string>(["Gear Die", "Board Die", "Button Die", "Bracket Die"]);
+            var dies = new Queue<string>(["Plate Die", "Housing Die", "Button Die", "Bracket Die"]);
             foreach (var z in new[] { -103f, -119f })
                 foreach (var x in new[] { 75f, 86f })
                 {
@@ -104,6 +106,7 @@ public sealed partial class ZeroDayWorks
                     _presses.Add(press);
                 }
             FeedPresses(); // (each press's own Extruder, straight into its bay 1: ZeroDayWorks.PressFeed.cs)
+            LaySmallPresses(); // (the Circuit Boards' and Gear Sets' own small presses, south of the block Assembler)
             // Between the two columns of presses (x 82 to 85): the Die Racks and the Die Lathe, beside the beds, out of the swing strips.
             foreach (var z in new[] { -105f, -109f, -117f, -125f })
                 On("Die Rack", 83, z, Up, "-y.0.0", General2);
@@ -145,7 +148,7 @@ public sealed partial class ZeroDayWorks
         }
 
         /// <summary>
-        /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed east of it (Press Blocks under the housings, Press Bed Blocks between) (3 along x, the flow, from the Core's +x;
+        /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed east of it, Press Blocks under the housings and Press Bed Blocks between (3 along x, the flow, from the Core's +x;
         /// 4 rows south: the bed is the blocks beside the Core, not the Core), and one block on each cell of the north and south rows for
         /// the shells (a 2 m swing strip north and south).
         /// </summary>
