@@ -253,7 +253,7 @@ public static partial class LifterProbe
         {
             if (j.PartOf[k] != -1 || j.StepKind[k] < 0 || ConstructParts.Get(j.KindDef[j.StepKind[k]]) is not { } d)
                 continue;
-            var place = j.Pos + Vector3.Transform(plan.At[k], j.Rot);
+            var place = j.Pos + Vector3.Transform(plan.Centre[k], j.Rot);
             ConstructLifters.InReach(ld, sh, lr, place, ConstructLifters.WristLift(d), out var far);
             s += $"; {k} {d.Name}: ready {ConstructStation.ReadyStep(j, k)}, carries {ConstructLifters.Carries(ld, d)}, reach {ConstructLifters.InReach(ld, sh, lr, place, ConstructLifters.WristLift(d), out _)} ({far:0.0} m, up {Vector3.Transform(place - sh, Quaternion.Conjugate(lr)).Y:0.0}), hold {ConstructCrafting.Holds(tray, d.Id)}, pad {ConstructLifters.PickPadHolding(world, l, d.Id)}, counted {ConstructLifters.PickPadHolds(world, sc, t, d.Id)}";
         }

@@ -43,7 +43,7 @@ public sealed partial class ZeroDayWorks
             // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
             var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
             var ovenC = Oven(39, -155, 33, 7, 13, 3, LineC);
-            Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 2); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south)
+            Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 4); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south; four masts a corner, an 8 m stack: the Stern's side skins stand 6.4 m)
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
             foreach (var z in new[] { -143f, -148f, -153f })
@@ -161,8 +161,10 @@ public sealed partial class ZeroDayWorks
                 Chain(run, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
             }
             else
+            {
                 run = FormerStage(tableEnds, dieCells, bedAcross, bedAlong, tables, paint);
                 _lineFormers[line] = _lastFormer!;
+            }
             if (cutAlong == 0)
             {
                 // Line D: the skins wait on a pad two rows deep for the crane (it sends nowhere: the station's crane order takes them).

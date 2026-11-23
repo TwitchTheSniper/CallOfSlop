@@ -125,6 +125,539 @@
           "finish": "plated steel"
         }
       ]
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Port 1",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f3-3 p - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Port 2",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f3-3 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Stbd 1",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f3-3 s - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Stbd 2",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f3-3 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Port 4",
+      "pieces": [
+        {
+          "part": "Hull Section (800 f3-3 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Port 5",
+      "pieces": [
+        {
+          "part": "Hull Section (400 f3-3 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750)",
+          "at": [
+            6.38,
+            -0.12,
+            37.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Stbd 4",
+      "pieces": [
+        {
+          "part": "Hull Section (800 f3-3 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Stbd 5",
+      "pieces": [
+        {
+          "part": "Hull Section (400 f3-3 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750)",
+          "at": [
+            6.38,
+            -0.12,
+            37.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 1",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f4-5 p - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 2",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f4-5 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 3",
+      "pieces": [
+        {
+          "part": "Hull Section (1000 f4-5 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            19.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 1",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f4-5 s - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 2",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f4-5 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 3",
+      "pieces": [
+        {
+          "part": "Hull Section (1000 f4-5 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            19.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Port 4",
+      "pieces": [
+        {
+          "part": "Hull Section (800 f4-5 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Port 5",
+      "pieces": [
+        {
+          "part": "Hull Section (400 f4-5 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750)",
+          "at": [
+            6.38,
+            -0.12,
+            37.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Stbd 4",
+      "pieces": [
+        {
+          "part": "Hull Section (800 f4-5 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Stbd 5",
+      "pieces": [
+        {
+          "part": "Hull Section (400 f4-5 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750)",
+          "at": [
+            6.38,
+            -0.12,
+            37.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Spine",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f6-6 p - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 80 -"
+        },
+        {
+          "part": "Hull Section (600 f6-6 s - 0 - | 0,-110 230,-110 440,30 520,310 440,620 240,710 0,710 | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740)",
+          "at": [
+            6.38,
+            -0.12,
+            7.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 80 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Spine 2",
+      "pieces": [
+        {
+          "part": "Hull Section (600 f6-6 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (600 f6-6 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            13.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 40 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Spine 3",
+      "pieces": [
+        {
+          "part": "Hull Section (1000 f6-6 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            19.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 0 -"
+        },
+        {
+          "part": "Hull Section (1000 f6-6 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            19.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Spine 4",
+      "pieces": [
+        {
+          "part": "Hull Section (800 f6-6 p - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 0 -"
+        },
+        {
+          "part": "Hull Section (800 f6-6 s - 0 - | 0,-160 280,-160 530,30 600,330 500,630 260,740 0,740 | =)",
+          "at": [
+            6.38,
+            -0.12,
+            29.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 0 -"
+        }
+      ]
+    },
+    {
+      "part": "Zero Day Stern",
+      "pieces": [
+        {
+          "part": "Hull Section (200 f1-2 p - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (200 f3-4 p - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (200 f5-6 p - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#a9a59a",
+          "finish": "painted plating",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (200 f1-2 s - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (200 f3-4 s - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (200 f5-6 s - 0 - | 0,-170 300,-170 560,20 630,330 530,640 280,750 0,750 | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760)",
+          "at": [
+            6.38,
+            -0.12,
+            41.88
+          ],
+          "paint": "#a9a59a",
+          "finish": "painted plating",
+          "dress": "it 20 -"
+        },
+        {
+          "part": "Hull Section (250 f1-2 p - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (250 f3-4 p - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (250 f5-6 p - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#a9a59a",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (250 f1-2 s - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#3b4148",
+          "finish": "plated steel",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (250 f3-4 s - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#bdb9ad",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        },
+        {
+          "part": "Hull Section (250 f5-6 s - 0 - | 0,-130 300,-130 600,10 660,330 570,650 310,760 0,760 | 0,-50 260,-50 560,50 640,330 550,630 300,730 0,730)",
+          "at": [
+            6.38,
+            -0.12,
+            43.88
+          ],
+          "paint": "#a9a59a",
+          "finish": "painted plating",
+          "dress": "it 40 -"
+        }
+      ]
     }
   ]
 }
