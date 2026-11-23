@@ -27,7 +27,7 @@ public static class ConstructRadar
     /// <summary>How far this craft's working radar reaches (m; 0: it has none, or none works).</summary>
     public static float Range(Construct c)
     {
-        if (c.RadarStamp != c.RebuildStamp || c.RadarPartCount != c.PartCount)
+        if (c.RadarStamp != c.StructStamp || c.RadarPartCount != c.PartCount)
             Scan(c);
         var best = 0f;
         foreach (var i in c.RadarParts)
@@ -38,7 +38,7 @@ public static class ConstructRadar
 
     private static void Scan(Construct c)
     {
-        c.RadarStamp = c.RebuildStamp;
+        c.RadarStamp = c.StructStamp;
         c.RadarPartCount = c.PartCount;
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)

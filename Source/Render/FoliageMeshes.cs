@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 21;
+    public const int TypeCount = 23;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -261,6 +261,18 @@ public static class FoliageMeshes
                     var r = 0.12f + 0.09f * k;
                     Blob(new Vector3(MathF.Cos(a) * r, 0.02f, MathF.Sin(a) * r), new Vector3(0.13f, 0.05f, 0.1f) * (1f + 0.25f * (k % 3)), 0, 113 + k, 0.2f, 0f, 0f);
                 }
+                break;
+
+            case FoliageType.FarBroadleaf:
+                // Only a far mesh (one in nine trees, seen from 500 m on): a coarse leaf mass three times a canopy's width,
+                // standing for the tree and its neighbours. Its near mesh is empty.
+                if (lod == 1)
+                    Blob(new Vector3(0, 0.66f, 0), new Vector3(0.75f, 0.27f, 0.72f), 0, 5, 0.12f, 0f, 0f);
+                break;
+
+            case FoliageType.FarConifer:
+                if (lod == 1)
+                    Cone(0.2f, 1f, 0.55f, 6, 0.3f);
                 break;
 
             case FoliageType.Pillar or FoliageType.Arch or FoliageType.Needle or FoliageType.Tor:

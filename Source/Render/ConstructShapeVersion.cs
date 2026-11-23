@@ -55,6 +55,8 @@ public static class ConstructShapeVersion
                 ref var p = ref c.Parts[i];
                 var d = p.D;
                 var h = Mix(Mix(Mix(Mix(RuntimeHelpers.GetHashCode(d), RuntimeHelpers.GetHashCode(d.Boxes)), BitConverter.SingleToInt32Bits(p.Pos.X)), BitConverter.SingleToInt32Bits(p.Pos.Y)), BitConverter.SingleToInt32Bits(p.Pos.Z) ^ (long)p.Rot << 32 ^ (long)p.Seg << 40);
+                if (c.Growing(i))
+                    continue; // (a piece growing on a die is in no cache of the body's boxes: SunShadows leaves it out, Construct.GrowStamp)
                 if (c.DoorOfListed(i) >= 0)
                     doors = Mix(doors, h ^ i);
                 else

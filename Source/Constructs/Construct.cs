@@ -282,6 +282,7 @@ public sealed partial class Construct
     public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
+    public string? Origin; // what made a spilled body (a Material Bundle: the bin, its body, scoop or miner), for the F9 report's awake bodies; not saved
     public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's). A sentry's kills are theirs (milestone 3)
     public bool Damaged; // a part of it has been wrecked (broken off or stopped working): disabled, so anyone may salvage it
     public double IdleSince = -1; // server: a wreck's last time with a player near or salvaging it (debris expiry; -1: not yet looked at)
@@ -560,6 +561,7 @@ public sealed partial class Construct
     public int BreachStamp = -1, BreachParts; // (ConstructBreach.cs: the hull grapples and cutters counted at this RebuildStamp)
     public int LampStamp = -1; // (phase 7b: LampParts was gathered at this RebuildStamp; ConstructLamps.cs)
     public int[] LampParts = []; // the parts that light the space round them (a lined bay's lamps, a Lamp logic part)
+    public float LampReachMore; // how much farther than a plain lamp its longest lamp throws (a part's "light" range), for the eye's distance cull
     public int AmbStamp = -1; // (PartAmbience.cs: AmbParts was gathered at this RebuildStamp)
     public int[] AmbParts = []; // the parts with something about them that moves or sounds (a chimney's smoke, a valve's steam, a searchlight, a tannoy)
     public int[] MainsFeed = []; // (interiors phase 11) by part, for mains lamps: the part whose wire switches it (-1: none, lit from the circuit alone); gathered with LampParts
@@ -569,6 +571,21 @@ public sealed partial class Construct
     public int[] RadarParts = []; // the parts with a "radar" block
     public ushort RadarLock; // server: the contact its seats' radar has locked for its missiles (0: none; ConstructRadar.cs), not saved
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
+
+    /// <summary>
+    /// How many of <see cref="RebuildStamp"/>'s steps were a growing piece's new length (<see cref="RefreshShape"/>) and nothing
+    /// else. <see cref="StructStamp"/> leaves them out: what is drawn from every part of a body (its merged chunks, lamps, sounds,
+    /// flames, panels) follows it, and a growing piece is drawn alone (<see cref="Growing"/>). 2026-11-23: on the Zero Day works
+    /// each Extruder step (twice a second in a 60 s headless run) made every whole-body cache of 5,500 parts again, Sean's
+    /// once-a-second 40 ms frame. Render only.
+    /// </summary>
+    public int GrowStamp;
+
+    /// <summary><see cref="RebuildStamp"/> without a growing piece's steps (<see cref="GrowStamp"/>).</summary>
+    public int StructStamp => RebuildStamp - GrowStamp;
+
+    /// <summary>Is part <paramref name="i"/> a piece still growing on an Extruder's die (its def changes in place, <see cref="RefreshShape"/>)?</summary>
+    public bool Growing(int i) => Parts[i].D is { IsExtrusion: true, ExKey.Growing: true };
     internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
     internal int SigListCount, SigListStamp = -1, SigListParts = -1;
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
@@ -1436,6 +1453,7 @@ public sealed partial class Construct
         if (Dirty)
             return; // (a rebuild is coming)
         RebuildStamp++; // (its boxes in a big body's batch: ConstructRenderBatch.cs)
+        GrowStamp++; // (only the growing piece changed: the whole-body caches keep, StructStamp)
         ColliderChanged(); // (a piece growing on a die: a rebuild of its tree at the Extruder's rate, not the part tree's: ConstructPartTree.cs)
         if (_sumsValid)
         {

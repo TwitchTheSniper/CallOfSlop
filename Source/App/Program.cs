@@ -473,6 +473,8 @@ public static unsafe partial class Program
             RoomShade.ForcedOff = true; // ship rooms keep the sky's light whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-lamp-shadows", StringComparison.OrdinalIgnoreCase)))
             LampShadows.ForcedOff = true; // lamps shine through walls whatever the Video setting (a before picture)
+        if (args.Any(a => a.Equals("--no-lamp-beams", StringComparison.OrdinalIgnoreCase)))
+            LampBeams.ForcedOff = true; // no cones of light in the air under spot lamps whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-contact", StringComparison.OrdinalIgnoreCase)))
             PostFx.ContactForcedOff = true; // no contact shadows under bodies whatever the Video setting (a before picture)
         if (args.Any(a => a.Equals("--no-bevels", StringComparison.OrdinalIgnoreCase)))

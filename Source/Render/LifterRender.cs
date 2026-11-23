@@ -38,7 +38,8 @@ public static class LifterRender
                 var shoulder = lp + Vector3.Transform(ld.Base, lr);
                 // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
                 var turn = Quaternion.Identity;
-                var origin = l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn) : ConstructLifters.RestOf(ld); // (at rest before its first move)
+                var age = ConstructLifters.AgeNow(l);
+                var origin = l.Moved ? ConstructLifters.Pose(ld, l, age, out turn) : ConstructLifters.RestOf(ld); // (at rest before its first move)
                 // Culled by the nearer of its base and its hand: a crane's bridge and piece may be 300 m along its rails from its cabinet.
                 var handAt = lp + Vector3.Transform(origin, lr);
                 if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear && Vector3.DistanceSquared(eye, handAt) > DrawNear * DrawNear)
@@ -73,6 +74,8 @@ public static class LifterRender
                     grip = origin + Vector3.Transform(top, turn) + Vector3.UnitY * ConstructLifters.GripLift;
                     span = Math.Clamp(MathF.Min(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) * 0.8f, 0.25f, 1.2f);
                 }
+                if (l.Moved && l.Fetch > 0 && age < l.Fetch)
+                    grip = ConstructLifters.HandPose(ld, l, age) + Vector3.UnitY * ConstructLifters.GripLift; // (the empty hand on its way to the piece, which still lies where it was)
                 if (ld.Bridge)
                 {
                     DrawCrane(gfx, ld, part, grip);

@@ -62,14 +62,14 @@ public sealed partial class Construct
     {
         if (Dirty)
             return false;
-        if (_doorStamp != RebuildStamp)
+        if (_doorStamp != StructStamp)
             BuildDoors();
         return true;
     }
 
     private void BuildDoors()
     {
-        _doorStamp = RebuildStamp;
+        _doorStamp = StructStamp;
         var oldCount = DoorCount;
         if (oldCount > 0)
         {
@@ -205,7 +205,7 @@ public sealed partial class Construct
     }
 
     /// <summary>As <see cref="DoorOf"/>, from the list as last built (never builds it: drawing). -1 while the list waits for a rebuild.</summary>
-    public int DoorOfListed(int part) => DoorCount > 0 && _doorStamp == RebuildStamp && !Dirty && (uint)part < (uint)_doorOfCount ? _doorOfPart[part] : -1;
+    public int DoorOfListed(int part) => DoorCount > 0 && _doorStamp == StructStamp && !Dirty && (uint)part < (uint)_doorOfCount ? _doorOfPart[part] : -1;
 
     /// <summary>
     /// Drawing: the moving door part <paramref name="part"/> rides, or -1 (no door moves: one compare). A door's parts are

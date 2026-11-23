@@ -59,6 +59,7 @@ public static partial class ConstructLifters
                 continue;
             }
             var inv = Quaternion.Conjugate(lr);
+            var hand = HandNow(ld, l);
             l.Def = 0;
             l.Paint = 0;
             l.From = Vector3.Transform(body.Pos - lp, inv);
@@ -71,6 +72,7 @@ public static partial class ConstructLifters
             l.Why = LiftWhy.None;
             (l.ToHold, l.ToKind, l.Job, l.Plan, l.Step, l.StationBody) = (false, LiftPointKind.None, null, null, -1, 0);
             Begin(l);
+            Approach(ld, l, hand); // (the hand goes to the body first, as to a piece)
             l.State = LiftState.Carry;
             l.Moved = true;
             l.Fitted = false;

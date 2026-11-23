@@ -128,7 +128,7 @@ public static class ConstructLogistics
     public static LogiMap Map(Construct c)
     {
         var m = c.Logi ??= new LogiMap();
-        if (m.Stamp == c.RebuildStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount && (m.LiftPartN == 0 || !ConstructLifters.ModesChanged(c, m)))
+        if (m.Stamp == c.StructStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount && (m.LiftPartN == 0 || !ConstructLifters.ModesChanged(c, m)))
             return m;
         Build(c, m);
         return m;
@@ -208,7 +208,7 @@ public static class ConstructLogistics
 
     private static void Build(Construct c, LogiMap m)
     {
-        m.Stamp = c.RebuildStamp;
+        m.Stamp = c.StructStamp;
         m.SizeStamp = c.LogiStamp;
         m.PartCount = c.PartCount;
         m.RouteCount = c.RouteCount;
@@ -893,7 +893,7 @@ public static class ConstructLogistics
     /// <summary>Server, each conveyor step for a body with a pile beside a Router: the pieces taken away leave it; the last one taken ends its Alarm.</summary>
     public static void Piles(ConstructWorld world, Construct c)
     {
-        if (c.Logi is not { OffAny: > 0 } m || m.Stamp != c.RebuildStamp)
+        if (c.Logi is not { OffAny: > 0 } m || m.Stamp != c.StructStamp)
             return;
         var changed = false;
         for (var s = 0; s < m.RouterN; s++)
@@ -1064,7 +1064,7 @@ public static class ConstructLogistics
         way = state = 0;
         stuck = false;
         fence = 0;
-        if (c.Logi is not { } m || m.Stamp != c.RebuildStamp)
+        if (c.Logi is not { } m || m.Stamp != c.StructStamp)
             return false;
         var s = m.RouterSlot(part);
         if (s < 0)

@@ -249,6 +249,8 @@ public static unsafe partial class PostFx
         Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
         for (var i = 0; i < c.PartCount; i++)
         {
+            if (c.Growing(i))
+                continue; // (a piece growing on a die: out of the footprint, which keeps while it grows: Construct.GrowStamp)
             ref var part = ref c.Parts[i];
             var def = c.DefOf(i);
             foreach (var b in def.Boxes)
@@ -278,6 +280,8 @@ public static unsafe partial class PostFx
         Array.Fill(FootLow, float.MaxValue);
         for (var i = 0; i < c.PartCount; i++)
         {
+            if (c.Growing(i))
+                continue; // (a piece growing on a die: out of the footprint, which keeps while it grows: Construct.GrowStamp)
             ref var part = ref c.Parts[i];
             var def = c.DefOf(i);
             foreach (var b in def.Boxes)

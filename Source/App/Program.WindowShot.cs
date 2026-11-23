@@ -125,7 +125,7 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--ao-radius", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } aoR && float.TryParse(aoR, System.Globalization.CultureInfo.InvariantCulture, out var aoRv))
             _settings.AoRadius = aoRv;
         if (args.Any(a => a.Equals("--ao-clean", StringComparison.OrdinalIgnoreCase)))
-            _settings.AoClassic = false; // (the clean ambient occlusion; Classic is the default)
+            _settings.AoClassic = false; // (the clean ambient occlusion, the default since 2026-11-23, whatever style the copied settings hold)
         WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }
@@ -1396,7 +1396,7 @@ public static unsafe partial class Program
                     var seen = false;
                     foreach (var hb in g.Constructs.LiftBodies)
                         for (var hi = 0; hi < hb.N; hi++)
-                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age < hl.Dur / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
+                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age - hl.Fetch < (hl.Dur - hl.Fetch) / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
                     if (!seen)
                     {
                         _wsQueue.EnqueueFront(arg.Trim().Length > 0 ? "lifter " + arg.Trim() : "lifter");
@@ -1412,7 +1412,7 @@ public static unsafe partial class Program
                     var held = false;
                     foreach (var hb in g.Constructs.LiftBodies)
                         for (var hi = 0; hi < hb.N; hi++)
-                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > 6 && hl.Age < hl.Dur - 12;
+                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > hl.Fetch + 6 && hl.Age < hl.Dur - 12;
                     if (!held)
                     {
                         _wsQueue.EnqueueFront("lifter holding");
