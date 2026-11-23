@@ -1224,6 +1224,9 @@ public static partial class ConstructLifters
         l.Dur = Math.Min(l.Dur + l.Fetch, ushort.MaxValue);
     }
 
+    /// <summary>Is the empty hand still on its way to the piece <paramref name="age"/> ticks into a loaded carry (the piece lies where it was)?</summary>
+    public static bool Fetching(CLift l, float age) => l.Fetch > 0 && !l.Steered && l.State == LiftState.Carry && age < l.Fetch;
+
     /// <summary>Where the empty hand takes hold of the piece: over its top middle at the pick (an empty move's point, as <see cref="Back"/> starts from).</summary>
     private static Vector3 GripOf(CLift l)
     {
@@ -1235,7 +1238,7 @@ public static partial class ConstructLifters
     /// <summary>The hand's point (lifter part frame) <paramref name="age"/> ticks into the move: on its way to the piece while it fetches, else over the piece's top middle (empty: the move's own point).</summary>
     public static Vector3 HandPose(LifterDef ld, CLift l, float age)
     {
-        if (l.Fetch > 0 && age < l.Fetch && !l.Steered)
+        if (Fetching(l, age))
             return PoseMiddle(ld, l, age, null, false, l.Hand0, GripOf(l), out _);
         var o = Pose(ld, l, age, out var rot);
         if (l.Def == 0 || ConstructParts.Get(l.Def) is not { } d)
@@ -1876,7 +1879,7 @@ public static partial class LifterProbe
             foreach (var lb in world.LiftBodies)
                 for (var i = 0; i < lb.N; i++)
                     if (lb.Lifts[i] is { State: LiftState.Carry, WaitFrom: 0, Def: > 0 } pl && world.Get(lb.Body) is { } pc && pl.Part < pc.PartCount && ConstructLifters.DefOf(pc, pl.Part) is { } pld
-                        && ConstructLifters.AgeAt(pl, ConstructLifters.Now) < pl.Dur * 0.5f && ConstructLifterPush.PieceBox(pc, pl, pld, pl.Dur, out var pcen, out var phalf))
+                        && ConstructLifters.AgeAt(pl, ConstructLifters.Now) < pl.Fetch + (pl.Dur - pl.Fetch) * 0.5f && ConstructLifterPush.PieceBox(pc, pl, pld, pl.Dur, out var pcen, out var phalf))
                     {
                         info = $"{ConstructParts.Get(pl.Def)?.Name}: its put point, the piece's box {phalf.X * 2:0.00} x {phalf.Z * 2:0.00} m";
                         return new Vector3(pcen.X, pcen.Y - phalf.Y - 0.3f, pcen.Z);
@@ -1891,12 +1894,12 @@ public static partial class LifterProbe
                 if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
                 var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
-                if (age > l.Dur * 0.2f)
-                    continue;
+                if (age > l.Fetch + (l.Dur - l.Fetch) * 0.2f)
+                    continue; // (fractions of the carry itself, after the empty hand's way to the piece)
                 // The first point from 35 % on whose ground is clear of constructs (not on the build) and where the piece is at body height.
                 for (var f = 0.25f; f <= 0.95f; f += 0.05f)
                 {
-                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Dur * f, out var centre, out var half))
+                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Fetch + (l.Dur - l.Fetch) * f, out var centre, out var half))
                         break;
                     var ground = World.Map.GroundHeight(centre.X, centre.Z);
                     var feet = new Vector3(centre.X, ground + 0.5f, centre.Z); // (over a floor plate: the build, not the bay's floor, is what rules a point out)

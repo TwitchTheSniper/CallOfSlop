@@ -1396,7 +1396,7 @@ public static unsafe partial class Program
                     var seen = false;
                     foreach (var hb in g.Constructs.LiftBodies)
                         for (var hi = 0; hi < hb.N; hi++)
-                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age < hl.Dur / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
+                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age - hl.Fetch < (hl.Dur - hl.Fetch) / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
                     if (!seen)
                     {
                         _wsQueue.EnqueueFront(arg.Trim().Length > 0 ? "lifter " + arg.Trim() : "lifter");
@@ -1412,7 +1412,7 @@ public static unsafe partial class Program
                     var held = false;
                     foreach (var hb in g.Constructs.LiftBodies)
                         for (var hi = 0; hi < hb.N; hi++)
-                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > 6 && hl.Age < hl.Dur - 12;
+                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > hl.Fetch + 6 && hl.Age < hl.Dur - 12;
                     if (!held)
                     {
                         _wsQueue.EnqueueFront("lifter holding");
