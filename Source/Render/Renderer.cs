@@ -1018,12 +1018,41 @@ public sealed unsafe partial class Renderer
         return scope;
     }
 
+    // ---- Bounds of what is drawn (ConstructRenderBatch's walked parts that move: where they were last drawn) -----------------
+
+    private bool _tracking, _tracked;
+    private Vector3 _trackLo, _trackHi;
+
+    /// <summary>Starts gathering the bounds of every <see cref="Draw"/> (in the matrices' own space) until <see cref="TrackEnd"/>.</summary>
+    public void TrackBegin() => (_tracking, _tracked) = (true, false);
+
+    /// <summary>Stops gathering: the bounds of what was drawn since <see cref="TrackBegin"/>; false when nothing was.</summary>
+    public bool TrackEnd(out Vector3 lo, out Vector3 hi)
+    {
+        _tracking = false;
+        (lo, hi) = (_trackLo, _trackHi);
+        return _tracked;
+    }
+
+    private void Track(in Matrix4x4 model)
+    {
+        // (the unit cube round the middle: half its rows' lengths a side, as a sphere round it)
+        var r = 0.5f * MathF.Sqrt(new Vector3(model.M11, model.M12, model.M13).LengthSquared() + new Vector3(model.M21, model.M22, model.M23).LengthSquared() + new Vector3(model.M31, model.M32, model.M33).LengthSquared());
+        var at = model.Translation;
+        if (!_tracked)
+            (_trackLo, _trackHi, _tracked) = (at - new Vector3(r), at + new Vector3(r), true);
+        else
+            (_trackLo, _trackHi) = (Vector3.Min(_trackLo, at - new Vector3(r)), Vector3.Max(_trackHi, at + new Vector3(r)));
+    }
+
     /// <summary>
     /// Draws the unit cube transformed by <paramref name="model"/>, or with <paramref name="shape"/> &gt; 0 a weapon part's
     /// contoured shape inside it (<see cref="PartShapes"/>; uploaded into the box buffer the first time it's needed).
     /// </summary>
     public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, int shape = 0, float surface = 0)
     {
+        if (_tracking)
+            Track(in model);
         if (_tilted)
         {
             var tilted = model * _tilt;

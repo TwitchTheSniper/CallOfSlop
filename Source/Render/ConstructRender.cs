@@ -731,6 +731,8 @@ public static partial class ConstructRender
                 continue; // (a block machine's skirt or cap on a face welded to its own machine, or a fill where none is: MachineBlocks.cs)
             if (box.Work == BoxWork.Beam && !(_laserOn && _laserActive))
                 continue; // (a Laser Cutter's beam: only under the head that is cutting)
+            if (_walkDetail < LodClasses - 1 && SizeClass(in box, lit) > _walkDetail)
+                continue; // (far off, a box under a pixel: the far detail level, as a merged chunk leaves it out)
             c.BoxOf(i, b, out var centre, out var half);
             if (box.Spin && d.Rotor != null)
             {

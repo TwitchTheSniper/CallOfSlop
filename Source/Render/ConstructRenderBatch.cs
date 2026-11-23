@@ -67,7 +67,10 @@ public static partial class ConstructRender
         public int[] Extra = []; // merged parts whose stored parts or glass panes are drawn alone each frame
         public int ExtraCount;
         public int[] ExtraClass = []; // a merged machine block's biggest work box's size class (FarGlow)
-        public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: always drawn (it moves, burns or smokes)
+        public Vector4[] WalkedSphere = [], ExtraSphere = []; // each one's sphere in the body's frame, for the view test; radius below 0: it moves (WalkedSeen)
+        public Vector4[] WalkedSeen = [], ExtraSeen = []; // a moving one's sphere as last drawn, in the body's frame (radius 0: not drawn yet)
+        public int[] WalkedDrawn = [], ExtraDrawn = []; // the frame (_mergeFrame) each walked part was last drawn in
+        public int[] WalkedChunk = []; // the chunk whose occlusion box holds it (-1: none, -2: not looked for yet)
     }
 
     private struct MergeDraw
@@ -78,6 +81,7 @@ public static partial class ConstructRender
         public bool Test; // drawn only where last frame's occlusion query saw its box (ConstructRenderOcclusion.cs)
         public bool Use; // the eye has hardly moved against this chunk since that query: its result still speaks for it
         public Vector3 Min, Max; // the query's box, in the frame
+        public Vector3 Eye; // the eye in the chunk's frame (the CPU query's answer is kept with it)
     }
 
     private static readonly Dictionary<Construct, MergeSet> _merges = new();
@@ -423,10 +427,19 @@ public static partial class ConstructRender
         Grow(ref set.WalkedSphere, set.WalkedCount);
         Grow(ref set.ExtraSphere, set.ExtraCount);
         Grow(ref set.ExtraClass, set.ExtraCount);
+        Grow(ref set.WalkedSeen, set.WalkedCount);
+        Grow(ref set.WalkedDrawn, set.WalkedCount);
+        Grow(ref set.WalkedChunk, set.WalkedCount);
         for (var k = 0; k < set.WalkedCount; k++)
+        {
             set.WalkedSphere[k] = WalkSphere(c, set.Walked[k]);
+            (set.WalkedSeen[k], set.WalkedDrawn[k], set.WalkedChunk[k]) = (Vector4.Zero, int.MinValue / 2, -2);
+        }
+        Grow(ref set.ExtraSeen, set.ExtraCount);
+        Grow(ref set.ExtraDrawn, set.ExtraCount);
         for (var k = 0; k < set.ExtraCount; k++)
         {
+            (set.ExtraSeen[k], set.ExtraDrawn[k]) = (Vector4.Zero, int.MinValue / 2);
             set.ExtraSphere[k] = WalkSphere(c, set.Extra[k]);
             set.ExtraClass[k] = WorkClass(c.Parts[set.Extra[k]].D);
         }
@@ -754,6 +767,8 @@ public static partial class ConstructRender
                     ch.LookDue = false;
                 }
             }
+            if (ch.Gl.CpuQuery.Id != 0)
+                gfx.PollCpuQuery(ch.Gl); // (the walked parts in its box go by its answer: WalkedHidden)
             ref var frame = ref _segFrame[ch.Seg];
             if (_segToken[ch.Seg] != _segTok)
             {
@@ -782,7 +797,7 @@ public static partial class ConstructRender
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max, Eye = ch.EyeAt };
             LastMergedChunks++;
             var drawnSlots = ch.Gl.SlotsUpTo(detail);
             LastBatchBoxes += drawnSlots;
@@ -795,24 +810,59 @@ public static partial class ConstructRender
             var i = set.Walked[k];
             if (i >= c.PartCount)
                 continue;
-            if (cull && OffScreen(in set.WalkedSphere[k], in body, origin))
+            // A part that moves is tested by where it was last drawn, a margin round it, and drawn anyway every WalkRefresh
+            // frames so that stays true; one that burns is always drawn (its flames leave from it seen or not).
+            var sphere = set.WalkedSphere[k];
+            var moves = sphere.W < 0;
+            if (moves)
+                sphere = set.WalkedSeen[k] is { W: > 0 } seen && c.Parts[i].Burn <= 0 && _mergeFrame - set.WalkedDrawn[k] < WalkRefresh + (k & 3)
+                    ? seen with { W = seen.W + WalkMargin } : new Vector4(0, 0, 0, -1);
+            _walkDetail = LodClasses - 1;
+            if (cull && sphere.W >= 0)
             {
-                LastWalkedCulled++;
-                continue;
+                if (OffScreen(in sphere, in body, origin))
+                {
+                    LastWalkedCulled++;
+                    continue;
+                }
+                if (WalkedHidden(gfx, set, k, in sphere))
+                {
+                    LastWalkedHidden++;
+                    continue;
+                }
+                _walkDetail = DetailAt(Vector3.Distance(Vector3.Transform(new Vector3(sphere.X, sphere.Y, sphere.Z), body) + origin, _lodEye) - sphere.W);
             }
             HostCut(gfx, c, i);
+            if (moves)
+                gfx.TrackBegin();
             n += DrawPart(gfx, world, c, i, body, alpha, 1f);
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
+            _walkDetail = LodClasses - 1;
+            set.WalkedDrawn[k] = _mergeFrame;
+            if (moves && gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
+            {
+                var mid = Vector3.Transform((lo + hi) * 0.5f, toBody); // (drawn in the body's matrix: back into its frame, where the next frames test it)
+                set.WalkedSeen[k] = new Vector4(mid, (hi - lo).Length() * 0.5f);
+            }
         }
         LastBatchWalked += set.WalkedCount;
         for (var k = 0; k < set.ExtraCount; k++)
         {
             // Merged parts that hold stored parts or have panes: only those drawn here.
             var i = set.Extra[k];
-            if (i >= c.PartCount || cull && OffScreen(in set.ExtraSphere[k], in body, origin))
+            if (i >= c.PartCount)
+                continue;
+            var sphere = set.ExtraSphere[k];
+            var moves = sphere.W < 0; // (a machine block's work: tested where it was last drawn, as walked parts that move are)
+            if (moves)
+                sphere = set.ExtraSeen[k] is { W: > 0 } seen && c.Parts[i].Burn <= 0 && _mergeFrame - set.ExtraDrawn[k] < WalkRefresh + (k & 3)
+                    ? seen with { W = seen.W + WalkMargin } : new Vector4(0, 0, 0, -1);
+            if (cull && OffScreen(in sphere, in body, origin))
                 continue;
             HostCut(gfx, c, i);
+            if (moves)
+                gfx.TrackBegin();
             if (_defPanes.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken))
                 n += DrawPanes(gfx, c, i, body, alpha); // (not while its chunk waits its rebuild: DrawPart drew its panes above)
             if (_defWork.Contains(c.Parts[i].D) && !(_partWaiting.Length > i && _partWaiting[i] == _waitToken)
@@ -824,6 +874,14 @@ public static partial class ConstructRender
             }
             if (c.Parts[i].Store != 0)
                 n += DrawStored(gfx, world, c, i, body, alpha);
+            set.ExtraDrawn[k] = _mergeFrame;
+            if (moves)
+            {
+                if (gfx.TrackEnd(out var lo, out var hi) && Matrix4x4.Invert(body, out var toBody))
+                    set.ExtraSeen[k] = new Vector4(Vector3.Transform((lo + hi) * 0.5f, toBody), (hi - lo).Length() * 0.5f);
+                else
+                    set.ExtraSeen[k] = Vector4.Zero; // (nothing drawn: a far glow, a chunk still waiting)
+            }
         }
         drawn += n;
         return true;
@@ -905,7 +963,7 @@ public static partial class ConstructRender
         _mergeBudget = MergeBudgetBoxes;
         _mergeQueued = 0;
         LastMergedChunks = LastMergedBuilt = LastMergedWaiting = 0;
-        LastLodDropped = LastWalkedCulled = 0;
+        LastLodDropped = LastWalkedCulled = LastWalkedHidden = 0;
         _lodEye = gfx.CameraPosition;
         _lodPixelsAt = MathF.Abs(gfx.Proj.M22) * gfx.ViewportHeight * 0.5f;
         OcclusionBegin(gfx);
@@ -913,9 +971,58 @@ public static partial class ConstructRender
 
     private static Vector3 _lodEye;
 
-    /// <summary>Merged box slots the far detail level left out last frame, and walked parts skipped off screen (the F9 window, the bench).</summary>
+    /// <summary>Merged box slots the far detail level left out last frame, and walked parts skipped off screen and behind walls (the F9 window, the bench).</summary>
     public static int LastLodDropped { get; private set; }
     public static int LastWalkedCulled { get; private set; }
+    public static int LastWalkedHidden { get; private set; }
+
+    /// <summary>
+    /// Walked parts that move (machines' work, rigs, doors, joints): tested against the view by the sphere they were last drawn
+    /// in grown by <see cref="WalkMargin"/> metres, and drawn anyway at least every <see cref="WalkRefresh"/> frames (a few more,
+    /// spread by part) so that sphere stays true: at 8 frames a piece would have to move faster than 15 m/s to leave it.
+    /// </summary>
+    public const float WalkMargin = 1.5f;
+    public const int WalkRefresh = 8;
+
+    /// <summary>The smallest size class the walked part being drawn draws (the far detail level, as merged chunks have it; the last class: all).</summary>
+    private static int _walkDetail = LodClasses - 1;
+
+    /// <summary>
+    /// Is walked part <paramref name="k"/> (its <paramref name="sphere"/> in the body's frame) inside a merged chunk's occlusion box
+    /// that the CPU query last found hidden, with the eye still where it was asked from? Then it isn't drawn: a part in a room
+    /// behind a wall costs nothing, as the room's merged boxes don't. Only chunks of the body's own frame (segment 0) hold parts.
+    /// </summary>
+    private static bool WalkedHidden(Renderer gfx, MergeSet set, int k, in Vector4 sphere)
+    {
+        if (!_occlusionUse)
+            return false;
+        var q = set.WalkedChunk[k];
+        if (q >= 0 && (q >= set.ChunkCount || !Holds(set.Chunks[q], in sphere)))
+            q = set.WalkedChunk[k] = -2;
+        if (q == -2)
+        {
+            q = -1;
+            for (var j = 0; j < set.ChunkCount && q < 0; j++)
+                if (set.Chunks[j].Seg == 0 && !set.Chunks[j].Dirty && Holds(set.Chunks[j], in sphere))
+                    q = j;
+            set.WalkedChunk[k] = q;
+        }
+        if (q < 0)
+            return false;
+        var ch = set.Chunks[q];
+        var m = ch.Gl;
+        return m.CpuHidden && m.CpuAt >= 0 && gfx.OcclusionFrame - m.CpuAt <= 6 && ch.EyeFrame == gfx.OcclusionFrame
+            && Vector3.DistanceSquared(ch.EyeAt, m.CpuEye) < 1f;
+    }
+
+    /// <summary>Does a chunk's occlusion box (its bounds and the query's pad) hold a sphere wholly?</summary>
+    private static bool Holds(MergeChunk ch, in Vector4 sphere)
+    {
+        var at = new Vector3(sphere.X, sphere.Y, sphere.Z);
+        var r = new Vector3(sphere.W);
+        return ch.Radius > 0 && Vector3.Min(at - r, ch.Min - new Vector3(OcclusionPad)) == ch.Min - new Vector3(OcclusionPad)
+            && Vector3.Max(at + r, ch.Max + new Vector3(OcclusionPad)) == ch.Max + new Vector3(OcclusionPad);
+    }
 
     /// <summary>The chunks queued this frame, in one run of the merged shader (opaque, so their order with the box batch doesn't matter).</summary>
     private static void FlushMerged(Renderer gfx)

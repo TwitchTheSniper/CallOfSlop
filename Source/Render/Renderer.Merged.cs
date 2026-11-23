@@ -43,6 +43,19 @@ public sealed unsafe partial class Renderer
         internal GlQuery Query;
         internal int QueryFrame = -1;
 
+        /// <summary>
+        /// A second query the CPU reads (the parts walked one by one beside it: ConstructRenderBatch.cs): asked again only once its
+        /// last answer came, so it never waits and never loses an answer to a newer ask. <see cref="CpuHidden"/> is that answer,
+        /// from occlusion frame <see cref="CpuAt"/> (-1: none), asked with the eye at <see cref="CpuEye"/> (the group's own frame).
+        /// </summary>
+        internal GlQuery CpuQuery;
+        internal bool CpuPending, CpuVoid;
+        internal int CpuIssued;
+        internal Vector3 CpuAskedEye;
+        public bool CpuHidden;
+        public int CpuAt = -1;
+        public Vector3 CpuEye;
+
         /// <summary>Slots drawn at detail level <paramref name="detail"/> (the smallest size class drawn).</summary>
         public int SlotsUpTo(int detail)
         {
@@ -227,6 +240,8 @@ public sealed unsafe partial class Renderer
         m.Slots = slots;
         m.PointedAt = -1; // (the buffer may have been made again: point the attributes afresh)
         m.QueryFrame = -1; // (its bounds may have changed: last frame's query no longer speaks for it)
+        m.CpuAt = -1;
+        m.CpuVoid = m.CpuPending; // (an answer still on its way speaks for the old bounds)
     }
 
     /// <summary>A group's looks: one vec4 a slot (tint, material code; a code below zero: a glowing box).</summary>
@@ -407,7 +422,7 @@ public sealed unsafe partial class Renderer
     }
 
     /// <summary>Tests a group's box (<paramref name="min"/> to <paramref name="max"/> in <paramref name="frame"/>) against the depth drawn so far: next occlusion frame, <see cref="DrawMerged"/> with <c>occluded</c> draws it only if a sample passed.</summary>
-    public void QueryMerged(MergedMesh m, in Matrix4x4 frame, Vector3 min, Vector3 max)
+    public void QueryMerged(MergedMesh m, in Matrix4x4 frame, Vector3 min, Vector3 max, Vector3 eye = default)
     {
         if (!_occOn || m.Vao.Id == 0)
             return;
@@ -425,6 +440,37 @@ public sealed unsafe partial class Renderer
         Native.glEndQuery(target);
         m.QueryFrame = OcclusionFrame;
         OcclusionQueries++;
+        if (!m.CpuPending && Native.glGetQueryObjectuiv != null)
+        {
+            if (m.CpuQuery.Id == 0)
+            {
+                GlQuery q;
+                Native.glGenQueries(1, &q);
+                m.CpuQuery = q;
+            }
+            Native.glBeginQuery(target, m.CpuQuery);
+            Native.glDrawArrays(GL_TRIANGLES, 0, 36);
+            Native.glEndQuery(target);
+            (m.CpuPending, m.CpuVoid, m.CpuIssued, m.CpuAskedEye) = (true, false, OcclusionFrame, eye);
+            OcclusionQueries++;
+        }
+    }
+
+    /// <summary>Takes the CPU query's answer if it has come (never waits): <see cref="MergedMesh.CpuHidden"/> and its frame then hold it.</summary>
+    public void PollCpuQuery(MergedMesh m)
+    {
+        if (!m.CpuPending || m.CpuQuery.Id == 0 || Native.glGetQueryObjectuiv == null)
+            return;
+        int available;
+        Native.glGetQueryObjectiv(m.CpuQuery.Id, GL_QUERY_RESULT_AVAILABLE, &available);
+        if (available == 0)
+            return;
+        uint r;
+        Native.glGetQueryObjectuiv(m.CpuQuery.Id, GL_QUERY_RESULT, &r);
+        m.CpuPending = false;
+        if (m.CpuVoid)
+            return;
+        (m.CpuHidden, m.CpuAt, m.CpuEye) = (r == 0, m.CpuIssued, m.CpuAskedEye);
     }
 
     /// <summary>The bench, after a glFinish: did this frame's query of <paramref name="m"/> see any of it (false: hidden; null: not tested this frame)?</summary>
@@ -479,6 +525,13 @@ public sealed unsafe partial class Renderer
             Native.glDeleteQueries(1, &q);
             m.Query = default;
         }
+        if (m.CpuQuery.Id != 0)
+        {
+            var q = m.CpuQuery;
+            Native.glDeleteQueries(1, &q);
+            m.CpuQuery = default;
+        }
+        (m.CpuPending, m.CpuAt) = (false, -1);
         m.QueryFrame = -1;
         m.Vao = default;
         m.XformVbo = m.LookVbo = default;
