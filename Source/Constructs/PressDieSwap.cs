@@ -70,6 +70,9 @@ public static partial class ConstructPress
     /// </summary>
     private static bool SiblingHolding(ConstructWorld world, Construct rackBody, int rack, Construct c, int press, PressDie die, out Construct? holder, out int at)
     {
+        (holder, at) = (null, -1);
+        if (world.StoreOf(rackBody, rack) is not { SlotCount: > 0 })
+            return false; // (a store with no slots never holds a die: a copper bin chuted into a Board and a Button press is no die rack between them, 2026-11-23)
         var d = c.DefOf(press);
         for (var k = 0; NextFed(world, rackBody, rack, ref k, out holder, out at);)
             if (!(ReferenceEquals(holder, c) && at == press) && DieIn(holder!, at) is var i and >= 0 && IsDieFor(holder!.Parts[i].D, die, d))
