@@ -120,8 +120,9 @@ public static class RollerRuns
         for (var i = 0; i < c.ConveyedCount; i++)
             if (c.Conveyed[i].Route == route)
             {
-                if (!ConstructConveyor.PassesBed(c, c.Routes[route].To, c.Conveyed[i]) || ConstructParts.Def(c.Conveyed[i].Def) is not { } d)
-                    return -1;
+                if (!ConstructConveyor.PassesBed(c, c.Routes[route].To, c.Conveyed[i]) || ConstructParts.Def(c.Conveyed[i].Def) is not { } d
+                    || ConstructConveyor.PassesThrough(c, c.Routes[route].To, d))
+                    return -1; // (one that rolls on across the bed to the machine's out run isn't the crane's here)
                 ConstructConveyor.Size(d, out _, out _, out var along);
                 var leg = System.Numerics.Vector3.Distance(ConstructRoutes.Point(c, route, c.Routes[route].Count - 1, out _), ConstructRoutes.Point(c, route, c.Routes[route].Count, out _));
                 return c.Conveyed[i].At >= ConstructConveyor.Length(c, route) - leg - along * 0.5f - 0.02f ? i : -1;

@@ -181,7 +181,13 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   last tile, not by welds, so a Laser Cutter's bed half a tile off the run's grid is still met). The piece rides off the run onto the
   bed to its middle, where the former takes it as the blank of the order it fits (one blank a panel), a cutter as its blank; while a
   blank already lies on the bed, the next waits whole on the run at the bed's edge (`ConstructConveyor.BedHold`, either peer: `OnBed`
-  is on the wire). A run against the Core's back (its `-z` socket) still ends on its Piece in. `--machine-blocks NAME` prints how each
+  is on the wire). **Rolling through** (Sean, 2026-11-23: "parts rolling through from the extruder past the panel former, past the laser
+  cutter, if the steps aren't needed, all the way to the building station"): a piece made for another's order (a station's or a
+  terminal's, `PastBed` tags it; `PassesBed`) whose size fits the machine's out run (the run off its Out Tables, the link its own pieces
+  go on: `ConstructConveyor.PassesThrough`, either peer) rides onto the free bed and on at the out run's start, keeping its order, health
+  and paint (`PassOn`, put on after the step's loop); a full out run keeps it on the bed until there is room. Only a piece too big for
+  the out run still waits at the bed's edge for a crane. So a line of Extruder, Panel Former and Laser Cutter rolls a station's plain
+  plates to a pick pad at the cutter's run's end, past both machines, with no crane. A run against the Core's back (its `-z` socket) still ends on its Piece in. `--machine-blocks NAME` prints how each
   bed machine is fed. A Panel Former's Core may stand beside its bed's head corner, so the line runs straight from the run onto the bed:
   its Out Tables then close the bed's far end the other way (`MachineBlocks.FindOut` takes that edge when the side across from the Core
   has none). Tried headless (2026-11-21, before the one-blank Panel Former): a 0.5 x 0.1 m plate cut at 6 m off an Extruder, one table, two
@@ -1506,8 +1512,12 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   linked steel rather than ordering them; then the next skin. Design: docs/sandbox/design/hull-dress.md "The dress station";
   `--dress-skin` prints a skin's plan and builds it headless.
 - **Pick pads under its crane** (`ConstructStationPads.cs`, Sean 2026-11-21: "pick pads for pieces up to 14 t and 14 m long"). A Lay-down
-  Pad (or a Pad Tile pad) on the station's body whose deck lies within the bay's width, wholly past either end of the bay and within 20 m of
-  it, is a pick pad of the station itself (four at most, the nearest first). The runway is drawn on over it. Its fitting arms take a step's
+  Pad (or a Pad Tile pad) on the station's body whose deck lies wholly past one side of the bay within 20 m of it, and within the bay's
+  span along that side, is a pick pad of the station itself (four at most, the nearest first): past either end across (x), the runway
+  drawn on over it, or beside either long side (z; Sean 2026-11-23: "a pad attached to a build station" as its input), the bridges
+  drawn reaching out over it. A run ending on the pad's Piece in delivers there, and what lands counts for the station's order even on a
+  body with no lifters (`ConstructLifters.PadArrived`). A **Pad Tile Stand** (Factory/Plinths) under each tile lifts the pad's hold
+  floor to a Roller Tile's rollers (1 m), so a run rolls its pieces level onto it. Its fitting arms take a step's
   part off it as they take one from the hold, up to `storage.pieces.lift` (14,000 kg on the station): the way a part too long or wide for
   the 4.8 m hold (a 14 m stern on a Large Lay-down Pad) is built in without a Hall Crane. A large part is ordered onto it as onto a Loader
   Arm's pick pad (`ConstructLifters.PickPadFor`), what lies there counts as held and is claimed for the build, and an arm's carry off a pad

@@ -13,12 +13,13 @@ public sealed partial class FactoryShellParts
     public const double PlinthHigh = 1.0; // a Roller Tile's rollers' top: an Extruder on a plinth puts its Run-out Tables level with a run
 
     /// <summary>The plinth parts' names, in their Assembling rows' order.</summary>
-    public static readonly string[] PlinthNames = ["Extruder Plinth", "Run-out Table Stand"];
+    public static readonly string[] PlinthNames = ["Extruder Plinth", "Run-out Table Stand", "Pad Tile Stand"];
 
     private static IEnumerable<(string, Part)> Plinths()
     {
         yield return ("Plinths", ExtruderPlinth());
         yield return ("Plinths", TableStand());
+        yield return ("Plinths", PadStand());
     }
 
     /// <summary>
@@ -66,6 +67,41 @@ public sealed partial class FactoryShellParts
         p.Add(Box([-e + 2 * leg, 0, 3.95], [e - 2 * leg, 0.05, 4.05])); // a floor tie between the middle legs, the socket's seat
         p.Sock("bottom", [0, 0, 4.0], "-y");
         p.Stats(420, 900, 6);
+        p.Set(("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>
+    /// The Pad Tile Stand (Sean, 2026-11-23: a pick pad beside a Building Station raised to the rollers' height): a 2 m steel stool under one
+    /// Pad Tile, its top 0.77 m up so the pad's hold floor is level with a Roller Tile's rollers (1 m) and a run rolls its pieces straight on.
+    /// Stands weld side by side as their pad's tiles do; a tile welds on its top.
+    /// </summary>
+    private static Part PadStand()
+    {
+        const double h = PlinthHigh - 0.23, e = 0.985, leg = 0.09; // (0.23: the Pad Tile's hold floor over its foot, PieceRackParts.HoldLo)
+        var p = new Part("Pad Tile Stand", Small, "Factory",
+            "A steel stand under a Pad Tile: the pad's deck level with a Roller Tile run's rollers, so a run rolls its pieces straight onto it. Lay one under every tile of the pad.",
+            color: StandSteel, group: "Production");
+        const double f = 0.997, lx = e - leg - 0.04; // (f: the top frame's side, the stand's faces; lx: a leg's middle, its foot plate inside the frame's line)
+        foreach (var x in new[] { -lx, lx })
+            foreach (var z in new[] { -lx, lx })
+            {
+                p.Add(Box([x - leg, 0.046, z - leg], [x + leg, h - 0.116, z + leg])); // a leg (4 mm into its foot and the frame: no shared face)
+                p.Add(Box([x - leg - 0.04, 0, z - leg - 0.04], [x + leg + 0.04, 0.05, z + leg + 0.04], Rim)); // its foot plate
+            }
+        p.Add(Box([-f, h - 0.12, -f], [f, h - 0.004, f])); // the top frame the tile stands on (4 mm under its foot)
+        foreach (var x in new[] { -0.5, 0.0, 0.5 })
+            p.Add(Box([x - 0.04, h - 0.008, -e + 0.02], [x + 0.04, h, e - 0.02], Rim, detail: true)); // the bearers under the tile
+        foreach (var z in new[] { -lx, lx })
+            p.Add(Box([-lx + leg, 0.3, z - 0.03], [lx - leg, 0.38, z + 0.03])); // a brace between the legs
+        p.Add(Box([-f + 0.02, h - 0.1, -f - 0.004], [f - 0.02, h - 0.04, -f + 0.002], Hazard, detail: true)); // a hazard band on its -z face
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, h, 0], "+y");
+        p.Sock("+x", [1, h * 0.5, 0], "+x");
+        p.Sock("-x", [-1, h * 0.5, 0], "-x");
+        p.Sock("+z", [0, h * 0.5, 1], "+z");
+        p.Sock("-z", [0, h * 0.5, -1], "-z");
+        p.Stats(180, 900, 6);
         p.Set(("collider", "boxes"));
         return p;
     }

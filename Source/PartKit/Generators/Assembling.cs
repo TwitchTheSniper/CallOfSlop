@@ -1076,6 +1076,7 @@ public sealed class Assembling : IPartGenerator
         // (the Zero Day works' plinths, Sean 2026-11-22: an Extruder raised level with its run; FactoryShellParts.Plinths, after everything: AfterCloche)
         ("Factory/Plinths", "Extruder Plinth", Rec("Extruder Plinth", 40, m: [("concrete", 320), ("steel", 20)])),
         ("Factory/Plinths", "Run-out Table Stand", Rec("Run-out Table Stand", 20, m: [("steel", 60)])),
+        ("Factory/Plinths", "Pad Tile Stand", Rec("Pad Tile Stand", 15, m: [("steel", 40)])),
     ];
 
     /// <summary>

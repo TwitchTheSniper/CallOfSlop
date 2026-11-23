@@ -13,8 +13,9 @@ public sealed partial class Construct
 
 /// <summary>
 /// A Building Station's own pick pads (Sean 2026-11-21, the Zero Day works: "pick pads for pieces up to 14 t and 14 m long"). A
-/// Lay-down Pad (or a Pad Tile pad) on the station's body whose deck lies under its crane's runway, just past either end of the bay
-/// (across the bay's whole width, within <see cref="PadReach"/> of its end), is a pick pad of the station itself: its fitting arms
+/// Lay-down Pad (or a Pad Tile pad) on the station's body whose deck lies wholly past one side of the bay, within <see cref="PadReach"/>
+/// of it and within the bay's span along that side (past an end across, or beside a long side: Sean 2026-11-23, a pad attached to the
+/// station is an input for it), is a pick pad of the station itself: its fitting arms
 /// take a step's part off it as they take one from the hold, up to the station's <c>storage.pieces.lift</c> (14 t), so a part too
 /// long or wide for the hold (a 14 m stern) is built in without a Hall Crane. A large part is ordered onto it as onto a Loader Arm's
 /// pick pad (<see cref="ConstructLifters.PickPadFor"/>); what lies on it for the build counts as held and is claimed for it
@@ -95,9 +96,10 @@ public static partial class ConstructStation
                     int p = c.PieceRacks[b];
                     if (p >= c.PartCount || p == t || !PadInBay(c, t, p, out var mid, out var half) || Taken(c, t, p))
                         continue;
-                    // Under the runway: its deck within the bay's width, wholly past one end of the bay and within reach of it, at the bay's floor.
-                    var off = MathF.Abs(mid.X) - half.X - hx;
-                    if (MathF.Abs(mid.Z) + half.Z > hz + 0.05f || off < -0.05f || MathF.Abs(mid.X) + half.X > hx + PadReach || MathF.Abs(mid.Y) > 3f)
+                    // At the bay's floor, wholly past one side of the bay and within reach of it: past an end across (x) within the bay's
+                    // length, or past a long side (z) within its width (Sean, 2026-11-23: a pad attached to the station is its input, where
+                    // a roller run from the line sets a piece down). The runway or the bridges reach on over it (StationRender.cs).
+                    if (MathF.Abs(mid.Y) > 3f || SideOff(mid, half, hx, hz) is not { } off)
                         continue;
                     if (off < bestOff)
                         (best, bestOff) = (p, off);
@@ -114,6 +116,21 @@ public static partial class ConstructStation
             if (taken > 0)
                 Console.WriteLine($"[station] body {c.Id} part {t}: {taken} pick pad{(taken == 1 ? "" : "s")} under its crane");
         }
+    }
+
+    /// <summary>
+    /// How far past the bay's side a pad's deck (<paramref name="mid"/>, <paramref name="half"/>, bay frame) lies, when it lies wholly past
+    /// one side within <see cref="PadReach"/> and within the bay's span along that side; null otherwise.
+    /// </summary>
+    private static float? SideOff(Vector3 mid, Vector3 half, float hx, float hz)
+    {
+        var offX = MathF.Abs(mid.X) - half.X - hx;
+        if (MathF.Abs(mid.Z) + half.Z <= hz + 0.05f && offX >= -0.05f && MathF.Abs(mid.X) + half.X <= hx + PadReach)
+            return offX;
+        var offZ = MathF.Abs(mid.Z) - half.Z - hz;
+        if (MathF.Abs(mid.X) + half.X <= hx + 0.05f && offZ >= -0.05f && MathF.Abs(mid.Z) + half.Z <= hz + PadReach)
+            return offZ;
+        return null;
     }
 
     /// <summary>Is pad <paramref name="p"/> taken by any station already (one station's pad; the first station's when two could reach it)?</summary>
