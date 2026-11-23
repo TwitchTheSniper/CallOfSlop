@@ -1162,7 +1162,10 @@ public static class ConstructConveyor
         ref readonly var r = ref c.Routes[route];
         if (r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is not { OnBed: true }
             || !world.CraftOpen.Contains(c.Id) || ConstructPanelFormer.Takes(c, r.To, piece)
-            || r.Count != 2 || !PassesThrough(c, r.To, piece) && !ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host))
+            || r.Count != 2)
+            return;
+        var crane = ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
+        if (!crane && !PassesThrough(c, r.To, piece))
             return; // (no crane picks at the run's end and no out run to roll on to: it goes on onto the bed as before, never held there for ever)
         for (var t = 0; t < c.PartCount; t++)
         {
@@ -1173,6 +1176,8 @@ public static class ConstructConveyor
                 ref readonly var o = ref q.Items[k];
                 if (o.Asked > 0 && o.Where == maker && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
                 {
+                    if (!crane && !ThroughReaches(world, c, r.To, piece, t, 0))
+                        return; // (rolling on would leave it where nothing takes it to the order: onto the bed as before)
                     (rider.Dest, rider.Tag, rider.Flags) = (c.Parts[t].Store, o.Id, 0);
                     return;
                 }
@@ -1195,6 +1200,27 @@ public static class ConstructConveyor
             return false;
         Size(d, out var across, out var up, out var along);
         return Fits(across, up, c.Routes[o]) && c.Routes[o].FirstCut > c.Routes[o].Count && along <= Length(c, o) + 0.01f;
+    }
+
+    /// <summary>
+    /// Server: does rolling a piece of kind <paramref name="d"/> on across bed Core <paramref name="to"/>'s machine bring it to where order
+    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, or a run's
+    /// end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
+    /// </summary>
+    private static bool ThroughReaches(ConstructWorld world, Construct c, int to, ConstructPartDef d, int holder, int depth)
+    {
+        if (depth > 4 || !PassesThrough(c, to, d) || Out(c, to) is not (>= 0 and var o))
+            return false;
+        ref readonly var r = ref c.Routes[o];
+        if (r.To < c.PartCount)
+        {
+            var end = ConstructPads.Owner(c, r.To);
+            if (end == holder || c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, end))
+                return true;
+            if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
+                return ThroughReaches(world, c, r.To, d, holder, depth + 1);
+        }
+        return r.Count == 2 && RollerRuns.IsRun(c, o) && ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
     }
 
     private static readonly CRider[] _through = new CRider[4];

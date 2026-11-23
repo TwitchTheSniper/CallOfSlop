@@ -220,6 +220,8 @@ public sealed class PieceRackParts : IPartGenerator
         p.Sock("-x", [-e, 0.1, 0], "-x");
         p.Sock("+z", [0, 0.1, e], "+z");
         p.Sock("-z", [0, 0.1, -e], "-z");
+        foreach (var (f, x, z) in new[] { ("+x", e, 0.0), ("-x", -e, 0.0), ("+z", 0.0, e), ("-z", 0.0, -e) })
+            p.Sock(f + " deck", [x, R + 0.1, z], f); // (at the raised deck's edge: a Rack Side's foot, so its bars stand over the deck)
         p.Stats(160, 420, 4);
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(1.66, 1.0)), ("length", 1.66), ("count", 500),
             ("hold", Py.L(Py.L(-0.83, TileRise + HoldLo, -0.83), Py.L(0.83, TileRise + HoldLo + 1.0, 0.83))), ("open", true))))));

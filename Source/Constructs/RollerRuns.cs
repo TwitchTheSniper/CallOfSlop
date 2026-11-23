@@ -115,14 +115,14 @@ public static class RollerRuns
     }
 
     /// <summary>The lead rider of bed run <paramref name="route"/> when it rides past the bed and has come to its wait at the bed's edge, or -1.</summary>
-    public static int PassingLead(Construct c, int route)
+    public static int PassingLead(ConstructWorld world, Construct c, int route)
     {
         for (var i = 0; i < c.ConveyedCount; i++)
             if (c.Conveyed[i].Route == route)
             {
                 if (!ConstructConveyor.PassesBed(c, c.Routes[route].To, c.Conveyed[i]) || ConstructParts.Def(c.Conveyed[i].Def) is not { } d
-                    || ConstructConveyor.PassesThrough(c, c.Routes[route].To, d))
-                    return -1; // (one that rolls on across the bed to the machine's out run isn't the crane's here)
+                    || ConstructConveyor.PassesThrough(c, c.Routes[route].To, d) && world.StoreOf(c, c.Routes[route].To) is not { OnBed: true })
+                    return -1; // (one that rolls on across a free bed to the machine's out run isn't the crane's here; held by a blank on the bed, the crane takes it past)
                 ConstructConveyor.Size(d, out _, out _, out var along);
                 var leg = System.Numerics.Vector3.Distance(ConstructRoutes.Point(c, route, c.Routes[route].Count - 1, out _), ConstructRoutes.Point(c, route, c.Routes[route].Count, out _));
                 return c.Conveyed[i].At >= ConstructConveyor.Length(c, route) - leg - along * 0.5f - 0.02f ? i : -1;
