@@ -222,7 +222,14 @@ public static partial class SelfTest
             sumWall += ms;
             maxSim = Math.Max(maxSim, ConstructPhysics.LastSimulated);
         }
-        var bytes = tickBytes; // (each tick's own: the note below allocates only on a tick that did)
+        // (each tick's own: the note below allocates only on a tick that did; a one-off seen in this window, 2026-11-23: 2.5-6 KB in
+        // one tick on main's Linux shard 2/3 twice while the same tree passed on its branch and alone, is measured again as the least
+        // of repeat rounds of the same ticks, RecheckAllocBytes: a real per-tick allocation shows in every round)
+        var bytes = RecheckAllocBytes(tickBytes, () =>
+        {
+            for (var t = 0; t < ticks; t++)
+                w.Step(q, World.TickDt);
+        });
         if (allocTicks.Length > 0)
             Line($"scale tick: allocations:{allocTicks}");
         ScaleNote($"scale tick: {w.Bodies.Count} bodies, {w.TotalParts} parts, {awake} awake; up to {maxSim} simulated a tick; "
