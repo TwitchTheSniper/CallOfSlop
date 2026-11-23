@@ -227,8 +227,8 @@ public static class ConstructLifterPush
     private static bool Pose(Construct c, CLift l, LifterDef ld, float age, out Posed b)
     {
         b = default;
-        if (ConstructParts.Get(l.Def) is not { } d)
-            return false;
+        if (ConstructParts.Get(l.Def) is not { } d || ConstructLifters.Fetching(l, age))
+            return false; // (while the empty hand fetches it, the piece is already out of its store: it pushes nobody until it is lifted)
         Freeform.PartWorld(c, l.Part, out var lp, out var lr);
         var origin = ConstructLifters.Pose(ld, l, age, out var turn);
         var q = Quaternion.Normalize(lr * turn);
