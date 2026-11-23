@@ -1982,7 +1982,12 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   generator keeps the Keel plain. A lifter judges its reach to a station step from the step's middle (`StationJob.LiftPlan.Centre`), as
   `WristLift` is measured over the middle: a hull skin's origin is on the hull's axis, metres under its plate, and the crane refused a
   10 m wall skin as "below its hook" while it sat on the pick pad. `--oven-order "Zero Day Upper Fore Hull Port 3"`: formed, fitted,
-  dressed and baked in 324 s.
+  dressed and baked in 324 s. The generator splits a skin whose girth (its blank's length) passes line C's one 8 m Run-out Table
+  (`TorpedoFrigateParts.MaxSkinGirth`): the Stern's half profiles (18.8 m) became three skins a side and band, 12 in all, baked in
+  2433 s. A kit too tall or long for its station's bay is laid at the lowest of the 24 turns that fits (`ConstructStation.LayTurn`;
+  kits bake at any turn), and line C's store has four masts a corner (an 8 m stack: the Stern's side skins stand 6.4 m). The listed
+  kits are dressed at a Sandbox match's start (`BakeKits.Warm`, about 200 ms), not on the tick of the first bake or order, and a listed
+  kit that can't be made leaves its part to the Assembler (`BakeKits.Has`).
 
 ## Production Showcase
 
