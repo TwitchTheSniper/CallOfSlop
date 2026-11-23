@@ -46,6 +46,7 @@ public static partial class ConstructRender
         public int[] SlotPart = []; // slot k's member (its place in Members: an edit can renumber the parts) and box
         public byte[] SlotBox = [];
         public Renderer.MergedMesh? Dorm; // its idle machine blocks' work boxes (ConstructRenderBatch: DormAfter)
+        public bool Ever; // built at least once (before that, Centre and Radius are a rough sphere round its parts' places: WaitUnbuilt)
         public bool DormDirty, DormWake;
         public byte[] SlotMask = []; // slot k's faces covered by another box of the chunk (bit 2 * axis + side, side 1 the + face: HideCovered)
         public bool Dirty = true, LookDue = true;
@@ -88,6 +89,7 @@ public static partial class ConstructRender
         public Renderer.MergedMesh Mesh;
         public Matrix4x4 Frame;
         public int Detail; // the smallest size class drawn (the far detail level)
+        public float Away; // its distance from the eye (FlushMerged draws nearest first)
         public bool Test; // drawn only where last frame's occlusion query saw its box (ConstructRenderOcclusion.cs)
         public bool Use; // the eye has hardly moved against this chunk since that query: its result still speaks for it
         public Vector3 Min, Max; // the query's box, in the frame
@@ -724,6 +726,7 @@ public static partial class ConstructRender
     /// </summary>
     private static void BuildChunk(Renderer gfx, Construct c, MergeChunk ch)
     {
+        ch.Ever = true;
         var n = ch.Boxes;
         Grow(ref _mergeXform, n * Renderer.MergeXformFloats);
         Grow(ref _slotKey, n);
@@ -907,6 +910,8 @@ public static partial class ConstructRender
             {
                 // Waiting its turn to be rebuilt: drawn part by part, as it was before merged meshes.
                 LastMergedWaiting++;
+                if (cull && !ch.Ever && WaitUnbuilt(c, ch, body, alpha, origin))
+                    continue;
                 Grow(ref _partWaiting, c.PartCount);
                 for (var m = 0; m < ch.MemberCount; m++)
                     if (ch.Members[m] < c.PartCount)
@@ -939,6 +944,7 @@ public static partial class ConstructRender
             var detail = LodClasses - 1;
             var test = false;
             var use = false;
+            var awayAt = 0f;
             if (cull)
             {
                 var at = Vector3.Transform(ch.Centre, frame) + origin;
@@ -951,6 +957,7 @@ public static partial class ConstructRender
                 if (outside)
                     continue;
                 var away = Vector3.Distance(at, _lodEye) - ch.Radius;
+                awayAt = away;
                 detail = DetailAt(away);
                 test = OcclusionWanted(ch, away); // (ConstructRenderOcclusion.cs: big enough to be worth a query, and the eye not by it)
                 if (test)
@@ -958,12 +965,12 @@ public static partial class ConstructRender
             }
             if (_mergeQueued == _mergeQueue.Length)
                 Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2); // (grows to the busiest frame once)
-            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max, Eye = ch.EyeAt };
+            _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = ch.Gl, Frame = frame, Detail = detail, Test = test, Use = use, Min = ch.Min, Max = ch.Max, Eye = ch.EyeAt, Away = awayAt };
             if (ch.Dorm is { Slots: > 0 } dorm)
             {
                 if (_mergeQueued == _mergeQueue.Length)
                     Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2);
-                _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = dorm, Frame = frame, Detail = LodClasses - 1 }; // (its idle machine blocks' work boxes: not tested, its own boxes' test speaks for the chunk)
+                _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = dorm, Frame = frame, Detail = LodClasses - 1, Away = awayAt }; // (its idle machine blocks' work boxes: not tested, its own boxes' test speaks for the chunk)
             }
             LastMergedChunks++;
             var drawnSlots = ch.Gl.SlotsUpTo(detail);
@@ -1176,7 +1183,7 @@ public static partial class ConstructRender
         _dormBudget = DormBudget;
         _mergeQueued = 0;
         LastMergedChunks = LastMergedBuilt = LastMergedWaiting = 0;
-        LastLodDropped = LastWalkedCulled = LastWalkedHidden = LastDormant = 0;
+        LastLodDropped = LastWalkedCulled = LastWalkedHidden = LastDormant = LastMergedUnbuiltWaiting = 0;
         _lodEye = gfx.CameraPosition;
         _lodPixelsAt = MathF.Abs(gfx.Proj.M22) * gfx.ViewportHeight * 0.5f;
         OcclusionBegin(gfx);
@@ -1199,6 +1206,47 @@ public static partial class ConstructRender
 
     /// <summary>The smallest size class the walked part being drawn draws (the far detail level, as merged chunks have it; the last class: all).</summary>
     private static int _walkDetail = LodClasses - 1;
+
+    /// <summary>
+    /// A chunk never built yet (a body just loaded or come into view: every chunk of the Zero Day works at once, 2026-11-23, a
+    /// 95 ms first frame as 250,000 boxes were walked part by part while the budget built four chunks) is drawn walked only when
+    /// it is on screen and within <see cref="WaitNear"/>; past that it waits undrawn for its turn, a few frames at most
+    /// (<see cref="MergeBudgetBoxes"/> a frame). True when it waits undrawn.
+    /// </summary>
+    private static bool WaitUnbuilt(Construct c, MergeChunk ch, in Matrix4x4 body, float alpha, Vector3 origin)
+    {
+        if (ch.Radius <= 0)
+        {
+            var mn = new Vector3(float.MaxValue);
+            var mx = new Vector3(float.MinValue);
+            for (var m = 0; m < ch.MemberCount; m++)
+                if (ch.Members[m] < c.PartCount)
+                {
+                    mn = Vector3.Min(mn, c.Parts[ch.Members[m]].Pos);
+                    mx = Vector3.Max(mx, c.Parts[ch.Members[m]].Pos);
+                }
+            if (mn.X > mx.X)
+                return true;
+            (ch.Centre, ch.Radius) = ((mn + mx) * 0.5f, (mx - mn).Length() * 0.5f + WaitPad); // (rough: parts' places, padded by a big part's reach)
+        }
+        var frame = ch.Seg == 0 ? body : SegMatrix(c, ch.Seg, alpha) * body;
+        var at = Vector3.Transform(ch.Centre, frame) + origin;
+        for (var q = 0; q < 6; q++)
+        {
+            var pl = _planes[q];
+            if (pl.X * at.X + pl.Y * at.Y + pl.Z * at.Z + pl.W < -ch.Radius)
+                return true;
+        }
+        if (Vector3.Distance(at, _lodEye) - ch.Radius <= WaitNear)
+            return false;
+        LastMergedUnbuiltWaiting++;
+        return true;
+    }
+
+    public const float WaitNear = 24f, WaitPad = 6f;
+
+    /// <summary>Chunks not built yet left undrawn last frame (far or off screen, waiting their first build: WaitUnbuilt).</summary>
+    public static int LastMergedUnbuiltWaiting { get; private set; }
 
     // ---- Idle machine blocks (2026-11-23: on the Zero Day works their work boxes, walked one block at a time, were 4 ms of a 5 ms
     // constructs pass, most of them standing still) ----------------------------------------------------------------------------
@@ -1393,6 +1441,9 @@ public static partial class ConstructRender
     }
 
     /// <summary>The chunks queued this frame, in one run of the merged shader (opaque, so their order with the box batch doesn't matter).</summary>
+    private static float[] _mergeOrderKey = [];
+    private static int[] _mergeOrder = [];
+
     private static void FlushMerged(Renderer gfx)
     {
         if (_mergeQueued == 0)
@@ -1400,9 +1451,15 @@ public static partial class ConstructRender
         gfx.BeginMerged();
         var rel = gfx.Relative;
         gfx.Relative = true; // (the frames are relative to the render origin already)
+        // Nearest first (2026-11-23): the depth test then throws away what nearer chunks hide before its costly lighting runs.
+        Grow(ref _mergeOrderKey, _mergeQueued);
+        Grow(ref _mergeOrder, _mergeQueued);
         for (var k = 0; k < _mergeQueued; k++)
+            (_mergeOrderKey[k], _mergeOrder[k]) = (_mergeQueue[k].Away, k);
+        Array.Sort(_mergeOrderKey, _mergeOrder, 0, _mergeQueued);
+        for (var o = 0; o < _mergeQueued; o++)
         {
-            ref var q = ref _mergeQueue[k];
+            ref var q = ref _mergeQueue[_mergeOrder[o]];
             gfx.DrawMerged(q.Mesh, in q.Frame, q.Detail, q.Test && q.Use && _occlusionUse);
         }
         gfx.Relative = rel;
