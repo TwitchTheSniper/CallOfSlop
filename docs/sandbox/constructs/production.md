@@ -1857,6 +1857,15 @@ station builds Storage Corner from a stock pad 40 m away, through an arm, a run,
 station's own conveyor fetch from a store doesn't cross lifters (the store's pieces go by hand-off instead), and the logistics map
 has no edge for a run's start or end (a Router doesn't route by them).
 
+**A refused put isn't tried again at once** (Sean, 2026-11-23: a Zero Day works Hall Crane carried a piece back and forth for good).
+A pad or rack is a taker only while it has room for the piece (`RackCheck`), not only while it wants one. When a put point still
+refuses the piece at the end of the carry, the lifter remembers that point and the one before it (`CLift.Refused`, `Refused2`) and
+passes them over for 30 s (`ConstructLifters.RefuseHold`) in every choice of where a piece goes (a want, a rider's destination, a
+hand-off, storage): the piece goes to another taker or waits in the hand, stuck, and a put that goes in clears the memory. A lifter
+never hands a piece onto a run whose end it picks from itself (`PicksEndOf`): it would only come back to its own hand.
+`--handoff-check --pad-full` fills the pick pad and a second one beside the last arm with parts the build doesn't use and counts
+the carries (85 in 2 minutes before, 6 now).
+
 **Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
 any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
