@@ -106,7 +106,7 @@ public sealed class HallShowcase : IPartGenerator
                     var t = pad[i, j] = Stand("Pad Tile", V(11 + 2 * i, FloorY, -9 - 2 * j), Up, tiles[5 + i, 4 + j], "bottom");
                     Paint(t, Hazard);
                     if (i is 0 or 2 && j is 0 or 3)
-                        Paint(Stand("Mast Block", V(11 + 2 * i, FloorY + 0.2f, -9 - 2 * j), Up, t, "bottom"), Mast);
+                        Paint(Stand("Mast Block", V(11 + 2 * i, FloorY + 0.2f + (float)PieceRackParts.TileRise, -9 - 2 * j), Up, t, "bottom"), Mast); // (on the raised deck)
                     if (i == 2)
                         Paint(Stand("Rack Side", V(16, FloorY + 0.1f, -9 - 2 * j), Up, t, "in"), Hazard);
                 }

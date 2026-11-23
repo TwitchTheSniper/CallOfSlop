@@ -120,7 +120,10 @@ public sealed class PieceRackParts : IPartGenerator
     // ---- Pad Tiles (design page drawing 23: Piece Racks fold into Pad Tiles) -------------------------------------------------
 
     private const string PadsOut = "Constructs/Parts/Pads";
-    private const double Deck = 0.2, KerbIn = 0.1, HoldLo = 0.23, PortY = 0.14; // the tile's height, its kerb's width, the hold's floor over its foot
+    private const double Deck = 0.2, KerbIn = 0.1, HoldLo = 0.23, PortY = 0.14; // the deck's depth, its kerb's width, the hold's floor over the deck's foot
+    // How far the deck stands up on its skirt (Sean, 2026-11-23: the pads raised to the rollers' height): the hold's floor is level with a
+    // Roller Tile's rollers (FactoryShellParts.PlinthHigh, 1 m), so a run rolls its pieces straight onto the pad.
+    public const double TileRise = 1.0 - HoldLo;
 
     private static PyDict? Seam(PyDict? box, params string[] faces)
     {
@@ -140,7 +143,8 @@ public sealed class PieceRackParts : IPartGenerator
     }
 
     /// <summary>
-    /// The Pad Tile (drawing 23; ConstructPads.cs): a 2 m steel deck, 20 cm high, no Core. Tiles welded side by side are one pad: the
+    /// The Pad Tile (drawing 23; ConstructPads.cs): a 2 m steel deck on a skirt, its hold's floor 1 m up (level with a Roller Tile run's rollers,
+    /// Sean 2026-11-23), no Core. Tiles welded side by side are one pad: the
     /// largest rectangle of them holding the lowest-index tile (at most 16 x 16 and 128 tiles) is one store, 500 pieces a tile, its
     /// hold the whole rectangle. Its stack is 1 m with no mast and 2 m more for each Mast Block of the tallest column stood on it.
     /// Four tread-plate panels on a dark cross of joists; a hazard kerb round each edge and a conveyor port on three of them (the
@@ -150,7 +154,7 @@ public sealed class PieceRackParts : IPartGenerator
     private static Part Tile()
     {
         var p = new Part("Pad Tile", Small, "Extrusion",
-            "A 2 m deck where pieces wait. Weld tiles side by side into one pad (up to 16 x 16 tiles): one store of 500 pieces a tile, stacked 1 m high, 2 m more for each Mast Block on it. Conveyors end at any open edge; Loader Arms and cranes pick and put; F takes the piece you look at.",
+            "A 2 m deck where pieces wait, its top level with a Roller Tile run's rollers so a run rolls pieces straight on. Weld tiles side by side into one pad (up to 16 x 16 tiles): one store of 500 pieces a tile, stacked 1 m high, 2 m more for each Mast Block on it. Conveyors end at any open edge; Loader Arms and cranes pick and put; F takes the piece you look at.",
             role: "storage", tool: "welder", color: Frame, group: "Production");
         const double e = 1.0, i = 0.997;
         p.Add(Box([-e, 0, -e], [e, Deck, e], hidden: true));
@@ -195,7 +199,22 @@ public sealed class PieceRackParts : IPartGenerator
         }
         // A maker's plate on the -z face of the frame.
         p.Add(Seam(MachineLook.D([0.4, 0.04, -0.996], [0.7, 0.12, -0.99], MachineLook.Steel, "steel"), "-z"));
-        p.Sock("top", [0, Deck, 0], "+y");
+        // The deck stands on its skirt: everything so far goes up by TileRise, and a dark skirt with a hazard band at its foot carries it
+        // (each tile its own: no seams, its sides 5 mm inside the deck's, its top 4 mm into the deck's frame).
+        const double R = TileRise, sk = 0.985;
+        foreach (var b in p.Boxes)
+            foreach (var key in new[] { "min", "max" })
+                if (b[key] is List<object?> v)
+                    v[1] = Math.Round(Py.D(v[1]) + R, 4);
+        p.Add(MachineLook.D([-sk, 0, -sk], [sk, R + 0.01, sk], Bar));
+        foreach (var (n, sg) in new[] { (2, -1), (2, 1), (0, -1), (0, 1) })
+        {
+            double[] mn = n == 2 ? [-sk + 0.02, 0.1, sg > 0 ? sk - 0.002 : -sk - 0.006] : [sg > 0 ? sk - 0.002 : -sk - 0.006, 0.1, -sk + 0.02];
+            double[] mx = n == 2 ? [sk - 0.02, 0.18, sg > 0 ? sk + 0.006 : -sk + 0.002] : [sg > 0 ? sk + 0.006 : -sk + 0.002, 0.18, sk - 0.02];
+            p.Add(MachineLook.D(mn, mx, MachineLook.Accent, "hazard paint")); // (a hazard band round its foot)
+        }
+        p.Add(Box([-e, 0, -e], [e, R + 0.004, e], hidden: true)); // (solid down to the floor)
+        p.Sock("top", [0, R + Deck, 0], "+y"); // (the sides' sockets stay at the foot: a tile welds to its neighbour's or a Roller Tile's low side)
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [e, 0.1, 0], "+x");
         p.Sock("-x", [-e, 0.1, 0], "-x");
@@ -203,12 +222,13 @@ public sealed class PieceRackParts : IPartGenerator
         p.Sock("-z", [0, 0.1, -e], "-z");
         p.Stats(160, 420, 4);
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(1.66, 1.0)), ("length", 1.66), ("count", 500),
-            ("hold", Py.L(Py.L(-0.83, HoldLo, -0.83), Py.L(0.83, HoldLo + 1.0, 0.83))), ("open", true))))));
+            ("hold", Py.L(Py.L(-0.83, TileRise + HoldLo, -0.83), Py.L(0.83, TileRise + HoldLo + 1.0, 0.83))), ("open", true))))));
         p.Set(("ports", Py.L(
-            Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, PortY, -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),
-            Kw(("name", "Piece in -x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(-e, PortY, 0)), ("face", "-x"), ("opening", Py.L(2.0, 2.0))),
-            Kw(("name", "Piece in +x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(e, PortY, 0)), ("face", "+x"), ("opening", Py.L(2.0, 2.0))))));
-        p.Set(("machineBlock", Kw(("family", "pad"), ("role", "block"), ("cell", 2), ("seed", true), ("origin", Py.L(0, -0.8, 0)))), ("centreSockets", false), ("collider", "boxes"));
+            Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, Py.Round(TileRise + PortY, 3), -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),
+            Kw(("name", "Piece in -x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(-e, Py.Round(TileRise + PortY, 3), 0)), ("face", "-x"), ("opening", Py.L(2.0, 2.0))),
+            Kw(("name", "Piece in +x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(e, Py.Round(TileRise + PortY, 3), 0)), ("face", "+x"), ("opening", Py.L(2.0, 2.0))))));
+        // (the cell origin: a tile's middle rounds to cell 0 and a Mast Block stood on its top to cell 1, as before the rise)
+        p.Set(("machineBlock", Kw(("family", "pad"), ("role", "block"), ("cell", 2), ("seed", true), ("origin", Py.L(0, Py.Round(-0.8 + TileRise * 0.75, 3), 0)))), ("centreSockets", false), ("collider", "boxes"));
         return p;
     }
 

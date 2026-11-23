@@ -1516,8 +1516,9 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   span along that side, is a pick pad of the station itself (four at most, the nearest first): past either end across (x), the runway
   drawn on over it, or beside either long side (z; Sean 2026-11-23: "a pad attached to a build station" as its input), the bridges
   drawn reaching out over it. A run ending on the pad's Piece in delivers there, and what lands counts for the station's order even on a
-  body with no lifters (`ConstructLifters.PadArrived`). A **Pad Tile Stand** (Factory/Plinths) under each tile lifts the pad's hold
-  floor to a Roller Tile's rollers (1 m), so a run rolls its pieces level onto it. Its fitting arms take a step's
+  body with no lifters (`ConstructLifters.PadArrived`). A Pad Tile's deck stands on a skirt with its hold floor
+  level with a Roller Tile's rollers (1 m, `PieceRackParts.TileRise`; Sean 2026-11-23), so a run rolls its pieces level onto it; its side
+  sockets stay at its foot, its top (masts, Rack Sides) on the raised deck. Its fitting arms take a step's
   part off it as they take one from the hold, up to `storage.pieces.lift` (14,000 kg on the station): the way a part too long or wide for
   the 4.8 m hold (a 14 m stern on a Large Lay-down Pad) is built in without a Hall Crane. A large part is ordered onto it as onto a Loader
   Arm's pick pad (`ConstructLifters.PickPadFor`), what lies there counts as held and is claimed for the build, and an arm's carry off a pad
@@ -2019,7 +2020,8 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   origin against the kit frame's (its skins aren't the part box for box).
 - **On the works.** Line C's console wires the station's orders to its Panel Former as well as its Sheet Extruder, so the station's skin
   orders go to the former. A formed skin meant for a station rides past the Laser Cutter as a deck's plate rides past the former: it
-  waits whole at the cutter bed's edge and the bay crane lifts it there (`ConstructConveyor.PastBed`; `RollerRuns.BedRunAt` also takes a
+  rolls on across the cutter's bed to its pick run's end, where the bay crane lifts it (2026-11-23, rolling through; before, it
+  waited at the cutter bed's edge: `ConstructConveyor.PastBed`; `RollerRuns.BedRunAt` also takes a
   run onto a Lay-down Pad, where a skin too long for the pad or not its way waits at the pad's edge). Line C's store,
   the kit station's and the yard station's pick pad, is 18 x 12 m turned East (its hold 17.7 m long across the bay, a deck 17.25 m) with
   two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s

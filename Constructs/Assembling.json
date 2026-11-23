@@ -2790,7 +2790,6 @@
     {"output": "Console Arc Desk R0.7 120", "materials": {"steel": 3, "concrete": 1}, "seconds": 2.4},
     {"output": "Console Arc Desk R0.8 180", "materials": {"steel": 4, "concrete": 1}, "seconds": 2.6},
     {"output": "Extruder Plinth", "materials": {"concrete": 320, "steel": 20}, "seconds": 40},
-    {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20},
-    {"output": "Pad Tile Stand", "materials": {"steel": 40}, "seconds": 15}
+    {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20}
   ]
 }
