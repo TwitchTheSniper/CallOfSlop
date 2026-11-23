@@ -829,8 +829,8 @@ public static partial class ConstructRender
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
-            drawn += DrawShellDie(gfx, in shellPose, dieOpen, shellStore != null ? ConstructPress.DieLift(shellStore, shellPose.Gap) : 0.1f,
-                ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null, seg * body, shade, opacity);
+            drawn += DrawShellDie(gfx, in shellPose, dieOpen, ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null,
+                seg * body, shade, opacity);
         else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && !p.Broken && PressBed(c, i, d, pressStore, working, out var onBed, out var bedAt))
             drawn += DrawBlank(gfx, onBed, 0, bedAt, in p, seg * body, shade, opacity); // (the blank on the bed under the open dies, then the part they made)
         return drawn;
@@ -875,52 +875,67 @@ public static partial class ConstructRender
     }
 
     private static readonly Vector3 DieSteel = new(0.46f, 0.48f, 0.51f), DieEdge = new(0.82f, 0.16f, 0.12f);
-    private static readonly ushort DieShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = 0, Angle = 90, Dir = 225, Segments = 8 });
+    private static readonly ushort DieShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = 0, Angle = 90, Dir = 45, Segments = 8 });
+    private const float DieLinerInner = 0.95f; // (a die's liner: a ring the same quarter, its inner radius this share of its outer, hidden inside the die)
+    private static readonly ushort DieLinerShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = DieLinerInner, Angle = 90, Dir = 45, Segments = 8 });
 
     /// <summary>
-    /// A Press housing's round die (Sean's sketch, 2026-11-23): a solid quarter round from the bed's centre line to the housing's inner face,
-    /// its flat working face down, standing <paramref name="lift"/> over the bed (room for the piece pressed: ConstructPress.DieLift), turned
-    /// <paramref name="open"/> of the way about its hinge (that face's outer edge) up and out, into its housing. The two sides' dies meet
-    /// over the bed as a half round; a red strip marks the leading edge. The fitted die (<paramref name="die"/>) covers the working face,
-    /// its look stretched to the face, so a bigger press shows a bigger die. Drawn only: the housing's cell is the collider.
+    /// A Press housing's round die (Sean, 2026-11-23): a solid quarter round turning about its own centre, the top of the housing's inner
+    /// edge, its radius over the bed. Shut, it reaches down that face to the bed and in to the bed's centre line, where the other side's
+    /// point meets it, its curved face down over the blank (an arch); turned <paramref name="open"/> of the way, it rolls down and out
+    /// into its housing. The fitted die (<paramref name="die"/>) lines the curved face in its colours, so a bigger press shows a bigger
+    /// die; a red strip marks the point. Drawn only: the housing's cell is the collider.
     /// </summary>
-    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, float lift, ConstructPartDef? die, in Matrix4x4 onBody, float shade, float opacity)
+    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, ConstructPartDef? die, in Matrix4x4 onBody, float shade, float opacity)
     {
-        var r = s.Gap - 0.008f; // (the two dies' flat faces 6 mm apart when shut; open, 5 mm proud of the housing's face)
-        var apex = s.Centre + s.Out * 0.003f + s.Up * lift;
-        var hinge = apex + s.Out * r;
+        var r = s.Gap - 0.008f; // (its point 3 mm short of the centre line; its foot 4 mm over the bed; open, within its housing)
+        var centre = s.Hinge - s.Out * 0.005f + s.Up * (r + 0.004f); // (5 mm in front of the housing's face: its flat side never lies on it)
         var turn = open <= 0 ? Matrix4x4.Identity
-            : Matrix4x4.CreateTranslation(-hinge) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(hinge);
+            : Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), -open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(centre);
         var m = turn * onBody;
-        var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's; the stiffeners on the housing's top stop 12 mm under the die's flat face)
-        gfx.Draw(Oriented(s, apex + (s.Up + s.Out) * (r * 0.5f), len, r, r) * m, DieSteel * shade, opacity, mode: 0, shape: DieShape);
-        gfx.Draw(Oriented(s, apex + s.Up * (r - 0.03f) + s.Out * 0.029f, len - 0.02f, 0.06f, 0.05f) * m, DieEdge * shade, opacity); // (its leading edge, at the top of the centre line, 4 mm proud of its flat face)
-        var drawn = 2;
+        var along = Vector3.Dot(Vector3.Cross(s.Along, s.Up), s.Out) < 0 ? -s.Along : s.Along; // (handed: a mirrored model turns its faces inside out)
+        var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's)
+        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len, r - (die != null ? 0.045f : 0)) * m, DieSteel * shade, opacity, mode: 0, shape: DieShape); // (with a die, its liner makes up the radius)
+        gfx.Draw(Matrix4x4.CreateScale(len - 0.02f, 0.05f, 0.06f) * Basis(along, s.Up, s.Out, centre - s.Out * (r - 0.03f) + s.Up * 0.029f) * m, DieEdge * shade, opacity); // (its point: on its flat top, 4 mm proud)
         if (die == null)
-            return drawn;
-        // The die's look on the working face: its x along the bed, its z out to the hinge, its up down off the face (into the room
-        // over the bed), its foot 3 mm under the face. Handed so the turn keeps its faces' winding.
-        Vector3 lo = die.BoundsMin, hi = die.BoundsMax, span = Vector3.Max(hi - lo, new Vector3(0.01f));
-        var sx = len * 0.96f / span.X;
-        var sz = r * 0.94f / span.Z;
-        var sy = MathF.Min(MathF.Min(sx, sz), ConstructPress.DieRelief(s.Gap) / span.Y);
-        var down = -s.Up;
-        var along = Vector3.Dot(Vector3.Cross(s.Along, down), s.Out) < 0 ? -s.Along : s.Along;
-        var middle = apex + s.Out * (r * 0.5f) - s.Up * 0.003f;
-        var frame = new Matrix4x4(
-            along.X * sx, along.Y * sx, along.Z * sx, 0,
-            down.X * sy, down.Y * sy, down.Z * sy, 0,
-            s.Out.X * sz, s.Out.Y * sz, s.Out.Z * sz, 0,
-            middle.X, middle.Y, middle.Z, 1);
-        var onFace = Matrix4x4.CreateTranslation(-new Vector3((lo.X + hi.X) * 0.5f, lo.Y, (lo.Z + hi.Z) * 0.5f)) * frame * m;
+            return 2;
+        // The die's colours on the curved face: its biggest box's as a liner the whole length, the colour least like it (its insert) as
+        // a band down the middle, standing a little proud of the liner.
+        Vector3 baseColour = DieSteel, insert = DieSteel;
+        float most = -1, far = -1;
         foreach (ref readonly var box in die.Boxes.AsSpan())
         {
             if (box.Hidden || box.Bare)
                 continue;
-            gfx.Draw(box.Model(0, box.Center) * onFace, box.Color * shade, opacity, mode: 0, shape: box.Shape);
-            drawn++;
+            var v = box.Half.X * box.Half.Y * box.Half.Z;
+            if (v > most)
+                (most, baseColour) = (v, box.Color);
         }
-        return drawn;
+        foreach (ref readonly var box in die.Boxes.AsSpan())
+        {
+            if (box.Hidden || box.Bare)
+                continue;
+            var d = Vector3.DistanceSquared(box.Color, baseColour);
+            if (d > far)
+                (far, insert) = (d, box.Color);
+        }
+        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len - 0.01f, r - 0.015f) * m, baseColour * shade, opacity, mode: 0, shape: DieLinerShape);
+        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len * 0.7f, r) * m, insert * shade, opacity, mode: 0, shape: DieLinerShape);
+        return 4;
+    }
+
+    /// <summary>A frame with these axes (unit length) and origin.</summary>
+    private static Matrix4x4 Basis(Vector3 x, Vector3 y, Vector3 z, Vector3 at) => new(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, at.X, at.Y, at.Z, 1);
+
+    /// <summary>A quarter round's model (DieShape's arc: down and in from its centre), <paramref name="radius"/> about <paramref name="centre"/>.</summary>
+    private static Matrix4x4 Quarter(Vector3 along, Vector3 up, Vector3 @out, Vector3 centre, float len, float radius)
+    {
+        var at = centre - (up + @out) * (radius * 0.5f);
+        return new Matrix4x4(
+            along.X * len, along.Y * len, along.Z * len, 0,
+            up.X * radius, up.Y * radius, up.Z * radius, 0,
+            @out.X * radius, @out.Y * radius, @out.Z * radius, 0,
+            at.X, at.Y, at.Z, 1);
     }
 
     /// <summary>What a Press shows on its bed now (<see cref="ConstructPress.DieOpen"/> of its last segment, the last to shut and open) and where, in the Core's own frame.</summary>
@@ -940,13 +955,6 @@ public static partial class ConstructRender
         at = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, o.Y + 0.5f * d.BlockCell + 0.006f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell) - foot;
         return true;
     }
-
-    /// <summary>A unit box's model: <paramref name="along"/> by <paramref name="up"/> by <paramref name="out"/> metres on a shell's axes, centred at <paramref name="at"/>.</summary>
-    private static Matrix4x4 Oriented(in ConstructPress.ShellPose s, Vector3 at, float along, float up, float @out) => new(
-        s.Along.X * along, s.Along.Y * along, s.Along.Z * along, 0,
-        s.Up.X * up, s.Up.Y * up, s.Up.Z * up, 0,
-        s.Out.X * @out, s.Out.Y * @out, s.Out.Z * @out, 0,
-        at.X, at.Y, at.Z, 1);
 
     private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
     private static readonly Vector3 RouterOrder = new(1f, 0.5f, 0.1f), RouterStore = new(0.95f, 0.95f, 0.9f), RouterStuck = new(1f, 0.12f, 0.08f);

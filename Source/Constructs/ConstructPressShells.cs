@@ -5,8 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// The Press as two round dies (Sean, 2026-11-23, replacing the swinging walls and their flat roof of drawing 17b). The wall blocks
 /// stacked on the bed's two long edges (its first and last rows along the Core's z) are fixed housings. Each wall column holds one
-/// segment of a round die: a solid quarter-round, hinged along the foot of the housing's inner face. Open, it stands stowed in its
-/// housing; closing, it rolls over the bed until the two dies meet over the bed's centre line as one half-round, over the blank. Each
+/// segment of a round die: a solid quarter-round turning about its own centre, the top of the housing's inner edge (its radius, half
+/// the bed's width, over the bed). Open, it is turned down and out into its housing; closing, it rolls out over the bed until the two
+/// dies' points meet over the bed's centre line, their curved faces (the die's look on them) over the blank like an arch (Sean). Each
 /// stroke: the blank lies on the bed, the dies close on it in a quick ripple down the bed (one segment a cell along the flow, the Core's
 /// x) and hold while it presses; the part is made at the stroke's end and the dies open on it. Between strokes the dies stand open.
 /// <list type="bullet">
@@ -14,8 +15,8 @@ namespace CallOfSlop;
 /// ended: a peer sees a stroke start when its store turns Busy or its progress falls back to the 0 each stroke sends at its start, and
 /// end when Busy falls (<see cref="StrokeUpdate"/>); the server's crush test reads the stroke's work so far. Nothing new goes on the
 /// wire. The housings' collision is where they were welded; the dies have none.</item>
-/// <item><b>The swing strip.</b> An open die stands in its housing; one wider than its housing (a bed wider than four blocks) reaches
-/// past it. That reach, beside each side, must be clear: at the machine's rebuild a fixed part of the same construct there (not one of
+/// <item><b>The swing strip.</b> An open die lies in its housing; one wider than its housing (a bed wider than four blocks) reaches
+/// past it, out and down. That reach, beside each side, must be clear: at the machine's rebuild a fixed part of the same construct there (not one of
 /// its own blocks) is kept as the machine's blocker (<see cref="SwingCheck"/>): the press doesn't work, the screen says "Shell swing
 /// blocked" and the look line names the part.</item>
 /// <item><b>No stopping for people.</b> The dies close on whoever is on the bed (the server's crush test: Game.SandboxPressCrush).</item>
@@ -38,7 +39,7 @@ public static partial class ConstructPress
     /// <summary>A housing segment and its die: where the die's hinge is and which way it opens, in the body frame.</summary>
     public struct ShellPose
     {
-        public Vector3 Hinge; // a point on the die's hinge line (the foot of the housing's inner face, on the bed)
+        public Vector3 Hinge; // the foot of the housing's inner face, on the bed (the die turns about the point its radius over it)
         public Vector3 Centre; // the bed's centre line at this segment, on the bed
         public Vector3 Axis; // the hinge line's direction: a positive turn about it opens the die (up toward out)
         public Vector3 Out, Up, Along; // outward from the bed, the Core's up, along the flow
@@ -118,27 +119,12 @@ public static partial class ConstructPress
             st.StrokeSince = now;
             st.StrokeLast = st.StrokeMade;
             StrokePieces(c, core, out st.StrokeBlank, out st.StrokeMade);
-            if (st.StrokeBlank != null || st.StrokeMade != null)
-                st.StrokeTall = MathF.Max(Tall(st.StrokeBlank), Tall(st.StrokeMade));
         }
         else if (!st.Busy && st.StrokeOn)
             st.StrokeEnd = now;
         st.StrokeOn = st.Busy;
         st.StrokeSeen = st.Progress;
     }
-
-    private static float Tall(ConstructPartDef? d) => d == null ? 0 : d.BoundsMax.Y - d.BoundsMin.Y;
-
-    /// <summary>How high the shut dies stand over the bed (m): room for the stroke's pieces (<see cref="CStore.StrokeTall"/>) and the die's face, at most <see cref="MaxLift"/>.</summary>
-    public static float DieLift(CStore st, float radius) => Math.Clamp(st.StrokeTall + DieRelief(radius) + 0.03f, 0.1f, MaxLift(radius));
-
-    /// <summary>The most the shut dies stand over the bed (m): half their radius, at most <see cref="LiftCap"/>.</summary>
-    public static float MaxLift(float radius) => MathF.Max(0.1f, MathF.Min(radius * 0.5f, LiftCap));
-
-    private const float LiftCap = 0.6f;
-
-    /// <summary>How deep the fitted die's look stands off a round die's working face (m).</summary>
-    public static float DieRelief(float radius) => Math.Clamp(radius * 0.05f, 0.04f, 0.15f);
 
     /// <summary>Seconds into the stroke under way, as this peer draws it (after <see cref="StrokeUpdate"/>).</summary>
     public static double StrokeSeconds(CStore st, double now) => now - st.StrokeSince;
@@ -214,7 +200,7 @@ public static partial class ConstructPress
     /// <summary>What blocks this press's shells, for the look line ("the shells' swing hits Conveyor"), or "".</summary>
     public static string SwingText(Construct c, int part) =>
         c.Parts[part].D.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var asm) && asm.Blocker >= 0 && asm.Blocker < c.PartCount
-            ? $"the dies' swing hits the {c.Parts[asm.Blocker].D.Name}: keep {(asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f:0.#} m out from each housing's inner face clear, up to {MaxLift((asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f) + (asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f * 1.415f:0.#} m over the bed"
+            ? $"the dies' swing hits the {c.Parts[asm.Blocker].D.Name}: keep {(asm.L - 2) * c.Parts[part].D.BlockCell * 0.5f:0.#} m out from each housing's inner face clear, up to that high over the bed"
             : "";
 
     /// <summary>
@@ -244,12 +230,12 @@ public static partial class ConstructPress
             var reach = (asm.L - 2) * cell * 0.5f; // (the die's radius: open, it stands that far out from the housing's inner face)
             if (reach <= Margin)
                 continue;
-            // Its sweep: about its hinge (the housing's inner face, at most MaxLift over the bed) from over the bed to out over the housing. Its far corner,
-            // reach * sqrt 2 from the hinge, passes straight over the hinge; past the hinge it reaches out at most its radius. Over the
-            // housing and past it, from the bed up to that corner's height (the housing's own blocks are skipped).
+            // Its sweep: a quarter round turning about its own centre (the top of the housing's inner edge, its radius over the bed),
+            // from over the bed down and out into the housing: the half round under that centre. Outward of the housing's inner face
+            // (the bed's side is the shut dies' own room), up to the centre's height; the housing's own blocks are skipped.
             var face = (edge + 0.5f * sgn) * cell;
             var lo = new Vector3((asm.X0 - 0.5f) * cell + Margin, 0.5f * cell + Margin, sgn > 0 ? face + Margin : face - reach);
-            var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + MaxLift(reach) + reach * 1.415f, sgn > 0 ? face + reach : face - Margin);
+            var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + reach, sgn > 0 ? face + reach : face - Margin);
             for (var j = 0; j < c.PartCount; j++)
             {
                 if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0
