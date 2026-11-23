@@ -722,6 +722,7 @@ public static partial class ConstructLifters
         Quaternion toRot = fromRot;
         if (world.Get(pt.Body) is { } tb && pt.Part < tb.PartCount)
             Freeform.PartWorld(tb, pt.Part, out _, out toRot);
+        var hand = HandNow(ld, l);
         l.OrderId = 0; // (phase 7: OrderCarry sets it after, for a hand order's carry)
         l.Def = (ushort)d.Id;
         l.Paint = paint;
@@ -733,6 +734,7 @@ public static partial class ConstructLifters
         l.Rise = ClearRise(world, c, l, ld, d);
         l.Dur = CarryTicks(ld, l, d);
         Begin(l);
+        Approach(ld, l, hand);
         (l.State, l.Why, l.ToHold, l.Moved, l.Fitted) = (LiftState.Carry, LiftWhy.Carrying, false, true, false);
         (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (pt.Body, -1, -1, null, null);
         (l.ToKind, l.ToPart, l.ToBay) = (pt.Kind, pt.Part, pt.Bay);

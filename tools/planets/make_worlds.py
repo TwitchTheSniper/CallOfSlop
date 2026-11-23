@@ -356,6 +356,9 @@ WORLDS = [
             noise(4, 100, 4, 5),
         ],
         "landing": 30,
+        # (Sean, 2026-11-23: the pole's floor wide enough to set the Zero Day works down on, a site about 96 x 239 m:
+        # 175 m round the pole is 350 m across, with room to drive round it)
+        "poleFlat": (175, 220),
         "sites": [("home", 30, 150, 160, -100, 220), ("data", 60, 152, 70, 640, 140)],
         "biomes": CALEDON_BIOMES,
     },
@@ -501,7 +504,8 @@ def build(w):
     if "city" in w:  # the city's ground: level to its last street and a little over (CITY.md)
         features.append(flatten(90, 0, w["city"]["radius"] + 80, h + 0.18, 300))  # (level with the pavements' tops: CityGeometry.GroundTop)
     else:
-        features.append(flatten(90, 0, 70, h, 150))
+        flat, edge = w.get("poleFlat", (70, 150))  # (the landing ground round the pole, where the creative starts land)
+        features.append(flatten(90, 0, flat, h, edge))
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
     if "biomes" in w:  # (docs/planets/BIOMES.md: heights in them are the grown world's)
         planetoid["biomes"] = w["biomes"]

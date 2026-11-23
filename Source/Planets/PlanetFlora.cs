@@ -112,9 +112,11 @@ public sealed class PlanetFlora
     public int PointsAcross(int layer) => (int)Math.Ceiling(Planet.N / _step[layer]);
 
     /// <summary>The range of sample points (a0..a1, end excluded) whose base lies in drawing cell <paramref name="c"/> of a layer.</summary>
-    public (int A0, int A1) PointsInCell(int layer, int c)
+    public (int A0, int A1) PointsInCell(int layer, int c) => PointsInCell(layer, c, CellGrid[layer]);
+
+    /// <summary>The same for cells <paramref name="g"/> grid cells across (the far trees' bigger cells).</summary>
+    public (int A0, int A1) PointsInCell(int layer, int c, int g)
     {
-        var g = CellGrid[layer];
         var s = _step[layer];
         int a0 = (int)Math.Ceiling(c * g / s), a1 = (int)Math.Ceiling((c + 1) * g / s);
         return (a0, Math.Min(a1, PointsAcross(layer)));
