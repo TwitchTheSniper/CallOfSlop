@@ -12,7 +12,8 @@
       0.15,
       0
     ],
-    "bunk": true
+    "bunk": true,
+    "g": 40
   },
   "mass": 90.0,
   "health": 220,

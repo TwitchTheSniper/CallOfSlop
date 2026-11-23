@@ -153,6 +153,14 @@ public static class ConstructFrames
             c.FrameG = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, com) : new Vector3(0, -ConstructPhysics.GravityAccel, 0); // (held by the map: the world's pull, not a tilted deck's; a wheel fallen off a car that leans on that corner topples as it would beside it)
         else if (ConstructGravity.Generators > 0 && ConstructGravity.GenAt(com, c.Id) >= 0)
             c.FrameG = ConstructGravity.GravityFor(c, com);
+        else if (ShipGravity.Mode != ShipGravityMode.Deck && ShipGravity.Active(f))
+        {
+            // Ship gravity (ShipGravity.cs): no deck pull. In space the ship's own change of motion reaches the body as its
+            // flight's (FreeFall: the drive and hits); in the bubble the solver meets the hull's acceleration, so the world's pull is all.
+            c.FrameG = f.SpaceShip != 0 ? Vector3.Zero : ShipGravity.WorldPull(com);
+            if (ConstructGravity.Wells > 0)
+                c.FrameG += ConstructGravity.WellsAt(com, c.Id);
+        }
         else
         {
             c.FrameG = -Vector3.Transform(c.FrameUp, f.Rot) * (World.Gravity * World.GravityScale);
@@ -202,6 +210,7 @@ public static class ConstructFrames
         if (!posed)
         {
             _tick++;
+            ShipGravity.NewTick();
             for (var i = 0; i < bodies.Count; i++)
                 bodies[i].FrameRiders = 0;
             LastBodies = 0;
@@ -372,8 +381,8 @@ public static class ConstructFrames
             {
                 var a = (fv - c.FrameV - frameDv) * World.TickRate - c.FrameFree; // (the frame's turning at it, and what of its change is felt)
                 c.FrameFelt += (a.Length() - c.FrameFelt) * 0.3f;
-                if (c.FrameFelt > WakeFelt)
-                    c.Wake();
+                if (c.FrameFelt > WakeFelt && ShipGravity.MayWake(f))
+                    c.Wake(); // (with ship gravity on, a few a tick: a burn doesn't wake a whole hold at once, ShipGravity.cs)
             }
             c.FrameVel = c.FrameSpin = Vector3.Zero;
         }

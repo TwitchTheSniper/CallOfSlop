@@ -112,6 +112,8 @@ public struct MoveState
     // whole movement, gravity is along -RideUp, and Position and Velocity are only copies for everything that reads the world.
     public Vector3 RideUp; // their up in the construct's rest frame (zero: a bot, or the plain ride above)
     public Vector3 RideVel; // their own velocity in the segment's frame
+    public Vector3 RideFelt; // ship gravity (ShipGravity.cs): the pull they feel in the segment's frame, the server's (its owner's snapshot carries it)
+    public bool RideFeltOn; // ...in force (false: the deck's 1 g along RideUp, as before)
     public Vector3 RideUpW; // RideUp in the world, as the frame last put them down (not sent)
     public byte RideOn; // contraption space: the moving segment (a lift deck, a ramp, a turntable) under the feet, which carries them in the body's frame (0: the body itself); RideVel is relative to it while they stand on it
 

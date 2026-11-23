@@ -475,6 +475,16 @@ public sealed partial class Ui
         ImGui.PushTextWrapPos(RoomWrap);
         ImGuiSafe.TextColored(Dim, _room.SandboxHint);
         ImGui.PopTextWrapPos();
+        // Ship gravity (ShipGravity.cs): a saved world's is its own.
+        var shipGravity = game.SandboxShipGravity;
+        ImGui.BeginDisabled(game.WorldShownName.Length > 0 || !host);
+        if (ShipGravityPicker(ref shipGravity) && host)
+        {
+            game.LobbySetSandboxShipGravity(shipGravity);
+            s.SandboxShipGravity = shipGravity;
+            s.Save();
+        }
+        ImGui.EndDisabled();
         if (!survival)
             return;
         // Survival's death rules (GameSandboxDeath.cs): a saved world's are its own.
@@ -510,6 +520,27 @@ public sealed partial class Ui
             changed = true;
         ImGui.PushTextWrapPos(RoomWrap);
         ImGuiSafe.TextColored(Dim, Game.DeathHint(rule) + (rule == SurvivalDeath.Permadeath ? " The backpack always drops." : keepPack ? " You keep what you carry." : " What you carry drops where you fall."));
+        ImGui.PopTextWrapPos();
+        return changed;
+    }
+
+    /// <summary>A world's ship gravity rule (ShipGravity.cs): a combo with the rule's hint. True when it changed.</summary>
+    private bool ShipGravityPicker(ref ShipGravityMode mode)
+    {
+        var changed = false;
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Ship gravity##world"u8, ShipGravity.Label(mode)))
+        {
+            for (var k = ShipGravityMode.Deck; k <= ShipGravityMode.Everywhere; k++)
+                if (ImGui.Selectable(ShipGravity.Label(k), k == mode) && k != mode)
+                {
+                    mode = k;
+                    changed = true;
+                }
+            ImGui.EndCombo();
+        }
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, ShipGravity.Hint(mode));
         ImGui.PopTextWrapPos();
         return changed;
     }
