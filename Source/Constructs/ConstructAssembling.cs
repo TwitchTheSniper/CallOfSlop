@@ -326,6 +326,7 @@ public static class ConstructAssembling
 
     private static string? _leaveWhy; // (the last place's refusal in Leave: the log line when an output first can't leave)
     private static ConstructWorld? _leaveWorld;
+    private static int _leavePart;
 
     /// <summary>Why the last place refused, naming the part in the way when it was a construct's.</summary>
     private static string LeaveWhy()
@@ -404,7 +405,7 @@ public static class ConstructAssembling
     {
         if (!world.HasRoom())
             return AsmBlock.WorldFull;
-        (_leaveWorld, _leaveWhy) = (world, null);
+        (_leaveWorld, _leaveWhy, _leavePart) = (world, null, part);
         ref var p = ref c.Parts[part];
         var d = p.D;
         if (FitOf(c, part) is { Limited: true, W: > 0 } fit && MachineBlocks.TryOf(c, part, out var asm))
@@ -485,10 +486,11 @@ public static class ConstructAssembling
         return madeOnly ? AsmBlock.BedFull : AsmBlock.OutputBlocked;
     }
 
-    /// <summary>Was the last place refused for a loose one-part body other than the machine's own (a piece lying on the bed)?</summary>
+    /// <summary>Was the last place refused for a loose piece this machine's recipes make (one it made before, lying on the bed)?</summary>
     private static bool MadeHere(ConstructWorld world, Construct c) =>
         _leaveWhy != null && _leaveWhy.StartsWith("another construct", StringComparison.Ordinal) && ConstructPlace.LastInWayBody != c.Id
-        && world.Get(ConstructPlace.LastInWayBody) is { PartCount: 1, Anchored: false };
+        && world.Get(ConstructPlace.LastInWayBody) is { PartCount: 1, Anchored: false } lo
+        && AssemblingTable.Current.Of((ushort)lo.DefOf(0).Id) is { } r && r.Output == lo.DefOf(0) && r.Machine == c.DefOf(_leavePart).AsmMachine;
 
     private const int ArmDamage = 1; // per 60 Hz game tick in a working place (60 a second): its arm swinging and its weld (GameMachineHazards)
     private static int _family = -2;
