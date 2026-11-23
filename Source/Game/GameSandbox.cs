@@ -2831,16 +2831,14 @@ public sealed partial class Game
             _ladderLook = 0;
         if (ladder < 0 || body == 0 || Constructs.Get(body) is not { } c || ladder >= c.PartCount || c.Parts[ladder].Broken)
             return;
-        ref var lp = ref c.Parts[ladder];
-        var d = lp.D;
-        if (d.LadderTop <= 0)
+        if (c.Parts[ladder].D.LadderTop <= 0)
             return;
-        DrawnFrame(c, lp.Seg, out var q, out var t);
-        var lq = q * Rot24.Quat(lp.Rot);
-        var origin = t + Vector3.Transform(lp.Pos, q);
-        p.RenderLadderFrame = Matrix4x4.CreateFromQuaternion(lq) * Matrix4x4.CreateTranslation(origin);
-        p.RenderLadderFeet = Vector3.Transform(p.RenderPosition - origin, Quaternion.Conjugate(lq));
-        p.RenderLadderGeom = LadderGeom.Of(d);
+        LadderFrameOf(p, c, ladder);
+        // (a climb on through a dock, ConstructRide.Chained: past this ladder's end the limbs take the docked craft's ladder)
+        var f0 = p.RenderLadderFeet;
+        var g0 = p.RenderLadderGeom;
+        if ((f0.Y > g0.Top + 0.3f || f0.Y < g0.Base - 0.3f) && ConstructRide.Chained(Constructs, c, ladder, f0.Y > g0.Top, out var oc, out var op) < 0 && oc != null)
+            LadderFrameOf(p, oc, op);
         p.RenderLadder = true;
         if (p.Id != LocalId || GravityFrames.Curved)
             return;
@@ -2853,13 +2851,25 @@ public sealed partial class Game
         }
         if (_ladderLookLeft <= 0)
             return;
-        var f = Vector3.Transform(Vector3.UnitZ, lq);
+        var f = Vector3.TransformNormal(Vector3.UnitZ, p.RenderLadderFrame);
         if (f.X * f.X + f.Z * f.Z < 0.1f)
             return;
         var k = MathF.Min(1f, _ladderDt / _ladderLookLeft);
         LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(MathF.Atan2(f.X, -f.Z) - LookYaw) * k);
         p.RenderYaw = p.Yaw = LookYaw;
         _ladderLookLeft -= _ladderDt;
+    }
+
+    /// <summary>A ladder's frame as drawn now, the feet in it and its shape, onto the climber (SandboxLadderRender).</summary>
+    private void LadderFrameOf(Player p, Construct c, int ladder)
+    {
+        ref var lp = ref c.Parts[ladder];
+        DrawnFrame(c, lp.Seg, out var q, out var t);
+        var lq = q * Rot24.Quat(lp.Rot);
+        var origin = t + Vector3.Transform(lp.Pos, q);
+        p.RenderLadderFrame = Matrix4x4.CreateFromQuaternion(lq) * Matrix4x4.CreateTranslation(origin);
+        p.RenderLadderFeet = Vector3.Transform(p.RenderPosition - origin, Quaternion.Conjugate(lq));
+        p.RenderLadderGeom = LadderGeom.Of(lp.D);
     }
 
     private uint _ladderLook; // the ladder your view last turned to (body << 16 | part + 1; 0: none)

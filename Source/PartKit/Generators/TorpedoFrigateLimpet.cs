@@ -33,7 +33,7 @@ public sealed partial class TorpedoFrigateParts
     // Docked under the Zero Day's keel (its frame): the pod's roof just under the keel's docking hatch, its receiver on the centreline.
     private const double LimpetRoofY = -1.7, LimpetBaseY = LimpetRoofY - PH, LimpetRecvZ = 31.4;
     private const double PHatchZ = 1.95; // the docking hatch's middle under the ceiling (its shoe 0.69 m aft of it, clear of the stern; its lid over the hole)
-    private const double LimpetLadderRise = Ft0 - (LimpetBaseY + PFt + 0.013); // (from the pod's deck up to the lower deck's floor)
+    private const double LimpetLadderRise = PCeil - PFt; // (from the pod's deck up under its own docking hatch: docked, the Zero Day's shaft ladder carries on from there)
     private const double LimpetOriginZ = LimpetRecvZ - 2.05; // (the pod's middle: its receiver is 2.05 m aft of it)
     private const double LimpetClampX = Cx - 2.1, LimpetClampZ = 29.3; // the Docking Clamp under the keel to port of the pod
 
@@ -293,13 +293,13 @@ public sealed partial class TorpedoFrigateParts
         return p.Stats(90, 1500, 25, 3.0);
     }
 
-    /// <summary>The ladder from the Limpet's floor up through its receiver and the Zero Day's docking hatch into its lower deck: its
-    /// rails stop under the roof, so nothing of it stands out of the pod.</summary>
+    /// <summary>The ladder from the Limpet's floor up to its docking hatch (Karl, 2026-11-22): docked, the ship's shaft ladder meets
+    /// its top and one climb runs through both (ConstructRide.Chained); its rails stop under the roof, so nothing stands out of the pod.</summary>
     private static Part PLadder()
     {
         var rise = LimpetLadderRise;
         var top = PCeil - PFt - 0.09; // (under the docking hatch hung on the ceiling)
-        var p = new Part("Limpet Ladder", Small, PSection, "The ladder at the Limpet's aft wall, up through its receiver and, docked, on through the Zero Day's docking hatch into its lower deck: F climbs it.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        var p = new Part("Limpet Ladder", Small, PSection, "The ladder at the Limpet's aft wall, up to its docking hatch. Docked with both hatches open, F climbs on up the ship's own ladder through its shaft; undocked, the hatch stays shut.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
         {

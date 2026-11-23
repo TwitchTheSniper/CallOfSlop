@@ -1259,6 +1259,9 @@ public sealed partial class Construct
         OnRail = false; // (back into the physics: ConstructRails.cs)
     }
 
+    /// <summary>Server: a ship out of the bubble on a ledger path (Game/GameHaulLedger.cs): its drive gives its ship no push, the path's burns do.</summary>
+    public bool LedgerCoast;
+
     /// <summary>Server: falling free on a rail, out of the physics' list and the per-body systems (ConstructRails.cs). Its pose and speed are true every tick.</summary>
     public bool OnRail;
 

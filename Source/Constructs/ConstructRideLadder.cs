@@ -70,6 +70,8 @@ public static partial class ConstructRide
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
         if (NextLid(c, part) is var lid and >= 0)
             return ConstructDoors.IsMoving(c, c.Doors[lid].Part) ? "the hatch is still moving" : ConstructDoors.Locked(c, c.Doors[lid].Part) ? "the hatch is locked" : "the hatch is shut: F opens it"; // (a deck hatch over its shaft, a belly door under it: F on the ladder opens them first, GameSandbox Use; crews too, CrewNav)
+        if (s.RideBody == c.Id && s.RideUp != Vector3.Zero && s.RideSeg <= c.JointCount)
+            s.Position = ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal); // (a rider in its frame is where the frame holds them now: a ship posed in orbit moves metres a tick after the riders' step, so the world feet lag it and the wrong end was taken; Karl, 2026-11-22)
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
@@ -85,7 +87,24 @@ public static partial class ConstructRide
             return "get to the ladder's foot or its top first";
         var up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, lq));
         var onEnd = ToWorld(atTop ? low : high); // (where the climb leaves the rungs)
-        var exit = LadderExit(c, part, ToWorld(atTop ? foot : top), onEnd, lq, up, atTop ? -1f : 1f, height);
+        Vector3 exit;
+        if (Chained(Bodies, c, part, !atTop, out var oc, out var op) is var dock and >= 0)
+            return ConstructDoors.IsMoving(c, c.Doors[dock].Part) ? "the docking hatch is still moving" : "the docking hatch is shut: nothing is docked there";
+        if (oc != null)
+        {
+            // (a ladder that meets another's end through two open docking hatches, a docked craft's: one climb on through both, to
+            // the far end of the other; both bodies are held together while docked, so the climb's points in this one's frame hold)
+            var o = oc.Parts[op];
+            oc.WorldFrame(o.Seg, out var oq, out var ot);
+            var olq = oq * Rot24.Quat(o.Rot);
+            LadderEnds(o.D, out var ofoot, out var otop);
+            LadderLine(o.D, out var olow, out var ohigh);
+            Vector3 OWorld(Vector3 local) => ot + Vector3.Transform(o.Pos + Rot24.Apply(o.Rot, local), oq);
+            onEnd = OWorld(atTop ? olow : ohigh);
+            exit = LadderExit(oc, op, OWorld(atTop ? ofoot : otop), onEnd, olq, up, atTop ? -1f : 1f, height);
+        }
+        else
+            exit = LadderExit(c, part, ToWorld(atTop ? foot : top), onEnd, lq, up, atTop ? -1f : 1f, height);
         StartClimb(ref s, c, p.Seg, ToWorld(atTop ? high : low), 1, frame);
         var seg = s.RideSeg;
         var on = s.RideClimbTo;
@@ -95,6 +114,86 @@ public static partial class ConstructRide
         s.RideLadder = (byte)(LadderOn | (atTop ? LadderDown : 0) | 2);
         s.RideLadderPart = (ushort)part;
         return null;
+    }
+
+    /// <summary>
+    /// A ladder's way on through a dock (Karl, 2026-11-22: "ladder is connected to dock, two docks connect two ladders so you end
+    /// up on either end"): when the end it is climbed towards (<paramref name="up"/>: its top) lies by a docking hatch of its own
+    /// body, the ladder on the craft docked there (carrying this body, or carried by it) whose near end meets this one's, the two
+    /// lined up, comes back in <paramref name="other"/> and <paramref name="part"/>. Returns -1, or the door slot of a docking
+    /// hatch by that end that isn't open (the climb waits for it: nothing docked, or the hatches still sliding). No docking hatch
+    /// there, or one open with no ladder meeting this one: -1 and no other ladder, an ordinary climb. Shared by the climb and its drawing (allocates nothing).
+    /// </summary>
+    public static int Chained(ConstructWorld? w, Construct c, int ladder, bool up, out Construct? other, out int part)
+    {
+        other = null;
+        part = -1;
+        if ((uint)ladder >= (uint)c.PartCount || !c.EnsureDoors() || c.DoorCount == 0)
+            return -1;
+        var end = LadderPoint(c, ladder, up, out var dir);
+        var dock = DockBy(c, end);
+        if (dock < 0)
+            return -1;
+        if (ConstructDoors.IsMoving(c, c.Doors[dock].Part) || !ConstructDoors.SettledOpen(c, c.Doors[dock].Part) || w == null)
+            return dock;
+        if (c.CarriedBy != 0 && w.Get(c.CarriedBy) is { } carrier && Meets(carrier, end, dir, up, out part))
+        {
+            other = carrier;
+            return -1;
+        }
+        var bodies = w.Bodies;
+        for (var b = 0; b < bodies.Count; b++)
+            if (bodies[b].CarriedBy == c.Id && bodies[b] != c && Meets(bodies[b], end, dir, up, out part))
+            {
+                other = bodies[b];
+                return -1;
+            }
+        return -1; // (open, but no ladder meets it: a ladder that runs on into the docked craft by itself, or a hatch opened by hand)
+    }
+
+    /// <summary>A ladder's feet line's end (world): its top (<paramref name="top"/>) or its foot, and its up.</summary>
+    private static Vector3 LadderPoint(Construct c, int ladder, bool top, out Vector3 up)
+    {
+        ref var p = ref c.Parts[ladder];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        LadderLine(p.D, out var low, out var high);
+        up = Vector3.Normalize(Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitY), q));
+        return t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, top ? high : low), q);
+    }
+
+    /// <summary>A docking hatch of body <paramref name="c"/> whose middle, shut, lies within 1.6 m of <paramref name="at"/> (world): its door slot, else -1.</summary>
+    private static int DockBy(Construct c, Vector3 at)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var dp = c.Doors[k].Part;
+            if (c.Parts[dp].Broken || c.Parts[dp].D.Door is not { Dock: true })
+                continue;
+            if (Vector3.DistanceSquared(c.ToWorld(ConstructDoors.ShutPos(c, dp)), at) < 1.6f * 1.6f) // (where it lies shut: open, it has slid off)
+                return k;
+        }
+        return -1;
+    }
+
+    /// <summary>A ladder of body <paramref name="o"/> lined up with one climbed along <paramref name="up"/> whose near end meets <paramref name="end"/> (within 0.35 m across, up to 1.2 m on along the climb).</summary>
+    private static bool Meets(Construct o, Vector3 end, Vector3 dir, bool up, out int part)
+    {
+        part = -1;
+        for (var i = 0; i < o.PartCount; i++)
+        {
+            if (o.Parts[i].Broken || o.Parts[i].D.LadderTop <= 0)
+                continue;
+            var near = LadderPoint(o, i, !up, out var odir);
+            if (Vector3.Dot(odir, dir) < 0.95f)
+                continue;
+            var gap = near - end;
+            var along = Vector3.Dot(gap, dir) * (up ? 1f : -1f);
+            if (along < -0.3f || along > 1.2f || (gap - dir * Vector3.Dot(gap, dir)).Length() > 0.35f)
+                continue;
+            part = i;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -348,3 +447,4 @@ public struct LadderGeom
         Top = d.LadderTop, RailTop = MathF.Max(d.BoundsMax.Y, d.LadderTop + 0.3f),
     };
 }
+
