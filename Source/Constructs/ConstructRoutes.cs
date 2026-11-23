@@ -705,6 +705,9 @@ public static partial class ConstructRoutes
                 return pn.Pos;
             }
             seg = rt.From < c.PartCount ? c.Parts[rt.From].Seg : 0;
+            if (rt.From < c.PartCount && rt.Type == RouteType.Conveyor && c.Parts[rt.From].D.IsExtruder && RollerRuns.IsRun(c, r)
+                && ConstructExtruder.BlockDieOut(c, rt.From, out var die))
+                return c.Parts[rt.From].Pos + Rot24.Apply(c.Parts[rt.From].Rot, die * c.ScaleOf(rt.From)); // (a roller run off a block die's tables: under the die's middle, where its sheet lies)
             return rt.From < c.PartCount ? PortPoint(c, rt.From, rt.FromPort, rt.Type) : Vector3.Zero;
         }
         if (i < rt.Count)
