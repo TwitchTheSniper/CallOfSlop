@@ -544,7 +544,7 @@ public static partial class ConstructStation
         if (firstKind >= 0 && j.KindReady[firstKind] > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
             && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) is var rc and not 0)
             stuck = rc == 3 ? HasOwnPad(c, t) ? nd.Mass > LiftKg(c, t) ? $"too heavy for this station's crane ({nd.Mass / 1000f:0.#} t, it lifts {LiftKg(c, t) / 1000f:0.#} t): fit it by hand or with a Hall Crane" : null
-                : ConstructLifters.HasPickPad(world, c, t) ? null // (a crane or an arm fits it from a pick pad: it comes there, as an order)
+                : ConstructLifters.HasPickPad(world, c, t, nd) ? null // (a crane or an arm fits it from a pick pad: it comes there, as an order)
                 : "too long for this station's hold: lay a Lay-down Pad under its crane just past the bay, or fit it by hand"
                 : tray.ItemCount > 0 && !MakeRoomFor(world, c, t, nd) ? "hold full of parts no step fits yet, no rack with room: take one out" : null;
         for (var i = 0; i < j.KindN && stuck == null; i++)

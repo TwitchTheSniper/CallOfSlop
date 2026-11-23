@@ -1150,8 +1150,9 @@ public static class ConstructConveyor
     {
         ref readonly var r = ref c.Routes[route];
         if (r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is not { OnBed: true }
-            || !world.CraftOpen.Contains(c.Id) || ConstructPanelFormer.Takes(c, r.To, piece))
-            return;
+            || !world.CraftOpen.Contains(c.Id) || ConstructPanelFormer.Takes(c, r.To, piece)
+            || r.Count != 2 || !ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host))
+            return; // (no crane picks at the run's end: it goes on onto the bed as before, never held there for ever)
         for (var t = 0; t < c.PartCount; t++)
         {
             if (c.Parts[t].Craft is not { Count: > 0 } q)

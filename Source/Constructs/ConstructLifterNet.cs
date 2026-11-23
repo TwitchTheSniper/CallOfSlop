@@ -310,6 +310,23 @@ public static partial class ConstructLifters
     private static bool ServesPad(ConstructWorld world, Construct sc, int t, ushort padBody, int pad) =>
         padBody == sc.Id && ConstructStation.IsOwnPad(sc, t, pad) || ArmServes(world, sc, t, padBody, pad); // (a pick pad under the station's own crane: ConstructStationPads.cs)
 
+    /// <summary>Server: has a lifter a run's-end pick point on Roller Tile <paramref name="tile"/> of body <paramref name="body"/> (a crane over it)? Allocates nothing.</summary>
+    public static bool PicksRunEnd(ConstructWorld world, ushort body, int tile)
+    {
+        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        {
+            var lb = world.LiftBodies[bi];
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                for (var k = 0; l.Points != null && k < l.PointN; k++)
+                    if (l.Points[k].Body == body && l.Points[k].Part == tile && l.Points[k].Kind == LiftPointKind.RunEnd)
+                        return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of a lifter arm that can fit for station <paramref name="t"/> now?</summary>
     private static bool ArmServes(ConstructWorld world, Construct sc, int t, ushort padBody, int pad)
     {

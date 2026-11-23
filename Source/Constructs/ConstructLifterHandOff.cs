@@ -182,15 +182,16 @@ public static partial class ConstructLifters
         return best;
     }
 
-    /// <summary>Server: does a lifter fit station <paramref name="t"/>'s parts from a pick pad (a lead with no hops for it)? Allocates nothing.</summary>
-    public static bool HasPickPad(ConstructWorld world, Construct sc, int t)
+    /// <summary>Server: does a lifter fit station <paramref name="t"/>'s parts from a pick pad (a lead with no hops for it) whose hold takes <paramref name="d"/>? Allocates nothing.</summary>
+    public static bool HasPickPad(ConstructWorld world, Construct sc, int t, ConstructPartDef d)
     {
         if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0)
             return false;
         Leads(world);
         for (var e = 0; e < _leadN; e++)
-            if (_leads[e].Hops == 0 && _leads[e].StBody == sc.Id && _leads[e].St == t)
-                return true;
+            if (_leads[e].Hops == 0 && _leads[e].StBody == sc.Id && _leads[e].St == t && world.Get(_leads[e].PadBody) is { } pb && _leads[e].Pad < pb.PartCount
+                && ConstructRackPack.Fit(ConstructPads.RackDef(pb, _leads[e].Pad), d, out _, out _, out _))
+                return true; // (a pad too small for it says nothing for it: the station's note stands)
         return false;
     }
 

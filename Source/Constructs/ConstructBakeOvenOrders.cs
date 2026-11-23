@@ -50,9 +50,18 @@ public static partial class ConstructBakeOven
                 (near, nearDist) = (s, dist);
         if (near < 0)
             return $"no Building Station on this construct has a bay that holds the {made.Name} kit";
-        if (!OrdersConsole(c, near))
+        if (!OrdersConsole(c, near) && AnyOrdersConsole(c, bp)) // (none has one: a plain station orders by its own links, as any build)
             return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
         return null;
+    }
+
+    /// <summary>Has any station on the construct whose bay holds the kit a Line Console wired into its Orders (a works that orders through consoles)?</summary>
+    private static bool AnyOrdersConsole(Construct c, ConstructBuild.Blueprint bp)
+    {
+        for (var s = 0; s < c.PartCount; s++)
+            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null && OrdersConsole(c, s))
+                return true;
+        return false;
     }
 
     /// <summary>Is a Line Console wired into station <paramref name="t"/>'s Orders port (ConstructCrafting's network)?</summary>
