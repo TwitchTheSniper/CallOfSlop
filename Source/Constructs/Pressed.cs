@@ -647,7 +647,7 @@ public static class Pressed
             r[i] = new NamedPort
             {
                 Name = q.Name, Type = q.Type, In = q.In, Out = q.Out, Socket = q.Socket, At = (q.At - from) * scale + to, Face = q.Face, Fluid = q.Fluid,
-                NoEffect = q.NoEffect, Byte = q.Byte, Implicit = q.Implicit, Opening = q.Opening,
+                NoEffect = q.NoEffect, Byte = q.Byte, Implicit = q.Implicit, Opening = q.Opening, OnBed = q.OnBed,
             };
         }
         return r;
