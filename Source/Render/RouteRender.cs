@@ -104,7 +104,7 @@ public static class RouteRender
                         {
                             var dn = next - b;
                             var ln = dn.Length();
-                            if (ln > 1e-4f && ConstructRoutes.SegmentHealth(c, k, i + 1) > 0)
+                            if (ln > 1e-4f && ConstructRoutes.SegmentHealth(c, k, i + 1) > 0 && !(r.Type == RouteType.Conveyor && (RestShaft(c, k, i, out _) || RestShaft(c, k, i + 1, out _))))
                             {
                                 zNext = dn / ln;
                                 tEnd = RouteCurves.Tangent(r.Type, curveW, z, len, zNext, ln);
@@ -253,7 +253,7 @@ public static class RouteRender
     private const float ShaftRail = 0.08f, ShaftDeep = 0.16f, ShaftLugPitch = 0.5f, ShaftFlangePitch = 1f;
 
     /// <summary>How far a shaft's mast rails' middles stand out from its line, either side, for a link <paramref name="width"/> wide.</summary>
-    private static float ShaftSide(float width) => width * 0.5f + 0.07f;
+    private static float ShaftSide(float width) => width * 0.5f + 0.074f; // (the masts' inner faces 4 mm past a joining bed's plate: no shared plane)
 
     /// <summary>
     /// A straight vertical conveyor segment (<see cref="ConstructConveyor.IsShaft"/>) drawn as a lift (Sean, 2026-11-23): two mast rails
@@ -320,7 +320,7 @@ public static class RouteRender
         if (footFree)
         {
             // The foot: a plate under the lower end (under a bed coming in: its plate's underside is 9 cm under the line).
-            gfx.Draw(Matrix4x4.CreateScale(side * 2f + 0.2f, 0.04f, ShaftDeep + 0.24f) * basis * Matrix4x4.CreateTranslation(lower - up * 0.115f), ConvPlate);
+            gfx.Draw(Matrix4x4.CreateScale(side * 2f + 0.2f, ShaftDeep + 0.24f, 0.04f) * basis * Matrix4x4.CreateTranslation(lower - up * 0.115f), ConvPlate);
         }
         if (headFree)
         {
