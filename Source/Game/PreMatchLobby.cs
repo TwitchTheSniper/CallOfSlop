@@ -440,6 +440,7 @@ public sealed partial class Game
         }
         w.PatchU8(countAt, n);
         w.Str(WorldShownName); // (protocol 128: a saved world's name, GameWorldSave.cs)
+        w.U8((byte)ShipGravity.Mode); // (protocol 444: the world's ship gravity, GameShipGravity.cs)
     }
 
     private ushort ServerPingOf(Player p)
@@ -498,6 +499,8 @@ public sealed partial class Game
                 PingMs[id] = ping;
         }
         WorldShownName = r.Has(1) ? r.Text(WorldStore.MaxNameLength) : "";
+        if (r.Has(1))
+            HearSandboxShipGravity(r.U8()); // (every copy, as the survival flag: GameShipGravity.cs)
         _lobbyStateSeen = true;
         ApplyHostGravity(gravity); // (every copy: it's a byte, and a missed change mustn't wait for the next version)
         HearSandboxSurvival((zflags & LobbyZFlagSurvival) != 0); // (every copy, for the same reason)

@@ -387,6 +387,7 @@ public sealed partial class Game
             p.Sim.Gear = SandboxWorn(p);
             p.MmuFuel = p.Sim.JetFuel;
             SandboxEvaTick(p, now); // (breath in vacuum, a suit's air: GameSandboxEva.cs)
+            ShipGravityTick(p, h, now); // (felt g: watched for cargo, hurt past the limit; GameShipGravity.cs)
             if (!h.Seated)
             {
                 if (h.RemoteBody != 0)
