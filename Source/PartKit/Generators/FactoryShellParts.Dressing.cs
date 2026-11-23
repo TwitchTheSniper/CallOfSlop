@@ -79,6 +79,8 @@ public sealed partial class FactoryShellParts
         p.Add(Glow([-0.09, -0.7, -0.09], [0.09, -0.634, 0.09], Kw(("shape", "sphere"), ("segments", 10)))); // the bulb
         p.Sock("top", [0, 0, 0], "+y");
         p.Stats(14, 60, 1, 1.0);
+        // (Sean 2026-11-23: hung 21 m over the works floor, a 4.5 m bulb lit nothing: a cone of light down onto the floor, from just under the bulb)
+        p.D["light"] = new PyDict { ["range"] = 32, ["strength"] = 2.0, ["cone"] = 40, ["dir"] = Py.L(0, -1, 0), ["at"] = Py.L(0, -0.71, 0) };
         return Mains(p, 250, "#fff1d0", 140);
     }
 

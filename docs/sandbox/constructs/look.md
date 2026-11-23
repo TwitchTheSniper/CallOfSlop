@@ -52,8 +52,14 @@ on its sides and broom-finished on top, streaked under its top edge and dirty at
 on. A mains lamp (Wall Light, Hall Floodlight: logic `"mains": true`) needs no wire: it is lit while a working battery's
 circuit reaches it. With a Battery on the build every logic part needs power (the frame is the circuit); without one, and
 on a map without `"power": "required"`, nothing does ([Power](power-and-links.md#power)). Lit lamps light what is round
-them (`Source/Render/ConstructLamps.cs`: the nearest to the eye within 16 m, at most 4 dynamic lights a frame, 4.5 m
-reach), so the old line "lamps cast no light yet" in the configure tool's section is out of date.
+them (`Source/Render/ConstructLamps.cs`: the nearest to the eye within 16 m, at most 32 dynamic lights a frame, 4.5 m
+reach, in the lamp's Colour setting times its Brightness), so the old line "lamps cast no light yet" in the configure tool's section is out of date.
+A lamp part may say how its light falls with a `"light"` block (Sean, 2026-11-23: the works' high-bay pendants hang 21 m up and a 4.5 m
+bulb lit nothing): `range` (m, up to 32), `strength` (times the plain lamp's, 0.1-4), and for a spot `cone` (half angle, degrees) with
+`dir` (the part's frame), plus `at` (where the light comes from; else the part's middle). A spot lights only inside its cone, soft at the
+edge, adds a little fill inside a wider cone (the light thrown back off its pool), shows a faint beam in the air (Video > Light beams) and
+counts as that much nearer to the eye when lamps are picked. The High-Bay Pendant (32 m, 40 degrees, straight down) and the Hall
+Floodlight (24 m, 45 degrees, down and out from its wall) have one; docs/render/LIGHTING.md "Spot lamps".
 
 **How paint treats a box.** A painted part's paintable boxes are drawn in the paint times the box's **tone**: its
 brightness against the part's main colour, clamped to 0.65-1.3 (`ConstructPaint.ToneOf`, `BoxColour`), then capped at

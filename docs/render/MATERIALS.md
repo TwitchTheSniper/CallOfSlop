@@ -182,9 +182,10 @@ back buffer is resolved once into a texture, and everything works from that at s
   flat or faceted ground doesn't shade itself; the blur is a 3x3 that skips other surfaces by depth (Karl, 2026-11-21, phase 4 of the
   ship looks; before it, 8 samples with derivative normals greyed all flat ground). It is off by itself, with a log line, if the driver
   can't resolve depth. `--window-shot ... --post High --ao-strength N --ao-radius M` draws a picture with it.
-  **Style** (`ao_classic`, Karl 2026-11-21: he liked the old grain): Classic, the default, is the AO from before phase 4 (8 samples,
-  derivative normals, a plain 4-tap blur: about half the work, and flat ground takes a fine grain); Clean is the one above. Both take
-  the strength and reach sliders; `--ao-clean` picks Clean for a window shot.
+  **Style** (`ao_style=clean|classic`): Clean, the one above, is the default (Sean, 2026-11-23: Classic's grain showed as a dither over
+  every surface on High; the old `ao_classic` line is no longer read, so every saved setting starts Clean). Classic (Karl 2026-11-21: he
+  liked the old grain) is the AO from before phase 4 (8 samples, derivative normals, a plain 4-tap blur: about half the work, and flat
+  ground takes a fine grain). Both take the strength and reach sliders; `--ao-clean` picks Clean for a window shot.
 - **Contact shadows** (Karl, 2026-11-21, from the Ship Render Bench): Settings > Video > Contact shadows, on by default and at any
   Post effects level (`contact_shadows`; `--no-contact` forces it off for a before picture). `PostFx.Contact.cs`: ConstructRender.Draw
   offers each body it draws in full (`PostFx.OfferContact`, the 8 nearest kept); after ambient occlusion each one's footprint (a 64x64

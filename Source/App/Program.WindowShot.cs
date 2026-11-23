@@ -125,7 +125,7 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--ao-radius", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } aoR && float.TryParse(aoR, System.Globalization.CultureInfo.InvariantCulture, out var aoRv))
             _settings.AoRadius = aoRv;
         if (args.Any(a => a.Equals("--ao-clean", StringComparison.OrdinalIgnoreCase)))
-            _settings.AoClassic = false; // (the clean ambient occlusion; Classic is the default)
+            _settings.AoClassic = false; // (the clean ambient occlusion, the default since 2026-11-23, whatever style the copied settings hold)
         WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }

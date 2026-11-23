@@ -143,6 +143,7 @@ public static unsafe class Lighting
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
             vec4 uDynPos[32]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
             vec4 uDynCol[32]; // colour * intensity
+            vec4 uDynSpot[32]; // a spot's direction and the cosine of its half angle (w under -1: all round; ConstructLamps' cones)
             vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom; z: edge bevels on; w: material contrast on
             mat4 uShadowVP;  // world less uShadowC to the sun shadow map's u, v and stored depth (SunShadows.cs)
             vec4 uShadowC;   // xyz: the map's centre; w: the normal offset (m)
@@ -151,7 +152,7 @@ public static unsafe class Lighting
             mat4 uRoomVP[8]; // world less uRoomC to each dark-interiors map's u, v and stored depth (RoomShade.cs; the size is RoomShade.Layers)
             vec4 uRoomC;     // xyz: the maps' centre (the camera); w: the normal offset (m)
             vec4 uRoomQ;     // x: 1 while the maps are live; y: the ambient a shut room keeps; z: 1 in the gun's pass (read at the eye); w: the signed depth bias
-            vec4 uLampRows[96]; // each lamp shadow slot's world-to-body turn, three rows (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
+            vec4 uLampRows[96]; // each lamp shadow slot's world-to-body turn, three rows, the first's w 1 / the distance its maps hold (LampShadows.cs; the size is LampShadows.MaxSlots * 3)
             vec4 uLampQ;     // x: 1 while some slot is live; y: the signed depth bias; z: 1 / the maps' distance range; w: the normal offset a metre out (m)
             vec4 uLampP;     // x: the soft compare's step (uv); y: 1 with reversed depth
         };
@@ -319,13 +320,40 @@ public static unsafe class Lighting
             else if (a.y >= a.z) { face = v.y >= 0.0 ? 2 : 3; uv = v.zx; ma = a.y; }
             else { face = v.z >= 0.0 ? 4 : 5; uv = v.xy; ma = a.z; }
             uv = uv / max(ma, 1e-4) * (0.925926 * 0.5) + 0.5; // (LampShadows.Guard)
-            float d = min(length(v) * uLampQ.z, 1.0);
+            float d = min(length(v) * uLampRows[slot * 3].w, 1.0); // (1 / the slot's own reach: LampShadows.StoreOf)
             float r = (uLampP.y > 0.5 ? 1.0 - d : d) - uLampQ.y;
             float layer = float(slot * 6 + face);
             float t = uLampP.x * 0.75;
             float lit = texture(uLampShadow, vec4(uv + vec2(-t, -t), layer, r)) + texture(uLampShadow, vec4(uv + vec2(t, -t), layer, r))
                       + texture(uLampShadow, vec4(uv + vec2(-t, t), layer, r)) + texture(uLampShadow, vec4(uv + vec2(t, t), layer, r));
             return lit * 0.25;
+        }
+
+        // Dynamic light i at world point p facing n (a lamp, a muzzle flash, a blast). All round: a soft inverse-square-like falloff to
+        // zero at its range, by how much the surface faces it, past its shadow. A spot (Sean 2026-11-23: high-bay pendants as cones of
+        // light on the floor): the same inside its cone, soft over the outer third of its half angle, nothing outside it; plus a flat
+        // fill under a wider cone, the light its pool throws back (SpotFill of it), so a lit hall's machines aren't black on their
+        // sides. Its shadow is read only where it lights.
+        const float SpotFill = 0.14;
+        vec3 DynLight(int i, vec3 p, vec3 n)
+        {
+            vec3 l = uDynPos[i].xyz - p;
+            float d = length(l);
+            float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
+            float f = (1.0 - q * q) * (1.0 - q * q);
+            if (f <= 0.0)
+                return vec3(0.0);
+            vec3 ld = l / max(d, 1e-3);
+            float face = max(dot(n, ld) * 0.8 + 0.2, 0.0);
+            vec4 s = uDynSpot[i];
+            if (s.w < -1.0)
+                return uDynCol[i].rgb * f * face * LampShadow(i, p, n);
+            float cd = dot(-ld, s.xyz);
+            float cone = smoothstep(s.w, mix(s.w, 1.0, 0.35), cd);
+            float wide = smoothstep(s.w - 0.35, s.w, cd);
+            if (wide <= 0.0)
+                return vec3(0.0);
+            return uDynCol[i].rgb * f * (face * cone + SpotFill * wide) * LampShadow(i, p, n);
         }
 
         // ApplyLight plus the baked light at world position p (mode 0: ApplyLight, with the sun shadows and the key light).
@@ -346,14 +374,7 @@ public static unsafe class Lighting
                 vec3 dl = vec3(0.0);
                 int nd5 = int(uLitMode.w + 0.5);
                 for (int i = 0; i < nd5; i++) // at most LightGrid.MaxDynamic
-                {
-                    vec3 l = uDynPos[i].xyz - p;
-                    float d = length(l);
-                    float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
-                    float f = (1.0 - q * q) * (1.0 - q * q);
-                    if (f > 0.0)
-                        dl += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0) * LampShadow(i, p, n);
-                }
+                    dl += DynLight(i, p, n);
                 // A soft knee (2026-11-14): a lamp's pool stays strong, but a wall or a roof a metre or two from a lamp is no
                 // longer burnt white (ConstructLamps' strengths are set for it: a brightest channel of 1 comes out 0.69, 2 comes out 1.05).
                 dl = dl / (1.0 + 0.45 * max(max(dl.r, dl.g), dl.b)); // (on the brightest channel: the sodium's amber keeps its hue)
@@ -385,14 +406,7 @@ public static unsafe class Lighting
             vec3 lit = a.rgb * facing * LitFlicker(uLitMode.y, c, a.a);
             int nd = uLitMode.x < 1.5 ? int(uLitMode.w + 0.5) : 0;
             for (int i = 0; i < nd; i++) // at most LightGrid.MaxDynamic
-            {
-                vec3 l = uDynPos[i].xyz - p;
-                float d = length(l);
-                float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
-                float f = (1.0 - q * q) * (1.0 - q * q);
-                if (f > 0.0)
-                    lit += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0) * LampShadow(i, p, n);
-            }
+                lit += DynLight(i, p, n);
             if (uLitMode.x > 2.5) // (--light-debug's pictures: the grid's light alone, or its sky and sun visibility)
                 return uLitMode.x < 3.5 ? lit + vec3(0.02) : vec3(b.w * 0.6 + sunVis * 0.4, b.w * 0.6 + sunVis * 0.4, b.w * 0.6);
             return albedo * (amb + uSunColor * key * diff + lit);

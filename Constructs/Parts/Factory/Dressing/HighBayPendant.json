@@ -13,6 +13,21 @@
   "material": "steel",
   "color": "#2f4a3c",
   "attachSeconds": 1.0,
+  "light": {
+    "range": 32,
+    "strength": 2.0,
+    "cone": 40,
+    "dir": [
+      0,
+      -1,
+      0
+    ],
+    "at": [
+      0,
+      -0.71,
+      0
+    ]
+  },
   "logic": {
     "kind": "lamp",
     "mains": true

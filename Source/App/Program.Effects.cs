@@ -21,6 +21,7 @@ public static unsafe partial class Program
         (SunShadows.On, SunShadows.Size, SunShadows.KeyLight) = (_settings.SunShadows > VideoLevel.Low, _settings.SunShadows == VideoLevel.High ? 4096 : 2048, _settings.KeyLight);
         RoomShade.On = _settings.DarkInteriors;
         (LampShadows.On, LampShadows.Size, LampShadows.Slots) = (_settings.LampShadows > VideoLevel.Low, _settings.LampShadows == VideoLevel.High ? 384 : 256, LightGrid.MaxDynamic); // (every lit lamp: an unshadowed one shone through walls, and which ones depended on where you stood)
+        LampBeams.On = _settings.LampBeams;
         PostFx.ContactOn = _settings.ContactShadows; // (any Post effects level: one small pass per near body)
         Gfx.MarkGlow = LightGrid.MarkGlow = PostFx.Bloom;
         ConstructRender.OcclusionSetting = _settings.HiddenCulling;
@@ -52,6 +53,7 @@ public static unsafe partial class Program
             FxGpu.Step((float)FrameDt, (float)(now % 4096.0));
             var l = Lighting.Current;
             var ambient = (l.AmbSky + l.AmbGround) * 0.5f + l.SunColor * MathF.Max(Vector3.Dot(l.SunDir, l.Up == default ? Vector3.UnitY : l.Up), 0f) * 0.55f;
+            LampBeams.Draw(Gfx); // spot lamps' cones of light in the air (Source/Render/LampBeams.cs)
             FxGpu.Draw(Gfx, ambient);
             if (!CameraFeeds.InPass)
                 SnowRenderer.Draw(Gfx, _settings.Particles, now); // a cold storm's driven snow (nothing without one; Source/Render/SnowRenderer.cs)

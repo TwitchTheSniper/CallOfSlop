@@ -41,7 +41,7 @@ public static unsafe class LightGrid
     public const int MaxDynamic = 32;
 
     /// <summary>Is the shader's block the same size as <see cref="FrameBlock"/> (its arrays sized <see cref="MaxDynamic"/>)? Checked when the block is made.</summary>
-    public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal);
+    public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynSpot[{MaxDynamic}]", StringComparison.Ordinal);
 
     /// <summary>The dark interiors' lookups (RoomShade.cs), one mat4 each, as the std140 array lays them out.</summary>
     [System.Runtime.CompilerServices.InlineArray(RoomShade.Layers)]
@@ -88,6 +88,7 @@ public static unsafe class LightGrid
         public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
         public DynArray Dyn;  // dynamic lights: position, range
         public DynArray DynC; // colour * intensity
+        public DynArray DynS; // a spot's direction (unit) and the cosine of its half angle; w under -1: all round (ConstructLamps' cones)
         public Vector4 Surf;    // x: the materials setting (Surfaces.cs); z: edge bevels on; w: material contrast on
         public Matrix4x4 ShadowVP; // world (less ShadowC) to the sun shadow map's u, v and stored depth (SunShadows.cs)
         public Vector4 ShadowC;   // xyz: the map's centre; w: the normal offset (m)
@@ -117,7 +118,10 @@ public static unsafe class LightGrid
     private static bool _shadowSent, _roomSent, _lampSent;
 
     private static FrameBlock _block;
-    private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic];
+    private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic], DynSpot = new Vector4[MaxDynamic];
+
+    /// <summary>A light that shines all round (<see cref="FrameBlock.DynS"/>'s w).</summary>
+    private static readonly Vector4 AllRound = new(0f, 0f, 0f, -2f);
     private static int _dynCount;
 
     private static bool _ready, _broken;
@@ -250,6 +254,22 @@ public static unsafe class LightGrid
             return;
         DynPos[_dynCount] = new Vector4(pos, range);
         DynCol[_dynCount] = new Vector4(color, 0f);
+        DynSpot[_dynCount] = AllRound;
+        _dynCount++;
+    }
+
+    /// <summary>
+    /// A spot light for this frame: as <see cref="AddDynamic(Vector3, Vector3, float)"/>, lighting only within <paramref name="cosHalf"/> of
+    /// <paramref name="dir"/> (unit), soft towards its edge, plus a little all-round fill inside a wider cone (the light thrown back off what it
+    /// lights: Lighting.Glsl's <c>DynLight</c>).
+    /// </summary>
+    public static void AddDynamic(Vector3 pos, Vector3 color, float range, Vector3 dir, float cosHalf)
+    {
+        if (_dynCount >= MaxDynamic || range <= 0f)
+            return;
+        DynPos[_dynCount] = new Vector4(pos, range);
+        DynCol[_dynCount] = new Vector4(color, 0f);
+        DynSpot[_dynCount] = new Vector4(dir, cosHalf);
         _dynCount++;
     }
 
@@ -273,7 +293,7 @@ public static unsafe class LightGrid
             return;
         if (bake != null)
             Bind(bake);
-        Fill(ref _block, bake, time, DynamicEnabled ? _dynCount : 0, DynPos, DynCol);
+        Fill(ref _block, bake, time, DynamicEnabled ? _dynCount : 0, DynPos, DynCol, DynSpot);
         if (DebugView > 0 && bake != null)
             _block.Mode.X = DebugView;
         _dynCount = 0;
@@ -373,7 +393,7 @@ public static unsafe class LightGrid
     public static float NormalOffsetY(LightBake bake) => bake.CellY * LightBake.NormalNudge;
 
     /// <summary>Fills the world pass's block (no GL: the self-test runs it; no allocation).</summary>
-    public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol)
+    public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol, Vector4[]? dynSpot = null)
     {
         var n = Math.Min(dynamic, MaxDynamic);
         if (bake == null)
@@ -393,6 +413,7 @@ public static unsafe class LightGrid
         {
             b.Dyn[i] = i < n ? dynPos[i] : default;
             b.DynC[i] = i < n ? dynCol[i] : default;
+            b.DynS[i] = i < n && dynSpot != null ? dynSpot[i] : AllRound;
         }
     }
 
