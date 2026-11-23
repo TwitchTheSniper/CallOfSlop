@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Press",
-  "description": "A Press Core: stamps parts out of extruded pieces between two shells that slam shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the shells (1.6 m of daylight, 2 m more a block; each side needs a clear strip as wide as its shells are tall), and it works faster with every block. The shells never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
+  "description": "A Press Core: stamps parts out of extruded pieces between two round dies that roll shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the housings the dies swing out of (1.6 m of daylight, 2 m more a block; a bed over four blocks wide needs a clear strip beside each side for its dies' overhang), and it works faster with every block. The dies never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
   "group": "Production",
   "section": "Presses",
   "role": "storage",

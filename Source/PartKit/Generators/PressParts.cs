@@ -215,7 +215,7 @@ public sealed partial class PressParts : IPartGenerator
         var c = Small;
         var k = c.Cell;
         const int n = CoreCells;
-        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces between two shells that slam shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the shells (1.6 m of daylight, 2 m more a block; each side needs a clear strip as wide as its shells are tall), and it works faster with every block. The shells never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
+        var p = new Part("Press", c, Section, "A Press Core: stamps parts out of extruded pieces between two round dies that roll shut over the blank. Alone it takes blanks up to 0.45 m across in its own small clamshell; weld Press Blocks beside it for a bed (along the flow from the Core; its width across the widest blank), stack blocks on the bed's two long edges for the housings the dies swing out of (1.6 m of daylight, 2 m more a block; a bed over four blocks wide needs a clear strip beside each side for its dies' overhang), and it works faster with every block. The dies never stop for anyone. A die in its slot sets what it makes; blanks go in bay 1, a die's kit in bay 2. Needs power.",
             role: "storage", group: "Production", color: Blue);
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), y1 = c.Hi(n), z0 = c.Lo(), z1 = c.Hi(n);
         double mid = (x0 + x1) / 2, my = (y0 + y1) / 2, zm = (z0 + z1) / 2;
@@ -334,9 +334,9 @@ public sealed partial class PressParts : IPartGenerator
     /// <item><b>A bed block</b> (nothing of its press under it): a framed machine table: a deck slab with the tread plate and the hazard
     /// edge and a leg at each corner, in the press's paint, and a dark body set well back under the deck. Welded to a block of its press, the bodies join legs to legs and
     /// the edge goes, so a bed reads as one table.</item>
-    /// <item><b>A wall block</b> (a block of its press under it: a clamshell segment, which the game swings about its hinge,
-    /// ConstructPressShells.cs): a solid steel lid, unpainted so it never takes the bed's colour, with a dark cap, two stiffeners across
-    /// its top and a hazard band round its foot.</item>
+    /// <item><b>A wall block</b> (a block of its press under it: a housing, out of which the game swings a round die drawn on its
+    /// top, ConstructPressShells.cs): a solid steel lid, unpainted so it never takes the bed's colour, with a dark cap, two stiffeners
+    /// across its top (12 mm under the open die's flat face) and a hazard band round its foot.</item>
     /// </list>
     /// Both solid (no hollow sections: Sean wants polygons saved). Its collision is the whole cell (a hidden box), so the bed, the walls,
     /// the swing check and the crush test are as they were.
@@ -391,7 +391,7 @@ public sealed partial class PressParts : IPartGenerator
         p.Add(MachineLook.D([-e, 0.006, -e], [e, 1.88, e], Lid, "steel")!.Update(("seamFill", "-y")));
         p.Add(MachineLook.D([-e + 0.004, 1.88, -e + 0.004], [e - 0.004, 1.93, e - 0.004], MachineLook.Base)!.Update(("seamFill", "-y")));
         foreach (var x in new[] { -0.5, 0.5 })
-            p.Add(MachineLook.D([x - 0.06, 1.93, -e + 0.03], [x + 0.06, 1.994, e - 0.03], Lid, "steel")!.Update(("seamFill", "-y")));
+            p.Add(MachineLook.D([x - 0.06, 1.93, -e + 0.03], [x + 0.06, 1.984, e - 0.03], Lid, "steel")!.Update(("seamFill", "-y")));
         p.Sock("+x", [1, 1, 0], "+x");
         p.Sock("-x", [-1, 1, 0], "-x");
         p.Sock("+z", [0, 1, 1], "+z");
