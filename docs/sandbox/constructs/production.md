@@ -405,7 +405,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   `IsPanelFormer`, a member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the
   Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`): a **Panel Former** Core (2 m wide: screen and queue,
   Orders, power, Piece in and its in rollers, the offcut bin with its Offcut chute port; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
-  a pin field, an upper pin platen, corner posts, their own hydraulics; 900 W each while forming) welded on its far side and to each
+  a pin field and an upper pin platen behind walls, their own hydraulics; 900 W each while forming) welded on its far side and to each
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
@@ -415,10 +415,12 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
   over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
   stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any
-  size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: one platen, posts at its corners, an
-  oil manifold down one side, a hazard edge round the outside. Animations: the in rollers and table rollers spin, the pins rise in a
-  wave from the Core's end to the head order's panel shape (`PinLift`, read from the key: work `pin`), the platen strokes (`PressAt`:
-  work `press`). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
+  size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: one closed box, pillars at its corners, an
+  oil manifold down one side, a hazard edge round the outside. **The forming is hidden** (Sean, 2026-11-23): a Bed Block is walled from its
+  lower bed to its crosshead on every free side and draws nothing inside (no pins, platen or ram: no cost), and `PanelFormerRender.DrawEnds`
+  hangs a rubber strip curtain with a header rail across the bed's two ends, where the Core and the Out Tables are welded. Animations: the in
+  rollers and table rollers spin; the pins' wave (`PinLift`) and the platen's stroke (`PressAt`) still time the work but are no longer drawn (work
+  `pin` and `press` remain for any part that wants them). The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
   profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
   comes from the panel's **flat size**: the surface unrolled (`HullLoft.PanelFlat`, three lines each way), its thickness in whole cm
