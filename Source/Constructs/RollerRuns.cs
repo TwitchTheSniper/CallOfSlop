@@ -108,8 +108,8 @@ public static class RollerRuns
         {
             ref readonly var r = ref c.Routes[k];
             if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
-                && c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } && IsRun(c, k))
-                return k;
+                && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && IsRun(c, k))
+                return k; // (or onto a pad: a formed skin for a station's order waits at the pad's edge, too long for it or not its way)
         }
         return -1;
     }

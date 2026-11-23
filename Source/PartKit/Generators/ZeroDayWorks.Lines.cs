@@ -43,7 +43,7 @@ public sealed partial class ZeroDayWorks
             // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
             var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
             var ovenC = Oven(39, -155, 33, 7, 13, 3, LineC);
-            Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south)
+            Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 2); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south)
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
             foreach (var z in new[] { -143f, -148f, -153f })
@@ -119,11 +119,11 @@ public sealed partial class ZeroDayWorks
         /// A line's piece store: a pad of Pad Tiles (a Mast Block on each corner, the stack 3 m), with <paramref name="second"/> a run of one
         /// row and a second pad below it; then a transfer run of <paramref name="transferRows"/> rows, three tiles wide, south from the last pad's middle.
         /// </summary>
-        private void Stores(string line, float x0, float z0, int across, int along, string paint, bool second, int transferRows, bool eastWest = false)
+        private void Stores(string line, float x0, float z0, int across, int along, string paint, bool second, int transferRows, bool eastWest = false, int masts = 1)
         {
             var pad = Tiles("Pad Tile", x0, z0, across, along, eastWest ? East : South, Stock); // (East: the hold's length runs across the bay)
             foreach (var c in Corners(pad))
-                Stack(c, "top", 1);
+                Stack(c, "top", masts); // (each mast raises the hold's stack: a lower deck is 3.25 m tall)
             _stores.Add((line, pad[0, 0]));
             var z = z0 - 2 * along;
             if (second)

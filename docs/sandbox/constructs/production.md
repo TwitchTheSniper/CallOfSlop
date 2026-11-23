@@ -1929,8 +1929,8 @@ column on each corner of the bed. A welded group set on the bed bakes into one p
 ### Bake kits (2026-11-23)
 
 Sean: "Large deck parts should be made through the extrusion chain in the factory, put together, and then baked in the oven, not made
-in an assembler." The parts listed in `Constructs/BakeKits.json` (the four Zero Day decks; other hull pieces wait on Sean) are made that
-way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOvenOrders.cs` (the oven's orders).
+in an assembler." The parts listed in `Constructs/BakeKits.json` (the four Zero Day decks) and in `Constructs/BakeKits/` (the Zero Day's keel bands) are
+made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOvenOrders.cs` (the oven's orders).
 
 - **The kit.** One extrusion for each solid, drawn box of the part (detail boxes, seams and markings, come with the bake): its longest
   side the length (5 cm steps), the thinner of the others the height (a Sheet under 10 cm), painted and finished as the box, at the box's
@@ -1958,6 +1958,21 @@ way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOvenOrders.cs
   don't reach both). On the works (2026-11-23) line C's oven took the order, its station built the Upper Deck Aft kit and the kit baked
   into the deck in 11 s with both; without `--kit-carry` it waits: no crane reaches line C's station and oven both (the bay 2 crane's
   rails end at z -137), and the yard's station doesn't reach the oven by its network. Those are the works layout's to give.
+- **Listed kits (the keel).** Sean, 2026-11-23: the Keel too is extruded and baked, its curved plates bent on the Panel Former (his card
+  answer). A generator may list a kit piece by piece in `Constructs/BakeKits/*.json` (format `call-of-slop-bake-kit-list/1`: each kit a
+  `part` and its `pieces`, each a `part` name, `at` in the part's frame to the centimetre, optional `rot`, `paint`, `finish`); a piece
+  may be any part found by name, such as a run-time plain Hull Section. The frigate generator notes every skin plate it draws (facet,
+  side and band) and writes each Keel band's kit: one plain Hull Section a side and band, its profile the station's half profile closed
+  on the centreline (facet 1 the keel flat's half, 2 to 5 the sides, 6 the spine's half), placed at the band's station. Two parts whose
+  kits are alike bake into the one the oven's head order names (`BakeKits.Target`'s `want`). `--bake-kit` checks a listed kit's part
+  origin against the kit frame's (its skins aren't the part box for box).
+- **On the works.** Line C's console wires the station's orders to its Panel Former as well as its Sheet Extruder, so the station's skin
+  orders go to the former. A formed skin meant for a station that is too long for the skin pad (or not its way) waits at the pad's edge
+  and the bay crane lifts it there (`RollerRuns.BedRunAt` takes a run onto a Lay-down Pad as well as one onto a bed). Line C's store,
+  the kit station's and the yard station's pick pad, is 18 x 12 m turned East (its hold 17.7 m long across the bay, a deck 17.25 m) with
+  two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s
+  `--station-check "Zero Day Works" --build "Zero Day Frigate"` run (2026-11-23): the Keel bands and the decks made and baked on line C
+  and fitted hands-free, 15 of the frigate's 341 parts in.
 
 ## Production Showcase
 

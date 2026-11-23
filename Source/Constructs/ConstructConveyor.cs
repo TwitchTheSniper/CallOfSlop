@@ -1169,7 +1169,7 @@ public static class ConstructConveyor
     }
 
     /// <summary>Does a piece on a run into bed Core <paramref name="to"/> ride past the bed (made for another's order: <see cref="PastBed"/>)? Either peer (a rider's Dest is on the wire).</summary>
-    public static bool PassesBed(Construct c, int to, in CRider r) => r.Dest != 0 && to < c.PartCount && r.Dest != c.Parts[to].Store;
+    public static bool PassesBed(Construct c, int to, in CRider r) => r.Dest != 0 && to < c.PartCount && r.Dest != c.Parts[ConstructPads.Owner(c, to)].Store; // (a pad's tile: its owner's store)
 
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
     private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
