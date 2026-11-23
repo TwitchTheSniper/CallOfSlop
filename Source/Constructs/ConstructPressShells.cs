@@ -5,13 +5,14 @@ namespace CallOfSlop;
 /// <summary>
 /// The Press as a clamshell (design page drawing 17b, Sean 2026-11-21). The wall blocks stacked on the bed's two long edges (its first
 /// and last rows along the Core's z) are its shells: each wall column is one shell segment, hinged along the outer top edge of the bed
-/// block it stands on. While the press works the segments swing open flat out to their side and slam shut over the blank, in a quick
-/// ripple down the bed (one segment a cell along the flow, the Core's x), and the top block of each column draws a roof lip out to the
-/// bed's centre line, where the two halves meet. At rest the shells stand shut, where the blocks' own collision is.
+/// block it stands on. Each stroke (Sean, 2026-11-23: they close on the part to transform it) swings the segments open flat out to their
+/// side over the blank, slams them shut on it in a quick ripple down the bed (one segment a cell along the flow, the Core's x), and holds
+/// them shut while it presses; the part is made at the stroke's end. The top block of each column draws a roof lip out to the bed's
+/// centre line, where the two halves meet. At rest the shells stand shut, where the blocks' own collision is.
 /// <list type="bullet">
-/// <item><b>Drawn only.</b> The swing is a pure function of the shared mover clock (the server tick; a client's predicted one) and the
-/// press's line state, so every peer draws the same pose and nothing goes on the wire. The blocks' collision stays where they were
-/// welded: shut.</item>
+/// <item><b>Drawn only.</b> The swing is a function of the time into the stroke: a peer sees a stroke start when its store turns Busy or
+/// its progress falls back to the 0 each stroke sends at its start (<see cref="StrokeSeconds"/>); the server's crush test reads the
+/// stroke's work so far. Nothing new goes on the wire. The blocks' collision stays where they were welded: shut.</item>
 /// <item><b>The swing strip.</b> Each side needs a clear strip as wide as its shells are tall. At the machine's rebuild a fixed part of
 /// the same construct in a strip (not one of its own blocks) is kept as the machine's blocker (<see cref="SwingCheck"/>): the press
 /// doesn't work, the screen says "Shell swing blocked" and the look line names the part.</item>
@@ -21,10 +22,16 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class ConstructPress
 {
-    public const double ShellCycle = 3.0; // s: one swing cycle while the press works (open, slam, hold, open)
-    private const double Ripple = 0.06; // of a cycle between one segment and the next down the bed
-    public const double SlamAt = 0.12; // the cycle's fraction where a segment slams shut (closing from 0)
-    public const double HoldTo = 0.5, OpenTo = 0.8; // shut until HoldTo, swinging open until OpenTo, then open until the cycle ends
+    // A stroke's swing (Sean, 2026-11-23: the shells close on the part to transform it): from the stroke's start the segments swing open
+    // flat out (OpenTo), stand open over the blank (SlamFrom), slam shut on it (SlamAt), then stay shut until the stroke ends and the part
+    // is made. Each segment a little behind the one before it down the bed (Ripple, at most RippleMax of them). In seconds into the stroke.
+    public const double OpenTo = 0.55, SlamFrom = 0.75, SlamAt = 1.0;
+    private const double Ripple = 0.05;
+    private const int RippleMax = 8;
+    /// <summary>The shortest stroke, in press steps (10 Hz): the last segment is shut before the part is made.</summary>
+    public const int StrokeMinSteps = (int)((SlamAt + Ripple * RippleMax) * 10) + 1;
+    /// <summary>A creative stroke, in press steps: free, but it still takes its swing.</summary>
+    public const int CreativeStrokeSteps = 20;
 
     /// <summary>A shell segment: where its hinge is and which way it opens, in the body frame.</summary>
     public struct ShellPose
@@ -68,33 +75,43 @@ public static partial class ConstructPress
         return true;
     }
 
-    /// <summary>How far open (0 shut, 1 flat out) a segment is at mover tick <paramref name="tick"/>; shut while the press isn't working.</summary>
-    public static float Openness(bool working, int index, double tick)
+    /// <summary>How far open (0 shut, 1 flat out) segment <paramref name="index"/> is <paramref name="seconds"/> into a stroke; shut while the press isn't working.</summary>
+    public static float Openness(bool working, int index, double seconds)
     {
         if (!working)
             return 0;
-        var ph = Phase(index, tick);
-        if (ph < SlamAt)
-        {
-            var t = ph / SlamAt;
-            return (float)(1 - t * t); // (gathering speed into the slam)
-        }
-        if (ph < HoldTo)
+        var ph = Phase(index, seconds);
+        if (ph <= 0 || ph >= SlamAt)
             return 0;
         if (ph < OpenTo)
         {
-            var t = (ph - HoldTo) / (OpenTo - HoldTo);
+            var t = ph / OpenTo;
             return (float)(t * t * (3 - 2 * t));
         }
-        return 1;
+        if (ph < SlamFrom)
+            return 1;
+        var u = (ph - SlamFrom) / (SlamAt - SlamFrom);
+        return (float)(1 - u * u); // (gathering speed into the slam)
     }
 
-    /// <summary>Where segment <paramref name="index"/> is in its swing cycle (0..1) at mover tick <paramref name="tick"/>.</summary>
-    public static double Phase(int index, double tick)
+    /// <summary>Where segment <paramref name="index"/> is in its swing, in seconds into the stroke (each segment down the bed a little behind).</summary>
+    public static double Phase(int index, double seconds) => seconds - Math.Min(index, RippleMax) * Ripple;
+
+    /// <summary>
+    /// Seconds into the stroke a press is at, as this peer draws it at <paramref name="now"/> (ConstructRender.Now). A stroke starts when
+    /// its store turns Busy or its progress falls back (each stroke sends a 0 at its start: WorkSized), seen here and kept on the store.
+    /// </summary>
+    public static double StrokeSeconds(CStore st, double now)
     {
-        var ph = tick / (World.TickRate * ShellCycle) - index * Ripple;
-        return ph - Math.Floor(ph);
+        if (st.Busy && (!st.StrokeOn || st.Progress < st.StrokeSeen))
+            st.StrokeSince = now;
+        st.StrokeOn = st.Busy;
+        st.StrokeSeen = st.Progress;
+        return now - st.StrokeSince;
     }
+
+    /// <summary>Server: seconds into the stroke under way, from its work so far (the crush test's clock: the same swing every peer draws).</summary>
+    public static double StrokeSecondsServer(Construct c, int part, CStore st) => st.JobTicks / (double)Math.Max(1, WorkOf(c, part)) / 10.0;
 
     /// <summary>The turn (body frame) that swings a segment's boxes <paramref name="open"/> of the way open about its hinge.</summary>
     public static Matrix4x4 ShellTurn(in ShellPose s, float open) =>

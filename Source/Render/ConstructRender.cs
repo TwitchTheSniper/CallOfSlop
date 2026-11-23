@@ -692,6 +692,7 @@ public static partial class ConstructRender
             : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
+        _pressStroke = working && c.Parts[workPart].D.IsPress && world.StoreOf(c, workPart) is { } pressStore ? ConstructPress.StrokeSeconds(pressStore, Now) : 0; // (a Press Core's leaves swing with its stroke)
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
@@ -711,8 +712,10 @@ public static partial class ConstructRender
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
         ConstructPress.ShellPose shellPose = default;
         var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
-        var shellTurn = shellOn ? ConstructPress.ShellTurn(shellPose, ConstructPress.Openness(!c.Parts[shellPose.Core].Broken && world.StoreOf(c, shellPose.Core) is { } shellStore
-            && ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), shellPose.Index, ConstructLifters.DrawTick)) : Matrix4x4.Identity;
+        var shellTurn = shellOn && !c.Parts[shellPose.Core].Broken && world.StoreOf(c, shellPose.Core) is { } shellStore
+            ? ConstructPress.ShellTurn(shellPose, ConstructPress.Openness(ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), shellPose.Index,
+                ConstructPress.StrokeSeconds(shellStore, Now))) // (the stroke's swing: open over the blank, slam shut on it, shut while it is pressed)
+            : Matrix4x4.Identity;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -917,6 +920,7 @@ public static partial class ConstructRender
         for (var k = Fx.Share(3f * _fxDt); k > 0; k--)
             Fx.Emit(FxKind.Smoke, at + up * 0.05f, c.Vel + up * 0.6f, 0.08f, 0.9f);
     }
+    private static double _pressStroke; // seconds into the stroke of the Press being drawn (its Core's "hinge" leaves: ConstructPress.Openness)
     private static int _workCore = -1; // the machine whose work the part being drawn shows (its own, or its block machine's Core)
 
     /// <summary>The part whose work a part's "work" boxes show: its own, its block machine's Core, or the Extruder a Run-out Table serves (-1: none).</summary>
@@ -940,7 +944,7 @@ public static partial class ConstructRender
             case BoxWork.Hinge:
                 {
                     // A clamshell leaf: it swings open toward its axis and slams shut in the press's cycle (ConstructPressShells.cs), its turn about the hinge line.
-                    var open = ConstructPress.Openness(true, 0, ConstructLifters.DrawTick);
+                    var open = ConstructPress.Openness(true, 0, _pressStroke); // (the Core's own small clamshell: its stroke's swing, as the shells')
                     if (open > 0)
                     {
                         var up = Rot24.Apply(p.Rot, Vector3.UnitY);

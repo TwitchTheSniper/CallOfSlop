@@ -328,55 +328,70 @@ public sealed partial class PressParts : IPartGenerator
     private const string Hose = "#1d1f22";
 
     /// <summary>
-    /// A Press Block: one 2 m cube of a press's bed or wall. Its bolted rims, skirt and hazard edge on a side are drawn only while no block
-    /// of the same press is welded there (MachineBlocks: "seam"), so a bed reads as one plate with a hazard edge round it, and a wall as one.
-    /// A wall block on one of the bed's long edges is a clamshell segment: the game swings it about its hinge (ConstructPressShells.cs).
+    /// A Press Block: one 2 m cell of a press's bed or wall. Sean (2026-11-23): the beds and the frame pieces looked the same, so a press
+    /// read as one giant black box. A block is drawn by what it is, from its seams (MachineBlocks: "seam", "seamFill" on "-y"):
+    /// <list type="bullet">
+    /// <item><b>A bed block</b> (nothing of its press under it): a framed machine table: a deck slab with the tread plate and the hazard
+    /// edge, a leg at each corner and a body set well back under the deck. Welded to a block of its press, the bodies join legs to legs and
+    /// the edge goes, so a bed reads as one table.</item>
+    /// <item><b>A wall block</b> (a block of its press under it: a clamshell segment, which the game swings about its hinge,
+    /// ConstructPressShells.cs): a solid steel lid, unpainted so it never takes the bed's colour, with a dark cap, two stiffeners across
+    /// its top and a hazard band round its foot.</item>
+    /// </list>
+    /// Both solid (no hollow sections: Sean wants polygons saved). Its collision is the whole cell (a hidden box), so the bed, the walls,
+    /// the swing check and the crush test are as they were.
     /// </summary>
     private static Part PressBlock()
     {
         var p = new Part("Press Block", Small, Section,
             "Weld it beside a Press Core, or beside or on another Press Block: blocks on the Core's layer make the bed (2 m a block, the widest blank it takes), blocks stacked on the bed's two long edges make the walls (the tallest). The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
             group: "Production", color: Blue);
-        const double e = 0.997, t = 0.06; // (the body stops 3 mm short of the cell, so two blocks' faces never meet on one plane; the rims make the cell)
-        p.Add(Box([-e, 0.003, -e], [e, 1.997 - 0.04, e]));
-        p.Add(Box([-e, 1.997 - 0.04, -e], [e, 1.997, e], Bed)!.Update(("paintable", false), ("finish", "tread plate"))); // (the bed's top: the dark working tone)
-        foreach (var (side, lo, hi) in new[]
+        const double e = 0.997; // (the cell less 3 mm, so two blocks' faces never meet on one plane)
+        const double deck = 1.72; // (the deck slab's underside: the slab is 28 cm, the body under it set back)
+        const double leg = 0.26; // (the legs' side, and how far the body is set back from an open side)
+        const double inset = e - leg; // (the body's open face, from the middle)
+        // Its collision: the whole cell, never drawn (the bed and the walls keep their size and swing).
+        p.Add(Box([-e, 0.003, -e], [e, 1.997, e], hidden: true));
+        // ---- A bed block: drawn while no block of its press is under it ("seam": "-y") ----
+        PyDict BedBox(PyDict? box, string? side = null) => box!.Update(("seam", side == null ? "-y" : Py.L(side, "-y")));
+        p.Add(BedBox(MachineLook.D([-e, deck, -e], [e, 1.957, e], Blue, paintable: true))); // (the deck slab)
+        p.Add(BedBox(MachineLook.D([-e + 0.004, 1.957, -e + 0.004], [e - 0.004, 1.997, e - 0.004], Bed, "tread plate"))); // (the bed's top: the dark working tone)
+        p.Add(BedBox(MachineLook.D([-inset, 0.003, -inset], [inset, deck - 0.004, inset], Blue, paintable: true))); // (the body, set back between the legs)
+        foreach (var x in new[] { -e, e - leg })
+            foreach (var z in new[] { -e, e - leg })
+                p.Add(BedBox(MachineLook.D([x, 0.003, z], [x + leg, deck - 0.004, z + leg], MachineLook.Base))); // (a leg)
+        foreach (var (side, axis, sign) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
-            ("+x", new[] { 1 - t, 0, -1 + t }, new[] { 1.0, 2, 1 - t }), ("-x", new[] { -1.0, 0, -1 + t }, new[] { -1 + t, 2, 1 - t }),
-            ("+z", new[] { -1 + t, 0, 1 - t }, new[] { 1 - t, 2, 1.0 }), ("-z", new[] { -1 + t, 0, -1.0 }, new[] { 1 - t, 2, -1 + t }),
-        })
-        {
-            // Each side's frame (its corner posts are the two neighbours' frames meeting) and, at its top edge, the hazard band round the bed.
-            p.Add(Seam(MachineLook.D(lo, hi, MachineLook.Base)!, side));
-            var axis = side[1] == 'x' ? 0 : 2;
-            var sign = side[0] == '+' ? 1 : -1;
-            double[] hl = [-1 + t + 0.004, 1.84, -1 + t + 0.004], hh = [1 - t - 0.004, 1.94, 1 - t - 0.004];
-            hl[axis] = sign > 0 ? 0.996 : -1.008;
-            hh[axis] = sign > 0 ? 1.008 : -0.996; // (into the frame, so no face of it lies on the frame's)
-            p.Add(Seam(MachineLook.D(hl, hh, MachineLook.Accent, "hazard paint")!, side));
-            // Its production detail (Sean 2026-11-21), on the side's plate and gone with it when a block is welded there: two
-            // stiffener ribs up the plate, a row of bolt heads along its foot and one under the hazard band.
             var u = axis == 0 ? 2 : 0;
-            double n0 = sign > 0 ? 0.994 : -1.016, n1 = sign > 0 ? 1.016 : -0.994;
-            foreach (var c in new[] { -0.5, 0.5 })
+            // Lo and hi of a box on this side: out0..out1 outward from the middle, along a0..a1 the side, y0..y1 up.
+            PyDict? On(double out0, double out1, double a0, double a1, double y0, double y1, string colour, string? finish = null, bool paint = false)
             {
-                double[] rl = new double[3], rh = new double[3];
-                (rl[axis], rh[axis], rl[1], rh[1], rl[u], rh[u]) = (n0, n1, 0.16, 1.78, c - 0.03, c + 0.03);
-                p.Add(Seam(MachineLook.D(rl, rh, MachineLook.Base)!, side));
+                double[] lo = new double[3], hi = new double[3];
+                (lo[axis], hi[axis]) = sign > 0 ? (out0, out1) : (-out1, -out0);
+                (lo[u], hi[u], lo[1], hi[1]) = (a0, a1, y0, y1);
+                return MachineLook.D(lo, hi, colour, finish, paint);
             }
-            double b0 = sign > 0 ? 0.992 : -1.022, b1 = sign > 0 ? 1.022 : -0.992;
-            foreach (var c in new[] { -0.8, -0.25, 0.0, 0.25, 0.8 })
-                foreach (var by in new[] { 0.08, 1.74 })
-                {
-                    if (c == 0.0 && by > 1)
-                        continue;
-                    double[] bl = new double[3], bh = new double[3];
-                    (bl[axis], bh[axis], bl[1], bh[1], bl[u], bh[u]) = (b0, b1, by, by + 0.035, c - 0.0175, c + 0.0175);
-                    p.Add(Seam(MachineLook.D(bl, bh, MachineLook.Steel, "steel")!, side));
-                }
+            // Welded to a block of its press: the body runs on to the neighbour's under the deck, legs to legs (on a wall block it is
+            // inside the lid, unseen).
+            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.007, deck - 0.008, Blue, paint: true)!.Update(("seamFill", side)));
+            // Open: the deck's hazard edge, a row of bolts along the slab, two ribs and a kick band on the set-back body, and a dark
+            // band just under the deck (its shadow line, which reads as the frame's depth).
+            p.Add(BedBox(On(e - 0.004, e + 0.008, -e + 0.03, e - 0.03, 1.80, 1.90, MachineLook.Accent, "hazard paint"), side));
+            foreach (var c in new[] { -0.75, -0.25, 0.25, 0.75 })
+                p.Add(BedBox(On(e - 0.004, e + 0.022, c - 0.0175, c + 0.0175, 1.745, 1.78, MachineLook.Steel, "steel"), side));
+            foreach (var c in new[] { -0.3, 0.3 })
+                p.Add(BedBox(On(inset - 0.004, inset + 0.04, c - 0.03, c + 0.03, 0.16, deck - 0.06, MachineLook.Base), side));
+            p.Add(BedBox(On(inset - 0.004, inset + 0.016, -inset + 0.004, inset - 0.004, 0.007, 0.14, MachineLook.Base), side));
+            p.Add(BedBox(On(inset - 0.004, inset + 0.012, -inset + 0.004, inset - 0.004, deck - 0.05, deck - 0.012, Hose), side));
+            // ---- A wall block (a block of its press under it: "seamFill": "-y"): the lid's hazard band round its foot ----
+            var off = axis == 0 ? 0 : 0.004; // (the x sides' bands and the z sides' cross at the corners: their tops and feet a few mm apart)
+            p.Add(On(e - 0.008, e + 0.004, -e + 0.004, e - 0.004, 0.08 + off, 0.22 - off, MachineLook.Accent, "hazard paint")!.Update(("seamFill", "-y")));
         }
-        foreach (var (x, z) in new[] { (-1.0, -1.0), (1 - t, -1.0), (-1.0, 1 - t), (1 - t, 1 - t) })
-            p.Add(MachineLook.D([x, 0, z], [x + t, 2, z + t], MachineLook.Base)); // (the corner posts)
+        // The lid: one solid steel body (unpainted: its own tone, never the bed's), a dark cap, two stiffeners across its top.
+        p.Add(MachineLook.D([-e, 0.006, -e], [e, 1.88, e], Lid, "steel")!.Update(("seamFill", "-y")));
+        p.Add(MachineLook.D([-e + 0.004, 1.88, -e + 0.004], [e - 0.004, 1.93, e - 0.004], MachineLook.Base)!.Update(("seamFill", "-y")));
+        foreach (var x in new[] { -0.5, 0.5 })
+            p.Add(MachineLook.D([x - 0.06, 1.93, -e + 0.03], [x + 0.06, 1.994, e - 0.03], Lid, "steel")!.Update(("seamFill", "-y")));
         p.Sock("+x", [1, 1, 0], "+x");
         p.Sock("-x", [-1, 1, 0], "-x");
         p.Sock("+z", [0, 1, 1], "+z");
@@ -387,6 +402,8 @@ public sealed partial class PressParts : IPartGenerator
         p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false));
         return p;
     }
+
+    private const string Lid = "#7d8690"; // a Press Block's shell lid: bare gunmetal, lighter than any bed paint
 
     private static PyDict Seam(PyDict box, string face) => box.Update(("seam", face));
 
