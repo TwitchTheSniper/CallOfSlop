@@ -293,7 +293,7 @@ public sealed class LifterParts : IPartGenerator
     /// <summary>
     /// A Crane Rail Block: 2 m of runway girder, one 2 m cell across and along and 1 m deep, for the top of a mast column (the shared Mast
     /// Block). An I-beam (sole plate, bottom flange, web, top flange) with the steel rail on top, whose top is the block's top: the line a
-    /// Hall Crane's end trucks run on. Web stiffeners, rail clips, a splice plate at each end, a conductor bar for the bridge's power on its
+    /// Hall Crane's end trucks run on. Plain for the triangle count: hazard paint on the bottom flange, a conductor bar for the bridge's power on its
     /// +x side, an amber lamp on its -x side that flashes while a bridge passes (ConstructLifters.RailLit). Blocks in line end to end make a
     /// run (ConstructCraneRails.cs); two parallel runs up to 32 m apart make a crane.
     /// </summary>
@@ -309,50 +309,18 @@ public sealed class LifterParts : IPartGenerator
         p.Add(Box([-0.065, 0.126, -e + 0.006], [0.065, 0.824, e - 0.006], CraneWeb)); // (the web)
         p.Add(Box([-0.4, 0.82, -e + 0.003], [0.4, 0.9, e - 0.003], CraneBase)); // (the top flange)
         p.Add(MachineLook.D([-0.085, 0.896, -0.999], [0.085, top, 0.999], CraneSteel, "steel")); // (the rail: its top is the run's line)
-        // Web stiffeners every half metre, both sides, flange to flange; at each end a splice plate with six bolts.
-        foreach (var z in new[] { -0.75, -0.25, 0.25, 0.75 })
-            foreach (var sx in new[] { -1, 1 })
-            {
-                double a = sx * 0.069, b = sx * 0.36;
-                p.Add(MachineLook.D([Math.Min(a, b), 0.134, z - 0.014], [Math.Max(a, b), 0.816, z + 0.014], CraneWeb));
-            }
-        foreach (var sz in new[] { -1, 1 })
-            foreach (var sx in new[] { -1, 1 })
-            {
-                double za = sz * (e - 0.006), zb = sz * (e - 0.26), xa = sx * 0.069, xb = sx * 0.092;
-                p.Add(MachineLook.D([Math.Min(xa, xb), 0.25, Math.Min(za, zb)], [Math.Max(xa, xb), 0.7, Math.Max(za, zb)], CraneBase));
-                foreach (var y in new[] { 0.33, 0.475, 0.62 })
-                    foreach (var dz in new[] { 0.07, 0.18 })
-                    {
-                        var bz = sz * (e - dz);
-                        p.Add(MachineLook.D([Math.Min(xb, sx * 0.112), y - 0.018, bz - 0.018], [Math.Max(xb, sx * 0.112), y + 0.018, bz + 0.018], CraneSteel, "steel"));
-                    }
-            }
-        // Rail clips along the rail's foot every 40 cm, both sides; anchor bolts through the sole plate into the mast.
-        foreach (var z in new[] { -0.8, -0.4, 0.0, 0.4, 0.8 })
-            foreach (var sx in new[] { -1, 1 })
-            {
-                double a = sx * 0.089, b = sx * 0.16;
-                p.Add(MachineLook.D([Math.Min(a, b), 0.898, z - 0.05], [Math.Max(a, b), 0.935, z + 0.05], CraneSteel, "steel"));
-            }
-        foreach (var (bx, bz) in new[] { (0.54, 0.8), (0.54, -0.8), (-0.54, 0.8), (-0.54, -0.8), (0.54, 0.0), (-0.54, 0.0) })
-            p.Add(MachineLook.D([bx - 0.025, 0.05, bz - 0.025], [bx + 0.025, 0.085, bz + 0.025], CraneSteel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 6), ("front", "+y"))));
+        // Kept plain for the triangle count (Sean, 2026-11-23): no stiffeners, splice plates, bolts or rail clips; only details that
+        // run the block's whole length (hazard paint, the conductor bar), so a run of blocks reads as one long girder.
         // Hazard paint on the bottom flange's edges: overhead work.
         p.Add(MachineLook.D([-0.472, 0.06, -0.92], [-0.458, 0.12, 0.92], CraneYellow, "hazard paint"));
         p.Add(MachineLook.D([0.458, 0.06, -0.92], [0.472, 0.12, 0.92], CraneYellow, "hazard paint"));
-        // The conductor bar on the +x side: insulator brackets off the web, a dark carrier and its copper face (the bridge's collector runs on it).
-        foreach (var z in new[] { -0.6, 0.0, 0.6 })
-        {
-            p.Add(MachineLook.D([0.069, 0.6, z - 0.03], [0.29, 0.64, z + 0.03], CraneBase));
-            p.Add(MachineLook.D([0.27, 0.56, z - 0.035], [0.33, 0.66, z + 0.035], "#c9c4b2"));
-        }
+        // The conductor bar on the +x side: one long bracket off the web, a dark carrier and its copper face (the bridge's collector runs on it).
+        p.Add(MachineLook.D([0.06, 0.6, -0.97], [0.333, 0.64, 0.97], CraneBase));
         p.Add(MachineLook.D([0.33, 0.57, -0.98], [0.37, 0.65, 0.98], CraneBase));
         p.Add(MachineLook.D([0.37, 0.59, -0.97], [0.384, 0.63, 0.97], "#b87333", "copper"));
         // The lamp on the -x side under the top flange: a dark housing and its amber lens, which flashes while a bridge passes.
         p.Add(MachineLook.D([-0.24, 0.62, -0.09], [-0.069, 0.78, 0.09], CraneBase));
         p.Add(MachineLook.Work(MachineLook.D([-0.27, 0.64, -0.07], [-0.236, 0.76, 0.07], MachineLook.Accent), "glow"));
-        p.Add(MachineLook.D([-0.11, 0.3, -0.6], [-0.069, 0.42, -0.3], MachineLook.In)); // (the maker's plate on the web)
-        p.Add(MachineLook.D([-0.118, 0.34, -0.57], [-0.106, 0.38, -0.33], MachineLook.Ink));
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+z", [0, 0.5, 1], "+z");
         p.Sock("-z", [0, 0.5, -1], "-z");
