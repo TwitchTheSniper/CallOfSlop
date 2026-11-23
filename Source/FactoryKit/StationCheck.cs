@@ -196,6 +196,9 @@ public static class StationCheck
                 var bin = FillTarget(px, pz, fm);
                 Console.WriteLine($"  at the end the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz} holds {(bin < 0 ? "" : Holds(bin))}");
             }
+        // Every bin's stock at the end: where the bulk an Assembler waits for went (2026-11-22: the yard Assembler starved of steel).
+        foreach (var i in Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsBin && w.StoreOf(c, i) is { Amount: > 0 }))
+            Console.WriteLine($"  the {c.DefOf(i).Name} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0} holds {Holds(i)}");
         foreach (var b in w.Bodies)
             if (b != c)
                 Console.WriteLine($"  a body of {b.PartCount} part(s) ({(b.PartCount > 0 ? b.DefOf(0).Name : "")}) at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.0}, {b.WorldCom.Z:0.0}");
