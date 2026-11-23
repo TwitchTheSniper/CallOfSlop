@@ -200,9 +200,9 @@ public static partial class ConstructLifters
     /// <summary>Has the body a lifter part? Kept on the body until its parts change (a terminal's network key asks on every look).</summary>
     public static bool HasLifter(Construct c)
     {
-        if (c.HasLiftStamp == c.RebuildStamp && c.HasLiftParts == c.PartCount)
+        if (c.HasLiftStamp == c.StructStamp && c.HasLiftParts == c.PartCount)
             return c.HasLift;
-        (c.HasLiftStamp, c.HasLiftParts, c.HasLift) = (c.RebuildStamp, c.PartCount, false);
+        (c.HasLiftStamp, c.HasLiftParts, c.HasLift) = (c.StructStamp, c.PartCount, false);
         for (var i = 0; i < c.PartCount && !c.HasLift; i++)
             c.HasLift = c.DefOf(i).Lifter != null;
         return c.HasLift;

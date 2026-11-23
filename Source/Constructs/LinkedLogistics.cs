@@ -256,9 +256,9 @@ public static partial class LinkedLogistics
     /// <summary>How many linked logistics parts a body has, counted again only when it was rebuilt (a client's command view asks too).</summary>
     public static int PartCount(Construct c)
     {
-        if (c.LinkStamp != c.RebuildStamp || c.LinkParts < 0)
+        if (c.LinkStamp != c.StructStamp || c.LinkParts < 0)
         {
-            c.LinkStamp = c.RebuildStamp;
+            c.LinkStamp = c.StructStamp;
             var n = 0;
             for (var i = 0; i < c.PartCount; i++)
                 if (c.DefOf(i).LinkKind != LinkKind.None)

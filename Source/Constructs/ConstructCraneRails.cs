@@ -36,9 +36,9 @@ public static partial class ConstructLifters
         var ld = c.DefOf(part).Lifter;
         if (ld is not { Bridge: true })
             return ld;
-        if (c.CraneStamp != c.RebuildStamp || c.CranePartCount != c.PartCount)
+        if (c.CraneStamp != c.StructStamp || c.CranePartCount != c.PartCount)
         {
-            c.CraneStamp = c.RebuildStamp;
+            c.CraneStamp = c.StructStamp;
             c.CranePartCount = c.PartCount;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             var key = CraneKeyOf(c);

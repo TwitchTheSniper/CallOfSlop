@@ -79,7 +79,7 @@ public static class ConstructLamps
         {
             if (c.SpaceAway != 0)
                 continue;
-            if (c.LampStamp != c.RebuildStamp)
+            if (c.LampStamp != c.StructStamp)
                 Gather(c);
             if (c.LampParts.Length == 0)
                 continue;
@@ -290,7 +290,7 @@ public static class ConstructLamps
         ref var p = ref c.Parts[i];
         if (p.Broken || !c.HasBattery || !c.PowerOn || !p.Powered)
             return false;
-        if (c.LampStamp != c.RebuildStamp)
+        if (c.LampStamp != c.StructStamp)
             Gather(c);
         var f = i < c.MainsFeed.Length ? c.MainsFeed[i] : -1;
         return f < 0 || f < c.PartCount && !c.Parts[f].Broken && c.Parts[f].Out >= 0.5f;
@@ -299,7 +299,7 @@ public static class ConstructLamps
     /// <summary>A body's lamp parts, gathered again after a rebuild (the only allocation: a new list when the parts change).</summary>
     private static void Gather(Construct c)
     {
-        c.LampStamp = c.RebuildStamp;
+        c.LampStamp = c.StructStamp;
         // (mains lamps' switch wires: the first wire into each, from a part of this body)
         var mains = false;
         for (var i = 0; i < c.PartCount && !mains; i++)

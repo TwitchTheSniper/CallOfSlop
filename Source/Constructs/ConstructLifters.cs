@@ -251,13 +251,13 @@ public static partial class ConstructLifters
     {
         foreach (var c in world.Bodies)
         {
-            if (server && (c.PadStamp != c.RebuildStamp || c.PadPartCount != c.PartCount))
+            if (server && (c.PadStamp != c.StructStamp || c.PadPartCount != c.PartCount))
             {
                 NotePads(world, c); // (phase 5: the bodies with a Lay-down Pad, ConstructLifterPads.cs; its own stamp, as a host's drawing scans this world too)
                 if (HasPacked(c) && !world.PackedBodies.Contains(c.Id))
                     world.PackedBodies.Add(c.Id); // (a packed group out of a store, or welded on before it was unpacked: its group again, PackedGroups.cs)
             }
-            if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
+            if (c.LiftStamp != c.StructStamp || c.LiftPartCount != c.PartCount)
                 ScanBody(world, c, server);
         }
         for (var k = world.LiftBodies.Count - 1; k >= 0; k--)
@@ -296,17 +296,17 @@ public static partial class ConstructLifters
             // A body never seen with lifters: none kept for it while it has none (a shell, a wreck piece or a dropped part
             // came and went every Scan, and each one's LiftBody was an allocation in the world step).
             n = CountLifters(c);
-            c.LiftStamp = c.RebuildStamp;
+            c.LiftStamp = c.StructStamp;
             c.LiftPartCount = c.PartCount;
             if (n == 0)
                 return NoLifts; // (read only: no lifters)
             world.LiftSeen[c.Id] = lb = new LiftBody { Body = c.Id };
         }
-        else if (lb.Stamp == c.RebuildStamp && lb.Count == c.PartCount)
+        else if (lb.Stamp == c.StructStamp && lb.Count == c.PartCount)
             return lb;
         else
             n = CountLifters(c);
-        lb.Stamp = c.LiftStamp = c.RebuildStamp;
+        lb.Stamp = c.LiftStamp = c.StructStamp;
         lb.Count = c.LiftPartCount = c.PartCount;
         var old = lb.Lifts;
         var oldN = lb.N;
