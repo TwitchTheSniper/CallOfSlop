@@ -126,6 +126,8 @@ public static partial class ConstructBakeOven
             var mj = c.Parts[mine].Station!;
             if (mj.State != StationState.Done || why != OvenStall.Empty || world.Get(mj.Body) is not { } kit || ConstructLifters.CarryingBody(world, kit.Id) != null)
                 return; // (building, or the bed isn't clear yet)
+            if (ConstructRollOut.RunOut(c, mine) is var way and >= 0 && ConstructRollOut.OvenOf(c, way) == part)
+                return; // (its station rolls it out along the run to this bed: ConstructRollOut.FromStation)
             if (Landing(c, part, asm, bed, kit, out var toPos, out var toRot) is { } no)
             {
                 Note(world, c, part, $"the {d.Name} kit doesn't fit the bed: {no}");

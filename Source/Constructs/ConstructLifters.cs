@@ -351,6 +351,7 @@ public static partial class ConstructLifters
         var fitTaken = world.FitThisTick;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         PoseBodies(world); // (every tick: a carried submodule rides its hand)
+        ConstructRollOut.Step(world); // (and a body rolling along a Roller Tile run: out of a station's bay, onto an oven's bed)
         StepLifts(world, query, fitTaken);
         if (world.LiftBodies.Count > 0)
         {
