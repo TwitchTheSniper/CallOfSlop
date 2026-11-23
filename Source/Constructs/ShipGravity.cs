@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>A world's ship gravity rule (docs/sandbox/SHIP-GRAVITY.md). The byte is in saves and on the wire: add at the end.</summary>
 public enum ShipGravityMode : byte
 {
-    Deck, // as before: every deck pulls 1 g along its own down, wherever the ship is and whatever it does
+    Deck, // every deck pulls 1 g along its own down, wherever the ship is; a hard burn, brake or turn is felt on top (Karl, 2026-11-23)
     Space, // ships in space have no deck gravity: what their riders feel is their acceleration (on a planet, decks as before)
     Everywhere, // every vehicle, everywhere: what a rider feels is the world's pull less the vehicle's acceleration (true physics)
 }
@@ -51,6 +51,13 @@ public static class ShipGravity
     /// <summary>A space suit takes this many times as much (its g-suit bladders).</summary>
     public const float SuitFactor = 1.3f;
 
+    /// <summary>
+    /// Deck gravity: the hull's acceleration is felt on top of the deck's 1 g past this much (g), less this much (Karl, 2026-11-23:
+    /// a high-g burn let riders jump about). Gentle driving and cruising feel as before; a hard burn pins them as it does with the
+    /// rule on. The fade is continuous, so nothing pops as a burn builds.
+    /// </summary>
+    public const float DeckFeltFrom = 0.25f;
+
     /// <summary>Under this (g) a rider floats: a jump pushes off, and in the air the move keys drift them (Jump up, Crouch down).</summary>
     public const float FloatG = 0.15f;
 
@@ -84,7 +91,10 @@ public static class ShipGravity
         if (c.Asleep && c.SpaceShip == 0 && c.CarriedBy == 0)
             return; // (resting: its last pull stands, and the map's field isn't asked for every sleeper every tick)
         Vector3 raw;
-        if (c.SpaceShip != 0)
+        if (Mode == ShipGravityMode.Deck)
+            raw = c.SpaceShip != 0 ? (ConstructFrames.SpaceTimeSpeed > 1 ? Vector3.Zero : -c.SpaceAccel) // (deck gravity: only the hull's change of motion, the deck stands in for the world's pull)
+                : c.CarriedBy != 0 ? c.Felt : -c.Accel;
+        else if (c.SpaceShip != 0)
             raw = ConstructFrames.SpaceTimeSpeed > 1 ? Vector3.Zero : -c.SpaceAccel; // (a ship on its flight is in free fall: only its drive is felt; at a raised time speed nothing)
         else if (c.CarriedBy != 0)
             raw = c.Felt; // (a docked craft feels its carrier's: left as it was, the carrier's own is read by its riders)
@@ -101,10 +111,11 @@ public static class ShipGravity
     public static void SetRider(ref MoveState s, Construct c)
     {
         s.RideFeltOn = false;
-        if (Mode == ShipGravityMode.Deck || s.RideUp == Vector3.Zero || s.RideBody != c.Id)
+        if (s.RideUp == Vector3.Zero || s.RideBody != c.Id)
             return;
         var body = c.CarriedBy != 0 && ConstructRide.Bodies?.Get(c.CarriedBy) is { } carrier ? carrier : c; // (in a docked craft: the carrier's motion)
-        if (!Active(body))
+        var deck = Mode == ShipGravityMode.Deck;
+        if (!deck && !Active(body))
             return;
         var chest = s.Position + s.RideUpW * 1.2f;
         if (ConstructGravity.Generators > 0 && ConstructGravity.GenAt(chest, 0) >= 0)
@@ -112,6 +123,16 @@ public static class ShipGravity
         var r = chest - body.WorldCom;
         var felt = body.Felt - Vector3.Cross(body.AngVel, Vector3.Cross(body.AngVel, r)); // (a turning hull throws them outwards)
         c.WorldFrame(s.RideSeg, out var q, out _);
+        if (deck)
+        {
+            // Deck gravity: the deck's 1 g along their down, and the hull's acceleration on top past DeckFeltFrom (faded in).
+            var a = felt.Length();
+            var from = DeckFeltFrom * G;
+            if (a <= from)
+                return; // (as before: the deck's 1 g alone)
+            var downW = Vector3.Transform(-Vector3.Normalize(s.RideUp), q);
+            felt = downW * (World.Gravity * World.GravityScale) + felt * ((a - from) / a);
+        }
         s.RideFelt = Vector3.Transform(felt, Quaternion.Conjugate(q));
         s.RideFeltOn = true;
     }
@@ -122,6 +143,13 @@ public static class ShipGravity
         var l = s.RideFelt;
         var along = -Vector3.Dot(l, up);
         push = along > 0 ? l + up * along : l; // (what isn't down: sideways in a turn, up to the ceiling when they brake hard)
+        if (Mode == ShipGravityMode.Deck)
+        {
+            // Deck gravity holds them to the deck: the burn makes them heavier along their down (weak jumps, slow moving,
+            // pinned), never slides or lifts them (a turning or braking vehicle keeps its riders on their spots, as before).
+            along = l.Length();
+            push = Vector3.Zero;
+        }
         var g = l.Length() / G;
         if (g >= PinG)
         {
@@ -230,6 +258,6 @@ public static class ShipGravity
     {
         ShipGravityMode.Space => "Ships in space have no deck gravity: you float at rest and feel their thrust. Hard burns pin you, harder ones hurt unless you sit. On planets decks pull as usual.",
         ShipGravityMode.Everywhere => "Every vehicle, everywhere: you feel the world's pull less the vehicle's acceleration. Turns push you sideways, burns pin you, hard ones hurt unless you sit.",
-        _ => "Every deck pulls 1 g towards its floor, wherever the ship is.",
+        _ => "Every deck pulls 1 g towards its floor, wherever the ship is. Hard burns, brakes and turns still press you on top of it.",
     };
 }
