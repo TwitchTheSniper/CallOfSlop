@@ -501,7 +501,7 @@ public static partial class BakedParts
     private static int MidCm(float lo, float hi)
     {
         var sum = (long)MathF.Round(lo * 200) + (long)MathF.Round(hi * 200); // four times the middle, in cm
-        return (int)Math.Floor(sum / 4.0 + 0.5);
+        return (int)Math.Floor(sum / 4.0 + 0.5); // (halves up, not to even: the same group moved by whole centimetres keeps its hash; a group with a middle on a half centimetre may bake to a new hash after 2026-11-23)
     }
 
     /// <summary>A baked kit's body: the catalogue part where the kit's frame put it, the plates kept, the old body gone.</summary>

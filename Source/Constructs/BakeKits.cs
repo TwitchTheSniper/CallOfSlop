@@ -71,7 +71,15 @@ public static class BakeKits
     }
 
     /// <summary>Is this part made from a kit (baked, never assembled)?</summary>
-    public static bool Has(ConstructPartDef d) => !d.IsNamedRuntime && !d.IsExtrusion && Array.FindIndex(Names, n => n.Equals(d.Name, StringComparison.OrdinalIgnoreCase)) >= 0;
+    public static bool Has(ConstructPartDef d)
+    {
+        if (d.IsNamedRuntime || d.IsExtrusion)
+            return false;
+        foreach (var n in Names) // (no lambda: it is asked in looks that must not allocate)
+            if (n.Equals(d.Name, StringComparison.OrdinalIgnoreCase))
+                return true;
+        return false;
+    }
 
     /// <summary>A part's kit (null: it has none, or one of its boxes can't be made: the log says which).</summary>
     public static Piece[]? KitOf(ConstructPartDef d)

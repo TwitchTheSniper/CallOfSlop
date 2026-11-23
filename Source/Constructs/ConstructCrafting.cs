@@ -397,7 +397,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.Pressed || r.MinTier > md.Tier || !ConstructAssembling.Takes(c, m, r))
+                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.Has(r.Output) || !ConstructAssembling.Takes(c, m, r))
                         continue; // (a block Assembler lists only what its modules and bed build: WorkOrders refuses the rest)
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)

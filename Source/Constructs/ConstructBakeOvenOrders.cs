@@ -100,6 +100,7 @@ public static partial class ConstructBakeOven
             if (ConstructLifters.CarryBody(world, c, mine, kit, toPos, toRot, out var who, out var cant))
             {
                 world.OvenKits[key] = kit.Id;
+                Note(world, c, part, "");
                 Console.WriteLine($"[oven] construct {c.Id} part {part}: the {d.Name} kit (body {kit.Id}) carried to its bed by the {who}");
             }
             else
@@ -116,7 +117,10 @@ public static partial class ConstructBakeOven
         if (ConstructStation.Start(world, c, idle, bp.Name, 0) is { } refused)
             Note(world, c, part, $"the {d.Name} kit: {refused}");
         else
+        {
+            Note(world, c, part, "");
             Console.WriteLine($"[oven] construct {c.Id} part {part}: the {d.Name} kit started at the {c.DefOf(idle).Name} {idle}");
+        }
     }
 
     private static void Note(ConstructWorld world, Construct c, int part, string note)
@@ -125,7 +129,9 @@ public static partial class ConstructBakeOven
         if (c.Parts[part].Orders is { } q && q.Note != note)
         {
             q.Note = note;
-            Console.WriteLine($"[oven] construct {c.Id} part {part}: {note}");
+            world.OrdersChanged(c); // (the note rides with the queue to every peer)
+            if (note.Length > 0)
+                Console.WriteLine($"[oven] construct {c.Id} part {part}: {note}");
         }
     }
 

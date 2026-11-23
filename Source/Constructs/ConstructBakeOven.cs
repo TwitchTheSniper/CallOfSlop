@@ -342,8 +342,8 @@ public static partial class ConstructBakeOven
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var b = bodies[bi];
-            if (b == c || b.PartCount == 0)
-                continue;
+            if (b == c || b.PartCount == 0 || b.HeldBy != 0)
+                continue; // (a body held, a kit still on a lifter's hook, isn't on the bed yet)
             // Its bounds in the Core's frame (the eight corners of its rest-frame box, through the world).
             b.WorldFrame(0, out var bq, out var bt);
             Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
