@@ -144,6 +144,7 @@ public static partial class Program
             // The shadow and dark-interior passes' boxes last frame (each pass draws only the caster cells it reaches: SunShadows.DrawCells).
             s.Extra["sunBoxes"] = SunShadows.LastBoxes;
             s.Extra["roomBoxes"] = RoomShade.LastBoxes;
+            s.Extra["roomFarDrawn"] = RoomShade.FarDrawn; // (far dark-interior maps drawn since start: one a frame while the ring catches up)
             s.Extra["lampBoxes"] = LampShadows.LastBoxes;
             s.Extra["casterCellsSkipped"] = SunShadows.CellsSkipped;
         }

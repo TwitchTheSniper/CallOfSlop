@@ -59,6 +59,8 @@ public static class ConstructLamps
     // and its direction in the body's frame for its shadow's faces)
     private static readonly float[] BestRange = new float[Most], BestStrength = new float[Most], BestCos = new float[Most];
     private static readonly Vector3[] BestDir = new Vector3[Most], BestBodyDir = new Vector3[Most];
+    // (how far down a long spot's axis the eye's nearest point is (m): Seen looks there, at what it lights, not at its bulb)
+    private static readonly float[] BestSeeT = new float[Most];
 
     /// <summary>Lamps lit this frame and lamps in reach (the F9 window and the smoke log).</summary>
     public static int LastLit, LastNear;
@@ -116,7 +118,7 @@ public static class ConstructLamps
         // The candidates in order of distance, a lamp the eye can't see counting HiddenPenalty farther (insertion sort: few, mostly in order).
         for (var k = 0; k < cand; k++)
         {
-            BestKey[k] = BestD[k] + (SeenCached(world, eye, k, ref rays) ? 0f : HiddenPenalty);
+            BestKey[k] = BestD[k] + SeenCached(world, eye, k, ref rays) * HiddenPenalty;
             var at = k;
             while (at > 0 && BestKey[Order[at - 1]] > BestKey[k])
             {
@@ -157,33 +159,70 @@ public static class ConstructLamps
     /// <summary>Rays a frame for <see cref="Seen"/>, nearest lamps first, and how many frames an answer is kept.</summary>
     private const int RaysPerFrame = 8, SeenKeep = 12;
 
+    /// <summary>
+    /// How much of <see cref="HiddenPenalty"/> a lamp's hidden share moves a frame. Sean, 2026-11-23: the works shed's light flickered
+    /// and rolled as he walked: the pendants' rays crossed trusses and crane rails and flipped between seen and hidden, each flip moved
+    /// a lamp 8 m in the order at once, and the lamps lit swapped with no fade (and their shadow slots with them). Eased over about
+    /// 10 frames the order changes as smoothly as the distances do, and the hand-over's fade has time to work.
+    /// </summary>
+    private const float HideEase = 0.1f;
+
     private struct SeenEntry
     {
-        public int Body, Part, Sub, Frame;
+        public int Body, Part, Sub, Frame, Eased;
         public bool Seen;
+        public float Hide; // (0 seen, 1 hidden, eased towards Seen)
     }
 
-    private static readonly SeenEntry[] SeenCache = new SeenEntry[256]; // (open slots keyed by lamp; a clash takes the slot)
+    private const int SeenWays = 4;
+
+    private static readonly SeenEntry[] SeenCache = new SeenEntry[1024]; // (open slots keyed by lamp; a clash takes the slot: the works has hundreds of lamps in reach)
     private static int _frame;
 
     /// <summary>
     /// <see cref="Seen"/> kept a few frames per lamp: a ship deck has 60 lamps in reach, and a ray each a frame cost 3 ms on the
-    /// cloud box. A lamp not tested yet counts as seen (by distance alone, as before) until its ray comes round.
+    /// cloud box. A lamp not tested yet counts as seen (by distance alone, as before) until its ray comes round. Returns the lamp's
+    /// hidden share, 0 to 1, eased (<see cref="HideEase"/>).
     /// </summary>
-    private static bool SeenCached(ConstructWorld world, Vector3 eye, int k, ref int rays)
+    private static float SeenCached(ConstructWorld world, Vector3 eye, int k, ref int rays)
     {
         if (BestSub[k] < 0 || BestBody[k] is not { } c)
-            return true;
-        var slot = (int)((uint)(c.Id * 73856093 ^ BestPart[k] * 19349663 ^ BestSub[k] * 83492791) % (uint)SeenCache.Length);
+            return 0f;
+        // Up to SeenWays slots from the hash: this lamp's own, else an empty one, else the one used longest ago (two lamps in reach
+        // that hash alike never take each other's slot every frame, which reset both to seen).
+        var home = (int)((uint)(c.Id * 73856093 ^ BestPart[k] * 19349663 ^ BestSub[k] * 83492791) % (uint)SeenCache.Length);
+        var slot = -1;
+        for (var w = 0; w < SeenWays && slot < 0; w++)
+        {
+            ref var x = ref SeenCache[(home + w) % SeenCache.Length];
+            if (x.Eased != 0 && x.Body == c.Id && x.Part == BestPart[k] && x.Sub == BestSub[k])
+                slot = (home + w) % SeenCache.Length;
+        }
+        var fresh = slot < 0;
+        if (fresh)
+        {
+            slot = home;
+            for (var w = 1; w < SeenWays; w++)
+            {
+                var at = (home + w) % SeenCache.Length;
+                if (SeenCache[at].Eased < SeenCache[slot].Eased)
+                    slot = at;
+            }
+            SeenCache[slot] = new SeenEntry { Body = c.Id, Part = BestPart[k], Sub = BestSub[k], Seen = true, Eased = _frame }; // (Frame 0: not tested yet)
+        }
         ref var e = ref SeenCache[slot];
-        var mine = e.Frame != 0 && e.Body == c.Id && e.Part == BestPart[k] && e.Sub == BestSub[k];
-        if (mine && _frame - e.Frame < SeenKeep)
-            return e.Seen;
-        if (rays >= RaysPerFrame)
-            return !mine || e.Seen;
-        rays++;
-        e = new SeenEntry { Body = c.Id, Part = BestPart[k], Sub = BestSub[k], Frame = _frame, Seen = Seen(world, eye, k) };
-        return e.Seen;
+        if ((e.Frame == 0 || _frame - e.Frame >= SeenKeep) && rays < RaysPerFrame)
+        {
+            rays += BestSeeT[k] > 0f ? 2 : 1;
+            var first = e.Frame == 0;
+            (e.Seen, e.Frame) = (Seen(world, eye, k), _frame);
+            if (first)
+                e.Hide = e.Seen ? 0f : 1f; // (its first answer stands: a lamp new to the candidates is at their far end)
+        }
+        var step = Math.Min(_frame - e.Eased, 30) * HideEase;
+        e.Eased = _frame;
+        e.Hide = e.Seen ? MathF.Max(e.Hide - step, 0f) : MathF.Min(e.Hide + step, 1f);
+        return e.Hide;
     }
 
     /// <summary>
@@ -197,12 +236,28 @@ public static class ConstructLamps
             return true;
         var inv = Quaternion.Conjugate(BestRot[k]);
         var from = c.Pos + Vector3.Transform(Vector3.Transform(eye - BestBodyPos[k], inv), c.Rot);
-        var to = c.Pos + Vector3.Transform(BestLocal[k], c.Rot);
+        var bulb = c.Pos + Vector3.Transform(BestLocal[k], c.Rot);
+        if (BestSeeT[k] > 0f)
+        {
+            // A long spot: seen when the eye sees the point on its axis nearest the eye (what it lights round you, not its bulb up in the
+            // roof steel) and its beam reaches that point (not a pendant on the far side of a deck).
+            var axis = Vector3.Transform(BestBodyDir[k], c.Rot);
+            var lit = bulb + axis * BestSeeT[k];
+            if (BestSeeT[k] > 0.35f && world.Raycast(bulb + axis * 0.35f, axis, BestSeeT[k] - 0.35f, out var down) && !down.Glass)
+                return false;
+            return Clear(world, from, lit, 0f);
+        }
+        return Clear(world, from, bulb, 0.35f); // (0.35 m short: the lamp's own fitting)
+    }
+
+    /// <summary>Nothing but glass between <paramref name="from"/> and <paramref name="to"/> (stopping <paramref name="shortOf"/> short); within 0.6 m counts as clear.</summary>
+    private static bool Clear(ConstructWorld world, Vector3 from, Vector3 to, float shortOf)
+    {
         var dir = to - from;
         var d = dir.Length();
         if (d < 0.6f)
             return true;
-        return !world.Raycast(from, dir / d, d - 0.35f, out var hit) || hit.Glass; // (0.35 m short: the lamp's own fitting)
+        return !world.Raycast(from, dir / d, d - shortOf, out var hit) || hit.Glass;
     }
 
     /// <summary>Lamp <paramref name="sub"/> at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
@@ -216,6 +271,7 @@ public static class ConstructLamps
         // from its beam's axis (a pendant 21 m up lights the floor round you), anything else that much nearer. Not plainly by its extra range:
         // a hall of pendants 25 m off then outranked a cabin's own lamps beside the eye (merge review).
         var dist = Vector3.Distance(world, eye);
+        var seeT = 0f;
         if (light != null && light.LightRange > _range)
         {
             if (light.LightCone > 0f)
@@ -223,6 +279,7 @@ public static class ConstructLamps
                 var axis = still ? Vector3.Transform(Rot24.Apply(p.Rot, light.LightDir), rot) : Vector3.Normalize(c.SegToWorld(p.Seg, rest + Rot24.Apply(p.Rot, light.LightDir)) - world);
                 var t = Math.Clamp(Vector3.Dot(eye - world, axis), 0f, light.LightRange * 0.8f);
                 dist = Vector3.Distance(eye, world + axis * t);
+                seeT = t;
             }
             else
                 dist = MathF.Max(dist - (light.LightRange - _range), 0f);
@@ -237,7 +294,7 @@ public static class ConstructLamps
         for (var k = Math.Min(n, keep - 1); k > at; k--)
         {
             (BestD[k], BestPos[k], BestCol[k]) = (BestD[k - 1], BestPos[k - 1], BestCol[k - 1]);
-            (BestRange[k], BestStrength[k], BestCos[k], BestDir[k], BestBodyDir[k]) = (BestRange[k - 1], BestStrength[k - 1], BestCos[k - 1], BestDir[k - 1], BestBodyDir[k - 1]);
+            (BestRange[k], BestStrength[k], BestCos[k], BestDir[k], BestBodyDir[k], BestSeeT[k]) = (BestRange[k - 1], BestStrength[k - 1], BestCos[k - 1], BestDir[k - 1], BestBodyDir[k - 1], BestSeeT[k - 1]);
             (BestBody[k], BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k]) = (BestBody[k - 1], BestPart[k - 1], BestSub[k - 1], BestLocal[k - 1], BestBodyPos[k - 1], BestRot[k - 1]);
         }
         (BestD[at], BestPos[at], BestCol[at]) = (dist, world, colour);
@@ -245,12 +302,14 @@ public static class ConstructLamps
         BestStrength[at] = light?.LightStrength ?? 1f;
         BestCos[at] = -2f;
         BestDir[at] = BestBodyDir[at] = default;
+        BestSeeT[at] = 0f;
         if (light is { LightCone: > 0f })
         {
             var bodyDir = Rot24.Apply(p.Rot, light.LightDir);
             BestBodyDir[at] = bodyDir;
             BestDir[at] = still ? Vector3.Transform(bodyDir, rot) : Vector3.Normalize(c.SegToWorld(p.Seg, rest + bodyDir) - world);
             BestCos[at] = MathF.Cos(light.LightCone * (MathF.PI / 180f));
+            BestSeeT[at] = seeT;
         }
         (BestBody[at], BestPart[at], BestSub[at], BestLocal[at], BestBodyPos[at], BestRot[at]) = (c, i, still ? sub : -1, rest, pos, rot);
         n++;
