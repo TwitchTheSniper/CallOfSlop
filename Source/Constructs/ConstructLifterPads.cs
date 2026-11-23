@@ -355,7 +355,7 @@ public static partial class ConstructLifters
             var q = j.StepKind[k];
             if (_padHeld[q] == 0 || _padReach[q] >= _padHeld[q] || ConstructParts.Get(j.KindDef[q]) is not { } d)
                 continue;
-            var place = j.Pos + Vector3.Transform(plan.At[k], j.Rot);
+            var place = j.Pos + Vector3.Transform(plan.Centre[k], j.Rot); // (the middle: WristLift is over it, and a hull skin's origin lies metres under its plate)
             for (var a = 0; a < serving; a++)
                 if (Carries(ServeDef[a], d) && InReach(ServeDef[a], ServeShoulder[a], ServeRot[a], place, WristLift(d), out _))
                 {
