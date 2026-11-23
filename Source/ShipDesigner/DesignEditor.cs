@@ -285,15 +285,66 @@ public sealed class DesignEditor
             }
             case "autoRoom":
                 return AutoRoom(P());
+            case "pastePiece":
+            {
+                // A copy of a piece, moved along its hull (Ctrl+V).
+                if (d.Pieces.Count >= ShipDesign.MaxPieces)
+                    return $"at most {ShipDesign.MaxPieces} pieces";
+                var src = P();
+                var h = d.Hull(src.Hull)!;
+                var p = Piece.FromJson(src.ToJson(), d.NewId());
+                p.Hull = src.Hull;
+                p.Z = Math.Clamp(p.Z + D(o, "dz", 2), h.Front, h.Back);
+                p.U += p.Surface == "skin" ? 0 : D(o, "dz", 2);
+                d.Pieces.Add(p);
+                return "";
+            }
+            case "pasteRoom":
+            {
+                if (d.Rooms.Count >= ShipDesign.MaxRooms)
+                    return $"at most {ShipDesign.MaxRooms} rooms";
+                var src = Rm();
+                var r = Room.FromJson(src.ToJson(), d.NewId());
+                var len = r.Z1 - r.Z0;
+                r.Z0 += len; r.Z1 += len; // laid next to it, sharing a wall
+                d.Rooms.Add(r);
+                return "";
+            }
             case "delPiece":
                 d.Pieces.Remove(P());
                 return "";
 
             // ---- decks and rooms
+            case "orient":
+            {
+                // Lay the decks the other way: the rooms go (undo brings them back), and fresh decks fill the first hull.
+                var stacked = (bool?)o["stacked"] ?? !d.Stacked;
+                if (stacked == d.Stacked)
+                    return "";
+                d.Stacked = stacked;
+                d.Rooms.Clear();
+                d.Decks.Clear();
+                var b = d.Hulls[0].Bounds();
+                if (!stacked)
+                    for (var f = Math.Ceiling((b.Y0 + 0.4) * 4) / 4; f + 3 < b.Y1 - 0.3 && d.Decks.Count < 3; f += 3.25)
+                        d.Decks.Add(new Deck { Floor = f, Height = 3 });
+                else
+                    for (var f = Math.Floor((b.Z1 - 1.5) * 4) / 4; f - 3 > b.Z0 + 2 && d.Decks.Count < ShipDesign.MaxDecks; f -= 3.25)
+                        d.Decks.Add(new Deck { Floor = f, Height = 3 });
+                if (d.Decks.Count == 0)
+                    d.Decks.Add(new Deck { Floor = stacked ? b.Z1 - 1 : 0.25, Height = 3 });
+                return "";
+            }
             case "addDeck":
             {
                 if (d.Decks.Count >= ShipDesign.MaxDecks)
                     return $"at most {ShipDesign.MaxDecks} decks";
+                if (d.Stacked)
+                {
+                    var fore = d.Decks.Count == 0 ? null : d.Decks.MinBy(k => k.Floor);
+                    d.Decks.Add(new Deck { Floor = fore is null ? d.Hulls[0].Bounds().Z1 - 1 : fore.Floor - fore.Height - 0.25, Height = fore?.Height ?? 3 });
+                    return "";
+                }
                 var top = d.Decks.Count == 0 ? null : d.Decks.MaxBy(k => k.Floor);
                 d.Decks.Add(new Deck { Floor = top is null ? 0.25 : top.Ceiling + 0.25, Height = top?.Height ?? 3 });
                 return "";
@@ -358,28 +409,33 @@ public sealed class DesignEditor
         var d = Design;
         var kind = PieceKinds.Find(p.Kind)!;
         var (at, n) = DesignScene.Spots(d, p).First();
-        if (Math.Abs(n[1]) > 0.7)
-            return "an airlock room goes behind a door in the side; on the belly or the roof, lay the room yourself";
-        var deck = d.Decks.FindIndex(k => at[1] >= k.Floor - 0.6 && at[1] <= k.Ceiling);
+        // The door's place and its outward normal on the deck's plane (u across, v the floor's other way), and its height off the floor.
+        var (pu, pv, nu, nv, nUp) = d.Stacked ? (at[0], at[1], n[0], n[1], n[2]) : (at[0], at[2], n[0], n[2], n[1]);
+        if (Math.Abs(nUp) > 0.7)
+            return "an airlock room goes behind a door in a wall; through a floor or a ceiling, lay the room yourself";
+        var deck = d.Decks.FindIndex(k => d.Stacked ? at[2] <= k.Floor + 0.6 && at[2] >= k.Floor - k.Height : at[1] >= k.Floor - 0.6 && at[1] <= k.Ceiling);
         if (deck < 0)
-            return "the door is on no deck: move it down or up to a deck's height";
+            return "the door is on no deck: move it to a deck";
         var dk = d.Decks[deck];
-        bool across = Math.Abs(n[0]) >= Math.Abs(n[2]);
-        var sgn = Math.Sign(across ? n[0] : n[2]);
+        var across = Math.Abs(nu) >= Math.Abs(nv);
+        var sgn = Math.Sign(across ? nu : nv);
         for (var off = 0.25; off <= 3.01; off += 0.25)
         {
-            double edge = Snap((across ? at[0] : at[2]) - sgn * off, 0.25), far = edge - sgn * 2.5, mid = Snap(across ? at[2] : at[0], 0.25);
+            double edge = Snap((across ? pu : pv) - sgn * off, 0.25), far = edge - sgn * 2.5, mid = Snap(across ? pv : pu, 0.25);
             var r = across ? new Room { X0 = edge, X1 = far, Z0 = mid - 1.25, Z1 = mid + 1.25 } : new Room { Z0 = edge, Z1 = far, X0 = mid - 1.25, X1 = mid + 1.25 };
             r.Normalise();
             var fits = true;
-            foreach (var y in new[] { dk.Floor + 0.05, dk.Ceiling - 0.02 })
-                foreach (var x in new[] { r.X0, r.X1 })
-                    foreach (var z in new[] { r.Z0, r.Z1 })
-                        fits &= d.Hulls.Any(h => h.Depth(x, y, z) >= 0.06);
+            foreach (var up in new[] { 0.05, dk.Height - 0.02 })
+                foreach (var u in new[] { r.X0, r.X1 })
+                    foreach (var v in new[] { r.Z0, r.Z1 })
+                    {
+                        var w = d.World(dk, u, v, up);
+                        fits &= d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06);
+                    }
             if (!fits)
                 continue;
             if (d.Rooms.Any(o => o.Deck == deck && Math.Min(r.X1, o.X1) - Math.Max(r.X0, o.X0) > 0.01 && Math.Min(r.Z1, o.Z1) - Math.Max(r.Z0, o.Z0) > 0.01))
-                return "";  // a room is already there: the airlock opens into it
+                return ""; // a room is already there: the airlock opens into it
             r.Id = d.NewId();
             r.Deck = deck;
             r.Kind = "Airlock room";

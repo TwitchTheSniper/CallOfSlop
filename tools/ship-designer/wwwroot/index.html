@@ -109,8 +109,8 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
     <div class="grow"></div>
     <div class="tools">
       <select id="start" aria-label="Start from" title="Start a new design from"></select>
-      <button id="undo" disabled title="Ctrl+Z">Undo</button>
-      <button id="redo" disabled title="Ctrl+Y">Redo</button>
+      <button id="undo" disabled title="Ctrl+Z (Ctrl+C, Ctrl+X, Ctrl+V copy, cut and paste what is picked)">Undo</button>
+      <button id="redo" disabled title="Ctrl+Y or Ctrl+Shift+Z">Redo</button>
       <button id="file">Design file</button>
     </div>
   </header>
@@ -173,11 +173,12 @@ let deck = 0;
 function take(answerText) {
   const a = JSON.parse(answerText);
   S = a.scene;
+  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
   $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
   if (a.error) toast(a.error);
   rebuild();
   panels();
-  try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
+  if (S.hulls.every(h => h.copies)) try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
   return a;
 }
 function cmd(op, merge = false) { op.merge = merge; return take(api.Apply(JSON.stringify(op))); }
@@ -226,7 +227,9 @@ const gizmoTarget = new THREE.Object3D(); scene.add(gizmoTarget);
 function resize() { const r = yard.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(yard);
 
-function meshFrom(m, opts = {}) {
+const hullGeo = new Map(), hullCopies = new Map();
+function meshFrom(m, opts = {}, geo = null) {
+  if (!m) { return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(m.p, 3));
   g.setAttribute("color", new THREE.Uint8BufferAttribute(m.c, 3, true));
@@ -241,12 +244,17 @@ function rebuild() {
   world.clear(); pickables = [];
   $("shipname").textContent = S.name;
   const ghost = view.xray || mode === "interior";
+  const fresh = S.hulls.every(h => h.copies);
+  if (fresh) hullGeo.clear();
   for (const h of S.hulls) {
-    for (const c of h.copies) {
+    for (const c of h.copies ?? hullCopies.get(h.id) ?? []) {
       for (const surf of ["skin", "fore", "aft"]) {
         if (!c[surf].p.length) continue;
         const selHull = sel.kind === "hull" && sel.id === h.id;
-        const m = meshFrom(c[surf], ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {});
+        // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
+        const key = `${h.id}/${c.copy}/${surf}`;
+        if (!hullGeo.has(key)) hullGeo.set(key, meshFrom(c[surf]).geometry);
+        const m = meshFrom(null, ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {}, hullGeo.get(key));
         if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
         m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
         world.add(m); pickables.push(m);
@@ -287,21 +295,21 @@ function drawRooms() {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
     const dim = mode === "interior" && r.deck !== deck;
-    const w = r.x1 - r.x0, l = r.z1 - r.z0, h = d.height;
+    const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
     const col = new THREE.Color(r.colour);
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.08, l - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
-    floor.position.set((r.x0 + r.x1) / 2, d.floor + 0.04, (r.z0 + r.z1) / 2);
+    const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - 0.06, 0.08, bz1 - bz0 - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
+    floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.04, st ? bz1 - 0.04 : (bz0 + bz1) / 2);
     floor.userData = { type: "room", id: r.id };
     world.add(floor); if (!dim) pickables.push(floor);
-    const box = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, h - 0.1, l - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
-    box.position.set(floor.position.x, d.floor + h / 2, floor.position.z);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, bz1 - bz0 - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
+    box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
     world.add(box);
     const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: !r.ok ? 0xff6a50 : (!r.reached ? 0xffb02e : col), transparent: true, opacity: dim ? 0.2 : 0.85 }));
     edges.position.copy(box.position); world.add(edges);
   }
   for (const [x, y, z] of S.doors) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
-    m.position.set(x, y + 0.1, z); world.add(m);
+    const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
+    m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
   }
 }
 
@@ -319,9 +327,10 @@ let deckPlane = null;
 function drawDeckPlane() {
   const d = S.decks[deck]; if (!d) return;
   deckPlane = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ visible: false }));
-  deckPlane.rotation.x = -Math.PI / 2; deckPlane.position.y = d.floor; deckPlane.userData = { type: "deck" };
+  deckPlane.userData = { type: "deck" };
   world.add(deckPlane);
-  const g = new THREE.GridHelper(80, 160, 0x4c6070, 0x2e3a42); g.position.set(0, d.floor + 0.01, 22);
+  const g = new THREE.GridHelper(80, 160, 0x4c6070, 0x2e3a42);
+  if (S.stacked) { g.rotation.x = Math.PI / 2; g.position.set(0, 3, d.floor - 0.01); } else g.position.set(0, d.floor + 0.01, 22);
   g.material.transparent = true; g.material.opacity = 0.55; world.add(g);
 }
 
@@ -408,7 +417,7 @@ window.addEventListener("pointermove", ev => {
   } else if (drag.what === "piece") {
     const hit = hullHit(ev);
     drag.off = !hit;
-    if (hit) { const u = hit.object.userData; dragCmd({ op: "movePiece", id: drag.id, hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
+    if (hit) { const u = hit.object.userData; dragCmd({ op: "movePiece", preview: true, light: true, id: drag.id, hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
     $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
   } else if (drag.what === "room") {
     const at = deckPoint(ev); if (!at || !drag.start) return;
@@ -418,9 +427,9 @@ window.addEventListener("pointermove", ev => {
       const b = { x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 };
       if (e.x0) b.x0 = Math.min(r.x0 + dx, r.x1 - 1); if (e.x1) b.x1 = Math.max(r.x1 + dx, r.x0 + 1);
       if (e.z0) b.z0 = Math.min(r.z0 + dz, r.z1 - 1); if (e.z1) b.z1 = Math.max(r.z1 + dz, r.z0 + 1);
-      dragCmd({ op: "setRoom", id: drag.id, ...b });
+      dragCmd({ op: "setRoom", light: true, id: drag.id, ...b });
       $("tip").textContent = `${fmt(b.x1 - b.x0)} x ${fmt(b.z1 - b.z0)} m`;
-    } else dragCmd({ op: "setRoom", id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
+    } else dragCmd({ op: "setRoom", light: true, id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
   } else if (drag.what === "draw") {
     const at = deckPoint(ev); if (!at) return;
     drag.end = at; drawPreview(drag.start, at);
@@ -440,7 +449,7 @@ window.addEventListener("pointerup", ev => {
       const x0 = Math.min(d.start.x, d.end.x), x1 = Math.max(d.start.x, d.end.x), z0 = Math.min(d.start.z, d.end.z), z1 = Math.max(d.start.z, d.end.z);
       if (x1 - x0 >= 0.9 && z1 - z0 >= 0.9) { const a = cmd({ op: "addRoom", deck, kind: roomKind, x0, x1, z0, z1 }); if (!a.error) select("room", a.id); }
     }
-  } else flush();
+  } else { flush(); if (d.what === "piece" || d.what === "room") take(api.Scene()); }
   $("tip").textContent = tips[mode];
 });
 
@@ -461,6 +470,8 @@ function deckPoint(ev) {
   ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
   const pt = new THREE.Vector3();
+  // On a stacked deck the floor faces the bow: its plane is z = floor, and a room's second axis (z0..z1) is the height y.
+  if (S.stacked) { if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -dk.floor), pt)) return null; return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.y * 4) / 4 }; }
   if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -dk.floor), pt)) return null;
   return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.z * 4) / 4 };
 }
@@ -476,8 +487,9 @@ function drawPreview(a, b) {
   clearPreview();
   const dk = S.decks[deck];
   const w = Math.max(0.1, Math.abs(b.x - a.x)), l = Math.max(0.1, Math.abs(b.z - a.z));
-  preview = new THREE.Mesh(new THREE.BoxGeometry(w, dk.height, l), new THREE.MeshBasicMaterial({ color: new THREE.Color(CAT.rooms.find(k => k.name === roomKind).colour), transparent: true, opacity: 0.35, depthWrite: false }));
-  preview.position.set((a.x + b.x) / 2, dk.floor + dk.height / 2, (a.z + b.z) / 2);
+  preview = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(w, l, dk.height) : new THREE.BoxGeometry(w, dk.height, l), new THREE.MeshBasicMaterial({ color: new THREE.Color(CAT.rooms.find(k => k.name === roomKind).colour), transparent: true, opacity: 0.35, depthWrite: false }));
+  if (S.stacked) preview.position.set((a.x + b.x) / 2, (a.z + b.z) / 2, dk.floor - dk.height / 2);
+  else preview.position.set((a.x + b.x) / 2, dk.floor + dk.height / 2, (a.z + b.z) / 2);
   scene.add(preview);
   $("tip").textContent = `${fmt(w)} x ${fmt(l)} m ${roomKind}`;
 }
@@ -514,16 +526,17 @@ function paletteMove(ev) {
   if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
   const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
   if (!paletteDrag.id) {
-    const a = cmd({ op: "addPiece", kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, ...at });
+    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, ...at });
     if (a.error) { paletteDrag = null; return; }
     paletteDrag.id = a.id; dragFirst = false; select("piece", a.id, false);
-  } else dragCmd({ op: "movePiece", id: paletteDrag.id, ...at });
+  } else dragCmd({ op: "movePiece", preview: true, light: true, id: paletteDrag.id, ...at });
 }
 function paletteDrop() {
   const p = paletteDrag; paletteDrag = null;
   if (p.id && p.off) { pending = null; cmd({ op: "delPiece", id: p.id }, true); select(null, 0); }
   else {
     flush();
+    if (p.id) take(api.Scene()); // now cut its opening
     if (p.id) {
       // An airlock comes with its chamber: an Airlock room behind it, in the same undo step.
       if (CAT.pieces.find(k => k.name === p.kind)?.socket === "airlock") { const n = S.rooms.length, a = cmd({ op: "autoRoom", id: p.id }, true); if (!a.error) toast(S.rooms.length > n ? "Airlock placed, with an airlock room behind it." : "Airlock placed: it opens into the room already there.", true); }
@@ -542,7 +555,7 @@ const tips = {
   pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
   interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
 };
-let roomKind = "Cabin", drawing = true;
+let roomKind = "Cabin", drawing = true, clip = null;
 
 function setMode(m) {
   mode = m;
@@ -583,9 +596,12 @@ function leftPanel() {
     S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
     dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
     const d = S.decks[deck];
-    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), dsel,
+    const orient = el("div", { class: "row" },
+      el("button", { class: S.stacked ? "" : "on", onclick: () => { if (S.stacked) { cmd({ op: "orient", stacked: false }); deck = 0; toast("Decks laid along the length. Undo brings the old decks and rooms back.", true); panels(); } } }, "Along the length"),
+      el("button", { class: S.stacked ? "on" : "", onclick: () => { if (!S.stacked) { cmd({ op: "orient", stacked: true }); deck = 0; toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true); panels(); } } }, "Stacked (thrust is down)"));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), el("p", { class: "hint" }, "Orientation"), orient, dsel,
       d ? el("div", { class: "grid2" },
-        el("span", {}, "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
+        el("span", {}, S.stacked ? "floor at z" : "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
         el("span", {}, "clear m"), num(d.height, v => cmd({ op: "setDeck", deck, height: v }), 0.05, "deckheight")) : "",
       d ? el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDeck", deck }); deck = Math.max(0, deck - 1); rebuild(); panels(); } }, "Remove deck and its rooms")) : ""));
     const kinds = el("div", { class: "kinds" });
@@ -662,7 +678,7 @@ function profileEditor(h, i) {
     e.setAttribute("fill", "none"); e.setAttribute("stroke", stroke); e.setAttribute("stroke-width", width); if (dash) e.setAttribute("stroke-dasharray", dash);
     svg.append(e);
   };
-  for (const d of S.decks) for (const y of [d.floor, d.floor + d.height]) {
+  for (const d of S.stacked ? [] : S.decks) for (const y of [d.floor, d.floor + d.height]) {
     const ly = y - h.y; const e = document.createElementNS(NS, "line");
     e.setAttribute("x1", 0); e.setAttribute("x2", W); e.setAttribute("y1", Y(ly)); e.setAttribute("y2", Y(ly)); e.setAttribute("stroke", "#3c6a52"); e.setAttribute("stroke-dasharray", "3 3"); svg.append(e);
   }
@@ -764,8 +780,20 @@ const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = 
 toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links");
 window.addEventListener("keydown", e => {
   if (e.target.closest?.("input, textarea, select")) return;
-  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); $("undo").click(); }
-  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); $("redo").click(); }
+  const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (ctrl && k === "z" && !e.shiftKey) { e.preventDefault(); $("undo").click(); }
+  else if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); $("redo").click(); }
+  else if (ctrl && (k === "c" || k === "x")) {
+    if (!sel.kind) return;
+    e.preventDefault(); clip = { kind: sel.kind, id: sel.id };
+    if (k === "x") { if (sel.kind === "piece") cmd({ op: "delPiece", id: sel.id }); else if (sel.kind === "room") cmd({ op: "delRoom", id: sel.id }); else if (sel.kind === "hull") cmd({ op: "delHull", hull: sel.id }); clip.cut = true; select(null, 0); }
+    else toast("Copied. Ctrl+V pastes a copy beside it.", true);
+  } else if (ctrl && k === "v") {
+    if (!clip) return; e.preventDefault();
+    if (clip.cut) { $("undo").click(); clip.cut = false; toast("Pasted back.", true); return; } // (a cut thing keeps its place)
+    const a = clip.kind === "piece" ? cmd({ op: "pastePiece", id: clip.id, dz: 2 }) : clip.kind === "room" ? cmd({ op: "pasteRoom", id: clip.id }) : cmd({ op: "copyHull", hull: clip.id });
+    if (!a.error) { if (clip.kind === "hull") select("hull", S.hulls[S.hulls.length - 1].id); else { select(clip.kind, a.id); clip = { kind: clip.kind, id: a.id }; } }
+  } else if (ctrl && k === "d" && sel.kind) { e.preventDefault(); clip = { kind: sel.kind, id: sel.id }; window.dispatchEvent(new KeyboardEvent("keydown", { key: "v", ctrlKey: true })); }
   else if (e.key === "Delete" || e.key === "Backspace") {
     if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }

@@ -8,6 +8,12 @@ namespace CallOfSlop.ShipDesigner;
 /// </summary>
 public static class DesignScene
 {
+    /// <summary>False while a piece is being dragged: its opening is cut when it is let go (Karl, 2026-11-23).</summary>
+    public static bool Holes = true;
+
+    /// <summary>True while a room or a piece is being dragged: the hulls' meshes are left out (the page keeps the last ones), so a drag stays quick.</summary>
+    public static bool Light;
+
     public sealed record Issue(string Level, string Text, string What);
 
     public sealed class Check
@@ -89,7 +95,7 @@ public static class DesignScene
         var cutters = d.Hulls.Where(o => o != h && (o.Cut || h.Cut) && Overlap(o.Bounds(), (bx0, bx1, by0, by1, bz0, bz1))).ToList();
         // The openings the sockets on this copy cut through the skin (each a frame and its half sizes).
         var holes = new List<(Place W, double Hx, double Hz, bool Round)>();
-        foreach (var p in d.Pieces)
+        foreach (var p in Holes ? d.Pieces : [])
         {
             if (p.Hull != h.Id || Math.Min(p.Copy, h.Copies - 1) != copy || PieceKinds.Find(p.Kind)?.Opening is not { } op)
                 continue;
@@ -208,7 +214,7 @@ public static class DesignScene
         {
             var ok = true;
             var dk = d.Decks[r.Deck];
-            foreach (var y in new[] { dk.Floor + 0.05, dk.Ceiling - 0.02 })
+            foreach (var up in new[] { 0.05, dk.Height - 0.02 })
             {
                 var nx = Math.Max(1, (int)Math.Ceiling(r.X1 - r.X0));
                 var nz = Math.Max(1, (int)Math.Ceiling(r.Z1 - r.Z0));
@@ -217,12 +223,11 @@ public static class DesignScene
                     {
                         if (i != 0 && i != nx && j != 0 && j != nz)
                             continue; // the edges only
-                        var x = r.X0 + (r.X1 - r.X0) * i / nx;
-                        var z = r.Z0 + (r.Z1 - r.Z0) * j / nz;
-                        if (!d.Hulls.Any(h => h.Depth(x, y, z) >= 0.06))
+                        var w = d.World(dk, r.X0 + (r.X1 - r.X0) * i / nx, r.Z0 + (r.Z1 - r.Z0) * j / nz, up);
+                        if (!d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06))
                         {
                             ok = false;
-                            c.Issues.Add(new("error", $"{Name(r)} on deck {r.Deck + 1} pokes through the skin near x {x:0.0}, z {z:0.0}", $"room:{r.Id}"));
+                            c.Issues.Add(new("error", $"{Name(r)} on deck {r.Deck + 1} pokes through the skin near x {w[0]:0.0}, y {w[1]:0.0}, z {w[2]:0.0}", $"room:{r.Id}"));
                         }
                     }
             }
@@ -251,9 +256,9 @@ public static class DesignScene
                     var ox = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0);
                     double[]? door = null;
                     if (oz >= 0.9 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02))
-                        door = [Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0, dk.Floor, (Math.Max(a.Z0, b.Z0) + Math.Min(a.Z1, b.Z1)) / 2];
+                        door = d.World(dk, Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0, (Math.Max(a.Z0, b.Z0) + Math.Min(a.Z1, b.Z1)) / 2, 0);
                     else if (ox >= 0.9 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02))
-                        door = [(Math.Max(a.X0, b.X0) + Math.Min(a.X1, b.X1)) / 2, dk.Floor, Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0];
+                        door = d.World(dk, (Math.Max(a.X0, b.X0) + Math.Min(a.X1, b.X1)) / 2, Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0, 0);
                     if (door is not null)
                     {
                         joins[a.Id].Add(b.Id);
@@ -261,14 +266,14 @@ public static class DesignScene
                         c.Doors.Add(door);
                     }
                 }
-                else if (Math.Abs(a.Deck - b.Deck) == 1 && (a.Kind == "Shaft" || b.Kind == "Shaft") &&
+                else if (d.Neighbours(a.Deck, b.Deck) && (a.Kind == "Shaft" || b.Kind == "Shaft") &&
                          Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) >= 0.8 && Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0) >= 0.8)
                 {
                     joins[a.Id].Add(b.Id);
                     joins[b.Id].Add(a.Id);
                     var s = a.Kind == "Shaft" ? a : b;
-                    var hi = d.Decks[Math.Max(a.Deck, b.Deck)];
-                    c.Doors.Add([(s.X0 + s.X1) / 2, hi.Floor, (s.Z0 + s.Z1) / 2]);
+                    var hi = d.Decks[a.Deck].Floor > d.Decks[b.Deck].Floor != d.Stacked ? d.Decks[a.Deck] : d.Decks[b.Deck];
+                    c.Doors.Add(d.World(hi, (s.X0 + s.X1) / 2, (s.Z0 + s.Z1) / 2, 0));
                 }
             }
 
@@ -309,9 +314,10 @@ public static class DesignScene
                     if (kind.Socket == "cargo" && r.Kind != "Hold")
                         continue;
                     var dk = d.Decks[r.Deck];
-                    if (kind.Socket == "shaft" && (r.Deck != lowest || at[1] > dk.Floor || at[0] < r.X0 - 0.3 || at[0] > r.X1 + 0.3 || at[2] < r.Z0 - 0.3 || at[2] > r.Z1 + 0.3))
+                    if (kind.Socket == "shaft" && !d.Stacked && (r.Deck != lowest || at[1] > dk.Floor || at[0] < r.X0 - 0.3 || at[0] > r.X1 + 0.3 || at[2] < r.Z0 - 0.3 || at[2] > r.Z1 + 0.3))
                         continue;
-                    double[] q = [Math.Clamp(at[0], r.X0, r.X1), Math.Clamp(at[1], dk.Floor, dk.Ceiling), Math.Clamp(at[2], r.Z0, r.Z1)];
+                    var bx = d.Box(r);
+                    double[] q = [Math.Clamp(at[0], bx[0], bx[1]), Math.Clamp(at[1], bx[2], bx[3]), Math.Clamp(at[2], bx[4], bx[5])];
                     var dist = Math.Sqrt(Math.Pow(q[0] - at[0], 2) + Math.Pow(q[1] - at[1], 2) + Math.Pow(q[2] - at[2], 2));
                     if (dist < bestD)
                         (best, bestD, bestPt) = (r, dist, q);
@@ -370,7 +376,7 @@ public static class DesignScene
     {
         var c = Run(d);
         var sb = new StringBuilder(1 << 16);
-        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"hulls\":[");
+        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
         for (var i = 0; i < d.Hulls.Count; i++)
         {
             var h = d.Hulls[i];
@@ -387,8 +393,8 @@ public static class DesignScene
                     sb.Append(k > 0 ? "," : "").Append('[').Append(ShipDesign.S(h.Stations[s].P[k].H)).Append(',').Append(ShipDesign.S(h.Stations[s].P[k].Y)).Append(']');
                 sb.Append("]}");
             }
-            sb.Append("],\"copies\":[");
-            for (var copy = 0; copy < h.Copies; copy++)
+            sb.Append("],\"copies\":").Append(Light ? "null" : "[");
+            for (var copy = 0; copy < (Light ? 0 : h.Copies); copy++)
             {
                 var (skin, fore, aft) = HullMesh(d, h, copy);
                 if (copy > 0) sb.Append(',');
@@ -400,7 +406,7 @@ public static class DesignScene
                 aft.Write(sb);
                 sb.Append('}');
             }
-            sb.Append("]}");
+            sb.Append(Light ? "}" : "]}");
         }
         sb.Append("],\"pieces\":[");
         for (var i = 0; i < d.Pieces.Count; i++)
@@ -432,6 +438,7 @@ public static class DesignScene
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(r.Id).Append(",\"deck\":").Append(r.Deck)
               .Append(",\"x0\":").Append(ShipDesign.S(r.X0)).Append(",\"x1\":").Append(ShipDesign.S(r.X1)).Append(",\"z0\":").Append(ShipDesign.S(r.Z0)).Append(",\"z1\":").Append(ShipDesign.S(r.Z1))
               .Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"label\":").Append(Q(r.Label)).Append(",\"colour\":").Append(Q(RoomKinds.Find(r.Kind)!.Colour))
+              .Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');
         }
         sb.Append("],\"doors\":[");

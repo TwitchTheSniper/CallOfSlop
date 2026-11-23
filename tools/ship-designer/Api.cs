@@ -23,11 +23,14 @@ public static partial class Api
     {
         var o = System.Text.Json.Nodes.JsonNode.Parse(command)!.AsObject();
         var err = _ed.Apply(o.ToJsonString());
+        DesignScene.Holes = !((bool?)o["preview"] ?? false);
+        DesignScene.Light = (bool?)o["light"] ?? false;
         // A new piece or room's id, so the page can select it.
         var id = 0;
-        if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom"))
+        if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom"))
             id = Math.Max(_ed.Design.Pieces.Count == 0 ? 0 : _ed.Design.Pieces.Max(p => p.Id), _ed.Design.Rooms.Count == 0 ? 0 : _ed.Design.Rooms.Max(r => r.Id));
-        return Answer(err, id);
+        try { return Answer(err, id); }
+        finally { DesignScene.Holes = true; DesignScene.Light = false; }
     }
 
     [JSExport]

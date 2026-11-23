@@ -12,9 +12,34 @@ namespace CallOfSlop.ShipDesigner;
 public sealed class ShipDesign
 {
     public const int Version = 1;
-    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 6;
+    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24;
 
     public string Name = "New ship";
+
+    /// <summary>
+    /// How the decks lie. Along (false): floors level, decks along the length, as the Zero Day's (a deck's Floor is a height). Stacked
+    /// (true): floors across the ship facing the bow, so thrust is down, as a tower ship's (a deck's Floor is a z, its rooms' up is towards the
+    /// bow, and a room's X runs across and its Z0..Z1 hold its height range y).
+    /// </summary>
+    public bool Stacked;
+
+    /// <summary>A point on a deck to world: (u, v) on the floor (a room's X and Z), up above it.</summary>
+    public double[] World(Deck dk, double u, double v, double up) => Stacked ? [u, v, dk.Floor - up] : [u, dk.Floor + up, v];
+
+    /// <summary>A room's world box: x0, x1, y0, y1, z0, z1.</summary>
+    public double[] Box(Room r)
+    {
+        var dk = Decks[r.Deck];
+        return Stacked ? [r.X0, r.X1, r.Z0, r.Z1, dk.Floor - dk.Height, dk.Floor] : [r.X0, r.X1, dk.Floor, dk.Ceiling, r.Z0, r.Z1];
+    }
+
+    /// <summary>Two decks one above the other with no deck between (a shaft can join them).</summary>
+    public bool Neighbours(int a, int b)
+    {
+        if (a == b) return false;
+        var (lo, hi) = Decks[a].Floor < Decks[b].Floor ? (Decks[a], Decks[b]) : (Decks[b], Decks[a]);
+        return !Decks.Any(k => k.Floor > lo.Floor && k.Floor < hi.Floor);
+    }
     public List<HullBody> Hulls = [];
     public List<Piece> Pieces = [];
     public List<Deck> Decks = [];
@@ -36,6 +61,7 @@ public sealed class ShipDesign
             ["format"] = "CallOfSlop ship design",
             ["version"] = Version,
             ["name"] = Name,
+            ["decks orientation"] = Stacked ? "stacked" : "along",
             ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; return (JsonNode)j; })]),
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
@@ -52,7 +78,7 @@ public sealed class ShipDesign
         catch (Exception e) { throw new FormatException("not JSON: " + e.Message); }
         if (root is not JsonObject o)
             throw new FormatException("not a ship design (no object)");
-        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship" };
+        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship", Stacked = (string?)o["decks orientation"] == "stacked" };
         foreach (var h in o["hulls"]?.AsArray() ?? [])
             if (h is JsonObject ho && d.Hulls.Count < MaxHulls)
                 d.Hulls.Add(HullBody.FromJson(ho, d.Take(ho)));
