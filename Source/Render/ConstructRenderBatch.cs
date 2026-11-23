@@ -511,6 +511,8 @@ public static partial class ConstructRender
             }
             else
                 ch = new MergeChunk { Dirty = true };
+            if (!ch.Ever)
+                ch.Radius = 0; // (WaitUnbuilt's rough sphere is made again from the new members)
             ch.Key = _eKey[e];
             ch.Sub = _eSub[e];
             ch.Seg = _eSeg[e];
@@ -910,9 +912,15 @@ public static partial class ConstructRender
             {
                 // Waiting its turn to be rebuilt: drawn part by part, as it was before merged meshes.
                 LastMergedWaiting++;
-                if (cull && !ch.Ever && WaitUnbuilt(c, ch, body, alpha, origin))
-                    continue;
+                var undrawn = cull && !ch.Ever && WaitUnbuilt(c, ch, body, alpha, origin);
                 Grow(ref _partWaiting, c.PartCount);
+                if (undrawn)
+                {
+                    for (var m = 0; m < ch.MemberCount; m++)
+                        if (ch.Members[m] < c.PartCount)
+                            _partWaiting[ch.Members[m]] = _waitToken; // (its panes and machine work wait with it, not drawn floating)
+                    continue;
+                }
                 for (var m = 0; m < ch.MemberCount; m++)
                     if (ch.Members[m] < c.PartCount)
                     {
@@ -1210,8 +1218,8 @@ public static partial class ConstructRender
     /// <summary>
     /// A chunk never built yet (a body just loaded or come into view: every chunk of the Zero Day works at once, 2026-11-23, a
     /// 95 ms first frame as 250,000 boxes were walked part by part while the budget built four chunks) is drawn walked only when
-    /// it is on screen and within <see cref="WaitNear"/>; past that it waits undrawn for its turn, a few frames at most
-    /// (<see cref="MergeBudgetBoxes"/> a frame). True when it waits undrawn.
+    /// it is on screen and within <see cref="WaitNear"/>; past that it waits undrawn for its turn, with its panes and machine work
+    /// (<see cref="MergeBudgetBoxes"/> a frame: about 30 frames for the whole works). True when it waits undrawn.
     /// </summary>
     private static bool WaitUnbuilt(Construct c, MergeChunk ch, in Matrix4x4 body, float alpha, Vector3 origin)
     {
