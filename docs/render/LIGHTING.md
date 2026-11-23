@@ -156,13 +156,13 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
   light, so the shed was black under them). A lamp part's `"light"` block (docs/sandbox/constructs/look.md "How lamps light") gives its
   range (up to `ConstructLamps.MaxRange`, 32 m), strength and, for a spot, its cone. The block's `uDynSpot[32]` (after `uDynCol`) holds
   each light's direction and the cosine of its half angle (w under -1: all round). `DynLight(i, p, n)` in `Lighting.Glsl` is the one
-  dynamic-light term for both modes: a spot lights inside its cone (soft over its outer third), plus `SpotFill` (0.14) unfaced inside a
+  dynamic-light term for both modes: a spot lights inside its cone (soft over the outer 35% of the cone in cosine: about the outer fifth of a 40 degree half angle), plus `SpotFill` (0.14) unfaced inside a
   cone 0.35 wider in cosine (the light its pool throws back), and reads its shadow only there. A long lamp counts its extra range nearer
   in the pick (`ConstructLamps.Offer`), and a body's cull grows by its longest lamp (`Construct.LampReachMore`). A lamp's Colour and
   Brightness settings are its light's. Lamp shadow slots hold a lamp's own reach (`LampShadows.StoreOf`: 16 m, or a longer lamp's
   range; the shader reads 1 / it from the slot's first turn row's w), and a spot draws only the cube faces its wide cone reaches
   (`LampShadows.FacesFor`: a downward pendant skips its upward face). **Beams** (`LampBeams.cs`): each lit spot is drawn as a faint
-  additive cone in the air, one instanced draw with no buffer, fading down its length (72% of the range) and at its silhouette;
+  additive cone in the air, one instanced draw with no buffer, narrower than its light (60% of the cone's spread: a row of pendants 8 m apart drawn at full width fogged the whole hall) and fading down its length (60% of the range) and at its silhouette;
   Video > Light beams, `--no-lamp-beams`.
 - `LitGrid(p, n)` reads the grid for a surface (C# twin: `LightBake.SampleSurface`): a little over half a cell along the
   normal, with the GPU's own trilinear filtering, unless the 8 cells round that point are a mixed block (one texel

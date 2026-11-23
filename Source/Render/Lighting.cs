@@ -331,7 +331,7 @@ public static unsafe class Lighting
 
         // Dynamic light i at world point p facing n (a lamp, a muzzle flash, a blast). All round: a soft inverse-square-like falloff to
         // zero at its range, by how much the surface faces it, past its shadow. A spot (Sean 2026-11-23: high-bay pendants as cones of
-        // light on the floor): the same inside its cone, soft over the outer third of its half angle, nothing outside it; plus a flat
+        // light on the floor): the same inside its cone, soft over the outer 35% of it in cosine, nothing outside it; plus a flat
         // fill under a wider cone, the light its pool throws back (SpotFill of it), so a lit hall's machines aren't black on their
         // sides. Its shadow is read only where it lights.
         const float SpotFill = 0.14;

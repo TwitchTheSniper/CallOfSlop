@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// lights (<see cref="ConstructLamps"/>, a part's "light" cone) is drawn as a faint cone of lit dust: one instanced draw with no buffer,
 /// each cone's apex, axis, spread and colour in a uniform array, its 16 sides made in the vertex shader. Added to the picture in the
 /// blended pass (depth read, never written; the back buffer's alpha, the bloom's mark, left as it is), brightest by the lamp, fading out
-/// down its length and at its silhouette, so it never shows a hard edge where it meets the floor. Video > Light beams; --no-lamp-beams.
+/// down its length and at its silhouette, so where it meets a floor far below its lamp it has all but faded. Video > Light beams; --no-lamp-beams.
 /// <para>Cost: one draw of at most <see cref="Max"/> x 96 vertices; the fill is a few ALU ops a covered pixel, no texture read.</para>
 /// </summary>
 public static unsafe class LampBeams
@@ -18,10 +18,13 @@ public static unsafe class LampBeams
     public const int Max = LightGrid.MaxDynamic;
 
     /// <summary>How far down its range a beam is drawn (the rest of its light is on the floor, not in the air).</summary>
-    public const float LengthShare = 0.72f;
+    public const float LengthShare = 0.6f;
+
+    /// <summary>How wide a beam is against its lamp's cone (its spread's tangent): the bright core, not the whole pool, or a row of pendants 8 m apart fogs the whole hall.</summary>
+    public const float WidthShare = 0.6f;
 
     /// <summary>How bright the dust in a beam is, for a lamp of colour 1.</summary>
-    public const float Haze = 0.045f;
+    public const float Haze = 0.025f;
 
     /// <summary>The setting (Video: Light beams); <see cref="ForcedOff"/>: --no-lamp-beams.</summary>
     public static bool On = true, ForcedOff;
@@ -83,7 +86,7 @@ public static unsafe class LampBeams
         {
             vec3 view = normalize(uEye - vRel);
             // Seen through its middle the beam is thickest; at its silhouette (the side edge-on) it thins to nothing.
-            float thick = pow(clamp(abs(dot(normalize(vN), view)), 0.0, 1.0), 1.5);
+            float thick = pow(clamp(abs(dot(normalize(vN), view)), 0.0, 1.0), 0.75);
             float along = (1.0 - vT) * (1.0 - vT) * smoothstep(0.0, 0.06, vT);
             float dist = length(uEye - vRel);
             float fog = uFogRange.y > uFogRange.x ? 1.0 - clamp((dist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0) : 1.0;
@@ -101,7 +104,7 @@ public static unsafe class LampBeams
     {
         if (_count >= Max || !On || ForcedOff || cosHalf <= 0.05f || cosHalf >= 0.9999f)
             return;
-        var tan = MathF.Sqrt(1f - cosHalf * cosHalf) / cosHalf;
+        var tan = MathF.Sqrt(1f - cosHalf * cosHalf) / cosHalf * WidthShare;
         Apex[_count] = new Vector4(at, range * LengthShare);
         Axis[_count] = new Vector4(dir, tan);
         Colour[_count] = new Vector4(colour * Haze, 0f);
