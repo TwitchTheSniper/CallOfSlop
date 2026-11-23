@@ -219,8 +219,9 @@ public sealed class PanelFormerParts : IPartGenerator
                 return L(mn, mx, colour, finish);
             }
             p.Add(Seam(Face(0, 0.014, -E, E, 0.003, 0.14, MachineLook.Base), side));
-            // The wall from the lower bed's lip to the crosshead, two stiffeners on it and a crush warning plate.
-            p.Add(Seam(Face(-0.03, 0.006, -E - 0.002, E + 0.002, DeckY - 0.01, Head + 0.012, Green, null)!.Update(("paintable", true)), side));
+            // The wall from the lower bed's lip to the crosshead, two stiffeners on it and a crush warning plate. It ends on the cell's
+            // edge (1 m), so two blocks' walls meet end to end with no slit and no overlap (a block painted another colour would flicker).
+            p.Add(Seam(Face(-0.03, 0.006, -E - 0.003, E + 0.003, DeckY - 0.01, Head + 0.012, Green, null)!.Update(("paintable", true)), side));
             foreach (var t in new[] { -0.5, 0.5 })
                 p.Add(Seam(Face(0.006, 0.03, t - 0.04, t + 0.04, DeckY + 0.06, Head - 0.04, Trim, null)!.Update(("paintable", true)), side));
             p.Add(Seam(Face(0.006, 0.018, -0.3, 0.3, 1.86, 2.1, MachineLook.Accent, "hazard paint"), side));
