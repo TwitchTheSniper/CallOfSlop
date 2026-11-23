@@ -46,6 +46,29 @@ public static partial class ConstructExtruder
     public const byte CutPending = 2; // a machine's State: a rising signal into Cut waits for its next step (ConstructLogic)
     public const int CutPort = 1, ModePort = 2; // their places in DataIn (Run first)
     public const string CutName = "Cut", ModeName = "Mode";
+    public const int OrderFill = 2000; // units: what a chute tops an Extruder on orders up to (its own settings: its whole bin)
+
+    /// <summary>
+    /// How much of <paramref name="material"/> a chute may bring an Extruder now. One on orders (a queue, even an empty one) takes only
+    /// its head order's material, up to <see cref="OrderFill"/> (or eight steps of the order's section, a big die's; a Wheel, Fan or
+    /// Airframe Former's order its whole bin) and nothing while no order waits; one on its own settings takes what its bin holds. The Zero Day works' idle line Extruders filled their 32,000-unit
+    /// bins from the steel bin they share with both Assemblers, so the yard Assembler never had steel for its Keel (Sean, 2026-11-22).
+    /// </summary>
+    public static int ChuteRoom(Construct c, int part, CStore st, byte material)
+    {
+        if (c.Parts[part].Orders is not { Bill: false } q)
+            return int.MaxValue;
+        if (q.Count == 0)
+            return 0;
+        var want = q.Head.Key.Material;
+        if (want != 0 && want != material)
+            return 0;
+        if (q.Head.Key.Shape is ExShape.Wheel or ExShape.Fan or ExShape.Wing)
+            return int.MaxValue; // (a former pays a whole growth step at once, which a big wheel's or fan's can pass any cap: its whole bin)
+        var steps = ExtrusionTable.Current.Find(material) is { } row ? Extrusion.AreaM2(q.Head.Key) * Extrusion.StepCm / 100f * row.UnitsPerM3 * 8 : 0;
+        return (int)Math.Max(OrderFill, MathF.Min(ConstructStorage.MaxBulk, steps)) - st.Amount;
+    }
+
     private static readonly List<Construct> _near = new(32);
     private static readonly byte AxleTurn = MakeAxleTurn(); // a wheel's axle (its x) along the machine's z
 
