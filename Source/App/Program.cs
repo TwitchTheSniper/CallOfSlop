@@ -488,7 +488,7 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
         if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)
-            (ConstructRender.LodPixels, ConstructRender.LodPixelsForced) = (lodPx, true); // the far detail level drops boxes under this many pixels (default 1, the Video settings' Far detail)
+            (ConstructRender.LodPixels, ConstructRender.LodPixelsForced) = (lodPx, true); // the far detail level drops boxes under this many pixels (the Video settings' Far detail: Low 3, Medium 1.5, High 0.5)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
