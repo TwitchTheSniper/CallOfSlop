@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// each fitting arm, with its trolley, hoist, cable, hook block and gripper; and a lamp on each mast's top that shows the job's state. An
 /// arm's carry is posed from the job as this peer heard it, so host and client draw the same: the bridge runs to the hold, the hook drops
 /// into it and comes up with the part, runs to the part's place, lowers it there and holds it while it goes on (the weld flash is
-/// RouteRender's), then lifts clear. Looks only: nothing here collides or runs on the server. Drawn within <see cref="DrawNear"/>.
+/// RouteRender's), then lifts clear. A station whose bay a real crane on its body reaches draws only its lamps (UnderRealCrane). Looks
+/// only: nothing here collides or runs on the server. Drawn within <see cref="DrawNear"/>.
 /// Allocates nothing.
 /// </summary>
 public static class StationRender
@@ -36,12 +37,36 @@ public static class StationRender
                 var floor = pos + Vector3.Transform(ConstructStation.BayFloor(c, t), rot);
                 if (Vector3.DistanceSquared(eye, floor) > DrawNear * DrawNear)
                     continue;
-                DrawStation(gfx, c, t, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(floor), size, now);
+                DrawStation(gfx, c, t, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(floor), size, now,
+                    UnderRealCrane(c, t));
             }
         }
     }
 
-    private static void DrawStation(Renderer gfx, Construct c, int t, Matrix4x4 bay, Vector3 size, double now)
+    /// <summary>
+    /// Does a real Bridge or Hall Crane on the station's body reach a metre over its bay's middle? Then the station
+    /// draws no crane of its own: its bridges stood parked in the way of the finished ship and clashed with the real crane (the Zero
+    /// Day works' yard, Sean 2026-11-23). Reads the crane reach LifterRender keeps current; allocates nothing.
+    /// </summary>
+    private static bool UnderRealCrane(Construct c, int t)
+    {
+        if (c.CraneN == 0)
+            return false;
+        Freeform.PartWorld(c, t, out var sp, out var sr); // (the station in the cranes' own pose, the tick's, so a moving body doesn't flicker at a reach's edge)
+        var at = sp + Vector3.Transform(ConstructStation.BayFloor(c, t) + Vector3.UnitY, sr);
+        for (var k = 0; k < c.CraneN; k++)
+        {
+            int part = c.CraneDefs[k].Part;
+            if (part >= c.PartCount || c.Parts[part].Broken || ConstructLifters.DefOf(c, part) is not { Bridge: true, RailWhy: 0 } ld)
+                continue;
+            ConstructLifters.Frame(c, part, ld, out _, out var rot, out var shoulder);
+            if (ConstructLifters.InReach(ld, shoulder, rot, at, 0, out _))
+                return true;
+        }
+        return false;
+    }
+
+    private static void DrawStation(Renderer gfx, Construct c, int t, Matrix4x4 bay, Vector3 size, double now, bool realCrane)
     {
         var d = c.DefOf(t);
         var cell = d.BlockCell;
@@ -73,7 +98,7 @@ public static class StationRender
         var bayLegs = masts ? Math.Max(0, (int)MathF.Ceiling(size.X / LegEvery) - 1) : 0;
         var RailH = Math.Clamp(0.42f + (xb - xa) / (legs + 1) * 0.03f, 0.42f, 0.9f); // (its depth by the span it carries)
         var y = top + RailH * 0.5f + 0.004f;
-        for (var s = -1; s <= 1; s += 2)
+        for (var s = -1; s <= 1 && !realCrane; s += 2) // (under a real crane: no runway of its own)
         {
             var z = s * railZ;
             Box(gfx, bay, new Vector3((xa + xb) * 0.5f, y, z), new Vector3(xb - xa, RailH - 0.08f, 0.06f), Dark); // (the web)
@@ -115,12 +140,12 @@ public static class StationRender
             {
                 var lx = sx * (masts ? hx - cell * 0.5f : hx + 0.25f);
                 var lz = sz * railZ;
-                var ly = top + RailH + 0.02f;
+                var ly = top + (realCrane ? 0 : RailH) + 0.02f; // (no runway under a real crane: on the masts' tops)
                 Box(gfx, bay, new Vector3(lx, ly + 0.04f, lz + sz * (RailW * 0.5f + 0.12f)), new Vector3(0.22f, 0.12f, 0.2f), Dark);
                 Box(gfx, bay, new Vector3(lx, ly + 0.16f, lz + sz * (RailW * 0.5f + 0.12f)), new Vector3(0.16f, 0.14f, 0.14f), lamp);
             }
         // The bridges, one an arm.
-        var n = ConstructStation.Arms(c, t);
+        var n = realCrane ? 0 : ConstructStation.Arms(c, t); // (under a real crane: no bridges of its own either)
         var building = j is { State: StationState.Building };
         var hookUp = top - 0.7f;
         for (var a = 0; a < n; a++)
