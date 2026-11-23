@@ -38,8 +38,14 @@ public static unsafe class LampShadows
     /// <summary>Slots drawn again at most a frame (six depth passes each).</summary>
     public static int Budget = 4;
 
-    /// <summary>How far the maps hold distances (m): past <see cref="ConstructLamps.DarkRange"/>, so a lamp's range can change without drawing again.</summary>
+    /// <summary>How far a plain lamp's maps hold distances (m): past <see cref="ConstructLamps.DarkRange"/>, so a lamp's range can change without drawing again.</summary>
     public const float Store = 16f;
+
+    /// <summary>
+    /// How far a lamp's maps hold distances (m): <see cref="Store"/>, or a longer lamp's own most range (a part's "light" range: a high-bay
+    /// pendant's). The shader reads each slot's own (its first turn row's w).
+    /// </summary>
+    public static float StoreOf(float range) => MathF.Max(Store, range);
 
     /// <summary>How near the lamp's point a small box casts nothing (m): the lamp's own fixture.</summary>
     public const float SelfClear = 0.16f;
@@ -72,6 +78,8 @@ public static unsafe class LampShadows
         public int BodyId, Part, Sub = -1, Used = -1, Drawn = -1;
         public long Shape; // (its body's boxes as drawn: ConstructShapeVersion.Both)
         public Vector3 Local;
+        public float Store = LampShadows.Store;
+        public byte Faces = 63; // (the cube faces drawn: a spot's cone reaches only some)
         public int Others;
         public readonly int[] OtherId = new int[MaxOthers];
         public readonly long[] OtherShape = new long[MaxOthers];
@@ -84,6 +92,8 @@ public static unsafe class LampShadows
         public int Part, Sub, Light;
         public Vector3 Local, Pos;
         public Quaternion Rot;
+        public float Store;
+        public byte Faces;
     }
 
     private static readonly Slot[] All = new Slot[MaxSlots];
@@ -101,11 +111,34 @@ public static unsafe class LampShadows
     /// <see cref="ConstructLamps"/>: lamp <paramref name="sub"/> of part <paramref name="part"/> (its point <paramref name="local"/> in the body's
     /// frame) is dynamic light <paramref name="light"/> this frame, the body posed at <paramref name="pos"/>, <paramref name="rot"/>.
     /// </summary>
-    public static void Offer(int light, Construct c, int part, int sub, Vector3 local, Vector3 pos, Quaternion rot)
+    public static void Offer(int light, Construct c, int part, int sub, Vector3 local, Vector3 pos, Quaternion rot, float range = 0f, Vector3 dir = default, float cosWide = -2f)
     {
         if (!On || ForcedOff || _broken || _wants >= Math.Min(Slots, MaxSlots))
             return;
-        Wants[_wants++] = new Want { Body = c, Part = part, Sub = sub, Light = light, Local = local, Pos = pos, Rot = rot };
+        Wants[_wants++] = new Want { Body = c, Part = part, Sub = sub, Light = light, Local = local, Pos = pos, Rot = rot, Store = StoreOf(range), Faces = FacesFor(dir, cosWide) };
+    }
+
+    /// <summary>The angle from a cube face's axis to its map's corner (its Guard included): a direction farther than this from a face's axis is never on it.</summary>
+    private static readonly float FaceReach = MathF.Atan(MathF.Sqrt(2f) / Guard);
+
+    /// <summary>
+    /// The cube faces a light reaches, as bits (face f: axis f / 2, + for even f): all six for a lamp that shines all round, only those
+    /// within <paramref name="cosWide"/> (the cosine of its widest lit angle) of <paramref name="dir"/> (body frame) for a spot. A downward
+    /// pendant skips its upward face: a sixth fewer depth passes, and the shader never reads a face the light doesn't reach.
+    /// </summary>
+    public static byte FacesFor(Vector3 dir, float cosWide)
+    {
+        if (cosWide < -1f || dir.LengthSquared() < 1e-6f)
+            return 63;
+        var wide = MathF.Acos(Math.Clamp(cosWide, -1f, 1f)) + FaceReach + 0.02f;
+        byte bits = 0;
+        for (var f = 0; f < 6; f++)
+        {
+            var axis = (f / 2) switch { 0 => Vector3.UnitX, 1 => Vector3.UnitY, _ => Vector3.UnitZ } * ((f & 1) == 0 ? 1f : -1f);
+            if (MathF.Acos(Math.Clamp(Vector3.Dot(axis, dir), -1f, 1f)) <= wide)
+                bits |= (byte)(1 << f);
+        }
+        return bits;
     }
 
     /// <summary>
@@ -136,7 +169,7 @@ public static unsafe class LampShadows
             ref var want = ref Wants[w];
             slotOf[w] = -1;
             for (var s = 0; s < Slots; s++)
-                if (All[s] is { } sl && sl.BodyId == want.Body.Id && sl.Part == want.Part && sl.Sub == want.Sub && sl.Used != _frame && sl.Local == want.Local)
+                if (All[s] is { } sl && sl.BodyId == want.Body.Id && sl.Part == want.Part && sl.Sub == want.Sub && sl.Used != _frame && sl.Local == want.Local && sl.Store == want.Store && sl.Faces == want.Faces)
                 {
                     slotOf[w] = s;
                     break;
@@ -161,7 +194,7 @@ public static unsafe class LampShadows
                 continue;
             var sl = All[best];
             ref var want = ref Wants[w];
-            (sl.BodyId, sl.Part, sl.Sub, sl.Local, sl.Used, sl.Drawn) = (want.Body.Id, want.Part, want.Sub, want.Local, _frame, -1);
+            (sl.BodyId, sl.Part, sl.Sub, sl.Local, sl.Used, sl.Drawn, sl.Store, sl.Faces) = (want.Body.Id, want.Part, want.Sub, want.Local, _frame, -1, want.Store, want.Faces);
             slotOf[w] = best;
         }
 
@@ -178,7 +211,7 @@ public static unsafe class LampShadows
                 continue;
             ref var want = ref Wants[w];
             var sl = All[s];
-            var others = Gather(world, want.Body, want.Local, want.Pos, want.Rot, alpha, blendTicks);
+            var others = Gather(world, want.Body, want.Local, want.Pos, want.Rot, want.Store, alpha, blendTicks);
             if (drawn < Budget && Stale(sl, want.Body, others))
             {
                 if (!bound)
@@ -198,7 +231,6 @@ public static unsafe class LampShadows
                     Native.glDisable(GlCapability.Blend);
                     Native.glDisable(GlCapability.CullFace);
                     Native.glDisable(GlCapability.ScissorTest);
-                    Native.glUniform1f(_lInv, 1f / Store);
                     Native.glUniform1f(_lRev, RenderCaps.ReversedDepth ? 1f : 0f);
                     Native.glUniform1f(_lClear, SelfClear);
                     bound = true;
@@ -211,7 +243,7 @@ public static unsafe class LampShadows
             var r0 = Vector3.Transform(Vector3.UnitX, want.Rot);
             var r1 = Vector3.Transform(Vector3.UnitY, want.Rot);
             var r2 = Vector3.Transform(Vector3.UnitZ, want.Rot);
-            Rows[s * 3] = new Vector4(r0, 0f);
+            Rows[s * 3] = new Vector4(r0, 1f / sl.Store);
             Rows[s * 3 + 1] = new Vector4(r1, 0f);
             Rows[s * 3 + 2] = new Vector4(r2, 0f);
             LightGrid.SetDynamicSlot(want.Light, s);
@@ -255,7 +287,7 @@ public static unsafe class LampShadows
     }
 
     /// <summary>The other bodies whose sphere reaches the lamp's (into <see cref="Near"/>, with each one's pose in the lamp's body frame); how many.</summary>
-    private static int Gather(ConstructWorld world, Construct own, Vector3 local, Vector3 pos, Quaternion rot, float alpha, bool blendTicks)
+    private static int Gather(ConstructWorld world, Construct own, Vector3 local, Vector3 pos, Quaternion rot, float store, float alpha, bool blendTicks)
     {
         var at = pos + Vector3.Transform(local, rot);
         var inv = Matrix4x4.CreateFromQuaternion(Quaternion.Conjugate(rot));
@@ -264,7 +296,7 @@ public static unsafe class LampShadows
         {
             if (c == own || c.PartCount == 0 || (ConstructRender.AwayOnly != 0 ? c.Id != ConstructRender.AwayOnly : c.SpaceAway != 0))
                 continue;
-            var r = Store + c.Radius + 2f;
+            var r = store + c.Radius + 2f;
             var cpos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos; // (posed as drawn, as the lamp's own body is: ConstructLamps)
             if (Vector3.DistanceSquared(cpos, at) > r * r)
                 continue;
@@ -309,27 +341,30 @@ public static unsafe class LampShadows
         for (var k = 0; k < others; k++)
             (sl.OtherId[k], sl.OtherShape[k], sl.OtherRel[k]) = (Near[k]!.Id, ConstructShapeVersion.Both(Near[k]!), NearRel[k]);
         var toLamp = Matrix4x4.CreateTranslation(-local);
+        Native.glUniform1f(_lInv, 1f / sl.Store);
         for (var f = 0; f < 6; f++)
         {
+            if ((sl.Faces & (1 << f)) == 0)
+                continue; // (a spot's cone never reaches it: left as it was, never read)
             Native.glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, _tex, 0, s * 6 + f);
             Native.glClear(GL_DEPTH_BUFFER_BIT);
             Native.glUniform1i(_lFace, f);
-            DrawBody(own, toLamp, true);
+            DrawBody(own, toLamp, true, sl.Store);
             for (var k = 0; k < others; k++)
             {
                 var m = NearRel[k] * toLamp;
-                DrawBody(Near[k]!, m, false);
+                DrawBody(Near[k]!, m, false, sl.Store);
             }
         }
     }
 
     /// <summary>A body's caster boxes within the map's reach (<see cref="Store"/>) of the lamp, <paramref name="model"/> taking the body's frame to the lamp's.</summary>
-    private static void DrawBody(Construct c, Matrix4x4 model, bool self)
+    private static void DrawBody(Construct c, Matrix4x4 model, bool self, float store)
     {
         if (!Matrix4x4.Invert(model, out var back))
             return;
         Native.glUniformMatrix4fv(_lModel, 1, false, &model.M11);
-        LastBoxes += SunShadows.DrawNear(c, Vector3.Transform(Vector3.Zero, back), Store, _lSelf, self); // (the lamp's point in the body's frame: a works' far bays aren't drawn for a lamp in one)
+        LastBoxes += SunShadows.DrawNear(c, Vector3.Transform(Vector3.Zero, back), store, _lSelf, self); // (the lamp's point in the body's frame: a works' far bays aren't drawn for a lamp in one)
     }
 
     // Face f: axis f / 2, + for even f. The map's u, v are the other two axes (x: y, z; y: z, x; z: x, y) over the distance along

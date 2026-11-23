@@ -21,6 +21,15 @@ public static class ConstructLamps
     /// </summary>
     public const float DarkReach = 60f, DarkRange = 15f, DarkStrength = 2.6f;
 
+    /// <summary>The longest a part's "light" may reach (m; <see cref="ConstructPartDef.LightRange"/>): a high-bay pendant's throw, and what a lamp shadow slot then holds.</summary>
+    public const float MaxRange = 32f;
+
+    /// <summary>
+    /// How much of a spot's half angle its shadow and fill reach past its cone, as a cosine (Lighting.Glsl's <c>DynLight</c>: the fill's
+    /// wider cone starts 0.35 under the cone's own cosine).
+    /// </summary>
+    public const float FillCos = 0.35f;
+
     /// <summary>A plain lamp's light in the dark: the orange of an old sodium lamp, against the dusk's blue.</summary>
     public static readonly Vector3 DarkColour = new(1f, 0.74f, 0.36f);
 
@@ -46,6 +55,10 @@ public static class ConstructLamps
     private static readonly int[] BestPart = new int[Most], BestSub = new int[Most];
     private static readonly Vector3[] BestLocal = new Vector3[Most], BestBodyPos = new Vector3[Most];
     private static readonly Quaternion[] BestRot = new Quaternion[Most];
+    // (each kept lamp's own light: its range, its strength over the plain one, its spot's world direction and cosine, -2 all round,
+    // and its direction in the body's frame for its shadow's faces)
+    private static readonly float[] BestRange = new float[Most], BestStrength = new float[Most], BestCos = new float[Most];
+    private static readonly Vector3[] BestDir = new Vector3[Most], BestBodyDir = new Vector3[Most];
 
     /// <summary>Lamps lit this frame and lamps in reach (the F9 window and the smoke log).</summary>
     public static int LastLit, LastNear;
@@ -54,12 +67,14 @@ public static class ConstructLamps
     {
         var free = LightGrid.DynamicFree;
         LastLit = LastNear = 0;
+        LampBeams.Clear();
         if (free <= 0)
             return;
         var keep = Math.Min(free * 2 + 1, Most);
         var n = 0;
         var dark = Math.Clamp(Dark, 0f, 1f);
         float reach = Reach + (DarkReach - Reach) * dark, range = Range + (DarkRange - Range) * dark, strength = Strength + (DarkStrength - Strength) * dark;
+        _range = range;
         foreach (var c in world.Bodies)
         {
             if (c.SpaceAway != 0)
@@ -69,7 +84,8 @@ public static class ConstructLamps
             if (c.LampParts.Length == 0)
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            if (Vector3.DistanceSquared(c.WorldCom, eye) > (reach + c.Radius) * (reach + c.Radius))
+            var far = reach + c.Radius + MathF.Max(c.LampReachMore, 0f);
+            if (Vector3.DistanceSquared(c.WorldCom, eye) > far * far)
                 continue; // (every part is within Radius of the centre of mass: a 200 m works is lit at its far end too)
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             foreach (var i in c.LampParts)
@@ -80,8 +96,8 @@ public static class ConstructLamps
                 var d = c.DefOf(i);
                 if (d.Logic == CLogic.Lamp)
                 {
-                    if (d.Mains ? MainsLit(c, i) : p.Out >= 0.5f)
-                        Offer(c, i, 0, (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(new Vector3(1f, 0.93f, 0.6f), DarkColour, dark), pos, rot, eye, keep, reach, ref n);
+                    if ((d.Mains ? MainsLit(c, i) : p.Out >= 0.5f) && LampColour(c, i, d) is var lc && lc != Vector3.Zero)
+                        Offer(c, i, 0, d.LightAt ?? (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(lc, DarkColour, dark), pos, rot, eye, keep, reach, ref n, d);
                     continue;
                 }
                 var sub = 0;
@@ -119,9 +135,18 @@ public static class ConstructLamps
             if (fade > 0.01f)
             {
                 var light = LightGrid.MaxDynamic - LightGrid.DynamicFree;
-                LightGrid.AddDynamic(BestPos[k], BestCol[k] * (strength * fade), range);
+                var own = BestRange[k] > 0f;
+                var r = own ? BestRange[k] : range; // (a long lamp keeps its own throw by day and at dusk: it already lights its floor)
+                var col = BestCol[k] * (strength * BestStrength[k] * fade);
+                if (BestCos[k] >= -1f)
+                {
+                    LightGrid.AddDynamic(BestPos[k], col, r, BestDir[k], BestCos[k]);
+                    LampBeams.Add(BestPos[k], BestDir[k], BestCos[k], col, r); // (its cone seen in the air: LampBeams.cs)
+                }
+                else
+                    LightGrid.AddDynamic(BestPos[k], col, r);
                 if (BestSub[k] >= 0 && BestBody[k] is { } body)
-                    LampShadows.Offer(light, body, BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k]); // (its walls keep its light in: LampShadows.cs)
+                    LampShadows.Offer(light, body, BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k], own ? r : 0f, BestBodyDir[k], BestCos[k] >= -1f ? BestCos[k] - FillCos : -2f); // (its walls keep its light in: LampShadows.cs)
                 LastLit++;
             }
         }
@@ -181,13 +206,27 @@ public static class ConstructLamps
     }
 
     /// <summary>Lamp <paramref name="sub"/> at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
-    private static void Offer(Construct c, int i, int sub, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, float reach, ref int n)
+    private static void Offer(Construct c, int i, int sub, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, float reach, ref int n, ConstructPartDef? light = null)
     {
         ref var p = ref c.Parts[i];
         var rest = p.Pos + Rot24.Apply(p.Rot, local);
         var still = c.FrameOf(p.Seg) == 0;
         var world = still ? pos + Vector3.Transform(rest, rot) : c.SegToWorld(p.Seg, rest);
+        // A lamp that throws further (its part's "light" range) counts by how near the eye is to what it lights: a spot by the eye's distance
+        // from its beam's axis (a pendant 21 m up lights the floor round you), anything else that much nearer. Not plainly by its extra range:
+        // a hall of pendants 25 m off then outranked a cabin's own lamps beside the eye (merge review).
         var dist = Vector3.Distance(world, eye);
+        if (light != null && light.LightRange > _range)
+        {
+            if (light.LightCone > 0f)
+            {
+                var axis = still ? Vector3.Transform(Rot24.Apply(p.Rot, light.LightDir), rot) : Vector3.Normalize(c.SegToWorld(p.Seg, rest + Rot24.Apply(p.Rot, light.LightDir)) - world);
+                var t = Math.Clamp(Vector3.Dot(eye - world, axis), 0f, light.LightRange * 0.8f);
+                dist = Vector3.Distance(eye, world + axis * t);
+            }
+            else
+                dist = MathF.Max(dist - (light.LightRange - _range), 0f);
+        }
         if (dist > reach)
             return;
         var at = Math.Min(n, keep);
@@ -198,12 +237,37 @@ public static class ConstructLamps
         for (var k = Math.Min(n, keep - 1); k > at; k--)
         {
             (BestD[k], BestPos[k], BestCol[k]) = (BestD[k - 1], BestPos[k - 1], BestCol[k - 1]);
+            (BestRange[k], BestStrength[k], BestCos[k], BestDir[k], BestBodyDir[k]) = (BestRange[k - 1], BestStrength[k - 1], BestCos[k - 1], BestDir[k - 1], BestBodyDir[k - 1]);
             (BestBody[k], BestPart[k], BestSub[k], BestLocal[k], BestBodyPos[k], BestRot[k]) = (BestBody[k - 1], BestPart[k - 1], BestSub[k - 1], BestLocal[k - 1], BestBodyPos[k - 1], BestRot[k - 1]);
         }
         (BestD[at], BestPos[at], BestCol[at]) = (dist, world, colour);
+        BestRange[at] = light?.LightRange ?? 0f;
+        BestStrength[at] = light?.LightStrength ?? 1f;
+        BestCos[at] = -2f;
+        BestDir[at] = BestBodyDir[at] = default;
+        if (light is { LightCone: > 0f })
+        {
+            var bodyDir = Rot24.Apply(p.Rot, light.LightDir);
+            BestBodyDir[at] = bodyDir;
+            BestDir[at] = still ? Vector3.Transform(bodyDir, rot) : Vector3.Normalize(c.SegToWorld(p.Seg, rest + bodyDir) - world);
+            BestCos[at] = MathF.Cos(light.LightCone * (MathF.PI / 180f));
+        }
         (BestBody[at], BestPart[at], BestSub[at], BestLocal[at], BestBodyPos[at], BestRot[at]) = (c, i, still ? sub : -1, rest, pos, rot);
         n++;
     }
+
+    /// <summary>A Lamp part's light colour: its Colour setting as its glow shows it, at most 1 a channel, times its Brightness (100%: 1).</summary>
+    private static Vector3 LampColour(Construct c, int i, ConstructPartDef d)
+    {
+        ref var p = ref c.Parts[i];
+        var col = ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99));
+        var hi = MathF.Max(col.X, MathF.Max(col.Y, col.Z));
+        if (hi < 0.05f)
+            return Vector3.Zero;
+        return col / hi * (ConstructConfig.Get(p, d, CfgKey.Brightness, 100) / 100f);
+    }
+
+    private static float _range = Range;
 
     /// <summary>
     /// Whether a lamp part is lit (interiors phase 11). A plain lamp: while its signal is on. A mains lamp (<see cref="ConstructPartDef.Mains"/>):
@@ -265,10 +329,15 @@ public static class ConstructLamps
         }
         var list = new int[count];
         count = 0;
+        var more = 0f;
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i) is var d && (d.Lamps.Length > 0 || d.Logic == CLogic.Lamp || StripLamps(d).Length > 0))
+            {
                 list[count++] = i;
+                more = MathF.Max(more, d.LightRange - Range);
+            }
         c.LampParts = list;
+        c.LampReachMore = more;
     }
 
     /// <summary>A light strip's lamps: one every this far along it (m), this far under it.</summary>

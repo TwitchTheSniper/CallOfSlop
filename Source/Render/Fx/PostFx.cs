@@ -31,7 +31,7 @@ public static unsafe partial class PostFx
     public static float AoRadius = 0.8f, AoStrength = 1f;
 
     /// <summary>Video > Ambient occlusion style: Classic (the grainy one before phase 4, cheaper) or Clean.</summary>
-    public static bool AoClassic = true;
+    public static bool AoClassic;
 
     /// <summary>Classic AO's reach for each metre of the Shade reach slider: its old fixed 0.7 m at the default 0.8 (Karl 2026-11-21:
     /// the default sliders give exactly the old picture).</summary>
