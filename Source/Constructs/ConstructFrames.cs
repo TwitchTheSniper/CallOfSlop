@@ -381,7 +381,7 @@ public static class ConstructFrames
             {
                 var a = (fv - c.FrameV - frameDv) * World.TickRate - c.FrameFree; // (the frame's turning at it, and what of its change is felt)
                 c.FrameFelt += (a.Length() - c.FrameFelt) * 0.3f;
-                if (c.FrameFelt > WakeFelt && ShipGravity.MayWake())
+                if (c.FrameFelt > WakeFelt && ShipGravity.MayWake(f))
                     c.Wake(); // (with ship gravity on, a few a tick: a burn doesn't wake a whole hold at once, ShipGravity.cs)
             }
             c.FrameVel = c.FrameSpin = Vector3.Zero;

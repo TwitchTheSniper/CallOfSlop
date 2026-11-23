@@ -70,7 +70,7 @@ public static class ShipGravity
     public static bool Active(Construct c) => Mode switch
     {
         ShipGravityMode.Everywhere => true,
-        ShipGravityMode.Space => c.SpaceShip != 0 || WorldPull(c.WorldCom).LengthSquared() < 0.25f, // (out of the bubble, or a bubble with no pull: space)
+        ShipGravityMode.Space => c.SpaceShip != 0 || c.FeltSpace, // (out of the bubble, or a bubble with no pull: space; Update keeps it)
         _ => false,
     };
 
@@ -81,13 +81,19 @@ public static class ShipGravity
     /// <summary>Server, once a tick per body after its acceleration (<see cref="ConstructRide.BeforePhysics"/>): its felt pull, filtered.</summary>
     public static void Update(Construct c)
     {
+        if (c.Asleep && c.SpaceShip == 0 && c.CarriedBy == 0)
+            return; // (resting: its last pull stands, and the map's field isn't asked for every sleeper every tick)
         Vector3 raw;
         if (c.SpaceShip != 0)
             raw = ConstructFrames.SpaceTimeSpeed > 1 ? Vector3.Zero : -c.SpaceAccel; // (a ship on its flight is in free fall: only its drive is felt; at a raised time speed nothing)
         else if (c.CarriedBy != 0)
             raw = c.Felt; // (a docked craft feels its carrier's: left as it was, the carrier's own is read by its riders)
         else
-            raw = WorldPull(c.WorldCom) - c.Accel; // (resting: the world's pull; falling freely: nothing)
+        {
+            var pull = WorldPull(c.WorldCom);
+            c.FeltSpace = pull.LengthSquared() < 0.25f; // (a bubble with no pull counts as space)
+            raw = pull - c.Accel; // (resting: the world's pull; falling freely: nothing)
+        }
         c.Felt += (raw - c.Felt) * MathF.Min(1f, World.TickDt / FilterSeconds);
     }
 
@@ -175,15 +181,23 @@ public static class ShipGravity
         }
         if (_watcherCount < _watchers.Length)
             _watchers[_watcherCount++] = at;
+        _sinceWatch = 0;
     }
 
     /// <summary>Each tick's wake budget starts again (ConstructFrames.After, the first pass).</summary>
-    public static void NewTick() => _wakes = 0;
+    public static void NewTick()
+    {
+        _wakes = 0;
+        if (_sinceWatch < 255)
+            _sinceWatch++; // (nobody watched for a while, everyone dead or gone: the list is stale, Settles reads it as empty)
+    }
+
+    private static byte _sinceWatch = 255;
 
     /// <summary>May a sleeping body woken by its frame's change wake this tick? (Rule off: always.)</summary>
-    public static bool MayWake()
+    public static bool MayWake(Construct f)
     {
-        if (Mode == ShipGravityMode.Deck)
+        if (Mode == ShipGravityMode.Deck || !Active(f))
             return true;
         return _wakes++ < WakesPerTick;
     }
@@ -198,7 +212,8 @@ public static class ShipGravity
         if (Mode == ShipGravityMode.Deck || !Active(f) || f.Felt.LengthSquared() > FloatG * G * FloatG * G)
             return false;
         var at = c.WorldCom;
-        for (var i = 0; i < _watcherCount; i++)
+        var watchers = _sinceWatch > 2 ? 0 : _watcherCount;
+        for (var i = 0; i < watchers; i++)
             if (Vector3.DistanceSquared(_watchers[i], at) < WatchRange * WatchRange)
                 return false;
         return true;
