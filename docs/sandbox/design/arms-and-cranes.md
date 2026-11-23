@@ -129,7 +129,7 @@ needs (3.6). A move's `T` in seconds, where the text below says it, is that coun
 - **Path.** Closed form from `From`, `To` and `T`, the same on every peer. An arm: straight up to its carry height, round
   the base in angle and radius (so the piece goes round the mast, never through it), straight down. A bridge: hoist,
   travel and traverse together, lower. The turn goes from `FromRot` to `ToRot` over the middle leg. `Dur` is the path's
-  length over `speed` plus `handle`; `Return` is the same path back with an empty hand.
+  legs at `speed` (a bridge: eased, 3.4) plus `handle`; `Return` is the same path back with an empty hand.
 - **Step.** At 10 Hz (the conveyor's rate, its own counter in `ConstructLifters.cs`): when the tick passes
   `Start + Held + Dur` the place happens (a fit, a put) and the lifter starts back. A decision is made only when a lifter is idle and something in reach changed (a store's
   version, a rider reaching a pick point, a station's ready count), else every 2 s, as a Router's stuck look.
@@ -147,10 +147,19 @@ Four parts by class (the classes and loads of the existing Winch and Crane Boom;
 
 | Class | Bridge span | Rail section | Hook drop | Payload | Largest piece | Travel, hoist |
 | --- | --- | --- | --- | --- | --- | --- |
-| Small | 4 m | 1 m | 4 m | 5 t | 3.6, 8 m | 2.5 m/s, 1.25 m/s |
-| Medium | 8 m | 4 m | 8 m | 30 t | 7.2, 16 m | 2 m/s, 1 m/s |
-| Large | 32 m | 16 m | 24 m | 300 t | 28.8, 64 m | 1.5 m/s, 0.75 m/s |
-| Capital | 64 m | 32 m | 48 m | 3,000 t | 28.8, 128 m | 1 m/s, 0.5 m/s |
+| Small | 4 m | 1 m | 4 m | 5 t | 3.6, 8 m | 6 m/s, 3 m/s (ramp 1 s) |
+| Medium | 8 m | 4 m | 8 m | 30 t | 7.2, 16 m | 6 m/s, 2.5 m/s (ramp 1.25 s) |
+| Large | 32 m | 16 m | 24 m | 300 t | 28.8, 64 m | 5 m/s, 2 m/s (ramp 2 s) |
+| Capital | 64 m | 32 m | 48 m | 3,000 t | 28.8, 128 m | 4 m/s, 1.5 m/s (ramp 2.5 s) |
+
+A Hall Crane's Crane Core: 5 m/s, 2 m/s, ramp 2 s. Sean, 2026-11-23: the cranes were far too slow for a factory (they
+were 2.5 down to 1 m/s travel, 1.25 down to 0.5 m/s hoist, at full speed from the first tick). Each leg (hoist, run
+across, lower) now starts and stops on a sine-shaped push: its speed rises as (1 - cos)/2 over the part's `ramp` seconds
+(file key `ramp`, default 1.5 s on a bridge), cruises, and falls the same way; a leg too short for top speed peaks lower
+(`ConstructLifters.LegTime`, `LegAt`). **Over what's in the way:** a loaded carry's rise is raised on the server, at the
+carry's start, so the piece's underside passes 0.3 m over the tallest box of any body along its run (its footprint at both
+end turns); what reaches past the hook's highest carry, what hangs over the piece at an end and what the piece lies in are
+left out (`ConstructLifterClear.cs`). The rise goes to clients in the lift word as before.
 
 - **What is built.** **Crane Rail** sections joined end to end by `end-` and `end+` sockets make a run, as Linear rails do
   (in line within 2 cm and 3 degrees, at most 64 sections); two runs a span apart, on whatever the player stands them on

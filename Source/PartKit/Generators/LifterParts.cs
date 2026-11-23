@@ -195,13 +195,17 @@ public sealed class LifterParts : IPartGenerator
     // ---- The Bridge Crane (arms-and-cranes.md 3.4, phase 6): Crane Rail sections and the Crane Bridge, in four size classes (the Small
     // for small container ships' holds, Sean 2026-11-22: a 4 m span on 0.25 m runway girders).
 
-    /// <summary>The design's table: span, rail section, hook drop, payload kg, piece across and long, travel and hoist m/s, handling s, power W.</summary>
-    private static (double Span, int Rail, double Drop, int Payload, double Across, double Long, double Travel, double Hoist, double Handle, int Power) Crane(Cls c) => c.Key switch
+    /// <summary>
+    /// The design's table: span, rail section, hook drop, payload kg, piece across and long, travel and hoist m/s, handling s, power W,
+    /// and the ramp: seconds from standing to top speed on a sine-shaped push, the same to stop (Sean 2026-11-23: the cranes were
+    /// far too slow for a factory; travel and hoist were 2.5/1.25 Small down to 1/0.5 Capital, with no easing).
+    /// </summary>
+    private static (double Span, int Rail, double Drop, int Payload, double Across, double Long, double Travel, double Hoist, double Handle, int Power, double Ramp) Crane(Cls c) => c.Key switch
     {
-        "small" => (4, 1, 4, 5_000, 3.6, 8, 2.5, 1.25, 2.0, 2000),
-        "medium" => (8, 4, 8, 30_000, 7.2, 16, 2.0, 1.0, 3.0, 6000),
-        "large" => (32, 16, 24, 300_000, 28.8, 64, 1.5, 0.75, 5.0, 30_000),
-        _ => (64, 32, 48, 3_000_000, 28.8, 128, 1.0, 0.5, 8.0, 120_000),
+        "small" => (4, 1, 4, 5_000, 3.6, 8, 6.0, 3.0, 2.0, 2000, 1.0),
+        "medium" => (8, 4, 8, 30_000, 7.2, 16, 6.0, 2.5, 3.0, 6000, 1.25),
+        "large" => (32, 16, 24, 300_000, 28.8, 64, 5.0, 2.0, 5.0, 30_000, 2.0),
+        _ => (64, 32, 48, 3_000_000, 28.8, 128, 4.0, 1.5, 8.0, 120_000, 2.5),
     };
 
     /// <summary>A crane class's word in names: the Small class has none of its own ("" in PartScale), so its cranes say "Small".</summary>
@@ -279,7 +283,7 @@ public sealed class LifterParts : IPartGenerator
         var margin = 0.7 * k;
         p.Set(("lifter", Kw(("kind", "bridge"), ("base", Py.L(Py.Round(k, 3), Py.Round(hi, 3), 0.0)), ("span", cr.Span), ("depth", Py.Round(0.6 * k, 3)),
             ("reach", Py.L(Py.Round(margin, 3), Py.Round(cr.Span - margin, 3))), ("up", 0.0), ("down", cr.Drop), ("payload", cr.Payload), ("piece", Py.L(cr.Across, cr.Long)),
-            ("speed", cr.Travel), ("hoist", cr.Hoist), ("handle", cr.Handle))));
+            ("speed", cr.Travel), ("hoist", cr.Hoist), ("handle", cr.Handle), ("ramp", cr.Ramp))));
         p.Set(("config", Py.L(
             Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
                 ("tooltip", "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, racks and pads. Off: stands still.")),
@@ -432,7 +436,7 @@ public sealed class LifterParts : IPartGenerator
         p.Set(("power", 12000), ("onBreak", "disable"), ("centreSockets", false), ("collider", "boxes"));
         p.Set(("lifter", Kw(("kind", "bridge"), ("hall", true), ("base", Py.L(2.0, 2.0, 0.0)), ("span", 32.0), ("depth", 1.6),
             ("reach", Py.L(1.0, 31.0)), ("up", 0.0), ("down", 8.0), ("payload", 20000), ("piece", Py.L(30.0, 64.0)),
-            ("speed", 1.5), ("hoist", 0.75), ("handle", 3.0))));
+            ("speed", 5.0), ("hoist", 2.0), ("handle", 3.0), ("ramp", 2.0)))); // (Sean 2026-11-23: was 1.5 and 0.75 m/s, no easing)
         p.Set(("config", Py.L(
             Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
                 ("tooltip", "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, pads and roller runs. Off: stands still.")),
