@@ -1,0 +1,766 @@
+<title>Ship Designer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a drafting console. Tool rail left, the 3D yard in the middle, the inspector and the checks right; stacks under the yard on a phone. */
+:root {
+  --bg: #e4e9ec; --panel: #f6f8f9; --ink: #18232b; --ink2: #56656f; --line: #c6d0d6; --chip: #e9eef1;
+  --accent: #2f7fcf; --accent-ink: #ffffff; --ok: #2f8f4a; --warn: #b8780a; --bad: #c03a28;
+  --yard: #1b2329; --yard-ink: #d6e0e6;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1418; --panel: #172026; --ink: #dce5ea; --ink2: #93a3ad; --line: #2b3842; --chip: #1f2a31;
+  --accent: #4b9be6; --accent-ink: #08121a; --ok: #5cc077; --warn: #e9a53b; --bad: #ec6a55;
+  --yard: #11181d; --yard-ink: #d6e0e6; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1418; --panel: #172026; --ink: #dce5ea; --ink2: #93a3ad; --line: #2b3842; --chip: #1f2a31;
+  --accent: #4b9be6; --accent-ink: #08121a; --ok: #5cc077; --warn: #e9a53b; --bad: #ec6a55;
+  --yard: #11181d; --yard-ink: #d6e0e6; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--body); overflow: hidden; }
+* { box-sizing: border-box; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { background: var(--chip); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.on, button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+select, input[type=number], input[type=text] { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-width: 0; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { font: 700 22px/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
+.brand small { font: 500 11px var(--mono); letter-spacing: .1em; color: var(--ink2); margin-left: 8px; text-transform: none; }
+.modes { display: flex; gap: 4px; }
+.modes button { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 14px; }
+.grow { flex: 1; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.main { min-height: 0; display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; }
+aside { background: var(--panel); overflow-y: auto; min-width: 0; padding: 14px 14px 24px; display: grid; gap: 16px; align-content: start; }
+aside.left { border-right: 1px solid var(--line); }
+aside.right { border-left: 1px solid var(--line); }
+h2 { font: 600 17px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+h2 .n { font: 500 11px var(--mono); color: var(--ink2); letter-spacing: .04em; text-transform: none; }
+.sec { display: grid; gap: 8px; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.row label { display: flex; gap: 6px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; }
+.grid2 > span { font: 12px var(--mono); color: var(--ink2); }
+.hint { font-size: 12.5px; color: var(--ink2); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.yard { position: relative; background: var(--yard); min-width: 0; min-height: 0; touch-action: none; }
+.yard canvas { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud button { background: rgba(20, 28, 34, .82); color: var(--yard-ink); border-color: #34444f; font-size: 12.5px; padding: 4px 9px; }
+.hud button.on { background: var(--accent); color: var(--accent-ink); }
+.tip { position: absolute; left: 10px; bottom: 10px; right: 10px; color: var(--yard-ink); font: 12px var(--mono); opacity: .8; pointer-events: none; }
+.toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: #26323a; color: #f2f5f7; border-left: 3px solid var(--bad);
+  padding: 7px 12px; font-size: 13px; border-radius: 3px; max-width: min(90%, 520px); pointer-events: none; }
+.toast.info { border-left-color: var(--accent); }
+.pal { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pal button { text-align: left; padding: 6px 8px; display: grid; gap: 1px; touch-action: none; user-select: none; }
+.pal button b { font-weight: 600; font-size: 13px; }
+.pal button i { font-style: normal; font-size: 11px; color: var(--ink2); font-family: var(--mono); }
+.pal button.sock { border-left: 3px solid var(--warn); }
+.kinds { display: flex; flex-wrap: wrap; gap: 5px; }
+.kinds button { display: flex; gap: 6px; align-items: center; font-size: 12.5px; padding: 3px 8px; }
+.sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.25); }
+.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.issues li { display: grid; grid-template-columns: 8px 1fr; gap: 8px; font-size: 12.5px; cursor: pointer; align-items: start; }
+.issues li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; background: var(--warn); }
+.issues li.error::before { background: var(--bad); }
+.issues li.good { cursor: default; } .issues li.good::before { background: var(--ok); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--chip); border-radius: 4px; padding: 6px 8px; }
+.stat b { display: block; font: 600 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { font: 11px var(--mono); color: var(--ink2); }
+svg.prof { width: 100%; height: auto; background: var(--yard); border-radius: 4px; touch-action: none; }
+svg.prof .pt { cursor: grab; }
+.row input[type=number] { width: 74px; }
+dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; width: min(720px, 94vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
+.boot { position: absolute; inset: 0; display: grid; place-items: center; color: var(--yard-ink); font: 13px var(--mono); }
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app { height: auto; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .yard { height: 62vh; order: -1; }
+  aside.left, aside.right { border: 0; border-top: 1px solid var(--line);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">Ship Designer<small id="shipname">loading</small></div>
+    <nav class="modes" aria-label="Mode">
+      <button id="m-hull" class="on">Hull</button>
+      <button id="m-pieces">Pieces</button>
+      <button id="m-interior">Interior</button>
+    </nav>
+    <div class="grow"></div>
+    <div class="tools">
+      <select id="start" aria-label="Start from" title="Start a new design from"></select>
+      <button id="undo" disabled title="Ctrl+Z">Undo</button>
+      <button id="redo" disabled title="Ctrl+Y">Redo</button>
+      <button id="file">Design file</button>
+    </div>
+  </header>
+  <div class="main">
+    <aside class="left" id="left"></aside>
+    <div class="yard" id="yard">
+      <div class="boot" id="boot">Starting the designer (the game's C#, as WebAssembly)...</div>
+      <div class="hud" id="hud">
+        <button id="v-frame">Frame ship</button>
+        <button id="v-xray">X-ray hull</button>
+        <button id="v-rooms" class="on">Rooms</button>
+        <button id="v-links" class="on">Socket links</button>
+      </div>
+      <div class="tip" id="tip"></div>
+    </div>
+    <aside class="right">
+      <div class="sec" id="inspect"></div>
+      <div class="sec"><h2>Checks <span class="n" id="icount"></span></h2><ul class="issues" id="issues"></ul></div>
+      <div class="sec"><h2>Ship</h2><div class="stats" id="stats"></div></div>
+    </aside>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <div class="sec">
+    <h2>Design file</h2>
+    <p class="hint">The design as JSON. Copy it to keep it (the game will read this file), or paste one in and load it.</p>
+    <textarea id="dtext" spellcheck="false" aria-label="Design JSON"></textarea>
+    <div class="row"><button id="dcopy" class="primary">Copy</button><button id="dload">Load this text</button><span class="grow"></span><button id="dclose">Close</button></div>
+    <div class="hint" id="dmsg"></div>
+  </div>
+</dialog>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
+
+const $ = id => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); } for (const k of kids) e.append(k); return e; };
+const fmt = v => (Math.round(v * 100) / 100).toString();
+
+// ---------- the C# side
+let api;
+async function bootCs() {
+  const { dotnet } = await import(new URL("framework/dotnet.js", document.baseURI).href);
+  const rt = await dotnet.create();
+  const exp = await rt.getAssemblyExports("ShipDesigner.Web.dll");
+  api = exp.CallOfSlop.ShipDesigner.Api;
+}
+
+let S = null;          // the scene from C#
+let CAT = null;        // the catalogue
+const sel = { kind: null, id: 0, station: -1 };
+let mode = "hull";
+const view = { xray: false, rooms: true, links: true };
+let deck = 0;
+
+function take(answerText) {
+  const a = JSON.parse(answerText);
+  S = a.scene;
+  $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
+  if (a.error) toast(a.error);
+  rebuild();
+  panels();
+  try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
+  return a;
+}
+function cmd(op, merge = false) { op.merge = merge; return take(api.Apply(JSON.stringify(op))); }
+
+// A drag sends a command a frame at most; its first is an undo step, the rest merge into it.
+let pending = null, dragFirst = true;
+function dragCmd(op) { pending = op; }
+function flush() { if (!pending) return; const op = pending; pending = null; const a = cmd(op, !dragFirst); dragFirst = false; return a; }
+
+let toastTimer;
+function toast(msg, info = false) {
+  let t = document.querySelector(".toast");
+  if (!t) { t = el("div", { class: "toast" }); $("yard").append(t); }
+  t.className = "toast" + (info ? " info" : ""); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200);
+}
+
+// ---------- three
+const yard = $("yard");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+yard.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b2329);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+camera.position.set(38, 22, -12);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3, 22);
+controls.enableDamping = true;
+scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x2a3036, 1.25));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(30, 50, -20); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x9fc0e0, 0.5); fill.position.set(-30, -10, 40); scene.add(fill);
+const grid = new THREE.GridHelper(200, 100, 0x3a4852, 0x26323a); scene.add(grid);
+const world = new THREE.Group(); scene.add(world);
+const gizmo = new TransformControls(camera, renderer.domElement);
+gizmo.setTranslationSnap(0.25); gizmo.setSize(0.8);
+scene.add(gizmo);
+gizmo.addEventListener("dragging-changed", e => { controls.enabled = !e.value; if (e.value) { dragFirst = true; } else flush(); });
+gizmo.addEventListener("objectChange", () => {
+  const o = gizmo.object; if (!o || !o.userData.hullId) return;
+  dragCmd({ op: "moveHull", hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
+});
+const gizmoTarget = new THREE.Object3D(); scene.add(gizmoTarget);
+
+function resize() { const r = yard.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(yard);
+
+function meshFrom(m, opts = {}) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(m.p, 3));
+  g.setAttribute("color", new THREE.Uint8BufferAttribute(m.c, 3, true));
+  g.computeVertexNormals();
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts });
+  return new THREE.Mesh(g, mat);
+}
+
+let pickables = [];
+function rebuild() {
+  if (!S) return;
+  world.clear(); pickables = [];
+  $("shipname").textContent = S.name;
+  const ghost = view.xray || mode === "interior";
+  for (const h of S.hulls) {
+    for (const c of h.copies) {
+      for (const surf of ["skin", "fore", "aft"]) {
+        if (!c[surf].p.length) continue;
+        const selHull = sel.kind === "hull" && sel.id === h.id;
+        const m = meshFrom(c[surf], ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {});
+        if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
+        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
+        world.add(m); pickables.push(m);
+      }
+    }
+    if (mode === "hull" && sel.kind === "hull" && sel.id === h.id) drawRings(h);
+  }
+  for (const p of S.pieces) {
+    const m = meshFrom(p.mesh, mode === "interior" ? { transparent: true, opacity: 0.35, depthWrite: false } : {});
+    if (sel.kind === "piece" && sel.id === p.id) m.material.emissive = new THREE.Color(0x1d4f86);
+    if (!p.ok) m.material.emissive = new THREE.Color(0x5a1408);
+    m.userData = { type: "piece", id: p.id };
+    world.add(m); pickables.push(m);
+  }
+  if (view.rooms && (mode === "interior" || view.xray)) drawRooms();
+  if (view.links && mode !== "hull") drawLinks();
+  if (mode === "interior") drawDeckPlane();
+  placeGizmo();
+}
+
+function drawRings(h) {
+  h.stations.forEach((s, i) => {
+    for (let c = 0; c < (h.mirror && Math.abs(h.x) > 0.01 ? 2 : 1); c++) {
+      const cx = c ? -h.x : h.x, pts = [];
+      const ring = [[0, s.p[0][1]], ...s.p, [0, s.p[s.p.length - 1][1]]];
+      for (const [x, y] of ring) pts.push(new THREE.Vector3(cx + x, h.y + y, h.z + s.z));
+      for (let k = ring.length - 1; k >= 0; k--) pts.push(new THREE.Vector3(cx - ring[k][0], h.y + ring[k][1], h.z + s.z));
+      const on = sel.station === i;
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: on ? 0xffb02e : 0x6fb6ff, depthTest: false, transparent: true }));
+      line.renderOrder = 5; line.userData = { type: "station", hull: h.id, i };
+      world.add(line); pickables.push(line);
+    }
+  });
+}
+
+const roomMats = new Map();
+function drawRooms() {
+  for (const r of S.rooms) {
+    const d = S.decks[r.deck]; if (!d) continue;
+    const dim = mode === "interior" && r.deck !== deck;
+    const w = r.x1 - r.x0, l = r.z1 - r.z0, h = d.height;
+    const col = new THREE.Color(r.colour);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, 0.08, l - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
+    floor.position.set((r.x0 + r.x1) / 2, d.floor + 0.04, (r.z0 + r.z1) / 2);
+    floor.userData = { type: "room", id: r.id };
+    world.add(floor); if (!dim) pickables.push(floor);
+    const box = new THREE.Mesh(new THREE.BoxGeometry(w - 0.06, h - 0.1, l - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
+    box.position.set(floor.position.x, d.floor + h / 2, floor.position.z);
+    world.add(box);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: !r.ok ? 0xff6a50 : (!r.reached ? 0xffb02e : col), transparent: true, opacity: dim ? 0.2 : 0.85 }));
+    edges.position.copy(box.position); world.add(edges);
+  }
+  for (const [x, y, z] of S.doors) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
+    m.position.set(x, y + 0.1, z); world.add(m);
+  }
+}
+
+function drawLinks() {
+  for (const l of S.links) {
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...l.a), new THREE.Vector3(...l.b)]);
+    const line = new THREE.Line(g, new THREE.LineDashedMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, dashSize: 0.3, gapSize: 0.2, depthTest: false, transparent: true }));
+    line.computeLineDistances(); line.renderOrder = 6; world.add(line);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, depthTest: false }));
+    dot.position.set(...l.b); dot.renderOrder = 6; world.add(dot);
+  }
+}
+
+let deckPlane = null;
+function drawDeckPlane() {
+  const d = S.decks[deck]; if (!d) return;
+  deckPlane = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ visible: false }));
+  deckPlane.rotation.x = -Math.PI / 2; deckPlane.position.y = d.floor; deckPlane.userData = { type: "deck" };
+  world.add(deckPlane);
+  const g = new THREE.GridHelper(80, 160, 0x4c6070, 0x2e3a42); g.position.set(0, d.floor + 0.01, 22);
+  g.material.transparent = true; g.material.opacity = 0.55; world.add(g);
+}
+
+function placeGizmo() {
+  if (gizmo.dragging) return;
+  gizmo.detach();
+  if (mode === "hull" && sel.kind === "hull" && sel.station < 0) {
+    const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
+    gizmoTarget.position.set(h.x, h.y, h.z); gizmoTarget.userData.hullId = h.id; gizmo.attach(gizmoTarget);
+  }
+}
+
+function frame() {
+  if (!S) return;
+  const box = new THREE.Box3();
+  world.traverse(o => { if (o.isMesh && o.userData.type === "hull") box.expandByObject(o); });
+  if (box.isEmpty()) return;
+  const c = box.getCenter(new THREE.Vector3()), r = box.getSize(new THREE.Vector3()).length() / 2;
+  controls.target.copy(c);
+  camera.position.copy(c).add(new THREE.Vector3(r * 1.7, r * 0.9, -r * 0.8));
+  grid.position.y = box.min.y - 3.4;
+}
+
+// ---------- pointer: picking and dragging in the yard
+const ray = new THREE.Raycaster(); ray.params.Line.threshold = 0.35;
+const ndc = new THREE.Vector2();
+function cast(ev, list = pickables) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.intersectObjects(list, false);
+}
+function hullHit(ev) { return cast(ev, pickables.filter(o => o.userData.type === "hull")).find(h => !h.object.material.transparent || true); }
+
+let drag = null; // { what, ... , moved, x0, y0 }
+renderer.domElement.addEventListener("pointerdown", ev => {
+  if (!S || ev.button !== 0 || gizmo.dragging || gizmo.axis) return;
+  const hits = cast(ev);
+  const top = hits[0];
+  if (mode === "hull") {
+    const st = hits.find(h => h.object.userData.type === "station");
+    if (st) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
+    const h = hits.find(h => h.object.userData.type === "hull");
+    if (h) { select("hull", h.object.userData.hull); return; }
+    return;
+  }
+  if (mode === "pieces") {
+    const p = hits.find(h => h.object.userData.type === "piece");
+    if (p && (!top || top.object === p.object || top.distance + 0.01 >= p.distance)) {
+      select("piece", p.object.userData.id);
+      drag = { what: "piece", id: p.object.userData.id, x0: ev.clientX, y0: ev.clientY, moved: false };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    const h = hits.find(h => h.object.userData.type === "hull");
+    if (!h) select(null, 0);
+    return;
+  }
+  if (mode === "interior") {
+    const r = hits.find(h => h.object.userData.type === "room");
+    if (r) {
+      select("room", r.object.userData.id);
+      const room = S.rooms.find(x => x.id === r.object.userData.id);
+      const at = deckPoint(ev);
+      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    if (ev.shiftKey || drawing) {
+      const at = deckPoint(ev); if (!at) return;
+      drag = { what: "draw", start: at, x0: ev.clientX, y0: ev.clientY };
+      controls.enabled = false; return;
+    }
+    select(null, 0);
+  }
+});
+
+window.addEventListener("pointermove", ev => {
+  if (paletteDrag) { paletteMove(ev); return; }
+  if (!drag) { hover(ev); return; }
+  if (Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) > 4) drag.moved = true;
+  if (!drag.moved) return;
+  if (drag.what === "station") {
+    const h = S.hulls.find(h => h.id === drag.hull);
+    const z = axisZ(ev, h); if (z !== null) dragCmd({ op: "moveStation", hull: h.id, i: drag.i, z: z - h.z });
+  } else if (drag.what === "piece") {
+    const hit = hullHit(ev);
+    drag.off = !hit;
+    if (hit) { const u = hit.object.userData; dragCmd({ op: "movePiece", id: drag.id, hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
+    $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
+  } else if (drag.what === "room") {
+    const at = deckPoint(ev); if (!at || !drag.start) return;
+    const dx = Math.round((at.x - drag.start.x) * 4) / 4, dz = Math.round((at.z - drag.start.z) * 4) / 4, r = drag.room;
+    dragCmd({ op: "setRoom", id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
+  } else if (drag.what === "draw") {
+    const at = deckPoint(ev); if (!at) return;
+    drag.end = at; drawPreview(drag.start, at);
+  }
+});
+
+window.addEventListener("pointerup", ev => {
+  if (paletteDrag) { paletteDrop(ev); return; }
+  if (!drag) return;
+  const d = drag; drag = null; controls.enabled = true;
+  if (d.what === "piece" && d.moved && d.off) {
+    pending = null; cmd({ op: "delPiece", id: d.id }, !dragFirst); select(null, 0);
+    toast("Taken off the ship. Undo puts it back.", true);
+  } else if (d.what === "draw") {
+    clearPreview();
+    if (d.end) {
+      const x0 = Math.min(d.start.x, d.end.x), x1 = Math.max(d.start.x, d.end.x), z0 = Math.min(d.start.z, d.end.z), z1 = Math.max(d.start.z, d.end.z);
+      if (x1 - x0 >= 0.9 && z1 - z0 >= 0.9) { const a = cmd({ op: "addRoom", deck, kind: roomKind, x0, x1, z0, z1 }); if (!a.error) select("room", a.id); }
+    }
+  } else flush();
+  $("tip").textContent = tips[mode];
+});
+
+function axisZ(ev, h) {
+  // The point on the line along the ship through the hull's middle nearest the pointer's ray.
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const p = new THREE.Vector3(h.x, h.y + 2, 0), u = new THREE.Vector3(0, 0, 1);
+  const o = ray.ray.origin, d = ray.ray.direction;
+  const w = o.clone().sub(p), b = u.dot(d), dd = u.dot(w), e = d.dot(w), den = 1 - b * b;
+  if (Math.abs(den) < 1e-4) return null;
+  return p.z + (dd - b * e) / den;
+}
+function deckPoint(ev) {
+  const dk = S.decks[deck]; if (!dk) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const pt = new THREE.Vector3();
+  if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -dk.floor), pt)) return null;
+  return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.z * 4) / 4 };
+}
+let preview = null;
+function drawPreview(a, b) {
+  clearPreview();
+  const dk = S.decks[deck];
+  const w = Math.max(0.1, Math.abs(b.x - a.x)), l = Math.max(0.1, Math.abs(b.z - a.z));
+  preview = new THREE.Mesh(new THREE.BoxGeometry(w, dk.height, l), new THREE.MeshBasicMaterial({ color: new THREE.Color(CAT.rooms.find(k => k.name === roomKind).colour), transparent: true, opacity: 0.35, depthWrite: false }));
+  preview.position.set((a.x + b.x) / 2, dk.floor + dk.height / 2, (a.z + b.z) / 2);
+  scene.add(preview);
+  $("tip").textContent = `${fmt(w)} x ${fmt(l)} m ${roomKind}`;
+}
+function clearPreview() { if (preview) { scene.remove(preview); preview = null; } }
+
+function hover(ev) {
+  if (!S || ev.target !== renderer.domElement) return;
+  renderer.domElement.style.cursor = "";
+  const hits = cast(ev);
+  if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
+  else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
+  else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) renderer.domElement.style.cursor = "move";
+  else if (mode === "interior" && drawing) renderer.domElement.style.cursor = "crosshair";
+}
+
+// ---------- the palette: drag a piece from the left panel onto the hull
+let paletteDrag = null;
+function paletteStart(ev, kind) {
+  ev.preventDefault();
+  paletteDrag = { kind, id: 0 }; dragFirst = true;
+  $("tip").textContent = `Drag the ${kind} onto the hull.`;
+}
+function paletteMove(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) return;
+  const hit = hullHit(ev);
+  if (!hit) { if (paletteDrag.id) $("tip").textContent = "Release here to leave it off."; paletteDrag.off = true; return; }
+  paletteDrag.off = false;
+  const u = hit.object.userData;
+  const where = CAT.pieces.find(k => k.name === paletteDrag.kind).where;
+  if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
+  const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
+  if (!paletteDrag.id) {
+    const a = cmd({ op: "addPiece", kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, ...at });
+    if (a.error) { paletteDrag = null; return; }
+    paletteDrag.id = a.id; dragFirst = false; select("piece", a.id, false);
+  } else dragCmd({ op: "movePiece", id: paletteDrag.id, ...at });
+}
+function paletteDrop() {
+  const p = paletteDrag; paletteDrag = null;
+  if (p.id && p.off) { pending = null; cmd({ op: "delPiece", id: p.id }, true); select(null, 0); }
+  else { flush(); if (p.id) select("piece", p.id); }
+  $("tip").textContent = tips[mode];
+}
+
+// ---------- selection and panels
+function select(kind, id, redraw = true) { sel.kind = kind; sel.id = id; sel.station = -1; if (redraw) { rebuild(); panels(); } }
+function selectStation(hull, i) { sel.kind = "hull"; sel.id = hull; sel.station = i; rebuild(); panels(); }
+
+const tips = {
+  hull: "Click a hull to pick it and move it with the arrows. Drag a blue station ring along the ship. Shape a station's profile on the left.",
+  pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
+  interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it.",
+};
+let roomKind = "Cabin", drawing = true;
+
+function setMode(m) {
+  mode = m;
+  for (const k of ["hull", "pieces", "interior"]) $("m-" + k).classList.toggle("on", k === m);
+  if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
+  $("tip").textContent = tips[m];
+  rebuild(); panels();
+}
+
+function panels() { leftPanel(); inspector(); checks(); }
+
+function leftPanel() {
+  const L = $("left"); L.replaceChildren();
+  if (!S) return;
+  if (mode === "hull") {
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Hull bodies", el("span", { class: "n" }, `${S.hulls.length}`)),
+      ...S.hulls.map(h => el("button", { class: sel.kind === "hull" && sel.id === h.id ? "on" : "", onclick: () => select("hull", h.id) }, `${h.name} · ${h.stations.length} stations${h.mirror ? " · pair" : ""}`)),
+      el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
+        el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
+      el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")));
+    const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
+    if (h) L.append(stationPanel(h));
+  } else if (mode === "pieces") {
+    const groups = [...new Set(CAT.pieces.map(p => p.group))];
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) open into a room inside."),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Place as a mirrored pair")));
+    for (const g of groups) {
+      const pal = el("div", { class: "pal" });
+      for (const k of CAT.pieces.filter(p => p.group === g)) {
+        const b = el("button", { class: k.socket ? "sock" : "", title: k.desc }, el("b", {}, k.name), el("i", {}, k.socket ? `needs ${k.needs}` : (k.where === "skin" ? "on the skin" : "on a hull's end")));
+        b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
+        pal.append(b);
+      }
+      L.append(el("div", { class: "sec" }, el("h2", {}, g), pal));
+    }
+  } else {
+    const dsel = el("div", { class: "row" });
+    S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
+    dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
+    const d = S.decks[deck];
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), dsel,
+      d ? el("div", { class: "grid2" },
+        el("span", {}, "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
+        el("span", {}, "clear m"), num(d.height, v => cmd({ op: "setDeck", deck, height: v }), 0.05, "deckheight")) : "",
+      d ? el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDeck", deck }); deck = Math.max(0, deck - 1); rebuild(); panels(); } }, "Remove deck and its rooms")) : ""));
+    const kinds = el("div", { class: "kinds" });
+    for (const k of CAT.rooms) kinds.append(el("button", { class: k.name === roomKind ? "on" : "", title: k.desc, onclick: () => { roomKind = k.name; leftPanel(); } }, el("span", { class: "sw", style: `background:${k.colour}` }), k.name));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "drawon", ...(drawing ? { checked: "" } : {}), onchange: e => drawing = e.target.checked }), "Draw rooms by dragging"),
+      kinds,
+      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")));
+  }
+}
+
+function num(v, set, step = 0.05, id = "") {
+  const i = el("input", { type: "number", step: String(step), value: fmt(v), ...(id ? { id } : {}) });
+  i.addEventListener("change", () => { const x = parseFloat(i.value); if (Number.isFinite(x)) set(x); });
+  return i;
+}
+
+function stationPanel(h) {
+  const box = el("div", { class: "sec" });
+  const i = sel.station;
+  box.append(el("h2", {}, h.name, el("span", { class: "n" }, i >= 0 ? `station ${i + 1} of ${h.stations.length}` : "pick a station ring")));
+  box.append(el("div", { class: "grid2" },
+    el("span", {}, "name"), (() => { const t = el("input", { type: "text", value: h.name, id: "hullname" }); t.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, name: t.value })); return t; })(),
+    el("span", {}, "at x y z"), el("div", { class: "row" }, num(h.x, v => cmd({ op: "moveHull", hull: h.id, x: v, y: h.y, z: h.z }), 0.25), num(h.y, v => cmd({ op: "moveHull", hull: h.id, x: h.x, y: v, z: h.z }), 0.25), num(h.z, v => cmd({ op: "moveHull", hull: h.id, x: h.x, y: h.y, z: v }), 0.25)),
+    el("span", {}, "skin"), (() => { const c = el("input", { type: "color", value: h.skin, "aria-label": "Skin colour" }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, skin: c.value })); return c; })()));
+  box.append(el("div", { class: "row" },
+    el("label", {}, el("input", { type: "checkbox", ...(h.cut ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, cut: e.target.checked }) }), "Cut where it meets"),
+    el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
+  const secSel = el("select", { "aria-label": "Section shape" }); for (const s of CAT.sections) secSel.append(el("option", {}, s.name));
+  box.append(el("div", { class: "row" },
+    el("button", { onclick: () => cmd({ op: "addStationFront", hull: h.id, preset: secSel.value, len: 4 }) }, "+ Segment at bow"),
+    el("button", { onclick: () => cmd({ op: "addStation", hull: h.id, i: h.stations.length - 1, preset: secSel.value, len: 4 }) }, "+ Segment at stern")),
+    el("div", { class: "row" }, el("span", { class: "hint" }, "shape"), secSel));
+  if (i >= 0 && i < h.stations.length) {
+    const s = h.stations[i];
+    box.append(profileEditor(h, i));
+    box.append(el("div", { class: "grid2" }, el("span", {}, "z m"), num(s.z, v => cmd({ op: "moveStation", hull: h.id, i, z: v }), 0.25, "stz")));
+    box.append(el("div", { class: "row" },
+      el("label", {}, el("input", { type: "checkbox", id: "allst" }), "Move the point on every station")));
+    box.append(el("div", { class: "row" },
+      el("button", { onclick: () => cmd({ op: "section", hull: h.id, i, preset: secSel.value }) }, "Use shape"),
+      el("button", { onclick: () => cmd({ op: "addStation", hull: h.id, i }) }, "Split after"),
+      el("button", { onclick: () => { cmd({ op: "delStation", hull: h.id, i }); sel.station = -1; panels(); rebuild(); } }, "Remove")));
+    box.append(el("div", { class: "row" },
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1.1, sy: 1 }) }, "Wider"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 1 }) }, "Narrower"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 1.1 }) }, "Taller"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower")));
+  }
+  const pts = el("select", { "aria-label": "Points a profile" });
+  for (let n = 3; n <= 8; n++) pts.append(el("option", n === h.stations[0].p.length ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
+  pts.addEventListener("change", () => cmd({ op: "points", hull: h.id, n: pts.selectedIndex + 3 }));
+  box.append(el("div", { class: "row" }, pts));
+  box.append(el("div", { class: "row" },
+    el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
+    el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
+  return box;
+}
+
+// The half profile at one station, drawn whole (both sides), with its neighbours ghosted and the decks across it; drag a point to move it.
+function profileEditor(h, i) {
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 260, Hh = 230, pad = 14;
+  let maxH = 1, y0 = 1e9, y1 = -1e9;
+  for (const s of h.stations) for (const [x, y] of s.p) { maxH = Math.max(maxH, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const span = Math.max(maxH * 2, y1 - y0) * 1.12, sc = (Math.min(W, Hh) - pad * 2) / span;
+  const cx = W / 2, cy = Hh / 2 + ((y0 + y1) / 2) * sc;
+  const X = x => cx + x * sc, Y = y => cy - y * sc;
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.setAttribute("class", "prof");
+  const path = (p, stroke, width, dash) => {
+    const pts = [[0, p[0][1]], ...p, [0, p[p.length - 1][1]]];
+    const all = [...pts.map(([x, y]) => [X(x), Y(y)]), ...pts.slice().reverse().map(([x, y]) => [X(-x), Y(y)])];
+    const e = document.createElementNS(NS, "polyline"); e.setAttribute("points", all.map(q => q.join(",")).join(" "));
+    e.setAttribute("fill", "none"); e.setAttribute("stroke", stroke); e.setAttribute("stroke-width", width); if (dash) e.setAttribute("stroke-dasharray", dash);
+    svg.append(e);
+  };
+  for (const d of S.decks) for (const y of [d.floor, d.floor + d.height]) {
+    const ly = y - h.y; const e = document.createElementNS(NS, "line");
+    e.setAttribute("x1", 0); e.setAttribute("x2", W); e.setAttribute("y1", Y(ly)); e.setAttribute("y2", Y(ly)); e.setAttribute("stroke", "#3c6a52"); e.setAttribute("stroke-dasharray", "3 3"); svg.append(e);
+  }
+  const axis = document.createElementNS(NS, "line"); axis.setAttribute("x1", cx); axis.setAttribute("x2", cx); axis.setAttribute("y1", 0); axis.setAttribute("y2", Hh); axis.setAttribute("stroke", "#33414b"); svg.append(axis);
+  if (i > 0) path(h.stations[i - 1].p, "#5d7383", 1, "4 3");
+  if (i < h.stations.length - 1) path(h.stations[i + 1].p, "#5d7383", 1, "1 3");
+  path(h.stations[i].p, "#ffb02e", 2);
+  h.stations[i].p.forEach(([x, y], k) => {
+    const c = document.createElementNS(NS, "circle"); c.setAttribute("cx", X(x)); c.setAttribute("cy", Y(y)); c.setAttribute("r", 7);
+    c.setAttribute("fill", "#ffb02e"); c.setAttribute("stroke", "#1b2329"); c.setAttribute("stroke-width", 2); c.setAttribute("class", "pt");
+    c.addEventListener("pointerdown", ev => {
+      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true;
+      const move = e2 => {
+        const r = svg.getBoundingClientRect(), k2 = W / r.width;
+        const px = (e2.clientX - r.left) * k2, py = (e2.clientY - r.top) * k2;
+        const nx = Math.max(0.05, Math.abs((px - cx) / sc)), ny = (cy - py) / sc;
+        c.setAttribute("cx", X(nx)); c.setAttribute("cy", Y(ny));
+        dragCmd({ op: "setPoint", hull: h.id, i, k, h: nx, y: ny, all: $("allst")?.checked ?? false });
+      };
+      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); flush(); leftPanel(); };
+      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up);
+    });
+    const t = document.createElementNS(NS, "title"); t.textContent = `point ${k + 1}: ${fmt(x)} m out, ${fmt(y)} m up`; c.append(t);
+    svg.append(c);
+  });
+  const lab = document.createElementNS(NS, "text"); lab.setAttribute("x", 8); lab.setAttribute("y", Hh - 8); lab.setAttribute("fill", "#93a3ad"); lab.setAttribute("font-size", "10"); lab.setAttribute("font-family", "IBM Plex Mono, monospace");
+  lab.textContent = `${fmt(maxH * 2)} m beam · decks dashed`; svg.append(lab);
+  return svg;
+}
+
+function inspector() {
+  const I = $("inspect"); I.replaceChildren();
+  if (!S) return;
+  if (sel.kind === "piece") {
+    const p = S.pieces.find(p => p.id === sel.id); if (!p) return;
+    const k = CAT.pieces.find(k => k.name === p.kind);
+    I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
+      el("div", { class: "row" },
+        el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirrored pair")),
+      el("div", { class: "row" },
+        el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
+        el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
+        el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPiece", id: p.id }); select(null, 0); } }, "Take off")));
+  } else if (sel.kind === "room") {
+    const r = S.rooms.find(r => r.id === sel.id); if (!r) return;
+    const ks = el("select", { "aria-label": "Room kind" }); for (const k of CAT.rooms) ks.append(el("option", k.name === r.kind ? { selected: "" } : {}, k.name));
+    ks.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, kind: ks.value }));
+    const lab = el("input", { type: "text", value: r.label, placeholder: r.kind, id: "roomlabel" }); lab.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, label: lab.value }));
+    const d = S.decks[r.deck];
+    I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1} · ${fmt((r.x1 - r.x0) * (r.z1 - r.z0))} m2`)),
+      el("div", { class: "grid2" }, el("span", {}, "kind"), ks, el("span", {}, "name"), lab,
+        el("span", {}, "x from"), num(r.x0, v => cmd({ op: "setRoom", id: r.id, x0: v }), 0.25), el("span", {}, "x to"), num(r.x1, v => cmd({ op: "setRoom", id: r.id, x1: v }), 0.25),
+        el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25)),
+      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt((r.x1 - r.x0) * (r.z1 - r.z0) * d.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
+  } else if (sel.kind === "hull") {
+    const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
+    const len = h.stations[h.stations.length - 1].z - h.stations[0].z;
+    I.append(el("h2", {}, h.name), el("p", { class: "hint" }, `${fmt(len)} m long, ${h.stations.length - 1} segments, ${h.stations[0].p.length} points a profile${h.mirror ? ", a mirrored pair" : ""}. Drag the arrows to move the body.`));
+  } else {
+    I.append(el("h2", {}, "Selection"), el("p", { class: "hint" }, mode === "pieces" ? "Click a piece to pick it." : mode === "interior" ? "Click a room to pick it." : "Click a hull body to pick it."));
+  }
+}
+
+function checks() {
+  const ul = $("issues"); ul.replaceChildren();
+  const errs = S.issues.filter(i => i.level === "error").length;
+  $("icount").textContent = S.issues.length ? `${errs} to fix, ${S.issues.length - errs} to look at` : "all clear";
+  if (!S.issues.length) ul.append(el("li", { class: "good" }, "Every room fits, every socket opens into a room, and every room can be reached."));
+  for (const i of S.issues) ul.append(el("li", { class: i.level, onclick: () => {
+    const [k, id] = i.what.split(":");
+    if (k === "room") { const r = S.rooms.find(r => r.id === +id); if (r) { deck = r.deck; if (mode !== "interior") setMode("interior"); select("room", +id); } }
+    else if (k === "piece") { if (mode !== "pieces") setMode("pieces"); select("piece", +id); }
+  } }, i.text));
+  const st = S.stats;
+  $("stats").replaceChildren(...[["length", `${fmt(st.length)} m`], ["beam", `${fmt(st.beam)} m`], ["height", `${fmt(st.height)} m`], ["floor", `${fmt(st.floor)} m2`],
+    ["cargo hold", `${fmt(st.hold)} m3`], ["bunks", `${st.bunks}`], ["rooms", `${st.rooms}`], ["pieces", `${st.pieces}`]].map(([k, v]) => el("div", { class: "stat" }, el("b", {}, v), el("span", {}, k))));
+}
+
+// ---------- the bar
+for (const k of ["hull", "pieces", "interior"]) $("m-" + k).addEventListener("click", () => setMode(k));
+$("undo").addEventListener("click", () => { take(api.Undo()); panels(); });
+$("redo").addEventListener("click", () => { take(api.Redo()); panels(); });
+$("start").addEventListener("change", e => { if (!e.target.value) return; cmd({ op: "start", name: e.target.value }); e.target.value = ""; select(null, 0); frame(); });
+$("file").addEventListener("click", () => { $("dtext").value = api.Save(); $("dmsg").textContent = ""; $("dlg").showModal(); });
+$("dclose").addEventListener("click", () => $("dlg").close());
+$("dcopy").addEventListener("click", () => {
+  navigator.clipboard.writeText($("dtext").value).then(() => $("dmsg").textContent = "Copied.", () => { $("dtext").select(); $("dmsg").textContent = "Selected: press Ctrl+C to copy."; });
+});
+$("dload").addEventListener("click", () => {
+  const a = cmd({ op: "load", json: $("dtext").value });
+  $("dmsg").textContent = a.error ? "Not loaded: " + a.error : "Loaded.";
+  if (!a.error) { select(null, 0); frame(); }
+});
+$("v-frame").addEventListener("click", frame);
+const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links");
+window.addEventListener("keydown", e => {
+  if (e.target.closest?.("input, textarea, select")) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); $("undo").click(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); $("redo").click(); }
+  else if (e.key === "Delete" || e.key === "Backspace") {
+    if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
+  } else if (e.key === "Escape") select(null, 0);
+});
+
+window.shipDesigner = { cmd, selectStation, select, setMode }; // (for a page test)
+function loop() { requestAnimationFrame(loop); flush(); controls.update(); renderer.render(scene, camera); }
+
+try {
+  await bootCs();
+  CAT = JSON.parse(api.Catalogue());
+  const st = $("start"); st.append(el("option", { value: "" }, "New from...")); for (const s of CAT.starts) st.append(el("option", { value: s }, s));
+  let saved = null; try { saved = localStorage.getItem("shipdesigner.design"); } catch (e) {}
+  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) take(api.Scene()); } else take(api.Scene());
+  $("boot").remove();
+  $("tip").textContent = tips[mode];
+  resize(); frame(); panels(); loop();
+} catch (e) {
+  $("boot").textContent = "The designer's C# could not start here: " + e;
+  console.error(e);
+}
+</script>
