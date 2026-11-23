@@ -39,10 +39,14 @@ public sealed partial class ZeroDayWorks
             }
             // Bay 2 west span (x 32 to 50): line C, the wide flat pieces.
             ArmourLine("C", 33, LineC, bedAcross: 6, bedAlong: 12, tables: 1, cutAlong: 12);
-            Station(47, -137, 33, -135, 7, 13, 3, LineC);
-            Oven(39, -163, 33, 7, 13, 3, LineC);
-            Stores("C", 33, -191, 6, 4, LineC, second: false, transferRows: 0);
-            foreach (var z in new[] { -143f, -151f, -159f })
+            // (the bay 20 m long, room for a deck's 17 m kit; the store 18 x 12 m, the kit station's pick pad and the yard station's: a deck's 10 m plates are
+            // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
+            var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
+            var ovenC = Oven(39, -155, 33, 7, 13, 3, LineC);
+            Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 2); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south)
+            LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
+            _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
+            foreach (var z in new[] { -143f, -148f, -153f })
                 Arm("Industrial Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
@@ -67,6 +71,32 @@ public sealed partial class ZeroDayWorks
             return core;
         }
 
+        private readonly Dictionary<string, VPart> _lineExtruders = new(); // (each armour line's Sheet Extruder Core)
+        private VPart? _lastSheet;
+        private readonly Dictionary<string, VPart> _lineFormers = new(); // (each armour line's Panel Former Core)
+        private VPart? _lastFormer;
+
+        /// <summary>
+        /// What a line's own station orders through: a Line Console (started) at (<paramref name="x"/>, <paramref name="z"/>), its Run wired to
+        /// the line's Sheet Extruder (and its Panel Former, at 6.5 m) and its wire into the station's Orders port, carried at 6 m.
+        /// </summary>
+        private void LineOrders(VPart station, VPart extruder, float x, float z, string paint, VPart? former = null)
+        {
+            const float up = 6f;
+            var console = Paint(On("Line Console", x, z, West, paint: paint), paint);
+            Config(console, ("startOn", 1));
+            var at = SocketAt(console, "bottom");
+            var to = SocketAt(extruder, extruder.Def.Sockets[0].Name);
+            Link("data", console, extruder, null, "Run", paint, false, null, Cut(at, V(at.X, up, at.Z), V(at.X, up, to.Z), V(to.X, up, to.Z)));
+            var s = SocketAt(station, "-y.0.1");
+            Link("data", console, station, null, "Orders", paint, false, null, Cut(at, V(at.X, up, at.Z), V(s.X, up, at.Z), V(s.X, up, s.Z)));
+            if (former != null)
+            {
+                var f = SocketAt(former, former.Def.Sockets[0].Name);
+                Link("data", console, former, null, "Run", paint, false, null, Cut(at, V(at.X, up + 0.5f, at.Z), V(at.X, up + 0.5f, f.Z), V(f.X, up + 0.5f, f.Z)));
+            }
+        }
+
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
         private VPart Arm(string part, float x, float z) => On(part, x, z, Up, "-y.0.0", Crane);
 
@@ -89,11 +119,11 @@ public sealed partial class ZeroDayWorks
         /// A line's piece store: a pad of Pad Tiles (a Mast Block on each corner, the stack 3 m), with <paramref name="second"/> a run of one
         /// row and a second pad below it; then a transfer run of <paramref name="transferRows"/> rows, three tiles wide, south from the last pad's middle.
         /// </summary>
-        private void Stores(string line, float x0, float z0, int across, int along, string paint, bool second, int transferRows)
+        private void Stores(string line, float x0, float z0, int across, int along, string paint, bool second, int transferRows, bool eastWest = false, int masts = 1)
         {
-            var pad = Tiles("Pad Tile", x0, z0, across, along, South, Stock);
+            var pad = Tiles("Pad Tile", x0, z0, across, along, eastWest ? East : South, Stock); // (East: the hold's length runs across the bay)
             foreach (var c in Corners(pad))
-                Stack(c, "top", 1);
+                Stack(c, "top", masts); // (each mast raises the hold's stack: a lower deck is 3.25 m tall)
             _stores.Add((line, pad[0, 0]));
             var z = z0 - 2 * along;
             if (second)
@@ -120,6 +150,7 @@ public sealed partial class ZeroDayWorks
             // ---- The Sheet Extruder: its Core at the die's east end, Die Blocks welded west, Run-out Tables south of every cell. --------------
             // Everything after it is welded on in a chain from its tables (a table's far end is a quarter metre off the floor's 2 m grid).
             var tableEnds = SheetExtruder(x0 + 2 * dieCells, dieCells, tables, paint);
+            _lineExtruders[line] = _lastSheet!;
             VPart[,] run;
             if (bedAlong == 0)
             {
@@ -131,6 +162,7 @@ public sealed partial class ZeroDayWorks
             }
             else
                 run = FormerStage(tableEnds, dieCells, bedAcross, bedAlong, tables, paint);
+                _lineFormers[line] = _lastFormer!;
             if (cutAlong == 0)
             {
                 // Line D: the skins wait on a pad two rows deep for the crane (it sends nowhere: the station's crane order takes them).
@@ -163,6 +195,7 @@ public sealed partial class ZeroDayWorks
             Chain(bed, "Bed Block", "+z", "-z", "-x", "+x", paint, rowZero: false);
             var former = Paint(Onto(bed[bedAcross - 1, 0], "-x", "Panel Former", "+z"), paint); // (South: a block's own -x is east)
             OrdersOnly(former);
+            _lastFormer = former;
             foreach (var c in Corners(bed))
                 Stack(c, "top", 1);
             var outs = new VPart[bedAcross, 1];
@@ -230,6 +263,7 @@ public sealed partial class ZeroDayWorks
             var plinth = Finish2(On("Extruder Plinth", coreX, ExtruderCoreZ, South), "concrete");
             var core = Paint(Stand("Extruder", SocketAt(plinth, "top"), South, plinth, "bottom"), paint);
             OrdersOnly(core);
+            _lastSheet = core;
             var cell = core;
             for (var k = 0; k < cells; k++)
             {

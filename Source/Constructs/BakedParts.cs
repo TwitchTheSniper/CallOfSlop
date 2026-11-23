@@ -531,7 +531,7 @@ public static partial class BakedParts
     /// Server: bakes body <paramref name="c"/> into a new body of one baked part (and its socket plates), where it stood. The old body goes.
     /// Null: it can't (<see cref="LastRefusal"/>). The design is kept in the world (sent to everyone with the next flush, before the body).
     /// </summary>
-    public static Construct? Bake(ConstructWorld world, Construct c)
+    public static Construct? Bake(ConstructWorld world, Construct c, ushort want = 0)
     {
         if (CanBake(c) is { } why)
         {
@@ -562,7 +562,7 @@ public static partial class BakedParts
         }
         var text = DesignText(group, out var origin);
         // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was.
-        if (BakeKits.Target(HashOf(text)) is { } kit)
+        if (BakeKits.Target(HashOf(text), want) is { } kit) // (want: the oven's order, when two parts share a kit)
             return Swap(world, c, kit.Part, origin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
         if (Register(text) is not { } hash)
             return null;

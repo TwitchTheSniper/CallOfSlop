@@ -248,7 +248,7 @@ public static partial class ProductionLines
         return n;
     }
 
-    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false, IsAssembler: false, IsRecycler: false, IsGatherer: false, IsPress: false, IsLathe: false }; // (refiners, Extruders, Formers, Assemblers, Presses, Die Lathes, Recyclers and gathering modules are the lines' machines)
+    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false, IsAssembler: false, IsRecycler: false, IsGatherer: false, IsPress: false, IsLathe: false, IsBakeOven: false }; // (refiners, Extruders, Formers, Assemblers, Presses, Die Lathes, Bake Ovens, Recyclers and gathering modules are the lines' machines)
 
     private static bool OnBill(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.LinePage, 0) >= 0.5f;
 
@@ -513,7 +513,7 @@ public static partial class ProductionLines
     };
 
     /// <summary>"Smelter T3", "Extruder", "Grow Former": a machine's kind on a line, in full.</summary>
-    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder || d.IsAssembler || d.IsRecycler || d.IsGatherer || d.IsPress || d.IsLathe ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder || d.IsAssembler || d.IsRecycler || d.IsGatherer || d.IsPress || d.IsLathe || d.IsBakeOven ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
 
     /// <summary>A machine's name on its console: its kind, and its number among those of its kind on this line in wire order ("Extruder 2") when there are two or more. Cached per def.</summary>
     internal static string NameOf(Construct c, ReadOnlySpan<int> list, int k)
