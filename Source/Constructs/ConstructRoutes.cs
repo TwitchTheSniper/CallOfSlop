@@ -637,8 +637,6 @@ public static partial class ConstructRoutes
         }
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
             return np.OnBed && MachineBlocks.BedMiddle(c, part, out var bed) ? bed : // (a bed Core's Bed in: the bed's middle at a run's line)
-                t == RouteType.Conveyor && np.Out && np.Implicit && d.IsExtruder && ConstructExtruder.BlockDieOut(c, part, out var die)
-                    ? c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, die) : // (an Extruder Core's Piece out on a block die: under the die's middle, where its piece lies)
                 c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         if (t == RouteType.Data && DataSeat(d) is { } seat)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, seat * c.ScaleOf(part)); // (its middle is in the air: the link ends on the body)
@@ -707,6 +705,9 @@ public static partial class ConstructRoutes
                 return pn.Pos;
             }
             seg = rt.From < c.PartCount ? c.Parts[rt.From].Seg : 0;
+            if (rt.From < c.PartCount && rt.Type == RouteType.Conveyor && c.Parts[rt.From].D.IsExtruder && RollerRuns.IsRun(c, r)
+                && ConstructExtruder.BlockDieOut(c, rt.From, out var die))
+                return c.Parts[rt.From].Pos + Rot24.Apply(c.Parts[rt.From].Rot, die * c.ScaleOf(rt.From)); // (a roller run off a block die's tables: under the die's middle, where its sheet lies)
             return rt.From < c.PartCount ? PortPoint(c, rt.From, rt.FromPort, rt.Type) : Vector3.Zero;
         }
         if (i < rt.Count)
