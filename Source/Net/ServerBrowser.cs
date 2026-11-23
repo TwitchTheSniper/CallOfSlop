@@ -754,7 +754,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 445: a terminal's (a Building Station's) open orders go to 96 (ConstructCrafting.MaxOrders, was 32): a client reads up to that many.
     // 446: a lifter's lift record ends with Hand0 (3 x cm) and Fetch (u16 ticks): a loaded carry starts with the empty hand's way to
     //      the piece, so a crane travels between jobs instead of jumping (Sean 2026-11-23).
-    public const ushort ProtocolVersion = 446;
+    // 447: the Press Bed Block (Sean 2026-11-23: parts roll into the big press bay and out): a new part file moves part ids, and a
+    //      Press Core gains implicit conveyor ports "Bed in" and "Bed out" after its others.
+    public const ushort ProtocolVersion = 447;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

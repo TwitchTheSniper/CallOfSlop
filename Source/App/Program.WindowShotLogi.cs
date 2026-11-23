@@ -283,6 +283,36 @@ public static partial class Program
                 WsFail($"logi cut: no way {way} out of \"{rest}\"");
                 return;
             }
+            case "press" when g.IsServer: // "logi press PRESS[#n]": its look line, as a player near it reads it
+            {
+                var (pc, pp) = LogiFind(g, rest);
+                if (pc == null || w.StoreOf(pc, pp) is not { } pst || !pc.DefOf(pp).IsPress)
+                {
+                    WsFail($"logi press: no press \"{rest}\"");
+                    return;
+                }
+                WsSay($"[logi] press: {ConstructPress.Look(pc, pp, pst, true, null, default)}");
+                return;
+            }
+            case "onto" when g.IsServer: // "logi onto PART[#n] KEY": one piece (a part name or an extrusion key) put at the start of the conveyor leaving PART (a Roller Tile run's first tile)
+            {
+                var ks = rest.IndexOf(' ' + Extrusion.Prefix, StringComparison.Ordinal);
+                var (oc, op) = ks > 0 ? LogiFind(g, rest[..ks]) : (null, 0);
+                if (oc == null || ConstructParts.Find(rest[(ks + 1)..]) is not { } opiece)
+                {
+                    WsFail("logi onto PART[#n] EXTRUSION-KEY");
+                    return;
+                }
+                for (var k = 0; k < oc.RouteCount; k++)
+                    if (oc.Routes[k].Type == RouteType.Conveyor && oc.Routes[k].From == op)
+                    {
+                        var put = ConstructConveyor.PutMade(w, oc, k, opiece, 1, out var owhy);
+                        WsSay($"[logi] onto conveyor {k} ({oc.DefOf(op).Name}#{op} to {oc.DefOf(oc.Routes[k].To).Name}#{oc.Routes[k].To}): {(put ? "put" : $"not put ({owhy})")}");
+                        return;
+                    }
+                WsFail($"logi onto: no conveyor leaves \"{rest[..ks]}\"");
+                return;
+            }
             case "feed" when g.IsServer: // "logi feed N [NAME]": N pieces (Gear Set) with no order put on the conveyors into a Router, one at a time as room comes
             {
                 var fb = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);

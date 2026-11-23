@@ -756,6 +756,7 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Bay Block", 40, 1, m: [("steel", 420), ("rubber", 20)], p: [("Wiring Loom", 1)])),
         // (the Press on the block system, Sean 2026-11-21: its Press Block, a 2 m cube of the bed or a wall; the Core keeps the Press's row)
         (null, null, Rec("Press Block", 60, 1, m: [("steel", 400), ("concrete", 200)], p: [("Gear Set", 1)])),
+        (null, null, Rec("Press Bed Block", 40, 1, m: [("steel", 240), ("concrete", 120)])), // (a low bed cell at the rollers' height, Sean 2026-11-23)
         // (the Satchel, the Traders' courier, Karl 2026-11-21: CourierParts; in the folder's file order of 2026-11-21)
         ("Satchel", "Satchel Bay", null),
         ("Satchel", "Satchel Bay Ceiling", null),

@@ -2323,6 +2323,7 @@
     {"output": "Laser Bed Block", "materials": {"steel": 480, "rubber": 60, "copper": 20}, "parts": {"Wiring Loom": 1, "Gear Set": 1}, "seconds": 90, "needs": ["Power Coupling"]},
     {"output": "Bay Block", "materials": {"steel": 420, "rubber": 20}, "parts": {"Wiring Loom": 1}, "seconds": 40, "needs": ["Power Coupling"]},
     {"output": "Press Block", "materials": {"steel": 400, "concrete": 200}, "parts": {"Gear Set": 1}, "seconds": 60},
+    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40},
     {"output": "Satchel Bay", "materials": {"steel": 1120, "concrete": 224}, "seconds": 170.0},
     {"output": "Satchel Bay Ceiling", "materials": {"steel": 180, "concrete": 36}, "seconds": 29.0},
     {"output": "Satchel Bay Hull Port 6", "materials": {"steel": 270, "concrete": 54}, "seconds": 42.5},

@@ -29,6 +29,7 @@ public sealed class NamedPort
 public static partial class ConstructParts
 {
     public const string BedInPort = "Bed in"; // a bed Core's port on its bed's middle (NamedPort.OnBed)
+    public const string BedOutPort = "Bed out"; // a low-bedded Press Core's: what it stamps leaves its bed's middle on a run (NamedPort.OnBed)
 
     private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute", "feed", "conveyor"];
 
@@ -185,6 +186,14 @@ public static partial class ConstructParts
         // port's byte stays as it was; it opens as the Core's Piece in does.
         if (d.IsPanelFormer && d.BlockRole == BlockRole.Core && list.Find(x => x.Type == RouteType.Conveyor && x.In && x.Name == "Piece in") is { } pin)
             list.Add(new NamedPort { Name = BedInPort, Type = RouteType.Conveyor, In = true, At = new Vector3(0, pin.At.Y, d.BoundsMax.Z), Face = 4, Opening = pin.Opening, Implicit = true, OnBed = true });
+        // A Press Core: a run butted on its bed's open end rolls a blank to the bed's middle (into bay 1), and a run leaving the other end
+        // takes what it stamps (its Piece out conveyor: ConstructConveyor.Out takes the first). Only a bed of Press Bed Blocks is at the
+        // runs' height (MachineBlocks.BedAt, CMachineAsm.LowBed; Sean 2026-11-23). Last, after its Piece in and Piece out.
+        if (d.IsPress && d.BlockRole == BlockRole.Core && list.Find(x => x.Type == RouteType.Conveyor && x.In && x.Name == "Piece in") is { } ppin)
+        {
+            list.Add(new NamedPort { Name = BedInPort, Type = RouteType.Conveyor, In = true, At = new Vector3(0, ppin.At.Y, d.BoundsMax.Z), Face = 4, Opening = ppin.Opening, Implicit = true, OnBed = true });
+            list.Add(new NamedPort { Name = BedOutPort, Type = RouteType.Conveyor, Out = true, At = new Vector3(0, ppin.At.Y, d.BoundsMin.Z), Face = 5, Opening = ppin.Opening, Implicit = true, OnBed = true });
+        }
         d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && !d.IsPieceRack && !d.IsAssembler && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];

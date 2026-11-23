@@ -145,7 +145,7 @@ public sealed partial class ZeroDayWorks
         }
 
         /// <summary>
-        /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed of Press Blocks east of it (3 along x, the flow, from the Core's +x;
+        /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed east of it (Press Blocks under the housings, Press Bed Blocks between) (3 along x, the flow, from the Core's +x;
         /// 4 rows south: the bed is the blocks beside the Core, not the Core), and one block on each cell of the north and south rows for
         /// the shells (a 2 m swing strip north and south).
         /// </summary>
@@ -157,6 +157,9 @@ public sealed partial class ZeroDayWorks
             bed[0, 0] = Paint(Onto(core, "+x", "Press Block", "-x"), General);
             for (var i = 1; i < 3; i++)
                 bed[i, 0] = Paint(Onto(bed[i - 1, 0], "+x", "Press Block", "-x"), General);
+            for (var j = 1; j < 3; j++)
+                for (var i = 0; i < 3; i++)
+                    bed[i, j] = Paint(Onto(bed[i, j - 1], "-z", "Press Bed Block", "+z"), General); // (the low bed between the housings' rows, at the rollers' height: Sean 2026-11-23)
             Chain(bed, "Press Block", "-z", "+z", "+x", "-x", General, rowZero: true);
             foreach (var j in new[] { 0, 3 })
                 for (var i = 0; i < 3; i++)
