@@ -349,13 +349,13 @@ public static class ConstructFrames
         }
         if (c.Dirty)
             c.Rebuild();
-        if ((f.SpaceAway != 0 || far) && !c.Asleep)
+        if ((f.SpaceAway != 0 || far && !c.FrameFarSlept) && !c.Asleep)
         {
-            c.Asleep = true; // (its ship parked far out or in another system: carried there, never stepped at those floats' grain; or nobody is near it: FarFromPeople)
+            c.Asleep = true; // (its ship parked far out or in another system: carried there, never stepped at those floats' grain; or nobody came near it: FarFromPeople)
             c.SleepTicks = 0;
         }
         if (far)
-            c.FrameFarSlept = true;
+            c.FrameFarSlept = true; // (once, as it goes far: something that wakes it after (a lift, a door, a craft landing on it) steps it as before, and it sleeps again by the usual rule)
         else if (c.FrameFarSlept)
         {
             c.FrameFarSlept = false;
