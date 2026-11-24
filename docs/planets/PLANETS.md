@@ -61,6 +61,7 @@ Features (lat/lon in degrees: latitude 90 is the +Y pole, longitude 0 faces +Z a
 | `ridge` | lat, lon, length, width, height, bearing = 0, peaks = 0.5, rough = 0.15, wander = 0, seed = 1 | A ridge `length` long along `bearing`: a crest `height` high with steep upper flanks and scree-like feet, falling to the ground over half its `width` either side. `peaks` lets the crest dip into passes (0 an even crest, 0.9 deep saddles: the way over), `rough` breaks its flanks (a share of the height), `wander` bends its line. Nunatak spurs, ice pressure ridges, hogbacks. |
 | `crevasses` | lat, lon, radius, edge = radius x 0.3, bearing = 0, spacing = 70, length = 90, width = 8, depth = 25, share = 0.5, spread = 20, lip = 0.8, seed = 1 | A field of cracks round a place: the ground cut into cells (`spacing` across the bearing, about the crack's length along it), a `share` of them holding a crack with its own middle, size and turn (up to `spread` degrees). A crack is a slot with near-upright walls, `depth` deep, pinching out at its ends, with a low `lip` of snow along each side. Only the nine cells round a point are asked, so a field costs the same however big. The gaps between cracks are the routes through. |
 | `drifts` | lat, lon, radius, amplitude, edge = radius x 0.3, bearing = 0, scale = 6, stretch = 6, octaves = 2, seed = 1 | Ridged noise stretched along the wind's `bearing`: crests `scale` m apart across the wind, `stretch` times longer along it, about `amplitude` m from crest to trough. Small: sastrugi (Glacier lays half a metre on all its open snow, from a centre at the far pole). Big (amplitude 5 to 11, scale 40 to 60): a field of pressure ridges. |
+| `sea` | lat, lon, radius, depth, edge = radius x 0.4, coast = 0.35, water = false, rough = 2, seed = 1 | A sea's basin ("Seas" below): the ground drawn down to a bed `depth` under the water's level in its middle, a ragged coast (`coast` 0 round to 0.6 deeply bayed) and a shore `edge` wide. `water` fills it to the level with flat ground; without it, it is a dry sea bed with `rough` m of swells. The level is worked out from the ground round the rim. Put it after every noise (the fine grain too), so the water is flat. |
 | `cave` | lat, lon, bearing, radius = 2.6, chamber = 8, cover = 14, climb = 8, wander = radius x 2, seed = 1 | Not a height: a cave dug when a fresh world starts ("Caves" below). |
 
 A `noise` may also take `lat`, `lon`, `radius` and `edge` (half the radius if not said): the noise is laid only round
@@ -73,6 +74,26 @@ culling rely on. Features that are everywhere add up; features placed by lat / l
 (the worst group that all reach one another), so mountains spread round a world don't stack: the Planetoid's bound
 fell from 5,651 m to 3,550 m (its ground tops out at 2,355 m). The features' numbers are read once
 (`Planetoid.Placed`), not by name for every vertex.
+
+## Seas
+
+(Sean, 2026-11-24.) A `sea` feature is a basin kilometres across. Inside its coast the ground is drawn down towards a bed
+under the sea's level, deepest in the middle; across the shore it eases back to the ground round it. The coast's line
+is the distance from the centre warped by noise (bays and headlands). The level is the ground the earlier features make
+along the rim, low in that ring (its tenth lowest share), less 1.5 m, so the water meets the shore almost all the way
+round (`Planetoid.SeaLevel`, worked out once when the features are placed). Where the rim has a gap lower than the level
+(a glen running out of it), the ground rises to the water over the shore's outer half, a bank, so there is no step and
+no dry moat.
+
+**Water is blue ground for now.** A wet sea's water is flat ground at its level, walked and built on like any other:
+there is no water simulation, swimming or buoyancy yet. It is coloured by `Planetoid.SeaTint` after the ground's own
+colour (the planet's pages, dug ground and `--png`): the surface's `sea` near the shore darkening to `seaDeep` in the
+middle, and `seaShore` (else `sand`) on a beach up to 4 m over the water. Plants don't grow on the water
+(`Planetoid.IsWater`). A dry sea (no `water`) keeps a trace of the ground that was there plus its own swells, coloured
+`seaBed` in pale salt pans and darker silt. `--check-planetoid` prints each sea's level and the share of the world under water.
+
+Two seas mustn't overlap (their levels differ: make_worlds.py places them apart). Seas are made in
+`tools/planets/make_worlds.py` (`SEAS`, WORLDS.md "Seas").
 
 ## Making a world
 

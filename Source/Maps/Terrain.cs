@@ -97,6 +97,10 @@ public sealed class TerrainSurface
 
     public double IceScale = 70;
 
+    /// <summary>A planetoid's seas (Planetoid.SeaTint): the water near its shore and in its middle, the beach over it, and
+    /// a dried-out sea's bed. Null: the defaults (blue water, the sand colour, a pale silt).</summary>
+    public Vector3? Sea, SeaDeep, SeaShore, SeaBed;
+
     /// <summary>The colour of stone fill: <see cref="Stone"/>, else the rock's.</summary>
     public Vector3 StoneFill => Stone ?? Rock;
 
@@ -274,8 +278,12 @@ public sealed class TerrainSpec
                 case "ice": s.Ice = MapFile.ToColour(p.Value, $"{where}.ice", ""); break;
                 case "icepatches": s.IcePatches = Range(Num(p.Value, where, "icePatches"), 0, 0.8, where, "icePatches"); break;
                 case "icescale": s.IceScale = Range(Num(p.Value, where, "iceScale"), 4, 2000, where, "iceScale"); break;
+                case "sea": s.Sea = MapFile.ToColour(p.Value, $"{where}.sea", ""); break;
+                case "seadeep": s.SeaDeep = MapFile.ToColour(p.Value, $"{where}.seaDeep", ""); break;
+                case "seashore": s.SeaShore = MapFile.ToColour(p.Value, $"{where}.seaShore", ""); break;
+                case "seabed": s.SeaBed = MapFile.ToColour(p.Value, $"{where}.seaBed", ""); break;
                 default:
-                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, snow, stone, dirtSlope, rockSlope, sandBelow, snowAbove, variation, dusting, ice, icePatches, iceScale)");
+                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, snow, stone, dirtSlope, rockSlope, sandBelow, snowAbove, variation, dusting, ice, icePatches, iceScale, sea, seaDeep, seaShore, seaBed)");
             }
         }
         return s;
@@ -458,6 +466,8 @@ public sealed class TerrainSpec
         + (s.Stone is { } st ? $"\"stone\": {C(st)}, " : "")
         + (s.Dusting > 0 ? $"\"dusting\": {N(s.Dusting)}, " : "")
         + (s.IcePatches > 0 ? $"\"ice\": {C(s.Ice)}, \"icePatches\": {N(s.IcePatches)}, \"iceScale\": {N(s.IceScale)}, " : "")
+        + (s.Sea is { } se ? $"\"sea\": {C(se)}, " : "") + (s.SeaDeep is { } sd ? $"\"seaDeep\": {C(sd)}, " : "")
+        + (s.SeaShore is { } ss ? $"\"seaShore\": {C(ss)}, " : "") + (s.SeaBed is { } sbd ? $"\"seaBed\": {C(sbd)}, " : "")
         + $"\"variation\": {N(s.Variation)} }}";
 
     /// <summary>A "features" list as map-file JSON, one feature a line (no newline after the closing bracket).</summary>
