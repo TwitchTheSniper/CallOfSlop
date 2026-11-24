@@ -25,6 +25,7 @@ public sealed class HullJoin
     public double W = 1.2, H = 1.2;
     public int Segments = 6;
     public bool Mirror = true;
+    public double OpenA = 0.9, OpenB = 0.9; // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
     public static End At(HullBody h, int copy, double x, double y, double z)
@@ -47,7 +48,7 @@ public sealed class HullJoin
     public JsonObject ToJson(ShipDesign d) => new()
     {
         ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(W), ["h"] = ShipDesign.R(H),
-        ["segments"] = Segments, ["mirror"] = Mirror,
+        ["segments"] = Segments, ["mirror"] = Mirror, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
     };
 
     private static JsonObject EndJson(ShipDesign d, End e) => new()
@@ -74,7 +75,7 @@ public sealed class HullJoin
         if (E(o["a"]) is not { } a || E(o["b"]) is not { } b)
             return null;
         var j = new HullJoin { Id = id, A = a, B = b, Section = (string?)o["section"] ?? "Round", W = ShipDesign.F(o["w"], 1.2), H = ShipDesign.F(o["h"], 1.2),
-            Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true };
+            Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true, OpenA = ShipDesign.F(o["openA"], 0.9), OpenB = ShipDesign.F(o["openB"], 0.9) };
         j.Tidy();
         return j;
     }
@@ -86,6 +87,8 @@ public sealed class HullJoin
         W = Math.Clamp(W, 0.2, 20);
         H = Math.Clamp(H, 0.2, 20);
         Segments = Math.Clamp(Segments, 1, MaxSegments);
+        OpenA = Math.Clamp(OpenA, 0, 1.5);
+        OpenB = Math.Clamp(OpenB, 0, 1.5);
     }
 
     /// <summary>The section as a closed ring of (across, up) points fitting a unit square (-0.5..0.5), the +x side first.</summary>
@@ -112,12 +115,14 @@ public sealed class HullJoin
         public bool Holds(double x, double y, double z)
         {
             double qx = x - C[0], qy = y - C[1], qz = z - C[2];
-            var reach = Math.Max(W, H);
+            var reach = Math.Max(W, H) + 0.5;
             var a = qx * T[0] + qy * T[1] + qz * T[2];
             if (Math.Abs(a) > reach)
                 return false;
-            var u = (qx * S[0] + qy * S[1] + qz * S[2]) / W * 0.96; // (a little inside its walls, so the skin meets them)
-            var v = (qx * U[0] + qy * U[1] + qz * U[2]) / H * 0.96;
+            if (W < 0.01 || H < 0.01)
+                return false;
+            var u = (qx * S[0] + qy * S[1] + qz * S[2]) / W;
+            var v = (qx * U[0] + qy * U[1] + qz * U[2]) / H;
             var inside = false;
             for (int i = 0, j = Ring.Count - 1; i < Ring.Count; j = i++)
                 if ((Ring[i].V > v) != (Ring[j].V > v) && u < (Ring[j].U - Ring[i].U) * (v - Ring[i].V) / (Ring[j].V - Ring[i].V) + Ring[i].U)
@@ -204,9 +209,10 @@ public sealed class HullJoin
             if (mouths is not null && (i == 0 || i == Segments))
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
-                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W, H, ring));
+                var f = i == 0 ? OpenA : OpenB;
+                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W * f, H * f, ring));
                 if (Mirror && Math.Abs(a.P[0]) > 0.3)
-                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W, H, ring));
+                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W * f, H * f, ring));
             }
             var r = new (double, double, double)[ring.Count];
             for (var j = 0; j < ring.Count; j++)

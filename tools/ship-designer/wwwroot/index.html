@@ -572,7 +572,7 @@ function paletteMove(ev) {
   if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
   const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
   if (!paletteDrag.id) {
-    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, ...at });
+    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, pair: $("ppair")?.checked ?? true, ...at });
     if (a.error) { paletteDrag = null; return; }
     paletteDrag.id = a.id; dragFirst = false; select("piece", a.id, false);
   } else dragCmd({ op: "movePiece", preview: true, light: true, id: paletteDrag.id, ...at });
@@ -616,7 +616,7 @@ function shapeIcon(p) {
 // The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
 // on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
 let conn = null;
-const cOpt = { section: "Round", w: 1.2, h: 1.6, segments: 6, mirror: true, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+const cOpt = { section: "Round", w: 1.2, h: 1.6, segments: 6, mirror: true, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
 function gallery(pick, onPick, tall = 300) {
   const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
   for (const s of CAT.sections) {
@@ -636,6 +636,9 @@ function joinControls(o, apply) {
     slider("Width", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(true); }, () => apply()),
     slider("Height", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(true); }, () => apply()),
     slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(true); }, () => apply()),
+    el("h3", {}, "Sockets (the hole each end cuts)"),
+    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(true); }, () => apply()),
+    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(true); }, () => apply()),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
 }
 function connectSection() {
@@ -663,7 +666,7 @@ function connectSection() {
 // Places the connection again (the first placing is an undo step, the rest merge into it).
 function placeJoin() {
   if (!conn || (!conn.b && !conn.newBody)) return;
-  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, segments: cOpt.segments, mirror: cOpt.mirror, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
+  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, segments: cOpt.segments, mirror: cOpt.mirror, openA: cOpt.openA, openB: cOpt.openB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
   if (conn.newBody) op.body = { ...cOpt.body }; else op.b = conn.b;
   const a = cmd(op, !!conn.joinId);
   if (a.error) { console.log("connect err", a.error); toast(a.error); return; }
@@ -699,7 +702,8 @@ function leftPanel() {
   } else if (mode === "pieces") {
     const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
     L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
-      el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Place as a mirrored pair")));
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Mirror on its own body"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "ppair", checked: "" }), "On a mirrored pair of bodies, put it on both")));
     for (const g of groups) {
       const pal = el("div", { class: "pal" });
       for (const k of CAT.pieces.filter(p => p.group === g)) {
@@ -838,7 +842,7 @@ function inspector() {
   if (!S) return;
   if (sel.kind === "join") {
     const j = S.joins.find(j => j.id === sel.id); if (!j) return;
-    const o = { section: j.section, w: j.w, h: j.h, segments: j.segments, mirror: j.mirror };
+    const o = { section: j.section, w: j.w, h: j.h, segments: j.segments, mirror: j.mirror, openA: j.openA, openB: j.openB };
     let first = true;
     const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
     I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
@@ -850,7 +854,8 @@ function inspector() {
     const k = CAT.pieces.find(k => k.name === p.kind);
     I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
       el("div", { class: "row" },
-        el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirrored pair")),
+        el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
+        ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
       el("div", { class: "row" },
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),

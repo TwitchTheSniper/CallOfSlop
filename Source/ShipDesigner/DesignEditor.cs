@@ -117,7 +117,7 @@ public sealed class DesignEditor
                 var ao = o["a"]?.AsObject() ?? throw new InvalidOperationException("no first point");
                 var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), W = D(o, "w", 1.2), H = D(o, "h", 1.2), Segments = I(o, "segments", 6),
-                    Mirror = (bool?)o["mirror"] ?? true };
+                    Mirror = (bool?)o["mirror"] ?? true, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
                 j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"));
                 if (o["b"] is JsonObject bo)
                 {
@@ -160,6 +160,8 @@ public sealed class DesignEditor
                 j.H = D(o, "h", j.H);
                 j.Segments = I(o, "segments", j.Segments);
                 j.Mirror = (bool?)o["mirror"] ?? j.Mirror;
+                j.OpenA = D(o, "openA", j.OpenA);
+                j.OpenB = D(o, "openB", j.OpenB);
                 j.Tidy();
                 return "";
             }
@@ -338,7 +340,7 @@ public sealed class DesignEditor
                 if (d.Pieces.Count >= ShipDesign.MaxPieces)
                     return $"at most {ShipDesign.MaxPieces} pieces";
                 var kind = PieceKinds.Find(Str(o, "kind")) ?? throw new InvalidOperationException("no such piece");
-                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false };
+                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true };
                 d.Pieces.Add(p);
                 Attach(p, o);
                 o["id"] = p.Id;
@@ -351,6 +353,7 @@ public sealed class DesignEditor
             {
                 var p = P();
                 if (o["mirror"] is not null) p.Mirror = (bool)o["mirror"]!;
+                if (o["pair"] is not null) p.Pair = (bool)o["pair"]!;
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
                 if (o["room"] is not null)
                 {

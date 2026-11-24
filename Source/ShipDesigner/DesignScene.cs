@@ -74,11 +74,16 @@ public static class DesignScene
         if (h is null)
             yield break;
         var w = Where(h, p);
+        var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
+        var pair = p.Pair && h.Copies == 2;
         yield return (w.O, w.Y);
+        if (pair)
+            yield return ([-w.O[0], w.O[1], w.O[2]], [-w.Y[0], w.Y[1], w.Y[2]]);
         if (p.Mirror)
         {
-            var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
             yield return ([2 * cx - w.O[0], w.O[1], w.O[2]], [-w.Y[0], w.Y[1], w.Y[2]]);
+            if (pair)
+                yield return ([-(2 * cx - w.O[0]), w.O[1], w.O[2]], [w.Y[0], w.Y[1], w.Y[2]]);
         }
     }
 
@@ -99,15 +104,19 @@ public static class DesignScene
         var holes = new List<(Place W, double Hx, double Hz, bool Round)>();
         foreach (var p in Holes ? d.Pieces : [])
         {
-            if (p.Hull != h.Id || Math.Min(p.Copy, h.Copies - 1) != copy || PieceKinds.Find(p.Kind)?.Opening is not { } op)
+            if (p.Hull != h.Id || PieceKinds.Find(p.Kind)?.Opening is not { } op)
                 continue;
+            var own = Math.Min(p.Copy, h.Copies - 1) == copy;
+            // On the other body of a pair, its twin across the ship.
+            if (!own && !(p.Pair && h.Copies == 2))
+                continue;
+            double[] F(double[] v) => [-v[0], v[1], v[2]];
             var w = Where(h, p);
+            if (!own)
+                w = new Place([-w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
             holes.Add((w, op.Hx, op.Hz, op.Round));
             if (p.Mirror)
-            {
-                double[] F(double[] v) => [-v[0], v[1], v[2]];
                 holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx, op.Hz, op.Round));
-            }
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
@@ -599,6 +608,7 @@ public static class DesignScene
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.W))
               .Append(",\"h\":").Append(ShipDesign.S(j.H)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
+              .Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
               .Append(",\"mesh\":");
             j.Mesh(d).Write(sb);
             sb.Append('}');
@@ -615,9 +625,12 @@ public static class DesignScene
             kind.Draw(m);
             if (p.Mirror)
                 m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
+            if (p.Pair && h.Copies == 2)
+                m.MirrorFrom(0, 0);
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
-              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
+              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false")
+              .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             m.Write(sb);
@@ -674,7 +687,7 @@ public static class DesignScene
         var bunks = d.Rooms.Where(r => r.Kind == "Cabin").Sum(r => Math.Floor(Area(d, r) / 6));
         sb.Append("{\"length\":").Append(ShipDesign.S(z1 - z0)).Append(",\"beam\":").Append(ShipDesign.S(x1 - x0)).Append(",\"height\":").Append(ShipDesign.S(y1 - y0))
           .Append(",\"floor\":").Append(ShipDesign.S(floor)).Append(",\"hold\":").Append(ShipDesign.S(hold)).Append(",\"bunks\":").Append(bunks)
-          .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => p.Mirror ? 2 : 1)).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');
+          .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => (p.Mirror ? 2 : 1) * (p.Pair && d.Hull(p.Hull)?.Copies == 2 ? 2 : 1))).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');
     }
 
     public static string Q(string s)
