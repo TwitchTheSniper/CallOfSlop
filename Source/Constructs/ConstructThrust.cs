@@ -277,7 +277,7 @@ public static partial class ConstructPhysics
                 wiredHeight = MathF.Max(wiredHeight, p.In1);
             if (t.Lifts && Live(c, ref t, p))
             {
-                liftForce += p.D.ThrustForce * t.Cap;
+                liftForce += c.ThrustOf(k); // (with a Mixture Controller's share, as the trims' weights take it)
                 spool = MathF.Max(spool, p.D.ThrustSpool);
             }
         }

@@ -59,8 +59,8 @@ public struct CModule
     public ModTag Primary;
     public int Parts;
     public float Mass, Thrust, Made, Draw; // kg, N, kW made, W drawn (Thrust at its peak: a train with a Mixture Controller on rich)
-    public float TrainThrust; // N: its bells that need an injector (engine trains), at their rating
-    public bool Rich; // a Mixture Controller is in it: its train bells can push ConstructPhysics.MixRichPush more
+    public float TrainThrust; // N: its bells that need an injector (engine trains) with no Mixture Controller in their train, at their rating
+    public bool Rich; // a bell in it has a Mixture Controller in its train: counted at ConstructPhysics.MixRichPush more
     public int Guns, Stores, Harvest;
     public Vector3 Min, Max; // its bounds (the plug's segment rest frame)
     public bool Bridged; // its parts reach the hull other than through its plug (welded to more than its socket)
@@ -498,14 +498,14 @@ public static class ModuleSockets
                     m.Thrust += pd.ThrustForce + pd.AbForce;
                 if (pd.Role == PartRole.Thruster && ConstructWorks.InjectorFedHead(pd))
                 {
-                    m.TrainThrust += pd.ThrustForce;
-                    if (m.Rich)
-                        m.Thrust += ConstructPhysics.MixRichPush * pd.ThrustForce; // (its peak: on rich)
-                }
-                if (pd.TrainFn == TrainFunction.Mixture && !m.Rich)
-                {
-                    m.Rich = true;
-                    m.Thrust += ConstructPhysics.MixRichPush * m.TrainThrust;
+                    // Its peak: on rich, when its train (the works, built before the modules) has a Mixture Controller, wherever it sits.
+                    if (c.WorksHeadOf(at) is var wh and >= 0 && c.WorksHeads[wh].Mixer >= 0)
+                    {
+                        m.Thrust += ConstructPhysics.MixRichPush * pd.ThrustForce;
+                        m.Rich = true;
+                    }
+                    else
+                        m.TrainThrust += pd.ThrustForce; // (a mixer welded in later would raise these)
                 }
                 if (pd.Role == PartRole.Generator)
                     m.Made += pd.PlantRate;
@@ -1115,7 +1115,7 @@ public static class ModuleSockets
             if (c.Modules[mi].Mass + def.Mass > t.MassRating(s))
                 return $"the module would weigh {(c.Modules[mi].Mass + def.Mass) / 1000f:0.#} t: the socket holds {t.MassRating(s) / 1000f:0.#} t";
             var adds = def.Role == PartRole.Thruster ? def.ThrustForce + def.AbForce + (c.Modules[mi].Rich && ConstructWorks.InjectorFedHead(def) ? ConstructPhysics.MixRichPush * def.ThrustForce : 0)
-                : def.TrainFn == TrainFunction.Mixture && !c.Modules[mi].Rich ? ConstructPhysics.MixRichPush * c.Modules[mi].TrainThrust : 0; // (at its peak: a Mixture Controller's rich mix)
+                : def.TrainFn == TrainFunction.Mixture ? ConstructPhysics.MixRichPush * c.Modules[mi].TrainThrust : 0; // (at its peak: a Mixture Controller's rich mix)
             if (adds > 0 && c.Modules[mi].Thrust + adds > t.ThrustRating(s))
                 return $"the module would push more than its socket's {t.ThrustRating(s) / 1000f:0} kN{(def.TrainFn == TrainFunction.Mixture || c.Modules[mi].Rich ? " on a rich mix" : "")}";
         }
