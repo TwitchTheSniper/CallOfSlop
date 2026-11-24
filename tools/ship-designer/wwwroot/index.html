@@ -128,6 +128,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
         <button id="v-rooms" class="on">Rooms</button>
         <button id="v-links" class="on">Socket links</button>
         <button id="v-person" class="on">Person</button>
+        <button id="v-hull" class="on" title="Show or hide the hull (and its connections) outside the Hull tab">Hull shown</button>
       </div>
       <div class="tip" id="tip"></div>
     </div>
@@ -172,7 +173,7 @@ let S = null;          // the scene from C#
 let CAT = null;        // the catalogue
 const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
-const view = { xray: false, rooms: true, links: true, person: true };
+const view = { xray: false, rooms: true, links: true, person: true, hull: true };
 let deck = 0;
 
 function take(answerText) {
@@ -259,7 +260,9 @@ function rebuild() {
   const ghost = view.xray || mode === "interior" || pickRoomFor;
   const fresh = S.hulls.every(h => h.copies);
   if (fresh) hullGeo.clear();
+  const hideHull = !view.hull && mode !== "hull";
   for (const h of S.hulls) {
+    if (hideHull) continue;
     for (const c of h.copies ?? hullCopies.get(h.id) ?? []) {
       for (const surf of ["skin", "fore", "aft"]) {
         if (!c[surf].p.length) continue;
@@ -278,7 +281,7 @@ function rebuild() {
     if (mode === "hull" && sel.kind === "hull" && sel.id === h.id) drawRings(h);
   }
   for (const j of S.joins ?? []) {
-    if (!j.mesh.p.length) continue;
+    if (!j.mesh.p.length || hideHull) continue;
     const m = meshFrom(j.mesh, ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {});
     if (sel.kind === "join" && sel.id === j.id) m.material.emissive = new THREE.Color(0x1d4f86);
     m.userData = { type: "join", id: j.id };
@@ -1007,7 +1010,7 @@ $("dload").addEventListener("click", () => {
 });
 $("v-frame").addEventListener("click", frame);
 const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
-toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person");
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull");
 window.addEventListener("keydown", e => {
   if (e.target.closest?.("input, textarea, select")) return;
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
