@@ -534,6 +534,9 @@ public static partial class ConstructLifters
             if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
                 continue;
             var asNew = rider.Health == 255 && rider.Paint == 0;
+            var (dest, tag) = (rider.Dest, rider.Tag);
+            if (tag != 0 && NeverDest(world, b, dest, d) && ConstructConveyor.AskedOf(b, MachineBlocks.Owner(b, b.Routes[run].From), d, out var oid) is >= 0 and var holder)
+                (dest, tag) = (b.Parts[holder].Store, oid); // (sent to a pad it can never lie on, by a world saved before 2026-11-24: the order that asked its maker, as ConstructConveyor.PastBed tags it)
             // A rider bound only for storage (Sean, 2026-11-23: made pieces went to a store and then on to where they were wanted): a want
             // or a hand-off in reach first, the store it was riding to only after.
             var stored = rider.Tag == 0 && (rider.Dest == 0 || ((LogiFlags)rider.Flags & (LogiFlags.Storage | LogiFlags.Overflow)) == LogiFlags.Storage); // (a stock link's refill keeps its way)
@@ -542,12 +545,12 @@ public static partial class ConstructLifters
             if (stored && asNew)
                 to = PutFor(world, l, ld, shoulder, lr, d, storage: false, skip: k, out toAt);
             if (to < 0)
-                to = DestPoint(world, l, ld, shoulder, lr, d, rider.Dest, out toAt);
-            if (to < 0 && asNew && IsLeadPadHandle(world, b.Id, rider.Dest))
-                to = HandOffFor(world, l, ld, shoulder, lr, d, k, out toAt, rider.Dest); // (handed on toward its station's pick pad, out of this lifter's reach)
+                to = DestPoint(world, l, ld, shoulder, lr, d, dest, out toAt);
+            if (to < 0 && asNew && IsLeadPadHandle(world, b.Id, dest))
+                to = HandOffFor(world, l, ld, shoulder, lr, d, k, out toAt, dest); // (handed on toward its station's pick pad, out of this lifter's reach)
             if (to < 0)
                 to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out toAt, asNew);
-            var ds = DirectIf(asNew && StoreLike(l, to), world, c, l, ld, shoulder, lr, d, to, out var dsc, out var dt, out var dj, rider.Tag, rider.Dest);
+            var ds = DirectIf(asNew && StoreLike(l, to), world, c, l, ld, shoulder, lr, d, to, out var dsc, out var dt, out var dj, tag, dest);
             if (ds < 0 && to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
                 continue;
             l.OutTurn = k + 1;
@@ -561,6 +564,10 @@ public static partial class ConstructLifters
         }
         return false;
     }
+
+    /// <summary>Is store <paramref name="dest"/> a pick pad a piece of kind <paramref name="d"/> can never lie on (<see cref="NeverHolds"/>)? Server; a scan of the body's parts.</summary>
+    private static bool NeverDest(ConstructWorld world, Construct b, ushort dest, ConstructPartDef d) =>
+        ConstructLogistics.PartOfStore(b, dest) is >= 0 and var p && b.DefOf(p).IsLayDownPad && world.StoreOf(b, p) is { } st && NeverHolds(b, p, st, d);
 
     /// <summary>The put point whose store is <paramref name="dest"/> (a rider's destination: a rack, pad, tray or machine's input), when it takes the piece now and is in reach; else -1.</summary>
     private static int DestPoint(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, ushort dest, out Vector3 at)

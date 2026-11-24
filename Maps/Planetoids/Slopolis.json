@@ -38,7 +38,9 @@
       "sand": "#8c7f68",
       "dirtSlope": 16,
       "rockSlope": 30,
-      "sandBelow": -60
+      "sandBelow": -60,
+      "sea": "#3a5a72",
+      "seaDeep": "#1a2e48"
     },
     "features": [
       {
@@ -90,6 +92,28 @@
         "scale": 12,
         "octaves": 2,
         "seed": 9
+      },
+      {
+        "type": "sea",
+        "lat": -57.69,
+        "lon": 76.9,
+        "radius": 5200,
+        "depth": 110,
+        "edge": 1520,
+        "coast": 0.36,
+        "water": true,
+        "seed": 320
+      },
+      {
+        "type": "sea",
+        "lat": 3.65,
+        "lon": 281.48,
+        "radius": 3200,
+        "depth": 90,
+        "edge": 1200,
+        "coast": 0.42,
+        "water": true,
+        "seed": 321
       },
       {
         "type": "flatten",

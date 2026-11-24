@@ -40,7 +40,10 @@
       "dirtSlope": 17,
       "rockSlope": 36,
       "sandBelow": -140,
-      "snowAbove": 1040
+      "snowAbove": 1040,
+      "sea": "#2f5a6e",
+      "seaDeep": "#16324a",
+      "seaShore": "#8a8462"
     },
     "biomes": {
       "seed": 4,
@@ -863,6 +866,61 @@
         "scale": 12,
         "octaves": 2,
         "seed": 9
+      },
+      {
+        "type": "sea",
+        "lat": -12.47,
+        "lon": 89.11,
+        "radius": 10400,
+        "depth": 160,
+        "edge": 2400,
+        "coast": 0.31,
+        "water": true,
+        "seed": 310
+      },
+      {
+        "type": "sea",
+        "lat": -19.11,
+        "lon": 343.95,
+        "radius": 6800,
+        "depth": 130,
+        "edge": 1800,
+        "coast": 0.33,
+        "water": true,
+        "seed": 311
+      },
+      {
+        "type": "sea",
+        "lat": -24.27,
+        "lon": 236.26,
+        "radius": 5200,
+        "depth": 110,
+        "edge": 1520,
+        "coast": 0.32,
+        "water": true,
+        "seed": 312
+      },
+      {
+        "type": "sea",
+        "lat": 4.32,
+        "lon": 183.55,
+        "radius": 4000,
+        "depth": 100,
+        "edge": 1280,
+        "coast": 0.44,
+        "water": true,
+        "seed": 313
+      },
+      {
+        "type": "sea",
+        "lat": -43.66,
+        "lon": 161.64,
+        "radius": 3200,
+        "depth": 90,
+        "edge": 1120,
+        "coast": 0.32,
+        "water": true,
+        "seed": 314
       },
       {
         "type": "flatten",
