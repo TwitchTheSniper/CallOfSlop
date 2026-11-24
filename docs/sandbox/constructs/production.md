@@ -172,7 +172,7 @@ burns by it, every peer alike, all in the Core's frame. The front is -z (the Cor
   burns no one: its hearth is behind a door. A HOT plate on the Hearth Block and the Casting Bed says so.
 - **Cost.** All of it is worked out from the squares each frame and tick, allocating nothing; drawn spans are culled past 150 m.
 
-**The wire.** Part ids moved (protocol 451); nothing else is new: the blocks' joins and the squares are each peer's own. Saves keep
+**The wire.** Part ids moved (protocol 452); nothing else is new: the blocks' joins and the squares are each peer's own. Saves keep
 working: "Workshop Smelter" to "Plasma Smelter" load as the Smelter Core (`ConstructParts.Renamed`), and a saved recipe choice keeps its
 recipe (`ConstructRefining.SavedRecipe`). **Self-test**: "Machine tier looks", "Refining", "Refining network" (a Hearth Block welded on the
 host reaches the client's look line), "Gathering" (`SelfTestMachineTiers.cs`: a bare Core, a 1 x 1 and a 2 x 2 at x1, x2.25 and x7; a
@@ -2041,6 +2041,17 @@ someone holds waits until they let go. A packed part is physics-only (never in t
 it; its size and mass as packed), so a Hall Crane can set one on a pad. `--pack-check` tries it headless: two groups built in
 different orders and turns go in as one kind, a damaged one is refused, one taken out is its group again. Not yet: arms and cranes
 carrying a group by order (only the cab does), and a stock target naming a packed kind.
+
+### Arm kit (2026-11-24, part 1)
+
+A modular loader arm built from pieces (Sean's design page "Design modular loader arms"). Code: `Source/Constructs/ArmKit.cs` (the spec), `Source/Render/ArmKitRender.cs` (the posed chain), the generator `Source/PartKit/Generators/ArmKitParts.cs` (`--gen-parts arm_kit`) and the Arm die in `PressParts.cs`.
+
+- **Arm Core**: a 2 m block (lifter `"kit": true`) with its screen on +x, the slewing bearing on top. Its "chain" socket takes the chain: shoulder **Arm Joint**, upper **Arm Boom**, elbow Joint, fore Boom, **Arm Wrist**, **Pad Clamp**, each on the one before's "tip" by its own "base". **Arm Counterweights** chain from its "weight" socket (-x) through their "back"; **Arm Drive Packs** bolt on its and its **Arm Pedestals'** +z and -z sides; Pedestals stack under it (at most 4 Pedestals, 4 Counterweights, 8 Packs, reach 32 m).
+- Every piece but the Core and the Pedestal is pressed to order on the **Arm die** (like bodies of the catalogue pieces: `Pressed Part (arm.boom hollow 40x40x400 steel)`), so its size is the order's. Its numbers come from its size: a joint's moment 1443 a^3 kN m, a boom's from its tube section at 160 MPa, a counterweight by its volume of steel on a 3.25 m lever, a Pack 3 kW a metre of height, the Core 2 kW and a 1,500 kN m bearing, a Pad Clamp's own limit by its width. (The design page's route was Extruder, Cutter and End die; one press die per piece keeps orders to one machine.)
+- **Load chart**: P(r) = min((T_sh - M_arm)/(g r), (T_el - M_fore)/(g (r - x_el)), (T_bear - M_arm)/(g r), P_head) at four radii; the payload is the chart at full reach, and the look line names the piece that sets it. **Speed**: v = v_cap min(1, kW / (0.8 kW/t (m_arm + m_load))), v_cap = 10 / (1 + joint side).
+- **Mast and fold-out**: the chain stands straight up on the Core as it is built (plain parts). Once it is a whole arm its chain pieces are drawn posed by LifterRender (no collider, left out of the merged batch) and, with power, it folds out over 6 s (`LiftWhy.Folding`) before it works; an idle arm without power folds back. Both peers step the fold (`CLift.Fold`, never sent). A chain that isn't whole says what to fit next (`LiftWhy.ArmChain`, its look line).
+- **Presets**: blueprints Bench Arm, Line Arm, Heavy Arm and Yard Arm. `--arm-kit [NAME,...]` builds them headless and prints each Core's chain, chart, speed and power.
+- To come: heads and the Head Stand (part 2), the Knuckle and Rail Carriage (part 3), then every fixed arm replaced (part 4).
 
 ## Bake Oven and baked parts (2026-11-21)
 

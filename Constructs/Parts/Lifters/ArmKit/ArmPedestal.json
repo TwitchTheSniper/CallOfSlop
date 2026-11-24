@@ -1,0 +1,206 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Pedestal",
+  "description": "A 2 m block an Arm Core stands on: up to four raise an arm over a bay's machines. Drive Packs bolt on its sides as on the Core's.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1900.0,
+  "health": 2600,
+  "armour": 10,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 8.0,
+  "armPiece": "pedestal",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        1.0,
+        2.0,
+        1.0
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -1.008,
+        0.004,
+        -1.008
+      ],
+      "max": [
+        1.008,
+        0.12,
+        1.008
+      ],
+      "color": "#4c5157",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.008,
+        1.88,
+        -1.008
+      ],
+      "max": [
+        1.008,
+        1.996,
+        1.008
+      ],
+      "color": "#4c5157",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.854,
+        0.12,
+        0.854
+      ],
+      "max": [
+        1.006,
+        1.88,
+        1.006
+      ],
+      "color": "#c99c18",
+      "detail": true
+    },
+    {
+      "min": [
+        0.854,
+        0.12,
+        -0.998
+      ],
+      "max": [
+        1.006,
+        1.88,
+        -0.86
+      ],
+      "color": "#c99c18",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.998,
+        0.12,
+        0.854
+      ],
+      "max": [
+        -0.86,
+        1.88,
+        1.006
+      ],
+      "color": "#c99c18",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.002,
+        0.12,
+        -1.002
+      ],
+      "max": [
+        -0.86,
+        1.88,
+        -0.86
+      ],
+      "color": "#c99c18",
+      "detail": true
+    },
+    {
+      "min": [
+        0.996,
+        0.9,
+        -0.6
+      ],
+      "max": [
+        1.008,
+        1.1,
+        0.6
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.008,
+        0.9,
+        -0.6
+      ],
+      "max": [
+        -0.996,
+        1.1,
+        0.6
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        1.0,
+        1.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        1.0,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        1.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

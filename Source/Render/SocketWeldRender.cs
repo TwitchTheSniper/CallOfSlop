@@ -173,15 +173,19 @@ public static class SocketWeldRender
                 col = Vector3.Lerp(col, Colour(WeldMarkerState.Used), 0.7f);
             var a = m.Fade * (hot || sel ? 0.95f : used ? 0.35f : 0.7f);
             var cls = 1f + 0.25f * MathF.Min(m.Class, (byte)3);
-            var size = (hot ? 0.065f : used ? 0.03f : 0.045f) * m.Size * cls;
-            var at = mAt + mDir * 0.02f;
-            Glyph(gfx, m.Look, m.Side, at, mDir, col, a, size);
+            // The icon stands out along the socket's facing, big enough to read; a thin stem runs back to a small dot on the
+            // exact point (Sean 2026-11-24). A used socket's stands half as far, smaller.
+            var size = (hot ? 0.11f : used ? 0.05f : 0.085f) * m.Size * cls;
+            var stand = SocketWeld.IconStand * m.Size * (used ? 0.5f : 1f);
+            var at = mAt + mDir * 0.01f;
+            var icon = mAt + mDir * stand;
+            gfx.Draw(Matrix4x4.CreateScale((hot ? 0.03f : 0.022f) * m.Size) * Matrix4x4.CreateTranslation(at), hot ? new Vector3(1f, 1f, 1f) : col, a, mode: 2);
+            Bar(gfx, at, icon, (hot ? 0.007f : 0.005f) * m.Size, col, a * 0.85f);
+            Glyph(gfx, m.Look, m.Side, icon, mDir, col, a, size);
             if (hot)
-                gfx.Draw(Matrix4x4.CreateScale(size * 0.9f) * Matrix4x4.CreateTranslation(at + mDir * size * 0.6f), new Vector3(1f, 1f, 1f), 0.95f * m.Fade, mode: 2);
+                gfx.Draw(Matrix4x4.CreateScale(size * 0.7f) * Matrix4x4.CreateTranslation(icon + mDir * size * 0.6f), new Vector3(1f, 1f, 1f), 0.95f * m.Fade, mode: 2);
             if (sel)
-                gfx.Draw(Matrix4x4.CreateScale(size * 4.2f) * Matrix4x4.CreateTranslation(at), Colour(WeldMarkerState.Selected), 0.3f * pulse * m.Fade, mode: 2);
-            if (!used)
-                Bar(gfx, at, at + mDir * (hot ? 0.16f : 0.11f) * m.Size * cls, size * 0.3f, col, a);
+                gfx.Draw(Matrix4x4.CreateScale(size * 3.2f) * Matrix4x4.CreateTranslation(icon), Colour(WeldMarkerState.Selected), 0.3f * pulse * m.Fade, mode: 2);
             MarkersDrawn++;
         }
         if (PointOn)

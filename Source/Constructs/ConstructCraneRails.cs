@@ -34,6 +34,8 @@ public static partial class ConstructLifters
     public static LifterDef? DefOf(Construct c, int part)
     {
         var ld = c.DefOf(part).Lifter;
+        if (ld is { Kit: true })
+            return ArmKit.DefOf(c, part, ld);
         if (ld is not { Bridge: true })
             return ld;
         if (c.CraneStamp != c.StructStamp || c.CranePartCount != c.PartCount)
