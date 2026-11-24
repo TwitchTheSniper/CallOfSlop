@@ -78,7 +78,7 @@ public static class ArmKit
                 if (d.Spec is { Valid: true, Heads.Length: > 1 } s)
                 {
                     var want = ConstructConfig.Get(c.Parts[part], c.Parts[part].D, CfgKey.ArmHead, 0);
-                    if ((int)MathF.Round(want) != s.Mounted) // (the Head setting changed by hand, or on a client by the body's settings)
+                    if (HeadIndex(s, want) != s.Mounted) // (the Head setting changed by hand, or on a client by the body's settings)
                     {
                         Mount(s, want);
                         d.Payload = s.Payload;
@@ -128,7 +128,7 @@ public static class ArmKit
             d.Spec = spec;
             spec.Def = d;
             if (spec.Valid)
-                Mount(spec, spec.Mounted); // (again, now its def is known: Fitter and payload)
+                MountAt(spec, spec.Mounted); // (again, now its def is known: Fitter and payload)
             if (spec.Valid)
             {
                 Apply(d, ld, spec);
@@ -436,10 +436,31 @@ public static class ArmKit
 
     private static Vector3 SocketDirOf(in CSocket k) => ConstructParts.DirVector(k.Dir);
 
-    /// <summary>The head on the Wrist: the chart and payload are the chain's held to its own limit.</summary>
-    public static void Mount(ArmSpec s, float setting)
+    /// <summary>The Head setting's choices after "Own": a head kind each. The setting saves a kind, never a place in the list, so a stand
+    /// added or taken away can't change which head an arm wears after a reload.</summary>
+    public static readonly ArmPieceKind[] HeadKinds = [ArmPieceKind.PadClamp, ArmPieceKind.Spreader, ArmPieceKind.Vacuum, ArmPieceKind.Magnet, ArmPieceKind.Fork, ArmPieceKind.FitterHead];
+
+    /// <summary>Which of its heads a Head setting names: 0 (Own) its own; a kind, its own head if it is that kind, else the first spare of it, else its own.</summary>
+    public static int HeadIndex(ArmSpec s, float setting)
     {
-        s.Mounted = Math.Clamp((int)MathF.Round(setting), 0, Math.Max(0, s.Heads.Length - 1));
+        var c = (int)MathF.Round(setting) - 1;
+        if (c < 0 || c >= HeadKinds.Length || s.Heads.Length == 0)
+            return 0;
+        for (var k = 0; k < s.Heads.Length; k++)
+            if (s.Heads[k].Kind == HeadKinds[c])
+                return k;
+        return 0;
+    }
+
+    /// <summary>The Head setting that names head <paramref name="k"/>: Own for its own, else that head's kind.</summary>
+    public static int SettingOf(ArmSpec s, int k) => k <= 0 || k >= s.Heads.Length || s.Heads[k].Kind == s.Heads[0].Kind ? 0 : 1 + Array.IndexOf(HeadKinds, s.Heads[k].Kind);
+
+    /// <summary>The head on the Wrist by the Head setting: the chart and payload are the chain's held to its own limit.</summary>
+    public static void Mount(ArmSpec s, float setting) => MountAt(s, HeadIndex(s, setting));
+
+    public static void MountAt(ArmSpec s, int index)
+    {
+        s.Mounted = Math.Clamp(index, 0, Math.Max(0, s.Heads.Length - 1));
         var h = s.Heads.Length > 0 ? s.Heads[s.Mounted] : default;
         for (var k = 0; k < 4; k++)
             s.ChartP[k] = MathF.Min(s.ChainP[k], h.Rating);
@@ -493,8 +514,8 @@ public static class ArmKit
         var slot = p.D.CfgSlot[(int)CfgKey.ArmHead];
         if (slot < 0)
             return;
-        p.Cfg[slot] = k;
-        Mount(s, k);
+        p.Cfg[slot] = SettingOf(s, k);
+        MountAt(s, k);
         if (s.Def != null)
             s.Def.Payload = s.Payload;
         ServerWorld?.StructureDirty.Add(c.Id); // (the setting goes to clients with the body)
@@ -505,8 +526,9 @@ public static class ArmKit
     {
         if (d.Lifter is not { Kit: true } || list.Count >= ConstructConfig.MaxSlots || list.Exists(e => e.Id == CfgKey.ArmHead))
             return;
-        list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ArmHead), Id = CfgKey.ArmHead, Type = CfgType.Number, Min = 0, Max = MaxHeads - 1, Step = 1, Default = 0, Label = "Head", Group = "Lifter",
-            Tooltip = "Which head is on its Wrist: 0 its own, 1 and up the spares on Head Stands in its reach. It swaps by itself when the next piece needs another." });
+        list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ArmHead), Id = CfgKey.ArmHead, Type = CfgType.Choice, Min = 0, Max = HeadKinds.Length, Step = 1, Default = 0, Label = "Head", Group = "Lifter",
+            Options = ["Own", .. HeadKinds.Select(KindName)],
+            Tooltip = "Which head is on its Wrist: Own, the one built on, or a kind from a Head Stand in its reach (its own head if no spare of that kind). It swaps by itself when the next piece needs another." });
     }
 
     /// <summary>The Core's look-line words: its chart, or what its chain lacks.</summary>
