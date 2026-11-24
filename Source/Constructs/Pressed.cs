@@ -779,7 +779,7 @@ public static class Pressed
         var cls = across < 200 ? ConstructParts.Small : across < 700 ? ConstructParts.Medium : across < 2400 ? ConstructParts.Large : ConstructParts.Capital;
         var socks = new CSocket[like.Sockets.Length];
         for (var i = 0; i < socks.Length; i++)
-            socks[i] = like.Sockets[i] with { At = Map(like.Sockets[i].At), Class = cls };
+            socks[i] = like.Sockets[i] with { At = Map(like.Sockets[i].At), Class = like.ArmPiece != ArmPieceKind.None ? like.Sockets[i].Class : cls }; // (an arm piece keeps its like's class: every piece of a chain mates whatever its size, ArmKit.cs)
         var (volume, mass) = VolumeMass(k);
         var thinnest = k.Shape == ExShape.Pipe ? k.Wall / 100f : MathF.Min(w, h);
         var d = like.ShallowCopy();

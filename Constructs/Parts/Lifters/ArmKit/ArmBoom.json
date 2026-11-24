@@ -1,0 +1,158 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Boom",
+  "description": "A link of a modular arm: a square steel tube with lugs at its ends. Pressed to any width and length on the Arm die: its moment grows with its section, its weight with both.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 500.0,
+  "health": 1200,
+  "armour": 10,
+  "material": "steel",
+  "color": "#e8b81c",
+  "attachSeconds": 6.0,
+  "armPiece": "boom",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        0.0,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        4.0,
+        0.2
+      ],
+      "color": "#e8b81c"
+    },
+    {
+      "min": [
+        -0.21,
+        0.004,
+        -0.21
+      ],
+      "max": [
+        0.21,
+        0.296,
+        0.21
+      ],
+      "color": "#2b2f34",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.21,
+        3.704,
+        -0.21
+      ],
+      "max": [
+        0.21,
+        3.996,
+        0.21
+      ],
+      "color": "#2b2f34",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2105,
+        0.32,
+        -0.02
+      ],
+      "max": [
+        -0.1925,
+        3.68,
+        0.02
+      ],
+      "color": "#c99c18",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.1925,
+        0.32,
+        -0.02
+      ],
+      "max": [
+        0.2085,
+        3.68,
+        0.02
+      ],
+      "color": "#c99c18",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.206,
+        1.8,
+        -0.206
+      ],
+      "max": [
+        0.206,
+        2.2,
+        0.206
+      ],
+      "color": "#c99c18",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.208,
+        3.4,
+        -0.208
+      ],
+      "max": [
+        0.206,
+        3.6,
+        0.208
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.12,
+        1.2,
+        0.204
+      ],
+      "max": [
+        0.12,
+        1.44,
+        0.25
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "tip",
+      "at": [
+        0.0,
+        4.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

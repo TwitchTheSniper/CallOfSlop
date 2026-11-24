@@ -539,6 +539,8 @@ public static partial class ConstructRender
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
         ref var p = ref c.Parts[i];
         var d = p.D;
+        if (d.ArmPiece != ArmPieceKind.None && ArmKit.Posed(c, i))
+            return 0; // (a live arm's chain piece: LifterRender poses it, ArmKit.cs)
         if (d.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return 0; // (a socket connector set hidden: Hide connector, ModuleSockets.HiddenLook)
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.

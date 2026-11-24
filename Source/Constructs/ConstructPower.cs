@@ -255,7 +255,7 @@ public static class ConstructPower
                 if (d.Lifter != null)
                 {
                     if (p.Out >= 0.5f)
-                        watts += d.PowerDraw; // (a lifter draws its wattage while it moves, nothing idle: its Busy output, ConstructLifters.Ports)
+                        watts += d.Lifter.Kit && ConstructLifters.DefOf(c, i) is { Spec.Valid: true } kd ? kd.Spec!.Watts : d.PowerDraw; // (an Arm Core: its Drive Packs' and its own, ArmKit.cs; a lifter draws its wattage while it moves, nothing idle: its Busy output, ConstructLifters.Ports)
                     continue;
                 }
                 if (d.WorksKind == WorksKind.Hoist)

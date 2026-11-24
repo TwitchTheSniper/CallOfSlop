@@ -777,6 +777,7 @@ public sealed partial class ConstructPartDef
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
+    public ArmPieceKind ArmPiece; // "armPiece": a piece of a modular loader arm (ArmKit.cs): its kind; a pressed copy keeps it
     public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool CraneRail; // "craneRail": true: a Crane Rail section, along its +z (a Bridge Crane runs on two runs of them: ConstructCraneRails.cs)
     public bool HallRail; // "craneRail": "hall": a Hall Crane's Crane Rail Block (a Crane Core runs on these only, a classed Crane Bridge never: both are Small class)
@@ -1457,7 +1458,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1528,6 +1529,8 @@ public static partial class ConstructParts
         if (d.IsRouter && d.TextSlots == 0)
             d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
         d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
+        if (Opt(root, "armPiece") is { ValueKind: JsonValueKind.String } ap)
+            d.ArmPiece = Enum.TryParse<ArmPieceKind>(ap.GetString(), true, out var apk) && apk != ArmPieceKind.None ? apk : throw new ConstructPartException($"{file}: armPiece is boom, joint, wrist, padClamp, counterweight or drivePack");
         d.HallRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.String } hr && hr.GetString() == "hall";
         d.CraneRail = d.HallRail || Opt(root, "craneRail") is { ValueKind: JsonValueKind.True };
         d.LifterCab = Opt(root, "lifterCab") is { ValueKind: JsonValueKind.True } && d.Role == PartRole.Seat;
