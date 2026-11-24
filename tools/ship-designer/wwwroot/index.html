@@ -344,7 +344,7 @@ function drawRooms() {
     const dim = inside() && r.deck !== deck;
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
-      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
+      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
       m.userData = { type: "room", id: r.id }; world.add(m); if (!dim) pickables.push(m);
       continue;
     }
@@ -358,8 +358,18 @@ function drawRooms() {
     box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
     box.userData = { type: "room", id: r.id }; // its walls can be grabbed too, from any angle
     world.add(box); if (!dim) pickables.push(box);
-    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({ color: !r.ok ? 0xff6a50 : (!r.reached ? 0xffb02e : col), transparent: true, opacity: dim ? 0.2 : 0.85 }));
-    edges.position.copy(box.position); world.add(edges);
+    // Its outline; a room in parts (merged or split) leaves out the edges on the walls its parts share, so it reads as one.
+    const mates = r.group ? S.rooms.filter(o => o !== r && o.group === r.group && o.deck === r.deck && !o.mesh) : [];
+    const onMate = (x, y, z) => mates.some(o => { const b = o.box, e = 0.05; return x >= b[0] - e && x <= b[1] + e && y >= b[2] - e && y <= b[3] + e && z >= b[4] - e && z <= b[5] + e; });
+    const C = [[bx0, by0, bz0], [bx1, by0, bz0], [bx1, by1, bz0], [bx0, by1, bz0], [bx0, by0, bz1], [bx1, by0, bz1], [bx1, by1, bz1], [bx0, by1, bz1]];
+    const pts = [];
+    for (const [i, j] of [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) {
+      const a = C[i], b = C[j];
+      if (onMate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2)) continue;
+      pts.push(new THREE.Vector3(...a), new THREE.Vector3(...b));
+    }
+    const edges = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: !r.ok ? 0xff6a50 : (!r.reached ? 0xffb02e : col), transparent: true, opacity: dim ? 0.2 : 0.85 }));
+    world.add(edges);
   }
   // Placed doors (Karl, 2026-11-24): a frame you can pick and drag along the wall the two rooms share.
   if (mode === "connectors") for (const p of S.placedDoors || []) {
