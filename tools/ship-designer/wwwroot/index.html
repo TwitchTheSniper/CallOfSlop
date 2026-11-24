@@ -833,8 +833,11 @@ function hover(ev) {
   else if (mode === "connectors" && hits.some(h => ["riser", "room"].includes(h.object.userData.type))) renderer.domElement.style.cursor = "pointer";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
     const hit = hits.find(h => h.object.userData.type === "room"), r = S.rooms.find(x => x.id === hit.object.userData.id);
-    const e = edgesNear(r, S.stacked ? { x: hit.point.x, z: hit.point.y } : { x: hit.point.x, z: hit.point.z }, hit);
-    renderer.domElement.style.cursor = !e.any ? "move" : (e.x0 || e.x1) && (e.z0 || e.z1) ? "nwse-resize" : (e.x0 || e.x1) ? "ew-resize" : "ns-resize";
+    // The same tests as a press: its top first (drag it up or down for its height), then its edges, else it moves.
+    const bx = r.box, hp = hit.point, onTop = S.stacked ? Math.abs(hp.z - bx[4]) < 0.12 : Math.abs(hp.y - bx[3]) < 0.12;
+    const e = onTop ? { any: false } : edgesNear(r, S.stacked ? { x: hp.x, z: hp.y } : { x: hp.x, z: hp.z }, hit);
+    renderer.domElement.style.cursor = onTop ? "row-resize" : !e.any ? "move" : (e.x0 || e.x1) && (e.z0 || e.z1) ? "nwse-resize" : (e.x0 || e.x1) ? "ew-resize" : "ns-resize";
+    $("tip").textContent = onTop ? "Drag up or down to set the room's height." : e.any ? "Drag to size the room." : "Drag to move the room.";
   }
   else if (mode === "interior" && drawing) renderer.domElement.style.cursor = "crosshair";
 }
