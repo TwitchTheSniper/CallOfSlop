@@ -288,7 +288,7 @@ public static class StationCheck
         }
         Console.WriteLine($"  after {seconds} s: {ConstructStation.StateText(j)}, {j.Fitted}/{j.Steps} fitted: {j.Note}");
         if (args.Contains("--reach"))
-            Reach(c, t, j);
+            Reach(w, c, t, j);
         var whys = new Dictionary<string, List<string>>();
         for (var i = 0; i < j.KindN; i++)
             if (j.KindWhy[i] is { } why)
@@ -322,7 +322,7 @@ public static class StationCheck
     /// and how much of each pick pad's deck it reaches with a 4 m wrist lift (a hull piece's); then the steps no arm fits and why. Cranes
     /// are counted apart: the question is the arms'. Body frame, as the rest of the report.
     /// </summary>
-    private static void Reach(Construct c, int t, StationJob j)
+    private static void Reach(ConstructWorld w, Construct c, int t, StationJob j)
     {
         if (j.Plan is not { } plan || plan.Centre.Length != j.StepKind.Length)
         {
@@ -390,6 +390,7 @@ public static class StationCheck
                 padText.Append($", pad {padList[k]} {100 * n / Math.Max(1, padPoints[k])}%");
             }
             Console.WriteLine($"    {c.DefOf(a.Part).Name} (part {a.Part}) at {a.Shoulder.X:0}, {a.Shoulder.Z:0}: fits {fits} of {j.Steps} steps; the hold {(hold ? "in reach" : "out of reach")}{padText}");
+            CarryRises(w, c, j, plan, a.Part, a.Ld, a.Shoulder, a.Rot, padList, padPts);
         }
         for (var k = 0; k < np; k++)
         {
@@ -408,6 +409,50 @@ public static class StationCheck
             none[key] = none.GetValueOrDefault(key) + 1;
         }
         Console.WriteLine($"    steps no arm fits: {none.Values.Sum()} of {j.Steps}{(none.Count > 0 ? ": " : "")}{string.Join(", ", none.Select(x => $"{x.Value} x {x.Key}"))}");
+    }
+
+    /// <summary>
+    /// The carry height an arm would take with the biggest piece it fits from each pad it reaches to that piece's step (the server's
+    /// clearance over what stands in the way, <c>ConstructLifters.ClearRise</c>): its pad point nearest the pad's middle, the piece
+    /// lying as it is fitted.
+    /// </summary>
+    private static void CarryRises(ConstructWorld w, Construct c, StationJob j, StationJob.LiftPlan plan, int part, LifterDef ld, Vector3 shoulder, Quaternion rot, List<int> pads, List<Vector3>[] padPts)
+    {
+        var best = -1;
+        var bestSize = 0f;
+        for (var s = 0; s < j.StepKind.Length; s++)
+            if (j.StepKind[s] >= 0 && ConstructParts.Get(j.KindDef[j.StepKind[s]]) is { } d && ConstructLifters.Carries(ld, d)
+                && ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.Centre[s], j.Rot), ConstructLifters.WristLift(d), out _)
+                && (d.BoundsMax - d.BoundsMin) is var sz && sz.X * sz.Y * sz.Z > bestSize)
+                (best, bestSize) = (s, sz.X * sz.Y * sz.Z);
+        if (best < 0)
+            return;
+        var piece = ConstructParts.Get(j.KindDef[j.StepKind[best]])!;
+        ConstructLifters.Frame(c, part, ld, out var lp, out var lr, out _);
+        var inv = Quaternion.Conjugate(lr);
+        var turn = Quaternion.Normalize(inv * j.Rot * plan.Rot[best]);
+        var mid = (piece.BoundsMin + piece.BoundsMax) * 0.5f;
+        var halfY = Vector3.Transform(Vector3.UnitY, Quaternion.Conjugate(j.Rot * plan.Rot[best])) is var up
+            ? MathF.Abs(up.X) * (piece.BoundsMax.X - piece.BoundsMin.X) * 0.5f + MathF.Abs(up.Y) * (piece.BoundsMax.Y - piece.BoundsMin.Y) * 0.5f + MathF.Abs(up.Z) * (piece.BoundsMax.Z - piece.BoundsMin.Z) * 0.5f : 0;
+        var stepMid = j.Pos + Vector3.Transform(plan.Centre[best], j.Rot);
+        for (var k = 0; k < pads.Count; k++)
+        {
+            var near = padPts[k].Where(p => ConstructLifters.InReach(ld, shoulder, rot, p, ConstructLifters.WristLift(piece), out _)).ToList();
+            if (near.Count == 0)
+                continue;
+            var centre = new Vector3(near.Average(p => p.X), near.Average(p => p.Y), near.Average(p => p.Z));
+            var at = near.MinBy(p => Vector3.DistanceSquared(p, centre)) - Vector3.UnitY * 1f + Vector3.UnitY * (halfY + 0.05f); // (the piece's middle over the deck)
+            var l = new CLift
+            {
+                Part = (ushort)part,
+                From = Vector3.Transform(at - lp, inv) - Vector3.Transform(mid, turn),
+                To = Vector3.Transform(stepMid - lp, inv) - Vector3.Transform(mid, turn),
+                FromRot = turn,
+                ToRot = turn,
+            };
+            var rise = ConstructLifters.ClearRise(w, c, l, ld, piece);
+            Console.WriteLine($"      a {piece.Name} from pad {pads[k]} to its step: carried {rise:0.0} m over the higher end");
+        }
     }
 
     /// <summary>

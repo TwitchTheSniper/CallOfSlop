@@ -209,10 +209,13 @@ public sealed class LifterParts : IPartGenerator
         }
         p.Set(("power", tb.Power), ("onBreak", "disable"), ("collider", "boxes")); // (as the machines: a tier's round details are looks and never become a hull)
         var lk = Look[lookT];
-        p.Set(("lifter", Kw(("kind", "arm"), ("base", Py.L(Py.Round(cx, 3), Py.Round(y0 + 1.32 * sa, 3), Py.Round(cz, 3))), ("ring", Py.Round(y0 + ring, 3)),
+        var lifter = Kw(("kind", "arm"), ("base", Py.L(Py.Round(cx, 3), Py.Round(y0 + 1.32 * sa, 3), Py.Round(cz, 3))), ("ring", Py.Round(y0 + ring, 3)),
             ("reach", Py.L(tb.R0, tb.R1)), ("up", tb.Up), ("down", Py.Round(1.32 * sa + 0.3, 2)) /* (lifters phase 4: to 0.3 m under its own floor, so a rack or pad on the same ground is in reach; was 1.0 * s) */, ("payload", tb.Payload), ("piece", Py.L(tb.Across, tb.Long)),
             ("speed", tb.Speed), ("handle", tb.Handle), ("arm", Py.L(Py.Round(2.3 * sa, 3), Py.Round(2.2 * sa, 3))),
-            ("look", Kw(("turret", lk[0]), ("weight", lk[1]), ("upper", lk[2]), ("fore", lk[3]), ("joint", lk[4]), ("pin", lk[5]))))));
+            ("look", Kw(("turret", lk[0]), ("weight", lk[1]), ("upper", lk[2]), ("fore", lk[3]), ("joint", lk[4]), ("pin", lk[5]))));
+        if (big != null)
+            lifter["housing"] = Py.Round(s, 3); // (the drawn housing and counterweight sized to the pedestal, as a tier arm's are: its links are bigger)
+        p.Set(("lifter", lifter));
         if (fitter)
             ((PyDict)p.D.Get("lifter")!)["fitter"] = true;
         p.Set(("config", Py.L(

@@ -1748,8 +1748,10 @@ Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Mo
 
 **The big arms** (Sean, 2026-11-24: arms that carry a shipyard's pieces from the line pads straight into its building bay;
 `LifterParts.BigArms`, folder `Lifters/BigArms`) are past the tiers: a 3.5 m square pedestal (14 cells, `"centre -y"` stands it
-by its middle) with the Military look scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times the tier-1 arm's (the
-drawing scales by `Upper / 2.3`). They carry the hull pieces, decks and keel bands a Plasma arm can't (the Zero Day frigate's run
+by its middle) with the Industrial look (yellow, hydraulic) scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times
+the tier-1 arm's (the drawing scales by `Upper / 2.3`; the lifter key's `"housing"` keeps the drawn housing and counterweight to the
+pedestal's size, so they turn within 1.6 m of its middle). Their screens and the station's Fitters line name them by the part's name
+("Shipyard"), not by their machine tier (5). They carry the hull pieces, decks and keel bands a Plasma arm can't (the Zero Day frigate's run
 to 14 t and 22 m), and work as every arm does: a piece on a pad or a run's end in reach goes straight to a ready step
 (`ConstructLifterDirect.cs`), and the station's offers give them steps whose part lies on a pad they reach. Their Assembling rows
 are the last in the table (`AfterCloche`).
@@ -1761,7 +1763,10 @@ arm fits with the reason.
 
 - **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
   later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it
-  turns; capped so the arm never stretches straight).
+  turns; capped so the arm never stretches straight). A loaded carry goes higher when something stands in its way: the server
+  looks along the arc the piece makes round the base (its footprint as it turns) for the tallest box under the arm's highest carry
+  and lifts the piece 0.3 m over it, as a crane does over its straight run (`ConstructLifterClear.cs`, 2026-11-24, for the big arms'
+  17 m decks); what stands taller than the arm can reach is passed through.
 - **Ports**: in **Run** (a wire held low keeps it from starting a move); out **Busy** (a move runs), **Alarm** (it holds a piece
   nothing takes), **Moved** (parts it fitted since the world loaded).
 - **Looking at it**: the look line says what it does or waits on ("fitting a Wheel Hub to the Buggy, step 12 of 26", "waiting:
