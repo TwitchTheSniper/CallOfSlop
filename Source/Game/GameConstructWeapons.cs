@@ -378,8 +378,10 @@ public sealed partial class Game : IConstructTargets
         var speed = g.Fx == GunFx.Beam ? 0f : g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : g.RoundV is > 0 and < TracerBaseSpeed * 0.95f ? g.RoundV : 0f; // (a slow charge's round is seen to fly)
         var life = speed > 0 ? 0.25f + Vector3.Distance(muzzle, e.At) / speed : 0f;
         var bow = speed > 0 && g.RoundV > 0 ? PowderCharge.Bow(g.RoundV, Vector3.Distance(muzzle, e.At)) : 0f;
-        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = g.Fx == GunFx.Beam ? BeamLife : MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
-        ConstructRender.AddFlash(muzzle, fwd, now, g.Fx);
+        var carry = c.PointVel(muzzle); // (the gun's own speed: its flash, smoke and tracer ride with it, a ship's in orbit too)
+        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = g.Fx == GunFx.Beam ? BeamLife : MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow,
+            Carry = carry, CarryEnd = (e.Hit & (CFireHit.World | CFireHit.Part | CFireHit.Target)) == 0 });
+        ConstructRender.AddFlash(muzzle, fwd, now, g.Fx, carry);
         // One report a pull (the first pellet's event), not one per pellet.
         if (_cwLastReport.Body != e.Body || _cwLastReport.Part != e.Part || now - _cwLastReport.At > 0.03)
         {

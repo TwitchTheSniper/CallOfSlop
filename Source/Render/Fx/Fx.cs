@@ -186,13 +186,15 @@ public static class Fx
     }
 
     /// <summary>A shot: a quick flash, a few sparks along the barrel and a wisp of smoke.</summary>
-    public static void Muzzle(Vector3 at, Vector3 dir, float size)
+    public static void Muzzle(Vector3 at, Vector3 dir, float size, Vector3 carry = default)
     {
-        Emit(FxKind.Flash, at + dir * (size * 0.5f), dir * 3f, size, 0.055f);
+        // carry: the speed of the gun that fired (a ship's), kept, so the flash and smoke stay at its muzzle: in orbit at 461 m/s
+        // smoke left where it was made sat on the frigate 400 m behind a second later, and read as that ship firing (Karl, 2026-11-24).
+        Emit(FxKind.Flash, at + dir * (size * 0.5f), dir * 3f, size, 0.055f, White, carry);
         for (var k = Share(4f); k > 0; k--)
-            Emit(FxKind.Spark, at, (dir + RandDir() * 0.25f) * (6f + 14f * Rand()), 0.012f + 0.012f * Rand(), 0.07f + 0.1f * Rand());
+            Emit(FxKind.Spark, at, (dir + RandDir() * 0.25f) * (6f + 14f * Rand()), 0.012f + 0.012f * Rand(), 0.07f + 0.1f * Rand(), White, carry);
         for (var k = Share(1.5f); k > 0; k--)
-            Emit(FxKind.Smoke, at, dir * (0.5f + Rand()) + new Vector3(0, 0.25f, 0), size * 0.5f, 0.6f + 0.6f * Rand());
+            Emit(FxKind.Smoke, at, dir * (0.5f + Rand()) + new Vector3(0, 0.25f, 0), size * 0.5f, 0.6f + 0.6f * Rand(), White, carry);
     }
 
     /// <summary>Puffs of engine or stack smoke at <paramref name="at"/>, moving at <paramref name="vel"/>; <paramref name="dark"/>: 0 thin and grey, 1 a black column.</summary>

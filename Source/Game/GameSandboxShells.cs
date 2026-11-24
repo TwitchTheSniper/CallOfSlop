@@ -71,7 +71,7 @@ public sealed partial class Game
             return;
         }
         var dir = e.To.LengthSquared() > 1e-4f ? Vector3.Normalize(e.To) : Vector3.UnitY;
-        ConstructRender.AddFlash(e.At, dir, now, kind is ShellKind.Rocket or ShellKind.Missile ? GunFx.Rocket : GunFx.Cannon);
+        ConstructRender.AddFlash(e.At, dir, now, kind is ShellKind.Rocket or ShellKind.Missile ? GunFx.Rocket : GunFx.Cannon, Constructs.Get(e.Body) is { } fc ? fc.PointVel(e.At) : default); // (rides with its ship: GameConstructWeapons)
         if (Constructs.Get(e.Body) is { } c && c.GunOf(e.Part) is var k and >= 0 && c.Guns[k].Def is { } def)
         {
             Audio.Shot(def, e.At, mergeN: c.Guns[k].MergeN);
