@@ -103,8 +103,17 @@ Not yet: the Fuel Filter's Clogged out; a client doesn't see a ring boosting (no
 
 Drawn swinging (coordinator's ask, for Sean's full-animations rule): every gimballed or train-fed bell is drawn turned whole about its mount by its gimbal's two angles, its flame with it (`ConstructRender.GimbalTurn`; a bell with a gimbal of its own is walked, not merged: `StaticBoxes`; the search runs only on a body with a bell swung, `Construct.Swung`). A client is told each swung bell's angles with its level (`CBodyKind.Thrust`, 0.4 degree a step, at most what keeps the message under the MTU, protocol 464); like the levels, a held angle is told again only when something changes. A bell with no gimbal of its own and no work looks would stay merged and straight (none ships). `--engine-check` prints each swung bell's angles, how far the drawn bell is off straight and off the push, and a client's.
 
+## Phase 8: the Fuel Selector
+
+- **Fuel Selector XS** (0.4 m, supply): two Fuel in ports (top, left). Its train is fed while either line reaches a working tank (`ConstructWorks.InjectorFed` takes a pipe into a working selector as into the injector). Source out (`SelectorSource`, every logic tick) is the line it runs on: the first, or the second with Select in on, and else the other; 0 for neither. A valve block with a turning handle, two lamps.
+- Presses on the Housing die (`fuelselector` 70x70x40).
+- `--engine-check ... --cut-at S` also cuts a selector's first line and prints its Source out each second: 1, then 2 after the cut, the drive fed throughout.
+- Protocol 465 (new part file).
+
+Not yet: "runs dry" by a tank's own contents (the plain fuel tanks are one pool; a selector goes over when a line is cut or its tank lost).
+
 ## Next
 
-1. The other pieces of the doc one at a time: Fuel Selector, Turbopump Drive, Bore Adapter.
+1. The other pieces of the doc one at a time: Turbopump Drive (what it does waits on Sean: fuel pumps draw no power today), Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

@@ -60,13 +60,21 @@ public static class EngineTrainCheck
             {
                 cut = true;
                 var n = 0;
+                var sel = false;
                 for (var k = c.RouteCount - 1; k >= 0; k--)
                     if (c.Routes[k].Type == RouteType.Pipe && c.Routes[k].To < c.PartCount && c.DefOf(c.Routes[k].To).WorksKind == WorksKind.Injector)
                     {
                         ConstructRoutes.Remove(w, c, k);
                         n++;
                     }
-                Console.WriteLine($"  t {now,5:0.0} s: cut {n} pipe(s) into the injector");
+                for (var k = 0; k < c.RouteCount && !sel; k++)
+                    if (c.Routes[k].Type == RouteType.Pipe && c.Routes[k].To < c.PartCount && c.DefOf(c.Routes[k].To).TrainFn == TrainFunction.Selector
+                        && ConstructRoutes.PortOf(c.DefOf(c.Routes[k].To), RouteType.Pipe, c.Routes[k].ToPort) is { Name: "Fuel in" })
+                    {
+                        ConstructRoutes.Remove(w, c, k); // (a Fuel Selector's first line: it should go over to the second)
+                        sel = true;
+                    }
+                Console.WriteLine($"  t {now,5:0.0} s: cut {n} pipe(s) into the injector{(sel ? " and the Fuel Selector's first line" : "")}");
             }
             if (t % World.TickRate == 0)
                 Swing(c, w, now);
@@ -79,7 +87,9 @@ public static class EngineTrainCheck
                 }
             if (t % World.TickRate == 0)
                 for (var i = 0; i < c.PartCount; i++)
-                    if (c.Parts[i].D.TrainFn == TrainFunction.Sensor)
+                    if (c.Parts[i].D.TrainFn == TrainFunction.Selector)
+                        Console.WriteLine($"  t {now,5:0.0} s: {c.Parts[i].D.Name}: source {c.Parts[i].Out:0}");
+                    else if (c.Parts[i].D.TrainFn == TrainFunction.Sensor)
                         Console.WriteLine($"  t {now,5:0.0} s: Sensor Ring outputs: level {c.Parts[i].Out:0}, buffer {c.Parts[i].Out1:0}, health {ConstructModules.Output(c, i, 2):0}, heat {ConstructModules.Output(c, i, 3):0}");
             c.Wake(); // (held still, it would sleep: a drive at work keeps stepping)
             w.Step(q, World.TickDt);

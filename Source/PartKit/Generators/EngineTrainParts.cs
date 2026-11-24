@@ -261,7 +261,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4;
     public const double GimbalDegrees = 6; // (the doc: the bell swings up to 6 degrees)
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
@@ -658,6 +658,41 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(260, 1600, 60);
     }
 
+    /// <summary>
+    /// The Fuel Selector XS: a supply piece, a valve block on a band round the train with two Fuel in ports (one on top, one on the
+    /// left), a valve block with a turning handle between them and two lamps. Its train is fed while either line reaches a working tank: the first,
+    /// or with Select in on the second, and else the other; Source out says which (1, 2, or 0 for neither).
+    /// </summary>
+    private static Part FuelSelector()
+    {
+        var d = SelectorD;
+        var p = new Part("Fuel Selector XS", Small, Section,
+            "A fuel selector for an engine train, 0.4 m long: weld it in the supply zone (at the back) and run a fuel pipe into each of its two Fuel ins. The drive runs on the first line, or the second with Select in on, and goes over to the other if one is cut or its tank is lost. Source out says which line feeds it (1 or 2, 0 for none).",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.008, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var rb = FlangeR - 0.016;
+        Cyl(p, 0, 0, rb, -0.08, -d + 0.08, "#3a4a5a", "painted plating", inner: Math.Round((Bore - 0.01) / rb, 3), segments: 24); // (the band)
+        var zm = -d * 0.5;
+        // Two inlet stubs (top and left), a valve block between them on the upper left with the handle that turns, and two lamps.
+        var pr = Bore + 0.085;
+        Look(p, -0.028, rb - 0.01, zm - 0.028, 0.028, pr, zm + 0.028, Copper, "copper"); // (the top inlet's stub)
+        Look(p, -pr, -0.028, zm - 0.028, -rb + 0.01, 0.028, zm + 0.028, Copper, "copper"); // (the left inlet's stub)
+        var (vx, vy) = (-rb * 0.72, rb * 0.72);
+        Look(p, vx - 0.06, vy - 0.06, zm - 0.07, vx + 0.06, vy + 0.06, zm + 0.07, Dark, "dirty steel"); // (the valve block)
+        Look(p, vx - 0.012, vy + 0.06, zm - 0.012, vx + 0.012, vy + 0.09, zm + 0.012, Bolt, "steel"); // (the handle's stem)
+        Look(p, vx - 0.006, vy + 0.09, zm - 0.012, vx + 0.006, vy + 0.102, zm + 0.11, "#a02818", "painted plating", work: "spin", axis: "+y"); // (the handle)
+        foreach (var x in new[] { 0.06, 0.1 })
+            Look(p, x - 0.01, rb + 0.004, zm - 0.012, x + 0.01, rb + 0.016, zm + 0.012, Lamp, "", work: "chase");
+        TrainPiece(p, d, "selector");
+        p.Add(Box(P(-0.04, Bore - 0.02, zm - 0.04), P(0.04, pr, zm + 0.04), hidden: true)); // (the inlets' bosses: a pipe's end has a face to meet)
+        p.Add(Box(P(-pr, -0.04, zm - 0.04), P(-Bore + 0.02, 0.04, zm + 0.04), hidden: true));
+        p.Set(("ports", Py.L(
+            BigDriveParts.PipePort("Fuel in", "in", [0, Py.Round(pr, 3), Py.Round(zm, 3)], "+y", "fuel"),
+            BigDriveParts.PipePort("Fuel in 2", "in", [Py.Round(-pr, 3), 0, Py.Round(zm, 3)], "-x", "fuel"))));
+        return p.Stats(110, 600, 20);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -675,7 +710,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar(), FuelSelector() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }
