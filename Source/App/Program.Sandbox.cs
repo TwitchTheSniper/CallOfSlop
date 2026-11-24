@@ -1328,6 +1328,7 @@ public static unsafe partial class Program
         GatherModulePulls(g, now); // (a module the physics gun pulls on shakes: ModulePullLook.cs)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         ConstructRender.ShellRigs = false;
+        var perf = Perf.Measure(PerfArea.CDrawRigs); // (the F9 window's rows under "Constructs (draw)")
         if (ConstructRender.ShellRigCount > 0)
         {
             Gfx.BeginBatch();
@@ -1336,6 +1337,8 @@ public static unsafe partial class Program
         }
         if (g.CrewStandIns.Count > 0)
             g.DrawCrewStandIns(Gfx); // crew with no body, at their seats (GameCrewDraw.cs)
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CDrawSounds);
         AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
@@ -1344,6 +1347,7 @@ public static unsafe partial class Program
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
         g.MachineFrameSounds(now); // (reactors' hums, robot shells starting up, the shell chair's link: GameMachineSounds.cs)
+        perf.Dispose();
         AllocProfile.Stop();
     }
 
