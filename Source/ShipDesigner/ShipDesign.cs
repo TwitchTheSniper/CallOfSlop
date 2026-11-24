@@ -63,7 +63,6 @@ public sealed class ShipDesign
     public List<Riser> Risers = [];
     public List<RoomDoor> Doors = [];
     public List<HullWindow> Windows = [];
-    public List<Protrusion> Protrusions = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -72,7 +71,6 @@ public sealed class ShipDesign
     public Piece? PieceById(int id) => Pieces.Find(p => p.Id == id);
     public Room? RoomById(int id) => Rooms.Find(r => r.Id == id);
     public HullJoin? JoinById(int id) => Joins.Find(j => j.Id == id);
-    public Protrusion? ProtrusionById(int id) => Protrusions.Find(p => p.Id == id);
 
     // ---- JSON (System.Text.Json.Nodes only: no reflection, so it trims for the web page)
 
@@ -90,7 +88,6 @@ public sealed class ShipDesign
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
             ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
-            ["protrusions"] = new JsonArray([.. Protrusions.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
@@ -126,16 +123,6 @@ public sealed class ShipDesign
                 pc.Hull = d.Hulls[hi].Id;
                 d.Pieces.Add(pc);
             }
-        foreach (var j in o["protrusions"]?.AsArray() ?? [])
-            if (j is JsonObject po && d.Protrusions.Count < Protrusion.Max)
-            {
-                var pr = Protrusion.FromJson(po, d.Take(po));
-                var hi = (int?)po["hull"] ?? 0;
-                if (hi < 0 || hi >= d.Hulls.Count)
-                    continue;
-                pr.Hull = d.Hulls[hi].Id;
-                d.Protrusions.Add(pr);
-            }
         foreach (var j in o["joins"]?.AsArray() ?? [])
             if (j is JsonObject jo && d.Joins.Count < MaxJoins && HullJoin.FromJson(d, jo, d.Take(jo)) is { } hj)
                 d.Joins.Add(hj);
@@ -167,7 +154,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id) || Protrusions.Any(k => k.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;

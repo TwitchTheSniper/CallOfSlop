@@ -33,8 +33,6 @@ public static partial class Api
             id = _ed.Design.Windows.Count == 0 ? 0 : _ed.Design.Windows[^1].Id;
         else if (err.Length == 0 && (string?)o["op"] == "addDoor")
             id = _ed.Design.Doors.Count == 0 ? 0 : _ed.Design.Doors.Max(k => k.Id);
-        else if (err.Length == 0 && (string?)o["op"] is "addProtrusion" or "dupProtrusion")
-            id = _ed.Design.Protrusions.Count == 0 ? 0 : _ed.Design.Protrusions[^1].Id;
         else if (err.Length == 0 && (string?)o["op"] == "addRiser")
             id = _ed.Design.Risers.Count == 0 ? 0 : _ed.Design.Risers[^1].Id;
         else if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom" or "splitRoom" or "mount"))
@@ -61,8 +59,6 @@ public static partial class Api
         sb.AppendJoin(',', RoomKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"colour\":{DesignScene.Q(k.Colour)},\"desc\":{DesignScene.Q(k.Desc)}}}"));
         sb.Append("],\"sections\":[");
         sb.AppendJoin(',', DesignTemplates.Sections.Select(s => $"{{\"name\":{DesignScene.Q(s.Name)},\"p\":[{string.Join(',', s.P.Select(q => $"[{ShipDesign.S(q.H)},{ShipDesign.S(q.Y)}]"))}]}}"));
-        sb.Append("],\"protrusions\":[");
-        sb.AppendJoin(',', Protrusion.Gallery.Select(g => $"{{\"name\":{DesignScene.Q(g.Name)},\"len\":{ShipDesign.S(g.Len)},\"wid\":{ShipDesign.S(g.Wid)},\"rise\":{ShipDesign.S(g.Rise)},\"chamfer\":{ShipDesign.S(g.Chamfer)},\"taper\":{ShipDesign.S(g.Taper)},\"facets\":{g.Facets}}}"));
         sb.Append("],\"bodies\":[").AppendJoin(',', DesignTemplates.Bodies.Select(DesignScene.Q));
         sb.Append("],\"starts\":[").AppendJoin(',', DesignTemplates.Starts.Select(DesignScene.Q));
         return sb.Append("]}").ToString();

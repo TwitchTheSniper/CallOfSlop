@@ -1266,24 +1266,6 @@ public static class DesignScene
             m.Write(sb);
             sb.Append('}');
         }
-        sb.Append("],\"protrusions\":[");
-        for (var i = 0; i < d.Protrusions.Count; i++)
-        {
-            var pr = d.Protrusions[i];
-            var m = new DesignMesh();
-            var ok = ProtrusionMesher.Build(d, pr, m);
-            var h = d.Hull(pr.Hull);
-            var at = h is null ? [0.0, 0, 0] : SkinPoint(h, pr);
-            if (i > 0) sb.Append(',');
-            sb.Append("{\"id\":").Append(pr.Id).Append(",\"kind\":").Append(Q(pr.Kind)).Append(",\"hull\":").Append(pr.Hull).Append(",\"copy\":").Append(pr.Copy)
-              .Append(",\"z\":").Append(ShipDesign.S(pr.Z)).Append(",\"t\":").Append(ShipDesign.S(pr.T)).Append(",\"side\":").Append(pr.Side).Append(",\"mirror\":").Append(pr.Mirror ? "true" : "false")
-              .Append(",\"len\":").Append(ShipDesign.S(pr.Len)).Append(",\"wid\":").Append(ShipDesign.S(pr.Wid)).Append(",\"rise\":").Append(ShipDesign.S(pr.Rise))
-              .Append(",\"chamfer\":").Append(ShipDesign.S(pr.Chamfer)).Append(",\"taper\":").Append(ShipDesign.S(pr.Taper)).Append(",\"facets\":").Append(pr.Facets)
-              .Append(",\"ok\":").Append(ok ? "true" : "false")
-              .Append(",\"at\":[").Append(ShipDesign.S(at[0])).Append(',').Append(ShipDesign.S(at[1])).Append(',').Append(ShipDesign.S(at[2])).Append("],\"mesh\":");
-            m.Write(sb);
-            sb.Append('}');
-        }
         sb.Append("],\"decks\":[");
         for (var i = 0; i < d.Decks.Count; i++)
             sb.Append(i > 0 ? "," : "").Append("{\"floor\":").Append(ShipDesign.S(d.Decks[i].Floor)).Append(",\"height\":").Append(ShipDesign.S(d.Decks[i].Height)).Append('}');
@@ -1376,12 +1358,6 @@ public static class DesignScene
         sb.Append("{\"length\":").Append(ShipDesign.S(z1 - z0)).Append(",\"beam\":").Append(ShipDesign.S(x1 - x0)).Append(",\"height\":").Append(ShipDesign.S(y1 - y0))
           .Append(",\"floor\":").Append(ShipDesign.S(floor)).Append(",\"hold\":").Append(ShipDesign.S(hold)).Append(",\"bunks\":").Append(bunks)
           .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => (p.Mirror ? 2 : 1) * (p.Pair && d.Hull(p.Hull)?.Copies == 2 ? 2 : 1))).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');
-    }
-
-    private static double[] SkinPoint(HullBody h, Protrusion pr)
-    {
-        var s = h.OnSkin(pr.Z, pr.T, pr.Side);
-        return [h.CopyX(Math.Min(pr.Copy, h.Copies - 1)) + s.X, h.Y + s.Y, h.Z + s.Z];
     }
 
     public static string Q(string s)
