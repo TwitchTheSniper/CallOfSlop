@@ -227,8 +227,8 @@ public sealed partial class ZeroDayWorks
                 feed[i, 0] = Paint(Onto(tableEnds[dieCells - 1 - i], "roller", "Roller Tile", "-z table"), paint); // (west to east)
             Chain(feed, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
 
-            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east, a Mast Block on each bed
-            // corner (2 m more pin travel a level), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ---------------
+            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east, nothing over the bed (its
+            // upper die is its top, Sean 2026-11-24), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ------------
             var bed = new VPart[bedAcross, bedAlong];
             for (var i = 0; i < bedAcross; i++)
                 bed[i, 0] = Paint(Onto(feed[i, feedRows - 1], "+z", "Bed Block", "-z"), paint);
@@ -236,8 +236,6 @@ public sealed partial class ZeroDayWorks
             var former = Paint(Onto(bed[bedAcross - 1, 0], "-x", "Panel Former", "+z"), paint); // (South: a block's own -x is east)
             OrdersOnly(former);
             _lastFormer = former;
-            foreach (var c in Corners(bed))
-                Stack(c, "top", 1);
             var outs = new VPart[bedAcross, 1];
             for (var i = 0; i < bedAcross; i++)
                 outs[i, 0] = Paint(Onto(bed[i, bedAlong - 1], "+z", "Out Table", "-z"), paint);
