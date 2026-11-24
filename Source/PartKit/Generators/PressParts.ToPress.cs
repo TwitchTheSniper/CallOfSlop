@@ -88,7 +88,8 @@ public sealed partial class PressParts
         ("housing", "exchanger", "Coolant Exchanger L", "coolant exchanger", "hollow 230x220x115 steel", ["hollow"]),
         ("housing", "capacitor", "Capacitor Bank S", "capacitor bank", "solid 80x110x70 steel", ["solid"]),
         ("actuator", "turretring", "Turret Ring S", "turret ring", "solid 100x100x95 steel", ["solid"]),
-        // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing.
+        // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing
+        // at any length and diameter (EngineTrainPattern: what it serves scales with the blank, so these are not presets-only).
         ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
         ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
@@ -247,8 +248,28 @@ public sealed partial class PressParts
 
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
     private static IEnumerable<object?> More(string die, PyDict? bay2 = null, List<object?>? scale = null, string? along = null) =>
-        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
-            along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
+        MorePatterns.Where(m => m.Die == die).Select(m => EngineTrainScale(m.Id) is { } train ? (object?)EngineTrainPattern(m, train)
+            : Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
+                along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
+
+    /// <summary>
+    /// An engine train piece's numbers by its blank (Sean, 2026-11-24: any length and diameter; what it serves goes with length times
+    /// diameter squared, the blank's volume): the bell's thrust and burn, a chamber's or an injector's serves. Null: not a train piece.
+    /// </summary>
+    private static List<object?>? EngineTrainScale(string id) => id switch
+    {
+        "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
+        "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
+        _ => null,
+    };
+
+    /// <summary>A train piece's pattern: its own round look stretched to the blank along its axis (z), none of the housing die's corner bosses.</summary>
+    private static PyDict EngineTrainPattern((string Die, string Id, string Like, string Label, string Blank, string[]? Only) m, List<object?> scale)
+    {
+        var p = Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, scale: scale, along: "z", auto: false);
+        p["dieFeatures"] = false;
+        return p;
+    }
 
     /// <summary>The presets this adds (Presets calls it, after the ones before it).</summary>
     private static IEnumerable<(string Part, string Die, string Pattern, string Blank)> MoreToPress() =>
