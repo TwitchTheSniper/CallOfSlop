@@ -522,8 +522,9 @@ public static class DesignScene
         var top = Math.Min(w.Sill + w.H, dk.Height - 0.05);
         var foot = Math.Min(w.Sill, top - 0.2);
         (width, top, foot) = (width + 2 * grow, top + grow, foot - grow); // the boarding's outer edge, laid the same way
-        int nu = Math.Max(2, (int)Math.Ceiling(width / 0.25) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.25) + 1);
+        int nu = Math.Max(2, (int)Math.Ceiling(width / 0.1) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.1) + 1);
         var pts = new double[nu * nv * 3];
+        var ray = new double[nu * nv * 3];
         var gap = 0.0;
         var ok = true;
         for (var j = 0; j < nv; j++)
@@ -555,11 +556,40 @@ public static class DesignScene
                     ok = false;
                     f = HullWindow.MaxGap;
                 }
+                else
+                {
+                    // Close in on the skin between the last step inside and the first outside: on skin the ray meets at a slant,
+                    // a 2 cm step leaves the glass well off it.
+                    double lo2 = Math.Max(0, f - 0.02), hi2 = f;
+                    for (var it = 0; it < 12 && f > 0; it++)
+                    {
+                        var m = (lo2 + hi2) / 2;
+                        if (d.Hulls.Any(h => h.Depth(p[0] + nx * m, p[1] + ny * m, p[2] + nz * m) > 0)) lo2 = m; else hi2 = m;
+                    }
+                    f = hi2;
+                }
                 gap = Math.Max(gap, f);
                 var k = (j * nu + i) * 3;
-                (pts[k], pts[k + 1], pts[k + 2]) = (p[0] + nx * (f + lift), p[1] + ny * (f + lift), p[2] + nz * (f + lift));
+                (pts[k], pts[k + 1], pts[k + 2]) = (p[0] + nx * f, p[1] + ny * f, p[2] + nz * f);
+                (ray[k], ray[k + 1], ray[k + 2]) = (nx, ny, nz);
             }
-        return (pts, nu, nv, gap, ok, len);
+        // Stand it off the skin along the skin's own normal (from the grid's neighbours), not along the ray: where the hull turns
+        // under the window a step along the ray slides along the skin and leaves the glass in it (Karl, 2026-11-24).
+        var outp = new double[pts.Length];
+        for (var j = 0; j < nv; j++)
+            for (var i = 0; i < nu; i++)
+            {
+                int k = (j * nu + i) * 3, a = (j * nu + Math.Max(0, i - 1)) * 3, b = (j * nu + Math.Min(nu - 1, i + 1)) * 3,
+                    c = (Math.Max(0, j - 1) * nu + i) * 3, e = (Math.Min(nv - 1, j + 1) * nu + i) * 3;
+                double ux = pts[b] - pts[a], uy = pts[b + 1] - pts[a + 1], uz = pts[b + 2] - pts[a + 2];
+                double vx = pts[e] - pts[c], vy = pts[e + 1] - pts[c + 1], vz = pts[e + 2] - pts[c + 2];
+                double cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx, cl = Math.Sqrt(cx * cx + cy * cy + cz * cz);
+                if (cl < 1e-9) (cx, cy, cz, cl) = (ray[k], ray[k + 1], ray[k + 2], 1);
+                var sg = cx * ray[k] + cy * ray[k + 1] + cz * ray[k + 2] < 0 ? -1 : 1;
+                for (var t = 0; t < 3; t++)
+                    outp[k + t] = pts[k + t] + sg * lift * (t == 0 ? cx : t == 1 ? cy : cz) / cl;
+            }
+        return (outp, nu, nv, gap, ok, len);
     }
 
     /// <summary>An extension's two rings in world space, the same count each: for a wall, its outline at the floor and at the
@@ -1110,7 +1140,7 @@ public static class DesignScene
               .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill))
               .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
               .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
-            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.03);
+            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.025);
             sb.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"risers\":[");
