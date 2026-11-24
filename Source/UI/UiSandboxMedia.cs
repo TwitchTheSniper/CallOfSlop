@@ -92,9 +92,9 @@ public sealed partial class Ui
             MediaAdsChanged?.Invoke();
         }
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip("Off: other players' Browser Screens stay blank on this PC. On: their sites load here, which shows those sites your address and runs what they chose. Your own page is shared with players who have this on.");
+            ImGuiSafe.SetTooltip("Off: other players' Browser Screens stay blank on this PC. On: their sites load here, signed in wherever you signed in on a Browser Screen, which shows those sites your address and runs what they chose. Your own page is shared with players who have this on.");
         ImGui.SeparatorText("Private page"u8);
-        ImGui.TextWrapped("Nothing is saved to disk. Logins, cookies and history end when the game closes."u8);
+        ImGui.TextWrapped("Nothing is saved to disk. Your sign-ins and cookies are shared by every Browser Screen on this PC and last until the game closes. A page whose screen goes out of range is kept as it was for 10 minutes."u8); // (MediaDirector.ShelfSeconds)
         ImGui.TextWrapped("Shared: the address with its query, how far the page is scrolled, and its main video or audio. Whoever used it last leads. Other players only load it if they turn on Show other players' web pages."u8);
         ImGui.TextWrapped("Taken out of the address first: parameters named like secrets (token, auth, session, key, code, sig, password, state and so on). That goes by names, so don't share a page whose address holds a secret under another name."u8);
         ImGui.TextWrapped("Not shared: your clicks, your typing, your logins. Each player's page is their own."u8);

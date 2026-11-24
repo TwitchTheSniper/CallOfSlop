@@ -1156,7 +1156,7 @@ public sealed partial class Ui
             if (ImGui.Checkbox("Show other players' web pages"u8, ref s.MediaOthersWeb))
                 MediaDirector.OthersWeb = s.MediaOthersWeb;
             if (ImGui.IsItemHovered())
-                ImGui.SetItemTooltip("Off: other players' Browser Screens stay blank. On: their sites load on this PC, which shows those sites your address and runs what they chose."u8);
+                ImGui.SetItemTooltip("Off: other players' Browser Screens stay blank. On: their sites load on this PC, signed in wherever you signed in on a Browser Screen, which shows those sites your address and runs what they chose."u8);
             var musicStyle = (int)s.MusicChoice;
             ImGui.Text("Music style"u8);
             ImGui.SameLine();

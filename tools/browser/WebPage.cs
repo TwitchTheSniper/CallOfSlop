@@ -6,29 +6,34 @@ using CefSharp.OffScreen;
 namespace SlopBrowser;
 
 /// <summary>
-/// A Browser Screen's page (docs/sandbox/MEDIA.md, "Browser Screens"): any http or https site. It runs on rules of its own, not the YouTube page's, in a request context of its own with nothing on disk.
+/// A Browser Screen's page (docs/sandbox/MEDIA.md, "Browser Screens"): any http or https site. It runs on rules of its own, not the YouTube page's, in the Browser Screens' own request context,
+/// in memory and shared by every Browser Screen page of this run (<see cref="Program"/>'s <c>WebContext</c>), so a sign-in lasts until the game closes and nothing is put on disk.
 /// The address can come from another player, so everything here is the same for every peer's copy: only http and https, no private or local addresses, no downloads, no external programs, no popups
 /// (a link that wants one opens in place), every permission denied, no dialogs or file pickers. URLs are never logged, and a query string never leaves this process in a report.
+/// Out of range, a page goes on the shelf instead of closing (<see cref="Shelve"/>): hidden and unheard, but alive, so it comes back as it was.
 /// </summary>
 internal sealed class WebPage : IDisposable
 {
-    private readonly SharedBlock _block;
+    private readonly PageSink _sink;
+    private readonly Painter _painter;
     private readonly ChromiumWebBrowser _web;
-    private readonly RequestContext _context;
-    private readonly int _slot;
     private volatile bool _closing;
+    private volatile string _address = "", _title = ""; // (said again when the page comes off the shelf)
+    private volatile int _seen; // goes up when the page comes off the shelf: its watch says where it is again
     private readonly AdSwitch _ads;
 
-    public WebPage(int slot, string url, int width, int height, string block, bool ads)
+    public int Width => _sink.Width;
+
+    public int Height => _sink.Height;
+
+    public WebPage(int slot, string url, int width, int height, string block, bool ads, RequestContext context)
     {
-        _slot = slot;
         _ads = new AdSwitch(ads);
-        _block = new SharedBlock(block, width, height);
-        _context = new RequestContext(new RequestContextSettings { CachePath = "", PersistSessionCookies = false });
-        _web = new ChromiumWebBrowser(WebPolicy.Allowed(url) ? url : "about:blank", requestContext: _context, automaticallyCreateBrowser: false)
+        _sink = new PageSink(new SharedBlock(block, width, height), slot);
+        _web = new ChromiumWebBrowser(WebPolicy.Allowed(url) ? url : "about:blank", requestContext: context, automaticallyCreateBrowser: false)
         {
-            RenderHandler = new Painter(_block, slot),
-            AudioHandler = new PageSound(_block, slot),
+            RenderHandler = _painter = new Painter(_sink),
+            AudioHandler = new PageSound(_sink),
             RequestHandler = new Requests(new Resources(_ads)),
             LifeSpanHandler = new InPlace(),
             DisplayHandler = new Quiet(),
@@ -37,22 +42,59 @@ internal sealed class WebPage : IDisposable
             DialogHandler = new NoFiles(),
             JsDialogHandler = new NoDialogs(),
         };
-        _web.AddressChanged += (_, e) => Program.Say($"u {_slot} {WebPolicy.Shareable(e.Address)}");
-        _web.TitleChanged += (_, e) => Program.Say($"t {_slot} {Program.OneLine(e.Title)}");
+        _web.AddressChanged += (_, e) =>
+        {
+            _address = e.Address;
+            _sink.Say("u", WebPolicy.Shareable(e.Address));
+        };
+        _web.TitleChanged += (_, e) =>
+        {
+            _title = Program.OneLine(e.Title);
+            _sink.Say("t", _title);
+        };
         _web.LoadError += (_, e) =>
         {
             if (e.Frame.IsMain && e.ErrorCode is not (CefErrorCode.Aborted or CefErrorCode.BlockedByClient))
-                Program.Say($"pfail {_slot} the page didn't load ({e.ErrorCode})"); // (never the address)
+                _sink.Say("pfail", $"the page didn't load ({e.ErrorCode})"); // (never the address)
         };
         _web.FrameLoadEnd += (_, e) =>
         {
             if (e.Frame.IsMain && e.HttpStatusCode > 0)
-                Program.Say($"pok {_slot}"); // (a page that loaded after one that didn't: its panel's fault goes)
+                _sink.Say("pok", ""); // (a page that loaded after one that didn't: its panel's fault goes)
         };
         _web.Size = new System.Drawing.Size(width, height);
-        new Thread(() => PageInput.Run(_block, _web, keys: true, () => _closing, () => { })) { IsBackground = true, Name = "Input " + slot }.Start();
+        new Thread(() => PageInput.Run(_sink, _web, keys: true, () => _closing, () => { })) { IsBackground = true, Name = "Input " + slot }.Start();
         _ = Watch();
         _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 });
+    }
+
+    /// <summary>
+    /// Its screen went out of range: off the screen and onto the shelf. No picture, sound, input or report, and the block goes back to the game, but the page itself runs on as it was,
+    /// signed in, at its place, its video going (unheard), until it comes back (<see cref="Return"/>) or is dropped.
+    /// </summary>
+    public void Shelve()
+    {
+        _sink.Detach()?.Dispose();
+        if (_web.IsBrowserInitialized)
+            _web.GetBrowserHost()?.WasHidden(true); // (no paints while nobody sees it)
+    }
+
+    /// <summary>Off the shelf onto a screen in <paramref name="slot"/>: says where it is and what it's called, and paints a whole frame at once.</summary>
+    public void Return(int slot, string block, bool ads)
+    {
+        _sink.Attach(new SharedBlock(block, _sink.Width, _sink.Height), slot);
+        _painter.Again();
+        _seen++;
+        if (_address.Length > 0)
+            _sink.Say("u", WebPolicy.Shareable(_address));
+        if (_title.Length > 0)
+            _sink.Say("t", _title);
+        if (_web.IsBrowserInitialized && _web.GetBrowserHost() is { } host)
+        {
+            host.WasHidden(false);
+            host.Invalidate(PaintElementType.View);
+        }
+        Ads(ads);
     }
 
     private const string FindScroller = """
@@ -89,18 +131,24 @@ internal sealed class WebPage : IDisposable
     private async Task Watch()
     {
         var last = "";
+        var seen = _seen;
         while (!_closing)
         {
             await Task.Delay(250);
-            if (_closing || !_web.IsBrowserInitialized)
+            if (_closing || !_web.IsBrowserInitialized || _sink.Slot < 0) // (nobody asks about a shelved page)
                 continue;
+            if (seen != _seen)
+            {
+                seen = _seen;
+                last = ""; // (the game forgot it when its screen took it back)
+            }
             try
             {
                 var r = await _web.GetMainFrame().EvaluateScriptAsync(WatchScript);
                 if (r.Success && r.Result is string { Length: > 0 } now && now != last)
                 {
                     last = now;
-                    Program.Say($"w {_slot} {now}");
+                    _sink.Say("w", now);
                 }
             }
             catch (Exception e) when (e is not OutOfMemoryException)
@@ -162,9 +210,9 @@ internal sealed class WebPage : IDisposable
     public void Dispose()
     {
         _closing = true;
+        var block = _sink.Detach(); // (a paint or a packet in flight finishes first, and none comes after)
         _web.Dispose();
-        _context.Dispose();
-        _block.Dispose();
+        block?.Dispose(); // (the request context is the run's: the next page signs in with it)
     }
 
     private sealed class Requests(IResourceRequestHandler resources) : RequestHandler

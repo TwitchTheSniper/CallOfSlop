@@ -5,15 +5,18 @@ using CefSharp.Structs;
 
 namespace SlopBrowser;
 
-/// <summary>Frames from the offscreen browser. The first one, and a size the game's block can't take, say so in the game's log.</summary>
-internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
+/// <summary>Frames from the offscreen browser, into the page's <see cref="PageSink"/>. The first one, and a size the game's block can't take, say so in the game's log.</summary>
+internal sealed class Painter(PageSink sink) : IRenderHandler
 {
     private bool _painted;
     private int _wrongSize;
     private bool _failed; // this painter said pfail: its first right-size frame takes it back
 
+    /// <summary>Back on a screen from the shelf: its first picture there is logged too.</summary>
+    public void Again() => _painted = false;
+
     public ScreenInfo? GetScreenInfo() => new ScreenInfo { DeviceScaleFactor = 1 };
-    public Rect GetViewRect() => new(0, 0, block.Width, block.Height);
+    public Rect GetViewRect() => new(0, 0, sink.Width, sink.Height);
     public bool GetScreenPoint(int viewX, int viewY, out int screenX, out int screenY)
     {
         screenX = viewX;
@@ -25,28 +28,29 @@ internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
     {
         if (type != PaintElementType.View)
             return;
-        if (width != block.Width || height != block.Height)
+        if (width != sink.Width || height != sink.Height)
         {
             // (a display scale that isn't 1, say; a paint or two while a size settles is no fault, so the panel hears of it only if it goes on)
             if (++_wrongSize == 1)
-                Program.Log($"page {slot}: the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
+                Program.Log($"page {sink.Slot}: the browser paints {width} x {height}, not the screen's {sink.Width} x {sink.Height}");
             else if (_wrongSize == 10 && !_painted)
             {
                 _failed = true;
-                Program.Say($"pfail {slot} the browser paints {width} x {height}, not the screen's {block.Width} x {block.Height}");
+                sink.Say("pfail", $"the browser paints {width} x {height}, not the screen's {sink.Width} x {sink.Height}");
             }
             return;
         }
-        block.WriteFrame(buffer, width, height);
+        if (!sink.Paint(buffer, width, height))
+            return; // (on the shelf)
         if (_failed)
         {
             _failed = false;
-            Program.Say($"pok {slot}");
+            sink.Say("pok", "");
         }
         if (!_painted)
         {
             _painted = true;
-            Program.Log($"page {slot}: first picture, {width} x {height}");
+            Program.Log($"page {sink.Slot}: first picture, {width} x {height}");
         }
     }
     public void OnCursorChange(IntPtr cursor, CursorType type, CursorInfo customCursorInfo) { }
@@ -60,7 +64,7 @@ internal sealed class Painter(SharedBlock block, int slot) : IRenderHandler
 }
 
 /// <summary>The sound: with this handler CEF sends a page's audio here, not to the speakers.</summary>
-internal sealed class PageSound(SharedBlock block, int slot) : IAudioHandler
+internal sealed class PageSound(PageSink sink) : IAudioHandler
 {
     private const long LogEvery = 5;
     private int _channels = 2, _rate = SharedBlock.GameRate;
@@ -69,7 +73,7 @@ internal sealed class PageSound(SharedBlock block, int slot) : IAudioHandler
 
     public bool GetAudioParameters(IWebBrowser chromiumWebBrowser, IBrowser browser, ref AudioParameters parameters)
     {
-        Program.Log($"page {slot}: audio handler asked (hop 2): offered {parameters.SampleRate} Hz, {parameters.ChannelLayout}, {parameters.FramesPerBuffer} frames");
+        Program.Log($"page {sink.Slot}: audio handler asked (hop 2): offered {parameters.SampleRate} Hz, {parameters.ChannelLayout}, {parameters.FramesPerBuffer} frames");
         parameters.SampleRate = SharedBlock.GameRate;
         parameters.ChannelLayout = ChannelLayout.LayoutStereo;
         return true;
@@ -80,25 +84,25 @@ internal sealed class PageSound(SharedBlock block, int slot) : IAudioHandler
         _channels = channels;
         _rate = parameters.SampleRate;
         Started = true;
-        Program.Log($"page {slot}: audio stream started (hop 3): {channels} channels, {parameters.SampleRate} Hz, {parameters.ChannelLayout}");
+        Program.Log($"page {sink.Slot}: audio stream started (hop 3): {channels} channels, {parameters.SampleRate} Hz, {parameters.ChannelLayout}");
     }
 
     public void OnAudioStreamPacket(IWebBrowser chromiumWebBrowser, IBrowser browser, IntPtr data, int noOfFrames, long pts)
     {
-        block.WriteAudio(data, noOfFrames, _channels, _rate);
+        sink.Audio(data, noOfFrames, _channels, _rate); // (dropped on the shelf)
         _packets++;
         var now = Environment.TickCount64 / 1000;
-        if (now < _nextLog)
+        if (now < _nextLog || sink.Slot < 0)
             return;
         _nextLog = now + LogEvery;
-        Program.Log($"page {slot}: audio packets (hop 4): {_packets}, {block.AudioFrames} frames into the ring, peak {block.AudioPeak:0.000}");
-        block.AudioPeak = 0;
+        var (frames, peak) = sink.AudioLevels();
+        Program.Log($"page {sink.Slot}: audio packets (hop 4): {_packets}, {frames} frames into the ring, peak {peak:0.000}");
     }
 
-    public void OnAudioStreamStopped(IWebBrowser chromiumWebBrowser, IBrowser browser) => Program.Log($"page {slot}: audio stream stopped after {_packets} packets");
+    public void OnAudioStreamStopped(IWebBrowser chromiumWebBrowser, IBrowser browser) => Program.Log($"page {sink.Slot}: audio stream stopped after {_packets} packets");
 
     // (never a "fail": that closes every page, and a picture without sound is still a picture)
-    public void OnAudioStreamError(IWebBrowser chromiumWebBrowser, IBrowser browser, string errorMessage) => Program.Log($"page {slot}: audio stream error: {errorMessage}");
+    public void OnAudioStreamError(IWebBrowser chromiumWebBrowser, IBrowser browser, string errorMessage) => Program.Log($"page {sink.Slot}: audio stream error: {errorMessage}");
 
     public void Dispose() { }
 }

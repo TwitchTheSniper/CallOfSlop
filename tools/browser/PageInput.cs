@@ -8,13 +8,16 @@ internal static class PageInput
 {
     private const int Move = 1, Down = 2, Up = 3, Wheel = 4, Leave = 5, KeyDown = 6, KeyUp = 7, Char = 8;
 
-    /// <summary>Runs until <paramref name="closing"/>. <paramref name="touched"/> hears a first click or wheel. Keys count only with <paramref name="keys"/>: a YouTube page never takes one.</summary>
-    public static void Run(SharedBlock block, ChromiumWebBrowser web, bool keys, Func<bool> closing, Action touched)
+    /// <summary>
+    /// Runs until <paramref name="closing"/>. <paramref name="touched"/> hears a first click or wheel. Keys count only with <paramref name="keys"/>: a YouTube page never takes one.
+    /// A shelved page's sink has no block, so it hears nothing until it is on a screen again.
+    /// </summary>
+    public static void Run(PageSink sink, ChromiumWebBrowser web, bool keys, Func<bool> closing, Action touched)
     {
         var pressed = false;
         while (!closing())
         {
-            if (!block.NextMouse(out var kind, out var x, out var y, out var data))
+            if (!sink.NextMouse(out var kind, out var x, out var y, out var data))
             {
                 Thread.Sleep(8);
                 continue;

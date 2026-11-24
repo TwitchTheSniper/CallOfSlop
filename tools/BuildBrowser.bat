@@ -12,7 +12,7 @@ if "%BROWSER_OLD%"=="0" (
     echo The video browser is up to date.
     exit /b 0
 )
-rem (a helper still running holds its files: the game quits it 20 s after the last screen, and closing the game ends it)
+rem (a helper still running holds its files: the game quits it 20 s after the last screen unless a Browser Screen used it, and closing the game ends it)
 tasklist /fi "imagename eq SlopBrowser.exe" 2>nul | find /i "SlopBrowser.exe" >nul && (
     echo The video browser is running: close the game first.
     exit /b 1
