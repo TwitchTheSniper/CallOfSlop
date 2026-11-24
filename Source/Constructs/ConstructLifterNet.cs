@@ -330,7 +330,7 @@ public static partial class ConstructLifters
     /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of a lifter arm that can fit for station <paramref name="t"/> now?</summary>
     private static bool ArmServes(ConstructWorld world, Construct sc, int t, ushort padBody, int pad)
     {
-        ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
+        ConstructStation.Bay(sc, t, out var floor, out var bayRot, out var bay);
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {
             var lb = world.LiftBodies[bi];
@@ -348,12 +348,32 @@ public static partial class ConstructLifters
                         at = k;
                 if (at < 0 || (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0) is 2 or 3 || !CanWorkNow(world, c, l))
                     continue;
-                Frame(c, l.Part, ld, out _, out _, out var shoulder);
-                if (Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down)
+                Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
+                if (ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down)
                     return true;
             }
         }
         return false;
+    }
+
+    /// <summary>
+    /// Does a crane's box (across between its rails, along what both runs share) reach over any of a station's bay floor? A crane's
+    /// ReachMax is its whole box's radius, so the arm's distance cut let a bay crane over lines A and B "serve" line C's station from
+    /// line A's store pad (2026-11-24). Allocates nothing.
+    /// </summary>
+    private static bool CraneOverBay(LifterDef ld, Vector3 shoulder, Quaternion lr, Vector3 floor, Quaternion bayRot, Vector3 bay)
+    {
+        if (ld.RailWhy != 0)
+            return false;
+        var inv = Quaternion.Conjugate(lr);
+        float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        for (var k = 0; k < 4; k++)
+        {
+            var corner = floor + Vector3.Transform(new Vector3((k & 1) == 0 ? -0.5f * bay.X : 0.5f * bay.X, 0, (k & 2) == 0 ? -0.5f * bay.Z : 0.5f * bay.Z), bayRot);
+            var p = Vector3.Transform(corner - shoulder, inv);
+            (x0, x1, z0, z1) = (MathF.Min(x0, p.X), MathF.Max(x1, p.X), MathF.Min(z0, p.Z), MathF.Max(z1, p.Z));
+        }
+        return x1 >= ld.AcrossMin && x0 <= ld.AcrossMax && z1 >= ld.RunLo && z0 <= ld.RunHi;
     }
 
     /// <summary>
@@ -415,10 +435,16 @@ public static partial class ConstructLifters
     private static int PadLack(ConstructWorld world, Construct b, int pad, CStore ps, Construct sc, int t, StationJob j, CStore tray, ConstructPartDef d)
     {
         var kind = Array.IndexOf(j.KindDef, (ushort)d.Id, 0, j.KindN);
-        if (kind < 0 || !TooBigForHold(sc, t, tray, d) || !ServesPad(world, sc, t, b.Id, pad))
-            return 0;
+        if (kind < 0 || !TooBigForHold(sc, t, tray, d) || NeverHolds(b, pad, ps, d) || !ServesPad(world, sc, t, b.Id, pad))
+            return 0; // (a pad the piece can never lie on is no taker: the Routers sent line B's 14.1 m wall plate to line A's store pad, 2026-11-24)
         return j.KindNeed[kind] - j.KindFit[kind] - PickPadHolds(world, sc, t, (ushort)d.Id) - RidingTo(b, ps.Handle, 0) - HandsTo(world, b.Id, pad, (ushort)d.Id);
     }
+
+    /// <summary>
+    /// Can pad <paramref name="pad"/> never take a piece of kind <paramref name="d"/> (too big for its hold, not a piece, not a rack), as
+    /// a put there would refuse it (<see cref="ConstructConveyor.RackCheck"/>)? A full pad is not "never": its arms empty it.
+    /// </summary>
+    public static bool NeverHolds(Construct b, int pad, CStore ps, ConstructPartDef d) => ConstructConveyor.RackCheck(b, pad, ps, d) is 1 or 2 or 3;
 
     /// <summary>Server: is a rider's way to this pad (a station's large part) still wanted? Its order, or the build's lack.</summary>
     public static bool PadOrderOpen(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
@@ -427,7 +453,7 @@ public static partial class ConstructLifters
             return false;
         int si = 0, t = -1;
         while (NextStation(world, ref si, ref t, out var sc, out var j, out var tray))
-            if (TooBigForHold(sc, t, tray, d) && ServesPad(world, sc, t, b.Id, pad) && (OrderOf(sc, t, (ushort)d.Id, tag) >= 0 || PadLack(world, b, pad, ps, sc, t, j, tray, d) + 1 > 0))
+            if (TooBigForHold(sc, t, tray, d) && !NeverHolds(b, pad, ps, d) && ServesPad(world, sc, t, b.Id, pad) && (OrderOf(sc, t, (ushort)d.Id, tag) >= 0 || PadLack(world, b, pad, ps, sc, t, j, tray, d) + 1 > 0))
                 return true; // (+1: this rider is one of those riding there)
         return false;
     }
@@ -441,12 +467,15 @@ public static partial class ConstructLifters
         pad = ConstructPads.Owner(b, pad);
         if (world.StationOpen.Count == 0 || !b.DefOf(pad).IsLayDownPad) // (no lifters at all: a station's own pad still counts, ServesPad)
             return;
-        for (var pass = tag == 0 ? 1 : 0; pass < 2; pass++)
+        // (the pad's own station first, then one an arm or crane fits for from it: order ids are each station's own, so lines A and B
+        // both had an order 1 for the same piece, and a piece on line B's own pad counted for line A's, 2026-11-24)
+        for (var pass = tag == 0 ? 2 : 0; pass < 4; pass++)
         {
             int si = 0, t = -1;
             while (NextStation(world, ref si, ref t, out var sc, out _, out _))
             {
-                if (OrderOf(sc, t, (ushort)d.Id, pass == 0 ? tag : (ushort)0) < 0 || !ServesPad(world, sc, t, b.Id, pad))
+                if (OrderOf(sc, t, (ushort)d.Id, pass < 2 ? tag : (ushort)0) < 0
+                    || ((pass & 1) == 0 ? sc.Id != b.Id || !ConstructStation.IsOwnPad(sc, t, pad) : !ServesPad(world, sc, t, b.Id, pad)))
                     continue; // (any size since the hand-offs, 2026-11-22: a part handed on to the pad counts as a large one always has)
                 ConstructCrafting.Arrived(world, sc, t, d);
                 Console.WriteLine($"[lifter] a {d.Name} landed on the pick pad (body {b.Id} part {pad}) for the station (body {sc.Id} part {t})");
