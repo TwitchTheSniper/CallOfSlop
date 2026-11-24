@@ -154,7 +154,7 @@ public static class DesignScene
                     lo = Math.Min(lo, nn); hi = Math.Max(hi, nn);
                 }
                 if (lo <= hi)
-                    cutouts.Add(new Cutout(q.O, q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0, (lo - 0.12, hi + 0.08)));
+                    cutouts.Add(new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx - 0.01, q.Hz - 0.01) : HullWindow.Rim(hw.Shape, q.Hx - 0.01, q.Hz - 0.01), 0, (lo - 0.12, hi + 0.08)));
             }
         }
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
@@ -547,7 +547,10 @@ public static class DesignScene
         var top = Math.Min(w.Sill + w.H, dk.Height - 0.05);
         var foot = Math.Min(w.Sill, top - 0.2);
         (width, top, foot) = (width + 2 * grow, top + grow, foot - grow); // the boarding's outer edge, laid the same way
-        int nu = Math.Max(2, (int)Math.Ceiling(width / 0.1) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.05) + 1);
+        // A shaped window is laid as a fan of rings from its middle out to its outline (row nv - 1 is the rim, wrapping round).
+        var rim = w.Shape == "Rect" ? null : HullWindow.Rim(w.Shape, width / 2, (top - foot) / 2);
+        int nu = rim?.Count ?? Math.Max(2, (int)Math.Ceiling(width / 0.1) + 1),
+            nv = rim is null ? Math.Max(2, (int)Math.Ceiling((top - foot) / 0.05) + 1) : Math.Max(3, (int)Math.Ceiling(Math.Max(width, top - foot) / 2 / 0.05) + 1);
         var pts = new double[nu * nv * 3];
         var ray = new double[nu * nv * 3];
         var gap = 0.0;
@@ -557,6 +560,11 @@ public static class DesignScene
             {
                 var s = mid - width / 2 + width * i / (nu - 1);
                 var up = foot + (top - foot) * j / (nv - 1);
+                if (rim is not null)
+                {
+                    var b = (double)j / (nv - 1);
+                    (s, up) = (mid + b * rim[i].U, (foot + top) / 2 + b * rim[i].V);
+                }
                 // A room out to the hull has its side walls at the skin (lined in): start from where it is drawn.
                 var wallU = wallAt;
                 if (alongZ)
@@ -604,7 +612,7 @@ public static class DesignScene
         for (var j = 0; j < nv; j++)
             for (var i = 0; i < nu; i++)
             {
-                int k = (j * nu + i) * 3, a = (j * nu + Math.Max(0, i - 1)) * 3, b = (j * nu + Math.Min(nu - 1, i + 1)) * 3,
+                int k = (j * nu + i) * 3, a = (j * nu + (rim is null ? Math.Max(0, i - 1) : (i + nu - 1) % nu)) * 3, b = (j * nu + (rim is null ? Math.Min(nu - 1, i + 1) : (i + 1) % nu)) * 3,
                     c = (Math.Max(0, j - 1) * nu + i) * 3, e = (Math.Min(nv - 1, j + 1) * nu + i) * 3;
                 double ux = pts[b] - pts[a], uy = pts[b + 1] - pts[a + 1], uz = pts[b + 2] - pts[a + 2];
                 double vx = pts[e] - pts[c], vy = pts[e + 1] - pts[c + 1], vz = pts[e + 2] - pts[c + 2];
@@ -1182,7 +1190,7 @@ public static class DesignScene
             var w = d.Windows[i];
             var (pts, nu, nv, gap, ok, len) = Lay(d, w);
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(w.Id).Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
-              .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill))
+              .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
               .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
               .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
             var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.045);

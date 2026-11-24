@@ -541,6 +541,7 @@ public sealed class DesignEditor
                 if (o["w"] is not null) w.W = Math.Clamp(Snap(D(o, "w"), 0.05), 0.3, 40);
                 if (o["h"] is not null) w.H = Math.Clamp(Snap(D(o, "h"), 0.05), 0.3, 6);
                 if (o["sill"] is not null) w.Sill = Math.Clamp(Snap(D(o, "sill"), 0.05), 0, 6);
+                if (o["shape"] is not null && HullWindow.Shapes.Contains(Str(o, "shape"))) w.Shape = Str(o, "shape");
                 return "";
             }
             case "delHullWindow":

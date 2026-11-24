@@ -86,7 +86,7 @@ public sealed class ShipDesign
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
-            ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill) })]),
+            ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
             ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill) })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
@@ -134,7 +134,7 @@ public sealed class ShipDesign
         foreach (var j in o["windows"]?.AsArray() ?? [])
             if (j is JsonObject wo && d.Windows.Count < MaxRooms * 2 && (int?)wo["room"] is int ri && ri >= 0 && ri < d.Rooms.Count)
                 d.Windows.Add(new HullWindow { Id = d.Take(wo), Room = d.Rooms[ri].Id, Side = HullWindow.Sides.Contains((string?)wo["side"]) ? (string)wo["side"]! : "x0",
-                    T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6) });
+                    T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6), Shape = HullWindow.Shapes.Contains((string?)wo["shape"]) ? (string)wo["shape"]! : "Rect" });
         // Doors name their rooms by place in the list (room ids are made fresh on reading).
         foreach (var j in o["doors"]?.AsArray() ?? [])
             if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
@@ -319,6 +319,51 @@ public sealed class HullWindow
     public int Id, Room;
     public string Side = "x0";
     public double T = 0.5, W = 1.5, H = 1.0, Sill = 0.9;
+    public string Shape = "Rect"; // its outline (Karl, 2026-11-24): Rect, Round, Oval, Arch or Hex
+    public static readonly string[] Shapes = ["Rect", "Round", "Oval", "Arch", "Hex"];
+
+    /// <summary>A shaped window's outline round its middle, counter-clockwise, as (across, up) offsets, in RimPoints points evenly
+    /// spaced along it. Every shape is convex, so a hole cut from it and a fan of glass from its middle both work.</summary>
+    public const int RimPoints = 48;
+    public static List<(double U, double V)> Rim(string shape, double hx, double hz)
+    {
+        var poly = new List<(double U, double V)>();
+        switch (shape)
+        {
+            case "Round":
+                for (var i = 0; i < RimPoints; i++) poly.Add((Math.Min(hx, hz) * Math.Cos(2 * Math.PI * i / RimPoints), Math.Min(hx, hz) * Math.Sin(2 * Math.PI * i / RimPoints)));
+                return poly;
+            case "Oval":
+                for (var i = 0; i < RimPoints; i++) poly.Add((hx * Math.Cos(2 * Math.PI * i / RimPoints), hz * Math.Sin(2 * Math.PI * i / RimPoints)));
+                return poly;
+            case "Arch":
+            {
+                var rv = Math.Min(hx, 2 * hz); // the arch's rise
+                poly.Add((-hx, -hz)); poly.Add((hx, -hz));
+                for (var i = 0; i <= 16; i++) poly.Add((hx * Math.Cos(Math.PI * i / 16), hz - rv + rv * Math.Sin(Math.PI * i / 16)));
+                break;
+            }
+            case "Hex":
+                poly.AddRange([(hx, 0), (hx / 2, hz), (-hx / 2, hz), (-hx, 0), (-hx / 2, -hz), (hx / 2, -hz)]);
+                break;
+            default:
+                poly.AddRange([(-hx, -hz), (hx, -hz), (hx, hz), (-hx, hz)]);
+                break;
+        }
+        // Evenly along the perimeter, so the glass fan's spokes are even.
+        var len = new double[poly.Count + 1];
+        for (var i = 0; i < poly.Count; i++) { var (a, b) = (poly[i], poly[(i + 1) % poly.Count]); len[i + 1] = len[i] + Math.Sqrt((b.U - a.U) * (b.U - a.U) + (b.V - a.V) * (b.V - a.V)); }
+        var outp = new List<(double U, double V)>();
+        for (int k = 0, e = 0; k < RimPoints; k++)
+        {
+            var t = len[^1] * k / RimPoints;
+            while (e < poly.Count - 1 && len[e + 1] < t) e++;
+            var (a, b) = (poly[e], poly[(e + 1) % poly.Count]);
+            var f = len[e + 1] > len[e] ? (t - len[e]) / (len[e + 1] - len[e]) : 0;
+            outp.Add((a.U + (b.U - a.U) * f, a.V + (b.V - a.V) * f));
+        }
+        return outp;
+    }
 }
 
 

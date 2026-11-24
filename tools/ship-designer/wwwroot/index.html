@@ -476,13 +476,16 @@ function drawHullWindows() {
     const { nu, nv, pts } = w; if (nu < 2 || nv < 2) continue;
     const picked = sel.kind === "hullwin" && sel.id === w.id;
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
-    const idx = []; for (let j = 0; j < nv - 1; j++) for (let i = 0; i < nu - 1; i++) { const a = j * nu + i, b = a + 1, c = a + nu, d = c + 1; idx.push(a, b, d, a, d, c); }
+    // A shaped window (Karl, 2026-11-24) is a fan of rings from its middle: row nv - 1 is its rim, and it wraps round.
+    const shaped = w.shape && w.shape !== "Rect";
+    const idx = []; for (let j = 0; j < nv - 1; j++) for (let i = 0; i < (shaped ? nu : nu - 1); i++) { const a = j * nu + i, b = j * nu + (i + 1) % nu, c = a + nu, d = b + nu; idx.push(a, b, d, a, d, c); }
     g.setIndex(idx); g.computeVertexNormals();
     const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: w.ok ? 0x9fd3ff : 0xff8a70, metalness: 0.3, roughness: 0.1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, emissive: picked ? 0x1d4f86 : 0x0b2236, depthWrite: false }));
     m.userData = { type: "hullwin", id: w.id }; m.renderOrder = 5; world.add(m); pickables.push(m);
     const ring = []; const P = k => new THREE.Vector3(pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]);
-    for (let i = 0; i < nu; i++) ring.push(P(i)); for (let j = 1; j < nv; j++) ring.push(P(j * nu + nu - 1));
-    for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu));
+    if (shaped) { for (let i = 0; i <= nu; i++) ring.push(P((nv - 1) * nu + i % nu)); }
+    else { for (let i = 0; i < nu; i++) ring.push(P(i)); for (let j = 1; j < nv; j++) ring.push(P(j * nu + nu - 1));
+      for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu)); }
     const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
     frame.renderOrder = 6; world.add(frame);
     // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide laid on the skin by the same rays as the glass (fpts), from
@@ -494,7 +497,9 @@ function drawHullWindows() {
     const resample = (line, K) => { const L = [0]; for (let i = 1; i < line.length; i++) L.push(L[i - 1] + line[i].distanceTo(line[i - 1])); const T = L[L.length - 1] || 1, out = [];
       for (let k = 0; k < K; k++) { const t = T * k / (K - 1); let i = 1; while (i < line.length - 1 && L[i] < t) i++; const f = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); out.push(line[i - 1].clone().lerp(line[i], Math.min(1, Math.max(0, f)))); } return out; };
     const si = sides(pts, nu, nv), so = sides(w.fpts, w.fnu, w.fnv), inner = [], outer = [];
-    for (let e = 0; e < 4; e++) { const K = Math.max(si[e].length, so[e].length) * 2; const a = resample(si[e], K), b = resample(so[e], K); a.pop(); b.pop(); inner.push(...a); outer.push(...b); }
+    if (shaped) { const Q = (q, a, b, i) => new THREE.Vector3(q[3 * ((b - 1) * a + i)], q[3 * ((b - 1) * a + i) + 1], q[3 * ((b - 1) * a + i) + 2]);
+      for (let i = 0; i < nu; i++) { inner.push(Q(pts, nu, nv, i)); outer.push(Q(w.fpts, w.fnu, w.fnv, i % w.fnu)); } }
+    else for (let e = 0; e < 4; e++) { const K = Math.max(si[e].length, so[e].length) * 2; const a = resample(si[e], K), b = resample(so[e], K); a.pop(); b.pop(); inner.push(...a); outer.push(...b); }
     const N = inner.length;
     const bp = [], bi = [];
     for (let k = 0; k < N; k++) { const o = outer[k], ii = inner[k];
@@ -1204,6 +1209,8 @@ function inspector() {
       el("p", { class: "hint" }, `On ${r ? r.label || r.kind : "a room"}'s ${{ x0: "port", x1: "starboard", z0: S.stacked ? "lower" : "fore", z1: S.stacked ? "upper" : "aft" }[w.side]} wall. It follows the hull's contour; sizes apply when you let go.`),
       sl("Along the wall", "t", w.t, 0, 100, 1, "%", 100), sl("Width", "w", Math.min(w.w, w.len), 30, Math.max(30, Math.round(w.len * 100)), 5, " cm", 100),
       sl("Height", "h", w.h, 30, 400, 5, " cm", 100), sl("Sill", "sill", w.sill, 0, 300, 5, " cm", 100),
+      el("div", { class: "row" }, el("span", {}, "Shape"), ...[["Rect", "Square"], ["Round", "Round"], ["Oval", "Oval"], ["Arch", "Arched"], ["Hex", "Hexagon"]].map(([k, t]) =>
+        el("button", { class: (w.shape || "Rect") === k ? "on" : "", onclick: () => cmd({ op: "setHullWindow", id: w.id, shape: k }) }, t))),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delHullWindow", id: w.id }); select(null, 0); } }, "Delete")));
     return;
   }
