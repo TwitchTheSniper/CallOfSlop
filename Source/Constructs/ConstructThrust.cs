@@ -606,10 +606,12 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>
-    /// <summary>A bell with no Igniter in its train, asked to burn from a standing start, waits <see cref="CThruster.LightDelay"/> before its level rises.</summary>
+    /// <summary>A bell with no Igniter in its train, asked to burn from cold, waits <see cref="CThruster.LightDelay"/> before its level rises (a warm one, off for a moment, relights at once).</summary>
+    private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)
+
     private static void Lighting(ref CThruster t, ref float want, float dt)
     {
-        if (t.Level > 0 || want <= 0)
+        if (t.Level > 0 || want <= 0 || t.Heat > WarmRelight)
         {
             t.Lit = 0;
             return;
