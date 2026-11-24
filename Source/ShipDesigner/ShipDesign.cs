@@ -12,7 +12,7 @@ namespace CallOfSlop.ShipDesigner;
 public sealed class ShipDesign
 {
     public const int Version = 1;
-    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40;
+    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40, MaxRisers = 40;
 
     public string Name = "New ship";
 
@@ -48,6 +48,7 @@ public sealed class ShipDesign
     public List<Deck> Decks = [];
     public List<Room> Rooms = [];
     public List<HullJoin> Joins = [];
+    public List<Riser> Risers = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -71,6 +72,7 @@ public sealed class ShipDesign
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
+            ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
         return o.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
@@ -108,6 +110,10 @@ public sealed class ShipDesign
         foreach (var j in o["joins"]?.AsArray() ?? [])
             if (j is JsonObject jo && d.Joins.Count < MaxJoins && HullJoin.FromJson(d, jo, d.Take(jo)) is { } hj)
                 d.Joins.Add(hj);
+        foreach (var j in o["risers"]?.AsArray() ?? [])
+            if (j is JsonObject ro && d.Risers.Count < MaxRisers)
+                d.Risers.Add(Riser.FromJson(ro, d.Take(ro)));
+        d.Risers.RemoveAll(k => k.From < 0 || k.To < 0 || k.From >= d.Decks.Count || k.To >= d.Decks.Count || k.From == k.To);
         d.Rooms.RemoveAll(r => r.Deck < 0 || r.Deck >= d.Decks.Count);
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
@@ -118,7 +124,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;
@@ -216,5 +222,30 @@ public sealed class Piece
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
         Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
+    };
+}
+
+
+/// <summary>A ladder or a lift between decks (Karl, 2026-11-24): at a plan point (x, z), from one deck to another, through
+/// every deck between. It joins the rooms it stands in on each deck it stops at.</summary>
+public sealed class Riser
+{
+    public int Id;
+    public string Kind = "Ladder"; // Ladder or Lift
+    public double X, Z;
+    public int From, To;
+
+    /// <summary>Its footprint (half sizes across and along): a ladder's well, a lift's car.</summary>
+    public (double Hx, double Hz) Half => Kind == "Lift" ? (0.8, 0.8) : (0.4, 0.35);
+
+    public JsonObject ToJson() => new()
+    {
+        ["id"] = Id, ["kind"] = Kind, ["x"] = ShipDesign.R(X), ["z"] = ShipDesign.R(Z), ["from"] = From, ["to"] = To,
+    };
+
+    public static Riser FromJson(JsonObject o, int id) => new()
+    {
+        Id = id, Kind = (string?)o["kind"] == "Lift" ? "Lift" : "Ladder", X = ShipDesign.F(o["x"], 0), Z = ShipDesign.F(o["z"], 0),
+        From = (int?)o["from"] ?? 0, To = (int?)o["to"] ?? 1,
     };
 }

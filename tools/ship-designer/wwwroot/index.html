@@ -298,6 +298,7 @@ function rebuild() {
   }
   if (view.rooms && (mode === "interior" || view.xray || pickRoomFor)) drawRooms();
   if (view.parts) drawConnectors();
+  if (mode === "interior" || view.xray) drawRisers();
   if (view.links && mode !== "hull") drawLinks();
   if (mode === "interior") drawDeckPlane();
   if (view.person) drawPerson();
@@ -363,6 +364,45 @@ function drawRooms() {
     const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
     m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
   }
+}
+
+// Ladders and lifts between decks (Karl, 2026-11-24): a ladder is two rails and rungs up a well, a lift a glass shaft with
+// corner posts and its car at the lowest stop; amber frames mark where it passes each deck. Pickable in the interior.
+let placingRiser = null;
+function drawRisers() {
+  for (const k of S.risers || []) {
+    const a = new THREE.Vector3(...k.a), b = new THREE.Vector3(...k.b), len = a.distanceTo(b); if (len < 0.1) continue;
+    const g = new THREE.Group(); g.position.copy(a);
+    if (S.stacked) g.rotation.x = -Math.PI / 2; // its up is the ship's -z there, its plan z the ship's y
+    const picked = sel.kind === "riser" && sel.id === k.id;
+    const amber = new THREE.MeshStandardMaterial({ color: k.ok ? 0xd8b04a : 0xff5a44, metalness: 0.5, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
+    const lo = Math.min(...k.stops);
+    for (const f of k.stops) {
+      const y = Math.abs(f - lo) + 0.02, w = 2 * k.hx + 0.1, d = 2 * k.hz + 0.1;
+      box(w, 0.05, 0.08, 0, y, d / 2, amber); box(w, 0.05, 0.08, 0, y, -d / 2, amber); box(0.08, 0.05, d, w / 2, y, 0, amber); box(0.08, 0.05, d, -w / 2, y, 0, amber);
+    }
+    if (k.kind === "Lift") {
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(0.08, len, 0.08, x * k.hx, len / 2, z * k.hz, steel);
+      box(2 * k.hx - 0.1, 0.12, 2 * k.hz - 0.1, 0, 0.06, 0, steel);                          // the car's floor at the lowest stop
+      box(2 * k.hx - 0.1, 0.05, 2 * k.hz - 0.1, 0, 2.3, 0, steel);                            // and its roof
+    } else {
+      const z = -k.hz + 0.08;
+      for (const x of [-0.22, 0.22]) box(0.05, len, 0.05, x, len / 2, z, steel);
+      for (let y = 0.3; y < len; y += 0.3) box(0.44, 0.035, 0.035, 0, y, z, steel);
+    }
+    const hit = box(2 * k.hx, len, 2 * k.hz, 0, len / 2, 0, new THREE.MeshBasicMaterial({ color: k.kind === "Lift" ? 0x9fd3ff : 0xd8b04a, transparent: true, opacity: k.kind === "Lift" ? 0.14 : 0.06, depthWrite: false }));
+    hit.userData = { type: "riser", id: k.id };
+    g.traverse(o => { o.renderOrder = 5; });
+    world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
+  }
+}
+// The deck a new ladder or lift reaches from this one: the next deck up (fore when stacked), else the next one down.
+function otherDeck(i, dir = 1) {
+  const order = S.decks.map((d, j) => [d.floor, j]).sort((p, q) => p[0] - q[0]).map(p => p[1]), at = order.indexOf(i);
+  if (dir < 0) return at > 0 ? order[at - 1] : -1;
+  return at + 1 < order.length ? order[at + 1] : -1;
 }
 
 // A socket's connector to a room farther than its reach: a lined shaft like the Limpet's, with rungs when it climbs and a
@@ -492,7 +532,20 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     toast(`${kind} fitted: it cuts the hull there and opens into the room.`, true);
     return;
   }
+  if (mode === "interior" && placingRiser) {
+    const { kind, dir, room } = placingRiser, rm = S.rooms.find(r => r.id === room); placingRiser = null; leftPanel(); inspector();
+    let at = deckPoint(ev); const to = otherDeck(rm ? rm.deck : deck, dir);
+    if (rm && (!at || at.x < rm.x0 || at.x > rm.x1 || at.z < rm.z0 || at.z > rm.z1)) at = { x: (rm.x0 + rm.x1) / 2, z: (rm.z0 + rm.z1) / 2 }; // off the room: its middle
+    if (!at) { toast("Click the deck."); return; }
+    if (to < 0) { toast(dir < 0 ? "There is no deck below this one." : "There is no deck above this one."); return; }
+    const a = cmd({ op: "addRiser", kind, x: at.x, z: at.z, from: rm ? rm.deck : deck, to });
+    if (a.error) { toast(a.error); return; }
+    select("riser", a.id); toast(`${kind} from deck ${(rm ? rm.deck : deck) + 1} to deck ${to + 1}${rm ? `, from ${rm.label || rm.kind}` : ""}. Pick its decks on the right to run it farther.`, true);
+    return;
+  }
   if (mode === "interior") {
+    const rz = hits.find(h => h.object.userData.type === "riser");
+    if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
     const r = hits.find(h => h.object.userData.type === "room");
     if (r) {
       select("room", r.object.userData.id);
@@ -853,7 +906,10 @@ function leftPanel() {
     L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "drawon", ...(drawing ? { checked: "" } : {}), onchange: e => drawing = e.target.checked }), "Draw rooms by dragging"),
       kinds,
-      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")));
+      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")),
+      el("div", { class: "sec" }, el("h2", {}, "Ladders and lifts"),
+        el("div", { class: "row" }, ...["Ladder", "Lift"].map(k => el("button", { class: placingRiser?.kind === k && !placingRiser.room ? "on" : "", onclick: () => { placingRiser = placingRiser?.kind === k && !placingRiser.room ? null : { kind: k, dir: 1, room: 0 }; leftPanel(); $("tip").textContent = placingRiser ? `Click this deck where the ${k.toLowerCase()} goes: it runs to the deck above.` : ""; } }, k))),
+        el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room, a lift 1.6 x 1.6 m.")));
   }
 }
 
@@ -962,6 +1018,17 @@ function profileEditor(h, i) {
 function inspector() {
   const I = $("inspect"); I.replaceChildren();
   if (!S) return;
+  if (sel.kind === "riser") {
+    const k = (S.risers || []).find(k => k.id === sel.id); if (!k) return;
+    const deckSel = (v, key) => { const s = el("select", { "aria-label": key }); S.decks.forEach((d, i) => s.append(el("option", { value: i, ...(i === v ? { selected: "" } : {}) }, `Deck ${i + 1}`))); s.addEventListener("change", () => { const a = cmd({ op: "setRiser", id: k.id, [key]: +s.value }); if (a.error) toast(a.error); }); return s; };
+    I.append(el("h2", {}, k.kind, el("span", { class: "n" }, k.ok ? "fits" : "see checks")),
+      el("div", { class: "row" }, ...["Ladder", "Lift"].map(t => el("button", { class: k.kind === t ? "on" : "", onclick: () => cmd({ op: "setRiser", id: k.id, kind: t }) }, t))),
+      el("div", { class: "grid2" }, el("span", {}, "from"), deckSel(k.from, "from"), el("span", {}, "to"), deckSel(k.to, "to"),
+        el("span", {}, "x"), num(k.x, v => cmd({ op: "setRiser", id: k.id, x: v }), 0.25), el("span", {}, S.stacked ? "y" : "z"), num(k.z, v => cmd({ op: "setRiser", id: k.id, z: v }), 0.25)),
+      el("p", { class: "hint" }, "It stops at every deck between its two ends, and joins the room round it on each."),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRiser", id: k.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
   if (sel.kind === "join") {
     const j = S.joins.find(j => j.id === sel.id); if (!j) return;
     const o = { section: j.section, w: j.w, h: j.h, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, squareHole: j.squareHole, openA: j.openA, openB: j.openB };
@@ -1005,6 +1072,10 @@ function inspector() {
         el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
       el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
       el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("h3", {}, "Ladder or lift from this room"),
+      el("div", { class: "row" }, ...[["Ladder", -1, "Ladder down"], ["Ladder", 1, "Ladder up"], ["Lift", -1, "Lift down"], ["Lift", 1, "Lift up"]].map(([k, dir, t]) =>
+        el("button", { class: placingRiser?.room === r.id && placingRiser.kind === k && placingRiser.dir === dir ? "on" : "", ...(otherDeck(r.deck, dir) < 0 ? { disabled: "" } : {}),
+          onclick: () => { placingRiser = { kind: k, dir, room: r.id }; deck = r.deck; rebuild(); inspector(); $("tip").textContent = `Click where in ${r.label || r.kind} the ${k.toLowerCase()} goes (it reaches the room ${dir < 0 ? "below" : "above"}).`; } }, t))),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),
@@ -1074,6 +1145,7 @@ window.addEventListener("keydown", e => {
     if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
     else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "riser") { cmd({ op: "delRiser", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
   } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
 });

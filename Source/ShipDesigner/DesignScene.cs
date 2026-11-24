@@ -23,6 +23,7 @@ public static class DesignScene
         public readonly Dictionary<int, bool> PieceOk = [];
         public readonly List<(double[] A, double[] B, bool Ok, double Shaft)> Links = [];
         public readonly List<double[]> Doors = [];
+        public readonly Dictionary<int, bool> RiserOk = [];
         public readonly HashSet<int> Reached = [];
     }
 
@@ -531,6 +532,34 @@ public static class DesignScene
                 }
             }
 
+        // Ladders and lifts: each joins the rooms it stands in on every deck it stops at (Karl, 2026-11-24).
+        foreach (var k in d.Risers)
+        {
+            var (lo, hi) = d.Decks[k.From].Floor < d.Decks[k.To].Floor ? (d.Decks[k.From], d.Decks[k.To]) : (d.Decks[k.To], d.Decks[k.From]);
+            Room? last = null;
+            var stops = new List<string>();
+            foreach (var dk in d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).OrderBy(q => q.Floor))
+            {
+                var di = d.Decks.IndexOf(dk);
+                var (hx, hz) = k.Half;
+                var r = d.Rooms.FirstOrDefault(q => q.Deck == di && k.X - hx >= q.X0 - 0.01 && k.X + hx <= q.X1 + 0.01 && k.Z - hz >= q.Z0 - 0.01 && k.Z + hz <= q.Z1 + 0.01);
+                if (r is null)
+                {
+                    stops.Add($"{di + 1}");
+                    continue;
+                }
+                if (last is not null)
+                {
+                    joins[last.Id].Add(r.Id);
+                    joins[r.Id].Add(last.Id);
+                }
+                last = r;
+            }
+            c.RiserOk[k.Id] = stops.Count == 0;
+            if (stops.Count > 0)
+                c.Issues.Add(new("warn", $"{k.Kind} has no room round it on deck {string.Join(", ", stops)} (it needs a room its whole {2 * k.Half.Hx:0.0} x {2 * k.Half.Hz:0.0} m fits in)", $"riser:{k.Id}"));
+        }
+
         // Pieces: on their hull, not where the skin is cut away; sockets reach a room of the kind they need.
         var lowest = d.Decks.Count == 0 ? -1 : d.Decks.IndexOf(d.Decks.MinBy(k => k.Floor)!);
         var entries = new List<int>();
@@ -861,6 +890,19 @@ public static class DesignScene
         sb.Append("],\"doors\":[");
         for (var i = 0; i < c.Doors.Count; i++)
             sb.Append(i > 0 ? "," : "").Append('[').Append(ShipDesign.S(c.Doors[i][0])).Append(',').Append(ShipDesign.S(c.Doors[i][1])).Append(',').Append(ShipDesign.S(c.Doors[i][2])).Append(']');
+        sb.Append("],\"risers\":[");
+        for (var i = 0; i < d.Risers.Count; i++)
+        {
+            var k = d.Risers[i];
+            var (lo, hi) = d.Decks[k.From].Floor < d.Decks[k.To].Floor ? (d.Decks[k.From], d.Decks[k.To]) : (d.Decks[k.To], d.Decks[k.From]);
+            var a = d.World(lo, k.X, k.Z, 0);
+            var b = d.World(hi, k.X, k.Z, hi.Height);
+            sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(k.Id).Append(",\"kind\":").Append(Q(k.Kind)).Append(",\"x\":").Append(ShipDesign.S(k.X)).Append(",\"z\":").Append(ShipDesign.S(k.Z))
+              .Append(",\"from\":").Append(k.From).Append(",\"to\":").Append(k.To).Append(",\"hx\":").Append(ShipDesign.S(k.Half.Hx)).Append(",\"hz\":").Append(ShipDesign.S(k.Half.Hz))
+              .Append(",\"ok\":").Append(c.RiserOk.GetValueOrDefault(k.Id) ? "true" : "false")
+              .Append(",\"stops\":[").Append(string.Join(',', d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).Select(q => ShipDesign.S(q.Floor)))).Append(']')
+              .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append("]}");
+        }
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {

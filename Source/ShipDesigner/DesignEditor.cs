@@ -456,6 +456,40 @@ public sealed class DesignEditor
                 foreach (var r in d.Rooms)
                     if (r.Deck > i)
                         r.Deck--;
+                foreach (var k in d.Risers)
+                {
+                    if (k.From == i) k.From = -1; else if (k.From > i) k.From--;
+                    if (k.To == i) k.To = -1; else if (k.To > i) k.To--;
+                }
+                d.Risers.RemoveAll(k => k.From < 0 || k.To < 0 || k.From == k.To);
+                return "";
+            }
+            // ---- ladders and lifts between decks (Karl, 2026-11-24)
+            case "addRiser":
+            {
+                if (d.Risers.Count >= ShipDesign.MaxRisers)
+                    return $"at most {ShipDesign.MaxRisers} ladders and lifts";
+                var k = new Riser { Id = d.NewId(), Kind = Str(o, "kind") == "Lift" ? "Lift" : "Ladder", X = Snap(D(o, "x"), 0.25), Z = Snap(D(o, "z"), 0.25), From = I(o, "from"), To = I(o, "to") };
+                if (k.From < 0 || k.To < 0 || k.From >= d.Decks.Count || k.To >= d.Decks.Count || k.From == k.To)
+                    return "pick two different decks";
+                d.Risers.Add(k);
+                return "";
+            }
+            case "setRiser":
+            {
+                var k = d.Risers.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such ladder or lift");
+                if (o["kind"] is not null) k.Kind = Str(o, "kind") == "Lift" ? "Lift" : "Ladder";
+                if (o["x"] is not null) k.X = Snap(D(o, "x"), 0.25);
+                if (o["z"] is not null) k.Z = Snap(D(o, "z"), 0.25);
+                var (f, t) = (o["from"] is null ? k.From : I(o, "from"), o["to"] is null ? k.To : I(o, "to"));
+                if (f < 0 || t < 0 || f >= d.Decks.Count || t >= d.Decks.Count || f == t)
+                    return "pick two different decks";
+                (k.From, k.To) = (f, t);
+                return "";
+            }
+            case "delRiser":
+            {
+                d.Risers.RemoveAll(q => q.Id == I(o, "id"));
                 return "";
             }
             case "addRoom":

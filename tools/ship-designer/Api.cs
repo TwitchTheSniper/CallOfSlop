@@ -29,6 +29,8 @@ public static partial class Api
         var id = 0;
         if (err.Length == 0 && (string?)o["op"] == "connect")
             id = _ed.Design.Joins.Count == 0 ? 0 : _ed.Design.Joins[^1].Id;
+        else if (err.Length == 0 && (string?)o["op"] == "addRiser")
+            id = _ed.Design.Risers.Count == 0 ? 0 : _ed.Design.Risers[^1].Id;
         else if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom" or "splitRoom" or "mount"))
             id = Math.Max(_ed.Design.Pieces.Count == 0 ? 0 : _ed.Design.Pieces.Max(p => p.Id), _ed.Design.Rooms.Count == 0 ? 0 : _ed.Design.Rooms.Max(r => r.Id));
         try { return Answer(err, id); }
