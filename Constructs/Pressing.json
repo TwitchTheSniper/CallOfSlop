@@ -1101,7 +1101,7 @@
      "id": "fuelbuffer",
      "like": "Fuel Buffer XS",
      "label": "fuel buffer",
-     "preset": "hollow 75x75x50 steel",
+     "preset": "hollow 70x70x50 steel",
      "auto": false,
      "body": "like",
      "along": "z",
@@ -1114,7 +1114,7 @@
      "id": "coolingjacket",
      "like": "Cooling Jacket XS",
      "label": "cooling jacket",
-     "preset": "hollow 75x75x60 steel",
+     "preset": "hollow 70x70x60 steel",
      "auto": false,
      "body": "like",
      "along": "z",
@@ -1205,7 +1205,7 @@
      "id": "gimbalring",
      "like": "Gimbal Ring XS",
      "label": "gimbal ring",
-     "preset": "hollow 75x75x40 steel",
+     "preset": "hollow 70x70x40 steel",
      "auto": false,
      "body": "like",
      "along": "z",
@@ -1232,6 +1232,19 @@
      "like": "Fuel Selector XS",
      "label": "fuel selector",
      "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "boreadapter",
+     "like": "Bore Adapter XS",
+     "label": "bore adapter",
+     "preset": "hollow 140x140x75 steel",
      "auto": false,
      "body": "like",
      "along": "z",
@@ -9125,13 +9138,13 @@
    "part": "Fuel Buffer XS",
    "die": "housing",
    "pattern": "fuelbuffer",
-   "blank": "hollow 75x75x50 steel"
+   "blank": "hollow 70x70x50 steel"
   },
   {
    "part": "Cooling Jacket XS",
    "die": "housing",
    "pattern": "coolingjacket",
-   "blank": "hollow 75x75x60 steel"
+   "blank": "hollow 70x70x60 steel"
   },
   {
    "part": "Igniter XS",
@@ -9173,7 +9186,7 @@
    "part": "Gimbal Ring XS",
    "die": "housing",
    "pattern": "gimbalring",
-   "blank": "hollow 75x75x40 steel"
+   "blank": "hollow 70x70x40 steel"
   },
   {
    "part": "Armour Collar XS",
@@ -9186,6 +9199,12 @@
    "die": "housing",
    "pattern": "fuelselector",
    "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Bore Adapter XS",
+   "die": "housing",
+   "pattern": "boreadapter",
+   "blank": "hollow 140x140x75 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

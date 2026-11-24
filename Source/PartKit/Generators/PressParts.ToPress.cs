@@ -93,19 +93,21 @@ public sealed partial class PressParts
         ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
         ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
-        // ...and its function pieces (phase 3): a Spacer, a Fuel Buffer and a Cooling Jacket, at any size too.
+        // ...and its function pieces (phase 3): a Spacer, a Fuel Buffer and a Cooling Jacket, at any size too. Every bored piece's preset is 70 cm
+        // across (the Bore Adapter's 140), so one blank across gives one bore whatever the kind (Pressed.BuildLike: bore x across over the preset's).
         ("housing", "trainspacer", "Train Spacer XS", "train spacer", "hollow 70x70x40 steel", ["hollow"]),
-        ("housing", "fuelbuffer", "Fuel Buffer XS", "fuel buffer", "hollow 75x75x50 steel", ["hollow"]),
-        ("housing", "coolingjacket", "Cooling Jacket XS", "cooling jacket", "hollow 75x75x60 steel", ["hollow"]),
+        ("housing", "fuelbuffer", "Fuel Buffer XS", "fuel buffer", "hollow 70x70x50 steel", ["hollow"]),
+        ("housing", "coolingjacket", "Cooling Jacket XS", "cooling jacket", "hollow 70x70x60 steel", ["hollow"]),
         ("housing", "igniter", "Igniter XS", "igniter", "hollow 70x70x35 steel", ["hollow"]),
         ("housing", "sensorring", "Sensor Ring XS", "sensor ring", "hollow 70x70x35 steel", ["hollow"]),
         ("housing", "throttlevalve", "Throttle Valve XS", "throttle valve", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "mixture", "Mixture Controller XS", "mixture controller", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "reheatring", "Reheat Ring XS", "reheat ring", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "fuelfilter", "Fuel Filter XS", "fuel filter", "hollow 70x70x35 steel", ["hollow"]),
-        ("housing", "gimbalring", "Gimbal Ring XS", "gimbal ring", "hollow 75x75x40 steel", ["hollow"]),
+        ("housing", "gimbalring", "Gimbal Ring XS", "gimbal ring", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "armourcollar", "Armour Collar XS", "armour collar", "hollow 70x70x35 steel", ["hollow"]),
         ("housing", "fuelselector", "Fuel Selector XS", "fuel selector", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "boreadapter", "Bore Adapter XS", "bore adapter", "hollow 140x140x75 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -273,7 +275,7 @@ public sealed partial class PressParts
     {
         "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
         "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
-        "trainspacer" or "fuelbuffer" or "coolingjacket" or "igniter" or "sensorring" or "throttlevalve" or "mixture" or "reheatring" or "fuelfilter" or "gimbalring" or "armourcollar" or "fuelselector" => Py.L(), // (a function piece: what it adds is the same at any size)
+        "trainspacer" or "fuelbuffer" or "coolingjacket" or "igniter" or "sensorring" or "throttlevalve" or "mixture" or "reheatring" or "fuelfilter" or "gimbalring" or "armourcollar" or "fuelselector" or "boreadapter" => Py.L(), // (a function piece: what it adds is the same at any size)
         _ => null,
     };
 

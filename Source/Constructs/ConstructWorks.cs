@@ -43,6 +43,7 @@ public enum TrainFunction : byte
     Gimbal, // hot: the bell swings up to its file's "gimbal" degrees under the flight control, so the drive also steers (ConstructBoost.GimbalOf)
     Collar, // hot: each one takes ShipWorks.CollarArmour more off every hit on its bell and its hot zone's pieces (ConstructWorks.TrainArmour)
     Selector, // supply: two Fuel in ports; its train is fed while either reaches a working tank, by the first (Select in on: the second) and else the other; Source out says which (SelectorSource)
+    Adapter, // any zone: a tapered shell whose two ends have different bores (its file's "bore" in front, "boreBack" behind), so pieces of two bores join (Bores)
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -64,6 +65,7 @@ public struct CWorksHead
     public int Gimbal; // ...its train's first working Gimbal Ring (-1: none)
     public byte Collars; // ...how many working Armour Collars are in it
     public int Stray; // such a head: the first piece welded into its train in the wrong zone or past the piece limit, left out of it (-1: none)
+    public bool StrayBore; // ...left out because its bore doesn't meet the piece's in front of it (Bores)
 }
 
 /// <summary>
@@ -262,7 +264,7 @@ public static class ConstructWorks
         _ => "works",
     };
 
-    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter", "gimbal", "collar", "selector"];
+    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter", "gimbal", "collar", "selector", "adapter"];
 
     /// <summary>An engine train piece's zone, counted back from the bell (Sean 2026-11-24): 0 hot, 1 feed, 2 supply; -1 any zone (a Spacer) or none.</summary>
     public static int ZoneOf(ConstructPartDef d) => d.WorksKind switch
@@ -335,7 +337,7 @@ public static class ConstructWorks
         }
         if (ConstructParts.Opt(root, "worksPiece") is { } wp)
         {
-            ConstructParts.Known(wp, ["kind", "serves", "service", "function", "gimbal", "gimbalRate"], $"{file}: \"worksPiece\"");
+            ConstructParts.Known(wp, ["kind", "serves", "service", "function", "gimbal", "gimbalRate", "bore", "boreBack"], $"{file}: \"worksPiece\"");
             d.WorksKind = KindOf(ConstructParts.Str(ConstructParts.Need(wp, "kind", $"{file}: \"worksPiece\""), file, "worksPiece.kind"), file, "worksPiece.kind");
             if (d.WorksKind == WorksKind.Mount)
             {
@@ -382,6 +384,24 @@ public static class ConstructWorks
                 d.WorksServes = ConstructParts.Num(ConstructParts.Need(wp, "serves", $"{file}: \"worksPiece\""), file, "worksPiece.serves");
                 ConstructParts.Range(d.WorksServes, 1, 1e10f, file, "worksPiece.serves");
             }
+            // Its bore (m across its joint flanges): an engine train's pieces weld only to pieces of the same bore, a Bore Adapter's two ends differ.
+            if (ConstructParts.Opt(wp, "bore") is { } bore)
+            {
+                if (d.WorksKind == WorksKind.Mount)
+                    throw new ConstructPartException($"{file}: a mount has no \"worksPiece.bore\"");
+                d.TrainBore = ConstructParts.Num(bore, file, "worksPiece.bore");
+                ConstructParts.Range(d.TrainBore, 0.05f, 50, file, "worksPiece.bore");
+            }
+            d.TrainBoreBack = d.TrainBore;
+            if (ConstructParts.Opt(wp, "boreBack") is { } back)
+            {
+                if (d.TrainFn != TrainFunction.Adapter || d.TrainBore <= 0)
+                    throw new ConstructPartException($"{file}: only a Bore Adapter's \"worksPiece\" has a \"boreBack\" (and a \"bore\")");
+                d.TrainBoreBack = ConstructParts.Num(back, file, "worksPiece.boreBack");
+                ConstructParts.Range(d.TrainBoreBack, 0.05f, 50, file, "worksPiece.boreBack");
+            }
+            else if (d.TrainFn == TrainFunction.Adapter)
+                throw new ConstructPartException($"{file}: a Bore Adapter's \"worksPiece\" has its two ends' \"bore\" and \"boreBack\"");
             if (IsHead(d))
                 throw new ConstructPartException($"{file}: a part is a head (\"works\") or a works piece (\"worksPiece\"), not both");
         }
@@ -436,12 +456,19 @@ public static class ConstructWorks
                 continue;
             var first = InLine(c, wh.Part, wh.Mount, asmOf, out wh.Taken);
             wh.Stray = -1;
+            wh.StrayBore = false;
             if (first >= 0)
             {
                 var from = c.WorksPieceCount;
                 wh.Asm = Stack(c, first, asmOf, queue);
                 if (InjectorFedHead(c.Parts[wh.Part].D))
+                {
                     wh.Stray = Zones(c, wh.Part, from);
+                    var bore = Bores(c, wh.Part, from);
+                    wh.StrayBore = bore >= 0;
+                    if (bore >= 0)
+                        wh.Stray = bore; // (nearer the bell than any zone stray: that one's cut took everything behind it)
+                }
             }
         }
         for (var h = 0; h < c.WorksHeadCount; h++)
@@ -585,10 +612,85 @@ public static class ConstructWorks
         return stray;
     }
 
+    /// <summary>Two bores (m) meet when they are within this share of the larger: a pressed piece's bore steps by its blank's centimetres.</summary>
+    public const float BoreSlack = 0.03f;
+
+    /// <summary>Do bores <paramref name="a"/> and <paramref name="b"/> meet (either 0: a piece with no bore, not checked)?</summary>
+    public static bool BoresMeet(float a, float b) => a <= 0 || b <= 0 || MathF.Abs(a - b) <= BoreSlack * MathF.Max(a, b);
+
+    /// <summary>
+    /// The bore rule (Sean's "Any bore", 2026-11-24): an engine train's pieces, taken from the bell back, weld only where the back of one
+    /// meets a front of the same bore; a Bore Adapter's ends differ, and welded turned round it steps down. The first piece that doesn't
+    /// meet the one in front of it and every piece behind it leave the train, as <see cref="Zones"/> leaves them. Returns that piece or -1.
+    /// Bounded by the train's pieces (at most the piece limit stay after <see cref="Zones"/>); allocates nothing.
+    /// </summary>
+    private static int Bores(Construct c, int head, int from)
+    {
+        var (at, dir) = ThrustLine(c, head);
+        var n = c.WorksPieceCount - from;
+        if (n < 2 || n > 64)
+            return -1;
+        Span<int> order = stackalloc int[n];
+        Span<float> back = stackalloc float[n];
+        for (var k = 0; k < n; k++)
+        {
+            var i = c.WorksPieces[from + k];
+            ref var p = ref c.Parts[i];
+            var mid = p.Pos + Rot24.Apply(p.Rot, (p.D.BoundsMin + p.D.BoundsMax) * 0.5f);
+            var b = -Vector3.Dot(mid - at, dir);
+            var j = k;
+            for (; j > 0 && back[j - 1] > b; j--)
+            {
+                back[j] = back[j - 1];
+                order[j] = order[j - 1];
+            }
+            back[j] = b;
+            order[j] = i;
+        }
+        var far = -1f; // (the back bore of the piece in front)
+        for (var k = 0; k < n; k++)
+        {
+            ref var p = ref c.Parts[order[k]];
+            var facing = Vector3.Dot(Rot24.Apply(p.Rot, Vector3.UnitZ), dir) > 0; // (its front towards the bell)
+            var near = facing ? p.D.TrainBore : p.D.TrainBoreBack;
+            if (k > 0 && !BoresMeet(far, near))
+            {
+                var stray = order[k];
+                var cut = back[k];
+                var m = from;
+                for (var q = from; q < c.WorksPieceCount; q++)
+                {
+                    ref var o = ref c.Parts[c.WorksPieces[q]];
+                    if (-Vector3.Dot(o.Pos + Rot24.Apply(o.Rot, (o.D.BoundsMin + o.D.BoundsMax) * 0.5f) - at, dir) >= cut - 1e-3f)
+                        continue;
+                    c.WorksPieces[m] = c.WorksPieces[q];
+                    c.WorksPieceAsm[m++] = c.WorksPieceAsm[q];
+                }
+                c.WorksPieceCount = m;
+                return stray;
+            }
+            far = facing ? p.D.TrainBoreBack : p.D.TrainBore;
+        }
+        return -1;
+    }
+
+    /// <summary>The bore of piece <paramref name="part"/>'s end towards (<paramref name="near"/>) or away from its bell (by how it faces <paramref name="dir"/>).</summary>
+    private static float BoreAt(Construct c, int part, Vector3 dir, bool near)
+    {
+        ref var p = ref c.Parts[part];
+        var facing = Vector3.Dot(Rot24.Apply(p.Rot, Vector3.UnitZ), dir) > 0;
+        return facing == near ? p.D.TrainBore : p.D.TrainBoreBack;
+    }
+
     /// <summary>Why the piece <see cref="CWorksHead.Stray"/> is left out of its bell's train, for a look line or the works report.</summary>
     private static string StrayWhy(Construct c, in CWorksHead h)
     {
         var sd = c.Parts[h.Stray].D;
+        if (h.StrayBore)
+        {
+            var dir = ThrustLine(c, h.Part).Dir;
+            return $"the {sd.Name} and what is behind it are out of the engine: its {BoreAt(c, h.Stray, dir, true):0.00} m bore doesn't meet the piece in front of it (a Bore Adapter joins two bores)";
+        }
         var z = ZoneOf(sd);
         return z >= 0
             ? $"the {sd.Name} and what is behind it are out of the engine: a {ZoneNames[z]} piece goes before {(z == 0 ? "the feed and supply pieces" : "the supply pieces")} (or past {ShipWorks.Current.TrainPieces} pieces)"
@@ -1062,7 +1164,7 @@ public static class ConstructWorks
         if (asm < 0 && d.WorksKind == WorksKind.Mount && HeadsThrough(c, part) is var through and > 0)
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(through == 1 ? "mount for 1 drive" : $"mount for {through} drives", wrecked), null, action);
         if (asm < 0 && (d.WorksKind == WorksKind.Train || d.WorksKind == WorksKind.Injector))
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Train ? "" : $"serves {PieceServes(d)}", wrecked), "not in an engine: a train behind a drive's bell takes hot pieces first, then feed, then supply, and at most 16 (the bell's look says what it left out)", action);
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Train ? "" : $"serves {PieceServes(d)}", wrecked), "not in an engine: a train behind a drive's bell takes hot pieces first, then feed, then supply, all of one bore (a Bore Adapter joins two), and at most 16 (the bell's look says what it left out)", action);
         if (asm < 0 && IsDrivePiece(d))
             return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", wrecked), "in line with no bell: bolt it to a Hull Mount right behind a drive's nozzle, on its axis", action);
         if (d.WorksKind == WorksKind.Loader)
@@ -1193,6 +1295,7 @@ public static class ConstructWorks
         TrainFunction.Collar => $"-{ShipWorks.Current.CollarArmour:0} a hit on the hot zone",
         TrainFunction.Selector => "two fuel lines",
         TrainFunction.Spacer => "spacer",
+        TrainFunction.Adapter => $"joins a {d.TrainBore:0.##} m bore to {d.TrainBoreBack:0.##} m",
         _ => "",
     };
 

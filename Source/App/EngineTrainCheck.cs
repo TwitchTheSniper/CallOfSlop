@@ -50,6 +50,12 @@ public static class EngineTrainCheck
             if (ConstructWorks.TrainArmour(c, th.Part) is var arm and > 0)
                 Console.WriteLine($"  {c.Parts[th.Part].D.Name}: Armour Collars take {arm:0} more off each hit on it and its hot zone");
         }
+        for (var k = 0; k < c.WorksHeadCount; k++)
+            if (c.WorksHeads[k].Stray >= 0)
+                Console.WriteLine($"  {ConstructWorks.Look(c, c.WorksHeads[k].Part)}");
+        for (var i = 0; i < c.PartCount; i++)
+            if (ConstructWorks.IsDrivePiece(c.Parts[i].D))
+                Console.WriteLine($"  part {i} {c.Parts[i].D.Name}: bore {c.Parts[i].D.TrainBore:0.00}/{c.Parts[i].D.TrainBoreBack:0.00} m, {(ConstructWorks.AsmOfPiece(c, i) >= 0 ? "in the train" : "out")}");
         var problems = 0;
         var ticks = (int)(seconds * World.TickRate);
         var cut = false;

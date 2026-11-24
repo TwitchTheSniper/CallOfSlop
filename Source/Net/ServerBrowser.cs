@@ -784,7 +784,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 464: CBodyKind.Thrust carries each swung bell's gimbal angles after the levels (u16 count, then u16 index, s8 x, s8 y at 0.4 degree a step),
     //      so a client draws a bell swinging on its gimbal (ConstructThrust.WriteShown).
     // 465: engine trains: the Fuel Selector XS part file moves part ids.
-    public const ushort ProtocolVersion = 465;
+    // 466: engine trains: the Bore Adapter XS part file moves part ids (and train pieces carry a bore).
+    public const ushort ProtocolVersion = 466;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

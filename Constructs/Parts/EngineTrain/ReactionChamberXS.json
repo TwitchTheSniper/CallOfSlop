@@ -10,7 +10,8 @@
   "onBreak": "disable",
   "worksPiece": {
     "kind": "core",
-    "serves": 240000.0
+    "serves": 240000.0,
+    "bore": 0.66
   },
   "mass": 350.0,
   "health": 1500,

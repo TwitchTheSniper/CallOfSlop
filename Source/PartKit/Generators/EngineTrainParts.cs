@@ -29,6 +29,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // The XS train (the 1 m round socket's): bore radius, flange radius, and per piece its length, what it serves, mass, health, armour.
     public const double Bore = 0.28, FlangeR = 0.33, ChamberD = 1.1, InjectorD = 0.3;
+    public const double Across = FlangeR * 2; // (an XS piece's bore: across its joint flanges; pieces weld only to the same bore, ConstructWorks.Bores)
     public const double NozzleForce = 2.4e5, ChamberServes = 2.4e5, InjectorServes = 2.4e5;
     private const double NozzleLen = 1.0, NozzleCollar = 0.36, NozzleMouth = 0.43, Burn = 2.0; // (l/s a MN, as a hull drive's)
 
@@ -201,7 +202,7 @@ public sealed class EngineTrainParts : IPartGenerator
         TrainSolid(p, d);
         p.Sock("front", P(0, 0, 0), "+z");
         p.Sock("back", P(0, 0, -d), "-z");
-        p.Set(("worksPiece", Kw(("kind", "core"), ("serves", ChamberServes))));
+        p.Set(("worksPiece", Kw(("kind", "core"), ("serves", ChamberServes), ("bore", Across))));
         return p.Stats(350, 1500, 30);
     }
 
@@ -255,13 +256,13 @@ public sealed class EngineTrainParts : IPartGenerator
         p.Sock("front", P(0, 0, 0), "+z");
         p.Sock("back", P(0, 0, -d), "-z");
         p.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, Py.Round(Bore + 0.085, 3), Py.Round(zm, 3)], "+y", "fuel"))));
-        p.Set(("worksPiece", Kw(("kind", "injector"), ("serves", InjectorServes))));
+        p.Set(("worksPiece", Kw(("kind", "injector"), ("serves", InjectorServes), ("bore", Across))));
         return p.Stats(120, 700, 20);
     }
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4, AdapterD = 0.75;
     public const double GimbalDegrees = 6; // (the doc: the bell swings up to 6 degrees)
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
@@ -278,7 +279,7 @@ public sealed class EngineTrainParts : IPartGenerator
         TrainSolid(p, d);
         p.Sock("front", P(0, 0, 0), "+z");
         p.Sock("back", P(0, 0, -d), "-z");
-        p.Set(("worksPiece", Kw(("kind", "train"), ("function", function))));
+        p.Set(("worksPiece", Kw(("kind", "train"), ("function", function), ("bore", Across))));
     }
 
     /// <summary>
@@ -626,7 +627,7 @@ public sealed class EngineTrainParts : IPartGenerator
         Look(p, ro + 0.06, -0.01, zm - 0.05, ro + 0.08, 0.01, zm + 0.02, Bolt, "steel", work: "stroke", travel: 0.025, axis: "+z"); // (the yaw rod)
         Look(p, ro + 0.1, -0.012, -d + 0.09, ro + 0.112, 0.012, -d + 0.114, Lamp, "", work: "chase");
         TrainPiece(p, d, "gimbal");
-        p.Set(("worksPiece", Kw(("kind", "train"), ("function", "gimbal"), ("gimbal", GimbalDegrees), ("gimbalRate", 40)))); // (how far it swings its bell, degrees, and how fast, degrees a second)
+        p.Set(("worksPiece", Kw(("kind", "train"), ("function", "gimbal"), ("gimbal", GimbalDegrees), ("gimbalRate", 40), ("bore", Across)))); // (how far it swings its bell, degrees, and how fast, degrees a second)
         return p.Stats(140, 700, 25);
     }
 
@@ -693,6 +694,39 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(110, 600, 20);
     }
 
+    /// <summary>
+    /// The Bore Adapter XS: a short tapered shell that joins an engine train of twice the XS bore in front to the XS bore behind it (the
+    /// doc's "Any bore": a weld joins only equal bores). Welded turned round it steps up instead. A wide bolted flange at its big end with
+    /// two lifting lugs and a hazard band, the cone, and the XS flange at its small end; it adds nothing else and goes in any zone.
+    /// </summary>
+    private static Part BoreAdapter()
+    {
+        var d = AdapterD;
+        var big = Across * 2; // (its front's bore)
+        var rb = big * 0.5;
+        var p = new Part("Bore Adapter XS", Small, Section,
+            $"A tapered engine section, 0.75 m long: it joins train pieces of a {big:0.00} m bore in front to pieces of a {Across:0.00} m bore behind it (weld it turned round to go from {Across:0.00} m up to {big:0.00} m). Train pieces weld only to pieces of the same bore. It adds nothing else and goes in any zone.",
+            role: "frame", tool: "welder", material: "steel", color: Clad, group: Group);
+        Cyl(p, 0, 0, rb - 0.004, -0.05, -0.003, Trim, "dirty steel", segments: 32); // (the big flange, 4 mm under the flange it meets)
+        Bolts(p, rb - 0.03, -0.015, -0.001, 16, Math.PI / 16);
+        var cone = rb - 0.04;
+        Cyl(p, 0, 0, cone, -d + 0.047, -0.047, Clad, "painted plating", taper: Math.Round(FlangeR * 0.94 / cone, 4), segments: 32); // (the cone, down to inside the small flange)
+        Cyl(p, 0, 0, cone + 0.012, -0.11, -0.075, Hazard, "hazard paint", inner: Math.Round((cone - 0.05) / (cone + 0.012), 3), segments: 32); // (a band by the big flange)
+        Cyl(p, 0, 0, FlangeR - 0.001, -d + 0.05, -d + 0.003, Trim, "dirty steel", segments: 24); // (the small flange, at the XS bore)
+        Bolts(p, FlangeR - 0.03, -d + 0.001, -d + 0.015, 8);
+        foreach (var sx in new[] { -1.0, 1.0 }) // (two lifting lugs on the big flange's top, each with its eye's boss)
+        {
+            var x = sx * 0.2;
+            Look(p, x - 0.02, rb - 0.03, -0.045, x + 0.02, rb + 0.06, -0.012, Dark, "dirty steel");
+            Look(p, x - 0.028, rb + 0.022, -0.036, x + 0.028, rb + 0.045, -0.021, Bolt, "steel");
+        }
+        TrainSolid(p, d);
+        p.Sock("front", P(0, 0, 0), "+z");
+        p.Sock("back", P(0, 0, -d), "-z");
+        p.Set(("worksPiece", Kw(("kind", "train"), ("function", "adapter"), ("bore", big), ("boreBack", Across))));
+        return p.Stats(120, 700, 20);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -710,7 +744,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar(), FuelSelector() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar(), FuelSelector(), BoreAdapter() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }

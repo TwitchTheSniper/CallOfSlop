@@ -10,7 +10,8 @@
   "onBreak": "disable",
   "worksPiece": {
     "kind": "train",
-    "function": "mixture"
+    "function": "mixture",
+    "bore": 0.66
   },
   "config": [
     {

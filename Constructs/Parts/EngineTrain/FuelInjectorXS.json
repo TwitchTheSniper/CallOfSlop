@@ -24,7 +24,8 @@
   ],
   "worksPiece": {
     "kind": "injector",
-    "serves": 240000.0
+    "serves": 240000.0,
+    "bore": 0.66
   },
   "mass": 120.0,
   "health": 700,

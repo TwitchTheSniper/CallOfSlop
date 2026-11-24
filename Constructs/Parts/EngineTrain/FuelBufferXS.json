@@ -10,7 +10,8 @@
   "onBreak": "disable",
   "worksPiece": {
     "kind": "train",
-    "function": "buffer"
+    "function": "buffer",
+    "bore": 0.66
   },
   "mass": 150.0,
   "health": 700,
