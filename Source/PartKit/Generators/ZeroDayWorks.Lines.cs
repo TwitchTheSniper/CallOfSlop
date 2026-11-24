@@ -22,6 +22,7 @@ public sealed partial class ZeroDayWorks
 
         private readonly List<(string Line, VPart Store)> _stores = new();
         private readonly Dictionary<string, VPart[]> _lineCutOuts = new();
+        private readonly Dictionary<string, VPart[,]> _skinPads = new(); // (line D's skins pad, its station's bay welded on it)
 
         private void LayArmourLines()
         {
@@ -35,7 +36,7 @@ public sealed partial class ZeroDayWorks
                 // the floor's 2 m grid (the extruder's tables), so the bay is welded on the pad's south edge, butted with no gap, and the
                 // Core on the bay: Sean 2026-11-24)
                 var pad = RollThrough(_lineCutOuts[line], 2, paint);
-                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint, onPad: (pad[0, 1], 1));
+                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint, onPad: (pad[0, 1], "+z", 1));
                 // The oven's Core east of its bed's first row, out of the two rows between the bay and the bed, where two Roller Tiles under
                 // both middles roll a finished kit onto the bed (ConstructRollOut.cs); its console runs the line for the station's kits, and
                 // the yard's orders reach the oven (Sean, 2026-11-23: the frigate's interior walls are made on lines A and B).
@@ -57,7 +58,14 @@ public sealed partial class ZeroDayWorks
             ArmourLine("C", 33, LineC, bedAcross: 6, bedAlong: 12, tables: 1, cutAlong: 12);
             // (the bay 20 m long, room for a deck's 17 m kit; the store 18 x 12 m, the kit station's pick pad and the yard station's: a deck's 10 m plates are
             // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
-            var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC);
+            // (the cutter's six runs end at z -129.75, 4.25 m short of the bay: two rows more of Roller Tiles, and the bay welded on the runs'
+            // ends, so the runs touch the bay (Sean 2026-11-24, "the lines should touch"). No pick pad between: a deck's 10 m plates and the
+            // skins' 18 m are longer than the strip would hold, so they wait at the runs' ends, where the bay's Hall Crane fits them from.)
+            var runC = new VPart[_lineCutOuts["C"].Length, 2];
+            for (var i = 0; i < runC.GetLength(0); i++)
+                runC[i, 0] = Paint(Onto(_lineCutOuts["C"][i], "+z", "Roller Tile", "-z"), LineC);
+            Chain(runC, "Roller Tile", "+z", "-z", "-x", "+x", LineC, rowZero: true);
+            var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC, onPad: (runC[0, 1], "+z low", 0));
             // The oven's Core east of its bed's first row (it stood in the row between the bay and the bed): a finished kit rolls out of the
             // station's bay south along the Roller Tile in that row, straight onto the bed's middle (ConstructRollOut.cs), no crane.
             var ovenC = Oven(47, -157, 33, 7, 13, 3, LineC, bedZ0: -157, facing: West);
@@ -69,7 +77,7 @@ public sealed partial class ZeroDayWorks
                 Arm("Long Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there; a Long arm's 2 m plinth does, and it lifts the deck plates, Sean 2026-11-24)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
-            Station(69, -101, 53, -99, 8, 8, 6, LineD);
+            Station(69, -101, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0)); // (welded on the skins' pad: no walkway between them)
             Oven(61, -119, 53, 8, 8, 6, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
             Arm("Heavy Loader Arm", 52, -118); // (two Heavy arms at the station's south corners, either side of the oven's Core: a Plasma's 10 m reached three of its steps, Sean 2026-11-24)
@@ -79,18 +87,18 @@ public sealed partial class ZeroDayWorks
         /// <summary>
         /// A Building Station: its Core at (<paramref name="coreX"/>, <paramref name="coreZ"/>) facing south with its bay west of it (the bay's
         /// north-west cell at <paramref name="bayX0"/>, <paramref name="bayZ0"/>), <paramref name="masts"/> Mast Blocks on each bay corner.
+        /// <paramref name="onPad"/>: a Pad Tile or a run's last Roller Tile on the bay's north edge, its south socket and the bay column south
+        /// of it. The bay is welded on that socket and the Core on the bay (a pad or run laid off the floor's grid), not stood on the floor.
         /// </summary>
-        /// <paramref name="onPad"/>: a Pad Tile on the bay's north edge and the bay column south of it. The bay is welded on that tile's south
-        /// side and the Core on the bay (a pad laid off the floor's grid), not stood on the floor.
         private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint, Orient? turned = null,
-            (VPart Tile, int Column)? onPad = null)
+            (VPart Tile, string Socket, int Column)? onPad = null)
         {
             VPart core;
             VPart[,] bay;
-            if (onPad is var (tile, col))
+            if (onPad is var (tile, socket, col))
             {
                 bay = new VPart[across, along];
-                bay[col, 0] = Paint(Onto(tile, "+z", "Bay Block", "-z"), paint);
+                bay[col, 0] = Paint(Onto(tile, socket, "Bay Block", "-z"), paint);
                 for (var i = col - 1; i >= 0; i--)
                     bay[i, 0] = Paint(Onto(bay[i + 1, 0], "+x", "Bay Block", "-x"), paint); // (South: a block's own +x is west)
                 for (var i = col + 1; i < across; i++)
@@ -216,6 +224,7 @@ public sealed partial class ZeroDayWorks
                     skins[i, 0] = Paint(Onto(run[i, 1], "+z low", "Pad Tile", "-z"), Stock);
                 Chain(skins, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: false);
                 Stack(skins[0, 0], "top", 1);
+                _skinPads[line] = skins;
                 return;
             }
             _lineCutOuts[line] = CutterStage(run, bedAcross, cutAlong, paint);

@@ -759,7 +759,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Press Core gains implicit conveyor ports "Bed in" and "Bed out" after its others.
     // 449: the owner's snapshot carries the pull they feel (own flag 16, a world-axes vector): the felt-g readout (UiVitalsPanel.cs);
     //      the input packet ends with a u8 of magnet-boots bits, one per command (InputCmd.MagBoots, GameSandboxMagBoots.cs).
-    // 450: the Heavy and Shipyard Loader Arms (Sean 2026-11-24: big arms that carry the yard's pieces into its bay): two new part
+    // 450: the Heavy, Shipyard and Long Loader Arms (Sean 2026-11-24: big arms that carry the yard's pieces into its bay): three new part
     //      files move part ids.
     public const ushort ProtocolVersion = 450;
 
