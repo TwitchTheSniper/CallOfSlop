@@ -42,6 +42,7 @@ public enum TrainFunction : byte
     Filter, // feed: halves how often breakdowns land on its train (GameSandboxBreakdowns)
     Gimbal, // hot: the bell swings up to its file's "gimbal" degrees under the flight control, so the drive also steers (ConstructBoost.GimbalOf)
     Collar, // hot: each one takes ShipWorks.CollarArmour more off every hit on its bell and its hot zone's pieces (ConstructWorks.TrainArmour)
+    Selector, // supply: two Fuel in ports; its train is fed while either reaches a working tank, by the first (Select in on: the second) and else the other; Source out says which (SelectorSource)
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -261,7 +262,7 @@ public static class ConstructWorks
         _ => "works",
     };
 
-    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter", "gimbal", "collar"];
+    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter", "gimbal", "collar", "selector"];
 
     /// <summary>An engine train piece's zone, counted back from the bell (Sean 2026-11-24): 0 hot, 1 feed, 2 supply; -1 any zone (a Spacer) or none.</summary>
     public static int ZoneOf(ConstructPartDef d) => d.WorksKind switch
@@ -269,7 +270,7 @@ public static class ConstructWorks
         WorksKind.Core => 0,
         WorksKind.Injector => 1,
         WorksKind.Pump or WorksKind.Exchanger or WorksKind.Turbopump => 2,
-        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket or TrainFunction.Reheat or TrainFunction.Gimbal or TrainFunction.Collar => 0, TrainFunction.Filter => 1, TrainFunction.Buffer or TrainFunction.Igniter or TrainFunction.Throttle or TrainFunction.Mixture => 1, TrainFunction.Sensor => 2, _ => -1 },
+        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket or TrainFunction.Reheat or TrainFunction.Gimbal or TrainFunction.Collar => 0, TrainFunction.Filter => 1, TrainFunction.Buffer or TrainFunction.Igniter or TrainFunction.Throttle or TrainFunction.Mixture => 1, TrainFunction.Sensor or TrainFunction.Selector => 2, _ => -1 },
         _ => -1,
     };
 
@@ -355,6 +356,11 @@ public static class ConstructWorks
                 d.TrainFn = at >= 1 ? (TrainFunction)at : throw new ConstructPartException($"{file}: \"worksPiece.function\" is one of {string.Join(", ", TrainFunctionNames.Skip(1))}, not \"{fn}\"");
                 if (d.TrainFn == TrainFunction.Sensor)
                     d.DataOut = SensorPorts;
+                if (d.TrainFn == TrainFunction.Selector)
+                {
+                    d.DataIn = SelectorIn;
+                    d.DataOut = SelectorOut;
+                }
                 if (d.TrainFn == TrainFunction.Gimbal)
                 {
                     // How far it swings its bell and how fast (its Throw, Expo and Reverse settings follow from ThrustGimbal, as a gimballed nozzle's).
@@ -589,6 +595,7 @@ public static class ConstructWorks
             : $"the {sd.Name} and what is behind it are out of the engine: a train holds at most {ShipWorks.Current.TrainPieces} pieces";
     }
 
+    public static readonly string[] SelectorIn = ["select"], SelectorOut = ["source"]; // (a Fuel Selector's)
     public static readonly string[] SensorPorts = ["level", "buffer", "health", "heat"]; // (a Sensor Ring's data outputs, by index: add at the end)
 
     /// <summary>
@@ -709,8 +716,43 @@ public static class ConstructWorks
     private static bool InjectorFed(Construct c, short asm)
     {
         for (var k = 0; k < c.WorksPieceCount; k++)
-            if (c.WorksPieceAsm[k] == asm && c.Parts[c.WorksPieces[k]] is { Working: true } p && p.D.WorksKind == WorksKind.Injector && ConstructRoutes.PipeFeeds(c, c.WorksPieces[k]))
+            if (c.WorksPieceAsm[k] == asm && c.Parts[c.WorksPieces[k]] is { Working: true } p && (p.D.WorksKind == WorksKind.Injector || p.D.TrainFn == TrainFunction.Selector) && ConstructRoutes.PipeFeeds(c, c.WorksPieces[k]))
+                return true; // (or a working Fuel Selector in its train: a pipe into either of its Fuel ins)
+        return false;
+    }
+
+    /// <summary>
+    /// A Fuel Selector's Source out: 1 or 2, the Fuel in its train is fed through (the first, or with Select in on the second, while it
+    /// reaches a working tank; else the other), 0 neither. A rebuild with a cut pipe or a shot tank moves it over.
+    /// </summary>
+    public static float SelectorSource(Construct c, int part)
+    {
+        ref readonly var p = ref c.Parts[part];
+        if (!p.Working)
+            return 0;
+        int a = -1, b = -1; // (its two Fuel ins' port bytes: the first is 255, a part's first port)
+        foreach (var np in p.D.NamedPorts)
+            if (np.Type == RouteType.Pipe && np.In && np.Fluid == "fuel")
+            {
+                if (a < 0)
+                    a = np.Byte;
+                else if (b < 0)
+                    b = np.Byte;
+            }
+        bool fa = FeedsPort(c, part, a), fb = FeedsPort(c, part, b);
+        return p.InCount > 0 && p.In >= 0.5f ? fb ? 2 : fa ? 1 : 0 : fa ? 1 : fb ? 2 : 0;
+    }
+
+    private static bool FeedsPort(Construct c, int part, int port)
+    {
+        if (port < 0)
+            return false;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Pipe && r.To == part && r.ToPort == port && r.FedEnd && r.Source < c.PartCount && c.Parts[r.Source].D.Role is PartRole.FuelTank or PartRole.FluidTank && c.Parts[r.Source].Working)
                 return true;
+        }
         return false;
     }
 
@@ -1149,6 +1191,7 @@ public static class ConstructWorks
         TrainFunction.Filter => "half the breakdowns",
         TrainFunction.Gimbal => $"swings the bell {d.ThrustGimbal * 180f / MathF.PI:0} degrees",
         TrainFunction.Collar => $"-{ShipWorks.Current.CollarArmour:0} a hit on the hot zone",
+        TrainFunction.Selector => "two fuel lines",
         TrainFunction.Spacer => "spacer",
         _ => "",
     };

@@ -1226,6 +1226,19 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "fuelselector",
+     "like": "Fuel Selector XS",
+     "label": "fuel selector",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9167,6 +9180,12 @@
    "die": "housing",
    "pattern": "armourcollar",
    "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Fuel Selector XS",
+   "die": "housing",
+   "pattern": "fuelselector",
+   "blank": "hollow 70x70x40 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",
