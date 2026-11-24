@@ -21,10 +21,9 @@ public sealed class PanelFormerParts : IPartGenerator
     private const string Green = "#5d7f3c"; // the Panel Formers' body colour
     private const string Trim = "#46602d";
     private const double E = 0.997; // a cell's body stops 3 mm short of its 2 m, so two cells' faces never meet on one plane
-    private const double H = 3.197; // a cell's top (3.2 m: the bed under, the dies and the crosshead over)
+    private const double H = 3.197; // a cell's top (3.2 m: the bed under, the dies over, the corner posts' caps)
     private const double WorkY = OutTableParts.WorkY; // the rails' tops and the in rollers' nip: the sheet's height on the bed
     private const double DeckY = 0.86; // the lower bed's deck, where the lower die stands
-    private const double Head = 2.96; // the crosshead's underside
         private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
     private const double OffX = -0.5, OffY = 2.8; // the Offcut port, on the bin's back wall
 
@@ -160,8 +159,8 @@ public sealed class PanelFormerParts : IPartGenerator
     }
 
     /// <summary>
-    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed with a steel deck, where the lower die stands, a crosshead
-    /// the upper die hangs from, and its own power. Welds to the Core, to another block's four sides,
+    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed with a steel deck, where the lower die stands, corner
+    /// posts the upper die rides between (nothing over it: the upper die is the machine's top, Sean 2026-11-24), and its own power. Welds to the Core, to another block's four sides,
     /// or to an Out Table.
     /// </summary>
     private static Part BedBlock()
@@ -170,14 +169,15 @@ public sealed class PanelFormerParts : IPartGenerator
             "Weld it on a Panel Former Core's front, or beside another Bed Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core, an Out Table on its far end; a block outside it idles.",
             group: "Production", color: Green);
         const double d = 0.07, rib = 0.13; // (the lower body's sides are sunk between ribs: its frame at the edges and a cross rib at the middle)
-        // Solid: the lower bed (a sunk body, framed by ribs) and the crosshead over it. Between them: the posts here, the dies and rails by the renderer.
+        // Solid: the lower bed (a sunk body, framed by ribs), and a lid over the upper die's back that isn't drawn (the cell's 3.2 m, which the
+        // block system measures, and something to stand on over the die). Over the deck: the posts here, the dies and rails by the renderer.
         p.Add(Box([-E + d, 0.003, -E + d], [E - d, DeckY, E - d]));
+        p.Add(Box([-E, H - 0.02, -E], [E, H, E], hidden: true));
         foreach (var (a, b) in new[] { (-E, -E + rib), (-0.065, 0.065), (E - rib, E) })
         {
             p.Add(Box([-E, 0.003, a], [E, DeckY, b]));
             p.Add(Box([a, 0.003, -E], [b, DeckY, E]));
         }
-        p.Add(Box([-E, Head, -E], [E, H, E], Trim)!.Update(("paintable", true)));
         // Where a block is welded on, a fill in the body's tone closes the sunk panels, so no slot runs between two blocks.
         foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
@@ -190,15 +190,8 @@ public sealed class PanelFormerParts : IPartGenerator
         foreach (var x in new[] { -0.9, 0.9 })
             foreach (var z in new[] { -0.9, 0.9 })
                 p.Add(L([x - 0.014, DeckY + 0.014, z - 0.014], [x + 0.014, DeckY + 0.026, z + 0.014], MachineLook.Base));
-        // Between the deck and the crosshead the dies and the rails are drawn by the renderer (PanelFormerRender.DrawDies, Sean 2026-11-24):
-        // a lower and an upper die that take on the panel's shape and squeeze the blank, on rails at the work height.
-        // The ram: a cylinder on the crosshead, driving the upper die.
-        // (Under a Mast Block, which stands on the crosshead to deepen the stroke, the cylinder's head is the mast's: not drawn.)
-        p.Add(Seam(L([-0.22, H - 0.004, -0.22], [0.22, H + 0.52, 0.22], MachineLook.Base, shape: Cyl("+y", 16)), "+y"));
-        p.Add(Seam(L([-0.25, H + 0.52, -0.25], [0.25, H + 0.58, 0.25], MachineLook.Steel, "steel", shape: Cyl("+y", 16)), "+y"));
-        foreach (var (x, z) in new[] { (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2) })
-            p.Add(Seam(L([x - 0.018, H + 0.58, z - 0.018], [x + 0.018, H + 0.61, z + 0.018], MachineLook.Base), "+y")); // (its head's bolts)
-        p.Add(L([0.3, H - 0.004, -0.04], [0.85, H + 0.06, 0.04], MachineLook.Steel, "steel")); // (its oil line along the crosshead)
+        // Over the deck the dies and the rails are drawn by the renderer (PanelFormerRender.DrawDies, Sean 2026-11-24): a lower and an upper
+        // die that take on the panel's shape and squeeze the blank, on rails at the work height.
         // The corner posts: drawn only at the bed's outer corners (a post's two faces both free), the upper die's guides.
         foreach (var (sx, xs) in new[] { (1, "+x"), (-1, "-x") })
             foreach (var (sz, zs) in new[] { (1, "+z"), (-1, "-z") })
@@ -207,16 +200,16 @@ public sealed class PanelFormerParts : IPartGenerator
                 double[] Z(double a, double b) => sz > 0 ? [a, b] : [-b, -a];
                 var px = X(E - 0.15, E - 0.004);
                 var pz = Z(E - 0.15, E - 0.004);
-                p.Add(Seam(L([px[0], DeckY + 0.034, pz[0]], [px[1], Head - 0.004, pz[1]], MachineLook.Base), xs, zs));
+                p.Add(Seam(L([px[0], DeckY + 0.034, pz[0]], [px[1], H - 0.004, pz[1]], MachineLook.Base), xs, zs));
                 var gx = X(E - 0.17, E - 0.15);
-                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], Head - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the upper die)
+                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], H - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the upper die)
                 var fx = X(E - 0.2, E - 0.004);
                 var fz = Z(E - 0.2, E - 0.004);
                 p.Add(Seam(L([fx[0], DeckY + 0.032, fz[0]], [fx[1], DeckY + 0.09, fz[1]], MachineLook.Base), xs, zs)); // (its foot plate)
-                p.Add(Seam(L([fx[0], Head - 0.06, fz[0]], [fx[1], Head - 0.002, fz[1]], MachineLook.Base), xs, zs)); // (its head plate)
+                p.Add(Seam(L([fx[0], H - 0.06, fz[0]], [fx[1], H - 0.002, fz[1]], MachineLook.Base), xs, zs)); // (its cap)
             }
         // On each side, drawn while nothing of its machine is welded there: the skirt, the hazard edge along the bed's lip, louvres in the
-        // sunk panels, bolts along the crosshead and a cable tray on it.
+        // sunk panels.
         foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
             int u = 2 - n;
@@ -233,19 +226,15 @@ public sealed class PanelFormerParts : IPartGenerator
             foreach (var (a, b) in new[] { (-E + rib + 0.06, -0.065 - 0.06), (0.065 + 0.06, E - rib - 0.06) })
                 foreach (var y in new[] { 0.36, 0.46, 0.56 })
                     p.Add(Seam(Face(-d + 0.004, -d + 0.03, a, b, y, y + 0.04, MachineLook.Base), side)); // (louvres in the sunk panel)
-            foreach (var t in new[] { -0.75, -0.25, 0.25, 0.75 })
-                p.Add(Seam(Face(-0.004, 0.012, t - 0.02, t + 0.02, Head + 0.1, Head + 0.14, MachineLook.Steel), side));
-            p.Add(Seam(Face(-0.004, 0.014, -E, E, Head + 0.016, Head + 0.04, MachineLook.Out), side)); // (the out side's band along its crosshead)
         }
-        // The oil manifold down its right side (one side of the bed): a pipe with a valve block, a gauge and a hose up to the ram.
+        // The oil manifold down its right side (one side of the bed): a pipe with a valve block, a gauge and a hose up to the dies.
         p.Add(Seam(L([E + 0.01, 0.48, -E + 0.004], [E + 0.09, 0.56, E - 0.004], MachineLook.Steel, "steel", shape: Cyl("+z")), "+x"));
         p.Add(Seam(L([E + 0.004, 0.4, -0.22], [E + 0.14, 0.64, 0.02], MachineLook.Base), "+x"));
         p.Add(Seam(L([E + 0.14, 0.44, -0.18], [E + 0.18, 0.6, -0.02], MachineLook.Accent), "+x")); // (its valve's hand wheel)
         p.Add(Seam(L([E + 0.06, 0.64, 0.08], [E + 0.11, DeckY + 1.3, 0.13], MachineLook.Base), "+x")); // (the hose up)
         p.Add(Seam(L([E + 0.004, 0.68, 0.3], [E + 0.03, 0.84, 0.46], "#e8e6df", shape: Cyl("+x")), "+x")); // (its gauge)
         p.Add(Seam(L([E + 0.03, 0.75, 0.37], [E + 0.044, 0.82, 0.39], MachineLook.Ink), "+x"));
-        // A cable tray along its left side's crosshead (the bed's power from the Core), and a maker's plate under it.
-        p.Add(Seam(L([-E - 0.1, Head + 0.004, -E + 0.004], [-E - 0.004, Head + 0.08, E - 0.004], MachineLook.Base), "-x"));
+        // A maker's plate on its left side.
         p.Add(Seam(L([-E - 0.024, 0.66, 0.3], [-E - 0.004, 0.8, 0.6], MachineLook.In), "-x"));
         p.Add(Seam(L([-E - 0.036, 0.71, 0.33], [-E - 0.022, 0.75, 0.57], MachineLook.Ink), "-x"));
         p.Sock("+x", [1, 0.5, 0], "+x");
@@ -253,7 +242,7 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Sock("+z", [0, 0.5, 1], "+z");
         p.Sock("-z", [0, 0.5, -1], "-z");
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("top", [0, 3.2, 0], "+y"); // (a Mast Block on each of the bed's corners: 2 m more stroke a level, ConstructPanelFormer.PinDepth)
+        p.Sock("top", [0, 3.2, 0], "+y"); // (on the lid: older blueprints stood Mast Blocks there; nothing needs one now)
         p.Stats(5200, 2600, 8, 20);
         p.Set(("machineBlock", Kw(("family", "panel"), ("role", "block"))), ("centreSockets", false), ("collider", "boxes"));
         return p;

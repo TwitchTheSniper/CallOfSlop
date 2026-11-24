@@ -416,20 +416,20 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the pins' travel: 2 m, or 4 m with **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on their crossheads,
-  socket `top`; one level, past the deepest panel HullLoft allows; a Bed Block stacked there is not a mast and idles;
-  `ConstructPanelFormer.PinDepth`; the Zero Day's upper hull pieces need it) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
-  per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
-  over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
-  stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any
+  than the dies form: 4 m of crown and rake, past the deepest panel HullLoft allows (`ConstructPanelFormer.DepthMost`, `PinDepth`;
+  `ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). Nothing stands over the bed (Sean, 2026-11-24): no crosshead, no corner
+  masts, no head; the upper die is the machine's top, between the corner posts, under a solid lid that isn't drawn. One stroke is 4 s set and 8 s press at any
   size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: posts at its corners, an oil manifold
   down one side, a hazard edge round the outside. **Shaped dies** (Sean, 2026-11-24; `PanelFormerRender.DrawDies`, drawn only): small
   rails run along the bed at the work height (the in rollers' and Out Tables' height, `OutTableParts.WorkY`), a metre apart; a lower die
-  stands on the deck under them and an upper die hangs under the crosshead, each one solid steel inside the corner posts. While the
+  stands on the deck under them and an upper die over them, each one solid steel across the bed inside the corner posts. While the
   former works, both take on the head order's panel shape (`ConstructPanelFormer.DieShaping`, `Die`: the key's `PanelLift`, cached per
   name): the lower die rises into it and lifts the blank on its highest point, the upper die comes down (`PressAt`) and squeezes it into
-  the panel, then lifts, and the lower die goes flat, leaving the panel with its lowest point on the rails (`BedLook`). Over the sheet the
-  dies are half-metre cells, a column and a face plate turned to the slope; a key with no shape (a kit's loft, a plain skin) keeps them
+  the panel, then lifts, and the lower die goes flat, leaving the panel with its lowest point on the rails (`BedLook`). The shape covers the
+  whole die, its edges carried out to the die's ends and sides, so seen head-on along the bed each die's end shows the bend it makes
+  (Sean, 2026-11-24): cells a quarter metre across the bed, along it only where the shape changes along (`DieInfo.AlongFlat`), each a
+  column and a face plate turned to the slope; the shape is a height map of the panel as it lies (`HullLoft.PanelAt`, so a fold's arc
+  lands where it is formed), its lift capped at `DieDeepest`; a key with no shape (a kit's loft, a plain skin) keeps them
   flat. The in rollers spin. The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
   profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
