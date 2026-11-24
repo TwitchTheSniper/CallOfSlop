@@ -143,7 +143,19 @@ public static class DesignScene
             // the skin however the hull curves (Karl, 2026-11-24: a flat plane cut a box out of a curved side).
             var f = WindowFrame(d, hw);
             if (f is { } q)
-                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0));
+            {
+                // Only the skin the glass lies on: a band along the rays from just inside its nearest point to just past its
+                // farthest, so a cut never runs on through a nose or a far wall (Karl, 2026-11-24: a window took a nose off).
+                var (lp, _, _, _, _, _) = Lay(d, hw);
+                double lo = double.MaxValue, hi = double.MinValue;
+                for (var k = 0; k + 2 < lp.Length; k += 3)
+                {
+                    var nn = (lp[k] - q.O[0]) * q.N[0] + (lp[k + 1] - q.O[1]) * q.N[1] + (lp[k + 2] - q.O[2]) * q.N[2];
+                    lo = Math.Min(lo, nn); hi = Math.Max(hi, nn);
+                }
+                if (lo <= hi)
+                    cutouts.Add(new Cutout(q.O, q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0, (lo - 0.12, hi + 0.08)));
+            }
         }
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
@@ -248,7 +260,7 @@ public static class DesignScene
     }
 
     /// <summary>An opening's outline: a convex polygon (u along X, v along Z) in the plane through O facing Y.</summary>
-    private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly, double edgeMin = 0.35)
+    private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly, double edgeMin = 0.35, (double Lo, double Hi)? band = null)
     {
         private readonly double _reach = poly.Max(q => Math.Sqrt(q.U * q.U + q.V * q.V));
 
@@ -265,7 +277,9 @@ public static class DesignScene
             var lc = Local(c);
             double mu = (la.U + lc.U) / 2, mv = (la.V + lc.V) / 2, mn = (la.N + lc.N) / 2;
             var half = Math.Sqrt(Math.Pow(la.U - lc.U, 2) + Math.Pow(la.V - lc.V, 2) + Math.Pow(la.N - lc.N, 2)) / 2;
-            return Math.Abs(mn) < 0.8 + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
+            if (band is { } bd)
+                return mn > bd.Lo - half && mn < bd.Hi + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
+                        return Math.Abs(mn) < 0.8 + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
         }
 
         /// <summary>A convex polygon less the opening: the parts outside each of its edges in turn (each convex).</summary>
@@ -285,7 +299,18 @@ public static class DesignScene
             }
             var fl = Math.Sqrt(fx * fx + fy * fy + fz * fz);
             var edgeOn = fl > 1e-9 && Math.Abs((fx * y[0] + fy * y[1] + fz * y[2]) / fl) < edgeMin;
-            if (edgeOn || poly0.All(q => Math.Abs(Local(q).N) > 0.8))
+            if (band is { } bd)
+            {
+                // Outside the band stays whole; only the slice inside it is cut.
+                var below = Clip(poly0, q => bd.Lo - Local(q).N);
+                var above = Clip(poly0, q => Local(q).N - bd.Hi);
+                if (below.Count >= 3) outv.Add(below);
+                if (above.Count >= 3) outv.Add(above);
+                poly0 = Clip(Clip(poly0, q => Local(q).N - bd.Lo), q => bd.Hi - Local(q).N);
+                if (poly0.Count < 3)
+                    return outv;
+            }
+            else if (edgeOn || poly0.All(q => Math.Abs(Local(q).N) > 0.8))
             {
                 outv.Add(poly0);
                 return outv;
