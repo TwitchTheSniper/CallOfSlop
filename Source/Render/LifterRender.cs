@@ -85,8 +85,17 @@ public static class LifterRender
                     continue;
                 }
                 var tipHead = -1;
+                var slide = 0f;
                 if (ld.Kit && ld.Spec is { Valid: true } ks)
+                {
                     grip = HeadSwap(ks, l, grip, out tipHead);
+                    if (ld.SlideHi > ld.SlideLo) // (on a Rail Carriage: the whole arm runs along its z to the hand, ConstructLifters.Slide)
+                    {
+                        slide = ConstructLifters.Slide(ld, grip.X - ld.Base.X, grip.Z - ld.Base.Z);
+                        grip.Z -= slide;
+                        part = Matrix4x4.CreateTranslation(0, 0, slide) * part;
+                    }
+                }
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
                 if (ld.Kit)
                 {
@@ -94,7 +103,7 @@ public static class LifterRender
                     {
                         if (!l.FoldServer) // (a client steps the fold by the server's rule: out while it may work, in when idle without power)
                             l.Fold = l.Why == LiftWhy.NoPower && l.State == LiftState.Idle ? MathF.Max(0, l.Fold - _dt / ArmKit.FoldSeconds) : MathF.Min(1, l.Fold + _dt / ArmKit.FoldSeconds);
-                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold, tipHead);
+                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold, tipHead, slide);
                     }
                     continue;
                 }
@@ -208,7 +217,7 @@ public static class LifterRender
             {
                 if (!sc.DefOf(st).IsBuildStation || sc.Parts[st].Station is not { State: StationState.Building })
                     continue;
-                if (Vector3.Distance(ConstructLifters.HoldPoint(sc, st, shoulder), shoulder) > ld.ReachMax * 2 + 4)
+                if (Vector3.Distance(ConstructLifters.HoldPoint(sc, st, shoulder), shoulder) > (ld.ReachMax + ld.Travel) * 2 + 4)
                     continue;
                 Freeform.PartWorld(c, part, out _, out var lr);
                 var ok = ConstructLifters.HoldPick(sc, st, ld, shoulder, lr, ConstructLifters.SafeLift, ConstructLifters.SafeLift, out var hold); // (the nearest point along the hold's side it reaches)

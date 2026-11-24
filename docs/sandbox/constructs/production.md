@@ -2171,6 +2171,14 @@ A **Head Stand** (catalogue part, one Assembling row) holds three spares on its 
 
 Not yet: a spare on a stand has no collider while it belongs to an arm (as the chain); two spares of one kind are told apart by their order on the body; and a swap between two spares shows the arm's own head on the first spare's slot until it ends.
 
+### Arm kit Knuckle and Rail Carriage (2026-11-24, part 3)
+
+An **Arm Knuckle** (pressed on the Arm die, `arm.knuckle`) goes on the forearm's tip, then a drop Boom, then the Wrist. The forearm runs to the knuckle's middle and the drop hangs plumb from there whatever the arm does (`ArmSpec.Drop`, at most `ArmKit.MaxDrop`), so the hand reaches down into a bay over a wall without losing reach: the two-link solve ends the drop over the hand (`ArmIk.Solve` adds `LifterDef.Drop` to the wrist's lift), `InReach` measures the wrist that much higher, and the arm's `Down` grows by it. The knuckle and drop are hand weight on the chart, and the elbow's limit is held to a tenth of the knuckle's moment over the drop. Drawn up the mast as it stands, plumb once it folds out (`ArmKitRender`).
+
+A **Rail Carriage** (catalogue part, one Assembling row) goes under the Core or its lowest Pedestal, on a Small crane rail (Crane Rail Small 1 m sections end to end) lying along the Core's z. Its run is the rail under its middle (`ArmKit.Carry`, the cranes' `Run`), less half its length at each end (`SlideLo`, `SlideHi`). The arm's shoulder runs along its z with the hand, the same on every peer from the hand alone (`ConstructLifters.Slide`: level with the hand, held to the rail, stepped back when that would put the hand inside its nearest reach), so nothing is sent. Reach checks measure from there; the distance cuts that skip far machines add `LifterDef.Travel`. The Core, its Pedestals, the carriage, its Counterweights and Drive Packs are drawn where it runs (`ArmSpec.Carried`, its wheels roll), left out of the body's batches (`ArmKit.Drawn`); their colliders stay where they were built. The presets **Knuckle Arm** and **Rail Arm** (a Line Arm on 24 m of rail) show both.
+
+Not yet: the Core's screen and its colliders stay where the arm was built while it runs; an idle arm comes back to its rest point, which is where it was built.
+
 ### Roll-out and roll-in (2026-11-23)
 
 Sean: "The oven should allow parts coming in to be rolled directly into it. Also, the construction station should be able to roll out,

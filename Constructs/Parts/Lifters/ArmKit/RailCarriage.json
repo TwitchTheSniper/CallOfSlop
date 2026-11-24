@@ -1,0 +1,252 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rail Carriage",
+  "description": "A wheeled bogie an Arm Core (or its Pedestals) stands on: set it on a Small crane rail (Crane Rail Small 1 m sections laid end to end on the floor) along its length and the whole arm runs along the rail to each job, as far as the rail runs.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 900.0,
+  "health": 1500,
+  "armour": 10,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 6.0,
+  "armPiece": "railCarriage",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        0.12,
+        0.15,
+        1.0
+      ],
+      "color": "#2b2f34",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.8,
+        0.15,
+        -1.0
+      ],
+      "max": [
+        0.8,
+        0.6,
+        1.0
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.808,
+        0.22,
+        -0.9
+      ],
+      "max": [
+        -0.796,
+        0.52,
+        0.9
+      ],
+      "color": "#e8b81c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.115,
+        0.003,
+        -0.9
+      ],
+      "max": [
+        -0.065,
+        0.403,
+        -0.5
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel",
+      "roll": true
+    },
+    {
+      "min": [
+        -0.115,
+        0.003,
+        0.5
+      ],
+      "max": [
+        -0.065,
+        0.403,
+        0.9
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel",
+      "roll": true
+    },
+    {
+      "min": [
+        0.796,
+        0.22,
+        -0.9
+      ],
+      "max": [
+        0.808,
+        0.52,
+        0.9
+      ],
+      "color": "#e8b81c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.065,
+        0.003,
+        -0.9
+      ],
+      "max": [
+        0.115,
+        0.403,
+        -0.5
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel",
+      "roll": true
+    },
+    {
+      "min": [
+        0.065,
+        0.003,
+        0.5
+      ],
+      "max": [
+        0.115,
+        0.403,
+        0.9
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel",
+      "roll": true
+    },
+    {
+      "min": [
+        -0.7,
+        0.25,
+        -1.008
+      ],
+      "max": [
+        0.7,
+        0.4,
+        -0.996
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.3,
+        0.05,
+        -1.1
+      ],
+      "max": [
+        0.3,
+        0.14,
+        -0.996
+      ],
+      "color": "#4c5157",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.7,
+        0.25,
+        0.996
+      ],
+      "max": [
+        0.7,
+        0.4,
+        1.008
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.3,
+        0.05,
+        0.996
+      ],
+      "max": [
+        0.3,
+        0.14,
+        1.1
+      ],
+      "color": "#4c5157",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.68,
+        0.596,
+        0.88
+      ],
+      "max": [
+        0.76,
+        0.66,
+        0.96
+      ],
+      "color": "#ff9a1a",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.6,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

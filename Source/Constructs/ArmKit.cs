@@ -19,6 +19,8 @@ public enum ArmPieceKind : byte
     Fork, // ...two tines under a piece: heavy, compact
     FitterHead, // ...a gripper, torch and cutter: what a Module Fitter carries
     HeadStand, // a rack of spare heads in an arm's reach: it swaps to the head the next piece needs
+    Knuckle, // (part 3) a third bend after the forearm: the last link hangs plumb (a drop Boom after it), so the hand reaches down into a bay over a wall
+    RailCarriage, // (part 3) under the Core (or its Pedestals): the arm rides a floor crane rail along its z
 }
 
 /// <summary>A head an arm can wear: its own on the Wrist (slot -1) or a spare on a Head Stand in reach.</summary>
@@ -54,6 +56,13 @@ public sealed class ArmSpec
     public string ChainWeak = "";
     public Construct? Body; // (the body it was worked out for, and the Core: a carry's head swap sets the Core's setting)
     public int Core = -1;
+    public int Knuckle = -1, DropBoom = -1; // (part 3) the optional knuckle and the drop Boom hanging from it
+    public float KnuckleA, DropLen, Drop; // ...their sizes; Drop: the knuckle's middle to the drop Boom's end (m)
+    public int Carriage = -1; // (part 3) a Rail Carriage under it: the arm rides its rail
+    public float SlideLo, SlideHi; // ...how far the carriage runs along the Core's z from where it was built (0, 0: not on a rail)
+    public string RailWhy = ""; // ...why it can't run (no rail under it), for its look line
+    public int[] Carried = []; // ...the parts that ride with it (Core, Pedestals, Carriage, Counterweights, Drive Packs), drawn by ArmKitRender
+    public Matrix4x4[] CarriedM = []; // ...each one's frame in the Core's frame
 }
 
 public static class ArmKit
@@ -98,12 +107,27 @@ public static class ArmKit
         return i < c.ArmPosed.Length && c.ArmPosed[i];
     }
 
+    /// <summary>
+    /// Is part <paramref name="i"/> drawn by ArmKitRender, not the body's batches: a chain piece of a whole arm, a spare head on its stand,
+    /// or a part that rides a Rail Carriage (its collider stays where it was built).
+    /// </summary>
+    public static bool Drawn(Construct c, int i)
+    {
+        var d = c.Parts[i].D;
+        if (d.ArmPiece == ArmPieceKind.None && d.Lifter is not { Kit: true })
+            return false;
+        Refresh(c);
+        return i < c.ArmPosed.Length && (c.ArmPosed[i] || c.ArmCarried[i]);
+    }
+
     /// <summary>Has a piece of a whole arm's chain broken since its spec was made (a body's rebuild after damage is put off)?</summary>
     public static bool ChainBroken(Construct c, ArmSpec s)
     {
         foreach (var i in (ReadOnlySpan<int>)[s.Shoulder, s.UpperBoom, s.Elbow, s.ForeBoom, s.Wrist, s.Head])
             if (i < 0 || i >= c.PartCount || c.Parts[i].Broken)
                 return true;
+        if (s.Knuckle >= 0 && (s.Knuckle >= c.PartCount || c.Parts[s.Knuckle].Broken || s.DropBoom >= c.PartCount || c.Parts[s.DropBoom].Broken))
+            return true;
         return false;
     }
 
@@ -115,13 +139,19 @@ public static class ArmKit
         c.ArmPartCount = c.PartCount;
         c.ArmN = 0;
         if (c.ArmPosed.Length > 0)
+        {
             Array.Clear(c.ArmPosed);
+            Array.Clear(c.ArmCarried);
+        }
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.Parts[i].D.Lifter is not { Kit: true } ld)
                 continue;
             if (c.ArmPosed.Length < c.PartCount)
+            {
                 c.ArmPosed = new bool[c.PartCount + 16];
+                c.ArmCarried = new bool[c.PartCount + 16];
+            }
             var spec = Build(c, i);
             var d = ld.CraneCopy();
             d.Of = ld;
@@ -136,6 +166,11 @@ public static class ArmKit
                     c.ArmPosed[p] = true;
                 foreach (var h in spec.Heads)
                     c.ArmPosed[h.Part] = true; // (the spares on stands too: drawn by ArmKitRender, as they change places)
+                if (spec.Knuckle >= 0)
+                    c.ArmPosed[spec.Knuckle] = c.ArmPosed[spec.DropBoom] = true;
+                if (spec.SlideHi > spec.SlideLo)
+                    foreach (var p in spec.Carried)
+                        c.ArmCarried[p] = true; // (drawn where its carriage is; its collider stays where it was built)
             }
             if (c.ArmDefs.Length <= c.ArmN)
                 Array.Resize(ref c.ArmDefs, c.ArmN + 4);
@@ -207,6 +242,8 @@ public static class ArmKit
             below = p;
         }
         CountPacks(c, core, s);
+        if (On(c, below, Sock(c.Parts[below].D, "bottom"), out var tc) is var car and >= 0 && c.Parts[car].D.ArmPiece == ArmPieceKind.RailCarriage && !c.Parts[car].Broken && Sock(c.Parts[car].D, "top") == tc)
+            s.Carriage = car;
         var w = Next(c, core, "weight", ArmPieceKind.Counterweight);
         while (w >= 0)
         {
@@ -230,9 +267,22 @@ public static class ArmKit
         s.ForeBoom = Next(c, s.Elbow, "tip", ArmPieceKind.Boom);
         if (s.ForeBoom < 0)
             return Fail(s, "fit an Arm Boom on the elbow Joint: the forearm");
-        s.Wrist = Next(c, s.ForeBoom, "tip", ArmPieceKind.Wrist);
-        if (s.Wrist < 0)
-            return Fail(s, "fit an Arm Wrist on the forearm");
+        s.Knuckle = Next(c, s.ForeBoom, "tip", ArmPieceKind.Knuckle);
+        if (s.Knuckle >= 0)
+        {
+            s.DropBoom = Next(c, s.Knuckle, "tip", ArmPieceKind.Boom);
+            if (s.DropBoom < 0)
+                return Fail(s, "fit an Arm Boom on the Knuckle: the drop it hangs");
+            s.Wrist = Next(c, s.DropBoom, "tip", ArmPieceKind.Wrist);
+            if (s.Wrist < 0)
+                return Fail(s, "fit an Arm Wrist on the Knuckle's drop Boom");
+        }
+        else
+        {
+            s.Wrist = Next(c, s.ForeBoom, "tip", ArmPieceKind.Wrist);
+            if (s.Wrist < 0)
+                return Fail(s, "fit an Arm Wrist on the forearm (or an Arm Knuckle, then a drop Boom)");
+        }
         s.Head = NextHead(c, s.Wrist);
         if (s.Head < 0)
             return Fail(s, "fit a head on the Wrist: a Pad Clamp, Spreader, Vacuum Head, Magnet Head, Fork or Fitter Head");
@@ -245,16 +295,27 @@ public static class ArmKit
         s.HeadLen = Along(H);
         s.Upper = s.JointA * 0.5f + s.UpperLen + s.ElbowA * 0.5f;
         s.Fore = s.ElbowA * 0.5f + s.ForeLen;
+        if (s.Knuckle >= 0)
+        {
+            s.KnuckleA = Along(c.Parts[s.Knuckle].D);
+            s.DropLen = Along(c.Parts[s.DropBoom].D);
+            s.Fore += s.KnuckleA * 0.5f; // (the forearm runs to the knuckle's middle; the drop hangs plumb from there)
+            s.Drop = s.KnuckleA * 0.5f + s.DropLen;
+            if (s.Drop > MaxDrop)
+                return Fail(s, $"its drop Boom is too long: a Knuckle hangs at most {MaxDrop:0} m");
+        }
         if (s.Upper < 0.6f || s.Fore < 0.6f || s.Upper > s.Fore * 3 || s.Fore > s.Upper * 3)
             return Fail(s, "its upper arm and forearm are too unlike to bend: keep the Booms within three times each other's length");
         s.Reach = (s.Upper + s.Fore) * LifterDef.Straight * 0.95f;
         if (s.Reach > MaxReach)
             return Fail(s, $"too long: an arm reaches at most {MaxReach:0} m");
         // ---- The load chart: P(r) = min((T_sh - M_arm) / (g r), (T_el - M_fore) / (g (r - x_el)), (T_bear - M_arm) / (g r), P_head).
-        float mU = B1.Mass, mE = J2.Mass, mF = B2.Mass, mH = Wd.Mass + H.Mass;
+        float mU = B1.Mass, mE = J2.Mass, mF = B2.Mass, mH = Wd.Mass + H.Mass + (s.Knuckle >= 0 ? c.Parts[s.Knuckle].D.Mass + c.Parts[s.DropBoom].D.Mass : 0); // (a knuckle and its drop hang at the forearm's end: hand weight)
         s.ArmMass = J1.Mass + mU + mE + mF + mH;
         float tSh = MathF.Min(JointRating(Across(J1)), BoomMoment(Across(B1)));
         float tEl = MathF.Min(JointRating(Across(J2)), MathF.Min(BoomMoment(Across(B2)), JointRating(Across(Wd))));
+        if (s.Knuckle >= 0) // (the knuckle holds the drop plumb against the hand's swing: a tenth of its load's moment over the drop)
+            tEl = MathF.Min(tEl, JointRating(Across(c.Parts[s.Knuckle].D)) * 10f / MathF.Max(1f, s.Drop));
         float tBear = BearingMoment + s.WeightMass * G * WeightLever;
         float pHead = float.MaxValue; // (the chain alone; each head's own limit is set against it below)
         float R = s.Upper + s.Fore;
@@ -277,6 +338,7 @@ public static class ArmKit
         Array.Copy(s.ChartP, s.ChainP, 4);
         s.Body = c;
         s.Core = core;
+        Carry(c, core, below, s);
         Heads(c, core, s);
         Mount(s, ConstructConfig.Get(c.Parts[core], c.Parts[core].D, CfgKey.ArmHead, 0));
         if (s.ChainP[3] < 1)
@@ -288,6 +350,74 @@ public static class ArmKit
         s.Watts = kw * 1000f;
         s.Valid = true;
         return s;
+    }
+
+    public const float MaxDrop = 12f, CarriageHalf = 1f, CarriageH = 0.6f; // (part 3) a Knuckle's longest drop; a Rail Carriage's half length along its rail
+
+    /// <summary>
+    /// The parts that ride a Rail Carriage (the Core, its Pedestals, the Carriage, its Counterweights and Drive Packs) with each one's frame
+    /// in the Core's, and how far along the Core's z the rail under it lets it run: the rail sections of any crane class lying along that z
+    /// with their top line under the carriage's middle, end to end (ConstructLifters.Run). Rebuild only.
+    /// </summary>
+    private static void Carry(Construct c, int core, int bottom, ArmSpec s)
+    {
+        if (s.Carriage < 0)
+            return;
+        var list = new List<int> { core, s.Carriage };
+        for (var b = core; b != bottom;)
+        {
+            b = On(c, b, Sock(c.Parts[b].D, "bottom"), out _);
+            if (b < 0 || b == s.Carriage)
+                break;
+            list.Add(b);
+        }
+        foreach (var hold in list.ToArray())
+            foreach (var name in new[] { "+z", "-z" })
+                if (Next(c, hold, name, ArmPieceKind.DrivePack) is var pk and >= 0)
+                    list.Add(pk);
+        for (var w = Next(c, core, "weight", ArmPieceKind.Counterweight); w >= 0; w = Next(c, w, "back", ArmPieceKind.Counterweight))
+            list.Add(w);
+        s.Carried = list.ToArray();
+        s.CarriedM = new Matrix4x4[s.Carried.Length];
+        var inv = Quaternion.Conjugate(Rot24.Quat(c.Parts[core].Rot));
+        for (var k = 0; k < s.Carried.Length; k++)
+        {
+            var i = s.Carried[k];
+            s.CarriedM[k] = Matrix4x4.CreateFromQuaternion(inv * Rot24.Quat(c.Parts[i].Rot)) * Matrix4x4.CreateTranslation(InCore(c, core, i, Vector3.Zero));
+        }
+        // Its rail: sections along the Core's z whose top line runs under the carriage's origin (its bottom face's middle).
+        var at = InCore(c, core, s.Carriage, Vector3.Zero);
+        const int Max = ConstructLifters.MaxRailParts;
+        Span<float> x = stackalloc float[Max], y = stackalloc float[Max], z0 = stackalloc float[Max], z1 = stackalloc float[Max];
+        var m = 0;
+        var cq = Rot24.Quat(c.Parts[core].Rot);
+        var cos = MathF.Cos(ConstructLifters.RailDeg * MathF.PI / 180f);
+        for (var i = 0; i < c.PartCount && m < Max; i++)
+        {
+            var d = c.Parts[i].D;
+            if (!d.CraneRail || d.HallRail || c.Parts[i].Broken)
+                continue;
+            var q = Quaternion.Conjugate(cq) * Rot24.Quat(c.Parts[i].Rot);
+            if (MathF.Abs(Vector3.Transform(Vector3.UnitZ, q).Z) < cos)
+                continue;
+            var mid = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, 0);
+            var a = InCore(c, core, i, mid with { Z = d.BoundsMin.Z }) - at;
+            var b2 = InCore(c, core, i, mid with { Z = d.BoundsMax.Z }) - at;
+            (x[m], y[m], z0[m], z1[m]) = ((a.X + b2.X) * 0.5f, (a.Y + b2.Y) * 0.5f, MathF.Min(a.Z, b2.Z), MathF.Max(a.Z, b2.Z));
+            m++;
+        }
+        if (!ConstructLifters.RunOf(x[..m], y[..m], z0[..m], z1[..m], 0, 0, ConstructLifters.FarRail, 0, out var lo, out var hi))
+        {
+            s.RailWhy = "its Rail Carriage stands on no crane rail along its length";
+            return;
+        }
+        s.SlideLo = MathF.Max(lo + CarriageHalf, -ConstructLifters.MaxRun);
+        s.SlideHi = MathF.Min(hi - CarriageHalf, ConstructLifters.MaxRun);
+        if (s.SlideHi - s.SlideLo < 0.5f)
+        {
+            (s.SlideLo, s.SlideHi) = (0, 0);
+            s.RailWhy = "its rail is too short to run on: lay more sections end to end";
+        }
     }
 
     private static void CountPacks(Construct c, int part, ArmSpec s)
@@ -320,7 +450,9 @@ public static class ArmKit
         d.ReachMax = s.Reach;
         d.ReachMin = MathF.Min(s.Reach - 0.5f, MathF.Abs(s.Upper - s.Fore) + LifterDef.Fold + 0.3f);
         d.Up = (s.Upper + s.Fore) * 0.7f;
-        d.Down = d.Base.Y + s.Pedestals * 2f + 0.3f;
+        d.Down = d.Base.Y + s.Pedestals * 2f + 0.3f + s.Drop + (s.Carriage >= 0 ? CarriageH : 0);
+        d.Drop = s.Drop;
+        (d.SlideLo, d.SlideHi) = (s.SlideLo, s.SlideHi);
         d.Payload = s.Payload;
         var hw = s.HeadLen; // (the clamp's width across is its own: read from the part when drawn; here its pads' spread by its length)
         d.PieceAcross = Math.Clamp(s.Reach * 0.25f, 0.5f, 8f);
@@ -540,6 +672,10 @@ public static class ArmKit
             return $" - not an arm yet: {s.Why}";
         static string Kg(float p) => p >= 1000 ? $"{p / 1000f:0.#} t" : $"{p:0} kg";
         var heads = s.Heads.Length > 1 ? $"; head {KindName(s.Heads[s.Mounted].Kind)} ({s.Mounted + 1} of {s.Heads.Length})" : "";
+        if (s.Knuckle >= 0)
+            heads += $"; knuckle drop {s.Drop:0.#} m";
+        if (s.Carriage >= 0)
+            heads += s.SlideHi > s.SlideLo ? $"; runs {s.SlideHi - s.SlideLo:0.#} m of rail" : $"; {s.RailWhy}";
         return $"{heads} - load chart {Kg(s.ChartP[0])} at {s.ChartR[0]:0.#} m, {Kg(s.ChartP[2])} at {s.ChartR[2]:0.#} m, {Kg(s.ChartP[3])} at {s.ChartR[3]:0.#} m (set by its {s.Weak}); {s.Speed:0.#} m/s, {s.Watts / 1000f:0.#} kW";
     }
 }
@@ -550,7 +686,7 @@ public sealed partial class Construct
     internal int ArmStamp = -1, ArmPartCount = -1;
     internal (ushort Part, LifterDef Def)[] ArmDefs = [];
     internal int ArmN;
-    internal bool[] ArmPosed = [];
+    internal bool[] ArmPosed = [], ArmCarried = [];
 }
 
 /// <summary><c>--arm-kit [NAME,...]</c>: each named blueprint (default: the four presets) built headless, and its Arm Cores' specs: the chain, the load chart, speed and power, or what it lacks.</summary>
@@ -559,7 +695,7 @@ public static class ArmKitCheck
     public static int Cli(string[] args)
     {
         var at = Array.FindIndex(args, a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase));
-        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Heavy Arm", "Yard Arm"];
+        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm"];
         var bad = 0;
         foreach (var name in names)
         {
@@ -598,6 +734,8 @@ public static class ArmKitCheck
                     posed += ArmKit.Posed(c, k) ? 1 : 0;
                 Console.WriteLine($"[arm] {name}: {c.PartCount} parts, {posed} posed; upper {s.Upper:0.00} m, fore {s.Fore:0.00} m, reach {ld.ReachMin:0.0} to {ld.ReachMax:0.0} m, up {ld.Up:0.0}, down {ld.Down:0.0}; {s.Pedestals} pedestals, {s.Weights} weights ({s.WeightMass:0} kg), {s.Packs} packs; arm {s.ArmMass:0} kg");
                 Console.WriteLine($"[arm]   chart: {string.Join(", ", Enumerable.Range(0, 4).Select(k => $"{s.ChartP[k]:0} kg at {s.ChartR[k]:0.0} m"))} (full reach set by its {s.Weak}); speed {s.Speed:0.00} m/s, {s.Watts / 1000:0.0} kW, handle {ld.Handle:0.00} s, piece {ld.PieceAcross:0.0} x {ld.PieceLong:0.0} m");
+                if (s.Knuckle >= 0 || s.Carriage >= 0)
+                    Console.WriteLine($"[arm]   knuckle drop {s.Drop:0.00} m (down {ld.Down:0.0} m); carriage {(s.Carriage >= 0 ? (s.SlideHi > s.SlideLo ? $"runs {s.SlideLo:0.0} to {s.SlideHi:0.0} m along its rail, {s.Carried.Length} parts ride" : s.RailWhy) : "none")}");
                 if (s.Heads.Length > 0)
                 {
                     var takes = new int[s.Heads.Length];

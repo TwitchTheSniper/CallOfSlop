@@ -285,7 +285,7 @@ public static partial class ConstructLifters
         for (var bi = 0; bi < bodies.Count && n < into.Length; bi++)
         {
             var b = bodies[bi];
-            if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Up + ld.Down + b.Radius)
+            if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Travel + ld.Up + ld.Down + b.Radius)
                 continue;
             PointsOn(b, b == c ? part : -1, ld, shoulder, lr, into, ref n);
         }

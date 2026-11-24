@@ -11,7 +11,7 @@ public static class ArmKitRender
 {
     private static readonly Vector3 Ram = new(0.62f, 0.64f, 0.66f), RamBody = new(0.18f, 0.19f, 0.21f), Hose = new(0.08f, 0.08f, 0.09f);
 
-    public static void Draw(Renderer gfx, Construct c, LifterDef ld, ArmSpec s, Matrix4x4 part, float yaw, Vector3 elbow, Vector3 wrist, float fold, int tipHead = -1)
+    public static void Draw(Renderer gfx, Construct c, LifterDef ld, ArmSpec s, Matrix4x4 part, float yaw, Vector3 elbow, Vector3 wrist, float fold, int tipHead = -1, float slide = 0)
     {
         var t = fold * fold * (3 - 2 * fold); // (eased: it starts and stops gently)
         var heading = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
@@ -24,6 +24,14 @@ public static class ArmKitRender
         Vector3 du = Dir(au), df = Dir(af), dw = Dir(aw);
         var e = sh + du * s.Upper;
         var tip = e + df * s.Fore;
+        if (s.Knuckle >= 0) // (a Knuckle at the forearm's end, its drop Boom hanging plumb from it out; up the mast as it stands)
+        {
+            var ad = Up + (-Up - Up) * t;
+            var dd = Dir(ad);
+            Piece(gfx, c, s.Knuckle, tip - dd * (s.KnuckleA * 0.5f), dd, side, 1, part);
+            Piece(gfx, c, s.DropBoom, tip + dd * (s.KnuckleA * 0.5f), dd, side, 1, part);
+            tip += dd * s.Drop;
+        }
         var hand = s.WristLen + s.HeadLen;
         var k = hand > 0.45f ? 1 + (0.45f / hand - 1) * t : 1; // (out, the wrist and clamp keep to the hand's drop over the gripper bar)
         Piece(gfx, c, s.Shoulder, sh - du * (s.JointA * 0.5f), du, side, 1, part);
@@ -33,12 +41,17 @@ public static class ArmKitRender
         Piece(gfx, c, s.Wrist, tip, dw, side, k, part);
         var onTip = tipHead >= 0 && tipHead < s.Heads.Length ? s.Heads[tipHead].Part : s.Head;
         Piece(gfx, c, onTip, tip + dw * (s.WristLen * k), dw, side, k, part);
-        // The spares on their stands: a slot whose head is on the Wrist holds the arm's own head instead.
+        // The spares on their stands (where they were built, not riding the carriage): a slot whose head is on the Wrist holds the arm's own head instead.
+        var still = slide != 0 ? Matrix4x4.CreateTranslation(0, 0, -slide) * part : part;
         for (var h = 1; h < s.Heads.Length; h++)
         {
             ref readonly var hd = ref s.Heads[h];
-            Piece(gfx, c, h == tipHead ? s.Heads[0].Part : hd.Part, hd.Slot, hd.SlotUp, hd.SlotSide, 1, part);
+            Piece(gfx, c, h == tipHead ? s.Heads[0].Part : hd.Part, hd.Slot, hd.SlotUp, hd.SlotSide, 1, still);
         }
+        // On a Rail Carriage: the Core, its Pedestals, the Carriage, its Counterweights and Drive Packs, all run along with the arm.
+        if (ld.SlideHi > ld.SlideLo)
+            for (var q = 0; q < s.Carried.Length; q++)
+                Whole(gfx, c, s.Carried[q], s.CarriedM[q] * part, q == 1 ? slide : float.NaN);
         // The rams: the shoulder's from a lug on the Core's top to a third of the way along the upper boom, the elbow's along the upper
         // boom's back to the forearm's root; each a dark barrel and a bright rod, the hose beside it.
         var off = Vector3.Cross(side, du) * (s.JointA * 0.55f);
@@ -67,6 +80,28 @@ public static class ArmKitRender
             ref readonly var box = ref d.Boxes[b];
             if (!box.Hidden)
                 gfx.Draw(box.Model(0, box.Center) * m, p.Paint != 0 && box.Paintable ? paint : box.Color, shape: box.Shape);
+        }
+    }
+
+    /// <summary>A part drawn whole in its frame <paramref name="m"/>; a Rail Carriage's wheels (its "roll" boxes) turn by how far it ran.</summary>
+    private static void Whole(Renderer gfx, Construct c, int i, Matrix4x4 m, float ran)
+    {
+        if (i < 0 || i >= c.PartCount)
+            return;
+        ref var p = ref c.Parts[i];
+        if (p.Broken)
+            return;
+        var d = p.D;
+        var paint = p.Paint != 0 ? ConstructPaint.ToVector(p.Paint) : Vector3.Zero;
+        for (var b = 0; b < d.Boxes.Length; b++)
+        {
+            ref readonly var box = ref d.Boxes[b];
+            if (box.Hidden)
+                continue;
+            var bm = !float.IsNaN(ran) && box.Roll // (its wheels roll about their axle, x, by how far it ran)
+                ? box.Model(0, Vector3.Zero) * Matrix4x4.CreateRotationX(ran / MathF.Max(0.05f, box.Half.Y)) * Matrix4x4.CreateTranslation(box.Center)
+                : box.Model(0, box.Center);
+            gfx.Draw(bm * m, p.Paint != 0 && box.Paintable ? paint : box.Color, shape: box.Shape);
         }
     }
 
