@@ -24,6 +24,7 @@ public sealed partial class Ui
     /// <summary>The gravity block's height under the rows (before the UI scale).</summary>
     private const float VpGravityH = 34;
     private long _vpShipKey = -1;
+    private float _vpTop = float.MaxValue; // (the plate's top as last drawn, MaxValue when not: the HUD chat sits above it, UiChat.cs)
     private string _vpShipTime = "";
 
     private static string[] MakeVpCount(string unit, int most)
@@ -48,6 +49,7 @@ public sealed partial class Ui
 
     private void DrawVitalsPanel(Game game, float2 pos, float2 size)
     {
+        _vpTop = float.MaxValue;
         if (PauseOpen || MenuOpen || CommandOpen || !game.SandboxOn || game.Local is not { Alive: true, InShell: false } me)
             return;
         var dl = ImGui.GetForegroundDrawList();
@@ -74,6 +76,7 @@ public sealed partial class Ui
         h = MathF.Max(h, 150 * s);
         var p0 = new float2(pos.X + 20 * s, pos.Y + size.Y - 30 * s - h);
         var p1 = p0 + new float2(w, h);
+        _vpTop = p0.Y;
         var hpCol = SpColour(hp, 50);
         var danger = vacuum && (!suited || me.SuitAir <= 0) || hp <= 15 || crushing;
         CmdPlate(dl, p0, p1, 1f, danger ? CmdRed : vacuum && suited && suitPct < 25 ? CmdAmber : CmdCyan);
@@ -154,9 +157,9 @@ public sealed partial class Ui
     /// The gravity block under the rows (felt gravity, ShipGravity.cs: the server's pull, <see cref="ShipGravity.PersonPull"/>, the
     /// owner's snapshot on a client). On the left GRAVITY and the pull's way in words (or WEIGHTLESS); in the bars' column a dial,
     /// the pull as seen from behind them facing forward (right is right, down is down), its end filled while it presses them back
-    /// (into the seat or the aft bulkhead) and a ring while it pulls them forward (past a tenth of a g); on the right the g. Cyan, amber from
+    /// (into the seat or the aft bulkhead), a ring while it pulls them forward (past a tenth of a g), else an arrowhead; on the right the g. Cyan, amber from
     /// <see cref="ShipGravity.SlowG"/> (moving slows), red and PINNED from <see cref="ShipGravity.PinG"/>; past the g they take
-    /// unhurt (<see cref="ShipGravity.Limit"/>, not under deck gravity) it blinks CRUSHING and the plate turns red.
+    /// unhurt (<see cref="ShipGravity.Limit"/>, not under deck gravity) it pulses CRUSHING and the plate turns red.
     /// </summary>
     private void VpGravity(ImDrawListPtr dl, Game game, Player me, ushort seatBody, float2 p0, float2 p1, float y, float g, bool crushing, float blink)
     {
@@ -178,30 +181,43 @@ public sealed partial class Ui
 
         var floating = g < ShipGravity.FloatG;
         var col = crushing || g >= ShipGravity.PinG ? CmdRed : g >= ShipGravity.SlowG ? CmdAmber : floating ? CmdDim : CmdCyan;
-        var a = crushing ? blink : 1f;
+        var a = crushing ? 0.55f + 0.45f * blink : 1f; // (a soft blink: the figure stays readable when it matters most)
         var x = p0.X + 108 * s;
         CmdText(dl, new float2(x, y), 11f, col == CmdCyan ? CmdWhite : col, 0.9f * a, "GRAVITY", 0, false);
-        CmdText(dl, new float2(x, y + 15 * s), 10f, CmdDim, 0.95f, floating ? "WEIGHTLESS" : VpWays[VpWay(down, ahead, side)], 0, false);
+        CmdText(dl, new float2(x, y + 15 * s), 10f, floating ? CmdDim : col == CmdCyan ? CmdWhite : col, floating ? 0.95f : col == CmdCyan ? 0.62f : 0.8f * a,
+            floating ? "WEIGHTLESS" : VpWays[VpWay(down, ahead, side)], 0, false);
 
-        // The dial, in the bars' column.
+        // The dial, in the bars' column: a ring with ticks at its four points (no crosshair through the middle, where a straight
+        // down arrow would be lost on it).
         var c = new float2(p0.X + 201 * s, y + 15 * s);
         var r = 14 * s;
+        var tick = r * 0.72f;
         ImDrawListExtensions.AddCircleFilled(dl, in c, r, Hud.Colour(col, 0.07f), 32);
         CmdRing(dl, c, r, CmdDim, 0.85f, 1f);
-        CmdLine(dl, new float2(c.X - r, c.Y), new float2(c.X + r, c.Y), CmdDim, 0.3f);
-        CmdLine(dl, new float2(c.X, c.Y - r), new float2(c.X, c.Y + r), CmdDim, 0.3f);
+        CmdLine(dl, new float2(c.X - r, c.Y), new float2(c.X - tick, c.Y), CmdDim, 0.6f);
+        CmdLine(dl, new float2(c.X + tick, c.Y), new float2(c.X + r, c.Y), CmdDim, 0.6f);
+        CmdLine(dl, new float2(c.X, c.Y - r), new float2(c.X, c.Y - tick), CmdDim, 0.6f);
+        CmdLine(dl, new float2(c.X, c.Y + tick), new float2(c.X, c.Y + r), CmdDim, 0.6f);
         if (!floating)
         {
-            // The arrow grows with the g, full at the pin (by its root, so 1 g still reads: over half way); a pull straight ahead
-            // or back is short, its end's fill saying which (none under a tenth of a g that way, so a still seat doesn't flicker).
+            // The arrow grows with the g, full at the pin (by a low power, so 1 g still reaches well out: 58%); a pull straight
+            // ahead or back is short, its end saying which: a filled dot pressed back, a ring pulled forward, else a head (under
+            // a tenth of a g either way, so a still seat doesn't flicker between the two).
             var flat = MathF.Sqrt(side * side + down * down);
-            var reach = r * 0.85f * MathF.Sqrt(MathF.Min(1f, g / ShipGravity.PinG)) * flat / (g * ShipGravity.G);
+            var reach = r * 0.85f * MathF.Pow(MathF.Min(1f, g / ShipGravity.PinG), 0.35f) * flat / (g * ShipGravity.G);
             var tip = flat > 1e-3f ? new float2(c.X + side / flat * reach, c.Y + down / flat * reach) : c;
-            CmdGlow(dl, c, tip, col, a, 1.6f);
+            CmdGlow(dl, c, tip, col, a, 2f);
             if (ahead < -0.1f * ShipGravity.G)
                 ImDrawListExtensions.AddCircleFilled(dl, in tip, 3.2f * s, Hud.Colour(col, a), 12);
             else if (ahead > 0.1f * ShipGravity.G)
                 CmdRing(dl, tip, 3.2f * s, col, a, 1.4f);
+            else if (flat > 1e-3f)
+            {
+                float ux = side / flat, uy = down / flat, len = 4.5f * s, half = 3f * s;
+                ImDrawListExtensions.AddTriangleFilled(dl, new float2(tip.X + ux * 1.5f * s, tip.Y + uy * 1.5f * s),
+                    new float2(tip.X - ux * len - uy * half, tip.Y - uy * len + ux * half),
+                    new float2(tip.X - ux * len + uy * half, tip.Y - uy * len - ux * half), Hud.Colour(col, a));
+            }
         }
 
         // The g, and what it does to them.

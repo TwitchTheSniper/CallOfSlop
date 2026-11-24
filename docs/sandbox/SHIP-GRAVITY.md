@@ -27,11 +27,11 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   gravity (Karl not asked).
 - **Felt-g readout** (Karl, 2026-11-24; moved into the vitals panel, Sean 2026-11-24: `UI/UiVitalsPanel.cs`, `VpGravity`): a
   block under the panel's rows, always shown: GRAVITY and the way in words ("DOWN, BACK", or WEIGHTLESS), a dial in the bars'
-  column (the pull seen from behind them; its end filled while it presses them back, a ring forward; its length the root of
-  the g over 3 g) and the g on the right ("1.0 G"). The server works out each person's pull (`ShipGravity.PersonPull`: seated,
+  column (the pull seen from behind them; its end filled while it presses them back, a ring forward, else a head; its length
+  the g over 3 g to the power 0.35) and the g on the right ("1.0 G"). The server works out each person's pull (`ShipGravity.PersonPull`: seated,
   standing aboard, on the ground, or nothing in free fall) and the owner's snapshot carries it (protocol 449). Cyan, amber
   from 1.5 g, red and PINNED from 3 g; past the g they take unhurt (`ShipGravity.Limit`, the harm rule below; never under
-  deck gravity) it blinks CRUSHING and the plate turns red. Not shown in a robot shell (the shell's panel is there instead).
+  deck gravity) it pulses CRUSHING and the plate turns red. Not shown in a robot shell (the shell's panel is there instead).
   Under deck gravity the deck counts as 1 g (`G`), and the mover's own (stronger) deck gravity is scaled by the g felt.
 - **Magnet boots** (Karl, 2026-11-24; `Game/GameSandboxMagBoots.cs`): key 7 (`GameAction.MagBoots`, binds 35), sent with
   each command (`InputCmd.MagBoots`). On and standing on a deck with a felt pull: held to it (at least the mover's 1 g, no
