@@ -349,6 +349,24 @@ public static partial class ConstructRender
         return box.Glow || lamp ? Math.Max(0, k - 2) : k;
     }
 
+    /// <summary>
+    /// A captured box's size class (an idle machine block's work box in its chunk's idle mesh, DormBuild), as <see cref="SizeClass"/>
+    /// takes a part box's: from its model's three axes (a box's are its sizes: <see cref="CPartBox.Model"/>), a glowing one two
+    /// classes bigger. 2026-11-23: the idle meshes were drawn whole at every distance, 110 of a Mast Block's 115 boxes among them.
+    /// </summary>
+    private static int CapturedClass(in Renderer.Captured box)
+    {
+        ref readonly var m = ref box.Model;
+        var a = new Vector3(m.M11, m.M12, m.M13).Length();
+        var b = new Vector3(m.M21, m.M22, m.M23).Length();
+        var c = new Vector3(m.M31, m.M32, m.M33).Length();
+        var big = MathF.Max(a, MathF.Max(b, c));
+        var mid = MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
+        var s = MathF.Sqrt(big * mid);
+        var k = s >= 4f ? 0 : s >= 1f ? 1 : s >= 0.25f ? 2 : s >= 0.0625f ? 3 : 4;
+        return box.Code < 0 ? Math.Max(0, k - 2) : k; // (Code -1: drawn glowing)
+    }
+
     /// <summary>The smallest size class a chunk this far off (metres to its nearest side) draws.</summary>
     private static int DetailAt(float dist)
     {
@@ -981,7 +999,9 @@ public static partial class ConstructRender
             {
                 if (_mergeQueued == _mergeQueue.Length)
                     Array.Resize(ref _mergeQueue, _mergeQueue.Length * 2);
-                _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = dorm, Frame = frame, Detail = LodClasses - 1, Away = awayAt }; // (its idle machine blocks' work boxes: not tested, its own boxes' test speaks for the chunk)
+                _mergeQueue[_mergeQueued++] = new MergeDraw { Mesh = dorm, Frame = frame, Detail = detail, Away = awayAt }; // (its idle machine blocks' work boxes: not tested, its own boxes' test speaks for the chunk; the chunk's far detail level, as its own boxes)
+                var dormSlots = dorm.SlotsUpTo(detail);
+                LastLodDropped += dorm.Slots - dormSlots;
             }
             LastMergedChunks++;
             var drawnSlots = ch.Gl.SlotsUpTo(detail);
@@ -1378,14 +1398,14 @@ public static partial class ConstructRender
         }
         Grow(ref _dormKey, n);
         for (var b = 0; b < n; b++)
-            _dormKey[b] = (long)_dormScratch[b].Shape << 32 | (uint)b;
+            _dormKey[b] = (long)_dormScratch[b].Shape << 36 | (long)CapturedClass(in _dormScratch[b]) << 32 | (uint)b; // (shape, then its size class biggest first, as a chunk's slots: the far detail level draws a group's first slots)
         Array.Sort(_dormKey, 0, n);
         Grow(ref _mergeXform, n * Renderer.MergeXformFloats);
         Grow(ref _mergeLook, n * Renderer.MergeLookFloats);
         var xf = _mergeXform;
         var look = _mergeLook;
         gl.Groups = 0;
-        gl.ClassCount = 1;
+        gl.ClassCount = LodClasses;
         var last = -1;
         for (var s = 0; s < n; s++)
         {
@@ -1395,13 +1415,16 @@ public static partial class ConstructRender
                 Grow(ref gl.GroupShape, gl.Groups + 1);
                 Grow(ref gl.GroupFirst, gl.Groups + 1);
                 Grow(ref gl.GroupCount, gl.Groups + 1);
-                Grow(ref gl.GroupClassEnd, gl.Groups + 1);
+                Grow(ref gl.GroupClassEnd, (gl.Groups + 1) * LodClasses);
+                for (var q2 = 0; q2 < LodClasses; q2++)
+                    gl.GroupClassEnd[gl.Groups * LodClasses + q2] = 0;
                 (gl.GroupShape[gl.Groups], gl.GroupFirst[gl.Groups], gl.GroupCount[gl.Groups]) = (box.Shape, s, 0);
                 gl.Groups++;
                 last = box.Shape;
             }
             gl.GroupCount[gl.Groups - 1]++;
-            gl.GroupClassEnd[gl.Groups - 1] = gl.GroupCount[gl.Groups - 1];
+            for (var q2 = (int)(_dormKey[s] >> 32 & 0xF); q2 < LodClasses; q2++)
+                gl.GroupClassEnd[(gl.Groups - 1) * LodClasses + q2]++; // (slots of class q2 or bigger: the group's first that many)
             ref readonly var m = ref box.Model;
             var o = s * Renderer.MergeXformFloats;
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;

@@ -855,10 +855,12 @@ public static partial class ConstructExtruder
     {
         ref var pp = ref c.Parts[product];
         var was = pp.D;
+        c.PartBounds(product, out var oldMin, out var oldMax); // (where its leaves are in the collider: GrowPart)
+        var taken = c.GrowBegin(product);
         pp.Def = next.Id;
         pp.Health = MathF.Max(1, pp.Health + next.Health - was.Health);
         c.Wake();
-        world.ShapeChanged(c);
+        world.ShapeChanged(c, product, oldMin, oldMax, taken);
         world.ExtrudeDirty.Add((c.Id, (ushort)product));
     }
 
@@ -1127,9 +1129,9 @@ public sealed partial class ConstructWorld
     public readonly List<(ushort Body, ushort Part)> AnalogDirty = new(32); // (Analog Levers that moved: AnalogLever.cs)
 
     /// <summary>A part's def changed size in place: the body's shape, without a rebuild, and the broadphase's sphere.</summary>
-    public void ShapeChanged(Construct c)
+    public void ShapeChanged(Construct c, int part = -1, Vector3 oldMin = default, Vector3 oldMax = default, bool sumsTaken = false)
     {
-        c.RefreshShape();
+        c.RefreshShape(part, oldMin, oldMax, sumsTaken);
         GridGrew(c);
     }
 }
