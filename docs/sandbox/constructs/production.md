@@ -2047,6 +2047,20 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   the row between the station's bay and the bed), and one Roller Tile in that row, under the bay's and the bed's middle, is the bay's way
   out and the oven's way in: a finished kit rolls onto the bed with no crane. On the works an Upper Deck Aft baked in 314 s, the Upper
   Fore Hull Port 3 in 174 s (324 s craned) and the Keel in 232 s (547 s).
+- **Interior walls on lines A and B.** Sean, 2026-11-23: the frigate's 31 interior walls ("Zero Day Lower/Upper Fore/Aft Wall N") are
+  made on lines A and B, not the Assembler: they are box kits in BakeKits.json (a one-plate wall is split into two lengths, since a bake
+  needs two pieces or more). Each of the two lines is laid as line C: its oven Core beside its bed's first row and a Roller Tile from the
+  station's bay onto the bed, a Line Console wiring the station to its Sheet Extruder and Panel Former, and the Laser Cutter's out run
+  going on one row onto a raised pad of Pad Tiles butted on the bay's north end (the station's pick pad: pieces roll Extruder, former,
+  cutter, pad when no stage takes them). A wall plate longer than a former's out run (14.1 m against 6 m) waits at the former bed's
+  edge on the Extruder's feed (`RollerRuns.DieFeed`), and the bay crane lifts it straight to its station step (a piece tagged for a
+  station's order goes direct to that station only, its store or one of its own pick pads: `ConstructLifters.DirectIf`'s `dest`).
+  Which oven: BakeKits.json `"bigBed"` keeps the decks, keel and hull pieces on a bed of 80 cells or more (line C's 7 x 13; A and B
+  are 5 x 9); an oven builds its kit at the station whose roll-out run leads to its bed, never at one rolling to another oven, else the
+  nearest (`Kits`, `OrderRefusal`); a station's ask goes to the ovens alike with the shortest queue, the smaller bed on a tie
+  (`ConstructCrafting.LeastOven`, as chains rank them). On the works: Lower Aft Wall 1 baked on line A in 234 s, Upper Fore Wall 11
+  and Lower Fore Wall 3 on line B in 136 and 221 s, the Upper Deck Aft still on line C in 317 s (refused at A's oven); the yard's
+  frigate order puts 16 walls on A's oven and 15 on B's.
 
 ## Production Showcase
 

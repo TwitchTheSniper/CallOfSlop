@@ -547,7 +547,7 @@ public static partial class ConstructLifters
                 to = HandOffFor(world, l, ld, shoulder, lr, d, k, out toAt, rider.Dest); // (handed on toward its station's pick pad, out of this lifter's reach)
             if (to < 0)
                 to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out toAt, asNew);
-            var ds = DirectIf(asNew && StoreLike(l, to), world, c, l, ld, shoulder, lr, d, to, out var dsc, out var dt, out var dj, rider.Tag);
+            var ds = DirectIf(asNew && StoreLike(l, to), world, c, l, ld, shoulder, lr, d, to, out var dsc, out var dt, out var dj, rider.Tag, rider.Dest);
             if (ds < 0 && to < 0 || ConstructConveyor.TakeRider(world, b, lead, out from, out fromRot, out var health, out var paint) == null)
                 continue;
             l.OutTurn = k + 1;

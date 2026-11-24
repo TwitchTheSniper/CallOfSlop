@@ -108,10 +108,21 @@ public static class RollerRuns
         {
             ref readonly var r = ref c.Routes[k];
             if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
-                && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && IsRun(c, k))
+                && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && (IsRun(c, k) || DieFeed(c, k)))
                 return k; // (or onto a pad: a formed skin for a station's order waits at the pad's edge, too long for it or not its way)
         }
         return -1;
+    }
+
+    /// <summary>
+    /// A Sheet Extruder's feed straight onto a bed (the works' lines: Run-out Tables, then Roller Tiles butted on the bed's head): it starts
+    /// on a table under the die, not on a tile, so it is no <see cref="IsRun"/>, but a piece made for another's order waits at the bed's edge
+    /// on it all the same, for the crane over it (Sean, 2026-11-23: plates that need no forming are lifted past the Panel Former).
+    /// </summary>
+    private static bool DieFeed(Construct c, int k)
+    {
+        ref readonly var r = ref c.Routes[k];
+        return r.From < c.PartCount && c.Parts[r.From].D.IsExtruder && c.Parts[c.RouteNodes[r.Start + 1].Host].D.IsRollerTile;
     }
 
     /// <summary>The lead rider of bed run <paramref name="route"/> when it rides past the bed and has come to its wait at the bed's edge, or -1.</summary>

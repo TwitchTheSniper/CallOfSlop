@@ -37,9 +37,10 @@ public static partial class ConstructLifters
     /// Server: a building station's ready, unclaimed step of kind <paramref name="d"/> whose place lifter <paramref name="l"/> reaches
     /// (in Auto: it does station work and carries), the station powered: the step's index, else -1. <paramref name="onlyBody"/> (not 0)
     /// and <paramref name="only"/>: the lead point (body, part) the piece was going to: only a station it leads to (never another station's step).
+    /// <paramref name="onlyStore"/> (not 0): only the station whose store that is (a piece tagged for its order).
     /// <paramref name="sc"/>, <paramref name="t"/> and <paramref name="j"/> are the station's body, part and job.
     /// </summary>
-    public static int DirectStep(ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, out Construct? sc, out int t, out StationJob? j, ushort onlyBody = 0, int only = -1)
+    public static int DirectStep(ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, out Construct? sc, out int t, out StationJob? j, ushort onlyBody = 0, int only = -1, int onlyStore = 0)
     {
         (sc, t, j) = (null, -1, null);
         if (world.StationOpen.Count == 0 || ld.Fitter || !Carries(ld, d) || (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0) != 0)
@@ -51,6 +52,9 @@ public static partial class ConstructLifters
             if (onlyBody != 0 && !HasLead(onlyBody, only, _dsBody[si], _dsPart[si]) || world.Get(_dsBody[si]) is not { } b || _dsPart[si] >= b.PartCount)
                 continue;
             var p = (int)_dsPart[si];
+            if (onlyStore != 0 && b.Parts[p].Store != onlyStore
+                && !(ConstructLogistics.PartOfStore(b, (ushort)onlyStore) is var held and >= 0 && ConstructStation.IsOwnPad(b, p, ConstructPads.Owner(b, held))))
+                continue; // (its own store, or one of its own pick pads)
             if (b.Parts[p].Station is not { State: StationState.Building, Plan: { } plan, Bp: { } } job || plan.At.Length != job.PartOf.Length)
                 continue;
             var kind = Array.IndexOf(job.KindDef, (ushort)d.Id, 0, job.KindN);
@@ -120,7 +124,7 @@ public static partial class ConstructLifters
     /// one (<paramref name="to"/>), goes only to that station's step: its order counts it. <paramref name="tag"/> (not 0): it rides for an
     /// order or a stock link, and only such a way to a station lets it go direct.
     /// </summary>
-    private static int DirectIf(bool when, ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, int to, out Construct? sc, out int t, out StationJob? j, ushort tag = 0)
+    private static int DirectIf(bool when, ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, int to, out Construct? sc, out int t, out StationJob? j, ushort tag = 0, ushort dest = 0)
     {
         (sc, t, j) = (null, -1, null);
         if (!when)
@@ -135,9 +139,11 @@ public static partial class ConstructLifters
                 if (_leads[e].Body == pt.Body && _leads[e].Part == pt.Part && _leads[e].Kind == pt.Kind)
                     (onlyBody, only) = (pt.Body, pt.Part); // (a lead: only the stations it leads to, ConstructLifterHandOff.HasLead)
         }
-        if (tag != 0 && onlyBody == 0)
+        if (tag != 0 && onlyBody == 0 && dest == 0)
             return -1; // (a stock link's or another machine's piece: it goes where it was sent)
-        return DirectStep(world, c, l, ld, shoulder, lr, d, out sc, out t, out j, onlyBody, only);
+        // (tagged for an order of the store it rides to: only that store's station, when it is one: a wall plate held at a Panel Former's
+        // bed edge for its dress station, lifted past the former, Sean 2026-11-23)
+        return DirectStep(world, c, l, ld, shoulder, lr, d, out sc, out t, out j, onlyBody, only, tag != 0 && onlyBody == 0 ? dest : 0);
     }
 
     /// <summary>Would the put point a piece was given be a store or a hand-off (so a ready station step that wants it goes first)?</summary>

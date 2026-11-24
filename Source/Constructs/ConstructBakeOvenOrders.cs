@@ -47,15 +47,20 @@ public static partial class ConstructBakeOven
         int near = -1;
         var nearDist = float.MaxValue;
         for (var s = 0; s < c.PartCount; s++)
-            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && Vector3.DistanceSquared(c.Parts[s].Pos, c.Parts[part].Pos) is var dist && dist < nearDist
-                && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null)
+        {
+            if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken || ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) != null)
+                continue;
+            var rolls = ConstructRollOut.RunOut(c, s) is var run and >= 0 ? ConstructRollOut.OvenOf(c, run) : -1;
+            if (rolls >= 0 && rolls != part)
+                continue; // (another oven's station: its kits roll to that bed, as the kit's start takes it: Kits)
+            var dist = rolls == part ? -1 : Vector3.DistanceSquared(c.Parts[s].Pos, c.Parts[part].Pos);
+            if (dist < nearDist)
                 (near, nearDist) = (s, dist);
+        }
         if (near < 0)
-            return $"no Building Station on this construct has a bay that holds the {made.Name} kit";
+            return $"no Building Station on this construct has a bay that holds the {made.Name} kit (and doesn't roll its kits to another oven)";
         if (!OrdersConsole(c, near) && AnyOrdersConsole(c, bp)) // (none has one: a plain station orders by its own links, as any build)
             return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
-        if (ConstructRollOut.RunOut(c, near) is var run and >= 0 && ConstructRollOut.OvenOf(c, run) is var rolls and >= 0 && rolls != part)
-            return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit rolls its kits to another oven"; // (the works' line A oven took a deck that only line C's station holds)
         if (OrdersConsole(c, near) && LineLacks(world, c, near, bp) is { } lacks)
             return $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
         return null;
@@ -140,8 +145,13 @@ public static partial class ConstructBakeOven
         {
             if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken)
                 continue;
+            // A station whose kits roll out along a run to another oven's bed is that oven's; one that rolls to this bed comes first
+            // (the works' lines B and C: line C's station is as near line B's oven as line B's own).
+            var rolls = ConstructRollOut.RunOut(c, s) is var run and >= 0 ? ConstructRollOut.OvenOf(c, run) : -1;
+            if (rolls >= 0 && rolls != part)
+                continue;
             ConstructStation.Bay(c, s, out var floor, out _, out _);
-            var dist = Vector3.DistanceSquared(floor, bedMid);
+            var dist = rolls == part ? -1 : Vector3.DistanceSquared(floor, bedMid);
             if (c.Parts[s].Station is { } j && j.Name.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)
                 && (j.State is StationState.Costing or StationState.Building || j.State == StationState.Done && world.Get(j.Body) is { } jb && !ConstructStation.BayClearOf(world, c, s, jb)))
             {
