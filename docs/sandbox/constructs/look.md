@@ -124,7 +124,10 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is),
    and `"inMachine": true` (drawn only while the part is a cell of a machine) or `"bare": true` (drawn only while it is not):
    a Mast Block outside a machine, a shed's pillar or a crane's column, hides its whole lattice and draws a solid square
-   column instead, one stepped foot and one stepped head per stack (5 boxes a cell).
+   column instead, one stepped foot and one stepped head per stack (5 boxes a cell). A squares Core's block (a Hearth Block)
+   may say `"alone": true` (drawn only while it is not in a square of 2 x 2 or more) or `"merged": true` (drawn only while it
+   is: `MachineBlocks.Merged`, bit 0x80 of `BlockJoined`); only a detail box takes either, and not both. A part's `machineBlock` `"role"` is `core`, `block` or `end` (an end piece of its `family`, as a
+   Casting Bed is the smelter's).
    Drawn only while `ProductionLines.Working` says
    the machine runs, from the store each peer already has: nothing on the server or the wire. The status lamp's band and
    the bin's fill are the game's own.
@@ -148,7 +151,7 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 | Accent | `#f2b01e` | buttons, pulleys, chucks, a ram's hazard edge |
 | In / Out | `#ecebe4` / `#f07818` | the band and arrow of each side |
 | Stop | `#d02a1e` | the stop button |
-| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020` | cladding; takes paint |
+| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020`, Smelter `#9a4a2c` (fire brick) | cladding; takes paint |
 
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
@@ -171,6 +174,21 @@ in, orange out) and the shared mouth at its top. The declared port's point stays
 straight out, through the collar), and the spout stops 3 cm short of it. The Extruder Core's chute is the first (on its back, under
 the hopper's arrow); each machine's rework PR moves its ports onto it.
 
+**Dress by size** (block machines whose blocks make squares: the Smelter, 2026-11-24; production.md "Refiners as block
+machines"). A block dresses for the furnace it is part of, never as a repeat of the block beside it:
+
+- **Alone** (a 1 x 1, or a block off its square) it is a whole small machine: a Hearth Block shows a stub stack with collars
+  and a soot lip that smokes, a glowing door with a latch and a taphole over a spout (`"alone"`).
+- **Merged** (a square of 2 x 2 or more) the alone boxes go and each block shows a charge door (`"merged"`); the faces it
+  shares with blocks of its own square lose their skirt, buckstays, courses and bolts (`"seam"`), and a joint strip shows on
+  top (`"seamFill"`), so the square reads as one furnace. What a square has once (its stack, taphole, runner, hot-blast main,
+  charging belt) is not a part box at all: it is drawn by the square's size (`SmelterRender`, laid out by `SmelterWorks`).
+- **Neighbours never share a plane.** Two squares side by side keep their dressing on the faces that meet, so the -x and -z
+  faces' dressing is set in from the +x and +z faces' (4 mm on its depth, 30 mm along the face for the buckstays, the tie
+  strap and courses 10 x 4 mm lower), and a skirt stops 4 mm short of the corners so an end piece's base beside it has a face
+  of its own. Check with `--check-vehicle` on a 3 x 3 + 2 x 2 + 1 x 1 with Casting Beds, not only on one block.
+- **HOT** plates (black on yellow) mark what burns: a Hearth Block's front, a Casting Bed's kerb.
+
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
 mounted and the faces are settled: no solid box, socket, port or screen moves. `Site.Add` leaves out a box that would
@@ -178,8 +196,8 @@ cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's o
 rules, by construction). What `TierStyle` draws as `dark`, `edge` or `pipe` stops taking paint, so a painted machine
 keeps a dark stack and a steel blade.
 
-- **A line's cues are the same at every tier.** Smelter: a white-rimmed hopper, a dark charge door with two slots and
-  a tap hole that glow over a steel spout, a collared stack that smokes. Foundry: the mouth glows, a steel crucible on a
+- **A line's cues are the same at every tier.** (The Smelter left the tiers on 2026-11-24: its cues are the Core's hopper
+  and hearth and its blocks', above.) Foundry: the mouth glows, a steel crucible on a
   trunnion pours into three moulds, both stacks smoke. Sawmill: steel rails through the frame, a carriage and log that
   feed (`stroke`), the blade turns (`spin`), planks over the out bed. Assembler family: the bit, an accent collar and
   a steel platen stroke over the trays; a Thruster Assembler's nozzle glows, a Tailor's bolt turns. Tier 5 keeps

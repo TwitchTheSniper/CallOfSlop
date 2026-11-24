@@ -759,7 +759,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Press Core gains implicit conveyor ports "Bed in" and "Bed out" after its others.
     // 449: the owner's snapshot carries the pull they feel (own flag 16, a world-axes vector): the felt-g readout (UiGForce.cs);
     //      the input packet ends with a u8 of magnet-boots bits, one per command (InputCmd.MagBoots, GameSandboxMagBoots.cs).
-    public const ushort ProtocolVersion = 449;
+    // 450: the Smelter is a block machine (Core, Hearth Block, Casting Bed; Smelter T2-T5 gone): new part files move part ids, and a
+    //      Core's rate, bins and chute load come from its squares, which each peer works out from the parts (MachineBlocks.Squares).
+    public const ushort ProtocolVersion = 450;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
