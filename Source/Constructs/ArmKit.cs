@@ -751,7 +751,7 @@ public static class ArmKitCheck
                 if (ConstructParts.Find(f) is { Lifter: { } l } fd)
                     Console.WriteLine($"[swap] base {f}: {l.Base} socket -y.0.0 {Array.Find(fd.Sockets, x => x.Name == "-y.0.0").At} centre -y {Array.Find(fd.Sockets, x => x.Name == "centre -y").At}");
         var at = Array.FindIndex(args, a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase));
-        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm", "Kit Loader Arm", "Kit Workshop Arm", "Kit Industrial Arm", "Kit Military Arm", "Kit Plasma Arm", "Kit Long Arm", "Kit Heavy Arm", "Kit Shipyard Arm", "Kit Module Fitter"];
+        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm", "Kit Loader Arm", "Kit Workshop Arm", "Kit Industrial Arm", "Kit Military Arm", "Kit Plasma Arm", "Kit Long Arm", "Kit Heavy Arm", "Kit Shipyard Arm", "Kit Module Fitter", "Kit Heavy Arm XL"];
         var bad = 0;
         foreach (var name in names)
         {
@@ -847,6 +847,9 @@ public static class ArmKitMigrate
         ("Military Loader Arm", "Kit Military Arm"), ("Plasma Loader Arm", "Kit Plasma Arm"), ("Long Loader Arm", "Kit Long Arm"),
         ("Heavy Loader Arm", "Kit Heavy Arm"), ("Shipyard Loader Arm", "Kit Shipyard Arm"), ("Module Fitter S", "Kit Module Fitter"),
     ];
+
+    /// <summary>Where a fixed arm's preset can't keep its jobs from a free place, a bigger one tried next (`--arm-swap-find`).</summary>
+    public static readonly (string Fixed, string Preset)[] Bigger = [("Loader Arm", "Kit Workshop Arm"), ("Loader Arm", "Kit Industrial Arm"), ("Heavy Loader Arm", "Kit Heavy Arm XL")];
 
     public static string? PresetFor(string fixedName)
     {
@@ -971,6 +974,188 @@ public static class ArmKitMigrate
             lost += n;
         }
         return lost;
+    }
+
+    private static readonly string[] JobNames = ["Pad", "Bed", "Roller Tile", "Bay Block", "Rack", "Bunker", "Hold", "Store", "Building Station", "Press", "Extruder", "Assembler", "Oven", "Former", "Cutter", "Hopper", "Chute"];
+
+    /// <summary>
+    /// <c>--arm-swap-find [BLUEPRINT,...]</c>: for each fixed arm whose preset doesn't fit where it stands, the nearest place it does (the preset
+    /// turned a quarter at a time, its shoulder moved up to 4 m on whole metres), keeping every job the fixed arm reached: each machine, pad,
+    /// store, bed, run or station whose nearest point the fixed arm reached (a metre over it) the preset reaches too. Prints
+    /// "[find] ... -> move (dx, dz) turn k" or "no place". Writes nothing.
+    /// </summary>
+    public static int Find(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--arm-swap-find", StringComparison.OrdinalIgnoreCase));
+        string[] names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Zero Day Works", "Production Showcase"];
+        var none = 0;
+        foreach (var name in names)
+        {
+            if (Build(name) is not { } c)
+                continue;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var d = c.Parts[i].D;
+                if (d.Lifter is not { Kit: false, Bridge: false } fl || PresetFor(d.Name) is not { } preset || Kit(preset) is not { } kit)
+                    continue;
+                c.PartBounds(i, out var amn, out _);
+                var rot = Rot24.Quat(c.Parts[i].Rot);
+                var sh = c.Parts[i].Pos + Vector3.Transform(fl.Base, rot);
+                var jobs = new List<(string, Vector3)>();
+                for (var j = 0; j < c.PartCount; j++)
+                {
+                    if (j == i || c.Parts[j].Broken || c.Parts[j].D.ArmPiece != ArmPieceKind.None || c.Parts[j].D.Lifter != null || Array.FindIndex(JobNames, n => c.Parts[j].D.Name.Contains(n)) < 0)
+                        continue;
+                    c.PartBounds(j, out var bmn, out var bmx);
+                    var pt = Vector3.Clamp(sh, bmn, bmx) with { Y = bmx.Y + 1f };
+                    if (ConstructLifters.InReach(fl, sh, rot, pt, 1f, out _))
+                        jobs.Add((c.Parts[j].D.Name, pt));
+                }
+                var where = $"{name}: {d.Name} #{i} at ({sh.X:0.0}, {sh.Z:0.0}), {jobs.Count} jobs";
+                if (jobs.Count < 8)
+                    Log($"[find]   jobs: {string.Join("; ", jobs.Select(jb => $"{jb.Item1} {jb.Item2.X:0.0},{jb.Item2.Y:0.0},{jb.Item2.Z:0.0}"))}; shoulder y {sh.Y:0.0}, kit shoulder {kit.ShoulderH:0.0} over its floor, up {kit.Ld.Up:0.0} down {kit.Ld.Down:0.0} min {kit.Ld.ReachMin:0.0}");
+                if (Hits(c, i, kit.Shape, new Vector3(sh.X, amn.Y, sh.Z), rot).Count == 0)
+                {
+                    Log($"[find] {where}: fits as it stands");
+                    continue;
+                }
+                (float D, int X, int Z, int K) Search(KitShape kit)
+                {
+                var best = (D: float.MaxValue, X: 0, Z: 0, K: 0);
+                for (var dx = -4; dx <= 4; dx++)
+                    for (var dz = -4; dz <= 4; dz++)
+                        for (var k = 0; k < 4; k++)
+                        {
+                            var cost = MathF.Sqrt(dx * dx + dz * dz) + (k == 0 ? 0 : 0.25f);
+                            if (cost >= best.D)
+                                continue;
+                            var r2 = Quaternion.CreateFromAxisAngle(Vector3.UnitY, k * MathF.PI / 2) * rot;
+                            var foot = new Vector3(MathF.Round(sh.X) + dx, amn.Y, MathF.Round(sh.Z) + dz);
+                            if (Hits(c, i, kit.Shape, foot, r2).Count > 0)
+                                continue;
+                            var ksh = foot with { Y = amn.Y + kit.ShoulderH };
+                            if (!jobs.TrueForAll(jb => ConstructLifters.InReach(kit.Ld, ksh, r2, jb.Item2, 1f, out _)))
+                                continue;
+                            best = (cost, dx, dz, k);
+                        }
+                return best;
+                }
+                var best = Search(kit);
+                var found = false;
+                foreach (var (bf, big) in Bigger)
+                    if (best.D == float.MaxValue && !found && bf == d.Name && Kit(big) is { } bk && Search(bk) is { D: < float.MaxValue } b2)
+                    {
+                        Log($"[find] {where}: {big} instead: shoulder to ({MathF.Round(sh.X) + b2.X}, {MathF.Round(sh.Z) + b2.Z}) turn {b2.K}");
+                        found = true;
+                    }
+                if (found)
+                    continue;
+                if (best.D == float.MaxValue)
+                {
+                    none++;
+                    // The clear place that loses fewest jobs, and which, for the person who lays the site out.
+                    if (Array.Find(Bigger, b => b.Fixed == d.Name).Preset is { } big2 && Kit(big2) is { } bk2)
+                        kit = bk2; // (the bigger one's losses)
+                    var near = (Lost: int.MaxValue, X: 0, Z: 0, K: 0, Names: "");
+                    var clear = 0;
+                    var fewHits = (N: int.MaxValue, Text: "");
+                    for (var dx = -8; dx <= 8; dx++)
+                        for (var dz = -8; dz <= 8; dz++)
+                            for (var k = 0; k < 4; k++)
+                            {
+                                var r2 = Quaternion.CreateFromAxisAngle(Vector3.UnitY, k * MathF.PI / 2) * rot;
+                                var foot = new Vector3(MathF.Round(sh.X) + dx, amn.Y, MathF.Round(sh.Z) + dz);
+                                var hh = Hits(c, i, kit.Shape, foot, r2);
+                                if (hh.Count > 0)
+                                {
+                                    if (hh.Count < fewHits.N)
+                                        fewHits = (hh.Count, $"({foot.X}, {foot.Z}) turn {k}: {string.Join("; ", hh.Distinct())}");
+                                    continue;
+                                }
+                                clear++;
+                                var ksh = foot with { Y = amn.Y + kit.ShoulderH };
+                                var lost = jobs.Where(jb => !ConstructLifters.InReach(kit.Ld, ksh, r2, jb.Item2, 1f, out _)).Select(jb => jb.Item1).ToList();
+                                if (lost.Count < near.Lost)
+                                    near = (lost.Count, dx, dz, k, string.Join(", ", lost.GroupBy(n => n).Select(g => $"{g.Count()} x {g.Key}")));
+                            }
+                    Log($"[find] {where}: no place within 4 m keeps every job ({clear} clear within 8 m); fewest lost: {(near.Lost == int.MaxValue ? "none clear" : $"{near.Lost} at ({MathF.Round(sh.X) + near.X}, {MathF.Round(sh.Z) + near.Z}) turn {near.K}: {near.Names}")}; here it meets: {string.Join("; ", Hits(c, i, kit.Shape, new Vector3(sh.X, amn.Y, sh.Z), rot).Distinct().Take(6))}; fewest hits at {fewHits.Text}");
+                }
+                else
+                    Log($"[find] {where}: shoulder to ({MathF.Round(sh.X) + best.X}, {MathF.Round(sh.Z) + best.Z}), move ({MathF.Round(sh.X) + best.X - sh.X:0.00}, {MathF.Round(sh.Z) + best.Z - sh.Z:0.00}) turn {best.K}");
+            }
+        }
+        return none;
+    }
+
+    private sealed record KitShape(List<(string Name, Vector3 Min, Vector3 Max)> Shape, LifterDef Ld, float ShoulderH);
+
+    private static readonly Dictionary<string, KitShape?> Kits = new();
+
+    private static KitShape? Kit(string preset)
+    {
+        if (Kits.TryGetValue(preset, out var k))
+            return k;
+        k = null;
+        if (Build(preset) is { } c)
+        {
+            var floor = float.MaxValue;
+            var core = -1;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                c.PartBounds(i, out var mn, out _);
+                floor = MathF.Min(floor, mn.Y);
+                if (core < 0 && c.Parts[i].D.Lifter is { Kit: true })
+                    core = i;
+            }
+            if (core >= 0)
+            {
+                var ld = ArmKit.DefOf(c, core, c.Parts[core].D.Lifter!);
+                var shY = (c.Parts[core].Pos + Vector3.Transform(c.Parts[core].D.Lifter!.Base, Rot24.Quat(c.Parts[core].Rot))).Y;
+                k = new KitShape(Footprint(preset), ld, shY - floor);
+                Log($"[find] {preset}: mast top {k.Shape.Max(b => b.Max.Y):0.00} m over its floor, shoulder {k.ShoulderH:0.00} m");
+            }
+        }
+        return Kits[preset] = k;
+    }
+
+    /// <summary>What a preset's boxes (its shoulder's foot at <paramref name="foot"/>, turned <paramref name="rot"/>) meet in body <paramref name="c"/>, arm <paramref name="self"/> aside.</summary>
+    private static List<string> Hits(Construct c, int self, List<(string Name, Vector3 Min, Vector3 Max)> shape, Vector3 foot, Quaternion rot)
+    {
+        var hits = new List<string>();
+        foreach (var (pn, mn, mx) in shape)
+        {
+            var lo = new Vector3(float.MaxValue);
+            var hi = new Vector3(float.MinValue);
+            for (var k = 0; k < 8; k++)
+            {
+                var corner = new Vector3((k & 1) == 0 ? mn.X : mx.X, (k & 2) == 0 ? mn.Y : mx.Y, (k & 4) == 0 ? mn.Z : mx.Z);
+                var w = foot + Vector3.Transform(corner, rot);
+                lo = Vector3.Min(lo, w);
+                hi = Vector3.Max(hi, w);
+            }
+            lo += new Vector3(0.02f);
+            hi -= new Vector3(0.02f);
+            for (var j = 0; j < c.PartCount; j++)
+            {
+                if (j == self || c.Parts[j].Broken)
+                    continue;
+                c.PartBounds(j, out var bmn, out var bmx);
+                if (bmx.Y <= foot.Y + 0.05f)
+                    continue;
+                if (bmn.X < hi.X && bmx.X > lo.X && bmn.Y < hi.Y && bmx.Y > lo.Y && bmn.Z < hi.Z && bmx.Z > lo.Z)
+                    hits.Add($"{pn} meets {c.Parts[j].D.Name} at ({(bmn.X + bmx.X) * 0.5f:0.0}, {bmn.Y:0.0}, {(bmn.Z + bmx.Z) * 0.5f:0.0})");
+            }
+            for (var n = 0; n < c.RouteNodeCount; n++) // (a laid link's nodes: a chute or a cable through the mast)
+            {
+                var q = c.RouteNodes[n].Pos;
+                if (q.X > lo.X - 0.3f && q.X < hi.X + 0.3f && q.Y > lo.Y - 0.3f && q.Y < hi.Y + 0.3f && q.Z > lo.Z - 0.3f && q.Z < hi.Z + 0.3f)
+                {
+                    hits.Add($"{pn} meets a link's node");
+                    break;
+                }
+            }
+        }
+        return hits;
     }
 
     private static void Log(string s) => Console.WriteLine(s);

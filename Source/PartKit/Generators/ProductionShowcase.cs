@@ -57,6 +57,29 @@ public sealed class ProductionShowcase : IPartGenerator
         private static Vector3 V(float x, float y, float z) => new(x, y, z);
 
         /// <summary>A part standing on the floor by its own socket <paramref name="by"/> at (x, z).</summary>
+        /// <summary>An arm kit preset (ArmKitParts.PresetSteps) with its first part's middle over (x, z) on the floor; hands back its Arm Core.</summary>
+        private VPart KitArm(string preset, float x, float z)
+        {
+            var steps = ArmKitParts.PresetSteps(preset);
+            var placed = new VPart[steps.Count];
+            VPart? core = null;
+            for (var k = 0; k < steps.Count; k++)
+            {
+                var (p, on, socket, own) = steps[k];
+                if (on < 0)
+                {
+                    var d0 = Def(p);
+                    var lift = (d0.BoundsMin + d0.BoundsMax) * 0.5f - Array.Find(d0.Sockets, s => s.Name == "bottom").At;
+                    placed[k] = Put(p, V(x, FloorY + lift.Y, z), Front, 0.5f, null, "bottom");
+                }
+                else
+                    placed[k] = Onto(placed[on], socket, p, own);
+                if (p == "Arm Core")
+                    core = placed[k];
+            }
+            return core!;
+        }
+
         private VPart On(string part, float x, float z, Orient o, string by = "bottom", string? paint = null, string? finish = null)
         {
             var p = Stand(part, V(x, FloorY, z), o, null, by);
@@ -366,7 +389,7 @@ public sealed class ProductionShowcase : IPartGenerator
             // Loader Arms (production.md "The Loader Arm") at the bay's two corners by the hold (the window tool's "lifter place" slots 0 and 1),
             // on this body: its mains power them (a placed arm is a body of its own, with no battery: "No power" in a timed world). Each picks
             // along the hold's side. (Slots 2 and 3, 6 m further along the bay, are out of a Loader Arm's 4 m reach of the hold: "NoPoint".)
-            On("Loader Arm", 68.75f, -10.75f, Front, "-y.0.0");
+            KitArm("Kit Loader Arm", 71.98f, -7.03f); // (a Kit Loader Arm: the fixed Loader Arm's place, 2.6 m west and 3.1 m south of here, put its Core in the Long Piece Rack; here it reaches the hold's Bay Blocks as that did, --arm-swap-find, Sean 2026-11-24)
             // (its second arm stood where the bay's Bay Blocks are now, drawing 18: the station's own arms fit parts there)
             return station;
         }

@@ -374,6 +374,7 @@ public sealed class ArmKitParts : IPartGenerator
         new("Kit Long Arm", "The kit arm a Long Loader Arm became: 14 m of reach, 6 t, on a pedestal.", 1, 120, 90, 690, 115, 95, 680, 95, 120, 4, 40, 6),
         new("Kit Heavy Arm", "The kit arm a Heavy Loader Arm became: 14 m of reach, 16 t, on a pedestal.", 1, 155, 115, 660, 145, 110, 640, 125, 160, 4, 70, 8),
         new("Kit Shipyard Arm", "The kit arm a Shipyard Loader Arm became: 18 m of reach, 24 t, on two pedestals.", 2, 200, 150, 850, 190, 150, 840, 150, 190, 4, 240, 8),
+        new("Kit Heavy Arm XL", "A Kit Heavy Arm with booms 80 cm longer: for a place where the Heavy arm it stands for moved over, so it still reaches every job: no pedestal, so its mast stands under a lower roof.", 0, 165, 120, 740, 155, 115, 720, 125, 160, 4, 110, 8),
         new("Kit Module Fitter", "The kit arm a Module Fitter S became: a Fitter Head, 8 m of reach, 20 t.", 0, 130, 100, 380, 120, 100, 360, 110, 140, 4, 60, 6, Fitter: true),
     ];
 

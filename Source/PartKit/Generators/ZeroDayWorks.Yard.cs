@@ -156,7 +156,7 @@ public sealed partial class ZeroDayWorks
             // (stood by the pedestal's middle, "centre -y": it spans 1.75 m round (x, z), so on z -198 it stands in the 4 m between the bay's
             // edge at z -200 and line C's store at -196 without touching either, and on z -220 just south of the bay's edge at -218)
             foreach (var (x, z) in YardArms)
-                Arm("Shipyard Loader Arm", x, z, "centre -y", keep: x is 44 or 73 or 39 or 47); // (four stay fixed arms: their kit presets' counterweights would meet masts, and the north two's the crane rail and roof, --arm-swap-check)
+                Arm("Shipyard Loader Arm", x, z, "centre -y", turn: x switch { 44 => 1, 73 => 2, _ => 0 }, keep: z == -198); // (turned where their counterweights met the stores' masts, --arm-swap-find; the north two stay fixed arms for now: in the 4 m gaps between line C's store masts a kit preset's counterweights and packs meet a mast or the bay, whatever its turn)
         }
 
         /// <summary>

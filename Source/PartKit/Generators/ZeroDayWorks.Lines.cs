@@ -54,7 +54,7 @@ public sealed partial class ZeroDayWorks
                 // straight into the bay (Sean 2026-11-24: the Industrial arms there reached neither the pad nor a 2.3 t wall plate), and two
                 // Industrial arms by the oven's bed.
                 foreach (var z in new[] { -124f, -132f })
-                    Arm("Long Loader Arm", east, z, keep: z == -124f); // (the first stays a fixed arm: its kit preset's drive packs would meet the station, --arm-swap-check)
+                    Arm("Long Loader Arm", east, z, turn: z == -124f ? 1 : 0); // (the first turned a quarter: its drive packs met the station, --arm-swap-find)
                 foreach (var z in new[] { -143f, -149f })
                     Arm("Industrial Loader Arm", east, z);
             }
@@ -79,7 +79,7 @@ public sealed partial class ZeroDayWorks
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
             foreach (var z in new[] { -143f, -148f, -153f })
-                Arm("Long Loader Arm", 47, z, keep: z == -153f); // (the last stays a fixed arm: its kit preset's counterweights would meet the store's masts, --arm-swap-check)
+                Arm("Long Loader Arm", 47, z, turn: z == -153f ? 2 : 0); // (the last turned a quarter: its counterweights met the store's masts, --arm-swap-find)
                 // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there; a Long arm's 2 m plinth does, and it lifts the deck plates, Sean 2026-11-24)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
@@ -91,7 +91,7 @@ public sealed partial class ZeroDayWorks
             Tiles("Roller Tile", 59, -135, 2, 1, South, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
             Arm("Heavy Loader Arm", 52, -118); // (two Heavy arms at the station's south corners, either side of the oven's Core: a Plasma's 10 m reached three of its steps, Sean 2026-11-24)
-            Arm("Heavy Loader Arm", 63, -118, keep: true); // (stays a fixed arm: its kit preset's mast would stand in the Ore Bunker's chute to the Assembler)
+            Arm("Heavy Loader Arm", 63, -118, turn: 2, shoulder: new Vector2(62.96f, -115.96f), preset: "Kit Heavy Arm XL"); // (1.6 m west and half turned, a longer preset with no pedestal, so it still reaches every job: the Heavy preset's mast stood in the Ore Bunker's chute to the Assembler, --arm-swap-find)
         }
 
         /// <summary>
@@ -160,17 +160,23 @@ public sealed partial class ZeroDayWorks
 
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
         /// <summary>
-        /// A loader arm at (x, z): a fixed arm's kit preset (ArmKitMigrate.Map: at least its reach and load), its shoulder over where the
-        /// fixed arm's stood; <paramref name="keep"/> keeps the fixed arm, for the places its preset doesn't fit (`--arm-swap-check`, 2026-11-24:
-        /// Sean's to re-lay). Hands back the preset's Arm Core.
+        /// A loader arm where a fixed arm <paramref name="part"/> stood at (x, z) by its socket <paramref name="by"/>: that arm's kit preset
+        /// (ArmKitMigrate.Map: at least its reach and load; <paramref name="preset"/> names another), its shoulder over the fixed arm's, or at
+        /// <paramref name="shoulder"/> and turned <paramref name="turn"/> quarters (anticlockwise from above) where the preset meets something
+        /// there (`--arm-swap-find`: the nearest place it fits and reaches every job the fixed arm did, Sean 2026-11-24). Hands back its Arm Core.
         /// </summary>
-        private VPart Arm(string part, float x, float z, string by = "-y.0.0", bool keep = false)
+        private VPart Arm(string part, float x, float z, string by = "-y.0.0", int turn = 0, Vector2? shoulder = null, string? preset = null, bool keep = false)
         {
-            if (keep || ArmKitMigrate.PresetFor(part) is not { } preset)
-                return On(part, x, z, Up, by, Crane);
-            var turn = FirstTurn(Up);
+            if (keep)
+                return On(part, x, z, Up, by, Crane); // (a fixed arm no kit preset fits in for now: Sean's to settle)
+            preset ??= ArmKitMigrate.PresetFor(part) ?? throw new VehicleKitException($"no kit preset for a {part}");
+            var t0 = FirstTurn(Up);
             var fd = Def(part);
-            var mid = V(x, FloorY, z) + Rot24.Apply(turn, (fd.BoundsMin + fd.BoundsMax) * 0.5f - Array.Find(fd.Sockets, s => s.Name == by).At);
+            var mid = V(x, FloorY, z) + Rot24.Apply(t0, (fd.BoundsMin + fd.BoundsMax) * 0.5f - Array.Find(fd.Sockets, s => s.Name == by).At);
+            if (shoulder is { } at)
+                mid = new Vector3(at.X, mid.Y, at.Y);
+            var face = Vector3.Transform(Vector3.UnitZ, Quaternion.CreateFromAxisAngle(Vector3.UnitY, turn * MathF.PI / 2));
+            var o = new Orient(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, new Vector3(MathF.Round(face.X), 0, MathF.Round(face.Z)));
             var steps = ArmKitParts.PresetSteps(preset);
             var placed = new VPart[steps.Count];
             VPart? core = null;
@@ -180,11 +186,11 @@ public sealed partial class ZeroDayWorks
                 if (on < 0)
                 {
                     var d0 = Def(p);
-                    var lift = Rot24.Apply(turn, (d0.BoundsMin + d0.BoundsMax) * 0.5f - Array.Find(d0.Sockets, s => s.Name == "bottom").At);
-                    placed[k] = StandNear(p, mid with { Y = V(x, FloorY, z).Y + lift.Y });
+                    var lift = Rot24.Apply(t0, (d0.BoundsMin + d0.BoundsMax) * 0.5f - Array.Find(d0.Sockets, s => s.Name == "bottom").At);
+                    placed[k] = StandNear(p, mid with { Y = V(x, FloorY, z).Y + lift.Y }, o);
                 }
                 else
-                    placed[k] = Onto(placed[on], socket, p, own);
+                    placed[k] = p is "Arm Core" or "Arm Pedestal" && turn != 0 ? Onto(placed[on], socket, p, own, spin: SpinTo(placed[on], socket, p, own, FirstTurn(o))) : Onto(placed[on], socket, p, own); // (the Core and pedestals turned alike)
                 if (!p.StartsWith("Pressed Part"))
                     Paint(placed[k], Crane);
                 if (p == "Arm Core")
@@ -193,11 +199,20 @@ public sealed partial class ZeroDayWorks
             return core!;
         }
 
+        /// <summary>The spin that turns <paramref name="part"/> on <paramref name="on"/>'s <paramref name="socket"/> to <paramref name="rot"/>.</summary>
+        private int SpinTo(VPart on, string socket, string part, string by, byte rot)
+        {
+            for (var sp = 0; sp < 4; sp++)
+                if (TurnOf(on, socket, part, by, sp) == rot)
+                    return sp;
+            throw new VehicleKitException($"no spin turns a {part} on a {on.Name}'s \"{socket}\" to turn {rot}");
+        }
+
         /// <summary>
         /// A part by its bottom on the floor, its middle on the whole metre nearest <paramref name="centre"/> that is free (the floor takes a part on
         /// whole metres; a kit arm's shoulder is at a fixed arm's, which wasn't): within 1.5 m, nearest first. Throws when none is.
         /// </summary>
-        private VPart StandNear(string part, Vector3 centre)
+        private VPart StandNear(string part, Vector3 centre, Orient o)
         {
             var spots = new List<Vector2>();
             for (var dx = -2; dx <= 2; dx++)
@@ -210,7 +225,7 @@ public sealed partial class ZeroDayWorks
                     break;
                 try
                 {
-                    return Put(part, new Vector3(s.X, centre.Y, s.Y), Up, 0.05f, Tile(s.X, s.Y), "bottom");
+                    return Put(part, new Vector3(s.X, centre.Y, s.Y), o, 0.05f, Tile(s.X, s.Y), "bottom");
                 }
                 catch (VehicleKitException)
                 {
