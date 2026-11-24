@@ -49,7 +49,8 @@ public static class ConstructShapeVersion
         if (c.ShapeStamp != c.RebuildStamp || c.ShapeParts != c.PartCount)
         {
             c.EnsureDoors();
-            long main = c.PartCount, doors = 17;
+            long main = 0, doors = 17;
+            var counted = 0; // (the parts hashed: a piece growing on a die that comes or goes changes no cache, so it isn't counted either)
             for (var i = 0; i < c.PartCount; i++)
             {
                 ref var p = ref c.Parts[i];
@@ -57,11 +58,13 @@ public static class ConstructShapeVersion
                 var h = Mix(Mix(Mix(Mix(RuntimeHelpers.GetHashCode(d), RuntimeHelpers.GetHashCode(d.Boxes)), BitConverter.SingleToInt32Bits(p.Pos.X)), BitConverter.SingleToInt32Bits(p.Pos.Y)), BitConverter.SingleToInt32Bits(p.Pos.Z) ^ (long)p.Rot << 32 ^ (long)p.Seg << 40);
                 if (c.Growing(i))
                     continue; // (a piece growing on a die is in no cache of the body's boxes: SunShadows leaves it out, Construct.GrowStamp)
+                counted++;
                 if (c.DoorOfListed(i) >= 0)
-                    doors = Mix(doors, h ^ i);
+                    doors = Mix(doors, h ^ counted); // (its place among the hashed parts, not its index: a piece taken off the body earlier in the list renumbers the doors' parts and moves no box)
                 else
                     main = Mix(main, h);
             }
+            main = Mix(main, counted); // (2026-11-24: the seed was the part count, so each piece an Extruder started or handed on remade the works' whole sun caster, 30 ms)
             if (main != c.ShapeMainHash || c.ShapeStamp < 0)
             {
                 c.ShapeMainHash = main;

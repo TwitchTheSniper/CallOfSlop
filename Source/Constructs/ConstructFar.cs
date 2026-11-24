@@ -66,6 +66,25 @@ public static class ConstructFar
         }
     }
 
+    /// <summary>
+    /// Is body <paramref name="c"/> further than <see cref="Range"/> (and its radius) from every person, or falling round a planet on its rail? What
+    /// a box or a bucket pours is held back then (2026-11-24: two Requisition Crates on a ship 4 km over Caledon poured a 25 kg Material Bundle
+    /// each every second, which fell at 320 m/s for half a minute each, awake, and nobody near to see them). False with nobody given.
+    /// </summary>
+    public static bool Unwatched(ConstructWorld world, Construct c)
+    {
+        if (c.OnRail)
+            return true; // (in free fall nothing runs out of a box)
+        if (Range <= 0 || world.PeopleCount == 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.CarriedBy != 0)
+            return false;
+        var reach = Range + c.Radius;
+        var at = c.WorldCom;
+        for (var k = 0; k < world.PeopleCount; k++)
+            if (Vector3.DistanceSquared(world.People[k], at) < reach * reach)
+                return false;
+        return true;
+    }
+
     /// <summary>Is a far body's logic and power due this tick (and so stepped by <see cref="Construct.FarLogic"/> ticks' time)?</summary>
     public static bool LogicDue(Construct c) => !c.OnRail && (c.FarLogic <= 1 || _tick % c.FarLogic == 0); // (one phase, as the physics)
 

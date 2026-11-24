@@ -302,7 +302,8 @@ public static class ConstructScoops
         if (slow)
         {
             ConstructGatherer.SetBusy(world, st, s.Linger > 0);
-            Tip(world, query, c, ref s, in p, d, st, q, t);
+            if (!ConstructFar.Unwatched(world, c)) // (nothing pours where nobody is: ConstructFar.Unwatched)
+                Tip(world, query, c, ref s, in p, d, st, q, t);
         }
     }
 

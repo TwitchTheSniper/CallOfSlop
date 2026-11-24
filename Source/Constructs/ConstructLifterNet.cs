@@ -214,11 +214,14 @@ public static partial class ConstructLifters
     /// </summary>
     public static ulong EdgeKey(Construct c)
     {
-        var h = 14695981039346656037UL ^ (ulong)c.PartCount;
+        // (Every kind PointsOn takes is hashed, and not the part count: a piece an Extruder made or handed on, at the end of the parts, made
+        // the Zero Day works' map walk all its lifters' points again, 3 ms a time, 2026-11-24. A part going from the middle moves the
+        // indices of those after it, which are hashed.)
+        var h = 14695981039346656037UL;
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.DefOf(i);
-            if (d.Lifter == null && !d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
+            if (d.Lifter == null && !d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile && !d.IsBakeOven)
                 continue;
             ref readonly var p = ref c.Parts[i];
             h = (h ^ (ulong)i ^ (ulong)d.Id << 16 ^ (ulong)p.Rot << 40 ^ (ulong)p.Seg << 48 ^ (p.Broken ? 1UL << 56 : 0)) * 1099511628211UL;
