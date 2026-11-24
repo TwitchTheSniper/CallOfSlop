@@ -965,23 +965,46 @@ public sealed partial class Construct
         }
         Array.Sort(keys, order);
         var pairs = new List<long>();
+        // Only pairs in different frames count, so one of the two is in a freeform frame: each part, as the sweep reaches its low end,
+        // is tested against the welded parts still open on the axis, and a welded part against every part still open (2026-11-24: the
+        // sweep over every pair of the Zero Day works' 6,272 parts took 1.8 ms of each rebuild, four rebuilds a second as its machines
+        // ran; the pairs are the same, the order is put back by the sort below).
+        var openF = new List<int>();
+        var openRest = new List<int>();
         for (var a = 0; a < PartCount; a++)
         {
-            var pi = order[a];
-            if (Parts[pi].Broken)
+            var p = order[a];
+            if (Parts[p].Broken)
                 continue;
-            for (var b = a + 1; b < PartCount; b++)
+            var at = mn[p][ax];
+            for (var k = openF.Count - 1; k >= 0; k--)
             {
-                var pj = order[b];
-                if (mn[pj][ax] - pad.X > mx[pi][ax])
-                    break; // (sorted by their low end on the axis: none further on can meet it)
-                if (frame[pi] == frame[pj] || Parts[pj].Broken)
+                var q = openF[k];
+                if (mx[q][ax] + pad.X < at)
+                {
+                    openF[k] = openF[^1];
+                    openF.RemoveAt(openF.Count - 1);
                     continue;
-                if (mn[pi].X - pad.X > mx[pj].X || mn[pj].X - pad.X > mx[pi].X || mn[pi].Y - pad.Y > mx[pj].Y || mn[pj].Y - pad.Y > mx[pi].Y
-                    || mn[pi].Z - pad.Z > mx[pj].Z || mn[pj].Z - pad.Z > mx[pi].Z)
-                    continue;
-                pairs.Add(pi < pj ? (long)pi << 32 | (uint)pj : (long)pj << 32 | (uint)pi);
+                }
+                SeamPair(p, q, frame, mn, mx, pad, pairs);
             }
+            if (frame[p] != 0)
+            {
+                for (var k = openRest.Count - 1; k >= 0; k--)
+                {
+                    var q = openRest[k];
+                    if (mx[q][ax] + pad.X < at)
+                    {
+                        openRest[k] = openRest[^1];
+                        openRest.RemoveAt(openRest.Count - 1);
+                        continue;
+                    }
+                    SeamPair(p, q, frame, mn, mx, pad, pairs);
+                }
+                openF.Add(p);
+            }
+            else
+                openRest.Add(p);
         }
         pairs.Sort();
         // Each part's free structural sockets in the rest frame, made once (a cut plate has dozens and is in many pairs).
@@ -1037,6 +1060,17 @@ public sealed partial class Construct
             socks.Add((s, ToRest(Parts[i].Seg, at), DirToRest(Parts[i].Seg, ConstructParts.DirVector(r))));
         }
         socks.Add((-1, default, default)); // (the end of its run)
+    }
+
+    /// <summary>Two parts of <see cref="BuildSeamLinks"/>' sweep, open together on its axis: a pair when they are in different frames and their bounds meet (with the pad).</summary>
+    private static void SeamPair(int pi, int pj, Span<int> frame, Span<Vector3> mn, Span<Vector3> mx, Vector3 pad, List<long> pairs)
+    {
+        if (frame[pi] == frame[pj])
+            return;
+        if (mn[pi].X - pad.X > mx[pj].X || mn[pj].X - pad.X > mx[pi].X || mn[pi].Y - pad.Y > mx[pj].Y || mn[pj].Y - pad.Y > mx[pi].Y
+            || mn[pi].Z - pad.Z > mx[pj].Z || mn[pj].Z - pad.Z > mx[pi].Z)
+            return;
+        pairs.Add(pi < pj ? (long)pi << 32 | (uint)pj : (long)pj << 32 | (uint)pi);
     }
 
     /// <summary>How many sockets part <paramref name="i"/> has in <paramref name="socks"/> (up to its end mark).</summary>

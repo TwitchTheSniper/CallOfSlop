@@ -201,11 +201,16 @@ public static class StationCheck
         }
         var lastNote = "";
         var lifterLooks = new Dictionary<int, string>();
+        var slowMs = double.TryParse(Arg("--slow-ticks"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sm) ? sm : 0;
+        if (slowMs > 0)
+            (AllocProfile.On, AllocProfile.SlowTickMs) = (true, slowMs); // (--slow-ticks MS: each tick over MS named by its slowest sections, at the end)
         using (place.In())
             for (var k = 0; k < seconds * World.TickRate; k++)
             {
                 MoverPhysics.Clock++; // (the server tick: Game.ServerTickStep sets it in a game; lifters' moves run on it, and never ended here before 2026-11-22)
+                AllocProfile.TickStart();
                 w.Step(q, World.TickDt);
+                AllocProfile.TickEnd((uint)k);
                 if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
                         Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: queue {c.Parts[m].Orders?.Count ?? -1}, "
@@ -236,6 +241,13 @@ public static class StationCheck
                     Console.WriteLine($"  {k / (float)World.TickRate,5:0.0} s: {ConstructStation.StateText(sj)}: {sj.Note}");
                 }
             }
+        if (slowMs > 0)
+        {
+            AllocProfile.On = false;
+            Console.WriteLine($"  ticks over {slowMs:0.#} ms: {AllocProfile.SlowTicks.Count}");
+            foreach (var line in AllocProfile.SlowTicks)
+                Console.WriteLine($"    {line}");
+        }
         string Holds(int i) => w.StoreOf(c, i) is not { } st ? "no store" : $"{st.Amount} {RecyclingTable.Current.NameOf(st.Material)}"
             + (st.InAmount > 0 ? $", in {st.InAmount} {RecyclingTable.Current.NameOf(st.InMaterial)}" : "")
             + (st.MixN > 0 ? ", mix " + string.Join(" ", Enumerable.Range(0, st.MixN).Select(k => $"{st.MixAmount![k]} {RecyclingTable.Current.NameOf(st.MixMat![k])}")) : "");
