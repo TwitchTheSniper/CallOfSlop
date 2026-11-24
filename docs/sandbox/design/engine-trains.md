@@ -16,7 +16,8 @@ The rules (`ConstructWorks`, `ConstructThrust`):
 
 - The bell finds its pieces as it finds any ship works: through the head's own links (the train welded behind it), then by the old in-line search. Without its train it runs at the bare share (a quarter).
 - Fuel reaches the bell only by a pipe into the Fuel Injector's `Fuel in` (`ConstructWorks.TrainFed`). A tank touching the injector feeds nothing.
-- With the pipe gone (shot, or taken off) the bell runs on the injector's buffer, `injectorBuffer` seconds at full throttle (10 s, `Constructs/ShipWorks.json`), then stops. The buffer refills while fed.
+- With the pipe gone (shot, or taken off) the bell runs on the injector's buffer, `injectorBuffer` seconds at full throttle (10 s, `Constructs/ShipWorks.json`), then stops. The buffer refills while fed. It is not saved: a world loaded with the pipe cut has an empty buffer. A joined client doesn't run the buffer down: it shows an unfed bell that still burns as running on its buffer.
+- Only a bell that needs an injector takes a plug that is not on an engine socket as its mount and looks for its pieces through its own welds; older bells find their works as before.
 - The Look line and `--check-vehicle`'s works report say whether the train is fed.
 - The bell needs no `Fuel in` of its own (`ConstructParts.PortProblems` exempts a thruster that needs an injector).
 - A 1 m round socket takes 250 kN, so the XS bell is 240 kN.

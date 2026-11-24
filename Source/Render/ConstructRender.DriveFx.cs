@@ -14,7 +14,6 @@ public sealed partial class Construct
 {
     public float[] DriveHeat = [], DriveLast = []; // a drive part's eased heat and the level it last saw, by part index (drawn only: ConstructRender.DrivePrepare)
     public double[] DriveAt = []; // ...and when it was last stepped
-    public int DriveStamp = -1; // the StructStamp they are for
 }
 
 public static partial class ConstructRender
@@ -43,22 +42,12 @@ public static partial class ConstructRender
             return false;
         ref var th = ref c.Thrusters[t];
         _driveLevel = _fxHost ? th.Level * th.Cap : c.ThrustHeard ? th.Shown : c.ThrustShow;
-        _driveFed = th.Fed || th.Buffer > 0;
-        if (c.DriveHeat.Length < c.PartCount || c.DriveStamp != c.StructStamp)
+        _driveFed = th.Fed || (_fxHost ? th.Buffer > 0 : _driveLevel > LightOff); // (the buffer runs down on the host only: a client takes an unfed bell that still burns as on its buffer)
+        if (c.DriveHeat.Length < c.PartCount)
         {
-            if (c.DriveHeat.Length < c.PartCount)
-            {
-                c.DriveHeat = new float[c.PartCount + 8]; // (once as a body grows: never in a steady frame)
-                c.DriveLast = new float[c.PartCount + 8];
-                c.DriveAt = new double[c.PartCount + 8];
-            }
-            else
-            {
-                Array.Clear(c.DriveHeat);
-                Array.Clear(c.DriveLast);
-                Array.Clear(c.DriveAt);
-            }
-            c.DriveStamp = c.StructStamp;
+            Array.Resize(ref c.DriveHeat, c.PartCount + 8); // (once as a body grows: never in a steady frame; kept through a hit or an edit, so a burning engine stays hot)
+            Array.Resize(ref c.DriveLast, c.PartCount + 8);
+            Array.Resize(ref c.DriveAt, c.PartCount + 8);
         }
         var dt = (float)Math.Clamp(Now - c.DriveAt[i], 0, 120); // (time since this part was last stepped: far or culled, it catches up)
         if (c.DriveAt[i] == 0)

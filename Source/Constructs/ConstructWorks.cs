@@ -480,7 +480,8 @@ public static class ConstructWorks
         taken = false;
         var (at, dir) = ThrustLine(c, head);
         // A bell welded straight to its train (an engine module on a Round Module Plug, Sean 2026-11-24): the piece welded to its back.
-        for (var e = c.FirstLink(head); e >= 0; e = c.NextLink(e))
+        // Only a bell fed through an injector looks there, so older bells find their pieces as they always did.
+        for (var e = InjectorFedHead(c.Parts[head].D) ? c.FirstLink(head) : -1; e >= 0; e = c.NextLink(e))
         {
             var o = c.OtherEnd(e);
             if (!IsDrivePiece(c.Parts[o].D) || !OnLine(c, o, at, dir))
@@ -544,7 +545,7 @@ public static class ConstructWorks
                         return o;
                     if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
                         return MountUnder(c, head, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
-                    if (d.ModPart == ModPart.Plug && c.Parts[head].D.Role == PartRole.Thruster)
+                    if (d.ModPart == ModPart.Plug && c.Parts[head].D.Role == PartRole.Thruster && InjectorFedHead(c.Parts[head].D))
                         return o; // (a bell on any other plug, a whole engine module: the plug is its mount and its train is welded to the bell, Sean 2026-11-24)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
