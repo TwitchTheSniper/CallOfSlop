@@ -442,6 +442,8 @@ public sealed class DesignEditor
                     return "no such deck";
                 if (o["floor"] is not null) d.Decks[i].Floor = Snap(D(o, "floor"), 0.05);
                 if (o["height"] is not null) d.Decks[i].Height = Math.Clamp(Snap(D(o, "height"), 0.05), 2.2, 8);
+                if (o["by"] is not null) d.Decks[i].Floor = Snap(d.Decks[i].Floor + D(o, "by"), 0.05);
+                DesignScene.FitDeck(d, i);
                 return "";
             }
             case "delDeck":
@@ -612,6 +614,8 @@ public sealed class DesignEditor
         if (o["x1"] is not null) r.X1 = Snap(D(o, "x1"), 0.25);
         if (o["z0"] is not null) r.Z0 = Snap(D(o, "z0"), 0.25);
         if (o["z1"] is not null) r.Z1 = Snap(D(o, "z1"), 0.25);
+        if (o["x0"] is not null || o["x1"] is not null || o["z0"] is not null || o["z1"] is not null)
+            r.Want = null; // drawn anew: this is its plan now
         r.Normalise();
     }
 

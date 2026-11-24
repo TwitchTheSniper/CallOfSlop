@@ -843,6 +843,10 @@ function leftPanel() {
       d ? el("div", { class: "grid2" },
         el("span", {}, S.stacked ? "floor at z" : "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
         el("span", {}, "clear m"), num(d.height, v => cmd({ op: "setDeck", deck, height: v }), 0.05, "deckheight")) : "",
+      d ? el("div", { class: "row" }, el("span", {}, S.stacked ? "Move deck" : "Move deck"),
+        ...[[-1, S.stacked ? "1 m aft" : "Down 1 m"], [-0.25, S.stacked ? "25 cm aft" : "Down 25 cm"], [0.25, S.stacked ? "25 cm fore" : "Up 25 cm"], [1, S.stacked ? "1 m fore" : "Up 1 m"]]
+          .map(([by, t]) => el("button", { onclick: () => cmd({ op: "setDeck", deck, by }) }, t))) : "",
+      d ? el("p", { class: "hint" }, "Its rooms move with it. One out to the hull follows the skin; the rest shrink to fit inside it, and grow back to the size you drew when the deck moves back.") : "",
       d ? el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDeck", deck }); deck = Math.max(0, deck - 1); rebuild(); panels(); } }, "Remove deck and its rooms")) : ""));
     const kinds = el("div", { class: "kinds" });
     for (const k of CAT.rooms) kinds.append(el("button", { class: k.name === roomKind ? "on" : "", title: k.desc, onclick: () => { roomKind = k.name; leftPanel(); } }, el("span", { class: "sw", style: `background:${k.colour}` }), k.name));

@@ -148,6 +148,7 @@ public sealed class Room
     public string Label = "";
     public int Group; // segments of one room share a group (not 0): open to each other, no door between (Karl, 2026-11-24)
     public double Height; // its own clear height (0: its deck's), so it can rise through the decks above (Karl, 2026-11-24)
+    public double[]? Want; // the plan it was drawn at, while a deck move has shrunk it to fit (it grows back to this when it can)
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);

@@ -375,6 +375,86 @@ public static class DesignScene
 
     // ---- checks
 
+    /// <summary>How many of a room's edge samples are outside the skin (the room check's own samples).</summary>
+    public static int Outside(ShipDesign d, Room r) => Outside(d, r, null);
+
+    public static int Outside(ShipDesign d, Room r, List<(double X, double Z)>? where)
+    {
+        var spines = d.Joins.Select(j => (J: j, S: j.Spine(d))).ToList();
+        var dk = d.DeckOf(r);
+        var n = 0;
+        foreach (var up in new[] { 0.05, dk.Height - 0.02 })
+        {
+            var nx = Math.Max(1, (int)Math.Ceiling(r.X1 - r.X0));
+            var nz = Math.Max(1, (int)Math.Ceiling(r.Z1 - r.Z0));
+            for (var i = 0; i <= nx; i++)
+                for (var j = 0; j <= nz; j++)
+                {
+                    if (i != 0 && i != nx && j != 0 && j != nz)
+                        continue;
+                    var v = r.Z0 + (r.Z1 - r.Z0) * j / nz;
+                    var (el, er) = Edges(d, r, v, up);
+                    var w = d.World(dk, i == 0 ? el : i == nx ? er : r.X0 + (r.X1 - r.X0) * i / nx, v, up);
+                    if (!d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06) && !spines.Any(q => q.J.Inside(q.S, w[0], w[1], w[2], 0.06)))
+                    {
+                        n++;
+                        where?.Add((r.X0 + (r.X1 - r.X0) * i / nx, v));
+                    }
+                }
+        }
+        return n;
+    }
+
+    /// <summary>After a deck moves (Karl, 2026-11-24): each room on it goes back to the plan it was drawn at, then shrinks a
+    /// quarter metre at a time from whichever side frees most of the samples outside the skin. A room out to the hull follows
+    /// the skin by itself (its open sides), so it only shrinks where its closed sides or its ends poke out.</summary>
+    public static void FitDeck(ShipDesign d, int deck)
+    {
+        foreach (var r in d.Rooms)
+        {
+            if (r.Deck != deck)
+                continue;
+            r.Want ??= [r.X0, r.X1, r.Z0, r.Z1];
+            (r.X0, r.X1, r.Z0, r.Z1) = (r.Want[0], r.Want[1], r.Want[2], r.Want[3]);
+            var outs = new List<(double X, double Z)>();
+            var bad = Outside(d, r, outs);
+            // Each sample outside votes for the side nearest it; the side with most votes comes in a quarter metre.
+            for (var k = 0; k < 160 && bad > 0; k++)
+            {
+                var votes = new double[4];
+                foreach (var (x, z) in outs)
+                {
+                    double[] dist = [x - r.X0, r.X1 - x, z - r.Z0, r.Z1 - z];
+                    var m = 0;
+                    for (var q = 1; q < 4; q++)
+                        if (dist[q] < dist[m])
+                            m = q;
+                    votes[m]++;
+                }
+                var side = -1;
+                for (var q = 0; q < 4; q++)
+                {
+                    var room = q < 2 ? r.X1 - r.X0 : r.Z1 - r.Z0;
+                    if (votes[q] > 0 && room >= 1.25 && (side < 0 || votes[q] > votes[side]))
+                        side = q;
+                }
+                if (side < 0)
+                    break;
+                switch (side)
+                {
+                    case 0: r.X0 += 0.25; break;
+                    case 1: r.X1 -= 0.25; break;
+                    case 2: r.Z0 += 0.25; break;
+                    default: r.Z1 -= 0.25; break;
+                }
+                outs.Clear();
+                bad = Outside(d, r, outs);
+            }
+            if (bad > 0)
+                (r.X0, r.X1, r.Z0, r.Z1) = (r.Want[0], r.Want[1], r.Want[2], r.Want[3]); // it can't fit at this height: keep its plan, the check says so
+        }
+    }
+
     public static Check Run(ShipDesign d)
     {
         var c = new Check();
