@@ -1273,6 +1273,7 @@ function inspector() {
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
       el("div", { class: "row" },
+        el("button", { title: "Onto the ship's centreline: the middle of its keel or spine, or of a hull's end", onclick: () => cmd({ op: "centrePiece", id: p.id }) }, "Centre"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),

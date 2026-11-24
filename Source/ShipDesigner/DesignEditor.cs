@@ -370,6 +370,19 @@ public sealed class DesignEditor
                 }
                 return "";
             }
+            case "centrePiece":
+            {
+                // Onto the ship's centreline (Karl, 2026-11-24): on a hull's end, across to x 0; on the skin, to the keel's or the
+                // spine's middle, whichever is nearer. One piece there, so no mirrored twin.
+                var p = P();
+                var h = d.Hull(p.Hull) ?? throw new InvalidOperationException("no such hull");
+                if (p.Surface is "aft" or "fore")
+                    p.U = Math.Round(-h.CopyX(Math.Min(p.Copy, h.Copies - 1)), 3);
+                else
+                    p.T = p.T < 0.5 ? 0 : 1;
+                p.Mirror = false;
+                return "";
+            }
             case "autoRoom":
                 return AutoRoom(P());
             case "pastePiece":
