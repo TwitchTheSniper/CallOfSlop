@@ -318,6 +318,8 @@ public sealed class FactoryScript : BlueprintScript
             prev = row[i];
         }
         Onto(row[n - 1], "+x", end, "-x");
+        if (o.Recipe.Length > 0)
+            Config(core, ("recipe", RecipeOf(core, o.Recipe))); // (set, not Auto, as a plain machine's: a mixed one would otherwise take any fellow)
         return core;
     }
 

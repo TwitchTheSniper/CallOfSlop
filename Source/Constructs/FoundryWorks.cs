@@ -24,7 +24,7 @@ public static class FoundryWorks
     public const float PitTop = 1.6f, MouldTop = 1f; // a Crucible Block's top and a Mould Line's (FoundryParts draws them)
     public const float LaunderOut = 0.3f, LaunderHalf = 0.18f, LaunderY0 = 1.12f, LaunderY1 = 1.34f;
     public const float EavesOver = 3f, StackTop = 12f, HoodOut = 0.3f, HoodFront = 0.85f;
-    public const float CrucibleY0 = 1.64f, TiltDegrees = 30f; // (FoundryParts' lone crucible: its bottom, and how far it tips)
+    public const float CrucibleY0 = 1.64f, TiltDegrees = 30f; // (a crucible's lowest bottom, and how far a 1 x 1's tips: Bottom, Tilt)
     private const int BurnDamage = 1; // per 60 Hz tick in a hot box (GameMachineHazards): the pours, the launder, the Mould Lines
     private const int MostHazards = 60; // (the shared list's cap, as the Assemblers')
 
@@ -33,17 +33,42 @@ public static class FoundryWorks
 
     // ---- A square's crucible ----
 
-    /// <summary>A crucible's radius over an n x n square: 2n - 0.4 m across (0.8 on a 1 x 1, the Crucible Block's own).</summary>
+    /// <summary>A crucible's radius over an n x n square, at its rim: 2n - 0.4 m across (0.8 on a 1 x 1, the Crucible Block's own). It tapers to
+    /// <see cref="TaperBottom"/> of that at its foot.</summary>
     public static float Radius(int n) => n - 0.2f;
+
+    /// <summary>A crucible's foot against its rim (it widens about 15% to the top), and its middle course's.</summary>
+    public const float TaperBottom = 1f / 1.15f, TaperMiddle = 1f / 1.07f;
 
     /// <summary>Its height, bottom to rim (0.96 m on a 1 x 1).</summary>
     public static float Height(int n) => 0.96f + 0.6f * (n - 1);
 
-    /// <summary>The trunnions' height over the floor: the line it tips about (2.2 m on a 1 x 1).</summary>
-    public static float Trunnion(int n) => CrucibleY0 + Height(n) * 0.58f;
+    /// <summary>How far it tips toward the front to pour (degrees): <see cref="TiltDegrees"/> on a 1 x 1, less on a bigger one, whose lip drops further.</summary>
+    public static float Tilt(int n) => TiltDegrees / MathF.Sqrt(Math.Max(1, n));
 
-    /// <summary>How far its lip's spout reaches past the rim, toward the front.</summary>
-    public static float Spout(int n) => 0.32f + 0.08f * n;
+    private const float TrunnionShare = 0.58f, Clear = 0.05f; // (the trunnions' height up the crucible; the tipped shell's least gap over the pit's top)
+
+    /// <summary>
+    /// Its bottom over the floor: raised on its trunnions so that, tipped by <see cref="Tilt"/>, its front foot stays <see cref="Clear"/> over the
+    /// pit's top (its rim's radius, the most it could reach; 1.975 m on a 1 x 1).
+    /// </summary>
+    public static float Bottom(int n)
+    {
+        var (s, k) = MathF.SinCos(Tilt(n) * MathF.PI / 180f);
+        var drop = Radius(n) * s - TrunnionShare * Height(n) * (1f - k); // (how far the front foot falls below the upright bottom)
+        return MathF.Max(CrucibleY0, PitTop + Clear + drop);
+    }
+
+    /// <summary>The trunnions' height over the floor: the line it tips about.</summary>
+    public static float Trunnion(int n) => Bottom(n) + Height(n) * TrunnionShare;
+
+    /// <summary>How far its lip's spout reaches past the rim, toward the front: so that, tipped, the lip is over the launder's middle.</summary>
+    public static float Spout(int n)
+    {
+        var (s, k) = MathF.SinCos(Tilt(n) * MathF.PI / 180f);
+        var dy = Height(n) * (1f - TrunnionShare) - 0.05f;
+        return (n + LaunderOut - dy * s) / k - Radius(n);
+    }
 
     /// <summary>A square's pour cycle (s): it tips, pours, comes back and rests, a bigger one pouring longer.</summary>
     public static float Period(int n) => 7f + n;
@@ -79,8 +104,8 @@ public static class FoundryWorks
     /// </summary>
     public static Vector3 Lip(int n, float cx, float cz, float floor, float share)
     {
-        var a = share * TiltDegrees * MathF.PI / 180f;
-        float dz = -(Radius(n) + Spout(n)), dy = CrucibleY0 + Height(n) - 0.05f - Trunnion(n);
+        var a = share * Tilt(n) * MathF.PI / 180f;
+        float dz = -(Radius(n) + Spout(n)), dy = Bottom(n) + Height(n) - 0.05f - Trunnion(n);
         var (s, k) = MathF.SinCos(a);
         return new Vector3(cx, floor + Trunnion(n) + dz * s + dy * k, cz + dz * k - dy * s);
     }

@@ -1083,9 +1083,10 @@ public sealed class Assembling : IPartGenerator
         // keeps the Smelter's row, and the Workshop to Plasma Smelters' rows went: tools/MIGRATING.md; after everything: AfterCloche)
         (null, null, Rec("Hearth Block", 60, 1, m: [("concrete", 320), ("steel", 140)])),
         (null, null, Rec("Casting Bed", 25, 1, m: [("concrete", 90), ("steel", 80)])),
-        // (the Foundry on the block system, PR 2 of the refiners: its Crucible Block, a steel pit frame lined with brick, and its Mould Line; the
+        // (the Foundry on the block system, PR 2 of the refiners: its Crucible Block, a steel pit frame lined with brick (about 0.85 of the Core's
+        // 745 units: the design's "a little less than its Core"), and its Mould Line; the
         // Core keeps the Foundry's row, and the Workshop to Plasma Foundries' rows went: tools/MIGRATING.md; after everything: AfterCloche)
-        (null, null, Rec("Crucible Block", 60, 1, m: [("steel", 260), ("concrete", 180)])),
+        (null, null, Rec("Crucible Block", 60, 1, m: [("steel", 380), ("concrete", 250)])),
         (null, null, Rec("Mould Line", 25, 1, m: [("steel", 110), ("concrete", 30)])),
     ];
 

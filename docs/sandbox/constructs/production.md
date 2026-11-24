@@ -188,12 +188,13 @@ Foundry's tiers and its recipe gates are gone. Parts by the part kit's `foundry_
   **Chute in** (on the manifold between them), **Chute out** is on its free -x side, a screen and a sight glass on its front (-z); nothing
   moves but the mixers' paddles. Alone it is the old tier 1: 2 steel a second.
 - **Crucible Block** (`CrucibleBlock.json`): 2 x 2 m, a 1.6 m pit frame, 3 t, sockets on all four sides and the bottom. Alone (a 1 x 1)
-  it carries its own small crucible on trunnions (`"work": "hinge"` boxes, tipping 30 degrees toward the front on the square's clock) with
-  a glowing melt; in a square of 2 or more the faces between its blocks lose their dressing and one crucible 2n - 0.4 m across is drawn over
+  it carries its own small crucible on trunnions (`"work": "hinge"` boxes, tipping 30 degrees toward the front on the square's clock, its steel shell
+  widening to the rim) with a glowing melt; in a square of 2 or more the faces between its blocks lose their dressing and one crucible 2n - 0.4 m across is drawn over
   the square.
 - **Mould Line** (`MouldLine.json`): an end piece of the foundry family, 2 x 2 m and 1 m tall, eight sand moulds on a roller deck. Its
   moulds take the colour of what the Foundry makes as each pour reaches them. Looks only.
-- **Recipes** (`Assembling.cs`'s Tail, at the end of AfterCloche): Crucible Block 260 steel and 180 concrete, Mould Line 110 steel and 30
+- **Recipes** (`Assembling.cs`'s Tail, at the end of AfterCloche): Crucible Block 380 steel and 250 concrete (about 0.85 of the Core's 745
+  units), Mould Line 110 steel and 30
   concrete.
 
 | Squares | Rate | Power | Input bin | Output bin | Blocks, mass |
@@ -207,16 +208,20 @@ Foundry's tiers and its recipe gates are gone. Parts by the part kit's `foundry_
 **Where the works go** (`FoundryWorks` places them, `FoundryRender` draws them, `FoundryWorks.AddHazards` burns by them, in the Core's
 frame, allocating nothing; culled past 150 m):
 
-- **Crucibles.** One over each square's middle, 2n - 0.4 m across and 0.96 + 0.6 (n - 1) m tall, on trunnions along x on two A-frame
-  stands with a sector gear and motor. Each tips toward the front on its own clock (a cycle of 7 + n s from its corner cell: 1.5 s up,
-  1.5 + 0.4n s pouring, 1.5 s back), its lip's spout over the launder, and pours a stream in the colour of the melt (the output's
-  colour while it holds any, iron grey before).
+- **Crucibles.** One over each square's middle, 2n - 0.4 m across at the rim and 0.96 + 0.6 (n - 1) m tall, a steel shell in three
+  courses widening about 15% to the rim with dark bands over the joints, a crust round the melt. It hangs on trunnions along x on two
+  A-frame stands in the square's 0.2 m margin (a sector gear and motor on the +x one). Each tips toward the front on its own clock (a
+  cycle of 7 + n s from its corner cell: 1.5 s up, 1.5 + 0.4n s pouring, 1.5 s back) by 30 / sqrt(n) degrees, and stands high enough on
+  its trunnions that the tipped shell clears the pit's top by 5 cm (`FoundryWorks.Bottom`: 1.98 m on a 1 x 1, 2.71 m on a 5 x 5); its
+  spout is long enough that the tipped lip is over the launder's middle (`Spout`). It pours a stream in the colour of the melt (the
+  output's colour while the bin holds any, else the recipe it works, set or picked by its input; iron grey before any).
 - **The launder.** One trough on trestles 0.3 m in front of the frontmost square, from the first crucible's lip to the Mould Line nearest
   the front (the furthest along x of those), with a lip into its first mould; with no Mould Line it ends in a ladle past the last square.
   A square behind another pours by a spur when the cells in front of its middle are free, else into a covered launder (not drawn). The
   launder glows from the first pouring lip on, and the moulds fill one by one in the output's colour.
 - **The hood.** One hood on four posts over the whole bed and its Mould Lines, its eaves at the biggest square's n + 3 m, three stepped
-  roof courses and gutters, and one collared stack to 12 m that smokes while it works.
+  courses of plated steel (the top one sooted) with a steel batten and bolts along their edges, a ridge vent, a hazard fascia on the front
+  eave and gutters, all on Base steel posts and braces, and one collared stack to 12 m that smokes while it works.
 - **Burns.** While a Foundry works, each open square's pour and spur, the launder and its lip and every Mould Line are hot (the Smelter's
   `world.Hazards` and cap). A bare Core burns no one: its melt is behind the sight glass.
 

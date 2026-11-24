@@ -251,7 +251,7 @@
     {"part": "Hearth Block", "on": 242, "socket": "+x", "by": "-x", "paint": "#5c6644"},
     {"part": "Hearth Block", "on": 244, "socket": "+z", "by": "-z", "paint": "#5c6644"},
     {"part": "Casting Bed", "on": 244, "socket": "+x", "by": "-x", "spin": 3},
-    {"part": "Foundry", "on": 33, "socket": "top22", "by": "bottom", "spin": 3, "paint": "#4f5a3a"},
+    {"part": "Foundry", "on": 33, "socket": "top22", "by": "bottom", "spin": 3, "config": {"recipe": 2}, "paint": "#4f5a3a"},
     {"part": "Crucible Block", "on": 247, "socket": "+x", "by": "-x", "paint": "#4f5a3a"},
     {"part": "Crucible Block", "on": 248, "socket": "+z", "by": "-z", "paint": "#4f5a3a"},
     {"part": "Crucible Block", "on": 248, "socket": "+x", "by": "-x", "paint": "#4f5a3a"},

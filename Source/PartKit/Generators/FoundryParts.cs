@@ -30,14 +30,17 @@ public sealed class FoundryParts : IPartGenerator
     public const string Body = "#6b4a35"; // the Foundries' colour: the Core's cladding, the pit frames' plates
     private const string Trim = "#4a3324";
     private const string Lining = "#8a7f72"; // refractory: a crucible's rim, the pits' lining
-    private const string Sand = "#7a6a55", Soot = "#2b2b2b";
+    private const string Sand = "#7a6a55", Soot = "#2b2b2b", Crust = "#3a2418";
     public const double SockY = 0.25; // the side sockets' height on the Core, a block and the Mould Line (they weld at one height)
     public const double BlockTop = FoundryWorks.PitTop, CoreTop = 2.0, LineTop = FoundryWorks.MouldTop;
     public const int OutBin = 400, InBin = 200; // the Core's bins at x1 (the old tier 1 Foundry's: its input, of each material), grown by its squares' rate
     private const int MaxCells = 50, MaxSide = 10;
 
     /// <summary>A lone Crucible Block's crucible (its frame): radius, bottom and top, the trunnions' height (the hinge line, along x) and how far it tips toward the front.</summary>
-    public const double CrucibleR = 0.8, CrucibleY0 = FoundryWorks.CrucibleY0, CrucibleY1 = CrucibleY0 + 0.96, TrunnionY = 2.2, Tilt = FoundryWorks.TiltDegrees; // (FoundryWorks.Radius, Height and Trunnion at n 1)
+    public static readonly double CrucibleR = FoundryWorks.Radius(1), CrucibleY0 = R3(FoundryWorks.Bottom(1)), CrucibleY1 = R3(CrucibleY0 + FoundryWorks.Height(1)),
+        TrunnionY = R3(FoundryWorks.Trunnion(1)), Tilt = FoundryWorks.Tilt(1), SpoutOut = R3(FoundryWorks.Spout(1)); // (FoundryWorks at n 1)
+
+    private static double R3(double v) => Math.Round(v, 3);
 
     private static PyDict Cyl(string front, int segments = 12) => Kw(("shape", "cylinder"), ("segments", segments), ("front", front));
 
@@ -211,19 +214,28 @@ public sealed class FoundryParts : IPartGenerator
         }
         // ---- Alone (a 1 x 1, or a loose block): its pit's lining and its own small crucible on two trunnion stands ----
         p.Add(Alone(L([-0.92, t - 0.004, -0.92], [0.92, t + 0.016, 0.92], Lining, paintable: false))); // (the pit's refractory lining)
-        const double r = CrucibleR, y0 = CrucibleY0, y1 = CrucibleY1, ty = TrunnionY;
-        p.Add(Alone(Tips(L([-r, y0, -r], [r, y1, r], MachineLook.Base, "dirty steel", shape: Cyl("+y", 20))))); // (its shell)
-        p.Add(Alone(Tips(L([-r - 0.03, y1 - 0.12, -r - 0.03], [r + 0.03, y1 - 0.04, r + 0.03], MachineLook.Steel, "steel", shape: Cyl("+y", 20))))); // (a band round its top)
+        double r = Math.Round(CrucibleR, 3), y0 = CrucibleY0, y1 = CrucibleY1, ty = TrunnionY, h = y1 - y0;
+        // Its shell: steel, three courses widening to the rim (FoundryWorks.TaperBottom, TaperMiddle), a dark band over each joint and a dark rim.
+        var rs = new[] { Math.Round(r * FoundryWorks.TaperBottom, 3), Math.Round(r * FoundryWorks.TaperMiddle, 3), r };
+        for (var k = 0; k < 3; k++)
+        {
+            var rk = rs[k];
+            p.Add(Alone(Tips(L([-rk, y0 + h * k / 3 + (k > 0 ? 0.004 : 0), -rk], [rk, y0 + h * (k + 1) / 3 - (k < 2 ? 0.004 : 0), rk], MachineLook.Steel, "steel", shape: Cyl("+y", 20))))); // (a course)
+            if (k > 0)
+                p.Add(Alone(Tips(L([-rk - 0.03, y0 + h * k / 3 - 0.05, -rk - 0.03], [rk + 0.03, y0 + h * k / 3 + 0.05, rk + 0.03], MachineLook.Base, shape: Cyl("+y", 20))))); // (a band over the joint)
+        }
+        p.Add(Alone(Tips(L([-r - 0.03, y1 - 0.12, -r - 0.03], [r + 0.03, y1 - 0.04, r + 0.03], MachineLook.Base, shape: Cyl("+y", 20))))); // (the band round its top)
         p.Add(Alone(Tips(L([-r + 0.04, y1 - 0.008, -r + 0.04], [r - 0.04, y1 + 0.004, r - 0.04], Lining, shape: Cyl("+y", 20))))); // (its refractory rim)
-        p.Add(Alone(Tips(L([-r + 0.12, y1 + 0.008, -r + 0.12], [r - 0.12, y1 + 0.022, r - 0.12], MachineLook.Hot, shape: Cyl("+y", 20))))); // (the melt: it glows while its machine works)
-        p.Add(Alone(Tips(L([-0.12, y1 - 0.1, -r - 0.4], [0.12, y1 - 0.006, -r + 0.02], MachineLook.Base)))); // (the lip's spout, to the front)
-        p.Add(Alone(Tips(L([-0.08, y1 - 0.09, -r - 0.38], [0.08, y1 - 0.02, -r - 0.02], MachineLook.Hot)))); // (its channel)
+        p.Add(Alone(Tips(L([-r + 0.08, y1 + 0.002, -r + 0.08], [r - 0.08, y1 + 0.016, r - 0.08], Crust, shape: Cyl("+y", 20))))); // (the crust round the melt's edge)
+        p.Add(Alone(Tips(L([-r + 0.14, y1 + 0.008, -r + 0.14], [r - 0.14, y1 + 0.022, r - 0.14], MachineLook.Hot, shape: Cyl("+y", 20))))); // (the melt: it glows while its machine works)
+        p.Add(Alone(Tips(L([-0.12, y1 - 0.1, -r - SpoutOut], [0.12, y1 - 0.006, -r + 0.02], MachineLook.Base)))); // (the lip's spout, to the front)
+        p.Add(Alone(Tips(L([-0.08, y1 - 0.09, -r - SpoutOut + 0.02], [0.08, y1 - 0.02, -r - 0.02], MachineLook.Hot)))); // (its channel)
         foreach (var sx in new[] { -1, 1 })
         {
             double x0 = sx > 0 ? r + 0.04 : -r - 0.04, x1 = sx > 0 ? 0.94 : -0.94;
             p.Add(Alone(L([Math.Min(x0, x1), t, -0.14], [Math.Max(x0, x1), ty - 0.1, 0.14], MachineLook.Base))); // (a trunnion stand)
             p.Add(Alone(L([Math.Min(x0, x1) - 0.004, ty - 0.1, -0.16], [Math.Max(x0, x1) + 0.004, ty + 0.12, 0.16], MachineLook.Steel, "steel"))); // (its bearing)
-            p.Add(Alone(L([sx > 0 ? r - 0.02 : -0.94 - 0.006, ty - 0.07, -0.07], [sx > 0 ? 0.94 + 0.006 : -r + 0.02, ty + 0.07, 0.07], MachineLook.Steel, "steel", shape: Cyl("+x", 12)))); // (the trunnion pin)
+            p.Add(Alone(L([sx > 0 ? rs[1] - 0.02 : -0.94 - 0.006, ty - 0.07, -0.07], [sx > 0 ? 0.94 + 0.006 : -rs[1] + 0.02, ty + 0.07, 0.07], MachineLook.Steel, "steel", shape: Cyl("+x", 12)))); // (the trunnion pin)
         }
         p.Add(Alone(L([0.946, ty - 0.3, -0.3], [0.97, ty + 0.3, 0.3], MachineLook.Accent, shape: Cyl("+x", 16)))); // (the tilt gear's sector, on the +x stand)
         p.Add(Alone(L([0.7, t, 0.3], [0.94, t + 0.24, 0.6], MachineLook.Base))); // (its motor)
