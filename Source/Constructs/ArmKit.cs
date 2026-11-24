@@ -724,6 +724,10 @@ public static class ArmKitCheck
 {
     public static int Cli(string[] args)
     {
+        if (Array.Exists(args, a => a == "--arm-swap-base"))
+            foreach (var (f, p) in ArmKitMigrate.Map)
+                if (ConstructParts.Find(f) is { Lifter: { } l } fd)
+                    Console.WriteLine($"[swap] base {f}: {l.Base} socket -y.0.0 {Array.Find(fd.Sockets, x => x.Name == "-y.0.0").At} centre -y {Array.Find(fd.Sockets, x => x.Name == "centre -y").At}");
         var at = Array.FindIndex(args, a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase));
         var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm", "Kit Loader Arm", "Kit Workshop Arm", "Kit Industrial Arm", "Kit Military Arm", "Kit Plasma Arm", "Kit Long Arm", "Kit Heavy Arm", "Kit Shipyard Arm", "Kit Module Fitter"];
         var bad = 0;
@@ -858,8 +862,9 @@ public static class ArmKitMigrate
                 if (!presets.TryGetValue(preset, out var shape))
                     presets[preset] = shape = Footprint(preset);
                 c.PartBounds(i, out var amn, out var amx);
-                var foot = new Vector3((amn.X + amx.X) * 0.5f, amn.Y, (amn.Z + amx.Z) * 0.5f);
                 var rot = Rot24.Quat(c.Parts[i].Rot);
+                var sh = c.Parts[i].Pos + Vector3.Transform(d.Lifter.Base, rot); // (its shoulder: the kit Core's goes over it, so each reaches the same ring)
+                var foot = new Vector3(sh.X, amn.Y, sh.Z);
                 var hits = new List<string>();
                 foreach (var (pn, mn, mx) in shape)
                 {
@@ -907,6 +912,45 @@ public static class ArmKitMigrate
         return blocked;
     }
 
+    /// <summary>
+    /// <c>--arm-swap-carry [BLUEPRINT]</c> (default the Zero Day Frigate): for each fixed arm and its preset, the parts of the blueprint the fixed
+    /// arm carries and the preset doesn't, and why (each head's payload and size rule).
+    /// </summary>
+    public static int Carry(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--arm-swap-carry", StringComparison.OrdinalIgnoreCase));
+        var name = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
+        if (ConstructBuild.FindBlueprint(name) is not { } bp)
+            return 1;
+        var kinds = new SortedSet<string>();
+        foreach (var st in bp.Steps)
+            kinds.Add(st.Part);
+        var lost = 0;
+        foreach (var (f, p) in Map)
+        {
+            if (ConstructParts.Find(f) is not { Lifter: { } fl } || Build(p) is not { } c)
+                continue;
+            var core = -1;
+            for (var i = 0; i < c.PartCount && core < 0; i++)
+                if (c.Parts[i].D.Lifter is { Kit: true })
+                    core = i;
+            var kl = ArmKit.DefOf(c, core, c.Parts[core].D.Lifter!);
+            var n = 0;
+            foreach (var k in kinds)
+            {
+                if (ConstructParts.Find(k) is not { } d || !ConstructLifters.Carries(fl, d) || ConstructLifters.Carries(kl, d))
+                    continue;
+                n++;
+                var sz = d.BoundsMax - d.BoundsMin;
+                var why = kl.Spec is { Valid: true } s ? string.Join(", ", Enumerable.Range(0, s.Heads.Length).Select(h => $"{s.Heads[h].Kind} {ArmKit.PayloadWith(s, h):0} kg{(ArmKit.Fits(s.Heads[h].Kind, s.Heads[h].Width, d) ? "" : " too big")}")) : "no spec";
+                Log($"[carry] {f} -> {p}: {k} ({d.Mass:0} kg, {sz.X:0.0} x {sz.Y:0.0} x {sz.Z:0.0} m): {why}; long {kl.PieceLong:0.0} m");
+            }
+            Log($"[carry] {f} -> {p}: {n} kind(s) of {name} lost");
+            lost += n;
+        }
+        return lost;
+    }
+
     private static void Log(string s) => Console.WriteLine(s);
 
     private static Construct? Build(string name)
@@ -935,7 +979,7 @@ public static class ArmKitMigrate
         var s = ArmKit.Build(c, core);
         var inv = Quaternion.Conjugate(Rot24.Quat(c.Parts[core].Rot));
         c.PartBounds(core, out var cmn, out _);
-        var origin = c.Parts[core].Pos with { Y = cmn.Y };
+        var origin = c.Parts[core].Pos + Vector3.Transform(c.Parts[core].D.Lifter!.Base, Rot24.Quat(c.Parts[core].Rot)); // (its shoulder)
         // Its lowest part's bottom (a pedestal's) is the floor: the Core's bottom middle sits that much higher.
         var floor = cmn.Y;
         for (var i = 0; i < c.PartCount; i++)

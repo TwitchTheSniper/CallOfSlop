@@ -377,6 +377,19 @@ public sealed class ArmKitParts : IPartGenerator
         new("Kit Module Fitter", "The kit arm a Module Fitter S became: a Fitter Head, 8 m of reach, 20 t.", 0, 130, 100, 380, 120, 100, 360, 110, 140, 4, 60, 6, Fitter: true),
     ];
 
+    /// <summary>A preset's steps (part, the step it goes on or -1, that step's socket, its own), for a generator that lays one inside a bigger blueprint (ZeroDayWorks.Arm).</summary>
+    public static List<(string Part, int On, string Socket, string By)> PresetSteps(string name)
+    {
+        var s = Array.Find(Presets, x => x.Name == name) ?? throw new InvalidOperationException($"no arm kit preset \"{name}\"");
+        var list = new List<(string, int, string, string)>();
+        foreach (var o in (List<object?>)Blueprint(s)["steps"]!)
+        {
+            var d = (PyDict)o!;
+            list.Add(((string)d["part"]!, d.Has("on") ? (int)d["on"]! : -1, d.Has("socket") ? (string)d["socket"]! : "", d.Has("by") ? (string)d["by"]! : ""));
+        }
+        return list;
+    }
+
     private static string Key(string die, string pattern, string blank) => $"Pressed Part (arm.{pattern} {blank})";
 
     private static PyDict Blueprint(Preset s)

@@ -80,11 +80,17 @@ public sealed class SubmoduleShowcase : IPartGenerator
         steps.Add("{ \"part\": \"Foundation\", \"on\": 4, \"socket\": \"x+0\", \"by\": \"x-0\" }"); // 5: (4, 0, 4)
         steps.Add("{ \"part\": \"Building Station\", \"on\": 0, \"socket\": \"top01\", \"by\": \"-y.0.0\" }"); // 6: the main station
         steps.Add("{ \"part\": \"Building Station\", \"on\": 3, \"socket\": \"top01\", \"by\": \"-y.0.0\" }"); // 7: the sub-station
-        steps.Add("{ \"part\": \"Loader Arm\", \"on\": 5, \"socket\": \"top12\", \"by\": \"-y.0.0\" }"); // 8
         // Each station's bay (drawing 18): two Bay Blocks beside its Core, 2 x 4 m and, with no masts, 2 m high.
         foreach (var core in new[] { 6, 7 })
             foreach (var cell in new[] { "+x.1", "+x.2" })
-                steps.Add($"{{ \"part\": \"Bay Block\", \"on\": {core}, \"socket\": \"{cell}\", \"by\": \"-x\" }}"); // 9 to 12
+                steps.Add($"{{ \"part\": \"Bay Block\", \"on\": {core}, \"socket\": \"{cell}\", \"by\": \"-x\" }}"); // 8 to 11
+        // The arm: a Kit Loader Arm (4 m, 500 kg: what the fixed Loader Arm was, ArmKitMigrate), its Core's middle on the foundation's
+        // top23, 0.18 m from where the fixed arm's shoulder stood.
+        var first = steps.Count;
+        foreach (var (part, on, socket, by) in ArmKitParts.PresetSteps("Kit Loader Arm"))
+            steps.Add(on < 0
+                ? $"{{ \"part\": \"{part}\", \"on\": 5, \"socket\": \"top23\", \"by\": \"bottom\" }}"
+                : $"{{ \"part\": \"{part}\", \"on\": {first + on}, \"socket\": \"{socket}\", \"by\": \"{by}\" }}");
         for (var k = 0; k < steps.Count; k++)
             sb.Append("    ").Append(steps[k]).Append(k + 1 < steps.Count ? ",\n" : "\n");
         sb.Append("  ]\n}\n");
