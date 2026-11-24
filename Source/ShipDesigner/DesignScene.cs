@@ -232,11 +232,16 @@ public static class DesignScene
 
         var col = DesignMesh.Hex(h.Skin);
         var dark = DesignMesh.Hex("#3a3e44");
-        var n = h.Points;
+        var ah = new double[HullBody.MaxLoft];
+        var ay = new double[HullBody.MaxLoft];
+        var bh = new double[HullBody.MaxLoft];
+        var by = new double[HullBody.MaxLoft];
         for (var i = 0; i < h.Stations.Count - 1; i++)
         {
             var a = h.Stations[i];
             var b = h.Stations[i + 1];
+            // Two stations may hold different point counts: both are sampled at the same places along their outlines.
+            var n = h.Pair(i, ah, ay, bh, by);
             var band = i % 2 == 0 ? 1.0 : 0.94;
             // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
             var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2)
@@ -246,11 +251,11 @@ public static class DesignScene
                 for (var k = 0; k < n - 1; k++)
                 {
                     var shade = DesignMesh.Tone(col, band * (k % 2 == 0 ? 1.0 : 0.9));
-                    Facet(skin, (s * a.P[k].H, a.P[k].Y, a.Z), (s * a.P[k + 1].H, a.P[k + 1].Y, a.Z), (s * b.P[k].H, b.P[k].Y, b.Z), (s * b.P[k + 1].H, b.P[k + 1].Y, b.Z), shade, holed, step, s < 0);
+                    Facet(skin, (s * ah[k], ay[k], a.Z), (s * ah[k + 1], ay[k + 1], a.Z), (s * bh[k], by[k], b.Z), (s * bh[k + 1], by[k + 1], b.Z), shade, holed, step, s < 0);
                 }
             // The keel (across the bottom) and the spine (across the top).
-            Facet(skin, (-a.P[0].H, a.P[0].Y, a.Z), (a.P[0].H, a.P[0].Y, a.Z), (-b.P[0].H, b.P[0].Y, b.Z), (b.P[0].H, b.P[0].Y, b.Z), DesignMesh.Tone(dark, band), holed, step, false);
-            Facet(skin, (a.P[n - 1].H, a.P[n - 1].Y, a.Z), (-a.P[n - 1].H, a.P[n - 1].Y, a.Z), (b.P[n - 1].H, b.P[n - 1].Y, b.Z), (-b.P[n - 1].H, b.P[n - 1].Y, b.Z), DesignMesh.Tone(col, band * 1.05), holed, step, false);
+            Facet(skin, (-ah[0], ay[0], a.Z), (ah[0], ay[0], a.Z), (-bh[0], by[0], b.Z), (bh[0], by[0], b.Z), DesignMesh.Tone(dark, band), holed, step, false);
+            Facet(skin, (ah[n - 1], ay[n - 1], a.Z), (-ah[n - 1], ay[n - 1], a.Z), (bh[n - 1], by[n - 1], b.Z), (-bh[n - 1], by[n - 1], b.Z), DesignMesh.Tone(col, band * 1.05), holed, step, false);
         }
         near.Clear();
         near.AddRange(cutters.Select(o => o.B).Distinct());
@@ -1180,7 +1185,7 @@ public static class DesignScene
             {
                 if (s > 0) sb.Append(',');
                 sb.Append("{\"z\":").Append(ShipDesign.S(h.Stations[s].Z)).Append(",\"p\":[");
-                for (var k = 0; k < h.Points; k++)
+                for (var k = 0; k < h.Stations[s].P.Count; k++)
                     sb.Append(k > 0 ? "," : "").Append('[').Append(ShipDesign.S(h.Stations[s].P[k].H)).Append(',').Append(ShipDesign.S(h.Stations[s].P[k].Y)).Append(']');
                 sb.Append("]}");
             }

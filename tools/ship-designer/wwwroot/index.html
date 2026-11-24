@@ -1146,10 +1146,13 @@ function stationPanel(h) {
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 1.1 }) }, "Taller"),
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower")));
   }
-  const pts = el("select", { "aria-label": "Points a profile" });
-  for (let n = 3; n <= 16; n++) pts.append(el("option", n === h.stations[0].p.length ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
-  pts.addEventListener("change", () => cmd({ op: "points", hull: h.id, n: pts.selectedIndex + 3 }));
-  box.append(el("div", { class: "row" }, pts));
+  // Each station keeps its own point count (Karl, 2026-11-24): with a station picked the list changes that one, else every station.
+  const one = sel.station >= 0 && sel.station < h.stations.length;
+  const cur = h.stations[one ? sel.station : 0].p.length;
+  const pts = el("select", { "aria-label": one ? "Points on this station" : "Points on every station" });
+  for (let n = 3; n <= 16; n++) pts.append(el("option", n === cur ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
+  pts.addEventListener("change", () => cmd(one ? { op: "points", hull: h.id, i: sel.station, n: pts.selectedIndex + 3 } : { op: "points", hull: h.id, n: pts.selectedIndex + 3 }));
+  box.append(el("div", { class: "row" }, el("span", { class: "hint" }, one ? "This station:" : "Every station:"), pts));
   box.append(el("div", { class: "row" },
     el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
     el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
@@ -1346,7 +1349,7 @@ function inspector() {
   } else if (sel.kind === "hull") {
     const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
     const len = h.stations[h.stations.length - 1].z - h.stations[0].z;
-    I.append(el("h2", {}, h.name), el("p", { class: "hint" }, `${fmt(len)} m long, ${h.stations.length - 1} segments, ${h.stations[0].p.length} points a profile${h.mirror ? ", a mirrored pair" : ""}. Drag the arrows to move the body.`));
+    I.append(el("h2", {}, h.name), el("p", { class: "hint" }, `${fmt(len)} m long, ${h.stations.length - 1} segments, ${[...new Set(h.stations.map(s => s.p.length))].join("/")} points a profile${h.mirror ? ", a mirrored pair" : ""}. Drag the arrows to move the body.`));
   } else {
     I.append(el("h2", {}, "Selection"), el("p", { class: "hint" }, mode === "pieces" ? "Click a piece to pick it." : mode === "interior" ? "Click a room to pick it." : "Click a hull body to pick it."));
   }

@@ -32,7 +32,63 @@ public sealed class HullBody
 
     public int Copies => Mirror && Math.Abs(X) > 0.01 ? 2 : 1;
     public double CopyX(int copy) => copy == 1 ? -X : X;
-    public int Points => Stations.Count == 0 ? 0 : Stations[0].P.Count;
+    public int Points => Stations.Count == 0 ? 0 : Stations.Max(s => s.P.Count); // the most any station has
+    /// <summary>The most points a lofted profile between two stations can have: every corner of both ends.</summary>
+    public const int MaxLoft = 2 * MaxPoints;
+
+    /// <summary>A segment's two end profiles at one shared set of points (Karl, 2026-11-24: stations may differ in point count). With the
+    /// same count they are the stations' own points, matched one to one; otherwise every corner of each end, placed by how far round
+    /// its profile it is (keel 0, spine 1), and the other end sampled at that same fraction, so neither end's shape changes.</summary>
+    public int Pair(int i, Span<double> ah, Span<double> ay, Span<double> bh, Span<double> by)
+    {
+        var a = Stations[i].P;
+        var b = Stations[i + 1].P;
+        if (a.Count == b.Count)
+        {
+            for (var k = 0; k < a.Count; k++)
+                (ah[k], ay[k], bh[k], by[k]) = (a[k].H, a[k].Y, b[k].H, b[k].Y);
+            return a.Count;
+        }
+        Span<double> fa = stackalloc double[MaxPoints];
+        Span<double> fb = stackalloc double[MaxPoints];
+        Fractions(a, fa);
+        Fractions(b, fb);
+        Span<double> f = stackalloc double[MaxLoft];
+        int n = 0, ia = 0, ib = 0;
+        while (ia < a.Count || ib < b.Count)
+        {
+            var next = ib >= b.Count || (ia < a.Count && fa[ia] <= fb[ib]) ? fa[ia++] : fb[ib++];
+            if (n == 0 || next - f[n - 1] > 1e-4)
+                f[n++] = next;
+        }
+        for (var k = 0; k < n; k++)
+        {
+            (ah[k], ay[k]) = Sample(a, fa, f[k]);
+            (bh[k], by[k]) = Sample(b, fb, f[k]);
+        }
+        return n;
+    }
+
+    private static void Fractions(List<(double H, double Y)> p, Span<double> f)
+    {
+        f[0] = 0;
+        for (var k = 1; k < p.Count; k++)
+            f[k] = f[k - 1] + Len(p[k].H - p[k - 1].H, p[k].Y - p[k - 1].Y);
+        var total = f[p.Count - 1];
+        for (var k = 0; k < p.Count; k++)
+            f[k] = total < 1e-9 ? (double)k / (p.Count - 1) : f[k] / total;
+    }
+
+    private static (double H, double Y) Sample(List<(double H, double Y)> p, Span<double> f, double at)
+    {
+        for (var k = 0; k < p.Count - 1; k++)
+            if (at <= f[k + 1] + 1e-12)
+            {
+                var t = f[k + 1] - f[k] < 1e-12 ? 0 : Math.Clamp((at - f[k]) / (f[k + 1] - f[k]), 0, 1);
+                return (p[k].H + (p[k + 1].H - p[k].H) * t, p[k].Y + (p[k + 1].Y - p[k].Y) * t);
+            }
+        return p[^1];
+    }
     public double Front => Stations[0].Z;
     public double Back => Stations[^1].Z;
 
@@ -63,9 +119,9 @@ public sealed class HullBody
                     st.P.Add(((double)a[0]!, (double)a[1]!));
             h.Stations.Add(st);
         }
-        var n = h.Stations.Count == 0 ? 0 : h.Stations[0].P.Count;
-        if (h.Stations.Count < 2 || n < MinPoints || h.Stations.Any(s => s.P.Count != n))
-            throw new FormatException($"hull \"{h.Name}\": needs 2 or more stations of the same {MinPoints} to {MaxPoints} points");
+        // Stations may have different point counts (Karl, 2026-11-24): each segment is lofted through both ends' corners.
+        if (h.Stations.Count < 2 || h.Stations.Any(s => s.P.Count < MinPoints))
+            throw new FormatException($"hull \"{h.Name}\": needs 2 or more stations of {MinPoints} to {MaxPoints} points each");
         h.Tidy();
         return h;
     }
@@ -98,12 +154,16 @@ public sealed class HullBody
 
     // ---- the shape
 
-    /// <summary>The half profile at local z (straight lines between stations), or false outside the body's length.</summary>
-    public bool At(double z, Span<double> hs, Span<double> ys)
+    /// <summary>The half profile at local z (straight lines between stations): its point count, or 0 outside the body's length.
+    /// The spans hold MaxLoft points.</summary>
+    public int At(double z, Span<double> hs, Span<double> ys)
     {
         if (z < Front - 1e-6 || z > Back + 1e-6)
-            return false;
-        var n = Points;
+            return 0;
+        Span<double> ah = stackalloc double[MaxLoft];
+        Span<double> ay = stackalloc double[MaxLoft];
+        Span<double> bh = stackalloc double[MaxLoft];
+        Span<double> by = stackalloc double[MaxLoft];
         for (var i = 0; i < Stations.Count - 1; i++)
         {
             var a = Stations[i];
@@ -111,24 +171,25 @@ public sealed class HullBody
             if (z > b.Z + 1e-9 && i < Stations.Count - 2)
                 continue;
             var t = b.Z - a.Z < 1e-9 ? 0 : Math.Clamp((z - a.Z) / (b.Z - a.Z), 0, 1);
+            var n = Pair(i, ah, ay, bh, by);
             for (var k = 0; k < n; k++)
             {
-                hs[k] = a.P[k].H + (b.P[k].H - a.P[k].H) * t;
-                ys[k] = a.P[k].Y + (b.P[k].Y - a.P[k].Y) * t;
+                hs[k] = ah[k] + (bh[k] - ah[k]) * t;
+                ys[k] = ay[k] + (by[k] - ay[k]) * t;
             }
-            return true;
+            return n;
         }
-        return false;
+        return 0;
     }
 
     /// <summary>The skin's half width at local z and height y, or -1 outside the body (the Zero Day's SkinHalf).</summary>
     public double SkinHalf(double z, double y)
     {
-        Span<double> hs = stackalloc double[MaxPoints];
-        Span<double> ys = stackalloc double[MaxPoints];
-        if (!At(z, hs, ys))
+        Span<double> hs = stackalloc double[MaxLoft];
+        Span<double> ys = stackalloc double[MaxLoft];
+        var n = At(z, hs, ys);
+        if (n == 0)
             return -1;
-        var n = Points;
         if (y < ys[0] || y > ys[n - 1])
             return -1;
         for (var k = 0; k < n - 1; k++)
@@ -156,13 +217,15 @@ public sealed class HullBody
     }
 
     private double Bottom(double z) => Edge(z, 0);
-    private double Top(double z) => Edge(z, Points - 1);
+    private double Top(double z) => Edge(z, -1);
 
+    /// <summary>A profile point's height at z (k -1: the last, the spine).</summary>
     private double Edge(double z, int k)
     {
-        Span<double> hs = stackalloc double[MaxPoints];
-        Span<double> ys = stackalloc double[MaxPoints];
-        return At(z, hs, ys) ? ys[k] : 0;
+        Span<double> hs = stackalloc double[MaxLoft];
+        Span<double> ys = stackalloc double[MaxLoft];
+        var n = At(z, hs, ys);
+        return n == 0 ? 0 : ys[k < 0 ? n - 1 : k];
     }
 
     /// <summary>
@@ -171,8 +234,8 @@ public sealed class HullBody
     /// </summary>
     public (double X, double Y, double Z, double Nx, double Ny) OnSkin(double z, double t, int side)
     {
-        Span<double> hs = stackalloc double[MaxPoints + 2];
-        Span<double> ys = stackalloc double[MaxPoints + 2];
+        Span<double> hs = stackalloc double[MaxLoft + 2];
+        Span<double> ys = stackalloc double[MaxLoft + 2];
         z = Math.Clamp(z, Front, Back);
         var n = Path(z, hs, ys);
         var total = 0.0;
@@ -200,8 +263,8 @@ public sealed class HullBody
     /// <summary>The t of the skin point nearest a hull-local point (its side taken from x).</summary>
     public double NearestT(double x, double y, double z)
     {
-        Span<double> hs = stackalloc double[MaxPoints + 2];
-        Span<double> ys = stackalloc double[MaxPoints + 2];
+        Span<double> hs = stackalloc double[MaxLoft + 2];
+        Span<double> ys = stackalloc double[MaxLoft + 2];
         var n = Path(Math.Clamp(z, Front, Back), hs, ys);
         var ax = Math.Abs(x);
         double total = 0, bestAt = 0, best = double.MaxValue;
@@ -222,8 +285,9 @@ public sealed class HullBody
     /// <summary>The path round the half profile at z: the keel's middle, the profile's points, the spine's middle.</summary>
     private int Path(double z, Span<double> hs, Span<double> ys)
     {
-        var n = Points;
-        At(z, hs[1..], ys[1..]);
+        var n = At(z, hs[1..], ys[1..]);
+        if (n == 0)
+            return 0;
         hs[0] = 0;
         ys[0] = ys[1];
         hs[n + 1] = 0;

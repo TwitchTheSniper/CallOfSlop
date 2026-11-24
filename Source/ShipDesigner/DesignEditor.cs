@@ -229,7 +229,7 @@ public sealed class DesignEditor
                 var h = H();
                 var i = I(o, "i");
                 var k = I(o, "k");
-                if (i < 0 || i >= h.Stations.Count || k < 0 || k >= h.Points)
+                if (i < 0 || i >= h.Stations.Count || k < 0 || k >= h.Stations[i].P.Count)
                     return "no such point";
                 var p = h.Stations[i].P;
                 var lo = k == 0 ? -100 : p[k - 1].Y + 0.05;
@@ -239,7 +239,7 @@ public sealed class DesignEditor
                 p[k] = (Math.Clamp(Snap(D(o, "h"), 0.05), 0.05, 16), Math.Clamp(Snap(D(o, "y"), 0.05), lo, hi));
                 if ((bool?)o["all"] ?? false) // the same point on every station (a whole run of the hull)
                     foreach (var s in h.Stations)
-                        if (s != h.Stations[i])
+                        if (s != h.Stations[i] && k < s.P.Count)
                             s.P[k] = (p[k].H, Math.Clamp(p[k].Y, k == 0 ? -100 : s.P[k - 1].Y + 0.05, k == s.P.Count - 1 ? 100 : s.P[k + 1].Y - 0.05));
                 h.Tidy();
                 return "";
@@ -274,8 +274,9 @@ public sealed class DesignEditor
                     if (b.Z - a.Z < 2 * HullBody.MinGap)
                         return "too close to the next station to split";
                     s = new Station { Z = (a.Z + b.Z) / 2 };
-                    for (var k = 0; k < h.Points; k++)
-                        s.P.Add(((a.P[k].H + b.P[k].H) / 2, (a.P[k].Y + b.P[k].Y) / 2));
+                    var bp = b.P.Count == a.P.Count ? b.P : DesignTemplates.Resample(b.P, a.P.Count); // the new station keeps the fore one's count
+                    for (var k = 0; k < a.P.Count; k++)
+                        s.P.Add(((a.P[k].H + bp[k].H) / 2, (a.P[k].Y + bp[k].Y) / 2));
                     h.Stations.Insert(i + 1, s);
                 }
                 else // a new segment past the end, the same shape
@@ -331,8 +332,12 @@ public sealed class DesignEditor
                 var n = I(o, "n");
                 if (n < HullBody.MinPoints || n > HullBody.MaxPoints)
                     return $"a profile has {HullBody.MinPoints} to {HullBody.MaxPoints} points";
+                var only = I(o, "i", -1); // one station, or every station when none is given
+                if (only >= h.Stations.Count)
+                    return "no such station";
                 foreach (var s in h.Stations)
-                    s.P = DesignTemplates.Resample(s.P, n);
+                    if (only < 0 || s == h.Stations[only])
+                        s.P = DesignTemplates.Resample(s.P, n);
                 h.Tidy();
                 return "";
             }
@@ -852,7 +857,7 @@ public sealed class DesignEditor
         var sec = Array.Find(DesignTemplates.Sections, s => s.Name == preset);
         if (sec.P is null)
             throw new InvalidOperationException("no such section shape");
-        h.Stations[i].P = DesignTemplates.Resample(sec.P, h.Points);
+        h.Stations[i].P = DesignTemplates.Resample(sec.P, h.Stations[i].P.Count);
     }
 
     /// <summary>
