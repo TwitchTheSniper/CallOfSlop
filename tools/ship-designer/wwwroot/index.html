@@ -127,6 +127,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
         <button id="v-xray">X-ray hull</button>
         <button id="v-rooms" class="on">Rooms</button>
         <button id="v-links" class="on">Socket links</button>
+        <button id="v-person" class="on">Person</button>
       </div>
       <div class="tip" id="tip"></div>
     </div>
@@ -171,7 +172,7 @@ let S = null;          // the scene from C#
 let CAT = null;        // the catalogue
 const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
-const view = { xray: false, rooms: true, links: true };
+const view = { xray: false, rooms: true, links: true, person: true };
 let deck = 0;
 
 function take(answerText) {
@@ -293,7 +294,24 @@ function rebuild() {
   if (view.rooms && (mode === "interior" || view.xray || pickRoomFor)) drawRooms();
   if (view.links && mode !== "hull") drawLinks();
   if (mode === "interior") drawDeckPlane();
+  if (view.person) drawPerson();
   placeGizmo();
+}
+// A person for scale (1.8 m), standing on the floor of the bridge (else the first room), else beside the ship.
+function drawPerson() {
+  const r = S.rooms.find(r => r.kind === "Bridge") ?? S.rooms[0];
+  const b = r?.box;
+  const at = b ? [(b[0] + b[1]) / 2, b[2], (b[4] + b[5]) / 2] : [Math.max(...S.hulls.map(h => Math.abs(h.x))) + 12, 0, 0];
+  const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0xe8792b, roughness: 0.6 });
+  const part = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); g.add(m); };
+  part(0.16, 0.85, 0.2, -0.11, 0.425, 0); part(0.16, 0.85, 0.2, 0.11, 0.425, 0); // legs
+  part(0.46, 0.62, 0.26, 0, 1.17, 0);                                            // body
+  part(0.11, 0.6, 0.13, -0.3, 1.16, 0); part(0.11, 0.6, 0.13, 0.3, 1.16, 0);   // arms
+  part(0.22, 0.26, 0.24, 0, 1.64, 0);                                            // head (top at 1.77 m)
+  g.position.set(...at);
+  if (S.stacked && b) { g.rotation.x = -Math.PI / 2; g.position.set((b[0] + b[1]) / 2, (b[2] + b[3]) / 2, b[5]); }
+  g.userData = { type: "person" };
+  world.add(g);
 }
 
 function drawRings(h) {
@@ -924,7 +942,7 @@ $("dload").addEventListener("click", () => {
 });
 $("v-frame").addEventListener("click", frame);
 const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
-toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links");
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person");
 window.addEventListener("keydown", e => {
   if (e.target.closest?.("input, textarea, select")) return;
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
