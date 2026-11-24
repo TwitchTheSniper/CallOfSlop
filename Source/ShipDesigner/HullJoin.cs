@@ -118,11 +118,10 @@ public sealed class HullJoin
         double[] m0 = [a.N[0] * k, a.N[1] * k, a.N[2] * k], m1 = [-b.N[0] * k, -b.N[1] * k, -b.N[2] * k];
         var ring = Ring(Section);
         var col = DesignMesh.Hex(d.Hull(A.Hull)?.Skin ?? "#c9cdd2");
-        var rings = new List<(double, double, double)[]>();
-        double[]? side = null;
-        for (var i = 0; i <= Segments; i++)
+        var ha = d.Hull(A.Hull)!;
+        var hb = d.Hull(B.Hull)!;
+        (double[] C, double[] T) Curve(double s)
         {
-            var s = (double)i / Segments;
             double h00 = 2 * s * s * s - 3 * s * s + 1, h10 = s * s * s - 2 * s * s + s, h01 = -2 * s * s * s + 3 * s * s, h11 = s * s * s - s * s;
             double d00 = 6 * s * s - 6 * s, d10 = 3 * s * s - 4 * s + 1, d01 = -6 * s * s + 6 * s, d11 = 3 * s * s - 2 * s;
             var c = new double[3];
@@ -133,6 +132,31 @@ public sealed class HullJoin
                 t[q] = d00 * p0[q] + d10 * m0[q] + d01 * p1[q] + d11 * m1[q];
             }
             Norm(t);
+            return (c, t);
+        }
+        // Where the middle line leaves the first skin and enters the second: the connection is drawn between, its end rings laid on the skins
+        // (Karl, 2026-11-24: it meets the hull, not a hoop inside it).
+        static double Cross0(Func<double, bool> inside, double lo, double hi)
+        {
+            if (!inside(lo) || inside(hi))
+                return lo;
+            for (var i = 0; i < 24; i++)
+            {
+                var mid = (lo + hi) / 2;
+                if (inside(mid)) lo = mid; else hi = mid;
+            }
+            return lo;
+        }
+        bool In(HullBody h, double[] q) => h.Depth(q[0], q[1], q[2]) > 0;
+        var s0 = Cross0(s => In(ha, Curve(s).C), 0, 0.5);
+        var s1 = 1 - Cross0(s => In(hb, Curve(1 - s).C), 0, 0.5);
+        if (s1 <= s0 + 1e-3)
+            return m;
+        var rings = new List<(double, double, double)[]>();
+        double[]? side = null;
+        for (var i = 0; i <= Segments; i++)
+        {
+            var (c, t) = Curve(s0 + (s1 - s0) * i / Segments);
             // The ring's across axis: carried along from the last ring (so the strut doesn't twist), first from the world's up.
             if (side is null)
             {
@@ -151,6 +175,31 @@ public sealed class HullJoin
             {
                 var (u, v) = ring[j];
                 r[j] = (c[0] + side[0] * u * W + upv[0] * v * H, c[1] + side[1] * u * W + upv[1] * v * H, c[2] + side[2] * u * W + upv[2] * v * H);
+            }
+            // An end ring slid along the line onto its skin, each point where it meets it.
+            if (i == 0 || i == Segments)
+            {
+                var h = i == 0 ? ha : hb;
+                var dir = i == 0 ? -1.0 : 1.0;
+                var reach = 2 * Math.Max(W, H) + 1;
+                for (var j = 0; j < r.Length; j++)
+                {
+                    var v = r[j];
+                    double[] At(double f) => [v.Item1 + t[0] * dir * f, v.Item2 + t[1] * dir * f, v.Item3 + t[2] * dir * f];
+                    // f from 0 (this point) to reach (deeper in): the first f inside the skin.
+                    // Inside already: back out to where it leaves the skin; else on in to where it meets it.
+                    var inside = In(h, At(0));
+                    if (inside ? In(h, At(-reach)) : !In(h, At(reach)))
+                        continue;
+                    double lo = inside ? -reach : 0, hi = inside ? 0 : reach;
+                    for (var it = 0; it < 20; it++)
+                    {
+                        var mid = (lo + hi) / 2;
+                        if (In(h, At(mid))) hi = mid; else lo = mid;
+                    }
+                    var e = At(hi + 0.01);
+                    r[j] = (e[0], e[1], e[2]);
+                }
             }
             rings.Add(r);
         }
