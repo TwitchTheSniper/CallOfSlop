@@ -368,6 +368,8 @@ public sealed partial class Game : ICrewHost
                     s.Contact = 255;
                     s.ContactBody = o.Body;
                 }
+            if (s.Contact != 255 || s.ContactBody != 0)
+                c.NpcBusy = true; // (something to fight: off the cruise at once, ConstructCruise.cs; the captain's next look decides again)
         }
         if (s.ContactBody != 0)
         {

@@ -500,27 +500,30 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   output in `callofslop.log`.
 - **The machine** (design page drawing 15; `storage.panel`: `speed`, `at`, `maxWidth`, `maxLength`, `blockPower`, on an `any` bin;
   `IsPanelFormer`, a member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the
-  Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`): a **Panel Former** Core (2 m wide: screen and queue,
-  Orders, power, Piece in and its in rollers, the offcut bin with its Offcut chute port; bin 60,000, 1.2 kW) with identical 2 x 2 m **Bed Blocks** (3.2 m tall:
-  a lower and an upper die on rails at the work height, corner posts, their own hydraulics; 900 W each while forming) welded on its far side and to each
-  other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
-  machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
-  all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the dies form: 4 m of crown and rake, past the deepest panel HullLoft allows (`ConstructPanelFormer.DepthMost`, `PinDepth`;
-  `ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). Nothing stands over the bed (Sean, 2026-11-24): no crosshead, no corner
-  masts, no head; the upper die is the machine's top, between the corner posts, under a solid lid that isn't drawn. One stroke is 4 s set and 8 s press at any
-  size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: posts at its corners, an oil manifold
-  down one side, a hazard edge round the outside. **Shaped dies** (Sean, 2026-11-24; `PanelFormerRender.DrawDies`, drawn only): small
-  rails run along the bed at the work height (the in rollers' and Out Tables' height, `OutTableParts.WorkY`), a metre apart; a lower die
-  stands on the deck under them and an upper die over them, each one solid steel across the bed inside the corner posts. While the
-  former works, both take on the head order's panel shape (`ConstructPanelFormer.DieShaping`, `Die`: the key's `PanelLift`, cached per
-  name): the lower die rises into it and lifts the blank on its highest point, the upper die comes down (`PressAt`) and squeezes it into
-  the panel, then lifts, and the lower die goes flat, leaving the panel with its lowest point on the rails (`BedLook`). The shape covers the
-  whole die, its edges carried out to the die's ends and sides, so seen head-on along the bed each die's end shows the bend it makes
-  (Sean, 2026-11-24): cells a quarter metre across the bed, along it only where the shape changes along (`DieInfo.AlongFlat`), each a
-  column and a face plate turned to the slope; the shape is a height map of the panel as it lies (`HullLoft.PanelAt`, so a fold's arc
-  lands where it is formed), its lift capped at `DieDeepest`; a key with no shape (a kit's loft, a plain skin) keeps them
-  flat. The in rollers spin. The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
+  Extruder's) is built on the block system (`MachineBlocks.cs`, family `panel`). It is a **stretch former** (Sean, 2026-11-24, from the
+  Panel Former Lab, https://claude.ai/artifact/WNECeRGzmy6ps8hgPRcNQX). The **Panel Former** Core is the slim "Stack" (modules bolted on
+  a lattice column, a tread deck and trim cage holding the offcut bin, a beacon; screen and queue, Orders, power, Piece in on its back,
+  the Offcut chute port; bin 60,000, 1.2 kW). It stands beside the bed's head row, its bed side `+z`, its screen on `-x` facing the
+  in-feed, tied to the bed by a low ribbed base link under the parked side jaw. Identical 2 x 2 m **Bed Blocks** (solid to the roll line,
+  1 m; 900 W each while forming) are welded beside it and to each other, and **Out Tables** (role `end`) across the bed's far row carry
+  **Piece out** (`MachineBlocks.Owner`). A Roller Tile run butted on the bed's head rolls each blank in (the Core's Bed in). The bed is
+  the largest full rectangle of blocks (at most 16 x 16, 128 in all). A panel fits when its longest side fits the bed's length and the
+  next its width; **any depth**: the die sinks into a closed pocket under the floor as deep as its shape needs (the Lab's cheat; no
+  masts) (`ConstructPanelFormer.Bed`, `BedRefusal`, `BedFits` per step). One stroke is 12 s at any size (`StrokeSeconds`).
+- **What it draws** (`PanelFormerRender.cs`, over the whole bed in the bed's frame; drawn only, nothing on the wire): roller lanes along
+  both long sides at the roll line (`OutTableParts.WorkY`), the post zones outside them, both cut through by a slot at each out-rigger
+  rail; between the lanes the pocket's mouth with a hazard lip, an always-on faint fill and strip lamps (glowing boxes, not real lights),
+  and under the floor the pocket's closed box (bare ground hides it). In it the **die**: 0.3 m columns on a table and rams, their tops
+  tilted to the head order's panel shape (`ConstructPanelFormer.Die`: the key's surface as it lies, no depth cap). Two jaw sets: swing-out
+  **end gates** (two half-gates each end, hinged on lift cylinders in the post zones) for shapes along the bed, and **side jaws** (a beam
+  each side on thick carriages riding out-rigger rails through the slots, parked 0.4 m past the bed's edge) for shapes across it
+  (`DieInfo.SideGrip`). The stroke (`ConstructPanelFormer.Pose`, clocked on the store from when the drawing first saw it at work): the
+  jaws grip, the die rises and the sheet takes its shape exactly (the blank, then the panel drawn squashed toward it, `BedLook`), it
+  holds, the jaws let go and ease down, the die sinks. Columns past the sheet's edge stay down. **Pre-positioning**: while a blank rolls
+  in, the set the head order needs waits at its sheet (the gates open at its ends, the side jaws 12 cm outside its edges), the other set
+  stowed. A **changeover** (a head order of another shape, 4 s): the die sinks, its columns run a travelling wave (amplitude 0.5) while
+  their tops tilt to the new shape, and the jaw sets move to the new panel's spots. A key with no shape (a kit's loft, a plain skin) has
+  a flat die. Not done: a sheet narrower than the lanes floats between them while it rolls in. Recipes are the Assembling generator's.
 - **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
   profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
   comes from the panel's **flat size**: the surface unrolled (`HullLoft.PanelFlat`, three lines each way), its thickness in whole cm
@@ -532,7 +535,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   trim (the blank's units less the panel's, `HullLoft.FormedUnits`) goes whole into the **offcut bin** (one material: "offcut bin
   full", empty it by chute from its Offcut port); Cancel or Clear puts a blank on the bed back into the bin whole (`GiveBack`). The
   look line and screen name the blank needed: "needs a 1.71 x 0.47 m steel blank, 2 cm (up to 25% over each way) on Piece in"
-  (`Lacks`, `BlankText`). Drawn: the blank lies flat on the bed, and the panel over the pins late in the stroke (`BedLook`).
+  (`Lacks`, `BlankText`). Drawn: the blank lies flat on the lanes, then the panel stretched over the rising die (`BedLook`).
 - **Plain hull skins** (Sean, 2026-11-21: "the whole sections should start in the panel former": a formed piece is the base, the
   other pieces are added to it). A plain skin's key, `Hull Section (... - 0 - | ...)` (style `-`, salt 0, extras `-`;
   docs/sandbox/design/hull-dress.md), is a formed name (`HullLoft.IsPlainSectionName`, read with no allocation), so a former takes its order
@@ -540,8 +543,8 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   side by side (`HullLoft.SectionFlat`: the longest facet edge along, the facet widths added across at the wider end), its blank a 4 cm
   steel sheet (`HullLoft.SectionSkinCm`); the skin weighs its 4 cm plate (area x 0.04 m x the steel row's units a m3 x a unit's weight), so it
   costs what its blank holds. It is made standing as it sits on the hull, so the bed lays it turned (`ConstructPanelFormer.LayOf`): its
-  shallowest side up (that is its depth for the pins: most of the Zero Day's need corner masts), its longest along the bed, its outer face
-  up. The pins rise evenly under it (no key shape to read). A dressed section's key is refused: "a dressed hull section: the Panel Former
+  shallowest side up, its longest along the bed, its outer face
+  up. The die stays flat under it (no key shape to read). A dressed section's key is refused: "a dressed hull section: the Panel Former
   forms its plain skin, Hull Section (...); a Building Station's Dress skins job dresses it". `--form-panel "Hull Section (...)"` prints
   the flat size, the blank, the depth and the laid turn.
 - **Orders only** ([Work orders](#work-orders)). `WorkOrder.Name` is the panel's name; a former with no queue, or an empty one, waits
@@ -550,7 +553,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   linked Sheet Extruder for its blanks (`AskBlanks`: those with a conveyor way to the former first); a chained order (a terminal, the
   designer) asks the blank through the planner (`ConstructLogisticsPlan.FormerInputs`), which refuses a blank wider than any linked
   Extruder's die ("Too wide", with the Die Blocks or Run-out Tables it needs). Refusals (`ConstructPanelFormer.Refusal`): "not a panel" (a piece, a
-  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too deep for the pins", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"),
+  catalogue part or a name nothing makes), "no bed", "no Out Table", "its Out Tables cover 1 of the bed's 2 blocks across", "panel too large for this bed: 5.98 x 2.98 m needs a 3 x 2 bed, this one is 2 x 2" (the screen: "Bed can't take it"),
   a full queue. An Extruder or an Assembler refuses a panel ("a Panel Former's order").
 - **Forming is a timed stroke**: 12 s on the block machine; the finished panel then rides out of the Out Table's **Piece out** on a
   conveyor to a rack, waiting as an Extruder's piece does (too narrow, full, cut; a conveyor out shorter than the panel says so), or with none linked drops on the middle of the bed as

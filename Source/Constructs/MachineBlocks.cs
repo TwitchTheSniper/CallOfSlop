@@ -748,7 +748,7 @@ public static class MachineBlocks
                 if (y > 0 && d.BlockRole == BlockRole.Block && cd.IsPanelFormer && !cd.IsLaserCutter)
                     continue;
                 if (y > 0 && d.BlockRole == BlockRole.Block && assembler)
-                    continue; // (a bed block stacked on an Assembler's bed isn't part of it: its masts stand outside the bed, Masts) // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
+                    continue; // (a bed block stacked on an Assembler's bed isn't part of it: its masts stand outside the bed, Masts) // (a Bed Block stacked on a Panel Former's bed isn't part of it: its bed is one layer)
                 // A squares Core's cap counts only the blocks that can work, on its own layer off its +x side (a block stacked or off its
                 // side does nothing and takes no place under the cap; its end pieces are looks); the flood's scratch bounds the rest.
                 var counted = !squares || d.BlockRole == BlockRole.Block && y == 0 && x >= 1;
@@ -1481,8 +1481,6 @@ public static class MachineBlocks
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
             if (asm.LowBed)
                 sb.Append(", low bed (runs roll on and off)");
-            if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
-                sb.Append($", dies form {ConstructPanelFormer.PinDepth(c, asm):0} m deep");
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)
