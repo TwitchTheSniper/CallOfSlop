@@ -261,7 +261,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4;
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
     private static void Flanges(Part p, double d)
@@ -456,6 +456,79 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(50, 400, 20);
     }
 
+    /// <summary>A function piece's one percent setting (the configure tool), on CfgKey.Strength.</summary>
+    private static void Percent(Part p, string label, double min, double max, double step, double dflt, string tip) =>
+        p.Set(("config", Py.L(Kw(("key", "strength"), ("label", label), ("group", "Engine"), ("unit", "%"), ("min", min), ("max", max), ("step", step), ("default", dflt), ("tooltip", tip)))));
+
+    /// <summary>
+    /// The Throttle Valve XS: a feed piece, a valve body round the train with a handwheel on top and an actuator whose rod strokes with
+    /// the spray. It throttles its drive finely, down to 5% in 2% steps: unwired, its Level setting holds the drive at most there; a wire
+    /// into its Throttle in sets the level. Its output is the drive's level in %.
+    /// </summary>
+    private static Part ThrottleValve()
+    {
+        var d = ValveD;
+        var p = new Part("Throttle Valve XS", Small, Section,
+            "A throttle valve for an engine train, 0.4 m long: weld it in the feed zone (behind the chambers, with the injectors). It throttles the drive finely, down to 5% in 2% steps: set its Level to hold the drive there, or wire a lever into it to set the level. It puts out the drive's level in %.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.008, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var rb = FlangeR - 0.018;
+        Cyl(p, 0, 0, rb, -0.09, -d + 0.09, "#3a4a5a", "painted plating", inner: Math.Round((Bore - 0.01) / rb, 3), segments: 24); // (the valve body)
+        Cyl(p, 0, 0, rb + 0.004, -d * 0.5 - 0.015, -d * 0.5 + 0.015, Hazard, "hazard paint", inner: Math.Round((rb - 0.004) / (rb + 0.004), 3), segments: 24); // (its band)
+        var zm = -d * 0.5;
+        // The bonnet on top, its stem and a handwheel (spokes and rim) that turns with the drive.
+        Look(p, -0.05, rb - 0.01, zm - 0.05, 0.05, rb + 0.05, zm + 0.05, Dark, "dirty steel");
+        Look(p, -0.012, rb + 0.05, zm - 0.012, 0.012, rb + 0.11, zm + 0.012, Bolt, "steel"); // (the stem)
+        Look(p, -0.09, rb + 0.112, -0.012 + zm, 0.09, rb + 0.124, 0.012 + zm, "#a02818", "painted plating", work: "spin", axis: "+y"); // (a spoke)
+        Look(p, -0.012, rb + 0.1125, zm - 0.09, 0.012, rb + 0.1235, zm + 0.09, "#a02818", "painted plating", work: "spin", axis: "+y"); // (the other)
+        foreach (var (x0, z0, x1, z1) in new[] { (-0.1, -0.1, 0.1, -0.08), (-0.1, 0.08, 0.1, 0.1), (-0.1, -0.08, -0.08, 0.08), (0.08, -0.08, 0.1, 0.08) })
+            Look(p, x0, rb + 0.114, zm + z0, x1, rb + 0.126, zm + z1, "#a02818", "painted plating", work: "spin", axis: "+y"); // (the rim)
+        // The actuator at the side: a cylinder box, its rod that strokes, and a lamp.
+        Look(p, rb - 0.01, -0.04, zm - 0.1, rb + 0.06, 0.04, zm + 0.02, Dark, "painted plating");
+        Look(p, rb + 0.015, -0.01, zm + 0.02, rb + 0.035, 0.01, zm + 0.09, Bolt, "steel", work: "stroke", travel: 0.03, axis: "+z"); // (the rod)
+        Look(p, rb + 0.06, -0.012, zm - 0.07, rb + 0.072, 0.012, zm - 0.046, Lamp, "", work: "chase");
+        TrainPiece(p, d, "throttle");
+        Percent(p, "Level", 5, 100, 2, 100, "Holds the drive at most at this level, in 2% steps down to 5%. A wire into the valve sets the level instead.");
+        return p.Stats(110, 600, 20);
+    }
+
+    /// <summary>
+    /// The Mixture Controller XS: a feed piece, a mixing ring with a big dial whose needle shows the heat, two fuel lines that loop into
+    /// its body and a lamp. One dial (or a wire into Mix in, -1 to 1) trades push for burn: -100 is 80% push at 70% burn, +100 is 110%
+    /// push at 130% burn.
+    /// </summary>
+    private static Part MixtureController()
+    {
+        var d = MixerD;
+        var p = new Part("Mixture Controller XS", Small, Section,
+            "A mixture controller for an engine train, 0.4 m long: weld it in the feed zone (behind the chambers, with the injectors). Its Mix dial trades push for burn: lean (-100) is 80% push at 70% of the fuel, rich (+100) is 110% push at 130% of the fuel. A wire into it (-1 to 1) sets the mix instead.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.008, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var rm = FlangeR - 0.014;
+        Cyl(p, 0, 0, rm, -0.08, -d + 0.08, "#4a5a3a", "painted plating", inner: Math.Round((Bore - 0.01) / rm, 3), segments: 24); // (the mixing ring)
+        foreach (var z in new[] { -0.1, -d + 0.1 })
+            Cyl(p, 0, 0, rm + 0.006, z - 0.01, z + 0.01, Dark, "dirty steel", inner: Math.Round((rm - 0.004) / (rm + 0.006), 3), segments: 24); // (its straps)
+        var zm = -d * 0.5;
+        // The dial on top: board, face, needle; a lamp beside it.
+        Look(p, -0.08, rm - 0.01, zm - 0.07, 0.08, rm + 0.02, zm + 0.07, Dark, "painted plating");
+        Look(p, -0.06, rm + 0.02, zm - 0.055, 0.06, rm + 0.028, zm + 0.055, "#d8d4c8", "painted plating");
+        Look(p, -0.004, rm + 0.028, zm - 0.045, 0.004, rm + 0.034, zm + 0.01, "#c03020", "", work: "spin", axis: "+y"); // (the needle)
+        Look(p, 0.065, rm + 0.02, zm + 0.04, 0.077, rm + 0.032, zm + 0.064, Lamp, "", work: "chase");
+        // Two fuel lines looping over the sides into the ring.
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            var x = sx * (rm + 0.025);
+            Look(p, x - 0.016, -0.1, zm - 0.09, x + 0.016, 0.1, zm - 0.06, Copper, "copper");
+            Look(p, x - 0.016, -0.1, zm + 0.06, x + 0.016, 0.1, zm + 0.09, Copper, "copper");
+            Look(p, x - 0.02, -0.03, zm - 0.06, x + 0.02, 0.03, zm + 0.06, Dark, "dirty steel"); // (the mixing block)
+        }
+        TrainPiece(p, d, "mixture");
+        Percent(p, "Mix", -100, 100, 5, 0, "Lean (-100): 80% push at 70% of the fuel. Rich (+100): 110% push at 130% of the fuel. A wire into it (-1 to 1) sets the mix instead.");
+        return p.Stats(100, 600, 20);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -473,7 +546,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }

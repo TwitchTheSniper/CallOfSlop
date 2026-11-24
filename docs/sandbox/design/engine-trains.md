@@ -69,8 +69,19 @@ Not yet: a piece in the wrong zone is not refused at its socket, only left out a
 
 Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sensor Ring's outputs are not shown on a client's own copy (the logic runs on the host).
 
+## Phase 5: the Throttle Valve and the Mixture Controller
+
+- **Throttle Valve XS** (0.4 m, feed): its Level setting (5 to 100%, 2% steps; `strength` in a blueprint's config) holds the drive at most there; a wire into it sets the level instead (0 to 1), whatever the bell's own ask, and keeps a parked body awake while it asks (as a wire into the bell does); under a Flight Stabilizer the wire only holds the bell at most there. A level above nothing is at least 5%, in 2% steps (`ConstructPhysics.ValveWant`, per tick, host). Its output is the drive's level in %, and never wakes a body. Handwheel turning with the heat, an actuator rod that strokes, a lamp.
+- **Mixture Controller XS** (0.4 m, feed): its Mix dial (-100 to 100, `strength`) or a wire (-1 to 1) trades push for burn: -100 is 80% push at 70% burn, 0 as it is, +100 is 110% push at 130% burn, straight between (`ConstructPhysics.MixOf`, per tick, host). Dial, two fuel loops, a lamp.
+- The bell keeps its train's first working valve and mixer as part indices at the rebuild (`CWorksHead.Valve`, `Mixer`); a broken one passes the ask on.
+- Both press at any size on the Housing die (`throttlevalve`, `mixture`, blank 70x70x40). A press pattern id is at most 16 characters: a longer one refuses the whole Pressing table.
+- `--engine-check`: a valve at 40% holds the XS bell at 96 kN; wired on, 240 kN; lean 192 kN at 0.28 l/s, rich 264 kN at 0.52 l/s.
+- Protocol 460 (new part files).
+
+Not yet: a Flight Stabilizer plans its shares without the mix (feedback makes up the rest); a client's push readout and flame don't show the mix (the flame byte is the level); a rich XS bell's 264 kN is over its 1 m socket's 250 kN rating, which the fit rule reads from the bell's own rating.
+
 ## Next
 
-1. The other pieces of the doc one at a time: Throttle Valve, Mixture Controller, Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
+1. The other pieces of the doc one at a time: Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.
