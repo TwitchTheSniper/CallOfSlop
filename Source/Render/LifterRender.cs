@@ -13,11 +13,14 @@ public static class LifterRender
 {
     public const float DrawNear = 150f;
     private static readonly Vector3 Out = new(0.94f, 0.47f, 0.09f), Accent = new(0.95f, 0.69f, 0.12f);
-    private static double _scanAt;
+    private static double _scanAt, _drawnAt;
+    private static float _dt;
 
     public static void Draw(Renderer gfx, ConstructWorld world)
     {
         var now = ConstructConveyor.Clock;
+        _dt = (float)Math.Clamp(now - _drawnAt, 0, 0.1);
+        _drawnAt = now;
         if (world.LiftBusy == 0 && now - _scanAt > 1.0)
         {
             _scanAt = now; // (a client finds its lifters itself; a host's own step looks while a hand is busy)
@@ -82,6 +85,16 @@ public static class LifterRender
                     continue;
                 }
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
+                if (ld.Kit)
+                {
+                    if (ld.Spec is { Valid: true } spec)
+                    {
+                        if (!l.FoldServer) // (a client steps the fold by the server's rule: out while it may work, in when idle without power)
+                            l.Fold = l.Why == LiftWhy.NoPower && l.State == LiftState.Idle ? MathF.Max(0, l.Fold - _dt / ArmKit.FoldSeconds) : MathF.Min(1, l.Fold + _dt / ArmKit.FoldSeconds);
+                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold);
+                    }
+                    continue;
+                }
                 DrawArm(gfx, ld, part, yaw, elbow, wrist, span);
                 if (ld.Fitter)
                     DrawToolHead(gfx, part, yaw, wrist, l.CarryBody != 0 && world.Get(l.CarryBody) is { } held ? MathF.Min(held.LocalMax.X - held.LocalMin.X, held.LocalMax.Z - held.LocalMin.Z) : 1.2f);

@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heavy Arm",
+  "description": "A heavy kit arm on a pedestal: about 9 m of reach, big pieces. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Arm Pedestal"
+    },
+    {
+      "part": "Arm Core",
+      "on": 0,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 80x80x80 steel)",
+      "on": 1,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 60x60x400 steel)",
+      "on": 2,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 70x70x70 steel)",
+      "on": 3,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 55x55x380 steel)",
+      "on": 4,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 50x50x65 steel)",
+      "on": 5,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.padclamp solid 100x50x50 steel)",
+      "on": 6,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x20 steel)",
+      "on": 1,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x20 steel)",
+      "on": 8,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 1,
+      "socket": "-z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "-z",
+      "by": "base"
+    }
+  ]
+}

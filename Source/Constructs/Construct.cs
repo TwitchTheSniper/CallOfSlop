@@ -1691,7 +1691,7 @@ public sealed partial class Construct
         var table = RecyclingTable.Current;
         if (ConstructStorage.FillBox(this, i, st, out centre, out half))
             kg = st.Amount > 0 ? st.Amount * table.WeightOf(st.Material) : st.ItemKg; // (a Storage Volume's parts weigh what they weigh)
-        if (ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InTotal, out var ic, out var ih))
+        if (ConstructStorage.InputBox(this, i, st.InTotal, out var ic, out var ih))
         {
             var ik = st.InAmount * table.WeightOf(st.InMaterial) + st.ItemKg; // (a mixed input's materials and an Assembler's parts weigh what they weigh)
             for (var k = 0; k < st.MixN; k++)

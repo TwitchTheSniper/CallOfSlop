@@ -2316,7 +2316,7 @@ public static partial class ConstructRoutes
             return ConstructPress.Chute(world, cf, from, src, fd, ct, to, into);
         if ((fd.IsBin || fd.IsTerminal) && td.IsBin && src.Amount > 0)
         {
-            var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);
+            var load = Math.Min(Math.Max(ConstructRefining.ChuteLoadOf(world, cf, from), ConstructRefining.ChuteLoadOf(world, ct, to)), src.Amount); // (a squares Core's grows with its rate)
             if (td.IsExtruder)
                 load = Math.Min(load, ConstructExtruder.ChuteRoom(ct, to, into, src.Material)); // (on orders: only its order's material, a little at a time)
             if (load <= 0)
@@ -2385,7 +2385,7 @@ public static partial class ConstructRoutes
             return true; // (the tool block its head recipe needs, from a Block Rack: swapped in at the next step)
         if ((fd.IsBin || fd.IsTerminal) && src.Amount > 0)
         {
-            var put = world.FeedAssembler(ct, to, Math.Min(Math.Max(fd.ChuteLoad, ct.DefOf(to).ChuteLoad), src.Amount), src.Material);
+            var put = world.FeedAssembler(ct, to, Math.Min(Math.Max(ConstructRefining.ChuteLoadOf(world, cf, from), ct.DefOf(to).ChuteLoad), src.Amount), src.Material);
             if (put > 0)
                 world.Withdraw(cf, from, put);
             return put > 0;

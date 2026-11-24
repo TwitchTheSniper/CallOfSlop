@@ -56,10 +56,11 @@ public sealed partial class PressParts : IPartGenerator
         ("Barrel", 2, "#4a4d52"),
         ("Receiver", 2, "#4a5146"),
         ("Engine", 3, "#6a4f3a"),
+        ("Arm", 3, "#e8b81c"), // (the arm kit's pieces, ArmKitParts: at the end, so every older die keeps its place)
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver", "Engine"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver", "Engine", "Arm"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -1183,6 +1184,9 @@ public sealed partial class PressParts : IPartGenerator
                 Feature("base", [-0.2, -0.2, 1, 1.2, 1.2, 1.03], "dark", proud: "z", clamp: "z", min: 1, max: 30))),
             Pattern("strut", "Frame Beam", "strut", "solid 20x20x100 steel", features: Py.L(
                 Feature("band", [-0.06, -0.06, 0.47, 1.06, 1.06, 0.53], "dark", proud: "xy")))).And(More("beam")));
+        // Arm (the arm kit, ArmKitParts): each piece a like body of its catalogue piece, stretched to the order's blank; its rating comes from its size (ArmKit.cs).
+        yield return SizedDie("Arm", ["solid", "hollow"], ["steel"], [20, 200], [10, 1600], [0.05, 64], 4, 0.01, Py.L(),
+            ArmPatterns.Select(a => (object?)Pattern(a.Id, a.Part, a.Part.ToLowerInvariant(), a.Blank, blanks: [a.Blank.Split(' ')[0]], along: a.Id == "counterweight" ? "x" : "y")).ToList());
     }
 
     /// <summary>
@@ -1192,6 +1196,13 @@ public sealed partial class PressParts : IPartGenerator
     /// Auto picks the pattern from the blank (PressDie.PatternFor: the first preset of that blank); its Pattern setting picks the others that
     /// share a blank (the Plate die's plate, tread and grate).
     /// </summary>
+    /// <summary>The Arm die's patterns: catalogue piece, pattern id, preset blank (ArmKitParts).</summary>
+    private static readonly (string Part, string Id, string Blank)[] ArmPatterns =
+    [
+        ("Arm Joint", "joint", ArmKitParts.JointBlank), ("Arm Boom", "boom", ArmKitParts.BoomBlank), ("Arm Wrist", "wrist", ArmKitParts.WristBlank),
+        ("Pad Clamp", "padclamp", ArmKitParts.ClampBlank), ("Arm Counterweight", "counterweight", ArmKitParts.WeightBlank), ("Arm Drive Pack", "drivepack", ArmKitParts.PackBlank),
+    ];
+
     private static List<object?> Presets()
     {
         var r = new List<object?>();
@@ -1223,6 +1234,8 @@ public sealed partial class PressParts : IPartGenerator
                 Add(name, "engine", p.Id, blank);
         foreach (var d in DrivePatterns.Concat(MoreDrivePatterns))
             Add(d.Like, "drive", d.Id, d.Blank);
+        foreach (var (part, id, blank) in ArmPatterns)
+            Add(part, "arm", id, blank);
         Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");
         Add("Sheet Steel 1 m", "plate", "sheet", "plate 100x10x100 steel");
         Add("Plate Steel 1 m", "plate", "plate", "plate 100x10x100 steel"); // (the same blank as the sheet's: a press set to this pattern makes it)

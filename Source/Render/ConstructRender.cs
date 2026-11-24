@@ -539,6 +539,8 @@ public static partial class ConstructRender
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
         ref var p = ref c.Parts[i];
         var d = p.D;
+        if (d.ArmPiece != ArmPieceKind.None && ArmKit.Posed(c, i))
+            return 0; // (a live arm's chain piece: LifterRender poses it, ArmKit.cs)
         if (d.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return 0; // (a socket connector set hidden: Hide connector, ModuleSockets.HiddenLook)
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
@@ -861,7 +863,7 @@ public static partial class ConstructRender
         var drawn = 0;
         foreach (ref readonly var box in d.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             gfx.Draw(box.Model(rot, at + Rot24.Apply(rot, box.Center)) * frame, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;
@@ -923,7 +925,7 @@ public static partial class ConstructRender
         float most = -1, far = -1;
         foreach (ref readonly var box in die.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             var v = box.Half.X * box.Half.Y * box.Half.Z;
             if (v > most)
@@ -931,7 +933,7 @@ public static partial class ConstructRender
         }
         foreach (ref readonly var box in die.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             var d = Vector3.DistanceSquared(box.Color, baseColour);
             if (d > far)
@@ -1165,7 +1167,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
                     ref readonly var box = ref d.Boxes[b];
-                    if (box.Hidden || box.Bare)
+                    if (box.Hidden || box.Bare || box.MergedOnly)
                         continue;
                     ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out _);
                     if (box.IsGlass && QueueGlass(box.Model(turn, centre) * seg * body, box.Color * shade, box.Glass, box.Shape))
@@ -1182,7 +1184,7 @@ public static partial class ConstructRender
                 fh -= new Vector3(0.015f); // (the box ends on the player's walls: clear of their faces)
             drawn += DrawFill(gfx, fc, Vector3.Max(fh, new Vector3(0.01f)), st.Amount > 0 ? table.ColourOf(st.Material) : ConstructStoreVolume.PartsColour, seg * body);
         }
-        if (ConstructStorage.InputBox(p, cd, st.InTotal, out var ic, out var ih))
+        if (ConstructStorage.InputBox(c, i, st.InTotal, out var ic, out var ih))
             drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.MixN > 0 ? st.MixMat![0] : st.InMaterial), seg * body); // (a production machine's input; a mixed one in its first material's colour)
         return drawn;
     }
@@ -1579,7 +1581,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden || box.Bare || box.Detail && AidCount > 16)
+                    if (box.Hidden || box.Bare || box.MergedOnly || box.Detail && AidCount > 16)
                         continue;
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, g.Pos + Rot24.Apply(g.Rot, box.Center)) * m, GhostBoxColour(in box, g.Ok), 0.3f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
@@ -1633,7 +1635,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden || box.Bare)
+                    if (box.Hidden || box.Bare || box.MergedOnly)
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);

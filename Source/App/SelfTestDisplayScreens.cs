@@ -234,7 +234,7 @@ public static partial class SelfTest
         st.Held = true;
         Says(smelter, "Idle", "Held off", "a Run wire");
         st.Held = false;
-        st.Amount = smelter.DefOf(0).BulkCapacity;
+        st.Amount = ConstructRefining.RefineOf(smelter, 0).Out; // (a Core's output bin at its size: x1 bare)
         st.Material = metal;
         Says(smelter, "Wants", "Output full", "its output full");
         st.Amount = 5;
@@ -243,7 +243,7 @@ public static partial class SelfTest
         st.Amount = 0;
         st.Material = 0;
         st.InMaterial = names.IdOf("copper ore");
-        Says(smelter, "Refused", "Needs tier 2", "copper in a tier 1");
+        Says(smelter, "Fault", "No power", "copper in a bare Core (a Smelter has no tiers)");
         st.InMaterial = names.IdOf("wood");
         Says(smelter, "Refused", "Wrong input", "wood in a Smelter");
         var foundry = ConstructEdits.DropLoose(w, ConstructParts.Need("Foundry"), new Vector3(9, 10, 0), Quaternion.Identity)!;
@@ -252,6 +252,11 @@ public static partial class SelfTest
         w.AddInput(fs, names.IdOf("stone"), 40);
         var fc = FillCard(w, foundry, 0);
         want(new string(fc.Line(2)).Contains("+1"), $"a Foundry's mixed input: {CardText(fc)}");
+        var bronze = ConstructEdits.DropLoose(w, ConstructParts.Need("Foundry"), new Vector3(18, 10, 0), Quaternion.Identity)!;
+        w.AddInput(w.StoreOf(bronze, 0)!, names.IdOf("copper"), 40);
+        w.AddInput(w.StoreOf(bronze, 0)!, metal, 40);
+        Says(bronze, "Refused", "Needs tier 2", "bronze in a tier 1 Foundry");
+        w.Remove(bronze);
         var asm = ConstructEdits.DropLoose(w, ConstructParts.Need("Assembler"), new Vector3(-9, 10, 0), Quaternion.Identity)!;
         var ast = w.StoreOf(asm, 0)!;
         ref var ap = ref asm.Parts[0];

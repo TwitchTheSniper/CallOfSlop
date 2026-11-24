@@ -1118,6 +1118,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L ^ (long)hit.Body.Parts[hit.Part].SealedFaces << 8; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is var ad && (ad.IsAssembler || ad.IsRefiner))
             key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store; a refiner's set recipe too)
+        if (hit.Body.DefOf(hit.Part).BlockSquares && MachineBlocks.TryOf(hit.Body, hit.Part, out var sqa))
+            key ^= ((long)sqa.R4 * 131 + sqa.Broken * 7 + sqa.OffSide * 3 + sqa.OffTop * 5 + sqa.Over * 11 + sqa.SquareCount * 17) * 0x9E3779B97F4AL; // (a squares Core's line says its squares, which its blocks change, not the store)
         if (hit.Body.DefOf(hit.Part).IsPress)
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsPieceRack)
@@ -1150,7 +1152,7 @@ public static unsafe partial class Program
         if (cd.IsPieceRack)
             return _sbStoreText = ConstructConveyor.Look(ConstructPads.RackDef(hit.Body, hit.Part), st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null) is var rl && StockTargets.Look(hit.Body, hit.Part) is { Length: > 0 } kl ? rl + " - " + kl : rl;
         if (cd.IsRefiner)
-            return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
+            return _sbStoreText = ConstructRefining.Look(hit.Body, hit.Part, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), ConstructAssembling.FitOf(hit.Body, hit.Part), near, inv, held, hit.Body.Parts[hit.Part].Orders is { Bill: false },
                 _game is { } ag ? AssemblerToolBay.HeldIn(ag.Constructs, hit.Body, hit.Part) : null);
