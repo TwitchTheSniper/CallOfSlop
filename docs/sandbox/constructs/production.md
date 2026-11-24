@@ -2179,6 +2179,10 @@ A **Rail Carriage** (catalogue part, one Assembling row) goes under the Core or 
 
 Not yet: building onto a riding part while it is away uses its built place (the part tree); an idle arm comes back to its rest point, which is where it was built.
 
+### Arm kit: the fixed arms (2026-11-24, part 4, first step)
+
+Each fixed arm has a kit preset built to at least its reach and its load at full reach (`ArmKitMigrate.Map`; numbers from `--arm-kit`): Kit Loader Arm (4.0 m, 603 kg), Kit Workshop Arm (5.1 m, 1.6 t), Kit Industrial Arm (6.1 m, 2.1 t), Kit Military Arm (8.2 m, 6.9 t), Kit Plasma Arm (10.2 m, 14.1 t), Kit Long Arm (14.4 m, 13.8 t, 1 pedestal), Kit Heavy Arm (14.2 m, 16.4 t, 1 pedestal), Kit Shipyard Arm (18.4 m, 25.7 t, 2 pedestals) and Kit Module Fitter (8.6 m, 20.8 t, a Fitter Head). `--arm-swap-check [BLUEPRINT,...]` (to callofslop.log) says, for each fixed arm in a blueprint, whether its preset fits where it stands: its Core's bottom on the arm's, centred and turned as it is, every part but the chain, and the mast as it stands unpowered, against every part rising over its floor. On 2026-11-24 16 of the 24 placed arms fit; 8 don't (two Long arms' Drive Packs meet a Building Station, one's Counterweights a Mast Block, five Shipyard arms' Counterweights meet Mast Blocks and two of their masts the yard's crane rails and roof, the Production Showcase's Core a Long Piece Rack). Swapping them, moving saves and deleting the fixed arms wait on Sean's call on those 8 (factory layout is his).
+
 ### Roll-out and roll-in (2026-11-23)
 
 Sean: "The oven should allow parts coming in to be rolled directly into it. Also, the construction station should be able to roll out,

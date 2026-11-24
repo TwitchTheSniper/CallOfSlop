@@ -317,6 +317,8 @@ public static unsafe partial class Program
             return HandOffCheck.Cli(args); // a station's parts handed on by lifters and Roller Tile runs to its pick pad, headless (ConstructLifterHandOff.cs)
         if (args.Any(a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase)))
             return ArmKitCheck.Cli(args); // the arm kit's blueprints built headless and each Arm Core's spec: chain, load chart, speed (ArmKit.cs)
+        if (args.Any(a => a.Equals("--arm-swap-check", StringComparison.OrdinalIgnoreCase)))
+            return ArmKitMigrate.Cli(args); // does each fixed arm's kit preset fit where the fixed arm stands (ArmKit.cs)
         if (args.Any(a => a.Equals("--pack-check", StringComparison.OrdinalIgnoreCase)))
             return PackCheck.Cli(args); // welded groups on a pad, packed as one kind and back out as the group (PackedGroups.cs)
         if (args.Any(a => a.Equals("--bake-kit", StringComparison.OrdinalIgnoreCase)))
