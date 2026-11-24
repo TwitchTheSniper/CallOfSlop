@@ -54,6 +54,12 @@ public static class DesignScene
                 break;
         }
         var x = Cross(y, z);
+        // A piece with an up and a down (a gangway, a ladder) is turned about its normal on the port side, so its X stays up.
+        if (p.Side < 0 && p.Surface == "skin" && p.Kind is "Gangway" or "Boarding ladder")
+        {
+            x = [-x[0], -x[1], -x[2]];
+            z = [-z[0], -z[1], -z[2]];
+        }
         if (p.Turn != 0)
         {
             var a = p.Turn * Math.PI / 180;

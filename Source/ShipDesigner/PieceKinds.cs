@@ -7,12 +7,13 @@ namespace CallOfSlop.ShipDesigner;
 public sealed record PieceKind(string Name, string Group, string Where, string? Socket, string Needs, string Desc, Action<DesignMesh> Draw)
 {
     /// <summary>How far a socket may be from the room it opens into (the void between a room's wall and the skin, then a little).</summary>
-    public double Reach => Socket switch { "dock" => 2.6, "cargo" => 2.6, _ => 2.2 };
+    public double Reach => Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => 2.6, _ => 2.2 };
 
     /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
-        "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false), _ => null,
+        "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
+        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false), _ => null,
     };
 }
 
@@ -136,6 +137,44 @@ public static class PieceKinds
             m.Box(0.25, -2.2, 0.38, 0.3, 0, 0.43, Amber);
             for (var y = -2.0; y < 0; y += 0.3)
                 m.Box(-0.25, y, 0.39, 0.25, y + 0.04, 0.42, Gun);
+        }),
+        // Ways aboard from the ground or a pier (Karl, 2026-11-24). Each opens into any room.
+        new("Boarding ramp", "Sockets", "skin", "ramp", "any room", "A ramp door hinged at its aft edge, shown lowered: walk aboard from the ground.", m =>
+        {
+            m.Box(-1.45, 0, -1.8, 1.45, 0.12, -1.6, Armour); m.Box(-1.45, 0, 1.6, 1.45, 0.12, 1.8, Armour);
+            m.Box(-1.45, 0, -1.6, -1.25, 0.12, 1.6, Armour); m.Box(1.25, 0, -1.6, 1.45, 0.12, 1.6, Armour);
+            // The ramp: from the hinge out and down at about 35 degrees, 3.4 m long, with side rails.
+            const int n = 8;
+            for (var i = 0; i < n; i++)
+            {
+                double t0 = 3.4 * i / n, t1 = 3.4 * (i + 1) / n, c = Math.Cos(0.61), sn = Math.Sin(0.61);
+                m.Box(-1.2, t0 * sn, -1.6 - t1 * c, 1.2, t0 * sn + 0.1, -1.6 - t0 * c, i % 2 == 0 ? Gun : Armour);
+                m.Box(-1.25, t0 * sn + 0.1, -1.6 - t1 * c, -1.15, t0 * sn + 0.35, -1.6 - t0 * c, Amber);
+                m.Box(1.15, t0 * sn + 0.1, -1.6 - t1 * c, 1.25, t0 * sn + 0.35, -1.6 - t0 * c, Amber);
+            }
+            Well(m, 1.25, 1.6, 1.0);
+        }),
+        // On a side wall a piece's X is up (Where turns these two the right way up on the port side too), Z along the ship.
+        new("Gangway", "Sockets", "skin", "gangway", "any room", "A side door with a gangway run out 3 m: board from a pier or a station's platform.", m =>
+        {
+            m.Box(-1.25, 0, -0.8, -1.1, 0.12, 0.8, Armour); m.Box(1.1, 0, -0.8, 1.25, 0.12, 0.8, Armour);
+            m.Box(-1.1, 0, -0.8, 1.1, 0.12, -0.6, Armour); m.Box(-1.1, 0, 0.6, 1.1, 0.12, 0.8, Armour);
+            m.Box(-1.1, 0.05, -0.6, -1.0, 3.1, 0.6, Gun);         // the walkway, level with the sill
+            m.Box(-1.0, 0.1, -0.62, -0.05, 3.1, -0.56, Amber);   // its rails
+            m.Box(-1.0, 0.1, 0.56, -0.05, 3.1, 0.62, Amber);
+            m.Box(-1.0, 2.95, -0.62, -0.9, 3.1, 0.62, Armour);
+            Well(m, 1.1, 0.6, 0.8);
+        }),
+        new("Boarding ladder", "Sockets", "skin", "ladder", "any room", "A side door with a ladder folded down outside it, to climb aboard from the ground.", m =>
+        {
+            m.Box(-1.2, 0, -0.75, -1.05, 0.12, 0.75, Armour); m.Box(1.05, 0, -0.75, 1.2, 0.12, 0.75, Armour);
+            m.Box(-1.05, 0, -0.75, 1.05, 0.12, -0.55, Armour); m.Box(-1.05, 0, 0.55, 1.05, 0.12, 0.75, Armour);
+            // From the sill down 3 m, standing 15 cm off the skin.
+            m.Box(-4.2, 0.12, -0.3, -1.05, 0.2, -0.25, Amber);
+            m.Box(-4.2, 0.12, 0.25, -1.05, 0.2, 0.3, Amber);
+            for (var x = -4.0; x < -1.1; x += 0.3)
+                m.Box(x, 0.14, -0.25, x + 0.04, 0.18, 0.25, Gun);
+            Well(m, 1.05, 0.55, 0.8);
         }),
     ];
 
