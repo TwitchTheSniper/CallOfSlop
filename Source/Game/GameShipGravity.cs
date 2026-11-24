@@ -34,6 +34,8 @@ public sealed partial class Game
     /// <summary>Server, each tick for every player in Sandbox: watched for cargo, and hurt by more g than they are braced for.</summary>
     private void ShipGravityTick(Player p, in SandboxHand h, double now)
     {
+        p.FeltPull = ShipGravity.PersonPull(p.Sim, Constructs, h.SeatBody, p.Alive); // (the felt-g readout: the owner's snapshot carries it, UiGForce.cs)
+        if (ServerTick % 60 == 0) { var dbg = Constructs.Get(p.Sim.RideBody); Console.WriteLine($"[gdbg] felt {p.FeltPull} ride {p.Sim.RideBody} seat {h.SeatBody} grounded {p.Sim.Grounded} up {p.Sim.RideUpW} feltOn {p.Sim.RideFeltOn} pull {ShipGravity.WorldPull(p.Position)} ship {dbg?.SpaceShip} accel {dbg?.Accel} space {dbg?.SpaceAccel} bfelt {dbg?.Felt}"); }
         if (ShipGravity.Mode == ShipGravityMode.Deck || !p.Alive)
             return;
         ShipGravity.Watch(ServerTick, p.Position);

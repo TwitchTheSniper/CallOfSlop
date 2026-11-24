@@ -125,16 +125,51 @@ public static class ShipGravity
         c.WorldFrame(s.RideSeg, out var q, out _);
         if (deck)
         {
-            // Deck gravity: the deck's 1 g along their down, and the hull's acceleration on top past DeckFeltFrom (faded in).
-            var a = felt.Length();
-            var from = DeckFeltFrom * G;
-            if (a <= from)
+            if (felt.LengthSquared() <= DeckFeltFrom * G * DeckFeltFrom * G)
                 return; // (as before: the deck's 1 g alone)
-            var downW = Vector3.Transform(-Vector3.Normalize(s.RideUp), q);
-            felt = downW * (World.Gravity * World.GravityScale) + felt * ((a - from) / a);
+            felt = DeckFelt(Vector3.Transform(-Vector3.Normalize(s.RideUp), q), felt);
         }
         s.RideFelt = Vector3.Transform(felt, Quaternion.Conjugate(q));
         s.RideFeltOn = true;
+    }
+
+    /// <summary>Deck gravity: the deck's 1 g along <paramref name="downW"/>, and the hull's acceleration on top past <see cref="DeckFeltFrom"/> (faded in).</summary>
+    public static Vector3 DeckFelt(Vector3 downW, Vector3 hull)
+    {
+        var a = hull.Length();
+        var from = DeckFeltFrom * G;
+        var deck = downW * (World.Gravity * World.GravityScale);
+        return a <= from ? deck : deck + hull * ((a - from) / a);
+    }
+
+    /// <summary>
+    /// Server, each tick: the pull a person feels now, world axes (the felt-g readout, UiGForce.cs): seated, the seat's
+    /// vehicle's; standing aboard, their ride's; on the ground, the world's; falling or floating, nothing.
+    /// </summary>
+    public static Vector3 PersonPull(in MoveState s, ConstructWorld w, ushort seatBody, bool alive)
+    {
+        if (!alive)
+            return Vector3.Zero;
+        if (seatBody != 0)
+        {
+            if (w.Get(seatBody) is not { } seat)
+                return Vector3.Zero;
+            var body = seat.CarriedBy != 0 && w.Get(seat.CarriedBy) is { } carrier ? carrier : seat;
+            var down = Vector3.Transform(-Vector3.UnitY, seat.Rot);
+            if (Mode == ShipGravityMode.Deck)
+                return DeckFelt(down, body.Felt);
+            return Active(body) ? body.Felt : down * (World.Gravity * World.GravityScale);
+        }
+        if (s.RideBody != 0 && s.RideUp != Vector3.Zero && s.RideUpW != Vector3.Zero)
+        {
+            if (s.RideFeltOn && w.Get(s.RideBody) is { } c)
+            {
+                c.WorldFrame(s.RideSeg, out var q, out _);
+                return Vector3.Transform(s.RideFelt, q);
+            }
+            return -Vector3.Normalize(s.RideUpW) * (World.Gravity * World.GravityScale);
+        }
+        return s.Grounded ? WorldPull(s.Position) : Vector3.Zero;
     }
 
     /// <summary>A rider's step with the rule on: the pull along their down, the rest as a push, and how much they can still move.</summary>
