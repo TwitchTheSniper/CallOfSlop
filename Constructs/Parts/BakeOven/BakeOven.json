@@ -10,7 +10,7 @@
   "health": 3000,
   "armour": 8,
   "material": "steel",
-  "color": "#3a3f46",
+  "color": "#a8763a",
   "attachSeconds": 10,
   "power": 2000,
   "storage": {
@@ -531,7 +531,7 @@
         0.5,
         -0.25
       ],
-      "color": "#3a3f46",
+      "color": "#a8763a",
       "detail": true
     },
     {
