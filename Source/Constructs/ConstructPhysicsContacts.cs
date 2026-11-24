@@ -14,6 +14,13 @@ public static partial class ConstructPhysics
     /// <summary>What every contact allows beyond this tick's travel (m): pieces this close make contact points.</summary>
     public const float Skin = 0.02f;
 
+    /// <summary>
+    /// The most a body's own travel in one tick widens its look for the world's shapes, ground, trees and rocks (m: 12 km/s). 2026-11-24:
+    /// Material Bundles riding in a hauler that went on the ledger were carried at its leg's pace (1.6 million m/s) and each tick gathered a
+    /// 54 km box of the planet's flora and shapes: 0.5-3.2 s ticks for 7.7 s in Sean's world. Past this a body tunnels rather than stalls the game.
+    /// </summary>
+    internal const float MaxSweep = 200f;
+
     private const float WorldFriction = 0.7f, BodyFriction = 0.6f;
     private const int MaxCand = 4096;
     private const int KeepPerNormal = 9; // the deepest and the eight furthest round it
@@ -268,7 +275,7 @@ public static partial class ConstructPhysics
             ref var root = ref col.Nodes[col.Groups[g].Root];
             var mid = f.Point(root.Centre);
             GroupMotion(c, index, seg, mid, out var v, out var w);
-            var travel = (v.Length() + w.Length() * root.Half.Length()) * dt;
+            var travel = MathF.Min(MaxSweep, (v.Length() + w.Length() * root.Half.Length()) * dt); // (MaxSweep: a body flung absurdly fast tunnels, it never gathers a planet's worth)
             var margin = Skin + travel;
             var reach = CFrame.Abs(f, root.Half) + new Vector3(margin);
             var start = n;

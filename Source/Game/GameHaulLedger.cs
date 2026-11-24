@@ -150,7 +150,20 @@ public sealed partial class Game
         foreach (var e in _escorts)
             if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
                 return false;
+        // Nothing of the bubble rides in it (2026-11-24: Material Bundles poured from a hauler's Requisition Crate rode in its frame, were
+        // carried at its ledger leg's pace, 1.6 million m/s, and froze Sean's game for 7.7 s): with riders it flies the leg as before.
+        foreach (var b in Constructs.Bodies)
+            if (b.Frame != 0 && (b.Frame == c.Id || EscortOf(run, b.Frame)))
+                return false;
         return true;
+    }
+
+    private bool EscortOf(HaulRun run, ushort ship)
+    {
+        foreach (var e in _escorts)
+            if (e.Hauler == run.Ship && e.Ship == ship)
+                return true;
+        return false;
     }
 
     /// <summary>How far behind its station (on the station's orbit) a ledger hauler comes up when a person is near the station (m).</summary>
