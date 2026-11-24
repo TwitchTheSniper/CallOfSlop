@@ -169,6 +169,8 @@ public static class ConstructRails
 
     private static bool Close(Construct c, Construct o, Vector3 at, float ahead)
     {
+        if (o.CarriedBy == c.Id || o.Frame == c.Id && o.Frame != 0)
+            return false; // (what it carries or has aboard moves with it: ConstructCruise.cs; a rail body carries nothing)
         var reach = c.Radius + o.Radius + (c.Vel - o.Vel).Length() * ahead + _top * World.TickDt + ConstructWorld.GridMargin;
         return Vector3.DistanceSquared(o.WorldCom, at) < reach * reach;
     }

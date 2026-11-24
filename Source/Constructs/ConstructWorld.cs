@@ -1031,6 +1031,8 @@ public sealed partial class ConstructWorld
             c.LastHitBy = DamageBy; // (a crew's captain reads it: a deed against its faction, Source/Crew/CrewWorld.cs)
         if (dealt > 0 && DamageBody != 0 && DamageBody != c.Id)
             c.LastHitBody = DamageBody;
+        if (dealt > 0)
+            c.CruiseHit = true; // (off its cruise rail, and kept off a while: ConstructCruise.cs)
         if (dealt <= 0 || p.Broken && !p.BrokeDown) // (a broken-down thruster can still be shot to pieces)
             return false;
         var taken = d.IsEnvelope && !raw ? dealt * ConstructLift.Holed(this, c, part, dealt) : dealt; // (a round goes through a cell's skin)

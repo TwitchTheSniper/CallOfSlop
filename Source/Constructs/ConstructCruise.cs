@@ -44,8 +44,15 @@ public static class ConstructCruise
     /// <summary>Metres up or down a spell may take a climbing or sinking ship (its height hold would level it off).</summary>
     public const float ClimbMost = 10;
 
-    /// <summary>Seconds between the places along a spell's path whose ground is looked at before it goes on.</summary>
-    public const float PathStep = 2.5f;
+    /// <summary>Seconds between the places along a spell's path whose ground is looked at before it goes on; the air needed under each grows by
+    /// half the way to the next (<see cref="Clear"/>), so a slope up to about 26 degrees between two looks still passes under it.</summary>
+    public const float PathStep = 1f;
+
+    /// <summary>Ticks after a hit that a ship takes no spell (a player's ship has no captain to read its hits).</summary>
+    public const int HitQuiet = 15 * World.TickRate;
+
+    /// <summary>Ticks between a spell's fuel and charge settlements (<see cref="Settle"/>), so a save mid-spell misses at most this much burn.</summary>
+    public const int SettleEvery = World.TickRate;
 
     /// <summary>A candidate is looked at once every this many far steps (staggered by id), so the look costs a fraction of a body a tick.</summary>
     public const int LookEvery = 8;
@@ -89,12 +96,17 @@ public static class ConstructCruise
         var n = 0;
         foreach (var c in world.Bodies)
         {
+            if (c.CruiseHit)
+            {
+                c.CruiseHit = false;
+                c.CruiseQuiet = tick + (uint)HitQuiet;
+            }
             if (c.Cruise)
             {
                 // (a far NPC body comes off only on the tick before its far step; one the physics steps every tick, a player's ship or one the
                 // far LOD made near again, on any tick: the physics has it from the next)
                 var anyTick = c.FarRate <= 1;
-                var off = !Still(world, c) || c.CruiseFuelRate > 0 && c.CruiseFuelRate * (tick + 1 - c.CruiseFrom) >= c.CruiseFuelAt; // (its fuel would run out: the physics has it before)
+                var off = !Still(world, c) || c.CruiseQuiet > tick || SteerKey(c) != c.CruiseSteer || c.CruiseFuelRate > 0 && c.CruiseFuelRate * (tick + 1 - c.CruiseFrom) >= c.CruiseFuelAt; // (its fuel would run out: the physics has it before)
                 Move(world, c, planet, dt);
                 if (!off)
                 {
@@ -110,13 +122,18 @@ public static class ConstructCruise
                 }
                 else
                 {
+                    if ((tick + 1 - c.CruiseFrom) >= SettleEvery)
+                    {
+                        Settle(c, tick); // (a save mid-spell misses at most a second's burn)
+                        (c.CruiseFuelAt, c.CruiseChargeAt, c.CruiseFrom) = (c.FuelLeft, c.Charge, tick + 1);
+                    }
                     n++;
                     Ticks++;
                 }
                 continue;
             }
             var far = c.FarRate > 1;
-            if (c.OnRail || (far ? !last : c.NpcFaction == 0 && c.Owner == 255))
+            if (c.OnRail || c.CruiseQuiet > tick || (far ? !last : c.NpcFaction == 0 && c.Owner == 255))
                 continue; // (a far NPC body goes on only after the tick its far step covers ends; a player's ship stepped every tick, on any)
             var due = c.CruiseRecheck != 0 && tick >= c.CruiseRecheck || (far ? (tick / every + c.Id) % LookEvery == 0 : (tick + c.Id) % (LookEvery * every) == 0);
             if (!due)
@@ -137,6 +154,7 @@ public static class ConstructCruise
                         c.Vel = (c.Vel + c.CruiseV0) * 0.5f; // (the steady speed: a coarse step's jitter halved)
                     c.AngVel = Vector3.Zero;
                     c.CruiseUntil = tick + 1 + (uint)spell;
+                    c.CruiseSteer = SteerKey(c);
                     Spells++;
                     n++;
                     continue;
@@ -252,6 +270,29 @@ public static class ConstructCruise
         return closing < 1 ? HoldTicks : (d / closing - GoalLead) * World.TickRate;
     }
 
+    /// <summary>
+    /// A key of what steers it: its crew's order (point and whether it has one) and its first stabilizer's autopilot settings (on, mode,
+    /// waypoint, height). A new order, a Land or a new waypoint changes it, and the spell ends: an order ignored for up to 30 s would overshoot.
+    /// </summary>
+    internal static int SteerKey(Construct c)
+    {
+        var h = new HashCode();
+        h.Add(c.CruiseGoalOn);
+        if (c.CruiseGoalOn)
+            h.Add(c.CruiseGoal);
+        if (c.StabCount > 0 && c.Stabs[0].Part < c.PartCount)
+        {
+            ref var p = ref c.Parts[c.Stabs[0].Part];
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.Autopilot, 0)); // (the settings an order writes, ConstructFlight.NavEngage: not the loops' own held values, which a pilot's nudges move)
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.ApMode, 0));
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.WaypointX, 0));
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.WaypointY, 0));
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.WaypointZ, 0));
+            h.Add(ConstructConfig.Get(p, p.D, CfgKey.TargetAlt, 0));
+        }
+        return h.ToHashCode();
+    }
+
     /// <summary>Where a spell's move puts its centre of mass after <paramref name="t"/> seconds (round the planet's centre, as <see cref="ConstructPhysics.CruiseStep"/>).</summary>
     private static Vector3 PathAt(Vector3 at, Vector3 vel, PointGravity? planet, float t)
     {
@@ -276,6 +317,7 @@ public static class ConstructCruise
         var need = Floor + c.Radius;
         if (ground != null && (at - planet!.Center).Length() < ground.Radius)
             return false; // (in a hollow world's cavity)
+        need += 0.5f * c.Vel.Length() * PathStep; // (half the way between two looks: a slope that rises between them still passes under it)
         var steps = (int)MathF.Ceiling(span / PathStep);
         for (var k = 0; k <= steps; k++)
         {

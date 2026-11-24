@@ -317,18 +317,19 @@ rarely ("checking only 30 seconds kind of time"). Out of a bubble ships already 
 this does it inside one. A far NPC crew's awake ship (`ConstructFar`), or a player's ship flying unseated, more than `Range`
 (1,500 m, the far LOD's) from every person, whose crew has nothing to fight (`Construct.NpcBusy`, set by the captain and the
 crew's contact look), not hit, flying steadily (speed changed under 3 m/s2 on average since its last look, turning under
-0.35 rad/s), with clear air (60 m and its radius) under every 2.5 s of the path a spell takes it (the ground's smooth height
-and a ray down) and nothing near (the rails' hash, each tick), leaves the physics for a spell of up to 30 s
+0.35 rad/s), with clear air (60 m, its radius and half a second of its speed) under every second of the path a spell takes it (the
+ground's smooth height and a ray down) and nothing near but what it carries or has aboard (the rails' hash, each tick), leaves the physics for a spell of up to 30 s
 (`HoldTicks`): each tick `ConstructPhysics.CruiseStep` moves it at its speed round the planet's centre, the speed and hull
 turned with it, so a level flight stays level and a hover stays put; its spin is held at none.
 
 - **Shorter spells.** A spell ends 6 s before the ship would reach the point its order (`Construct.CruiseGoal`, from the
   crew's GoTo, Retreat, Route and civilian orders) or its autopilot (`CStab.HoldPos`) flies it to, and a climbing or sinking
   ship's spell takes it 10 m up or down at most (its height hold would level it). Under 3 s: no spell.
-- **Ends sooner** when it is hit, its crew sees a contact, it is changed, held, coupled or carried, a person comes within
-  1,400 m, its fuel would run out, anything could meet it, or the physics' list takes it (an active body near).
+- **Ends sooner** when it is hit (and none for 15 s after: `CruiseHit`, `HitQuiet`), its crew sees a contact, its orders or
+  autopilot settings change (`SteerKey`: a Land, a new waypoint or order), it is changed, held, coupled or carried, a person
+  comes within 1,400 m, its fuel would run out, anything could meet it, or the physics' list takes it (an active body near).
 - **What still runs.** Logic, power, the autopilot and the crew run as a far body's do; the fuel and charge its physics would
-  have burned are measured before a spell (by rate) and taken at its end (`Settle`), less what its logic burned meanwhile.
+  have burned are measured before a spell (by rate) and taken each second of it (`Settle`), less what its logic burned meanwhile.
 - **Ticks line up.** A far NPC body goes on right after the tick its far step covers ends and comes off on the tick before
   its next far step (`ConstructFar.Tick`), so no tick of its motion is stepped twice or skipped; a ship the physics steps
   every tick goes on and off on any tick. Nothing changes on the wire or in a save.

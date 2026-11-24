@@ -1307,6 +1307,11 @@ public sealed partial class Construct
     /// <summary>Server: the point its NPC crew's order flies it to, while <see cref="CruiseGoalOn"/> (CrewWorld): a cruise spell ends before it gets there (ConstructCruise.SpellFor).</summary>
     public Vector3 CruiseGoal;
     public bool CruiseGoalOn;
+    /// <summary>Server: what steers it (its order's point, its autopilot's mode and held point) when its spell began: a change ends the spell (ConstructCruise.SteerKey).</summary>
+    public int CruiseSteer;
+    /// <summary>Server: it was damaged (ConstructWorld.Damage): off its cruise rail, and none for <see cref="ConstructCruise.HitQuiet"/> ticks after (until <see cref="CruiseQuiet"/>).</summary>
+    public bool CruiseHit;
+    public uint CruiseQuiet;
 
     /// <summary>A rail body's lowest distance from the planet's centre until its next check (ConstructRails.cs).</summary>
     public float RailLow;
