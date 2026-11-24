@@ -992,9 +992,7 @@ public static class ConstructStorage
         var flags = r.U8();
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
-        var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 128)
-            throw new MalformedPacketException($"a store with more flags {more}");
+        var more = (flags & 64) != 0 ? r.U8() : 0; // (every bit of it is used: 128 is a Scrap Breaker's wreck, protocol 458)
         s.OnBed = (more & 64) != 0;
         if ((more & 1) != 0)
         {

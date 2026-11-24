@@ -358,8 +358,16 @@ public static partial class Program
                 _wsWait = 10;
                 return true;
             }
-            case "recycle": // host: "recycle NAME|KEY [@ RECYCLER[#n]]": that part wrecked by the damage path and left in the intake; "recycle read [RECYCLER[#n]]": the bin
+            case "recycle": // host: "recycle NAME|KEY [@ RECYCLER[#n]] [^ DX,DZ]": that part wrecked by the damage path and left in the intake (DX, DZ m off its middle in the part's frame: a Scrap Breaker's far square); "recycle read [RECYCLER[#n]]": the bin
             {
+                var off = Vector3.Zero;
+                if (arg.IndexOf(" ^ ", StringComparison.Ordinal) is var hat and >= 0)
+                {
+                    var xz = arg[(hat + 3)..].Split(',');
+                    if (xz.Length == 2 && float.TryParse(xz[0], System.Globalization.NumberStyles.Float, ci, out var ox) && float.TryParse(xz[1], System.Globalization.NumberStyles.Float, ci, out var oz))
+                        off = new Vector3(ox, 0, oz);
+                    arg = arg[..hat];
+                }
                 var at = arg.IndexOf(" @ ", StringComparison.Ordinal);
                 var read = arg == "read" || arg.StartsWith("read ", StringComparison.Ordinal);
                 var what = read ? "" : at < 0 ? arg : arg[..at];
@@ -371,6 +379,7 @@ public static partial class Program
                     return true;
                 }
                 var table = RecyclingTable.Current;
+                var rd0 = rc.DefOf(rp);
                 if (read)
                 {
                     var inside = 0;
@@ -384,8 +393,8 @@ public static partial class Program
                     WsSay($"recycle: read: the body's other stores: {(others.Count == 0 ? "empty" : string.Join(", ", others))}");
                     foreach (var b in g.Constructs.Bodies)
                         if (b != rc && b.PartCount == 1 && b.Parts[0].Broken && Vector3.Distance(b.WorldCom, rc.WorldCom) < 8)
-                            WsSay($"recycle: read: a wrecked {b.DefOf(0).Name} (body {b.Id}) at {b.WorldCom:0.00}, in the intake {ConstructRecycler.InIntake(rc, rp, b.WorldCom)}, feedable {ConstructRecycler.Feedable(b)}");
-                    WsSay($"recycle: read: bin {st.Amount} {table.NameOf(st.Material)}; job {st.JobAmount} {table.NameOf(st.JobMaterial)}, {st.JobTicks / (float)World.TickRate:0.0} s of {st.JobFull / (float)World.TickRate:0.0} left, busy {st.Busy}, blocked {st.Blocked}, held {st.Held}; powered {ConstructRecycler.Powered(g.Constructs, rc, rp)}, line {ConstructRecycler.LineOf(g.Constructs, rc, rp, st)}; bodies in the intake {inside}");
+                            WsSay($"recycle: read: a wrecked {b.DefOf(0).Name} (body {b.Id}) at {b.WorldCom:0.00}, in the intake {ConstructRecycler.InIntake(rc, rp, b.WorldCom)}{(rd0.IsBreaker ? $", in the mouth {BreakerWorks.InMouth(rc, rp, b.WorldCom, out var bx, out var bz)} at cell {bx},{bz}" : "")}, feedable {ConstructRecycler.Feedable(b)}");
+                    WsSay($"recycle: read: bin {st.Amount} of {ConstructStorage.Capacity(rc, rp)}{(rd0.IsBreaker ? $" ({ConstructRefining.SizeText(rc, rp)}), wreck drawn {(st.JobDef == ConstructParts.None ? "none" : ConstructParts.Def(st.JobDef).Name)} at cell {st.JobCellX},{st.JobCellZ}" : "")}, {table.NameOf(st.Material)}; job {st.JobAmount} {table.NameOf(st.JobMaterial)}, {st.JobTicks / (float)World.TickRate:0.0} s of {st.JobFull / (float)World.TickRate:0.0} left, busy {st.Busy}, blocked {st.Blocked}, held {st.Held}; powered {ConstructRecycler.Powered(g.Constructs, rc, rp)}, line {ConstructRecycler.LineOf(g.Constructs, rc, rp, st)}; bodies in the intake {inside}");
                     return true;
                 }
                 if (!g.IsServer || ConstructParts.Find(what) is not { } def)
@@ -396,7 +405,7 @@ public static partial class Program
                 ref var rpart = ref rc.Parts[rp];
                 var rd = rc.DefOf(rp);
                 rc.WorldFrame(rpart.Seg, out var q, out var t);
-                var mid = t + Vector3.Transform(rpart.Pos + Rot24.Apply(rpart.Rot, (rd.IntakeMin + rd.IntakeMax) * 0.5f), q);
+                var mid = t + Vector3.Transform(rpart.Pos + Rot24.Apply(rpart.Rot, (rd.IntakeMin + rd.IntakeMax) * 0.5f + off), q);
                 var wreck = ConstructEdits.DropLoose(g.Constructs, def, mid, Quaternion.Identity);
                 if (wreck == null)
                 {
