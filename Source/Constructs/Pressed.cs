@@ -853,9 +853,9 @@ public static class Pressed
             d.Mass = Math.Clamp(MathF.Min(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass); // (never more than its blank: production.md 2026-11-13)
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
-        if (like.TrainBore > 0) // (an engine train piece's bore goes with its blank across: the lesser side, ConstructWorks.Bores)
+        if (like.TrainBore > 0) // (an engine train piece's bore goes with its blank's across over its preset's, so a preset's neighbour has about its bore; every bored preset is 70 cm across: ConstructWorks.Bores)
         {
-            var wide = MathF.Min(Get(s, axes[0]), Get(s, axes[1]));
+            var wide = Across(k) / (float)Math.Max(1, Across(p.Preset));
             d.TrainBore = like.TrainBore * wide;
             d.TrainBoreBack = like.TrainBoreBack * wide;
             d.Description += $" Its bore is {d.TrainBore:0.00} m{(d.TrainBoreBack != d.TrainBore ? $" in front, {d.TrainBoreBack:0.00} m behind" : "")}.";

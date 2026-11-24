@@ -262,7 +262,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4, AdapterD = 0.7;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4, AdapterD = 0.75;
     public const double GimbalDegrees = 6; // (the doc: the bell swings up to 6 degrees)
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
@@ -705,7 +705,7 @@ public sealed class EngineTrainParts : IPartGenerator
         var big = Across * 2; // (its front's bore)
         var rb = big * 0.5;
         var p = new Part("Bore Adapter XS", Small, Section,
-            $"A tapered engine section, 0.7 m long: it joins train pieces of a {big:0.00} m bore in front to pieces of a {Across:0.00} m bore behind it (weld it turned round to go from {Across:0.00} m up to {big:0.00} m). Train pieces weld only to pieces of the same bore. It adds nothing else and goes in any zone.",
+            $"A tapered engine section, 0.75 m long: it joins train pieces of a {big:0.00} m bore in front to pieces of a {Across:0.00} m bore behind it (weld it turned round to go from {Across:0.00} m up to {big:0.00} m). Train pieces weld only to pieces of the same bore. It adds nothing else and goes in any zone.",
             role: "frame", tool: "welder", material: "steel", color: Clad, group: Group);
         Cyl(p, 0, 0, rb - 0.004, -0.05, -0.003, Trim, "dirty steel", segments: 32); // (the big flange, 4 mm under the flange it meets)
         Bolts(p, rb - 0.03, -0.015, -0.001, 16, Math.PI / 16);

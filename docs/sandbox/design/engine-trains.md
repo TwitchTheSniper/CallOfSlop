@@ -114,9 +114,9 @@ Not yet: "runs dry" by a tank's own contents (the plain fuel tanks are one pool;
 
 ## Phase 9: bores and the Bore Adapter
 
-- Every train piece's file gives its **bore** (`worksPiece.bore`, m across its joint flanges: 0.66 at XS). A pressed piece's bore goes with its blank across (the lesser of width and height against its like part's bounds), and its description says it.
+- Every train piece's file gives its **bore** (`worksPiece.bore`, m across its joint flanges: 0.66 at XS). A pressed piece's bore goes with its blank's across over its preset's (`Pressed.BuildLike`), and its description says it. Every bored piece's preset is 70 cm across (the Fuel Buffer, Cooling Jacket and Gimbal Ring moved from 75), the Bore Adapter's 140, so one blank across gives one bore whatever the kind: 70 cm is 0.66 m, 140 cm is 1.32 m.
 - The rule (the doc's "Any bore": a weld joins only equal bores): `ConstructWorks.Bores`, after `Zones`, takes the train's pieces from the bell back by their middles; the first piece whose bell-side bore isn't within 3% (`BoreSlack`) of the back bore of the piece in front, and every piece behind it, leave the train. The bell's look and the works report say "its 0.66 m bore doesn't meet the piece in front of it". A piece with no bore (0) isn't checked. The bell's own collar isn't checked.
-- **Bore Adapter XS** (0.7 m, any zone): a cone from a 1.32 m bolted flange (front, with two lifting lugs and a hazard band) to the XS flange (back): `"bore": 1.32, "boreBack": 0.66`. Welded turned round it steps up; which end meets which piece goes by the way its front faces. Presses on the Housing die (`boreadapter` 135x135x70; a housing's length is at least half its width), both bores scaled together.
+- **Bore Adapter XS** (0.75 m, any zone; no breakdowns land on it, as on a Spacer): a cone from a 1.32 m bolted flange (front, with two lifting lugs and a hazard band) to the XS flange (back): `"bore": 1.32, "boreBack": 0.66`. Welded turned round it steps up; which end meets which piece goes by the way its front faces. Presses on the Housing die (`boreadapter` 140x140x75; a housing's length is at least half its width), both bores scaled together.
 - `--engine-check` prints each drive piece's bore and whether it is in the train.
 - Protocol 466 (new part file).
 
