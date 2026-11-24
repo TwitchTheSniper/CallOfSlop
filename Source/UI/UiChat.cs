@@ -111,7 +111,7 @@ public sealed partial class Ui
                 _hudChatText.Add(ChatRules.Format(c));
         }
         var width = MathF.Min(560 * _scale, size.X * 0.42f);
-        var bottom = new float2(pos.X + pad, pos.Y + size.Y - pad - 230 * _scale); // above the health panel
+        var bottom = new float2(pos.X + pad, MathF.Min(pos.Y + size.Y - pad - 230 * _scale, _vpTop - 8 * _scale)); // above the health panel (Sandbox: the vitals panel's top, which grows with its rows)
         var chat = game.Chat;
         var lines = _hudChatText;
 

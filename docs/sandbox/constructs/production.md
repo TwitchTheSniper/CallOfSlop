@@ -1499,7 +1499,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
   network and orders are [the terminal's](#crafting-terminal). It is a block machine's Core (`"machineBlock"`, family `station`;
   `MachineBlocks.cs`), with sockets for Bay Blocks along both sides and under it.
-- **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles,
+- **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles, a 1 m deck level with the roller runs and the raised Pad Tiles, Sean
+  2026-11-24; the Core stays on the floor, its screen at hand height; their side sockets at a Pad Tile's, 0.1 m, so a bay welds butted on a pad,
   their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 32 cells a
   side and 512 cells in all, masts included (the station's own limit, `"maxSide"` and `"maxCells"` in its `"machineBlock"`; Sean 2026-11-21,
   so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
@@ -1738,10 +1739,25 @@ inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter
 | 3 | Industrial Loader Arm | 1.5 to 6 m | 2 t | 1.5 by 6 m | 6 m/s | 0.45 s | 1.9 kW |
 | 4 | Military Loader Arm | 2 to 8 m | 4 t | 2.0 by 8 m | 9 m/s | 0.3 s | 3.4 kW |
 | 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
+| big | Heavy Loader Arm | 3 to 14 m | 16 t | 6 by 16 m | 10 m/s | 0.3 s | 12 kW |
+| big | Shipyard Loader Arm | 3.5 to 18 m | 24 t | 10 by 24 m | 9 m/s | 0.4 s | 20 kW |
 
 Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
 cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
 Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
+
+**The big arms** (Sean, 2026-11-24: arms that carry a shipyard's pieces from the line pads straight into its building bay;
+`LifterParts.BigArms`, folder `Lifters/BigArms`) are past the tiers: a 3.5 m square pedestal (14 cells, `"centre -y"` stands it
+by its middle) with the Military look scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times the tier-1 arm's (the
+drawing scales by `Upper / 2.3`). They carry the hull pieces, decks and keel bands a Plasma arm can't (the Zero Day frigate's run
+to 14 t and 22 m), and work as every arm does: a piece on a pad or a run's end in reach goes straight to a ready step
+(`ConstructLifterDirect.cs`), and the station's offers give them steps whose part lies on a pad they reach. Their Assembling rows
+are the last in the table (`AfterCloche`).
+
+`--station-check SITE --build NAME --seconds 3 --reach` reports, for every arm by a station's bay: the steps of the build it can fit
+(size, payload and reach at the part's middle with its wrist lift), whether it reaches the hold, and how much of each pad's deck
+(the station's own pick pads and any pad within 30 m of the bay) is in its reach; then each pad's cover by any arm, and the steps no
+arm fits with the reason.
 
 - **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
   later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it

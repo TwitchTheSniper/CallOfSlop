@@ -218,7 +218,7 @@ public sealed partial class Game
                 {
                     e.Position = o.Position; // exact, so prediction doesn't chase rounding errors
                     e.Velocity = o.Velocity;
-                    p.FeltPull = o.Felt; // (the felt-g readout, UiGForce.cs)
+                    p.FeltPull = o.Felt; // (the felt-g readout, UiVitalsPanel.cs)
                     if (o.Mantling)
                         e.MantleTo = o.MantleTo;
                 }

@@ -25,9 +25,13 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   driving and a cruise feel as before) into `RideFelt`. The same moving rules below then slow and pin them, but `Rider` takes the whole of it along their down
   and pushes nothing sideways (a turning or braking vehicle keeps its riders on their spots, as the ride-frame tests ask). No harm with deck
   gravity (Karl not asked).
-- **Felt-g readout** (Karl, 2026-11-24; `UI/UiGForce.cs`): left of centre, a dial and the figure, "1.0 g down". The server
-  works out each person's pull (`ShipGravity.PersonPull`: seated, standing aboard, on the ground, or nothing in free fall) and
-  the owner's snapshot carries it (protocol 449). Amber from 1.5 g, red and PINNED from 3 g. Shown aboard, or off 1 g.
+- **Felt-g readout** (Karl, 2026-11-24; moved into the vitals panel, Sean 2026-11-24: `UI/UiVitalsPanel.cs`, `VpGravity`): a
+  block under the panel's rows, always shown: GRAVITY and the way in words ("DOWN, BACK", or WEIGHTLESS), a dial in the bars'
+  column (the pull seen from behind them; its end filled while it presses them back, a ring forward, else a head; its length
+  the g over 3 g to the power 0.35) and the g on the right ("1.0 G"). The server works out each person's pull (`ShipGravity.PersonPull`: seated,
+  standing aboard, on the ground, or nothing in free fall) and the owner's snapshot carries it (protocol 449). Cyan, amber
+  from 1.5 g, red and PINNED from 3 g; past the g they take unhurt (`ShipGravity.Limit`, the harm rule below; never under
+  deck gravity) it pulses CRUSHING and the plate turns red. Not shown in a robot shell (the shell's panel is there instead).
   Under deck gravity the deck counts as 1 g (`G`), and the mover's own (stronger) deck gravity is scaled by the g felt.
 - **Magnet boots** (Karl, 2026-11-24; `Game/GameSandboxMagBoots.cs`): key 7 (`GameAction.MagBoots`, binds 35), sent with
   each command (`InputCmd.MagBoots`). On and standing on a deck with a felt pull: held to it (at least the mover's 1 g, no

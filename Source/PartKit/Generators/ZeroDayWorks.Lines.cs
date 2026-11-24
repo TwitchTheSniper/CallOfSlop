@@ -31,8 +31,11 @@ public sealed partial class ZeroDayWorks
                 ArmourLine(line, x0, paint, bedAcross: 3, bedAlong: 7, tables: 2, cutAlong: 7);
                 // The dress station (a small Building Station: Core east of a 5 x 9 bay, Mast Blocks 3 high on its corners), its Bake Oven,
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
-                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint);
-                RollThrough(_lineCutOuts[line], 2, paint); // (the cutter's runs end at z -109: a row on, then the pad at -113 and -115, the bay from -117)
+                // (the cutter's runs end at z -109: a row on, then the pad at -113 and -115, the bay from -117. The runs are a quarter metre off
+                // the floor's 2 m grid (the extruder's tables), so the bay is welded on the pad's south edge, butted with no gap, and the
+                // Core on the bay: Sean 2026-11-24)
+                var pad = RollThrough(_lineCutOuts[line], 2, paint);
+                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint, onPad: (pad[0, 1], 1));
                 // The oven's Core east of its bed's first row, out of the two rows between the bay and the bed, where two Roller Tiles under
                 // both middles roll a finished kit onto the bed (ConstructRollOut.cs); its console runs the line for the station's kits, and
                 // the yard's orders reach the oven (Sean, 2026-11-23: the frigate's interior walls are made on lines A and B).
@@ -72,10 +75,34 @@ public sealed partial class ZeroDayWorks
         /// A Building Station: its Core at (<paramref name="coreX"/>, <paramref name="coreZ"/>) facing south with its bay west of it (the bay's
         /// north-west cell at <paramref name="bayX0"/>, <paramref name="bayZ0"/>), <paramref name="masts"/> Mast Blocks on each bay corner.
         /// </summary>
-        private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint, Orient? turned = null)
+        /// <paramref name="onPad"/>: a Pad Tile on the bay's north edge and the bay column south of it. The bay is welded on that tile's south
+        /// side and the Core on the bay (a pad laid off the floor's grid), not stood on the floor.
+        private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint, Orient? turned = null,
+            (VPart Tile, int Column)? onPad = null)
         {
-            var core = On("Building Station", coreX, coreZ, turned ?? South, "-y.0.1", paint);
-            var bay = Tiles("Bay Block", bayX0, bayZ0, across, along, South, paint);
+            VPart core;
+            VPart[,] bay;
+            if (onPad is var (tile, col))
+            {
+                bay = new VPart[across, along];
+                bay[col, 0] = Paint(Onto(tile, "+z", "Bay Block", "-z"), paint);
+                for (var i = col - 1; i >= 0; i--)
+                    bay[i, 0] = Paint(Onto(bay[i + 1, 0], "+x", "Bay Block", "-x"), paint); // (South: a block's own +x is west)
+                for (var i = col + 1; i < across; i++)
+                    bay[i, 0] = Paint(Onto(bay[i - 1, 0], "-x", "Bay Block", "+x"), paint);
+                Chain(bay, "Bay Block", "+z", "-z", "-x", "+x", paint, rowZero: true);
+                // The Core east of the bay, its middle cell beside the bay's second row, turned as one stood South would be.
+                core = Paint(Onto(bay[across - 1, 1], "-x", "Building Station", "+x.1", spin: 0), paint);
+                var want = V(coreX, 0, coreZ) - V(bayX0, 0, bayZ0);
+                var got = SocketAt(core, "-y.0.1") - SocketAt(bay[0, 0], "bottom");
+                if (MathF.Abs(got.X - want.X) > 0.01f || MathF.Abs(got.Z - want.Z) > 0.01f || SocketAt(core, "-y.0.0").Z < SocketAt(core, "-y.0.2").Z)
+                    throw new VehicleKitException($"Zero Day Works: a station's Core welded on its bay sits at {got} from the bay, not {want}");
+            }
+            else
+            {
+                core = On("Building Station", coreX, coreZ, turned ?? South, "-y.0.1", paint);
+                bay = Tiles("Bay Block", bayX0, bayZ0, across, along, South, paint);
+            }
             foreach (var c in Corners(bay))
                 Stack(c, "top", masts);
             _stations.Add(core);
@@ -252,7 +279,7 @@ public sealed partial class ZeroDayWorks
         /// dress station's bay's north end, which the station takes as its pick pad. Each piece rolls from the Extruder through the Panel Former
         /// and the Laser Cutter (across a bed it has no work on) to that pad, where the station's crane picks it (ConstructStation pick pads).
         /// </summary>
-        private void RollThrough(VPart[] ends, int rows, string paint)
+        private VPart[,] RollThrough(VPart[] ends, int rows, string paint)
         {
             var pad = new VPart[ends.Length, rows];
             for (var i = 0; i < ends.Length; i++)
@@ -261,6 +288,7 @@ public sealed partial class ZeroDayWorks
                 pad[i, 0] = Paint(Onto(r, "+z low", "Pad Tile", "-z"), Stock);
             }
             Chain(pad, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: true);
+            return pad;
         }
 
         /// <summary>
