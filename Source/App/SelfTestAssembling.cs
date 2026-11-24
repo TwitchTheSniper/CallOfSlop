@@ -86,31 +86,19 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The big machines are buildings, not bricks (the Smelter and the Foundry are 2 m block machines' Cores now, grown by their blocks): the size table; less than half of their bounds solid; a player fits their aisle;
-    /// a body can leave and a player can reach from beside a 10 m machine; every chute port on the outside.
+    /// The refiners are block machines' 2 m Cores now (the Smelter, the Sawmill and the Foundry), grown by their blocks, not by tiers (a Core
+    /// is a block, so the old "not a brick" share is gone): one cell across, two chute ports on the outside.
     /// </summary>
     private static void BigMachineChecks(Action<bool, string> want)
     {
-        (string Line, float[] Across)[] lines =
-        [
-            ("Sawmill", [0, 3, 4, 5, 7, 9]),
-        ];
-        foreach (var (line, across) in lines)
-            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
-            {
-                var d = ConstructParts.Need(TierName(line, tier));
-                var size = d.BoundsMax - d.BoundsMin;
-                want(MathF.Abs(MathF.Max(size.X, size.Z) - across[tier]) < 0.1f, $"{d.Name} is {size} across, not {across[tier]}");
-                var solid = 0f;
-                for (var b = 0; b < d.SolidBoxes; b++)
-                {
-                    var h = d.Boxes[b].Half * 2;
-                    solid += h.X * h.Y * h.Z;
-                }
-                want(solid < size.X * size.Y * size.Z * 0.55f, $"{d.Name} is a brick: {solid:0} of {size.X * size.Y * size.Z:0} m3 solid");
-                want(d.NamedPorts.Count(p => p.Type == RouteType.Chute) == 2, $"{d.Name}'s chute ports");
-                want(d.SolidBoxes <= ConstructParts.MaxBoxes, $"{d.Name}'s boxes");
-            }
+        foreach (var name in (string[])["Smelter", "Sawmill", "Foundry"])
+        {
+            var d = ConstructParts.Need(name);
+            var size = d.BoundsMax - d.BoundsMin;
+            want(d.BlockSquares && MathF.Abs(MathF.Max(size.X, size.Z) - d.BlockCell) < 0.1f, $"{d.Name} is {size} across, not one {d.BlockCell} m cell");
+            want(d.NamedPorts.Count(p => p.Type == RouteType.Chute) == 2, $"{d.Name}'s chute ports");
+            want(d.SolidBoxes <= ConstructParts.MaxBoxes, $"{d.Name}'s boxes");
+        }
     }
 
     /// <summary>
@@ -452,17 +440,17 @@ public static partial class SelfTest
         Want(st.Items == 0 && st.MixN == 0 && st.KindN == 0 && inv.Materials[steel] > before, $"F took everything back (tray {st.Items}, mix {st.MixN}, kinds {st.KindN}, steel {inv.Materials[steel]} from {before})");
         Want(edits.UseBin(w, me, eye, bay.Id, asm) is { } empty && empty.Contains("no recipe"), "F at an empty machine with no recipe says why");
 
-        // ---- From beside a 9 m machine: the server measures reach to the part's nearest point, not its centre.
-        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Plasma Sawmill"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
+        // ---- From beside an 8 m bunker: the server measures reach to the part's nearest point, not its centre.
+        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Ore Bunker 8 m"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
         {
             huge.Rebuild();
-            var side = farSpot + new Vector3(5.8f, 1.6f, -2f);
-            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside a Plasma Sawmill F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
-            Want(edits.UseBin(w, me, farSpot + new Vector3(12f, 1.6f, -2f), huge.Id, 0) == "too far away", "from 7.5 m off it is too far");
+            var side = farSpot + new Vector3(5.3f, 1.6f, -2f);
+            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside an Ore Bunker 8 m F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
+            Want(edits.UseBin(w, me, farSpot + new Vector3(12f, 1.6f, -2f), huge.Id, 0) == "too far away", "from 8 m off it is too far");
             w.Remove(huge);
         }
         else
-            Want(false, "no room for a Plasma Sawmill");
+            Want(false, "no room for an Ore Bunker 8 m");
 
         // ---- Creative: instant and unpowered; a broken machine spills its input.
         ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Wall Clock"));

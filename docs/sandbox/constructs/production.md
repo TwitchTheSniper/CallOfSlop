@@ -9,9 +9,9 @@ out. Chutes move it between them. [Assembling](#assembling) uses the results. Th
 materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
 from a **Foundry**, which mixes two first tier ones.
 
-- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; the Sawmill comes in five tiers, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). The **Smelter** and the **Foundry** are block machines with no tiers (2026-11-24, [Refiners as block machines](#refiners-as-block-machines)); the Smelter is
-  a 2 m Core (3 t, 3 kW) with a hopper on top (its input), a screen and a small glowing hearth on its front and its output bin inside, made bigger by Hearth Blocks welded on its +x side. The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
-  between a trough at the back (input) and a rack at the front (output). The **Foundry** is a 2 m Core (3.5 t, 3.5 kW) with two mixer hoppers on top (its mixed input) and a screen and sight glass on its front, made bigger by Crucible Blocks ([The Foundry](#the-foundry)). Any part with `storage.refine` is a machine: its
+- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only). The **Smelter**, the **Sawmill** and the **Foundry** are block machines with no tiers (2026-11-24, [Refiners as block machines](#refiners-as-block-machines)); the Smelter is
+  a 2 m Core (3 t, 3 kW) with a hopper on top (its input), a screen and a small glowing hearth on its front and its output bin inside, made bigger by Hearth Blocks welded on its +x side. The **Sawmill** is a 2 m Core (1.5 t, 1.8 kW) with a log bunker on top (its input)
+  under a cyclone tower, made bigger by Saw Blocks ([The Sawmill](#the-sawmill)). The **Foundry** is a 2 m Core (3.5 t, 3.5 kW) with two mixer hoppers on top (its mixed input) and a screen and sight glass on its front, made bigger by Crucible Blocks ([The Foundry](#the-foundry)). Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
 - **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
@@ -92,7 +92,7 @@ its own.
 
 ## Refiners as block machines
 
-The Smelter (2026-11-24; the Foundry the same day, [The Foundry](#the-foundry); the Sawmill and a Scrap Breaker are to follow) is a block machine with no tiers, as the Assembler
+The Smelter (2026-11-24; the Foundry and the Sawmill the same day, [The Foundry](#the-foundry), [The Sawmill](#the-sawmill); a Scrap Breaker is to follow) is a block machine with no tiers, as the Assembler
 and the Press are: a **Smelter Core** and **Hearth Blocks** welded on its +x side, the blocks cut into square furnaces that all work at
 once, and **Casting Beds** past their far edge. Bigger squares pay more than the same blocks in small ones, so a player plans the furnace,
 and every peer works the machine out from its parts alone (`MachineBlocks.Squares`, nothing on the wire). Parts by the part kit's
@@ -228,6 +228,61 @@ frame, allocating nothing; culled past 150 m):
 **The wire.** Part ids moved (protocol 453). Saves keep working: "Workshop Foundry" to "Plasma Foundry" load as the Foundry Core
 (`ConstructParts.Renamed`), and a saved recipe keeps its recipe (each old tier's list was a start of the full one). **Self-test**:
 "Machine tier looks", "Refining", "Assembling", "Display screens".
+
+### The Sawmill
+
+The Sawmill (2026-11-24) is a block machine on the same rule as the Smelter and the Foundry: the same best split, R4, power shares, bins,
+chute load and next-size hint, and both of its recipes (wood to planks, planks to cloth) at the Core; the Sawmill's tiers are gone (it had
+no recipe gates). Parts by the part kit's `sawmill_parts` (`Source/PartKit/Generators/SawmillParts.cs`, `--gen-parts sawmill_parts`).
+
+- **Sawmill Core** (`Sawmill.json`, the old name and file, tier 1): 2 x 2 x 2 m, 1.5 t, 1.8 kW. A log bunker on top takes the **Chute in**
+  (on its mouth, 2.72 m up), **Chute out** is on its free -x side, the screen on its front (-z), a sawdust hatch and a CUT HAZARD plate
+  beside it. A static cyclone tower stands on it to 7.6 m (cone, barrel, outlet and rain cap, a rotary valve and drop pipe, the inlet stub
+  the ducts come to); nothing on it moves. Alone it is the old tier 1: 4 planks a second.
+- **Saw Block** (`SawBlock.json`): 2 x 2 m, a 1 m bed under a tread plate deck, 1.2 t, sockets on all four sides and the bottom. Alone (a
+  1 x 1) it carries its own small band mill: a column with its upper wheel (`"work": "spin"` boxes about x), the band's runs and their
+  guards, and a carriage on two rails with a log on it that strokes along x through the band (`"work": "stroke"`, travel 1 m). In a
+  square of 2 or more the faces between its blocks lose their dressing and one bigger band mill is drawn over the square.
+- **Plank Stacker** (`PlankStacker.json`): an end piece of the sawmill family, 2 x 2 m, a roller table with four stakes. Its pile of
+  boards grows while the mill works and clears when it is full. Looks only.
+- **Recipes** (`Assembling.cs`'s Tail, at the end of AfterCloche): Saw Block 190 steel, 40 concrete and 40 rubber (about 0.85 of the
+  Core's units), Plank Stacker 50 steel and 20 concrete.
+
+| Squares | Rate | Planks | Power | Input bin | Output bin | Blocks, mass |
+| --- | --- | --- | --- | --- | --- | --- |
+| bare Core | x1 | 4/s | 1.8 kW | 200 | 400 | 0, 1.5 t |
+| 1x1 | x2.25 | 9/s | 3.6 kW | 450 | 900 | 1, 2.7 t |
+| 2x2 | x7 | 28/s | 9 kW | 1,400 | 2,800 | 4, 6.3 t |
+| 3x3, 2x2, 1x1 | x24 | 96/s | 27 kW | 4,800 | 9,600 | 14, 18.3 t |
+| 5x5 | x57.25 | 229/s | 46.8 kW | 11,450 | 22,900 | 25, 31.5 t |
+
+Cloth goes at a quarter of the planks' rate (1 a second bare).
+
+**Where the works go** (`SawmillWorks` places them, `SawmillRender` draws them, `SawmillWorks.AddHazards` cuts by them, in the Core's
+frame, allocating nothing; culled past 150 m):
+
+- **Band mills.** One headrig over each square: from front to back (z), the log on its carriage, the band's cutting run (which takes a
+  board off the log's front), its back run behind a guard and the column, 3 + n m tall, with the upper wheel (radius 0.35 + 0.15n m, its
+  axle along x) on two arms over the log; the lower wheel is in the pit under the deck. The wheels and the band's teeth run while it
+  works. A bigger square takes a longer, thicker log (n - 0.2 m long, radius 0.2 + 0.1n m).
+- **Carriages.** Each square's carriage rides two rails along x behind the band on its own clock (a cycle of 4 + n s from its corner
+  cell): 0.7 of it through the band, slowly (the cut), 0.2 back, then a pause while the log is set. It carries bolsters, knees, dogs and a
+  setworks box; at every pose neither it nor its log meets the column, the arms, the guide or the back run (`SawmillWorks` lays them out
+  so).
+- **The log deck.** Behind each column of a square of 2 or more, up to three logs waiting on skids.
+- **The plank chain.** One chain bed on trestles 0.35 m in front of the frontmost square, from the first square to the Plank Stacker
+  nearest the front (the furthest along x of those); with no Stacker it ends in a stop past the last square. A square behind another
+  sends its boards by a transfer when the cells in front of its middle are free, else under a covered way (not drawn). Boards ride the
+  chain while it works, in the output's colour.
+- **The sawdust duct.** A duct rises from each headrig's top to one trunk along x over the Core's row (over every headrig, at least the
+  cyclone's inlet at 6.4 m) and into the cyclone.
+- **Cuts.** While a Sawmill works, each square's band (deck to upper wheel) and its carriage's path with the log on it cut a player in
+  them (the Smelter's `world.Hazards` and cap; a 1 x 1's too). A bare Core cuts no one.
+
+**The wire.** Part ids moved (protocol 457). Saves keep working: "Workshop Sawmill" to "Plasma Sawmill" load as the Sawmill Core
+(`ConstructParts.Renamed`), and a saved recipe keeps its recipe (both were open at every tier). Its ports moved: the Chute in is on the
+bunker's mouth on top and the Chute out on the -x side, so a saved chute is laid again to the new ports. **Self-test**: "Machine tier
+looks", "Refining", "Assembling", "Gathering".
 
 ## Grow beds
 
@@ -717,11 +772,11 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 ## Machine tiers
 
-(History: the Smelter column is gone since 2026-11-24: the Smelter is a block machine with no tiers, [Refiners as block machines](#refiners-as-block-machines), and "Workshop Smelter" to "Plasma Smelter" load as its Core; the Foundry the same day ([The Foundry](#the-foundry)), "Workshop Foundry" to "Plasma Foundry" loading as its Core, so the Smelter and Foundry columns below are history. The Assembler went the same way on 2026-11-21.)
+(History: the Smelter column is gone since 2026-11-24: the Smelter is a block machine with no tiers, [Refiners as block machines](#refiners-as-block-machines), and "Workshop Smelter" to "Plasma Smelter" load as its Core; the Foundry the same day ([The Foundry](#the-foundry)), "Workshop Foundry" to "Plasma Foundry" loading as its Core, and the Sawmill too ([The Sawmill](#the-sawmill)), "Workshop Sawmill" to "Plasma Sawmill" loading as its Core, so the Smelter, Sawmill and Foundry columns below are history; tiers are left only for the Drill and Saw Modules. The Assembler went the same way on 2026-11-21.)
 
 Each of the machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
-(Drill Module, Saw Module, Sawmill); the others are named after their tier ("Industrial Drill Module", "Plasma Sawmill").
+(Drill Module, Saw Module); the others are named after their tier ("Industrial Drill Module", "Plasma Saw Module").
 
 The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The drill's buffer and shaft](gathering-and-salvage.md#the-drills-buffer-and-shaft)), so the Bin column is the Saw Module's:
 
@@ -756,7 +811,7 @@ Fitting time grows from x1 to x2.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
-  the part kit's `machine_tiers` (`Source/PartKit/Generators/MachineTiers.cs`, `--gen-parts machine_tiers`) writes all 40 files from one
+  the part kit's `machine_tiers` (`Source/PartKit/Generators/MachineTiers.cs`, `--gen-parts machine_tiers`) writes the Drill and Saw Modules' 10 files from one
   table per line and `TierStyle.cs`: fix them, not their output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
 - **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
   rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
@@ -794,7 +849,7 @@ Fitting time grows from x1 to x2.
   plain bins still move 10 a second.
 - **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
   on the wire, so a client works out the same look line.
-- **The inventory.** All 30 are in the **Production** category, sections Drills, Saws, Sawmills, Smelters, Foundries and Assemblers, in tier order, with the sub-components in Components.
+- **The inventory.** The tiered modules are in the **Production** category, sections Drills and Saws, in tier order (the Sawmills, Smelters and Foundries sections hold each Core with its blocks), with the sub-components in Components.
 
 Not yet (choices made, the developer may change them): tiers cost what their recipe says in survival, but nothing unlocks them, since scanning isn't built;
 a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing

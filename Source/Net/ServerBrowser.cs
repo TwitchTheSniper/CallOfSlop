@@ -772,8 +772,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 455: the arm kit's Knuckle and Rail Carriage (Sean 2026-11-24, part 3): the Arm Knuckle and Rail Carriage part files move part ids.
     // 456: engine trains (Sean 2026-11-24): the Drive Nozzle, Reaction Chamber and Fuel Injector XS part files (phase 1) move part ids, and
     //      their Press patterns take any blank size (phase 2), so a sized piece's key now names a part an older build refuses.
-    // 457: engine trains phase 3: the Train Spacer, Fuel Buffer and Cooling Jacket XS part files move part ids.
-    public const ushort ProtocolVersion = 457;
+    // 457: the Sawmill is a block machine (Core, Saw Block, Plank Stacker; Sawmill T2-T5 gone): new part files move part ids, and a
+    //      Sawmill Core's rate, bins and chute load come from its squares as the Smelter's and the Foundry's do.
+    // 458: engine trains phase 3: the Train Spacer, Fuel Buffer and Cooling Jacket XS part files move part ids.
+    public const ushort ProtocolVersion = 458;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

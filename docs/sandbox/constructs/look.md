@@ -198,10 +198,9 @@ cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's o
 rules, by construction). What `TierStyle` draws as `dark`, `edge` or `pipe` stops taking paint, so a painted machine
 keeps a dark stack and a steel blade.
 
-- **A line's cues are the same at every tier.** (The Smelter left the tiers on 2026-11-24: its cues are the Core's hopper
-  and hearth and its blocks', above.) Foundry: the mouth glows, a steel crucible on a
-  trunnion pours into three moulds, both stacks smoke. Sawmill: steel rails through the frame, a carriage and log that
-  feed (`stroke`), the blade turns (`spin`), planks over the out bed. Assembler family: the bit, an accent collar and
+- **A line's cues are the same at every tier.** (The Smelter, the Foundry and the Sawmill left the tiers on 2026-11-24: their cues are
+  each Core's and its blocks'; a Sawmill's band wheels turn (`spin`) and its carriage strokes the log through the band (`stroke`),
+  production.md "The Sawmill".) Assembler family: the bit, an accent collar and
   a steel platen stroke over the trays; a Thruster Assembler's nozzle glows, a Tailor's bolt turns. Tier 5 keeps
   its lit core instead of a mouth.
 - **Flow**: a band over or under each chute port (white in, orange out) with a black arrow pointing back to front,

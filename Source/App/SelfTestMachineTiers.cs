@@ -19,7 +19,7 @@ public static partial class SelfTest
     private static void MachineTierData(Action<bool, string> want)
     {
         (string Line, string Section, float Rate, float Power, float Mass)[] lines =
-            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160)];
+            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260)];
         float RateOf(ConstructPartDef d) => d.IsGatherer ? d.GatherRate : d.RefineWork / (float)ConstructRefining.BaseWork;
         var cat = SandboxCatalogue.Make();
         foreach (var (line, section, rate, power, mass) in lines)
@@ -73,6 +73,12 @@ public static partial class SelfTest
         want(smelter is { Tier: 1, BlockSquares: true, IsRefiner: true, RefineMachine: "smelter" } && ConstructParts.Find("Workshop Smelter") == smelter && ConstructParts.Find("Plasma Smelter") == smelter, $"the Smelter Core: tier {smelter.Tier}, squares {smelter.BlockSquares}");
         var smelters = cat.Parts.Sections.FirstOrDefault(s => s.Name == "Smelters");
         want(smelters != null && smelters.Items.Select(i => ConstructParts.All[i].Name).Order().SequenceEqual(["Casting Bed", "Hearth Block", "Smelter"]), $"the Smelters section: {(smelters == null ? "" : string.Join(", ", smelters.Items.Select(i => ConstructParts.All[i].Name)))}");
+        // The Sawmill too (2026-11-24): one Core at tier 1's numbers (x1 is 4 planks a second), its Saw Blocks and Plank Stackers in the Sawmills section.
+        var sawmill = ConstructParts.Need("Sawmill");
+        want(sawmill is { Tier: 1, BlockSquares: true, IsRefiner: true, RefineMachine: "sawmill", PowerDraw: 1800, Mass: 1500 } && ConstructParts.Find("Workshop Sawmill") == sawmill && ConstructParts.Find("Plasma Sawmill") == sawmill,
+            $"the Sawmill Core: tier {sawmill.Tier}, squares {sawmill.BlockSquares}, {sawmill.PowerDraw} W, {sawmill.Mass} kg");
+        var sawmills = cat.Parts.Sections.FirstOrDefault(s => s.Name == "Sawmills");
+        want(sawmills != null && sawmills.Items.Select(i => ConstructParts.All[i].Name).Order().SequenceEqual(["Plank Stacker", "Saw Block", "Sawmill"]), $"the Sawmills section: {(sawmills == null ? "" : string.Join(", ", sawmills.Items.Select(i => ConstructParts.All[i].Name)))}");
         // The file's tier and the gate's values.
         var drillFile = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Gathering", "DrillModuleT3.json"));
         foreach (var (from, to, why) in ((string, string, string)[])[("\"tier\": 3", "\"tier\": 6", "tier"), ("\"tier\": 3", "\"tier\": 0", "tier"), ("\"chuteLoad\": 40", "\"chuteLoad\": 5", "chuteLoad")])
@@ -105,7 +111,7 @@ public static partial class SelfTest
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
     private static readonly Dictionary<string, (float Low, float High)> TierHeights = new()
     {
-        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f)
+        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f)
     };
 
     /// <summary>
@@ -162,6 +168,7 @@ public static partial class SelfTest
             {
                 "Smelter" => ["Smelter", "Hearth Block", "Casting Bed"],
                 "Foundry" => ["Foundry", "Crucible Block", "Mould Line"],
+                "Sawmill" => ["Sawmill", "Saw Block", "Plank Stacker"],
                 _ => [.. Enumerable.Range(1, ConstructParts.MaxTier).Select(t => TierName(line, t))],
             };
             foreach (var member in members)
@@ -208,8 +215,14 @@ public static partial class SelfTest
                         Want(details.Length > 0 && Solid(new Vector3(-0.5f, 0.1f, -0.5f), new Vector3(0.5f, 0.3f, -0.44f)) && Solid(new Vector3(0.44f, 0.1f, -0.4f), new Vector3(0.5f, 0.3f, 0.4f)), $"{d.Name} has no bin walls");
                         break;
                     case "Sawmill":
-                        Want(Solid(new Vector3(-0.5f, 0.1f, -0.5f), new Vector3(0.5f, 0.3f, -0.44f)) && Solid(new Vector3(-0.5f, 0.1f, 0.44f), new Vector3(0.5f, 0.3f, 0.5f)), $"{d.Name} has no beds");
-                        Want(details.Any(b => b.Half.X < 0.025f * size && b.Half.Y > 0.15f * size && b.Half.Z > 0.15f * size), $"{d.Name} has no blade");
+                        // The Core's log bunker on top (its input) under a cyclone tower, a Saw Block's own band mill alone (a wheel that spins,
+                        // a carriage that strokes), a Plank Stacker low.
+                        if (d.BlockSquares)
+                            Want(d.InFillMin.Y >= SawmillWorks.BlockTop && d.BoundsMax.Y >= SawmillWorks.CycloneTop - 0.05f, $"{d.Name} has no log bunker on top or no cyclone ({d.InFillMin.Y}, {d.BoundsMax.Y} m)");
+                        else if (d.Name == "Saw Block")
+                            Want(boxes.Any(b => b.Alone && b.Work == BoxWork.Spin) && boxes.Any(b => b.Alone && b.Work == BoxWork.Stroke) && solids.All(b => b.Center.Y + b.Half.Y <= SawmillWorks.BlockTop + 0.01f), $"{d.Name} has no band wheel or carriage alone, or its block stands over {SawmillWorks.BlockTop} m");
+                        else
+                            Want(solids.All(b => b.Center.Y - b.Half.Y < SawmillWorks.StackerTop) && d.BoundsMax.Y <= 1.4f, $"{d.Name} stands {d.BoundsMax.Y} m tall");
                         break;
                     case "Smelter":
                         // The Core's hopper on top with a glowing hearth on its front, a Hearth Block's stub stack alone and charge doors merged, a Casting Bed low.
@@ -258,7 +271,7 @@ public static partial class SelfTest
                         weight += area;
                     }
                 colour /= weight;
-                foreach (var (name, other, tone) in line is "Smelter" or "Foundry" ? [] : shapes) // (a Core and its blocks differ by what they are, not by tier)
+                foreach (var (name, other, tone) in line is "Smelter" or "Foundry" or "Sawmill" ? [] : shapes) // (a Core and its blocks differ by what they are, not by tier)
                 {
                     int both = 0, any = 0;
                     for (var i = 0; i < cells.Length; i++)
@@ -416,14 +429,18 @@ public static partial class SelfTest
     /// within a chute segment. <paramref name="square"/> Hearth Blocks' side (1 or 2) go on a Smelter Core's +x side as one square: the Core then
     /// stands on the middle slab, its square over the third, and the bins are on the first.
     /// </summary>
+    /// <summary>A block machine's block (a Smelter's Hearth Block, a Sawmill's Saw Block).</summary>
+    private static string BlockOf(string machine) => ConstructParts.Need(machine).RefineMachine == "sawmill" ? "Saw Block" : "Hearth Block";
+
     private static Construct? TierStation(ConstructWorld w, string machine, Vector3 spot, Action<bool, string> want, int square = 0)
     {
         var (host, slab) = square > 0 ? (1, 0) : (0, ConstructParts.Need(machine).BoundsMax.X > 3.01f ? 2 : 1);
+        var block = BlockOf(machine);
         // Step 7 on the Core's +x, then along +x; a 2 x 2's second row on +z (steps 7 to 10: (1, 0), (2, 0), (1, 1), (2, 1)).
         var blocks = square switch
         {
-            1 => """, { "part": "Hearth Block", "on": 3, "socket": "+x", "by": "-x" }""",
-            2 => """, { "part": "Hearth Block", "on": 3, "socket": "+x", "by": "-x" }, { "part": "Hearth Block", "on": 7, "socket": "+x", "by": "-x" }, { "part": "Hearth Block", "on": 7, "socket": "+z", "by": "-z" }, { "part": "Hearth Block", "on": 9, "socket": "+x", "by": "-x" }""",
+            1 => $$""", { "part": "{{block}}", "on": 3, "socket": "+x", "by": "-x" }""",
+            2 => $$""", { "part": "{{block}}", "on": 3, "socket": "+x", "by": "-x" }, { "part": "{{block}}", "on": 7, "socket": "+x", "by": "-x" }, { "part": "{{block}}", "on": 7, "socket": "+z", "by": "-z" }, { "part": "{{block}}", "on": 9, "socket": "+x", "by": "-x" }""",
             _ => "",
         };
         var bp = ConstructBuild.ParseBlueprint($$"""
@@ -445,9 +462,9 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// Every tier of Sawmill, and the Smelter bare and with a 1 x 1 and a 2 x 2 of Hearth Blocks, through a real station in survival: a chute
+    /// The Smelter and the Sawmill, each bare and with a 1 x 1 and a 2 x 2 of its blocks (Hearth Blocks, Saw Blocks), through a real station in survival: a chute
     /// feeds it, it makes batches at its speed (the Core's: x1, x2.25, x7) and draws its power, chutes carry a bigger machine's bigger load; a
-    /// step allocates nothing, even finishing several batches. A wrecked Hearth Block keeps its square and adds nothing until mended. A bare
+    /// step allocates nothing, even finishing several batches. A wrecked block keeps its square and adds nothing until mended. A bare
     /// Smelter Core takes every ore (no gates since it became a block machine): copper and gold by chute and by F. Tier 3 does gold.
     /// </summary>
     private static void RefiningTiers(Map yard, Action<bool, string> want)
@@ -475,10 +492,10 @@ public static partial class SelfTest
         yard.RestoreProps();
         World.SetMap(yard);
         foreach (var (line, input, output, machine) in ((string, byte, byte, string)[])[("Smelter", ore, metal, "smelter"), ("Sawmill", wood, planks, "sawmill")])
-            for (var tier = 1; tier <= (line == "Smelter" ? 3 : ConstructParts.MaxTier); tier++)
+            for (var tier = 1; tier <= 3; tier++)
             {
-                var square = line == "Smelter" ? tier - 1 : 0; // (the Smelter: bare, a 1 x 1, a 2 x 2)
-                var name = line == "Smelter" ? line : TierName(line, tier);
+                var square = tier - 1; // (a block machine: bare, a 1 x 1, a 2 x 2)
+                var name = line;
                 var what = square > 0 ? $"{name} with a {square} x {square}" : name;
                 if (TierStation(w, name, spot, want, square) is not { } c)
                     continue;
@@ -517,16 +534,17 @@ public static partial class SelfTest
                 if (square == 2)
                 {
                     // A wrecked block keeps its square (the split doesn't change) and adds nothing until it is mended.
-                    var block = PartNamed(c, "Hearth Block", 3);
+                    var blockName = BlockOf(line);
+                    var block = PartNamed(c, blockName, 3);
                     c.Parts[block].Broken = true;
                     c.Rebuild();
                     var hurt = ConstructRefining.RefineOf(c, si);
                     var hurtOk = MachineBlocks.TryOf(c, si, out var asm) && asm.SquareCount == 1 && asm.Broken == 1;
-                    want(hurtOk && hurt.R4 == size.R4 - (4 + square) && hurt.Shares == size.Shares - 1, $"a wrecked Hearth Block: x{hurt.Rate} on {hurt.Shares} shares, {asm.SquareCount} squares, {asm.Broken} wrecked");
+                    want(hurtOk && hurt.R4 == size.R4 - (4 + square) && hurt.Shares == size.Shares - 1, $"a wrecked {blockName}: x{hurt.Rate} on {hurt.Shares} shares, {asm.SquareCount} squares, {asm.Broken} wrecked");
                     want(ConstructRefining.SizeText(c, si).Contains("wrecked"), $"the {what}'s size text: \"{ConstructRefining.SizeText(c, si)}\"");
                     c.Parts[block].Broken = false;
                     c.Rebuild();
-                    want(ConstructRefining.RefineOf(c, si).R4 == size.R4, $"a mended Hearth Block: x{ConstructRefining.RefineOf(c, si).Rate}");
+                    want(ConstructRefining.RefineOf(c, si).R4 == size.R4, $"a mended {blockName}: x{ConstructRefining.RefineOf(c, si).Rate}");
                 }
                 w.Remove(c);
             }
@@ -597,7 +615,7 @@ public static partial class SelfTest
         yard.RestoreProps();
         World.SetMap(yard);
         var w = new ConstructWorld();
-        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill"])
+        foreach (var line in (string[])["Drill Module", "Saw Module"])
             for (var tier = 2; tier <= ConstructParts.MaxTier; tier++)
             {
                 var name = TierName(line, tier);
@@ -625,7 +643,7 @@ public static partial class SelfTest
 
         var hands = FwHands();
         foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter"])
-            for (var tier = 1; tier <= (line == "Smelter" ? 1 : ConstructParts.MaxTier); tier++) // (the Smelter Core: one size, its blocks make it bigger)
+            for (var tier = 1; tier <= (line is "Smelter" or "Sawmill" ? 1 : ConstructParts.MaxTier); tier++) // (a block machine's Core: one size, its blocks make it bigger)
             {
                 var name = TierName(line, tier);
                 if (SwBody(w, "Foundation", new Vector3(0, 12, 0), Quaternion.Identity, pinned: true) is not { } baseC

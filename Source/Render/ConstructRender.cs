@@ -1030,6 +1030,17 @@ public static partial class ConstructRender
             case BoxWork.Spin:
                 model = model * Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(axis, (float)(Now * 2.4 % Math.Tau)) * Matrix4x4.CreateTranslation(centre);
                 break;
+            case BoxWork.Stroke when _workCore >= 0 && _workCore < c.PartCount && SawmillWorks.Is(c.Parts[_workCore].D):
+            {
+                // A lone Saw Block's carriage and log, on its square's own clock (SawmillWorks.CarriageShare at n 1, as SawmillRender's
+                // merged mills): its boxes are drawn at the stroke's end (share 1) and stroke back along their axis by the travel.
+                ref readonly var core = ref c.Parts[_workCore];
+                var cd = core.D;
+                var rel = Rot24.Apply(Rot24.Inverse(core.Rot), p.Pos - core.Pos) - (cd.BlockOrigin ?? Vector3.Zero);
+                var share = SawmillWorks.CarriageShare(Now, 1, (int)MathF.Round(rel.X / cd.BlockCell), (int)MathF.Round(rel.Z / cd.BlockCell), out _);
+                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (1f - share)));
+                break;
+            }
             case BoxWork.Stroke:
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));

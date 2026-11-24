@@ -222,6 +222,7 @@ public static partial class ConstructBakeOven
         ConstructAssembling.AddHazards(world); // (after the ovens', so their boxes always have room: Assemblers' working beds, the arms strike and the weld burns)
         SmelterWorks.AddHazards(world); // (working Smelters' charge doors, runners and Casting Beds burn: SmelterWorks.cs)
         FoundryWorks.AddHazards(world); // (working Foundries' pours, launders and Mould Lines burn: FoundryWorks.cs)
+        SawmillWorks.AddHazards(world); // (working Sawmills' bands and carriages cut: SawmillWorks.cs)
     }
 
     private static void Work(ConstructWorld world, Construct c, int part, int asmIndex, CStore st)
