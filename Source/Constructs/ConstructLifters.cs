@@ -1937,7 +1937,9 @@ public static partial class LifterProbe
         for (var a = 0; a <= l.Dur; a += 3)
         {
             var grip = Grip(ld, l, a);
-            var len = (grip + Vector3.UnitY * ConstructLifters.Wrist - ld.Base).Length();
+            if (ld.SlideHi > ld.SlideLo) // (as drawn: a Rail Carriage's shoulder runs with the hand)
+                grip.Z -= ConstructLifters.Slide(ld, grip.X - ld.Base.X, grip.Z - ld.Base.Z);
+            var len = (grip + Vector3.UnitY * (ConstructLifters.Wrist + ld.Drop) - ld.Base).Length();
             lo = MathF.Min(lo, len);
             hi = MathF.Max(hi, len);
             clamped += len < ld.LinkMin - 0.001f || len > ld.LinkMax + 0.001f ? 1 : 0;
