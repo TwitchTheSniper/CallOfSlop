@@ -25,6 +25,7 @@ public struct CThruster
     public float Lit; // ...and how long it has been asked to light (host only)
     public bool Train; // a bell that needs an injector (ConstructWorks.InjectorFedHead): its heat is kept for a Sensor Ring
     public float Heat; // ...0..1: its level eased as the drawn heat is (3 s up, 25 s down; host only, kept over rebuilds)
+    public int Valve, Mixer; // a bell that needs an injector: its train's Throttle Valve and Mixture Controller (part indices, -1: none; ConstructWorks.CWorksHead)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
 
@@ -155,8 +156,14 @@ public sealed partial class Construct
             if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
             t.Train = ConstructWorks.InjectorFedHead(d);
+            t.Valve = t.Mixer = -1;
             if (t.Train)
-                t.LightDelay = WorksHeadOf(i) is var wl and >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
+            {
+                var wl = WorksHeadOf(i);
+                t.LightDelay = wl >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
+                if (wl >= 0)
+                    (t.Valve, t.Mixer) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer);
+            }
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
             ThrusterCount++;
@@ -367,6 +374,8 @@ public static partial class ConstructPhysics
                 }
                 else if (c.Driven)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
+                if (t.Valve >= 0)
+                    want = ValveWant(c, t.Valve, want);
             }
             if (t.LightDelay > 0)
                 Lighting(ref t, ref want, dt);
@@ -379,6 +388,12 @@ public static partial class ConstructPhysics
                 continue;
             var push = d.ThrustForce * t.Cap * t.Level; // (what its works let it push)
             var burn = d.ThrustBurn * t.Burn * t.Level;
+            if (t.Mixer >= 0)
+            {
+                var (mp, mb) = MixOf(c, t.Mixer);
+                push *= mp;
+                burn *= mb;
+            }
             if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
                 ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
             if (push <= 0)
@@ -527,7 +542,11 @@ public static partial class ConstructPhysics
             var d = p.D;
             var want = 0f;
             if (Live(c, ref t, p))
+            {
                 want = owned && t.Scanned ? Math.Clamp(t.Command, 0, 1) : d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
+                if (t.Valve >= 0)
+                    want = ValveWant(c, t.Valve, want);
+            }
             if (t.LightDelay > 0)
                 Lighting(ref t, ref want, dt);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
@@ -538,14 +557,15 @@ public static partial class ConstructPhysics
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
-            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level);
+            var (sp, sb) = t.Mixer >= 0 ? MixOf(c, t.Mixer) : (1f, 1f);
+            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level * sp);
             sum += push;
             torque += Vector3.Cross(o + Vector3.Transform(t.At, q) - com, push);
-            shown += d.ThrustForce * t.Cap * t.Level;
+            shown += d.ThrustForce * t.Cap * t.Level * sp;
             if (d.ThrustFuel == EngineFuel.Fuel)
             {
                 if (d.ThrustKind != ThrustKind.Solid)
-                    c.UseFuel(d.ThrustBurn * t.Burn * t.Level * dt * SpaceFuelScale);
+                    c.UseFuel(d.ThrustBurn * t.Burn * t.Level * sb * dt * SpaceFuelScale);
                 if (d.ThrustOx > 0)
                     ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt * SpaceFuelScale);
                 if (!t.Fed)
@@ -607,6 +627,34 @@ public static partial class ConstructPhysics
 
     /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>
     /// <summary>A bell with no Igniter in its train, asked to burn from cold, waits <see cref="CThruster.LightDelay"/> before its level rises (a warm one, off for a moment, relights at once).</summary>
+    /// <summary>
+    /// What a bell asks with a Throttle Valve in its train: wired, the valve's Throttle in (0..1) sets the level; unwired, its Level setting
+    /// holds the drive at most there. Either way a level above nothing is at least 5%, in 2% steps. A broken valve passes the ask on.
+    /// </summary>
+    private static float ValveWant(Construct c, int valve, float want)
+    {
+        if (valve >= c.PartCount)
+            return want;
+        ref var v = ref c.Parts[valve];
+        if (v.Broken)
+            return want;
+        var w = v.InCount > 0 ? Math.Clamp(v.In, 0, 1) : MathF.Min(want, ConstructConfig.Get(v, v.D, CfgKey.Strength, 100) / 100f);
+        return w <= 0.005f ? 0 : MathF.Max(0.05f, MathF.Round(w * 50) / 50);
+    }
+
+    /// <summary>
+    /// A Mixture Controller's push and burn shares: its dial (or its Mix in, -1..1, when wired) from -100 (80% push at 70% burn) through 0
+    /// (as it is) to 100 (110% push at 130% burn). A broken one is as it is.
+    /// </summary>
+    public static (float Push, float Burn) MixOf(Construct c, int mixer)
+    {
+        if (mixer >= c.PartCount || c.Parts[mixer].Broken)
+            return (1, 1);
+        ref var m = ref c.Parts[mixer];
+        var x = Math.Clamp(m.InCount > 0 ? m.In : ConstructConfig.Get(m, m.D, CfgKey.Strength, 0) / 100f, -1, 1);
+        return (1 + (x < 0 ? 0.2f : 0.1f) * x, 1 + 0.3f * x);
+    }
+
     private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)
 
     private static void Lighting(ref CThruster t, ref float want, float dt)

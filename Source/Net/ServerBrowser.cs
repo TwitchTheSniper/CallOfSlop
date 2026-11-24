@@ -776,7 +776,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Sawmill Core's rate, bins and chute load come from its squares as the Smelter's and the Foundry's do.
     // 458: engine trains phase 3: the Train Spacer, Fuel Buffer and Cooling Jacket XS part files move part ids.
     // 459: engine trains phase 4: the Igniter and Sensor Ring XS part files move part ids.
-    public const ushort ProtocolVersion = 459;
+    // 460: engine trains phase 5: the Throttle Valve and Mixture Controller XS part files move part ids.
+    public const ushort ProtocolVersion = 460;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
