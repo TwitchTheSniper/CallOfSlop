@@ -4866,6 +4866,17 @@
      "blanks": [
       "solid"
      ]
+    },
+    {
+     "id": "knuckle",
+     "like": "Arm Knuckle",
+     "label": "arm knuckle",
+     "preset": "solid 40x40x40 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
     }
    ]
   },
@@ -8047,6 +8058,12 @@
    "die": "arm",
    "pattern": "fitter",
    "blank": "solid 60x40x40 steel"
+  },
+  {
+   "part": "Arm Knuckle",
+   "die": "arm",
+   "pattern": "knuckle",
+   "blank": "solid 40x40x40 steel"
   },
   {
    "part": "Steel Plate",

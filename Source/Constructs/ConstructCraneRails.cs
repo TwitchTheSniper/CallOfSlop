@@ -302,6 +302,10 @@ public static partial class ConstructLifters
     /// The run whose top line is at (<paramref name="atX"/>, <paramref name="atY"/>) within <paramref name="tol"/>: the section nearest
     /// <paramref name="atZ"/> (or overlapping [<paramref name="wantLo"/>, <paramref name="wantHi"/>]) and every section in line end to end with it.
     /// </summary>
+    /// <summary>The run through (<paramref name="atX"/>, <paramref name="atY"/>) nearest <paramref name="atZ"/>: its ends (an arm kit's Rail Carriage, ArmKit.Carry).</summary>
+    internal static bool RunOf(Span<float> x, Span<float> y, Span<float> z0, Span<float> z1, float atX, float atY, float tol, float atZ, out float lo, out float hi)
+        => Run(x, y, z0, z1, atX, atY, tol, atZ, out lo, out hi, out _, out _);
+
     private static bool Run(Span<float> x, Span<float> y, Span<float> z0, Span<float> z1, float atX, float atY, float tol, float atZ,
         out float lo, out float hi, out float lineX, out float lineY, float wantLo = float.NaN, float wantHi = float.NaN)
     {

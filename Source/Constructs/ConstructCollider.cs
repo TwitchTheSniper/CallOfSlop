@@ -88,9 +88,12 @@ internal sealed partial class ConstructCollider
     /// <summary>Colliders built (every body, every thread, roughly: a harness's count).</summary>
     internal static int Builds;
 
+    public int Version; // bumped on every build (an arm kit's carried parts know their moved leaves went back home: ArmKit.Track)
+
     public void Build(Construct c)
     {
         Builds++;
+        Version++;
         _dead = 0;
         _mainLeaves = _mainNodes = 0;
         Array.Fill(GroundPicked, -1);

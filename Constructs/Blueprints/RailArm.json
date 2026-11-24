@@ -1,0 +1,214 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Rail Arm",
+  "description": "A Line Arm on a Rail Carriage: it runs along 24 m of crane rail to each job. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Crane Rail Small 1 m"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 1,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 3,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 5,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 6,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 7,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 8,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 9,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 10,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 11,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 12,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 13,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 14,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 15,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 16,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 17,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 18,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 19,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 20,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 21,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Crane Rail Small 1 m",
+      "on": 22,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Rail Carriage",
+      "on": 12,
+      "socket": "+y.0.0",
+      "by": "bottom"
+    },
+    {
+      "part": "Arm Core",
+      "on": 24,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 50x50x50 steel)",
+      "on": 25,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 40x40x300 steel)",
+      "on": 26,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 45x45x45 steel)",
+      "on": 27,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 35x35x300 steel)",
+      "on": 28,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 30x30x40 steel)",
+      "on": 29,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.padclamp solid 60x30x30 steel)",
+      "on": 30,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x10 steel)",
+      "on": 25,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 25,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 25,
+      "socket": "-z",
+      "by": "base"
+    }
+  ]
+}
