@@ -189,7 +189,7 @@ public sealed partial class ZeroDayWorks
             _lineCutOuts[line] = CutterStage(run, bedAcross, cutAlong, paint);
         }
 
-        /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
+        /// <summary>The feed run from the extruder's tables, the Panel Former (bed, Out Tables) and a two-row run off it.</summary>
         private VPart[,] FormerStage(VPart[] tableEnds, int dieCells, int bedAcross, int bedAlong, int tables, string paint)
         {
             // The feed run from the tables to the former's bed: as wide as the die, rows down to the bed's head (its tiles butted on the
@@ -200,8 +200,8 @@ public sealed partial class ZeroDayWorks
                 feed[i, 0] = Paint(Onto(tableEnds[dieCells - 1 - i], "roller", "Roller Tile", "-z table"), paint); // (west to east)
             Chain(feed, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
 
-            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east, a Mast Block on each bed
-            // corner (2 m more pin travel a level), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ---------------
+            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east (a stretch former: no
+            // masts, its die sinks into a pocket), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ---------------
             var bed = new VPart[bedAcross, bedAlong];
             for (var i = 0; i < bedAcross; i++)
                 bed[i, 0] = Paint(Onto(feed[i, feedRows - 1], "+z", "Bed Block", "-z"), paint);
@@ -209,8 +209,6 @@ public sealed partial class ZeroDayWorks
             var former = Paint(Onto(bed[bedAcross - 1, 0], "-x", "Panel Former", "+z"), paint); // (South: a block's own -x is east)
             OrdersOnly(former);
             _lastFormer = former;
-            foreach (var c in Corners(bed))
-                Stack(c, "top", 1);
             var outs = new VPart[bedAcross, 1];
             for (var i = 0; i < bedAcross; i++)
                 outs[i, 0] = Paint(Onto(bed[i, bedAlong - 1], "+z", "Out Table", "-z"), paint);
