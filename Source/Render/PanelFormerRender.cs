@@ -8,8 +8,7 @@ namespace CallOfSlop;
 /// each Bed Block row with the oil main along one side and a drop hose down to each row's crossheads; on the inner corner of each corner
 /// mast a long booster cylinder from the crosshead up to the girders, its crosshead collar riding up and down with the pins' stroke while
 /// the machine works; a lamp on each corner, green while it forms. Drawn within <see cref="DrawNear"/>, from the Core's work and the
-/// shared stroke clock, so every peer draws the same. On any Panel Former with a bed, the strip curtains closing the bed's two ends
-/// (<see cref="DrawEnds"/>), so with the Bed Blocks' walls the forming is hidden. Allocates nothing.
+/// shared stroke clock, so every peer draws the same. Allocates nothing.
 /// </summary>
 public static class PanelFormerRender
 {
@@ -17,7 +16,6 @@ public static class PanelFormerRender
     private static readonly Vector3 Green = new(0.365f, 0.498f, 0.235f), Trim = new(0.275f, 0.376f, 0.176f), Steel = new(0.6f, 0.63f, 0.66f),
         Dark = new(0.133f, 0.149f, 0.169f), Yellow = new(0.94f, 0.76f, 0.1f), Lamp = new(0.35f, 1f, 0.4f);
     private const float BedTop = 3.2f; // a Bed Block's crosshead top (m above the Core's foot), where the first Mast Block stands
-    private const float DeckY = 0.86f, Head = 2.96f; // a Bed Block's lower bed top and crosshead underside (PanelFormerParts)
 
     public static void Draw(Renderer gfx, ConstructWorld world)
     {
@@ -34,7 +32,6 @@ public static class PanelFormerRender
                 var d = c.Parts[asm.Core].D;
                 if (!d.IsPanelFormer || d.IsLaserCutter || d.BlockRole != BlockRole.Core)
                     continue;
-                DrawEnds(gfx, c, asm);
                 var levels = MachineBlocks.CornerColumns(c, asm); // (its masts as they stand, a level past what deepens the stroke too: the head sits on their tops)
                 if (levels == 0)
                     continue; // (no corner masts: the bed's own 2 m stroke, nothing over it)
@@ -42,46 +39,6 @@ public static class PanelFormerRender
                 DrawHead(gfx, c, asm, levels, working, ConstructRender.Now);
             }
         }
-    }
-
-    /// <summary>
-    /// The bed's two ends, where it is welded to the Core and to the Out Tables, so its Bed Blocks draw no wall there (seam): a rubber strip
-    /// curtain across each, 8 cm inside the bed, from the lower bed's lip to the crosshead, with a header rail; the blank goes in and the
-    /// panel out through it, and nothing of the forming shows (Sean, 2026-11-23). Behind a Bed Block's own wall where one is drawn. Six
-    /// boxes a machine.
-    /// </summary>
-    private static void DrawEnds(Renderer gfx, Construct c, in CMachineAsm asm)
-    {
-        var d = c.Parts[asm.Core].D;
-        ConstructRender.PartDrawn(c, asm.Core, out var pos, out var rot);
-        var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
-        var cell = d.BlockCell;
-        var half = cell * 0.5f;
-        var o = d.BlockOrigin ?? Vector3.Zero;
-        var foot = o.Y - 1.6f;
-        float x0 = o.X + asm.X0 * cell - half, x1 = o.X + (asm.X0 + asm.W - 1) * cell + half;
-        float z0 = o.Z + asm.Z0 * cell - half, z1 = o.Z + (asm.Z0 + asm.L - 1) * cell + half;
-        float ylo = foot + DeckY - 0.006f, yhi = foot + Head + 0.01f;
-        var alongX = asm.OutSide is 0 or 1; // (the bed runs from the Core along x: its ends lie across z)
-        for (var end = 0; end < 2; end++)
-        {
-            var sg = end == 0 ? 1f : -1f; // (inward)
-            var at = alongX ? (end == 0 ? x0 : x1) + sg * 0.08f : (end == 0 ? z0 : z1) + sg * 0.08f;
-            float u0 = (alongX ? z0 : x0) + 0.04f, u1 = (alongX ? z1 : x1) - 0.04f;
-            Across(gfx, frame, alongX, at - 0.01f, at + 0.01f, u0, u1, ylo, yhi - 0.155f, Dark); // (the curtain)
-            Across(gfx, frame, alongX, at - 0.04f, at + 0.04f, u0, u1, yhi - 0.16f, yhi, Trim); // (its header rail)
-            var face = at - sg * 0.043f; // (a hazard band on the header's outer face, 3 mm proud of it)
-            Across(gfx, frame, alongX, MathF.Min(face, face + sg * 0.006f), MathF.Max(face, face + sg * 0.006f), u0 + 0.02f, u1 - 0.02f, yhi - 0.12f, yhi - 0.05f, Yellow);
-        }
-    }
-
-    /// <summary>A box across the bed's end: <paramref name="a0"/>..<paramref name="a1"/> along the bed's run, <paramref name="u0"/>..<paramref name="u1"/> across it.</summary>
-    private static void Across(Renderer gfx, Matrix4x4 frame, bool alongX, float a0, float a1, float u0, float u1, float y0, float y1, Vector3 colour)
-    {
-        if (alongX)
-            Box(gfx, frame, new Vector3(a0, y0, u0), new Vector3(a1, y1, u1), colour);
-        else
-            Box(gfx, frame, new Vector3(u0, y0, a0), new Vector3(u1, y1, a1), colour);
     }
 
     private static void DrawHead(Renderer gfx, Construct c, in CMachineAsm asm, int levels, bool working, double now)
