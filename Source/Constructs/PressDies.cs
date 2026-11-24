@@ -113,6 +113,8 @@ public sealed class PressPattern
     /// </summary>
     public bool LikeBody;
     public sbyte Along = -1;
+    /// <summary>"dieFeatures": false: the die's own features (a housing's seams and corner bosses) are left off, for a like body whose look is its own (an engine train's round pieces, 2026-11-24).</summary>
+    public bool NoDieFeatures;
 
     /// <summary>
     /// "likeBy": "nearest" (sized-parts design 6.2): the pattern's presets are its knots, and a blank takes the part of the one nearest it in
@@ -277,7 +279,7 @@ internal static class PressDies
         }
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)
-                pat.PresetsOnly = (pat.Like.Door != null || pat.Like.WorksKind != WorksKind.None || pat.Like.CapacitorKJ > 0) && Array.Exists(die.Presets, q => q.Pattern == pat);
+                pat.PresetsOnly = (pat.Like.Door != null || pat.Like.WorksKind != WorksKind.None && !Pressed.SizesWorks(pat) || pat.Like.CapacitorKJ > 0) && Array.Exists(die.Presets, q => q.Pattern == pat);
         // A likeBy-nearest pattern's knots: its presets by size across (one at least; each a part of its like part's kind).
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)
@@ -373,7 +375,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto", "dieFeatures");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -393,6 +395,8 @@ internal static class PressDies
         }
         if (e.TryGetProperty("body", out var body))
             p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
+        if (e.TryGetProperty("dieFeatures", out var df))
+            p.NoDieFeatures = df.ValueKind switch { JsonValueKind.False => true, JsonValueKind.True => false, _ => throw new FormatException($"{where}: \"dieFeatures\" is true or false") };
         if (e.TryGetProperty("auto", out var auto))
             p.Auto = auto.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => throw new FormatException($"{where}: \"auto\" is true or false") };
         if (e.TryGetProperty("likeBy", out var likeBy))

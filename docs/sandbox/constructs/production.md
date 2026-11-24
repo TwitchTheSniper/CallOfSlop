@@ -279,7 +279,7 @@ frame, allocating nothing; culled past 150 m):
 - **Cuts.** While a Sawmill works, each square's band (deck to upper wheel) and its carriage's path with the log on it cut a player in
   them (the Smelter's `world.Hazards` and cap; a 1 x 1's too). A bare Core cuts no one.
 
-**The wire.** Part ids moved (protocol 456). Saves keep working: "Workshop Sawmill" to "Plasma Sawmill" load as the Sawmill Core
+**The wire.** Part ids moved (protocol 457). Saves keep working: "Workshop Sawmill" to "Plasma Sawmill" load as the Sawmill Core
 (`ConstructParts.Renamed`), and a saved recipe keeps its recipe (both were open at every tier). Its ports moved: the Chute in is on the
 bunker's mouth on top and the Chute out on the -x side, so a saved chute is laid again to the new ports. **Self-test**: "Machine tier
 looks", "Refining", "Assembling", "Gathering".
