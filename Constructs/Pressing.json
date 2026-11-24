@@ -1148,6 +1148,32 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "throttlevalve",
+     "like": "Throttle Valve XS",
+     "label": "throttle valve",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "mixture",
+     "like": "Mixture Controller XS",
+     "label": "mixture controller",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9053,6 +9079,18 @@
    "die": "housing",
    "pattern": "sensorring",
    "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Throttle Valve XS",
+   "die": "housing",
+   "pattern": "throttlevalve",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Mixture Controller XS",
+   "die": "housing",
+   "pattern": "mixture",
+   "blank": "hollow 70x70x40 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

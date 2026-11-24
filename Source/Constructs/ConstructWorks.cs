@@ -36,6 +36,8 @@ public enum TrainFunction : byte
     Jacket, // hot: 10% less fuel at the same push (once)
     Igniter, // feed: the drive lights at once (without one, a bell that needs an injector takes ShipWorks.LightSeconds to light)
     Sensor, // supply: the drive's level, buffer, health and heat on four data outputs (SensorPort)
+    Throttle, // feed: fine throttle down to 5% in 2% steps, holds a set level; Throttle in sets it, its output is the level (ConstructThrust.ValveWant)
+    Mixture, // feed: one dial (or Mix in) trades push for burn, 80% push at 70% burn to 110% push at 130% burn (ConstructThrust.MixOf)
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -51,6 +53,7 @@ public struct CWorksHead
     public WorksKind Short; // the kind that holds it back most (None: nothing does)
     public bool Fed; // a head that needs a Fuel Injector: a pipe from a working tank reaches a working injector's Fuel in in its engine (touching tanks don't count)
     public float BufferMax; // such a head: seconds of full burn its injector holds (ShipWorks.InjectorBuffer, and each working Fuel Buffer's)
+    public int Valve, Mixer; // such a head: its train's first working Throttle Valve and Mixture Controller (-1: none)
     public bool Igniter; // such a head: a working Igniter is in its train, so it lights at once
     public int Stray; // such a head: the first piece welded into its train in the wrong zone or past the piece limit, left out of it (-1: none)
 }
@@ -241,7 +244,7 @@ public static class ConstructWorks
         _ => "works",
     };
 
-    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor"];
+    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture"];
 
     /// <summary>An engine train piece's zone, counted back from the bell (Sean 2026-11-24): 0 hot, 1 feed, 2 supply; -1 any zone (a Spacer) or none.</summary>
     public static int ZoneOf(ConstructPartDef d) => d.WorksKind switch
@@ -249,7 +252,7 @@ public static class ConstructWorks
         WorksKind.Core => 0,
         WorksKind.Injector => 1,
         WorksKind.Pump or WorksKind.Exchanger or WorksKind.Turbopump => 2,
-        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket => 0, TrainFunction.Buffer or TrainFunction.Igniter => 1, TrainFunction.Sensor => 2, _ => -1 },
+        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket => 0, TrainFunction.Buffer or TrainFunction.Igniter or TrainFunction.Throttle or TrainFunction.Mixture => 1, TrainFunction.Sensor => 2, _ => -1 },
         _ => -1,
     };
 
@@ -391,7 +394,7 @@ public static class ConstructWorks
             if (IsHead(c.Parts[i].D))
             {
                 var mount = FindMount(c, i, queue);
-                c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = -1, Mount = mount, Outside = c.Parts[i].D.WorksOutside || mount >= 0 && c.Parts[mount].D.WorksOutside, Cap = 1, Burn = 1, Stray = -1 };
+                c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = -1, Mount = mount, Outside = c.Parts[i].D.WorksOutside || mount >= 0 && c.Parts[mount].D.WorksOutside, Cap = 1, Burn = 1, Stray = -1, Valve = -1, Mixer = -1 };
             }
         // The thrusters first, each taking the engine in line behind its bell; then the rest share what is left on their mounts.
         for (var h = 0; h < c.WorksHeadCount; h++)
@@ -618,6 +621,10 @@ public static class ConstructWorks
                 jacket = true;
             else if (p.D.TrainFn == TrainFunction.Igniter)
                 wh.Igniter = true;
+            else if (p.D.TrainFn == TrainFunction.Throttle && wh.Valve < 0)
+                wh.Valve = c.WorksPieces[k];
+            else if (p.D.TrainFn == TrainFunction.Mixture && wh.Mixer < 0)
+                wh.Mixer = c.WorksPieces[k];
         }
         if (jacket)
             wh.Burn *= 1 - t.JacketSaving;
@@ -1061,6 +1068,8 @@ public static class ConstructWorks
         TrainFunction.Jacket => $"{ShipWorks.Current.JacketSaving * 100:0}% less fuel",
         TrainFunction.Igniter => "lights the drive at once",
         TrainFunction.Sensor => "level, buffer, health and heat out",
+        TrainFunction.Throttle => "fine throttle to 5%",
+        TrainFunction.Mixture => "trades push for burn",
         TrainFunction.Spacer => "spacer",
         _ => "",
     };

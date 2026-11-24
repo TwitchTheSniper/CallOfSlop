@@ -971,7 +971,7 @@ public sealed partial class ConstructPartDef
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || PlantShaft > 0 || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet // (a data lead's inlet puts out what the lead carries)
-                             || TrainFn == TrainFunction.Sensor // (a Sensor Ring's four outputs: ConstructWorks.SensorPort)
+                             || TrainFn is TrainFunction.Sensor or TrainFunction.Throttle // (a Sensor Ring's four outputs, a Throttle Valve's level: ConstructWorks.SensorPort)
                              || ModData > 0; // (a module plate's or plug's Data k: a pass-through, ModuleSockets.PassWires; no value of its own)
 
     /// <summary>
@@ -997,7 +997,7 @@ public sealed partial class ConstructPartDef
     public bool Settable => Configurable || TextSlots > 0; // the configure tool opens a panel on it (settings, or only its text)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
-    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } ? 1 : ModData > 0 ? DataIn.Length * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
+    public int MaxInputs => IsSpeaker || Surface is { Control: > 0 } || TrainFn is TrainFunction.Throttle or TrainFunction.Mixture ? 1 : ModData > 0 ? DataIn.Length * ModuleSockets.DataWires : Role switch // (a speaker's one cable comes from what it repeats; a control surface's angle)
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Door => Door != null ? 3 * ModuleSockets.DataWires : 0, // an event door: Open (high open, low shut), Toggle, Lock (ConstructDoors.cs), several controls each (wires on one port add up)

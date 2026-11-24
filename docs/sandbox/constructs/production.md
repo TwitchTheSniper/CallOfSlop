@@ -326,7 +326,7 @@ sinking into the rotors and squashing as the job goes (a draw offset only: its b
 square from under its rotors to a metre over the rim hurts a player in it (the Smelter's `world.Hazards` and cap). The Core's own mouth
 hurts no one.
 
-**The wire** (protocol 460): a Breaker's store sends the wreck's def (`WriteDef`) and the cell it landed on, under the store's second flags
+**The wire** (protocol 461): a Breaker's store sends the wreck's def (`WriteDef`) and the cell it landed on, under the store's second flags
 byte's last bit (128). It isn't saved: a world loaded mid-job finishes the job but draws no wreck. **Self-test**: "Salvage haul",
 "Refining", "Assembling".
 

@@ -62,7 +62,7 @@ public static class EngineTrainCheck
                 {
                     ref var th = ref c.Thrusters[k];
                     var h = c.WorksHeadOf(th.Part);
-                    Console.WriteLine($"  t {now,5:0.0} s: {c.Parts[th.Part].D.Name}: level {th.Level:0.00}, cap {th.Cap * 100:0}%, fed {(th.Fed ? "yes" : "no")}, buffer {th.Buffer:0.0} s, push {c.Parts[th.Part].D.ThrustForce * th.Cap * th.Level / 1000:0} kN, fuel {c.FuelLeft:0.00} l{(h >= 0 ? "" : " (no works)")}");
+                    Console.WriteLine($"  t {now,5:0.0} s: {c.Parts[th.Part].D.Name}: level {th.Level:0.00}, cap {th.Cap * 100:0}%, fed {(th.Fed ? "yes" : "no")}, buffer {th.Buffer:0.0} s, push {c.Parts[th.Part].D.ThrustForce * th.Cap * th.Level * (th.Mixer >= 0 ? ConstructPhysics.MixOf(c, th.Mixer).Push : 1) / 1000:0} kN, fuel {c.FuelLeft:0.00} l{(h >= 0 ? "" : " (no works)")}");
                 }
             if (t % World.TickRate == 0)
                 for (var i = 0; i < c.PartCount; i++)

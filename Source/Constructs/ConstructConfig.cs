@@ -950,7 +950,7 @@ public static class ConstructConfig
                 CfgKey.Loop => d.IsMedia,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.FlightStabilizer,
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.FlightStabilizer || d.TrainFn is TrainFunction.Throttle or TrainFunction.Mixture, // (an engine train's Throttle Valve level, Mixture Controller dial: %)
                 CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter => d.IsModularRack,
