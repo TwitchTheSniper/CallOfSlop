@@ -1,0 +1,1556 @@
+<title>Ship Designer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a drafting console. Tool rail left, the 3D yard in the middle, the inspector and the checks right; stacks under the yard on a phone. */
+:root {
+  --bg: #e4e9ec; --panel: #f6f8f9; --ink: #18232b; --ink2: #56656f; --line: #c6d0d6; --chip: #e9eef1;
+  --accent: #2f7fcf; --accent-ink: #ffffff; --ok: #2f8f4a; --warn: #b8780a; --bad: #c03a28;
+  --yard: #1b2329; --yard-ink: #d6e0e6;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1418; --panel: #172026; --ink: #dce5ea; --ink2: #93a3ad; --line: #2b3842; --chip: #1f2a31;
+  --accent: #4b9be6; --accent-ink: #08121a; --ok: #5cc077; --warn: #e9a53b; --bad: #ec6a55;
+  --yard: #11181d; --yard-ink: #d6e0e6; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1418; --panel: #172026; --ink: #dce5ea; --ink2: #93a3ad; --line: #2b3842; --chip: #1f2a31;
+  --accent: #4b9be6; --accent-ink: #08121a; --ok: #5cc077; --warn: #e9a53b; --bad: #ec6a55;
+  --yard: #11181d; --yard-ink: #d6e0e6; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--body); overflow: hidden; }
+* { box-sizing: border-box; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button { background: var(--chip); border: 1px solid var(--line); border-radius: 4px; padding: 5px 10px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.on, button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+select, input[type=number], input[type=text] { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; min-width: 0; }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+header.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+.brand { font: 700 22px/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
+.brand small { font: 500 11px var(--mono); letter-spacing: .1em; color: var(--ink2); margin-left: 8px; text-transform: none; }
+.modes { display: flex; gap: 4px; }
+.modes button { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 14px; }
+.grow { flex: 1; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.main { min-height: 0; display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; }
+aside { background: var(--panel); overflow-y: auto; min-width: 0; padding: 14px 14px 24px; display: grid; gap: 16px; align-content: start; }
+aside.left { border-right: 1px solid var(--line); }
+aside.right { border-left: 1px solid var(--line); }
+h2 { font: 600 17px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; margin: 0; display: flex; align-items: baseline; gap: 8px; }
+h2 .n { font: 500 11px var(--mono); color: var(--ink2); letter-spacing: .04em; text-transform: none; }
+.sec { display: grid; gap: 8px; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.row label { display: flex; gap: 6px; align-items: center; }
+.grid2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; }
+.grid2 > span { font: 12px var(--mono); color: var(--ink2); }
+.hint { font-size: 12.5px; color: var(--ink2); }
+.mono { font-family: var(--mono); font-size: 12px; }
+.yard { position: relative; background: var(--yard); min-width: 0; min-height: 0; touch-action: none; }
+.yard canvas { display: block; width: 100%; height: 100%; }
+.hud { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud button { background: rgba(20, 28, 34, .82); color: var(--yard-ink); border-color: #34444f; font-size: 12.5px; padding: 4px 9px; }
+.hud button.on { background: var(--accent); color: var(--accent-ink); }
+.tip { position: absolute; left: 10px; bottom: 10px; right: 10px; color: var(--yard-ink); font: 12px var(--mono); opacity: .8; pointer-events: none; }
+.toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); background: #26323a; color: #f2f5f7; border-left: 3px solid var(--bad);
+  padding: 7px 12px; font-size: 13px; border-radius: 3px; max-width: min(90%, 520px); pointer-events: none; }
+.toast.info { border-left-color: var(--accent); }
+.pal { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pal button { text-align: left; padding: 6px 8px; display: grid; gap: 1px; touch-action: none; user-select: none; }
+.pal button b { font-weight: 600; font-size: 13px; }
+.pal button i { font-style: normal; font-size: 11px; color: var(--ink2); font-family: var(--mono); }
+.pal button.sock { border-left: 3px solid var(--warn); }
+.kinds { display: flex; flex-wrap: wrap; gap: 5px; }
+.kinds button { display: flex; gap: 6px; align-items: center; font-size: 12.5px; padding: 3px 8px; }
+.sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.25); }
+.issues { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.issues li { display: grid; grid-template-columns: 8px 1fr; gap: 8px; font-size: 12.5px; cursor: pointer; align-items: start; }
+.issues li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; background: var(--warn); }
+.issues li.error::before { background: var(--bad); }
+.issues li.good { cursor: default; } .issues li.good::before { background: var(--ok); }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: var(--chip); border-radius: 4px; padding: 6px 8px; }
+.stat b { display: block; font: 600 20px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.stat span { font: 11px var(--mono); color: var(--ink2); }
+svg.prof { width: 100%; height: auto; background: var(--yard); border-radius: 4px; touch-action: none; }
+svg.prof .pt { cursor: grab; }
+.row input[type=number] { width: 74px; }
+.gal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.gal button { display: grid; gap: 2px; justify-items: center; padding: 4px 2px; font-size: 11px; line-height: 1.2; color: var(--ink); }
+.gal button svg { width: 100%; max-width: 64px; height: auto; color: var(--accent); }
+.gal button.on { background: var(--chip); color: var(--ink); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; width: min(720px, 94vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
+.boot { position: absolute; inset: 0; display: grid; place-items: center; color: var(--yard-ink); font: 13px var(--mono); }
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app { height: auto; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .yard { height: 62vh; order: -1; }
+  aside.left, aside.right { border: 0; border-top: 1px solid var(--line);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">Ship Designer<small id="shipname">loading</small></div>
+    <nav class="modes" aria-label="Mode">
+      <button id="m-hull" class="on">Hull</button>
+      <button id="m-pieces">Pieces</button>
+      <button id="m-interior">Interior</button>
+      <button id="m-connectors">Connectors</button>
+    </nav>
+    <div class="grow"></div>
+    <div class="tools">
+      <select id="start" aria-label="Start from" title="Start a new design from"></select>
+      <button id="undo" disabled title="Ctrl+Z (Ctrl+C, Ctrl+X, Ctrl+V copy, cut and paste what is picked)">Undo</button>
+      <button id="redo" disabled title="Ctrl+Y or Ctrl+Shift+Z">Redo</button>
+      <button id="file">Design file</button>
+    </div>
+  </header>
+  <div class="main">
+    <aside class="left" id="left"></aside>
+    <div class="yard" id="yard">
+      <div class="boot" id="boot">Starting the designer (the game's C#, as WebAssembly)...</div>
+      <div class="hud" id="hud">
+        <button id="v-frame">Frame ship</button>
+        <button id="v-xray">X-ray hull</button>
+        <button id="v-rooms" class="on">Rooms</button>
+        <button id="v-links" class="on">Socket links</button>
+        <button id="v-person" class="on">Person</button>
+        <button id="v-hull" class="on" title="Show or hide the hull (and its connections) outside the Hull tab">Hull shown</button>
+        <button id="v-parts" class="on" title="Show or hide the pieces on the hull outside the Pieces tab">Parts shown</button>
+      </div>
+      <div class="tip" id="tip"></div>
+    </div>
+    <aside class="right">
+      <div class="sec" id="inspect"></div>
+      <div class="sec"><h2>Checks <span class="n" id="icount"></span></h2><ul class="issues" id="issues"></ul></div>
+      <div class="sec"><h2>Ship</h2><div class="stats" id="stats"></div></div>
+    </aside>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <div class="sec">
+    <h2>Design file</h2>
+    <p class="hint">The design as JSON. Copy it to keep it (the game will read this file), or paste one in and load it.</p>
+    <textarea id="dtext" spellcheck="false" aria-label="Design JSON"></textarea>
+    <div class="row"><button id="dcopy" class="primary">Copy</button><button id="dload">Load this text</button><span class="grow"></span><button id="dclose">Close</button></div>
+    <div class="hint" id="dmsg"></div>
+  </div>
+</dialog>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
+
+const $ = id => document.getElementById(id);
+const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); for (const [k, v] of Object.entries(attrs)) { if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v); } for (const k of kids) e.append(k); return e; };
+const fmt = v => (Math.round(v * 100) / 100).toString();
+
+// ---------- the C# side
+let api;
+async function bootCs() {
+  const { dotnet } = await import(new URL("framework/dotnet.js", document.baseURI).href);
+  const rt = await dotnet.create();
+  const exp = await rt.getAssemblyExports("ShipDesigner.Web.dll");
+  api = exp.CallOfSlop.ShipDesigner.Api;
+}
+
+let S = null;          // the scene from C#
+let CAT = null;        // the catalogue
+const sel = { kind: null, id: 0, station: -1 };
+let mode = "hull";
+const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true };
+let deck = 0;
+
+function take(answerText) {
+  const a = JSON.parse(answerText);
+  S = a.scene;
+  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
+  $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
+  if (a.error) toast(a.error);
+  rebuild();
+  panels();
+  if (S.hulls.every(h => h.copies)) try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
+  return a;
+}
+const timing = { cs: 0, js: 0, size: 0 }; // the last command's time in C# and in the page, and its answer's length (for a page test)
+function cmd(op, merge = false) {
+  op.merge = merge;
+  const t0 = performance.now(), text = api.Apply(JSON.stringify(op)), t1 = performance.now();
+  const a = take(text);
+  timing.cs = t1 - t0; timing.js = performance.now() - t1; timing.size = text.length; if (timing.keep) timing.text = text;
+  return a;
+}
+
+// A drag sends a command a frame at most; its first is an undo step, the rest merge into it.
+let pending = null, dragFirst = true;
+function dragCmd(op) { pending = op; }
+function flush() { if (!pending) return; const op = pending; pending = null; const a = cmd(op, !dragFirst); dragFirst = false; return a; }
+
+let toastTimer;
+function toast(msg, info = false) {
+  let t = document.querySelector(".toast");
+  if (!t) { t = el("div", { class: "toast" }); $("yard").append(t); }
+  t.className = "toast" + (info ? " info" : ""); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 3200);
+}
+
+// ---------- three
+const yard = $("yard");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.localClippingEnabled = true;
+yard.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1b2329);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+camera.position.set(38, 22, -12);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 3, 22);
+controls.enableDamping = true;
+controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE; // Karl, 2026-11-24: the middle button turns the view (the wheel zooms)
+scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x2a3036, 1.25));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(30, 50, -20); scene.add(sun);
+const fill = new THREE.DirectionalLight(0x9fc0e0, 0.5); fill.position.set(-30, -10, 40); scene.add(fill);
+const grid = new THREE.GridHelper(200, 100, 0x3a4852, 0x26323a); scene.add(grid);
+const world = new THREE.Group(); scene.add(world);
+const gizmo = new TransformControls(camera, renderer.domElement);
+gizmo.setTranslationSnap(0.25); gizmo.setSize(0.8);
+scene.add(gizmo);
+gizmo.addEventListener("dragging-changed", e => {
+  controls.enabled = !e.value;
+  if (e.value) { dragFirst = true; return; }
+  flush();
+  const o = gizmo.object;
+  if (o?.userData.hullId && !dragFirst) cmd({ op: "moveHull", hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z }, true);
+});
+gizmo.addEventListener("objectChange", () => {
+  const o = gizmo.object; if (!o || !o.userData.hullId) return;
+  // While dragging, the body's last mesh is drawn moved (no lofting or cutting a frame); the release cuts it where it lands.
+  dragCmd({ op: "moveHull", light: true, preview: true, hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
+});
+const gizmoTarget = new THREE.Object3D(); scene.add(gizmoTarget);
+
+function resize() { const r = yard.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(yard);
+
+const hullGeo = new Map(), hullCopies = new Map();
+// Geometry by the mesh's key ("k", new each time C# makes that mesh again): an edit rebuilds only the meshes it changed, the rest are
+// drawn from the geometry they had. Kept while a rebuild draws them; the rest are let go (disposed) at the next.
+const meshGeo = new Map(), geoUsed = new Set();
+function geoOf(m) {
+  let g = m.k ? meshGeo.get(m.k) : null;
+  if (!g) {
+    g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(m.p, 3));
+    g.setAttribute("color", new THREE.Uint8BufferAttribute(m.c, 3, true));
+    g.computeVertexNormals();
+    if (m.k) { g.userData.key = m.k; meshGeo.set(m.k, g); }
+  }
+  if (m.k) geoUsed.add(m.k);
+  return g;
+}
+// Before a rebuild: the old scene's materials and unkept geometry let go.
+function clearWorld() {
+  world.traverse(o => {
+    if (o.material) for (const x of [].concat(o.material)) x.dispose();
+    if (o.geometry && !o.geometry.userData.key) o.geometry.dispose();
+  });
+  world.clear();
+  geoUsed.clear();
+}
+// After one: keyed geometry nothing drew this time let go.
+function dropUnused() {
+  for (const [k, g] of meshGeo) if (!geoUsed.has(k)) { g.dispose(); meshGeo.delete(k); }
+}
+function meshFrom(m, opts = {}, geo = null) {
+  if (!m) { if (geo?.userData.key) geoUsed.add(geo.userData.key); return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
+  const g = geoOf(m);
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts });
+  return new THREE.Mesh(g, mat);
+}
+
+let pickables = [];
+function rebuild() {
+  if (!S) return;
+  clearWorld(); pickables = [];
+  $("shipname").textContent = S.name;
+  const ghost = view.xray || inside() || pickRoomFor;
+  const fresh = S.hulls.every(h => h.copies);
+  if (fresh) hullGeo.clear();
+  const hideHull = !view.hull && mode !== "hull";
+  for (const h of S.hulls) {
+    if (hideHull) continue;
+    for (const c of h.copies ?? hullCopies.get(h.id) ?? []) {
+      for (const surf of ["skin", "fore", "aft"]) {
+        if (!c[surf].p.length) continue;
+        const selHull = sel.kind === "hull" && sel.id === h.id;
+        // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
+        const key = `${h.id}/${c.copy}/${surf}`;
+        if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: geoOf(c[surf]), at: [h.x, h.y, h.z] });
+        const hg = hullGeo.get(key);
+        const m = meshFrom(null, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}, hg.g);
+        m.position.set((c.copy === 1 ? -1 : 1) * (h.x - hg.at[0]), h.y - hg.at[1], h.z - hg.at[2]);
+        if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
+        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
+        world.add(m); pickables.push(m);
+      }
+    }
+    if (mode === "hull" && sel.kind === "hull" && sel.id === h.id) drawRings(h);
+  }
+  for (const j of S.joins ?? []) {
+    if (!j.mesh.p.length || hideHull) continue;
+    const m = meshFrom(j.mesh, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {});
+    if (sel.kind === "join" && sel.id === j.id) m.material.emissive = new THREE.Color(0x1d4f86);
+    m.userData = { type: "join", id: j.id };
+    world.add(m); pickables.push(m);
+  }
+  for (const p of S.pieces) {
+    if (!view.parts && mode !== "pieces") continue;
+    const m = meshFrom(p.mesh, inside() ? { transparent: true, opacity: 0.35, depthWrite: false } : {});
+    if (sel.kind === "piece" && sel.id === p.id) m.material.emissive = new THREE.Color(0x1d4f86);
+    if (!p.ok) m.material.emissive = new THREE.Color(0x5a1408);
+    m.userData = { type: "piece", id: p.id };
+    world.add(m); pickables.push(m);
+  }
+  if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
+  if (view.parts) drawConnectors();
+  if (inside() || view.xray) drawRisers();
+  if (view.hull || inside()) drawHullWindows();
+  if (view.links && mode !== "hull") drawLinks();
+  if (inside()) drawDeckPlane();
+  if (view.person) drawPerson();
+  dropUnused();
+  placeGizmo();
+}
+// A person for scale (1.8 m), standing on the floor of the bridge (else the first room), else beside the ship.
+function drawPerson() {
+  const r = S.rooms.find(r => r.kind === "Bridge") ?? S.rooms[0];
+  const b = r?.box;
+  const at = b ? [(b[0] + b[1]) / 2, b[2], (b[4] + b[5]) / 2] : [Math.max(...S.hulls.map(h => Math.abs(h.x))) + 12, 0, 0];
+  const g = new THREE.Group(), mat = new THREE.MeshStandardMaterial({ color: 0xe8792b, roughness: 0.6 });
+  const part = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); g.add(m); };
+  part(0.16, 0.85, 0.2, -0.11, 0.425, 0); part(0.16, 0.85, 0.2, 0.11, 0.425, 0); // legs
+  part(0.46, 0.62, 0.26, 0, 1.17, 0);                                            // body
+  part(0.11, 0.6, 0.13, -0.3, 1.16, 0); part(0.11, 0.6, 0.13, 0.3, 1.16, 0);   // arms
+  part(0.22, 0.26, 0.24, 0, 1.64, 0);                                            // head (top at 1.77 m)
+  g.position.set(...at);
+  if (S.stacked && b) { g.rotation.x = -Math.PI / 2; g.position.set((b[0] + b[1]) / 2, (b[2] + b[3]) / 2, b[5]); }
+  g.userData = { type: "person" };
+  world.add(g);
+}
+
+function drawRings(h) {
+  h.stations.forEach((s, i) => {
+    for (let c = 0; c < (h.mirror && Math.abs(h.x) > 0.01 ? 2 : 1); c++) {
+      const cx = c ? -h.x : h.x, pts = [];
+      const ring = [[0, s.p[0][1]], ...s.p, [0, s.p[s.p.length - 1][1]]];
+      for (const [x, y] of ring) pts.push(new THREE.Vector3(cx + x, h.y + y, h.z + s.z));
+      for (let k = ring.length - 1; k >= 0; k--) pts.push(new THREE.Vector3(cx - ring[k][0], h.y + ring[k][1], h.z + s.z));
+      const on = sel.station === i;
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: on ? 0xffb02e : 0x6fb6ff, depthTest: false, transparent: true }));
+      line.renderOrder = 5; line.userData = { type: "station", hull: h.id, i };
+      world.add(line); pickables.push(line);
+    }
+  });
+}
+
+const roomMats = new Map();
+// A room's extensions (Karl, 2026-11-24): two rings of the same count, sides between them and a fan cap on each, in its colour.
+function drawExts(r, dim) {
+  for (const e of r.exts || []) {
+    const A = e.a, B = e.b, n = A.length / 3; if (n < 3 || B.length !== A.length) continue;
+    const pos = [...A, ...B], idx = [];
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; idx.push(i, j, n + j, i, n + j, n + i); }
+    const cap = (off) => { let cx = 0, cy = 0, cz = 0; for (let i = 0; i < n; i++) { cx += pos[3 * (off + i)]; cy += pos[3 * (off + i) + 1]; cz += pos[3 * (off + i) + 2]; }
+      const c = pos.length / 3; pos.push(cx / n, cy / n, cz / n); for (let i = 0; i < n; i++) idx.push(c, off + i, off + (i + 1) % n); };
+    cap(0); cap(n);
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const picked = sel.kind === "room" && sel.id === r.id;
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+    const lines = []; const V = (k) => new THREE.Vector3(pos[3 * k], pos[3 * k + 1], pos[3 * k + 2]);
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
+    world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
+  }
+}
+function drawRooms() {
+  for (const r of S.rooms) {
+    const d = S.decks[r.deck]; if (!d) continue;
+    // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
+    const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
+    const dim = inside() && r.deck !== deck && !through;
+    drawExts(r, dim);
+    if (r.wallMesh) {
+      // Its walls: a solid shell round the outside of the room, a little darker than its colour.
+      const wm = meshFrom(r.wallMesh, { transparent: dim, opacity: dim ? 0.15 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
+      wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
+    }
+    if (r.intMesh && r.intMesh.p.length) {
+      // Its interior cladding; the glow mesh unlit, so its strips read as lamps.
+      const im = meshFrom(r.intMesh, { transparent: dim, opacity: dim ? 0.12 : 1, metalness: 0.25, roughness: 0.55 });
+      im.userData = { type: "room", id: r.id }; world.add(im);
+      if (r.intGlow && r.intGlow.p.length) {
+        world.add(new THREE.Mesh(geoOf(r.intGlow), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: dim, opacity: dim ? 0.12 : 1 })));
+      }
+    }
+    if (r.mesh) {
+      // A room out to the hull follows the skin: drawn from its own shape.
+      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
+      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+      continue;
+    }
+    const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
+    const col = new THREE.Color(r.colour);
+    const gap = r.group && S.rooms.some(o => o !== r && o.group === r.group) ? 0 : 0.06; // a room in parts: one floor, no seams
+    const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - gap, by1 - by0 - gap, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - gap, 0.08, bz1 - bz0 - gap), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
+    floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.043, st ? bz1 - 0.043 : (bz0 + bz1) / 2); // 3 mm off the deck and the shell
+    floor.userData = { type: "room", id: r.id, floor: true };
+    world.add(floor); if (!dim || mergeFrom) pickables.push(floor);
+    // Its box bent inside the skin where the hull curves over it (the model's mesh); a plain box only if none came.
+    const box = r.boxMesh ? new THREE.Mesh(geoOf(r.boxMesh), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false, side: THREE.DoubleSide }))
+      : new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, bz1 - bz0 - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
+    if (!r.boxMesh) box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
+    box.userData = { type: "room", id: r.id }; // its walls can be grabbed too, from any angle
+    world.add(box); if (!dim || mergeFrom) pickables.push(box);
+    // Its outline; a room in parts (merged or split) leaves out the edges on the walls its parts share, so it reads as one.
+    const mates = r.group ? S.rooms.filter(o => o !== r && o.group === r.group && o.deck === r.deck && !o.mesh) : [];
+    const onMate = (x, y, z) => mates.some(o => { const b = o.box, e = 0.05; return x >= b[0] - e && x <= b[1] + e && y >= b[2] - e && y <= b[3] + e && z >= b[4] - e && z <= b[5] + e; });
+    const C = [[bx0, by0, bz0], [bx1, by0, bz0], [bx1, by1, bz0], [bx0, by1, bz0], [bx0, by0, bz1], [bx1, by0, bz1], [bx1, by1, bz1], [bx0, by1, bz1]];
+    const pts = [];
+    for (const [i, j] of [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) {
+      const a = C[i], b = C[j];
+      if (onMate((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2)) continue;
+      pts.push(new THREE.Vector3(...a), new THREE.Vector3(...b));
+    }
+    const edges = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: !r.ok ? 0xff6a50 : (!r.reached ? 0xffb02e : col), transparent: true, opacity: dim ? 0.2 : 0.85 }));
+    world.add(edges);
+  }
+  // Placed doors (Karl, 2026-11-24): a frame you can pick and drag along the wall the two rooms share.
+  if (mode === "connectors") for (const p of S.placedDoors || []) {
+    const along = new THREE.Vector3(...p.s1).sub(new THREE.Vector3(...p.s0)), across = Math.abs(along.x) > 1e-3 || along.length() < 1e-3 ? "z" : "x";
+    const picked = sel.kind === "door" && sel.id === p.id, g = new THREE.Group(); g.position.set(...p.at);
+    if (S.stacked) g.rotation.x = -Math.PI / 2;
+    if (across === "x") g.rotation.y = Math.PI / 2; // in a wall along z: turn it to face across x
+    const m = new THREE.MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.4, roughness: 0.5, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const pane = new THREE.MeshStandardMaterial({ color: p.kind === "Window" ? 0x9fd3ff : 0x5c6b7a, transparent: true, opacity: p.kind === "Window" ? 0.35 : 0.55, emissive: picked ? 0x1d4f86 : 0x000000, side: THREE.DoubleSide });
+    const part = (geo, mat, x, y, rz = 0) => { const b = new THREE.Mesh(geo, mat); b.position.set(x, y, 0); b.rotation.z = rz; b.userData = { type: "door", id: p.id }; g.add(b); pickables.push(b); return b; };
+    if (p.kind !== "Window") {
+      const w = p.w, h = p.h;
+      for (const [bw, bh, x, y] of [[0.1, h, -w / 2 - 0.05, h / 2], [0.1, h, w / 2 + 0.05, h / 2], [w + 0.2, 0.1, 0, h + 0.05]]) part(new THREE.BoxGeometry(bw, bh, 0.2), m, x, y);
+      if (w > 1.3) { part(new THREE.BoxGeometry(w / 2 - 0.02, h - 0.03, 0.08), pane, -w / 4, h / 2); part(new THREE.BoxGeometry(w / 2 - 0.02, h - 0.03, 0.08), pane, w / 4, h / 2); } // two leaves
+      else part(new THREE.BoxGeometry(w, h - 0.03, 0.08), pane, 0, h / 2);
+    } else {
+      // A window's outline as points round its middle (sill + h/2 up): a rectangle, a circle, an oval or an arch.
+      const w = p.w, h = p.shape === "Round" ? p.w : p.h, cy = p.sill + h / 2, pts = [];
+      if (p.shape === "Rect") pts.push([-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]);
+      else if (p.shape === "Arch") { const r = w / 2, sh = Math.max(0, h - r); pts.push([-r, -h / 2], [r, -h / 2], [r, -h / 2 + sh]); for (let i = 1; i < 12; i++) { const t = Math.PI * i / 12; pts.push([r * Math.cos(t), -h / 2 + sh + r * Math.sin(t)]); } pts.push([-r, -h / 2 + sh]); }
+      else for (let i = 0; i < 24; i++) { const t = 2 * Math.PI * i / 24; pts.push([w / 2 * Math.cos(t), h / 2 * Math.sin(t)]); }
+      const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
+      part(new THREE.ShapeGeometry(shape), pane, 0, cy);
+      for (let i = 0; i < pts.length; i++) {
+        const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % pts.length], len = Math.hypot(x1 - x0, y1 - y0);
+        part(new THREE.BoxGeometry(len + 0.06, 0.08, 0.18), m, (x0 + x1) / 2, cy + (y0 + y1) / 2, Math.atan2(y1 - y0, x1 - x0));
+      }
+    }
+    g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true);
+  }
+  for (const [x, y, z] of S.doors) {
+    const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
+    m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
+  }
+}
+
+// Ladders and lifts between decks (Karl, 2026-11-24): a ladder is two rails and rungs up a well, a lift a glass shaft with
+// corner posts and its car at the lowest stop; amber frames mark where it passes each deck. Pickable in the interior.
+let placingRiser = null, doorFrom = 0, doorKind = "Door";
+const inside = () => mode === "interior" || mode === "connectors";
+function drawRisers() {
+  for (const k of S.risers || []) {
+    const a = new THREE.Vector3(...k.a), b = new THREE.Vector3(...k.b), len = a.distanceTo(b); if (len < 0.1) continue;
+    const g = new THREE.Group(); g.position.copy(a);
+    if (S.stacked) g.rotation.x = -Math.PI / 2; // its up is the ship's -z there, its plan z the ship's y
+    const picked = sel.kind === "riser" && sel.id === k.id;
+    const amber = new THREE.MeshStandardMaterial({ color: k.ok ? 0xd8b04a : 0xff5a44, metalness: 0.5, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
+    const lo = Math.min(...k.stops);
+    for (const f of k.stops) {
+      const y = Math.abs(f - lo) + 0.02, w = 2 * k.hx + 0.1, d = 2 * k.hz + 0.1;
+      box(w, 0.05, 0.08, 0, y, d / 2, amber); box(w, 0.05, 0.08, 0, y, -d / 2, amber); box(0.08, 0.05, d, w / 2, y, 0, amber); box(0.08, 0.05, d, -w / 2, y, 0, amber);
+    }
+    if (k.kind === "Lift") {
+      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(0.08, len, 0.08, x * k.hx, len / 2, z * k.hz, steel);
+      box(2 * k.hx - 0.1, 0.12, 2 * k.hz - 0.1, 0, 0.06, 0, steel);                          // the car's floor at the lowest stop
+      box(2 * k.hx - 0.1, 0.05, 2 * k.hz - 0.1, 0, 2.3, 0, steel);                            // and its roof
+    } else {
+      const z = -k.hz + 0.08;
+      for (const x of [-0.22, 0.22]) box(0.05, len, 0.05, x, len / 2, z, steel);
+      for (let y = 0.3; y < len; y += 0.3) box(0.44, 0.035, 0.035, 0, y, z, steel);
+    }
+    const hit = box(2 * k.hx, len, 2 * k.hz, 0, len / 2, 0, new THREE.MeshBasicMaterial({ color: k.kind === "Lift" ? 0x9fd3ff : 0xd8b04a, transparent: true, opacity: k.kind === "Lift" ? 0.14 : 0.06, depthWrite: false }));
+    hit.userData = { type: "riser", id: k.id };
+    g.traverse(o => { o.renderOrder = 5; });
+    world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
+  }
+}
+// The deck a new ladder or lift reaches from this one: the next deck up (fore when stacked), else the next one down.
+function otherDeck(i, dir = 1) {
+  const order = S.decks.map((d, j) => [d.floor, j]).sort((p, q) => p[0] - q[0]).map(p => p[1]), at = order.indexOf(i);
+  if (dir < 0) return at > 0 ? order[at - 1] : -1;
+  return at + 1 < order.length ? order[at + 1] : -1;
+}
+
+// Windows in the hull (Karl, 2026-11-24): glass laid on the skin from a grid of points, so it follows the contour, with a frame
+// round its edge. Pickable from the Interior and Pieces views.
+function drawHullWindows() {
+  for (const w of S.hullWindows || []) {
+    const { nu, nv, pts } = w; if (nu < 2 || nv < 2) continue;
+    const picked = sel.kind === "hullwin" && sel.id === w.id;
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    // A shaped window (Karl, 2026-11-24) is a fan of rings from its middle: row nv - 1 is its rim, and it wraps round.
+    const shaped = w.shape && w.shape !== "Rect";
+    const idx = []; for (let j = 0; j < nv - 1; j++) for (let i = 0; i < (shaped ? nu : nu - 1); i++) { const a = j * nu + i, b = j * nu + (i + 1) % nu, c = a + nu, d = b + nu; idx.push(a, b, d, a, d, c); }
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: w.ok ? 0x9fd3ff : 0xff8a70, metalness: 0.3, roughness: 0.1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, emissive: picked ? 0x1d4f86 : 0x0b2236, depthWrite: false }));
+    m.userData = { type: "hullwin", id: w.id }; m.renderOrder = 5; world.add(m); pickables.push(m);
+    const ring = []; const P = k => new THREE.Vector3(pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]);
+    if (shaped) { for (let i = 0; i <= nu; i++) ring.push(P((nv - 1) * nu + i % nu)); }
+    else { for (let i = 0; i < nu; i++) ring.push(P(i)); for (let j = 1; j < nv; j++) ring.push(P(j * nu + nu - 1));
+      for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu)); }
+    const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
+    frame.renderOrder = 6; world.add(frame);
+    // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide laid on the skin by the same rays as the glass (fpts), from
+    // the glass's edge out to its own, standing a little proud, so it follows the contour and covers the cut edge.
+    if (!(w.fnu >= 2 && w.fnv >= 2)) continue;
+    const sides = (q, a, b) => { const Q = k => new THREE.Vector3(q[3 * k], q[3 * k + 1], q[3 * k + 2]), s4 = [[], [], [], []];
+      for (let i = 0; i < a; i++) s4[0].push(Q(i)); for (let j = 0; j < b; j++) s4[1].push(Q(j * a + a - 1));
+      for (let i = a - 1; i >= 0; i--) s4[2].push(Q((b - 1) * a + i)); for (let j = b - 1; j >= 0; j--) s4[3].push(Q(j * a)); return s4; };
+    const resample = (line, K) => { const L = [0]; for (let i = 1; i < line.length; i++) L.push(L[i - 1] + line[i].distanceTo(line[i - 1])); const T = L[L.length - 1] || 1, out = [];
+      for (let k = 0; k < K; k++) { const t = T * k / (K - 1); let i = 1; while (i < line.length - 1 && L[i] < t) i++; const f = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); out.push(line[i - 1].clone().lerp(line[i], Math.min(1, Math.max(0, f)))); } return out; };
+    const si = sides(pts, nu, nv), so = sides(w.fpts, w.fnu, w.fnv), inner = [], outer = [];
+    if (shaped) { const Q = (q, a, b, i) => new THREE.Vector3(q[3 * ((b - 1) * a + i)], q[3 * ((b - 1) * a + i) + 1], q[3 * ((b - 1) * a + i) + 2]);
+      for (let i = 0; i < nu; i++) { inner.push(Q(pts, nu, nv, i)); outer.push(Q(w.fpts, w.fnu, w.fnv, i % w.fnu)); } }
+    else for (let e = 0; e < 4; e++) { const K = Math.max(si[e].length, so[e].length) * 2; const a = resample(si[e], K), b = resample(so[e], K); a.pop(); b.pop(); inner.push(...a); outer.push(...b); }
+    const N = inner.length;
+    const bp = [], bi = [];
+    for (let k = 0; k < N; k++) { const o = outer[k], ii = inner[k];
+      bp.push(...ii.toArray(), ...o.toArray()); }
+    for (let k = 0; k < N; k++) { const a = 2 * k, b = 2 * ((k + 1) % N); bi.push(a, b, b + 1, a, b + 1, a + 1); }
+    const bg = new THREE.BufferGeometry(); bg.setAttribute("position", new THREE.Float32BufferAttribute(bp, 3)); bg.setIndex(bi); bg.computeVertexNormals();
+    const board = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: picked ? 0x4a6f9a : 0x3a3e44, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide }));
+    board.userData = { type: "hullwin", id: w.id }; world.add(board); pickables.push(board);
+  }
+}
+
+// A socket's connector to a room farther than its reach: a lined shaft like the Limpet's, with rungs when it climbs and a
+// hatch frame at the room's end (Karl, 2026-11-24). Drawn with the parts, whether or not the links are shown.
+function drawConnectors() {
+  for (const l of S.links) {
+    if (l.service) {
+      // A drive's service socket (Karl, 2026-11-24): a panel on the room's wall facing the drive, with its feed run to it.
+      const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = a.clone().sub(b);
+      // It faces into the room from the wall the drive is on: along the skin's normal, whatever room wall it landed on.
+      const dir = (l.n ? new THREE.Vector3(...l.n) : d.clone()).normalize(), g = new THREE.Group(); g.position.copy(b); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      const steel = new THREE.MeshStandardMaterial({ color: 0x6d7682, metalness: 0.5, roughness: 0.5 }), amber = new THREE.MeshStandardMaterial({ color: l.ok ? 0xd8b04a : 0xff5a44, metalness: 0.4, roughness: 0.5 });
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.06), steel); panel.position.z = 0.03; g.add(panel);
+      for (const [x, y, w, h] of [[0, 0.37, 0.8, 0.05], [0, -0.37, 0.8, 0.05], [0.37, 0, 0.05, 0.8], [-0.37, 0, 0.05, 0.8]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), amber); f.position.set(x, y, 0.04); g.add(f); }
+      const len = Math.max(0.05, d.length()), pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 8), steel); pipe.rotation.x = Math.PI / 2; pipe.position.z = len / 2; g.add(pipe);
+      g.traverse(o => { o.renderOrder = 4; }); world.add(g);
+      continue;
+    }
+    if (!(l.shaft > 0)) continue;
+    const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = b.clone().sub(a), len = d.length(); if (len < 0.1) continue;
+    const g = new THREE.Group(), w = l.shaft + 0.2, dir = d.clone().normalize();
+    g.position.copy(a).addScaledVector(d, 0.5);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const wall = new THREE.MeshStandardMaterial({ color: 0x6d7682, metalness: 0.4, roughness: 0.6, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const tube = new THREE.Mesh(new THREE.BoxGeometry(w, len, w, 1, 1, 1), wall); g.add(tube);
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(tube.geometry), new THREE.LineBasicMaterial({ color: l.ok ? 0xd8b04a : 0xff5a44 })); g.add(edge);
+    const amber = new THREE.MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.5, roughness: 0.4 });
+    // The hazard frames at both mouths.
+    for (const y of [-len / 2, len / 2]) for (const [sx, sz, bx, bz] of [[0, w / 2, w + 0.1, 0.08], [0, -w / 2, w + 0.1, 0.08], [w / 2, 0, 0.08, w + 0.1], [-w / 2, 0, 0.08, w + 0.1]]) {
+      const f = new THREE.Mesh(new THREE.BoxGeometry(bx, 0.1, bz), amber); f.position.set(sx, y, sz); g.add(f);
+    }
+    // A boarding ramp's passage is a stair from the room's floor (flush with it) down to the ramp at the hatch (Karl, 2026-11-24):
+    // treads every 0.2 m of rise across its floor side.
+    if (l.sock === "ramp") {
+      const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4 }), n = Math.max(2, Math.round(len * Math.abs(dir.y) / 0.2));
+      for (let k = 0; k < n; k++) { const t = new THREE.Mesh(new THREE.BoxGeometry(w - 0.1, 0.05, Math.max(0.22, len / n * 1.1)), steel);
+        t.position.set(0, len / 2 - (k + 0.5) * len / n, 0); t.rotation.x = 0; g.add(t); }
+    }
+    // A ladder up its side when it climbs more than it runs: two rails and rungs every 0.3 m.
+    else if (Math.abs(dir.y) > 0.6) {
+      const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4 }), z = -w / 2 + 0.12;
+      for (const x of [-0.22, 0.22]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.04, len, 0.04), steel); r.position.set(x, 0, z); g.add(r); }
+      for (let y = -len / 2 + 0.15; y < len / 2; y += 0.3) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.03, 0.03), steel); r.position.set(0, y, z); g.add(r); }
+    }
+    g.traverse(o => { o.renderOrder = 4; }); world.add(g);
+  }
+}
+
+function drawLinks() {
+  for (const l of S.links) {
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...l.a), new THREE.Vector3(...l.b)]);
+    const line = new THREE.Line(g, new THREE.LineDashedMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, dashSize: 0.3, gapSize: 0.2, depthTest: false, transparent: true }));
+    line.computeLineDistances(); line.renderOrder = 6; world.add(line);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, depthTest: false }));
+    dot.position.set(...l.b); dot.renderOrder = 6; world.add(dot);
+  }
+}
+
+let deckPlane = null;
+function drawDeckPlane() {
+  const d = S.decks[deck]; if (!d) return;
+  deckPlane = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshBasicMaterial({ visible: false }));
+  deckPlane.userData = { type: "deck" };
+  world.add(deckPlane);
+  const g = new THREE.GridHelper(80, 160, 0x4c6070, 0x2e3a42);
+  if (S.stacked) { g.rotation.x = Math.PI / 2; g.position.set(0, 3, d.floor - 0.01); } else g.position.set(0, d.floor + 0.01, 22);
+  g.material.transparent = true; g.material.opacity = 0.55; world.add(g);
+}
+
+function placeGizmo() {
+  if (gizmo.dragging) return;
+  gizmo.detach();
+  if (mode === "hull" && sel.kind === "hull" && sel.station < 0) {
+    const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
+    gizmoTarget.position.set(h.x, h.y, h.z); gizmoTarget.userData.hullId = h.id; gizmo.attach(gizmoTarget);
+  }
+}
+
+function frame() {
+  if (!S) return;
+  const box = new THREE.Box3();
+  world.traverse(o => { if (o.isMesh && o.userData.type === "hull") box.expandByObject(o); });
+  if (box.isEmpty()) return;
+  const c = box.getCenter(new THREE.Vector3()), r = box.getSize(new THREE.Vector3()).length() / 2;
+  controls.target.copy(c);
+  camera.position.copy(c).add(new THREE.Vector3(r * 1.7, r * 0.9, -r * 0.8));
+  grid.position.y = box.min.y - 3.4;
+}
+
+// ---------- pointer: picking and dragging in the yard
+const ray = new THREE.Raycaster(); ray.params.Line.threshold = 0.35;
+const ndc = new THREE.Vector2();
+function cast(ev, list = pickables) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.intersectObjects(list, false);
+}
+function hullHit(ev) { return cast(ev, pickables.filter(o => o.userData.type === "hull")).find(h => !h.object.material.transparent || true); }
+
+let drag = null; // { what, ... , moved, x0, y0 }
+renderer.domElement.addEventListener("pointerdown", ev => {
+  if (!S || ev.button !== 0 || gizmo.dragging || gizmo.axis) return;
+  const hits = cast(ev);
+  const top = hits[0];
+  if (mode === "hull") {
+    const st = hits.find(h => h.object.userData.type === "station");
+    if (st && !conn) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
+    const h = hits.find(h => h.object.userData.type === "hull");
+    if (h && conn) {
+      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z };
+      if (conn.step === "a") { conn = { step: "b", a: at, joinId: 0, hullId: 0, newBody: false }; leftPanel(); $("tip").textContent = "Set the connection, then click the second body where it meets, or add a new body."; return; }
+      if (u.hull === conn.hullId) conn.hullId = 0; // (connecting to the body this tool made keeps it)
+      conn.b = at; conn.newBody = false; placeJoin(); leftPanel(); return;
+    }
+    const jn = hits.find(h => h.object.userData.type === "join");
+    if (jn && (!h || jn.distance <= h.distance)) { select("join", jn.object.userData.id); return; }
+    if (h) { select("hull", h.object.userData.hull); return; }
+    return;
+  }
+  if (mode === "pieces" && pickRoomFor) {
+    // Picking the room a socket opens into: a click on a room joins them; anywhere else stops picking.
+    const r = hits.find(h => h.object.userData.type === "room"), id = pickRoomFor;
+    pickRoomFor = 0;
+    if (r) { cmd({ op: "setPiece", id, room: r.object.userData.id }); toast("Joined to that room.", true); }
+    select("piece", id); $("tip").textContent = tips[mode];
+    return;
+  }
+  if (mode === "pieces") {
+    const p = hits.find(h => h.object.userData.type === "piece");
+    if (p && (!top || top.object === p.object || top.distance + 0.01 >= p.distance)) {
+      select("piece", p.object.userData.id);
+      drag = { what: "piece", id: p.object.userData.id, x0: ev.clientX, y0: ev.clientY, moved: false };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    const h = hits.find(h => h.object.userData.type === "hull");
+    if (!h) select(null, 0);
+    return;
+  }
+  if (mode === "interior" && mounting) {
+    const op = mountAim(ev) ?? mounting.last;
+    if (!op) { toast("Click a wall, the floor or the ceiling of the room."); return; }
+    const a = cmd({ ...op, preview: false, light: false, replace: mounting.pid }, !!mounting.pid);
+    if (a.error) { toast(a.error); return; }
+    const kind = mounting.kind; mounting.pid = 0; stopMount(true);
+    toast(`${kind} fitted: it cuts the hull there and opens into the room.`, true);
+    return;
+  }
+  if (inside() && placingRiser) {
+    const { kind, dir, room } = placingRiser, rm = S.rooms.find(r => r.id === room); placingRiser = null; leftPanel(); inspector();
+    let at = deckPoint(ev); const to = otherDeck(rm ? rm.deck : deck, dir);
+    if (rm && (!at || at.x < rm.x0 || at.x > rm.x1 || at.z < rm.z0 || at.z > rm.z1)) at = { x: (rm.x0 + rm.x1) / 2, z: (rm.z0 + rm.z1) / 2 }; // off the room: its middle
+    if (!at) { toast("Click the deck."); return; }
+    if (to < 0) { toast(dir < 0 ? "There is no deck below this one." : "There is no deck above this one."); return; }
+    const a = cmd({ op: "addRiser", kind, x: at.x, z: at.z, from: rm ? rm.deck : deck, to });
+    if (a.error) { toast(a.error); return; }
+    select("riser", a.id); toast(`${kind} from deck ${(rm ? rm.deck : deck) + 1} to deck ${to + 1}${rm ? `, from ${rm.label || rm.kind}` : ""}. Pick its decks on the right to run it farther.`, true);
+    return;
+  }
+  if (mode === "connectors") {
+    // Doors and ladders win over the rooms round them (a room's walls are in front of its doors from most angles).
+    const by = t => hits.find(h => h.object.userData.type === t), h = by("door") ?? by("riser") ?? by("room");
+    if (doorFrom) {
+      const from = doorFrom; doorFrom = 0;
+      if (h?.object.userData.type === "room" && h.object.userData.id !== from) {
+        const a = cmd({ op: "addDoor", a: from, b: h.object.userData.id, kind: doorKind });
+        if (a.error) { toast(a.error); return; }
+        const p = (S.placedDoors || []).find(p => p.id === a.id);
+        if (p) { select("door", p.id); toast(`${doorKind} placed. Drag it along the wall.`, true); }
+        else { select(null, 0); toast(`Those rooms share too little wall on one deck, so the ${doorKind.toLowerCase()} has nowhere to go: it is kept, and the checks say so.`); }
+      } else { inspector(); toast("Stopped placing the door."); }
+      return;
+    }
+    if (h?.object.userData.type === "door") {
+      select("door", h.object.userData.id);
+      const p = S.placedDoors.find(p => p.id === h.object.userData.id);
+      drag = { what: "door", id: p.id, s0: p.s0, s1: p.s1, x0: ev.clientX, y0: ev.clientY, moved: false };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    if (h) select(h.object.userData.type, h.object.userData.id); else select(null, 0);
+    return;
+  }
+  if (mode === "interior" && mergeFrom) {
+    const h = hits.find(h => h.object.userData.type === "room"), from = mergeFrom; mergeFrom = 0;
+    const other = h && S.rooms.find(r => r.id === h.object.userData.id), mine = S.rooms.find(r => r.id === from);
+    if (other && mine && other.deck !== mine.deck) {
+      // Across decks: the player picks the deck that owns the tall room.
+      mergeAcross = { a: from, b: other.id }; select("room", from); $("tip").textContent = "Pick which deck owns the merged room, on the right."; return;
+    }
+    if (h && h.object.userData.id !== from) {
+      const a = cmd({ op: "mergeRoom", a: from, b: h.object.userData.id });
+      if (a.error) toast(a.error); else { select("room", from); toast("Merged. Undo splits them again.", true); }
+    } else { inspector(); toast("Stopped merging."); }
+    return;
+  }
+  if (inside() || mode === "pieces") {
+    const hw = hits.find(h => ["hullwin", "room", "piece"].includes(h.object.userData.type));
+    if (hw?.object.userData.type === "hullwin" && !placingRiser && !mergeFrom) { select("hullwin", hw.object.userData.id); return; }
+  }
+  if (mode === "interior") {
+    const rz = hits.find(h => h.object.userData.type === "riser");
+    if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
+    const r = hits.find(h => h.object.userData.type === "room");
+    if (r) {
+      select("room", r.object.userData.id);
+      const room = S.rooms.find(x => x.id === r.object.userData.id);
+      const at = deckPoint(ev), hp = r.point, onPlan = S.stacked ? { x: hp.x, z: hp.y } : { x: hp.x, z: hp.z };
+      // Its top grabbed: drag up or down to set its height (it can rise through the decks above).
+      const bx = room.box, onTop = S.stacked ? Math.abs(hp.z - bx[4]) < 0.12 : Math.abs(hp.y - bx[3]) < 0.12;
+      if (onTop) {
+        drag = { what: "roomTop", id: room.id, h0: room.height, at: hp.clone(), x0: ev.clientX, y0: ev.clientY, moved: false };
+        controls.enabled = false; dragFirst = true; return;
+      }
+      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false, edges: edgesNear(room, onPlan, r) };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    if (ev.shiftKey || drawing) {
+      const at = deckPoint(ev); if (!at) return;
+      drag = { what: "draw", start: at, x0: ev.clientX, y0: ev.clientY };
+      controls.enabled = false; return;
+    }
+    select(null, 0);
+  }
+});
+
+window.addEventListener("pointermove", ev => {
+  if (paletteDrag) { paletteMove(ev); return; }
+  if (mounting && !drag) { const op = mountAim(ev); if (op) mounting.pending = op; return; }
+  if (!drag) { hover(ev); return; }
+  if (Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) > 4) drag.moved = true;
+  if (!drag.moved) return;
+  if (drag.what === "station") {
+    const h = S.hulls.find(h => h.id === drag.hull);
+    const z = axisZ(ev, h); if (z !== null) dragCmd({ op: "moveStation", hull: h.id, i: drag.i, z: z - h.z });
+  } else if (drag.what === "piece") {
+    const hit = hullHit(ev);
+    drag.off = !hit;
+    if (hit) { const u = hit.object.userData; dragCmd({ op: "movePiece", preview: true, light: true, id: drag.id, hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
+    $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
+  } else if (drag.what === "room") {
+    const at = deckPoint(ev); if (!at || !drag.start) return;
+    const dx = Math.round((at.x - drag.start.x) * 4) / 4, dz = Math.round((at.z - drag.start.z) * 4) / 4, r = drag.room, e = drag.edges;
+    if (e.any) {
+      // Grab an edge or a corner to size the room; the far side stays put, and it keeps at least a metre.
+      const b = { x0: r.x0, x1: r.x1, z0: r.z0, z1: r.z1 };
+      if (e.x0) b.x0 = Math.min(r.x0 + dx, r.x1 - 1); if (e.x1) b.x1 = Math.max(r.x1 + dx, r.x0 + 1);
+      if (e.z0) b.z0 = Math.min(r.z0 + dz, r.z1 - 1); if (e.z1) b.z1 = Math.max(r.z1 + dz, r.z0 + 1);
+      dragCmd({ op: "setRoom", light: true, id: drag.id, ...b });
+      $("tip").textContent = `${fmt(b.x1 - b.x0)} x ${fmt(b.z1 - b.z0)} m`;
+    } else dragCmd({ op: "setRoom", light: true, id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
+  } else if (drag.what === "door") {
+    // Along the shared wall: the deck point projected onto it, as 0 to 1 between its ends.
+    const at = deckPoint(ev); if (!at) return;
+    const P = S.stacked ? [at.x, at.z] : [at.x, at.z], A = S.stacked ? [drag.s0[0], drag.s0[1]] : [drag.s0[0], drag.s0[2]], B = S.stacked ? [drag.s1[0], drag.s1[1]] : [drag.s1[0], drag.s1[2]];
+    const dx = B[0] - A[0], dz = B[1] - A[1], L2 = dx * dx + dz * dz;
+    const t = L2 < 1e-6 ? 0.5 : Math.min(1, Math.max(0, ((P[0] - A[0]) * dx + (P[1] - A[1]) * dz) / L2));
+    dragCmd({ op: "setDoor", light: true, id: drag.id, t: Math.round(t * 100) / 100 });
+  } else if (drag.what === "roomTop") {
+    // The point on the up line through the grabbed spot nearest the pointer's ray.
+    const ray = rayAt(ev), up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+    const w0 = drag.at.clone().sub(ray.origin), b = up.dot(ray.direction), dd = up.dot(w0), e = ray.direction.dot(w0), den = 1 - b * b;
+    if (den < 1e-4) return;
+    const t = (b * e - dd) / den, h = Math.max(2.2, Math.round((drag.h0 + t) * 4) / 4);
+    dragCmd({ op: "setRoom", light: true, id: drag.id, height: h });
+    $("tip").textContent = `${fmt(h)} m high`;
+  } else if (drag.what === "draw") {
+    const at = deckPoint(ev); if (!at) return;
+    drag.end = at; drawPreview(drag.start, at);
+  }
+});
+
+window.addEventListener("pointerup", ev => {
+  if (paletteDrag) { paletteDrop(ev); return; }
+  if (!drag) return;
+  const d = drag; drag = null; controls.enabled = true;
+  if (d.what === "piece" && d.moved && d.off) {
+    pending = null; cmd({ op: "delPiece", id: d.id }, !dragFirst); select(null, 0);
+    toast("Taken off the ship. Undo puts it back.", true);
+  } else if (d.what === "draw") {
+    clearPreview();
+    if (d.end) {
+      const x0 = Math.min(d.start.x, d.end.x), x1 = Math.max(d.start.x, d.end.x), z0 = Math.min(d.start.z, d.end.z), z1 = Math.max(d.start.z, d.end.z);
+      if (x1 - x0 >= 0.9 && z1 - z0 >= 0.9) { const a = cmd({ op: "addRoom", deck, kind: roomKind, x0, x1, z0, z1 }); if (!a.error) select("room", a.id); }
+    }
+  } else { flush(); if (d.what === "piece" || d.what === "room") take(api.Scene()); }
+  $("tip").textContent = tips[mode];
+});
+
+function axisZ(ev, h) {
+  // The point on the line along the ship through the hull's middle nearest the pointer's ray.
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const p = new THREE.Vector3(h.x, h.y + 2, 0), u = new THREE.Vector3(0, 0, 1);
+  const o = ray.ray.origin, d = ray.ray.direction;
+  const w = o.clone().sub(p), b = u.dot(d), dd = u.dot(w), e = d.dot(w), den = 1 - b * b;
+  if (Math.abs(den) < 1e-4) return null;
+  return p.z + (dd - b * e) / den;
+}
+// Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
+// line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
+let mounting = null, pieceSize = 1, pieceRecess = 0, extShape = "Box", extUp = "Vault", mergeFrom = 0, mergeAcross = null;
+function startMount(kind, room) {
+  stopMount();
+  mounting = { kind, room, pid: 0, pending: null, last: null };
+  $("tip").textContent = `Move over a wall of the room (its floor or ceiling for a hatch). The ${kind} shows where it would cut the hull; click to fit it.`;
+  inspector();
+}
+function stopMount(keep = false) {
+  if (!mounting) return;
+  if (!keep && mounting.pid) cmd({ op: "delPiece", id: mounting.pid }, true);
+  mounting = null; $("tip").textContent = tips[mode] ?? ""; inspector();
+}
+function mountAim(ev) {
+  const hit = cast(ev).find(h => h.object.userData.type === "room" && h.object.userData.id === mounting.room);
+  if (!hit) return null;
+  const up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+  const n = hit.object.userData.floor ? up.clone().negate() : hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+  return { op: "mount", kind: mounting.kind, room: mounting.room, x: hit.point.x, y: hit.point.y, z: hit.point.z, nx: n.x, ny: n.y, nz: n.z, mirror: false, pair: true, size: pieceSize, recess: pieceRecess };
+}
+function mountTick() {
+  if (!mounting?.pending) return;
+  const op = { ...mounting.pending, replace: mounting.pid, preview: true, light: true }; mounting.pending = null;
+  const a = cmd(op, !!mounting.pid);
+  if (a.error) { $("tip").textContent = a.error; mounting.pid = 0; return; }
+  mounting.pid = a.id; mounting.last = op;
+}
+function rayAt(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.ray;
+}
+function deckPoint(ev) {
+  const dk = S.decks[deck]; if (!dk) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const pt = new THREE.Vector3();
+  // On a stacked deck the floor faces the bow: its plane is z = floor, and a room's second axis (z0..z1) is the height y.
+  if (S.stacked) { if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), -dk.floor), pt)) return null; return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.y * 4) / 4 }; }
+  if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -dk.floor), pt)) return null;
+  return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.z * 4) / 4 };
+}
+// Which edges of a room a plan point is grabbing: only inside its box, within 45 cm (less on a small room), and only from its
+// floor or top (a wall, or the part of a room that runs out to the skin, moves it: Karl, 2026-11-24, rooms were hard to move).
+function edgesNear(r, at, hit) {
+  if (!at) return { any: false };
+  // A wall grabbed in its middle moves the room; grabbed near its foot (the floor's edge, 0.6 m) or its top (0.3 m) it sizes it.
+  const n = hit?.face?.normal;
+  if (n && Math.abs(S.stacked ? n.z : n.y) < 0.7) {
+    const b = r.box, up = S.stacked ? b[5] - hit.point.z : hit.point.y - b[2], h = S.stacked ? b[5] - b[4] : b[3] - b[2];
+    if (up > 0.6 && up < h - 0.3) return { any: false };
+  }
+  // Its edges as drawn: a room out to the hull is drawn (and grabbed) out to the skin, past its plan.
+  const b = r.box, X0 = Math.min(r.x0, b[0]), X1 = Math.max(r.x1, b[1]), Z0 = S.stacked ? Math.min(r.z0, b[2]) : Math.min(r.z0, b[4]), Z1 = S.stacked ? Math.max(r.z1, b[3]) : Math.max(r.z1, b[5]);
+  const mx = Math.min(0.45, (X1 - X0) * 0.2), mz = Math.min(0.45, (Z1 - Z0) * 0.2), t = 0.05;
+  if (at.x < X0 - t || at.x > X1 + t || at.z < Z0 - t || at.z > Z1 + t) return { any: false };
+  const e = { x0: at.x - X0 < mx, x1: X1 - at.x < mx, z0: at.z - Z0 < mz, z1: Z1 - at.z < mz };
+  e.any = e.x0 || e.x1 || e.z0 || e.z1; return e;
+}
+let preview = null;
+function drawPreview(a, b) {
+  clearPreview();
+  const dk = S.decks[deck];
+  const w = Math.max(0.1, Math.abs(b.x - a.x)), l = Math.max(0.1, Math.abs(b.z - a.z));
+  preview = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(w, l, dk.height) : new THREE.BoxGeometry(w, dk.height, l), new THREE.MeshBasicMaterial({ color: new THREE.Color(CAT.rooms.find(k => k.name === roomKind).colour), transparent: true, opacity: 0.35, depthWrite: false }));
+  if (S.stacked) preview.position.set((a.x + b.x) / 2, (a.z + b.z) / 2, dk.floor - dk.height / 2);
+  else preview.position.set((a.x + b.x) / 2, dk.floor + dk.height / 2, (a.z + b.z) / 2);
+  scene.add(preview);
+  $("tip").textContent = `${fmt(w)} x ${fmt(l)} m ${roomKind}`;
+}
+function clearPreview() { if (preview) { scene.remove(preview); preview = null; } }
+
+function hover(ev) {
+  if (!S || ev.target !== renderer.domElement) return;
+  renderer.domElement.style.cursor = "";
+  const hits = cast(ev);
+  if (mode === "hull" && conn && conn.step !== "set") renderer.domElement.style.cursor = "crosshair";
+  else if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
+  else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
+  else if (mode === "connectors" && hits.some(h => h.object.userData.type === "door")) { renderer.domElement.style.cursor = "grab"; $("tip").textContent = "Click to pick the door; drag it along the wall."; }
+  else if (mode === "connectors" && hits.some(h => ["riser", "room"].includes(h.object.userData.type))) renderer.domElement.style.cursor = "pointer";
+  else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
+    const hit = hits.find(h => h.object.userData.type === "room"), r = S.rooms.find(x => x.id === hit.object.userData.id);
+    // The same tests as a press: its top first (drag it up or down for its height), then its edges, else it moves.
+    const bx = r.box, hp = hit.point, onTop = S.stacked ? Math.abs(hp.z - bx[4]) < 0.12 : Math.abs(hp.y - bx[3]) < 0.12;
+    const e = onTop ? { any: false } : edgesNear(r, S.stacked ? { x: hp.x, z: hp.y } : { x: hp.x, z: hp.z }, hit);
+    renderer.domElement.style.cursor = onTop ? "row-resize" : !e.any ? "move" : (e.x0 || e.x1) && (e.z0 || e.z1) ? "nwse-resize" : (e.x0 || e.x1) ? "ew-resize" : "ns-resize";
+    $("tip").textContent = onTop ? "Drag up or down to set the room's height." : e.any ? "Drag to size the room." : "Drag to move the room.";
+  }
+  else if (mode === "interior" && drawing) renderer.domElement.style.cursor = "crosshair";
+}
+
+// ---------- the palette: drag a piece from the left panel onto the hull
+let paletteDrag = null;
+function paletteStart(ev, kind) {
+  ev.preventDefault();
+  paletteDrag = { kind, id: 0 }; dragFirst = true;
+  $("tip").textContent = `Drag the ${kind} onto the hull.`;
+}
+function paletteMove(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) return;
+  const hit = hullHit(ev);
+  if (!hit) { if (paletteDrag.id) $("tip").textContent = "Release here to leave it off."; paletteDrag.off = true; return; }
+  paletteDrag.off = false;
+  const u = hit.object.userData;
+  const where = CAT.pieces.find(k => k.name === paletteDrag.kind).where;
+  if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
+  const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
+  if (!paletteDrag.id) {
+    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, pair: $("ppair")?.checked ?? true, size: pieceSize, recess: pieceRecess, ...at });
+    if (a.error) { paletteDrag = null; return; }
+    paletteDrag.id = a.id; dragFirst = false; select("piece", a.id, false);
+  } else dragCmd({ op: "movePiece", preview: true, light: true, id: paletteDrag.id, ...at });
+}
+function paletteDrop() {
+  const p = paletteDrag; paletteDrag = null;
+  if (p.id && p.off) { pending = null; cmd({ op: "delPiece", id: p.id }, true); select(null, 0); }
+  else {
+    flush();
+    if (p.id) take(api.Scene()); // now cut its opening
+    if (p.id) {
+      // An airlock comes with its chamber: an Airlock room behind it, in the same undo step.
+      if (CAT.pieces.find(k => k.name === p.kind)?.socket === "airlock") { const n = S.rooms.length, a = cmd({ op: "autoRoom", id: p.id }, true); if (!a.error) toast(S.rooms.length > n ? "Airlock placed, with an airlock room behind it." : "Airlock placed: it opens into the room already there.", true); }
+      select("piece", p.id);
+    }
+  }
+  $("tip").textContent = tips[mode];
+}
+
+// ---------- selection and panels
+function select(kind, id, redraw = true) { sel.kind = kind; sel.id = id; sel.station = -1; if (redraw) { rebuild(); panels(); } }
+function selectStation(hull, i) { sel.kind = "hull"; sel.id = hull; sel.station = i; rebuild(); panels(); }
+
+const tips = {
+  hull: "Click a hull to pick it and move it with the arrows. Drag a blue station ring along the ship. Shape a station's profile on the left.",
+  pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
+  connectors: "Ladders and lifts between decks: pick a room and add one going down or up, or pick Ladder or Lift on the left and click a deck.",
+  interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
+};
+let shapePick = "Zero Day beam";
+function shapeIcon(p) {
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  let w = 0.5, y0 = 1e9, y1 = -1e9; for (const [x, y] of p) { w = Math.max(w, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const span = Math.max(w * 2, y1 - y0) * 1.15, sc = 64 / span, cx = 36, cy = 36 + ((y0 + y1) / 2) * sc;
+  const pts = [[0, p[0][1]], ...p, [0, p[p.length - 1][1]]];
+  const all = [...pts.map(([x, y]) => [cx + x * sc, cy - y * sc]), ...pts.slice().reverse().map(([x, y]) => [cx - x * sc, cy - y * sc])];
+  svg.setAttribute("viewBox", "0 0 72 72");
+  const poly = document.createElementNS(NS, "polygon"); poly.setAttribute("points", all.map(q => q.map(v => v.toFixed(1)).join(",")).join(" "));
+  poly.setAttribute("fill", "currentColor"); poly.setAttribute("fill-opacity", "0.25"); poly.setAttribute("stroke", "currentColor"); poly.setAttribute("stroke-width", "1.5"); poly.setAttribute("stroke-linejoin", "round");
+  svg.append(poly); return svg;
+}
+// The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
+// on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
+let conn = null;
+const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: true, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+function gallery(pick, onPick, tall = 300) {
+  const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
+  for (const s of CAT.sections) {
+    const b = el("button", { class: s.name === pick ? "on" : "", title: s.name, onclick: () => { for (const x of gal.children) x.classList.toggle("on", x === b); onPick(s.name); } }, shapeIcon(s.p), el("span", {}, s.name));
+    gal.append(b);
+  }
+  return gal;
+}
+function slider(label, v, min, max, step, unit, onInput, onDone) {
+  const r = el("input", { type: "range", min, max, step, value: v, "aria-label": label }), out = el("span", {}, `${v}${unit}`);
+  // Dragging only moves the shown value; the command goes when the slider is released (the user, 2026-11-24: dragging lagged).
+  r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; });
+  r.addEventListener("change", () => { out.textContent = `${r.value}${unit}`; (onDone || onInput)(+r.value); });
+  return el("label", { class: "row" }, `${label} `, r, out);
+}
+function joinControls(o, apply) {
+  // The connection's own sections (the user, 2026-11-24: wing-like arms), beside the hull gallery's.
+  const extra = el("div", { class: "row" }), gal = gallery(o.section, n => { o.section = n; for (const x of extra.children) x.classList.remove("on"); apply(); }, 150);
+  for (const [n, label] of [["TriangleUp", "Triangle up"], ["TriangleDown", "Triangle down"], ["Wedge", "Wedge"], ["Diamond", "Diamond"], ["Hexagon", "Hexagon"]])
+    extra.append(el("button", { class: o.section === n ? "on" : "", "data-sec": n, onclick: e => { o.section = n; for (const x of [...extra.children, ...gal.children]) x.classList.toggle("on", x === e.currentTarget); apply(); } }, label));
+  return [el("h3", {}, "Connection shape"), gal, extra,
+    slider("Width A", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(); }),
+    slider("Height A", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(); }),
+    slider("Width B", o.wb, 0.2, 8, 0.1, " m", v => { o.wb = v; apply(); }),
+    slider("Height B", o.hb, 0.2, 8, 0.1, " m", v => { o.hb = v; apply(); }),
+    slider("Twist", o.twist, -180, 180, 1, " deg", v => { o.twist = v; apply(); }),
+    slider("Sweep up", o.sweepUp, -20, 20, 0.1, " m", v => { o.sweepUp = v; apply(); }),
+    slider("Sweep fore", o.sweepFore, -20, 20, 0.1, " m", v => { o.sweepFore = v; apply(); }),
+    slider("Thickness bias", Math.round(o.bias * 100), -90, 90, 5, "%", v => { o.bias = v / 100; apply(); }),
+    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(); }),
+    el("h3", {}, "Buttress (the cladding where it meets each hull)"),
+    slider("Flare", Math.round(o.flare * 100), 100, 400, 5, "%", v => { o.flare = v / 100; apply(); }),
+    slider("Runs up", o.buttress, 0, 6, 0.1, " m", v => { o.buttress = v; apply(); }),
+    el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = !!o.follow; c.addEventListener("change", () => { o.follow = c.checked; apply(); }); return c; })(), "Follow the hull (its base laid onto the skin)"),
+    el("h3", {}, "Sockets (the hole each end cuts)"),
+    el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.squareHole; c.addEventListener("change", () => { o.squareHole = c.checked; apply(); }); return c; })(), "Square holes (else oval)"),
+    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(); }),
+    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(); }),
+    el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
+}
+function connectSection() {
+  const sec = el("div", { class: "sec" }, el("h2", {}, "Connect"),
+    el("button", { class: conn ? "on" : "", onclick: () => { conn = conn ? null : { step: "a" }; leftPanel(); $("tip").textContent = conn ? "Click the hull where the connection starts." : tips.hull; } },
+      conn?.step === "a" ? "Click the first point..." : conn ? "Connecting (press to stop)" : "Connect"));
+  if (!conn || conn.step === "a") { sec.append(el("p", { class: "hint" }, "Press Connect, click a point on the hull, set the connection, then click the second body or add a new one. A pylon, a strut or a neck out to a nacelle or a pod.")); return sec; }
+  const live = () => { if (conn.joinId) placeJoin(); };
+  sec.append(...joinControls(cOpt, live));
+  const B = cOpt.body;
+  const liveBody = () => { if (conn.newBody) placeJoin(); };
+  sec.append(el("h3", {}, "Second object"), el("p", { class: "hint" }, "Click another body where the connection should meet it, or add a new body this far out:"),
+    gallery(B.section, n => { B.section = n; liveBody(); }, 150),
+    slider("Width", B.w, 0.5, 20, 0.25, " m", v => { B.w = v; liveBody(); }),
+    slider("Height", B.h, 0.5, 20, 0.25, " m", v => { B.h = v; liveBody(); }),
+    slider("Length", B.len, 1, 80, 0.5, " m", v => { B.len = v; liveBody(); }),
+    slider("Segments", B.segments, 1, 16, 1, "", v => { B.segments = v; liveBody(); }),
+    slider("Distance", B.dist, 0, 30, 0.25, " m", v => { B.dist = v; liveBody(); }),
+    slider("Slide along", B.slide, -40, 40, 0.25, " m", v => { B.slide = v; liveBody(); }),
+    el("div", { class: "row" },
+      el("button", { onclick: () => { conn.newBody = true; conn.b = null; placeJoin(); leftPanel(); } }, conn.newBody ? "New body placed" : "Add new body"),
+      el("button", { onclick: () => { const id = conn.joinId; conn = null; $("tip").textContent = tips.hull; if (id) select("join", id); else leftPanel(); } }, "Done")));
+  return sec;
+}
+// Places the connection again (the first placing is an undo step, the rest merge into it).
+function placeJoin() {
+  if (!conn || (!conn.b && !conn.newBody)) return;
+  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, wb: cOpt.wb, hb: cOpt.hb, twist: cOpt.twist, sweepUp: cOpt.sweepUp, sweepFore: cOpt.sweepFore, bias: cOpt.bias, segments: cOpt.segments, mirror: cOpt.mirror, flare: cOpt.flare, buttress: cOpt.buttress, follow: cOpt.follow, squareHole: cOpt.squareHole, openA: cOpt.openA, openB: cOpt.openB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
+  if (conn.newBody) op.body = { ...cOpt.body }; else op.b = conn.b;
+  const a = cmd(op, !!conn.joinId);
+  if (a.error) { console.log("connect err", a.error); toast(a.error); return; }
+  conn.joinId = a.id; conn.step = "set";
+  conn.hullId = conn.newBody ? S.hulls[S.hulls.length - 1].id : 0;
+}
+let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
+
+function setMode(m) {
+  if (mounting) stopMount();
+  mode = m;
+  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
+  if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
+  $("tip").textContent = tips[m];
+  rebuild(); panels();
+}
+
+// A panel whose slider is being moved isn't drawn again under the pointer (the drag would end); it is when it lets go of the focus.
+function holding(id) { const a = document.activeElement; return a?.type === "range" && $(id).contains(a); }
+function panels() { if (!holding("left")) leftPanel(); if (!holding("inspect")) inspector(); checks(); }
+
+function leftPanel() {
+  const L = $("left"); L.replaceChildren();
+  if (!S) return;
+  if (mode === "hull") {
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Hull bodies", el("span", { class: "n" }, `${S.hulls.length}`)),
+      ...S.hulls.map(h => el("button", { class: sel.kind === "hull" && sel.id === h.id ? "on" : "", onclick: () => select("hull", h.id) }, `${h.name} · ${h.stations.length} stations${h.mirror ? " · pair" : ""}`)),
+      el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
+        el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
+      el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
+      connectSection());
+    const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
+    if (h) L.append(stationPanel(h));
+  } else if (mode === "pieces") {
+    const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Mirror on its own body"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "ppair", checked: "" }), "On a mirrored pair of bodies, put it on both"),
+      slider("Size to place", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }), slider("Recess to place", Math.round(pieceRecess * 100), 0, 200, 5, " cm", v => { pieceRecess = v / 100; })));
+    for (const g of groups) {
+      const pal = el("div", { class: "pal" });
+      for (const k of CAT.pieces.filter(p => p.group === g)) {
+        const b = el("button", { class: k.socket ? "sock" : "", title: k.desc }, el("b", {}, k.name), el("i", {}, k.socket ? `needs ${k.needs}` : (k.where === "skin" ? "on the skin" : "on a hull's end")));
+        b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
+        pal.append(b);
+      }
+      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
+    }
+  } else {
+    const dsel = el("div", { class: "row" });
+    S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
+    dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
+    const d = S.decks[deck];
+    if (mode === "connectors") {
+      L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), dsel),
+      el("div", { class: "sec" }, el("h2", {}, "Ladders and lifts"),
+        el("div", { class: "row" }, ...["Ladder", "Lift"].map(k => el("button", { class: placingRiser?.kind === k && !placingRiser.room ? "on" : "", onclick: () => { placingRiser = placingRiser?.kind === k && !placingRiser.room ? null : { kind: k, dir: 1, room: 0 }; leftPanel(); $("tip").textContent = placingRiser ? `Click this deck where the ${k.toLowerCase()} goes: it runs to the deck above.` : ""; } }, k))),
+        el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).")));
+      return;
+    }
+    const orient = el("div", { class: "row" },
+      el("button", { class: S.stacked ? "" : "on", onclick: () => { if (S.stacked) { cmd({ op: "orient", stacked: false }); deck = 0; toast("Decks laid along the length. Undo brings the old decks and rooms back.", true); panels(); } } }, "Along the length"),
+      el("button", { class: S.stacked ? "on" : "", onclick: () => { if (!S.stacked) { cmd({ op: "orient", stacked: true }); deck = 0; toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true); panels(); } } }, "Stacked (thrust is down)"));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), el("p", { class: "hint" }, "Orientation"), orient, dsel,
+      d ? el("div", { class: "grid2" },
+        el("span", {}, S.stacked ? "floor at z" : "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
+        el("span", {}, "clear m"), num(d.height, v => cmd({ op: "setDeck", deck, height: v }), 0.05, "deckheight")) : "",
+      d ? el("div", { class: "row" }, el("span", {}, S.stacked ? "Move deck" : "Move deck"),
+        ...[[-1, S.stacked ? "1 m aft" : "Down 1 m"], [-0.25, S.stacked ? "25 cm aft" : "Down 25 cm"], [0.25, S.stacked ? "25 cm fore" : "Up 25 cm"], [1, S.stacked ? "1 m fore" : "Up 1 m"]]
+          .map(([by, t]) => el("button", { onclick: () => cmd({ op: "setDeck", deck, by }) }, t))) : "",
+      d ? el("p", { class: "hint" }, "Its rooms move with it. One out to the hull follows the skin; the rest shrink to fit inside it, and grow back to the size you drew when the deck moves back.") : "",
+      d ? el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDeck", deck }); deck = Math.max(0, deck - 1); rebuild(); panels(); } }, "Remove deck and its rooms")) : ""));
+    const kinds = el("div", { class: "kinds" });
+    for (const k of CAT.rooms) kinds.append(el("button", { class: k.name === roomKind ? "on" : "", title: k.desc, onclick: () => { roomKind = k.name; leftPanel(); } }, el("span", { class: "sw", style: `background:${k.colour}` }), k.name));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "drawon", ...(drawing ? { checked: "" } : {}), onchange: e => drawing = e.target.checked }), "Draw rooms by dragging"),
+      kinds,
+      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")));
+  }
+}
+
+function num(v, set, step = 0.05, id = "") {
+  const i = el("input", { type: "number", step: String(step), value: fmt(v), ...(id ? { id } : {}) });
+  i.addEventListener("change", () => { const x = parseFloat(i.value); if (Number.isFinite(x)) set(x); });
+  return i;
+}
+
+function stationPanel(h) {
+  const box = el("div", { class: "sec" });
+  const i = sel.station;
+  box.append(el("h2", {}, h.name, el("span", { class: "n" }, i >= 0 ? `station ${i + 1} of ${h.stations.length}` : "pick a station ring")));
+  box.append(el("div", { class: "grid2" },
+    el("span", {}, "name"), (() => { const t = el("input", { type: "text", value: h.name, id: "hullname" }); t.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, name: t.value })); return t; })(),
+    el("span", {}, "at x y z"), el("div", { class: "row" }, num(h.x, v => cmd({ op: "moveHull", hull: h.id, x: v, y: h.y, z: h.z }), 0.25), num(h.y, v => cmd({ op: "moveHull", hull: h.id, x: h.x, y: v, z: h.z }), 0.25), num(h.z, v => cmd({ op: "moveHull", hull: h.id, x: h.x, y: h.y, z: v }), 0.25)),
+    el("span", {}, "skin"), (() => { const c = el("input", { type: "color", value: h.skin, "aria-label": "Skin colour" }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, skin: c.value })); return c; })()));
+  box.append(el("div", { class: "row" },
+    el("label", {}, el("input", { type: "checkbox", ...(h.cut ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, cut: e.target.checked }) }), "Cut where it meets"),
+    el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
+  // Cladding (the user's Star Destroyer flank, 2026-11-24): plates of varied size laid on the skin, raised a few cm, off every opening.
+  const clad = h.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+  box.append(el("h3", {}, "Cladding"),
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    ...(clad.kind === "Off" ? [] : [
+      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 })),
+      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 })),
+      el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
+        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
+  // Rounded ends: the skin curves into the cap over this radius.
+  const rMaxF = Math.max(0, Math.floor((h.roundMaxFore ?? 0) * 20) * 5), rMaxA = Math.max(0, Math.floor((h.roundMaxAft ?? 0) * 20) * 5);
+  box.append(el("h3", {}, "Rounded ends"),
+    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 })),
+    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 })),
+    el("p", { class: "hint" }, "0: a hard edge. At most half the end's smallest half-size, and short of the next station."));
+  // Paint (the user's Rocinante: mostly dark with bold accent areas), over the facets and the cladding plates.
+  const pa = h.paint || { accent: "#d8742a", amount: 0, pattern: "Blocks", stripe: 1.5, wear: 0, seed: 1 };
+  const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, [key]: c.value })); return c; };
+  box.append(el("h3", {}, "Paint"),
+    el("div", { class: "row" }, el("span", {}, "Base"), colour(h.skin, "Base colour", "skin"), el("span", {}, "Accent"), colour(pa.accent, "Accent colour", "accent")),
+    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 })),
+    el("div", { class: "row" }, el("span", {}, "Pattern"), ...["Blocks", "Stripes", "Bands"].map(k => el("button", { class: pa.pattern === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, pattern: k }) }, k))),
+    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }))]),
+    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 })),
+    el("div", { class: "row" }, el("span", {}, "Seed"), num(pa.seed, v => cmd({ op: "setHull", hull: h.id, paintSeed: Math.round(v) }), 1),
+      el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, paintSeed: Math.floor(Math.random() * 99999) }) }, "New pattern")),
+    el("p", { class: "hint" }, "Blocks: that share of facets and plates in the accent. Stripes run along the ship, bands across it. Wear darkens and varies the tones. Connections take hull A's paint."));
+  const secSel = { get value() { return shapePick; } };
+  // The section shapes as a gallery: each drawn whole, three a row, scrolling.
+  const gal = el("div", { class: "gal", role: "listbox", "aria-label": "Section shapes" });
+  for (const s of CAT.sections) {
+    const b = el("button", { class: s.name === shapePick ? "on" : "", title: s.name, onclick: () => { shapePick = s.name; for (const x of gal.children) x.classList.toggle("on", x === b); } }, shapeIcon(s.p), el("span", {}, s.name));
+    gal.append(b);
+  }
+  box.append(el("div", { class: "row" },
+    el("button", { onclick: () => cmd({ op: "addStationFront", hull: h.id, preset: secSel.value, len: 4 }) }, "+ Segment at bow"),
+    el("button", { onclick: () => cmd({ op: "addStation", hull: h.id, i: h.stations.length - 1, preset: secSel.value, len: 4 }) }, "+ Segment at stern")),
+    el("p", { class: "hint" }, "Pick a shape, then add a segment or use it on the picked station."), gal);
+  if (i >= 0 && i < h.stations.length) {
+    const s = h.stations[i];
+    box.append(profileEditor(h, i));
+    box.append(el("div", { class: "grid2" }, el("span", {}, "z m"), num(s.z, v => cmd({ op: "moveStation", hull: h.id, i, z: v }), 0.25, "stz")));
+    box.append(el("div", { class: "row" },
+      el("label", {}, el("input", { type: "checkbox", id: "allst" }), "Move the point on every station")));
+    box.append(el("div", { class: "row" },
+      el("button", { onclick: () => cmd({ op: "section", hull: h.id, i, preset: secSel.value }) }, "Use shape"),
+      el("button", { onclick: () => cmd({ op: "addStation", hull: h.id, i }) }, "Split after"),
+      el("button", { onclick: () => { cmd({ op: "delStation", hull: h.id, i }); sel.station = -1; panels(); rebuild(); } }, "Remove")));
+    box.append(el("div", { class: "row" },
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1.1, sy: 1 }) }, "Wider"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 1 }) }, "Narrower"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 1.1 }) }, "Taller"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1.1, sy: 1.1 }) }, "Bigger"),
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 0.9 }) }, "Smaller")));
+  }
+  // Each station keeps its own point count (Karl, 2026-11-24): with a station picked the list changes that one, else every station.
+  const one = sel.station >= 0 && sel.station < h.stations.length;
+  const cur = h.stations[one ? sel.station : 0].p.length;
+  const pts = el("select", { "aria-label": one ? "Points on this station" : "Points on every station" });
+  for (let n = 3; n <= 16; n++) pts.append(el("option", n === cur ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
+  pts.addEventListener("change", () => cmd(one ? { op: "points", hull: h.id, i: sel.station, n: pts.selectedIndex + 3 } : { op: "points", hull: h.id, n: pts.selectedIndex + 3 }));
+  box.append(el("div", { class: "row" }, el("span", { class: "hint" }, one ? "This station:" : "Every station:"), pts));
+  box.append(el("div", { class: "row" },
+    el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
+    el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
+  return box;
+}
+
+// The half profile at one station, drawn whole (both sides), with its neighbours ghosted and the decks across it; drag a point to move it.
+function profileEditor(h, i) {
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 260, Hh = 230, pad = 14;
+  let maxH = 1, y0 = 1e9, y1 = -1e9;
+  for (const s of h.stations) for (const [x, y] of s.p) { maxH = Math.max(maxH, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const span = Math.max(maxH * 2, y1 - y0) * 1.12, sc = (Math.min(W, Hh) - pad * 2) / span;
+  const cx = W / 2, cy = Hh / 2 + ((y0 + y1) / 2) * sc;
+  const X = x => cx + x * sc, Y = y => cy - y * sc;
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.setAttribute("class", "prof");
+  const path = (p, stroke, width, dash) => {
+    const pts = [[0, p[0][1]], ...p, [0, p[p.length - 1][1]]];
+    const all = [...pts.map(([x, y]) => [X(x), Y(y)]), ...pts.slice().reverse().map(([x, y]) => [X(-x), Y(y)])];
+    const e = document.createElementNS(NS, "polyline"); e.setAttribute("points", all.map(q => q.join(",")).join(" "));
+    e.setAttribute("fill", "none"); e.setAttribute("stroke", stroke); e.setAttribute("stroke-width", width); if (dash) e.setAttribute("stroke-dasharray", dash);
+    svg.append(e);
+  };
+  for (const d of S.stacked ? [] : S.decks) for (const y of [d.floor, d.floor + d.height]) {
+    const ly = y - h.y; const e = document.createElementNS(NS, "line");
+    e.setAttribute("x1", 0); e.setAttribute("x2", W); e.setAttribute("y1", Y(ly)); e.setAttribute("y2", Y(ly)); e.setAttribute("stroke", "#3c6a52"); e.setAttribute("stroke-dasharray", "3 3"); svg.append(e);
+  }
+  const axis = document.createElementNS(NS, "line"); axis.setAttribute("x1", cx); axis.setAttribute("x2", cx); axis.setAttribute("y1", 0); axis.setAttribute("y2", Hh); axis.setAttribute("stroke", "#33414b"); svg.append(axis);
+  if (i > 0) path(h.stations[i - 1].p, "#5d7383", 1, "4 3");
+  if (i < h.stations.length - 1) path(h.stations[i + 1].p, "#5d7383", 1, "1 3");
+  path(h.stations[i].p, "#ffb02e", 2);
+  h.stations[i].p.forEach(([x, y], k) => {
+    const c = document.createElementNS(NS, "circle"); c.setAttribute("cx", X(x)); c.setAttribute("cy", Y(y)); c.setAttribute("r", 7);
+    c.setAttribute("fill", "#ffb02e"); c.setAttribute("stroke", "#1b2329"); c.setAttribute("stroke-width", 2); c.setAttribute("class", "pt");
+    c.addEventListener("pointerdown", ev => {
+      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true;
+      const move = e2 => {
+        const r = svg.getBoundingClientRect(), k2 = W / r.width;
+        const px = (e2.clientX - r.left) * k2, py = (e2.clientY - r.top) * k2;
+        const nx = Math.max(0.05, Math.abs((px - cx) / sc)), ny = (cy - py) / sc;
+        c.setAttribute("cx", X(nx)); c.setAttribute("cy", Y(ny));
+        dragCmd({ op: "setPoint", hull: h.id, i, k, h: nx, y: ny, all: $("allst")?.checked ?? false });
+      };
+      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); flush(); leftPanel(); };
+      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up);
+    });
+    const t = document.createElementNS(NS, "title"); t.textContent = `point ${k + 1}: ${fmt(x)} m out, ${fmt(y)} m up`; c.append(t);
+    svg.append(c);
+  });
+  const lab = document.createElementNS(NS, "text"); lab.setAttribute("x", 8); lab.setAttribute("y", Hh - 8); lab.setAttribute("fill", "#93a3ad"); lab.setAttribute("font-size", "10"); lab.setAttribute("font-family", "IBM Plex Mono, monospace");
+  lab.textContent = `${fmt(maxH * 2)} m beam · decks dashed`; svg.append(lab);
+  return svg;
+}
+
+function inspector() {
+  const I = $("inspect"); I.replaceChildren();
+  if (!S) return;
+  if (sel.kind === "hullwin") {
+    const w = (S.hullWindows || []).find(w => w.id === sel.id); if (!w) return;
+    const r = S.rooms.find(r => r.id === w.room);
+    // Sized on letting go: the glass is laid on the skin again then (Karl, 2026-11-24).
+    const sl = (label, key, v, min, max, step, unit, scale) => slider(label, Math.round(v * scale), min, max, step, unit, () => {}, x => cmd({ op: "setHullWindow", id: w.id, [key]: x / scale }));
+    I.append(el("h2", {}, "Hull window", el("span", { class: "n" }, w.ok ? `${fmt(w.gap)} m out` : "too far from the skin")),
+      el("p", { class: "hint" }, `On ${r ? r.label || r.kind : "a room"}'s ${{ x0: "port", x1: "starboard", z0: S.stacked ? "lower" : "fore", z1: S.stacked ? "upper" : "aft" }[w.side]} wall. It follows the hull's contour; sizes apply when you let go.`),
+      sl("Along the wall", "t", w.t, 0, 100, 1, "%", 100), sl("Width", "w", Math.min(w.w, w.len), 30, Math.max(30, Math.round(w.len * 100)), 5, " cm", 100),
+      sl("Height", "h", w.h, 30, 400, 5, " cm", 100), sl("Sill", "sill", w.sill, 0, 300, 5, " cm", 100),
+      el("div", { class: "row" }, el("span", {}, "Shape"), ...[["Rect", "Square"], ["Round", "Round"], ["Oval", "Oval"], ["Arch", "Arched"], ["Hex", "Hexagon"]].map(([k, t]) =>
+        el("button", { class: (w.shape || "Rect") === k ? "on" : "", onclick: () => cmd({ op: "setHullWindow", id: w.id, shape: k }) }, t))),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delHullWindow", id: w.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
+  if (sel.kind === "door") {
+    const p = (S.placedDoors || []).find(p => p.id === sel.id); if (!p) return;
+    const nm = id => { const r = S.rooms.find(r => r.id === id); return r ? r.label || r.kind : "?"; };
+    let first = true;
+    const sl = (label, key, v, min, max, step, unit, scale) => { let f = true; return slider(label, Math.round(v * scale), min, max, step, unit, x => { cmd({ op: "setDoor", id: p.id, [key]: x / scale, light: true }, !f); f = false; }, x => cmd({ op: "setDoor", id: p.id, [key]: x / scale }, true)); };
+    I.append(el("h2", {}, p.kind), el("p", { class: "hint" }, `Between ${nm(p.a)} and ${nm(p.b)}. Drag it along their wall, or:`),
+      sl("Along the wall", "t", p.t, 0, 100, 1, "%", 100));
+    if (p.kind === "Door")
+      I.append(el("div", { class: "row" }, ...[["Narrow", 0.75, 2.0], ["Standard", 0.9, 2.1], ["Wide", 1.2, 2.1], ["Double", 1.8, 2.1], ["Cargo", 3, 2.8], ["Bay", 5, 3]].map(([n, w, h]) =>
+          el("button", { class: Math.abs(p.w - w) < 0.01 && Math.abs(p.h - h) < 0.01 ? "on" : "", onclick: () => cmd({ op: "setDoor", id: p.id, w, h }) }, `${n} ${w} m`))),
+        sl("Width", "w", p.w, 50, 600, 5, " cm", 100), sl("Height", "h", p.h, 150, 300, 5, " cm", 100));
+    if (p.kind === "Window")
+      I.append(el("div", { class: "row" }, ...["Rect", "Round", "Oval", "Arch"].map(sh => el("button", { class: p.shape === sh ? "on" : "", onclick: () => cmd({ op: "setDoor", id: p.id, shape: sh }) }, sh === "Rect" ? "Square" : sh))),
+        sl("Width", "w", p.w, 30, 400, 5, " cm", 100), ...(p.shape === "Round" ? [] : [sl("Height", "h", p.h, 30, 240, 5, " cm", 100)]), sl("Sill", "sill", p.sill, 0, 200, 5, " cm", 100));
+    I.append(el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDoor", id: p.id }); select(null, 0); } }, p.kind === "Window" ? "Delete" : "Back to the middle")));
+    return;
+  }
+  if (sel.kind === "riser") {
+    const k = (S.risers || []).find(k => k.id === sel.id); if (!k) return;
+    const deckSel = (v, key) => { const s = el("select", { "aria-label": key }); S.decks.forEach((d, i) => s.append(el("option", { value: i, ...(i === v ? { selected: "" } : {}) }, `Deck ${i + 1}`))); s.addEventListener("change", () => { const a = cmd({ op: "setRiser", id: k.id, [key]: +s.value }); if (a.error) toast(a.error); }); return s; };
+    I.append(el("h2", {}, k.kind, el("span", { class: "n" }, k.ok ? "fits" : "see checks")),
+      el("div", { class: "row" }, ...["Ladder", "Lift"].map(t => el("button", { class: k.kind === t ? "on" : "", onclick: () => cmd({ op: "setRiser", id: k.id, kind: t }) }, t))),
+      el("div", { class: "grid2" }, el("span", {}, "from"), deckSel(k.from, "from"), el("span", {}, "to"), deckSel(k.to, "to"),
+        el("span", {}, "x"), num(k.x, v => cmd({ op: "setRiser", id: k.id, x: v }), 0.25), el("span", {}, S.stacked ? "y" : "z"), num(k.z, v => cmd({ op: "setRiser", id: k.id, z: v }), 0.25)),
+      ...(k.kind === "Lift" ? [el("div", { class: "grid2" },
+        el("span", {}, "car across m"), (() => { const s = el("select", { "aria-label": "car across" }); for (let i = 1; i <= 8; i++) s.append(el("option", { value: i, ...(i === k.w ? { selected: "" } : {}) }, `${i} m`)); s.addEventListener("change", () => cmd({ op: "setRiser", id: k.id, w: +s.value })); return s; })(),
+        el("span", {}, "car along m"), (() => { const s = el("select", { "aria-label": "car along" }); for (let i = 1; i <= 8; i++) s.append(el("option", { value: i, ...(i === k.l ? { selected: "" } : {}) }, `${i} m`)); s.addEventListener("change", () => cmd({ op: "setRiser", id: k.id, l: +s.value })); return s; })())] : []),
+      el("p", { class: "hint" }, "It stops at every deck between its two ends, and joins the room round it on each."),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRiser", id: k.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
+  if (sel.kind === "join") {
+    const j = S.joins.find(j => j.id === sel.id); if (!j) return;
+    const o = { section: j.section, w: j.w, h: j.h, wb: j.wb ?? j.w, hb: j.hb ?? j.h, twist: j.twist ?? 0, sweepUp: j.sweepUp ?? 0, sweepFore: j.sweepFore ?? 0, bias: j.bias ?? 0, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, follow: !!j.follow, squareHole: j.squareHole, openA: j.openA, openB: j.openB };
+    let first = true;
+    const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
+    // Cladding on the strut, as a body's (the user, 2026-11-24: the nacelles' arms had none); the flared ends into the skins stay bare.
+    const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+    const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
+    const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
+    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
+      el("h3", {}, "Cladding"),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      ...(clad.kind === "Off" ? [] : [
+        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 })),
+        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 })),
+        el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
+          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+      el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
+      el("h3", {}, "Buttress cladding"),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      ...(bcl.kind === "Off" ? [] : [
+        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 })),
+        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 })),
+        el("div", { class: "row" }, el("span", {}, "Seed"), num(bcl.seed, v => jc({ buttressSeed: Math.round(v) }), 1),
+          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+      el("p", { class: "hint" }, "Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0."),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
+  if (sel.kind === "piece") {
+    const p = S.pieces.find(p => p.id === sel.id); if (!p) return;
+    const k = CAT.pieces.find(k => k.name === p.kind);
+    let firstSize = true, firstRec = true;
+    I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
+      slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 })),
+      ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
+      slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
+      el("div", { class: "row" },
+        el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
+        ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
+      el("div", { class: "row" },
+        el("button", { title: "Onto the ship's centreline: the middle of its keel or spine, or of a hull's end", onclick: () => cmd({ op: "centrePiece", id: p.id }) }, "Centre"),
+        el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
+        el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
+        el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
+      k.group === "Drives" ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
+      k.group === "Drives" ? el("div", { class: "row" },
+        el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
+        p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
+      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
+      k.socket ? el("div", { class: "row" },
+        el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room it opens into (the rooms show through the hull)."; } }, "Pick its room"),
+        p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "",
+        el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPiece", id: p.id }); select(null, 0); } }, "Take off")));
+  } else if (sel.kind === "room") {
+    const r = S.rooms.find(r => r.id === sel.id); if (!r) return;
+    if (mode === "connectors") {
+      I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1}`)),
+      el("h3", {}, "Ladder or lift from this room"),
+      el("div", { class: "row" }, ...[["Ladder", -1, "Ladder down"], ["Ladder", 1, "Ladder up"], ["Lift", -1, "Lift down"], ["Lift", 1, "Lift up"]].map(([k, dir, t]) =>
+        el("button", { class: placingRiser?.room === r.id && placingRiser.kind === k && placingRiser.dir === dir ? "on" : "", ...(otherDeck(r.deck, dir) < 0 ? { disabled: "" } : {}),
+          onclick: () => { placingRiser = { kind: k, dir, room: r.id }; deck = r.deck; rebuild(); inspector(); $("tip").textContent = `Click where in ${r.label || r.kind} the ${k.toLowerCase()} goes (it reaches the room ${dir < 0 ? "below" : "above"}).`; } }, t))),
+        el("p", { class: "hint" }, "Then click where in the room it goes; off the room puts it in the middle."),
+        el("h3", {}, "Doors and windows"),
+        el("div", { class: "row" }, ...["Door", "Window"].map(kd => el("button", { class: doorFrom === r.id && doorKind === kd ? "on" : "", onclick: () => { const on = doorFrom === r.id && doorKind === kd; doorFrom = on ? 0 : r.id; doorKind = kd; inspector(); $("tip").textContent = doorFrom ? `Click the room the ${kd.toLowerCase()} from ${r.label || r.kind} looks into.` : tips[mode]; } }, `Add a ${kd.toLowerCase()}`))),
+        el("p", { class: "hint" }, "Then click the other room: it goes in the wall they share, and you can drag it along. One door a pair of rooms; as many windows as fit."));
+      return;
+    }
+    const ks = el("select", { "aria-label": "Room kind" }); for (const k of CAT.rooms) ks.append(el("option", k.name === r.kind ? { selected: "" } : {}, k.name));
+    ks.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, kind: ks.value }));
+    const lab = el("input", { type: "text", value: r.label, placeholder: r.kind, id: "roomlabel" }); lab.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, label: lab.value }));
+    const d = S.decks[r.deck];
+    I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1}, ${fmt(r.area)} m2`)),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "tohull", ...(r.toHull ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, toHull: e.target.checked }) }), "Out to the hull (its open sides follow the skin)"),
+      ...(r.toHull && !S.stacked ? [el("label", { class: "row" }, el("input", { type: "checkbox", ...(r.runOn ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, runOn: e.target.checked }) }), "Run on into the nose (its fore end follows the hull; it can't be dragged while on)"),
+        el("label", { class: "row" }, el("input", { type: "checkbox", ...(r.runAft ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, runAft: e.target.checked }) }), "Run on into the stern (its aft end follows the hull; it can't be dragged while on)")] : []),
+      el("div", { class: "grid2" }, el("span", {}, "kind"), ks, el("span", {}, "name"), lab,
+        el("span", {}, "x from"), num(r.x0, v => cmd({ op: "setRoom", id: r.id, x0: v }), 0.25), el("span", {}, "x to"), num(r.x1, v => cmd({ op: "setRoom", id: r.id, x1: v }), 0.25),
+        el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25),
+        el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
+      el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
+      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("div", { class: "row" }, el("button", { class: mergeFrom === r.id ? "on" : "", onclick: () => { mergeFrom = mergeFrom === r.id ? 0 : r.id; mergeAcross = null; rebuild(); inspector(); $("tip").textContent = mergeFrom ? "Click the room to merge into this one (on this deck, or the deck above or below)." : tips[mode]; } }, "Merge with...")),
+      ...(mergeAcross && mergeAcross.a === r.id ? (() => { const o = S.rooms.find(q => q.id === mergeAcross.b); if (!o) return []; const go = owner => { const a = cmd({ op: "mergeRoom", a: mergeAcross.a, b: mergeAcross.b, owner }); mergeAcross = null; if (a.error) toast(a.error); else { const kept = S.rooms.find(q => q.id === (owner === "a" ? r.id : o.id)); if (kept) { deck = kept.deck; select("room", kept.id); } toast("Merged through both decks. Undo splits them again.", true); } };
+        return [el("p", { class: "hint" }, `One room through deck ${r.deck + 1} and deck ${o.deck + 1}. Which deck owns it (its plan, and where it is listed)?`),
+          el("div", { class: "row" }, el("button", { onclick: () => go("a") }, `Deck ${r.deck + 1} (${r.label || r.kind})`), el("button", { onclick: () => go("b") }, `Deck ${o.deck + 1} (${o.label || o.kind})`), el("button", { onclick: () => { mergeAcross = null; inspector(); } }, "Cancel"))]; })() : []),
+      el("h3", {}, "Hull window"),
+      el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["x0", "Port"], ["x1", "Starboard"], ["z0", "Fore"], ["z1", "Aft"]]).map(([side, t]) =>
+        el("button", { onclick: () => { const a = cmd({ op: "addHullWindow", room: r.id, side }); if (a.error) toast(a.error); else { select("hullwin", a.id); toast("Window on the skin. Size it on the right: it follows the hull when you let go.", true); } } }, t))),
+      el("p", { class: "hint" }, "Glass on the skin outside this room's wall, following the ship's shape. The wall must be within 1 m of the hull."),
+      el("h3", {}, "Extend the room"),
+      el("div", { class: "row" }, ...[["x0", "Port"], ["x1", "Starboard"], ...(S.stacked ? [["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["up", "Ceiling"]])].map(([side, t]) =>
+        el("button", { onclick: () => { const a = cmd({ op: "addExt", id: r.id, side, shape: side === "up" ? extUp : extShape, depth: side === "up" ? 1 : 1.5, width: 2 }); if (a.error) toast(a.error); else { rebuild(); inspector(); toast("The room grows that way. Shape and size it below.", true); } } }, t))),
+      el("div", { class: "row" }, el("span", {}, "Wall shape"), ...["Box", "Bay", "Hex", "Round"].map(k => el("button", { class: extShape === k ? "on" : "", onclick: () => { extShape = k; const i = (r.exts || []).map(e => e.side).lastIndexOf((r.exts || []).filter(e => e.side !== "up").map(e => e.side).pop()); if (i >= 0) cmd({ op: "setExt", id: r.id, i, shape: k }); else toast("Now pick a wall above: the room grows out of it in this shape.", true); inspector(); } }, k))),
+      el("div", { class: "row" }, el("span", {}, "Ceiling shape"), ...["Vault", "Gable", "Hex"].map(k => el("button", { class: extUp === k ? "on" : "", onclick: () => { extUp = k; const i = (r.exts || []).map(e => e.side).lastIndexOf("up"); if (i >= 0) cmd({ op: "setExt", id: r.id, i, shape: k }); else toast("Now press Ceiling above: the ceiling rises in this shape.", true); inspector(); } }, k))),
+      ...(r.exts || []).flatMap((e, i) => { const set = o => { const a = cmd({ op: "setExt", id: r.id, i, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
+        return [el("p", { class: "hint" }, `${i + 1}. ${e.shape} ${e.side === "up" ? "ceiling" : "off " + ({ x0: "port", x1: "starboard", z0: S.stacked ? "the bottom" : "fore", z1: S.stacked ? "the top" : "aft" })[e.side]}`),
+          el("div", { class: "row" }, ...(e.side === "up" ? ["Vault", "Gable", "Hex"] : ["Box", "Bay", "Hex", "Round"]).map(k => el("button", { class: e.shape === k ? "on" : "", onclick: () => set({ shape: k }) }, k)),
+            el("button", { onclick: () => { const a = cmd({ op: "delExt", id: r.id, i }); if (a.error) toast(a.error); else { rebuild(); inspector(); } } }, "Delete")),
+          slider(e.side === "up" ? "Rise" : "Depth", Math.round(e.depth * 100), 25, 600, 5, " cm", () => {}, v => set({ depth: v / 100 })),
+          ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
+            slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
+      el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
+      el("h3", {}, "Walls"),
+      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }),
+      el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
+      el("h3", {}, "Interior"),
+      (() => { const setI = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
+        const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => setI({ [key]: c.value })); return c; };
+        return el("div", {},
+          el("div", { class: "row" }, el("span", {}, "Style"), ...["Off", "Clean", "Industrial"].map(k => el("button", { class: (r.interior || "Off") === k ? "on" : "", onclick: () => setI({ interior: k }) }, k))),
+          slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v })),
+          el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),
+            el("button", { class: r.lights !== false ? "on" : "", onclick: () => setI({ lights: r.lights === false }) }, r.lights !== false ? "Lights on" : "Lights off")),
+          el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })(),
+      el("h3", {}, "Mount a socket from this room"),
+      el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
+      slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),
+      slider("Recess into the wall", Math.round(pieceRecess * 100), 0, 200, 5, " cm", v => { pieceRecess = v / 100; }),
+      el("div", { class: "row" },
+        el("button", { onclick: () => { const a = cmd({ op: "splitRoom", id: r.id }); if (!a.error) select("room", a.id); } }, "Split"),
+        el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
+  } else if (sel.kind === "hull") {
+    const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
+    const len = h.stations[h.stations.length - 1].z - h.stations[0].z;
+    I.append(el("h2", {}, h.name), el("p", { class: "hint" }, `${fmt(len)} m long, ${h.stations.length - 1} segments, ${[...new Set(h.stations.map(s => s.p.length))].join("/")} points a profile${h.mirror ? ", a mirrored pair" : ""}. Drag the arrows to move the body.`));
+  } else {
+    I.append(el("h2", {}, "Selection"), el("p", { class: "hint" }, mode === "pieces" ? "Click a piece to pick it." : mode === "interior" ? "Click a room to pick it." : "Click a hull body to pick it."));
+  }
+}
+
+function checks() {
+  const ul = $("issues"); ul.replaceChildren();
+  const errs = S.issues.filter(i => i.level === "error").length;
+  $("icount").textContent = S.issues.length ? `${errs} to fix, ${S.issues.length - errs} to look at` : "all clear";
+  if (!S.issues.length) ul.append(el("li", { class: "good" }, "Every room fits, every socket opens into a room, and every room can be reached."));
+  for (const i of S.issues) ul.append(el("li", { class: i.level, onclick: () => {
+    const [k, id] = i.what.split(":");
+    if (k === "room") { const r = S.rooms.find(r => r.id === +id); if (r) { deck = r.deck; if (mode !== "interior") setMode("interior"); select("room", +id); } }
+    else if (k === "piece") { if (mode !== "pieces") setMode("pieces"); select("piece", +id); }
+  } }, i.text));
+  const st = S.stats;
+  $("stats").replaceChildren(...[["length", `${fmt(st.length)} m`], ["beam", `${fmt(st.beam)} m`], ["height", `${fmt(st.height)} m`], ["floor", `${fmt(st.floor)} m2`],
+    ["cargo hold", `${fmt(st.hold)} m3`], ["bunks", `${st.bunks}`], ["rooms", `${st.rooms}`], ["pieces", `${st.pieces}`]].map(([k, v]) => el("div", { class: "stat" }, el("b", {}, v), el("span", {}, k))));
+}
+
+// ---------- the bar
+for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).addEventListener("click", () => setMode(k));
+$("undo").addEventListener("click", () => { take(api.Undo()); panels(); });
+$("redo").addEventListener("click", () => { take(api.Redo()); panels(); });
+$("start").addEventListener("change", e => { if (!e.target.value) return; cmd({ op: "start", name: e.target.value }); e.target.value = ""; select(null, 0); frame(); });
+$("file").addEventListener("click", () => { $("dtext").value = api.Save(); $("dmsg").textContent = ""; $("dlg").showModal(); });
+$("dclose").addEventListener("click", () => $("dlg").close());
+$("dcopy").addEventListener("click", () => {
+  navigator.clipboard.writeText($("dtext").value).then(() => $("dmsg").textContent = "Copied.", () => { $("dtext").select(); $("dmsg").textContent = "Selected: press Ctrl+C to copy."; });
+});
+$("dload").addEventListener("click", () => {
+  const a = cmd({ op: "load", json: $("dtext").value });
+  $("dmsg").textContent = a.error ? "Not loaded: " + a.error : "Loaded.";
+  if (!a.error) { select(null, 0); frame(); }
+});
+$("v-frame").addEventListener("click", frame);
+const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull"); toggle("v-parts", "parts");
+window.addEventListener("keydown", e => {
+  if (e.target.closest?.("input, textarea, select")) return;
+  const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (ctrl && k === "z" && !e.shiftKey) { e.preventDefault(); $("undo").click(); }
+  else if (ctrl && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); $("redo").click(); }
+  else if (ctrl && (k === "c" || k === "x")) {
+    if (!sel.kind) return;
+    e.preventDefault(); clip = { kind: sel.kind, id: sel.id };
+    if (k === "x") { if (sel.kind === "piece") cmd({ op: "delPiece", id: sel.id }); else if (sel.kind === "room") cmd({ op: "delRoom", id: sel.id }); else if (sel.kind === "hull") cmd({ op: "delHull", hull: sel.id }); clip.cut = true; select(null, 0); }
+    else toast("Copied. Ctrl+V pastes a copy beside it.", true);
+  } else if (ctrl && k === "v") {
+    if (!clip) return; e.preventDefault();
+    if (clip.cut) { $("undo").click(); clip.cut = false; toast("Pasted back.", true); return; } // (a cut thing keeps its place)
+    const a = clip.kind === "piece" ? cmd({ op: "pastePiece", id: clip.id, dz: 2 }) : clip.kind === "room" ? cmd({ op: "pasteRoom", id: clip.id }) : cmd({ op: "copyHull", hull: clip.id });
+    if (!a.error) { if (clip.kind === "hull") select("hull", S.hulls[S.hulls.length - 1].id); else { select(clip.kind, a.id); clip = { kind: clip.kind, id: a.id }; } }
+  } else if (ctrl && k === "d" && sel.kind) { e.preventDefault(); clip = { kind: sel.kind, id: sel.id }; window.dispatchEvent(new KeyboardEvent("keydown", { key: "v", ctrlKey: true })); }
+  else if (e.key === "Delete" || e.key === "Backspace") {
+    if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "riser") { cmd({ op: "delRiser", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
+  } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
+});
+
+window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
+function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
+
+try {
+  await bootCs();
+  CAT = JSON.parse(api.Catalogue());
+  const st = $("start"); st.append(el("option", { value: "" }, "New from...")); for (const s of CAT.starts) st.append(el("option", { value: s }, s));
+  let saved = null; try { saved = localStorage.getItem("shipdesigner.design"); } catch (e) {}
+  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) take(api.Scene()); } else take(api.Scene());
+  $("boot").remove();
+  $("tip").textContent = tips[mode];
+  resize(); frame(); panels(); loop();
+} catch (e) {
+  $("boot").textContent = "The designer's C# could not start here: " + e;
+  console.error(e);
+}
+</script>
