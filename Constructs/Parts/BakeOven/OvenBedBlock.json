@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Oven Bed Block",
-  "description": "Weld it beside an Oven Core, or beside another Oven Bed Block: 2 x 2 m more heated bed. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles. Stack Mast Blocks on the bed's four corners for the hood.",
+  "description": "Weld it beside an Oven Core, or beside another Oven Bed Block: 2 x 2 m more heated bed, and the tunnel over it 2 m longer or wider. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
   "group": "Production",
   "section": "Ovens",
   "role": "frame",
@@ -114,6 +114,19 @@
         0.6,
         0.997
       ]
+    },
+    {
+      "min": [
+        -0.997,
+        0.603,
+        -0.997
+      ],
+      "max": [
+        0.997,
+        0.997,
+        0.997
+      ],
+      "hidden": true
     },
     {
       "min": [
@@ -1009,7 +1022,7 @@
       "name": "top",
       "at": [
         0.0,
-        0.6,
+        1.0,
         0.0
       ],
       "dir": "+y"

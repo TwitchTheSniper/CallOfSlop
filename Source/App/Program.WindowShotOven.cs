@@ -3,9 +3,9 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The window tool's verb for Bake Ovens (ConstructBakeOven.cs): <c>oven</c> prints every oven as this peer has it (its bed, masts,
-/// clear height, phase, why it waits and what is on its bed); <c>oven put NAME</c> (host) sets a new body of one part NAME (or the
-/// blueprint NAME) down in the middle of the first oven's clear bed, as a crane would leave it.
+/// The window tool's verb for Bake Ovens (ConstructBakeOven.cs): <c>oven</c> prints every oven as this peer has it (its tunnel,
+/// clear height, way out, phase, why it waits and what is on its bed); <c>oven put NAME</c> (host) sets a new body of one part NAME (or the
+/// blueprint NAME) down in the middle of the first oven's hearth, as a crane would leave it.
 /// </summary>
 public static unsafe partial class Program
 {
@@ -35,18 +35,8 @@ public static unsafe partial class Program
                 }
                 if (sub[0] == "put" && g.IsServer && n == 0)
                 {
-                    // The clear cells' middle: the mean of every free cell's middle, on the bed's top.
-                    var d = c.Parts[asm.Core].D;
-                    var sum = Vector3.Zero;
-                    var k = 0;
-                    for (var x = bed.X0; x < bed.X0 + bed.W; x++)
-                        for (var z = bed.Z0; z < bed.Z0 + bed.L; z++)
-                            if (bed.Free(c, asm, x, z))
-                            {
-                                sum += bed.CellMid(d, x, z);
-                                k++;
-                            }
-                    var local = (k > 0 ? sum / k : Vector3.Zero) with { Y = bed.Top + 0.02f };
+                    // The hearth's middle, on the rollers.
+                    var local = bed.Mid(bed.Along * 0.5f) + new Vector3(0, 0.02f, 0);
                     var at = Vector3.Transform(local, ConstructBakeOven.CoreFrame(c, asm.Core));
                     Construct? made = null;
                     var name = sub.Length > 1 ? sub[1] : "";
@@ -60,7 +50,7 @@ public static unsafe partial class Program
                     _wsWait = 3;
                     return true;
                 }
-                WsSay($"oven #{n++}: body {c.Id} part {asm.Core}: {MachineBlocks.Describe(c, asm)}, corner masts {bed.Columns}, clear {bed.Clear:0.0} m, phase {(OvenPhase)st.Blocked}, busy {st.Busy}, stall {(OvenStall)st.Refused}, progress {st.Progress}%; now: {why}{(group != 0 ? $" (body {group}, {parts} parts)" : "")}");
+                WsSay($"oven #{n++}: body {c.Id} part {asm.Core}: {MachineBlocks.Describe(c, asm)}, tunnel {bed.Across:0} x {bed.Along:0} m, clear {bed.Clear:0.0} m, way out {(ConstructRollOut.OutRunOf(c, asm.Core) is var k and >= 0 ? $"run {k}" : "none")}, phase {(OvenPhase)st.Blocked}, busy {st.Busy}, stall {(OvenStall)st.Refused}, progress {st.Progress}%; now: {why}{(group != 0 ? $" (body {group}, {parts} parts)" : "")}");
             }
         if (n == 0)
             WsSay("oven: no Bake Oven");

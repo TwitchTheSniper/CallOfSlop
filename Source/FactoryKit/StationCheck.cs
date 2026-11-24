@@ -497,10 +497,12 @@ public static class StationCheck
         var loose = Environment.GetCommandLineArgs().Contains("--kit-loose");
         var carry = Environment.GetCommandLineArgs().Contains("--kit-carry");
         var kit = BakeKits.KitOf(d) ?? [];
+        var cmd = Environment.GetCommandLineArgs();
+        var after = Array.IndexOf(cmd, "--after") is var ai and >= 0 && ai + 1 < cmd.Length && int.TryParse(cmd[ai + 1], out var an) ? an : 0; // (--after N: run on N s once it is baked: the part rolling out)
         ushort lastLoose = 0;
         var nextLoose = 0;
         using (place.In())
-            for (var k = 0; k < seconds * World.TickRate && made < 0; k++)
+            for (var k = 0; k < seconds * World.TickRate && (made < 0 || k < made + after * World.TickRate); k++)
             {
                 MoverPhysics.Clock++;
                 w.Step(q, World.TickDt);
@@ -554,7 +556,7 @@ public static class StationCheck
                                 Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: the kit (body {kb.Id}) set on the oven's bed by hand");
                             }
                         }
-                if (c.Parts[oven].Orders is not { Count: > 0 })
+                if (made < 0 && c.Parts[oven].Orders is not { Count: > 0 })
                     made = k;
             }
         Console.WriteLine(made >= 0 ? $"  the {d.Name} baked after {made / (float)World.TickRate:0.0} s" : $"  after {seconds} s the order is still open: {c.Parts[oven].Orders?.Note}");

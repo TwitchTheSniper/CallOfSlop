@@ -9,7 +9,7 @@ public sealed partial class ZeroDayWorks
     {
         // Dressing (doc "Dressing: steel-mill details"): the rooms' furniture, a High-Bay Pendant under each truss half, and on the shed's columns
         // Hall Floodlights (on every second column, about 11 m up, under the crane rails, facing the lines; staggered so each bay is lit
-        // from both sides), Deck Signs at head height and a Fire Point every 32 m; the Lagged Main along the west wall, the ovens' heat shields, gauge clusters and bottle cages, the Foundry's ladle stand and slag pots, and floor markings
+        // from both sides), Deck Signs at head height and a Fire Point every 32 m; the Lagged Main along the west wall, the ovens' bottle cages, the Foundry's ladle stand and slag pots, and floor markings
         // down bays 1 and 3. Not laid yet: pipe banks, cable trays and the yard's lights.
         //
         // Furniture stands against a wall by its "wall" socket (buildings.md "Laying out a building"), on the wall's inside face: a
@@ -111,17 +111,7 @@ public sealed partial class ZeroDayWorks
                 if (DressAlong(masts[3], "+x", "Lagged Main 6 m", Power, Vector3.UnitZ) is { } main)
                     Dress(main, SocketAt(main, "-x").Z < SocketAt(main, "+x").Z ? "-x" : "+x", "Lagged Main 2 m", Power, "-x");
             // (No Amber Beacons on the cranes' Cores: a beacon on a Core's top stands up into its own bridge's way, and the crane stops.)
-            // The ovens: a Heat Shield and a Gauge Cluster on each bed corner's foot mast (the faces a shield fits: along the bed's
-            // sides, clear of its neighbours), and a Gas Bottle Cage on the floor beside each oven's Core.
-            foreach (var m in _ovenMasts)
-            {
-                var shield = false;
-                foreach (var f in new[] { "+z", "-z", "+x", "-x" })
-                    if (!shield)
-                        shield = Dress(m, f, "Heat Shield", Steel);
-                    else if (Dress(m, f, "Gauge Cluster", Furniture))
-                        break;
-            }
+            // The ovens: a Gas Bottle Cage on the floor beside each oven's Core.
             foreach (var oven in _ovens)
             {
                 var at = SocketAt(oven, oven.Def.Sockets[0].Name);

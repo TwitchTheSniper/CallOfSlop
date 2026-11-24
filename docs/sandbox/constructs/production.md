@@ -2062,17 +2062,31 @@ A modular loader arm built from pieces (Sean's design page "Design modular loade
 
 ## Bake Oven and baked parts (2026-11-21)
 
-The Bake Oven (`ConstructBakeOven.cs`, design page drawing 19) is an Oven Core, the Oven Bed Blocks welded beside it and a Mast Block
-column on each corner of the bed. A welded group set on the bed bakes into one part, or a baked part un-bakes back into its subparts
-(the Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`.
+The Bake Oven (`ConstructBakeOven.cs`, design page drawing 19) is a roller hearth tunnel (Sean, 2026-11-24: the Bake Oven Lab's
+tunnel with swing doors): a Recuperator Core (the Oven Core's part, still named "Bake Oven") and the Oven Bed Blocks welded beside it.
+Masts are gone. A welded group rolled or set on the hearth bakes into one part, or a baked part un-bakes back into its subparts (the
+Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`; the looks are `BakeOvenRender.cs`.
 
-- **The cycle.** With power, the group on the clear cells, settled and under the hood, the hood drops, the bed heats (2 s a subpart times
-  12 over the bed's blocks), it cools and lifts. The bake or un-bake happens at the end of the heat. The screen then reads "Done: lift it
-  off" until the new body leaves the bed (or the mode is turned). Anyone under the hood is crushed or burned.
+- **The tunnel.** It runs along the bed's edge the Core stands beside; its in end is the end nearer the Core. `ConstructBakeOven.Bed`
+  gives its frame (`ToCore`: x across, z along from the in end, y up from the foot; a turn about y, never a mirror): 0.4 m walls on the
+  bed's outer cells, a swing door zone 0.45 m deep at each end, the hearth's roll line at 1.0 m (`rollTop`, an Out Table's work height:
+  the Bed Block is solid to it, so a kit rests on the rollers) and a clear height from the Core's Tunnel height setting (1.5 to 12 m,
+  default 3). A group must lie wholly in the clear box (`Overhang`) and under the roof (`TooTall`). Looks: hearth rollers, ribbon windows
+  on both walls, radiant tubes, burner boxes and flues, a fill glow in the chamber while it heats (no lamps), two swing leaves at each
+  end that open outward, and the Core's drums, blower and a duct to the tunnel wall.
+- **The cycle.** With power and the group settled in the tunnel, the doors swing shut (3 s, `doorSeconds`), it heats (2 s a subpart
+  times 12 over the bed's blocks, at least 0.5 s a subpart), cools 3 s and the doors swing open. The bake or un-bake happens at the end
+  of the heat. A person in a door's swing is hit, one in the tunnel while it heats or cools is burned. Phase and stall bytes are the old
+  ones (Drop is doors shutting, Lift doors opening), so saves and the wire are unchanged.
+- **Roll-out.** A Roller Tile run butted on the tunnel's out end (its line over the bed past the tunnel's middle: `OutRunOf`) is the
+  oven's way out: when the doors are open the baked body is lifted onto the run's line if it lies lower, rolls along the run and is let
+  go at its end, or short of the first part of the site in its way (a pad's masts; a pad whose deck is under it is rolled over), once per
+  body (`ConstructWorld.OvenRolled`). Lifters leave a body in the tunnel alone while the oven has a way out (`ConstructBakeOven.Keeps`);
+  with none, a crane or an arm lifts it off as before. The screen reads "Done: roll it out".
 - **What bakes.** Plain structure only: frames, panels and foundations, part files and run-time parts alike (formed skins, pressed slabs,
   extrusions, hull sections, other baked parts), on the body or on freeform welds at a grid turn. Module Socket plates are never baked:
   they stay real parts beside the baked one. A part that works, moves or holds, a joint, a weld at an angle, or more than 256 boxes in all
-  is refused before the hood drops ("Can't bake that"; the oven verb and the log say which part). Un-bake takes a body of one baked part
+  is refused before the doors shut ("Can't bake that"; the oven verb and the log say which part). Un-bake takes a body of one baked part
   and its plates ("Not a baked part" otherwise).
 - **The part.** `Baked (#hash)`: every subpart's boxes turned and moved to its place, with its paint and finish drawn in (a shaped box
   keeps its subpart's turn in `CPartBox.Turn`), so armour stays where the slabs were; the subparts' sockets less the pairs that met inside
@@ -2102,7 +2116,7 @@ so it can push pieces it's finished constructing out into the conveying system."
   next build once the bay is clear, as before. Sub-jobs (their main station takes them) and Dress jobs never roll; a station tries once
   a build (`StationJob.RolledBody`), so a body that can't roll stays for a crane or its driver.
 - **An oven's way in.** A run whose line, run on 0.3 m past its last tile, meets a Bake Oven's bed is taken by that oven
-  (`ConstructRollOut.OvenOf`). A body rolling along it waits at the run's end until the bed is empty with its hood up and no other kit is
+  (`ConstructRollOut.OvenOf`). A body rolling along it waits at the run's end until the bed is empty with its doors open and no other kit is
   bound there, then goes on onto the bed's middle as a crane sets a kit (`ConstructBakeOven.Landing`, a quarter turn if that is what
   fits the clear cells), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
   that oven rolls (the oven's `Kits` leaves it to the station rather than calling a lifter), and the oven counts it as on its way
@@ -2119,7 +2133,10 @@ so it can push pieces it's finished constructing out into the conveying system."
   its oven's bed, beside the oven's Core): the kit rolled out of the bay (7.4 s), onto the bed and baked at 40.5 s, no crane. The works
   doesn't lay that tile: line C's oven Core stands in that row, so the kit passes through it (a layout matter for the works' threads).
 - **Not yet.** A body going on through a Turntable Tile to another run; the rollers turning under a rolling body (they turn for riders
-  only); a lifter putting a body on a run; the oven rolling its baked part out.
+  only); a lifter putting a body on a run. The oven's roll-out is in [Bake Oven and baked parts](#bake-oven-and-baked-parts-2026-11-21).
+- **The works (2026-11-24).** Each of the Zero Day works' four ovens (lines A to D) has an in run from its station's bay and an out run
+  from the tunnel's far end. Tried headless: lines A and B (`--oven-at 7,-147` / `21,-147`, a Lower Aft Wall) and C (`39,-160`, the
+  Upper Deck Aft) roll in, bake and roll out onto their store pads (`--after 40` keeps the run going after the part is made).
 
 ### Bake kits (2026-11-23)
 
