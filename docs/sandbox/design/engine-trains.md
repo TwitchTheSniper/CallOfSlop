@@ -101,7 +101,7 @@ Not yet: the Fuel Filter's Clogged out; a client doesn't see a ring boosting (no
 - `--engine-check` prints what swings each bell and how far, and the collars' armour.
 - Protocol 463 (new part files).
 
-Not yet: the bell isn't drawn swinging (no gimballed nozzle is: the angle is host-only).
+Drawn swinging (coordinator's ask, for Sean's full-animations rule): every gimballed or train-fed bell is drawn turned whole about its mount by its gimbal's two angles, its flame with it (`ConstructRender.GimbalTurn`; such a bell is walked, not merged: `StaticBoxes`). A client is told each swung bell's angles with its level (`CBodyKind.Thrust`, 0.2 degree a step, protocol 464). `--engine-check` prints each swung bell's angles, how far the drawn bell is off straight and off the push, and a client's.
 
 ## Next
 

@@ -19,6 +19,7 @@ public struct CThruster
     public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
+    public float ShownX, ShownY; // a client: its gimbal's angles as the host last said (radians), for the bell's swing
     public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
     public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
     public float LightDelay; // s it takes to light from a standing start: a bell that needs an injector, with no Igniter in its train (0: at once)
@@ -759,11 +760,18 @@ public static class ConstructThrust
             return false;
         var key = 17L + n;
         var lit = false;
+        var swung = 0;
         for (var k = 0; k < n; k++)
         {
-            var v = Level(c.Thrusters[k]);
+            ref var t = ref c.Thrusters[k];
+            var v = Level(t);
             key = key * 31 + v;
             lit |= v > 0;
+            if (Angle(t.AngleX) != 0 || Angle(t.AngleY) != 0)
+            {
+                key = (key * 31 + Angle(t.AngleX)) * 31 + Angle(t.AngleY);
+                swung++;
+            }
         }
         if (key == c.ThrustSentKey && (lit || c.ThrustDark >= 3))
             return false; // (all out goes three times: it goes unreliably, and a lost one would leave a flame burning)
@@ -772,8 +780,16 @@ public static class ConstructThrust
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Thrust).U16(c.Id).U16((ushort)n);
         for (var k = 0; k < n; k++)
             w.U8(Level(c.Thrusters[k]));
+        w.U16((ushort)swung); // (protocol 464: then each swung bell's index and its gimbal's two angles, 0.2 degree a step; the rest stand straight)
+        for (var k = 0; k < n; k++)
+            if (Angle(c.Thrusters[k].AngleX) != 0 || Angle(c.Thrusters[k].AngleY) != 0)
+                w.U16((ushort)k).U8((byte)Angle(c.Thrusters[k].AngleX)).U8((byte)Angle(c.Thrusters[k].AngleY));
         return true;
     }
+
+    private const float AngleStep = 0.2f * MathF.PI / 180f;
+
+    private static sbyte Angle(float a) => (sbyte)Math.Clamp(MathF.Round(a / AngleStep), -127, 127);
 
     private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level * t.Cap, t.Ab) * 255), 0, 255); // (a drive short of its works burns low)
 
@@ -787,6 +803,18 @@ public static class ConstructThrust
             var v = r.U8();
             if (fits)
                 c!.Thrusters[k].Shown = v / 255f;
+        }
+        if (fits)
+            for (var k = 0; k < n; k++)
+                c!.Thrusters[k].ShownX = c.Thrusters[k].ShownY = 0;
+        var swung = r.U16();
+        for (var m = 0; m < swung; m++)
+        {
+            var k = r.U16();
+            var x = (sbyte)r.U8();
+            var y = (sbyte)r.U8();
+            if (fits && k < n)
+                (c!.Thrusters[k].ShownX, c.Thrusters[k].ShownY) = (x * AngleStep, y * AngleStep);
         }
         if (fits)
             c!.ThrustHeard = true;
