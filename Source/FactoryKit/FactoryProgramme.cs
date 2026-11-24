@@ -13,6 +13,7 @@ public sealed class FactoryObject
     public int Bank = -1; // (machines of one recipe stand together facing one feed)
     public float Size; // (a store's footprint: metres square)
     public float Height = 2.5f; // (a walled store's height)
+    public int Square; // (a squares Core's, a Smelter's: the n x n square of blocks the builder welds beside it, 0 none; FactoryProgramme.SquareFor)
     public override string ToString() => $"{Id,2} {Zone,-8} {Role,-8} {Part}{(Material.Length > 0 ? $" ({Material})" : "")} {FactoryData.N(Rate * 3600)}/h";
 }
 
@@ -88,7 +89,7 @@ public sealed class FactoryProgramme
         foreach (var o in p.Objects.Where(o => o.Role == "loading"))
             (o.Part, o.Size) = (LoadingAuger, 1f);
         // Power: every machine's draw plus the margin, in gensets of the style's plant.
-        var draw = p.Objects.Sum(o => (ConstructParts.Find(o.Part)?.PowerDraw ?? 0)) / 1000.0;
+        var draw = p.Objects.Sum(o => (ConstructParts.Find(o.Part)?.PowerDraw ?? 0) * (1 + o.Square * o.Square)) / 1000.0; // (a squares Core: a share for it and each block)
         p.PowerKw = draw * (1 + f.PowerMargin);
         var plant = ConstructParts.Find(p.Genset) ?? throw new FactoryKitException($"no {p.Genset}");
         p.Gensets = Math.Max(1, (int)Math.Ceiling(p.PowerKw / Math.Max(1, plant.PlantRate)));
@@ -161,14 +162,19 @@ public sealed class FactoryProgramme
         {
             var (output, recipe, part, rate) = banks[b];
             var per = recipe.UnitsOut / Math.Max(0.1, recipe.Seconds) * (part.RefineWork / (double)ConstructRefining.BaseWork);
-            var n = Math.Max(1, (int)Math.Ceiling(rate / per * (1 + Spare) - 1e-9));
+            // A squares Core (a Smelter) grows by its blocks, not by tier: as few Cores as a 5 x 5 square each allows, each with the smallest
+            // square that covers its share (production.md "Refiners as block machines").
+            var n = part.BlockSquares ? Math.Max(1, (int)Math.Ceiling(rate / (per * SquareRate(MachineBlocks.MaxSquare)) * (1 + Spare) - 1e-9))
+                : Math.Max(1, (int)Math.Ceiling(rate / per * (1 + Spare) - 1e-9));
             var list = made[output] = new List<FactoryObject>();
             for (var k = 0; k < n; k++)
             {
                 var use = part;
-                if (k > 0 && d.Chance(style.OlderMachine) && MachineOf(recipe.Machine, part.Tier - 1) is { } older && older.Tier >= recipe.MinTier)
+                if (k > 0 && !part.BlockSquares && d.Chance(style.OlderMachine) && MachineOf(recipe.Machine, part.Tier - 1) is { } older && older.Tier >= recipe.MinTier)
                     use = older; // (an older machine kept running in the bank: the style's habit)
                 var o = Add("process", use.Name, "process", output, rate / n, b);
+                if (part.BlockSquares)
+                    o.Square = SquareFor(rate / n * (1 + Spare), per);
                 o.Recipe = recipe.Mix.Length > 0 ? output : "";
                 list.Add(o);
             }
@@ -192,6 +198,18 @@ public sealed class FactoryProgramme
             var load = Add("loading", "Storage Volume", "output", m, perHour / 3600.0);
             Edges.Add(new FactoryEdge(bin.Id, load.Id, m, "chute", bin.Rate, true));
         }
+    }
+
+    /// <summary>A squares Core's rate with an n x n square beside it, over its own (n 0: the Core alone, x1).</summary>
+    public static double SquareRate(int n) => n == 0 ? 1 : ConstructRefining.R4Of([n]) / 4.0;
+
+    /// <summary>The smallest square (0 to 5) whose rate covers <paramref name="rate"/> units a second on a Core making <paramref name="per"/> alone.</summary>
+    public static int SquareFor(double rate, double per)
+    {
+        var n = 0;
+        while (n < MachineBlocks.MaxSquare && per * SquareRate(n) < rate - 1e-9)
+            n++;
+        return n;
     }
 
     /// <summary>The machine part of a refining machine at a tier, else the highest below it (null: none at or under it).</summary>

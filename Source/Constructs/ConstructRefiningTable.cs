@@ -41,8 +41,8 @@ public sealed class RefiningTable
 
     private static readonly (string Machine, string In, int UnitsIn, string Out, int UnitsOut, float Seconds, int MinTier)[] BuiltIn =
     [
-        ("smelter", "iron ore", 2, "metal", 1, 0.5f, 1), ("smelter", "copper ore", 2, "copper", 1, 0.6f, 2), ("smelter", "gold ore", 4, "gold", 1, 1f, 3),
-        ("smelter", "sand", 2, "glass", 1, 0.5f, 1), ("sawmill", "wood", 1, "planks", 2, 0.5f, 1),
+        ("smelter", "iron ore", 2, "metal", 1, 0.5f, 1), ("smelter", "sand", 2, "glass", 1, 0.5f, 1), ("smelter", "copper ore", 2, "copper", 1, 0.6f, 1),
+        ("smelter", "gold ore", 4, "gold", 1, 1f, 1), ("sawmill", "wood", 1, "planks", 2, 0.5f, 1), // (the Smelter has no tiers: block-machine refiners)
     ];
 
     public RefineRecipe[] Recipes = [];

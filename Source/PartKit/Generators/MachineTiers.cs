@@ -111,7 +111,6 @@ public sealed class MachineTiers : IPartGenerator
     /// machine's width (x and z run -0.5 to 0.5); sockets stay on the grid because every width is a multiple of 0.5 m.</summary>
     private static readonly Dictionary<string, double[]> BigWidth = new()
     {
-        ["Refining/Smelter"] = [0, 3.5, 4.5, 6.0, 8.0, 10.0],
         ["Refining/Sawmill"] = [0, 3.0, 4.0, 5.0, 7.0, 9.0],
         ["Refining/Foundry"] = [0, 4.0, 5.0, 6.5, 8.0, 10.0],
         ["Assembling/Assembler"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
@@ -163,16 +162,6 @@ public sealed class MachineTiers : IPartGenerator
             Description = "Saws wood into planks, planks into cloth. Needs power.",
             Refine = ("sawmill", 200, B([-0.435, 0.03, -0.435], [0.435, 0.44, -0.165])),
         };
-        var smelter = new Line
-        {
-            File = "Refining/Smelter", Name = "Smelter", Section = "Smelters", Mass = 420, Health = 800, Armour = 10, Power = 3000, Attach = 9.0,
-            Sockets = BigSockets(0.25, -0.25),
-            Ports = ChutePorts(L(0.5, 0.4, -0.25), "+x", L(0.36, 0.12, 0.38), "+x"),
-            Bulk = B([-0.335, 0.025, 0.305], [0.335, 0.22, 0.455]), Capacity = 400,
-            Description = "Smelts ore to metal, copper and gold, sand to glass. Needs power.",
-            Refine = ("smelter", 200, B([-0.295, 0.805, -0.395], [0.055, 0.98, -0.155])),
-            Gated = new() { [1] = "Copper ore needs tier 2 and gold ore tier 3.", [2] = "Gold ore needs tier 3." },
-        };
         var foundry = new Line
         {
             File = "Refining/Foundry", Name = "Foundry", Section = "Foundries", Mass = 480, Health = 900, Armour = 10, Power = 3500, Attach = 10.0,
@@ -185,7 +174,7 @@ public sealed class MachineTiers : IPartGenerator
         };
         return
         [
-            drill, saw, sawmill, smelter, foundry, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts)
+            drill, saw, sawmill, foundry, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts; the Smelter to SmelterParts)
         ];
     }
 

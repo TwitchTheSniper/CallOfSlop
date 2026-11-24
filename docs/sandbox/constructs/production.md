@@ -9,8 +9,8 @@ out. Chutes move it between them. [Assembling](#assembling) uses the results. Th
 materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
 from a **Foundry**, which mixes two first tier ones.
 
-- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; five tiers each, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). All are buildings. The **Smelter** (3.5 m, 5,145 kg, 3 kW): a brick furnace with
-  a chimney, a glowing mouth, a hopper on top (its input) and, across an aisle, a tray at the front (its output). The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
+- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; the Sawmill and Foundry come in five tiers, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). The **Smelter** is a block machine with no tiers (2026-11-24, [Refiners as block machines](#refiners-as-block-machines)):
+  a 2 m Core (3 t, 3 kW) with a hopper on top (its input), a screen and a small glowing hearth on its front and its output bin inside, made bigger by Hearth Blocks welded on its +x side. The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
   between a trough at the back (input) and a rack at the front (output). The **Foundry** (4 m, 7,680 kg, 3.5 kW): a double furnace with a hopper across its top and twin stacks, with a mixed input. Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
@@ -29,8 +29,10 @@ from a **Foundry**, which mixes two first tier ones.
 | Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
 | Sawmill | 3 planks | 1 cloth | 1.0 | 1 cloth/s |
 
-  Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
-  chute moves 10 a second, more with a higher tier machine at either end.
+  Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several bare Smelter Cores (4 ore a second each), or one
+  with a 1 x 1 and a few more. A chute moves 10 a second, more with a higher tier machine or a bigger Smelter at either end. The rates are a
+  bare Smelter Core's: its squares multiply them ([the numbers](#the-numbers)). No Smelter recipe asks for a tier any more: a bare Core smelts
+  copper, gold and levite ore too.
 - **The Foundry's recipes** (machine `foundry`). A recipe lists `inputs`, 2 to 4 of `{"material", "units"}`, in place of `input` and `unitsIn`, and all of a machine's recipes
   are one kind or the other: a mixed machine's `RefineMix` makes its input `CStore`'s mixed one. Same material twice, a repeat of the same set, or the two kinds on one machine are refused.
 
@@ -70,7 +72,7 @@ from a **Foundry**, which mixes two first tier ones.
   both), by the usual `LoadChanged` path. `LoadKey` also follows where a load sits, so a batch that keeps its weight still moves
   the centre of mass.
 - **Spilling.** A broken machine spills up to six Material Bundles for each bin, of that bin's material.
-- **The Smelting Station** blueprint: a Smelter on a Concrete Foundation 4x4 m, and a second slab beside it with a Battery and two Materials Bins, chutes from the first bin into the
+- **The Smelting Station** blueprint (and the survival start's **Starter Smelter**, the same with a Small Genset): a bare Smelter Core on a Concrete Foundation 4x4 m, and a second slab beside it with a Battery and two Materials Bins, chutes from the first bin into the
   Smelter and from the Smelter to the second. Tip ore or sand into the first bin (or chute it in), take the product from the second.
   A battery of 300 kJ runs a Smelter for 100 s of work: 200 metal. The **Foundry Works** blueprint is the same with a Foundry and two bins feeding it: tip metal into one and stone into the other.
 - **Chute ports.** The machines have named ports on their outside, `Chute in` and `Chute out`, both on the +x side, so a chute needn't reach a building's middle. A port takes any number of chutes.
@@ -87,6 +89,94 @@ Choices made (the developer may change them): the numbers above; the input can't
 machine); a machine takes one input material at a time, so a stray unit short of a batch waits for its fellows; a refusal shows on the
 machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
 its own.
+
+## Refiners as block machines
+
+The Smelter (2026-11-24; the Foundry, the Sawmill and a Scrap Breaker are to follow it) is a block machine with no tiers, as the Assembler
+and the Press are: a **Smelter Core** and **Hearth Blocks** welded on its +x side, the blocks cut into square furnaces that all work at
+once, and **Casting Beds** past their far edge. Bigger squares pay more than the same blocks in small ones, so a player plans the furnace,
+and every peer works the machine out from its parts alone (`MachineBlocks.Squares`, nothing on the wire). Parts by the part kit's
+`smelter_parts` (`Source/PartKit/Generators/SmelterParts.cs`, `--gen-parts smelter_parts`): fix it, not its files.
+
+- **Smelter Core** (`Smelter.json`, the old name and file, tier 1): 2 x 2 x 2 m, 3 t, 6,000 hp, 3 kW. Its hopper on top is **Chute in**,
+  **Chute out** is on its free -x side, ports drawn by `MachineLook.Port`; a screen and a small glowing hearth on its front (-z); nothing
+  moves. Its `machineBlock` says `"role": "core"`, `"squares": true`, `maxCells` 50, `maxSide` 10, and its `storage.refine` gives the bins
+  at x1 (`"bin"` 200, `"outBin"` 400) and the most they grow to (`capacity` 30,000 in, the bulk's 60,000 out).
+- **Hearth Block** (`HearthBlock.json`): 2 x 2 x 3 m, 2.6 t, no power of its own, sockets on all four sides and the bottom. Alone (a 1 x 1)
+  it is a small furnace: a stub stack, a glowing door and a taphole. In a square of 2 x 2 or more (`MachineBlocks.Merged`, bit 0x80 of
+  `Construct.BlockJoined`) its `"alone"` boxes hide and its `"merged"` boxes draw: a charge door each, and the faces between blocks of one
+  square lose their dressing (`"seam"`), so a square reads as one furnace.
+- **Casting Bed** (`CastingBed.json`): an end piece of the smelter family, 2 x 2 m and 0.5 m tall, sand in steel kerbs with a sow and pig
+  moulds. Its pigs glow on each tap and cool to grey. One just past a square's far (+x) edge is that row's bed (`CMachineSquare.Ends`).
+- **Recipes** (Assembler, `Assembling.cs`'s Tail): the Core keeps its row; Hearth Block 320 concrete and 140 steel, Casting Bed 90
+  concrete and 80 steel.
+
+### The rule
+
+Every Hearth Block on the Core's own layer at cell x 1 or more (the Core is cell 0, 0) works. The cells are cut into full n x n squares,
+n 1 to 5 (`MachineBlocks.MaxSquare`), by the **best** split, not a greedy one: of every way to cover the blocks with squares, the one with
+the highest rate (`BestSplit`; past its memo of 65,536 states, largest square first, with a `[blocks]` line in the log). The scan runs its
+outer loop along the patch's longer side (x on a tie), so the search's frontier is the short side: about 1,100 states for 50 cells, where a
+3 x 16 strip scanned across took 70,000; the order comes from the bounds, so every peer splits alike. The list is largest first, then nearest
+the Core. Each square
+of side n adds n x n (4 + n) to four times the rate, so a 3 x 3 (x16.75) beats nine 1 x 1s (x12.25), and a 2 x 2 beside it is its own
+furnace. **Several squares** are fine and all work at once; they need not touch the Core, only its blocks.
+
+- **Rate** r = R4 / 4, R4 = 4 + the sum over squares of whole cells x (4 + n): the Core's own hearth is 1. Work and the bins go x r (the
+  bins up to the file's capacities), power is one 3 kW share for the Core and each whole cell, and a chute's load is ceil(10 r) a second,
+  eight times that in creative so one chute keeps up (`ConstructRefining.RefineOf`, `Sized`, `ChuteLoadOf`; every reader of a refiner's
+  rate, bins, load or power goes through `RefineOf`).
+- **Do nothing** (the look line says how many and why): a block stacked on another, one off the Core's +x side, and blocks past 50 cells.
+  A **wrecked** block keeps its place in the split, so the squares don't change, and adds nothing until it is mended. A block taken away
+  splits the rest again; an input or output over its new size takes no more until it is below it.
+- **Look line and screen**: "Smelter: in 120/1400 iron ore, out 30/2800 metal - REFINING iron ore to metal - furnaces 2x2: speed x7 - 4 more
+  beside the 2x2 fill a 3x3" (the fewest blocks that fill the next size round the largest square, counting cells other squares hold);
+  its screen says "Speed x7: 2x2". A bare Core says "speed x1: weld its blocks on its +x side", and the size text names wrecked
+  blocks, blocks that do nothing (off its +x side, stacked, or past its 50: only blocks that can work count to the 50) (`ConstructRefining.SizeText`,
+  `MachineBlocks.SquaresText`). `--machine-blocks` prints each Core's squares as `[NxN at x,z, whole, ends bits]`.
+
+### The numbers
+
+| Furnaces | Rate | Power | Input bin | Output bin | Chute a second (creative) | Blocks, mass |
+| --- | --- | --- | --- | --- | --- | --- |
+| bare Core | x1 | 3 kW | 200 | 400 | 10 (80) | 0, 3 t |
+| 1x1 | x2.25 | 6 kW | 450 | 900 | 23 (184) | 1, 5.6 t |
+| 2x2 | x7 | 15 kW | 1,400 | 2,800 | 70 (560) | 4, 13.4 t |
+| 3x3 | x16.75 | 30 kW | 3,350 | 6,700 | 168 (1,344) | 9, 26.4 t |
+| 3x3, 2x2, 1x1 | x24 | 45 kW | 4,800 | 9,600 | 240 (1,920) | 14, 39.4 t |
+| 4x4 | x33 | 51 kW | 6,600 | 13,200 | 330 (2,640) | 16, 44.6 t |
+| 5x5 | x57.25 | 78 kW | 11,450 | 22,900 | 573 (4,584) | 25, 68 t |
+| 2 x 5x5 (50 cells) | x113.5 | 153 kW | 22,700 | 45,400 | 1,135 (9,080) | 50, 133 t |
+
+A bare Core makes 2 metal a second, a 2 x 2 14, a 5 x 5 about 115. The old tiers (Workshop to Plasma, x2 to x16) sit between these.
+
+### Where the works go
+
+What joins the squares is drawn and burns, not built: `SmelterWorks` places it, `SmelterRender` draws it and `SmelterWorks.AddHazards`
+burns by it, every peer alike, all in the Core's frame. The front is -z (the Core's screen side).
+
+- **The runner.** One line 0.45 m in front of the frontmost square. Each square's **taphole** is in the column of its front row nearest its
+  middle whose cells down to that line are free (none free: it taps into a covered launder, not drawn), with a spur out to the line. The
+  runner ends at the Casting Bed nearest the front line (the furthest along x of those), with a short lip into its sow; with no bed it ends
+  past the last square's far edge. Each square taps every 4 + n s on its own clock: a glow runs down its spur and the line into the bed,
+  sparks fly, and the bed's pigs glow and cool to grey in 3 s.
+- **Stacks.** Each square of 2 or more has a row of collared stacks along its back row, one for each column, their tops 1 + n m over the
+  furnace top (a 1 x 1 is a lone block: its own stub stack), smoking while it works.
+- **The charging belt** leaves the Core's hopper spout up onto the tops along the Core's row, as far as the furthest square, its rollers
+  turning and ore riding it; a square off that row gets a cross belt from it on the cell joint by its middle (stacks stand on the column
+  middles). A belt over an empty cell stands on a post.
+- **The hot-blast main** runs along each square's front at 2.62 m over its free front columns, a tuyere down into each, and rises over the
+  roof at its -x end (the stoves' duct).
+- **Burns.** While a Smelter works (powered, busy, not held), the band in front of each square's charge doors, the runner's spurs, line and
+  lip and every Casting Bed are hot (`world.Hazards`, as the Assemblers' welding: 1 damage a tick, at most 60 boxes in all). A bare Core
+  burns no one: its hearth is behind a door. A HOT plate on the Hearth Block and the Casting Bed says so.
+- **Cost.** All of it is worked out from the squares each frame and tick, allocating nothing; drawn spans are culled past 150 m.
+
+**The wire.** Part ids moved (protocol 452); nothing else is new: the blocks' joins and the squares are each peer's own. Saves keep
+working: "Workshop Smelter" to "Plasma Smelter" load as the Smelter Core (`ConstructParts.Renamed`), and a saved recipe choice keeps its
+recipe (`ConstructRefining.SavedRecipe`). **Self-test**: "Machine tier looks", "Refining", "Refining network" (a Hearth Block welded on the
+host reaches the client's look line), "Gathering" (`SelfTestMachineTiers.cs`: a bare Core, a 1 x 1 and a 2 x 2 at x1, x2.25 and x7; a
+wrecked block), "Display screens", "Assembling".
 
 ## Grow beds
 
@@ -569,9 +659,11 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 ## Machine tiers
 
-Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
+(History: the Smelter column is gone since 2026-11-24: the Smelter is a block machine with no tiers, [Refiners as block machines](#refiners-as-block-machines), and "Workshop Smelter" to "Plasma Smelter" load as its Core. The Assembler went the same way on 2026-11-21.)
+
+Each of the machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
-(Drill Module, Saw Module, Sawmill, Smelter, Foundry); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+(Drill Module, Saw Module, Sawmill, Foundry); the others are named after their tier ("Industrial Drill Module", "Plasma Foundry").
 
 The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The drill's buffer and shaft](gathering-and-salvage.md#the-drills-buffer-and-shaft)), so the Bin column is the Saw Module's:
 
@@ -631,7 +723,7 @@ Fitting time grows from x1 to x2.
   `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
   (`ConstructParts.MaxPartReach`), for the tier 5 stacks. A box may show its machine working (`"work"`: spin, stroke, glow, smoke; [Machine look](look.md#machine-look)); the tiers here do not use it yet.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
-  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
+  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3 (deposits; of the recipes only the Foundry's bronze, 2, and circuits, 3, ask: the Smelter's gates went with its tiers). A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
   below it takes nothing: a chute's load stays in the source, F passes over that material, and the look line says why
   ("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"; an empty one, "takes iron ore, sand (copper
@@ -688,7 +780,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
 **In survival ([Creative or Survival](overview-and-playing.md#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Its upgrade modules need no module to make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
 
-**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
+**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Foundry; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
 Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches an arm (x2 a Feed Buffer), and an Assembler on orders no more than its queued orders still need: materials for the head's part (`ConstructAssembling.OrderedBatches`: one Zero Day Keel takes 208 rubber, never 2,800), parts for every queued order that uses them (`PartRoom`, pooled); the tray is 4 slots of 12; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
 

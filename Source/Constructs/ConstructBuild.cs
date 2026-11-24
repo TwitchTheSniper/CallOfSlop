@@ -785,7 +785,7 @@ public static class ConstructBuild
                         bp.StepText.Add(texts);
                         bp.StepMedia.Add(media);
                         bp.StepConfig.Add(config is { } cfg
-                            ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
+                            ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]", ConstructRefining.SavedTier(part)) : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
                             : null);
                         k++;
                     }
