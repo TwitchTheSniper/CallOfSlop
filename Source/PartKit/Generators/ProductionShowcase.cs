@@ -121,7 +121,17 @@ public sealed class ProductionShowcase : IPartGenerator
             Onto(h30, "+x", "Casting Bed", "-x"); // (the 1 x 1's)
             Onto(h21, "+x", "Casting Bed", "-x"); // (the 2 x 2's, beside the 1 x 1)
             Sign(3.25f, Posts2, Refining, "SMELTER: Hearth Blocks in squares; bigger squares pay more");
-            var sawmill = On("Sawmill", 15.25f, Row1, Back, paint: Refining);
+            // The Sawmill too: its Core on the first row at x 15.25, its front 0.75 m behind the front aisle, its band mills west of it (its own +x):
+            // a 2 x 2 square and a 1 x 1 of Saw Blocks (to x 8.25), a Plank Stacker past each; its plank chain runs along the front aisle.
+            var sawmill = On("Sawmill", 15.25f, -3.75f, Back, paint: Refining);
+            var w10 = Saw(sawmill, "+x", "-x");
+            var w20 = Saw(w10, "+x", "-x");
+            Saw(w10, "+z", "-z");
+            var w21 = Saw(w20, "+z", "-z");
+            var w30 = Saw(w20, "+x", "-x");
+            Paint(Onto(w30, "+x", "Plank Stacker", "-x"), Refining); // (the 1 x 1's)
+            Paint(Onto(w21, "+x", "Plank Stacker", "-x"), Refining); // (the 2 x 2's, beside the 1 x 1)
+            Sign(5.75f, -6.25f, Refining, "SAWMILL: Saw Blocks in squares; bigger squares pay more");
             // The Foundry is one too: its Core on the second row at x 26.75 facing the back aisle, its crucibles west of it (its own +x): a
             // 2 x 2 square and a 1 x 1 of Crucible Blocks (to x 19.75), a Mould Line past each; its hood stays clear of the Press (x 28.35).
             var foundry = On("Foundry", 26.75f, -9.75f, Back, paint: Refining);
@@ -134,15 +144,15 @@ public sealed class ProductionShowcase : IPartGenerator
             Paint(Onto(c21, "+x", "Mould Line", "-x"), Refining); // (the 2 x 2's, beside the 1 x 1)
             Sign(17.25f, Posts2, Refining, "FOUNDRY: Crucible Blocks in squares; bigger squares pay more");
             Feed(StockOf("iron ore", 15.75f, -12.75f), smelter);
-            Feed(StockOf("wood", 12.25f, -3.75f), sawmill);
+            Feed(StockOf("wood", 17.25f, -5.75f), sawmill); // (east of the Core, chuted up into its log bunker)
             Feed(StockOf("metal", 23.25f, -7.75f), foundry);
             Feed(StockOf("stone", 24.75f, -7.75f), foundry);
             Output(smelter, 15.75f, -9.75f);
-            Output(sawmill, 12.75f, -6.25f);
+            Output(sawmill, 17.25f, -3.75f); // (by its Chute out, on its east side)
             Output(foundry, 26.75f, -7.75f);
             var refine = On("Line Console", 17.75f, Posts1, Front, paint: Control);
             Sign(16.25f, Posts1, Refining, "Press Start on the console: all three refiners run");
-            Run(refine, smelter, V(17.5f, 0, -2.5f), V(17.5f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (between the Sawmill and the Foundry to the back aisle)
+            Run(refine, smelter, V(18.4f, 0, -2.5f), V(18.4f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (east of the Sawmill's bins, between it and the Foundry, to the back aisle)
             Run(refine, sawmill);
             Run(refine, foundry, V(19.25f, 0, -2.5f), V(19.25f, 0, -8.4f), V(26.75f, 0, -8.4f)); // (through the old Foundry's place in the first row)
 
@@ -658,6 +668,13 @@ public sealed class ProductionShowcase : IPartGenerator
             var c = Onto(on, socket, "Crucible Block", by);
             Paint(c, Refining);
             return c;
+        }
+
+        private VPart Saw(VPart on, string socket, string by)
+        {
+            var w = Onto(on, socket, "Saw Block", by);
+            Paint(w, Refining);
+            return w;
         }
 
         private VPart Hearth(VPart on, string socket, string by)
