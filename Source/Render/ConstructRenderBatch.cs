@@ -813,7 +813,7 @@ public static partial class ConstructRender
             var m = box.Model(p.Rot, centre);
             if (p.D.IsOrdnance)
                 FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
-            var gone = (box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
+            var gone = box.BySeams && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
             if (gone)
                 m = Matrix4x4.CreateScale(0f) * Matrix4x4.CreateTranslation(centre); // (a block machine's seam box on a welded face: kept in the chunk at no size, so the counts stand: MachineBlocks.cs)
             (_bLo[k], _bHi[k]) = (centre - half, centre + half);

@@ -360,9 +360,21 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// what a bare column of masts (a shed's pillar, a crane's column) shows in place of its lattice.
     /// </summary>
     public bool Bare { get; init; } // (ghosts, the selection, stored items and the preview draw a part as a machine's cell: they skip these)
+    /// <summary>
+    /// "alone": true: drawn only while its part is NOT merged into a square of 2 x 2 or more (<see cref="MachineBlocks.Merged"/> in
+    /// <see cref="Construct.BlockJoined"/>): a Hearth Block's own stub stack and door, which a bigger furnace draws as one. "merged": true: the
+    /// other way round, drawn only while it is (ghosts, the selection and stored items skip these, as they skip "bare").
+    /// </summary>
+    public bool Alone { get; init; }
+    /// <summary>"merged": true: drawn only while its part is a cell of a merged square (see <see cref="Alone"/>).</summary>
+    public bool MergedOnly { get; init; }
 
     /// <summary>Is this box hidden on a block machine's cell whose welded faces are <paramref name="joined"/>?</summary>
-    public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Bare && (joined & MachineBlocks.InMachine) != 0 || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
+    public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Bare && (joined & MachineBlocks.InMachine) != 0
+        || Alone && (joined & MachineBlocks.Merged) != 0 || MergedOnly && (joined & MachineBlocks.Merged) == 0
+        || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
+    /// <summary>Is this box drawn by its cell's welds or merge (a key <see cref="SeamHidden"/> reads)?</summary>
+    public bool BySeams => Seam != 0 || InMachine || Bare || Alone || MergedOnly;
     /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
     public byte Shows { get; init; }
 
@@ -764,6 +776,7 @@ public sealed partial class ConstructPartDef
     public byte BlockTool; // ...an Assembler's tool block: the tool it gives its Core (an index of AssemblingTable.Machines: 1 thruster, 2 tailor; role "tool")
     public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
+    public bool BlockSquares; // ...a Core whose blocks split into squares, every one working ("squares": the refiners, MachineBlocks.Squares)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
     public byte BlockMaxSide = MachineBlocks.MaxSide; // ...a Core: its bed's longest side in cells ("maxSide", up to MachineBlocks.GridHalf: the Building Station's 60 m bay)
     public short BlockMaxCells = MachineBlocks.MaxCells; // ...a Core: the cells its machine takes in, masts included ("maxCells", up to MachineBlocks.MaxCellsAny)
@@ -1654,7 +1667,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "inMachine", "bare", "middle"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "inMachine", "bare", "alone", "merged", "middle"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1746,6 +1759,10 @@ public static partial class ConstructParts
                 made = detail ? made with { InMachine = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be \"inMachine\" (drawn only while its part is a block machine's cell)");
             if (Opt(b, "bare") is { ValueKind: JsonValueKind.True })
                 made = detail && !made.InMachine ? made with { Bare = true } : throw new ConstructPartException($"{file}: {where}: only a detail box that isn't \"inMachine\" can be \"bare\" (drawn only while its part is not a block machine's cell)");
+            foreach (var (key, merged) in new[] { ("alone", false), ("merged", true) })
+                if (Opt(b, key) is { ValueKind: JsonValueKind.True })
+                    made = detail && !made.Alone && !made.MergedOnly ? (merged ? made with { MergedOnly = true } : made with { Alone = true })
+                        : throw new ConstructPartException($"{file}: {where}: only a detail box can be \"alone\" or \"merged\", and not both (drawn by whether its block is merged into a bigger square)");
             if (Opt(b, "shows") is { } showsBox)
                 made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
                     : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
@@ -1787,7 +1804,7 @@ public static partial class ConstructParts
         d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
-        d.HasSeams = list.Any(x => x.Seam != 0 || x.InMachine || x.Bare);
+        d.HasSeams = list.Any(x => x.BySeams);
         d.HasMiddle = d.Boxes.Any(x => x.Middle);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);

@@ -846,7 +846,7 @@ public static partial class ConstructRender
         var drawn = 0;
         foreach (ref readonly var box in d.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             gfx.Draw(box.Model(rot, at + Rot24.Apply(rot, box.Center)) * frame, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;
@@ -908,7 +908,7 @@ public static partial class ConstructRender
         float most = -1, far = -1;
         foreach (ref readonly var box in die.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             var v = box.Half.X * box.Half.Y * box.Half.Z;
             if (v > most)
@@ -916,7 +916,7 @@ public static partial class ConstructRender
         }
         foreach (ref readonly var box in die.Boxes.AsSpan())
         {
-            if (box.Hidden || box.Bare)
+            if (box.Hidden || box.Bare || box.MergedOnly)
                 continue;
             var d = Vector3.DistanceSquared(box.Color, baseColour);
             if (d > far)
@@ -1150,7 +1150,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
                     ref readonly var box = ref d.Boxes[b];
-                    if (box.Hidden || box.Bare)
+                    if (box.Hidden || box.Bare || box.MergedOnly)
                         continue;
                     ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out _);
                     if (box.IsGlass && QueueGlass(box.Model(turn, centre) * seg * body, box.Color * shade, box.Glass, box.Shape))
@@ -1564,7 +1564,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden || box.Bare || box.Detail && AidCount > 16)
+                    if (box.Hidden || box.Bare || box.MergedOnly || box.Detail && AidCount > 16)
                         continue;
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, g.Pos + Rot24.Apply(g.Rot, box.Center)) * m, GhostBoxColour(in box, g.Ok), 0.3f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
@@ -1618,7 +1618,7 @@ public static partial class ConstructRender
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
                     ref readonly var box = ref def.Boxes[b];
-                    if (box.Hidden || box.Bare)
+                    if (box.Hidden || box.Bare || box.MergedOnly)
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
