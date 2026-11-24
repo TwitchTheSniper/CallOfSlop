@@ -1981,12 +1981,12 @@ Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-crane
 drawing `Source/Render/LifterRender.cs`, parts `Source/PartKit/Generators/LifterParts.cs`, `--gen-parts lifter_parts`). Nothing is
 simulated: a carried piece moves on a path worked out from the move's ends on every peer, and passes through everything.
 
-**The fixed arms went (2026-11-24, arm kit part 4).** The tier arms (Loader to Plasma), the Heavy and Long arms and the Module Fitter S
+**The fixed arms went (2026-11-24, arm kit part 4).** The tier arms (Loader to Plasma), the Heavy, Shipyard and Long arms and the Module Fitter S
 are kit presets now (`ArmKitParts`, "Kit Loader Arm" and on; the Zero Day works' Heavy is a Kit Heavy Arm XL, booms 80 cm longer, so it
 reaches its jobs from 3 m over). Their part files and Assembler rows are gone (`AssemblingTable.Removed`, mark `asm-rows-2026-11-24-arms`:
 an old choice of one builds an Arm Core). A saved one loads as its preset, shoulder where its shoulder was, bottom on its floor
-(`ArmKitMigrate.Restand`). Only the Shipyard Loader Arm stays, for the yard's two north arms that no preset fits beside line C's
-store masts. The table below is the old arms', for reading old notes.
+(`ArmKitMigrate.Restand`). The yard's two north arms stand their folded 30 m masts under the yard crane's rail, raised to 32 m
+(`YardMasts` 16), south of the shed's last truss (the 4 m bay at z -197 went: `TrussSouth`). The table below is the old arms', for reading old notes.
 
 **The Loader Arm** stands beside a Building Station and is one more pair of hands: when idle and powered it asks the stations
 building in its reach for a step it can fit (the part's middle in reach, the part within its payload and size, its kind in the

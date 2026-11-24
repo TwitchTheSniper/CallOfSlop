@@ -206,7 +206,7 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
 
 ### Loader arms in a saved world (2026-11-24)
 
-The fixed Loader Arms (Loader, Workshop, Industrial, Military, Plasma, Heavy, Long) and the Module Fitter S are gone. A saved one comes back as its kit arm (Kit Loader Arm and so on), standing where it stood. An Assembler that was set to build one now builds an Arm Core. The Shipyard Loader Arm stays.
+The fixed Loader Arms (Loader, Workshop, Industrial, Military, Plasma, Heavy, Shipyard, Long) and the Module Fitter S are gone. A saved one comes back as its kit arm (Kit Loader Arm and so on), standing where it stood. An Assembler that was set to build one now builds an Arm Core.
 
 ### Keeping saves on a USB stick (portable mode)
 

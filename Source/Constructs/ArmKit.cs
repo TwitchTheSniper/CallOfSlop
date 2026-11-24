@@ -859,7 +859,7 @@ public static class ArmKitMigrate
     {
         ["Loader Arm"] = new(0.625f, 1.195f, 0.625f), ["Workshop Loader Arm"] = new(0.875f, 1.525f, 0.875f), ["Industrial Loader Arm"] = new(1f, 1.855f, 1f),
         ["Military Loader Arm"] = new(1.375f, 2.515f, 1.375f), ["Plasma Loader Arm"] = new(1.75f, 3.175f, 1.75f), ["Long Loader Arm"] = new(0.875f, 4.495f, 0.875f),
-        ["Heavy Loader Arm"] = new(1.625f, 4.495f, 1.625f), ["Module Fitter S"] = new(1.375f, 2.515f, 1.375f),
+        ["Heavy Loader Arm"] = new(1.625f, 4.495f, 1.625f), ["Shipyard Loader Arm"] = new(1.625f, 6.475f, 1.625f), ["Module Fitter S"] = new(1.375f, 2.515f, 1.375f),
     };
 
     /// <summary>The preset a saved part of this name stands as, when its part file went (null: not a gone fixed arm).</summary>

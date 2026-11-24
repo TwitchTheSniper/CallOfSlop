@@ -86,8 +86,8 @@ public sealed class AssemblingTable
         (1, "Medium Crane Bridge", ["Industrial Loader Arm"], "Arm Core"),
         (1, "Lifter Cab", ["Loader Arm", "Military Loader Arm", "Plasma Loader Arm", "Workshop Loader Arm"], "Arm Core"),
         (1, "Half Shell", ["Module Fitter S"], "Arm Core"),
-        (1, "Press Bed Block", ["Heavy Loader Arm"], "Arm Core"),
-        (1, "Shipyard Loader Arm", ["Long Loader Arm"], "Arm Core"),
+        (1, "Press Bed Block", ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"], "Arm Core"),
+        
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice

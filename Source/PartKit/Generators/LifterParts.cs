@@ -71,8 +71,8 @@ public sealed class LifterParts : IPartGenerator
 
     public static readonly string[] BigArmNames = ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"];
 
-    /// <summary>The big arms still made (the Shipyard: the yard's north arms; the Heavy and the Long went, 2026-11-24).</summary>
-    public static readonly string[] BigArmsMade = ["Shipyard Loader Arm"];
+    /// <summary>The big arms still made (none: the Heavy, the Shipyard and the Long went, 2026-11-24).</summary>
+    public static readonly string[] BigArmsMade = [];
 
     private static readonly BigArm[] BigArms =
     [
@@ -505,9 +505,8 @@ public sealed class LifterParts : IPartGenerator
     }
 
     // (the tier arms, the Heavy and the Long and the Module Fitter S went, 2026-11-24: kit presets stand for them, ArmKitParts.cs, and a
-    // saved one stands as its preset, ArmKitMigrate.Restand; the Shipyard stays for the yard's two north arms, which no preset fits yet)
+    // saved one stands as its preset, ArmKitMigrate.Restand; and the Shipyard, whose two north yard arms stand under the raised yard rail now)
     public void Make(PartOutput o) => WriteParts(o, Out, new[] { ("", Cab()) }
-        .Concat(BigArms.Where(b => b.Name == "Shipyard Loader Arm").Select(b => ("BigArms", Arm(5, big: b)))) // (a folder of their own, so their Assembling rows go at the end of the table: Assembling.AfterCloche)
         .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })) // (the classed cranes stay: the Medium for the Dray's hold, the Large and Capital rows because saved Assemblers keep recipe numbers; the hall's is the Hall Crane: drawing 24)
         .Concat(new[] { ("HallCranes", HallRail()), ("HallCranes", HallCore()) })
         .Concat(new[] { ("SmallCranes", Rail(Small)), ("SmallCranes", Bridge(Small)) })); // (a folder of their own, so their Assembling rows go at the end: Assembling.AfterCloche)
