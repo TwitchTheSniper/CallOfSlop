@@ -1992,13 +1992,16 @@ public static partial class ConstructStation
         return -1;
     }
 
+    /// <summary>How high over the bay's floor a part set down beside the bay goes: 0.3 m over the ground the Core stands on (the bay is a deck).</summary>
+    private static float BesideY(Construct c, int t) => 0.3f - BayFloor(c, t).Y;
+
     /// <summary>A part back into the hold; should even that fail, it is set down beside the bay and the log says so, never lost.</summary>
     private static void PutBack(ConstructWorld world, Construct c, int t, ConstructPartDef d)
     {
         if (world.RackPut(c, t, d))
             return;
         Bay(c, t, out var floor, out var rot, out var bay);
-        var at = floor + Vector3.Transform(new Vector3(bay.X * 0.5f + 1.2f, 0.3f, 0), rot);
+        var at = floor + Vector3.Transform(new Vector3(bay.X * 0.5f + 1.2f, BesideY(c, t), 0), rot);
         var loose = ConstructBuild.PlaceNew(world, d, at, 0);
         Console.WriteLine($"[station] {d.Name} wouldn't go back into the hold of construct {c.Id}: {(loose == null ? "and the world had no room to set it down: lost" : "set down beside the bay")}");
     }
@@ -2025,7 +2028,7 @@ public static partial class ConstructStation
             {
                 // Beside the bay, in a row along its far side.
                 var k = (j.Return.Count * 7 + count) % 16;
-                var at = floor + Vector3.Transform(new Vector3(bay.X * 0.5f + 1.2f + k / 8 * 1.2f, 0.3f, (k % 8 - 3.5f) * bay.Z / 8f), rot);
+                var at = floor + Vector3.Transform(new Vector3(bay.X * 0.5f + 1.2f + k / 8 * 1.2f, BesideY(c, t), (k % 8 - 3.5f) * bay.Z / 8f), rot);
                 if (ConstructBuild.PlaceNew(world, d, at, 0) == null)
                 {
                     j.Return.Add((def, 1, loose)); // (the world is full: it waits)

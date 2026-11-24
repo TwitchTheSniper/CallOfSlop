@@ -20,7 +20,11 @@ public sealed class BuildStationParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/BuildingStation";
     private const string Body = "#3f7d3a", Screen = "#10161c", Trim = "#356a31"; // (the family's body colour: it takes paint; the rest is MachineLook's tones)
-    private const double Plinth = 0.25; // the Core's plinth and a Bay Block are this high: the bay's floor
+    private const double Plinth = 0.25; // the Core's plinth: it stands on the works floor, its screen at a standing hand's height
+    // The bay's floor: a Bay Block's top, level with the roller runs and the raised Pad Tiles beside it (Sean 2026-11-24), so a piece
+    // rolls off a run onto a pick pad and the crane lifts it across at one height.
+    private const double Floor = OutTableParts.WorkY;
+    private const double SideY = 0.1; // the side sockets' height, a Pad Tile's: a bay welds to the pad it butts on, at one level
     private const double Hz0 = -2.55, Hz1 = 2.27; // the hold, along the Core (4.82 m: a 4.8 m piece lies in it)
     private const double Back = -2.58, Front = 2.3; // the intake housing's inner face, the control cabinet's back
     // The station's own block limits (Sean 2026-11-21, the Zero Day works: one station builds the whole 53 m frigate): a bay up to 32 cells
@@ -29,7 +33,7 @@ public sealed class BuildStationParts : IPartGenerator
     private const int LiftKg = 14000; // the heaviest piece its crane lifts off a pick pad beside the bay (ConstructStation.PadPick: a 14 t stern)
 
     private static PyDict BlockKey(string role) => role == "core"
-        ? Kw(("family", "station"), ("role", "core"), ("origin", Py.L(0, Plinth / 2, 0)), ("maxSide", MaxSide), ("maxCells", MaxCells))
+        ? Kw(("family", "station"), ("role", "core"), ("origin", Py.L(0, Floor / 2, 0)), ("maxSide", MaxSide), ("maxCells", MaxCells))
         : Kw(("family", "station"), ("role", role));
 
     private static PyDict Seam(PyDict? box, params string[] faces) => box!.Update(("seam", faces.Length == 1 ? faces[0] : Py.L([.. faces])));
@@ -123,13 +127,13 @@ public sealed class BuildStationParts : IPartGenerator
             var y = z < 0 ? 1.8 : MachineLook.HandY + 0.014;
             p.Add(L([x - 0.05, y - 0.004, z - 0.02], [x + 0.05, y + 0.1, z + 0.02], MachineLook.Steel, "steel"));
         }
-        // ---- Sockets: its foot, and its sides at the floor's height for Bay Blocks (one a cell).
+        // ---- Sockets: its foot, and its sides for Bay Blocks (one a cell), at a Bay Block's.
         for (var k = 0; k < 3; k++) // (named by cell from the back: "-y.0.0" is the foot blueprints have stood it by)
         {
             var z = -2.0 + 2 * k;
             p.Sock($"-y.0.{k}", [0, 0, z], "-y");
-            p.Sock($"+x.{k}", [x1, Plinth / 2, z], "+x");
-            p.Sock($"-x.{k}", [x0, Plinth / 2, z], "-x");
+            p.Sock($"+x.{k}", [x1, SideY, z], "+x");
+            p.Sock($"-x.{k}", [x0, SideY, z], "-x");
         }
         p.Stats(1600, 1600, 4, 10.0);
         p.Set(("power", 600), ("onBreak", "disable"), ("centreSockets", false), ("collider", "boxes"));
@@ -168,7 +172,7 @@ public sealed class BuildStationParts : IPartGenerator
     }
 
     /// <summary>
-    /// A Bay Block: one 2 x 2 m cell of a Building Station's bay floor, 25 cm thick, tread plate on top. Its edge trim (a kerb with a hazard
+    /// A Bay Block: one 2 x 2 m cell of a Building Station's bay floor, a 1 m deck (level with the roller runs), tread plate on top. Its edge trim (a kerb with a hazard
     /// strip, its bolts, an amber floor lamp) and its corner caps are seams: drawn only where no tile of the same bay is welded, so a bay reads
     /// as one floor with one hazard border. In the middle, a steel seat for a mast (welded on its top socket), four tie-down rings and a drain.
     /// </summary>
@@ -177,7 +181,7 @@ public sealed class BuildStationParts : IPartGenerator
         var p = new Part("Bay Block", Small, "Extrusion",
             "A 2 x 2 m tile of a Building Station's bay. Weld it beside the station's Core or beside another Bay Block: the bay is the largest full rectangle of them, up to 32 x 32 m. Stack Mast Blocks on the bay's four corners to build higher.",
             group: "Production", color: Body);
-        const double e = 0.997, h = Plinth, k = 0.12; // (the slab stops 3 mm short of the cell; k: the kerb's width)
+        const double e = 0.997, h = Floor, k = 0.12; // (the slab stops 3 mm short of the cell; k: the kerb's width)
         p.Add(Box([-e, 0, -e], [e, h - 0.02, e], MachineLook.Base));
         p.Add(Box([-e + 0.01, h - 0.024, -e + 0.01], [e - 0.01, h, e - 0.01], "#2b3036")!.Update(("finish", "tread plate"))); // (a dark floor, a step off the skirt's base: the Core keeps the body colour)
         // The kerb on each outer side: a dark rail with a hazard strip on its top, bolted down, and a sunk amber lamp in the middle.
@@ -196,7 +200,8 @@ public sealed class BuildStationParts : IPartGenerator
             p.Add(Seam(Edge(0.02, k - 0.02, -e + k, e - k, h + 0.026, h + 0.042, MachineLook.Accent, "hazard paint"), face));
             foreach (var t in new[] { -0.6, -0.2, 0.2, 0.6 })
                 p.Add(Seam(Edge(k / 2 - 0.016, k / 2 + 0.016, t - 0.016, t + 0.016, h + 0.04, h + 0.054, MachineLook.Steel, "steel"), face));
-            p.Add(Seam(Edge(-0.002, 0.014, -0.12, 0.12, 0.06, h - 0.06, MachineLook.Accent), face)); // (the floor lamp let into the slab's edge)
+            p.Add(Seam(Edge(-0.002, 0.014, -0.12, 0.12, h - 0.2, h - 0.06, MachineLook.Accent), face)); // (the floor lamp let into the slab's edge)
+            p.Add(Seam(Edge(-0.002, 0.012, -0.9, 0.9, 0.1, 0.18, MachineLook.Accent, "hazard paint"), face)); // (a hazard band round the deck's foot, as a Pad Tile's)
             p.Add(Seam(Edge(-0.002, 0.012, -0.9, 0.9, 0.02, 0.05, MachineLook.Base), face)); // (the slab's drip edge)
         }
         // The corner caps: a dark block with a steel plate on top where two outer kerbs meet.
@@ -219,10 +224,10 @@ public sealed class BuildStationParts : IPartGenerator
         p.Add(L([-0.5, h - 0.004, 0.66], [0.5, h + 0.008, 0.74], MachineLook.Base));
         foreach (var x in new[] { -0.4, -0.2, 0.0, 0.2, 0.4 })
             p.Add(L([x - 0.03, h + 0.004, 0.672], [x + 0.03, h + 0.012, 0.728], MachineLook.Steel, "steel")); // (the drain's grate)
-        p.Sock("+x", [1, h / 2, 0], "+x");
-        p.Sock("-x", [-1, h / 2, 0], "-x");
-        p.Sock("+z", [0, h / 2, 1], "+z");
-        p.Sock("-z", [0, h / 2, -1], "-z");
+        p.Sock("+x", [1, SideY, 0], "+x");
+        p.Sock("-x", [-1, SideY, 0], "-x");
+        p.Sock("+z", [0, SideY, 1], "+z");
+        p.Sock("-z", [0, SideY, -1], "-z");
         p.Sock("top", [0, h, 0], "+y");
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Stats(900, 1200, 6, 6.0);
