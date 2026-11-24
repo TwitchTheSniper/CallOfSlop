@@ -1,0 +1,128 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Spreader",
+  "description": "A modular arm's head for long pieces: a beam with a twist-lock hook at each end. Takes beams, hull sections and anything 2 m long or more, up to three widths across; holds a fifth more than a clamp of its width.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 160.0,
+  "health": 400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#f07818",
+  "attachSeconds": 4.0,
+  "armPiece": "spreader",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.06,
+        0.1
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -0.75,
+        0.056,
+        -0.15
+      ],
+      "max": [
+        0.75,
+        0.176,
+        0.15
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.75,
+        0.18,
+        -0.1
+      ],
+      "max": [
+        -0.65,
+        0.3,
+        0.1
+      ],
+      "color": "#e8b81c"
+    },
+    {
+      "min": [
+        -0.71,
+        0.296,
+        -0.03
+      ],
+      "max": [
+        -0.652,
+        0.36,
+        0.03
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.65,
+        0.18,
+        -0.1
+      ],
+      "max": [
+        0.75,
+        0.3,
+        0.1
+      ],
+      "color": "#e8b81c"
+    },
+    {
+      "min": [
+        0.652,
+        0.296,
+        -0.03
+      ],
+      "max": [
+        0.71,
+        0.36,
+        0.03
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.5,
+        0.06,
+        0.146
+      ],
+      "max": [
+        0.5,
+        0.15,
+        0.158
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -84,6 +84,9 @@ public static class LifterRender
                     DrawCrane(gfx, ld, part, grip);
                     continue;
                 }
+                var tipHead = -1;
+                if (ld.Kit && ld.Spec is { Valid: true } ks)
+                    grip = HeadSwap(ks, l, grip, out tipHead);
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
                 if (ld.Kit)
                 {
@@ -91,7 +94,7 @@ public static class LifterRender
                     {
                         if (!l.FoldServer) // (a client steps the fold by the server's rule: out while it may work, in when idle without power)
                             l.Fold = l.Why == LiftWhy.NoPower && l.State == LiftState.Idle ? MathF.Max(0, l.Fold - _dt / ArmKit.FoldSeconds) : MathF.Min(1, l.Fold + _dt / ArmKit.FoldSeconds);
-                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold);
+                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold, tipHead);
                     }
                     continue;
                 }
@@ -100,6 +103,36 @@ public static class LifterRender
                     DrawToolHead(gfx, part, yaw, wrist, l.CarryBody != 0 && world.Get(l.CarryBody) is { } held ? MathF.Min(held.LocalMax.X - held.LocalMin.X, held.LocalMax.Z - held.LocalMin.Z) : 1.2f);
             }
         }
+    }
+
+    /// <summary>
+    /// An arm kit's head swap, seen: when its mounted head changes (a carry's swap or the Head setting), the hand goes to the stand's slot
+    /// with the old head on, the heads change places there at half way and the hand comes back with the new one (ArmKit.SwapTicks).
+    /// </summary>
+    private static Vector3 HeadSwap(ArmSpec s, CLift l, Vector3 grip, out int tip)
+    {
+        if (l.SeenHead != s.Mounted)
+        {
+            if (l.SeenHead >= 0 && l.SeenHead < s.Heads.Length)
+            {
+                l.SwapFrom = l.SeenHead;
+                l.Swap = 0;
+            }
+            l.SeenHead = s.Mounted;
+        }
+        tip = s.Mounted;
+        if (l.Swap >= 1)
+            return grip;
+        l.Swap = MathF.Min(1, l.Swap + _dt * 60f / ArmKit.SwapTicks);
+        tip = l.Swap < 0.5f ? l.SwapFrom : s.Mounted;
+        var slot = s.Mounted != 0 ? s.Mounted : l.SwapFrom;
+        if (slot <= 0 || slot >= s.Heads.Length)
+            return grip;
+        var h = s.Heads[slot];
+        var at = h.Slot + h.SlotUp * (s.WristLen + s.HeadLen) + Vector3.UnitY * ConstructLifters.GripLift;
+        var w = MathF.Sin(MathF.PI * l.Swap);
+        w = w * w * (3 - 2 * w);
+        return Vector3.Lerp(grip, at, w);
     }
 
     /// <summary>

@@ -2795,6 +2795,7 @@
     {"output": "Hearth Block", "materials": {"concrete": 320, "steel": 140}, "seconds": 60},
     {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25},
     {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
-    {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40}
+    {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40},
+    {"output": "Head Stand", "materials": {"steel": 240}, "seconds": 20}
   ]
 }

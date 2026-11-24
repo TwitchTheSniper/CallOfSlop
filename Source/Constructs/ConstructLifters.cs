@@ -188,6 +188,8 @@ public sealed class CLift
     public int Held; // ticks the move has waited (a player in the way, no power): the path runs on Start + Held
     public uint WaitFrom; // the tick it stopped at while it waits (0: it runs): both peers pose it there (ConstructLifterPush.cs)
     public bool FoldServer; // (arm kit) the server's step moves Fold (a host's copy): drawing leaves it alone
+    public int SeenHead = -1, SwapFrom; // (arm kit, drawing) the head last drawn on and the one a swap took off
+    public float Swap = 1; // (arm kit, drawing) a head swap's progress, 0..1 (ArmKit.SwapTicks)
     public float Fold; // (arm kit) 0: standing as a mast, 1: folded out; each peer steps it (ArmKit.FoldSeconds; never sent)
     public bool Moved; // a move has been made or heard (else the hand is drawn at its rest)
     public float Rise = ConstructLifters.CarryRise; // the carry height over the higher end, from its Carry height setting when the move began
@@ -377,6 +379,7 @@ public static partial class ConstructLifters
 
     private static void StepLifts(ConstructWorld world, IWorldQuery? query, bool fitTaken)
     {
+        ArmKit.ServerWorld = world;
         Now = MoverPhysics.Clock; // (the server tick: Game.ServerTickStep sets it first)
         world.LiftTick++;
         if (world.LiftTick % ScanEvery == 1)
@@ -654,6 +657,8 @@ public static partial class ConstructLifters
     /// <summary>Does a part fit the hand: its mass and its size (the longest side against the length, the next against across)?</summary>
     public static bool Carries(LifterDef ld, ConstructPartDef d)
     {
+        if (ld.Spec is { Valid: true } kit) // (an arm kit: any of its heads, the mounted one or a spare it swaps to: ArmKit.HeadFor)
+            return ArmKit.HeadFor(kit, d) >= 0 && MaxSide(d) <= ld.PieceLong + 0.005f;
         var s = d.BoundsMax - d.BoundsMin;
         var a = MathF.Max(s.X, MathF.Max(s.Y, s.Z));
         var b = s.X + s.Y + s.Z - a - MathF.Min(s.X, MathF.Min(s.Y, s.Z));
@@ -1231,8 +1236,16 @@ public static partial class ConstructLifters
     /// was, <see cref="HandNow"/>) to the piece, on the same eased legs, and only then lifts it: no jump between jobs. The piece
     /// stays where it lies meanwhile (<see cref="Pose"/>).
     /// </summary>
+    private static float MaxSide(ConstructPartDef d)
+    {
+        var s = d.BoundsMax - d.BoundsMin;
+        return MathF.Max(s.X, MathF.Max(s.Y, s.Z));
+    }
+
     internal static void Approach(LifterDef ld, CLift l, Vector3 hand)
     {
+        if (ld.Kit && l.Def != 0 && ConstructParts.Get(l.Def) is { } piece)
+            ArmKit.SwapFor(ld, l, piece); // (an arm kit wears the head its piece needs: a swap first, part 2)
         var grip = GripOf(l);
         if (l.Steered || Vector3.DistanceSquared(hand, grip) < 0.0025f)
             return;

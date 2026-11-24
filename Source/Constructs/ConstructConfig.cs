@@ -173,7 +173,7 @@ public enum CfgKey : byte
     Throw, // control surface, nozzle: a share of its full deflection (ConstructAero.ThrowOf)
     Expo, // control surface, nozzle: soft around the middle, %
     HomeY, WaypointY, // Flight Stabilizer: on a round world, the rest of the point
-    Stations, // retired: the Modular Bomb Rack's station count (no part has it; the Ordnance Rack's RackRows and RackColumns took over)
+    ArmHead, // an Arm Core: which head is on its Wrist (0 its own, then the spares on Head Stands in reach; ArmKit.cs). Was Stations, retired: the Modular Bomb Rack's station count, which no part had
     RackLayout, // Ordnance Rack: grid or drum (its shape follows: ModularRack.cs)
     RackSize, // retired: the Modular Bomb Rack's light, heavy or giant (RackLength and RackDiameter took over)
     FireOrder, // bomb rack: one at a time, or a salvo (everything it holds on one press)
@@ -575,6 +575,7 @@ public static class ConstructConfig
         ConstructShellPod.AddSettings(d, list); // (what a shell pod holds, hidden)
         ModuleSockets.AddSettings(d, list); // (a Module Socket's kind, style and room; a Module Plug's primary tag)
         ToolRacks.AddSettings(d, list); // (a Tool Rack's tools out, hidden)
+        ArmKit.AddSettings(d, list); // (an Arm Core's Head)
         AddThrowSettings(d, list);
         // Every part that shows text: its size (last, so a part file's own settings keep their slots).
         if (ConstructPanels.HasText(d) && list.Count < MaxSlots && !list.Exists(e => e.Id == CfgKey.TextSize))
@@ -897,6 +898,7 @@ public static class ConstructConfig
                 CfgKey.ModHide => d.ModPart == ModPart.Socket && !d.ModStand && !d.ModNoHide,
                 CfgKey.ModLock => d.ModPart == ModPart.Socket && !d.ModStand,
                 CfgKey.ToolsOut => d.IsToolRack, // (ToolRacks.cs)
+                CfgKey.ArmHead => d.Lifter is { Kit: true }, // (ArmKit.cs)
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.GrowMakes => d.IsGrowFormer,
                 CfgKey.Shutdown => ConstructShutdown.Takes(d),

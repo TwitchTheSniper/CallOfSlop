@@ -13,6 +13,22 @@ public enum ArmPieceKind : byte
     Counterweight,
     DrivePack,
     Pedestal,
+    Spreader, // (part 2: heads) a beam with two hooks: long pieces
+    Vacuum, // ...suction cups: plates and sheets, light
+    Magnet, // ...a lifting magnet: steel and iron parts
+    Fork, // ...two tines under a piece: heavy, compact
+    FitterHead, // ...a gripper, torch and cutter: what a Module Fitter carries
+    HeadStand, // a rack of spare heads in an arm's reach: it swaps to the head the next piece needs
+}
+
+/// <summary>A head an arm can wear: its own on the Wrist (slot -1) or a spare on a Head Stand in reach.</summary>
+public struct ArmHead
+{
+    public int Part; // the head part
+    public ArmPieceKind Kind;
+    public float Width, Rating; // its width across (m), and what it holds alone (kg)
+    public Vector3 Slot; // a spare's: its stand slot's point in the Core's frame (the hand goes there to swap)
+    public Vector3 SlotUp, SlotSide; // ...the slot's up and across in the Core's frame
 }
 
 /// <summary>
@@ -31,11 +47,19 @@ public sealed class ArmSpec
     public float Upper, Fore, Reach, Payload, Speed, Watts, ArmMass, WeightMass;
     public readonly float[] ChartR = new float[4], ChartP = new float[4]; // the load chart: kg at four radii
     public string Weak = ""; // the piece that sets the payload at full reach
+    public readonly float[] ChainP = new float[4]; // (part 2) the chart without a head's own limit: what the chain holds
+    public ArmHead[] Heads = []; // (part 2) [0] its own head on the Wrist, then the spares on Head Stands in reach (at most MaxHeads)
+    public int Mounted;
+    public LifterDef? Def; // the per-part def this spec is applied to (ArmKit.Refresh) // which of Heads is on the Wrist now (the Core's hidden ArmHead setting)
+    public string ChainWeak = "";
+    public Construct? Body; // (the body it was worked out for, and the Core: a carry's head swap sets the Core's setting)
+    public int Core = -1;
 }
 
 public static class ArmKit
 {
-    public const int MaxPedestals = 4, MaxWeights = 4, MaxPacks = 8;
+    public const int MaxPedestals = 4, MaxWeights = 4, MaxPacks = 8, MaxHeads = 8;
+    public const int SwapTicks = 150; // (part 2) a head swap: 2.5 s, the hand to the stand and back
     public const float MaxReach = 32f, FoldSeconds = 6f, G = 9.81f;
     public const float JointMoment = 1.443e6f; // N m per m^3 of a joint's side (a solid steel hub's pin and cheeks)
     public const float BoomStress = 160e6f; // Pa: a boom's working stress
@@ -49,7 +73,19 @@ public static class ArmKit
         Refresh(c);
         for (var k = 0; k < c.ArmN; k++)
             if (c.ArmDefs[k].Part == part)
-                return c.ArmDefs[k].Def;
+            {
+                var d = c.ArmDefs[k].Def;
+                if (d.Spec is { Valid: true, Heads.Length: > 1 } s)
+                {
+                    var want = ConstructConfig.Get(c.Parts[part], c.Parts[part].D, CfgKey.ArmHead, 0);
+                    if ((int)MathF.Round(want) != s.Mounted) // (the Head setting changed by hand, or on a client by the body's settings)
+                    {
+                        Mount(s, want);
+                        d.Payload = s.Payload;
+                    }
+                }
+                return d;
+            }
         return file;
     }
 
@@ -90,11 +126,14 @@ public static class ArmKit
             var d = ld.CraneCopy();
             d.Of = ld;
             d.Spec = spec;
+            spec.Def = d;
             if (spec.Valid)
             {
                 Apply(d, ld, spec);
                 foreach (var p in new[] { spec.Shoulder, spec.UpperBoom, spec.Elbow, spec.ForeBoom, spec.Wrist, spec.Head })
                     c.ArmPosed[p] = true;
+                foreach (var h in spec.Heads)
+                    c.ArmPosed[h.Part] = true; // (the spares on stands too: drawn by ArmKitRender, as they change places)
             }
             if (c.ArmDefs.Length <= c.ArmN)
                 Array.Resize(ref c.ArmDefs, c.ArmN + 4);
@@ -192,9 +231,9 @@ public static class ArmKit
         s.Wrist = Next(c, s.ForeBoom, "tip", ArmPieceKind.Wrist);
         if (s.Wrist < 0)
             return Fail(s, "fit an Arm Wrist on the forearm");
-        s.Head = Next(c, s.Wrist, "tip", ArmPieceKind.PadClamp);
+        s.Head = NextHead(c, s.Wrist);
         if (s.Head < 0)
-            return Fail(s, "fit a Pad Clamp on the Wrist");
+            return Fail(s, "fit a head on the Wrist: a Pad Clamp, Spreader, Vacuum Head, Magnet Head, Fork or Fitter Head");
         ConstructPartDef J1 = c.Parts[s.Shoulder].D, B1 = c.Parts[s.UpperBoom].D, J2 = c.Parts[s.Elbow].D, B2 = c.Parts[s.ForeBoom].D, Wd = c.Parts[s.Wrist].D, H = c.Parts[s.Head].D;
         s.JointA = Along(J1);
         s.ElbowA = Along(J2);
@@ -215,7 +254,7 @@ public static class ArmKit
         float tSh = MathF.Min(JointRating(Across(J1)), BoomMoment(Across(B1)));
         float tEl = MathF.Min(JointRating(Across(J2)), MathF.Min(BoomMoment(Across(B2)), JointRating(Across(Wd))));
         float tBear = BearingMoment + s.WeightMass * G * WeightLever;
-        float pHead = HeadRating(H.BoundsMax.X - H.BoundsMin.X);
+        float pHead = float.MaxValue; // (the chain alone; each head's own limit is set against it below)
         float R = s.Upper + s.Fore;
         var weak = "";
         for (var k = 0; k < 4; k++)
@@ -230,11 +269,15 @@ public static class ArmKit
             s.ChartR[k] = r;
             s.ChartP[k] = p;
             if (k == 3)
-                weak = p == pHead ? H.Name : p == a3 ? "slewing bearing (add Counterweights)" : p == a1 ? (JointRating(Across(J1)) < BoomMoment(Across(B1)) ? "shoulder Joint" : "upper Boom") : (JointRating(Across(J2)) <= BoomMoment(Across(B2)) ? "elbow Joint" : "forearm Boom");
+                weak = p == a3 ? "slewing bearing (add Counterweights)" : p == a1 ? (JointRating(Across(J1)) < BoomMoment(Across(B1)) ? "shoulder Joint" : "upper Boom") : (JointRating(Across(J2)) <= BoomMoment(Across(B2)) ? "elbow Joint" : "forearm Boom");
         }
-        s.Weak = weak;
-        s.Payload = s.ChartP[3];
-        if (s.Payload < 1)
+        s.ChainWeak = weak;
+        Array.Copy(s.ChartP, s.ChainP, 4);
+        s.Body = c;
+        s.Core = core;
+        Heads(c, core, s);
+        Mount(s, ConstructConfig.Get(c.Parts[core], c.Parts[core].D, CfgKey.ArmHead, 0));
+        if (s.ChainP[3] < 1)
             return Fail(s, $"it can't hold itself up at full reach: its {weak} is too small for its Booms");
         // ---- Speed: v = v_cap min(1, kW / (0.8 kW/t (m_arm + m_load))), the cap from its biggest joint.
         var cap = 10f / (1 + MathF.Max(s.JointA, s.ElbowA));
@@ -272,6 +315,7 @@ public static class ArmKit
         d.Ring = top.Y;
         d.Upper = s.Upper;
         d.Fore = s.Fore;
+        d.Fitter = file.Fitter || (s.Heads.Length > 0 && s.Heads[0].Kind == ArmPieceKind.FitterHead); // (a Fitter Head built on: it fits modules as a Module Fitter)
         d.ReachMax = s.Reach;
         d.ReachMin = MathF.Min(s.Reach - 0.5f, MathF.Abs(s.Upper - s.Fore) + LifterDef.Fold + 0.3f);
         d.Up = (s.Upper + s.Fore) * 0.7f;
@@ -285,6 +329,180 @@ public static class ArmKit
         d.Housing = s.JointA * 2;
     }
 
+    // ---- Heads (part 2) ----------------------------------------------------------------------------------------------
+
+    /// <summary>The server's bodies while its lifters step (ConstructLifters.Step), for a swap's dirty mark.</summary>
+    internal static ConstructWorld? ServerWorld;
+
+    public static bool IsHead(ArmPieceKind k) => k is ArmPieceKind.PadClamp or ArmPieceKind.Spreader or ArmPieceKind.Vacuum or ArmPieceKind.Magnet or ArmPieceKind.Fork or ArmPieceKind.FitterHead;
+
+    /// <summary>What a head of a kind holds against a Pad Clamp of its width (the clamp's power law).</summary>
+    public static float KindFactor(ArmPieceKind k) => k switch
+    {
+        ArmPieceKind.Spreader => 1.2f,
+        ArmPieceKind.Vacuum => 0.4f,
+        ArmPieceKind.Magnet => 0.8f,
+        ArmPieceKind.Fork => 1.5f,
+        _ => 1f,
+    };
+
+    public static string KindName(ArmPieceKind k) => k switch
+    {
+        ArmPieceKind.PadClamp => "Pad Clamp",
+        ArmPieceKind.Spreader => "Spreader",
+        ArmPieceKind.Vacuum => "Vacuum Head",
+        ArmPieceKind.Magnet => "Magnet Head",
+        ArmPieceKind.Fork => "Fork",
+        ArmPieceKind.FitterHead => "Fitter Head",
+        _ => "head",
+    };
+
+    /// <summary>
+    /// Can a head of a kind and width take a part by its shape and stuff (mass apart)? A Pad Clamp's pads close on its middle side, up
+    /// to one and a half times its width; a Spreader's hooks take a piece 2 m long or more, up to three widths across; a Vacuum Head's
+    /// cups a plate or sheet (its thin side a tenth of its long side or less); a Magnet Head any steel or iron part; a Fork anything
+    /// it can get its tines under (its long side within three widths); a Fitter Head what a clamp takes.
+    /// </summary>
+    public static bool Fits(ArmPieceKind k, float width, ConstructPartDef d)
+    {
+        var sz = d.BoundsMax - d.BoundsMin;
+        var a = MathF.Max(sz.X, MathF.Max(sz.Y, sz.Z));
+        var c = MathF.Min(sz.X, MathF.Min(sz.Y, sz.Z));
+        var b = sz.X + sz.Y + sz.Z - a - c;
+        return k switch
+        {
+            ArmPieceKind.Spreader => a >= 2f && b <= width * 3f,
+            ArmPieceKind.Vacuum => c <= a * 0.1f + 0.005f && b <= width * 6f,
+            ArmPieceKind.Magnet => d.Material is "steel" or "iron" or "metal" && b <= width * 3f,
+            ArmPieceKind.Fork => a <= width * 3f,
+            _ => b <= width * 1.5f,
+        };
+    }
+
+    private static int NextHead(Construct c, int wrist)
+    {
+        var i = On(c, wrist, Sock(c.Parts[wrist].D, "tip"), out var theirs);
+        return i >= 0 && IsHead(c.Parts[i].D.ArmPiece) && !c.Parts[i].Broken && Sock(c.Parts[i].D, "base") == theirs ? i : -1;
+    }
+
+    private static ArmHead HeadOf(Construct c, int part)
+    {
+        var d = c.Parts[part].D;
+        var w = d.BoundsMax.X - d.BoundsMin.X;
+        return new ArmHead { Part = part, Kind = d.ArmPiece, Width = w, Rating = HeadRating(w) * KindFactor(d.ArmPiece) };
+    }
+
+    /// <summary>A point and a direction of part <paramref name="i"/>'s frame, in the Core's (both on the body's grid).</summary>
+    private static Vector3 InCore(Construct c, int core, int i, Vector3 at, bool dir = false)
+    {
+        var qi = Rot24.Quat(c.Parts[i].Rot);
+        var inv = Quaternion.Conjugate(Rot24.Quat(c.Parts[core].Rot));
+        var v = Vector3.Transform(at, qi);
+        return dir ? Vector3.Transform(v, inv) : Vector3.Transform(c.Parts[i].Pos + v - c.Parts[core].Pos, inv);
+    }
+
+    /// <summary>Its own head, then the spare heads on every Head Stand of its body whose slot lies in its reach.</summary>
+    private static void Heads(Construct c, int core, ArmSpec s)
+    {
+        var list = new List<ArmHead> { HeadOf(c, s.Head) };
+        var shoulder = (c.Parts[core].D.Lifter?.Base ?? Vector3.Zero) + new Vector3(0, s.JointA * 0.5f, 0);
+        for (var i = 0; i < c.PartCount && list.Count < MaxHeads; i++)
+        {
+            var sd = c.Parts[i].D;
+            if (sd.ArmPiece != ArmPieceKind.HeadStand || c.Parts[i].Broken)
+                continue;
+            for (var k = 0; k < sd.Sockets.Length && list.Count < MaxHeads; k++)
+            {
+                if (!sd.Sockets[k].Name.StartsWith("slot", StringComparison.Ordinal))
+                    continue;
+                var h = On(c, i, k, out var theirs);
+                if (h < 0 || !IsHead(c.Parts[h].D.ArmPiece) || c.Parts[h].Broken || Sock(c.Parts[h].D, "base") != theirs)
+                    continue;
+                var at = InCore(c, core, i, sd.Sockets[k].At);
+                var r = new Vector2(at.X - shoulder.X, at.Z - shoulder.Z).Length();
+                var wrist = MathF.Sqrt(r * r + (at.Y + 0.6f - shoulder.Y) * (at.Y + 0.6f - shoulder.Y));
+                if (r > s.Reach || wrist > (s.Upper + s.Fore) * LifterDef.Straight)
+                    continue; // (out of its reach: no spare of this arm's)
+                var hd = HeadOf(c, h);
+                hd.Slot = at;
+                hd.SlotUp = Vector3.Normalize(InCore(c, core, i, SocketDirOf(sd.Sockets[k]), dir: true));
+                hd.SlotSide = Vector3.Normalize(InCore(c, core, i, Vector3.UnitZ, dir: true));
+                list.Add(hd);
+            }
+        }
+        s.Heads = list.ToArray();
+    }
+
+    private static Vector3 SocketDirOf(in CSocket k) => ConstructParts.DirVector(k.Dir);
+
+    /// <summary>The head on the Wrist: the chart and payload are the chain's held to its own limit.</summary>
+    public static void Mount(ArmSpec s, float setting)
+    {
+        s.Mounted = Math.Clamp((int)MathF.Round(setting), 0, Math.Max(0, s.Heads.Length - 1));
+        var h = s.Heads.Length > 0 ? s.Heads[s.Mounted] : default;
+        for (var k = 0; k < 4; k++)
+            s.ChartP[k] = MathF.Min(s.ChainP[k], h.Rating);
+        s.Payload = s.ChartP[3];
+        s.Weak = s.ChainP[3] > h.Rating ? KindName(h.Kind) : s.ChainWeak;
+    }
+
+    /// <summary>What a head holds on this arm: the chain's full-reach chart held to the head's own limit.</summary>
+    public static float PayloadWith(ArmSpec s, int head) => MathF.Min(s.ChainP[3], s.Heads[head].Rating);
+
+    /// <summary>The best head for a part, the mounted one first: -1 when none of its heads takes it.</summary>
+    public static int HeadFor(ArmSpec s, ConstructPartDef d)
+    {
+        if (s.Heads.Length == 0)
+            return -1;
+        if (Takes(s, s.Mounted, d))
+            return s.Mounted;
+        var best = -1;
+        for (var k = 0; k < s.Heads.Length; k++)
+            if (k != s.Mounted && Takes(s, k, d) && (best < 0 || s.Heads[k].Rating > s.Heads[best].Rating))
+                best = k;
+        return best;
+    }
+
+    private static bool Takes(ArmSpec s, int k, ConstructPartDef d) => d.Mass <= PayloadWith(s, k) && Fits(s.Heads[k].Kind, s.Heads[k].Width, d);
+
+    /// <summary>
+    /// Server, at a loaded carry's start: if the mounted head can't take the piece, the head that can goes on (the Core's ArmHead
+    /// setting, sent with its body) and the move waits <see cref="SwapTicks"/> while the hand goes to the stand and back.
+    /// </summary>
+    public static void SwapFor(LifterDef ld, CLift l, ConstructPartDef d)
+    {
+        if (ld.Spec is not { Valid: true, Body: { } c } s || s.Core < 0 || s.Core >= c.PartCount)
+            return;
+        var k = HeadFor(s, d);
+        if (k < 0 || k == s.Mounted)
+            return;
+        SetHead(c, s, k);
+        l.Held += SwapTicks; // (the path runs on Start + Held: the swap goes first; Held rides the lift word)
+    }
+
+    /// <summary>Puts head <paramref name="k"/> on (a carry's swap, or the Head setting changed by hand).</summary>
+    public static void SetHead(Construct c, ArmSpec s, int k)
+    {
+        ref var p = ref c.Parts[s.Core];
+        var slot = p.D.CfgSlot[(int)CfgKey.ArmHead];
+        if (slot < 0)
+            return;
+        p.Cfg[slot] = k;
+        Mount(s, k);
+        if (s.Def != null)
+            s.Def.Payload = s.Payload;
+        ServerWorld?.StructureDirty.Add(c.Id); // (the setting goes to clients with the body)
+    }
+
+    /// <summary>Every Arm Core has its Head (which head is on: 0 its own, then the spares in reach; set by hand or by a carry's swap).</summary>
+    internal static void AddSettings(ConstructPartDef d, List<CConfigDef> list)
+    {
+        if (d.Lifter is not { Kit: true } || list.Exists(e => e.Id == CfgKey.ArmHead))
+            return;
+        list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ArmHead), Id = CfgKey.ArmHead, Type = CfgType.Number, Min = 0, Max = MaxHeads - 1, Step = 1, Default = 0, Label = "Head", Group = "Lifter",
+            Tooltip = "Which head is on its Wrist: 0 its own, 1 and up the spares on Head Stands in its reach. It swaps by itself when the next piece needs another." });
+    }
+
     /// <summary>The Core's look-line words: its chart, or what its chain lacks.</summary>
     public static string LookText(LifterDef ld)
     {
@@ -293,7 +511,8 @@ public static class ArmKit
         if (!s.Valid)
             return $" - not an arm yet: {s.Why}";
         static string Kg(float p) => p >= 1000 ? $"{p / 1000f:0.#} t" : $"{p:0} kg";
-        return $" - load chart {Kg(s.ChartP[0])} at {s.ChartR[0]:0.#} m, {Kg(s.ChartP[2])} at {s.ChartR[2]:0.#} m, {Kg(s.ChartP[3])} at {s.ChartR[3]:0.#} m (set by its {s.Weak}); {s.Speed:0.#} m/s, {s.Watts / 1000f:0.#} kW";
+        var heads = s.Heads.Length > 1 ? $"; head {KindName(s.Heads[s.Mounted].Kind)} ({s.Mounted + 1} of {s.Heads.Length})" : "";
+        return $"{heads} - load chart {Kg(s.ChartP[0])} at {s.ChartR[0]:0.#} m, {Kg(s.ChartP[2])} at {s.ChartR[2]:0.#} m, {Kg(s.ChartP[3])} at {s.ChartR[3]:0.#} m (set by its {s.Weak}); {s.Speed:0.#} m/s, {s.Watts / 1000f:0.#} kW";
     }
 }
 
@@ -312,7 +531,7 @@ public static class ArmKitCheck
     public static int Cli(string[] args)
     {
         var at = Array.FindIndex(args, a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase));
-        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Heavy Arm", "Yard Arm"];
+        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Heavy Arm", "Yard Arm"];
         var bad = 0;
         foreach (var name in names)
         {
@@ -351,6 +570,19 @@ public static class ArmKitCheck
                     posed += ArmKit.Posed(c, k) ? 1 : 0;
                 Console.WriteLine($"[arm] {name}: {c.PartCount} parts, {posed} posed; upper {s.Upper:0.00} m, fore {s.Fore:0.00} m, reach {ld.ReachMin:0.0} to {ld.ReachMax:0.0} m, up {ld.Up:0.0}, down {ld.Down:0.0}; {s.Pedestals} pedestals, {s.Weights} weights ({s.WeightMass:0} kg), {s.Packs} packs; arm {s.ArmMass:0} kg");
                 Console.WriteLine($"[arm]   chart: {string.Join(", ", Enumerable.Range(0, 4).Select(k => $"{s.ChartP[k]:0} kg at {s.ChartR[k]:0.0} m"))} (full reach set by its {s.Weak}); speed {s.Speed:0.00} m/s, {s.Watts / 1000:0.0} kW, handle {ld.Handle:0.00} s, piece {ld.PieceAcross:0.0} x {ld.PieceLong:0.0} m");
+                if (s.Heads.Length > 0)
+                {
+                    var takes = new int[s.Heads.Length];
+                    var none = 0;
+                    foreach (var pd in ConstructParts.All)
+                    {
+                        if (pd == null)
+                            continue;
+                        var k = ArmKit.HeadFor(s, pd);
+                        if (k >= 0) takes[k]++; else none++;
+                    }
+                    Console.WriteLine($"[arm]   heads: {string.Join(", ", s.Heads.Select((h, k) => $"{ArmKit.KindName(h.Kind)} {h.Width:0.00} m, {h.Rating:0} kg, first pick for {takes[k]} parts"))}; {none} parts none takes");
+                }
             }
             if (cores == 0)
             {
