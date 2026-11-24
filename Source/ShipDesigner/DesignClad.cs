@@ -42,10 +42,16 @@ public static partial class DesignScene
             double za = rings[i].Z, zb = rings[i + 1].Z;
             Cum(ah, ay, n, ca);
             Cum(bh, by, n, cb);
-            double arc = (ca[n - 1] + cb[n - 1]) / 2, len = zb - za;
-            if (arc < 0.3 || len < 0.3)
+            double arcA = ca[n - 1], arcB = cb[n - 1], arc = (arcA + arcB) / 2, len = zb - za;
+            if (Math.Max(arcA, arcB) < 0.3 || len < 0.3)
                 continue;
             int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
+            // A terminus (the first or last band, or one whose arc changes past 1.4x: a tapering nose, a rounded end) is laid in rows
+            // along z (the user, 2026-11-24: one grid there tapered into slivers meeting at the tip), each row its own count round
+            // the arc, from its own arc, the seams staggered row to row; near the tip, where a row's arc is under two panels, it is
+            // one wide cap ring a side that wraps the end.
+            var ratio = Math.Max(arcA, arcB) / Math.Max(1e-6, Math.Min(arcA, arcB));
+            var terminus = i == 0 || i == rings.Count - 2 || ratio > 1.4;
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
             foreach (var s in new[] { 1, -1 })
             {
@@ -84,16 +90,55 @@ public static partial class DesignScene
                     var q = Nrm(u, v);
                     return (cx + p.X + q.X * off, h.Y + p.Y + q.Y * off, h.Z + p.Z + q.Z * off);
                 }
-                var taken = new bool[nu, nv];
-                for (var a = 0; a < nu; a++)
-                    for (var b = 0; b < nv; b++)
+                if (!terminus)
+                {
+                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777));
+                    continue;
+                }
+                for (var r = 0; r < nv; r++)
+                {
+                    double r0 = (double)r / nv, r1 = (double)(r + 1) / nv;
+                    var rowArc = arcA + (arcB - arcA) * (r0 + r1) / 2;
+                    if (rowArc < 0.05)
+                        continue;
+                    var cap = rowArc < 2 * size;
+                    var ru = cap ? 1 : Math.Clamp((int)Math.Round(rowArc / size), 1, 64);
+                    // Masonry: every other row starts with a half cell, so its seams fall mid-plate of the row before.
+                    var stag = !cap && ru > 1 && (r & 1) == 1;
+                    var cells = stag ? ru + 1 : ru;
+                    double G(double t)
                     {
-                        double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
-                        taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
+                        if (!stag)
+                            return t;
+                        var q = Math.Clamp(t, 0, 1) * cells;
+                        var k = Math.Min((int)q, cells - 1);
+                        double B(int j) => j <= 0 ? 0 : j >= cells ? 1 : (j - 0.5) / ru;
+                        return B(k) + (B(k + 1) - B(k)) * (q - k);
                     }
-                LayPlates(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, taken, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777));
+                    var rr = r;
+                    (double X, double Y, double Z) Pr(double u, double v) => P(G(u), r0 + (r1 - r0) * v);
+                    (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
+                    (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
+                    LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0);
+                }
             }
         }
+    }
+
+    /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
+    private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
+        Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
+        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0)
+    {
+        var taken = new bool[nu, nv];
+        for (var a = 0; a < nu; a++)
+            for (var b = 0; b < nv; b++)
+            {
+                double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
+                taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
+            }
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross);
     }
 
     /// <summary>
@@ -103,7 +148,7 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0)
     {
         var rise = (heavy ? 0.20 : 0.08) - CladMin;
         double du = CladSeam / arc, dv = CladSeam / len;
@@ -114,6 +159,8 @@ public static partial class DesignScene
                 if (taken[a, b])
                     continue;
                 int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
+                if (maxAcross > 0)
+                    wu = Math.Min(wu, maxAcross);
                 var hgt = CladMin + rise * rng.NextDouble();
                 var tone = 0.88 + 0.18 * rng.NextDouble();
                 var greeble = heavy && rng.NextDouble() < 0.35;
