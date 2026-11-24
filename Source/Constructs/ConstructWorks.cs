@@ -648,10 +648,15 @@ public static class ConstructWorks
     /// Flat damage an engine train's Armour Collars take off a hit on part <paramref name="part"/>: each working one in its train gives
     /// ShipWorks.CollarArmour to its bell and every piece of its hot zone (0 for anything else). A hit's path: cheap for a part outside the works.
     /// </summary>
+    public static float ArmourOf(Construct c, int part) => c.Parts[part].D.Armour + TrainArmour(c, part); // (what every hit, blast and round reads)
+
     public static float TrainArmour(Construct c, int part)
     {
-        if (c.WorksHeadCount == 0)
-            return 0;
+        var any = false;
+        for (var k = 0; k < c.WorksHeadCount && !any; k++)
+            any = c.WorksHeads[k].Collars > 0;
+        if (!any)
+            return 0; // (no collar anywhere: the usual case, and no walk over the pieces)
         var d = c.Parts[part].D;
         var h = -1;
         if (d.Role == PartRole.Thruster && InjectorFedHead(d))

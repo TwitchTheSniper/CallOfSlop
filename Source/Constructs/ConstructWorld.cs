@@ -1026,7 +1026,7 @@ public sealed partial class ConstructWorld
             return false;
         ref var p = ref c.Parts[part];
         var d = p.D;
-        dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour - ConstructWorks.TrainArmour(c, part)); // (raw: burning, which armour doesn't stop; an engine train's Armour Collars)
+        dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - ConstructWorks.ArmourOf(c, part)); // (raw: burning, which armour doesn't stop; an engine train's Armour Collars)
         if (dealt > 0 && DamageBy != 255 && DamageBy != c.Owner)
             c.LastHitBy = DamageBy; // (a crew's captain reads it: a deed against its faction, Source/Crew/CrewWorld.cs)
         if (dealt > 0 && DamageBody != 0 && DamageBody != c.Id)

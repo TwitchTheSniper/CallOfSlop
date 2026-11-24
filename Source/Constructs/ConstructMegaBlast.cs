@@ -243,7 +243,7 @@ public sealed partial class ConstructWorld
             if (m.Look != MegaBlasts.Plain && f > 0.6f && CanBurn(c, i))
                 Ignite(c, i); // (the heat near the middle lights what burns)
             BlastStored(c, i, dmg);
-            if (dmg - d.Armour < p.Health || d.OnBreak == PartBreak.Disable)
+            if (dmg - ConstructWorks.ArmourOf(c, i) < p.Health || d.OnBreak == PartBreak.Disable)
             {
                 DamagePart(c, i, dmg, out _); // (it holds, or it stops working where it is: no change to the structure)
                 continue;
