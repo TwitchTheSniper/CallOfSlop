@@ -1393,6 +1393,7 @@ public static partial class ConstructParts
             or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
         "workshop smelter" or "industrial smelter" or "military smelter" or "plasma smelter" => "Smelter", // (a block machine, 2026-11-24: its Hearth Blocks' squares decide its rate; a saved recipe choice keeps its recipe, ConstructRefining.SavedRecipe)
         "workshop foundry" or "industrial foundry" or "military foundry" or "plasma foundry" => "Foundry", // (a block machine, 2026-11-24: its Crucible Blocks' squares decide its rate; a saved recipe choice keeps its recipe: the tier lists were the full list's first rows)
+        "workshop sawmill" or "industrial sawmill" or "military sawmill" or "plasma sawmill" => "Sawmill", // (a block machine, 2026-11-24: its Saw Blocks' squares decide its rate; its two recipes were open at every tier, so a saved choice keeps its recipe)
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };

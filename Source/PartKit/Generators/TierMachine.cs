@@ -4,9 +4,9 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The machine look on the tiered buildings (docs/sandbox/constructs/look.md, "Machine look"): what <see cref="MachineLook"/> gives the
-/// Extruders and the Press, put over each tier's own body from <see cref="TierStyle"/>. A line keeps one set of cues at every tier (a
-/// Sawmill's carriage on rails through a turning blade; an Assembler's stroking tool head over its trays), and a higher tier is built up further (tier by build: guard rails, pipework,
-/// cladding, a taller stack cap), its silhouette its own. (The Smelter and the Foundry went to the block system: SmelterParts, FoundryParts.)
+/// Extruders and the Press, put over each tier's own body from <see cref="TierStyle"/>. A line keeps one set of cues at every tier (an
+/// Assembler's stroking tool head over its trays), and a higher tier is built up further (tier by build: guard rails, pipework,
+/// cladding, a taller stack cap), its silhouette its own. (The Smelter, the Foundry and the Sawmill went to the block system: SmelterParts, FoundryParts, SawmillParts.)
 ///
 /// Everything here is a look box in metres, added after the screen is mounted and the body's faces are settled, so no solid box, socket,
 /// port or screen moves. A box that would cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's open front is
@@ -73,7 +73,7 @@ public static class TierMachine
             for (var a = 0; a < 3; a++)
                 if (mn[a] < _lo[a] - margin || mx[a] > _hi[a] + margin)
                     return false;
-            if (Name is not "Sawmill" && Over(mn, mx, U(-0.44, 0.05, 0.47), U(0.44, 0.55, 0.6))) // (an Assembler's open front)
+            if (Over(mn, mx, U(-0.44, 0.05, 0.47), U(0.44, 0.55, 0.6))) // (an Assembler's open front)
                 return false;
             if (clearOfDetails && _old.Any(o => Over(mn, mx, o.Min, o.Max, 0.004)))
                 return false;
@@ -143,9 +143,6 @@ public static class TierMachine
             Port(s, p.At, p.Face, p.In);
         switch (s.Name)
         {
-            case "Sawmill":
-                Sawmill(s);
-                break;
             default:
                 Assembler(s);
                 break;
@@ -247,61 +244,6 @@ public static class TierMachine
         (mn[1], mx[1]) = (floor - 0.004, under + 0.003);
         if (MachineLook.D(mn, mx, MachineLook.Base) is { } stand)
             s.Boxes.Add(stand);
-    }
-
-    /// <summary>A dark kick band round a footprint, a little proud.</summary>
-    private static void Kick(Site s, double x0, double x1, double z0, double z1, double y0, double y1)
-    {
-        s.Add([x0 - Thin, y0, z0 - Thin], [x1 + Thin, y1, z0 + 0.002], MachineLook.Base);
-        s.Add([x0 - Thin, y0, z1 - 0.002], [x1 + Thin, y1, z1 + Thin], MachineLook.Base);
-        s.Add([x0 - Thin, y0, z0 + 0.002], [x0 + 0.002, y1, z1 - 0.002], MachineLook.Base);
-        s.Add([x1 - 0.002, y0, z0 + 0.002], [x1 + Thin, y1, z1 - 0.002], MachineLook.Base);
-    }
-
-    // ---- The Sawmill: a log carriage on rails over the in bed, through a blade that turns, planks over the out bed
-
-    private static void Sawmill(Site s)
-    {
-        var t = s.Tier;
-        // The blade turns (the plates TierStyle draws across the frame).
-        foreach (var b in s.Shape.Detail.Where(b => b.Role is "edge" or "stripe" && b.Max[0] - b.Min[0] < 0.05 && b.Max[1] - b.Min[1] > 0.3 && Math.Abs(b.Min[0] + b.Max[0]) < 0.01))
-            if (s.Built(b, true) is { } blade)
-            {
-                var o = new PyDict(blade);
-                if (o.Has("color") && !o.Has("glow"))
-                {
-                    o["color"] = MachineLook.Steel;
-                    o["paintable"] = false;
-                    o["finish"] = "steel";
-                }
-                MachineLook.Work(o, "spin", "+x");
-                s.Boxes[s.Boxes.IndexOf(blade)] = o;
-            }
-        var bedTop = s.Shape.Solid.Where(b => b.Min[0] <= -0.49 && b.Max[0] >= 0.49 && b.Min[2] <= -0.49).Max(b => b.Max[1]);
-        // Rails from the in bed to the out bed, either side of the blade, on sleepers where the beds are low.
-        double ry0 = s.U(Math.Max(bedTop, 0.44) + 0.004), ry1 = ry0 + s.U(0.026);
-        foreach (var x in new[] { -0.105, 0.075 })
-            s.Add([s.U(x), ry0, s.U(-0.492)], [s.U(x + 0.03), ry1, s.U(0.492)], MachineLook.Steel, "steel");
-        if (ry0 - s.U(bedTop) > 0.014)
-            foreach (var (z0, z1) in new[] { (-0.497, -0.443), (-0.157, -0.103), (0.103, 0.157), (0.443, 0.497) })
-                s.Add([s.U(-0.13), s.U(bedTop) - 0.004, s.U(z0)], [s.U(0.13), ry0 - 0.003, s.U(z1)], MachineLook.Base);
-        // The carriage and its log: they feed towards the blade while the mill works.
-        double cy = ry1 + 0.004, feed = s.U(0.1);
-        MachineLook.Work(s.Add([s.U(-0.13), cy, s.U(-0.43)], [s.U(0.13), cy + s.U(0.02), s.U(-0.19)], MachineLook.Accent), "stroke", "+z", feed);
-        MachineLook.Work(s.Add([s.U(-0.05), cy + s.U(0.02) + 0.003, s.U(-0.46)], [s.U(0.05), cy + s.U(0.12) + 0.003, s.U(-0.16)], "#8a6a40", "wood", shape: Cylinder("+z", 10)), "stroke", "+z", feed);
-        // Planks coming off, over the out bed.
-        var planks = t >= 3 ? 3 : 2;
-        for (var i = 0; i < planks; i++)
-            s.Add([s.U(-0.12 + 0.012 * i), cy + s.U(0.022 * i) + 0.002 * i, s.U(0.3 + 0.008 * i)], [s.U(0.12 - 0.012 * i), cy + s.U(0.022 * i + 0.018) + 0.002 * i, s.U(0.47 - 0.008 * i)], "#b89460", "wood");
-        // A dark kick band round the beds; hazard paint on the bed edges by the blade from tier 2; steel cladding on the long sides from tier 4.
-        Kick(s, s.U(-0.5), s.U(0.5), s.U(-0.5), s.U(0.5), s.U(0.02) + 0.004, s.U(0.065));
-        if (t >= 2)
-            foreach (var (z0, z1) in new[] { (-0.157, -0.103), (0.103, 0.157) })
-                foreach (var (x0, x1) in new[] { (-0.44, -0.2), (0.2, 0.44) })
-                    s.Add([s.U(x0), s.U(bedTop) - 0.004, s.U(z0)], [s.U(x1), s.U(bedTop) + 0.012, s.U(z1)], MachineLook.Accent, "hazard paint", clear: true);
-        if (t >= 4)
-            foreach (var z in new[] { -0.5, 0.5 })
-                s.Add([s.U(-0.4), s.U(0.12), s.U(z) - (z < 0 ? Thin : 0.004)], [s.U(0.4), s.U(0.2), s.U(z) + (z < 0 ? 0.004 : Thin)], MachineLook.Steel, "steel", clear: true);
     }
 
     // ---- The Assembler family: a gantry over a bed, a tool head that strokes, trays with an orange lip; the hopper's rim white

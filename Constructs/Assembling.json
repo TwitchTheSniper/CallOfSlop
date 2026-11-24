@@ -1620,11 +1620,7 @@
     {"output": "Press", "materials": {"steel": 180, "rubber": 36}, "seconds": 29.0},
     {"output": "Pressure Plate", "materials": {"steel": 2, "copper": 3}, "parts": {"Circuit Board": 1}, "seconds": 2.2, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Foundry", "materials": {"steel": 438, "concrete": 219, "rubber": 88}, "parts": {"Gear Set": 2}, "seconds": 107.0},
-    {"output": "Sawmill", "materials": {"steel": 270, "concrete": 135, "rubber": 54}, "parts": {"Gear Set": 2}, "seconds": 66.8},
-    {"output": "Workshop Sawmill", "materials": {"steel": 480, "concrete": 240}, "parts": {"Gear Set": 4, "Wiring Loom": 2}, "seconds": 117.2, "techTier": 2, "needs": ["Power Coupling"]},
-    {"output": "Industrial Sawmill", "materials": {"steel": 750, "concrete": 375}, "parts": {"Gear Set": 6, "Wiring Loom": 3, "Control Unit": 1}, "seconds": 180.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Military Sawmill", "materials": {"steel": 1470, "concrete": 735}, "parts": {"Gear Set": 8, "Wiring Loom": 4, "Control Unit": 2}, "seconds": 180.0, "techTier": 4, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Plasma Sawmill", "materials": {"steel": 2000, "concrete": 1215}, "parts": {"Gear Set": 10, "Wiring Loom": 5, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Sawmill", "materials": {"steel": 188, "concrete": 94, "rubber": 38}, "parts": {"Gear Set": 2}, "seconds": 47.0},
     {"output": "Smelter", "materials": {"steel": 375, "concrete": 188, "rubber": 75}, "parts": {"Gear Set": 2}, "seconds": 92.0},
     {"output": "Camera", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "Camera Screen", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
@@ -2793,6 +2789,8 @@
     {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
     {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40},
     {"output": "Crucible Block", "materials": {"steel": 380, "concrete": 250}, "seconds": 60},
-    {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25}
+    {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25},
+    {"output": "Saw Block", "materials": {"steel": 190, "concrete": 40, "rubber": 40}, "seconds": 45},
+    {"output": "Plank Stacker", "materials": {"steel": 50, "concrete": 20}, "seconds": 20}
   ]
 }

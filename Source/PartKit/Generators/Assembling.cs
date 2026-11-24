@@ -1091,6 +1091,11 @@ public sealed class Assembling : IPartGenerator
         // Core keeps the Foundry's row, and the Workshop to Plasma Foundries' rows went: tools/MIGRATING.md; after everything: AfterCloche)
         (null, null, Rec("Crucible Block", 60, 1, m: [("steel", 380), ("concrete", 250)])),
         (null, null, Rec("Mould Line", 25, 1, m: [("steel", 110), ("concrete", 30)])),
+        // (the Sawmill on the block system, PR 3 of the refiners: its Saw Block, a steel bed and a band mill's running gear (about 0.85 of the
+        // Core's units), and its Plank Stacker; the Core keeps the Sawmill's row, and the Workshop to Plasma Sawmills' rows went:
+        // tools/MIGRATING.md; after everything: AfterCloche)
+        (null, null, Rec("Saw Block", 45, 1, m: [("steel", 190), ("concrete", 40), ("rubber", 40)])),
+        (null, null, Rec("Plank Stacker", 20, 1, m: [("steel", 50), ("concrete", 20)])),
     ];
 
     /// <summary>
@@ -1303,7 +1308,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line"];
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Saw Block", "Plank Stacker"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i
