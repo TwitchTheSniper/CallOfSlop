@@ -373,8 +373,6 @@ public static class ConstructSeal
             c.SealPour[k] = 0;
             return;
         }
-        if (ConstructFar.Unwatched(world, c))
-            return; // (it pours when someone comes near: no bundles falling where nobody is)
         var rate = MathF.Max(r.PourMin, total * r.PourShare) * dt;
         var want = MathF.Min(amount, tipped ? rate : MathF.Min(rate, over));
         // Clear of the box's rim and whatever stands round it, sideways as it falls.

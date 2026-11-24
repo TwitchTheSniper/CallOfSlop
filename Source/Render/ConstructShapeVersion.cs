@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// of a big body's boxes keyed to it (the sun's caster, the lamps' shadow maps, the contact shadow's footprint) were made again
 /// whole for changes that moved no box. On a new stamp this hashes every part's type, box list, place and turn (about 30 us for
 /// 6,000 parts, nothing allocated), apart for the door parts and the rest, and bumps a version only when a hash differs.
-/// <see cref="Main"/> covers the parts no door moves; <see cref="Doors"/> the doors' parts at their settled poses, together with
+/// <see cref="Main"/> covers the parts no door moves but machines' pieces (<see cref="Pieces"/>); <see cref="Doors"/> the doors' parts at their settled poses, together with
 /// <see cref="Construct.DoorPoseStamp"/>. Render only: nothing on the wire or in a save.
 /// </summary>
 public static class ConstructShapeVersion
@@ -27,12 +27,26 @@ public static class ConstructShapeVersion
         return c.ShapeDoorVersion;
     }
 
-    /// <summary>Both together, for a cache of all of a body's boxes.</summary>
+    /// <summary>
+    /// The version of the pieces machines made (run-time parts: extruded, pressed, baked) that no door moves and that aren't growing: they come
+    /// and go a few times a second on a works, so a cache of a big body's boxes keeps them apart from <see cref="Main"/> (2026-11-24: every piece
+    /// a works machine handed on or fitted remade the whole sun caster, 250,000 boxes, 28 ms a second).
+    /// </summary>
+    public static int Pieces(Construct c)
+    {
+        Refresh(c);
+        return c.ShapePieceVersion;
+    }
+
+    /// <summary>All together, for a cache of all of a body's boxes.</summary>
     public static long Both(Construct c)
     {
         Refresh(c);
-        return (long)c.ShapeMainVersion << 32 | (uint)c.ShapeDoorVersion;
+        return (long)c.ShapeSolidVersion << 32 | (uint)c.ShapeDoorVersion;
     }
+
+    /// <summary>Is part <paramref name="i"/> one of <see cref="Pieces"/>' (else <see cref="Main"/>'s, when it is no door's)?</summary>
+    public static bool IsPiece(Construct c, int i) => Extrusion.IsRuntimeId(c.Parts[i].Def);
 
     // Every version handed out is new across all bodies and worlds: caches are keyed by body id and version, and ids start again
     // at 1 in each world, so a body loaded after a world change must not match the last world's body of the same id. Render only.
@@ -49,7 +63,7 @@ public static class ConstructShapeVersion
         if (c.ShapeStamp != c.RebuildStamp || c.ShapeParts != c.PartCount)
         {
             c.EnsureDoors();
-            long main = 0, doors = 17;
+            long main = 0, doors = 17, pieces = 29;
             var counted = 0; // (the parts hashed: a piece growing on a die that comes or goes changes no cache, so it isn't counted either)
             for (var i = 0; i < c.PartCount; i++)
             {
@@ -61,15 +75,27 @@ public static class ConstructShapeVersion
                 counted++;
                 if (c.DoorOfListed(i) >= 0)
                     doors = Mix(doors, h ^ counted); // (its place among the hashed parts, not its index: a piece taken off the body earlier in the list renumbers the doors' parts and moves no box)
+                else if (IsPiece(c, i))
+                    pieces = Mix(pieces, h);
                 else
                     main = Mix(main, h);
             }
-            main = Mix(main, counted); // (2026-11-24: the seed was the part count, so each piece an Extruder started or handed on remade the works' whole sun caster, 30 ms)
+            // (2026-11-24: the main hash was seeded with the part count, so each piece an Extruder started or handed on remade the works' whole sun caster, 30 ms)
+            var solid = false;
             if (main != c.ShapeMainHash || c.ShapeStamp < 0)
             {
                 c.ShapeMainHash = main;
                 c.ShapeMainVersion = ++_next;
+                solid = true;
             }
+            if (pieces != c.ShapePieceHash || c.ShapeStamp < 0)
+            {
+                c.ShapePieceHash = pieces;
+                c.ShapePieceVersion = ++_next;
+                solid = true;
+            }
+            if (solid)
+                c.ShapeSolidVersion = ++_next;
             if (doors != c.ShapeDoorHash || c.ShapeStamp < 0)
             {
                 c.ShapeDoorHash = doors;
@@ -87,6 +113,6 @@ public static class ConstructShapeVersion
 public sealed partial class Construct
 {
     // (ConstructShapeVersion: the stamp, part count and door pose its hashes were taken at, the hashes and the versions)
-    internal int ShapeStamp = -1, ShapeParts = -1, ShapeDoorPose = -1, ShapeMainVersion, ShapeDoorVersion;
-    internal long ShapeMainHash, ShapeDoorHash;
+    internal int ShapeStamp = -1, ShapeParts = -1, ShapeDoorPose = -1, ShapeMainVersion, ShapeDoorVersion, ShapePieceVersion, ShapeSolidVersion;
+    internal long ShapeMainHash, ShapeDoorHash, ShapePieceHash;
 }

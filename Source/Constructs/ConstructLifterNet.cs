@@ -6,6 +6,26 @@ public sealed partial class Construct
 {
     internal int HasLiftStamp = int.MinValue, HasLiftParts = -1; // (ConstructLifters.HasLifter: the parts it was worked out for)
     internal bool HasLift;
+    private int _joinedKeyStamp = int.MinValue, _joinedKeyParts = -1;
+    private ulong _joinedKey;
+
+    /// <summary>
+    /// A hash of every part joined to another by a link (its place and kind), but run-time pieces,, kept while <see cref="StructStamp"/> holds: the cache keys of
+    /// what is worked out from the built parts (ConstructCrafting.KeyOf, ConstructLifters.EdgeKey) take it in place of the part count, which
+    /// a loose piece an Extruder or a Press makes or hands on changes (2026-11-24). A rail section, a Pad Tile, a bed block or an arm's chain
+    /// piece welded on or taken off changes it.
+    /// </summary>
+    internal ulong JoinedKey()
+    {
+        if (_joinedKeyStamp == StructStamp && _joinedKeyParts == PartCount)
+            return _joinedKey;
+        var h = 14695981039346656037UL;
+        for (var i = 0; i < PartCount; i++)
+            if (FirstLink(i) >= 0 && !Extrusion.IsRuntimeId(Parts[i].Def)) // (a run-time piece, extruded, pressed or baked, is what machines make: never a rail, a tile or a block)
+                h = (h ^ (ulong)i ^ (ulong)Parts[i].Def << 20 ^ (Parts[i].Broken ? 1UL << 40 : 0)) * 1099511628211UL;
+        (_joinedKeyStamp, _joinedKeyParts, _joinedKey) = (StructStamp, PartCount, h);
+        return h;
+    }
 }
 
 /// <summary>One lifter edge of the logistics map (<see cref="LogiMap"/>): the lifter part carries from a pick part to a put part.</summary>
@@ -210,14 +230,14 @@ public static partial class ConstructLifters
 
     /// <summary>
     /// Either peer: a hash of what a body's lifter edges follow from (each lifter's and each possible point's part, kind, place, whether
-    /// broken, and a lifter's Works setting), so a rebuild that changed none of them keeps the edges (a machine's piece leaving the body).
+    /// broken, and a lifter's Works setting), and of every joined part (<see cref="Construct.JoinedKey"/>), so a rebuild that changed none of them keeps the edges (a machine's piece leaving the body).
     /// </summary>
     public static ulong EdgeKey(Construct c)
     {
         // (Every kind PointsOn takes is hashed, and not the part count: a piece an Extruder made or handed on, at the end of the parts, made
         // the Zero Day works' map walk all its lifters' points again, 3 ms a time, 2026-11-24. A part going from the middle moves the
         // indices of those after it, which are hashed.)
-        var h = 14695981039346656037UL;
+        var h = 14695981039346656037UL ^ c.JoinedKey(); // (a lifter's reach follows parts welded to it, rails and chain pieces; a pad's and a bed's size their blocks)
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.DefOf(i);

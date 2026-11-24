@@ -302,8 +302,7 @@ public static class ConstructScoops
         if (slow)
         {
             ConstructGatherer.SetBusy(world, st, s.Linger > 0);
-            if (!ConstructFar.Unwatched(world, c)) // (nothing pours where nobody is: ConstructFar.Unwatched)
-                Tip(world, query, c, ref s, in p, d, st, q, t);
+            Tip(world, query, c, ref s, in p, d, st, q, t);
         }
     }
 
@@ -588,8 +587,8 @@ public static class ConstructScoops
                 return;
             }
         }
-        if (units < bundle)
-            return;
+        if (units < bundle || ConstructFar.Unwatched(world, c))
+            return; // (no loose bundle where nobody is, or out of a body in free fall: it waits in the box; into a body or the ground it still goes)
         var at = from + down * 0.2f;
         var load = Math.Min(bundle, st.Amount);
         if (world.SpillBundle(mat, load, at, c.PointVel(at)))

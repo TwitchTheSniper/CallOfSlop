@@ -70,8 +70,8 @@ public static class ConstructFar
     }
 
     /// <summary>
-    /// Is body <paramref name="c"/> further than <see cref="Range"/> (and its radius) from every person, or falling round a planet on its rail? What
-    /// a box or a bucket pours is held back then (2026-11-24: two Requisition Crates on a ship 4 km over Caledon poured a 25 kg Material Bundle
+    /// Is body <paramref name="c"/> further than <see cref="Range"/> (and its radius) from every person, or falling round a planet on its rail? A Material
+    /// Bundle a box or a bucket would spill is held back then (ConstructScoops.Into) (2026-11-24: two Requisition Crates on a ship 4 km over Caledon poured a 25 kg Material Bundle
     /// each every second, which fell at 320 m/s for half a minute each, awake, and nobody near to see them). False with nobody given.
     /// </summary>
     public static bool Unwatched(ConstructWorld world, Construct c)
