@@ -1083,6 +1083,10 @@ public sealed class Assembling : IPartGenerator
         // keeps the Smelter's row, and the Workshop to Plasma Smelters' rows went: tools/MIGRATING.md; after everything: AfterCloche)
         (null, null, Rec("Hearth Block", 60, 1, m: [("concrete", 320), ("steel", 140)])),
         (null, null, Rec("Casting Bed", 25, 1, m: [("concrete", 90), ("steel", 80)])),
+        // (the Foundry on the block system, PR 2 of the refiners: its Crucible Block, a steel pit frame lined with brick, and its Mould Line; the
+        // Core keeps the Foundry's row, and the Workshop to Plasma Foundries' rows went: tools/MIGRATING.md; after everything: AfterCloche)
+        (null, null, Rec("Crucible Block", 60, 1, m: [("steel", 260), ("concrete", 180)])),
+        (null, null, Rec("Mould Line", 25, 1, m: [("steel", 110), ("concrete", 30)])),
     ];
 
     /// <summary>
@@ -1295,7 +1299,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed"];
+        "Hearth Block", "Casting Bed", "Crucible Block", "Mould Line"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i
