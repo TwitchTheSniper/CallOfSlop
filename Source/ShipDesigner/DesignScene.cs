@@ -267,7 +267,7 @@ public static class DesignScene
         foreach (var r in d.Rooms)
         {
             var ok = true;
-            var dk = d.Decks[r.Deck];
+            var dk = d.DeckOf(r);
             foreach (var up in new[] { 0.05, dk.Height - 0.02 })
             {
                 var nx = Math.Max(1, (int)Math.Ceiling(r.X1 - r.X0));
@@ -315,11 +315,13 @@ public static class DesignScene
                         door = d.World(dk, Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0, (Math.Max(a.Z0, b.Z0) + Math.Min(a.Z1, b.Z1)) / 2, 0);
                     else if (ox >= 0.9 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02))
                         door = d.World(dk, (Math.Max(a.X0, b.X0) + Math.Min(a.X1, b.X1)) / 2, Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0, 0);
-                    if (door is not null)
+                    var segments = a.Group != 0 && a.Group == b.Group && (ox >= -0.02 && oz > 0.01 || oz >= -0.02 && ox > 0.01);
+                    if (door is not null || segments)
                     {
                         joins[a.Id].Add(b.Id);
                         joins[b.Id].Add(a.Id);
-                        c.Doors.Add(door);
+                        if (!segments)
+                            c.Doors.Add(door!);
                     }
                 }
                 else if (d.Neighbours(a.Deck, b.Deck) && (a.Kind == "Shaft" || b.Kind == "Shaft") &&
@@ -371,7 +373,7 @@ public static class DesignScene
                         continue; // the room the player picked for it
                     if (kind.Socket == "cargo" && r.Kind != "Hold")
                         continue;
-                    var dk = d.Decks[r.Deck];
+                    var dk = d.DeckOf(r);
                     if (kind.Socket == "shaft" && !d.Stacked && (r.Deck != lowest || at[1] > dk.Floor || at[0] < r.X0 - 0.3 || at[0] > r.X1 + 0.3 || at[2] < r.Z0 - 0.3 || at[2] > r.Z1 + 0.3))
                         continue;
                     var bx = Outer(d, r);
@@ -454,7 +456,7 @@ public static class DesignScene
         if (!r.ToHull)
             return b;
         double lo = r.X0, hi = r.X1;
-        var dk = d.Decks[r.Deck];
+        var dk = d.DeckOf(r);
         for (var v = r.Z0; v <= r.Z1 + 1e-6; v += Math.Max(0.25, (r.Z1 - r.Z0) / 8))
             foreach (var up in new[] { 0.05, dk.Height / 2, dk.Height - 0.02 })
             {
@@ -484,7 +486,7 @@ public static class DesignScene
     public static DesignMesh RoomMesh(ShipDesign d, Room r)
     {
         var m = new DesignMesh();
-        var dk = d.Decks[r.Deck];
+        var dk = d.DeckOf(r);
         var col = DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour);
         var nv = Math.Max(1, (int)Math.Ceiling((r.Z1 - r.Z0) / 0.5));
         const int nu = 4;
@@ -647,7 +649,7 @@ public static class DesignScene
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(r.Id).Append(",\"deck\":").Append(r.Deck)
               .Append(",\"x0\":").Append(ShipDesign.S(r.X0)).Append(",\"x1\":").Append(ShipDesign.S(r.X1)).Append(",\"z0\":").Append(ShipDesign.S(r.Z0)).Append(",\"z1\":").Append(ShipDesign.S(r.Z1))
               .Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"label\":").Append(Q(r.Label)).Append(",\"colour\":").Append(Q(RoomKinds.Find(r.Kind)!.Colour))
-              .Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
+              .Append(",\"height\":").Append(ShipDesign.S(d.DeckOf(r).Height)).Append(",\"group\":").Append(r.Group).Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
               .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
             if (r.ToHull)
             {
@@ -684,7 +686,7 @@ public static class DesignScene
             (x0, x1, y0, y1, z0, z1) = (Math.Min(x0, b.X0), Math.Max(x1, b.X1), Math.Min(y0, b.Y0), Math.Max(y1, b.Y1), Math.Min(z0, b.Z0), Math.Max(z1, b.Z1));
         }
         var floor = d.Rooms.Sum(r => Area(d, r));
-        var hold = d.Rooms.Where(r => r.Kind == "Hold").Sum(r => Area(d, r) * d.Decks[r.Deck].Height);
+        var hold = d.Rooms.Where(r => r.Kind == "Hold").Sum(r => Area(d, r) * d.DeckOf(r).Height);
         var bunks = d.Rooms.Where(r => r.Kind == "Cabin").Sum(r => Math.Floor(Area(d, r) / 6));
         sb.Append("{\"length\":").Append(ShipDesign.S(z1 - z0)).Append(",\"beam\":").Append(ShipDesign.S(x1 - x0)).Append(",\"height\":").Append(ShipDesign.S(y1 - y0))
           .Append(",\"floor\":").Append(ShipDesign.S(floor)).Append(",\"hold\":").Append(ShipDesign.S(hold)).Append(",\"bunks\":").Append(bunks)

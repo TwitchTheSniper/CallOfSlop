@@ -474,7 +474,33 @@ public sealed class DesignEditor
                 if (o["kind"] is not null) r.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? r.Kind;
                 if (o["label"] is not null) r.Label = Str(o, "label");
                 if (o["toHull"] is not null) r.ToHull = (bool)o["toHull"]!;
+                // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
+                if (o["height"] is not null)
+                {
+                    var hgt = Snap(Math.Clamp(D(o, "height"), 2.2, 40), 0.25);
+                    r.Height = Math.Abs(hgt - d.Decks[r.Deck].Height) < 0.01 || D(o, "height") <= 0 ? 0 : hgt;
+                }
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
+                return "";
+            }
+            case "splitRoom":
+            {
+                // A room cut in two across its longer side; the parts stay one room (a group), each sized on its own.
+                if (d.Rooms.Count >= ShipDesign.MaxRooms)
+                    return $"at most {ShipDesign.MaxRooms} rooms";
+                var r = Rm();
+                var alongX = r.X1 - r.X0 >= r.Z1 - r.Z0;
+                var len = alongX ? r.X1 - r.X0 : r.Z1 - r.Z0;
+                if (len < 2)
+                    return "a room needs 2 m to split (each part keeps a metre)";
+                if (r.Group == 0)
+                    r.Group = d.NewId();
+                var n = Room.FromJson(r.ToJson(), d.NewId());
+                n.Height = r.Height;
+                var mid = Snap((alongX ? r.X0 : r.Z0) + len / 2, 0.25);
+                if (alongX) { r.X1 = mid; n.X0 = mid; } else { r.Z1 = mid; n.Z0 = mid; }
+                d.Rooms.Add(n);
+                o["id"] = n.Id;
                 return "";
             }
             case "delRoom":

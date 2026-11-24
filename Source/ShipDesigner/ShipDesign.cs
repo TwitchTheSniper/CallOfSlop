@@ -27,9 +27,12 @@ public sealed class ShipDesign
     public double[] World(Deck dk, double u, double v, double up) => Stacked ? [u, v, dk.Floor - up] : [u, dk.Floor + up, v];
 
     /// <summary>A room's world box: x0, x1, y0, y1, z0, z1.</summary>
+    /// <summary>A room's deck as the room sees it: the deck's floor, and the room's own height when it has one (a tall hold, a two-deck hall).</summary>
+    public Deck DeckOf(Room r) => r.Height > 0 ? new Deck { Floor = Decks[r.Deck].Floor, Height = r.Height } : Decks[r.Deck];
+
     public double[] Box(Room r)
     {
-        var dk = Decks[r.Deck];
+        var dk = DeckOf(r);
         return Stacked ? [r.X0, r.X1, r.Z0, r.Z1, dk.Floor - dk.Height, dk.Floor] : [r.X0, r.X1, dk.Floor, dk.Ceiling, r.Z0, r.Z1];
     }
 
@@ -143,6 +146,8 @@ public sealed class Room
     public double X0, X1, Z0, Z1;
     public string Kind = "Cabin";
     public string Label = "";
+    public int Group; // segments of one room share a group (not 0): open to each other, no door between (Karl, 2026-11-24)
+    public double Height; // its own clear height (0: its deck's), so it can rise through the decks above (Karl, 2026-11-24)
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);
@@ -150,7 +155,7 @@ public sealed class Room
     public JsonObject ToJson() => new()
     {
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
-        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull,
+        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["height"] = ShipDesign.R(Height), ["group"] = Group,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -159,6 +164,7 @@ public sealed class Room
         {
             Id = id, Deck = (int?)o["deck"] ?? 0, X0 = ShipDesign.F(o["x0"], -1), X1 = ShipDesign.F(o["x1"], 1), Z0 = ShipDesign.F(o["z0"], 0),
             Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "", ToHull = (bool?)o["toHull"] ?? false,
+            Height = Math.Clamp(ShipDesign.F(o["height"], 0), 0, 40), Group = Math.Max(0, (int?)o["group"] ?? 0),
         };
         if (RoomKinds.Find(r.Kind) is null)
             r.Kind = "Cabin";

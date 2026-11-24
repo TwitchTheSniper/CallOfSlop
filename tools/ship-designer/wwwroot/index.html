@@ -456,6 +456,12 @@ renderer.domElement.addEventListener("pointerdown", ev => {
       select("room", r.object.userData.id);
       const room = S.rooms.find(x => x.id === r.object.userData.id);
       const at = deckPoint(ev), hp = r.point, onPlan = S.stacked ? { x: hp.x, z: hp.y } : { x: hp.x, z: hp.z };
+      // Its top grabbed: drag up or down to set its height (it can rise through the decks above).
+      const bx = room.box, onTop = S.stacked ? Math.abs(hp.z - bx[4]) < 0.12 : Math.abs(hp.y - bx[3]) < 0.12;
+      if (onTop) {
+        drag = { what: "roomTop", id: room.id, h0: room.height, at: hp.clone(), x0: ev.clientX, y0: ev.clientY, moved: false };
+        controls.enabled = false; dragFirst = true; return;
+      }
       drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false, edges: edgesNear(room, onPlan) };
       controls.enabled = false; dragFirst = true; return;
     }
@@ -492,6 +498,14 @@ window.addEventListener("pointermove", ev => {
       dragCmd({ op: "setRoom", light: true, id: drag.id, ...b });
       $("tip").textContent = `${fmt(b.x1 - b.x0)} x ${fmt(b.z1 - b.z0)} m`;
     } else dragCmd({ op: "setRoom", light: true, id: drag.id, x0: r.x0 + dx, x1: r.x1 + dx, z0: r.z0 + dz, z1: r.z1 + dz });
+  } else if (drag.what === "roomTop") {
+    // The point on the up line through the grabbed spot nearest the pointer's ray.
+    const ray = rayAt(ev), up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+    const w0 = drag.at.clone().sub(ray.origin), b = up.dot(ray.direction), dd = up.dot(w0), e = ray.direction.dot(w0), den = 1 - b * b;
+    if (den < 1e-4) return;
+    const t = (b * e - dd) / den, h = Math.max(2.2, Math.round((drag.h0 + t) * 4) / 4);
+    dragCmd({ op: "setRoom", light: true, id: drag.id, height: h });
+    $("tip").textContent = `${fmt(h)} m high`;
   } else if (drag.what === "draw") {
     const at = deckPoint(ev); if (!at) return;
     drag.end = at; drawPreview(drag.start, at);
@@ -525,6 +539,12 @@ function axisZ(ev, h) {
   const w = o.clone().sub(p), b = u.dot(d), dd = u.dot(w), e = d.dot(w), den = 1 - b * b;
   if (Math.abs(den) < 1e-4) return null;
   return p.z + (dd - b * e) / den;
+}
+function rayAt(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  return ray.ray;
 }
 function deckPoint(ev) {
   const dk = S.decks[deck]; if (!dk) return null;
@@ -898,9 +918,13 @@ function inspector() {
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "tohull", ...(r.toHull ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, toHull: e.target.checked }) }), "Out to the hull (its open sides follow the skin)"),
       el("div", { class: "grid2" }, el("span", {}, "kind"), ks, el("span", {}, "name"), lab,
         el("span", {}, "x from"), num(r.x0, v => cmd({ op: "setRoom", id: r.id, x0: v }), 0.25), el("span", {}, "x to"), num(r.x1, v => cmd({ op: "setRoom", id: r.id, x1: v }), 0.25),
-        el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25)),
-      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * d.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
-      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
+        el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25),
+        el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
+      el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
+      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("div", { class: "row" },
+        el("button", { onclick: () => { const a = cmd({ op: "splitRoom", id: r.id }); if (!a.error) select("room", a.id); } }, "Split"),
+        el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
   } else if (sel.kind === "hull") {
     const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
     const len = h.stations[h.stations.length - 1].z - h.stations[0].z;
