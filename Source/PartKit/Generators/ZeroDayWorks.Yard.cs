@@ -139,7 +139,32 @@ public sealed partial class ZeroDayWorks
                     Stack(c, "top", 4);
                 _stores.Add(($"yard pick {x0:0}", pad[0, 0]));
             }
+            LayYardArms();
         }
+
+        /// <summary>
+        /// The yard's arms (Sean, 2026-11-24: "arms placed so that the arms can move stuff from the end of the line pads straight into the
+        /// building bay"): Shipyard Loader Arms (LifterParts.BigArms: 18 m, 24 t, pieces to 10 x 24 m) on 3.5 m pedestals in the free floor
+        /// round the bay. South of it, in the gaps beside and between the two pick pads, each lifting off the pads it stands by; east of its
+        /// end, off the staging pad and the fittings pick pad; north of it, in the 4 m strip between the bay and line C's store (between the
+        /// yard crane's columns), off that store, line D's transfer run's end and the station's hold. Each fits a piece straight from where it
+        /// lies to its step (ConstructLifterDirect.cs), or the station's offers give it a step whose part lies on a pad it reaches.
+        /// <c>--station-check "Zero Day Works" --build "Zero Day Frigate" --reach</c> prints what each one reaches.
+        /// </summary>
+        private void LayYardArms()
+        {
+            // (stood by the pedestal's middle, "centre -y": it spans 1.75 m round (x, z), so on z -198 it stands in the 4 m between the bay's
+            // edge at z -200 and line C's store at -196 without touching either, and on z -220 just south of the bay's edge at -218)
+            foreach (var (x, z) in YardArms)
+                Arm("Shipyard Loader Arm", x, z, "centre -y");
+        }
+
+        /// <summary>
+        /// The yard arms' places, each its pedestal's middle and its shoulder (whole metres): south of the bay west of, between and east of
+        /// the pick pads; east of the bay's end between the staging pad and the fittings pick pad (it lifts off both); north of it in two
+        /// column bays either side of the yard crane's column at x 43, lifting off line C's store, line D's run end and the hold.
+        /// </summary>
+        public static readonly (float X, float Z)[] YardArms = [(17, -220), (44, -220), (73, -220), (78, -214), (39, -198), (47, -198)];
 
         /// <summary>A link's nodes through <paramref name="pts"/> from <paramref name="from"/>, each straight cut into spans of at most <see cref="SegmentMax"/>.</summary>
         private static Vector3[] Cut(Vector3 from, params Vector3[] pts)
