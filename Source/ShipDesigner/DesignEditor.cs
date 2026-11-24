@@ -552,7 +552,8 @@ public sealed class DesignEditor
                 if (o["height"] is not null)
                 {
                     var hgt = Snap(Math.Clamp(D(o, "height"), 2.2, 40), 0.25);
-                    r.Height = Math.Abs(hgt - d.Decks[r.Deck].Height) < 0.01 || D(o, "height") <= 0 ? 0 : hgt;
+                    hgt -= r.Below; // a room merged down through the deck under it counts its height from its own deck's floor
+                    r.Height = r.Below == 0 && Math.Abs(hgt - d.Decks[r.Deck].Height) < 0.01 || D(o, "height") <= 0 ? 0 : hgt;
                 }
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
                 return "";
@@ -564,9 +565,37 @@ public sealed class DesignEditor
                 var (a, b) = (d.RoomById(I(o, "a")), d.RoomById(I(o, "b")));
                 if (a is null || b is null || a == b)
                     return "pick two rooms";
-                if (a.Deck != b.Deck)
-                    return "rooms on different decks join with a ladder or a lift, not a merge";
                 const double e = 0.02;
+                if (a.Deck != b.Deck)
+                {
+                    // Across decks (Karl, 2026-11-24): one tall room through both, on the deck the player picks ("owner": "a" or "b").
+                    // It keeps the owner's plan; the other room goes.
+                    if (!d.Neighbours(a.Deck, b.Deck))
+                        return "merge rooms on decks next to each other (one at a time)";
+                    if (Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) < 0.5 || Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0) < 0.5)
+                        return "they don't overlap from above: line one up over the other first";
+                    var own = Str(o, "owner") == "b" ? b : a;
+                    var other = own == a ? b : a;
+                    var (lo, hi) = d.Under(a.Deck, b.Deck) ? (a, b) : (b, a);
+                    var (dl, dh) = (d.DeckOf(lo), d.DeckOf(hi));
+                    double bottom = dl.Floor, top = d.Stacked ? dh.Floor - dh.Height : dh.Floor + dh.Height; // world floor of the lower, roof of the upper
+                    var span = Math.Abs(top - bottom);
+                    var ownFloor = d.Decks[own.Deck].Floor;
+                    own.Below = Math.Round(Math.Abs(ownFloor - bottom), 3);
+                    own.Height = Math.Round(span - own.Below, 3);
+                    d.Doors.RemoveAll(k => k.Joins(a, b));
+                    d.Rooms.Remove(other);
+                    foreach (var p in d.Pieces)
+                        if (p.Room == other.Id)
+                            p.Room = own.Id;
+                    foreach (var k in d.Doors)
+                    {
+                        if (k.A == other.Id) k.A = own.Id;
+                        if (k.B == other.Id) k.B = own.Id;
+                    }
+                    o["id"] = own.Id;
+                    return "";
+                }
                 var rect = (Math.Abs(a.Z0 - b.Z0) < e && Math.Abs(a.Z1 - b.Z1) < e && (Math.Abs(a.X1 - b.X0) < e || Math.Abs(b.X1 - a.X0) < e))
                         || (Math.Abs(a.X0 - b.X0) < e && Math.Abs(a.X1 - b.X1) < e && (Math.Abs(a.Z1 - b.Z0) < e || Math.Abs(b.Z1 - a.Z0) < e));
                 var touch = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) >= -e && Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0) >= -e;

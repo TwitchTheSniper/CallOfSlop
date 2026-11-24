@@ -345,7 +345,7 @@ function drawRooms() {
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
       const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
-      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim) pickables.push(m);
+      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
       continue;
     }
     const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
@@ -354,11 +354,11 @@ function drawRooms() {
     const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - gap, by1 - by0 - gap, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - gap, 0.08, bz1 - bz0 - gap), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
     floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.04, st ? bz1 - 0.04 : (bz0 + bz1) / 2);
     floor.userData = { type: "room", id: r.id, floor: true };
-    world.add(floor); if (!dim) pickables.push(floor);
+    world.add(floor); if (!dim || mergeFrom) pickables.push(floor);
     const box = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, bz1 - bz0 - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
     box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
     box.userData = { type: "room", id: r.id }; // its walls can be grabbed too, from any angle
-    world.add(box); if (!dim) pickables.push(box);
+    world.add(box); if (!dim || mergeFrom) pickables.push(box);
     // Its outline; a room in parts (merged or split) leaves out the edges on the walls its parts share, so it reads as one.
     const mates = r.group ? S.rooms.filter(o => o !== r && o.group === r.group && o.deck === r.deck && !o.mesh) : [];
     const onMate = (x, y, z) => mates.some(o => { const b = o.box, e = 0.05; return x >= b[0] - e && x <= b[1] + e && y >= b[2] - e && y <= b[3] + e && z >= b[4] - e && z <= b[5] + e; });
@@ -610,6 +610,11 @@ renderer.domElement.addEventListener("pointerdown", ev => {
   }
   if (mode === "interior" && mergeFrom) {
     const h = hits.find(h => h.object.userData.type === "room"), from = mergeFrom; mergeFrom = 0;
+    const other = h && S.rooms.find(r => r.id === h.object.userData.id), mine = S.rooms.find(r => r.id === from);
+    if (other && mine && other.deck !== mine.deck) {
+      // Across decks: the player picks the deck that owns the tall room.
+      mergeAcross = { a: from, b: other.id }; select("room", from); $("tip").textContent = "Pick which deck owns the merged room, on the right."; return;
+    }
     if (h && h.object.userData.id !== from) {
       const a = cmd({ op: "mergeRoom", a: from, b: h.object.userData.id });
       if (a.error) toast(a.error); else { select("room", from); toast("Merged. Undo splits them again.", true); }
@@ -718,7 +723,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, mergeFrom = 0;
+let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, mergeFrom = 0, mergeAcross = null;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -1199,7 +1204,10 @@ function inspector() {
         el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
       el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
       el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
-      el("div", { class: "row" }, el("button", { class: mergeFrom === r.id ? "on" : "", onclick: () => { mergeFrom = mergeFrom === r.id ? 0 : r.id; inspector(); $("tip").textContent = mergeFrom ? "Click the room to merge into this one." : tips[mode]; } }, "Merge with...")),
+      el("div", { class: "row" }, el("button", { class: mergeFrom === r.id ? "on" : "", onclick: () => { mergeFrom = mergeFrom === r.id ? 0 : r.id; mergeAcross = null; rebuild(); inspector(); $("tip").textContent = mergeFrom ? "Click the room to merge into this one (on this deck, or the deck above or below)." : tips[mode]; } }, "Merge with...")),
+      ...(mergeAcross && mergeAcross.a === r.id ? (() => { const o = S.rooms.find(q => q.id === mergeAcross.b); if (!o) return []; const go = owner => { const a = cmd({ op: "mergeRoom", a: mergeAcross.a, b: mergeAcross.b, owner }); mergeAcross = null; if (a.error) toast(a.error); else { const kept = S.rooms.find(q => q.id === (owner === "a" ? r.id : o.id)); if (kept) { deck = kept.deck; select("room", kept.id); } toast("Merged through both decks. Undo splits them again.", true); } };
+        return [el("p", { class: "hint" }, `One room through deck ${r.deck + 1} and deck ${o.deck + 1}. Which deck owns it (its plan, and where it is listed)?`),
+          el("div", { class: "row" }, el("button", { onclick: () => go("a") }, `Deck ${r.deck + 1} (${r.label || r.kind})`), el("button", { onclick: () => go("b") }, `Deck ${o.deck + 1} (${o.label || o.kind})`), el("button", { onclick: () => { mergeAcross = null; inspector(); } }, "Cancel"))]; })() : []),
       el("h3", {}, "Cubby with a window"),
       el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
         el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, size: pieceSize, clad: 0.3 }); if (a.error) toast(a.error); else { toast("Cubby out to the skin, with a window at its end. Pick the window to size it and its cladding.", true); select("room", a.id); } } }, t))),

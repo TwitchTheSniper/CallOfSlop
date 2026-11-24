@@ -28,7 +28,19 @@ public sealed class ShipDesign
 
     /// <summary>A room's world box: x0, x1, y0, y1, z0, z1.</summary>
     /// <summary>A room's deck as the room sees it: the deck's floor, and the room's own height when it has one (a tall hold, a two-deck hall).</summary>
-    public Deck DeckOf(Room r) => r.Height > 0 ? new Deck { Floor = Decks[r.Deck].Floor, Height = r.Height } : Decks[r.Deck];
+    /// <summary>A room's own floor and clear height: its deck's, or its own height (it can rise through the decks above), and
+    /// for a room merged down through the deck below (Karl, 2026-11-24), its floor that much lower.</summary>
+    public Deck DeckOf(Room r)
+    {
+        if (r.Height <= 0 && r.Below <= 0)
+            return Decks[r.Deck];
+        var dk = Decks[r.Deck];
+        var h = r.Height > 0 ? r.Height : dk.Height;
+        return new Deck { Floor = dk.Floor - (Stacked ? -r.Below : r.Below), Height = h + r.Below };
+    }
+
+    /// <summary>Which of two decks is under the other (stacked decks: up is -z, so the one aft).</summary>
+    public bool Under(int a, int b) => Stacked ? Decks[a].Floor > Decks[b].Floor : Decks[a].Floor < Decks[b].Floor;
 
     public double[] Box(Room r)
     {
@@ -165,6 +177,7 @@ public sealed class Room
     public string Kind = "Cabin";
     public string Label = "";
     public int Group; // segments of one room share a group (not 0): open to each other, no door between (Karl, 2026-11-24)
+    public double Below; // metres its floor goes down through the deck under it (a room merged across decks, owned by the upper)
     public double Height; // its own clear height (0: its deck's), so it can rise through the decks above (Karl, 2026-11-24)
     public double[]? Want; // the plan it was drawn at, while a deck move has shrunk it to fit (it grows back to this when it can)
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
@@ -174,7 +187,7 @@ public sealed class Room
     public JsonObject ToJson() => new()
     {
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
-        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["height"] = ShipDesign.R(Height), ["group"] = Group,
+        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -183,7 +196,7 @@ public sealed class Room
         {
             Id = id, Deck = (int?)o["deck"] ?? 0, X0 = ShipDesign.F(o["x0"], -1), X1 = ShipDesign.F(o["x1"], 1), Z0 = ShipDesign.F(o["z0"], 0),
             Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "", ToHull = (bool?)o["toHull"] ?? false,
-            Height = Math.Clamp(ShipDesign.F(o["height"], 0), 0, 40), Group = Math.Max(0, (int?)o["group"] ?? 0),
+            Height = Math.Clamp(ShipDesign.F(o["height"], 0), 0, 40), Below = Math.Clamp(ShipDesign.F(o["below"], 0), 0, 40), Group = Math.Max(0, (int?)o["group"] ?? 0),
         };
         if (RoomKinds.Find(r.Kind) is null)
             r.Kind = "Cabin";
