@@ -191,7 +191,7 @@ public sealed partial class Construct
     public byte[] WorksHave = [], WorksAll = []; // by assembly, then kind: its working pieces, and all of them
 
     /// <summary>A thruster's push now could be, at full level (N): its force, times what its works let it have.</summary>
-    public float ThrustOf(int k) => Parts[Thrusters[k].Part].D.ThrustForce * Thrusters[k].Cap;
+    public float ThrustOf(int k) => Parts[Thrusters[k].Part].D.ThrustForce * Thrusters[k].Cap * (Thrusters[k].Mixer >= 0 ? ConstructPhysics.MixOf(this, Thrusters[k].Mixer).Push : 1); // (a Mixture Controller's push share too)
 
     /// <summary>The head entry of part <paramref name="part"/>, or -1 (its heads are in part order).</summary>
     public int WorksHeadOf(int part)

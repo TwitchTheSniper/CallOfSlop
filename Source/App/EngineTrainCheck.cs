@@ -39,6 +39,8 @@ public static class EngineTrainCheck
         }
         // (it flies off under its own push: the burn is what is read)
         Console.WriteLine($"{bp.Name}: {c.PartCount} parts, {c.ThrusterCount} thruster(s), fuel {c.FuelLeft:0.0} l");
+        foreach (var m in c.Modules)
+            Console.WriteLine($"  module on its plug: peak push {m.Thrust / 1000:0} kN{(m.Rich ? " (a Mixture Controller: on rich)" : "")}, {m.Mass:0} kg");
         var problems = 0;
         var ticks = (int)(seconds * World.TickRate);
         var cut = false;

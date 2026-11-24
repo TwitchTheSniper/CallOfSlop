@@ -58,7 +58,9 @@ public struct CModule
     public ushort Tags; // a bit per ModTag
     public ModTag Primary;
     public int Parts;
-    public float Mass, Thrust, Made, Draw; // kg, N, kW made, W drawn
+    public float Mass, Thrust, Made, Draw; // kg, N, kW made, W drawn (Thrust at its peak: a train with a Mixture Controller on rich)
+    public float TrainThrust; // N: its bells that need an injector (engine trains), at their rating
+    public bool Rich; // a Mixture Controller is in it: its train bells can push ConstructPhysics.MixRichPush more
     public int Guns, Stores, Harvest;
     public Vector3 Min, Max; // its bounds (the plug's segment rest frame)
     public bool Bridged; // its parts reach the hull other than through its plug (welded to more than its socket)
@@ -483,6 +485,8 @@ public static class ModuleSockets
             m.Min = new Vector3(float.MaxValue);
             m.Max = new Vector3(float.MinValue);
             var seg = c.Parts[i].Seg;
+            m.TrainThrust = 0;
+            m.Rich = false;
             while (top > 0)
             {
                 var at = stack[--top];
@@ -492,6 +496,17 @@ public static class ModuleSockets
                 m.Mass += pd.Mass;
                 if (pd.Role == PartRole.Thruster)
                     m.Thrust += pd.ThrustForce + pd.AbForce;
+                if (pd.Role == PartRole.Thruster && ConstructWorks.InjectorFedHead(pd))
+                {
+                    m.TrainThrust += pd.ThrustForce;
+                    if (m.Rich)
+                        m.Thrust += ConstructPhysics.MixRichPush * pd.ThrustForce; // (its peak: on rich)
+                }
+                if (pd.TrainFn == TrainFunction.Mixture && !m.Rich)
+                {
+                    m.Rich = true;
+                    m.Thrust += ConstructPhysics.MixRichPush * m.TrainThrust;
+                }
                 if (pd.Role == PartRole.Generator)
                     m.Made += pd.PlantRate;
                 m.Draw += pd.PowerDraw;
@@ -1018,7 +1033,7 @@ public static class ModuleSockets
         if (m.Mass > t.MassRating(s))
             return $"the module weighs {m.Mass / 1000f:0.#} t: a {ModuleSocketTable.SizeText(s)} socket holds {t.MassRating(s) / 1000f:0.#} t";
         if (m.Thrust > t.ThrustRating(s))
-            return $"the module pushes {m.Thrust / 1000f:0} kN: a {ModuleSocketTable.SizeText(s)} socket takes {t.ThrustRating(s) / 1000f:0} kN";
+            return $"the module pushes {m.Thrust / 1000f:0} kN{(m.Rich ? " on a rich mix" : "")}: a {ModuleSocketTable.SizeText(s)} socket takes {t.ThrustRating(s) / 1000f:0} kN";
         if (KindTag(s.Kind) is { } want && m.Primary != want)
             return $"this socket takes {TagName(want)} modules only: this one is {TagName(m.Primary)} ({TagsText(m.Tags)})";
         if (byHand && !creative)
@@ -1099,8 +1114,10 @@ public static class ModuleSockets
             var t = ModuleSocketTable.Current;
             if (c.Modules[mi].Mass + def.Mass > t.MassRating(s))
                 return $"the module would weigh {(c.Modules[mi].Mass + def.Mass) / 1000f:0.#} t: the socket holds {t.MassRating(s) / 1000f:0.#} t";
-            if (def.Role == PartRole.Thruster && c.Modules[mi].Thrust + def.ThrustForce + def.AbForce > t.ThrustRating(s))
-                return $"the module would push more than its socket's {t.ThrustRating(s) / 1000f:0} kN";
+            var adds = def.Role == PartRole.Thruster ? def.ThrustForce + def.AbForce + (c.Modules[mi].Rich && ConstructWorks.InjectorFedHead(def) ? ConstructPhysics.MixRichPush * def.ThrustForce : 0)
+                : def.TrainFn == TrainFunction.Mixture && !c.Modules[mi].Rich ? ConstructPhysics.MixRichPush * c.Modules[mi].TrainThrust : 0; // (at its peak: a Mixture Controller's rich mix)
+            if (adds > 0 && c.Modules[mi].Thrust + adds > t.ThrustRating(s))
+                return $"the module would push more than its socket's {t.ThrustRating(s) / 1000f:0} kN{(def.TrainFn == TrainFunction.Mixture || c.Modules[mi].Rich ? " on a rich mix" : "")}";
         }
         // Would its free sockets weld onto a part of another side (the module and the ship, or two modules)?
         var hits = Construct.PartScratch;
