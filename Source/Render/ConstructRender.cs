@@ -254,9 +254,13 @@ public static partial class ConstructRender
         var merge = MergeOn && gfx.MergedMeshes; // (static parts as merged meshes: ConstructRenderBatch.cs)
         BeginMergedFrame(gfx);
         var loopT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var perf = Perf.Measure(PerfArea.CDrawBodies); // (the F9 window's rows under "Constructs (draw)"; off, a bool test)
+        var perBody = Perf.On && !CameraFeeds.InPass; // (each body's draw for the F9 window's costliest bodies: PerfBodies.cs)
         foreach (var c in world.Bodies)
         {
             AllocProfile.Mark("cr: cull, flames"); // (the benchmark's --trace-frame: AllocProfile.cs; off, a bool test)
+            var bt = perBody ? System.Diagnostics.Stopwatch.GetTimestamp() : 0;
+            var n0 = n;
             if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
                 continue; // (phase 6: a ship in another star system is seen only by its own riders, who see nothing else: GameSpaceJump.cs)
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
@@ -267,6 +271,8 @@ public static partial class ConstructRender
             if (level == 0)
             {
                 culled++;
+                if (bt != 0)
+                    PerfBodies.Draw(c, bt, 0);
                 continue;
             }
             // The body's frame from the render origin (a ship far out in space: Renderer.SetCameraAt): the position less the
@@ -287,6 +293,8 @@ public static partial class ConstructRender
                 n += DrawLod(gfx, c, body);
                 gfx.Relative = false;
                 lod++;
+                if (bt != 0)
+                    PerfBodies.Draw(c, bt, n - n0);
                 continue;
             }
             AllocProfile.Mark("cr: body parts");
@@ -323,12 +331,18 @@ public static partial class ConstructRender
             }
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
+            if (bt != 0)
+                PerfBodies.Draw(c, bt, n - n0);
         }
+        perf.Dispose();
         AllocProfile.Mark("cr: flush");
         var loopT1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        perf = Perf.Measure(PerfArea.CDrawFlush);
         FlushMerged(gfx);
         gfx.EndBatch();
         QueryMerged(gfx); // (each queued chunk's box against what was just drawn: next frame draws it only if any of it showed, ConstructRenderOcclusion.cs)
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CDrawLinks);
         LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
         FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
         AllocProfile.Mark("cr: sweep, links, tracks, routes, panels");
@@ -359,6 +373,7 @@ public static partial class ConstructRender
             n++;
         }
         LastBoxes = n;
+        perf.Dispose();
         AllocProfile.Stop();
     }
 
