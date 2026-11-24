@@ -48,6 +48,22 @@ public static class BakeKits
     private static readonly Dictionary<string, Piece[]> Listed = new(StringComparer.OrdinalIgnoreCase); // (by part: the kit's pieces as listed)
     private static readonly object Gate = new();
 
+    private static int _bigBedCells;
+    private static string[] _bigBed = [];
+
+    /// <summary>
+    /// The least bed (2 m cells) an oven needs to bake this part: BakeKits.json "bigBed" (Sean, 2026-11-23: the frigate's decks, keel and hull
+    /// pieces on line C's big oven; its walls on lines A and B, whose smaller ovens a chain prefers). 0: any bed that holds it.
+    /// </summary>
+    public static int MinBedCells(ConstructPartDef d)
+    {
+        _ = Names; // (loaded)
+        foreach (var p in _bigBed)
+            if (d.Name.StartsWith(p, StringComparison.OrdinalIgnoreCase))
+                return _bigBedCells;
+        return 0;
+    }
+
     /// <summary>The parts made from kits (Constructs/BakeKits.json "parts").</summary>
     public static string[] Names
     {
@@ -71,6 +87,12 @@ public static class BakeKits
             if (root.TryGetProperty("material", out var m) && m.GetString() is { Length: > 0 } mat)
                 _material = mat;
             var list = new List<string>();
+            if (root.TryGetProperty("bigBed", out var bb))
+            {
+                _bigBedCells = bb.TryGetProperty("cells", out var cells) ? cells.GetInt32() : 0;
+                if (bb.TryGetProperty("prefixes", out var pre))
+                    _bigBed = [.. pre.EnumerateArray().Select(x => x.GetString()).OfType<string>().Where(x => x.Length > 0)];
+            }
             if (root.TryGetProperty("parts", out var ps))
                 foreach (var p in ps.EnumerateArray())
                     if (p.GetString() is { Length: > 0 } n)
@@ -219,6 +241,16 @@ public static class BakeKits
             for (var i = 0; i < pieces.Count; i++)
                 if (!Extrusion.IsSheet(pieces[i].Key) && pieces[i].Key with { Mask = mask } is var cored && Extrusion.KeyRefusal(cored) == null && Extrusion.Def(cored) != null)
                     pieces[i] = pieces[i] with { Key = cored };
+        }
+        if (pieces.Count == 1 && pieces[0].Key.L >= 2 * Extrusion.StepCm)
+        {
+            // One plate (a plain wall with no doorway): two lengths welded end to end, as a bake takes two or more subparts.
+            var p = pieces[0];
+            var l0 = p.Key.L / 2 / Extrusion.StepCm * Extrusion.StepCm;
+            var second = p.Pos + Rot24.Apply(p.Rot, new Vector3(0, 0, l0 / 100f));
+            second = new Vector3(MathF.Round(second.X * 100), MathF.Round(second.Y * 100), MathF.Round(second.Z * 100)) / 100f;
+            pieces[0] = p with { Key = p.Key with { L = (ushort)l0 } };
+            pieces.Add(p with { Key = p.Key with { L = (ushort)(p.Key.L - l0) }, Pos = second });
         }
         if (pieces.Count < 2 || pieces.Count > BakedParts.MaxSubparts)
         {

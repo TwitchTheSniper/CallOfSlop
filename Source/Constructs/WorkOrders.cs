@@ -107,7 +107,7 @@ public static class WorkOrders
         if (d.IsLaserCutter)
             return ConstructLaserCutter.Refusal(world, c, part, d, o);
         if (d.IsBakeOven)
-            return ConstructBakeOven.OrderRefusal(c, part, d, o);
+            return ConstructBakeOven.OrderRefusal(world, c, part, d, o);
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (o.IsMade && !d.IsAssembler)

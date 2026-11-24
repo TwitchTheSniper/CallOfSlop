@@ -529,9 +529,11 @@ public static class ConstructLogisticsPlan
                     (refusal, refusalKin) = (why, kin);
                 continue;
             }
-            var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;
+            var score = (c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1) * 256;
             if (ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
-                score += 1000; // (no conveyor way through joins and Routers to it: last; a Splitter's line may still bring it in turn)
+                score += 1000 * 256; // (no conveyor way through joins and Routers to it: last; a Splitter's line may still bring it in turn)
+            if (c.DefOf(mk).IsBakeOven && MachineBlocks.TryOf(c, mk, out var oa))
+                score += Math.Min(255, oa.W * oa.L); // (of ovens alike, the smallest bed that takes it: the works' walls on lines A and B, its decks on line C)
             if (score < bestScore)
                 (best, bestScore) = (mk, score);
         }
