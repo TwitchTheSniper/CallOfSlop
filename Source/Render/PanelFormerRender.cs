@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// each Bed Block row with the oil main along one side and a drop hose down to each row's crossheads; on the inner corner of each corner
 /// mast a long booster cylinder from the crosshead up to the girders, its crosshead collar riding up and down with the pins' stroke while
 /// the machine works; a lamp on each corner, green while it forms. Drawn within <see cref="DrawNear"/>, from the Core's work and the
-/// shared stroke clock, so every peer draws the same. Allocates nothing.
+/// shared stroke clock, so every peer draws the same. On every Panel Former, the bed's rails and its shaped dies (<see cref="DrawDies"/>).
+/// Allocates nothing.
 /// </summary>
 public static class PanelFormerRender
 {
@@ -16,6 +17,10 @@ public static class PanelFormerRender
     private static readonly Vector3 Green = new(0.365f, 0.498f, 0.235f), Trim = new(0.275f, 0.376f, 0.176f), Steel = new(0.6f, 0.63f, 0.66f),
         Dark = new(0.133f, 0.149f, 0.169f), Yellow = new(0.94f, 0.76f, 0.1f), Lamp = new(0.35f, 1f, 0.4f);
     private const float BedTop = 3.2f; // a Bed Block's crosshead top (m above the Core's foot), where the first Mast Block stands
+    private const float WorkY = 1f, DeckY = 0.86f, Head = 2.96f; // the rails' tops (OutTableParts.WorkY), the lower bed's deck, the crosshead's underside
+    private const float DiesFine = 40f; // the shaped dies' cells are half a metre within this, coarser past it
+    private const float DieInset = 0.2f, DieGap = 1f, FaceThick = 0.05f;
+    private static readonly Vector3 DieSteel = new(0.52f, 0.55f, 0.58f), DieFace = new(0.66f, 0.69f, 0.72f), Rail = new(0.42f, 0.44f, 0.47f);
 
     public static void Draw(Renderer gfx, ConstructWorld world)
     {
@@ -32,6 +37,8 @@ public static class PanelFormerRender
                 var d = c.Parts[asm.Core].D;
                 if (!d.IsPanelFormer || d.IsLaserCutter || d.BlockRole != BlockRole.Core)
                     continue;
+                var busy = !c.Parts[asm.Core].Broken && world.StoreOf(c, asm.Core) is { Busy: true };
+                DrawDies(gfx, c, asm, busy, ConstructRender.Now, Vector3.DistanceSquared(eye, c.WorldCom) < (DiesFine + c.Radius) * (DiesFine + c.Radius));
                 var levels = MachineBlocks.CornerColumns(c, asm); // (its masts as they stand, a level past what deepens the stroke too: the head sits on their tops)
                 if (levels == 0)
                     continue; // (no corner masts: the bed's own 2 m stroke, nothing over it)
@@ -40,6 +47,118 @@ public static class PanelFormerRender
             }
         }
     }
+
+    /// <summary>
+    /// The bed's dies and rails (Sean, 2026-11-24): small rails along the bed at the work height that the blank rides in on and the panel
+    /// out on; a lower die under them and an upper die hung under the crosshead, each one solid steel over the bed (inside its corner
+    /// posts). While the former works, both dies take on the head order's panel shape (<see cref="ConstructPanelFormer.DieShaping"/>): the
+    /// lower die rises into it and lifts the blank on its highest point, then the upper die comes down (<see cref="ConstructPanelFormer.PressAt"/>)
+    /// and squeezes the blank into the panel; the upper die lifts and the lower one goes flat, leaving the panel on the rails. Over the
+    /// sheet the dies are cells of half a metre (a column and a face plate turned to the shape's slope), elsewhere one flat block each.
+    /// Allocates nothing.
+    /// </summary>
+    private static void DrawDies(Renderer gfx, Construct c, in CMachineAsm asm, bool busy, double now, bool fine)
+    {
+        var d = c.Parts[asm.Core].D;
+        ConstructRender.PartDrawn(c, asm.Core, out var pos, out var rot);
+        var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
+        var cell = d.BlockCell;
+        var half = cell * 0.5f;
+        var o = d.BlockOrigin ?? Vector3.Zero;
+        var foot = o.Y - 1.6f;
+        float bx0 = o.X + asm.X0 * cell - half, bx1 = o.X + (asm.X0 + asm.W - 1) * cell + half;
+        float bz0 = o.Z + asm.Z0 * cell - half, bz1 = o.Z + (asm.Z0 + asm.L - 1) * cell + half;
+        float xc = (bx0 + bx1) * 0.5f, zc = (bz0 + bz1) * 0.5f;
+        var alongZ = asm.OutSide is 4 or 5;
+        var y0 = foot + WorkY;
+        // The rails: along the bed, a metre apart across it, the blank's and the panel's way over the dies.
+        float across0 = alongZ ? bx0 : bz0, across1 = alongZ ? bx1 : bz1, run0 = alongZ ? bz0 : bx0, run1 = alongZ ? bz1 : bx1;
+        var lanes = Math.Max(1, (int)MathF.Floor((across1 - across0 - 2 * DieInset) / 1f));
+        for (var k = 0; k <= lanes; k++)
+        {
+            var at = (across0 + across1) * 0.5f + (k - lanes * 0.5f);
+            if (alongZ)
+                Box(gfx, frame, new Vector3(at - 0.015f, y0 - 0.034f, run0 + 0.01f), new Vector3(at + 0.015f, y0, run1 - 0.01f), Rail);
+            else
+                Box(gfx, frame, new Vector3(run0 + 0.01f, y0 - 0.034f, at - 0.015f), new Vector3(run1 - 0.01f, y0, at + 0.015f), Rail);
+        }
+        // Where the dies are in the stroke, and the panel's shape (none: flat dies, as a kit's loft or a plain skin has no key shape).
+        var ph = ConstructPanelFormer.Phase(now);
+        float shaping = busy ? ConstructPanelFormer.DieShaping(ph) : 0, press = busy ? ConstructPanelFormer.PressAt(ph) : 0;
+        ConstructPanelFormer.DieInfo? die = null;
+        var shaped = busy && ConstructPanelFormer.Die(c, asm.Core, out die);
+        var thick = die?.Thick ?? 0.04f;
+        var high = die?.High ?? 0;
+        var gap = Math.Clamp(Head - 0.08f - (WorkY + 0.007f + thick + high), 0, DieGap); // (open: the upper die's lift, under the crosshead)
+        float dx0 = bx0 + DieInset, dx1 = bx1 - DieInset, dz0 = bz0 + DieInset, dz1 = bz1 - DieInset; // (inside the corner posts)
+        float lowBase = foot + DeckY + 0.02f, upTop = foot + Head - 0.004f;
+        // The sheet's footprint over the bed (none when flat), and the flat blocks round it.
+        float sx0 = xc, sx1 = xc, sz0 = zc, sz1 = zc;
+        if (die != null)
+        {
+            float hl = die.Length * 0.5f, hw = die.Width * 0.5f;
+            (sx0, sx1, sz0, sz1) = alongZ ? (xc - hw, xc + hw, zc - hl, zc + hl) : (xc - hl, xc + hl, zc - hw, zc + hw);
+            (sx0, sx1, sz0, sz1) = (Math.Clamp(sx0, dx0, dx1), Math.Clamp(sx1, dx0, dx1), Math.Clamp(sz0, dz0, dz1), Math.Clamp(sz1, dz0, dz1));
+        }
+        float lowFlat = y0 - ConstructPanelFormer.DieUnder + ConstructPanelFormer.DieRise * shaping;
+        float upFlat = y0 + 0.007f + thick + gap * (1 - press);
+        FlatDies(gfx, frame, dx0, dx1, dz0, sz0, lowBase, lowFlat, upFlat, upTop); // (before the sheet, along z)
+        FlatDies(gfx, frame, dx0, dx1, sz1, dz1, lowBase, lowFlat, upFlat, upTop); // (after it)
+        FlatDies(gfx, frame, dx0, sx0, sz0, sz1, lowBase, lowFlat, upFlat, upTop); // (beside it)
+        FlatDies(gfx, frame, sx1, dx1, sz0, sz1, lowBase, lowFlat, upFlat, upTop);
+        if (die == null || sx1 - sx0 < 0.01f || sz1 - sz0 < 0.01f)
+            return;
+        // Over the sheet: cells, each a column and a face plate turned to the shape's slope through its corners.
+        var res = fine ? 0.5f : 1.5f;
+        int nx = Math.Clamp((int)MathF.Ceiling((sx1 - sx0) / res), 1, 24), nz = Math.Clamp((int)MathF.Ceiling((sz1 - sz0) / res), 1, 24);
+        float cx = (sx1 - sx0) / nx, cz = (sz1 - sz0) / nz;
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < nz; j++)
+            {
+                float ax = sx0 + i * cx, az = sz0 + j * cz;
+                float h00 = Lift(die, ax, az, xc, zc, asm.OutSide), h10 = Lift(die, ax + cx, az, xc, zc, asm.OutSide);
+                float h01 = Lift(die, ax, az + cz, xc, zc, asm.OutSide), h11 = Lift(die, ax + cx, az + cz, xc, zc, asm.OutSide);
+                float lo = MathF.Min(MathF.Min(h00, h10), MathF.Min(h01, h11)), hi = MathF.Max(MathF.Max(h00, h10), MathF.Max(h01, h11));
+                var mid = new Vector3(ax + cx * 0.5f, (h00 + h10 + h01 + h11) * 0.25f, az + cz * 0.5f);
+                var ta = new Vector3(cx, (h10 + h11 - h00 - h01) * 0.5f, 0);
+                var tb = new Vector3(0, (h01 + h11 - h00 - h10) * 0.5f, cz);
+                var n = Vector3.Normalize(Vector3.Cross(tb, ta));
+                var plate = FaceThick + (hi - lo) * shaping; // (thick enough to meet its column at the cell's far corner)
+                // The lower die: its face at the shape (scaled by how far it has shaped), the column under it.
+                var lowAt = lowFlat + mid.Y * shaping;
+                Plate(gfx, frame, new Vector3(mid.X, lowAt, mid.Z) - n * (plate * 0.5f), ta * new Vector3(1, shaping, 1), tb * new Vector3(1, shaping, 1), n, plate, DieFace);
+                Box(gfx, frame, new Vector3(ax, lowBase, az), new Vector3(ax + cx, lowFlat + lo * shaping - 0.01f, az + cz), DieSteel);
+                // The upper die: its face the panel's top (scaled the same), lifted by the open gap, the column over it to the crosshead.
+                var upAt = upFlat + mid.Y * shaping;
+                Plate(gfx, frame, new Vector3(mid.X, upAt, mid.Z) + n * (plate * 0.5f), ta * new Vector3(1, shaping, 1), tb * new Vector3(1, shaping, 1), n, plate, DieFace);
+                Box(gfx, frame, new Vector3(ax, MathF.Min(upFlat + hi * shaping + 0.01f, upTop - 0.01f), az), new Vector3(ax + cx, upTop, az + cz), DieSteel);
+            }
+    }
+
+    /// <summary>The flat dies over one rectangle of the bed (x and z in the Core's frame): the lower die from the deck to its face, the upper from its face to the crosshead.</summary>
+    private static void FlatDies(Renderer gfx, Matrix4x4 frame, float x0, float x1, float z0, float z1, float lowBase, float lowFace, float upFace, float upTop)
+    {
+        if (x1 - x0 < 0.01f || z1 - z0 < 0.01f)
+            return;
+        Box(gfx, frame, new Vector3(x0, lowBase, z0), new Vector3(x1, lowFace, z1), DieSteel);
+        Box(gfx, frame, new Vector3(x0, MathF.Min(upFace, upTop - 0.01f), z0), new Vector3(x1, upTop, z1), DieSteel);
+    }
+
+    /// <summary>A plate centred at <paramref name="at"/>, spanning <paramref name="ta"/> and <paramref name="tb"/>, <paramref name="thick"/> along <paramref name="n"/> (its top lit by n).</summary>
+    private static void Plate(Renderer gfx, Matrix4x4 frame, Vector3 at, Vector3 ta, Vector3 tb, Vector3 n, float thick, Vector3 colour)
+    {
+        var up = n * thick;
+        var m = new Matrix4x4(ta.X, ta.Y, ta.Z, 0, up.X, up.Y, up.Z, 0, tb.X, tb.Y, tb.Z, 0, at.X, at.Y, at.Z, 1);
+        gfx.Draw(m * frame, colour);
+    }
+
+    /// <summary>
+    /// The panel's lift (m over its lowest point) over the Core-frame point (<paramref name="x"/>, <paramref name="z"/>), laid as
+    /// ConstructPanelFormer.BedLook lays it: centred on the bed, its length along z on a bed that runs along z (either way), along x
+    /// (a quarter turn, its across then against z) on one that runs along x.
+    /// </summary>
+    private static float Lift(ConstructPanelFormer.DieInfo die, float x, float z, float xc, float zc, byte outSide) =>
+        outSide is 4 or 5 ? die.LiftAt(z - zc, x - xc) : die.LiftAt(x - xc, zc - z);
 
     private static void DrawHead(Renderer gfx, Construct c, in CMachineAsm asm, int levels, bool working, double now)
     {
