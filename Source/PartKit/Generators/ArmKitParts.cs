@@ -15,6 +15,9 @@ public sealed class ArmKitParts : IPartGenerator
 {
     public string Name => "arm_kit";
 
+    /// <summary>The chain pieces: pressed on the Arm die, never an Assembler's row (Assembling.PressedNow).</summary>
+    public static readonly string[] PressedPieces = ["Arm Joint", "Arm Boom", "Arm Wrist", "Pad Clamp", "Arm Counterweight", "Arm Drive Pack"];
+
     private const string Out = "Constructs/Parts/Lifters/ArmKit";
     private const string Yellow = "#e8b81c", Yellow2 = "#c99c18", Dark = "#2b2f34", Steel = "#98a1a9", Pin = "#f07818", Weight = "#4c5157", Screen = "#10161c", Lamp = "#ff9a1a";
 

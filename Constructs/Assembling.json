@@ -2793,6 +2793,8 @@
     {"output": "Shipyard Loader Arm", "materials": {"steel": 1900}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Long Loader Arm", "materials": {"steel": 931}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 141.7, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Hearth Block", "materials": {"concrete": 320, "steel": 140}, "seconds": 60},
-    {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25}
+    {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25},
+    {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
+    {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40}
   ]
 }
