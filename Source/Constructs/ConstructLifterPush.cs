@@ -213,7 +213,7 @@ public static class ConstructLifterPush
                 if (c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     break;
                 ConstructLifters.Frame(c, l.Part, ld, out _, out _, out var shoulder);
-                var range = ld.ReachMax + ld.PieceLong + ld.Up + height + 1f; // (cheap: no piece of this lifter is further)
+                var range = ld.ReachMax + ld.Travel + ld.PieceLong + ld.Up + height + 1f; // (cheap: no piece of this lifter is further)
                 if (Vector3.DistanceSquared(shoulder, feet) > range * range)
                     continue;
                 if (Pose(c, l, ld, ConstructLifters.AgeAt(l, tick), out Boxes[_count]))

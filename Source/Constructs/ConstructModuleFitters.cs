@@ -103,7 +103,7 @@ public static class ModuleFitters
         var r = 0f;
         for (var i = 0; i < lb.N; i++)
             if (lb.Lifts[i].Part < c.PartCount && ConstructLifters.DefOf(c, lb.Lifts[i].Part) is { Fitter: true } ld && !c.Parts[lb.Lifts[i].Part].Broken)
-                r = MathF.Max(r, ld.ReachMax + ld.Up);
+                r = MathF.Max(r, ld.ReachMax + ld.Travel + ld.Up);
         return r;
     }
 

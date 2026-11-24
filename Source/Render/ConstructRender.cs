@@ -539,8 +539,8 @@ public static partial class ConstructRender
             return 0; // (on a leg segment: drawn there, ConstructRenderLegs.cs)
         ref var p = ref c.Parts[i];
         var d = p.D;
-        if (d.ArmPiece != ArmPieceKind.None && ArmKit.Posed(c, i))
-            return 0; // (a live arm's chain piece: LifterRender poses it, ArmKit.cs)
+        if ((d.ArmPiece != ArmPieceKind.None || d.Lifter != null) && ArmKit.Drawn(c, i))
+            return 0; // (a live arm's chain piece, or a part riding its Rail Carriage: LifterRender poses it, ArmKit.cs)
         if (d.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return 0; // (a socket connector set hidden: Hide connector, ModuleSockets.HiddenLook)
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
@@ -710,6 +710,7 @@ public static partial class ConstructRender
             : d.IsRollerTile || d.IsTurntable ? d.HasWork && !p.Broken && RollerRuns.Moving(c, i) // (a Roller Tile's rollers turn while a piece rides its run, a turntable's disc while one crosses: drawing 23)
             : workPart >= 0 && !p.Broken && world.StoreOf(c, workPart) is { } workStore && ProductionLines.Working(world, c, workPart, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
+        var drive = DriveLooks(d) && !p.Broken && DrivePrepare(gfx, c, i, d, seg * body); // (a bell and its engine's pieces show the burn: ConstructRender.DriveFx.cs)
         // A Press Core has no work boxes of its own (Sean 2026-11-23: no clamshell on the control module), so its store is read here.
         var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) : null;
         if (pressStore != null)
@@ -803,6 +804,8 @@ public static partial class ConstructRender
                 model = rig.Model(in box, in p, model);
             if (working && box.Work != BoxWork.None)
                 WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
+            else if (drive)
+                DriveMove(c, in box, in p, d, centre, ref model);
             if (_hubRise > 0 && box.RigTravel > 0 && box.Work is BoxWork.Slide or BoxWork.Spin)
                 model *= Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * MathF.Min(_hubRise, box.RigTravel)); // (the hub's carriage and its chuck ride up the slide, up to their travel)
             if (box.Fence && routerOn && routerFence != 0)
@@ -828,6 +831,8 @@ public static partial class ConstructRender
                 gfx.Draw(model, !p.Broken && (p.Out >= 0.5f) == (box.Shows == 1) ? box.Color : box.Color * (0.18f * shade), opacity, mode: 2, shape: box.Shape); // (a switch's state lamp: lit in its colour while on, or while off, dark otherwise)
             else if (box.Way != 0 && routerOn && (routerStuck ? MathF.Sin((float)Now * MathF.Tau * 3f) > 0 : routerWay == box.Way))
                 gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
+            else if (drive && box.Work is BoxWork.Glow or BoxWork.Chase && DriveColour(c, i, in box) is { } driveGlow)
+                gfx.Draw(model, driveGlow, opacity, mode: 2, shape: box.Shape); // (a drive's coil, throat or ring lamp, by the burn)
             else if ((box.Work is BoxWork.Glow or BoxWork.Beam || box.Work == BoxWork.Hinge && Vector3.DistanceSquared(box.Color, HingeMelt) < 1e-4f) && working) // (and a tipping crucible's melt: a "hinge" box in the machines' dull hot colour)
                 gfx.Draw(model, WorkHot * (0.85f + 0.15f * MathF.Sin((float)Now * 5f + i)), opacity, mode: 2, shape: box.Shape); // (a hot die, bright while the machine runs; its own dull colour otherwise)
             else if (box.Glow)

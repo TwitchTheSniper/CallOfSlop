@@ -21,6 +21,7 @@ public struct CThruster
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
     public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
     public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
+    public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
 
 /// <summary>
@@ -93,10 +94,12 @@ public sealed partial class Construct
         Span<float> keep = stackalloc float[MaxThrusters];
         Span<ushort> keepPart = stackalloc ushort[MaxThrusters];
         Span<float> keepAb = stackalloc float[MaxThrusters];
+        Span<float> keepBuffer = stackalloc float[MaxThrusters];
         var old = ThrusterCount;
         for (var k = 0; k < old; k++)
         {
             keepAb[k] = Thrusters[k].Ab;
+            keepBuffer[k] = Thrusters[k].Buffer;
             keep[k] = Thrusters[k].Level;
             keepPart[k] = Thrusters[k].Part;
         }
@@ -128,7 +131,7 @@ public sealed partial class Construct
             var dir = -ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
             ref var t = ref Thrusters[ThrusterCount];
             ConstructWorks.CapOf(this, i, out var cap, out var burnShare); // (what its works let it push: a dead drive isn't counted on for yaw)
-            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && FuelReaches(i), Cap = cap, Burn = burnShare };
+            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && (ConstructWorks.InjectorFedHead(d) ? ConstructWorks.TrainFed(this, i) : FuelReaches(i)), Cap = cap, Burn = burnShare };
             t.MixForward = Vector3.Dot(dir, fwd);
             t.MixYaw = Vector3.Cross(at - Com, dir).Y * d.ThrustForce * cap; // (made a share below)
             most = MathF.Max(most, MathF.Abs(t.MixYaw));
@@ -140,7 +143,10 @@ public sealed partial class Construct
             {
                 t.Level = keep[kept];
                 t.Ab = keepAb[kept];
+                t.Buffer = keepBuffer[kept];
             }
+            if (t.Fed && ConstructWorks.InjectorFedHead(d))
+                t.Buffer = ShipWorks.Current.InjectorBuffer; // (fed: its injector is full)
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)
@@ -369,6 +375,8 @@ public static partial class ConstructPhysics
                     c.UseFuel(burn * dt);
                 if (d.ThrustOx > 0)
                     ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt);
+                if (!t.Fed)
+                    t.Buffer = MathF.Max(0, t.Buffer - t.Level * dt); // (a cut line: it burns its injector's buffer, then stops)
             }
             else
                 c.MotorWork += d.ThrustPower * 1000f * (d.ThrustKind == ThrustKind.Repulsor ? push / d.ThrustForce : t.Level * t.Cap);
@@ -520,6 +528,8 @@ public static partial class ConstructPhysics
                     c.UseFuel(d.ThrustBurn * t.Burn * t.Level * dt * SpaceFuelScale);
                 if (d.ThrustOx > 0)
                     ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt * SpaceFuelScale);
+                if (!t.Fed)
+                    t.Buffer = MathF.Max(0, t.Buffer - t.Level * dt);
             }
             else
                 c.MotorWork += d.ThrustPower * 1000f * t.Level * t.Cap;
@@ -586,7 +596,7 @@ public static partial class ConstructPhysics
             return ConstructConfig.Get(p, p.D, CfgKey.Grain, 0) < p.D.BurnTime;
         if (p.D.ThrustOx > 0 && c.OxLeft <= 0)
             return false;
-        return p.D.ThrustFuel == EngineFuel.Fuel ? t.Fed && c.FuelLeft > 0 : c.Electrical && ConstructPower.On(c, t.Part);
+        return p.D.ThrustFuel == EngineFuel.Fuel ? (t.Fed || t.Buffer > 0) && c.FuelLeft > 0 : c.Electrical && ConstructPower.On(c, t.Part);
     }
 }
 
