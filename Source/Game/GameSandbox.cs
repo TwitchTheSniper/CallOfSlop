@@ -974,6 +974,13 @@ public sealed partial class Game
     /// </summary>
     private string? SandboxActGuarded(Player me, ref PacketReader r)
     {
+        // The host's input runs inside RideDrawnPose (the ridden ship at its drawn pose, between ticks), but the server's
+        // checks measure from the player's tick eye: at orbital speed the two are up to a tick's travel apart (7 m at
+        // 470 m/s), so F on a door beside the player said "too far away" (Karl, 2026-11-24). Every host action is judged
+        // at the tick's poses, as a client's is, and the drawn poses come back after.
+        var drawn = _rideDrawn != null;
+        if (drawn)
+            RideTickPose();
         try
         {
             var why = SandboxAct(me, ref r, SandboxNow);
@@ -990,6 +997,11 @@ public sealed partial class Game
                 CrashLog.Report("sandbox action exception on the host (recovered, the action was refused)", ex);
             }
             return "that didn't work (an error was logged)";
+        }
+        finally
+        {
+            if (drawn)
+                RideDrawnPose();
         }
     }
 
@@ -1993,13 +2005,9 @@ public sealed partial class Game
         {
             if (Local is { } me)
             {
-                var drawn = _rideDrawn != null;
-                RideTickPose(); // (the server's checks see the tick's pose: GameSandboxRide.cs)
                 var r = new PacketReader(w.Span[1..]);
-                if (SandboxActGuarded(me, ref r) is { } why)
+                if (SandboxActGuarded(me, ref r) is { } why) // (the server's checks see the tick's pose: SandboxActGuarded)
                     SandboxSay(why);
-                if (drawn)
-                    RideDrawnPose();
             }
             return;
         }

@@ -283,6 +283,18 @@ public sealed partial class Game
         eye += me.Position - me.RenderPosition; // (on foot: the drawn body is between the ticks too)
     }
 
+    /// <summary>
+    /// A rider's eye on their construct as it stands now: inside <see cref="RideDrawnPose"/> the deck is at its drawn pose,
+    /// while <see cref="Player.Eye"/> is where the last tick put them, up to a tick's travel away at orbital speed. Not riding: the eye.
+    /// </summary>
+    internal Vector3 RiderEyeNow(Player me)
+    {
+        ref var s = ref me.Sim;
+        if (s.RideUp == Vector3.Zero || Constructs.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return me.Eye;
+        return me.Eye + ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal) - me.Position;
+    }
+
     /// <summary>Server: after the constructs' step every rider is where their construct now is, whether or not an input came in this tick.</summary>
     private void SandboxRidersFollow()
     {
