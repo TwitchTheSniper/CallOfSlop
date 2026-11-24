@@ -341,7 +341,9 @@ const roomMats = new Map();
 function drawRooms() {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
-    const dim = inside() && r.deck !== deck;
+    // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
+    const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
+    const dim = inside() && r.deck !== deck && !through;
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
       const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
