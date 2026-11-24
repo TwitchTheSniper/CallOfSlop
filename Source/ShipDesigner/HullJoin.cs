@@ -275,7 +275,7 @@ public sealed class HullJoin
             {
                 var h = i == 0 ? ha : hb;
                 var dir = i == 0 ? -1.0 : 1.0;
-                var reach = 2 * Math.Max(W, H) * sc + 1;
+                var reach = 3 * Math.Max(W, H) * sc + 2;
                 for (var j = 0; j < r.Length; j++)
                 {
                     var v = r[j];
@@ -284,7 +284,11 @@ public sealed class HullJoin
                     // Inside already: back out to where it leaves the skin; else on in to where it meets it.
                     var inside = In(h, At(0));
                     if (inside ? In(h, At(-reach)) : !In(h, At(reach)))
+                    {
+                        // The line along the strut misses this body (a wide flare past a curved side): the nearest skin point instead.
+                        r[j] = Nearest(h, v.Item1, v.Item2, v.Item3);
                         continue;
+                    }
                     double lo = inside ? -reach : 0, hi = inside ? 0 : reach;
                     for (var it = 0; it < 20; it++)
                     {
@@ -309,6 +313,15 @@ public sealed class HullJoin
         if (Mirror && Math.Abs(a.P[0]) > 0.3)
             m.MirrorFrom(0, 0);
         return m;
+    }
+
+    private static (double, double, double) Nearest(HullBody h, double x, double y, double z)
+    {
+        var copy = h.Copies == 2 && Math.Abs(x - h.CopyX(1)) < Math.Abs(x - h.CopyX(0)) ? 1 : 0;
+        double lx = x - h.CopyX(copy), ly = y - h.Y, lz = Math.Clamp(z - h.Z, h.Front, h.Back);
+        var s = h.OnSkin(lz, h.NearestT(lx, ly, lz), lx < -0.01 ? -1 : 1);
+        // 1 cm in under the skin, so no seam shows.
+        return (h.CopyX(copy) + s.X - s.Nx * 0.01, h.Y + s.Y - s.Ny * 0.01, h.Z + s.Z);
     }
 
     private static double Sq(double v) => v * v;
