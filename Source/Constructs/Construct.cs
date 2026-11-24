@@ -386,7 +386,7 @@ public sealed partial class Construct
     // Server: a ship out of the bubble: the acceleration its drive gave it this tick (game axes; GameSpaceLaunch.SpaceLaunchBefore).
     internal Vector3 SpaceAccel;
     public bool FeltSpace; // server: its bubble pulls nothing where it is (ShipGravity.Update)
-    public Vector3 Felt; // server: the pull a rider aboard feels, world axes, filtered (ShipGravity.cs; zero with the rule off)
+    public Vector3 Felt; // server: the pull a rider aboard feels, world axes, filtered (ShipGravity.cs; with deck gravity, the hull's acceleration alone)
     // Server and client: loose bodies in this construct's frame at the last carry (most constructs: 0).
     internal int FrameRiders;
     // Client: the newest pose heard was in a frame (Frame), so the pose history holds frame poses.
@@ -1445,17 +1445,39 @@ public sealed partial class Construct
     }
 
     /// <summary>
+    /// Piece <paramref name="part"/> is about to take a new def in place (a growth step: <see cref="RefreshShape"/> follows): its share
+    /// of a big body's mass sums is taken off now, as it is, and true returned for RefreshShape to put the new one back (no walk over
+    /// every part). As <see cref="DoorPartMoving"/>.
+    /// </summary>
+    internal bool GrowBegin(int part)
+    {
+        if (!DoorSums(part))
+            return false;
+        AddPartSums(part, -1);
+        return true;
+    }
+
+    /// <summary>
     /// A part's size changed in place (an extrusion growing): the mass, bounds and contact points again, without the rest of
     /// <see cref="Rebuild"/> (links, power, drive line and guns don't follow from a length). The pose stays. Allocates nothing.
+    /// With <paramref name="part"/> and its old bounds, its collider leaves are reshaped in place, and with <paramref name="sumsTaken"/>
+    /// (<see cref="GrowBegin"/>) its mass share alone is put back: no walk over every part of a big body.
     /// </summary>
-    public void RefreshShape()
+    public void RefreshShape(int part = -1, Vector3 oldMin = default, Vector3 oldMax = default, bool sumsTaken = false)
     {
         if (Dirty)
-            return; // (a rebuild is coming)
+            return; // (a rebuild is coming: GrowBegin was skipped too, DoorSums)
         RebuildStamp++; // (its boxes in a big body's batch: ConstructRenderBatch.cs)
         GrowStamp++; // (only the growing piece changed: the whole-body caches keep, StructStamp)
-        ColliderChanged(); // (a piece growing on a die: a rebuild of its tree at the Extruder's rate, not the part tree's: ConstructPartTree.cs)
-        if (_sumsValid)
+        if (part < 0 || _collider == null || _colliderStale || !_collider.GrowPart(this, part, oldMin, oldMax))
+            ColliderChanged(); // (a piece growing on a die: its leaves reshaped in place when it can be (GrowPart), else the collider built again; the part tree holds it loose: ConstructPartTree.cs)
+        if (sumsTaken && _sumsValid)
+        {
+            AddPartSums(part, 1); // (its new share; the old one went in GrowBegin: 2026-11-23, the whole works summed again ten times a second, 1.2 ms each)
+            StructBounds(part, out var smn, out var smx);
+            GrowBounds(smn, smx);
+        }
+        else if (_sumsValid)
         {
             FuseMassStale(); // (a unit's member may be the part that changed)
             SumParts(); // (a part's shape changed: summed again)

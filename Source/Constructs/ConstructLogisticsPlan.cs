@@ -731,13 +731,13 @@ public static class ConstructLogisticsPlan
     public const int RetrySteps = 120;
 
     /// <summary>
-    /// What a maker's refusal depends on, folded into one number without allocating: the body's links and rebuilds (a Die Block, a
+    /// What a maker's refusal depends on, folded into one number without allocating: the body's links and rebuilds (StructStamp: not a piece growing on a die, ten times a second; a Die Block, a
     /// die, a new machine), and each machine's queue, bin and settings. A blocked link is asked again when it changes.
     /// </summary>
     private static uint Seen(ConstructWorld world, Construct c, CraftNet net)
     {
         var h = (2166136261u ^ net.Key) * 16777619u;
-        h = (h ^ (uint)c.RebuildStamp) * 16777619u;
+        h = (h ^ (uint)c.StructStamp) * 16777619u;
         h = (h ^ (uint)c.PartCount) * 16777619u;
         for (var i = 0; i < net.MachineN; i++)
         {
@@ -941,7 +941,7 @@ public static class ConstructLogisticsPlan
         ref var f = ref world.Chains[first];
         // (run 7: a maker or its machine held off by a wire into Run, a line console stopped, said nothing on the row: the player saw only "0/1")
         var held = f.Maker != NoPart && f.Maker < c.PartCount && ConstructExtruder.RunHeld(c, f.Maker) ? f.Maker : f.Dest < c.PartCount && ConstructExtruder.RunHeld(c, f.Dest) ? f.Dest : -1;
-        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.RebuildStamp * 2654435761u ^ (uint)(held + 1) << 24; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
+        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.StructStamp * 2654435761u ^ (uint)(held + 1) << 24; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
         if (f.NoteText == null || f.NoteKey != key)
         {
             var end = f.Maker == NoPart || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest);

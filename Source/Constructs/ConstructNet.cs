@@ -983,8 +983,10 @@ public static partial class ConstructNet
                     {
                         if (Extrusion.Def(was.ExKey with { W = wide, H = tall, L = cm }) is not { } longer)
                             throw new MalformedPacketException($"an extrusion of {wide} by {tall} by {cm} cm");
+                        c.PartBounds(part, out var oldMin, out var oldMax); // (where its leaves are in the collider: ConstructCollider.GrowPart)
+                        var taken = c.GrowBegin(part);
                         c.Parts[part].Def = longer.Id;
-                        world.ShapeChanged(c);
+                        world.ShapeChanged(c, part, oldMin, oldMax, taken);
                     }
                 }
                 break;
