@@ -325,12 +325,14 @@ public sealed class HullJoin
             for (var j = 0; j < ring.Count; j++)
             {
                 var j1 = (j + 1) % ring.Count;
-                var shade = DesignMesh.Tone(col, (i % 2 == 0 ? 1.0 : 0.94) * (j % 2 == 0 ? 1.0 : 0.9));
+                // Hull A's paint (the joint takes its colour from A): along by the ring's share of the length, round by j.
+                var pc = ha.Paint(len * i / Math.Max(1, last), (j + 0.5) / ring.Count, 4, Id * 4099 + i * 64 + j);
+                var shade = DesignMesh.Tone(pc, (i % 2 == 0 ? 1.0 : 0.94) * (j % 2 == 0 ? 1.0 : 0.9));
                 m.Quad(rings[i][j], rings[i + 1][j], rings[i + 1][j1], rings[i][j1], shade, false);
             }
         // The strut's own rings are clad; the flared ends into the skins (dl > 0) stay bare.
         if (Clad != "Off")
-            CladStrut(m, rings, centres, dl > 1e-4 ? 1 : 0, dl > 1e-4 ? last - 1 : last, col);
+            CladStrut(m, rings, centres, dl > 1e-4 ? 1 : 0, dl > 1e-4 ? last - 1 : last, col, ha);
         if (Mirror && Math.Abs(a.P[0]) > 0.3)
             m.MirrorFrom(0, 0);
         return m;
@@ -341,7 +343,7 @@ public sealed class HullJoin
     /// (by its length) and along the strut (by the middle line's), laid with the bodies' plates (<see cref="DesignScene.LayPlates"/>),
     /// each plate's normal out from the middle line. Seeded, so the same design always clads the same.
     /// </summary>
-    private void CladStrut(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int i0, int i1, (byte, byte, byte) col)
+    private void CladStrut(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int i0, int i1, (byte, byte, byte) col, HullBody ha)
     {
         if (i1 <= i0)
             return;
@@ -413,7 +415,8 @@ public sealed class HullJoin
         var size = Math.Clamp(CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
         var start = m.Tris;
-        DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(CladSeed * 1000003 + Id * 7919)), Clad == "Heavy", CladDepth, col, P, Nrm, W, new bool[nu, nv]);
+        DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(CladSeed * 1000003 + Id * 7919)), Clad == "Heavy", CladDepth, col, P, Nrm, W, new bool[nu, nv],
+            (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell));
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
     }

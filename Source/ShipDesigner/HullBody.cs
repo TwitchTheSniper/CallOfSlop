@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
 
 namespace CallOfSlop.ShipDesigner;
@@ -48,8 +49,8 @@ public sealed class HullBody
     /// its profile it is (keel 0, spine 1), and the other end sampled at that same fraction, so neither end's shape changes.</summary>
     public int Pair(int i, Span<double> ah, Span<double> ay, Span<double> bh, Span<double> by)
     {
-        var a = Stations[i].P;
-        var b = Stations[i + 1].P;
+        var a = Ring[i].P;
+        var b = Ring[i + 1].P;
         if (a.Count == b.Count)
         {
             for (var k = 0; k < a.Count; k++)
@@ -99,11 +100,139 @@ public sealed class HullBody
     public double Front => Stations[0].Z;
     public double Back => Stations[^1].Z;
 
+    // ---- rounded ends (Karl, 2026-11-24)
+
+    /// <summary>Rounded ends: a radius (m) at the bow and the stern, 0 for a hard edge. The end station's profile is shrunk towards its
+    /// centre and its z pulled back along a quarter circle, in RoundSteps generated rings, so the skin curves into the cap.</summary>
+    public double RoundFore, RoundAft;
+    public const int RoundSteps = 4;
+    public const double RoundMax = 8;
+
+    /// <summary>The most a round at one end may be: half the end profile's smallest half-size, and short of the next station.</summary>
+    public double RoundLimit(bool aft)
+    {
+        if (Stations.Count < 2)
+            return 0;
+        var s = aft ? Stations[^1] : Stations[0];
+        var gap = aft ? s.Z - Stations[^2].Z : Stations[1].Z - s.Z;
+        var hMax = s.P.Max(q => q.H);
+        var tall = (s.P[^1].Y - s.P[0].Y) / 2;
+        return Math.Max(0, Math.Min(RoundMax, Math.Min(0.5 * Math.Min(hMax, tall), gap - MinGap)));
+    }
+
+    private List<Station>? _ring;
+    private long _ringKey;
+
+    /// <summary>The stations the skin is made of: the saved ones, with the rounded ends' generated rings. Everything that reads the
+    /// skin's shape (the mesh, caps, cladding, At, SkinHalf, OnSkin) reads these, so they agree.</summary>
+    public List<Station> Ring
+    {
+        get
+        {
+            var key = Key();
+            if (_ring is not null && key == _ringKey)
+                return _ring;
+            _ringKey = key;
+            var rf = Math.Min(RoundFore, RoundLimit(false));
+            var ra = Math.Min(RoundAft, RoundLimit(true));
+            if (rf < 0.01 && ra < 0.01)
+                return _ring = Stations;
+            var list = new List<Station>();
+            if (rf >= 0.01)
+                Rounded(Stations[0], rf, 1, list, false);
+            for (var i = rf >= 0.01 ? 1 : 0; i < Stations.Count - (ra >= 0.01 ? 1 : 0); i++)
+                list.Add(Stations[i]);
+            if (ra >= 0.01)
+                Rounded(Stations[^1], ra, -1, list, true);
+            return _ring = list;
+        }
+    }
+
+    /// <summary>The rings of one rounded end, in z order: the shrunk end at the station's own z, then out along the quarter circle to the
+    /// full profile r in (towards dir).</summary>
+    private static void Rounded(Station s, double r, int dir, List<Station> list, bool aft)
+    {
+        double y0 = s.P[0].Y, y1 = s.P[^1].Y, yc = (y0 + y1) / 2;
+        var size = Math.Max(0.05, Math.Min(s.P.Max(q => q.H), (y1 - y0) / 2));
+        var rings = new List<Station>();
+        for (var k = 0; k <= RoundSteps; k++)
+        {
+            var a = Math.PI / 2 * k / RoundSteps;
+            var shrink = r * (1 - Math.Sin(a));
+            var f = Math.Max(0.05, 1 - shrink / size);
+            rings.Add(new Station { Z = s.Z + dir * r * (1 - Math.Cos(a)), P = [.. s.P.Select(q => (Math.Max(0.05 * f, q.H * f), yc + (q.Y - yc) * f))] });
+        }
+        if (aft)
+            rings.Reverse();
+        list.AddRange(rings);
+    }
+
+    private long Key()
+    {
+        var k = BitConverter.DoubleToInt64Bits(RoundFore) * 31 + BitConverter.DoubleToInt64Bits(RoundAft);
+        foreach (var s in Stations)
+        {
+            k = k * 1000003 + BitConverter.DoubleToInt64Bits(s.Z) + s.P.Count;
+            foreach (var (h, y) in s.P)
+                k = k * 31 + BitConverter.DoubleToInt64Bits(h) * 7 + BitConverter.DoubleToInt64Bits(y);
+        }
+        return k ^ RuntimeHelpers.GetHashCode(Stations);
+    }
+
+    // ---- paint (Karl, 2026-11-24: the Rocinante, mostly dark with bold orange areas)
+
+    public static readonly string[] PaintPatterns = ["Blocks", "Stripes", "Bands"];
+    public string Accent = "#d8742a", Pattern = "Blocks";
+    public double AccentAmount, Stripe = 1.5, Wear;
+    public int PaintSeed = 1;
+    public const double StripeMin = 0.2, StripeMax = 10;
+
+    private static double Hash(int a, int b, int c)
+    {
+        unchecked
+        {
+            var x = (uint)(a * 73856093) ^ (uint)(b * 19349663) ^ (uint)(c * 83492791);
+            x ^= x >> 13; x *= 0x5bd1e995; x ^= x >> 15;
+            return (x & 0xffffff) / (double)0x1000000;
+        }
+    }
+
+    /// <summary>The paint at a plate or facet: z along the body (local m), u round the profile (0 keel to 1 spine, m round it in arcM),
+    /// cell a stable index for it. Deterministic from the seed.</summary>
+    public (byte, byte, byte) Paint(double z, double u, double arcM, int cell)
+    {
+        var amt = Math.Clamp(AccentAmount, 0, 1);
+        var w = Math.Max(StripeMin, Stripe);
+        bool accent;
+        if (amt <= 0)
+            accent = false;
+        else if (Pattern == "Stripes") // along the ship, by the way round
+        {
+            var period = w / amt;
+            var at = u * arcM + Hash(PaintSeed, 7, 0) * period;
+            accent = at - Math.Floor(at / period) * period < w;
+        }
+        else if (Pattern == "Bands") // across the ship, by z
+        {
+            var period = w / amt;
+            var at = z + Hash(PaintSeed, 9, 0) * period;
+            accent = at - Math.Floor(at / period) * period < w;
+        }
+        else
+            accent = Hash(PaintSeed, cell, 1) < amt;
+        var c = DesignMesh.Hex(accent ? Accent : Skin);
+        var wear = Math.Clamp(Wear, 0, 1);
+        return DesignMesh.Tone(c, 1 - wear * (0.12 + 0.3 * Hash(PaintSeed, cell, 2)));
+    }
+
     public JsonObject ToJson()
     {
         var o = Json0();
         if (Clad != "Off")
             o["clad"] = new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) };
+        if (RoundFore > 0) o["roundFore"] = ShipDesign.R(RoundFore);
+        if (RoundAft > 0) o["roundAft"] = ShipDesign.R(RoundAft);
+        o["paint"] = new JsonObject { ["accent"] = Accent, ["amount"] = ShipDesign.R(AccentAmount), ["pattern"] = Pattern, ["stripe"] = ShipDesign.R(Stripe), ["wear"] = ShipDesign.R(Wear), ["seed"] = PaintSeed };
         return o;
     }
 
@@ -145,6 +274,19 @@ public sealed class HullBody
             h.CladSize = Math.Clamp(ShipDesign.F(c["size"], 1.5), CladSizeMin, CladSizeMax);
             h.CladDepth = Math.Clamp(ShipDesign.F(c["depth"], 1), CladDepthMin, CladDepthMax);
         }
+        h.RoundFore = Math.Clamp(ShipDesign.F(o["roundFore"], 0), 0, RoundMax);
+        h.RoundAft = Math.Clamp(ShipDesign.F(o["roundAft"], 0), 0, RoundMax);
+        if (o["paint"] is JsonObject pa)
+        {
+            var ac = (string?)pa["accent"] ?? "";
+            if (ac.Length == 7 && ac[0] == '#') h.Accent = ac;
+            var pt = (string?)pa["pattern"] ?? "Blocks";
+            h.Pattern = PaintPatterns.Contains(pt) ? pt : "Blocks";
+            h.AccentAmount = Math.Clamp(ShipDesign.F(pa["amount"], 0), 0, 1);
+            h.Stripe = Math.Clamp(ShipDesign.F(pa["stripe"], 1.5), StripeMin, StripeMax);
+            h.Wear = Math.Clamp(ShipDesign.F(pa["wear"], 0), 0, 1);
+            h.PaintSeed = Math.Clamp((int?)pa["seed"] ?? 1, 0, 99999);
+        }
         h.Tidy();
         return h;
     }
@@ -152,7 +294,8 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
-        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth,
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, RoundFore = RoundFore, RoundAft = RoundAft,
+        Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 
     /// <summary>
@@ -188,11 +331,12 @@ public sealed class HullBody
         Span<double> ay = stackalloc double[MaxLoft];
         Span<double> bh = stackalloc double[MaxLoft];
         Span<double> by = stackalloc double[MaxLoft];
-        for (var i = 0; i < Stations.Count - 1; i++)
+        var ring = Ring;
+        for (var i = 0; i < ring.Count - 1; i++)
         {
-            var a = Stations[i];
-            var b = Stations[i + 1];
-            if (z > b.Z + 1e-9 && i < Stations.Count - 2)
+            var a = ring[i];
+            var b = ring[i + 1];
+            if (z > b.Z + 1e-9 && i < ring.Count - 2)
                 continue;
             var t = b.Z - a.Z < 1e-9 ? 0 : Math.Clamp((z - a.Z) / (b.Z - a.Z), 0, 1);
             var n = Pair(i, ah, ay, bh, by);
@@ -325,7 +469,7 @@ public sealed class HullBody
     public (double X0, double X1, double Y0, double Y1, double Z0, double Z1) Bounds()
     {
         double w = 0, y0 = double.MaxValue, y1 = double.MinValue;
-        foreach (var s in Stations)
+        foreach (var s in Ring)
             foreach (var (h, y) in s.P)
             {
                 w = Math.Max(w, h);

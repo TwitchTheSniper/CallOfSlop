@@ -365,7 +365,7 @@ function drawRooms() {
     const dim = inside() && r.deck !== deck && !through;
     drawExts(r, dim);
     if (r.wallMesh) {
-      // Its partition walls, solid so they read inside the see-through room.
+      // Its walls: a solid shell round the outside of the room, a little darker than its colour.
       const wm = meshFrom(r.wallMesh, { transparent: dim, opacity: dim ? 0.15 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
       wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
     }
@@ -1134,6 +1134,24 @@ function stationPanel(h) {
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
     el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
+  // Rounded ends: the skin curves into the cap over this radius.
+  const rMaxF = Math.max(0, Math.floor((h.roundMaxFore ?? 0) * 20) * 5), rMaxA = Math.max(0, Math.floor((h.roundMaxAft ?? 0) * 20) * 5);
+  box.append(el("h3", {}, "Rounded ends"),
+    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 })),
+    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 })),
+    el("p", { class: "hint" }, "0: a hard edge. At most half the end's smallest half-size, and short of the next station."));
+  // Paint (the user's Rocinante: mostly dark with bold accent areas), over the facets and the cladding plates.
+  const pa = h.paint || { accent: "#d8742a", amount: 0, pattern: "Blocks", stripe: 1.5, wear: 0, seed: 1 };
+  const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, [key]: c.value })); return c; };
+  box.append(el("h3", {}, "Paint"),
+    el("div", { class: "row" }, el("span", {}, "Base"), colour(h.skin, "Base colour", "skin"), el("span", {}, "Accent"), colour(pa.accent, "Accent colour", "accent")),
+    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 })),
+    el("div", { class: "row" }, el("span", {}, "Pattern"), ...["Blocks", "Stripes", "Bands"].map(k => el("button", { class: pa.pattern === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, pattern: k }) }, k))),
+    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }))]),
+    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 })),
+    el("div", { class: "row" }, el("span", {}, "Seed"), num(pa.seed, v => cmd({ op: "setHull", hull: h.id, paintSeed: Math.round(v) }), 1),
+      el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, paintSeed: Math.floor(Math.random() * 99999) }) }, "New pattern")),
+    el("p", { class: "hint" }, "Blocks: that share of facets and plates in the accent. Stripes run along the ship, bands across it. Wear darkens and varies the tones. Connections take hull A's paint."));
   const secSel = { get value() { return shapePick; } };
   // The section shapes as a gallery: each drawn whole, three a row, scrolling.
   const gal = el("div", { class: "gal", role: "listbox", "aria-label": "Section shapes" });
@@ -1365,16 +1383,9 @@ function inspector() {
           ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
             slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
       el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
-      el("h3", {}, "Internal walls"),
-      el("div", { class: "row" }, ...[["x", "Across"], ["z", "Along"]].map(([ax, t]) => el("button", { onclick: () => { const a = cmd({ op: "addWall", id: r.id, axis: ax, t: 0.5 }); if (a.error) toast(a.error); } }, `Add a wall ${t.toLowerCase()}`))),
-      ...(r.walls || []).flatMap((w, i) => { const set = o => { const a = cmd({ op: "setWall", id: r.id, i, ...o }); if (a.error) toast(a.error); };
-        return [el("p", { class: "hint" }, `${i + 1}. Wall ${w.axis === "x" ? "across" : "along"}${w.door > 0 ? `, door ${Math.round(w.door * 100)} cm` : ""}`),
-          el("div", { class: "row" }, ...[["x", "Across"], ["z", "Along"]].map(([ax, t]) => el("button", { class: w.axis === ax ? "on" : "", onclick: () => set({ axis: ax }) }, t)),
-            el("button", { onclick: () => { const a = cmd({ op: "delWall", id: r.id, i }); if (a.error) toast(a.error); } }, "Delete")),
-          slider("Position", Math.round(w.t * 100), 2, 98, 1, "%", () => {}, v => set({ t: v / 100 })),
-          slider("Door width", Math.round(w.door * 100), 0, 400, 5, " cm", () => {}, v => set({ door: v / 100 })),
-          ...(w.door > 0 ? [slider("Door along", Math.round(w.doorT * 100), 0, 100, 1, "%", () => {}, v => set({ doorT: v / 100 }))] : [])]; }),
-      el("p", { class: "hint" }, "A partition across the room or along it, full height, 10 cm thick, with an optional door gap (0: none)."),
+      el("h3", {}, "Walls"),
+      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }),
+      el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),

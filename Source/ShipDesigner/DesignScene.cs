@@ -236,12 +236,16 @@ public static partial class DesignScene
         var ay = new double[HullBody.MaxLoft];
         var bh = new double[HullBody.MaxLoft];
         var by = new double[HullBody.MaxLoft];
-        for (var i = 0; i < h.Stations.Count - 1; i++)
+        var rings = h.Ring;
+        for (var i = 0; i < rings.Count - 1; i++)
         {
-            var a = h.Stations[i];
-            var b = h.Stations[i + 1];
+            var a = rings[i];
+            var b = rings[i + 1];
             // Two stations may hold different point counts: both are sampled at the same places along their outlines.
             var n = h.Pair(i, ah, ay, bh, by);
+            var arcM = 0.0;
+            for (var k = 0; k < n - 1; k++)
+                arcM += Math.Sqrt(Math.Pow(ah[k + 1] - ah[k], 2) + Math.Pow(ay[k + 1] - ay[k], 2));
             var band = i % 2 == 0 ? 1.0 : 0.94;
             // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
             var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2)
@@ -250,12 +254,12 @@ public static partial class DesignScene
             foreach (var s in new[] { -1, 1 })
                 for (var k = 0; k < n - 1; k++)
                 {
-                    var shade = DesignMesh.Tone(col, band * (k % 2 == 0 ? 1.0 : 0.9));
+                    var shade = DesignMesh.Tone(h.Paint((a.Z + b.Z) / 2, (k + 0.5) / Math.Max(1, n - 1), arcM, i * 64 + k), band * (k % 2 == 0 ? 1.0 : 0.9));
                     Facet(skin, (s * ah[k], ay[k], a.Z), (s * ah[k + 1], ay[k + 1], a.Z), (s * bh[k], by[k], b.Z), (s * bh[k + 1], by[k + 1], b.Z), shade, holed, step, s < 0);
                 }
             // The keel (across the bottom) and the spine (across the top).
-            Facet(skin, (-ah[0], ay[0], a.Z), (ah[0], ay[0], a.Z), (-bh[0], by[0], b.Z), (bh[0], by[0], b.Z), DesignMesh.Tone(dark, band), holed, step, false);
-            Facet(skin, (ah[n - 1], ay[n - 1], a.Z), (-ah[n - 1], ay[n - 1], a.Z), (bh[n - 1], by[n - 1], b.Z), (-bh[n - 1], by[n - 1], b.Z), DesignMesh.Tone(col, band * 1.05), holed, step, false);
+            Facet(skin, (-ah[0], ay[0], a.Z), (ah[0], ay[0], a.Z), (-bh[0], by[0], b.Z), (bh[0], by[0], b.Z), DesignMesh.Tone(h.Paint((a.Z + b.Z) / 2, 0, arcM, i * 64 + 60), band * 0.8), holed, step, false);
+            Facet(skin, (ah[n - 1], ay[n - 1], a.Z), (-ah[n - 1], ay[n - 1], a.Z), (bh[n - 1], by[n - 1], b.Z), (-bh[n - 1], by[n - 1], b.Z), DesignMesh.Tone(h.Paint((a.Z + b.Z) / 2, 1, arcM, i * 64 + 61), band * 1.05), holed, step, false);
         }
         near.Clear();
         near.AddRange(cutters.Select(o => o.B).Distinct());
@@ -272,8 +276,8 @@ public static partial class DesignScene
                         return true;
                 return false;
             });
-        Cap(fore, cx, h, h.Stations[0], DesignMesh.Tone(col, 0.85), Cut);
-        Cap(aft, cx, h, h.Stations[^1], DesignMesh.Tone(dark, 1.2), Cut);
+        Cap(fore, cx, h, rings[0], DesignMesh.Tone(h.Paint(h.Front, 0.5, 1, 9001), 0.85), Cut);
+        Cap(aft, cx, h, rings[^1], DesignMesh.Tone(dark, 1.2), Cut);
         return (skin, fore, aft);
     }
 
@@ -836,7 +840,7 @@ public static partial class DesignScene
             var ok = true;
             if (p.Surface != "skin")
             {
-                var st = p.Surface == "aft" ? h.Stations[^1] : h.Stations[0];
+                var st = p.Surface == "aft" ? h.Ring[^1] : h.Ring[0];
                 var half = Half(st, p.V);
                 if (half < 0 || Math.Abs(p.U) > half)
                 {
@@ -1194,6 +1198,10 @@ public static partial class DesignScene
               .Append(",\"x\":").Append(ShipDesign.S(h.X)).Append(",\"y\":").Append(ShipDesign.S(h.Y)).Append(",\"z\":").Append(ShipDesign.S(h.Z))
               .Append(",\"mirror\":").Append(h.Mirror ? "true" : "false").Append(",\"cut\":").Append(h.Cut ? "true" : "false").Append(",\"skin\":").Append(Q(h.Skin))
               .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append('}')
+              .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
+              .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
+              .Append(",\"paint\":{\"accent\":").Append(Q(h.Accent)).Append(",\"amount\":").Append(ShipDesign.S(h.AccentAmount)).Append(",\"pattern\":").Append(Q(h.Pattern))
+              .Append(",\"stripe\":").Append(ShipDesign.S(h.Stripe)).Append(",\"wear\":").Append(ShipDesign.S(h.Wear)).Append(",\"seed\":").Append(h.PaintSeed).Append('}')
               .Append(",\"stations\":[");
             for (var s = 0; s < h.Stations.Count; s++)
             {
@@ -1303,11 +1311,11 @@ public static partial class DesignScene
                 sb.Append(",\"mesh\":");
                 RoomMesh(d, r).Write(sb);
             }
-            sb.Append(",\"walls\":[").Append(string.Join(',', r.Walls.Select(w => w.ToJson().ToJsonString()))).Append(']');
-            if (r.Walls.Count > 0)
+            sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
+            if (r.WallThick > 0.005)
             {
                 sb.Append(",\"wallMesh\":");
-                WallMesh(d, r).Write(sb);
+                RoomShell(d, r, c.Doors).Write(sb);
             }
             sb
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');

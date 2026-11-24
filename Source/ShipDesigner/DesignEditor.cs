@@ -226,6 +226,19 @@ public sealed class DesignEditor
                 }
                 if (o["cladSeed"] is not null) h.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
                 if (o["cladSize"] is not null) h.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["roundFore"] is not null) h.RoundFore = Math.Clamp(Snap(D(o, "roundFore"), 0.05), 0, HullBody.RoundMax);
+                if (o["roundAft"] is not null) h.RoundAft = Math.Clamp(Snap(D(o, "roundAft"), 0.05), 0, HullBody.RoundMax);
+                if (o["accent"] is not null && Str(o, "accent").Length == 7) h.Accent = Str(o, "accent");
+                if (o["accentAmount"] is not null) h.AccentAmount = Math.Clamp(D(o, "accentAmount"), 0, 1);
+                if (o["pattern"] is not null)
+                {
+                    if (!HullBody.PaintPatterns.Contains(Str(o, "pattern")))
+                        return "the pattern is Blocks, Stripes or Bands";
+                    h.Pattern = Str(o, "pattern");
+                }
+                if (o["stripe"] is not null) h.Stripe = Math.Clamp(Snap(D(o, "stripe"), 0.05), HullBody.StripeMin, HullBody.StripeMax);
+                if (o["wear"] is not null) h.Wear = Math.Clamp(D(o, "wear"), 0, 1);
+                if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 return "";
             }
@@ -615,6 +628,7 @@ public sealed class DesignEditor
                     if (o["toHull"] is not null) q.ToHull = (bool)o["toHull"]!;
                     if (o["runOn"] is not null) q.RunOn = (bool)o["runOn"]!;
                     if (o["runAft"] is not null) q.RunAft = (bool)o["runAft"]!;
+                    if (o["wallThick"] is not null) q.WallThick = Math.Clamp(Snap(D(o, "wallThick"), 0.01), 0, Room.WallThickMax);
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)
@@ -736,38 +750,6 @@ public sealed class DesignEditor
                     r.Exts.RemoveAt(i);
                 return "";
             }
-            case "addWall":
-            {
-                var r = Rm();
-                if (r.Walls.Count >= RoomWall.Max)
-                    return $"at most {RoomWall.Max} walls a room";
-                var w = RoomWall.FromJson(o);
-                r.Walls.Add(w);
-                o["i"] = r.Walls.Count - 1;
-                return "";
-            }
-            case "setWall":
-            {
-                var r = Rm();
-                var i = I(o, "i", -1);
-                if (i < 0 || i >= r.Walls.Count)
-                    return "no such wall";
-                var w = r.Walls[i];
-                if (o["axis"] is not null) w.Axis = Str(o, "axis") == "z" ? "z" : "x";
-                if (o["t"] is not null) w.T = Math.Clamp(D(o, "t"), 0.02, 0.98);
-                if (o["door"] is not null) w.DoorW = Math.Clamp(Snap(D(o, "door"), 0.05), 0, RoomWall.DoorMax);
-                if (o["doorT"] is not null) w.DoorT = Math.Clamp(D(o, "doorT"), 0, 1);
-                return "";
-            }
-            case "delWall":
-            {
-                var r = Rm();
-                var i = I(o, "i", -1);
-                if (i < 0 || i >= r.Walls.Count)
-                    return "no such wall";
-                r.Walls.RemoveAt(i);
-                return "";
-            }
             case "mount":
             {
                 // A socket mounted from a room (Karl, 2026-11-24): from a point on the room's wall, floor or ceiling, out along that face's
@@ -824,7 +806,6 @@ public sealed class DesignEditor
                     r.Group = d.NewId();
                 var n = Room.FromJson(r.ToJson(), d.NewId());
                 n.Height = r.Height;
-                n.Walls.Clear();
                 var mid = Snap((alongX ? r.X0 : r.Z0) + len / 2, 0.25);
                 if (alongX) { r.X1 = mid; n.X0 = mid; } else { r.Z1 = mid; n.Z0 = mid; }
                 d.Rooms.Add(n);
