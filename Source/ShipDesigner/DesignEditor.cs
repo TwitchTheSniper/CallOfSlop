@@ -343,7 +343,7 @@ public sealed class DesignEditor
                 if (d.Pieces.Count >= ShipDesign.MaxPieces)
                     return $"at most {ShipDesign.MaxPieces} pieces";
                 var kind = PieceKinds.Find(Str(o, "kind")) ?? throw new InvalidOperationException("no such piece");
-                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4) };
+                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4), Recess = Math.Clamp(D(o, "recess", 0), 0, 2) };
                 d.Pieces.Add(p);
                 Attach(p, o);
                 o["id"] = p.Id;
@@ -358,6 +358,7 @@ public sealed class DesignEditor
                 if (o["mirror"] is not null) p.Mirror = (bool)o["mirror"]!;
                 if (o["pair"] is not null) p.Pair = (bool)o["pair"]!;
                 if (o["size"] is not null) p.Size = Math.Clamp(Snap(D(o, "size"), 0.05), 0.25, 4);
+                if (o["recess"] is not null) p.Recess = Math.Clamp(Snap(D(o, "recess"), 0.05), 0, 2);
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
                 if (o["room"] is not null)
                 {
@@ -519,7 +520,7 @@ public sealed class DesignEditor
                 }
                 if (inside is null)
                     return "no hull that way";
-                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4), Room = room.Id };
+                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4), Recess = Math.Clamp(D(o, "recess", 0), 0, 2), Room = room.Id };
                 var copy = inside.Copies == 2 && Math.Abs(ex - inside.CopyX(1)) < Math.Abs(ex - inside.CopyX(0)) ? 1 : 0;
                 d.Pieces.Add(p);
                 Attach(p, new JsonObject { ["hull"] = inside.Id, ["copy"] = copy, ["surface"] = "skin", ["x"] = ex, ["y"] = ey, ["z"] = ez });
