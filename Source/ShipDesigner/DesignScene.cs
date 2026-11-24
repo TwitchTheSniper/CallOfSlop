@@ -931,7 +931,7 @@ public static class DesignScene
         if (!el && !er)
             return (r.X0, r.X1);
         var w = d.World(d.Decks[r.Deck], 0, v, up);
-        double lo = r.X0, hi = r.X1;
+        double lo = r.X0, hi = r.X1, slo = double.MaxValue, shi = double.MinValue;
         foreach (var h in d.Hulls)
             for (var c = 0; c < h.Copies; c++)
             {
@@ -943,8 +943,54 @@ public static class DesignScene
                     continue; // a body the room isn't in
                 lo = Math.Min(lo, cx - half + 0.07);
                 hi = Math.Max(hi, cx + half - 0.07);
+                (slo, shi) = (Math.Min(slo, cx - half + 0.07), Math.Max(shi, cx + half - 0.07));
             }
+        // Past its drawn ends (a room carried on into the nose or the stern): inside the skin, which may be narrower than the room.
+        if (v < r.Z0 - 1e-6 || v > r.Z1 + 1e-6)
+        {
+            if (slo > shi)
+                return ((r.X0 + r.X1) / 2, (r.X0 + r.X1) / 2);
+            double l2 = el ? slo : Math.Max(r.X0, slo), r2 = er ? shi : Math.Min(r.X1, shi);
+            return l2 < r2 ? (l2, r2) : ((l2 + r2) / 2, (l2 + r2) / 2);
+        }
         return (el ? Math.Min(r.X0, lo) : r.X0, er ? Math.Max(r.X1, hi) : r.X1);
+    }
+
+    /// <summary>How far along a room runs (Karl, 2026-11-24: a bridge carried on into the nose): a room out to the hull with no room
+    /// of its deck beyond an end runs on past that end while the skin still has room for a person at the floor (40 cm each side
+    /// of its middle), so it follows the hull's shape there too. Its drawn box stays as it is.</summary>
+    public static (double V0, double V1) Span(ShipDesign d, Room r)
+    {
+        if (!r.ToHull || d.Stacked)
+            return (r.Z0, r.Z1);
+        var dk = d.DeckOf(r);
+        var mid = (r.X0 + r.X1) / 2;
+        bool Fits(double v)
+        {
+            foreach (var up in new[] { 0.3, Math.Min(1.8, dk.Height - 0.1) })
+            {
+                var w = d.World(dk, mid, v, up);
+                var any = false;
+                foreach (var h in d.Hulls)
+                    for (var c = 0; c < h.Copies && !any; c++)
+                    {
+                        var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
+                        any = half > 0.5 && Math.Abs(h.CopyX(c) - mid) < half - 0.45;
+                    }
+                if (!any)
+                    return false;
+            }
+            return true;
+        }
+        bool Beyond(bool fore) => d.Rooms.Any(o => o != r && o.Deck == r.Deck && Math.Min(r.X1, o.X1) - Math.Max(r.X0, o.X0) > 0.01 && (fore ? o.Z1 <= r.Z0 + 0.01 : o.Z0 >= r.Z1 - 0.01));
+        double v0 = r.Z0, v1 = r.Z1;
+        if (!Beyond(true))
+            while (v0 - 0.1 > r.Z0 - 30 && Fits(v0 - 0.1))
+                v0 -= 0.1;
+        if (!Beyond(false))
+            while (v1 + 0.1 < r.Z1 + 30 && Fits(v1 + 0.1))
+                v1 += 0.1;
+        return (v0, v1);
     }
 
     /// <summary>A room's world box, out to the skin where it expands.</summary>
@@ -955,7 +1001,9 @@ public static class DesignScene
             return b;
         double lo = r.X0, hi = r.X1;
         var dk = d.DeckOf(r);
-        for (var v = r.Z0; v <= r.Z1 + 1e-6; v += Math.Max(0.25, (r.Z1 - r.Z0) / 8))
+        var (s0, s1) = Span(d, r);
+        b[4] = Math.Min(b[4], s0); b[5] = Math.Max(b[5], s1);
+        for (var v = s0; v <= s1 + 1e-6; v += Math.Max(0.25, (s1 - s0) / 8))
             foreach (var up in new[] { 0.05, dk.Height / 2, dk.Height - 0.02 })
             {
                 var (l, rr) = Edges(d, r, v, up);
@@ -970,15 +1018,19 @@ public static class DesignScene
     {
         if (!r.ToHull)
             return r.Area;
-        var n = Math.Max(2, (int)Math.Ceiling((r.Z1 - r.Z0) / 0.25));
+        var (s0, s1) = Span(d, r);
+        var n = Math.Max(2, (int)Math.Ceiling((s1 - s0) / 0.25));
         var a = 0.0;
         for (var i = 0; i < n; i++)
         {
-            var (l, rr) = Edges(d, r, r.Z0 + (r.Z1 - r.Z0) * (i + 0.5) / n, 0.05);
-            a += (rr - l) * (r.Z1 - r.Z0) / n;
+            var (l, rr) = Edges(d, r, s0 + (s1 - s0) * (i + 0.5) / n, 0.05);
+            a += (rr - l) * (s1 - s0) / n;
         }
         return a;
     }
+
+    /// <summary>Head height of a person standing, and the least width they need there.</summary>
+    public const double Head = 1.8, Walkable = 0.6;
 
     /// <summary>A room that follows the hull, as triangles: its floor, ceiling, sides and ends, sampled every 50 cm along and four heights up.</summary>
     public static DesignMesh RoomMesh(ShipDesign d, Room r)
@@ -986,10 +1038,11 @@ public static class DesignScene
         var m = new DesignMesh();
         var dk = d.DeckOf(r);
         var col = DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour);
-        var nv = Math.Max(1, (int)Math.Ceiling((r.Z1 - r.Z0) / 0.5));
+        var (s0, s1) = Span(d, r);
+        var nv = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
         const int nu = 4;
         (double, double, double) P(double u, double v, double up) { var w = d.World(dk, u, v, up); return (w[0], w[1], w[2]); }
-        double V(int i) => r.Z0 + (r.Z1 - r.Z0) * i / nv;
+        double V(int i) => s0 + (s1 - s0) * i / nv;
         double Up(int k) => dk.Height * k / nu;
         for (var i = 0; i < nv; i++)
         {
@@ -1004,7 +1057,25 @@ public static class DesignScene
             }
             var (f0, g0) = Edges(d, r, V(i), 0);
             var (f1, g1) = Edges(d, r, V(i + 1), 0);
-            m.Quad(P(f0, V(i), 0.02), P(g0, V(i), 0.02), P(g1, V(i + 1), 0.02), P(f1, V(i + 1), 0.02), col, false);
+            // Floor a person can stand on (Karl, 2026-11-24): where the room is still Walkable wide at head height. The rest of the
+            // floor, under a skin that slopes in too low to stand, is drawn grey.
+            var hh = Math.Min(Head, dk.Height - 0.02);
+            var (h0, k0) = Edges(d, r, V(i), hh);
+            var (h1, k1) = Edges(d, r, V(i + 1), hh);
+            (h0, k0) = (Math.Clamp(h0, f0, g0), Math.Clamp(k0, f0, g0));
+            (h1, k1) = (Math.Clamp(h1, f1, g1), Math.Clamp(k1, f1, g1));
+            var stand = k0 - h0 >= Walkable && k1 - h1 >= Walkable;
+            var grey = ((byte)96, (byte)100, (byte)106);
+            if (stand)
+            {
+                m.Quad(P(h0, V(i), 0.02), P(k0, V(i), 0.02), P(k1, V(i + 1), 0.02), P(h1, V(i + 1), 0.02), col, false);
+                if (h0 - f0 > 0.01 || h1 - f1 > 0.01)
+                    m.Quad(P(f0, V(i), 0.02), P(h0, V(i), 0.02), P(h1, V(i + 1), 0.02), P(f1, V(i + 1), 0.02), grey, false);
+                if (g0 - k0 > 0.01 || g1 - k1 > 0.01)
+                    m.Quad(P(k0, V(i), 0.02), P(g0, V(i), 0.02), P(g1, V(i + 1), 0.02), P(k1, V(i + 1), 0.02), grey, false);
+            }
+            else
+                m.Quad(P(f0, V(i), 0.02), P(g0, V(i), 0.02), P(g1, V(i + 1), 0.02), P(f1, V(i + 1), 0.02), grey, false);
             var (c0, e0) = Edges(d, r, V(i), dk.Height);
             var (c1, e1) = Edges(d, r, V(i + 1), dk.Height);
             m.Quad(P(c0, V(i), dk.Height), P(e0, V(i), dk.Height), P(e1, V(i + 1), dk.Height), P(c1, V(i + 1), dk.Height), DesignMesh.Tone(col, 0.9), false);
