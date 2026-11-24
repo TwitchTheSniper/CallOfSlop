@@ -186,6 +186,7 @@ public sealed class Room
     public double Below; // metres its floor goes down through the deck under it (a room merged across decks, owned by the upper)
     public double Height; // its own clear height (0: its deck's), so it can rise through the decks above (Karl, 2026-11-24)
     public double[]? Want; // the plan it was drawn at, while a deck move has shrunk it to fit (it grows back to this when it can)
+    public List<RoomExt> Exts = []; // the room grown out of a wall or up through its ceiling, in a shape (Karl, 2026-11-24)
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);
@@ -194,6 +195,7 @@ public sealed class Room
     {
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
+        ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -206,6 +208,15 @@ public sealed class Room
         };
         if (RoomKinds.Find(r.Kind) is null)
             r.Kind = "Cabin";
+        foreach (var j in o["exts"]?.AsArray() ?? [])
+            if (j is JsonObject eo && r.Exts.Count < RoomExt.Max && RoomExt.Sides.Contains((string?)eo["side"]))
+            {
+                var e = new RoomExt { Side = (string)eo["side"]!, Shape = (string?)eo["shape"] ?? "Box", Depth = Math.Clamp(ShipDesign.F(eo["depth"], 1.5), 0.25, 12),
+                    Width = Math.Clamp(ShipDesign.F(eo["width"], 2), 0.5, 40), T = Math.Clamp(ShipDesign.F(eo["t"], 0.5), 0, 1) };
+                if (!RoomExt.ShapesFor(e.Side).Contains(e.Shape))
+                    e.Shape = RoomExt.ShapesFor(e.Side)[0];
+                r.Exts.Add(e);
+            }
         r.Normalise();
         return r;
     }
@@ -308,4 +319,44 @@ public sealed class HullWindow
     public int Id, Room;
     public string Side = "x0";
     public double T = 0.5, W = 1.5, H = 1.0, Sill = 0.9;
+}
+
+
+/// <summary>A room grown out of one of its walls, or up through its ceiling (Karl, 2026-11-24: "expanding the room a certain
+/// direction with more choices"). Out of a wall (Side x0, x1, z0, z1): an outline on plan, Width along the wall (its middle at T)
+/// and Depth out, as high as the room: Box, Bay (angled sides), Hex (half a hexagon) or Round (an apse). Up ("up"): the ceiling
+/// raised Depth in a profile across the room's narrower side, all along it: Vault (a barrel), Gable (pitched) or Hex (chamfered).</summary>
+public sealed class RoomExt
+{
+    public const int Max = 6;
+    public static readonly string[] Sides = ["x0", "x1", "z0", "z1", "up"];
+    public static string[] ShapesFor(string side) => side == "up" ? ["Vault", "Gable", "Hex"] : ["Box", "Bay", "Hex", "Round"];
+    public string Side = "z0", Shape = "Box";
+    public double Depth = 1.5, Width = 2, T = 0.5;
+
+    /// <summary>Its outline: (across, out) for a wall, from one end of its base round to the other; the base is the room's wall
+    /// (or, up, its ceiling) and is not listed. Convex, so a fan from its middle fills it.</summary>
+    public List<(double A, double B)> Outline(double w)
+    {
+        double h = w / 2, d = Depth;
+        switch (Shape)
+        {
+            case "Bay": case "Gable" when Side == "up":
+                return Shape == "Gable" ? [(-h, 0), (0, d), (h, 0)] : [(-h, 0), (-h / 2, d), (h / 2, d), (h, 0)];
+            case "Hex":
+                return [(-h, 0), (-h, d * 0.5), (-h / 2, d), (h / 2, d), (h, d * 0.5), (h, 0)];
+            case "Round": case "Vault":
+            {
+                var o = new List<(double, double)>();
+                for (var i = 0; i <= 12; i++)
+                {
+                    var t = Math.PI * i / 12;
+                    o.Add((-h * Math.Cos(t), d * Math.Sin(t)));
+                }
+                return o;
+            }
+            default:
+                return [(-h, 0), (-h, d), (h, d), (h, 0)];
+        }
+    }
 }

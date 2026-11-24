@@ -263,7 +263,19 @@ public static class DesignScene
         {
             var outv = new List<List<(double, double, double)>>();
             // Points far off the opening's plane (the skin's far side) are left whole.
-            if (poly0.All(q => Math.Abs(Local(q).N) > 0.8))
+            // Facets turned edge-on to the opening (running along its axis, as at a pointed nose) are left whole too: a cut
+            // through them would take the whole end off (Karl, 2026-11-24: an old window at the bow broke the hull).
+            double fx = 0, fy = 0, fz = 0;
+            for (var i = 0; i < poly0.Count; i++)
+            {
+                var (p, q) = (poly0[i], poly0[(i + 1) % poly0.Count]);
+                fx += (p.Item2 - q.Item2) * (p.Item3 + q.Item3);
+                fy += (p.Item3 - q.Item3) * (p.Item1 + q.Item1);
+                fz += (p.Item1 - q.Item1) * (p.Item2 + q.Item2);
+            }
+            var fl = Math.Sqrt(fx * fx + fy * fy + fz * fz);
+            var edgeOn = fl > 1e-9 && Math.Abs((fx * y[0] + fy * y[1] + fz * y[2]) / fl) < 0.35;
+            if (edgeOn || poly0.All(q => Math.Abs(Local(q).N) > 0.8))
             {
                 outv.Add(poly0);
                 return outv;
