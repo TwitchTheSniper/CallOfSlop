@@ -69,12 +69,14 @@ public sealed class LifterParts : IPartGenerator
     /// </summary>
     private sealed record BigArm(string Name, int Look, double Arm, int Cells, (double R0, double R1, double Up, int Payload, double Across, double Long, double Speed, double Handle, int Power) Row);
 
-    public static readonly string[] BigArmNames = ["Heavy Loader Arm", "Shipyard Loader Arm"];
+    public static readonly string[] BigArmNames = ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"];
 
     private static readonly BigArm[] BigArms =
     [
         new(BigArmNames[0], 3, 3.5, 14, (3.0, 14.0, 10.0, 16000, 6.0, 16.0, 10.0, 0.3, 12000)),
         new(BigArmNames[1], 3, 5.0, 14, (3.5, 18.0, 12.0, 24000, 10.0, 24.0, 9.0, 0.4, 20000)),
+        // (the Heavy's links on a tier-3 arm's 2 m plinth, for a 2 m strip between two lines' bays: 6 t, plates to 4 by 16 m. Sean 2026-11-24)
+        new(BigArmNames[2], 3, 3.5, 8, (3.0, 14.0, 9.0, 6000, 4.0, 16.0, 10.0, 0.3, 8000)),
     ];
 
     private static Part Arm(int t, bool fitter = false, BigArm? big = null)
@@ -90,7 +92,7 @@ public sealed class LifterParts : IPartGenerator
         var desc = fitter
             ? $"A heavy arm with a gripper, a welding torch and a cutting head: F on a Module Socket in its reach fits a module lying in its reach (it carries it, seats it and welds it on), or cuts a fitted module's seam and sets it on a free Module Stand. Reaches {tb.R0:0.#} to {tb.R1:0.#} m, carries {tb.Payload / 1000.0:0.#} t, modules up to 3x3. Needs {tb.Power / 1000.0:0.#} kW while it works."
             : big != null
-            ? $"A shipyard's arm on a 3.5 m pedestal: stands beside a big Building Station's bay and lifts hull pieces off its pick pads and the runs' ends straight onto the build. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {tb.Payload / 1000.0:0.#} t, pieces up to {tb.Across:0.#} by {tb.Long:0.#} m. Needs {tb.Power / 1000.0:0.#} kW while it moves."
+            ? $"A shipyard's arm on a {n * 0.25:0.#} m pedestal: stands beside a big Building Station's bay and lifts hull pieces off its pick pads and the runs' ends straight onto the build. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {tb.Payload / 1000.0:0.#} t, pieces up to {tb.Across:0.#} by {tb.Long:0.#} m. Needs {tb.Power / 1000.0:0.#} kW while it moves."
             : $"Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {(tb.Payload >= 1000 ? $"{tb.Payload / 1000.0:0.#} t" : $"{tb.Payload} kg")}. Needs power while it moves.";
         var p = new Part(name, c, fitter ? "Module fitters" : "Lifters", desc, role: "frame", tool: "welder", color: lookT == 1 ? Rust : pal["body"], group: fitter ? "Ship Modules" : "Production");
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), z0 = c.Lo(), z1 = c.Hi(n);

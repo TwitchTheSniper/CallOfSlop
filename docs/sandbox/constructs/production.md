@@ -1741,6 +1741,7 @@ inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter
 | 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
 | big | Heavy Loader Arm | 3 to 14 m | 16 t | 6 by 16 m | 10 m/s | 0.3 s | 12 kW |
 | big | Shipyard Loader Arm | 3.5 to 18 m | 24 t | 10 by 24 m | 9 m/s | 0.4 s | 20 kW |
+| big | Long Loader Arm | 3 to 14 m | 6 t | 4 by 16 m | 10 m/s | 0.3 s | 8 kW |
 
 Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
 cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
@@ -1748,7 +1749,7 @@ Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Mo
 
 **The big arms** (Sean, 2026-11-24: arms that carry a shipyard's pieces from the line pads straight into its building bay;
 `LifterParts.BigArms`, folder `Lifters/BigArms`) are past the tiers: a 3.5 m square pedestal (14 cells, `"centre -y"` stands it
-by its middle) with the Industrial look (yellow, hydraulic) scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times
+by its middle; the Long arm's is 2 m, the Industrial's, for a narrow strip between two bays) with the Industrial look (yellow, hydraulic) scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times
 the tier-1 arm's (the drawing scales by `Upper / 2.3`; the lifter key's `"housing"` keeps the drawn housing and counterweight to the
 pedestal's size, so they turn within 1.6 m of its middle). Their screens and the station's Fitters line name them by the part's name
 ("Shipyard"), not by their machine tier (5). They carry the hull pieces, decks and keel bands a Plasma arm can't (the Zero Day frigate's run
