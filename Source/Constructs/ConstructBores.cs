@@ -117,7 +117,7 @@ public static class ConstructBores
             }
             else
             {
-                armour = body.Parts[h.Part].D.Armour;
+                armour = ConstructWorks.ArmourOf(body, h.Part); // (an engine train's Armour Collars too)
                 exit = ConstructWeapons.ExitDistance(body, h.Part, at, dir); // (before the damage: the part may go)
                 if (Holes && holed < MaxHoleParts && !h.Glass && h.SlotPlus1 == 0 && body.Parts[h.Part].Health > dealt
                     && Cut(world, body, h.Part, at, dir, calibre, budget - Cost(armour, exit) <= 0 ? exit * 0.5f : exit + HoleOver))

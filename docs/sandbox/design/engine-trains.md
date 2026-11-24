@@ -30,9 +30,98 @@ Tools: `--engine-check FILE|NAME [--seconds S] [--cut-at S]` builds a blueprint 
 
 Fitting: `Module Engine XS` passes the fit rules of a Round Module Socket 1 m in Opening style (size, turn, room, mass and thrust). A window run with the socket standing on the ground refuses only because the engine would go into the ground; a fit on a raised hull plate was not tried in a window.
 
+## Phase 2: any length and diameter on the Press
+
+The three patterns (`PressParts.ToPress.cs`, `EngineTrainPattern`) press any hollow blank the Housing die takes, not only their presets:
+
+- The piece is its own look stretched to the blank, its length along z (`"body": "like"`, `"along": "z"`), without the housing die's seams and corner bosses (new pattern key `"dieFeatures": false`, `PressPattern.NoDieFeatures`).
+- What it does scales with the blank's volume, so with length times diameter squared: the bell's `thrustForce` and `thrustBurn`, a chamber's or injector's `worksServes` (new scaled fields in `Pressed.ScaledFields`). A preset's blank is still the catalogue part.
+- Mass goes with length times diameter from the catalogue piece's (`Pressed.BuildLike`), so a piece one step off its preset weighs about as it does; never more than its blank (`CostMass`).
+- The press's scale clamp (64 times the preset) stops thrust and serves growing past it, for the bell and its pieces alike: about a 2.5 m engine 4 m long.
+- Protocol 456: the phase 1 part files moved part ids, and a sized piece's key is refused by older builds.
+- The sockets keep their class whatever the size, so any pieces weld together.
+- `Pressed.SizesWorks` decides this: a works pattern that scales its thrust or serves is not presets-only. Drive Core XS and the other ship works stay presets-only.
+
+Example: a 1.7 x 2 m bell (`Pressed Part (housing.drivenozzle hollow 170x170x200 steel)`), a 1.4 x 2.2 m chamber and a 1.4 x 0.8 m injector on a Round Module Plug 2 m's `tc` socket push 1.92 MN (`--engine-check`). An XS chamber in that train holds it to the bare share, 480 kN.
+
+The pieces' bores are checked since phase 9 (the Bore Adapter).
+
+## Phase 3: zones, stacking and the first function pieces
+
+- **Stacking**: every drive piece welded into the train counts; pieces of one kind add up (two chambers serve their sum).
+- **Zones** (`ConstructWorks.Zones`, for a bell that needs an injector): counted back from the bell along its axis, hot pieces first (chambers, Cooling Jacket), then feed (injectors, Fuel Buffer), then supply (pumps, exchangers, turbopumps); a Spacer goes anywhere. At most `trainPieces` (16, ShipWorks.json). The first piece that breaks a rule and every piece behind it are left out of the engine: the bell's look line and the works report say which and why (`CWorksHead.Stray`). Older bells (Drive Core trains) are not zoned.
+- **Function pieces**: a new works kind, `train`, with `"worksPiece": {"kind": "train", "function": ...}` (`TrainFunction`). They serve no amount; what they add is read at the rebuild (`TrainFunctions`):
+  - **Train Spacer XS** (0.4 m): length, and its pipes and cable carry across.
+  - **Fuel Buffer XS** (0.5 m, feed): +15 s (`fuelBuffer`) on a cut line, each one adds (`CWorksHead.BufferMax`). Its band's lamps run with the burn as the injector's do; it burns when holed.
+  - **Cooling Jacket XS** (0.6 m, hot): 10% less fuel at the same push (`jacketSaving`), once a train; behind an older Drive Core engine too. Every third fin glows with the heat.
+- All three press at any size on the Housing die (patterns `trainspacer`, `fuelbuffer`, `coolingjacket`); what they add doesn't change with size.
+- `--engine-check` on chamber, jacket, injector, two buffers and a spacer: a 40 s buffer, 90% burn. A jacket welded behind the injector is left out, with the reason.
+
+Not yet: a piece in the wrong zone is not refused at its socket, only left out at the rebuild; the Fuel Buffer's Buffer out data port.
+
+## Phase 4: the Igniter and the Sensor Ring
+
+- **Igniter XS** (0.35 m, feed): a bell that needs an injector takes `lightSeconds` (3 s, ShipWorks.json) to light from cold, its level held at 0 while it waits (a warm bell, its heat over 5%, relights at once: about 75 s after a full burn) (`CThruster.LightDelay`, `Lit`, host only); with a working Igniter in its train it lights at once (`CWorksHead.Igniter`). Four spark plugs set into the bore, their tips glowing with the burn, a coil box whose lamps run with it, and a burst of sparks at light-off as the injector's. The works report says "lights at once" or "lights in 3 s (no Igniter)".
+- **Sensor Ring XS** (0.35 m, supply): four data outputs, `level` (% of full push), `buffer` (s), `health` (% of the weakest working piece, the bell's own included) and `heat` (%), whole numbers (`ConstructWorks.SensorPort`). The heat is the bell's level eased 3 s up and 25 s down on the host (`CThruster.Heat`, kept over rebuilds), as the drawn heat is. Its outputs never wake a sleeping body (as a gauge's). Four gauges whose needles sweep with the heat, four lamps that run with the burn, a junction box for the cables.
+- Both press at any size on the Housing die (`igniter`, `sensorring`, blank 70x70x35).
+- `--engine-check` prints a Sensor Ring's outputs once a second. With an Igniter the XS engine is at full push in 1 s, without one in 4 s; with the pipe cut at 6 s the ring's buffer counts 10 down to 0 and the heat falls from 99.
+- Protocol 459 (new part files).
+
+Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sensor Ring's outputs are not shown on a client's own copy (the logic runs on the host).
+
+## Phase 5: the Throttle Valve and the Mixture Controller
+
+- **Throttle Valve XS** (0.4 m, feed): its Level setting (5 to 100%, 2% steps; `strength` in a blueprint's config) holds the drive at most there; a wire into it sets the level instead (0 to 1), whatever the bell's own ask, and keeps a parked body awake while it asks (as a wire into the bell does); under a Flight Stabilizer the wire only holds the bell at most there. A level above nothing is at least 5%, in 2% steps (`ConstructPhysics.ValveWant`, per tick, host). Its output is the drive's level in %, and never wakes a body. Handwheel turning with the heat, an actuator rod that strokes, a lamp.
+- **Mixture Controller XS** (0.4 m, feed): its Mix dial (-100 to 100, `strength`) or a wire (-1 to 1) trades push for burn: -100 is 80% push at 70% burn, 0 as it is, +100 is 110% push at 130% burn, straight between (`ConstructPhysics.MixOf`, per tick, host). Dial, two fuel loops, a lamp.
+- The bell keeps its train's first working valve and mixer as part indices at the rebuild (`CWorksHead.Valve`, `Mixer`); a broken one passes the ask on.
+- Both press at any size on the Housing die (`throttlevalve`, `mixture`, blank 70x70x40). A press pattern id is at most 16 characters: a longer one refuses the whole Pressing table.
+- `--engine-check`: a valve at 40% holds the XS bell at 96 kN; wired on, 240 kN; lean 192 kN at 0.28 l/s, rich 264 kN at 0.52 l/s.
+- Protocol 460 (new part files).
+
+- A module's thrust for its socket's rating is its peak: a bell whose train has a Mixture Controller (wherever the mixer sits) counts on rich (`ConstructPhysics.MixRichPush`, `CModule.Rich`, `TrainThrust`), both at the fit and when a bell or a mixer is welded into a fitted module; the refusal says "on a rich mix". So the XS bell (240 kN) with a mixer (264 kN peak) needs more than a 1 m socket.
+- A Flight Stabilizer plans each bell's share with its mix's push (`ConstructEffectors.Scan`, at the rebuild), and the hover's trims read it too (`Construct.ThrustOf`); a mix a wire moves is made up by feedback.
+
+Not yet: a client's push readout and flame don't show the mix (the flame byte is the level).
+
+## Phase 6: the Reheat Ring and the Fuel Filter
+
+- **Reheat Ring XS** (0.4 m, hot): while a wire into its Boost in is on and the bell burns, the drive pushes `reheatBoost` (25%) more at twice the burn, for up to `reheatSeconds` (20 s); spent, nothing until it has all recovered over `reheatRecover` (40 s); off, what it used comes back at that pace (`ConstructPhysics.ReheatStep`, host; `CThruster.ReheatUsed`, `ReheatSpent`, kept over rebuilds). A module's peak thrust counts it boosting, on top of a rich mix (240 kN XS bell: 300 kN with a ring, 330 kN with a mixer too). The stabilizer plans without it (feedback). Glowing ribs and spray bars, two lamps.
+- **Fuel Filter XS** (0.35 m, feed): a breakdown that lands on its train passes half the time (`ConstructWorks.Filtered`, GameSandboxBreakdowns). Two canisters, a manifold, a dial.
+- Both press at any size on the Housing die (`reheatring` 70x70x40, `fuelfilter` 70x70x35).
+- `--engine-check` prints a ring's seconds used: boosted 0 to 20 s at 0.96 l/s, recovered to 60 s at 0.48 l/s, boosted again.
+- Protocol 462 (new part files).
+
+Not yet: the Fuel Filter's Clogged out; a client doesn't see a ring boosting (no wire value).
+
+## Phase 7: the Gimbal Ring and the Armour Collar
+
+- **Gimbal Ring XS** (0.4 m, hot): the bell swings up to the ring's `"worksPiece.gimbal"` (6 degrees, against a Drive Nozzle XS's own 3) at 40 degrees a second, under the Flight Stabilizer or the bell's own gimbal pitch and yaw wires (`ConstructBoost.GimbalOf`: the ring when it swings further, its Throw, Expo and Reverse settings then; `CThruster.Ring`, `CWorksHead.Gimbal`). It takes no wires. A bell with no gimbal of its own gains one. Two rings on crossed trunnions, pitch and yaw actuators whose rods stroke.
+- **Armour Collar XS** (0.35 m, hot): each working one takes `collarArmour` (15) more off every hit on its train's bell and the pieces of its hot zone (`ConstructWorks.TrainArmour`, read in `ConstructWorld.DamagePart`; `CWorksHead.Collars`). Its own armour is 60 and it weighs 260 kg. Twelve bolted segments with lips.
+- Both press at any size on the Housing die (`gimbalring` 75x75x40, `armourcollar` 70x70x35: a Housing blank is at least half as long as it is across).
+- `--engine-check` prints what swings each bell and how far, and the collars' armour.
+- Protocol 463 (new part files).
+
+Drawn swinging (coordinator's ask, for Sean's full-animations rule): every gimballed or train-fed bell is drawn turned whole about its mount by its gimbal's two angles, its flame with it (`ConstructRender.GimbalTurn`; a bell with a gimbal of its own is walked, not merged: `StaticBoxes`; the search runs only on a body with a bell swung, `Construct.Swung`). A client is told each swung bell's angles with its level (`CBodyKind.Thrust`, 0.4 degree a step, at most what keeps the message under the MTU, protocol 464); like the levels, a held angle is told again only when something changes. A bell with no gimbal of its own and no work looks would stay merged and straight (none ships). `--engine-check` prints each swung bell's angles, how far the drawn bell is off straight and off the push, and a client's.
+
+## Phase 8: the Fuel Selector
+
+- **Fuel Selector XS** (0.4 m, supply): two Fuel in ports (top, left). Its train is fed while either line reaches a working tank (`ConstructWorks.InjectorFed` takes a pipe into a working selector as into the injector). Source out (`SelectorSource`, every logic tick) is the line it runs on: the first, or the second with Select in on, and else the other; 0 for neither. A valve block with a turning handle, two lamps.
+- Presses on the Housing die (`fuelselector` 70x70x40).
+- `--engine-check ... --cut-at S` also cuts a selector's first line and prints its Source out each second: 1, then 2 after the cut, the drive fed throughout.
+- Protocol 465 (new part file).
+
+Not yet: "runs dry" by a tank's own contents (the plain fuel tanks are one pool; a selector goes over when a line is cut or its tank lost).
+
+## Phase 9: bores and the Bore Adapter
+
+- Every train piece's file gives its **bore** (`worksPiece.bore`, m across its joint flanges: 0.66 at XS). A pressed piece's bore goes with its blank's across over its preset's (`Pressed.BuildLike`), and its description says it. Every bored piece's preset is 70 cm across (the Fuel Buffer, Cooling Jacket and Gimbal Ring moved from 75), the Bore Adapter's 140, so one blank across gives one bore whatever the kind: 70 cm is 0.66 m, 140 cm is 1.32 m.
+- The rule (the doc's "Any bore": a weld joins only equal bores): `ConstructWorks.Bores`, after `Zones`, takes the train's pieces from the bell back by their middles; the first piece whose bell-side bore isn't within 3% (`BoreSlack`) of the back bore of the piece in front, and every piece behind it, leave the train. The bell's look and the works report say "its 0.66 m bore doesn't meet the piece in front of it". A piece with no bore (0) isn't checked. The bell's own collar isn't checked.
+- **Bore Adapter XS** (0.75 m, any zone; no breakdowns land on it, as on a Spacer): a cone from a 1.32 m bolted flange (front, with two lifting lugs and a hazard band) to the XS flange (back): `"bore": 1.32, "boreBack": 0.66`. Welded turned round it steps up; which end meets which piece goes by the way its front faces. Presses on the Housing die (`boreadapter` 140x140x75; a housing's length is at least half its width), both bores scaled together.
+- `--engine-check` prints each drive piece's bore and whether it is in the train.
+- Protocol 466 (new part file).
+
 ## Next
 
-1. Custom length and diameter on the Press for every piece (serves by length times diameter squared, mass by length times diameter).
-2. The other pieces of the doc one at a time: Gimbal Ring, Reheat Ring, Cooling Jacket, Armour Collar, Igniter, Throttle Valve, Mixture Controller, Fuel Buffer, Fuel Filter, Turbopump Drive, Fuel Selector, Sensor Ring, Spacer, Bore Adapter.
-3. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
-4. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.
+1. The other pieces of the doc: Turbopump Drive (what it does waits on Sean: fuel pumps draw no power today).
+2. Bigger bores: a socket's hole against the first piece's bore, a bell's collar against its chamber.
+3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

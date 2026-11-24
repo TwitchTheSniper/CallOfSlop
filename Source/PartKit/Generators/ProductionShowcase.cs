@@ -48,7 +48,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         public static Script Build()
         {
-            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 86 by 22 m, and a slope through the back strip buries the panel line's Extruder." };
+            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 94 by 22 m, and a slope through the back strip buries the panel line's Extruder." };
             s.Group = "Production";
             s.Lay();
             return s;
@@ -121,7 +121,17 @@ public sealed class ProductionShowcase : IPartGenerator
             Onto(h30, "+x", "Casting Bed", "-x"); // (the 1 x 1's)
             Onto(h21, "+x", "Casting Bed", "-x"); // (the 2 x 2's, beside the 1 x 1)
             Sign(3.25f, Posts2, Refining, "SMELTER: Hearth Blocks in squares; bigger squares pay more");
-            var sawmill = On("Sawmill", 15.25f, Row1, Back, paint: Refining);
+            // The Sawmill too: its Core on the first row at x 15.25, its front 0.75 m behind the front aisle, its band mills west of it (its own +x):
+            // a 2 x 2 square and a 1 x 1 of Saw Blocks (to x 8.25), a Plank Stacker past each; its plank chain runs along the front aisle.
+            var sawmill = On("Sawmill", 15.25f, -3.75f, Back, paint: Refining);
+            var w10 = Saw(sawmill, "+x", "-x");
+            var w20 = Saw(w10, "+x", "-x");
+            Saw(w10, "+z", "-z");
+            var w21 = Saw(w20, "+z", "-z");
+            var w30 = Saw(w20, "+x", "-x");
+            Paint(Onto(w30, "+x", "Plank Stacker", "-x"), Refining); // (the 1 x 1's)
+            Paint(Onto(w21, "+x", "Plank Stacker", "-x"), Refining); // (the 2 x 2's, beside the 1 x 1)
+            Sign(5.75f, -6.25f, Refining, "SAWMILL: Saw Blocks in squares; bigger squares pay more");
             // The Foundry is one too: its Core on the second row at x 26.75 facing the back aisle, its crucibles west of it (its own +x): a
             // 2 x 2 square and a 1 x 1 of Crucible Blocks (to x 19.75), a Mould Line past each; its hood stays clear of the Press (x 28.35).
             var foundry = On("Foundry", 26.75f, -9.75f, Back, paint: Refining);
@@ -134,15 +144,15 @@ public sealed class ProductionShowcase : IPartGenerator
             Paint(Onto(c21, "+x", "Mould Line", "-x"), Refining); // (the 2 x 2's, beside the 1 x 1)
             Sign(17.25f, Posts2, Refining, "FOUNDRY: Crucible Blocks in squares; bigger squares pay more");
             Feed(StockOf("iron ore", 15.75f, -12.75f), smelter);
-            Feed(StockOf("wood", 12.25f, -3.75f), sawmill);
+            Feed(StockOf("wood", 17.25f, -5.75f), sawmill); // (east of the Core, chuted up into its log bunker)
             Feed(StockOf("metal", 23.25f, -7.75f), foundry);
             Feed(StockOf("stone", 24.75f, -7.75f), foundry);
             Output(smelter, 15.75f, -9.75f);
-            Output(sawmill, 12.75f, -6.25f);
+            Output(sawmill, 17.25f, -3.75f); // (by its Chute out, on its east side)
             Output(foundry, 26.75f, -7.75f);
             var refine = On("Line Console", 17.75f, Posts1, Front, paint: Control);
             Sign(16.25f, Posts1, Refining, "Press Start on the console: all three refiners run");
-            Run(refine, smelter, V(17.5f, 0, -2.5f), V(17.5f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (between the Sawmill and the Foundry to the back aisle)
+            Run(refine, smelter, V(18.4f, 0, -2.5f), V(18.4f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (east of the Sawmill's bins, between it and the Foundry, to the back aisle)
             Run(refine, sawmill);
             Run(refine, foundry, V(19.25f, 0, -2.5f), V(19.25f, 0, -8.4f), V(26.75f, 0, -8.4f)); // (through the old Foundry's place in the first row)
 
@@ -233,6 +243,7 @@ public sealed class ProductionShowcase : IPartGenerator
             ChainCorner(asm); // (on the panel strip's floor: after it is laid)
             BackStrip(orders);
             CraneBay(); // (arms and cranes phase 7: a Bridge Crane working a line of its own behind the refiners)
+            BreakerCorner(); // (the Scrap Breaker, PR 4 of the refiners: past the Building Station's floor)
 
             Monitors(refine, orders);
             NetworkBoard(router);
@@ -493,6 +504,40 @@ public sealed class ProductionShowcase : IPartGenerator
             Stripe(5.75f, -18.25f, true);
         }
 
+        /// <summary>
+        /// The Scrap Breaker's corner (production.md "The Scrap Breaker"), on its own floor past the Building Station's (x 82 to 94, z 0 to
+        /// -14): a Breaker Core at x 90.25 with its screen to the front aisle, its Shredder Blocks west of it (its own +x): a 2 x 2 square and
+        /// a 1 x 1 beside it (x8.25 together), the mouth their whole bed; its Chute out east into a Materials Bin. Drop a wreck on any square.
+        /// </summary>
+        private void BreakerCorner()
+        {
+            for (var j = 0; j < TilesZ; j++)
+                for (var i = TilesX + 9; i < TilesX + 15; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == 0 ? Aisle : Floor);
+                    Finish(t, j == 0 ? "painted deck plate" : "concrete");
+                }
+            var core = On("Breaker Core", 90.25f, -6.25f, Back, paint: Recycling);
+            var b10 = Shred(core, "+x", "-x");
+            var b20 = Shred(b10, "+x", "-x");
+            Shred(b10, "+z", "-z");
+            Shred(b20, "+z", "-z");
+            Shred(b20, "+x", "-x"); // (the 1 x 1, beside the 2 x 2 on the Core's row)
+            Output(core, 92.75f, -6.25f); // (by its Chute out, on its east side)
+            Sign(88.25f, -2.75f, Recycling, "SCRAP BREAKER: drop wrecks on any square; big squares pay");
+            Sign(92.75f, -9.75f, Recycling, "KEEP CLEAR of the rotors while it works");
+        }
+
+        private const string Recycling = "#7d9a4a";
+
+        private VPart Shred(VPart on, string socket, string by)
+        {
+            var b = Onto(on, socket, "Shredder Block", by);
+            Paint(b, Recycling);
+            return b;
+        }
+
         /// <summary>A part's socket's place (vehicle coordinates).</summary>
         private Vector3 SocketAt(VPart p, string name)
         {
@@ -658,6 +703,13 @@ public sealed class ProductionShowcase : IPartGenerator
             var c = Onto(on, socket, "Crucible Block", by);
             Paint(c, Refining);
             return c;
+        }
+
+        private VPart Saw(VPart on, string socket, string by)
+        {
+            var w = Onto(on, socket, "Saw Block", by);
+            Paint(w, Refining);
+            return w;
         }
 
         private VPart Hearth(VPart on, string socket, string by)

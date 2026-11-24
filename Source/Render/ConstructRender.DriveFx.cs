@@ -57,8 +57,8 @@ public static partial class ConstructRender
             ref var h = ref c.DriveHeat[i];
             var tau = _driveLevel > h ? HeatUp : HeatDown;
             h += (_driveLevel - h) * (1 - MathF.Exp(-dt / tau));
-            // Light-off: one burst of sparks at the injector as the level first passes 2%.
-            if (d.WorksKind == WorksKind.Injector && c.DriveLast[i] <= LightOff && _driveLevel > LightOff && Fx.On)
+            // Light-off: one burst of sparks at the injector (and an Igniter) as the level first passes 2%.
+            if ((d.WorksKind == WorksKind.Injector || d.TrainFn == TrainFunction.Igniter) && c.DriveLast[i] <= LightOff && _driveLevel > LightOff && Fx.On)
                 LightOffSparks(gfx, c, i, onBody);
             c.DriveLast[i] = _driveLevel;
         }
@@ -114,6 +114,37 @@ public static partial class ConstructRender
     }
 
     /// <summary>A drive box's motion: a needle sweeps with the level, a valve strokes while it sprays, the chamber shakes up to 3 mm.</summary>
+    /// <summary>
+    /// The turn that swings thruster <paramref name="k"/>'s bell on its gimbal (its own, or its train's Gimbal Ring), in its segment's
+    /// frame about the part's origin (its mount): the host's angles, or the ones a client was last told (CBodyKind.Thrust). False: straight.
+    /// </summary>
+    internal static bool GimbalTurn(Construct c, int k, out Matrix4x4 turn) => GimbalTurn(c, k, _fxHost, out turn);
+
+    internal static bool GimbalTurn(Construct c, int k, bool host, out Matrix4x4 turn)
+    {
+        turn = Matrix4x4.Identity;
+        if ((uint)k >= (uint)c.ThrusterCount)
+            return false;
+        ref readonly var t = ref c.Thrusters[k];
+        var (ax, ay) = host ? (t.AngleX, t.AngleY) : (t.ShownX, t.ShownY);
+        if (MathF.Abs(ax) < 1e-4f && MathF.Abs(ay) < 1e-4f || t.Part >= c.PartCount)
+            return false;
+        var pivot = c.Parts[t.Part].Pos;
+        turn = Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(t.GimbalX, ax) * Matrix4x4.CreateFromAxisAngle(t.GimbalY, ay) * Matrix4x4.CreateTranslation(pivot);
+        return true;
+    }
+
+    /// <summary>Thruster part <paramref name="i"/>'s entry, or -1 (looked up only for a part that may swing: a gimballed or train-fed bell).</summary>
+    private static int SwingThruster(Construct c, int i, ConstructPartDef d)
+    {
+        if (!c.Swung || d.Role != PartRole.Thruster || d.ThrustGimbal <= 0 && !ConstructWorks.InjectorFedHead(d))
+            return -1; // (no bell on the body stands swung: no search)
+        for (var k = 0; k < c.ThrusterCount; k++)
+            if (c.Thrusters[k].Part == i)
+                return k;
+        return -1;
+    }
+
     private static void DriveMove(Construct c, in CPartBox box, in CPart p, ConstructPartDef d, Vector3 centre, ref Matrix4x4 model)
     {
         var axis = Rot24.Apply(p.Rot, ConstructParts.DirVector(box.WorkAxis));

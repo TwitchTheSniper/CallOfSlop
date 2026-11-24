@@ -37,7 +37,7 @@ public enum CBodyKind : byte
     Station, // protocol 256: one body's Building Stations' jobs (ConstructStation.Write)
     Designs, // protocol 260: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
     Lifts, // protocol 287: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
-    Thrust, // protocol 319: each thruster's level, for its flame: u16 n, u8 each (ConstructThrust.WriteShown)
+    Thrust, // protocol 319: each thruster's level, for its flame: u16 n, u8 each; 464: then u16 count, and u16 index, s8 x, s8 y each swung bell's gimbal (ConstructThrust.WriteShown)
     Link, // protocol 328: one body's linked logistics parts as their panels show them (LinkedLogistics.Write)
     Baked, // protocol 422: one baked part's design: u32 bytes, its text (BakedParts.Write), before any body that names it
 }

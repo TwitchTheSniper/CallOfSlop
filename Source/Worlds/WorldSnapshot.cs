@@ -255,6 +255,9 @@ public static class WorldStores
         to.JobAmount = from.JobAmount;
         to.OnBed = from.OnBed;
         to.JobMaterial = from.JobMaterial;
+        to.JobDef = from.JobDef; // (a Scrap Breaker's wreck under way: what it draws sinking)
+        to.JobCellX = from.JobCellX;
+        to.JobCellZ = from.JobCellZ;
         to.MixN = from.MixN;
         if (from.MixN > 0)
         {

@@ -1021,9 +1021,20 @@
      "label": "reaction chamber",
      "preset": "hollow 70x70x110 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "worksServes",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     },
     {
      "id": "fuelinjector",
@@ -1031,9 +1042,20 @@
      "label": "fuel injector",
      "preset": "hollow 70x70x40 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "worksServes",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     },
     {
      "id": "drivenozzle",
@@ -1041,9 +1063,195 @@
      "label": "drive nozzle",
      "preset": "hollow 85x85x100 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "thrustForce",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      },
+      {
+       "field": "thrustBurn",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "trainspacer",
+     "like": "Train Spacer XS",
+     "label": "train spacer",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "fuelbuffer",
+     "like": "Fuel Buffer XS",
+     "label": "fuel buffer",
+     "preset": "hollow 70x70x50 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "coolingjacket",
+     "like": "Cooling Jacket XS",
+     "label": "cooling jacket",
+     "preset": "hollow 70x70x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "igniter",
+     "like": "Igniter XS",
+     "label": "igniter",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "sensorring",
+     "like": "Sensor Ring XS",
+     "label": "sensor ring",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "throttlevalve",
+     "like": "Throttle Valve XS",
+     "label": "throttle valve",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "mixture",
+     "like": "Mixture Controller XS",
+     "label": "mixture controller",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "reheatring",
+     "like": "Reheat Ring XS",
+     "label": "reheat ring",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "fuelfilter",
+     "like": "Fuel Filter XS",
+     "label": "fuel filter",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "gimbalring",
+     "like": "Gimbal Ring XS",
+     "label": "gimbal ring",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "armourcollar",
+     "like": "Armour Collar XS",
+     "label": "armour collar",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "fuelselector",
+     "like": "Fuel Selector XS",
+     "label": "fuel selector",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "boreadapter",
+     "like": "Bore Adapter XS",
+     "label": "bore adapter",
+     "preset": "hollow 140x140x75 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -8919,6 +9127,84 @@
    "die": "housing",
    "pattern": "drivenozzle",
    "blank": "hollow 85x85x100 steel"
+  },
+  {
+   "part": "Train Spacer XS",
+   "die": "housing",
+   "pattern": "trainspacer",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Fuel Buffer XS",
+   "die": "housing",
+   "pattern": "fuelbuffer",
+   "blank": "hollow 70x70x50 steel"
+  },
+  {
+   "part": "Cooling Jacket XS",
+   "die": "housing",
+   "pattern": "coolingjacket",
+   "blank": "hollow 70x70x60 steel"
+  },
+  {
+   "part": "Igniter XS",
+   "die": "housing",
+   "pattern": "igniter",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Sensor Ring XS",
+   "die": "housing",
+   "pattern": "sensorring",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Throttle Valve XS",
+   "die": "housing",
+   "pattern": "throttlevalve",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Mixture Controller XS",
+   "die": "housing",
+   "pattern": "mixture",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Reheat Ring XS",
+   "die": "housing",
+   "pattern": "reheatring",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Fuel Filter XS",
+   "die": "housing",
+   "pattern": "fuelfilter",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Gimbal Ring XS",
+   "die": "housing",
+   "pattern": "gimbalring",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Armour Collar XS",
+   "die": "housing",
+   "pattern": "armourcollar",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Fuel Selector XS",
+   "die": "housing",
+   "pattern": "fuelselector",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Bore Adapter XS",
+   "die": "housing",
+   "pattern": "boreadapter",
+   "blank": "hollow 140x140x75 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

@@ -7,8 +7,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Sandbox's machine tiers (Constructs/Parts/Gathering, Refining and Assembling). Was tools/constructs/machine_tiers.py;
 /// docs/sandbox/constructs/production.md, "Machine tiers".
 ///
-/// Six lines of machine (Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler, with the Thruster Assembler and the Tailor
-/// beside it), five tiers each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. The two
+/// Two lines of machine now (Drill Module, Saw Module; the Sawmill, the Smelter, the Foundry and the Assemblers went to the block
+/// system), five tiers each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. The two
 /// gathering modules are vehicle-sized (the Drill Module a compact rig with a small buffer); the others are buildings, sized in BigWidth.
 ///
 /// Higher tiers are physically larger: every box, bin and work box grows by the tier's Size from the part's origin (the centre of its
@@ -111,7 +111,6 @@ public sealed class MachineTiers : IPartGenerator
     /// machine's width (x and z run -0.5 to 0.5); sockets stay on the grid because every width is a multiple of 0.5 m.</summary>
     private static readonly Dictionary<string, double[]> BigWidth = new()
     {
-        ["Refining/Sawmill"] = [0, 3.0, 4.0, 5.0, 7.0, 9.0],
         ["Assembling/Assembler"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
         ["Assembling/ThrusterAssembler"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
         ["Assembling/Tailor"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
@@ -152,18 +151,9 @@ public sealed class MachineTiers : IPartGenerator
             Description = "Cuts trees: needs power. Wood lands in its bin.",
             Gather = ("saw", 12, B([-0.7, 0.1, 0.55], [0.7, 1.5, 2.2])),
         };
-        var sawmill = new Line
-        {
-            File = "Refining/Sawmill", Name = "Sawmill", Section = "Sawmills", Mass = 240, Health = 500, Armour = 5, Power = 1800, Attach = 8.0,
-            Sockets = BigSockets(0.25, -0.3),
-            Ports = ChutePorts(L(0.5, 0.25, -0.33), "+x", L(0.5, 0.25, 0.33), "+x"),
-            Bulk = B([-0.435, 0.03, 0.165], [0.435, 0.44, 0.435]), Capacity = 400,
-            Description = "Saws wood into planks, planks into cloth. Needs power.",
-            Refine = ("sawmill", 200, B([-0.435, 0.03, -0.435], [0.435, 0.44, -0.165])),
-        };
         return
         [
-            drill, saw, sawmill, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts; the Smelter to SmelterParts, the Foundry to FoundryParts)
+            drill, saw, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts; the Smelter to SmelterParts, the Foundry to FoundryParts, the Sawmill to SawmillParts)
         ];
     }
 
@@ -411,7 +401,7 @@ public sealed class MachineTiers : IPartGenerator
         {
             ["format"] = Format,
             ["name"] = Prefix[tier] + line.Name,
-            ["description"] = head + line.Description.Replace("the Sawmill", "the mill").Replace("the Smelter", "the furnace"),
+            ["description"] = head + line.Description,
             ["group"] = Group,
             ["section"] = line.Section,
             ["tier"] = tier,

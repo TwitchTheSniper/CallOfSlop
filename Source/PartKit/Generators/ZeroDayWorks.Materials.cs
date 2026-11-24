@@ -16,6 +16,9 @@ public sealed partial class ZeroDayWorks
 
         private VPart? _recycler;
 
+        /// <summary>The hall's steel silo (x 63): the west annex's Foundry fills it too.</summary>
+        private VPart? _steelSilo;
+
         private void LayMaterials()
         {
             // Raw stock, west end: three ore bunkers (one ore each) and bunkers of stone and wood for the Foundry and the Sawmill.
@@ -26,12 +29,16 @@ public sealed partial class ZeroDayWorks
             var wood = Raw("Ore Bunker 4 m", 89f, "wood");
 
             // Three Smelters (iron ore to metal, copper ore to copper, sand to glass), the Foundry (metal and stone to steel), the Sawmill
-            // (wood to planks) and the Recycler, each over the bin it fills. A Smelter is a Core (x1, the old tier 1); the copper one has a
-            // Hearth Block on its +x side, a 1 x 1 furnace (x2.25, over the old Workshop Smelter's x2: production.md "Refiners as block machines").
+            // (wood to planks) and the Recycler, each over the bin it fills. A Smelter is a Core (x1, the old tier 1), as the Foundry and
+            // the Sawmill are (4 planks a second); the copper and glass ones have furnaces (below; production.md "Refiners as block machines"), and the
+            // metal and steel come mostly from the west annex's big refiners (ZeroDayWorks.Annex.cs).
             var smelt = Refiner("Smelter", 33f);
             var smeltCu = Refiner("Smelter", 41f);
-            Paint(Onto(smeltCu, "+x", "Hearth Block", "-x"), Refining);
             var smeltGlass = Refiner("Smelter", 49f);
+            // The copper and glass Smelters each take a 2 x 2 furnace (x7, 2026-11-24: from x2.25 and x1; their bins ran dry while the
+            // works built), north of their Cores' row: the 6 m between the Cores holds two cells, and the row north of the Cores is free to z -24.
+            RowSquare(smeltCu);
+            RowSquare(smeltGlass);
             var foundry = Refiner("Foundry", 57f);
             var sawmill = Refiner("Sawmill", 81f);
             _recycler = On("Recycler", 85f, RawRow, Up, paint: Refining); // (between the Sawmill and the wood bunker: x 69 is the laminate Foundry's)
@@ -46,7 +53,7 @@ public sealed partial class ZeroDayWorks
             // row full; full of its stock, the bin too, when spawned in creative. The silos stand between the stock yard's two rows of
             // chutes (z -12 and -21), their chutes over everything at 13 to 14.5 m.
             var metalSilo = Silo(57f, "metal");
-            var steelSilo = Silo(63f, "steel");
+            var steelSilo = _steelSilo = Silo(63f, "steel");
             Chute(smelt, metalSilo, 13f);
             Chute(metalSilo, Full(Bin("metal", 33f), "metal"), 13.5f);
             Chute(smeltCu, Bin("copper", 41f));
@@ -111,6 +118,15 @@ public sealed partial class ZeroDayWorks
         {
             Config(bin, ("material", stock), ("fill", 100));
             return bin;
+        }
+
+        /// <summary>A 2 x 2 square of Hearth Blocks on a row Smelter's +x side, its second row north (own +z).</summary>
+        private void RowSquare(VPart core)
+        {
+            var a = Paint(Onto(core, "+x", "Hearth Block", "-x"), Refining);
+            var b = Paint(Onto(a, "+x", "Hearth Block", "-x"), Refining);
+            Paint(Onto(a, "+z", "Hearth Block", "-z"), Refining);
+            Paint(Onto(b, "+z", "Hearth Block", "-z"), Refining);
         }
 
         private VPart Refiner(string part, float x) => On(part, x, RawRow, Up, paint: Refining);

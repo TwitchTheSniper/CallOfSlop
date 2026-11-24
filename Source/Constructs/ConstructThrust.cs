@@ -19,8 +19,19 @@ public struct CThruster
     public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
+    public float ShownX, ShownY; // a client: its gimbal's angles as the host last said (radians), for the bell's swing
     public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
     public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
+    public float LightDelay; // s it takes to light from a standing start: a bell that needs an injector, with no Igniter in its train (0: at once)
+    public float Lit; // ...and how long it has been asked to light (host only)
+    public bool Train; // a bell that needs an injector (ConstructWorks.InjectorFedHead): its heat is kept for a Sensor Ring
+    public float Heat; // ...0..1: its level eased as the drawn heat is (3 s up, 25 s down; host only, kept over rebuilds)
+    public int Reheat; // ...and its Reheat Ring (-1: none)
+    public float ReheatUsed; // s of boost used (host; it recovers while off, kept over rebuilds)
+    public bool ReheatSpent; // ...used up: no boost until it has all recovered
+    public bool ReheatOn; // ...boosting on the last step (host; ThrustOf reads it)
+    public int Ring; // ...its train's Gimbal Ring, which swings a bell with no gimbal of its own (-1: none; ConstructBoost.GimbalOf)
+    public int Valve, Mixer; // a bell that needs an injector: its train's Throttle Valve and Mixture Controller (part indices, -1: none; ConstructWorks.CWorksHead)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
 
@@ -47,6 +58,7 @@ public sealed partial class Construct
     public float HoverRateNow; // on a planet: how fast the height held moves this tick (m/s), which the hold follows as well as the height
     public float LiftHeld; // how long the driver has held Shift or Ctrl (s): on a planet the hold climbs and sinks faster the longer it is held
     public float ThrustShow; // 0..1: how hard its thrusters push, of all they could (server; clients get it in the pose)
+    public bool Swung; // a bell on it stands swung on its gimbal (the host's angles, or what a client was told): only then does the draw look for one (ConstructRender.SwingThruster)
     public long ThrustSentKey; // the server: the levels clients were last told (ConstructThrust.WriteShown)
     public int ThrustDark; // the server: how many times in a row it has told them every thruster is out
     public bool ThrustHeard; // a client: the host has told it each thruster's level since the last rebuild (else a flame burns by ThrustShow)
@@ -95,11 +107,17 @@ public sealed partial class Construct
         Span<ushort> keepPart = stackalloc ushort[MaxThrusters];
         Span<float> keepAb = stackalloc float[MaxThrusters];
         Span<float> keepBuffer = stackalloc float[MaxThrusters];
+        Span<float> keepHeat = stackalloc float[MaxThrusters];
+        Span<float> keepReheat = stackalloc float[MaxThrusters];
+        Span<bool> keepSpent = stackalloc bool[MaxThrusters];
         var old = ThrusterCount;
         for (var k = 0; k < old; k++)
         {
             keepAb[k] = Thrusters[k].Ab;
             keepBuffer[k] = Thrusters[k].Buffer;
+            keepHeat[k] = Thrusters[k].Heat;
+            keepReheat[k] = Thrusters[k].ReheatUsed;
+            keepSpent[k] = Thrusters[k].ReheatSpent;
             keep[k] = Thrusters[k].Level;
             keepPart[k] = Thrusters[k].Part;
         }
@@ -144,9 +162,23 @@ public sealed partial class Construct
                 t.Level = keep[kept];
                 t.Ab = keepAb[kept];
                 t.Buffer = keepBuffer[kept];
+                t.Heat = keepHeat[kept];
+                t.ReheatUsed = keepReheat[kept];
+                t.ReheatSpent = keepSpent[kept];
+            }
+            if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
+                t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
+            t.Train = ConstructWorks.InjectorFedHead(d);
+            t.Valve = t.Mixer = t.Reheat = t.Ring = -1;
+            if (t.Train)
+            {
+                var wl = WorksHeadOf(i);
+                t.LightDelay = wl >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
+                if (wl >= 0)
+                    (t.Valve, t.Mixer, t.Reheat, t.Ring) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer, WorksHeads[wl].Reheat, WorksHeads[wl].Gimbal);
             }
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
-                t.Buffer = ShipWorks.Current.InjectorBuffer; // (fed: its injector is full)
+                t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)
@@ -258,7 +290,7 @@ public static partial class ConstructPhysics
                 wiredHeight = MathF.Max(wiredHeight, p.In1);
             if (t.Lifts && Live(c, ref t, p))
             {
-                liftForce += p.D.ThrustForce * t.Cap;
+                liftForce += c.ThrustOf(k); // (with a Mixture Controller's share, as the trims' weights take it)
                 spool = MathF.Max(spool, p.D.ThrustSpool);
             }
         }
@@ -355,15 +387,33 @@ public static partial class ConstructPhysics
                 }
                 else if (c.Driven)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
+                if (t.Valve >= 0)
+                    want = ValveWant(c, t.Valve, want, t.Scanned && c.StabOwns);
             }
+            if (t.LightDelay > 0)
+                Lighting(ref t, ref want, dt);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
+            if (t.Train)
+                t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 && t.Ab <= 0)
                 continue;
             var push = d.ThrustForce * t.Cap * t.Level; // (what its works let it push)
             var burn = d.ThrustBurn * t.Burn * t.Level;
-            if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
+            if (t.Mixer >= 0)
+            {
+                var (mp, mb) = MixOf(c, t.Mixer);
+                push *= mp;
+                burn *= mb;
+            }
+            if (boost)
+            {
+                push *= 1 + ShipWorks.Current.ReheatBoost;
+                burn *= 2;
+            }
+            if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0 || t.Ring >= 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
                 ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
             if (push <= 0)
                 continue;
@@ -511,21 +561,33 @@ public static partial class ConstructPhysics
             var d = p.D;
             var want = 0f;
             if (Live(c, ref t, p))
+            {
                 want = owned && t.Scanned ? Math.Clamp(t.Command, 0, 1) : d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
+                if (t.Valve >= 0)
+                    want = ValveWant(c, t.Valve, want, owned && t.Scanned);
+            }
+            if (t.LightDelay > 0)
+                Lighting(ref t, ref want, dt);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
+            if (t.Train)
+                t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
-            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level);
+            var (sp, sb) = t.Mixer >= 0 ? MixOf(c, t.Mixer) : (1f, 1f);
+            if (boost)
+                (sp, sb) = (sp * (1 + ShipWorks.Current.ReheatBoost), sb * 2);
+            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level * sp);
             sum += push;
             torque += Vector3.Cross(o + Vector3.Transform(t.At, q) - com, push);
-            shown += d.ThrustForce * t.Cap * t.Level;
+            shown += d.ThrustForce * t.Cap * t.Level * sp;
             if (d.ThrustFuel == EngineFuel.Fuel)
             {
                 if (d.ThrustKind != ThrustKind.Solid)
-                    c.UseFuel(d.ThrustBurn * t.Burn * t.Level * dt * SpaceFuelScale);
+                    c.UseFuel(d.ThrustBurn * t.Burn * t.Level * sb * dt * SpaceFuelScale);
                 if (d.ThrustOx > 0)
                     ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt * SpaceFuelScale);
                 if (!t.Fed)
@@ -586,6 +648,76 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>
+    /// <summary>A bell with no Igniter in its train, asked to burn from cold, waits <see cref="CThruster.LightDelay"/> before its level rises (a warm one, off for a moment, relights at once).</summary>
+    /// <summary>
+    /// What a bell asks with a Throttle Valve in its train: wired, the valve's Throttle in (0..1) sets the level; unwired, its Level setting
+    /// holds the drive at most there. Either way a level above nothing is at least 5%, in 2% steps. A broken valve passes the ask on. A bell
+    /// a stabilizer commands (<paramref name="stab"/>) keeps its command, the wire only holding it at most there as the setting does.
+    /// </summary>
+    private static float ValveWant(Construct c, int valve, float want, bool stab)
+    {
+        if (valve >= c.PartCount)
+            return want;
+        ref var v = ref c.Parts[valve];
+        if (v.Broken)
+            return want;
+        var hold = v.InCount > 0 ? Math.Clamp(v.In, 0, 1) : ConstructConfig.Get(v, v.D, CfgKey.Strength, 100) / 100f;
+        var w = v.InCount > 0 && !stab ? hold : MathF.Min(want, hold);
+        return w <= 0.005f ? 0 : MathF.Max(0.05f, MathF.Round(w * 50) / 50);
+    }
+
+    /// <summary>
+    /// A Mixture Controller's push and burn shares: its dial (or its Mix in, -1..1, when wired) from -100 (80% push at 70% burn) through 0
+    /// (as it is) to 100 (110% push at 130% burn). A broken one is as it is.
+    /// </summary>
+    public const float MixRichPush = 0.1f, MixLeanPush = 0.2f; // (a Mixture Controller's push at +100 is 1 + rich, at -100 1 - lean: a module's peak thrust counts the rich)
+
+    public static (float Push, float Burn) MixOf(Construct c, int mixer)
+    {
+        if (mixer >= c.PartCount || c.Parts[mixer].Broken)
+            return (1, 1);
+        ref var m = ref c.Parts[mixer];
+        var x = Math.Clamp(m.InCount > 0 ? m.In : ConstructConfig.Get(m, m.D, CfgKey.Strength, 0) / 100f, -1, 1);
+        return (1 + (x < 0 ? MixLeanPush : MixRichPush) * x, 1 + 0.3f * x);
+    }
+
+    /// <summary>
+    /// A Reheat Ring's step (host): while its Boost in is on and the bell burns it boosts, for up to <see cref="ShipWorks.ReheatSeconds"/>;
+    /// spent, it gives nothing until it has all recovered over <see cref="ShipWorks.ReheatRecover"/>; off, what it used comes back at the
+    /// same pace. True: boosting this tick. A broken ring boosts nothing and recovers.
+    /// </summary>
+    public static bool ReheatStep(Construct c, ref CThruster t, float dt)
+    {
+        var w = ShipWorks.Current;
+        var on = t.Reheat < c.PartCount && c.Parts[t.Reheat] is { Broken: false, InCount: > 0, In: >= 0.5f } && t.Level > 0 && !t.ReheatSpent;
+        t.ReheatOn = on;
+        if (on)
+        {
+            t.ReheatUsed += dt;
+            if (t.ReheatUsed >= w.ReheatSeconds)
+                t.ReheatSpent = true;
+            return true;
+        }
+        t.ReheatUsed = MathF.Max(0, t.ReheatUsed - dt * w.ReheatSeconds / w.ReheatRecover);
+        if (t.ReheatUsed <= 0)
+            t.ReheatSpent = false;
+        return false;
+    }
+
+    private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)
+
+    private static void Lighting(ref CThruster t, ref float want, float dt)
+    {
+        if (t.Level > 0 || want <= 0 || t.Heat > WarmRelight)
+        {
+            t.Lit = 0;
+            return;
+        }
+        t.Lit += dt;
+        if (t.Lit < t.LightDelay)
+            want = 0;
+    }
+
     public static bool ThrusterLive(Construct c, ref CThruster t, in CPart p) => Live(c, ref t, p);
 
     private static bool Live(Construct c, ref CThruster t, in CPart p)
@@ -629,12 +761,21 @@ public static class ConstructThrust
             return false;
         var key = 17L + n;
         var lit = false;
+        var swung = 0;
         for (var k = 0; k < n; k++)
         {
-            var v = Level(c.Thrusters[k]);
+            ref var t = ref c.Thrusters[k];
+            var v = Level(t);
             key = key * 31 + v;
             lit |= v > 0;
+            if (Angle(t.AngleX) != 0 || Angle(t.AngleY) != 0)
+            {
+                key = (key * 31 + Angle(t.AngleX)) * 31 + Angle(t.AngleY);
+                swung++;
+            }
         }
+        c.Swung = swung > 0;
+        swung = Math.Min(swung, MaxSwung(n)); // (the rest are drawn straight on a client: one message stays under the MTU)
         if (key == c.ThrustSentKey && (lit || c.ThrustDark >= 3))
             return false; // (all out goes three times: it goes unreliably, and a lost one would leave a flame burning)
         c.ThrustDark = lit ? 0 : key == c.ThrustSentKey ? c.ThrustDark + 1 : 1;
@@ -642,8 +783,22 @@ public static class ConstructThrust
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Thrust).U16(c.Id).U16((ushort)n);
         for (var k = 0; k < n; k++)
             w.U8(Level(c.Thrusters[k]));
+        w.U16((ushort)swung); // (protocol 464: then each swung bell's index and its gimbal's two angles, 0.4 degree a step; the rest stand straight)
+        for (var k = 0; k < n && swung > 0; k++)
+            if (Angle(c.Thrusters[k].AngleX) != 0 || Angle(c.Thrusters[k].AngleY) != 0)
+            {
+                w.U16((ushort)k).U8((byte)Angle(c.Thrusters[k].AngleX)).U8((byte)Angle(c.Thrusters[k].AngleY));
+                swung--;
+            }
         return true;
     }
+
+    /// <summary>How many swung bells one message of <paramref name="n"/> levels can carry under <see cref="PacketWriter.Mtu"/> (4 bytes each).</summary>
+    private static int MaxSwung(int n) => Math.Max(0, (PacketWriter.Mtu - 9 - n) / 4);
+
+    private const float AngleStep = 0.4f * MathF.PI / 180f; // (127 steps: 50.8 degrees, past ConstructAero.ThrowMost's 43)
+
+    private static sbyte Angle(float a) => (sbyte)Math.Clamp(MathF.Round(a / AngleStep), -127, 127);
 
     private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level * t.Cap, t.Ab) * 255), 0, 255); // (a drive short of its works burns low)
 
@@ -657,6 +812,20 @@ public static class ConstructThrust
             var v = r.U8();
             if (fits)
                 c!.Thrusters[k].Shown = v / 255f;
+        }
+        if (fits)
+            for (var k = 0; k < n; k++)
+                c!.Thrusters[k].ShownX = c.Thrusters[k].ShownY = 0;
+        var swung = r.U16();
+        if (fits)
+            c!.Swung = swung > 0;
+        for (var m = 0; m < swung; m++)
+        {
+            var k = r.U16();
+            var x = (sbyte)r.U8();
+            var y = (sbyte)r.U8();
+            if (fits && k < n)
+                (c!.Thrusters[k].ShownX, c.Thrusters[k].ShownY) = (x * AngleStep, y * AngleStep);
         }
         if (fits)
             c!.ThrustHeard = true;

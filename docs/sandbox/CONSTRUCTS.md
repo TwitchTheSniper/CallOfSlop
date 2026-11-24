@@ -204,6 +204,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 Refining, grow beds (hydroponics on water), extrusion, the Wheel Former, the Press, the Panel Former, the Laser Cutter, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, lifters, the Production Showcase.
 
 - Refining (decision 14)
+- Refiners as block machines (the Smelter, the Foundry, the Sawmill, the Scrap Breaker)
 - Grow beds
 - Extrusion
 - The Wheel Former

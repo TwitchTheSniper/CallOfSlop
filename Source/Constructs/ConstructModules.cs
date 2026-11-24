@@ -178,6 +178,8 @@ public static class ConstructModules
             return ProductionLines.PortValue(p, port); // (a Line Console's Alarm, Running and Made)
         if (p.D.Monitor == MonitorKind.Network)
             return 0; // (a Router's Data out: a link to a display, no value)
+        if (p.D.TrainFn == TrainFunction.Sensor)
+            return ConstructWorks.SensorPort(c, part, port); // (an engine's Sensor Ring: health and heat)
         if (p.D.WidePorts)
             return LogicBlocks.OutPort(c, part, port); // (a Data Bus's breakout)
         if (p.D.Lifter != null)

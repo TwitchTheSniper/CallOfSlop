@@ -129,7 +129,7 @@ public sealed partial class Game
             return c.DefOf(i).WorksNeeds == 0 ? i : -1;
         }
         var j = c.WorksPieces[k - c.ThrusterCount];
-        return ConstructWorks.IsDrivePiece(c.DefOf(j)) ? j : -1;
+        return ConstructWorks.IsDrivePiece(c.DefOf(j)) && c.DefOf(j).TrainFn is not (TrainFunction.Spacer or TrainFunction.Adapter) ? j : -1; // (a Spacer or a Bore Adapter does nothing to break)
     }
 
     private static int BreakdownCandidates(Construct c) => c.ThrusterCount + c.WorksPieceCount;
@@ -158,6 +158,8 @@ public sealed partial class Game
         {
             if (BreakdownCandidate(c, k) is not (var i and >= 0) || !c.Parts[i].Working || pick-- > 0)
                 continue;
+            if (ConstructWorks.Filtered(c, i) && _bdRng.Next(2) == 0)
+                return; // (a Fuel Filter in its train: half the breakdowns that land there pass; the next try is a full wait away)
             c.BdDef = c.Parts[i].Def;
             c.BdPos = c.Parts[i].Pos;
             c.BdLeft = (int)(t.WarnSeconds * World.TickRate);

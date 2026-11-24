@@ -1620,7 +1620,7 @@ public static class ConstructWeapons
                 hit |= CFireHit.Part;
                 break;
             }
-            var armour = body.Parts[part].D.Armour;
+            var armour = ConstructWorks.ArmourOf(body, part); // (an engine train's Armour Collars too)
             var exit = ExitDistance(body, part, at, dir);
             if (ch.Glass)
             {

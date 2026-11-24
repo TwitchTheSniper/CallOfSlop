@@ -279,7 +279,7 @@ public static unsafe partial class Program
                 _sbLookKey = key;
                 var setting = d.Configurable && d.Settings.Length > 0 ? $"{d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))}" // (what the linking tool's reload key steps)
                     : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $"{d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : "";
-                var signal = d.IsSignal ? d.Mains ? ConstructLamps.Lit(hit.Body, hit.Part) ? "on" : "off" : d.HasReading ? LogicDisplays.Look(part, d) : d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
+                var signal = d.IsSignal && d.TrainFn is not (TrainFunction.Sensor or TrainFunction.Throttle or TrainFunction.Selector) ? d.Mains ? ConstructLamps.Lit(hit.Body, hit.Part) ? "on" : "off" : d.HasReading ? LogicDisplays.Look(part, d) : d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
                 var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? "no power" : "";
@@ -1163,7 +1163,7 @@ public static unsafe partial class Program
         if (cd.IsScoop)
         {
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
-            var action = !near ? null : tip != 0 ? SandboxKeys.Do(SandboxKeys.Use, $"tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {RecyclingTable.Current.NameOf(tip)}")
+            var action = !near ? null : tip != 0 ? SandboxKeys.Do(SandboxKeys.Use, $"tip in {Math.Min(inv.Materials[tip], ConstructStorage.Capacity(hit.Body, hit.Part) - st.Amount)} {RecyclingTable.Current.NameOf(tip)}")
                 : st.Amount > 0 ? SandboxKeys.Do(SandboxKeys.Use, $"take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {RecyclingTable.Current.NameOf(st.Material)}") : null;
             return _sbStoreText = ConstructScoops.Look(cd, st, action);
         }
@@ -1171,12 +1171,13 @@ public static unsafe partial class Program
         {
             var tbl = RecyclingTable.Current;
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
-            var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
+            var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], ConstructStorage.Capacity(hit.Body, hit.Part) - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
             var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer || cd.IsGrower ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
             var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
                 : cd.IsGatherer ? GathererLook(cd, st, hit, g)
                 : cd.IsGrower ? ConstructGrowing.Look(hit.Body, hit.Part, st) : "";
-            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
+            var sized = cd.IsBreaker ? $" - {ConstructRefining.SizeText(hit.Body, hit.Part)}" : ""; // (a Scrap Breaker: its shredders and rate, its bin theirs)
+            return _sbStoreText = $"{cd.Name}: {st.Amount}/{(cd.IsBreaker ? ConstructStorage.Capacity(hit.Body, hit.Part) : cd.BulkCapacity)}{holds}{rec}{sized}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)
         {

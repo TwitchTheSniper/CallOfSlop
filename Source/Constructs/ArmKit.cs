@@ -485,8 +485,8 @@ public static class ArmKit
         (d.SlideLo, d.SlideHi) = (s.SlideLo, s.SlideHi);
         d.Payload = s.Payload;
         var hw = s.HeadLen; // (the clamp's width across is its own: read from the part when drawn; here its pads' spread by its length)
-        d.PieceAcross = Math.Clamp(s.Reach * 0.25f, 0.5f, 8f);
-        d.PieceLong = Math.Clamp(s.Reach, 1f, 32f);
+        d.PieceAcross = PieceAcross(s);
+        d.PieceLong = PieceLong(s);
         d.Speed = s.Speed;
         d.Handle = Math.Clamp(0.25f + 0.1f * s.JointA + hw * 0.1f, 0.2f, 2f);
         d.Housing = s.JointA * 2;
@@ -643,16 +643,38 @@ public static class ArmKit
     {
         if (s.Heads.Length == 0)
             return -1;
-        if (Takes(s, s.Mounted, d))
-            return s.Mounted;
-        var best = -1;
-        for (var k = 0; k < s.Heads.Length; k++)
-            if (k != s.Mounted && Takes(s, k, d) && (best < 0 || s.Heads[k].Rating > s.Heads[best].Rating))
-                best = k;
-        return best;
+        // A head whose own grip suits the piece first (the swap goes to it); else any head that holds its mass, the piece within the
+        // arm's size (Sean 2026-11-24: arms take big pieces, never "not the right size", so a kit arm carries what the fixed arm did).
+        for (var loose = 0; loose < 2; loose++)
+        {
+            if (Takes(s, s.Mounted, d, loose == 1))
+                return s.Mounted;
+            var best = -1;
+            for (var k = 0; k < s.Heads.Length; k++)
+                if (k != s.Mounted && Takes(s, k, d, loose == 1) && (best < 0 || s.Heads[k].Rating > s.Heads[best].Rating))
+                    best = k;
+            if (best >= 0)
+                return best;
+        }
+        return -1;
     }
 
-    private static bool Takes(ArmSpec s, int k, ConstructPartDef d) => d.Mass <= PayloadWith(s, k) && Fits(s.Heads[k].Kind, s.Heads[k].Width, d);
+    private static bool Takes(ArmSpec s, int k, ConstructPartDef d, bool loose) =>
+        d.Mass <= PayloadWith(s, k) && (Fits(s.Heads[k].Kind, s.Heads[k].Width, d) || loose && MiddleSide(d) <= PieceAcross(s) + 0.005f);
+
+    /// <summary>
+    /// The biggest piece a kit arm takes: across (its middle side) about half its reach, along a third more than its reach, so each preset
+    /// takes what the fixed arm it replaced took (Shipyard 10 x 24 m at 18 m: ArmKitMigrate, `--arm-swap-carry`).
+    /// </summary>
+    public static float PieceAcross(ArmSpec s) => Math.Clamp(s.Reach * 0.55f, 0.5f, 12f);
+
+    public static float PieceLong(ArmSpec s) => Math.Clamp(s.Reach * 1.35f, 1f, 32f);
+
+    private static float MiddleSide(ConstructPartDef d)
+    {
+        var sz = d.BoundsMax - d.BoundsMin;
+        return sz.X + sz.Y + sz.Z - MathF.Max(sz.X, MathF.Max(sz.Y, sz.Z)) - MathF.Min(sz.X, MathF.Min(sz.Y, sz.Z));
+    }
 
     /// <summary>
     /// Server, at a loaded carry's start: if the mounted head can't take the piece, the head that can goes on (the Core's ArmHead

@@ -744,6 +744,8 @@ public static partial class ConstructRender
         var dieOpen = shellStore != null
             ? ConstructPress.DieOpen(shellStore, shellPose.Index, Now, ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), out _)
             : 1f; // (its round die's swing: stowed open, closing on the blank, shut while it is pressed, opening on the new part)
+        var swing = Matrix4x4.Identity;
+        var swung = !p.Broken && GimbalTurn(c, SwingThruster(c, i, d), out swing); // (a bell on its gimbal, swung as the host steers it: whole, about its mount)
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -806,6 +808,8 @@ public static partial class ConstructRender
                 WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
             else if (drive)
                 DriveMove(c, in box, in p, d, centre, ref model);
+            if (swung)
+                model *= swing;
             if (_hubRise > 0 && box.RigTravel > 0 && box.Work is BoxWork.Slide or BoxWork.Spin)
                 model *= Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * MathF.Min(_hubRise, box.RigTravel)); // (the hub's carriage and its chuck ride up the slide, up to their travel)
             if (box.Fence && routerOn && routerFence != 0)
@@ -1030,6 +1034,17 @@ public static partial class ConstructRender
             case BoxWork.Spin:
                 model = model * Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(axis, (float)(Now * 2.4 % Math.Tau)) * Matrix4x4.CreateTranslation(centre);
                 break;
+            case BoxWork.Stroke when _workCore >= 0 && _workCore < c.PartCount && SawmillWorks.Is(c.Parts[_workCore].D):
+            {
+                // A lone Saw Block's carriage and log, on its square's own clock (SawmillWorks.CarriageShare at n 1, as SawmillRender's
+                // merged mills): its boxes are drawn at the stroke's end (share 1) and stroke back along their axis by the travel.
+                ref readonly var core = ref c.Parts[_workCore];
+                var cd = core.D;
+                var rel = Rot24.Apply(Rot24.Inverse(core.Rot), p.Pos - core.Pos) - (cd.BlockOrigin ?? Vector3.Zero);
+                var share = SawmillWorks.CarriageShare(Now, 1, (int)MathF.Round(rel.X / cd.BlockCell), (int)MathF.Round(rel.Z / cd.BlockCell), out _);
+                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (1f - share)));
+                break;
+            }
             case BoxWork.Stroke:
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));

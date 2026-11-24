@@ -1,0 +1,624 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Throttle Valve XS",
+  "description": "A throttle valve for an engine train, 0.4 m long: weld it in the feed zone (behind the chambers, with the injectors). It throttles the drive finely, down to 5% in 2% steps: set its Level to hold the drive there, or wire a lever into it to set the level. It puts out the drive's level in %.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "train",
+    "function": "throttle",
+    "bore": 0.66
+  },
+  "config": [
+    {
+      "key": "strength",
+      "label": "Level",
+      "group": "Engine",
+      "unit": "%",
+      "min": 5.0,
+      "max": 100.0,
+      "step": 2.0,
+      "default": 100.0,
+      "tooltip": "Holds the drive at most at this level, in 2% steps down to 5%. A wire into the valve sets the level instead."
+    }
+  ],
+  "mass": 110.0,
+  "health": 600,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.326,
+        -0.326,
+        -0.05
+      ],
+      "max": [
+        0.326,
+        0.326,
+        -0.003
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.1961,
+        0.1961,
+        -0.015
+      ],
+      "max": [
+        0.2281,
+        0.2281,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.016,
+        0.284,
+        -0.015
+      ],
+      "max": [
+        0.016,
+        0.316,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2281,
+        0.1961,
+        -0.015
+      ],
+      "max": [
+        -0.1961,
+        0.2281,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.316,
+        -0.016,
+        -0.015
+      ],
+      "max": [
+        -0.284,
+        0.016,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2281,
+        -0.2281,
+        -0.015
+      ],
+      "max": [
+        -0.1961,
+        -0.1961,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.016,
+        -0.316,
+        -0.015
+      ],
+      "max": [
+        0.016,
+        -0.284,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.1961,
+        -0.2281,
+        -0.015
+      ],
+      "max": [
+        0.2281,
+        -0.1961,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.284,
+        -0.016,
+        -0.015
+      ],
+      "max": [
+        0.316,
+        0.016,
+        -0.001
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.329,
+        -0.329,
+        -0.397
+      ],
+      "max": [
+        0.329,
+        0.329,
+        -0.35
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.2612,
+        0.0988,
+        -0.399
+      ],
+      "max": [
+        0.2932,
+        0.1308,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0988,
+        0.2612,
+        -0.399
+      ],
+      "max": [
+        0.1308,
+        0.2932,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.1308,
+        0.2612,
+        -0.399
+      ],
+      "max": [
+        -0.0988,
+        0.2932,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2932,
+        0.0988,
+        -0.399
+      ],
+      "max": [
+        -0.2612,
+        0.1308,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2932,
+        -0.1308,
+        -0.399
+      ],
+      "max": [
+        -0.2612,
+        -0.0988,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.1308,
+        -0.2932,
+        -0.399
+      ],
+      "max": [
+        -0.0988,
+        -0.2612,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.0988,
+        -0.2932,
+        -0.399
+      ],
+      "max": [
+        0.1308,
+        -0.2612,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.2612,
+        -0.1308,
+        -0.399
+      ],
+      "max": [
+        0.2932,
+        -0.0988,
+        -0.385
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.272,
+        -0.272,
+        -0.353
+      ],
+      "max": [
+        0.272,
+        0.272,
+        -0.047
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.312,
+        -0.312,
+        -0.31
+      ],
+      "max": [
+        0.312,
+        0.312,
+        -0.09
+      ],
+      "color": "#3a4a5a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 24,
+      "finish": "painted plating",
+      "inner": 0.865
+    },
+    {
+      "min": [
+        -0.316,
+        -0.316,
+        -0.215
+      ],
+      "max": [
+        0.316,
+        0.316,
+        -0.185
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "shape": "tube",
+      "segments": 24,
+      "finish": "hazard paint",
+      "inner": 0.975
+    },
+    {
+      "min": [
+        -0.05,
+        0.302,
+        -0.25
+      ],
+      "max": [
+        0.05,
+        0.362,
+        -0.15
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.012,
+        0.362,
+        -0.212
+      ],
+      "max": [
+        0.012,
+        0.422,
+        -0.188
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.09,
+        0.428,
+        -0.212
+      ],
+      "max": [
+        0.09,
+        0.44,
+        -0.188
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.012,
+        0.4245,
+        -0.29
+      ],
+      "max": [
+        0.012,
+        0.4355,
+        -0.11
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.1,
+        0.426,
+        -0.3
+      ],
+      "max": [
+        0.1,
+        0.438,
+        -0.28
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.1,
+        0.426,
+        -0.12
+      ],
+      "max": [
+        0.1,
+        0.438,
+        -0.1
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        -0.1,
+        0.426,
+        -0.28
+      ],
+      "max": [
+        -0.08,
+        0.438,
+        -0.12
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        0.08,
+        0.426,
+        -0.28
+      ],
+      "max": [
+        0.1,
+        0.438,
+        -0.12
+      ],
+      "color": "#a02818",
+      "detail": true,
+      "finish": "painted plating",
+      "work": "spin",
+      "paintable": false,
+      "axis": "+y"
+    },
+    {
+      "min": [
+        0.302,
+        -0.04,
+        -0.3
+      ],
+      "max": [
+        0.372,
+        0.04,
+        -0.18
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.327,
+        -0.01,
+        -0.18
+      ],
+      "max": [
+        0.347,
+        0.01,
+        -0.11
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "work": "stroke",
+      "paintable": false,
+      "travel": 0.03,
+      "axis": "+z"
+    },
+    {
+      "min": [
+        0.372,
+        -0.012,
+        -0.27
+      ],
+      "max": [
+        0.384,
+        0.012,
+        -0.246
+      ],
+      "color": "#1f3a26",
+      "detail": true,
+      "work": "chase",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.05,
+        -0.4
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.4
+      ],
+      "max": [
+        0.2,
+        -0.05,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.05,
+        -0.05,
+        -0.4
+      ],
+      "max": [
+        0.2,
+        0.05,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        -0.05,
+        -0.4
+      ],
+      "max": [
+        -0.05,
+        0.05,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -770,7 +770,22 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 454: the arm kit's heads (Sean 2026-11-24, part 2): the Spreader, Vacuum Head, Magnet Head, Fork, Fitter Head and Head Stand part files
     // move part ids, and an Arm Core's Head setting (CfgKey.ArmHead, the retired Stations key's byte) rides in its CBody.
     // 455: the arm kit's Knuckle and Rail Carriage (Sean 2026-11-24, part 3): the Arm Knuckle and Rail Carriage part files move part ids.
-    public const ushort ProtocolVersion = 455;
+    // 456: engine trains (Sean 2026-11-24): the Drive Nozzle, Reaction Chamber and Fuel Injector XS part files (phase 1) move part ids, and
+    //      their Press patterns take any blank size (phase 2), so a sized piece's key now names a part an older build refuses.
+    // 457: the Sawmill is a block machine (Core, Saw Block, Plank Stacker; Sawmill T2-T5 gone): new part files move part ids, and a
+    //      Sawmill Core's rate, bins and chute load come from its squares as the Smelter's and the Foundry's do.
+    // 458: engine trains phase 3: the Train Spacer, Fuel Buffer and Cooling Jacket XS part files move part ids.
+    // 459: engine trains phase 4: the Igniter and Sensor Ring XS part files move part ids.
+    // 460: engine trains phase 5: the Throttle Valve and Mixture Controller XS part files move part ids.
+    // 461: the Scrap Breaker (Breaker Core, Shredder Block) beside the Recycler: new part files move part ids, a Breaker's bin, chute load
+    //      and job time come from its squares, and a store's second flags byte's 128 carries a Breaker's wreck under way (its def and cell).
+    // 462: engine trains phase 6: the Reheat Ring and Fuel Filter XS part files move part ids.
+    // 463: engine trains phase 7: the Gimbal Ring and Armour Collar XS part files move part ids.
+    // 464: CBodyKind.Thrust carries each swung bell's gimbal angles after the levels (u16 count, then u16 index, s8 x, s8 y at 0.4 degree a step),
+    //      so a client draws a bell swinging on its gimbal (ConstructThrust.WriteShown).
+    // 465: engine trains: the Fuel Selector XS part file moves part ids.
+    // 466: engine trains: the Bore Adapter XS part file moves part ids (and train pieces carry a bore).
+    public const ushort ProtocolVersion = 466;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

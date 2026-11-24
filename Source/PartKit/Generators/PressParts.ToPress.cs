@@ -88,10 +88,26 @@ public sealed partial class PressParts
         ("housing", "exchanger", "Coolant Exchanger L", "coolant exchanger", "hollow 230x220x115 steel", ["hollow"]),
         ("housing", "capacitor", "Capacitor Bank S", "capacitor bank", "solid 80x110x70 steel", ["solid"]),
         ("actuator", "turretring", "Turret Ring S", "turret ring", "solid 100x100x95 steel", ["solid"]),
-        // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing.
+        // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing
+        // at any length and diameter (EngineTrainPattern: what it serves scales with the blank, so these are not presets-only).
         ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
         ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
+        // ...and its function pieces (phase 3): a Spacer, a Fuel Buffer and a Cooling Jacket, at any size too. Every bored piece's preset is 70 cm
+        // across (the Bore Adapter's 140), so one blank across gives one bore whatever the kind (Pressed.BuildLike: bore x across over the preset's).
+        ("housing", "trainspacer", "Train Spacer XS", "train spacer", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "fuelbuffer", "Fuel Buffer XS", "fuel buffer", "hollow 70x70x50 steel", ["hollow"]),
+        ("housing", "coolingjacket", "Cooling Jacket XS", "cooling jacket", "hollow 70x70x60 steel", ["hollow"]),
+        ("housing", "igniter", "Igniter XS", "igniter", "hollow 70x70x35 steel", ["hollow"]),
+        ("housing", "sensorring", "Sensor Ring XS", "sensor ring", "hollow 70x70x35 steel", ["hollow"]),
+        ("housing", "throttlevalve", "Throttle Valve XS", "throttle valve", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "mixture", "Mixture Controller XS", "mixture controller", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "reheatring", "Reheat Ring XS", "reheat ring", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "fuelfilter", "Fuel Filter XS", "fuel filter", "hollow 70x70x35 steel", ["hollow"]),
+        ("housing", "gimbalring", "Gimbal Ring XS", "gimbal ring", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "armourcollar", "Armour Collar XS", "armour collar", "hollow 70x70x35 steel", ["hollow"]),
+        ("housing", "fuelselector", "Fuel Selector XS", "fuel selector", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "boreadapter", "Bore Adapter XS", "bore adapter", "hollow 140x140x75 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -247,8 +263,29 @@ public sealed partial class PressParts
 
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
     private static IEnumerable<object?> More(string die, PyDict? bay2 = null, List<object?>? scale = null, string? along = null) =>
-        MorePatterns.Where(m => m.Die == die).Select(m => (object?)Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
-            along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
+        MorePatterns.Where(m => m.Die == die).Select(m => EngineTrainScale(m.Id) is { } train ? (object?)EngineTrainPattern(m, train)
+            : Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
+                along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
+
+    /// <summary>
+    /// An engine train piece's numbers by its blank (Sean, 2026-11-24: any length and diameter; what it serves goes with length times
+    /// diameter squared, the blank's volume): the bell's thrust and burn, a chamber's or an injector's serves. Null: not a train piece.
+    /// </summary>
+    private static List<object?>? EngineTrainScale(string id) => id switch
+    {
+        "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
+        "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
+        "trainspacer" or "fuelbuffer" or "coolingjacket" or "igniter" or "sensorring" or "throttlevalve" or "mixture" or "reheatring" or "fuelfilter" or "gimbalring" or "armourcollar" or "fuelselector" or "boreadapter" => Py.L(), // (a function piece: what it adds is the same at any size)
+        _ => null,
+    };
+
+    /// <summary>A train piece's pattern: its own round look stretched to the blank along its axis (z), none of the housing die's corner bosses.</summary>
+    private static PyDict EngineTrainPattern((string Die, string Id, string Like, string Label, string Blank, string[]? Only) m, List<object?> scale)
+    {
+        var p = Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, scale: scale.Count > 0 ? scale : null, along: "z", auto: false);
+        p["dieFeatures"] = false;
+        return p;
+    }
 
     /// <summary>The presets this adds (Presets calls it, after the ones before it).</summary>
     private static IEnumerable<(string Part, string Die, string Pattern, string Blank)> MoreToPress() =>

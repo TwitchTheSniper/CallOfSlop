@@ -239,17 +239,21 @@ public static class ConstructBoost
             push *= air;
             burn *= air;
         }
-        if (d.ThrustGimbal > 0)
+        if (GimbalOf(c, t) is var gp and >= 0)
         {
-            var rate = d.GimbalRate * dt;
-            var most = ConstructAero.ThrowOf(p, d, d.ThrustGimbal) * (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f ? -1 : 1);
-            var expo = ConstructConfig.Get(p, d, CfgKey.Expo, 0) / 100f;
-            var wantX = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandX : p.InCount1 > 0 ? Math.Clamp(p.In1, -1, 1) : 0, expo) * most;
-            var wantY = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandY : p.InCount2 > 0 ? Math.Clamp(p.In2, -1, 1) : 0, expo) * most;
+            ref readonly var g = ref c.Parts[gp]; // (the bell's own gimbal, or its train's Gimbal Ring: whose settings and wires)
+            var gd = g.D;
+            var rate = gd.GimbalRate * dt;
+            var most = ConstructAero.ThrowOf(g, gd, gd.ThrustGimbal) * (ConstructConfig.Get(g, gd, CfgKey.Reverse, 0) >= 0.5f ? -1 : 1);
+            var expo = ConstructConfig.Get(g, gd, CfgKey.Expo, 0) / 100f;
+            var wantX = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandX : p.InCount1 > 0 && d.ThrustGimbal > 0 ? Math.Clamp(p.In1, -1, 1) : 0, expo) * most;
+            var wantY = ConstructAero.Curve(t.GimbalScanned && c.StabOwns ? t.CommandY : p.InCount2 > 0 && d.ThrustGimbal > 0 ? Math.Clamp(p.In2, -1, 1) : 0, expo) * most;
             t.AngleX += Math.Clamp(wantX - t.AngleX, -rate, rate);
             t.AngleY += Math.Clamp(wantY - t.AngleY, -rate, rate);
             dir = Vector3.Normalize(Vector3.Transform(t.Dir + Vector3.Cross(t.GimbalX, t.Dir) * t.AngleX + Vector3.Cross(t.GimbalY, t.Dir) * t.AngleY, q));
         }
+        else
+            t.AngleX = t.AngleY = 0; // (a Gimbal Ring shot off: the bell stands straight, and is drawn so)
         if (d.ThrustKind == ThrustKind.Repulsor)
         {
             var f = Falloff(t.Gap, d.RepulsorRange);
@@ -261,6 +265,19 @@ public static class ConstructBoost
                 push = Math.Clamp(push + damp, 0, d.ThrustForce * t.Cap * 2);
             }
         }
+    }
+
+    /// <summary>
+    /// The part whose gimbal swings thruster <paramref name="t"/>'s push (how far, and its Throw, Expo and Reverse settings): its engine
+    /// train's working Gimbal Ring when that swings further than the bell's own gimbal, else the bell itself if it has one, else -1.
+    /// The pitch and yaw wires are the bell's own ports either way (a ring takes none).
+    /// </summary>
+    public static int GimbalOf(Construct c, in CThruster t)
+    {
+        var own = c.Parts[t.Part].D.ThrustGimbal;
+        if (t.Ring >= 0 && t.Ring < c.PartCount && c.Parts[t.Ring] is { Working: true, Broken: false } r && r.D.ThrustGimbal > own)
+            return t.Ring;
+        return own > 0 ? t.Part : -1;
     }
 
     /// <summary>Server: a decoupler's tick. A rising input fires it, once; bodies change after the logic step.</summary>

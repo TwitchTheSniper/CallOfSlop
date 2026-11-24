@@ -350,73 +350,6 @@ public static class TierStyle
         };
     }
 
-    // ---- The sawmill: two beds and a blade frame between them
-
-    private static List<TB> Beds(string role = "trim", double top = 0.45) =>
-        [.. Walls(-0.5, 0.5, 0.02, top, -0.5, -0.1, 0.06, role), .. Walls(-0.5, 0.5, 0.02, top, 0.1, 0.5, 0.06, role)];
-
-    private static List<TB> Blades() => [D([-0.015, 0.52, -0.28], [0.015, 0.98, 0.28], "edge"), D([-0.018, 0.46, -0.18], [0.018, 1.03, 0.18], "edge"), D([-0.12, 0.72, -0.03], [0.12, 0.78, 0.03], "dark")];
-
-    private static List<TB> LowBlades() => [D([-0.015, 0.46, -0.24], [0.015, 0.82, 0.24], "edge"), D([-0.018, 0.46, -0.16], [0.018, 0.86, 0.16], "edge"), D([-0.12, 0.62, -0.03], [0.12, 0.68, 0.03], "dark")];
-
-    private static Shape Sawmill(int t)
-    {
-        if (t == 1) // a timber trestle: splayed posts, a motor on the floor with a belt up to the arbor
-            return new Shape
-            {
-                Solid = [Floor(), .. Beds("timber", 0.36),
-                    S([-0.3, 0.02, -0.08], [-0.24, 0.4, 0.08], "timber"), S([-0.25, 0.4, -0.08], [-0.19, 0.72, 0.08], "timber"), S([-0.2, 0.72, -0.08], [-0.14, 0.93, 0.08], "timber"),
-                    S([0.24, 0.02, -0.08], [0.3, 0.4, 0.08], "timber"), S([0.19, 0.4, -0.08], [0.25, 0.72, 0.08], "timber"), S([0.14, 0.72, -0.08], [0.2, 0.93, 0.08], "timber"),
-                    S([-0.24, 0.93, -0.12], [0.24, 0.99, 0.12], "frame"), S([0.3, 0.02, -0.09], [0.44, 0.2, 0.09], "motor")],
-                Detail = [D([-0.015, 0.45, -0.22], [0.015, 0.9, 0.22], "edge"), D([-0.018, 0.45, -0.14], [0.018, 0.92, 0.14], "edge"), D([-0.19, 0.62, -0.03], [0.19, 0.68, 0.03], "dark"),
-                    D([0.2, 0.2, -0.02], [0.22, 0.64, 0.02], "dark"), D([-0.5, 0.02, -0.512], [-0.1, 0.26, -0.5], "plate"), D([0.04, 0.1, -0.512], [0.42, 0.32, -0.5], "plate2"), D([-0.3, 0.08, 0.5], [0.1, 0.3, 0.512], "plate2"),
-                    D([-0.28, 0.99, -0.14], [0.3, 1.03, 0.16], "plate2")],
-            };
-        if (t == 2) // a cast frame with a beam, the motor on the frame, a flywheel on the arbor
-            return new Shape
-            {
-                Solid = [Floor(), .. Beds("body"),
-                    S([-0.18, 0.02, -0.1], [-0.12, 1.05, 0.1]), S([0.12, 0.02, -0.1], [0.18, 1.05, 0.1]), S([-0.2, 1.05, -0.16], [0.2, 1.12, 0.16], "accent"), S([0.18, 0.6, -0.12], [0.46, 0.88, 0.12], "motor")],
-                Detail = [.. Blades(),
-                    D([-0.506, 0.45, -0.506], [0.506, 0.47, -0.437], "trim"), D([-0.506, 0.45, 0.437], [0.506, 0.47, 0.506], "trim"),
-                    Cyl([-0.34, 0.54, -0.14], [-0.28, 0.82, 0.14], "dark", "-x", ("segments", 24)), Ring([-0.345, 0.58, -0.1], [-0.275, 0.78, 0.1], "trim", "-x", 0.72, ("ends", "closed")), D([-0.28, 0.66, -0.03], [-0.18, 0.72, 0.03], "frame"),
-                    D([-0.206, 0.02, -0.126], [-0.1, 0.12, 0.126], "frame"), D([0.1, 0.02, -0.126], [0.206, 0.12, 0.126], "frame"),
-                    .. Rivets([[-0.15, 0.9, 0.1], [0.15, 0.9, 0.1], [-0.15, 0.3, 0.1], [0.15, 0.3, 0.1]], 0.012)],
-            };
-        if (t == 3) // a gantry the width of the mill: tall outer legs, an overhead beam, the motor hung from it
-            return new Shape
-            {
-                Solid = [Floor(), .. Beds("trim"),
-                    S([-0.5, 0.02, -0.07], [-0.42, 1.12, 0.07], "accent"), S([0.42, 0.02, -0.07], [0.5, 1.12, 0.07], "accent"), S([-0.42, 1.04, -0.1], [0.42, 1.12, 0.1], "frame"),
-                    S([-0.16, 0.88, -0.1], [0.16, 1.04, 0.1], "motor"), S([-0.06, 0.02, -0.08], [0.06, 0.42, 0.08], "frame")],
-                Detail = [.. Blades(),
-                    .. Hazard([-0.505, 0.455, -0.505], [0.505, 0.475, -0.44], 3), D([-0.505, 0.455, 0.44], [0.505, 0.475, 0.505], "accent"),
-                    Cyl([0.16, 0.94, -0.04], [0.42, 1.02, 0.04], "pipe", "+x"),
-                    .. SideLadder(-0.07, 0.07, 0.48, 1.04, -0.42, 4, 0.02), D([0.3, 1.12, -0.03], [0.36, 1.16, 0.03], "light")],
-            };
-        if (t == 4) // a low armoured housing over the blade, sandbagged beds
-            return new Shape
-            {
-                Solid = [Floor(), .. Beds("trim", 0.4),
-                    S([-0.34, 0.02, -0.1], [-0.12, 0.84, 0.1], "body", "bevel", ("radius", 0.3), ("edges", "long"), ("front", "+x")), S([0.12, 0.02, -0.1], [0.34, 0.84, 0.1], "body", "bevel", ("radius", 0.3), ("edges", "long"), ("front", "+x")),
-                    S([-0.34, 0.84, -0.14], [0.34, 0.92, 0.14], "plate")],
-                Detail = [.. LowBlades(),
-                    Wedge([-0.34, 0.92, -0.14], [0.34, 1.0, 0.14], "plate2", "+y", L(0.7, 0.4)), D([-0.345, 0.5, -0.105], [-0.12, 0.57, 0.105], "accent"), D([0.12, 0.5, -0.105], [0.345, 0.57, 0.105], "accent"),
-                    Sandbag([-0.5, 0.4, -0.5], [0.5, 0.46, -0.44]), Sandbag([-0.5, 0.4, 0.44], [0.5, 0.46, 0.5]), Sandbag([-0.5, 0.4, -0.16], [0.5, 0.46, -0.1]), Sandbag([-0.5, 0.4, 0.1], [0.5, 0.46, 0.16]),
-                    D([0.26, 0.7, 0.1], [0.32, 0.74, 0.115], "light")],
-            };
-        return new Shape // the blade in a standing ring, two slim pylons
-        {
-            Solid = [Floor(), .. Beds("body"),
-                H([-0.42, 0.02, -0.05], [-0.34, 0.8, 0.05]), H([0.34, 0.02, -0.05], [0.42, 0.8, 0.05]), H([-0.34, 0.86, -0.05], [0.34, 1.1, 0.05])],
-            Detail = [
-                Ring([-0.44, 0.26, -0.05], [0.44, 1.14, 0.05], "plate2", "+z", 0.86, ("segments", 48)),
-                Ring([-0.36, 0.34, -0.06], [0.36, 1.06, 0.06], "coil", "+z", 0.92, ("segments", 48)),
-                D([-0.015, 0.5, -0.26], [0.015, 0.94, 0.26], "stripe"), Ball([-0.1, 0.64, -0.08], [0.1, 0.84, 0.08], "coil"),
-                D([-0.46, 0.452, -0.48], [0.46, 0.468, -0.46], "stripe"), D([-0.46, 0.452, 0.46], [0.46, 0.468, 0.48], "stripe"), D([-0.46, 0.452, -0.14], [0.46, 0.468, -0.12], "stripe"), D([-0.46, 0.452, 0.12], [0.46, 0.468, 0.14], "stripe")],
-        };
-    }
-
     // ---- The assembler: an open gantry with a low hopper at the back and an arm over the tray
 
     private static TB AsmFloor() => S([-0.5, 0, -0.5], [0.5, 0.03, 0.5]);
@@ -514,7 +447,6 @@ public static class TierStyle
     {
         "Drill Module" => Drill(tier),
         "Saw Module" => Saw(tier),
-        "Sawmill" => Sawmill(tier),
         "Assembler" => Assembler(tier),
         "Thruster Assembler" => ThrusterAssembler(tier),
         "Tailor" => Tailor(tier),

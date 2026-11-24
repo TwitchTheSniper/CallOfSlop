@@ -299,6 +299,7 @@ public sealed class FactoryScript : BlueprintScript
         {
             "smelter" => ("Hearth Block", "Casting Bed"),
             "foundry" => ("Crucible Block", "Mould Line"),
+            "sawmill" => ("Saw Block", "Plank Stacker"),
             _ => throw new VehicleKitException($"no blocks for a {o.Part}"),
         };
         // Own +x is west and own +z is back (Back); the assembly runs own x -1 to (n + 1.5) cells and own z -0.5 to n - 0.5 cells.
