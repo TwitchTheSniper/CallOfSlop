@@ -59,34 +59,56 @@ public sealed class LifterParts : IPartGenerator
     private static readonly (double R0, double R1, double Up, int Payload, double Across, double Long, double Speed, double Handle, int Power) FitterRow =
         (1.5, 8.0, 6.0, 20000, 3.3, 6.5, 3.0, 1.5, 8000);
 
-    private static Part Arm(int t, bool fitter = false)
+    /// <summary>
+    /// The big arms past the tiers (Sean 2026-11-24: "if new arms have to be constructed with bigger sizes, do so"): a shipyard's hull
+    /// pieces are 5 to 14 t and up to 22 m long (a Zero Day deck 17 x 9.5 m), past a Plasma arm's 8 t and 2.5 x 10 m, and a yard bay is 18 m
+    /// across with 12 m pick pads beside it. <c>Arm</c>: the links' scale (the tiers' size: links 2.3 and 2.2 times it, the shoulder 1.32
+    /// times it up); <c>Cells</c>: the plinth's side in 0.25 m cells, kept to 3.5 m so one stands in the 4 m strip between a yard station's bay and a pad or a column row (the
+    /// plinth, drum and ring scale with it, not with the links: a slim pedestal under a long arm). Look: the tier whose colours and
+    /// dressing it wears; its "tier" key is 5 (past every tier's arm).
+    /// </summary>
+    private sealed record BigArm(string Name, int Look, double Arm, int Cells, (double R0, double R1, double Up, int Payload, double Across, double Long, double Speed, double Handle, int Power) Row);
+
+    public static readonly string[] BigArmNames = ["Heavy Loader Arm", "Shipyard Loader Arm"];
+
+    private static readonly BigArm[] BigArms =
+    [
+        new(BigArmNames[0], 3, 3.5, 14, (3.0, 14.0, 10.0, 16000, 6.0, 16.0, 10.0, 0.3, 12000)),
+        new(BigArmNames[1], 3, 5.0, 14, (3.5, 18.0, 12.0, 24000, 10.0, 24.0, 9.0, 0.4, 20000)),
+    ];
+
+    private static Part Arm(int t, bool fitter = false, BigArm? big = null)
     {
         var c = Small;
-        var s = Size[t];
-        var n = Cells[t];
-        var tb = fitter ? FitterRow : Table[t];
-        var pal = TierStyle.Palette[t];
-        var name = fitter ? "Module Fitter S" : Prefix[t] + "Loader Arm";
+        var lookT = big?.Look ?? t; // (the tier whose look it wears)
+        var n = big?.Cells ?? Cells[t];
+        var s = big != null ? n / 6.0 : Size[t]; // (the plinth's, drum's and ring's scale: a tier's size, or a big arm's plinth)
+        var sa = big?.Arm ?? s; // (the links' scale)
+        var tb = big?.Row ?? (fitter ? FitterRow : Table[t]);
+        var pal = TierStyle.Palette[lookT];
+        var name = big?.Name ?? (fitter ? "Module Fitter S" : Prefix[t] + "Loader Arm");
         var desc = fitter
             ? $"A heavy arm with a gripper, a welding torch and a cutting head: F on a Module Socket in its reach fits a module lying in its reach (it carries it, seats it and welds it on), or cuts a fitted module's seam and sets it on a free Module Stand. Reaches {tb.R0:0.#} to {tb.R1:0.#} m, carries {tb.Payload / 1000.0:0.#} t, modules up to 3x3. Needs {tb.Power / 1000.0:0.#} kW while it works."
+            : big != null
+            ? $"A shipyard's arm on a 3.5 m pedestal: stands beside a big Building Station's bay and lifts hull pieces off its pick pads and the runs' ends straight onto the build. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {tb.Payload / 1000.0:0.#} t, pieces up to {tb.Across:0.#} by {tb.Long:0.#} m. Needs {tb.Power / 1000.0:0.#} kW while it moves."
             : $"Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches {tb.R0:0.#} to {tb.R1:0.#} m round its base, carries {(tb.Payload >= 1000 ? $"{tb.Payload / 1000.0:0.#} t" : $"{tb.Payload} kg")}. Needs power while it moves.";
-        var p = new Part(name, c, fitter ? "Module fitters" : "Lifters", desc, role: "frame", tool: "welder", color: t == 1 ? Rust : pal["body"], group: fitter ? "Ship Modules" : "Production");
+        var p = new Part(name, c, fitter ? "Module fitters" : "Lifters", desc, role: "frame", tool: "welder", color: lookT == 1 ? Rust : pal["body"], group: fitter ? "Ship Modules" : "Production");
         double x0 = c.Lo(), x1 = c.Hi(n), y0 = c.Lo(), z0 = c.Lo(), z1 = c.Hi(n);
         double cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
         var plinth = 0.34 * s;
         var ring = TurretY * s; // the ring's top over the floor
         var drum = 0.5 * s; // the drum's half side
-        var baseCol = t == 1 ? Dark : pal["dark"];
+        var baseCol = lookT == 1 ? Dark : pal["dark"];
         // ---- The plinth: a skirt in the tier's dark base, hazard paint all round (no fixed sides), the drum and the slewing ring.
-        p.Add(Box([x0 + 0.02, y0, z0 + 0.02], [x1 - 0.02, y0 + plinth, z1 - 0.02], t == 3 ? pal["frame"] : baseCol));
+        p.Add(Box([x0 + 0.02, y0, z0 + 0.02], [x1 - 0.02, y0 + plinth, z1 - 0.02], lookT == 3 ? pal["frame"] : baseCol));
         double hy0 = y0 + plinth * 0.65, hy1 = y0 + plinth * 0.88;
         MachineLook.Hazard(p, [x0 + 0.014, hy0, z0 + 0.1], [x0 + 0.026, hy1, z1 - 0.1]);
         MachineLook.Hazard(p, [x1 - 0.026, hy0, z0 + 0.1], [x1 - 0.014, hy1, z1 - 0.1]);
         MachineLook.Hazard(p, [x0 + 0.1, hy0, z0 + 0.014], [x1 - 0.1, hy1, z0 + 0.026]);
         MachineLook.Hazard(p, [x0 + 0.1, hy0, z1 - 0.026], [x1 - 0.1, hy1, z1 - 0.014]);
-        var drumCol = t == 1 ? Rust2 : pal["body"];
-        var steel = t == 1 ? Iron : pal["edge"];
-        if (t == 5)
+        var drumCol = lookT == 1 ? Rust2 : pal["body"];
+        var steel = lookT == 1 ? Iron : pal["edge"];
+        if (lookT == 5)
         {
             // Plasma: a rounded dark drum, a glowing ring at its waist.
             var solid = Box([cx - drum, y0 + plinth - 0.005, cz - drum], [cx + drum, y0 + ring * 0.9, cz + drum], drumCol)!;
@@ -99,9 +121,9 @@ public sealed class LifterParts : IPartGenerator
             p.Add(Box([cx - drum, y0 + plinth - 0.005, cz - drum], [cx + drum, y0 + ring * 0.9, cz + drum], drumCol));
         var ringHalf = drum * 0.88;
         p.Add(MachineLook.D([cx - ringHalf, y0 + ring * 0.9 - 0.005, cz - ringHalf], [cx + ringHalf, y0 + ring, cz + ringHalf], steel, "steel",
-            shape: t == 5 ? Kw(("shape", "cylinder"), ("segments", 24), ("front", "+y")) : null)); // the slewing ring
+            shape: lookT == 5 ? Kw(("shape", "cylinder"), ("segments", 24), ("front", "+y")) : null)); // the slewing ring
         // ---- The tier's dressing (tier by build: more guarding, cladding and piping up the ladder; the same silhouette).
-        switch (t)
+        switch (lookT)
         {
             case 1:
                 // Scrap: four crooked timber props, a chain drum with its brake band on the drum's side.
@@ -168,19 +190,28 @@ public sealed class LifterParts : IPartGenerator
         // ---- Its screen (the user, 2026-11-13: "a small screen now"): a console on the plinth in front of the drum on the +z side,
         // clear of every tier's dressing (the drum's bands end 0.02 m out, Industrial's kick rail starts 0.12 m in from the edge).
         double sy0 = y0 + plinth - 0.004, sy1 = y0 + plinth + 0.5, sz0 = z1 - 0.21, sz1 = z1 - 0.13;
-        p.Add(MachineLook.D([cx - 0.4, sy0, sz0], [cx + 0.4, sy1, sz1], t == 1 ? Iron : pal["frame"], "steel"));
+        p.Add(MachineLook.D([cx - 0.4, sy0, sz0], [cx + 0.4, sy1, sz1], lookT == 1 ? Iron : pal["frame"], "steel"));
         p.Add(MachineLook.D([cx - 0.38, sy1 - 0.33, sz1 - 0.004], [cx + 0.38, sy1 - 0.03, sz1 + 0.004], Screen)); // (the glass behind the panel's card)
         p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(cx, 3), Py.Round(sy1 - 0.18, 3), Py.Round(sz1 + 0.007, 3))), ("size", Py.L(0.74, 0.28)),
             ("face", "+z"), ("up", "+y"), ("rows", 5), ("range", 10)))));
         BlockSockets(p, n, n, n, faces: "y", skip: ["+y"]);
-        p.Stats(380 * MassK[t], 600 * HealthK[t], Armour[t], seconds: Py.Round(6.0 * (1 + 0.25 * (t - 1)), 2));
-        if (t > 1)
-            p.Set(("tier", t));
+        if (big != null)
+        {
+            // (mass and health grow as a tier's do, with the links' scale squared; past the Plasma arm: tier 5)
+            p.Stats(Py.Round(380 * sa * sa, 0), Py.Round(600 * sa * sa, 0), Armour[5], seconds: Py.Round(6.0 * (1 + 0.25 * (sa - 1)), 2));
+            p.Set(("tier", 5));
+        }
+        else
+        {
+            p.Stats(380 * MassK[t], 600 * HealthK[t], Armour[t], seconds: Py.Round(6.0 * (1 + 0.25 * (t - 1)), 2));
+            if (t > 1)
+                p.Set(("tier", t));
+        }
         p.Set(("power", tb.Power), ("onBreak", "disable"), ("collider", "boxes")); // (as the machines: a tier's round details are looks and never become a hull)
-        var lk = Look[t];
-        p.Set(("lifter", Kw(("kind", "arm"), ("base", Py.L(Py.Round(cx, 3), Py.Round(y0 + 1.32 * s, 3), Py.Round(cz, 3))), ("ring", Py.Round(y0 + ring, 3)),
-            ("reach", Py.L(tb.R0, tb.R1)), ("up", tb.Up), ("down", Py.Round(1.32 * s + 0.3, 2)) /* (lifters phase 4: to 0.3 m under its own floor, so a rack or pad on the same ground is in reach; was 1.0 * s) */, ("payload", tb.Payload), ("piece", Py.L(tb.Across, tb.Long)),
-            ("speed", tb.Speed), ("handle", tb.Handle), ("arm", Py.L(Py.Round(2.3 * s, 3), Py.Round(2.2 * s, 3))),
+        var lk = Look[lookT];
+        p.Set(("lifter", Kw(("kind", "arm"), ("base", Py.L(Py.Round(cx, 3), Py.Round(y0 + 1.32 * sa, 3), Py.Round(cz, 3))), ("ring", Py.Round(y0 + ring, 3)),
+            ("reach", Py.L(tb.R0, tb.R1)), ("up", tb.Up), ("down", Py.Round(1.32 * sa + 0.3, 2)) /* (lifters phase 4: to 0.3 m under its own floor, so a rack or pad on the same ground is in reach; was 1.0 * s) */, ("payload", tb.Payload), ("piece", Py.L(tb.Across, tb.Long)),
+            ("speed", tb.Speed), ("handle", tb.Handle), ("arm", Py.L(Py.Round(2.3 * sa, 3), Py.Round(2.2 * sa, 3))),
             ("look", Kw(("turret", lk[0]), ("weight", lk[1]), ("upper", lk[2]), ("fore", lk[3]), ("joint", lk[4]), ("pin", lk[5]))))));
         if (fitter)
             ((PyDict)p.D.Get("lifter")!)["fitter"] = true;
@@ -466,6 +497,7 @@ public sealed class LifterParts : IPartGenerator
     }
 
     public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))).Append(("", Cab()))
+        .Concat(BigArms.Select(b => ("BigArms", Arm(5, big: b)))) // (a folder of their own, so their Assembling rows go at the end of the table: Assembling.AfterCloche)
         .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })) // (the classed cranes stay: the Medium for the Dray's hold, the Large and Capital rows because saved Assemblers keep recipe numbers; the hall's is the Hall Crane: drawing 24)
         .Concat(new[] { ("HallCranes", HallRail()), ("HallCranes", HallCore()) })
         .Concat(new[] { ("SmallCranes", Rail(Small)), ("SmallCranes", Bridge(Small)) })); // (a folder of their own, so their Assembling rows go at the end: Assembling.AfterCloche)

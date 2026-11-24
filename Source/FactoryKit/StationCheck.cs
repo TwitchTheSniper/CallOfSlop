@@ -287,6 +287,8 @@ public static class StationCheck
             return Math.Max(1, preview.Unmade);
         }
         Console.WriteLine($"  after {seconds} s: {ConstructStation.StateText(j)}, {j.Fitted}/{j.Steps} fitted: {j.Note}");
+        if (args.Contains("--reach"))
+            Reach(c, t, j);
         var whys = new Dictionary<string, List<string>>();
         for (var i = 0; i < j.KindN; i++)
             if (j.KindWhy[i] is { } why)
@@ -311,6 +313,101 @@ public static class StationCheck
                 Console.WriteLine($"    {cq.Items[k].What.Count} x {ConstructParts.Get(ConstructCrafting.KindOf(ref cq.Items[k]))?.Name ?? "?"}: {ConstructCrafting.StateText(c, cq.Items[k])}");
         }
         return preview.Unmade;
+    }
+
+    /// <summary>
+    /// <c>--reach</c> (Sean 2026-11-24: arms placed so they move pieces from the pads at the end of the lines straight into the bay): for
+    /// the station's build, the lifters near its bay, each with the steps it can fit (carries the kind, and the piece's middle at its place is
+    /// in reach with its lift: the rule <see cref="ConstructLifters.DirectStep"/> and the station's offers use), whether it reaches the hold,
+    /// and how much of each pick pad's deck it reaches with a 4 m wrist lift (a hull piece's); then the steps no arm fits and why. Cranes
+    /// are counted apart: the question is the arms'. Body frame, as the rest of the report.
+    /// </summary>
+    private static void Reach(Construct c, int t, StationJob j)
+    {
+        if (j.Plan is not { } plan || plan.Centre.Length != j.StepKind.Length)
+        {
+            Console.WriteLine("  reach: the build isn't costed yet (run a second or more)");
+            return;
+        }
+        ConstructStation.Bay(c, t, out var floor, out var bayRot, out var bay);
+        Span<ushort> own = stackalloc ushort[8];
+        var nOwn = ConstructStation.OwnPads(c, t, own);
+        // (its own pick pads, then any other pad within 30 m of the bay's edge: an arm's pick pad, a staging or fittings pad)
+        var padList = own[..nOwn].ToArray().Select(p => (int)p).ToList();
+        for (var a = 0; a < c.PieceRackCount; a++)
+            if (c.PieceRacks[a] is var p && p < c.PartCount && !padList.Contains(p) && ConstructStation.PadInBay(c, t, p, out var pm, out var ph)
+                && MathF.Abs(pm.X) - ph.X < bay.X * 0.5f + 30 && MathF.Abs(pm.Z) - ph.Z < bay.Z * 0.5f + 30)
+                padList.Add(p);
+        var np = padList.Count;
+        var arms = new List<(int Part, LifterDef Ld, Vector3 Shoulder, Quaternion Rot)>();
+        var cranes = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (ConstructLifters.DefOf(c, i) is { Fitter: false } ld)
+            {
+                ConstructLifters.Frame(c, i, ld, out _, out var lr, out var shoulder);
+                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down + (ld.Bridge ? 64 : 0))
+                    continue;
+                if (ld.Bridge)
+                    cranes++;
+                else
+                    arms.Add((i, ld, shoulder, lr));
+            }
+        Console.WriteLine($"  reach: {arms.Count} arm(s) and {cranes} crane(s) by station part {t}'s bay; {j.Steps} steps, {nOwn} pick pad(s) of its own and {np - nOwn} other pad(s) near");
+        const float PadLift = 4f; // (a hull piece's wrist lift over its middle: half a 7 m diagonal and the grip)
+        var padCover = new int[np];
+        var padPoints = new int[np];
+        var padPts = new List<Vector3>[np];
+        for (var k = 0; k < np; k++)
+        {
+            padPts[k] = [];
+            if (!ConstructStation.PadInBay(c, t, padList[k], out var mid, out var half))
+                continue;
+            for (var x = -half.X + 0.5f; x <= half.X - 0.5f + 0.01f; x += 1f)
+                for (var z = -half.Z + 0.5f; z <= half.Z - 0.5f + 0.01f; z += 1f)
+                    padPts[k].Add(floor + Vector3.Transform(new Vector3(mid.X + x, mid.Y + 1f, mid.Z + z), bayRot)); // (a piece's middle a metre over the deck)
+            padPoints[k] = padPts[k].Count;
+        }
+        var stepBy = new int[j.StepKind.Length];
+        foreach (var a in arms)
+        {
+            var fits = 0;
+            for (var s = 0; s < j.StepKind.Length; s++)
+            {
+                if (j.StepKind[s] < 0 || ConstructParts.Get(j.KindDef[j.StepKind[s]]) is not { } d || !ConstructLifters.Carries(a.Ld, d))
+                    continue;
+                if (!ConstructLifters.InReach(a.Ld, a.Shoulder, a.Rot, j.Pos + Vector3.Transform(plan.Centre[s], j.Rot), ConstructLifters.WristLift(d), out _))
+                    continue;
+                fits++;
+                stepBy[s]++;
+            }
+            var hold = ConstructLifters.HoldPick(c, t, a.Ld, a.Shoulder, a.Rot, ConstructLifters.SafeLift, ConstructLifters.SafeLift, out _);
+            var padText = new System.Text.StringBuilder();
+            for (var k = 0; k < np; k++)
+            {
+                var n = padPts[k].Count(p => ConstructLifters.InReach(a.Ld, a.Shoulder, a.Rot, p, PadLift, out _));
+                if (n == 0)
+                    continue;
+                padText.Append($", pad {padList[k]} {100 * n / Math.Max(1, padPoints[k])}%");
+            }
+            Console.WriteLine($"    {c.DefOf(a.Part).Name} (part {a.Part}) at {a.Shoulder.X:0}, {a.Shoulder.Z:0}: fits {fits} of {j.Steps} steps; the hold {(hold ? "in reach" : "out of reach")}{padText}");
+        }
+        for (var k = 0; k < np; k++)
+        {
+            var n = padPts[k].Count(p => arms.Any(a => ConstructLifters.InReach(a.Ld, a.Shoulder, a.Rot, p, PadLift, out _)));
+            padCover[k] = n;
+            Console.WriteLine($"    {(k < nOwn ? "pick pad" : "other pad")} {padList[k]} at {c.Parts[padList[k]].Pos.X:0}, {c.Parts[padList[k]].Pos.Z:0}: {100 * n / Math.Max(1, padPoints[k])}% of its deck in some arm's reach");
+        }
+        var none = new SortedDictionary<string, int>();
+        for (var s = 0; s < j.StepKind.Length; s++)
+        {
+            if (stepBy[s] > 0 || j.StepKind[s] < 0 || ConstructParts.Get(j.KindDef[j.StepKind[s]]) is not { } d)
+                continue;
+            var why = arms.Count == 0 ? "no arm" : arms.Any(a => ConstructLifters.Carries(a.Ld, d)) ? "out of every arm's reach"
+                : d.Mass > arms.Max(a => a.Ld.Payload) ? $"{d.Mass / 1000:0.#} t, past every arm's payload" : "bigger than every arm's hand";
+            var key = $"{d.Name} ({why})";
+            none[key] = none.GetValueOrDefault(key) + 1;
+        }
+        Console.WriteLine($"    steps no arm fits: {none.Values.Sum()} of {j.Steps}{(none.Count > 0 ? ": " : "")}{string.Join(", ", none.Select(x => $"{x.Value} x {x.Key}"))}");
     }
 
     /// <summary>

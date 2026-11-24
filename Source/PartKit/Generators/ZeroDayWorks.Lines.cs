@@ -109,7 +109,7 @@ public sealed partial class ZeroDayWorks
         }
 
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
-        private VPart Arm(string part, float x, float z) => On(part, x, z, Up, "-y.0.0", Crane);
+        private VPart Arm(string part, float x, float z, string by = "-y.0.0") => On(part, x, z, Up, by, Crane);
 
         /// <summary>A Bake Oven: its Core at (x, z) facing south, its bed south of it from column <paramref name="bedX0"/>, masts on the bed's corners.</summary>
         private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, int masts, string paint, float? bedZ0 = null, Orient? facing = null)

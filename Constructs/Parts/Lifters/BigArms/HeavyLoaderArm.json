@@ -1,0 +1,477 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Heavy Loader Arm",
+  "description": "A shipyard's arm on a 3.5 m pedestal: stands beside a big Building Station's bay and lifts hull pieces off its pick pads and the runs' ends straight onto the build. Reaches 3 to 14 m round its base, carries 16 t, pieces up to 6 by 16 m. Needs 12 kW while it moves.",
+  "group": "Production",
+  "section": "Lifters",
+  "role": "frame",
+  "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        1.625,
+        0.988,
+        3.252
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
+  "mass": 4655.0,
+  "health": 7350,
+  "armour": 12,
+  "material": "steel",
+  "color": "#8f918d",
+  "attachSeconds": 9.75,
+  "tier": 5,
+  "power": 12000,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "arm",
+    "base": [
+      1.625,
+      4.495,
+      1.625
+    ],
+    "ring": 1.415,
+    "reach": [
+      3.0,
+      14.0
+    ],
+    "up": 10.0,
+    "down": 4.92,
+    "payload": 16000,
+    "piece": [
+      6.0,
+      16.0
+    ],
+    "speed": 10.0,
+    "handle": 0.3,
+    "arm": [
+      8.05,
+      7.7
+    ],
+    "look": {
+      "turret": "#f0c21a",
+      "weight": "#5e6266",
+      "upper": "#f0c21a",
+      "fore": "#c9a21c",
+      "joint": "#74777a",
+      "pin": "#f07818"
+    }
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 10.0,
+      "step": 0.1,
+      "default": 0.4,
+      "tooltip": "How high it lifts a piece over the higher end of its move before it turns. Never past what its arm reaches."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.105,
+        -0.125,
+        -0.105
+      ],
+      "max": [
+        3.355,
+        0.6683,
+        3.355
+      ],
+      "color": "#5e6266"
+    },
+    {
+      "min": [
+        -0.111,
+        0.3907,
+        -0.025
+      ],
+      "max": [
+        -0.099,
+        0.5731,
+        3.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        3.349,
+        0.3907,
+        -0.025
+      ],
+      "max": [
+        3.361,
+        0.5731,
+        3.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.3907,
+        -0.111
+      ],
+      "max": [
+        3.275,
+        0.5731,
+        -0.099
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.3907,
+        3.349
+      ],
+      "max": [
+        3.275,
+        0.5731,
+        3.361
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.4583,
+        0.6633,
+        0.4583
+      ],
+      "max": [
+        2.7917,
+        1.261,
+        2.7917
+      ],
+      "color": "#8f918d"
+    },
+    {
+      "min": [
+        0.5983,
+        1.256,
+        0.5983
+      ],
+      "max": [
+        2.6517,
+        1.415,
+        2.6517
+      ],
+      "color": "#dfe4ea",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.0417,
+        0.6643,
+        1.275
+      ],
+      "max": [
+        0.3983,
+        1.1683,
+        1.975
+      ],
+      "color": "#5e6266",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.0397,
+        1.1643,
+        1.325
+      ],
+      "max": [
+        0.3583,
+        1.2283,
+        1.925
+      ],
+      "color": "#f0c21a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.3883,
+        0.8683,
+        1.405
+      ],
+      "max": [
+        0.4623,
+        1.1994,
+        1.485
+      ],
+      "color": "#b8bcc0",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.3883,
+        0.8683,
+        1.765
+      ],
+      "max": [
+        0.4623,
+        1.1994,
+        1.845
+      ],
+      "color": "#b8bcc0",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.085,
+        0.6643,
+        3.255
+      ],
+      "max": [
+        3.335,
+        0.7483,
+        3.315
+      ],
+      "color": "#16171a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.085,
+        0.6643,
+        -0.065
+      ],
+      "max": [
+        3.335,
+        0.7483,
+        -0.005
+      ],
+      "color": "#16171a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.225,
+        0.6643,
+        3.165
+      ],
+      "max": [
+        2.025,
+        1.1683,
+        3.245
+      ],
+      "color": "#5e6266",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.245,
+        0.8383,
+        3.237
+      ],
+      "max": [
+        2.005,
+        1.1383,
+        3.253
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.4",
+      "at": [
+        0.0,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.9",
+      "at": [
+        0.0,
+        -0.125,
+        2.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.13",
+      "at": [
+        0.0,
+        -0.125,
+        3.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.0",
+      "at": [
+        1.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.4",
+      "at": [
+        1.0,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.9",
+      "at": [
+        1.0,
+        -0.125,
+        2.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.13",
+      "at": [
+        1.0,
+        -0.125,
+        3.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.9.0",
+      "at": [
+        2.25,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.9.4",
+      "at": [
+        2.25,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.9.9",
+      "at": [
+        2.25,
+        -0.125,
+        2.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.9.13",
+      "at": [
+        2.25,
+        -0.125,
+        3.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.13.0",
+      "at": [
+        3.25,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.13.4",
+      "at": [
+        3.25,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.13.9",
+      "at": [
+        3.25,
+        -0.125,
+        2.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.13.13",
+      "at": [
+        3.25,
+        -0.125,
+        3.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}
