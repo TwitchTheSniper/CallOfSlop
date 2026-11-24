@@ -636,7 +636,7 @@ public static partial class ConstructRoutes
             return merged;
         }
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor && PortOf(d, t.Value, port) is { } np)
-            return np.OnBed && MachineBlocks.BedMiddle(c, part, out var bed) ? bed : // (a bed Core's Bed in: the bed's middle at a run's line)
+            return np.OnBed && (!d.IsPress || MachineBlocks.TryOf(c, part, out var pa) && pa.LowBed) && MachineBlocks.BedMiddle(c, part, out var bed) ? bed : // (a bed Core's Bed in or out: the bed's middle at a run's line; a Press's only on a low bed, else its own face)
                 c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         if (t == RouteType.Data && DataSeat(d) is { } seat)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, seat * c.ScaleOf(part)); // (its middle is in the air: the link ends on the body)

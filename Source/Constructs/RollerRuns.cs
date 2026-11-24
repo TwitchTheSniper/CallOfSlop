@@ -311,6 +311,14 @@ public static class RollerRuns
             (part, port) = (bc, (byte)bp);
             return true;
         }
+        // Its in end meeting a low Press bed: the run starts at that Core's Bed out, the bed's middle, so a stamped part rolls off the bed
+        // onto the run (Sean, 2026-11-23: parts roll into the big press bay and out).
+        if (wantOut && MachineBlocks.BedAt(c, end + Rot24.Apply(c.Parts[seed].Rot, ConstructParts.DirVector(dir)) * 0.25f) is var oc and >= 0
+            && PortByte(c.DefOf(oc), ConstructParts.BedOutPort) is var op and >= 0)
+        {
+            (part, port) = (oc, (byte)op);
+            return true;
+        }
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.BlockAsmOf[i] != a || !c.Parts[i].D.IsRollerTile)

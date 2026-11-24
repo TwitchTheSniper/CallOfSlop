@@ -267,7 +267,8 @@ public static partial class ConstructPress
         var cell = c.Parts[part].D.BlockCell;
         mid = MachineBlocks.CoreMid(c, part);
         rot = c.Parts[part].Rot;
-        insideLo = new Vector3((asm.X0 - 0.5f) * cell, 0.5f * cell, (asm.Z0 + 0.5f) * cell);
+        var floor = asm.LowBed ? RollerRuns.RunY + ConstructConveyor.BedTop - 0.5f * cell : 0.5f * cell; // (a low bed's deck, at the rollers' height: someone standing on it is under the shut dies)
+        insideLo = new Vector3((asm.X0 - 0.5f) * cell, floor, (asm.Z0 + 0.5f) * cell);
         insideHi = new Vector3((asm.X0 + asm.W - 0.5f) * cell, 0.5f * cell + walls * cell, (asm.Z0 + asm.L - 1.5f) * cell);
         strip = walls * cell;
         return true;
