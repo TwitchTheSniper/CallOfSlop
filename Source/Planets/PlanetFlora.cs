@@ -157,6 +157,8 @@ public sealed class PlanetFlora
         if (dug && pl.IsDugAt(dir))
             return false;
         var h = pl.HeightAt(x, y, z);
+        if (pl.HasSeasCached && pl.IsWater(x, y, z, h))
+            return false; // (nothing grows on a sea's water)
         // The slope, across one grid cell each way.
         double e = 0.7;
         pl.DirOf(face, fi + e, fj, out var x1, out var y1, out var z1);

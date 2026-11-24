@@ -133,6 +133,7 @@ public sealed class Planetoid
         ["crevasses"] = (["lat", "lon", "radius", "edge", "bearing", "spacing", "length", "width", "depth", "share", "spread", "lip", "seed"], ["lat", "lon", "radius"]),
         ["cave"] = (["lat", "lon", "bearing", "radius", "chamber", "cover", "climb", "wander", "seed"], ["lat", "lon", "bearing"]),
         ["drifts"] = (["lat", "lon", "radius", "edge", "bearing", "amplitude", "scale", "stretch", "octaves", "seed"], ["lat", "lon", "radius", "amplitude"]),
+        ["sea"] = (["lat", "lon", "radius", "edge", "depth", "coast", "rough", "water", "level", "seed"], ["lat", "lon", "radius", "depth"]),
     };
 
     public static IEnumerable<string> FeatureTypes => Schema.Keys;
@@ -257,6 +258,8 @@ public sealed class Planetoid
         // crevasses: R radius, E edge, A depth, B half length, C half width, G spacing, D share, H spread (radians), K lip,
         //   Sin / Cos of the bearing, J seed
         // drifts: R radius, E edge, A amplitude, B scale (across the wind), D stretch (along it), I octaves, J seed, Sin / Cos
+        // sea: R radius, E edge (the shore's width), A depth, H coast (how ragged), B the coast's noise scale, K rough (a dry
+        //   bed's own relief), G the water's level (worked out from the ground round it unless given), Flag water, J seed
         public double A, B, C, D, E, G, H, K, R, Sin, Cos;
         public int I, J;
         public bool Flag;
@@ -319,6 +322,11 @@ public sealed class Planetoid
                     p.I = (int)f.Num("octaves", 2); p.J = (int)f.Num("seed", 1);
                     p.Sin = Math.Sin(f.Num("bearing", 0) * Math.PI / 180); p.Cos = Math.Cos(f.Num("bearing", 0) * Math.PI / 180);
                     break;
+                case "sea":
+                    p.R = f.Num("radius", 1); p.E = Math.Max(f.Num("edge", p.R * 0.4), 1); p.A = Math.Max(f.Num("depth", 1), 0);
+                    p.H = Math.Clamp(f.Num("coast", 0.35), 0, 0.6); p.B = Math.Max(p.R * 0.35, 20); p.K = Math.Max(f.Num("rough", 2), 0);
+                    p.Flag = f.Get("water") is true; p.J = (int)f.Num("seed", 1);
+                    break;
             }
             if (p.Local)
             {
@@ -350,15 +358,21 @@ public sealed class Planetoid
             }
             list[k] = p;
         }
+        for (var k = 0; k < list.Length; k++)
+            if (list[k].F.Type == "sea")
+                list[k].G = list[k].F.Has("level") ? list[k].F.Num("level", 0) : SeaLevel(list, k);
         return list;
     }
 
     /// <summary>The ground's height (metres above <see cref="Radius"/>) in unit direction (x, y, z): the features in order, rounded to <see cref="Quantum"/>.</summary>
-    public double HeightAt(double x, double y, double z)
+    public double HeightAt(double x, double y, double z) => Math.Round(HeightOver(PlacedFeatures, int.MaxValue, x, y, z) / Quantum) * Quantum;
+
+    /// <summary>The height the first <paramref name="count"/> features make (not rounded): a sea's level is worked out from it.</summary>
+    private double HeightOver(Placed[] list, int count, double x, double y, double z)
     {
         var h = Base;
-        var list = PlacedFeatures;
-        for (var n = 0; n < list.Length; n++)
+        count = Math.Min(count, list.Length);
+        for (var n = 0; n < count; n++)
         {
             var p = list[n];
             var f = p.F;
@@ -407,12 +421,15 @@ public sealed class Planetoid
                     if (d < p.R + p.E)
                         h += Drifts(p, lx, lz) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
                     break;
+                case "sea":
+                    h = Sea(p, h, x, y, z, d);
+                    break;
                 default:
                     h = Apply(p, h, lx, lz, d);
                     break;
             }
         }
-        return Math.Round(h / Quantum) * Quantum;
+        return h;
     }
 
     /// <summary>
@@ -498,6 +515,160 @@ public sealed class Planetoid
         return p.A * (0.5 - Math.Abs(n)); // (sharp crests about half the amplitude up, rounded troughs as far down)
     }
 
+    /// <summary>
+    /// A sea (Sean, 2026-11-24): a wide basin whose ground is drawn down towards a bed under the water's level, deepest in
+    /// its middle, with a ragged coast (bays and headlands from noise on the distance) and a shore <c>edge</c> wide where
+    /// the old ground slopes down into it. With <c>water</c> the basin holds water up to its level: for now the water is
+    /// flat blue ground (<see cref="SeaTint"/>), walked on like any other. Without it the basin is a dried-out sea bed, its
+    /// floor a little rough. The level is the ground round the basin's rim (low in it, so the water meets the ground
+    /// almost everywhere) unless the feature gives one.
+    /// </summary>
+    private double Sea(Placed p, double h, double x, double y, double z, double d)
+    {
+        var w = SeaWeight(p, x, y, z, d, out var dw);
+        if (w <= 0)
+            return h;
+        var mid = Math.Clamp(dw / p.R, 0, 1);
+        var bed = p.G - p.A * (0.35 + 0.65 * (1 - mid * mid));
+        if (!p.Flag && p.K > 0)
+            bed += p.K * Fbm3(x * Radius, y * Radius, z * Radius, 90, 3, 0.5, 2, p.J + 31); // (a dry bed's own swells and hollows)
+        var dry = h + (bed - h) * w * (p.Flag ? 1 : 0.92); // (a dry bed keeps a trace of the ground that was there)
+        if (!p.Flag)
+            return dry;
+        // The water's flat top fills whatever the basin drew under its level. Where the old ground round it was already
+        // lower than the level (a gap in the rim), the ground rises to the water over the shore's outer half, a bank, so
+        // nothing steps and no dry moat rings the sea.
+        var top = Math.Min(p.G, h) + (p.G - Math.Min(p.G, h)) * TerrainGen.Smoothstep(Math.Min(w * 2, 1));
+        return Math.Max(dry, top);
+    }
+
+    /// <summary>How much of a sea's basin is at a point (1 inside the coast's line, falling to 0 across the shore), and
+    /// the point's distance warped by the coast's noise.</summary>
+    private double SeaWeight(Placed p, double x, double y, double z, double d, out double dw)
+    {
+        var n = Fbm3(x * Radius, y * Radius, z * Radius, p.B, 4, 0.5, 2, p.J);
+        dw = d / Math.Max(1 + p.H * n * 1.6, 0.3);
+        return dw <= p.R ? 1 : dw >= p.R + p.E ? 0 : 1 - TerrainGen.Smoothstep((dw - p.R) / p.E);
+    }
+
+    private static double SeaReach(double r, double e, double coast) => (r + e) * Math.Max(1 + coast * 1.6, 1) + 2;
+
+    /// <summary>
+    /// A sea's level when the feature gives none: the ground the features before it make along its rim (where the basin
+    /// fades out), low in that ring (its tenth lowest share), less a metre and a half, so the water's edge lies inside the
+    /// shore nearly all round. Worked out once, when the features are placed.
+    /// </summary>
+    private double SeaLevel(Placed[] list, int k)
+    {
+        var p = list[k];
+        const int Spokes = 96;
+        var hs = new List<double>(Spokes * 2);
+        for (var a = 0; a < Spokes; a++)
+        {
+            var b = a * 2 * Math.PI / Spokes;
+            double ce = Math.Sin(b), cn = Math.Cos(b);
+            foreach (var share in new[] { 0.7, 1.0 })
+            {
+                // The rim along this bearing: where the warped distance reaches radius + edge (a few steps of the warp).
+                var d = (p.R + p.E * share);
+                double sx = 0, sy = 0, sz = 0;
+                for (var it = 0; it < 5; it++)
+                {
+                    SeaPoint(p, ce, cn, d, out sx, out sy, out sz);
+                    var n = Fbm3(sx * Radius, sy * Radius, sz * Radius, p.B, 4, 0.5, 2, p.J);
+                    d = (p.R + p.E * share) * Math.Max(1 + p.H * n * 1.6, 0.3);
+                }
+                SeaPoint(p, ce, cn, d, out sx, out sy, out sz);
+                hs.Add(HeightOver(list, k, sx, sy, sz));
+            }
+        }
+        hs.Sort();
+        return Math.Round((hs[hs.Count / 10] - 1.5) / Quantum) * Quantum;
+    }
+
+    /// <summary>The unit direction d metres from a placed feature's centre along a bearing (east and north shares).</summary>
+    private void SeaPoint(Placed p, double east, double north, double d, out double x, out double y, out double z)
+    {
+        var ang = d / Radius;
+        double c = Math.Cos(ang), s = Math.Sin(ang);
+        double tx = p.Ex * east + p.Nx * north, ty = p.Ey * east + p.Ny * north, tz = p.Ez * east + p.Nz * north;
+        x = p.Dx * c + tx * s;
+        y = p.Dy * c + ty * s;
+        z = p.Dz * c + tz * s;
+    }
+
+    /// <summary>Does this world have seas (wet or dry)? Read every vertex, so worked out once.</summary>
+    public bool HasSeasCached => Seas.Length > 0;
+
+    [NotBaked]
+    private Placed[]? _seas;
+
+    private Placed[] Seas => _seas ??= PlacedFeatures.Where(p => p.F.Type == "sea").ToArray();
+
+    /// <summary>Each sea in a line: where it is, wet or dry, its level.</summary>
+    public IEnumerable<string> SeaSummary() => Seas.Select(p =>
+        $"{(p.Flag ? "sea" : "dry bed")} at {p.F.Num("lat", 0):0.#}, {p.F.Num("lon", 0):0.#} ({p.R / 1000:0.#} km) level {p.G:0} m");
+
+    /// <summary>Is the ground at unit direction (x, y, z), height h, a sea's water (its flat top)?</summary>
+    public bool IsWater(double x, double y, double z, double h)
+    {
+        foreach (var p in Seas)
+        {
+            if (!p.Flag || Math.Abs(h - p.G) > Quantum)
+                continue;
+            var c = x * p.Dx + y * p.Dy + z * p.Dz;
+            if (c <= p.CosReach)
+                continue;
+            if (SeaWeight(p, x, y, z, Math.Acos(Math.Clamp(c, -1, 1)) * Radius, out _) > 0)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The ground's colour over the seas (drawing only): the water blue, darker towards a sea's middle, a sandy shore a few
+    /// metres above it, and a dry sea's bed pale and patchy (salt and silt). Called after the ground's own colour.
+    /// </summary>
+    public Vector3 SeaTint(double x, double y, double z, double h, Vector3 col)
+    {
+        var list = Seas;
+        if (list.Length == 0)
+            return col;
+        var s = Surface;
+        foreach (var p in list)
+        {
+            var c = x * p.Dx + y * p.Dy + z * p.Dz;
+            if (c <= p.CosReach)
+                continue;
+            var w = SeaWeight(p, x, y, z, Math.Acos(Math.Clamp(c, -1, 1)) * Radius, out var dw);
+            if (w <= 0)
+                continue;
+            if (p.Flag)
+            {
+                if (Math.Abs(h - p.G) <= Quantum)
+                {
+                    var deep = TerrainGen.Smoothstep(Math.Clamp((p.R - dw) / (p.R * 0.55), 0, 1));
+                    var ripple = 1 + 0.04 * Noise3(x * Radius / 40, y * Radius / 40, z * Radius / 40, p.J + 51);
+                    return Vector3.Lerp(s.Sea ?? DefaultSea, s.SeaDeep ?? DefaultSeaDeep, (float)deep) * (float)ripple;
+                }
+                var above = h - p.G;
+                if (above is > 0 and < 4) // (the beach: sand up to a few metres over the water, thinning out)
+                    col = Vector3.Lerp(col, s.SeaShore ?? s.Sand, (float)((1 - TerrainGen.Smoothstep(above / 4)) * Math.Min(w * 3, 1)));
+            }
+            else
+            {
+                var pan = 0.5 + 0.5 * Fbm3(x * Radius, y * Radius, z * Radius, 260, 3, 0.5, 2, p.J + 41); // (pale salt pans among darker silt)
+                var bed = Vector3.Lerp(s.SeaBed ?? DefaultSeaBed, (s.SeaBed ?? DefaultSeaBed) * 1.18f, (float)TerrainGen.Smoothstep(Math.Clamp((pan - 0.45) / 0.2, 0, 1)));
+                col = Vector3.Lerp(col, bed, (float)(TerrainGen.Smoothstep(w) * 0.85));
+            }
+        }
+        return col;
+    }
+
+    private static readonly Vector3 DefaultSea = new(0.16f, 0.36f, 0.52f);
+    private static readonly Vector3 DefaultSeaDeep = new(0.06f, 0.17f, 0.32f);
+    private static readonly Vector3 DefaultSeaBed = new(0.62f, 0.58f, 0.50f);
+
     private double Noise(Placed p, double x, double y, double z)
     {
         var n = Fbm3(x * Radius, y * Radius, z * Radius, p.B, p.I, p.C, p.D, p.J);
@@ -568,6 +739,7 @@ public sealed class Planetoid
         "cave" => 0,
         "crevasses" or "drifts" => f.Num("radius", 1) + Math.Max(f.Num("edge", f.Num("radius", 1) * 0.3), 0.01) + 2,
         "ridge" => Math.Sqrt(f.Num("length", 1) * f.Num("length", 1) * 0.25 + Math.Pow(f.Num("width", 1) * 0.5 + Math.Abs(f.Num("wander", 0)), 2)) + 2,
+        "sea" => SeaReach(f.Num("radius", 1), Math.Max(f.Num("edge", f.Num("radius", 1) * 0.4), 1), Math.Clamp(f.Num("coast", 0.35), 0, 0.6)),
         _ => Radius * 4,
     };
 
@@ -596,6 +768,8 @@ public sealed class Planetoid
             case "drifts":
                 var da = Math.Abs(f.Num("amplitude", 0.5));
                 return (da, da);
+            case "sea": // (its bed lies at most its depth and its roughness under its level, which is ground round it; the water never rises over that ground)
+                return (Math.Max(f.Num("depth", 1), 0) + Math.Max(f.Num("rough", 2), 0) + 1, 0);
             case "terrace": // (a height stays within its own step: a step either way covers it)
                 var step = Math.Abs(f.Num("step", 0));
                 return (step, step);
@@ -1430,6 +1604,11 @@ public sealed class Planetoid
         mix((float)s.RockSlope);
         mix((float)(s.SandBelow ?? -1e6));
         mix((float)(s.SnowAbove ?? 1e6));
+        foreach (var v in new[] { s.Sea, s.SeaDeep, s.SeaShore, s.SeaBed }) // (worlds without sea colours keep the fingerprint they had)
+            if (v is { } c)
+            {
+                mix(c.X); mix(c.Y); mix(c.Z);
+            }
         Biomes?.Mix(mix); // (worlds without biomes keep the fingerprint they had)
         if (Crust > 0) // (solid planetoids keep the fingerprint they had)
         {
