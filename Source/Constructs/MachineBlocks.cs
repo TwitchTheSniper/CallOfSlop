@@ -40,6 +40,23 @@ public struct CMachineAsm
     public byte Tool; // the tool block docked in an Assembler's Tool Bay: an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
     public ushort ToolPart; // that block's part (ushort.MaxValue: none)
     public bool LowBed; // a Press whose bed between its housings' rows is Press Bed Blocks, at the rollers' height: runs roll blanks on and made parts off (its Core's Bed in and Bed out)
+    // A Core that splits its blocks into squares ("squares": the refiners, docs/sandbox/constructs/production.md "Refiners as block machines"):
+    public short SquareFirst; // its first square in Construct.MachineSquares
+    public byte SquareCount; // its squares (largest first, in the order the split took them; 0: no blocks on its +x side)
+    public short R4; // four times its rate: 4 for the Core's own hearth plus each square's whole cells times (4 + its side)
+    public short Shares; // its power shares: 1 for the Core and one a whole cell in a square
+    public short Broken; // cells in its squares that are wrecked (they keep the size; each adds nothing until mended)
+    public byte OffSide, OffTop; // its blocks that do nothing: on the Core's own layer off its +x side, and stacked above or below it
+    public short Over; // blocks welded on past its "maxCells" (they do nothing either)
+}
+
+/// <summary>One square of a squares Core's blocks (MachineBlocks.Squares): its first cell in the Core's cell frame and its side.</summary>
+public struct CMachineSquare
+{
+    public sbyte X0, Z0; // its lowest cell (x across the Core's +x, z along its +z)
+    public byte N; // its side in cells, 1 to MachineBlocks.MaxSquare
+    public byte Whole; // its cells that aren't wrecked
+    public byte Ends; // bit k: an end cell of the Core's family (a Casting Bed) just past its far edge, at (X0 + N, Z0 + k)
 }
 
 public sealed partial class Construct
@@ -50,6 +67,8 @@ public sealed partial class Construct
     public byte[] BlockJoined = []; // each part's faces (bits by direction, part frame) welded to a cell of its own assembly
     public int[] BlockCellOf = []; // each part's cell in its Core's cell frame (MachineBlocks.CellOf: x, y, z packed a byte each, 128 the Core's)
     public byte[] BlockColumns = []; // per assembly, GridSide x GridSide column heights (bit 7: a bed cell; bits 0..6: cells stacked on it)
+    public CMachineSquare[] MachineSquares = []; // the squares of every squares Core's machine (CMachineAsm.SquareFirst, SquareCount)
+    public int MachineSquareCount;
 }
 
 /// <summary>
@@ -66,6 +85,9 @@ public static class MachineBlocks
 {
     /// <summary>A bit of <see cref="Construct.BlockJoined"/> past the six faces: the part is a cell of a machine's assembly ("inMachine" boxes draw).</summary>
     public const byte InMachine = 0x40;
+    /// <summary>A bit of <see cref="Construct.BlockJoined"/>: the part is a block of a square of 2 x 2 or more of a squares Core's machine ("alone" boxes hide, "merged" boxes draw).</summary>
+    public const byte Merged = 0x80;
+    public const int MaxSquare = 5; // the largest square a squares Core merges (n x n; its "maxSide" may be more: two squares side by side)
     public const int MaxSide = 16; // cells along either side of a bed rectangle (a Core's default: "maxSide" gives its own)
     public const int MaxCells = 128; // cells one machine takes in (a Core's default: "maxCells" gives its own)
     public const int GridHalf = 32; // the furthest a cell may lie from its Core's, either way, and the longest side any Core may ask for
@@ -98,7 +120,7 @@ public static class MachineBlocks
         d.IsTurntable = ConstructParts.Opt(root, "turntable") is { ValueKind: JsonValueKind.True };
         if (ConstructParts.Opt(root, "machineBlock") is not { } mb)
             return;
-        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "module", "maxSide", "maxCells", "tool"], $"{file}: \"machineBlock\"");
+        ConstructParts.Known(mb, ["family", "role", "cell", "plane", "origin", "seed", "coreSeams", "tier", "module", "maxSide", "maxCells", "tool", "squares"], $"{file}: \"machineBlock\"");
         var role = ConstructParts.Str(ConstructParts.Need(mb, "role", $"{file}: \"machineBlock\""), file, "machineBlock.role");
         d.BlockRole = role switch
         {
@@ -206,6 +228,13 @@ public static class MachineBlocks
             if (d.BlockRole != BlockRole.Core || cs.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                 throw new ConstructPartException($"{file}: only a Core says \"machineBlock.coreSeams\" (true or false)");
             d.BlockCoreSeams = cs.ValueKind == JsonValueKind.True;
+        }
+        if (ConstructParts.Opt(mb, "squares") is { } sq)
+        {
+            // A refiner's Core (the Smelter): every block on its +x side works, split into squares (Squares), a wrecked one keeps its place.
+            if (d.BlockRole != BlockRole.Core || sq.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                throw new ConstructPartException($"{file}: only a Core says \"machineBlock.squares\" (true or false)");
+            d.BlockSquares = sq.ValueKind == JsonValueKind.True;
         }
         if (ConstructParts.Opt(mb, "plane") is { } plane)
             d.BlockFace = ConstructParts.Str(plane, file, "machineBlock.plane") switch
@@ -456,6 +485,67 @@ public static class MachineBlocks
         return s;
     }
 
+    /// <summary>
+    /// A squares Core's machine (docs/sandbox/constructs/production.md "Refiners as block machines"): its squares by size and its rate
+    /// ("furnaces 3x3, 2x2, 4 x 1x1: speed x24"), wrecked blocks, blocks that do nothing and why, and what the largest square's next size needs.
+    /// UI text (it allocates).
+    /// </summary>
+    public static string SquaresText(Construct c, in CMachineAsm asm, string noun)
+    {
+        var list = Squares(c, asm);
+        var rate = (asm.R4 > 0 ? asm.R4 : 4) / 4f;
+        var s = list.Length == 0 ? $"speed x{rate:0.##}: weld its blocks on its +x side" : noun + " ";
+        if (list.Length > 0)
+        {
+            var first = true;
+            for (var n = MaxSquare; n >= 1; n--)
+            {
+                var k = 0;
+                foreach (ref readonly var q in list)
+                    k += q.N == n ? 1 : 0;
+                if (k == 0)
+                    continue;
+                s += (first ? "" : ", ") + (k > 1 ? $"{k} x {n}x{n}" : $"{n}x{n}");
+                first = false;
+            }
+            s += $": speed x{rate:0.##}";
+        }
+        if (asm.Broken > 0)
+            s += $", {asm.Broken} wrecked (mend {(asm.Broken > 1 ? "them" : "it")})";
+        if (asm.OffSide > 0)
+            s += $", {asm.OffSide} off its +x side do nothing";
+        if (asm.OffTop > 0)
+            s += $", {asm.OffTop} stacked do nothing";
+        if (asm.Over > 0)
+            s += $", over {c.Parts[asm.Core].D.BlockMaxCells} blocks: {asm.Over} do nothing";
+        if (list.Length > 0 && list[0].N < MaxSquare && NextSize(c, asm, list[0]) is var more and > 0)
+            s += $" - {more} more beside the {list[0].N}x{list[0].N} fill a {list[0].N + 1}x{list[0].N + 1}";
+        return s;
+    }
+
+    /// <summary>
+    /// The fewest blocks that fill an (n+1) x (n+1) holding the largest square <paramref name="q"/>, on the Core's +x side: its cells that
+    /// no square holds yet (a cell another square holds is counted as there). 0 when none fits the grid, or one is full already.
+    /// </summary>
+    private static int NextSize(Construct c, in CMachineAsm asm, in CMachineSquare q)
+    {
+        var grid = c.BlockColumns.AsSpan(asm.Grid, GridSide * GridSide); // (bit 7: a cell in a square, Squares)
+        int n = q.N + 1, best = int.MaxValue;
+        for (var a = 0; a <= 1; a++)
+            for (var b = 0; b <= 1; b++)
+            {
+                int x0 = q.X0 - a + Mid, z0 = q.Z0 - b + Mid;
+                if (x0 < Mid + 1 || z0 < 0 || x0 + n > GridSide || z0 + n > GridSide)
+                    continue; // (off the Core's +x side or the grid)
+                var miss = 0;
+                for (var x = x0; x < x0 + n; x++)
+                    for (var z = z0; z < z0 + n; z++)
+                        miss += (grid[x * GridSide + z] & 0x80) == 0 ? 1 : 0;
+                best = Math.Min(best, miss);
+            }
+        return best == int.MaxValue ? 0 : best; // (0 too when it is full already: the split chose otherwise, and no number would help)
+    }
+
     /// <summary>The tiers' names (drawing 21, as the machine lines' tiers: docs "Machine tiers") and the piece that brings each, by tier.</summary>
     public static readonly string[] TierNames = ["", "Scrap", "Workshop", "Industrial", "Military", "Plasma"];
     public static readonly string[] TierPieceNames = ["", "", "Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner"];
@@ -485,6 +575,7 @@ public static class MachineBlocks
     {
         var wasAny = c.MachineAsmCount > 0;
         c.MachineAsmCount = 0;
+        c.MachineSquareCount = 0;
         var cores = 0;
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockRole == BlockRole.Core || c.Parts[i].D.BlockSeed)
@@ -522,14 +613,17 @@ public static class MachineBlocks
         var cz = scratch.Take<sbyte>(MaxCellsAny + 1);
         var steps = scratch.Take<byte>(2 * (MaxCellsAny + 1)); // (each cell's steps across and along: a shared cell may be several)
         var sum = scratch.Take<short>((GridSide + 1) * (GridSide + 1));
+        var mark = scratch.Take<byte>(GridSide * GridSide); // (a squares Core's split: what each cell of its grid is, and its square)
+        var sqOf = scratch.Take<byte>(GridSide * GridSide);
+        var over = scratch.Take<ushort>(MaxCellsAny); // (blocks past a squares Core's cap, counted once each)
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockRole == BlockRole.Core && c.BlockAsmOf[i] < 0)
-                Assemble(c, i, queue, cx, cy, cz, steps, sum);
+                Assemble(c, i, queue, cx, cy, cz, steps, sum, mark, sqOf, over);
         // Seeded families after the Cores (a Mast Block a Core took stays the Core's), each from its lowest-index block: the specials
         // are in index order, so the first block of a weld met is its seed, and the rest join its flood.
         foreach (var i in c.Specials)
             if (c.Parts[i].D.BlockSeed && c.BlockAsmOf[i] < 0 && !c.Parts[i].Broken)
-                Assemble(c, i, queue, cx, cy, cz, steps, sum);
+                Assemble(c, i, queue, cx, cy, cz, steps, sum, mark, sqOf, over);
         ConstructPads.Build(c);
         RollerRuns.Note(c);
         SeamSame(c);
@@ -567,7 +661,9 @@ public static class MachineBlocks
         }
     }
 
-    private static void Assemble(Construct c, int core, Span<ushort> queue, Span<sbyte> cx, Span<sbyte> cy, Span<sbyte> cz, Span<byte> steps, Span<short> sum)
+    private const short OverMark = -2; // (BlockAsmOf of a block past a squares Core's cap while its flood runs: counted once, then -1 again)
+
+    private static void Assemble(Construct c, int core, Span<ushort> queue, Span<sbyte> cx, Span<sbyte> cy, Span<sbyte> cz, Span<byte> steps, Span<short> sum, Span<byte> mark, Span<byte> sqOf, Span<ushort> over)
     {
         var id = (short)c.MachineAsmCount++;
         ref var asm = ref c.MachineAsms[id];
@@ -587,7 +683,9 @@ public static class MachineBlocks
         queue[count++] = (ushort)core;
         cx[0] = cy[0] = cz[0] = 0;
         var cellCount = 0;
+        var overN = 0;
         int maxCells = cd.BlockMaxCells, maxSide = cd.BlockMaxSide; // (the Core's own limits: a seed block's are the defaults)
+        var squares = cd.BlockSquares; // (a refiner: every block on its +x side works, split into squares; a wrecked one keeps its place)
         while (at < count)
         {
             var i = queue[at++];
@@ -597,11 +695,14 @@ public static class MachineBlocks
             {
                 var o = c.OtherEnd(e);
                 var d = c.Parts[o].D;
-                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared or BlockRole.End) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || seeded && d.BlockRole == BlockRole.Block && c.Parts[o].Rot != coreRot || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace || c.Parts[o].Broken)
+                if (d.BlockRole is not (BlockRole.Block or BlockRole.Shared or BlockRole.End) || d.BlockRole == BlockRole.Block && d.BlockFamily != asm.Family || seeded && d.BlockRole == BlockRole.Block && c.Parts[o].Rot != coreRot || MathF.Abs(d.BlockCell - cell) > 0.01f || d.BlockFace != cd.BlockFace
+                    || d.BlockRole == BlockRole.End && d.BlockFamily != 255 && d.BlockFamily != asm.Family // (an end piece of a family, a Casting Bed, only its own family's machine takes)
+                    || c.Parts[o].Broken && !(squares && d.BlockRole == BlockRole.Block) // (a squares Core's wrecked block keeps its square's size: its share comes back when mended)
+                    || squares && d.BlockRole == BlockRole.Shared)
                     continue;
-                if (c.BlockAsmOf[o] >= 0)
+                if (c.BlockAsmOf[o] >= 0 || c.BlockAsmOf[o] == OverMark)
                     continue; // (in this machine already, or another Core's; a broken cell idles until it is mended)
-                if (d.BlockRole == BlockRole.End)
+                if (d.BlockRole == BlockRole.End && d.BlockFamily == 255)
                 {
                     // An Out Table belongs to the machine on its in side (its -z face, where its rollers come from), whatever was built
                     // first: in a line of former, table and cutter, the cutter's bed on the table's far side doesn't take it.
@@ -610,7 +711,7 @@ public static class MachineBlocks
                     if (os >= d.Sockets.Length || d.Sockets[os].Dir != 5)
                         continue;
                 }
-                if (cellCount >= maxCells)
+                if (!squares && cellCount >= maxCells)
                 {
                     asm.Capped = true;
                     Caps.Hit("cells in one block machine", maxCells, cellCount + 1);
@@ -648,9 +749,24 @@ public static class MachineBlocks
                     continue;
                 if (y > 0 && d.BlockRole == BlockRole.Block && assembler)
                     continue; // (a bed block stacked on an Assembler's bed isn't part of it: its masts stand outside the bed, Masts) // (a Bed Block stacked on a Panel Former's bed isn't part of it: its bed is one layer)
+                // A squares Core's cap counts only the blocks that can work, on its own layer off its +x side (a block stacked or off its
+                // side does nothing and takes no place under the cap; its end pieces are looks); the flood's scratch bounds the rest.
+                var counted = !squares || d.BlockRole == BlockRole.Block && y == 0 && x >= 1;
+                if (squares && (counted && cellCount >= maxCells || count >= queue.Length))
+                {
+                    asm.Capped = true;
+                    Caps.Hit("cells in one block machine", maxCells, cellCount + 1);
+                    if (overN < over.Length)
+                    {
+                        over[overN++] = (ushort)o; // (marked so a second weld to it doesn't count it again)
+                        c.BlockAsmOf[o] = OverMark;
+                    }
+                    continue;
+                }
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
-                cellCount++;
+                if (counted)
+                    cellCount++;
                 cx[count] = (sbyte)x;
                 cy[count] = (sbyte)y;
                 cz[count] = (sbyte)z;
@@ -661,6 +777,11 @@ public static class MachineBlocks
         }
         asm.Cells = (short)cellCount;
         Tiers(c, core, id, ref asm);
+        if (squares)
+        {
+            Squares(c, id, ref asm, queue[..count], cx, cy, cz, grid, sum, mark, sqOf, over[..overN]);
+            return;
+        }
         // Columns: the bed layer is the Core's own (y 0); a cell above a bed cell adds to its column. A seed is a bed cell itself.
         if (seeded)
             grid[Mid * GridSide + Mid] |= 0x80;
@@ -721,6 +842,325 @@ public static class MachineBlocks
             c.BlockJoined[i] = mask;
         }
     }
+
+    // ---- A squares Core's split (the refiners: docs/sandbox/constructs/production.md "Refiners as block machines") -------------------
+
+    private const byte Free = 1, Taken = 2, EndCell = 3, Wreck = 0x10; // (a split grid cell: a block not yet in a square, one in a square, an end piece; a wrecked block)
+
+    /// <summary>
+    /// A squares Core's machine after its flood: every block on the Core's own layer and its +x side (cell x 1 and up) works, cut into the
+    /// full n x n squares (n up to <see cref="MaxSquare"/>) that give the highest rate (<see cref="BestSplit"/>; past its memo, largest first),
+    /// so every peer splits alike. A wrecked block keeps its place in the split (only its share of the rate goes). Blocks off the +x side, stacked on others or past the
+    /// cap do nothing and leave the machine (they show their own look, at rest). A block's seams are its own square's: each square reads as
+    /// one furnace, and a square of 2 x 2 or more marks its blocks <see cref="Merged"/>. An end cell of the family just past a square's far
+    /// (+x) edge is that row's end piece (a Casting Bed). Allocates only when the construct's square list grows.
+    /// </summary>
+    private static void Squares(Construct c, short id, ref CMachineAsm asm, ReadOnlySpan<ushort> cells, ReadOnlySpan<sbyte> cx, ReadOnlySpan<sbyte> cy, ReadOnlySpan<sbyte> cz,
+        Span<byte> grid, Span<short> sum, Span<byte> mark, Span<byte> sqOf, ReadOnlySpan<ushort> over)
+    {
+        foreach (var o in over)
+            c.BlockAsmOf[o] = -1;
+        asm.Over = (short)over.Length;
+        asm.Out = ushort.MaxValue;
+        asm.Idle = 0;
+        mark.Clear();
+        sqOf.Fill(255);
+        int minX = int.MaxValue, maxX = int.MinValue, minZ = int.MaxValue, maxZ = int.MinValue, left = 0;
+        for (var k = 1; k < cells.Length; k++)
+        {
+            var o = cells[k];
+            var d = c.Parts[o].D;
+            int g = (cx[k] + Mid) * GridSide + cz[k] + Mid;
+            if (d.BlockRole == BlockRole.End)
+            {
+                if (d.BlockFamily == asm.Family && mark[g] == 0)
+                    mark[g] = EndCell;
+                continue;
+            }
+            if (d.BlockRole != BlockRole.Block)
+                continue;
+            if (cy[k] != 0 || cx[k] < 1 || mark[g] != 0)
+            {
+                // (stacked on or under its layer, off the Core's +x side, or a second block in a taken cell: it does nothing)
+                if (cy[k] != 0)
+                    asm.OffTop = (byte)Math.Min(255, asm.OffTop + 1);
+                else
+                    asm.OffSide = (byte)Math.Min(255, asm.OffSide + 1);
+                c.BlockAsmOf[o] = -1;
+                continue;
+            }
+            mark[g] = (byte)(Free | (c.Parts[o].Broken ? Wreck : 0));
+            left++;
+            (minX, maxX, minZ, maxZ) = (Math.Min(minX, cx[k] + Mid), Math.Max(maxX, cx[k] + Mid), Math.Min(minZ, cz[k] + Mid), Math.Max(maxZ, cz[k] + Mid));
+        }
+        asm.SquareFirst = (short)c.MachineSquareCount;
+        int r4 = 4, shares = 1, broken = 0;
+        // The cells in scan order, each one's number in the index grid (sum, free here: a squares Core has no rectangle). The scan's outer
+        // loop runs along the patch's longer side (x on a tie), so the search's frontier is its shorter side: about 1,100 states for 50
+        // cells, where a 3 x 16 strip scanned across its short side took 70,000. The order is the bounds', so every peer scans alike.
+        Span<byte> px = stackalloc byte[SplitMost], pz = stackalloc byte[SplitMost];
+        var cellsN = 0;
+        sum.Clear();
+        var alongZ = maxZ - minZ > maxX - minX;
+        int outer0 = alongZ ? minZ : minX, outer1 = alongZ ? maxZ : maxX, inner0 = alongZ ? minX : minZ, inner1 = alongZ ? maxX : maxZ;
+        for (var a = outer0; a <= outer1 && left > 0; a++)
+            for (var b = inner0; b <= inner1; b++)
+            {
+                var (x, z) = alongZ ? (b, a) : (a, b);
+                if ((mark[x * GridSide + z] & 0x0F) != Free)
+                    continue;
+                if (cellsN < SplitMost)
+                {
+                    (px[cellsN], pz[cellsN]) = ((byte)x, (byte)z);
+                    sum[x * GridSide + z] = (short)(cellsN + 1);
+                }
+                cellsN++;
+            }
+        Span<byte> pick = stackalloc byte[SplitMost]; // (the split: each square's corner cell and side, in the order the search took them)
+        Span<byte> pickN = stackalloc byte[SplitMost];
+        var picks = cellsN <= SplitMost ? BestSplit(px[..cellsN], pz[..cellsN], sum, pick, pickN) : -1;
+        if (picks < 0)
+        {
+            picks = 0;
+            if (Interlocked.Increment(ref _splitFallbacks) <= 20)
+                Console.WriteLine($"[blocks] {c.Parts[asm.Core].D.Name} (part {asm.Core}): {cellsN} blocks are too many to split exactly: split largest square first");
+        }
+        while (left > 0 && asm.SquareCount < 254)
+        {
+            int bn, bx, bz;
+            if (asm.SquareCount < picks)
+                (bx, bz, bn) = (px[pick[asm.SquareCount]], pz[pick[asm.SquareCount]], pickN[asm.SquareCount]);
+            else if (!LargestFree(mark, sum, minX, maxX, minZ, maxZ, out bx, out bz, out bn))
+                break; // (never: a free block is a 1 x 1)
+            if (c.MachineSquareCount >= c.MachineSquares.Length)
+                Array.Resize(ref c.MachineSquares, Math.Max(8, c.MachineSquares.Length * 2));
+            ref var sq = ref c.MachineSquares[c.MachineSquareCount++];
+            sq = new CMachineSquare { X0 = (sbyte)(bx - Mid), Z0 = (sbyte)(bz - Mid), N = (byte)bn };
+            var whole = 0;
+            for (var x = bx; x < bx + bn; x++)
+                for (var z = bz; z < bz + bn; z++)
+                {
+                    var g = x * GridSide + z;
+                    if ((mark[g] & Wreck) == 0)
+                        whole++;
+                    mark[g] = (byte)(Taken | (mark[g] & Wreck));
+                    grid[g] |= 0x80;
+                }
+            sq.Whole = (byte)whole;
+            for (var k = 0; k < bn; k++)
+            {
+                int ex = sq.X0 + bn + Mid, ez = sq.Z0 + k + Mid;
+                if (ex < GridSide && ez >= 0 && ez < GridSide && mark[ex * GridSide + ez] == EndCell)
+                    sq.Ends |= (byte)(1 << k);
+            }
+            r4 += whole * (4 + bn);
+            shares += whole;
+            broken += bn * bn - whole;
+            left -= bn * bn;
+            asm.SquareCount++;
+        }
+        // Largest first (then nearest the Core, as the split's order), and each cell's square by its place in that order.
+        var list = c.MachineSquares.AsSpan(asm.SquareFirst, asm.SquareCount);
+        for (var a = 1; a < list.Length; a++)
+            for (var b = a; b > 0 && Before(list[b], list[b - 1]); b--)
+                (list[b], list[b - 1]) = (list[b - 1], list[b]);
+        for (var q = 0; q < list.Length; q++)
+            for (var x = list[q].X0; x < list[q].X0 + list[q].N; x++)
+                for (var z = list[q].Z0; z < list[q].Z0 + list[q].N; z++)
+                    sqOf[(x + Mid) * GridSide + z + Mid] = (byte)q;
+        asm.R4 = (short)Math.Min(short.MaxValue, r4);
+        asm.Shares = (short)shares;
+        asm.Broken = (short)broken;
+        if (asm.SquareCount > 0)
+        {
+            ref readonly var first = ref c.MachineSquares[asm.SquareFirst];
+            (asm.X0, asm.Z0, asm.W, asm.L) = (first.X0, first.Z0, first.N, first.N); // (its largest square stands for its bed)
+        }
+        // Each cell's faces welded to its own square (a block) or to the machine's other end pieces (an end piece): each square is one furnace.
+        for (var k = 0; k < cells.Length; k++)
+        {
+            var i = cells[k];
+            if (c.BlockAsmOf[i] != id)
+                continue; // (a block that does nothing shows its own look)
+            var role = c.Parts[i].D.BlockRole;
+            byte mask = InMachine;
+            var mine = role == BlockRole.Block ? sqOf[(cx[k] + Mid) * GridSide + cz[k] + Mid] : (byte)255;
+            if (role is BlockRole.Block or BlockRole.End)
+                for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
+                {
+                    var o = c.OtherEnd(e);
+                    if (c.BlockAsmOf[o] != id || c.Parts[o].D.BlockRole != role)
+                        continue;
+                    if (role == BlockRole.Block)
+                    {
+                        var v = c.BlockCellOf[o];
+                        int ox = (v & 0xFF) - 128 + Mid, oz = (v >> 16 & 0xFF) - 128 + Mid;
+                        if (ox < 0 || ox >= GridSide || oz < 0 || oz >= GridSide || sqOf[ox * GridSide + oz] != mine)
+                            continue;
+                    }
+                    ref readonly var lk = ref c.Links[e >> 1];
+                    var s = (e & 1) == 0 ? lk.SA : lk.SB; // (this part's own socket of the weld)
+                    var socks = c.Parts[i].D.Sockets;
+                    if (s < socks.Length)
+                        mask |= (byte)(1 << socks[s].Dir);
+                }
+            if (mine != 255 && c.MachineSquares[asm.SquareFirst + mine].N >= 2)
+                mask |= Merged;
+            c.BlockJoined[i] = mask;
+        }
+    }
+
+    private const int SplitMost = 63; // (the exact split's cells: a taken mask in one ulong; a squares Core's "maxCells" is under it)
+    private static int _splitFallbacks;
+
+    /// <summary>Does square <paramref name="a"/> go before <paramref name="b"/> in a machine's list: the larger, then the nearer the Core (x, its middle's distance from the Core's row, z).</summary>
+    private static bool Before(in CMachineSquare a, in CMachineSquare b)
+    {
+        if (a.N != b.N)
+            return a.N > b.N;
+        if (a.X0 != b.X0)
+            return a.X0 < b.X0;
+        int na = Math.Abs(2 * a.Z0 + a.N - 1), nb = Math.Abs(2 * b.Z0 + b.N - 1);
+        return na != nb ? na < nb : a.Z0 < b.Z0;
+    }
+
+    /// <summary>The fallback split's next square: the largest full one of the free cells in the bounds, of equals the nearest the Core.</summary>
+    private static bool LargestFree(ReadOnlySpan<byte> mark, Span<short> sum, int minX, int maxX, int minZ, int maxZ, out int bx, out int bz, out int bn)
+    {
+        int w = maxX - minX + 1, l = maxZ - minZ + 1, S = l + 1;
+        for (var x = 0; x <= w; x++)
+            for (var z = 0; z <= l; z++)
+                sum[x * S + z] = (short)(x == 0 || z == 0 ? 0 : sum[(x - 1) * S + z] + sum[x * S + z - 1] - sum[(x - 1) * S + z - 1] + ((mark[(minX + x - 1) * GridSide + minZ + z - 1] & 0x0F) == Free ? 1 : 0));
+        (bn, bx, bz) = (0, 0, 0);
+        var bnear = 0;
+        for (var n = Math.Min(MaxSquare, Math.Min(w, l)); n >= 1 && bn == 0; n--)
+            for (var x0 = 0; x0 + n <= w; x0++)
+                for (var z0 = 0; z0 + n <= l; z0++)
+                {
+                    if (sum[(x0 + n) * S + z0 + n] - sum[x0 * S + z0 + n] - sum[(x0 + n) * S + z0] + sum[x0 * S + z0] != n * n)
+                        continue;
+                    var near = Math.Abs(2 * (minZ + z0 - Mid) + n - 1);
+                    if (bn == 0 || x0 + minX < bx || x0 + minX == bx && (near < bnear || near == bnear && z0 + minZ < bz))
+                        (bn, bx, bz, bnear) = (n, x0 + minX, z0 + minZ, near);
+                }
+        return bn > 0;
+    }
+
+    // The exact split (Sean, 2026-11-24, as the design thread checked it: a greedy split could lose rate when a block was added): of every
+    // way to cut the cells into full squares, the one with the highest total rate. Search from the first untaken cell in scan order (it is
+    // the corner of whatever square takes it), sides 5 down to 1, memo on the taken mask; of equals, the first found. Deterministic, so
+    // every peer splits alike. The memo is preallocated once a thread; past its cap the split falls back to largest first (logged).
+    private const int MemoBits = 16, MemoSize = 1 << MemoBits, MemoMost = MemoSize * 3 / 4;
+    [ThreadStatic] private static ulong[]? _memoKey;
+    [ThreadStatic] private static int[]? _memoVal;
+    [ThreadStatic] private static uint[]? _memoStamp;
+    [ThreadStatic] private static byte[]? _memoPick;
+    [ThreadStatic] private static uint _memoNow;
+    [ThreadStatic] private static int _memoUsed;
+
+    /// <summary>The best split of the cells (scan order; <paramref name="index"/>: each grid cell's number + 1): its squares' corners and sides into the spans; their count, or -1 when the memo filled.</summary>
+    private static int BestSplit(ReadOnlySpan<byte> px, ReadOnlySpan<byte> pz, ReadOnlySpan<short> index, Span<byte> pick, Span<byte> pickN)
+    {
+        var n = px.Length;
+        if (n == 0)
+            return 0;
+        // Each cell's square of side k (k 1..5) with it as the corner: the mask of its cells, 0 when one is missing.
+        Span<ulong> masks = stackalloc ulong[SplitMost * MaxSquare];
+        for (var i = 0; i < n; i++)
+            for (var k = 1; k <= MaxSquare; k++)
+            {
+                ulong m = 0;
+                for (var x = px[i]; x < px[i] + k && m != ulong.MaxValue; x++)
+                    for (var z = pz[i]; z < pz[i] + k; z++)
+                    {
+                        var at = x < GridSide && z < GridSide ? index[x * GridSide + z] : (short)0;
+                        if (at == 0)
+                        {
+                            m = ulong.MaxValue;
+                            break;
+                        }
+                        m |= 1UL << (at - 1);
+                    }
+                masks[i * MaxSquare + k - 1] = m == ulong.MaxValue ? 0 : m;
+            }
+        _memoKey ??= new ulong[MemoSize];
+        _memoVal ??= new int[MemoSize];
+        _memoStamp ??= new uint[MemoSize];
+        _memoPick ??= new byte[MemoSize];
+        if (++_memoNow == 0)
+        {
+            Array.Clear(_memoStamp); // (the stamp wrapped: every slot is free again)
+            _memoNow = 1;
+        }
+        _memoUsed = 0;
+        var full = n == 64 ? ulong.MaxValue : (1UL << n) - 1;
+        if (Best(0, full, masks) < 0)
+            return -1;
+        var count = 0;
+        for (ulong taken = 0; taken != full && count < pick.Length;)
+        {
+            var i = System.Numerics.BitOperations.TrailingZeroCount(~taken);
+            var k = Find(taken, out var slot) ? _memoPick![slot] : (byte)1;
+            (pick[count], pickN[count]) = ((byte)i, k);
+            count++;
+            taken |= masks[i * MaxSquare + k - 1];
+        }
+        return count;
+    }
+
+    /// <summary>The best total of n^2 (4 + n) over the cells not in <paramref name="taken"/>, or -1 when the memo is full.</summary>
+    private static int Best(ulong taken, ulong full, ReadOnlySpan<ulong> masks)
+    {
+        if (taken == full)
+            return 0;
+        if (Find(taken, out var slot))
+            return _memoVal![slot];
+        var i = System.Numerics.BitOperations.TrailingZeroCount(~taken);
+        int best = -1;
+        byte bestK = 1;
+        for (var k = MaxSquare; k >= 1; k--)
+        {
+            var m = masks[i * MaxSquare + k - 1];
+            if (m == 0 || (m & taken) != 0)
+                continue;
+            var rest = Best(taken | m, full, masks);
+            if (rest < 0)
+                return -1;
+            var v = k * k * (4 + k) + rest;
+            if (v > best)
+                (best, bestK) = (v, (byte)k);
+        }
+        if (_memoUsed >= MemoMost)
+            return -1;
+        if (!Find(taken, out slot))
+            _memoUsed++;
+        (_memoKey![slot], _memoVal![slot], _memoPick![slot], _memoStamp![slot]) = (taken, best, bestK, _memoNow);
+        return best;
+    }
+
+    /// <summary>The memo's slot for a taken mask: true when it holds that mask; else the free slot where it goes.</summary>
+    private static bool Find(ulong taken, out int slot)
+    {
+        var h = (int)((taken * 0x9E3779B97F4A7C15UL) >> (64 - MemoBits));
+        while (true)
+        {
+            if (_memoStamp![h] != _memoNow)
+            {
+                slot = h;
+                return false;
+            }
+            if (_memoKey![h] == taken)
+            {
+                slot = h;
+                return true;
+            }
+            h = (h + 1) & (MemoSize - 1);
+        }
+    }
+
+    /// <summary>A squares Core's squares (empty for any other machine): largest first, as the split took them.</summary>
+    public static ReadOnlySpan<CMachineSquare> Squares(Construct c, in CMachineAsm asm) =>
+        asm.SquareCount == 0 || asm.SquareFirst + asm.SquareCount > c.MachineSquareCount ? [] : c.MachineSquares.AsSpan(asm.SquareFirst, asm.SquareCount);
 
     /// <summary>
     /// The tier pieces bolted on the Core's own tier slots (drawing 21): each whole one joins the Core's assembly (so it shows its Core's
@@ -999,8 +1439,14 @@ public static class MachineBlocks
         for (var a = 0; a < c.MachineAsmCount; a++)
         {
             ref readonly var asm = ref c.MachineAsms[a];
-            sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
-            if (asm.W > 0)
+            var squares = c.Parts[asm.Core].D.BlockSquares;
+            sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {(squares ? ConstructRefining.SizeText(c, asm.Core) : Describe(c, asm))}");
+            if (squares && c.Parts[asm.Core].D is { RefineChoices.Length: > 0 } rd && (int)ConstructConfig.Get(c.Parts[asm.Core], rd, CfgKey.Recipe, 0) is var rc)
+                sb.Append(rc >= 1 && rc <= rd.RefineChoices.Length ? $", recipe {rc} ({rd.RefineChoices[rc - 1].InputName})" : ", recipe Auto");
+            if (squares)
+                foreach (ref readonly var q in Squares(c, asm))
+                    sb.Append($" [{q.N}x{q.N} at {q.X0},{q.Z0}, {q.Whole} whole, ends {Convert.ToString(q.Ends, 2)}]");
+            if (asm.W > 0 && !squares)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
             if (asm.LowBed)
                 sb.Append(", low bed (runs roll on and off)");

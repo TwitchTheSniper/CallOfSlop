@@ -665,7 +665,7 @@ public static class ConstructPanelFormer
             if (head && (!st.FormSeen || !ReferenceEquals(shaped, st.FormDie)))
             {
                 (st.FormDieFrom, st.FormDie) = (st.FormDie, shaped);
-                st.FormChangeAt = !st.FormSeen || st.Busy ? double.MinValue : now;
+                st.FormChangeAt = !st.FormSeen || st.Busy ? -1e9 : now;
                 st.FormSeen = true;
             }
             var dur = StrokeSeconds / MathF.Max(0.05f, d.ExtSpeed);

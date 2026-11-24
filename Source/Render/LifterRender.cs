@@ -13,11 +13,14 @@ public static class LifterRender
 {
     public const float DrawNear = 150f;
     private static readonly Vector3 Out = new(0.94f, 0.47f, 0.09f), Accent = new(0.95f, 0.69f, 0.12f);
-    private static double _scanAt;
+    private static double _scanAt, _drawnAt;
+    private static float _dt;
 
     public static void Draw(Renderer gfx, ConstructWorld world)
     {
         var now = ConstructConveyor.Clock;
+        _dt = (float)Math.Clamp(now - _drawnAt, 0, 0.1);
+        _drawnAt = now;
         if (world.LiftBusy == 0 && now - _scanAt > 1.0)
         {
             _scanAt = now; // (a client finds its lifters itself; a host's own step looks while a hand is busy)
@@ -82,6 +85,16 @@ public static class LifterRender
                     continue;
                 }
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
+                if (ld.Kit)
+                {
+                    if (ld.Spec is { Valid: true } spec)
+                    {
+                        if (!l.FoldServer) // (a client steps the fold by the server's rule: out while it may work, in when idle without power)
+                            l.Fold = l.Why == LiftWhy.NoPower && l.State == LiftState.Idle ? MathF.Max(0, l.Fold - _dt / ArmKit.FoldSeconds) : MathF.Min(1, l.Fold + _dt / ArmKit.FoldSeconds);
+                        ArmKitRender.Draw(gfx, c, ld, spec, part, yaw, elbow, wrist, l.Fold);
+                    }
+                    continue;
+                }
                 DrawArm(gfx, ld, part, yaw, elbow, wrist, span);
                 if (ld.Fitter)
                     DrawToolHead(gfx, part, yaw, wrist, l.CarryBody != 0 && world.Get(l.CarryBody) is { } held ? MathF.Min(held.LocalMax.X - held.LocalMin.X, held.LocalMax.Z - held.LocalMin.Z) : 1.2f);
@@ -180,12 +193,14 @@ public static class LifterRender
         var side = new Vector3(-heading.Z, 0, heading.X);
         var turret = Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw)); // (+x towards the hand)
         // The turret: a squat housing on the slewing ring (sunk 4 mm into it), a counterweight behind, the shoulder's yoke on top.
+        // (a big arm's housing and weight keep to its pedestal, "housing": its links outgrow it, LifterParts.BigArms)
         var floor = ld.Ring - 0.004f;
         var h = s.Y - 0.12f * k - floor;
-        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f, h / k, 0.66f) * k, ld.Turret);
-        var weight = s - heading * 0.5f * k + new Vector3(0, floor + 0.3f * k - s.Y, 0);
-        Box(gfx, part, turret, weight, new Vector3(0.36f, 0.42f, 0.58f) * k, ld.Weight);
-        Box(gfx, part, turret, weight + side * 0.292f * k, new Vector3(0.3f, 0.08f, 0.012f) * k, Accent); // (hazard on the weight's flank)
+        var kh = ld.Housing > 0 ? MathF.Min(k, ld.Housing) : k;
+        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f * kh, h, MathF.Max(0.66f * kh, 0.54f * k)), ld.Turret); // (never narrower than the shoulder's yoke cheeks on it)
+        var weight = s - heading * 0.5f * kh + new Vector3(0, floor + 0.3f * kh - s.Y, 0);
+        Box(gfx, part, turret, weight, new Vector3(0.36f, 0.42f, 0.58f) * kh, ld.Weight);
+        Box(gfx, part, turret, weight + side * 0.292f * kh, new Vector3(0.3f, 0.08f, 0.012f) * kh, Accent); // (hazard on the weight's flank)
         Box(gfx, part, turret, s + side * 0.22f * k, new Vector3(0.3f, 0.34f, 0.1f) * k, ld.Joint);
         Box(gfx, part, turret, s - side * 0.22f * k, new Vector3(0.3f, 0.34f, 0.1f) * k, ld.Joint);
         Box(gfx, part, turret, s, new Vector3(0.24f, 0.24f, 0.56f) * k, ld.Pin); // (the shoulder's pin: what moves)

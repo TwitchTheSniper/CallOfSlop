@@ -95,6 +95,8 @@ public sealed class FactoryPlan
         if (o.Part == "Storage Volume" || o.Part.Contains("Bunker") || o.Part.Contains("Grate") || o.Role == "loading")
             return (o.Size, o.Size);
         var def = ConstructParts.Find(o.Part) ?? throw new FactoryKitException($"no part {o.Part}");
+        if (o.Square > 0) // (a squares Core: its cell, the n x n square of blocks on its side and a Casting Bed past it; n deep: FactoryScript.Squares)
+            return ((o.Square + 2) * def.BlockCell, o.Square * def.BlockCell);
         var s = def.BoundsMax - def.BoundsMin;
         return (s.X, s.Z);
     }

@@ -76,6 +76,23 @@ Cinder turns once an orbit, so its sun stays over latitude 0, longitude 220 (`--
 side is centred there, the night side on longitude 40, and the twilight line runs through both poles and longitudes
 130 and 310. Change the body's rotation `"angle"` and those move.
 
+## Seas
+
+Sea basins (Sean, 2026-11-24: large-scale ground on every world; where water makes no sense, dried out), made in
+`make_worlds.py` (`SEAS`) by a seeded draw clear of the pole's landing ground (Caledon's Zero Day floor), the sites, the
+mountains' tops and each other. The feature is PLANETS.md "Seas".
+
+| World | Seas | Under water |
+| --- | --- | --- |
+| Caledon | five, the biggest about 10 km across its middle; a grey-green northern sea with shingle shores | 11% |
+| Slopolis | two, beyond the city | 7% |
+| Glacier | three, frozen flat (water in the ice's colours) | 5% |
+| Cinder | three dry sea beds: old ash plains with paler crusts | none |
+| Redrock | one dry sea bed: salt pans | none |
+| Mille, Crumb | none (Mille's crust is too thin over its cavity; Crumb is a rubble moonlet) | none |
+
+A world saved before the seas keeps its builds; one standing where a sea now is will float over its bed or sit on its water.
+
 ## Getting there
 
 A jump arrives in orbit round the system's main world (`"arrive": { "at": "Cinder", "km": 30 }` in its system file,

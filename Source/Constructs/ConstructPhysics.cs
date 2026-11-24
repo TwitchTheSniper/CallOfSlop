@@ -156,6 +156,7 @@ public static partial class ConstructPhysics
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var perf = Perf.Measure(PerfArea.CPhysList); // (the F9 window's rows under "Construct physics"; off, a bool test)
         var bodies = SimList(world);
         _bodies = bodies;
         if (query is PhysicsWorld { Planet: { Flora: not null } floraPlanet })
@@ -169,6 +170,8 @@ public static partial class ConstructPhysics
                 var r0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
                 ConstructSlowTick.Rebuilt(bodies[i], r0);
+                if (Perf.On)
+                    PerfBodies.Phys(bodies[i], r0);
             }
         LayOutJoints(bodies, n);
         _contactCount = 0;
@@ -182,16 +185,19 @@ public static partial class ConstructPhysics
         _world = world; // (the held body's sweep skips what it is coupled to)
         _warm = WarmOf(world);
         _warmTick = Pass == 2 ? world.WarmTick : ++world.WarmTick; // (one advance a real tick: the far pass steps in the near pass's tick, ConstructFar.cs)
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CPhysBodies);
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
+            var bt = Perf.On ? System.Diagnostics.Stopwatch.GetTimestamp() : 0; // (the body's own share, for the F9 window's costliest bodies)
             if (c.Dirty)
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
-            if (Pass != 0 && !InPass(c))
+            if (c.Cruise || Pass != 0 && !InPass(c))
             {
-                // (another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
+                // (a cruising ship, moved by its rail after the step (ConstructCruise.cs), or another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
                 (_dyn[i], _jact[i], _invI[i]) = (false, false, default);
                 continue;
             }
@@ -241,11 +247,14 @@ public static partial class ConstructPhysics
                 if (c.HasPowertrain)
                     Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
-                    Wheels(c, query, _invI[i], weight.Length(), weight.Length() * (1 - c.AntiShare), dt); // (the world's pull, and what is left of it after Anti-Grav)
+                    using (Perf.Measure(PerfArea.CPhysWheels))
+                        Wheels(c, query, _invI[i], weight.Length(), weight.Length() * (1 - c.AntiShare), dt); // (the world's pull, and what is left of it after Anti-Grav)
                 if (c.CellCount > 0)
-                    Lift(c, _invI[i], weight, dt); // (before the thrusters: the hover hold carries what the cells don't)
+                    using (Perf.Measure(PerfArea.CPhysFlight))
+                        Lift(c, _invI[i], weight, dt); // (before the thrusters: the hover hold carries what the cells don't)
                 if (c.SurfaceCount > 0 || c.RotorCount > 0)
                 {
+                    using var flightPerf = Perf.Measure(PerfArea.CPhysFlight);
                     if (c.CellCount == 0)
                         c.LiftNow = 0;
                     ConstructAero.Step(c, _invI[i], weight, dt); // (the wings: ConstructAero.cs)
@@ -253,18 +262,22 @@ public static partial class ConstructPhysics
                     ConstructRotor.Step(c, _invI[i], true, dt); // (after Powertrain: it takes this tick's rpm)
                 }
                 if (c.ThrusterCount > 0)
-                    Thrusters(c, query, _invI[i], dt);
+                    using (Perf.Measure(PerfArea.CPhysFlight))
+                        Thrusters(c, query, _invI[i], dt);
                 if (c.GyroNow != Vector3.Zero)
                 {
                     c.AngVel += Construct.Mul(_invI[i], c.GyroNow * dt); // (a Flight Stabilizer's gyro)
                     c.GyroNow = Vector3.Zero;
                 }
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
-                    SpringFeet(c, query, _invI[i], dt);
+                    using (Perf.Measure(PerfArea.CPhysWheels))
+                        SpringFeet(c, query, _invI[i], dt);
                 if (c.GearFootCount > 0)
-                    GearFeet(c, query, _invI[i], dt); // (landing legs' springs: ConstructPhysicsGear.cs)
+                    using (Perf.Measure(PerfArea.CPhysWheels))
+                        GearFeet(c, query, _invI[i], dt); // (landing legs' springs: ConstructPhysicsGear.cs)
                 if (c.LegCount > 0 && c.GrabbedBy == 255)
                 {
+                    using var legsPerf = Perf.Measure(PerfArea.CPhysWheels);
                     Walk(world, c, query, dt); // (the gait brain: ConstructWalk.cs)
                     ConstructNet.NoteFeet(c); // (which feet moved, for the poses: protocol 229)
                 }
@@ -280,13 +293,20 @@ public static partial class ConstructPhysics
             if (_dyn[i] && _jact[i] && c.GrabbedBy == 255) // (a held body is the beam's: it carries the arm's weight)
                 ArmWeight(c, i, weight, dt); // (ConstructFreeChain.cs)
             if (_dyn[i] || _jact[i])
+            {
+                using var worldPerf = Perf.Measure(PerfArea.CPhysWorld);
                 WorldCompound(c, (short)i, query, dt);
-            if ((_dyn[i] || _jact[i]) && world.Resources is { } forest)
-                TrunkContacts(c, (short)i, forest, dt); // (after JointPrep: the chains of the parts beyond a joint)
+                if (world.Resources is { } forest)
+                    TrunkContacts(c, (short)i, forest, dt); // (after JointPrep: the chains of the parts beyond a joint)
+            }
             if (c.RecoilCount > 0)
                 ApplyRecoils(c, i);
+            if (bt != 0)
+                PerfBodies.Phys(c, bt);
         }
         Lap(1, ref t0);
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CPhysContacts);
         _world = world;
         FrameLead(n);
         ApplyDeckPushes(n, dt);
@@ -300,9 +320,13 @@ public static partial class ConstructPhysics
             BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
         PinRows(n);
         Lap(2, ref t0);
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CPhysSolve);
         AllocProfile.Mark("p: solve");
         Solve(dt);
         Lap(3, ref t0);
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.CPhysIntegrate);
         AllocProfile.Mark("p: integrate");
         if (_anyHeld)
             HeldBoost(bodies, n, dt); // (the physics gun's speed build-up in flight: ConstructGrab.FlightBoost)
@@ -347,6 +371,7 @@ public static partial class ConstructPhysics
             Sleep(c);
         }
         Lap(4, ref t0);
+        perf.Dispose();
     }
 
     /// <summary>Dev (BattleCheck --nuke): this tick's body-to-body contacts, overlap at least <paramref name="deep"/> m, by pair names.</summary>
@@ -428,11 +453,12 @@ public static partial class ConstructPhysics
                 continue; // (the far bodies' LOD: ConstructFar.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && !c.OnRail && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
+            var moving = !c.Cruise && (!c.Asleep && !c.OnRail && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c)); // (a cruising ship is moved by its rail: ConstructCruise.cs; cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
                 c.OnRail = false; // (stepped here: the physics' again, ConstructRails.cs)
+                ConstructCruise.End(c); // (a cruising ship changed or taken in hand: the same, ConstructCruise.cs)
                 _sim.Add(c);
             }
         }
@@ -453,7 +479,10 @@ public static partial class ConstructPhysics
                     continue;
                 b.SimMark = stamp;
                 if (Pass == 0 || InPass(b))
+                {
+                    ConstructCruise.End(b);
                     b.OnRail = false; // (something it may meet: the physics' again, from its true pose and speed, ConstructRails.cs; another pass's body is a fixed obstacle here, not stepped, so it stays on its rail)
+                }
             }
         }
         for (var k = 0; k < world.CouplingCount; k++)
@@ -463,6 +492,8 @@ public static partial class ConstructPhysics
             {
                 a.SimMark = b.SimMark = stamp;
                 a.OnRail = b.OnRail = false; // (both in this pass: stepped here)
+                ConstructCruise.End(a);
+                ConstructCruise.End(b);
             }
         }
         MarkConnectors(world, stamp);

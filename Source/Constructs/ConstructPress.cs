@@ -1004,7 +1004,7 @@ public static partial class ConstructPress
             // Bay 2's kit: bulk from a bin, a part from a store's slots or kinds (as into an Assembler's input).
             if ((fd.IsBin || fd.IsTerminal) && src.Amount > 0)
             {
-                var put = FeedKitMaterial(world, ct, to, Math.Min(Math.Max(fd.ChuteLoad, d.ChuteLoad), src.Amount), src.Material);
+                var put = FeedKitMaterial(world, ct, to, Math.Min(Math.Max(ConstructRefining.ChuteLoadOf(world, cf, from), d.ChuteLoad), src.Amount), src.Material);
                 if (put > 0)
                     world.Withdraw(cf, from, put);
                 return put > 0;

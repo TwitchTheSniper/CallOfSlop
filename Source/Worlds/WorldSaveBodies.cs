@@ -703,9 +703,13 @@ public sealed partial class ConstructWorld
             throw new WorldFileException($"a construct of {n} parts");
         var stand = new bool[n];
         var parts = new CPart[n];
+        byte[]? tiers = null; // (a Smelter saved at tier 2 to 5: its recipe choice is moved to the Core's list, ConstructRefining.SavedRecipe)
         for (var i = 0; i < n; i++)
         {
-            var def = names.Part(r.U16(), "a construct");
+            var number = r.U16();
+            var def = names.Part(number, "a construct");
+            if (number < names.PartNames.Length && ConstructRefining.SavedTier(names.PartNames[number]) is var tier and > 1)
+                (tiers ??= new byte[n])[i] = (byte)tier;
             stand[i] = def == ConstructParts.None;
             parts[i].Def = stand[i] ? StandIn.Id : def;
         }
@@ -831,6 +835,8 @@ public sealed partial class ConstructWorld
             }
             var d = parts[part].D;
             var slot = Array.FindIndex(d.Config, e => !e.Bound && e.Key == names.Keys[key]);
+            if (slot >= 0 && float.IsFinite(v) && tiers != null && tiers[part] > 1 && slot == d.CfgSlot[(int)CfgKey.Recipe])
+                v = ConstructRefining.SavedRecipe(d, tiers[part], v);
             if (slot >= 0 && float.IsFinite(v))
                 parts[part].Cfg[slot] = d.Config[slot].Clamp(v);
             else if (slot < 0 && d.TextSlots > 0 && float.IsFinite(v))
@@ -850,8 +856,13 @@ public sealed partial class ConstructWorld
             var l = new CLink { A = r.U16(), B = r.U16(), SA = r.U8(), SB = r.U8() };
             if (l.A >= n || l.B >= n)
                 throw new WorldFileException("a link to a part that isn't there");
-            if (stand[l.A] || stand[l.B] || SocketGone(parts[l.A], l.SA) || SocketGone(parts[l.B], l.SB))
-                continue; // (a socket a part file has since lost goes like the link's part would)
+            if (stand[l.A] || stand[l.B])
+                continue;
+            if (SocketGone(parts[l.A], l.SA) || SocketGone(parts[l.B], l.SB))
+            { // (a socket a part file has since lost goes like the link's part would: an old Smelter's -x and back faces, tools/MIGRATING.md)
+                Console.WriteLine($"[world] a weld between {parts[l.A].D.Name} socket {l.SA} and {parts[l.B].D.Name} socket {l.SB}: the socket is gone, the weld dropped");
+                continue;
+            }
             linkList[keptLinks++] = l;
         }
         var joints = r.Count(64);

@@ -80,6 +80,7 @@ public sealed partial class Ui
             _perfStats.Update();
         }
         SamplePerfNet(game, now);
+        PerfBodies.Sample(game?.Constructs, now); // (the costliest constructs, taken every half second: PerfBodies.cs)
         _perfOverlayGame = game;
         if (PerfMode == PerfView.Overlay)
             DrawPerfOverlay();
@@ -220,6 +221,8 @@ public sealed partial class Ui
                 DrawCpuTable(s);
             if (ImGui.CollapsingHeader("GPU passes"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawGpuTable(s);
+            if (game != null && game.Constructs.Bodies.Count > 0 && ImGui.CollapsingHeader("Constructs (the costliest bodies)"u8, ImGuiTreeNodeFlags.DefaultOpen))
+                DrawPerfBodies(game);
             if (ImGui.CollapsingHeader("Counters"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawPerfCounters(game, s);
             if (Perf.Misnested > 0)
@@ -463,6 +466,52 @@ public sealed partial class Ui
         ImGui.EndTable();
     }
 
+    /// <summary>The constructs' counts this frame, then each body's own physics and draw, costliest first (PerfBodies.cs).</summary>
+    private void DrawPerfBodies(Game game)
+    {
+        ImGui.Text($"{PerfBodies.Bodies} bodies, {PerfBodies.Awake} awake; physics stepped {ConstructPhysics.LastSimulated} last tick ({ConstructFar.LastFar} far, stepped every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m; {ConstructCruise.Count} cruising, {ConstructRails.Count} on rails), {ConstructPhysics.LastContacts} contacts");
+        ImGui.Text($"Drawn: {ConstructRender.LastBoxes} boxes ({ConstructRender.LastBatchBoxes} from merged chunks, {ConstructRender.LastLodDropped} left out by far detail); bodies culled {ConstructRender.LastCulled}, as one box {ConstructRender.LastLod}");
+        ImGui.Text($"Merged chunks {ConstructRender.LastMergedChunks} ({ConstructRender.LastMergedBuilt} built this frame, {ConstructRender.LastMergedWaiting} waiting), idle machines {ConstructRender.LastDormant}, occlusion queries {ConstructRender.LastOccQueries}");
+        if (!game.IsServer)
+            ImGuiSafe.TextColored(Dim, "A joined client steps no construct physics: only the draw is billed here.");
+        ImGuiSafe.TextColored(Dim, $"Each body's own share over the last {PerfBodies.Seconds:0.0} s: physics {PerfBodies.PhysTotalMs:0.000} ms a tick in all (rebuilds, forces, wheels, feet, world contacts; contacts between bodies and the solver are shared), draw {PerfBodies.DrawTotalMs:0.000} ms a frame");
+        DrawPerfBodyTable("##perfbodyphys"u8, "physics ms/tick"u8, PerfBodies.ByPhys, PerfBodies.PhysRows, PerfBodies.PhysTotalMs, true);
+        DrawPerfBodyTable("##perfbodydraw"u8, "draw ms/frame"u8, PerfBodies.ByDraw, PerfBodies.DrawRows, PerfBodies.DrawTotalMs, false);
+    }
+
+    private void DrawPerfBodyTable(ReadOnlySpan<byte> id, ReadOnlySpan<byte> head, PerfBodies.Row[] rows, int count, float total, bool phys)
+    {
+        if (count == 0 || !ImGui.BeginTable(id, phys ? 4 : 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+            return;
+        ImGui.TableSetupColumn("Body"u8, ImGuiTableColumnFlags.WidthStretch, 0, default);
+        ImGui.TableSetupColumn("parts"u8, ImGuiTableColumnFlags.WidthFixed, 50 * _scale, default);
+        ImGui.TableSetupColumn(head, ImGuiTableColumnFlags.WidthFixed, 95 * _scale, default);
+        if (!phys)
+            ImGui.TableSetupColumn("boxes"u8, ImGuiTableColumnFlags.WidthFixed, 60 * _scale, default);
+        ImGui.TableSetupColumn("share"u8, ImGuiTableColumnFlags.WidthFixed, 110 * _scale, default);
+        ImGui.TableHeadersRow();
+        total = MathF.Max(total, 1e-6f);
+        for (var k = 0; k < count; k++)
+        {
+            ref readonly var r = ref rows[k];
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.Text($"#{r.Id} {r.Name}{PerfBodies.Flags(in r)}");
+            ImGui.TableNextColumn();
+            ImGui.Text($"{r.Parts}");
+            ImGui.TableNextColumn();
+            ImGui.Text($"{(phys ? r.PhysMs : r.DrawMs):0.000}");
+            if (!phys)
+            {
+                ImGui.TableNextColumn();
+                ImGui.Text($"{r.Boxes:0}");
+            }
+            ImGui.TableNextColumn();
+            ImGui.ProgressBar(Math.Clamp((phys ? r.PhysMs : r.DrawMs) / total, 0f, 1f), new float2(-1, ImGui.GetTextLineHeight()), ImString.Empty);
+        }
+        ImGui.EndTable();
+    }
+
     private void DrawPerfCounters(Game? game, PerfStats s)
     {
         ImGui.Text($"Draw calls {s.Draws:0}   triangles {s.Triangles / 1000f:0.0}k   instances {s.Instances:0}   (per frame, the 3D renderers; ImGui not counted)");
@@ -536,6 +585,8 @@ public sealed partial class Ui
             sb.Append(inv, $"net in {_perfIn / 1024:0.0} KB/s, out {_perfOut / 1024:0.0} KB/s, snapshots {_perfSnapRate:0}/s avg {_perfSnapSize:0} B{(game.IsServer ? "" : $", ping {game.Net.PingTo(game.Net.ServerGuid)} ms")}\n");
         if (game.CrowdOn)
             sb.Append(inv, $"{PerfCrowdText(game, walk + run + sprint)}\n");
+        if (game.Constructs.Bodies.Count > 0)
+            PerfBodies.Append(sb);
         return sb.ToString();
     }
 

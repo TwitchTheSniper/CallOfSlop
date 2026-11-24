@@ -59,29 +59,37 @@ public static partial class SelfTest
         }
         want(RefiningTable.Load("no-such-file.json") is { Problem.Length: > 0, Recipes.Length: 5 }, "a missing file gives the built-in recipes");
 
-        // A bad machine part.
+        // A bad machine part (the Smelter Core's file, one key changed).
         var smelter = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Refining", "Smelter.json"));
         ConstructParts.Parse(smelter, "good.json");
-        (string From, string To, string Want)[] parts =
+        static System.Text.Json.Nodes.JsonArray V(float x, float y, float z) => [x, y, z];
+        string Changed(string where, string key, System.Text.Json.Nodes.JsonNode value)
+        {
+            var root = System.Text.Json.Nodes.JsonNode.Parse(smelter)!;
+            root["storage"]![where]![key] = value;
+            return root.ToJsonString();
+        }
+        (string Json, string What, string Want)[] parts =
         [
-            ("\"machine\": \"smelter\"", "\"machine\": \"kiln\"", "no recipes"),
-            ("\"capacity\": 200", "\"capacity\": 5", "capacity"),
-            ("\"capacity\": 400", "\"capacity\": 5", "at least"),
-            ("\"material\": \"any\"", "\"material\": \"metal\"", "output bin"),
-            ("\"min\": [-1.0325, 2.3975, -1.3825]", "\"min\": [-1.0325, 2.3975, -2.9]", "outside"),
-            ("\"min\": [-1.0325, 2.3975, -1.3825], \"max\": [0.1925, 3.01, -0.5425]", "\"min\": [-0.4, 0.2, 1.1], \"max\": [0.4, 0.5, 1.4]", "overlaps"),
-            ("\"refine\": {", "\"refine\": { \"haste\": 2, ", "haste"),
-            ("\"refine\": {", "\"refine\": { \"speed\": 200, ", "speed"),
+            (Changed("refine", "machine", "kiln"), "machine kiln", "no recipes"),
+            (Changed("refine", "capacity", 5), "an input capacity of 5", "capacity"),
+            (Changed("bulk", "capacity", 5), "an output capacity of 5", "outBin"),
+            (Changed("refine", "bin", 5), "an input bin of 5 at x1", "bin"),
+            (Changed("bulk", "material", "metal"), "an output of metal only", "output bin"),
+            (Changed("refine", "min", V(-0.38f, 2.02f, -2.9f)), "an input past the part", "outside"),
+            (Changed("refine", "min", V(-0.8f, 0.2f, -0.4f)).Replace("[0.38,2.64,0.38]", "[-0.4,0.5,0.4]"), "an input over the output", "overlaps"),
+            (Changed("refine", "haste", 2), "a haste", "haste"),
+            (Changed("refine", "speed", 200), "a speed of 200", "speed"),
         ];
-        foreach (var (from, to, why) in parts)
+        foreach (var (json, what, why) in parts)
             try
             {
-                ConstructParts.Parse(smelter.Replace(from, to), "bad.json");
-                want(false, $"a machine part with {to} wasn't refused");
+                ConstructParts.Parse(json, "bad.json");
+                want(false, $"a machine part with {what} wasn't refused");
             }
             catch (ConstructPartException ex)
             {
-                want(ex.Message.Contains(why), $"a machine part with {to}: \"{ex.Message}\", want \"{why}\"");
+                want(ex.Message.Contains(why), $"a machine part with {what}: \"{ex.Message}\", want \"{why}\"");
             }
     }
 
@@ -140,8 +148,9 @@ public static partial class SelfTest
         var st = w.StoreOf(c, si)!;
         CStore sIn = w.StoreOf(c, binIn)!, sOut = w.StoreOf(c, binOut)!;
         var def = c.DefOf(si);
+        var size = ConstructRefining.RefineOf(c, si); // (a bare Smelter Core: x1, its bins at their x1 sizes)
         var inv0 = new SandboxInventory();
-        string Look(bool near = false) => ConstructRefining.Look(def, st, near, inv0);
+        string Look(bool near = false) => ConstructRefining.Look(c, si, st, near, inv0);
         void WantLook(string text)
         {
             var line = Look();
@@ -243,10 +252,10 @@ public static partial class SelfTest
         Want(moved && st.Amount == 0 && st.InAmount == 20 && sOut.Amount == 7 && sOut.Material == metal, $"a chute out of the output ({moved}, {st.Amount}, {st.InAmount}, {sOut.Amount})");
 
         // ---- A full output and a mixed one block, with a reason; emptied, it goes on.
-        w.Deposit(c, si, def.BulkCapacity, metal);
+        w.Deposit(c, si, size.Out, metal);
         c.Parts[sw].State = 1;
         Run(1.5f);
-        Want(st.InAmount == 20 && st.Amount == def.BulkCapacity && !st.Busy && c.PowerUse < def.PowerDraw, $"a full output should stop it ({st.InAmount}, {st.Amount}, busy {st.Busy}, {c.PowerUse} W)");
+        Want(st.InAmount == 20 && st.Amount == size.Out && !st.Busy && c.PowerUse < def.PowerDraw, $"a full output should stop it ({st.InAmount}, {st.Amount}, busy {st.Busy}, {c.PowerUse} W)");
         WantLook("output full");
         moved = ConstructRoutes.ChuteMove(w, c, si, c, binOut);
         Run(1.1f);
@@ -270,7 +279,7 @@ public static partial class SelfTest
         c.WorldFrame(c.Parts[si].Seg, out var fq, out var ft);
         c.PartBounds(si, out var fmn, out var fmx);
         var eye = ft + Vector3.Transform((fmn + fmx) * 0.5f, fq) + new Vector3(0, 0.5f, 0);
-        Want(ConstructRefining.Look(def, st, true, inv).Contains("F: take 3 glass"), $"the look line offers the output (\"{ConstructRefining.Look(def, st, true, inv)}\")");
+        Want(ConstructRefining.Look(c, si, st, true, inv).Contains("F: take 3 glass"), $"the look line offers the output (\"{ConstructRefining.Look(c, si, st, true, inv)}\")");
         var took = e.UseBin(w, me, eye, c.Id, si);
         Want(took == null && inv.Materials[glass] == 3 && st.Amount == 0, $"F took the glass ({took}, carried {inv.Materials[glass]}, output {st.Amount})");
         Run(6);
@@ -282,12 +291,12 @@ public static partial class SelfTest
         var nothing = e.UseBin(w, me, eye, c.Id, si);
         Want(nothing != null && nothing.Contains("iron ore") && st.InAmount == 0 && inv.Materials[glass] == 3, $"F with nothing it takes (\"{nothing}\", input {st.InAmount})");
         inv.AddMaterial(ore, 300);
-        Want(ConstructRefining.Look(def, st, true, inv).Contains($"F: tip in {def.InCapacity} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(def, st, true, inv)}\")");
+        Want(ConstructRefining.Look(c, si, st, true, inv).Contains($"F: tip in {size.In} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(c, si, st, true, inv)}\")");
         var tipped = e.UseBin(w, me, eye, c.Id, si);
-        Want(tipped == null && st.InAmount == def.InCapacity && st.InMaterial == ore && st.Amount == 0 && inv.Materials[ore] == 300 - def.InCapacity, $"F tipped ore in ({tipped}, input {st.InAmount}, output {st.Amount}, carried {inv.Materials[ore]})");
+        Want(tipped == null && st.InAmount == size.In && st.InMaterial == ore && st.Amount == 0 && inv.Materials[ore] == 300 - size.In, $"F tipped ore in ({tipped}, input {st.InAmount}, output {st.Amount}, carried {inv.Materials[ore]})");
         w.Deposit(c, si, 150, metal);
         var fromFull = e.UseBin(w, me, eye, c.Id, si);
-        Want(fromFull == null && st.Amount == 50 && inv.Materials[metal] == 100 && st.InAmount == def.InCapacity, $"F at a full input takes a load ({fromFull}, output {st.Amount}, carried {inv.Materials[metal]})");
+        Want(fromFull == null && st.Amount == 50 && inv.Materials[metal] == 100 && st.InAmount == size.In, $"F at a full input takes a load ({fromFull}, output {st.Amount}, carried {inv.Materials[metal]})");
 
         // ---- The mass: both bins, at their own places; the cheap path is the rebuild's.
         w.Withdraw(c, si, 1000);
@@ -296,9 +305,9 @@ public static partial class SelfTest
         var mass0 = c.Mass;
         var inKg = st.InAmount * names.WeightOf(ore);
         Want(MathF.Abs(c.LoadMass - inKg) < 0.05f, $"the input's weight counts ({c.LoadMass}, want {inKg})");
-        ConstructStorage.FillBox(c.Parts[si], def, 100, out var oc, out _);
-        ConstructStorage.InputBox(c.Parts[si], def, st.InAmount, out var ic, out _);
         w.Deposit(c, si, 100, metal);
+        ConstructStorage.FillBox(c, si, st, out var oc, out _); // (each bin's fill against its size now)
+        ConstructStorage.InputBox(c, si, st.InAmount, out var ic, out _);
         Run(0.5f);
         Want(c.LoadOf(si, out var both, out var centre, out var half) && MathF.Abs(both - (inKg + 200f)) < 0.05f && Vector3.Distance(centre, (ic * inKg + oc * 200f) / (inKg + 200f)) < 0.002f && half.Y > 0, $"both bins' load ({both} kg at {centre})");
         Want(MathF.Abs(c.LoadMass - both) < 0.05f && MathF.Abs(c.Mass - (mass0 + 200f)) < 0.05f && !c.Dirty, $"the mass follows the output ({c.LoadMass}, {c.Mass})");
@@ -308,9 +317,9 @@ public static partial class SelfTest
         Want(ma == c.Mass && ca == c.Com && ia == c.InvInertiaLocal, $"RefreshMass and Rebuild differ ({ma}/{c.Mass}, {ca}/{c.Com})");
         c.Parts[sw].State = 1;
         Run(1.1f);
-        var batches = (def.InCapacity - st.InAmount) / iron.UnitsIn;
+        var batches = (size.In - st.InAmount) / iron.UnitsIn;
         Run(ConstructWorld.LoadEvery / (float)World.TickRate * 2);
-        batches = (def.InCapacity - st.InAmount) / iron.UnitsIn;
+        batches = (size.In - st.InAmount) / iron.UnitsIn;
         Want(batches > 0 && MathF.Abs(c.LoadMass - (st.InAmount * 4f + st.Amount * 2f)) <= 2 * 4f + 2f + 0.05f, $"the mass follows a batch ({c.LoadMass}, input {st.InAmount}, output {st.Amount})");
 
         // ---- A Sawmill on another body, fed across a world chute; a machine with nothing to do with a vehicle.
@@ -349,11 +358,11 @@ public static partial class SelfTest
         ConstructRoutes.Remove(w, c, Enumerable.Range(0, c.RouteCount).First(k => c.Routes[k].Type == RouteType.Data));
         c.Rebuild();
         c.Charge = 0; // (a flat battery: a switch's wire would hold it off, as any logic with no power)
-        ConstructRefining.StateOf(RefiningTable.Current, def, st, out var creativeRecipe);
+        ConstructRefining.StateOf(RefiningTable.Current, c, si, st, out var creativeRecipe);
         float CreativeSeconds(int batches) // (the steps Creative takes: its need over the work a step does, rounded up)
         {
-            var need = Math.Max((long)batches * creativeRecipe!.Ticks * ConstructRefining.Milli / ConstructRefining.CreativeSpeed, (long)ConstructRefining.CreativeMinSteps * def.RefineWork);
-            return (need + def.RefineWork - 1) / def.RefineWork / 10f;
+            var need = Math.Max((long)batches * creativeRecipe!.Ticks * ConstructRefining.Milli / ConstructRefining.CreativeSpeed, (long)ConstructRefining.CreativeMinSteps * size.Work);
+            return (need + size.Work - 1) / size.Work / 10f;
         }
         var creativeTime = CreativeSeconds(creativeIn / creativeRecipe!.UnitsIn);
         Run(creativeTime - 0.3f);
@@ -363,10 +372,10 @@ public static partial class SelfTest
         Run(0.2f);
         Want(!st.Busy, "in creative an empty refiner should stop");
         w.Withdraw(c, si, 1000);
-        w.Deposit(c, si, def.BulkCapacity - 3, metal);
+        w.Deposit(c, si, size.Out - 3, metal);
         w.Feed(c, si, 20, ore);
         Run(CreativeSeconds(3) + 0.3f);
-        Want(st.Amount == def.BulkCapacity && st.InAmount == 14, $"in creative only what fits ({st.Amount}, input {st.InAmount})");
+        Want(st.Amount == size.Out && st.InAmount == 14, $"in creative only what fits ({st.Amount}, input {st.InAmount})");
         w.CreativeRecycling = false;
 
         // ---- The store's bytes. Other stores cost nothing more.
@@ -402,7 +411,7 @@ public static partial class SelfTest
         c.Charge = c.ChargeCapacity;
         w.Withdraw(c, si, 1000);
         Run(0.2f);
-        w.Feed(c, si, def.InCapacity - st.InAmount, ore);
+        w.Feed(c, si, size.In - st.InAmount, ore);
         for (var k = 0; k < 120; k++)
             ConstructRefining.Step(w);
         var a0 = GC.GetAllocatedBytesForCurrentThread();
@@ -437,7 +446,8 @@ public static partial class SelfTest
     /// <summary>
     /// "Refining network": a real host, a client and a late joiner over the transport, survival rules. The client spawns the
     /// Smelting Station and F tips its carried ore into the Smelter by the Bin message; both bins, the busy, held and refused
-    /// flags, the look line and the mass reach the client, and the joiner hears a machine stopped part way.
+    /// flags, the look line and the mass reach the client, a Hearth Block welded on the host reaches its look line as the Core's size, and the
+    /// joiner hears a machine stopped part way.
     /// </summary>
     private static void CheckRefiningNet()
     {
@@ -501,7 +511,7 @@ public static partial class SelfTest
                 return done();
             }
             CStore? Store(Game g) => g.Constructs.Get(station.Id) is { } cc ? g.Constructs.StoreOf(cc, si) : null;
-            string LookOf(Game g) => Store(g) is { } s ? ConstructRefining.Look(def, s, false, g.SandboxInventory(g.LocalId)) : "(no store)";
+            string LookOf(Game g) => g.Constructs.Get(station.Id) is { } cc && g.Constructs.StoreOf(cc, si) is { } s ? ConstructRefining.Look(cc, si, s, false, g.SandboxInventory(g.LocalId)) : "(no store)";
 
             // F over the wire: the client's carried ore goes into the input, then both sides see it work.
             server.SandboxInventory(sp.Id).AddMaterial(ore, 60);
@@ -526,14 +536,19 @@ public static partial class SelfTest
                 Fail($"refining network: the client's look line: \"{LookOf(a)}\"");
             w.Withdraw(station, binIn, 100);
 
-            // The tier gate needs nothing new on the wire: the refused material and the client's own table say why.
-            var copperOre = names.IdOf("copper ore");
-            w.Deposit(station, binIn, 20, copperOre);
-            if (!Await(() => Store(a) is { Refused: var r } && r == copperOre, 4, [a]))
-                Fail($"refining network: the client didn't hear the tier refusal (host {st.Refused}, client {Store(a)?.Refused})");
-            else if (!LookOf(a).Contains("chute refused copper ore: needs a tier 2 smelter"))
-                Fail($"refining network: the client's look line for the tier gate: \"{LookOf(a)}\"");
-            w.Withdraw(station, binIn, 100);
+            // A Hearth Block welded on the Core's +x side needs nothing new on the wire: the client works the square out from the parts it
+            // has, and its look line says the size and the bins it grows to (x2.25: 200 in becomes 450).
+            var hearth = ConstructParts.Need("Hearth Block");
+            var placed = ConstructBuild.Place(station, si, Array.FindIndex(def.Sockets, k => k.Name == "+x"), hearth, Array.FindIndex(hearth.Sockets, k => k.Name == "-x"), 0, out var ghost);
+            if (placed != null || ConstructBuild.Attach(w, station, hearth, ghost) < 0)
+                Fail($"refining network: a Hearth Block on the Smelter's +x side: {placed}");
+            else
+            {
+                station.Rebuild();
+                var sized = ConstructRefining.RefineOf(station, si);
+                if (!Await(() => LookOf(a).Contains("furnaces 1x1: speed x2.25") && LookOf(a).Contains($"/{sized.In}"), 3, [a]) || sized.Rate != 2.25f)
+                    Fail($"refining network: the client's look line for a 1 x 1 (host x{sized.Rate}, in {sized.In}): \"{LookOf(a)}\"");
+            }
 
             // Stopped part way by its power: the client and a joiner both hear what it holds and weigh the same.
             station.Charge = 0;

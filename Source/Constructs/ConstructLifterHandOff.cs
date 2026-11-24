@@ -293,6 +293,8 @@ public static partial class ConstructLifters
             tag = OrderOf(sc, _leads[e].St, (ushort)d.Id, 0) is var k and >= 0 ? sc.Parts[_leads[e].St].Craft!.Items[k].Id : (ushort)0;
             if (pb != b)
                 dest = 0; // (a rider's destination is a store on its own body: the next lifter's own rule takes it on)
+            else if (world.StoreOf(pb, _leads[e].Pad) is not { } ps || NeverHolds(pb, _leads[e].Pad, ps, d))
+                (dest, tag) = (0, 0); // (a run start keeps one lead a station, its first pad's: one that can never hold it gives no address, and the run's end lifter's own rule takes it on to a pad that does, 2026-11-24)
         }
         if (!ConstructConveyor.PutMade(world, b, run, d, 1, out _, dest, tag))
             return false;

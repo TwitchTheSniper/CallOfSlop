@@ -29,7 +29,24 @@ public enum PerfArea : byte
     CLogicBlocks, //             radio, then ConstructLogic.Step per body: the logic blocks
     CDoors, //             decouplers, racks' release, hoists, launchers, doors, riding before physics
     ConstructPhysics, //           ConstructPhysics.Step: bodies, contacts, joints, wheels
+    CPhysList, //             the bodies to step, rebuilds of changed bodies, colliders made
+    CPhysBodies, //             each body's own step: gravity, the physics gun, engines, joints' prep (and the three below)
+    CPhysWheels, //               wheels, spring and gear feet, walkers' legs
+    CPhysFlight, //               lift cells, wings, rotors, thrusters
+    CPhysWorld, //               contacts with the world: the ground, map shapes, trees (WorldCompound, TrunkContacts)
+    CPhysContacts, //             contacts between bodies, couplings, ropes, beams, pins
+    CPhysSolve, //             the solver
+    CPhysIntegrate, //             integrating, frames, sleeping
+    CPhysRails, //             free bodies falling round a planet off the physics (ConstructRails)
     Production, //           machines: recyclers, gatherers, scoops, smelters, assemblers, extruders, conveyors, beacons, cargo
+    PRaw, //             recyclers, gatherers, scoops, smelters, grow beds, bake ovens
+    PAssembly, //             assemblers, crafting terminals, line consoles
+    PExtruders, //             extruders, wheel formers, presses
+    PConveyors, //             conveyors
+    PStations, //             building stations, loader arms and cranes (lifters)
+    PLogistics, //             linked logistics, inventory beacons
+    PSeals, //             seals and lift cells
+    PCargo, //             bin loads, modules, breaches, cargo, loose bodies in frames
     SandboxWorld, //         the world's own: spawns, vehicles made at spawn, AI pilots, shots, debris, the flush
     Colony, //         the colony and its duties: the opening, quarry, labourers, depot, objectives, lockdown, induction
     Story, //         StoryTick (GameStory.cs): the story's people, plays and factions
@@ -55,6 +72,14 @@ public enum PerfArea : byte
     Bodies, //   players (and your own legs)
     Entities, //   grenades, streaks, launchers, zombies, map logic, co-op soldiers
     ConstructDraw, //   Sandbox: the constructs, the physics gun's beams, part ambience and engine sounds (Program.Sandbox.cs DrawSandbox)
+    CDrawSun, //     the constructs' sun shadow map (SunShadows)
+    CDrawRooms, //     dark interiors' maps (RoomShade)
+    CDrawLamps, //     lamp shadows (LampShadows)
+    CDrawBodies, //     each body: cull, flames, merged chunks queued or parts box by box, panels gathered (ConstructRender.Draw's loop)
+    CDrawFlush, //     the merged chunks' draws, the box batch, occlusion queries
+    CDrawLinks, //     couplings, tracks, legs, routed links, ropes, shells, world links, display panels, flashes
+    CDrawRigs, //     robot shells and crew stand-ins
+    CDrawSounds, //     the physics gun's beams, horns, part ambience, engine and machine sounds
     Effects, //   tracers, blasts, smoke, objectives, sparks
     Particles, //   the particle pool's step and draw (Source/Render/Fx)
     PostFx, //   bloom, heat haze, ambient occlusion (Source/Render/Fx/PostFx.cs)
@@ -108,10 +133,16 @@ public static class Perf
     public static readonly string[] Names =
     [
         "Events", "Input", "Game update", "Net receive", "Server ticks", "Match and mode", "Zombies", "Horde", "Co-op",
-        "Sandbox tick", "Constructs", "Links, power, logic", "Links, ropes, hoses", "Power", "Routed links", "Weapons", "Logic blocks", "Doors, launchers, release", "Construct physics", "Machines, production", "Spawns, pilots, debris", "Colony, duties", "Story",
+        "Sandbox tick", "Constructs", "Links, power, logic", "Links, ropes, hoses", "Power", "Routed links", "Weapons", "Logic blocks", "Doors, launchers, release", "Construct physics",
+        "List, rebuilds, colliders", "Bodies: forces, drive", "Wheels, feet, legs", "Lift, wings, rotors, thrust", "World contacts (ground, trees)",
+        "Contacts between bodies", "Solver", "Integrate, frames, sleep", "Rails (falling round a planet)",
+        "Machines, production", "Recyclers, gatherers, smelters, ovens", "Assemblers, crafting, lines", "Extruders, presses", "Conveyors",
+        "Stations, arms, cranes", "Logistics, beacons", "Seals, lift cells", "Bin loads, modules, cargo, frames", "Spawns, pilots, debris", "Colony, duties", "Story",
         "Projectiles", "Props, logic, destruction", "Space, travel", "Terrain streaming", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
-        "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
+        "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)",
+        "Sun shadows", "Dark interiors", "Lamp shadows", "Bodies: cull, chunks, parts", "Flush: merged draws, batch", "Links, tracks, legs, ropes, panels",
+        "Shells, crew stand-ins", "Beams, sounds, ambience", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
         "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
     ];
@@ -133,6 +164,10 @@ public static class Perf
         Under(PerfArea.Modes, PerfArea.Zombies, PerfArea.Coop, PerfArea.Sandbox);
         Under(PerfArea.Sandbox, PerfArea.Constructs, PerfArea.SandboxWorld, PerfArea.Colony, PerfArea.Story);
         Under(PerfArea.Constructs, PerfArea.ConstructLogic, PerfArea.ConstructPhysics, PerfArea.Production);
+        Under(PerfArea.ConstructPhysics, PerfArea.CPhysList, PerfArea.CPhysBodies, PerfArea.CPhysContacts, PerfArea.CPhysSolve, PerfArea.CPhysIntegrate, PerfArea.CPhysRails);
+        Under(PerfArea.CPhysBodies, PerfArea.CPhysWheels, PerfArea.CPhysFlight, PerfArea.CPhysWorld);
+        Under(PerfArea.Production, PerfArea.PRaw, PerfArea.PAssembly, PerfArea.PExtruders, PerfArea.PConveyors, PerfArea.PStations, PerfArea.PLogistics, PerfArea.PSeals, PerfArea.PCargo);
+        Under(PerfArea.ConstructDraw, PerfArea.CDrawSun, PerfArea.CDrawRooms, PerfArea.CDrawLamps, PerfArea.CDrawBodies, PerfArea.CDrawFlush, PerfArea.CDrawLinks, PerfArea.CDrawRigs, PerfArea.CDrawSounds);
         Under(PerfArea.ConstructLogic, PerfArea.CLinks, PerfArea.CPower, PerfArea.CRoutes, PerfArea.CWeapons, PerfArea.CLogicBlocks, PerfArea.CDoors);
         Under(PerfArea.Zombies, PerfArea.Horde);
         Under(PerfArea.Render, PerfArea.Buildings, PerfArea.City, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,

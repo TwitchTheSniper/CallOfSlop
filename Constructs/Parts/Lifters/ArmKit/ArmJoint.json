@@ -1,0 +1,135 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Joint",
+  "description": "A shoulder or an elbow of a modular arm: a steel hub with its pin across. Pressed to any size on the Arm die: its moment grows with its side cubed, its top speed falls as it grows.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 275.0,
+  "health": 900,
+  "armour": 12,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 6.0,
+  "armPiece": "joint",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.5,
+        0.25
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.258,
+        0.1,
+        -0.175
+      ],
+      "max": [
+        0.258,
+        0.4,
+        0.175
+      ],
+      "color": "#e8b81c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.15,
+        0.1,
+        -0.29
+      ],
+      "max": [
+        0.15,
+        0.4,
+        0.29
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.08,
+        0.17,
+        -0.31
+      ],
+      "max": [
+        0.08,
+        0.33,
+        0.31
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        -0.004,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.04,
+        0.2
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.46,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.504,
+        0.2
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "tip",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

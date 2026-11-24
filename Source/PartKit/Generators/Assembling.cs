@@ -312,7 +312,7 @@ public sealed class Assembling : IPartGenerator
 
     private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
     // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: the removed story (docs/removals-notes.md))
-    private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
+    private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds", .. ArmKitParts.PressedPieces]; // (the arm kit's chain pieces: pressed on the Arm die)
     private const int MaxUnits = 2000;
     // The lowest Assembler for a size class; a part's cost tops out at MaxUnits, its time at 600 s.
     private static readonly Dictionary<string, int> ClassTier = new() { ["small"] = 1, ["medium"] = 2, ["large"] = 3, ["capital"] = 4 };
@@ -1077,6 +1077,15 @@ public sealed class Assembling : IPartGenerator
         // (the Zero Day works' plinths, Sean 2026-11-22: an Extruder raised level with its run; FactoryShellParts.Plinths, after everything: AfterCloche)
         ("Factory/Plinths", "Extruder Plinth", Rec("Extruder Plinth", 40, m: [("concrete", 320), ("steel", 20)])),
         ("Factory/Plinths", "Run-out Table Stand", Rec("Run-out Table Stand", 20, m: [("steel", 60)])),
+        // (the big arms past the Plasma, Sean 2026-11-24: a shipyard's arms; LifterParts.BigArms, by rule, after everything: AfterCloche)
+        .. LifterParts.BigArmNames.Select(n => ((string?)"Lifters/BigArms", (string?)n, (PyDict?)null)),
+        // (the Smelter on the block system, PR 1 of the refiners: its Hearth Block, fire brick in a steel case, and its Casting Bed; the Core
+        // keeps the Smelter's row, and the Workshop to Plasma Smelters' rows went: tools/MIGRATING.md; after everything: AfterCloche)
+        (null, null, Rec("Hearth Block", 60, 1, m: [("concrete", 320), ("steel", 140)])),
+        (null, null, Rec("Casting Bed", 25, 1, m: [("concrete", 90), ("steel", 80)])),
+        // (the arm kit's Core and Pedestal, Sean 2026-11-24: ArmKitParts; its chain pieces are pressed on the Arm die, no row; after everything: AfterCloche)
+        ("Lifters/ArmKit", "Arm Core", Rec("Arm Core", 60, m: [("steel", 900), ("copper", 60)])),
+        ("Lifters/ArmKit", "Arm Pedestal", Rec("Arm Pedestal", 40, m: [("steel", 700)])),
     ];
 
     /// <summary>
@@ -1288,7 +1297,8 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block"];
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i
@@ -1321,7 +1331,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>; a Barrel or Engine die preset with at most one kind of part input (sized parts phase 6: every barrel, the plain three and the builder ones, and every engine piece but the Capital Smokestack, past the dies; receivers are assemblies by the sort and keep theirs beside their presets); or a Housing (the Housing die presses all 21).</summary>
     private static bool PressedNow(string output, PyDict r, HashSet<string> sized) =>
-        r.Get("machine") == null && (Moved.Contains(output) || ToPress.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
+        r.Get("machine") == null && (ArmKitParts.PressedPieces.Contains(output) || Moved.Contains(output) || ToPress.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
 
     /// <summary>The weapon builder's parts (Parts/*/*.json outside _*, Builds and Tables): made into Sandbox items at load, so a hand
     /// recipe may name one with no file in Constructs/Parts.</summary>

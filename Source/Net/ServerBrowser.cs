@@ -757,9 +757,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 447: an Assembler's blocked reason gains BedFull (its bed holds what it made, waiting to be lifted off): a client's look line reads it.
     // 448: the Press Bed Block (Sean 2026-11-23: parts roll into the big press bay and out): a new part file moves part ids, and a
     //      Press Core gains implicit conveyor ports "Bed in" and "Bed out" after its others.
-    // 449: the owner's snapshot carries the pull they feel (own flag 16, a world-axes vector): the felt-g readout (UiGForce.cs);
+    // 449: the owner's snapshot carries the pull they feel (own flag 16, a world-axes vector): the felt-g readout (UiVitalsPanel.cs);
     //      the input packet ends with a u8 of magnet-boots bits, one per command (InputCmd.MagBoots, GameSandboxMagBoots.cs).
-    public const ushort ProtocolVersion = 449;
+    // 450: the Heavy, Shipyard and Long Loader Arms (Sean 2026-11-24: big arms that carry the yard's pieces into its bay): three new part
+    //      files move part ids.
+    // 451: the arm kit (Sean 2026-11-24, modular loader arms): LiftWhy gains Folding and ArmChain on the lift word, and new part files
+    //      (Arm Core, Arm Pedestal, the arm pieces' like parts, the Arm Die) move part ids.
+    // 452: the Smelter is a block machine (Core, Hearth Block, Casting Bed; Smelter T2-T5 gone): new part files move part ids, and a
+    //      Core's rate, bins and chute load come from its squares, which each peer works out from the parts (MachineBlocks.Squares).
+    public const ushort ProtocolVersion = 452;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -13,6 +13,31 @@ namespace CallOfSlop;
 /// </summary>
 public static class StressCheck
 {
+    /// <summary>
+    /// <c>--stress-check --cruise-path [--alt M] [--speed V] [--seconds S]</c>: a ship moved by the cruise rail alone (ConstructCruise.cs) for S seconds
+    /// at V m/s, M m over the ground: its height, its tilt against the ground's up and the way it went, start and end (a level flight stays level).
+    /// </summary>
+    private static int CruisePath(ConstructWorld w, PointGravity planet, string name, float alt, float speed, int seconds)
+    {
+        var centre = planet.Center;
+        var groundR = (ConstructWorld.Ground(World.Query, 0, 0) - centre).Length();
+        var at = centre + Vector3.UnitY * (groundR + alt);
+        var bp = ConstructBuild.FindBlueprint(name) ?? throw new InvalidOperationException($"no blueprint {name}");
+        var c = ConstructBuild.Build(w, bp, at, Quaternion.Identity, out var why) ?? throw new InvalidOperationException(why);
+        var up0 = Vector3.Normalize(c.WorldCom - centre);
+        c.Vel = Vector3.Normalize(Vector3.Cross(up0, Vector3.UnitX)) * speed + up0 * 0.5f;
+        float Height() => (c.WorldCom - centre).Length() - groundR;
+        float Tilt() => MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Transform(Vector3.UnitY, c.Rot), Vector3.Normalize(c.WorldCom - centre)), -1, 1)) * 180 / MathF.PI;
+        float Climb() => Vector3.Dot(c.Vel, Vector3.Normalize(c.WorldCom - centre));
+        var start = c.WorldCom;
+        Console.WriteLine(FormattableString.Invariant($"cruise path: {name} at {Height():0.00} m, tilt {Tilt():0.000} deg, {c.Vel.Length():0.00} m/s (climb {Climb():0.00})"));
+        for (var t = 0; t < seconds * World.TickRate; t++)
+            ConstructPhysics.CruiseStep(c, planet, World.TickDt);
+        var arc = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(start - centre), Vector3.Normalize(c.WorldCom - centre)), -1, 1)) * (groundR + alt);
+        Console.WriteLine(FormattableString.Invariant($"cruise path: after {seconds} s at {Height():0.00} m (climb kept: {0.5f * seconds:0.0} m expected), tilt {Tilt():0.000} deg, {c.Vel.Length():0.00} m/s (climb {Climb():0.00}), {arc:0} m round the ground (expected {speed * seconds:0})"));
+        return 0;
+    }
+
     public static int Cli(string[] args)
     {
         string Arg(string name, string def) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? def;
@@ -41,6 +66,8 @@ public static class StressCheck
         }
         var w = new ConstructWorld();
         var centre = planet.Center;
+        if (args.Contains("--cruise-path"))
+            return CruisePath(w, planet, Arg("--hauler", "Dray Container Hauler"), float.Parse(Arg("--alt", "200"), inv), float.Parse(Arg("--speed", "120"), inv), seconds);
         // The orbits: about the planet's axis, in its equator's plane, from the ground's height under the map's origin.
         var groundR = (ConstructWorld.Ground(World.Query, 0, 0) - centre).Length();
         var axis = Vector3.Normalize(planet.Axis == Vector3.Zero ? Vector3.UnitY : planet.Axis);

@@ -718,7 +718,7 @@ public sealed class MatchStateAttribute : Attribute
 public sealed class Player
 {
     public byte Id;
-    public Vector3 FeltPull; // Sandbox: the pull this person feels, world axes (server's; a client's own from its snapshot: UiGForce.cs)
+    public Vector3 FeltPull; // Sandbox: the pull this person feels, world axes (server's; a client's own from its snapshot: UiVitalsPanel.cs)
     public string Name = "";
 
     /// <summary>This PC's own player: the noclip key's wish (GameNoclip.cs), sent on every input. Dying, a seat or a new match turns it off.</summary>

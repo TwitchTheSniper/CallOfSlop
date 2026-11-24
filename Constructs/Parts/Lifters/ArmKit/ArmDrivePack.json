@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Drive Pack",
+  "description": "A hydraulic power pack bolted on an Arm Core's or Pedestal's side: 3 kW a metre of its height, so a heavy arm keeps its speed. Up to eight; pressed taller on the Arm die, it gives more.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 380.0,
+  "health": 700,
+  "armour": 8,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 5.0,
+  "armPiece": "drivePack",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        0.0
+      ],
+      "max": [
+        0.3,
+        1.2,
+        0.4
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.26,
+        0.2,
+        0.396
+      ],
+      "max": [
+        0.26,
+        0.26,
+        0.42
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.26,
+        0.42,
+        0.396
+      ],
+      "max": [
+        0.26,
+        0.48,
+        0.42
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.26,
+        0.64,
+        0.396
+      ],
+      "max": [
+        0.26,
+        0.7,
+        0.42
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.26,
+        0.86,
+        0.396
+      ],
+      "max": [
+        0.26,
+        0.92,
+        0.42
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.306,
+        0.95,
+        0.04
+      ],
+      "max": [
+        0.306,
+        1.16,
+        0.36
+      ],
+      "color": "#e8b81c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.18,
+        1.196,
+        0.28
+      ],
+      "max": [
+        0.26,
+        1.26,
+        0.36
+      ],
+      "color": "#ff9a1a",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.08,
+        -0.004,
+        0.12
+      ],
+      "max": [
+        0.08,
+        0.1,
+        0.28
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

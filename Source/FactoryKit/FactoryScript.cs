@@ -262,6 +262,8 @@ public sealed class FactoryScript : BlueprintScript
         {
             case "drill":
                 return DrillRun(c);
+            case "process" when o.Square > 0:
+                return Squares(c, Style.Colour(_paint.Fork("machine" + o.Bank), "machine"));
             case "process":
             {
                 var m = On(o.Part, c.X, c.Z, Back, paint: Style.Colour(_paint.Fork("machine" + o.Bank), "machine"));
@@ -280,6 +282,38 @@ public sealed class FactoryScript : BlueprintScript
             default:
                 throw new VehicleKitException($"no cell for role {o.Role}");
         }
+    }
+
+    /// <summary>
+    /// A squares Core (a Smelter, production.md "Refiners as block machines") and its n x n square of Hearth Blocks welded on its own +x side
+    /// (west, as it stands with its screen to the road), its Core in the square's front row, a Casting Bed past the square's front row; the
+    /// whole centred in its cell.
+    /// </summary>
+    private VPart Squares(PlanCell c, string paint)
+    {
+        var o = c.Obj;
+        var n = o.Square;
+        var def = ConstructParts.Find(o.Part)!;
+        var cell = def.BlockCell;
+        var block = def.RefineMachine == "smelter" ? "Hearth Block" : throw new VehicleKitException($"no blocks for a {o.Part}");
+        // Own +x is west and own +z is back (Back); the assembly runs own x -1 to (n + 1.5) cells and own z -0.5 to n - 0.5 cells.
+        var core = On(o.Part, c.X + (n + 1) * cell * 0.5f, c.Z + (n - 1) * cell * 0.5f, Back, paint: paint);
+        var row = new VPart[n];
+        var prev = core;
+        for (var i = 0; i < n; i++)
+        {
+            row[i] = Onto(prev, "+x", block, "-x");
+            Paint(row[i], paint);
+            var up = row[i];
+            for (var j = 1; j < n; j++)
+            {
+                up = Onto(up, "+z", block, "-z");
+                Paint(up, paint);
+            }
+            prev = row[i];
+        }
+        Onto(row[n - 1], "+x", "Casting Bed", "-x");
+        return core;
     }
 
     /// <summary>
@@ -528,7 +562,7 @@ public sealed class FactoryScript : BlueprintScript
             var m = _of[o.Id];
             var at = FromRest(Live.Parts[m.Index].Pos);
             var lane = z - 0.2f - 0.04f * _cable++;
-            var side = FactoryPlan.Footprint(o).W * 0.5f + 0.4f; // (down the machine's west side to it, never over it)
+            var side = o.Square > 0 ? -1.6f : FactoryPlan.Footprint(o).W * 0.5f + 0.4f; // (down the machine's west side to it, never over it; a squares Core's from its free east side)
             var pts = new List<Vector3> { V(Plan.ConsoleX, 0, lane), V(at.X - side, 0, lane) };
             if (MathF.Abs(at.Z - lane) > 6f)
                 pts.Add(V(at.X - side, 0, at.Z));

@@ -142,7 +142,7 @@ public static class SnapRender
     private static Vector3 SideColour(byte side) => side == JointSides.Leaf ? JointSides.LeafColour : JointSides.BaseColour;
 
     /// <summary>One marker: its shape says the type (cube: a mount, bar with a tip: a shaft, diamond: a gun part, cross: fuel, power or data, flat disc: a wheel hub or hinge leaf).</summary>
-    private static void Marker(Renderer gfx, ConnType type, Vector3 at, Vector3 dir, Vector3 colour, float alpha, float size, byte side = 0)
+    internal static void Marker(Renderer gfx, ConnType type, Vector3 at, Vector3 dir, Vector3 colour, float alpha, float size, byte side = 0)
     {
         var len = dir.Length();
         var z = len < 1e-4f ? Vector3.UnitY : dir / len;

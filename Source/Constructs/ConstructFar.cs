@@ -25,6 +25,9 @@ public static class ConstructFar
 
     private static uint _tick;
 
+    /// <summary>The far LOD's tick count: the far pass steps on the ticks a multiple of <see cref="Every"/> (ConstructCruise.cs lines up with it).</summary>
+    public static uint Tick => _tick;
+
     /// <summary>Marks the far bodies of <paramref name="world"/>, then steps its physics: once as before when none is far, else the near pass and the far pass.</summary>
     public static void Physics(ConstructWorld world, IWorldQuery query, float dt)
     {

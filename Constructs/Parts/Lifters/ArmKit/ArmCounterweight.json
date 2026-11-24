@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Counterweight",
+  "description": "Steel plates on an Arm Core's back: each holds its slewing bearing against the arm's load (3.25 m of lever). Up to four chain one behind the other; pressed thicker on the Arm die, it weighs more.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1570.0,
+  "health": 2000,
+  "armour": 14,
+  "material": "steel",
+  "color": "#4c5157",
+  "attachSeconds": 5.0,
+  "armPiece": "counterweight",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        0.0,
+        2.0,
+        0.5
+      ],
+      "color": "#4c5157"
+    },
+    {
+      "min": [
+        -0.09,
+        1.7,
+        0.496
+      ],
+      "max": [
+        -0.01,
+        1.9,
+        0.508
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.09,
+        1.7,
+        -0.508
+      ],
+      "max": [
+        -0.01,
+        1.9,
+        -0.496
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.07,
+        1.996,
+        -0.1
+      ],
+      "max": [
+        -0.03,
+        2.08,
+        0.1
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        -0.1,
+        1.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

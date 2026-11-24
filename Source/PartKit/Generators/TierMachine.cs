@@ -5,7 +5,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The machine look on the tiered buildings (docs/sandbox/constructs/look.md, "Machine look"): what <see cref="MachineLook"/> gives the
 /// Extruders and the Press, put over each tier's own body from <see cref="TierStyle"/>. A line keeps one set of cues at every tier (a
-/// Smelter's charge door, tap hole and smoking stack; a Sawmill's carriage on rails through a turning blade; a Foundry's crucible over
+/// Sawmill's carriage on rails through a turning blade; a Foundry's crucible over
 /// moulds; an Assembler's stroking tool head over its trays), and a higher tier is built up further (tier by build: guard rails, pipework,
 /// cladding, a taller stack cap), its silhouette its own.
 ///
@@ -74,7 +74,7 @@ public static class TierMachine
             for (var a = 0; a < 3; a++)
                 if (mn[a] < _lo[a] - margin || mx[a] > _hi[a] + margin)
                     return false;
-            if (Name is "Smelter" or "Foundry") // (the aisle across the machine stays walkable)
+            if (Name == "Foundry") // (the aisle across the machine stays walkable)
             {
                 double r = 0.41, feet = 0.03 * Size;
                 if (Over(mn, mx, [-0.3 * Size - r, feet, 0.1 * Size - r], [0.3 * Size + r, feet + 1.86, 0.1 * Size + r]))
@@ -150,11 +150,8 @@ public static class TierMachine
             Port(s, p.At, p.Face, p.In);
         switch (s.Name)
         {
-            case "Smelter":
-                Furnace(s, false);
-                break;
             case "Foundry":
-                Furnace(s, true);
+                Furnace(s);
                 break;
             case "Sawmill":
                 Sawmill(s);
@@ -284,9 +281,9 @@ public static class TierMachine
     private static List<TB> Stacks(Site s, double wallTop) =>
         [.. s.Shape.Solid.Where(b => !b.Hidden && b.Max[0] - b.Min[0] < 0.24 && b.Max[2] - b.Min[2] < 0.24 && b.Max[1] - b.Min[1] > 0.1 && b.Max[1] > wallTop + 0.01)];
 
-    // ---- The Smelter and the Foundry: a vessel that is charged at the top, burns, and is tapped at the front across the aisle
+    // ---- The Foundry: a vessel that is charged at the top, burns, and is tapped at the front across the aisle (the Smelter went to the block system: SmelterParts)
 
-    private static void Furnace(Site s, bool foundry)
+    private static void Furnace(Site s)
     {
         var t = s.Tier;
         var (inMin, inMax) = s.Input!.Value;
@@ -340,50 +337,25 @@ public static class TierMachine
         if (mouth is not null && s.Built(mouth, true) is { } m)
         {
             double mx0 = C(m, "min", 0), mx1 = C(m, "max", 0), my0 = C(m, "min", 1), my1 = C(m, "max", 1), mz = C(m, "max", 2), mw = mx1 - mx0, mh = my1 - my0, cx = (mx0 + mx1) / 2;
-            if (!foundry)
+            // A Foundry: the mouth glows; a steel crucible hangs in front of it with its melt showing, and pours into a row of moulds.
+            Hot(s, m);
+            var room = (0.1 * s.Size - 0.41 - 0.03 - (mz + 0.01)) / 2; // (it stands out of the recess, short of the aisle)
+            double r = Math.Min(Math.Min(mw * 0.3, s.U(0.042)), room), cy = my0 + mh * 0.5, cz = mz + 0.01 + r;
+            s.Add([cx - r, cy, cz - r], [cx + r, cy + 2 * r, cz + r], MachineLook.Steel, "steel", shape: Cylinder("+y"));
+            MachineLook.Work(s.Add([cx - r * 0.7, cy + 2 * r - 0.006, cz - r * 0.7], [cx + r * 0.7, cy + 2 * r + 0.01, cz + r * 0.7], MachineLook.Hot, shape: Cylinder("+y")), "glow");
+            s.Add([cx - r * 1.5, cy + r * 0.8, cz - 0.02], [cx + r * 1.5, cy + r * 1.2, cz + 0.02], MachineLook.Accent); // (its trunnion bar)
+            MachineLook.Work(s.Add([cx - 0.02, fl0 + s.U(0.043), cz + r * 0.5], [cx + 0.02, cy + 0.004, cz + r * 0.5 + 0.03], MachineLook.Hot), "glow"); // (the pour)
+            var mould = mw * 0.3;
+            for (var i = -1; i <= 1; i++)
             {
-                // A Smelter: the mouth is a dark charge door with two glowing slots and a handle; under it the tap hole glows over a steel spout.
-                var door = new PyDict();
-                foreach (var (key, v) in m)
-                    if (key != "glow")
-                        door[key] = v;
-                door["color"] = MachineLook.Base;
-                door["paintable"] = false;
-                s.Boxes[s.Boxes.IndexOf(m)] = door;
-                foreach (var f in new[] { 0.3, 0.7 })
-                    MachineLook.Work(s.Add([mx0 + mw * (f - 0.14), my0 + mh * 0.62, mz - 0.004], [mx0 + mw * (f + 0.14), my0 + mh * 0.8, mz + Thin], MachineLook.Hot), "glow");
-                s.Add([mx1 - mw * 0.09, my0 + mh * 0.3, mz - 0.004], [mx1 - mw * 0.04, my0 + mh * 0.7, mz + 0.03], MachineLook.Accent);
-                MachineLook.Work(s.Add([cx - mw * 0.16, my0 + mh * 0.1, mz - 0.004], [cx + mw * 0.16, my0 + mh * 0.46, mz + Thin + 0.004], MachineLook.Hot), "glow");
-                s.Add([cx - mw * 0.2, my0 + mh * 0.02, mz - 0.004], [cx + mw * 0.2, my0 + mh * 0.1 - 0.004, mz + 0.06], MachineLook.Steel, "steel");
-                if (t >= 2) // a steel frame round the door
-                {
-                    var f = Math.Max(0.03, mw * 0.03);
-                    s.Add([mx0 - f, my0, mz - 0.006], [mx0 + 0.004, my1 + f, mz + 0.02], MachineLook.Steel, "steel", clear: true);
-                    s.Add([mx1 - 0.004, my0, mz - 0.006], [mx1 + f, my1 + f, mz + 0.02], MachineLook.Steel, "steel", clear: true);
-                }
-            }
-            else
-            {
-                // A Foundry: the mouth glows; a steel crucible hangs in front of it with its melt showing, and pours into a row of moulds.
-                Hot(s, m);
-                var room = (0.1 * s.Size - 0.41 - 0.03 - (mz + 0.01)) / 2; // (it stands out of the recess, short of the aisle)
-                double r = Math.Min(Math.Min(mw * 0.3, s.U(0.042)), room), cy = my0 + mh * 0.5, cz = mz + 0.01 + r;
-                s.Add([cx - r, cy, cz - r], [cx + r, cy + 2 * r, cz + r], MachineLook.Steel, "steel", shape: Cylinder("+y"));
-                MachineLook.Work(s.Add([cx - r * 0.7, cy + 2 * r - 0.006, cz - r * 0.7], [cx + r * 0.7, cy + 2 * r + 0.01, cz + r * 0.7], MachineLook.Hot, shape: Cylinder("+y")), "glow");
-                s.Add([cx - r * 1.5, cy + r * 0.8, cz - 0.02], [cx + r * 1.5, cy + r * 1.2, cz + 0.02], MachineLook.Accent); // (its trunnion bar)
-                MachineLook.Work(s.Add([cx - 0.02, fl0 + s.U(0.043), cz + r * 0.5], [cx + 0.02, cy + 0.004, cz + r * 0.5 + 0.03], MachineLook.Hot), "glow"); // (the pour)
-                var mould = mw * 0.3;
-                for (var i = -1; i <= 1; i++)
-                {
-                    var x = cx + i * mw * 0.34;
-                    s.Add([x - mould / 2, fl0 - 0.004, mz + 0.006], [x + mould / 2, fl0 + s.U(0.045), cz + r * 0.9], MachineLook.Steel, "steel");
-                    MachineLook.Work(s.Add([x - mould * 0.32, fl0 + s.U(0.045) - 0.008, mz + 0.006 + mould * 0.15], [x + mould * 0.32, fl0 + s.U(0.045) + 0.006, cz + r * 0.9 - mould * 0.15], MachineLook.Hot), "glow");
-                }
+                var x = cx + i * mw * 0.34;
+                s.Add([x - mould / 2, fl0 - 0.004, mz + 0.006], [x + mould / 2, fl0 + s.U(0.045), cz + r * 0.9], MachineLook.Steel, "steel");
+                MachineLook.Work(s.Add([x - mould * 0.32, fl0 + s.U(0.045) - 0.008, mz + 0.006 + mould * 0.15], [x + mould * 0.32, fl0 + s.U(0.045) + 0.006, cz + r * 0.9 - mould * 0.15], MachineLook.Hot), "glow");
             }
         }
 
         // The aisle: tread plate to walk on, hazard paint where a player steps in; the tray's rim says out. Cladding on the tray from tier 4.
-        double fl = s.U(0.02), tx = s.U(foundry ? 0.38 : 0.36);
+        double fl = s.U(0.02), tx = s.U(0.38);
         s.Add([s.U(-0.44), fl - 0.004, s.U(-0.03)], [s.U(0.44), fl + 0.01, s.U(0.25)], MachineLook.Steel, "tread plate");
         s.Add([s.U(-0.497), fl - 0.004, s.U(-0.03)], [s.U(-0.44) - 0.003, fl + 0.012, s.U(0.25)], MachineLook.Accent, "hazard paint");
         s.Add([s.U(0.44) + 0.003, fl - 0.004, s.U(-0.03)], [s.U(0.497), fl + 0.012, s.U(0.25)], MachineLook.Accent, "hazard paint");

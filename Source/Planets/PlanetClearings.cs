@@ -19,7 +19,8 @@ public sealed class PlanetClearings
     public int Version;
 
     private readonly List<Obb> _next = new();
-    private long _at = long.MinValue;
+    private long _at;
+    private bool _made;
 
     /// <summary>How far sideways a tree's foot must be from a base to stay (its canopy's reach), and other plants'.</summary>
     public const float TreeMargin = 3f, PlantMargin = 0.5f;
@@ -31,9 +32,10 @@ public sealed class PlanetClearings
     public void Update(ConstructWorld world, Planetoid planet)
     {
         var now = System.Diagnostics.Stopwatch.GetTimestamp();
-        if (now - _at < Every * System.Diagnostics.Stopwatch.Frequency)
-            return;
+        if (_made && now - _at < Every * System.Diagnostics.Stopwatch.Frequency)
+            return; // (2026-11-24: _at began at long.MinValue, and now minus it overflowed below the half second, so no clearing was ever made)
         _at = now;
+        _made = true;
         _next.Clear();
         foreach (var c in world.Bodies)
         {

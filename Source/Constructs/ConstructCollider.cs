@@ -108,8 +108,8 @@ internal sealed partial class ConstructCollider
             _wheelOf[c.Wheels[k].Part] = k;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.FuseRough(i) || c.Rides(i))
-                continue; // (inside its unit's rough shape; a rider is on a leg segment, not the body: ConstructWalkRiders.cs)
+            if (c.FuseRough(i) || c.Rides(i) || ArmKit.Posed(c, i))
+                continue; // (a live arm's chain piece is drawn posed and never collides, ArmKit.cs; inside its unit's rough shape; a rider is on a leg segment, not the body: ConstructWalkRiders.cs)
             total += Math.Max(1, c.SolidCount(i));
             if (c.MergeOf[i] == 0)
             {
@@ -129,8 +129,8 @@ internal sealed partial class ConstructCollider
         GroupCount = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.FuseRough(i) || c.Rides(i))
-                continue; // (its unit's rough boxes stand for it: below)
+            if (c.FuseRough(i) || c.Rides(i) || ArmKit.Posed(c, i))
+                continue; // (a live arm's chain piece: none, ArmKit.cs; its unit's rough boxes stand for it: below)
             ref var p = ref c.Parts[i];
             int seg = p.Seg;
             var gs = c.MoveSeg(seg);

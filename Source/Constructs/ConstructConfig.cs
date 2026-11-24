@@ -969,8 +969,12 @@ public static class ConstructConfig
 
     // ---- Blueprints --------------------------------------------------------------------------------------------------
 
-    /// <summary>A blueprint step's <c>"config"</c> object (setting key: value) for a part kind; throws a ConstructPartException-like message.</summary>
-    public static List<(int Slot, float Value)> ParseValues(ConstructPartDef d, JsonElement obj, string where)
+    /// <summary>
+    /// A blueprint step's <c>"config"</c> object (setting key: value) for a part kind; throws a ConstructPartException-like message.
+    /// <paramref name="savedTier"/>: the tier a step's old part name gave (a "Workshop Smelter" builds the Core, ConstructRefining.SavedTier),
+    /// whose recipe choice by number named that tier's list (ConstructRefining.SavedRecipe; a recipe by name is the Core's already).
+    /// </summary>
+    public static List<(int Slot, float Value)> ParseValues(ConstructPartDef d, JsonElement obj, string where, int savedTier = 0)
     {
         var list = new List<(int, float)>();
         if (obj.ValueKind != JsonValueKind.Object)
@@ -1000,6 +1004,8 @@ public static class ConstructConfig
                     && AssemblingTable.PressedLine(rd) is { } why => PressedRecipe(where, why),
                 _ => throw new ConstructPartException($"{where}: \"{p.Name}\" isn't a value a {d.Name}'s {e.Label.ToLowerInvariant()} takes"),
             };
+            if (savedTier > 1 && e.Id == CfgKey.Recipe && p.Value.ValueKind == JsonValueKind.Number)
+                v = ConstructRefining.SavedRecipe(d, savedTier, v);
             if (e.Type == CfgType.Number && (v < e.Min || v > e.Max))
                 throw new ConstructPartException($"{where}: \"{p.Name}\" is {v.ToString(CultureInfo.InvariantCulture)}, it must be {e.Min.ToString(CultureInfo.InvariantCulture)} to {e.Max.ToString(CultureInfo.InvariantCulture)}");
             if (e.Id is CfgKey.RackLayout or CfgKey.RackRows or CfgKey.RackColumns or CfgKey.RackLength or CfgKey.RackDiameter && e.Clamp(v) != e.Default)

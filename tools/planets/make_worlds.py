@@ -63,6 +63,15 @@ def cave(lat, lon, bearing, radius=2.6, chamber=8, cover=14, climb=8, seed=1):
     return {"type": "cave", "lat": lat, "lon": lon, "bearing": bearing, "radius": radius, "chamber": chamber, "cover": cover, "climb": climb, "seed": seed}
 
 
+def sea(lat, lon, radius, depth, edge, water, coast=0.35, rough=None, seed=1):
+    """A sea's basin (PLANETS.md "Seas"): wide ground drawn down under a level worked out from the ground round its rim.
+    water: holding water (flat blue ground for now); else a dried-out sea bed, rough metres of swells on its floor."""
+    f = {"type": "sea", "lat": lat, "lon": lon, "radius": radius, "depth": depth, "edge": edge, "coast": coast, "water": water, "seed": seed}
+    if rough is not None:
+        f["rough"] = rough
+    return f
+
+
 def away(radius, lat, lon, keep):
     """True when (lat, lon) is further than each kept place's own distance (m) from it: keep is [(lat, lon, metres)]."""
     a = (math.cos(math.radians(lat)) * math.sin(math.radians(lon)), math.sin(math.radians(lat)), math.cos(math.radians(lat)) * math.cos(math.radians(lon)))
@@ -77,6 +86,8 @@ def reach(f):
     """How far from its centre a feature can change the ground (m), as Planetoid.ReachOf works it out."""
     if f["type"] == "ridge":
         return math.hypot(f["length"] / 2, f["width"] / 2 + f.get("wander", 0)) + 2
+    if f["type"] == "sea":
+        return (f["radius"] + f["edge"]) * (1 + f.get("coast", 0.35) * 1.6) + 2
     return f["radius"] + f.get("edge", f["radius"] * 0.3) + 2
 
 
@@ -86,7 +97,11 @@ def scattered(radius, seed, count, keep, make):
     import random
     rng = random.Random(seed)
     out = []
+    tries = 0
     while len(out) < count:
+        tries += 1
+        if tries > 20000:
+            raise SystemExit(f"scattered (seed {seed}): no room for {count} features clear of the kept places")
         lat = round(math.degrees(math.asin(rng.uniform(-1, 1))), 2)
         lon = round(rng.uniform(0, 360), 2)
         f = make(rng, lat, lon, len(out))
@@ -217,6 +232,26 @@ def glacier_terrain():
     return near + world
 
 
+def seas(w, seed, sizes, water, **more):
+    """A world's seas (Sean, 2026-11-24), one for each (radius, depth, edge) in sizes, placed by a seeded draw clear of the
+    pole's landing ground, the sites and the mountains' tops (a ben may stand on a sea's shore, not in it). Written at the
+    world's old size, like its other features, and grown with them."""
+    pole = w.get("poleFlat", (70, 150))
+    keep = [(90, 0, (sum(pole) / GROW if "grow" not in w else sum(pole)) + 300)]
+    keep += [(lat, lon, 250) for _, lat, lon, _, _, _ in w["sites"]]
+    keep += [(f["lat"], f["lon"], f["radius"] * 0.6) for f in w["features"] if f["type"] == "mountain"]
+    keep += more.pop("keep", [])
+    if "city" in w:
+        keep.append((90, 0, (w["city"]["radius"] + 380) / GROW + 300))
+    out = []
+    for k, (radius, depth, edge) in enumerate(sizes):  # (one at a time, each clear of the ones before: two seas never meet at two levels)
+        f = scattered(w["radius"], seed + 100 * k, 1, keep, lambda g, lat, lon, _: sea(
+            lat, lon, radius, depth, edge, water, coast=round(g.uniform(0.3, 0.5), 2), seed=seed * 10 + k, **more))[0]
+        keep.append((f["lat"], f["lon"], reach(f) + 200))
+        out.append(f)
+    return out
+
+
 def flatten(lat, lon, radius, height, edge):
     return {"type": "flatten", "lat": lat, "lon": lon, "radius": radius, "height": height, "edge": edge}
 
@@ -228,7 +263,8 @@ WORLDS = [
         "name": "Redrock", "order": 1, "radius": 4000, "strength": 9, "grow": 1,  # (the Dev system's test world keeps its size)
         "ore": {"iron vein": 2, "sand bed": 2, "gold vein": 0.5, "helium pocket": 0.5},
         "description": "Redrock, a 4 km red desert in the home system (Systems/Dev.json): stepped mesas in the north, the Gash (a canyon 5 km long) across the middle and a dune sea in the south. A Ministry mining concession, and a practice landing before the first jump.",
-        "surface": {"grass": "#b5653a", "dirt": "#9c4f2e", "rock": "#7a3b26", "sand": "#d9a066", "dirtSlope": 20, "rockSlope": 32, "sandBelow": -30},
+        "surface": {"grass": "#b5653a", "dirt": "#9c4f2e", "rock": "#7a3b26", "sand": "#d9a066", "dirtSlope": 20, "rockSlope": 32, "sandBelow": -30,
+                    "seaBed": "#d4bf9c"},  # (a dry sea: salt pans)
         "skybox": {"preset": "desert", "zenith": "#b98a5e", "horizon": "#e2b98a", "ground": "#8a5a3c",
                    "sun": {"color": "#fff0d8", "intensity": 1.0}, "clouds": False, "haze": {"color": "#d9a878", "strength": 0.7}},
         "features": [
@@ -255,7 +291,8 @@ WORLDS = [
         "ore": {"copper vein": 2, "gold vein": 1.5, "stone seam": 1.5, "helium pocket": 0, "sand bed": 0.5},
         "limit": (60, "the ash flats swallow anything heavier"),
         "description": "Cinder, a 20 km scorched rock close to the white star Frostreach (Systems/Frostreach.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
-        "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28},
+        "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28,
+                    "seaBed": "#5e4c44"},  # (the dry seas: old lava plains, dull ash with paler crusts)
         "skybox": {"preset": "dusk", "zenith": "#1a0d10", "horizon": "#6e2a1c", "ground": "#1c1414", "stars": 1.4,
                    "sun": {"color": "#ff8a5a", "intensity": 1.1, "size": 5, "glow": 0.9}, "clouds": False,
                    "haze": {"color": "#7a2f20", "strength": 0.6}, "ambient": 0.8},
@@ -298,7 +335,9 @@ WORLDS = [
                     # (made ground is dark cinder with snow blown over it, not the blue of the ice: the colony's bench)
                     "stone": "#3d3f44", "dusting": 0.8,
                     # (wind-scoured patches of bare blue ice on the open snow)
-                    "ice": "#9ec3df", "icePatches": 0.22, "iceScale": 90},
+                    "ice": "#9ec3df", "icePatches": 0.22, "iceScale": 90,
+                    # (the seas are frozen flat: pale sea ice near the shore, darker clear ice over the deep)
+                    "sea": "#c4dcec", "seaDeep": "#7fa8c8", "seaShore": "#e4ecf3"},
         "skybox": {"preset": "alpine", "zenith": "#6f9fd0", "horizon": "#dbe8f2", "ground": "#c9d6e0",
                    "sun": {"color": "#f4f8ff", "intensity": 1.05, "size": 1.2}, "haze": {"color": "#e6eef5", "strength": 0.55}, "ambient": 1.25},
         "storm": {"dusk": 0.85},  # the cold storm outdoors (Maps/README.md "Storm", docs/weather/WEATHER.md "Cold storm")
@@ -330,7 +369,8 @@ WORLDS = [
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
         "ore": {"stone seam": 2, "iron vein": 1.5, "sand bed": 0.5},
         "description": "Caledon, the 24 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
-        "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520},
+        "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520,
+                    "sea": "#2f5a6e", "seaDeep": "#16324a", "seaShore": "#8a8462"},  # (a grey-green northern sea, shingle shores)
         "skybox": {"preset": "overcast", "zenith": "#7d8a96", "horizon": "#b9c2c8", "ground": "#5b6a55",
                    "sun": {"color": "#fff4dc", "intensity": 0.85}, "clouds": {"coverage": 0.72, "density": 0.6, "altitude": 1600, "speed": 14},
                    "haze": {"color": "#aab6bd", "strength": 0.75}},
@@ -387,7 +427,8 @@ WORLDS = [
         # No ore: a free port's stock comes in by ship (and a deposit's rocks would stand in the streets).
         "ore": {"iron vein": 0, "stone seam": 0, "sand bed": 0, "copper vein": 0, "gold vein": 0, "helium pocket": 0, "levite seam": 0},
         "description": "Slopolis, the free port: a 14 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
-        "surface": {"grass": "#5d6b4a", "dirt": "#6b5d4c", "rock": "#5a5752", "sand": "#8c7f68", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -30},
+        "surface": {"grass": "#5d6b4a", "dirt": "#6b5d4c", "rock": "#5a5752", "sand": "#8c7f68", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -30,
+                    "sea": "#3a5a72", "seaDeep": "#1a2e48"},
         "skybox": {"preset": "dusk", "zenith": "#16224a", "horizon": "#d98a64", "ground": "#1a1a20", "stars": 0.5, "ambient": 0.8,
                    "sun": {"elevation": 4, "azimuth": 250, "color": "#ff9a62", "intensity": 0.55, "size": 2.4, "glow": 0.9},
                    "haze": {"color": "#e07a52", "strength": 0.7}},
@@ -434,6 +475,19 @@ WORLDS = [
 ]
 
 
+# Seas (Sean, 2026-11-24: "recessed areas for seas"; where water makes no sense, dried out). Sizes are (radius, depth, shore
+# width) at the world's old size: grown, Caledon's ocean is about 7 km across its middle with a shore 1.6 km wide.
+# Caledon and Slopolis hold water (blue ground for now); Glacier's seas are frozen flat (water, in ice's colours); Cinder
+# and Redrock have dry sea beds. Mille (its crust is too thin over the cavity) and Crumb (a rubble moonlet) have none.
+SEAS = {
+    "Caledon": dict(seed=31, sizes=[(2600, 80, 600), (1700, 65, 450), (1300, 55, 380), (1000, 50, 320), (800, 45, 280)], water=True),
+    "Slopolis": dict(seed=32, sizes=[(1300, 55, 380), (800, 45, 300)], water=True),
+    "Glacier": dict(seed=33, sizes=[(2600, 50, 600), (1800, 45, 450), (1200, 40, 350)], water=True, keep=GLACIER_KEEP),
+    "Cinder": dict(seed=34, sizes=[(2200, 70, 550), (1500, 60, 420), (1100, 50, 320)], water=False, rough=3),
+    "Redrock": dict(seed=35, sizes=[(800, 40, 260)], water=False, rough=1.5),
+}
+
+
 def lat_of(radius, metres):
     """The latitude of a ring this many metres from the north pole along the ground."""
     return round(90 - math.degrees(metres / radius), 5)
@@ -477,6 +531,8 @@ def grown(f, wide, tall):
             mul(["scale"], wide); mul(["amplitude"], tall)
     elif t in ("crevasses", "drifts"):
         mul(["radius", "edge"], wide)
+    elif t == "sea":
+        mul(["radius", "edge"], wide); mul(["depth", "rough"], tall)
     elif t == "flatten":
         mul(["height"], tall)
     return f
@@ -498,7 +554,7 @@ def build(w):
         w["skybox"] = {**w["skybox"], "clouds": {**w["skybox"]["clouds"], "altitude": tidy(w["skybox"]["clouds"]["altitude"] * tall)}}
     r, h = w["radius"], w["landing"]
     top = r + h
-    features = list(w["features"]) + [FINE]
+    features = list(w["features"]) + [FINE] + [grown(f, wide, tall) for f in w.get("seas", [])]  # (seas after the fine grain: water is flat)
     for _, lat, lon, rad, height, edge in w["sites"]:
         features.append(flatten(lat, lon, rad, height, edge))
     if "city" in w:  # the city's ground: level to its last street and a little over (CITY.md)
@@ -542,6 +598,8 @@ def build(w):
 def main():
     os.makedirs(OUT, exist_ok=True)
     for w in WORLDS:
+        if w["name"] in SEAS:
+            w["seas"] = seas(w, **SEAS[w["name"]])
         path = os.path.join(OUT, w["name"] + ".json")
         with open(path, "w", newline="\n") as f:
             json.dump(build(w), f, indent=2)

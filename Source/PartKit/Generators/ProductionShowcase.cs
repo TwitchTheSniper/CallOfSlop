@@ -110,19 +110,29 @@ public sealed class ProductionShowcase : IPartGenerator
             Sign(5.25f, Posts1, Stock, "STOCK: creative fills these bins; survival builds them empty");
 
             // ---- 3. Refining: Smelter, Sawmill and Foundry, chuted from stock into Materials Bins, one Line Console on their Runs. -----
-            var smelter = On("Smelter", 9.25f, Row1, Back, paint: Refining);
+            // The Smelter is a block machine (production.md "Refiners as block machines"): its Core faces the back aisle at x 13.25 on the
+            // second row, its furnaces west of it (its own +x): a 2 x 2 square and a 1 x 1 of Hearth Blocks (x8.25), a Casting Bed past each.
+            var smelter = On("Smelter", 13.25f, -9.75f, Back, paint: Refining);
+            var h10 = Hearth(smelter, "+x", "-x");
+            var h20 = Hearth(h10, "+x", "-x");
+            Hearth(h10, "+z", "-z");
+            var h21 = Hearth(h20, "+z", "-z");
+            var h30 = Hearth(h20, "+x", "-x");
+            Onto(h30, "+x", "Casting Bed", "-x"); // (the 1 x 1's)
+            Onto(h21, "+x", "Casting Bed", "-x"); // (the 2 x 2's, beside the 1 x 1)
+            Sign(3.25f, Posts2, Refining, "SMELTER: Hearth Blocks in squares; bigger squares pay more");
             var sawmill = On("Sawmill", 15.25f, Row1, Back, paint: Refining);
             var foundry = On("Foundry", 20.25f, Row1, Flow, paint: Refining);
-            Feed(StockOf("iron ore", 6.25f, -3.75f), smelter);
+            Feed(StockOf("iron ore", 15.75f, -12.75f), smelter);
             Feed(StockOf("wood", 12.25f, -3.75f), sawmill);
             Feed(StockOf("metal", 18.25f, -8.25f), foundry);
             Feed(StockOf("stone", 19.75f, -8.25f), foundry);
-            Output(smelter, 6.75f, -6.25f);
+            Output(smelter, 15.75f, -9.75f);
             Output(sawmill, 12.75f, -6.25f);
             Output(foundry, 21.75f, -7.75f);
             var refine = On("Line Console", 17.75f, Posts1, Front, paint: Control);
             Sign(16.25f, Posts1, Refining, "Press Start on the console: all three refiners run");
-            Run(refine, smelter, V(17.75f, 0, -2.0f), V(13.5f, 0, -2.0f), V(9.25f, 0, -2.0f));
+            Run(refine, smelter, V(17.5f, 0, -2.5f), V(17.5f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (between the Sawmill and the Foundry to the back aisle)
             Run(refine, sawmill);
             Run(refine, foundry);
 
@@ -631,6 +641,13 @@ public sealed class ProductionShowcase : IPartGenerator
             // (the box from 5 cm over the floor, 1.2 m square and 1 m high; 24% full stays under every open side's lip)
             Config(v, ("sizeX", 1.2), ("sizeY", 1.0), ("sizeZ", 1.2), ("atY", 0.35), ("material", material), ("fill", 24));
             return v;
+        }
+
+        private VPart Hearth(VPart on, string socket, string by)
+        {
+            var h = Onto(on, socket, "Hearth Block", by);
+            Paint(h, Refining);
+            return h;
         }
 
         private void Feed(VPart from, VPart machine) => Link("chute", from, machine, "Chute out", machine.Def.IsRefiner ? "Chute in" : null, Stock);

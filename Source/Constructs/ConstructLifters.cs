@@ -14,8 +14,12 @@ public sealed class LifterDef
     public float Speed, Handle; // m/s at the hand; seconds for a pick and a place together
     public float Upper, Fore; // an arm's two links (m): shoulder to elbow, elbow to wrist ("arm")
     public int Tier = 1; // the part's tier (its "tier" key): the drawn half's dressing
+    public bool Kit; // "kit": true: an Arm Core (ArmKit.cs): its links, reach, payload and speed come from the pieces built on it (a copy per part: ArmKit.DefOf)
+    public ArmSpec? Spec; // (a kit copy's) what its chain is
     public bool Fitter; // "fitter": true: a Module Fitter (module-sockets.md 7): it carries modules to sockets and welds them on (ConstructModuleFitters.cs); its hand is a tool head
     public float Ring; // the slewing ring's top in the part's frame, where the drawn turret stands ("ring"; default 0.66 m under the shoulder)
+    public float Housing; // "housing": the drawn turret housing's and counterweight's size, at most the links' (Upper / 2.3); 0: the links'. A big arm's links outgrow its pedestal (LifterParts.BigArms)
+    public string? Grade, Screen; // (from the part's name, "<Grade> Loader Arm": the station's Fitters line and the arm's own screen; null: by tier)
     public Vector3 Turret = new(0.478f, 0.267f, 0.196f), Weight = new(0.184f, 0.165f, 0.149f), UpperCol = new(0.478f, 0.267f, 0.196f),
         ForeCol = new(0.42f, 0.29f, 0.21f), Joint = new(0.545f, 0.522f, 0.478f), Pin = new(0.94f, 0.47f, 0.09f); // the drawn half's colours ("look")
     // ---- A Bridge Crane (kind "bridge", phase 6: ConstructCraneRails.cs). Its frame: +x across the span from the near rail's top
@@ -42,12 +46,12 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall" or "ramp"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall" or "ramp" or "housing" or "kit"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
             throw new ConstructPartException($"{file}: lifter.kind is \"arm\" or \"bridge\"");
-        var d = new LifterDef { Bridge = kind == "bridge", Fitter = e.TryGetProperty("fitter", out var ft) && ft.ValueKind == JsonValueKind.True };
+        var d = new LifterDef { Bridge = kind == "bridge", Fitter = e.TryGetProperty("fitter", out var ft) && ft.ValueKind == JsonValueKind.True, Kit = e.TryGetProperty("kit", out var kt) && kt.ValueKind == JsonValueKind.True };
         var b = Nums(e, "base", 3, file);
         d.Base = new Vector3(b[0], b[1], b[2]);
         var reach = Nums(e, "reach", 2, file);
@@ -78,6 +82,7 @@ public sealed class LifterDef
                 throw new ConstructPartException($"{file}: lifter.arm is [upper arm, forearm] in m, each 0.3 m or more and near enough alike to bend");
         }
         d.Ring = e.TryGetProperty("ring", out var rg) ? Num(e, "ring", -64, 64, file) : d.Base.Y - 0.66f;
+        d.Housing = e.TryGetProperty("housing", out _) ? Num(e, "housing", 0.2f, 32, file) : 0;
         if (d.Ring > d.Base.Y - 0.2f)
             throw new ConstructPartException($"{file}: lifter.ring (the slewing ring's top) is 0.2 m or more under the shoulder (base)");
         if (e.TryGetProperty("look", out var look))
@@ -162,6 +167,8 @@ public enum LiftWhy : byte
     CabDropped, // (phase 8) the cab set its piece down loose
     CabRefused, // (phase 8) no room to set it down there
     CabNotNew, // (phase 8) what is under the hook holds something (a store, rounds, fluid, settings) that a hand would lose
+    Folding, // (arm kit) an Arm Core's chain folding out of its mast (or back in): it works once out (ArmKit.cs)
+    ArmChain, // (arm kit) an Arm Core whose chain isn't a whole arm yet: its look line says what to fit
 }
 
 /// <summary>
@@ -180,6 +187,8 @@ public sealed class CLift
     public uint Start; // the server tick (the mover clock) the move began
     public int Held; // ticks the move has waited (a player in the way, no power): the path runs on Start + Held
     public uint WaitFrom; // the tick it stopped at while it waits (0: it runs): both peers pose it there (ConstructLifterPush.cs)
+    public bool FoldServer; // (arm kit) the server's step moves Fold (a host's copy): drawing leaves it alone
+    public float Fold; // (arm kit) 0: standing as a mast, 1: folded out; each peer steps it (ArmKit.FoldSeconds; never sent)
     public bool Moved; // a move has been made or heard (else the hand is drawn at its rest)
     public float Rise = ConstructLifters.CarryRise; // the carry height over the higher end, from its Carry height setting when the move began
     public Vector3 Hand0; // (a loaded carry with Fetch) where the empty hand was when the carry began, in the lifter part's frame
@@ -241,6 +250,7 @@ public sealed class LiftBody
 public static partial class ConstructLifters
 {
     public const int Every = 6; // the step's rate: 10 Hz
+    private const float Dt = Every / 60f; // (seconds a step)
     public const int ScanEvery = 60; // ticks between looks for lifter parts while any station is open (a body is looked at only when its parts changed)
     public const int DecisionsAStep = 4; // idle lifters that ask in one step
     public const float CarryRise = 0.4f; // over the higher end of a move, before it turns
@@ -408,6 +418,8 @@ public static partial class ConstructLifters
                 // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
                 // as without power, and goes on when the rails are back.
                 var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (l.State == LiftState.Carry && OffRails(ld, l, false) || OffRails(ld, l, true))); // (an empty hook going back starts where its last piece was put, tested then)
+                if (ld.Kit && l.State == LiftState.Idle && !ConstructRecycler.Powered(world, c, l.Part))
+                    l.Fold = MathF.Max(0, l.Fold - Dt / ArmKit.FoldSeconds); // (no power: an idle arm folds back into its mast)
                 if (railless || !ConstructRecycler.Powered(world, c, l.Part) || !CrewGate.Works(world, c, l.Part)) // (an NPC crew's crane with nobody at it: as without power)
                 {
                     Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
@@ -419,6 +431,11 @@ public static partial class ConstructLifters
                     busy += l.State == LiftState.Idle ? 0 : 1;
                     Ports(c, l);
                     continue;
+                }
+                if (ld.Kit && KitWaits(world, c, l, ld))
+                {
+                    Ports(c, l);
+                    continue; // (an Arm Core folding out, or not a whole arm: ArmKit.cs)
                 }
                 if (l.PowerWait)
                 {
@@ -1313,7 +1330,7 @@ public static partial class ConstructLifters
                 if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 n++;
-                tiers.Append(tiers.Length > 0 ? ", " : "").Append(ld.Bridge ? "Bridge Crane" : TierName(ld.Tier));
+                tiers.Append(tiers.Length > 0 ? ", " : "").Append(ld.Bridge ? "Bridge Crane" : ld.Grade ?? TierName(ld.Tier));
                 rate += 1f / (ld.Handle * 1.25f + 2 * Vector3.Distance(hold, middle) / (ld.Bridge ? MathF.Min(ld.Speed, ld.Hoist) : ld.Speed)); // (a crane: its slower of travel and hoist)
             }
         }
@@ -1343,6 +1360,38 @@ public static partial class ConstructLifters
     }
 
     /// <summary>"Workshop Loader Arm: fitting a Wheel Hub to the Buggy, step 12 of 26 - reaches 1.2 to 5 m, carries 1 t; 7 fitted".</summary>
+    /// <summary>An Arm Core's gate before it works: whole and folded out (true: it waits this step, with its reason).</summary>
+    private static bool KitWaits(ConstructWorld world, Construct c, CLift l, LifterDef ld)
+    {
+        l.FoldServer = true;
+        if (ld.Spec is { Valid: true } live && ArmKit.ChainBroken(c, live))
+        {
+            c.ArmStamp = -1; // (a piece broken before the body's rebuild: the chain is worked out again now, not at full payload with a gap)
+            ld = ConstructLifters.DefOf(c, l.Part) ?? ld;
+        }
+        if (ld.Spec is not { Valid: true })
+        {
+            // Not a whole arm (a piece taken off or broken, even mid-move): it stops where it is, its piece in its hand, and says what to fit.
+            l.Fold = MathF.Max(0, l.Fold - Dt / ArmKit.FoldSeconds);
+            Why(world, l, LiftWhy.ArmChain);
+            if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)
+            {
+                l.PowerWait = true;
+                Freeze(world, l, Now);
+            }
+            return true;
+        }
+        if (l.Fold >= 1)
+        {
+            if (l.Why is LiftWhy.Folding or LiftWhy.ArmChain)
+                Why(world, l, LiftWhy.None);
+            return false;
+        }
+        l.Fold = MathF.Min(1, l.Fold + Dt / ArmKit.FoldSeconds);
+        Why(world, l, LiftWhy.Folding);
+        return true;
+    }
+
     public static string Look(ConstructWorld world, Construct c, int part)
     {
         var d = c.DefOf(part);
@@ -1402,7 +1451,11 @@ public static partial class ConstructLifters
         var carries = ld.Payload >= 1000 ? $"{ld.Payload / 1000f:0.#} t" : $"{ld.Payload:0} kg";
         if (ld.Bridge)
             return $"{d.Name}: {what} - spans {ld.Span:0.#} m over {MathF.Max(0, ld.RunHi - ld.RunLo):0.#} m of rail, hook drop {ld.Down:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}";
-        return $"{d.Name}: {what} - reaches {ld.ReachMin:0.#} to {ld.ReachMax:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}";
+        if (ld.Kit && l is { Why: LiftWhy.Folding })
+            what = "folding out of its mast";
+        if (ld.Kit && ld.Spec is not { Valid: true })
+            return $"{d.Name}: idle{ArmKit.LookText(ld)}";
+        return $"{d.Name}: {what} - reaches {ld.ReachMin:0.#} to {ld.ReachMax:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}{(ld.Kit ? ArmKit.LookText(ld) : "")}";
     }
 
     private static readonly string[] ScreenName = ["", "SCRAP ARM", "WORKSHOP ARM", "INDUSTRIAL ARM", "MILITARY ARM", "PLASMA ARM"];
@@ -1416,7 +1469,7 @@ public static partial class ConstructLifters
         var d = c.DefOf(part);
         if (d.Lifter is not { } ld)
             return;
-        card.Add(0, ld.Hall ? "HALL CRANE" : ld.Bridge ? "BRIDGE CRANE" : ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        card.Add(0, ld.Hall ? "HALL CRANE" : ld.Bridge ? "BRIDGE CRANE" : ld.Screen ?? ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
         if (c.Parts[part].Broken)
         {
             card.State = PanelState.Fault;

@@ -207,6 +207,8 @@ public static partial class ConstructRender
             return -1; // (a piece growing on a die: walked, drawn at its length now, so its new length plans nothing: Construct.GrowStamp)
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
+        if (ArmKit.Posed(c, i))
+            return -1; // (a live arm's chain piece: walked, and DrawPart leaves it to LifterRender, ArmKit.cs)
         if (ModulePullLook.Walks(c, i))
             return -1; // (a fitted module the physics gun strains on: walked, rocking on its seat, ModulePullLook.cs)
         if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
@@ -254,7 +256,9 @@ public static partial class ConstructRender
         {
             ref var p = ref c.Parts[i];
             h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0) | (p.D.HasSeams && i < c.BlockJoined.Length ? (long)c.BlockJoined[i] << 50 : 0)); // (a shell's fitted modules: walked once one is)
-            if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
+            if (p.D.ArmPiece != ArmPieceKind.None && ArmKit.Posed(c, i))
+                h = Mix(h, ~(long)i * 31); // (a live arm's chain piece is walked, drawn by LifterRender)
+            else if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
                 h = Mix(h, i); // (a lamp set blinking is walked)
             else if (p.D.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
                 h = Mix(h, ~i); // (a hidden socket connector is walked, drawing nothing)
@@ -813,7 +817,7 @@ public static partial class ConstructRender
             var m = box.Model(p.Rot, centre);
             if (p.D.IsOrdnance)
                 FoldWing(p.D, b, in box, p.Rot, centre, ref m); // (a designed weapon's wings, folded as it sits until it drops)
-            var gone = (box.Seam != 0 || box.InMachine || box.Bare) && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
+            var gone = box.BySeams && box.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0);
             if (gone)
                 m = Matrix4x4.CreateScale(0f) * Matrix4x4.CreateTranslation(centre); // (a block machine's seam box on a welded face: kept in the chunk at no size, so the counts stand: MachineBlocks.cs)
             (_bLo[k], _bHi[k]) = (centre - half, centre + half);

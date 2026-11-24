@@ -1979,7 +1979,7 @@ public static unsafe partial class Program
                     WsFail($"fill: no store or material in \"{arg}\"");
                     return;
                 }
-                st.Amount = Math.Clamp(amount, 0, c.DefOf(part).BulkCapacity);
+                st.Amount = Math.Clamp(amount, 0, ConstructStorage.Capacity(c, part));
                 st.Material = st.Amount > 0 ? mat : (byte)0;
                 st.Version++;
                 g.Constructs.StoreDirty.Add(st.Handle);

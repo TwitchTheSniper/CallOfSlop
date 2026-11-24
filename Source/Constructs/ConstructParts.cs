@@ -360,9 +360,21 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// what a bare column of masts (a shed's pillar, a crane's column) shows in place of its lattice.
     /// </summary>
     public bool Bare { get; init; } // (ghosts, the selection, stored items and the preview draw a part as a machine's cell: they skip these)
+    /// <summary>
+    /// "alone": true: drawn only while its part is NOT merged into a square of 2 x 2 or more (<see cref="MachineBlocks.Merged"/> in
+    /// <see cref="Construct.BlockJoined"/>): a Hearth Block's own stub stack and door, which a bigger furnace draws as one. "merged": true: the
+    /// other way round, drawn only while it is (ghosts, the selection and stored items skip these, as they skip "bare").
+    /// </summary>
+    public bool Alone { get; init; }
+    /// <summary>"merged": true: drawn only while its part is a cell of a merged square (see <see cref="Alone"/>).</summary>
+    public bool MergedOnly { get; init; }
 
     /// <summary>Is this box hidden on a block machine's cell whose welded faces are <paramref name="joined"/>?</summary>
-    public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Bare && (joined & MachineBlocks.InMachine) != 0 || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
+    public bool SeamHidden(byte joined) => InMachine && (joined & MachineBlocks.InMachine) == 0 || Bare && (joined & MachineBlocks.InMachine) != 0
+        || Alone && (joined & MachineBlocks.Merged) != 0 || MergedOnly && (joined & MachineBlocks.Merged) == 0
+        || Seam != 0 && ((joined & Seam & 0x3F) != 0) != ((Seam & 0x80) != 0);
+    /// <summary>Is this box drawn by its cell's welds or merge (a key <see cref="SeamHidden"/> reads)?</summary>
+    public bool BySeams => Seam != 0 || InMachine || Bare || Alone || MergedOnly;
     /// <summary>"shows": "on" or "off": a switch's state lamp, drawn lit in its own colour while the part's output is on (1) or off (2), and dark otherwise; 0: none.</summary>
     public byte Shows { get; init; }
 
@@ -747,6 +759,7 @@ public sealed partial class ConstructPartDef
     public int AsmBatches = 4; // an Assembler: how many batches of each input it buffers
     public Vector3 AsmOutAt = Vector3.Zero, AsmOutDir = Vector3.UnitZ; // an Assembler: where a finished body leaves, and which way (part frame)
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
+    public int RefineInBin, RefineOutBin; // a squares Core (the Smelter, MachineBlocks.Squares): its input and output bins at x1 ("bin", "outBin" in storage.refine), grown by its squares' rate up to its "capacity" keys (ConstructRefining.RefineOf)
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
     public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
@@ -764,6 +777,7 @@ public sealed partial class ConstructPartDef
     public byte BlockTool; // ...an Assembler's tool block: the tool it gives its Core (an index of AssemblingTable.Machines: 1 thruster, 2 tailor; role "tool")
     public byte BlockTier; // ...a tier piece's tier, 2 to 5 (role "tier": it raises the Core it is bolted on to this tier when every lower piece is there too)
     public float BlockCell = MachineBlocks.DefaultCell; // ...its lattice step (m)
+    public bool BlockSquares; // ...a Core whose blocks split into squares, every one working ("squares": the refiners, MachineBlocks.Squares)
     public bool BlockCoreSeams = true; // ...a Core: a bed cell's seam boxes on a face welded to it or to an Out Table are hidden ("coreSeams": false keeps them)
     public byte BlockMaxSide = MachineBlocks.MaxSide; // ...a Core: its bed's longest side in cells ("maxSide", up to MachineBlocks.GridHalf: the Building Station's 60 m bay)
     public short BlockMaxCells = MachineBlocks.MaxCells; // ...a Core: the cells its machine takes in, masts included ("maxCells", up to MachineBlocks.MaxCellsAny)
@@ -777,6 +791,7 @@ public sealed partial class ConstructPartDef
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
+    public ArmPieceKind ArmPiece; // "armPiece": a piece of a modular loader arm (ArmKit.cs): its kind; a pressed copy keeps it
     public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool CraneRail; // "craneRail": true: a Crane Rail section, along its +z (a Bridge Crane runs on two runs of them: ConstructCraneRails.cs)
     public bool HallRail; // "craneRail": "hall": a Hall Crane's Crane Rail Block (a Crane Core runs on these only, a classed Crane Bridge never: both are Small class)
@@ -1376,6 +1391,7 @@ public static partial class ConstructParts
         "wheel former" or "medium wheel former" or "large wheel former" or "capital wheel former"
             or "fan former" or "medium fan former" or "large fan former" or "capital fan former"
             or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
+        "workshop smelter" or "industrial smelter" or "military smelter" or "plasma smelter" => "Smelter", // (a block machine, 2026-11-24: its Hearth Blocks' squares decide its rate; a saved recipe choice keeps its recipe, ConstructRefining.SavedRecipe)
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };
@@ -1457,7 +1473,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1528,6 +1544,8 @@ public static partial class ConstructParts
         if (d.IsRouter && d.TextSlots == 0)
             d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
         d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
+        if (Opt(root, "armPiece") is { ValueKind: JsonValueKind.String } ap)
+            d.ArmPiece = Enum.TryParse<ArmPieceKind>(ap.GetString(), true, out var apk) && apk != ArmPieceKind.None ? apk : throw new ConstructPartException($"{file}: armPiece is boom, joint, wrist, padClamp, counterweight or drivePack");
         d.HallRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.String } hr && hr.GetString() == "hall";
         d.CraneRail = d.HallRail || Opt(root, "craneRail") is { ValueKind: JsonValueKind.True };
         d.LifterCab = Opt(root, "lifterCab") is { ValueKind: JsonValueKind.True } && d.Role == PartRole.Seat;
@@ -1555,6 +1573,12 @@ public static partial class ConstructParts
         if (d.Lifter != null)
         {
             d.Lifter.Tier = d.Tier; // (its drawn half's dressing)
+            if (d.Name.EndsWith(" Loader Arm", StringComparison.Ordinal) && d.Name.Length > " Loader Arm".Length)
+            {
+                // (named by its grade, not its tier: the big arms past the Plasma are tier 5 by their machine tier)
+                d.Lifter.Grade = d.Name[..^" Loader Arm".Length];
+                d.Lifter.Screen = d.Lifter.Grade.ToUpperInvariant() + " ARM";
+            }
             d.DataIn = [ConstructGatherer.RunPort];
             d.DataOut = ConstructLifters.OutPorts; // (Busy, Alarm, Moved: ConstructLifters.Ports)
         }
@@ -1654,7 +1678,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "inMachine", "bare", "middle"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence", "shows", "seam", "seamFill", "inMachine", "bare", "alone", "merged", "middle"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1746,6 +1770,10 @@ public static partial class ConstructParts
                 made = detail ? made with { InMachine = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be \"inMachine\" (drawn only while its part is a block machine's cell)");
             if (Opt(b, "bare") is { ValueKind: JsonValueKind.True })
                 made = detail && !made.InMachine ? made with { Bare = true } : throw new ConstructPartException($"{file}: {where}: only a detail box that isn't \"inMachine\" can be \"bare\" (drawn only while its part is not a block machine's cell)");
+            foreach (var (key, merged) in new[] { ("alone", false), ("merged", true) })
+                if (Opt(b, key) is { ValueKind: JsonValueKind.True })
+                    made = detail && !made.Alone && !made.MergedOnly ? (merged ? made with { MergedOnly = true } : made with { Alone = true })
+                        : throw new ConstructPartException($"{file}: {where}: only a detail box can be \"alone\" or \"merged\", and not both (drawn by whether its block is merged into a bigger square)");
             if (Opt(b, "shows") is { } showsBox)
                 made = detail && glass == 0 && Str(showsBox, file, where + ".shows") is "on" or "off" ? made with { Shows = Str(showsBox, file, where + ".shows") == "on" ? (byte)1 : (byte)2 }
                     : throw new ConstructPartException($"{file}: {where}.shows is \"on\" or \"off\" on an opaque detail box");
@@ -1787,7 +1815,7 @@ public static partial class ConstructParts
         d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
         d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
-        d.HasSeams = list.Any(x => x.Seam != 0 || x.InMachine || x.Bare);
+        d.HasSeams = list.Any(x => x.BySeams);
         d.HasMiddle = d.Boxes.Any(x => x.Middle);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);

@@ -379,6 +379,8 @@ public sealed partial class Construct
     internal Quaternion FrameQ0 = Quaternion.Identity;
     internal float FrameDt, FrameFelt;
     internal bool FrameFarSlept; // (carried asleep because nobody was near its frame: woken when someone comes near, ConstructFrames.FarFromPeople)
+    internal long PerfPhysTicks, PerfDrawTicks; // (Stopwatch ticks of its own physics step and its draw since the F9 window's last look: PerfBodies.cs; only while Perf.On)
+    internal int PerfDrawBoxes; // (boxes it drew since then)
     internal bool FrameNew, FrameGround, FrameLoaded; // (FrameGround: the last step had it touch the map; FrameLoaded: FramePos/FrameRot came with it from a save)
     /// <summary>Server: in a frame whose pose it has (not still to be joined from the world): the physics reads its speed against the frame's.</summary>
     internal bool Framed => Frame != 0 && !FrameNew;
@@ -1285,6 +1287,32 @@ public sealed partial class Construct
     /// <summary>Server: falling free on a rail, out of the physics' list and the per-body systems (ConstructRails.cs). Its pose and speed are true every tick.</summary>
     public bool OnRail;
 
+    /// <summary>
+    /// Server: an NPC ship cruising on a rail far from everyone (ConstructCruise.cs): out of the physics' list, moved each tick at its speed along
+    /// the planet's curve, back in the physics for a far step every <see cref="ConstructCruise.HoldTicks"/> or when anything engages it. Unlike
+    /// <see cref="OnRail"/>, <see cref="Wake"/> doesn't end it (a crew's keys and a stabilizer wake their body every tick).
+    /// </summary>
+    public bool Cruise;
+    /// <summary>Server: the tick its cruise spell ends, and the tick it is looked at again after one (ConstructFar.Tick; 0: none).</summary>
+    public uint CruiseUntil, CruiseRecheck;
+    /// <summary>Server: its speed when last looked at, and that tick (how steady its flight is: ConstructCruise.Steady).</summary>
+    public Vector3 CruiseV0;
+    public uint CruiseT0;
+    /// <summary>Server: its fuel and charge when last looked at; what its physics burned of each a tick before a spell (thrust, rotors, drives: the
+    /// physics' own), the tick the spell began and what it had then. A spell's end takes what the physics would have burned (ConstructCruise.Settle).</summary>
+    public float CruiseF0, CruiseC0, CruiseFuelRate, CruiseChargeRate, CruiseFuelAt, CruiseChargeAt;
+    public uint CruiseFrom;
+    /// <summary>Server: its NPC crew has something to fight, runs, is boarded or scuttles (the captain's look, CrewWorld.Captain): it never cruises.</summary>
+    public bool NpcBusy;
+    /// <summary>Server: the point its NPC crew's order flies it to, while <see cref="CruiseGoalOn"/> (CrewWorld): a cruise spell ends before it gets there (ConstructCruise.SpellFor).</summary>
+    public Vector3 CruiseGoal;
+    public bool CruiseGoalOn;
+    /// <summary>Server: what steers it (its order's point, its autopilot's mode and held point) when its spell began: a change ends the spell (ConstructCruise.SteerKey).</summary>
+    public int CruiseSteer;
+    /// <summary>Server: it was damaged (ConstructWorld.Damage): off its cruise rail, and none for <see cref="ConstructCruise.HitQuiet"/> ticks after (until <see cref="CruiseQuiet"/>).</summary>
+    public bool CruiseHit;
+    public uint CruiseQuiet;
+
     /// <summary>A rail body's lowest distance from the planet's centre until its next check (ConstructRails.cs).</summary>
     public float RailLow;
 
@@ -1655,7 +1683,7 @@ public sealed partial class Construct
         var table = RecyclingTable.Current;
         if (ConstructStorage.FillBox(this, i, st, out centre, out half))
             kg = st.Amount > 0 ? st.Amount * table.WeightOf(st.Material) : st.ItemKg; // (a Storage Volume's parts weigh what they weigh)
-        if (ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InTotal, out var ic, out var ih))
+        if (ConstructStorage.InputBox(this, i, st.InTotal, out var ic, out var ih))
         {
             var ik = st.InAmount * table.WeightOf(st.InMaterial) + st.ItemKg; // (a mixed input's materials and an Assembler's parts weigh what they weigh)
             for (var k = 0; k < st.MixN; k++)
