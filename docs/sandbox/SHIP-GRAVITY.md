@@ -25,6 +25,13 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   driving and a cruise feel as before) into `RideFelt`. The same moving rules below then slow and pin them, but `Rider` takes the whole of it along their down
   and pushes nothing sideways (a turning or braking vehicle keeps its riders on their spots, as the ride-frame tests ask). No harm with deck
   gravity (Karl not asked).
+- **Felt-g readout** (Karl, 2026-11-24; `UI/UiGForce.cs`): left of centre, a dial and the figure, "1.0 g down". The server
+  works out each person's pull (`ShipGravity.PersonPull`: seated, standing aboard, on the ground, or nothing in free fall) and
+  the owner's snapshot carries it (protocol 449). Amber from 1.5 g, red and PINNED from 3 g. Shown aboard, or off 1 g.
+  Under deck gravity the deck counts as 1 g (`G`), and the mover's own (stronger) deck gravity is scaled by the g felt.
+- **Magnet boots** (Karl, 2026-11-24; `Game/GameSandboxMagBoots.cs`): key 7 (`GameAction.MagBoots`, binds 35), sent with
+  each command (`InputCmd.MagBoots`). On and standing on a deck with a felt pull: held to it (at least the mover's 1 g, no
+  push, no jump, walking at `BootsSpeed`). The bottom-right line shows ON or OFF and the key.
 - **Moving.** Past `SlowG` (1.5 g) moving slows, down to a fifth at `PinG` (3 g), where a standing rider can't move or jump.
   Under `FloatG` (0.15 g) a rider in the air drifts: the move keys, Jump up and Crouch down, at 2 m/s. On a floor they still
   walk (no gravity pulls them off it); a jump pushes off.

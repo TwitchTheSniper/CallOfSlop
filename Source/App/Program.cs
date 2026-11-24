@@ -1816,6 +1816,8 @@ public static unsafe partial class Program
 
         if (_game.MmuSteering && !SpectateOn && Pressed(GameAction.SeatDampeners))
             _game.MmuToggleDampers(); // (a worn MMU's inertia dampeners, on the seat's key: GameSandboxMmu.cs)
+        if (_game.SandboxOn && !SpectateOn && !_game.SandboxSeatedHere && !Ui.ChatOpen && Pressed(GameAction.MagBoots))
+            _game.MagBootsToggle(); // (magnet boots: GameSandboxMagBoots.cs)
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).

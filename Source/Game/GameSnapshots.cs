@@ -125,7 +125,7 @@ public sealed partial class Game
         };
         var own = new SnapOwn
         {
-            Position = p.Position, Velocity = p.Sim.Velocity, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
+            Position = p.Position, Velocity = p.Sim.Velocity, Felt = p.FeltPull, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
             Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
             RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp), RideOn = p.Sim.RideOn,
             RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel, RideFeltOn = p.Sim.RideFeltOn, RideFelt = p.Sim.RideFelt,
@@ -218,6 +218,7 @@ public sealed partial class Game
                 {
                     e.Position = o.Position; // exact, so prediction doesn't chase rounding errors
                     e.Velocity = o.Velocity;
+                    p.FeltPull = o.Felt; // (the felt-g readout, UiGForce.cs)
                     if (o.Mantling)
                         e.MantleTo = o.MantleTo;
                 }

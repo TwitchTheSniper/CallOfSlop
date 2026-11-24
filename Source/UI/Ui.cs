@@ -364,6 +364,8 @@ public sealed partial class Ui : IDisposable
         // ---- Bottom-left: health number ---------------------------------------------
         if (arena)
             DrawHealthPanel(game, local, pos, size, pad);
+        else
+            DrawGForce(game, local, pos, size, pad); // the felt g and its way (UiGForce.cs)
 
         if (now - game.PerkBannerTime < 3 && game.PerkBanner.Length > 0)
         {

@@ -65,6 +65,7 @@ public struct SnapOwn
     public ushort RideLadderPart;
     public Vector3 RideClimbNext, RideClimbLast;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
+    public Vector3 Felt; // the pull they feel, world axes (protocol 449: the felt-g readout, UiGForce.cs)
     public bool RideFeltOn; // ship gravity (protocol 444): the pull they feel in the frame, the server's, for the replay (ShipGravity.cs)
     public Vector3 RideFelt;
     public bool Worn; // what they wear follows (PilotGear.cs)
@@ -339,7 +340,9 @@ public static class Snapshot
             w.U8(0);
             return;
         }
-        w.U8((byte)(1 | (o.Mantling ? 2 : 0) | (o.Ride ? 4 : 0) | (o.Worn ? 8 : 0))).Vec(o.Position).Vec(o.Velocity);
+        w.U8((byte)(1 | (o.Mantling ? 2 : 0) | (o.Ride ? 4 : 0) | (o.Worn ? 8 : 0) | (o.Felt != Vector3.Zero ? 16 : 0))).Vec(o.Position).Vec(o.Velocity);
+        if (o.Felt != Vector3.Zero)
+            w.Vec(o.Felt); // (protocol 449)
         if (o.Mantling)
             w.Vec(o.MantleTo);
         if (o.Ride)
@@ -370,6 +373,12 @@ public static class Snapshot
         var o = new SnapOwn { Position = r.Vec(), Velocity = r.Vec(), Mantling = (flags & 2) != 0 };
         if (o.Mantling)
             o.MantleTo = r.Vec();
+        if ((flags & 16) != 0)
+        {
+            if (!r.Has(12 + SlowBytes))
+                return null;
+            o.Felt = r.Vec();
+        }
         if ((flags & 4) != 0)
         {
             if (!r.Has(19 + SlowBytes))
