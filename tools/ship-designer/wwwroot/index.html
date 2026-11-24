@@ -350,7 +350,8 @@ function drawRooms() {
     }
     const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
     const col = new THREE.Color(r.colour);
-    const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - 0.06, 0.08, bz1 - bz0 - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
+    const gap = r.group && S.rooms.some(o => o !== r && o.group === r.group) ? 0 : 0.06; // a room in parts: one floor, no seams
+    const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - gap, by1 - by0 - gap, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - gap, 0.08, bz1 - bz0 - gap), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
     floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.04, st ? bz1 - 0.04 : (bz0 + bz1) / 2);
     floor.userData = { type: "room", id: r.id, floor: true };
     world.add(floor); if (!dim) pickables.push(floor);

@@ -541,9 +541,13 @@ public sealed class DesignEditor
             {
                 var r = Rm();
                 SetBox(r, o);
-                if (o["kind"] is not null) r.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? r.Kind;
-                if (o["label"] is not null) r.Label = Str(o, "label");
-                if (o["toHull"] is not null) r.ToHull = (bool)o["toHull"]!;
+                // A room in parts is one room: its kind, name and way to the skin go to every part.
+                foreach (var q in d.Rooms.Where(q => q == r || (r.Group != 0 && q.Group == r.Group)))
+                {
+                    if (o["kind"] is not null) q.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? q.Kind;
+                    if (o["label"] is not null) q.Label = Str(o, "label");
+                    if (o["toHull"] is not null) q.ToHull = (bool)o["toHull"]!;
+                }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)
                 {
@@ -592,8 +596,7 @@ public sealed class DesignEditor
                 var g = a.Group != 0 ? a.Group : b.Group != 0 ? b.Group : d.NewId();
                 foreach (var r in d.Rooms)
                     if (r == a || r == b || (r.Group != 0 && (r.Group == a.Group || r.Group == b.Group)))
-                        r.Group = g;
-                b.Kind = a.Kind;
+                        (r.Group, r.Kind, r.ToHull) = (g, a.Kind, a.ToHull); // one room: one kind, one way to the skin
                 return "";
             }
             case "addCubby":
