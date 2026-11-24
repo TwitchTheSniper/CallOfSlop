@@ -282,7 +282,7 @@ public static partial class ConstructLifters
         Array.Clear(_padHeld, 0, j.KindN);
         Array.Clear(_padReach, 0, j.KindN);
         Array.Clear(_ownHeld, 0, j.KindN);
-        ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
+        ConstructStation.Bay(sc, t, out var floor, out var bayRot, out var bay);
         var seen = 0;
         // The station's own pick pads first (ConstructStationPads.cs): its crane reaches every step, so all a pad holds of a kind it
         // lifts counts as held; a pad an arm also serves is counted once, here.
@@ -318,8 +318,8 @@ public static partial class ConstructLifters
                 if (!CanWorkNow(world, c, l))
                     continue; // (no power, broken, its Run held off or stuck: its pads' pieces are ordered as if it weren't there)
                 Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
-                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
-                    continue;
+                if (!NearBay(ld, shoulder, lr, floor, bayRot, bay))
+                    continue; // (a crane only over the bay: the same test as ServesPad's, or a pad it can't bring here counts as held)
                 var any = false;
                 for (var k = 0; k < l.PointN; k++)
                 {

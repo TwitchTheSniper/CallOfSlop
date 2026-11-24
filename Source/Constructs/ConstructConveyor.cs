@@ -1167,6 +1167,21 @@ public static class ConstructConveyor
         var crane = ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
         if (!crane && !PassesThrough(c, r.To, piece))
             return; // (no crane picks at the run's end and no out run to roll on to: it goes on onto the bed as before, never held there for ever)
+        if (AskedOf(c, maker, piece, out var id) is not (>= 0 and var t))
+            return;
+        if (!crane && !ThroughReaches(world, c, r.To, piece, t, 0))
+            return; // (rolling on would leave it where nothing takes it to the order: onto the bed as before)
+        (rider.Dest, rider.Tag, rider.Flags) = (c.Parts[t].Store, id, 0);
+    }
+
+    /// <summary>
+    /// Server: the open order (a Crafting Terminal's or a building station's) that asked machine <paramref name="maker"/> for a piece of
+    /// kind <paramref name="piece"/>: the part that holds it (its store is a rider's Dest, <paramref name="id"/> its Tag), or -1. The first
+    /// in part order, as <see cref="PastBed"/> has always taken it. Allocates nothing.
+    /// </summary>
+    public static int AskedOf(Construct c, int maker, ConstructPartDef piece, out ushort id)
+    {
+        id = 0;
         for (var t = 0; t < c.PartCount; t++)
         {
             if (c.Parts[t].Craft is not { Count: > 0 } q)
@@ -1176,13 +1191,12 @@ public static class ConstructConveyor
                 ref readonly var o = ref q.Items[k];
                 if (o.Asked > 0 && o.Where == maker && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
                 {
-                    if (!crane && !ThroughReaches(world, c, r.To, piece, t, 0))
-                        return; // (rolling on would leave it where nothing takes it to the order: onto the bed as before)
-                    (rider.Dest, rider.Tag, rider.Flags) = (c.Parts[t].Store, o.Id, 0);
-                    return;
+                    id = o.Id;
+                    return t;
                 }
             }
         }
+        return -1;
     }
 
     /// <summary>Does a piece on a run into bed Core <paramref name="to"/> ride past the bed (made for another's order: <see cref="PastBed"/>)? Either peer (a rider's Dest is on the wire).</summary>
@@ -1204,8 +1218,8 @@ public static class ConstructConveyor
 
     /// <summary>
     /// Server: does rolling a piece of kind <paramref name="d"/> on across bed Core <paramref name="to"/>'s machine bring it to where order
-    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, or a run's
-    /// end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
+    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, a Router
+    /// (it sends the piece on by the Routers' rule), or a run's end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
     /// </summary>
     private static bool ThroughReaches(ConstructWorld world, Construct c, int to, ConstructPartDef d, int holder, int depth)
     {
@@ -1219,6 +1233,8 @@ public static class ConstructConveyor
                 return true;
             if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
                 return ThroughReaches(world, c, r.To, d, holder, depth + 1);
+            if (c.DefOf(r.To).IsRouter)
+                return ConstructLogistics.Reaches(c, r.To, holder); // (a Router with a way to the holder sends it on: to the order's holder by a way that takes it, else to storage, never lost; a piece no pad can hold was shorn into offcuts here once pads stopped taking its address, 2026-11-24)
         }
         return r.Count == 2 && RollerRuns.IsRun(c, o) && ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
     }
