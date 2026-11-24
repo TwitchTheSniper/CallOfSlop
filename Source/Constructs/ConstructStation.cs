@@ -34,15 +34,25 @@ public sealed partial class StationJob
     public ushort LastPart = ushort.MaxValue; // the part fitted last, on Body (clients: where the fitting effect goes)
     public byte FitSeq, LinkSeq; // count up with each part fitted and each link laid (clients: an effect when one changes)
     public string Note = ""; // what it waits for, by name; why it failed
-    // The fitting arms (design page drawing 18: one per 16 Bay Blocks; protocol 394): each carries a part from the hold to its place, and
-    // it goes on when the carry ends. What both peers hold: each arm's carry count, its part, its length and where it goes (the top of
-    // the part's place, in the bay's frame: the middle of its floor, the Core's turn). Ticks 0: the arm is idle.
+    // The arm rovers (the rover docks, ConstructStationRovers.cs; protocol 468): one a dock, the Core's first. What both peers hold: each
+    // rover's trip count, its trip's length in ticks (0: it stands still), the part it carries, the trip itself, and where it stands when
+    // it stands still (set false: parked on its pad).
     public readonly byte[] ArmSeq = new byte[ConstructStation.MaxArms];
     public readonly ushort[] ArmTicks = new ushort[ConstructStation.MaxArms];
     public readonly ushort[] ArmDef = new ushort[ConstructStation.MaxArms];
-    public readonly Vector3[] ArmAt = new Vector3[ConstructStation.MaxArms];
-    public readonly bool[] ArmOffPad = new bool[ConstructStation.MaxArms]; // ...it takes its part off a pick pad of the station's own, not the hold (protocol 421)
-    public readonly Vector3[] ArmPick = new Vector3[ConstructStation.MaxArms]; // ...and where the hook takes it there (the bay's frame)
+    public readonly RoverPlan[] Rov = MakePlans();
+    public readonly Vector2[] RovAt = new Vector2[ConstructStation.MaxArms];
+    public readonly float[] RovH = new float[ConstructStation.MaxArms];
+    public readonly Vector3[] RovHook = new Vector3[ConstructStation.MaxArms];
+    public readonly bool[] RovSet = new bool[ConstructStation.MaxArms];
+
+    private static RoverPlan[] MakePlans()
+    {
+        var a = new RoverPlan[ConstructStation.MaxArms];
+        for (var k = 0; k < a.Length; k++)
+            a[k] = new RoverPlan();
+        return a;
+    }
 
     // ---- Server only.
     public ConstructBuild.Blueprint? Bp;
@@ -75,19 +85,38 @@ public sealed partial class StationJob
     public (ushort Def, int Version) RoomFail; // the part and the hold's version when making room last failed: not tried again until the hold changes
     public readonly List<(ushort Def, int Count, bool Loose)> Return = new(); // parts given back after a cancel or a release, a few a step
     public double CostMs, WorstMs;
-    public readonly int[] ArmStep = [-1, -1, -1, -1, -1, -1, -1, -1]; // each arm's step on its way (-1: idle; MaxArms long)
-    public readonly int[] ArmLeft = new int[ConstructStation.MaxArms]; // ...ticks until it goes on
-    public readonly ushort[] ArmPad = [ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue, ushort.MaxValue]; // ...the pick pad it takes its part off (MaxValue: the hold; ConstructStationPads.cs)
+    public readonly int[] ArmStep = Filled(-1); // each rover's step on its way (-1: none; MaxArms long)
+    public readonly int[] ArmLeft = new int[ConstructStation.MaxArms]; // ...ticks until its trip ends
+    public readonly ushort[] ArmPad = FilledU(ushort.MaxValue); // ...the pick pad it takes its part off (MaxValue: none; ConstructStationPads.cs)
+    public readonly int[] RovIdle = new int[ConstructStation.MaxArms]; // ticks each rover has stood idle off its pad
+    public readonly RoverPlan Try = new(); // (a trip being planned)
+    public int[] StepRank = [], RankOrder = []; // each step's place in the build order (keel, under the lowest deck, deck by deck), and the steps in that order
+    public int ArmGap = 1; // ticks since the rovers' last look (their caller looks every tick while one moves, else every half second)
+    public int GateRank, GateStall; // the lowest rank with a step still to fit; ticks without a fit (a stall lets the next rank go after 90 s)
+    public Vector2 KeepLo, KeepHi; // the build's footprint in the bay's frame (the rovers' keep-out ring)
+    public float BuiltTop; // the highest part fitted so far over the bay's floor
+
+    private static int[] Filled(int v)
+    {
+        var a = new int[ConstructStation.MaxArms];
+        Array.Fill(a, v);
+        return a;
+    }
+
+    private static ushort[] FilledU(ushort v)
+    {
+        var a = new ushort[ConstructStation.MaxArms];
+        Array.Fill(a, v);
+        return a;
+    }
+
     public int ArmWait; // server: ticks before idle arms look again after a look found nothing (a long blueprint's scan isn't run every tick)
     public long Started; // Stopwatch ticks at Start (the log's start-to-drivable time)
 
     // ---- Client only: the effects it has shown.
     public byte SeenFit, SeenLink;
     public readonly byte[] ArmSeen = new byte[ConstructStation.MaxArms];
-    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each arm's carry began, on this peer's clock
-    public readonly Vector3[] ArmFrom = new Vector3[ConstructStation.MaxArms]; // where each arm stood when its carry began (the bay's frame: x, the hook's height, z)
-    public readonly Vector3[] ArmLast = new Vector3[ConstructStation.MaxArms]; // ...and where it was drawn last
-    public readonly bool[] ArmDrawn = new bool[ConstructStation.MaxArms]; // ...once it has been
+    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each rover's trip began, on this peer's clock
     public byte HeardFit, HeardLink;
     public double FitAt, LinkAt2;
 }
@@ -137,16 +166,11 @@ public static partial class ConstructStation
 
     public const float MastStep = 2f; // m of bay height a Mast Block stacked on each corner adds
     public const float LowBay = 2f; // m: a bay with no masts builds things this low
-    public const int BlocksPerArm = 16; // a fitting arm for every this many Bay Blocks in the bay (at least one)
-    public const int MaxArms = 8; // (a 128-block bay has them all; ArmStep is this long, and the wire sends an arm by its index)
+    public const int MaxArms = 16; // docks a station takes (the Core and 15 Dock Expansions; ArmStep is this long, and the wire sends a rover by its index)
 
     /// <summary>The side of the corner cells a build may not take (the masts stand there), or 0 when the bay has no masts.</summary>
     public static float BayCorner(Construct c, int part) =>
         MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0 && MachineBlocks.CornerColumns(c, asm) > 0 ? c.Parts[asm.Core].D.BlockCell : 0f;
-
-    /// <summary>The station's fitting arms: one per <see cref="BlocksPerArm"/> Bay Blocks in its bay, at least one (either peer: both find the same assembly).</summary>
-    public static int Arms(Construct c, int part) =>
-        MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0 ? Math.Clamp(asm.W * asm.L / BlocksPerArm, 1, MaxArms) : 1;
 
     /// <summary>The bay in the world: the middle of its floor (the Bay Blocks' top), its turn, its size (x across, y up, z along).</summary>
     public static void Bay(Construct c, int part, out Vector3 floor, out Quaternion rot, out Vector3 size)
@@ -545,7 +569,7 @@ public static partial class ConstructStation
         {
             j.BayLooks = BayEvery;
             j.Batched = HasHoldingBay(world, c, t);
-            j.PadBatched = HasPickPads(world, c, t, j);
+            j.PadBatched = !c.DefOf(t).StationNoHold && HasPickPads(world, c, t, j); // (a station with no hold orders only what a step can take: its pads are its hold)
         }
         if (j.ParkFail > 0)
             j.ParkFail--;
@@ -1000,6 +1024,7 @@ public static partial class ConstructStation
         if (kind >= 0)
             j.KindFit[kind]++;
         j.LastPart = (ushort)j.PartOf[k];
+        Fitted(c, t, j, k, ConstructParts.Find(bp.Steps[k].Part)); // (the rovers' gate and carry height)
         world.FitThisTick = true; // (one fit a tick a world, whoever fits: ConstructLifters.cs)
         j.FitSeq++;
         world.StationChanged(c);
@@ -1276,126 +1301,6 @@ public static partial class ConstructStation
 
     // ---- The fitting arms (design page drawing 18) ----------------------------------------------------------------------------
 
-    /// <summary>
-    /// Server: the arms' tick. An arm with a part on its way counts down its carry (<see cref="FitTicksFor"/>: as long as a fit took
-    /// before) and fits it when it ends, one fit a tick a world; each idle arm then takes the next ready step the hold has a part for and
-    /// no other arm carries. The part leaves the hold when it goes on, so a player who takes it first only sends the arm back empty.
-    /// True while any arm is on its way.
-    /// </summary>
-    private static bool StepArms(ConstructWorld world, Construct c, int t, StationJob j, CStore tray)
-    {
-        var n = Arms(c, t);
-        var busy = false;
-        for (var a = 0; a < MaxArms; a++)
-        {
-            var k = j.ArmStep[a];
-            if (k < 0)
-                continue;
-            if (a >= n || k >= j.PartOf.Length)
-            {
-                Idle(world, c, j, a); // (the bay lost blocks: that arm is gone)
-                continue;
-            }
-            if (--j.ArmLeft[a] > 0 || world.FitThisTick && (j.ArmLeft[a] = 1) == 1)
-            {
-                busy = true;
-                continue;
-            }
-            var pad = j.ArmPad[a]; // (before Idle clears it)
-            Idle(world, c, j, a);
-            if (j.PartOf[k] != -1)
-                continue; // (a lifter got there first)
-            var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-            if (j.StepKind[k] is var sk and >= 0 && j.KindLaid[sk] ? !TakeLaid(world, c, t, d) : pad != ushort.MaxValue ? pad >= c.PartCount || world.StoreOf(c, pad) is not { } pst || !world.StationTake(c, pad, pst, d) : !world.StationTake(c, t, tray, d))
-                continue; // (taken from the hold or the pad meanwhile, or a laid part's stock gone: it is looked for again)
-            if (pad != ushort.MaxValue)
-                Console.WriteLine($"[station] body {c.Id} part {t}: arm {a} took a {d.Name} ({d.Mass / 1000f:0.#} t) off its pick pad (part {pad})");
-            world.CraftChanged(c);
-            FitOne(world, c, t, j, k);
-            j.ArmWait = 0; // (a part in: the next may be ready now)
-            if (j.State != StationState.Building)
-                return false;
-        }
-        if (j.ArmWait > 0 && --j.ArmWait > 0)
-            return busy;
-        for (var a = 0; a < n; a++)
-        {
-            if (j.ArmStep[a] >= 0)
-                continue;
-            var k = ArmPick(world, c, t, j, tray, out var from);
-            if (k < 0)
-            {
-                j.ArmWait = busy ? OrderEvery : 0; // (nothing to carry now: look again at the order pass's rate; with no arm busy the step itself waits that long)
-                break;
-            }
-            var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-            j.ArmStep[a] = k;
-            j.ArmLeft[a] = FitTicksFor(d);
-            j.ArmTicks[a] = (ushort)j.ArmLeft[a];
-            j.ArmDef[a] = (ushort)d.Id;
-            j.ArmAt[a] = ArmTarget(c, t, j, k, d);
-            j.ArmPad[a] = from < 0 ? ushort.MaxValue : (ushort)from;
-            j.ArmOffPad[a] = from >= 0;
-            j.ArmPick[a] = from >= 0 ? PadPickAt(c, t, from, d) : default;
-            j.ArmSeq[a]++;
-            world.StationChanged(c);
-            busy = true;
-        }
-        return busy;
-    }
-
-    private static bool ArmsBusy(StationJob j)
-    {
-        foreach (var k in j.ArmStep)
-            if (k >= 0)
-                return true;
-        return false;
-    }
-
-    private static void Idle(ConstructWorld world, Construct c, StationJob j, int a)
-    {
-        j.ArmStep[a] = -1;
-        j.ArmTicks[a] = 0;
-        j.ArmPad[a] = ushort.MaxValue;
-        world.StationChanged(c);
-    }
-
-    /// <summary>Every arm idle (a job starts, stops or is done fitting).</summary>
-    private static void ResetArms(ConstructWorld world, Construct c, StationJob j)
-    {
-        j.ArmWait = 0;
-        for (var a = 0; a < MaxArms; a++)
-            if (j.ArmStep[a] >= 0)
-                Idle(world, c, j, a);
-    }
-
-    /// <summary>
-    /// The next ready step whose part the hold (or a pick pad of the station's own, <paramref name="from"/> its part; -1: the hold) has more
-    /// of than the arms already carry from there, and that no arm carries; -1: none.
-    /// </summary>
-    private static int ArmPick(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, out int from)
-    {
-        from = -1;
-        while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
-            j.Cursor++;
-        for (var k = j.Cursor; k < j.PartOf.Length; k++)
-        {
-            if (j.PartOf[k] != -1 || j.StepKind[k] is not (var kind and >= 0) || Array.IndexOf(j.ArmStep, k) >= 0 || !Ready(j, k))
-                continue;
-            if (j.KindLaid[kind])
-            {
-                if (ConstructParts.Get(j.KindDef[kind]) is { } ld && LaidReady(world, c, t, ld))
-                    return k; // (laid from linked stock: no part in the hold)
-                continue;
-            }
-            if (ConstructParts.Get(j.KindDef[kind]) is not { } d || PickFrom(world, c, t, j, tray, kind, d) is not (var src and >= -1))
-                continue;
-            from = src;
-            return k;
-        }
-        return -1;
-    }
-
     /// <summary>Where an arm sets step <paramref name="k"/>'s part: the top of its place (the costing's plan), in the bay's frame.</summary>
     private static Vector3 ArmTarget(Construct c, int t, StationJob j, int k, ConstructPartDef d)
     {
@@ -1565,6 +1470,7 @@ public static partial class ConstructStation
             j.Fitted = j.LinksDone = 0;
             j.Cursor = 0;
         }
+        BuildOrder(c, t, j); // (the rovers' order: keel, under the lowest deck, deck by deck; and the build's keep-out ring)
         j.State = StationState.Building;
         ResetArms(world, c, j);
         j.FitTicks = World.TickRate / 2;
@@ -2133,13 +2039,15 @@ public static partial class ConstructStation
                 Rekind(j);
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
+                (j.GateRank, j.GateStall, j.BuiltTop) = (0, 0, 0f);
                 ResetArms(world, c, j);
                 j.Note = "";
                 world.StationChanged(c);
             }
         }
+        var moving = (j.State != StationState.Building || j.Fitted >= j.Steps) && TickTrips(world, c, t, j); // (rovers driving home)
         if (j.State != StationState.Building)
-            return j.Return.Count > 0 || j.State == StationState.Done && j.Repeat > 0
+            return moving || j.Return.Count > 0 || j.State == StationState.Done && j.Repeat > 0
                 || j.State == StationState.Done && j.Body != 0 && j.RolledBody != j.Body && j.Role != 1 && !Dresses(j) && ConstructRollOut.RunOut(c, t) >= 0; // (open until its build has rolled out)
         if (--j.FitTicks > 0)
             return true;
@@ -2160,11 +2068,11 @@ public static partial class ConstructStation
         }
         if (j.Fitted < j.Steps)
         {
-            j.FitTicks = StepArms(world, c, t, j, tray) ? 1 : OrderEvery; // (an arm on its way: every tick; else a look every half second)
+            j.FitTicks = j.ArmGap = StepArms(world, c, t, j, tray) ? 1 : OrderEvery; // (an arm on its way: every tick; else a look every half second)
             return j.State == StationState.Building;
         }
         if (ArmsBusy(j))
-            ResetArms(world, c, j); // (every step is in: an arm left holding one a lifter fitted goes idle)
+            ResetArms(world, c, j); // (every step is in: a rover left carrying one a lifter fitted drives home)
         if (b == null)
             return true;
         if (j.LinkAt < j.Links)
@@ -2208,7 +2116,7 @@ public static partial class ConstructStation
             if (c.Parts[i].Station is not { } j)
                 continue;
             w.U16((ushort)i).U8((byte)j.State).Str(j.Name).U16(j.Fitted).U16(j.Steps).U16(j.LinksDone).U16(j.Links).U16(j.Repeat).U16(j.Body).U16(j.LastPart).U8(j.FitSeq).U8(j.LinkSeq).Str(j.Note);
-            WriteArms(w, j); // (protocol 394)
+            WriteArms(w, j); // (protocol 468: the rovers)
             ConstructStationTree.Write(w, j); // (protocol 324: its role and its uses' tree)
             n++;
         }
@@ -2246,46 +2154,6 @@ public static partial class ConstructStation
             (j.State, j.Name, j.Fitted, j.Steps, j.LinksDone, j.Links, j.Repeat, j.Body, j.LastPart, j.FitSeq, j.LinkSeq, j.Note) = (state, name, fitted, steps, linksDone, links, repeat, body, last, fitSeq, linkSeq, note);
             ReadArms(ref r, j);
             ConstructStationTree.Read(ref r, j);
-        }
-    }
-
-    /// <summary>The arms on their way: each one's index, carry count, length, part and target.</summary>
-    private static void WriteArms(PacketWriter w, StationJob j)
-    {
-        var n = 0;
-        foreach (var t in j.ArmTicks)
-            if (t > 0)
-                n++;
-        w.U8((byte)n);
-        for (var a = 0; a < MaxArms; a++)
-            if (j.ArmTicks[a] > 0)
-            {
-                w.U8((byte)a).U8(j.ArmSeq[a]).U16(j.ArmTicks[a]);
-                ConstructStorage.WriteDef(w, j.ArmDef[a]);
-                w.CmVec(j.ArmAt[a]);
-                w.U8((byte)(j.ArmOffPad[a] ? 1 : 0)); // (protocol 421: off a pick pad, and where)
-                if (j.ArmOffPad[a])
-                    w.CmVec(j.ArmPick[a]);
-            }
-    }
-
-    private static void ReadArms(ref PacketReader r, StationJob? j)
-    {
-        if (j != null)
-            Array.Clear(j.ArmTicks);
-        int n = r.U8();
-        for (var k = 0; k < n; k++)
-        {
-            int a = r.U8();
-            var seq = r.U8();
-            var ticks = r.U16();
-            var def = ConstructStorage.ReadDef(ref r);
-            var at = r.CmVec();
-            var offPad = r.U8() != 0;
-            var pick = offPad ? r.CmVec() : default;
-            if (j == null || a >= MaxArms)
-                continue;
-            (j.ArmSeq[a], j.ArmTicks[a], j.ArmDef[a], j.ArmAt[a], j.ArmOffPad[a], j.ArmPick[a]) = (seq, ticks, def, at, offPad, pick);
         }
     }
 

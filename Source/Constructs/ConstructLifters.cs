@@ -1763,7 +1763,7 @@ public static partial class ConstructStation
             if (j.PartOf[k] != -1)
                 continue;
             looked++;
-            if (!Ready(j, k) || j.StepKind[k] < 0)
+            if (!Ready(j, k) || !Gated(j, k) || j.StepKind[k] < 0)
                 continue;
             var def = j.KindDef[j.StepKind[k]];
             if (ConstructParts.Get(def) is not { } d || !ConstructLifters.Carries(ld, d))

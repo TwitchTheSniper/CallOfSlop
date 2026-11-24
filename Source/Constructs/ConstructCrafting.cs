@@ -228,9 +228,14 @@ public static class ConstructCrafting
             int to = r.To;
             for (var hop = 0; hop < 8 && to != t; hop++)
             {
-                if (to < c.PartCount && c.DefOf(to).IsRouter && ConstructLogistics.Reaches(c, to, t))
+                if (to < c.PartCount && c.DefOf(to).IsRouter && (ConstructLogistics.Reaches(c, to, t) || RouterToPad(c, to, t)))
                 {
                     to = t; // (a Router sends a fetched piece on to its tray: ConstructLogistics)
+                    break;
+                }
+                if (OnOwnPad(c, to, t))
+                {
+                    to = t; // (a station with no hold: its pieces ride to its pick pads, and its rovers take them there)
                     break;
                 }
                 // Through a join (one conveyor out); a splitter sends pieces in turn, so it is no route.
@@ -250,6 +255,21 @@ public static class ConstructCrafting
                 return (short)k;
         }
         return -1;
+    }
+
+    /// <summary>Is part <paramref name="to"/> a tile of station <paramref name="t"/>'s own pick pads, the station having no hold (StationNoHold)?</summary>
+    private static bool OnOwnPad(Construct c, int to, int t) =>
+        to < c.PartCount && t < c.PartCount && c.DefOf(t).StationNoHold && c.DefOf(to).IsLayDownPad && ConstructStation.IsOwnPad(c, t, ConstructPads.Owner(c, to));
+
+    /// <summary>Has Router <paramref name="router"/> a way onto one of station <paramref name="t"/>'s own pick pads (a station with no hold)?</summary>
+    private static bool RouterToPad(Construct c, int router, int t)
+    {
+        if (!c.DefOf(t).StationNoHold)
+            return false;
+        for (var j = 0; j < c.RouteCount; j++)
+            if (c.Routes[j].Type == RouteType.Conveyor && c.Routes[j].To < c.PartCount && OnOwnPad(c, c.Routes[j].To, t) && ConstructLogistics.Reaches(c, router, c.Routes[j].To))
+                return true;
+        return false;
     }
 
     /// <summary>"3 machines, 5 stores" (and its consoles): what the terminal sees, for its look line.</summary>
@@ -784,7 +804,7 @@ public static class ConstructCrafting
         };
     }
 
-    private const string RidingToHold = "riding to the hold";
+    private const string RidingToHold = "riding to the hold", RidingToPad = "riding to its pick pad", NoPadRoom = "held: waits for room on a pick pad";
     private const string LooseHeld = "held, cancel it: "; // (its own prefix: the step keeps this note without making it again)
 
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
@@ -1275,6 +1295,12 @@ public static class ConstructCrafting
                     }
                     continue;
                 }
+                if (fits == 3 && c.DefOf(t).StationNoHold)
+                {
+                    state = CraftState.Held; // (a station with no hold: it waits at its store until a pick pad has room, as its rovers clear them)
+                    note = NoPadRoom;
+                    continue;
+                }
                 if (fits == 3)
                 {
                     // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
@@ -1378,7 +1404,7 @@ public static class ConstructCrafting
                 // What its machine made for it is on the conveyors to this tray (leftovers 3: a station's note still read "queued at the
                 // Assembler" while the container rode): said as riding, as a fetched piece is, until Arrived counts it in.
                 state = CraftState.Riding;
-                note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? c.DefOf(t).StationNoHold ? RidingToPad : RidingToHold : "");
                 if (note != (o.Note ?? ""))
                     changed = true;
             }
@@ -1388,7 +1414,7 @@ public static class ConstructCrafting
                 // A piece of it held at a Router says where, by the Router's name (phase 4c), looked at every fifth step as a queued note is.
                 note = o.State == CraftState.Riding ? o.Note ?? "" : "";
                 if (o.State != CraftState.Riding || o.Age++ % 5 == 0)
-                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? c.DefOf(t).StationNoHold ? RidingToPad : RidingToHold : "");
                 if (note != (o.Note ?? ""))
                     changed = true;
             }

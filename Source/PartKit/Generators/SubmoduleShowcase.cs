@@ -80,10 +80,11 @@ public sealed class SubmoduleShowcase : IPartGenerator
         steps.Add("{ \"part\": \"Foundation\", \"on\": 4, \"socket\": \"x+0\", \"by\": \"x-0\" }"); // 5: (4, 0, 4)
         steps.Add("{ \"part\": \"Building Station\", \"on\": 0, \"socket\": \"top01\", \"by\": \"-y.0.0\" }"); // 6: the main station
         steps.Add("{ \"part\": \"Building Station\", \"on\": 3, \"socket\": \"top01\", \"by\": \"-y.0.0\" }"); // 7: the sub-station
-        // Each station's bay (drawing 18): two Bay Blocks beside its Core, 2 x 4 m and, with no masts, 2 m high.
-        foreach (var core in new[] { 6, 7 })
-            foreach (var cell in new[] { "+x.1", "+x.2" })
-                steps.Add($"{{ \"part\": \"Bay Block\", \"on\": {core}, \"socket\": \"{cell}\", \"by\": \"-x\" }}"); // 8 to 11
+        // Each station's bay: two Bay Blocks out of its dock pad's mouth, 2 x 4 m (its rover parks on the Core's pad).
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 6, \"socket\": \"+x.0\", \"by\": \"-x\" }"); // 8
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 7, \"socket\": \"+x.0\", \"by\": \"-x\" }"); // 9
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 8, \"socket\": \"+x\", \"by\": \"-x\" }"); // 10
+        steps.Add("{ \"part\": \"Bay Block\", \"on\": 9, \"socket\": \"+z\", \"by\": \"-z\" }"); // 11 (beside, clear of the arm)
         // The arm: a Kit Loader Arm (4 m, 500 kg: what the fixed Loader Arm was, ArmKitMigrate), its Core's middle on the foundation's
         // top23, 0.18 m from where the fixed arm's shoulder stood.
         var first = steps.Count;

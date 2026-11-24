@@ -134,7 +134,27 @@ public static class ConstructRackPack
             at = sl.Z0Mm + sl.LenMm + gap;
         }
         if (i == st.SlabN && at + lenMm > hold)
-            return 4;
+        {
+            // No gap long enough, but the gaps together are (pieces taken out of the middle, as a station's rovers take them off a pad):
+            // the columns close up along the rack, in order, and it goes on the end.
+            var used = 0;
+            for (var k = 0; k < st.SlabN; k++)
+                used += st.Slabs![k].LenMm + gap;
+            if (used + lenMm > hold)
+                return 4;
+            if (dryRun)
+            {
+                slab = st.SlabN;
+                return 0;
+            }
+            at = 0;
+            for (var k = 0; k < st.SlabN; k++)
+            {
+                st.Slabs![k].Z0Mm = (ushort)at;
+                at += st.Slabs[k].LenMm + gap;
+            }
+            i = st.SlabN;
+        }
         slab = i;
         lane = 0;
         if (dryRun)

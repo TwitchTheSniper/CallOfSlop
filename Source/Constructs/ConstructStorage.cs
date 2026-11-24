@@ -587,7 +587,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open", "lift", "cargo"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth", "open", "lift", "cargo", "noHold"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -622,6 +622,7 @@ public static class ConstructStorage
                 if (d.StationLiftKg is < 0 or > 1e6f)
                     throw new ConstructPartException($"{file}: storage.pieces.lift is 0 to 1,000,000 kg, not {d.StationLiftKg}");
             }
+            d.StationNoHold = d.IsBuildStation && ConstructParts.Opt(pc, "noHold") is { ValueKind: JsonValueKind.True }; // (the rover docks: a Core with no hold, every piece ordered onto a pad; ConstructStationRovers.cs)
             d.IsPanelDesigner = d.IsCraftTerminal && ConstructParts.Opt(pc, "designer") is { ValueKind: JsonValueKind.True }; // (a Panel Designer: the terminal with the designer's panel, UiPanelDesigner.cs)
             if (d.IsPanelDesigner && ConstructParts.Opt(pc, "plinth") is { } pl)
             {

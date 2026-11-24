@@ -41,14 +41,8 @@ public sealed partial class ZeroDayWorks
             LaySmallPressBelts(join[0]); // (into the first Join's free west side: ZeroDayWorks.SmallPresses.cs)
             Belt(router, "Piece out 2", _blockAssembler!, "Piece in", high, General2, zFirst: true);
             Belt(router, "Piece out 3", rack, "Piece in", high, General2, zFirst: false);
-            // (the yard: south along bay 3's east side at 7.5 m, west along the shed's last aisle, down beside the station's Core, between it
-            // and the yard crane's column at x 51, into its Piece in on its west end: its Piece in 2 is where line D's transfer run ends)
-            var (a, fa) = PortOf(router, "Piece out");
-            var (b, _) = PortOf(_yardStation!, "Piece in");
-            var a1 = a + fa;
-            var drop = V(b.X + 0.15f, b.Y + 0.25f, -197.9f);
-            Link("conveyor", router, _yardStation!, "Piece out", "Piece in", General2, false, null,
-                Cut(a, a1, V(a1.X, high, a1.Z), V(a1.X, high, -195.5f), V(drop.X, high, -195.5f), V(drop.X, high, drop.Z), drop));
+            // (the yard station's Core is a rover dock with no hold since the rover docks, Sean 2026-11-24: pieces reach its bay by its pick
+            // pads, so the router's last way, which ran into the old Core's Piece in, stays open)
         }
 
         /// <summary>
