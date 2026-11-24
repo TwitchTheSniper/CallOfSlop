@@ -375,7 +375,7 @@ public static partial class ConstructPhysics
                 else if (c.Driven)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
                 if (t.Valve >= 0)
-                    want = ValveWant(c, t.Valve, want);
+                    want = ValveWant(c, t.Valve, want, t.Scanned && c.StabOwns);
             }
             if (t.LightDelay > 0)
                 Lighting(ref t, ref want, dt);
@@ -545,7 +545,7 @@ public static partial class ConstructPhysics
             {
                 want = owned && t.Scanned ? Math.Clamp(t.Command, 0, 1) : d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
                 if (t.Valve >= 0)
-                    want = ValveWant(c, t.Valve, want);
+                    want = ValveWant(c, t.Valve, want, owned && t.Scanned);
             }
             if (t.LightDelay > 0)
                 Lighting(ref t, ref want, dt);
@@ -629,16 +629,18 @@ public static partial class ConstructPhysics
     /// <summary>A bell with no Igniter in its train, asked to burn from cold, waits <see cref="CThruster.LightDelay"/> before its level rises (a warm one, off for a moment, relights at once).</summary>
     /// <summary>
     /// What a bell asks with a Throttle Valve in its train: wired, the valve's Throttle in (0..1) sets the level; unwired, its Level setting
-    /// holds the drive at most there. Either way a level above nothing is at least 5%, in 2% steps. A broken valve passes the ask on.
+    /// holds the drive at most there. Either way a level above nothing is at least 5%, in 2% steps. A broken valve passes the ask on. A bell
+    /// a stabilizer commands (<paramref name="stab"/>) keeps its command, the wire only holding it at most there as the setting does.
     /// </summary>
-    private static float ValveWant(Construct c, int valve, float want)
+    private static float ValveWant(Construct c, int valve, float want, bool stab)
     {
         if (valve >= c.PartCount)
             return want;
         ref var v = ref c.Parts[valve];
         if (v.Broken)
             return want;
-        var w = v.InCount > 0 ? Math.Clamp(v.In, 0, 1) : MathF.Min(want, ConstructConfig.Get(v, v.D, CfgKey.Strength, 100) / 100f);
+        var hold = v.InCount > 0 ? Math.Clamp(v.In, 0, 1) : ConstructConfig.Get(v, v.D, CfgKey.Strength, 100) / 100f;
+        var w = v.InCount > 0 && !stab ? hold : MathF.Min(want, hold);
         return w <= 0.005f ? 0 : MathF.Max(0.05f, MathF.Round(w * 50) / 50);
     }
 
