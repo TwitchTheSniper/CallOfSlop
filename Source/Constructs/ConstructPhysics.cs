@@ -195,9 +195,9 @@ public static partial class ConstructPhysics
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
-            if (Pass != 0 && !InPass(c))
+            if (c.Cruise || Pass != 0 && !InPass(c))
             {
-                // (another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
+                // (a cruising ship, moved by its rail after the step (ConstructCruise.cs), or another pass's body that one of this pass's touches: met as a fixed obstacle where it is, never moved, timed or posed here: ConstructFar.cs)
                 (_dyn[i], _jact[i], _invI[i]) = (false, false, default);
                 continue;
             }
@@ -453,11 +453,12 @@ public static partial class ConstructPhysics
                 continue; // (the far bodies' LOD: ConstructFar.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && !c.OnRail && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
+            var moving = !c.Cruise && (!c.Asleep && !c.OnRail && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0 || c.RotorLive) || EngineLive(c) || BeltMoving(c)); // (a cruising ship is moved by its rail: ConstructCruise.cs; cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
                 c.OnRail = false; // (stepped here: the physics' again, ConstructRails.cs)
+                ConstructCruise.End(c); // (a cruising ship changed or taken in hand: the same, ConstructCruise.cs)
                 _sim.Add(c);
             }
         }
@@ -478,7 +479,10 @@ public static partial class ConstructPhysics
                     continue;
                 b.SimMark = stamp;
                 if (Pass == 0 || InPass(b))
+                {
+                    ConstructCruise.End(b);
                     b.OnRail = false; // (something it may meet: the physics' again, from its true pose and speed, ConstructRails.cs; another pass's body is a fixed obstacle here, not stepped, so it stays on its rail)
+                }
             }
         }
         for (var k = 0; k < world.CouplingCount; k++)
@@ -488,6 +492,8 @@ public static partial class ConstructPhysics
             {
                 a.SimMark = b.SimMark = stamp;
                 a.OnRail = b.OnRail = false; // (both in this pass: stepped here)
+                ConstructCruise.End(a);
+                ConstructCruise.End(b);
             }
         }
         MarkConnectors(world, stamp);

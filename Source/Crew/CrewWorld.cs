@@ -1099,6 +1099,8 @@ public sealed class CrewWorld
         }
         if (s.Ai != null)
             s.Ai.Mode = s.Mode;
+        c.CruiseGoalOn = s.Ordered(Tick) && s.Order.Kind is OrderKind.GoTo or OrderKind.Retreat or OrderKind.Route or OrderKind.Deliver or OrderKind.Load or OrderKind.Unload or OrderKind.Mine;
+        c.CruiseGoal = s.Order.At; // (where its order takes it: a cruise spell ends before it gets there, ConstructCruise.cs)
         NavLook(c, s, host);
         Fill(c, s, host);
         if (Tick >= s.CaptainAt)
@@ -1150,7 +1152,10 @@ public sealed class CrewWorld
         if (def != null)
             s.Morale = Math.Clamp(def.MoraleStart - def.MoraleCrewLost * s.Lost - def.MoraleHullLost * (1 - s.Hull), 0, 1);
         if (host != null && host.Board(c, s))
+        {
+            c.NpcBusy = true; // (never cruising: ConstructCruise.cs)
             return; // (boarded, or a scuttle runs: GameCrewBoard.cs)
+        }
         var contact = s.Contact != 255 || s.ContactBody != 0;
         // Under an admiral's live order its own Flee lines are held off by the doctrine's discipline (a disciplined line holds until told to go).
         var held = s.Ordered(Tick) && s.Order.Kind != OrderKind.Retreat && Fleet.Of(s.Group) is { } grp ? 1 - grp.Doctrine.Discipline : 1f;
@@ -1159,6 +1164,7 @@ public sealed class CrewWorld
             : CrewGoal.Engage;
         if (goal == CrewGoal.Flee && s.Goal != CrewGoal.Flee && s.Group >= 0)
             Fleet.Report(this, s, FleetReport.NeedHelp, 0);
+        c.NpcBusy = goal != CrewGoal.Hold || contact || s.Boarded || s.ScStage != 0; // (a crew with something on its hands keeps its ship in the physics: ConstructCruise.cs)
 
         if (goal != s.Goal)
         {

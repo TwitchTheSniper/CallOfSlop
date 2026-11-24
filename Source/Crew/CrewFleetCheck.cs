@@ -37,6 +37,9 @@ public static class CrewFleetCheck
             ok &= CrewTerritoryCheck.Run(which, seconds); // (phase 4: territory and the far layer, CrewTerritoryCheck.cs)
         if (which.Equals("escort", StringComparison.OrdinalIgnoreCase))
             ok &= CrewAdmiralsCheck.Run(args); // (phase 6: a player's hired ships escort their mining ship, CrewAdmiralsCheck.cs)
+        _fleetFar = float.TryParse(Arg("--fleet-far"), out var ff) ? ff : 0;
+        if (args.Contains("--no-cruise", StringComparer.OrdinalIgnoreCase))
+            ConstructCruise.On = false; // (far NPC ships step on the far LOD as before: to compare, ConstructCruise.cs)
         if (which.Equals("scale", StringComparison.OrdinalIgnoreCase))
             ok &= Scale(int.TryParse(Arg("--fleet-scale"), out var n) ? n : 1000, int.TryParse(Arg("--fleet-awake"), out var k) ? k : 64,
                 int.TryParse(Arg("--group-size"), out var gs) ? Math.Clamp(gs, 1, CrewGroup.MaxShips) : CrewGroup.MaxShips, Arg("--crew-scale-ship") ?? "Small Helicopter",
@@ -44,6 +47,9 @@ public static class CrewFleetCheck
         Console.WriteLine($"fleet: {(ok ? "OK" : "FAILED")}");
         return ok ? 0 : 1;
     }
+
+    /// <summary><c>--fleet-far M</c>: the scale check's awake ships M metres from the person, sent on 3 km legs (far ships cruising: ConstructCruise.cs).</summary>
+    private static float _fleetFar;
 
     private static ConstructBuild.Blueprint Bp(string name) => ConstructBuild.FindBlueprint(name) ?? throw new InvalidOperationException($"no blueprint \"{name}\"");
 
@@ -454,7 +460,7 @@ public static class CrewFleetCheck
         {
             // The awake ones on a grid 70 m apart round the person (within 3 km), the rest 8 km out on a ring (asleep).
             var gap = MathF.Max(70, spread / side);
-            var at = i < awake ? new Vector3((i % side - side / 2) * gap, 0, (i / side - side / 2) * gap) : new Vector3(MathF.Cos(i * 0.01f) * 8000, 0, MathF.Sin(i * 0.01f) * 8000);
+            var at = i < awake ? new Vector3((i % side - side / 2) * gap + _fleetFar, 0, (i / side - side / 2) * gap) : new Vector3(MathF.Cos(i * 0.01f) * 8000, 0, MathF.Sin(i * 0.01f) * 8000);
             using (place.In())
             {
                 var c = CrewCheck.Build(w, bp, at, 0, place);
@@ -469,8 +475,8 @@ public static class CrewFleetCheck
         Console.WriteLine($"fleet scale: {n} {bp.Name} ({bodies[0].PartCount} parts each) built in {buildS:0} s, {crew.Fleet.Live} groups of up to {groupSize}, {awake} near the person; driver cap {CrewWorld.DriverCap}");
         // Each awake group goes somewhere: the admirals' orders drive their ships.
         for (var g = 0; g < CrewFleet.MaxGroups; g++)
-            if (crew.Fleet.Of(g) is { } grp && w.Get(grp.Flagship) is { } f && f.WorldCom.Length() < 4000)
-                crew.Fleet.Command(g, OrderKind.GoTo, f.WorldCom + new Vector3(0, 80, -800));
+            if (crew.Fleet.Of(g) is { } grp && w.Get(grp.Flagship) is { } f && (f.WorldCom - new Vector3(_fleetFar, 0, 0)).Length() < 4000)
+                crew.Fleet.Command(g, OrderKind.GoTo, f.WorldCom + new Vector3(0, 80, _fleetFar > 0 ? -3000 : -800));
         var people = new[] { Vector3.Zero };
         w.People[0] = Vector3.Zero;
         w.PeopleCount = 1; // (the far LOD: bodies past ConstructFar.Range from the person step every ConstructFar.Every ticks)
@@ -489,6 +495,7 @@ public static class CrewFleetCheck
         w.PhysicsMs = 0;
         Array.Clear(w.StepMs);
         ConstructFar.SimNear = ConstructFar.SimFar = 0;
+        ConstructCruise.Spells = ConstructCruise.Ticks = 0;
         Array.Clear(ConstructPhysics.PartMs);
         var farSum = 0L;
         var ticks = seconds * World.TickRate;
@@ -530,6 +537,11 @@ public static class CrewFleetCheck
             if (crew.ShipOf(c.Id) is not { Ai: not null })
                 (idle, idleFast) = (idle + 1, MathF.Max(idleFast, c.Vel.Length() + c.AngVel.Length()));
         }
+        Console.WriteLine($"fleet scale: cruise {(ConstructCruise.On ? "on" : "off")}: {ConstructCruise.Ticks / (double)ticks:0.0} ships cruising a tick on average, {ConstructCruise.Spells} spells, {ConstructCruise.Count} at the end");
+        var mean = Vector3.Zero;
+        foreach (var c in bodies.Take(awake))
+            mean += c.WorldCom / awake;
+        Console.WriteLine($"fleet scale: the awake ships' mean place at the end {mean.X:0} {mean.Y:0} {mean.Z:0}");
         Console.WriteLine($"fleet scale: {asleep} asleep at the end; {idle} undriven, the most moving of them at {idleFast:0.00} (speed + spin)");
         Console.WriteLine($"fleet scale: physics {w.PhysicsMs / ticks:0.00} ms a tick of the world's step; far bodies {farSum / (double)ticks:0} on average, stepped {ConstructFar.SimNear / (double)ticks:0} near and {ConstructFar.SimFar / (double)ticks:0} far a tick (every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m); fastest body {maxSpeed:0.0} m/s, lowest {lowest:0.0} m; the step's parts (links, power, weapons, logic, doors, physics, machines, rest) {string.Join(" ", w.StepMs.Select(x => (x / ticks).ToString("0.00")))} ms; physics' parts (list, bodies, contacts, solver, rest) {string.Join(" ", ConstructPhysics.PartMs.Select(x => (x / ticks).ToString("0.00")))} ms");
         // The network: one client standing with the person, a big world's poses for 60 pose ticks (the movers near it every time, far ones less often).
