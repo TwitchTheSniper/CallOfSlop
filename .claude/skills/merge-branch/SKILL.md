@@ -43,6 +43,6 @@ Nobody waits for a review: once the checks pass, merge and report it (CLAUDE.md,
 
 ## 4. After
 
-- Read main's CI run for the merge before launching the next piece of work. If it is red, fix it or revert the merge at once: every later merge hides which one broke it.
+- A thread doesn't wait for main's CI run after its PR merges (Sean, 2026-11-24): it reports the merge and finishes. The coordinator reads main's runs; when one is red it sends the failure back to the thread whose merge caused it, which fixes it or reverts the merge at once (every later merge hides which one broke it).
 - If it failed for a reason seen before, add the lesson to the `.claude/rules/` file that covers the code (one line: date, what went wrong, why, the rule).
 - Playtest board items the merge finishes are set to `done` (CLAUDE.md, "Player feedback").

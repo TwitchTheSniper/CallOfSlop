@@ -76,8 +76,11 @@ public sealed class CStore
     public byte SinkSeen; // a Scrap Breaker: the Progress the drawing last saw, when, and how fast it went (never sent: BreakerRender runs the sink on between sends)
     public double SinkAt;
     public float SinkRate;
-    public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
+    public byte OvenSeen; // a Bake Oven or an Extruder's billet press: the phase this peer last drew (never sent: BakeOvenRender.cs, ExtruderRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
+    public int PressTicks; // an Extruder's billet press: ticks into its phase (server only, never sent or saved: ConstructExtruderPress.cs)
+    public bool PressAsked; // ...a Cut signal came while its saw ran: kept for when the saw is through (server only)
+    public float PressNose; // ...where its puller last stood, from the die face (never sent: ExtruderRender.cs runs it home from there)
     public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
     public bool OvenFailed, OvenUnbaked; // a Bake Oven: its last bake or un-bake was refused at the end of the heat; that last was an un-bake (server only: ConstructBakeOven.cs)
     public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
@@ -151,6 +154,9 @@ public sealed class CStore
         OvenSeen = 0;
         OvenSince = 0;
         OvenParts = 0;
+        PressTicks = 0;
+        PressAsked = false;
+        PressNose = 0;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;
@@ -969,9 +975,9 @@ public static class ConstructStorage
         int n = r.U8();
         if (n > CStore.MaxSlots)
             throw new MalformedPacketException($"a store of {n} slots");
-        var (ovenSeen, ovenSince) = (s.OvenSeen, s.OvenSince); // (this peer's own clock for an oven's hood: a send mustn't restart it)
+        var (ovenSeen, ovenSince, nose) = (s.OvenSeen, s.OvenSince, s.PressNose); // (this peer's own clock for an oven's hood or a press's cycle: a send mustn't restart it)
         s.Reset(n);
-        (s.OvenSeen, s.OvenSince) = (ovenSeen, ovenSince);
+        (s.OvenSeen, s.OvenSince, s.PressNose) = (ovenSeen, ovenSince, nose);
         for (var k = 0; k < n; k++)
         {
             var def = ReadDef(ref r);

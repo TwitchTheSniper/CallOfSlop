@@ -725,8 +725,8 @@ public static unsafe class SunShadows
         ref var part = ref c.Parts[i];
         foreach (var b in c.DefOf(i).Boxes)
         {
-            if (b.Hidden || b.Glass > 0f)
-                continue;
+            if (b.Hidden || b.Glass > 0f || b.BySeams && b.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0))
+                continue; // (a block machine's box not drawn by its cell's welds casts nothing: a Die Block under its press, ExtruderRender.cs)
             if (b.Shape != 0 && MathF.Max(b.Half.X, MathF.Max(b.Half.Y, b.Half.Z)) >= ShapeMinHalf && PartShapes.Mesh(b.Shape) is { Length: > 0 } mesh)
             {
                 // A shape (a sloped hull plate, a wedge, a cylinder) casts as itself, not as the box it fills: a sloped plate's

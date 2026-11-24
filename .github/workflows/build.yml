@@ -50,7 +50,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     env:
-      SHARDS: 3 # parts a full suite is cut into, per system
+      SHARDS: 4 # parts a full suite is cut into, per system (3 until 2026-11-24: runs took ~8 min, 5 of them the self-test)
     outputs:
       only: ${{ steps.pick.outputs.only }}
       shards: ${{ steps.pick.outputs.shards }}
@@ -105,8 +105,11 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
+      # Roslyn analyzers off on Linux: they only add warnings (911, none an error) and cost about a quarter of the build
+      # (88 s against 67 s measured on 4 cores, 2026-11-24). Windows (every main run) keeps them, so main still builds
+      # with every analyzer and an analyzer error can't reach main unseen.
       - name: Build
-        run: dotnet build CallOfSlop.csproj -c Release -nologo
+        run: dotnet build CallOfSlop.csproj -c Release -nologo -p:RunAnalyzers=false
 
       # A plan PNG of every map this push changed (artifact "map-plans"), so a reviewer sees the layout without running
       # the game. The game's own plan (`--gen-plan`, the map kit) when the build has it, else tools/mapkit/plan_min.py

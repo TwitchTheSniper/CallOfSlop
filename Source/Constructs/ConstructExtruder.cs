@@ -243,6 +243,7 @@ public static partial class ConstructExtruder
         var product = ProductOf(c, part);
         if (product >= 0 && !c.Parts[product].D.IsExtrusion)
             product = -1; // (a bad link: nothing it can grow)
+        var press = d.ExtPress != null && IsPress(c, part);
         var asked = (p.State & CutPending) != 0;
         p.State &= unchecked((byte)~CutPending); // (one that met no piece goes unused)
         var len = product >= 0 ? c.Parts[product].D.ExKey.L : 0;
@@ -282,6 +283,10 @@ public static partial class ConstructExtruder
             asked = true; // (a Fan or an Airframe Former parts a piece off when it reaches the size asked; with a queue, its order's size)
         if (product >= 0 && !p.Broken && (asked || CutDueCm(c, part, p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
         {
+            if (press && Sawing(world, c, part, st, asked))
+                return false; // (a billet press: its hot saw runs across before the piece comes off: ConstructExtruderPress.cs)
+            if (press)
+                (asked, st.PressAsked) = (asked || st.PressAsked, false);
             if (forOrder && FormerPresets.PartOf(head) is { } made)
             {
                 // A former's preset (FormerPresets.cs): the catalogue part it names comes off in the piece's place, paid as the piece was.
@@ -342,6 +347,8 @@ public static partial class ConstructExtruder
             SetStall(world, st, ExtrudeStall.NoOrders);
             return false;
         }
+        if (press && Charging(world, c, part, st, product))
+            return false; // (a billet press: ram back, the charge filled, loaded and upset before a piece grows)
         var why = whole ? GrowWhole(world, query, c, part, st, product, keyed, headKey, air) : d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth, hasHead, head) : Grow(world, query, c, part, st, product, len, hasHead, head);
         SetStall(world, st, why);
         ConstructGatherer.SetBusy(world, st, why == ExtrudeStall.None);
@@ -809,9 +816,11 @@ public static partial class ConstructExtruder
     }
 
     /// <summary>Is a finished piece waiting on this machine's die for a chute (a Cut asked for, or its Cut every length reached)?</summary>
-    public static bool DueOff(Construct c, int part, int product)
+    public static bool DueOff(Construct c, int part, int product, CStore? st = null)
     {
         ref var p = ref c.Parts[part];
+        if (!OffTheSaw(c, part, st))
+            return false; // (a billet press: not until its saw is through)
         return (p.State & CutPending) != 0 || CutDueCm(c, part, p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
     }
 
@@ -1030,7 +1039,7 @@ public static partial class ConstructExtruder
             ExtrudeStall.NoOrders => ", waiting for orders (Clear on its screen: back to its own settings)",
             ExtrudeStall.OrderMaterial => $" - needs {(c.Parts[part].Orders is { Count: > 0 } q ? RecyclingTable.Current.NameOf(q.Head.Key.Material) : "another material")} for its order, holds {RecyclingTable.Current.NameOf(st.Material)}",
             ExtrudeStall.OrderTooLong => c.Parts[part].Orders is { Count: > 0 } lq ? $" - its order is {lq.Head.Key.L / 100f:0.##} m long, it makes {MaxLengthCm(c, part) / 100f:0.##} m now: {LongFix(d, lq.Head.Key.L, lq.Head.Key.W, lq.Head.Key.H)}, or Cancel it" : " - its order is longer than it makes now",
-            _ => st.Busy ? (wheel ? ", forming" : ", extruding") : ", waiting",
+            _ => st.Busy ? (wheel ? ", forming" : IsPress(c, part) ? ", " + PhaseName(PhaseOf(st)) : ", extruding") : ", waiting",
         };
     }
 
@@ -1144,7 +1153,7 @@ public static class ConstructExtruderParts
         const System.Text.Json.JsonValueKind Obj = System.Text.Json.JsonValueKind.Object;
         if (b.ValueKind != Obj || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner)
             throw new ConstructPartException($"{file}: storage \"extrude\" is an object (speed, die, at, maxSection, maxLength, pushForce) on a bin: what feeds it");
-        ConstructParts.Known(b, ["speed", "die", "at", "maxSection", "maxLength", "pushForce", "growLength", "blockPush", "blockPower"], $"{bw}.extrude");
+        ConstructParts.Known(b, ["speed", "die", "at", "maxSection", "maxLength", "pushForce", "growLength", "blockPush", "blockPower", "press"], $"{bw}.extrude");
         if (d.BulkMaterial != ConstructStorage.Any)
             throw new ConstructPartException($"{file}: an Extruder's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
         d.ExtSpeed = ConstructParts.Num(ConstructParts.Need(b, "speed", $"{bw}.extrude"), file, "storage.extrude.speed");
@@ -1173,6 +1182,19 @@ public static class ConstructExtruderParts
         {
             d.ExtBlockPower = ConstructParts.Num(bpw, file, "storage.extrude.blockPower");
             ConstructParts.Range(d.ExtBlockPower, 0, 1000000, file, "storage.extrude.blockPower");
+        }
+        if (ConstructParts.Opt(b, "press") is { } pr)
+        {
+            // A billet press's step seconds (fill, load, upset, saw, back) when Die Blocks are in its die (ConstructExtruderPress.cs).
+            if (pr.ValueKind != System.Text.Json.JsonValueKind.Array || pr.GetArrayLength() != 5)
+                throw new ConstructPartException($"{file}: storage.extrude.press is five seconds: fill, load, upset, saw, back");
+            var t = new float[5];
+            for (var k = 0; k < 5; k++)
+            {
+                t[k] = ConstructParts.Num(pr[k], file, "storage.extrude.press");
+                ConstructParts.Range(t[k], 0.1f, 60, file, "storage.extrude.press");
+            }
+            d.ExtPress = t;
         }
         Socket(d, file);
         d.IsExtruder = true;

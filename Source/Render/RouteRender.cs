@@ -196,6 +196,7 @@ public static class RouteRender
             LifterRender.Draw(gfx, world); // (Loader Arms: the boom, the hand and the piece on its move)
         ClampArmRender.Draw(gfx, world); // (station berths' clamp arms: the boom and head where each reaches)
         StationRender.Draw(gfx, world); // (Building Stations: the runway, a bridge an arm and the mast lamps: StationRender.cs)
+        ExtruderRender.Draw(gfx, world); // (Extruders: the silo's level glass, and on Die Blocks the billet press over them: ExtruderRender.cs)
         BakeOvenRender.Draw(gfx, world); // (Bake Ovens: the hood and its screws over the blocks: BakeOvenRender.cs)
         SmelterRender.Draw(gfx, world); // (Smelters: stacks, the charging belt, the hot-blast mains, the runner and its taps, the pigs: SmelterRender.cs)
         FoundryRender.Draw(gfx, world); // (Foundries: the crucibles tipping to pour, the launder, the moulds, the hood and its stack: FoundryRender.cs)
