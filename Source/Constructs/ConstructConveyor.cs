@@ -1218,8 +1218,8 @@ public static class ConstructConveyor
 
     /// <summary>
     /// Server: does rolling a piece of kind <paramref name="d"/> on across bed Core <paramref name="to"/>'s machine bring it to where order
-    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, or a run's
-    /// end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
+    /// holder <paramref name="holder"/> gets it: its own store, a pick pad of it (a station's own), across another bed machine on, a Router
+    /// (it sends the piece on by the Routers' rule), or a run's end a crane picks at? Follows the out runs a few machines deep; allocates nothing.
     /// </summary>
     private static bool ThroughReaches(ConstructWorld world, Construct c, int to, ConstructPartDef d, int holder, int depth)
     {
@@ -1233,6 +1233,8 @@ public static class ConstructConveyor
                 return true;
             if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
                 return ThroughReaches(world, c, r.To, d, holder, depth + 1);
+            if (c.DefOf(r.To).IsRouter)
+                return true; // (a Router sends it on: to the order's holder by a way that takes it, else to storage, never lost; a piece no pad can hold was shorn into offcuts here once pads stopped taking its address, 2026-11-24)
         }
         return r.Count == 2 && RollerRuns.IsRun(c, o) && ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
     }

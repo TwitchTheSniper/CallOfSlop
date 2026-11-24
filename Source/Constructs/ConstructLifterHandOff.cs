@@ -165,7 +165,7 @@ public static partial class ConstructLifters
         return lack;
     }
 
-    /// <summary>The lead at a point (the fewest hops) whose station lacks this kind (<paramref name="lacking"/>: else any), or -1.</summary>
+    /// <summary>The lead at a point (the fewest hops) whose station lacks this kind (<paramref name="lacking"/>: else any) and whose pad could ever hold it, or -1.</summary>
     private static int LeadAt(ConstructWorld world, ushort body, int part, LiftPointKind kind, ConstructPartDef d, ushort padHandle = 0, bool lacking = true, int self = 0)
     {
         var best = -1;
@@ -176,6 +176,8 @@ public static partial class ConstructLifters
                 continue;
             if (padHandle != 0 && (world.Get(ld.PadBody) is not { } pb || ld.Pad >= pb.PartCount || pb.Parts[ld.Pad].Store != padHandle))
                 continue;
+            if (world.Get(ld.PadBody) is not { } lpb || ld.Pad >= lpb.PartCount || world.StoreOf(lpb, ld.Pad) is not { } lps || NeverHolds(lpb, ld.Pad, lps, d))
+                continue; // (toward a pad that can never hold it: no way to the station, as PadLack says, 2026-11-24)
             if (!lacking || LeadLack(world, ld, d) + self > 0)
                 best = e;
         }

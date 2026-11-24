@@ -349,12 +349,20 @@ public static partial class ConstructLifters
                 if (at < 0 || (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0) is 2 or 3 || !CanWorkNow(world, c, l))
                     continue;
                 Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
-                if (ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down)
+                if (NearBay(ld, shoulder, lr, floor, bayRot, bay))
                     return true;
             }
         }
         return false;
     }
+
+    /// <summary>
+    /// Can lifter <paramref name="ld"/> (its shoulder and turn) work over a station's bay (<paramref name="floor"/>, <paramref name="bayRot"/>,
+    /// <paramref name="bay"/>: ConstructStation.Bay)? A crane when its box covers part of the bay (<see cref="CraneOverBay"/>), an arm by its
+    /// reach. Every count of what serves a station asks this one test (ServesPad, PadCounts). Allocates nothing.
+    /// </summary>
+    public static bool NearBay(LifterDef ld, Vector3 shoulder, Quaternion lr, Vector3 floor, Quaternion bayRot, Vector3 bay)
+        => ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down;
 
     /// <summary>
     /// Does a crane's box (across between its rails, along what both runs share) reach over any of a station's bay floor? A crane's
@@ -442,9 +450,11 @@ public static partial class ConstructLifters
 
     /// <summary>
     /// Can pad <paramref name="pad"/> never take a piece of kind <paramref name="d"/> (too big for its hold, not a piece, not a rack), as
-    /// a put there would refuse it (<see cref="ConstructConveyor.RackCheck"/>)? A full pad is not "never": its arms empty it.
+    /// a put there would refuse it (<see cref="ConstructConveyor.RackCheck"/>)? A full pad is not "never": its arms empty it. Its size is
+    /// asked apart, since RackCheck says "full" before "too big" (a full store pad would else take the address of a piece it can never hold).
     /// </summary>
-    public static bool NeverHolds(Construct b, int pad, CStore ps, ConstructPartDef d) => ConstructConveyor.RackCheck(b, pad, ps, d) is 1 or 2 or 3;
+    public static bool NeverHolds(Construct b, int pad, CStore ps, ConstructPartDef d)
+        => ConstructConveyor.RackCheck(b, pad, ps, d) is 1 or 2 or 3 || !ConstructRackPack.Fit(ConstructPads.RackDef(b, pad), d, out _, out _, out _);
 
     /// <summary>Server: is a rider's way to this pad (a station's large part) still wanted? Its order, or the build's lack.</summary>
     public static bool PadOrderOpen(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
