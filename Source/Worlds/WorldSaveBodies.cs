@@ -73,7 +73,7 @@ public sealed class WorldNamesRead
     public ushort[] Parts = [];
     public string[] PartNames = [];
     public string[] Keys = [];
-    public bool RowsKept = true; // the file names AssemblingTable.RowsMark: false moves its Assemblers' old recipe choices (LegacyChoice)
+    public int RowsLevel = AssemblingTable.Marks.Length - 1; // the newest AssemblingTable.Marks the file names (-1 none): an older one moves its Assemblers' old recipe choices (LegacyChoice)
     public byte[] Materials = [];
     public string[] MaterialNames = [];
     public readonly Dictionary<string, int> Missing = new();
@@ -93,7 +93,10 @@ public sealed class WorldNamesRead
         Keys = new string[n];
         for (var k = 0; k < n; k++)
             Keys[k] = r.Str();
-        RowsKept = Array.IndexOf(Keys, AssemblingTable.RowsMark) >= 0;
+        RowsLevel = -1;
+        for (var m = 0; m < AssemblingTable.Marks.Length; m++)
+            if (Array.IndexOf(Keys, AssemblingTable.Marks[m]) >= 0)
+                RowsLevel = m;
         n = r.Count(4);
         Materials = new byte[n + 1];
         MaterialNames = new string[n + 1];
@@ -708,6 +711,7 @@ public sealed partial class ConstructWorld
             throw new WorldFileException($"a construct of {n} parts");
         var stand = new bool[n];
         var parts = new CPart[n];
+        List<(int I, string Old)>? armsAt = null;
         byte[]? tiers = null; // (a Smelter saved at tier 2 to 5: its recipe choice is moved to the Core's list, ConstructRefining.SavedRecipe)
         for (var i = 0; i < n; i++)
         {
@@ -716,6 +720,8 @@ public sealed partial class ConstructWorld
             if (number < names.PartNames.Length && ConstructRefining.SavedTier(names.PartNames[number]) is var tier and > 1)
                 (tiers ??= new byte[n])[i] = (byte)tier;
             stand[i] = def == ConstructParts.None;
+            if (stand[i] && number < names.PartNames.Length && ArmKitMigrate.Gone(names.PartNames[number]) != null)
+                (armsAt ??= []).Add((i, names.PartNames[number])); // (a fixed arm whose part file went: its kit preset stands there below)
             parts[i].Def = stand[i] ? StandIn.Id : def;
         }
         for (var i = 0; i < n; i++)
@@ -842,8 +848,8 @@ public sealed partial class ConstructWorld
             var slot = Array.FindIndex(d.Config, e => !e.Bound && e.Key == names.Keys[key]);
             if (slot >= 0 && float.IsFinite(v) && tiers != null && tiers[part] > 1 && slot == d.CfgSlot[(int)CfgKey.Recipe])
                 v = ConstructRefining.SavedRecipe(d, tiers[part], v);
-            else if (slot >= 0 && float.IsFinite(v) && !names.RowsKept && d.IsAssembler && slot == d.CfgSlot[(int)CfgKey.Recipe])
-                v = AssemblingTable.Current.LegacyChoice(d.AsmMachine, v);
+            else if (slot >= 0 && float.IsFinite(v) && names.RowsLevel < AssemblingTable.Marks.Length - 1 && d.IsAssembler && slot == d.CfgSlot[(int)CfgKey.Recipe])
+                v = AssemblingTable.Current.LegacyChoice(d.AsmMachine, v, names.RowsLevel);
             if (slot >= 0 && float.IsFinite(v))
                 parts[part].Cfg[slot] = d.Config[slot].Clamp(v);
             else if (slot < 0 && d.TextSlots > 0 && float.IsFinite(v))
@@ -1176,9 +1182,15 @@ public sealed partial class ConstructWorld
         var doomed = 0;
         foreach (var gone in stand)
             doomed += gone ? 1 : 0;
+        List<(string, Vector3, byte, byte)>? arms = null;
+        if (armsAt != null)
+            foreach (var (ai, old) in armsAt)
+                (arms ??= []).Add((old, c.Parts[ai].Pos, c.Parts[ai].Rot, c.Parts[ai].Seg)); // (read before the stand-ins go and the parts renumber)
         if (doomed > 0)
         {
             RemoveParts(c, stand);
+            if (arms != null && Get(id) is { } ac)
+                ArmKitMigrate.Restand(this, ac, arms);
             if (Get(id) is { Dirty: true } left)
                 left.Rebuild();
         }

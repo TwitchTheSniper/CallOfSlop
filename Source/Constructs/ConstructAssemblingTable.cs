@@ -68,42 +68,58 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-24";
+    public const string RowsMark = "asm-rows-2026-11-24-arms";
 
-    /// <summary>The rows the refiner block machines took out, each group right after its Core's row, in this order.</summary>
-    private static readonly (string Core, string[] Gone)[] Removed =
-    [
-        ("Foundry", ["Workshop Foundry", "Industrial Foundry", "Military Foundry", "Plasma Foundry"]),
-        ("Sawmill", ["Workshop Sawmill", "Industrial Sawmill", "Military Sawmill", "Plasma Sawmill"]),
-        ("Smelter", ["Workshop Smelter", "Industrial Smelter", "Military Smelter", "Plasma Smelter"]),
-    ];
-
-    private int[][]? _legacy; // per family: an old choice (1 + its place in the old list) to this table's choice
+    /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", RowsMark];
 
     /// <summary>
-    /// An Assembler's recipe choice from a world saved before <see cref="RowsMark"/>, in this table's numbering: a row that was
-    /// taken out (a Workshop Smelter) becomes its Core's, and every row after one moves back by the rows taken out before it.
+    /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
+    /// an old choice of a gone row becomes its To row's (null: After's). Mark 0: the refiner block machines' Workshop to Plasma tiers.
+    /// Mark 1 (2026-11-24): the fixed loader arms, now kit presets (an old choice builds an Arm Core; MIGRATING.md).
     /// </summary>
-    public float LegacyChoice(int machine, float v)
+    private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
+    [
+        (0, "Foundry", ["Workshop Foundry", "Industrial Foundry", "Military Foundry", "Plasma Foundry"], null),
+        (0, "Sawmill", ["Workshop Sawmill", "Industrial Sawmill", "Military Sawmill", "Plasma Sawmill"], null),
+        (0, "Smelter", ["Workshop Smelter", "Industrial Smelter", "Military Smelter", "Plasma Smelter"], null),
+        (1, "Medium Crane Bridge", ["Industrial Loader Arm"], "Arm Core"),
+        (1, "Lifter Cab", ["Loader Arm", "Military Loader Arm", "Plasma Loader Arm", "Workshop Loader Arm"], "Arm Core"),
+        (1, "Half Shell", ["Module Fitter S"], "Arm Core"),
+        (1, "Press Bed Block", ["Heavy Loader Arm"], "Arm Core"),
+        (1, "Shipyard Loader Arm", ["Long Loader Arm"], "Arm Core"),
+    ];
+
+    private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice
+
+    /// <summary>
+    /// An Assembler's recipe choice from a world saved at an older rows mark (<paramref name="level"/>: the newest of <see cref="Marks"/>
+    /// it names, -1 none), in this table's numbering: a row that was taken out becomes its To row's, and every row after one moves back.
+    /// </summary>
+    public float LegacyChoice(int machine, float v, int level = -1)
     {
-        if (machine < 0 || machine >= ByMachine.Length || v < 1 || v != MathF.Floor(v))
+        if (machine < 0 || machine >= ByMachine.Length || v < 1 || v != MathF.Floor(v) || level >= Marks.Length - 1)
             return v;
-        _legacy ??= new int[ByMachine.Length][];
-        var map = _legacy[machine] ??= LegacyMap(ByMachine[machine]);
+        _legacy ??= new();
+        if (!_legacy.TryGetValue((machine, level), out var map))
+            _legacy[(machine, level)] = map = LegacyMap(ByMachine[machine], level);
         var k = (int)v - 1;
         return k < map.Length ? map[k] : v - (map.Length - ByMachine[machine].Length);
     }
 
-    private static int[] LegacyMap(AssembleRecipe[] now)
+    private static int[] LegacyMap(AssembleRecipe[] now, int level)
     {
-        var map = new List<int>(now.Length + 12);
+        var map = new List<int>(now.Length + 24);
         foreach (var r in now)
         {
             map.Add(r.Choice);
-            foreach (var (core, gone) in Removed)
-                if (r.Name.Equals(core, StringComparison.OrdinalIgnoreCase))
+            foreach (var (mark, after, gone, to) in Removed)
+                if (mark > level && r.Name.Equals(after, StringComparison.OrdinalIgnoreCase))
+                {
+                    var target = to == null ? r.Choice : Array.Find(now, x => x.Name.Equals(to, StringComparison.OrdinalIgnoreCase))?.Choice ?? 0;
                     foreach (var _ in gone)
-                        map.Add(r.Choice); // (a Workshop Smelter's Assembler now builds the Smelter Core: Renamed maps the part the same way)
+                        map.Add(target); // (a Workshop Smelter's Assembler now builds the Smelter Core: Renamed maps the part the same way)
+                }
         }
         return [.. map];
     }

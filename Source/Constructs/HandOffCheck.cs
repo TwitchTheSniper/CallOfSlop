@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// <c>--handoff-check [BLUEPRINT] [--seconds S]</c>: the hand-offs toward a building station (ConstructLifterHandOff.cs), headless, in a
 /// world of its own. A small Building Station builds BLUEPRINT (default Storage Corner) with no machine linked to it; every part it
-/// needs lies on a stock pad 40 m away. Between them: a Plasma Loader Arm by the stock, a Roller Tile run, a second arm, a second run,
+/// needs lies on a stock pad 40 m away. Between them: a Kit Plasma Arm by the stock, a Roller Tile run, a second arm, a second run,
 /// and the station's own arm beside its pick pad. Each arm reaches only its neighbours, so a part gets to the build only if it is
 /// handed on: stock, run 1, run 2, pick pad, build. Prints the leads, each hop and the build's end. Exit code: the failures.
 /// </summary>
@@ -67,14 +67,22 @@ public static class HandOffCheck
             w.StructureDirty.Add(b.Id);
             return b;
         }
+        Construct Arm(float x, float z) // (a Kit Plasma Arm: the fixed Plasma Loader Arm went, 2026-11-24)
+        {
+            var aj = new ConstructBuild.GroundJob(w, ConstructBuild.FindBlueprint("Kit Plasma Arm") ?? throw new InvalidOperationException("no Kit Plasma Arm blueprint"), null);
+            while (!aj.Step(2)) { }
+            var b = aj.Join(new Vector3(x, G(x, z), z), 0, out var awhy) ?? throw new InvalidOperationException("no room for a Kit Plasma Arm: " + awhy);
+            b.Anchored = true;
+            return b;
+        }
         // West of the core, north to south (+z): the stock pad, arm A, run 1, arm B, run 2, the station's arm C and its pick pad.
         var x0 = core.X - 3;
         var stock = Put("Lay-down Pad", x0, -30);
-        var armA = Put("Plasma Loader Arm", x0, -24);
+        var armA = Arm(x0, -24);
         var run1 = Run(x0, -18, 5); // (tiles at z -18 to -10: its start and end about 5 m from arms A and B)
-        var armB = Put("Plasma Loader Arm", x0, -4);
+        var armB = Arm(x0, -4);
         var run2 = Run(x0, 2, 5); // (z 2 to 10)
-        var armC = Put("Plasma Loader Arm", x0, 16);
+        var armC = Arm(x0, 16);
         var pad = Put("Lay-down Pad", x0 - 5.5f, 16);
         Console.WriteLine($"stock pad {stock.Id}, arm A {armA.Id}, run 1 {run1.Id}, arm B {armB.Id}, run 2 {run2.Id}, arm C {armC.Id}, pick pad {pad.Id}, station {sc.Id}");
 

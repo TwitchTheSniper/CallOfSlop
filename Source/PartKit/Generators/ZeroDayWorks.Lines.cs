@@ -171,8 +171,9 @@ public sealed partial class ZeroDayWorks
                 return On(part, x, z, Up, by, Crane); // (a fixed arm no kit preset fits in for now: Sean's to settle)
             preset ??= ArmKitMigrate.PresetFor(part) ?? throw new VehicleKitException($"no kit preset for a {part}");
             var t0 = FirstTurn(Up);
-            var fd = Def(part);
-            var mid = V(x, FloorY, z) + Rot24.Apply(t0, (fd.BoundsMin + fd.BoundsMax) * 0.5f - Array.Find(fd.Sockets, s => s.Name == by).At);
+            // (where the fixed arm's shoulder stood, by its old numbers: its part file went, 2026-11-24; its socket "-y.0.0" is 0.125 m under its origin)
+            var mid = V(x, FloorY, z) + Rot24.Apply(t0, ArmKitMigrate.OldBase.TryGetValue(part, out var ob) ? ob with { Y = 0.125f }
+                : (Def(part).BoundsMin + Def(part).BoundsMax) * 0.5f - Array.Find(Def(part).Sockets, s => s.Name == by).At);
             if (shoulder is { } at)
                 mid = new Vector3(at.X, mid.Y, at.Y);
             var face = Vector3.Transform(Vector3.UnitZ, Quaternion.CreateFromAxisAngle(Vector3.UnitY, turn * MathF.PI / 2));

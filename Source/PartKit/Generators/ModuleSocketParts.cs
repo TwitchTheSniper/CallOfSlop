@@ -265,7 +265,7 @@ public sealed partial class ModuleSocketParts : IPartGenerator
             parts.Add(("", Stand(w, l)));
         }
         WriteParts(o, Out, parts);
-        WriteParts(o, Out + "/Fitters", [("", LifterParts.ModuleFitter())]); // (phase 4: its own folder, after every older Modules row in the Assembling tail)
+        // (the Module Fitter S went, 2026-11-24: the Kit Module Fitter preset stands for it; its folder Fitters is empty)
         WriteParts(o, Out + "/Round", RoundParts()); // (round sockets, Sean 2026-11-21: their own folder, rows at the Assembling tail's end)
         foreach (var a in Adapters)
             o.File($"Constructs/Blueprints/ModuleAdapter{Size(a.W, a.L)}to{Size(a.SW, a.SL)}.json", AdapterText(a));

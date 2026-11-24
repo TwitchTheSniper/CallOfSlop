@@ -851,6 +851,86 @@ public static class ArmKitMigrate
     /// <summary>Where a fixed arm's preset can't keep its jobs from a free place, a bigger one tried next (`--arm-swap-find`).</summary>
     public static readonly (string Fixed, string Preset)[] Bigger = [("Loader Arm", "Kit Workshop Arm"), ("Loader Arm", "Kit Industrial Arm"), ("Heavy Loader Arm", "Kit Heavy Arm XL")];
 
+    /// <summary>
+    /// A fixed arm's shoulder over its part origin, by its old name (the fixed arms' part files went, 2026-11-24: <see cref="Restand"/> stands
+    /// each saved one's preset with its shoulder where the old one's was). Its floor is 0.125 m under its origin (socket "-y.0.0").
+    /// </summary>
+    public static readonly Dictionary<string, Vector3> OldBase = new()
+    {
+        ["Loader Arm"] = new(0.625f, 1.195f, 0.625f), ["Workshop Loader Arm"] = new(0.875f, 1.525f, 0.875f), ["Industrial Loader Arm"] = new(1f, 1.855f, 1f),
+        ["Military Loader Arm"] = new(1.375f, 2.515f, 1.375f), ["Plasma Loader Arm"] = new(1.75f, 3.175f, 1.75f), ["Long Loader Arm"] = new(0.875f, 4.495f, 0.875f),
+        ["Heavy Loader Arm"] = new(1.625f, 4.495f, 1.625f), ["Module Fitter S"] = new(1.375f, 2.515f, 1.375f),
+    };
+
+    /// <summary>The preset a saved part of this name stands as, when its part file went (null: not a gone fixed arm).</summary>
+    public static string? Gone(string savedName) => OldBase.ContainsKey(savedName) && ConstructParts.Find(savedName) == null ? PresetFor(savedName) : null;
+
+    private sealed record Template(List<(ConstructPartDef Def, Vector3 Pos, byte Rot, byte Setting, CfgValues Cfg)> Parts, Vector2 Shoulder, float Floor);
+
+    private static readonly Dictionary<string, Template?> Templates = new();
+
+    /// <summary>
+    /// Stands each gone fixed arm's kit preset in a loaded body: its Core's shoulder over the old arm's (whole parts turned as the old arm was),
+    /// its bottom on the old arm's floor, every piece linked as a build links it. A preset that doesn't load is logged and the arm stays gone.
+    /// </summary>
+    public static void Restand(ConstructWorld w, Construct c, List<(string Old, Vector3 Pos, byte Rot, byte Seg)> arms)
+    {
+        foreach (var (old, pos, rot, seg) in arms)
+        {
+            if (PresetFor(old) is not { } preset || Shape(preset) is not { } t)
+            {
+                Log($"[arm kit] a saved {old} had no kit preset to stand as: it is gone");
+                continue;
+            }
+            var q = Rot24.Quat(rot);
+            var sh = pos + Vector3.Transform(OldBase[old], q);
+            var floor = (pos + Vector3.Transform(new Vector3(0, -0.125f, 0), q)).Y; // (its socket "-y.0.0": a fixed arm stood upright)
+            var from = c.PartCount;
+            foreach (var (d, p, r, set, cfg) in t.Parts)
+            {
+                var local = new Vector3(p.X - t.Shoulder.X, p.Y - t.Floor, p.Z - t.Shoulder.Y);
+                var at = new Vector3(sh.X, floor, sh.Z) + Vector3.Transform(local, q);
+                var i = w.AddPart(c, d, at, Rot24.Compose(rot, r), seg);
+                if (i < 0)
+                    break;
+                c.Parts[i].Setting = set;
+                c.Parts[i].Cfg = cfg;
+            }
+            for (var i = from; i < c.PartCount; i++)
+                ConstructBuild.AutoLink(w, c, i);
+            Log($"[arm kit] a saved {old} stands as a {preset} ({c.PartCount - from} parts)");
+        }
+    }
+
+    private static Template? Shape(string preset)
+    {
+        if (Templates.TryGetValue(preset, out var t))
+            return t;
+        t = null;
+        if (Build(preset) is { } c)
+        {
+            var floor = float.MaxValue;
+            var core = -1;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                c.PartBounds(i, out var mn, out _);
+                if (!ArmKit.Posed(c, i))
+                    floor = MathF.Min(floor, mn.Y); // (the chain is posed from the hand: not where it stands)
+                if (core < 0 && c.Parts[i].D.Lifter is { Kit: true })
+                    core = i;
+            }
+            if (core >= 0)
+            {
+                var sh = c.Parts[core].Pos + Vector3.Transform(c.Parts[core].D.Lifter!.Base, Rot24.Quat(c.Parts[core].Rot));
+                var list = new List<(ConstructPartDef, Vector3, byte, byte, CfgValues)>();
+                for (var i = 0; i < c.PartCount; i++)
+                    list.Add((c.Parts[i].D, c.Parts[i].Pos, c.Parts[i].Rot, c.Parts[i].Setting, c.Parts[i].Cfg));
+                t = new Template(list, new Vector2(sh.X, sh.Z), floor);
+            }
+        }
+        return Templates[preset] = t;
+    }
+
     public static string? PresetFor(string fixedName)
     {
         foreach (var (f, p) in Map)
