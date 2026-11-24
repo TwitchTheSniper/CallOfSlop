@@ -1014,6 +1014,36 @@
      "blanks": [
       "solid"
      ]
+    },
+    {
+     "id": "reactionchamber",
+     "like": "Reaction Chamber XS",
+     "label": "reaction chamber",
+     "preset": "hollow 70x70x110 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "fuelinjector",
+     "like": "Fuel Injector XS",
+     "label": "fuel injector",
+     "preset": "hollow 70x70x30 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "drivenozzle",
+     "like": "Drive Nozzle XS",
+     "label": "drive nozzle",
+     "preset": "hollow 85x85x100 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ]
     }
    ]
   },
@@ -8769,6 +8799,24 @@
    "die": "actuator",
    "pattern": "turretring",
    "blank": "solid 100x100x95 steel"
+  },
+  {
+   "part": "Reaction Chamber XS",
+   "die": "housing",
+   "pattern": "reactionchamber",
+   "blank": "hollow 70x70x110 steel"
+  },
+  {
+   "part": "Fuel Injector XS",
+   "die": "housing",
+   "pattern": "fuelinjector",
+   "blank": "hollow 70x70x30 steel"
+  },
+  {
+   "part": "Drive Nozzle XS",
+   "die": "housing",
+   "pattern": "drivenozzle",
+   "blank": "hollow 85x85x100 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

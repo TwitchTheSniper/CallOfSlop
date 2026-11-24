@@ -471,7 +471,7 @@ public enum BoxRig : byte { None, Hub, Arm, Leg, Oleo, Lever, Knob, Slide, Flip,
 /// lifts as a new piece starts, the moment after a cut. Both read the piece on the machine's die, which every peer has. Drawn from the store as
 /// this peer has it (ConstructRender): nothing on the server or the wire. A block machine's cell shows its Core's work.
 /// </summary>
-public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge, Slide } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's; Slide: a Grow Former's hub carriage, raised by HubRise)
+public enum BoxWork : byte { None, Spin, Stroke, Glow, Smoke, Ram, Shear, Pin, Press, Bridge, Head, Beam, Hinge, Slide, Chase } // (Pin, Press: a Panel Former's bed, drawing 15: a pin rises to the panel's shape, the platen presses; Bridge, Head, Beam: a Laser Cutter's, ConstructLaserCutterBed.cs; Hinge: a clamshell leaf, the Press's; Slide: a Grow Former's hub carriage, raised by HubRise; Chase: a drive's ring lamp, lit in turn round its piece's axis with the burn: ConstructRender.DriveFx.cs)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -900,7 +900,7 @@ public sealed partial class ConstructPartDef
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
-    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns || WorksKind is WorksKind.Pump or WorksKind.Turbopump; // (a lift cell burns by its gas: ConstructWorld.CanBurn; a drive's pumps are full of fuel)
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns || WorksKind is WorksKind.Pump or WorksKind.Turbopump or WorksKind.Injector; // (a lift cell burns by its gas: ConstructWorld.CanBurn; a drive's pumps are full of fuel)
 
     /// <summary>Burns whatever its material: a designed weapon with a motor's propellant or a tank's fuel in it (OrdnanceDesign.Build).</summary>
     public bool Burns;
@@ -1313,7 +1313,7 @@ public static partial class ConstructParts
                 if (d.Drive is not (DriveKind.Hub or DriveKind.Stub))
                     Need(RouteType.Shaft, false, "a shaft output port");
                 break;
-            case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel && d.ThrustKind != ThrustKind.Solid:
+            case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel && d.ThrustKind != ThrustKind.Solid && !ConstructWorks.InjectorFedHead(d): // (a bell fed through its engine's Fuel Injector takes no pipe itself)
             case PartRole.Burner:
                 Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
@@ -1782,9 +1782,9 @@ public static partial class ConstructParts
                 var kind = Str(wk, file, where + ".work") switch
                 {
                     "spin" => BoxWork.Spin, "stroke" => BoxWork.Stroke, "glow" => BoxWork.Glow, "smoke" => BoxWork.Smoke, "ram" => BoxWork.Ram, "shear" => BoxWork.Shear,
-                    "pin" => BoxWork.Pin, "press" => BoxWork.Press, "slide" => BoxWork.Slide,
+                    "pin" => BoxWork.Pin, "press" => BoxWork.Press, "slide" => BoxWork.Slide, "chase" => BoxWork.Chase,
                     "bridge" => BoxWork.Bridge, "head" => BoxWork.Head, "beam" => BoxWork.Beam, "hinge" => BoxWork.Hinge,
-                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\", \"hinge\" or \"slide\""),
+                    _ => throw new ConstructPartException($"{file}: {where}.work is \"spin\", \"stroke\", \"glow\", \"smoke\", \"ram\", \"shear\", \"pin\", \"press\", \"bridge\", \"head\", \"beam\", \"hinge\", \"slide\" or \"chase\""),
                 };
                 if (kind == BoxWork.Hinge && (Opt(b, "pivot") is null || Opt(b, "axis") is null || Opt(b, "travel") is null))
                     throw new ConstructPartException($"{file}: {where}: a \"hinge\" box names its \"pivot\" (a point on the hinge line), the \"axis\" it swings open toward and its \"travel\" (degrees open)");
@@ -1810,7 +1810,7 @@ public static partial class ConstructParts
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
-        d.WorkGlowOnly = d.HasWork && list.All(x => x.Work is BoxWork.None or BoxWork.Glow);
+        d.WorkGlowOnly = d.HasWork && list.All(x => x.Work is BoxWork.None or BoxWork.Glow or BoxWork.Chase);
         d.HasPieceWork = list.Any(x => x.Work is BoxWork.Ram or BoxWork.Shear);
         d.HasHubSlide = list.Any(x => x.Work is BoxWork.Slide || x.Work == BoxWork.Spin && x.RigTravel > 0);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);

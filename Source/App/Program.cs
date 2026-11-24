@@ -221,6 +221,8 @@ public static unsafe partial class Program
             return PartKit.PropTools.ZFightMoves(args); // how far model boxes moved between two git versions (was tools/props/zfight_moves.py)
         if (args.Any(a => a.Equals("--gen-parts", StringComparison.OrdinalIgnoreCase)))
             return PartKit.PartKit.Cli(args); // the part kit: the construct part generators that were Python (docs/sandbox/PARTKIT.md; --check: compare only)
+        if (args.SkipWhile(a => !a.Equals("--engine-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } engineCheck)
+            return EngineTrainCheck.Cli(engineCheck, args); // an engine train run headless: its bell's level, feed and injector buffer, a pipe cut on the way (EngineTrainCheck.cs)
         if (args.Any(a => a.Equals("--speed-test", StringComparison.OrdinalIgnoreCase)))
             return EngineKit.EngineKitSpeed.Cli(args); // blueprints driven flat out on the flat: top speed, times, and what limits them (docs/vehiclekit/ENGINEKIT.md)
         if (args.SkipWhile(a => !a.Equals("--gen-factory", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genFactory)

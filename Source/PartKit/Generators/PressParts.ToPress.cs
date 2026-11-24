@@ -88,6 +88,10 @@ public sealed partial class PressParts
         ("housing", "exchanger", "Coolant Exchanger L", "coolant exchanger", "hollow 230x220x115 steel", ["hollow"]),
         ("housing", "capacitor", "Capacitor Bank S", "capacitor bank", "solid 80x110x70 steel", ["solid"]),
         ("actuator", "turretring", "Turret Ring S", "turret ring", "solid 100x100x95 steel", ["solid"]),
+        // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing.
+        ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
+        ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x30 steel", ["hollow"]),
+        ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>

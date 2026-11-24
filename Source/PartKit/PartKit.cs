@@ -111,6 +111,7 @@ public static class PartKit
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
         new Generators.ShipWorksParts(), // (ship works: the drives' nozzles, mounts, works and pods any ship builds from)
+        new Generators.EngineTrainParts(), // (engine trains: a bell with its engine welded on behind it, whole on one round plug)
         new Generators.CrewFittingsParts(), // (the couches, the gunnery console, the coffee station and the robot cradle the ships hang: before them)
         new Generators.StyleSheetParts(), // (the style grading sheet's drafts: several looks of one item, group Style, unlisted)
         new Generators.CommonerFittingParts(), // (ship fittings in the commoners' worn camper look, kept from the Commoner Style Sheet)
