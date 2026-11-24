@@ -781,7 +781,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      and job time come from its squares, and a store's second flags byte's 128 carries a Breaker's wreck under way (its def and cell).
     // 462: engine trains phase 6: the Reheat Ring and Fuel Filter XS part files move part ids.
     // 463: engine trains phase 7: the Gimbal Ring and Armour Collar XS part files move part ids.
-    // 464: CBodyKind.Thrust carries each swung bell's gimbal angles after the levels (u16 count, then u16 index, s8 x, s8 y at 0.2 degree a step),
+    // 464: CBodyKind.Thrust carries each swung bell's gimbal angles after the levels (u16 count, then u16 index, s8 x, s8 y at 0.4 degree a step),
     //      so a client draws a bell swinging on its gimbal (ConstructThrust.WriteShown).
     public const ushort ProtocolVersion = 464;
 

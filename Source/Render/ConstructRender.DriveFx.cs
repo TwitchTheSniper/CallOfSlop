@@ -137,8 +137,8 @@ public static partial class ConstructRender
     /// <summary>Thruster part <paramref name="i"/>'s entry, or -1 (looked up only for a part that may swing: a gimballed or train-fed bell).</summary>
     private static int SwingThruster(Construct c, int i, ConstructPartDef d)
     {
-        if (d.Role != PartRole.Thruster || d.ThrustGimbal <= 0 && !ConstructWorks.InjectorFedHead(d))
-            return -1;
+        if (!c.Swung || d.Role != PartRole.Thruster || d.ThrustGimbal <= 0 && !ConstructWorks.InjectorFedHead(d))
+            return -1; // (no bell on the body stands swung: no search)
         for (var k = 0; k < c.ThrusterCount; k++)
             if (c.Thrusters[k].Part == i)
                 return k;

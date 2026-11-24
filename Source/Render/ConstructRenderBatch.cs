@@ -145,7 +145,7 @@ public static partial class ConstructRender
         // (a lamp merges with its lit look in the chunk's looks; designed ordnance with its wings folded, as it sits until it drops;
         // a part with glass merges its opaque boxes and only the panes are walked: GlassOnly)
         var split = WorkSplits(d);
-        if (d.Role == PartRole.Joint || d.IsRail || d.Role == PartRole.Thruster && (d.ThrustGimbal > 0 || ConstructWorks.InjectorFedHead(d)) || d.HasRig || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner
+        if (d.Role == PartRole.Joint || d.IsRail || d.Role == PartRole.Thruster && d.ThrustGimbal > 0 || d.HasRig || d.HasDial || d.IsBeacon || d.IsTerminal || d.IsSpawner
             || d.HasWork && !split || d.HasRouterBoxes || d.HasEngineBoxes || d.Rotor != null || d.TrackRays > 0 || d.Logic is CLogic.AnalogLever || d.Surface is { Control: > 0 })
             n = -1;
         else
