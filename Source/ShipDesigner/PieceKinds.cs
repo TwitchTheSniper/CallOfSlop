@@ -11,7 +11,10 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// room behind (its feed and access panel). It cuts no hole and is not a way aboard.</summary>
     public bool Service => Group == "Drives";
 
-    public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => 2.6, _ => 2.2 };
+    public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
+
+    /// <summary>How far in from the skin a boarding ramp's room floor may be (Karl, 2026-11-24): its well and stair make up the rest.</summary>
+    public const double RampReach = 3.0;
 
     /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
     public (double Hx, double Hz, bool Round)? Opening => Socket switch

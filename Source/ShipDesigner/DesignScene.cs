@@ -918,7 +918,7 @@ public static class DesignScene
     /// <summary>How far in from the skin the floor of the room a ramp opens into is, straight in from it (null: no room there).</summary>
     private static double? RampDepth(ShipDesign d, Piece p, Place w)
     {
-        for (var t = 0.0; t <= 2.6; t += 0.02)
+        for (var t = 0.0; t <= PieceKind.RampReach; t += 0.02)
         {
             double x = w.O[0] - w.Y[0] * t, y = w.O[1] - w.Y[1] * t, z = w.O[2] - w.Y[2] * t;
             foreach (var r in d.Rooms)
