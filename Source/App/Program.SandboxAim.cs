@@ -55,7 +55,7 @@ public static partial class Program
             Part = hit.Part,
             Distance = GantryOn ? MathF.Min(hit.Distance, ConstructBuild.Reach) : hit.Distance, // (the gantry's camera: the server measures from the gantry)
             BuildReach = g.SandboxHands.BuildReachOf(me.Id),
-            ComDistance = GantryOn ? 0 : Vector3.Distance(me.Eye, c.WorldCom),
+            ComDistance = GantryOn ? 0 : Vector3.Distance(g.RiderEyeNow(me), c.WorldCom), // (the eye on the deck as it stands now: on the host in a ship in orbit the deck is at its drawn pose here, up to a tick's travel from the tick's eye)
             SlotPlus1 = hit.SlotPlus1,
             Player = me.Id,
             Seated = h.Seated,
