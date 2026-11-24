@@ -720,8 +720,11 @@ public sealed partial class ConstructWorld
             if (number < names.PartNames.Length && ConstructRefining.SavedTier(names.PartNames[number]) is var tier and > 1)
                 (tiers ??= new byte[n])[i] = (byte)tier;
             stand[i] = def == ConstructParts.None;
-            if (stand[i] && number < names.PartNames.Length && ArmKitMigrate.Gone(names.PartNames[number]) != null)
-                (armsAt ??= []).Add((i, names.PartNames[number])); // (a fixed arm whose part file went: its kit preset stands there below)
+            if (number < names.PartNames.Length && ArmKitMigrate.Gone(names.PartNames[number]) != null)
+            {
+                stand[i] = true; // (a fixed arm whose part file went: not the Arm Core its name finds now, but its kit preset, stood there below)
+                (armsAt ??= []).Add((i, names.PartNames[number]));
+            }
             parts[i].Def = stand[i] ? StandIn.Id : def;
         }
         for (var i = 0; i < n; i++)

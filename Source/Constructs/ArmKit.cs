@@ -863,7 +863,7 @@ public static class ArmKitMigrate
     };
 
     /// <summary>The preset a saved part of this name stands as, when its part file went (null: not a gone fixed arm).</summary>
-    public static string? Gone(string savedName) => OldBase.ContainsKey(savedName) && ConstructParts.Find(savedName) == null ? PresetFor(savedName) : null;
+    public static string? Gone(string savedName) => OldBase.ContainsKey(savedName) ? PresetFor(savedName) : null; // (Find gives an Arm Core for the name: ConstructParts.Renamed)
 
     private sealed record Template(List<(ConstructPartDef Def, Vector3 Pos, byte Rot, byte Setting, CfgValues Cfg)> Parts, Vector2 Shoulder, float Floor);
 
