@@ -40,6 +40,8 @@ public enum TrainFunction : byte
     Mixture, // feed: one dial (or Mix in) trades push for burn, 80% push at 70% burn to 110% push at 130% burn (ConstructThrust.MixOf)
     Reheat, // hot: Boost in gives +25% push at twice the burn for up to 20 s, then 40 s to recover (ConstructPhysics.ReheatStep)
     Filter, // feed: halves how often breakdowns land on its train (GameSandboxBreakdowns)
+    Gimbal, // hot: the bell swings up to its file's "gimbal" degrees under the flight control, so the drive also steers (ConstructBoost.GimbalOf)
+    Collar, // hot: each one takes ShipWorks.CollarArmour more off every hit on its bell and its hot zone's pieces (ConstructWorks.TrainArmour)
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -58,6 +60,8 @@ public struct CWorksHead
     public int Valve, Mixer, Reheat; // such a head: its train's first working Throttle Valve, Mixture Controller and Reheat Ring (-1: none)
     public bool Filter; // ...and a working Fuel Filter is in it: breakdowns land on it half as often
     public bool Igniter; // such a head: a working Igniter is in its train, so it lights at once
+    public int Gimbal; // ...its train's first working Gimbal Ring (-1: none)
+    public byte Collars; // ...how many working Armour Collars are in it
     public int Stray; // such a head: the first piece welded into its train in the wrong zone or past the piece limit, left out of it (-1: none)
 }
 
@@ -81,6 +85,7 @@ public sealed class ShipWorks
     public float FuelBufferSeconds = 15f; // s more a Fuel Buffer adds to its train's (each one, Sean 2026-11-24 doc, a first figure)
     public float JacketSaving = 0.1f; // the share of fuel a Cooling Jacket saves at the same push (once a train)
     public float LightSeconds = 3f; // s a bell that needs an injector takes to light with no Igniter in its train (Sean 2026-11-24 doc)
+    public float CollarArmour = 15f; // an Armour Collar: flat damage each one takes off every hit on its train's bell and hot zone
     public float ReheatBoost = 0.25f, ReheatSeconds = 20f, ReheatRecover = 40f; // a Reheat Ring: its push share more (at twice the burn), how long it boosts, how long it takes to recover from spent (Sean 2026-11-24 doc)
     public int TrainPieces = 16; // the most pieces an engine train holds (its walk and its looks stay bounded)
     public float InjectorBuffer = 10f; // s of full burn a Fuel Injector holds: a bell whose pipe is cut runs this long, then stops (Sean, 2026-11-24, a first figure)
@@ -119,7 +124,7 @@ public sealed class ShipWorks
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "injectorBuffer" or "fuelBuffer" or "jacketSaving" or "trainPieces" or "lightSeconds" or "reheatBoost" or "reheatSeconds" or "reheatRecover" or "drives"))
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "injectorBuffer" or "fuelBuffer" or "jacketSaving" or "trainPieces" or "lightSeconds" or "reheatBoost" or "reheatSeconds" or "reheatRecover" or "collarArmour" or "drives"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             t.JetMost = Num(root, "jetMost", 1, 1e9f);
             t.BareShare = Num(root, "bareShare", 0, 1);
@@ -143,6 +148,8 @@ public sealed class ShipWorks
                 t.ReheatSeconds = Num(root, "reheatSeconds", 1, 600);
             if (root.TryGetProperty("reheatRecover", out _))
                 t.ReheatRecover = Num(root, "reheatRecover", 1, 600);
+            if (root.TryGetProperty("collarArmour", out _))
+                t.CollarArmour = Num(root, "collarArmour", 0, 500);
             if (root.TryGetProperty("lightSeconds", out _))
                 t.LightSeconds = Num(root, "lightSeconds", 0, 60);
             if (root.TryGetProperty("trainPieces", out _))
@@ -254,7 +261,7 @@ public static class ConstructWorks
         _ => "works",
     };
 
-    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter"];
+    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor", "throttle", "mixture", "reheat", "filter", "gimbal", "collar"];
 
     /// <summary>An engine train piece's zone, counted back from the bell (Sean 2026-11-24): 0 hot, 1 feed, 2 supply; -1 any zone (a Spacer) or none.</summary>
     public static int ZoneOf(ConstructPartDef d) => d.WorksKind switch
@@ -262,7 +269,7 @@ public static class ConstructWorks
         WorksKind.Core => 0,
         WorksKind.Injector => 1,
         WorksKind.Pump or WorksKind.Exchanger or WorksKind.Turbopump => 2,
-        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket or TrainFunction.Reheat => 0, TrainFunction.Filter => 1, TrainFunction.Buffer or TrainFunction.Igniter or TrainFunction.Throttle or TrainFunction.Mixture => 1, TrainFunction.Sensor => 2, _ => -1 },
+        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket or TrainFunction.Reheat or TrainFunction.Gimbal or TrainFunction.Collar => 0, TrainFunction.Filter => 1, TrainFunction.Buffer or TrainFunction.Igniter or TrainFunction.Throttle or TrainFunction.Mixture => 1, TrainFunction.Sensor => 2, _ => -1 },
         _ => -1,
     };
 
@@ -327,7 +334,7 @@ public static class ConstructWorks
         }
         if (ConstructParts.Opt(root, "worksPiece") is { } wp)
         {
-            ConstructParts.Known(wp, ["kind", "serves", "service", "function"], $"{file}: \"worksPiece\"");
+            ConstructParts.Known(wp, ["kind", "serves", "service", "function", "gimbal", "gimbalRate"], $"{file}: \"worksPiece\"");
             d.WorksKind = KindOf(ConstructParts.Str(ConstructParts.Need(wp, "kind", $"{file}: \"worksPiece\""), file, "worksPiece.kind"), file, "worksPiece.kind");
             if (d.WorksKind == WorksKind.Mount)
             {
@@ -348,6 +355,15 @@ public static class ConstructWorks
                 d.TrainFn = at >= 1 ? (TrainFunction)at : throw new ConstructPartException($"{file}: \"worksPiece.function\" is one of {string.Join(", ", TrainFunctionNames.Skip(1))}, not \"{fn}\"");
                 if (d.TrainFn == TrainFunction.Sensor)
                     d.DataOut = SensorPorts;
+                if (d.TrainFn == TrainFunction.Gimbal)
+                {
+                    // How far it swings its bell and how fast (its Throw, Expo and Reverse settings follow from ThrustGimbal, as a gimballed nozzle's).
+                    d.ThrustGimbal = ConstructParts.Num(ConstructParts.Need(wp, "gimbal", $"{file}: a Gimbal Ring's \"worksPiece\""), file, "worksPiece.gimbal") * MathF.PI / 180f;
+                    ConstructParts.Range(d.ThrustGimbal, 0.01f, 0.5f, file, "worksPiece.gimbal");
+                    d.GimbalRate = (ConstructParts.Opt(wp, "gimbalRate") is { } gr ? ConstructParts.Num(gr, file, "worksPiece.gimbalRate") : 40f) * MathF.PI / 180f;
+                }
+                else if (ConstructParts.Opt(wp, "gimbal") != null || ConstructParts.Opt(wp, "gimbalRate") != null)
+                    throw new ConstructPartException($"{file}: only a Gimbal Ring's \"worksPiece\" has a \"gimbal\"");
                 if (ConstructParts.Opt(wp, "serves") != null || ConstructParts.Opt(wp, "service") != null)
                     throw new ConstructPartException($"{file}: an engine train's function piece serves no amount (no \"worksPiece.serves\" or \"service\")");
             }
@@ -404,7 +420,7 @@ public static class ConstructWorks
             if (IsHead(c.Parts[i].D))
             {
                 var mount = FindMount(c, i, queue);
-                c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = -1, Mount = mount, Outside = c.Parts[i].D.WorksOutside || mount >= 0 && c.Parts[mount].D.WorksOutside, Cap = 1, Burn = 1, Stray = -1, Valve = -1, Mixer = -1, Reheat = -1 };
+                c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = -1, Mount = mount, Outside = c.Parts[i].D.WorksOutside || mount >= 0 && c.Parts[mount].D.WorksOutside, Cap = 1, Burn = 1, Stray = -1, Valve = -1, Mixer = -1, Reheat = -1, Gimbal = -1 };
             }
         // The thrusters first, each taking the engine in line behind its bell; then the rest share what is left on their mounts.
         for (var h = 0; h < c.WorksHeadCount; h++)
@@ -628,6 +644,36 @@ public static class ConstructWorks
         return h >= 0 && c.WorksHeads[h].Filter;
     }
 
+    /// <summary>
+    /// Flat damage an engine train's Armour Collars take off a hit on part <paramref name="part"/>: each working one in its train gives
+    /// ShipWorks.CollarArmour to its bell and every piece of its hot zone (0 for anything else). A hit's path: cheap for a part outside the works.
+    /// </summary>
+    public static float ArmourOf(Construct c, int part) => c.Parts[part].D.Armour + TrainArmour(c, part); // (what every hit, blast and round reads)
+
+    public static float TrainArmour(Construct c, int part)
+    {
+        var any = false;
+        for (var k = 0; k < c.WorksHeadCount && !any; k++)
+            any = c.WorksHeads[k].Collars > 0;
+        if (!any)
+            return 0; // (no collar anywhere: the usual case, and no walk over the pieces)
+        var d = c.Parts[part].D;
+        var h = -1;
+        if (d.Role == PartRole.Thruster && InjectorFedHead(d))
+            h = c.WorksHeadOf(part);
+        else if (d.WorksKind != WorksKind.None && ZoneOf(d) == 0)
+        {
+            short asm = -1;
+            for (var k = 0; k < c.WorksPieceCount && asm < 0; k++)
+                if (c.WorksPieces[k] == part)
+                    asm = c.WorksPieceAsm[k];
+            for (var k = 0; asm >= 0 && k < c.WorksHeadCount && h < 0; k++)
+                if (c.WorksHeads[k].Asm == asm && c.WorksHeads[k].Collars > 0)
+                    h = k;
+        }
+        return h >= 0 ? c.WorksHeads[h].Collars * ShipWorks.Current.CollarArmour : 0;
+    }
+
     /// <summary>What a train's working function pieces add to its bell (read at the rebuild): each Fuel Buffer's seconds, a Cooling Jacket's saving.</summary>
     private static void TrainFunctions(Construct c, ref CWorksHead wh, ShipWorks t)
     {
@@ -650,6 +696,10 @@ public static class ConstructWorks
                 wh.Reheat = c.WorksPieces[k];
             else if (p.D.TrainFn == TrainFunction.Filter)
                 wh.Filter = true;
+            else if (p.D.TrainFn == TrainFunction.Gimbal && wh.Gimbal < 0)
+                wh.Gimbal = c.WorksPieces[k];
+            else if (p.D.TrainFn == TrainFunction.Collar && wh.Collars < 255)
+                wh.Collars++;
         }
         if (jacket)
             wh.Burn *= 1 - t.JacketSaving;
@@ -1097,6 +1147,8 @@ public static class ConstructWorks
         TrainFunction.Mixture => "trades push for burn",
         TrainFunction.Reheat => $"+{ShipWorks.Current.ReheatBoost * 100:0}% push for {ShipWorks.Current.ReheatSeconds:0} s on Boost in",
         TrainFunction.Filter => "half the breakdowns",
+        TrainFunction.Gimbal => $"swings the bell {d.ThrustGimbal * 180f / MathF.PI:0} degrees",
+        TrainFunction.Collar => $"-{ShipWorks.Current.CollarArmour:0} a hit on the hot zone",
         TrainFunction.Spacer => "spacer",
         _ => "",
     };

@@ -29,6 +29,7 @@ public struct CThruster
     public float ReheatUsed; // s of boost used (host; it recovers while off, kept over rebuilds)
     public bool ReheatSpent; // ...used up: no boost until it has all recovered
     public bool ReheatOn; // ...boosting on the last step (host; ThrustOf reads it)
+    public int Ring; // ...its train's Gimbal Ring, which swings a bell with no gimbal of its own (-1: none; ConstructBoost.GimbalOf)
     public int Valve, Mixer; // a bell that needs an injector: its train's Throttle Valve and Mixture Controller (part indices, -1: none; ConstructWorks.CWorksHead)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
@@ -166,13 +167,13 @@ public sealed partial class Construct
             if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
             t.Train = ConstructWorks.InjectorFedHead(d);
-            t.Valve = t.Mixer = t.Reheat = -1;
+            t.Valve = t.Mixer = t.Reheat = t.Ring = -1;
             if (t.Train)
             {
                 var wl = WorksHeadOf(i);
                 t.LightDelay = wl >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
                 if (wl >= 0)
-                    (t.Valve, t.Mixer, t.Reheat) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer, WorksHeads[wl].Reheat);
+                    (t.Valve, t.Mixer, t.Reheat, t.Ring) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer, WorksHeads[wl].Reheat, WorksHeads[wl].Gimbal);
             }
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
@@ -410,7 +411,7 @@ public static partial class ConstructPhysics
                 push *= 1 + ShipWorks.Current.ReheatBoost;
                 burn *= 2;
             }
-            if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
+            if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0 || t.Ring >= 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
                 ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
             if (push <= 0)
                 continue;

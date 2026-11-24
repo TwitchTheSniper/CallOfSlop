@@ -1200,6 +1200,32 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "gimbalring",
+     "like": "Gimbal Ring XS",
+     "label": "gimbal ring",
+     "preset": "hollow 75x75x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "armourcollar",
+     "like": "Armour Collar XS",
+     "label": "armour collar",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9128,6 +9154,18 @@
    "part": "Fuel Filter XS",
    "die": "housing",
    "pattern": "fuelfilter",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Gimbal Ring XS",
+   "die": "housing",
+   "pattern": "gimbalring",
+   "blank": "hollow 75x75x40 steel"
+  },
+  {
+   "part": "Armour Collar XS",
+   "die": "housing",
+   "pattern": "armourcollar",
    "blank": "hollow 70x70x35 steel"
   },
   {
