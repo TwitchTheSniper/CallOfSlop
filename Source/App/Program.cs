@@ -319,6 +319,8 @@ public static unsafe partial class Program
             return ArmKitCheck.Cli(args); // the arm kit's blueprints built headless and each Arm Core's spec: chain, load chart, speed (ArmKit.cs)
         if (args.Any(a => a.Equals("--arm-swap-carry", StringComparison.OrdinalIgnoreCase)))
             return ArmKitMigrate.Carry(args);
+        if (args.Any(a => a.Equals("--arm-swap-find", StringComparison.OrdinalIgnoreCase)))
+            return ArmKitMigrate.Find(args); // the nearest place each blocked fixed arm's kit preset fits and keeps its jobs (ArmKit.cs)
         if (args.Any(a => a.Equals("--arm-swap-check", StringComparison.OrdinalIgnoreCase)))
             return ArmKitMigrate.Cli(args); // does each fixed arm's kit preset fit where the fixed arm stands (ArmKit.cs)
         if (args.Any(a => a.Equals("--pack-check", StringComparison.OrdinalIgnoreCase)))

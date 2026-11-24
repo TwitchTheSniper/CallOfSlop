@@ -1397,6 +1397,8 @@ public static partial class ConstructParts
         "wheel former" or "medium wheel former" or "large wheel former" or "capital wheel former"
             or "fan former" or "medium fan former" or "large fan former" or "capital fan former"
             or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
+        "loader arm" or "workshop loader arm" or "industrial loader arm" or "military loader arm" or "plasma loader arm" or "heavy loader arm"
+            or "shipyard loader arm" or "long loader arm" or "module fitter s" => "Arm Core", // (arm kit part 4, 2026-11-24: one in a store, a hand or a blueprint is an Arm Core; one standing in a world stands as its kit preset, ArmKitMigrate.Restand)
         "workshop smelter" or "industrial smelter" or "military smelter" or "plasma smelter" => "Smelter", // (a block machine, 2026-11-24: its Hearth Blocks' squares decide its rate; a saved recipe choice keeps its recipe, ConstructRefining.SavedRecipe)
         "workshop foundry" or "industrial foundry" or "military foundry" or "plasma foundry" => "Foundry", // (a block machine, 2026-11-24: its Crucible Blocks' squares decide its rate; a saved recipe choice keeps its recipe: the tier lists were the full list's first rows)
         "workshop sawmill" or "industrial sawmill" or "military sawmill" or "plasma sawmill" => "Sawmill", // (a block machine, 2026-11-24: its Saw Blocks' squares decide its rate; its two recipes were open at every tier, so a saved choice keeps its recipe)

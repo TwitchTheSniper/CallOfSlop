@@ -18,7 +18,7 @@ public sealed partial class ZeroDayWorks
         // station's Core.
         public const float YardRailNorth = -199f, YardRailSouth = -231f; // the two runs' lines (z): a 32 m span
         public const float YardRailWest = 3f, YardRailEast = 93f; // the runs' first and last block centres (x)
-        public const int YardMasts = 10; // 20 m: the bay's 16 m corner masts stand under the hook, and the Core clears the shed's last truss (22.8 m)
+        public const int YardMasts = 16; // 32 m (Sean, 2026-11-24: raised so the yard's two north kit arms stand their folded 30 m masts under it; the shed's trusses end at z -193, north of the crane: TrussSouth)
         public const int BayAcross = 9, YardPadRows = 6; // the yard bay's cells across (18 m: the frigate's 16.4 m beam) and its pick pads' rows south of it
         public static float YardRailFoot => FloorY + 2 * YardMasts;
 
@@ -156,7 +156,7 @@ public sealed partial class ZeroDayWorks
             // (stood by the pedestal's middle, "centre -y": it spans 1.75 m round (x, z), so on z -198 it stands in the 4 m between the bay's
             // edge at z -200 and line C's store at -196 without touching either, and on z -220 just south of the bay's edge at -218)
             foreach (var (x, z) in YardArms)
-                Arm("Shipyard Loader Arm", x, z, "centre -y", keep: x is 44 or 73 or 39 or 47); // (four stay fixed arms: their kit presets' counterweights would meet masts, and the north two's the crane rail and roof, --arm-swap-check)
+                Arm("Shipyard Loader Arm", x, z, "centre -y", turn: x switch { 44 => 1, 73 => 2, 39 or 47 => 1, _ => 0 }); // (turned where their counterweights met the stores' masts or the crane's columns, --arm-swap-find; the north two stand their folded 30 m masts under the raised yard rail, south of the shed's last truss: TrussSouth)
         }
 
         /// <summary>

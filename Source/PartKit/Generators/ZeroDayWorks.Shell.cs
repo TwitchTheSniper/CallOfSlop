@@ -22,6 +22,9 @@ public sealed partial class ZeroDayWorks
         private readonly Dictionary<int, VPart[]> _trusses = new();
 
         /// <summary>The shed's north end over the generator hall and the materials row (z of each extra column line, north to south).</summary>
+        /// <summary>The shed's south end: column lines south of it carry no truss (the yard's north arms stand there).</summary>
+        public const float TrussSouth = -195f;
+
         public static readonly float[] NorthLines = [-1f, -9f, -17f, -25f, -33f];
 
         private void LayShell()
@@ -38,7 +41,9 @@ public sealed partial class ZeroDayWorks
                 var (er, em) = NorthColumn(RailX[^1], z);
                 lines.Add((z, wr, er, wm, em, -1 - lines.Count));
             }
-            foreach (var k in Enumerable.Range(0, RailBlocks).Where(k => _columns.ContainsKey((0, k))))
+            // (not the last column line at z -197, Sean 2026-11-24: the shed ends at -193 so the yard's two north kit arms stand their folded
+            // 30 m masts in the open south of its gable; its 4 m bay over line C's store went)
+            foreach (var k in Enumerable.Range(0, RailBlocks).Where(k => _columns.ContainsKey((0, k)) && RailNorth - 2 * k > TrussSouth))
                 lines.Add((RailNorth - 2 * k, _rails[0][k], _rails[RailX.Length - 1][k], _columns[(0, k)], _columns[(RailX.Length - 1, k)], k));
 
             var trusses = _trusses;

@@ -204,6 +204,10 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
 - **Storage Volumes can have walls.** A new Walls setting gives the box its own concrete walls and floor, 0.15 m inside it, and leaves the top open. A Storage Volume you place new from the inventory comes walled; the ones in your older worlds and blueprints stay open as you built them (turn Walls on in the configure tool if you want it).
 - **A drill works out its spot.** Each 3 m spot of a deposit gives 1,200 units, then the drill says "this spot is worked out". Move it on, or carry it on a Linear Actuator rail with nothing wired into Set: it moves itself on.
 
+### Loader arms in a saved world (2026-11-24)
+
+The fixed Loader Arms (Loader, Workshop, Industrial, Military, Plasma, Heavy, Shipyard, Long) and the Module Fitter S are gone. A saved one comes back as its kit arm (Kit Loader Arm and so on), standing where it stood. An Assembler that was set to build one now builds an Arm Core.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.
