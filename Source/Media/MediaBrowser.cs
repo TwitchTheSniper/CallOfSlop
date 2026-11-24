@@ -17,11 +17,13 @@ public sealed class MediaReport
     public volatile bool HasMedia, InnerPaused; // its main video or audio
     public volatile float Scroll, InnerTime;
     public volatile string Failure = ""; // the browser's own word on why this page can't show anything ("pfail"), or ""
+    public volatile bool Watched; // a web page's "w" came since the page was opened: Scroll, HasMedia and the rest are its own
 }
 
 /// <summary>
 /// The browser process from the game's side (docs/sandbox/MEDIA.md). CEF lives in its own exe, Browser/SlopBrowser.exe next to the game, started
-/// by the first page and let go when none is left, so a game that never plays a link never starts it, and its crash can't be the game's.
+/// by the first page and let go when none is left, so a game that never plays a link never starts it, and its crash can't be the game's. Once a Browser Screen
+/// has used it, it stays until the game closes, since the sign-ins it holds live nowhere else (<see cref="WebSession"/>).
 /// Nothing here waits on it: commands queue for a thread that writes them, reports come in on another. Whatever goes wrong ends up in
 /// <see cref="Problem"/>, which the panels and the look line show. The self-tests leave <see cref="Allowed"/> off and never start one.
 /// </summary>
@@ -34,7 +36,7 @@ public static class MediaBrowser
     /// The command lines' version, which the helper says with "ready" (tools/browser/Program.cs <c>Version</c>: raise both together whenever a line changes). A helper built
     /// from older source used to skip the commands it didn't know, and every screen said "Loading" for ever; now it is refused and the panels say how to rebuild it.
     /// </summary>
-    public const int HelperVersion = 2;
+    public const int HelperVersion = 3;
 
     /// <summary>What a player is told to do about a missing or old helper.</summary>
     public const string Rebuild = "run tools\\BuildBrowser.bat (or Start.bat) to build it";
@@ -51,6 +53,8 @@ public static class MediaBrowser
     private static volatile bool _ready;
     private static double _startedAt;
     private static int _blockNumber;
+    private static int _generation;
+    private static bool _webSession;
 
     /// <summary>Set by the windowed game; the self-tests and any tool leave it off.</summary>
     public static bool Allowed;
@@ -69,6 +73,15 @@ public static class MediaBrowser
 
     /// <summary>The helper said "ready" with this game's version.</summary>
     public static bool Ready => _ready;
+
+    /// <summary>Goes up with each helper started: a page shelved in an earlier one is gone with it.</summary>
+    public static int Generation => _generation;
+
+    /// <summary>
+    /// This helper has opened a Browser Screen page, so it holds sign-ins: they live in its memory and nowhere else, so it stays until the game closes
+    /// (Sean, 2026-11-24: sign-ins last while the game runs, never on disk).
+    /// </summary>
+    public static bool WebSession => _webSession && _process != null;
 
     public static MediaReport Report(int page) => Reports[page];
 
@@ -123,17 +136,29 @@ public static class MediaBrowser
         r.HasMedia = r.InnerPaused = false;
         r.Scroll = r.InnerTime = 0;
         r.Failure = "";
+        r.Watched = false;
         return true;
     }
 
-    /// <summary>Opens a Browser Screen's page. The address has been through <see cref="MediaEntry.Clean"/>. Nothing here logs it.</summary>
-    public static bool OpenWeb(int page, string url, int width, int height, bool ads)
+    /// <summary>
+    /// Opens a Browser Screen's page: the one on the shelf as <paramref name="shelf"/> if the helper still has it, as it was, else a new one at <paramref name="url"/>,
+    /// in this player's own sign-in store when <paramref name="mine"/>, else in the one other players' screens share (MediaDirector.OwnStore).
+    /// The address has been through <see cref="MediaEntry.Clean"/>. Nothing here logs it.
+    /// </summary>
+    public static bool OpenWeb(int page, string url, int width, int height, bool ads, string? shelf, bool mine)
     {
         if (Problem != null || !Start() || !Prepare(page, width, height))
             return false;
-        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)}");
+        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)} {shelf ?? "-"} {(mine ? 1 : 0)}");
+        _webSession = true;
         return true;
     }
+
+    /// <summary>A Browser Screen's page off its screen and onto the helper's shelf as <paramref name="shelf"/> (letters and digits), alive, instead of closed.</summary>
+    public static void Shelve(int page, string shelf) => Send($"park {page} {shelf}");
+
+    /// <summary>A shelved page closes.</summary>
+    public static void Drop(string shelf) => Send($"drop {shelf}");
 
     /// <summary>Ad blocking on this page, this PC only: it reloads.</summary>
     public static void Ads(int page, bool on) => Send($"ads {page} {(on ? 1 : 0)}");
@@ -213,6 +238,8 @@ public static class MediaBrowser
             _lines = lines;
             _problem = null;
             _ready = false;
+            _generation++;
+            _webSession = false; // (a new helper holds no sign-ins)
             _startedAt = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
             new Thread(() => Writer(process, lines)) { IsBackground = true, Name = "Browser in" }.Start();
             new Thread(() => Reader(process)) { IsBackground = true, Name = "Browser out" }.Start();
@@ -338,6 +365,7 @@ public static class MediaBrowser
                 w.InnerTime = Num(a[5]);
                 w.InnerPaused = a[4] == "1";
                 w.HasMedia = a[3] == "1";
+                w.Watched = true;
                 break;
             case "u" when a.Length >= 3 && int.TryParse(a[1], out var page3) && (uint)page3 < Reports.Length:
                 Reports[page3].Address = a[2]; // (never logged)

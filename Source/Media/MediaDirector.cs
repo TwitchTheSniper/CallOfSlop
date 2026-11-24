@@ -16,6 +16,15 @@ public static class MediaDirector
     /// <summary>Speakers heard at once, nearest first. Each is one more OpenAL source on a stream already decoded, so the cost is OpenAL's; this is about what a mix keeps clear.</summary>
     public const int MaxSpeakers = 8;
 
+    /// <summary>
+    /// Browser Screen pages kept on the helper's shelf after their screens went out of range or were pushed off the nearest <see cref="MaxPages"/>, and for how long. A shelved page is alive,
+    /// signed in and where it was, but hidden and unheard: nothing is drawn or copied for it, though a video in it plays on, so it is still on the clock when it comes back.
+    /// Sign-ins outlive the shelf anyway: every Browser Screen page shares the helper's one store until the game closes (docs/sandbox/MEDIA.md, "Sign-ins and out of range").
+    /// </summary>
+    public const int MaxShelved = 4;
+
+    public const double ShelfSeconds = 600; // (the Browser Screen panel's "Private page" says 10 minutes)
+
     private const double ScanEvery = 0.25, SyncEvery = 1, SeekEvery = 10, QuitAfter = 20;
 
     /// <summary>Seconds a page may show nothing before its panel says why rather than "Loading". A page on a slow line paints its first frame in a few seconds.</summary>
@@ -42,6 +51,21 @@ public static class MediaDirector
         public ushort Scrolled; // the last scroll this page was told to follow
         public double Opened; // when this peer asked for it
         public bool Stuck; // no picture after LoadTimeout: said once in the log
+        public bool Mine; // a Browser Screen page in this player's own sign-in store (OwnStore), for its life
+        public bool Back; // off the shelf: as leader it sends nothing until the page has said where it is (BackWait)
+    }
+
+    /// <summary>A page on the helper's shelf: whose it is, and under what name the helper keeps it.</summary>
+    private struct Shelved
+    {
+        public string? Name; // null: a free place
+        public ushort Body, Part;
+        public uint Seq;
+        public string Entry; // the address it was on when shelved
+        public double Since;
+        public int Generation; // the helper that holds it (MediaBrowser.Generation)
+        public ConstructWorld? World;
+        public bool Mine; // its sign-in store: it comes back only to a screen that would use the same one
     }
 
     private struct Near
@@ -51,6 +75,8 @@ public static class MediaDirector
     }
 
     private static readonly Page[] Pages = new Page[MaxPages];
+    private static readonly Shelved[] Shelf = new Shelved[MaxShelved];
+    private static int _shelfNames;
     private static readonly Near[] Closest = new Near[MaxPages];
     private static readonly Near[] Heard = new Near[MaxSpeakers];
     private static readonly ushort[] HeardBody = new ushort[MaxSpeakers], HeardPart = new ushort[MaxSpeakers];
@@ -233,7 +259,9 @@ public static class MediaDirector
             _heard = 0;
 
         // Pages whose part isn't among the nearest any more, or has moved on to another track, go first; and all of them if the browser went.
+        // A Browser Screen's page that is only out of range goes on the shelf instead, so it is still there, signed in and where it was, when its screen comes back into range.
         var browser = MediaBrowser.Problem == null;
+        ShelfUpkeep(g, world, now);
         for (var i = 0; i < Pages.Length; i++)
         {
             ref var page = ref Pages[i];
@@ -241,7 +269,11 @@ public static class MediaDirector
                 continue;
             var c = world?.Get(page.Body);
             var keep = browser && c != null && page.Part < c.PartCount && Listed(page.Body, page.Part) && c.Parts[page.Part].Media is { } m && m.Seq == page.Seq && (m.Entry == page.Entry || m.Entry is { } line && MediaEntry.IsWeb(line));
-            if (!keep)
+            if (keep)
+                continue;
+            if (browser && c != null && Shelvable(g!, c, i))
+                Shelve(world!, audio, i, now);
+            else
                 ClosePage(audio, i);
         }
         for (var n = 0; n < _closest; n++)
@@ -277,8 +309,8 @@ public static class MediaDirector
             audio.MediaSpeaker(k, follows);
         }
 
-        // Nothing has wanted the browser for a while: it goes, and what it held.
-        if (LivePages > 0)
+        // Nothing has wanted the browser for a while: it goes, and what it held. Not once a Browser Screen has used it: its sign-ins are in it, and they last until the game closes.
+        if (LivePages > 0 || MediaBrowser.WebSession)
             _idleSince = double.NaN;
         else if (MediaBrowser.Running)
         {
@@ -357,18 +389,126 @@ public static class MediaDirector
         ref var p = ref c.Parts[part];
         var m = p.Media!;
         var d = p.D;
-        var ads = MediaEntry.IsWeb(m.Entry!) ? BlockWebAds : BlockAds;
-        var opened = MediaEntry.IsWeb(m.Entry!) ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight, ads)
+        var web = MediaEntry.IsWeb(m.Entry!);
+        var ads = web ? BlockWebAds : BlockAds;
+        var mine = web && OwnStore(g, c, m);
+        var shelf = web ? OnShelf(world, body, part, m.Seq, mine) : -1;
+        var opened = web ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight, ads, shelf >= 0 ? Shelf[shelf].Name : null, mine)
             : MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight, ads);
         if (!opened)
             return;
+        var entry = m.Entry!;
+        if (shelf >= 0)
+        {
+            // (the address it was on: if the screen went elsewhere meanwhile, its first sync sends it there, and if not, nothing reloads it)
+            entry = Shelf[shelf].Entry;
+            Console.WriteLine($"[media] page {free}: back from the shelf after {now - Shelf[shelf].Since:0} s");
+            Shelf[shelf].Name = null;
+        }
         VideoFeeds.Forget(free);
         Pages[free] = new Page
         {
-            Open = true, Body = body, Part = part, Seq = m.Seq, Entry = m.Entry!, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
-            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads, Opened = now,
+            Open = true, Body = body, Part = part, Seq = m.Seq, Entry = entry, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
+            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads, Opened = now, Mine = mine, Back = shelf >= 0,
         };
         audio.MediaPage(free, MediaBrowser.Block(free));
+    }
+
+    /// <summary>
+    /// Which of the helper's two sign-in stores a Browser Screen's page opens in: this player's own for a screen on a construct they built or a page they set, so their sign-ins
+    /// hold on every screen of theirs; the other one, shared by other players' screens, for the rest. A page a stranger chose (shown with "Show other players' web pages") never
+    /// runs with this player's sign-ins. A page keeps its store for its life: a friend who takes the lead on an open page doesn't move it.
+    /// </summary>
+    private static bool OwnStore(Game g, Construct c, CMedia m)
+    {
+        var me = g.Local?.Id ?? 255;
+        return me != 255 && (m.By == me || c.Owner == me);
+    }
+
+    /// <summary>
+    /// The page could come back as it is: a Browser Screen's, still on the same link, on, shown on this PC and loaded. Anything else closes (a screen closed or set to another link,
+    /// other players' pages turned off, a page that failed).
+    /// </summary>
+    private static bool Shelvable(Game g, Construct c, int i)
+    {
+        ref var page = ref Pages[i];
+        if (!MediaEntry.IsWeb(page.Entry) || page.Part >= c.PartCount)
+            return false;
+        var r = MediaBrowser.Report(i);
+        return c.Parts[page.Part].Media is { State: not MediaState.Stopped } m && m.Seq == page.Seq && m.Entry is { } line && MediaEntry.IsWeb(line) && !Hidden(m, g.Local?.Id ?? 255)
+            && r.Error == 0 && r.Failure.Length == 0;
+    }
+
+    /// <summary>Page <paramref name="i"/> off its screen and onto the helper's shelf. The oldest shelved page closes if the shelf is full.</summary>
+    private static void Shelve(ConstructWorld world, Audio audio, int i, double now)
+    {
+        ref var page = ref Pages[i];
+        var at = 0;
+        for (var k = 0; k < Shelf.Length; k++)
+        {
+            if (Shelf[k].Name == null)
+            {
+                at = k;
+                break;
+            }
+            if (Shelf[k].Since < Shelf[at].Since)
+                at = k;
+        }
+        if (Shelf[at].Name != null)
+            DropShelved(at, "the shelf was full");
+        var name = "s" + (++_shelfNames).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Shelf[at] = new Shelved { Name = name, Body = page.Body, Part = page.Part, Seq = page.Seq, Entry = page.Entry, Since = now, Generation = MediaBrowser.Generation, World = world, Mine = page.Mine };
+        page.Open = false;
+        page.Entry = "";
+        audio.MediaPage(i, null);
+        MediaBrowser.Shelve(i, name);
+        VideoFeeds.Forget(i);
+        Console.WriteLine($"[media] page {i}: its screen is out of range, shelved as {name} for up to {ShelfSeconds:0} s");
+    }
+
+    private static int OnShelf(ConstructWorld world, ushort body, ushort part, uint seq, bool mine)
+    {
+        for (var k = 0; k < Shelf.Length; k++)
+            if (Shelf[k].Name != null && Shelf[k].World == world && Shelf[k].Body == body && Shelf[k].Part == part && Shelf[k].Seq == seq && Shelf[k].Mine == mine && Shelf[k].Generation == MediaBrowser.Generation)
+                return k;
+        return -1;
+    }
+
+    /// <summary>
+    /// Each scan: shelved pages whose time is up, whose screen was closed or set to another link, or whose world this isn't, close. A body that isn't in this peer's world
+    /// (streamed out, say) keeps its page until its time is up. A page whose helper went is forgotten: it went with it.
+    /// </summary>
+    private static void ShelfUpkeep(Game? g, ConstructWorld? world, double now)
+    {
+        var me = g?.Local?.Id ?? 255;
+        for (var k = 0; k < Shelf.Length; k++)
+        {
+            ref var s = ref Shelf[k];
+            if (s.Name == null)
+                continue;
+            if (s.Generation != MediaBrowser.Generation || !MediaBrowser.Running)
+            {
+                s.Name = null;
+                continue;
+            }
+            var c = world?.Get(s.Body);
+            var why = s.World != world ? "another world"
+                : now - s.Since > ShelfSeconds ? "its time was up"
+                : c == null ? null
+                : s.Part >= c.PartCount || c.Parts[s.Part].Media is not { State: not MediaState.Stopped } m || m.Seq != s.Seq || m.Entry is not { } line || !MediaEntry.IsWeb(line) ? "its screen closed or changed"
+                : Hidden(m, me) ? "other players' pages are off"
+                : OwnStore(g!, c, m) != s.Mine ? "its screen changed hands"
+                : null;
+            if (why != null)
+                DropShelved(k, why);
+        }
+    }
+
+    private static void DropShelved(int k, string why)
+    {
+        Console.WriteLine($"[media] shelved page {Shelf[k].Name}: closed, {why}");
+        MediaBrowser.Drop(Shelf[k].Name!);
+        Shelf[k].Name = null;
     }
 
     private static void ClosePage(Audio audio, int i)
@@ -470,6 +610,14 @@ public static class MediaDirector
     /// </summary>
     private static void WebSync(Game g, ref Page page, CMedia m, int i, string web, MediaReport r, double now)
     {
+        if (page.Back)
+        {
+            // Off the shelf: until the helper says where the page is, its report holds nothing (Prepare emptied it), and a leader would tell everyone the page
+            // went to the top with no video, or send it to an address it may be on already.
+            if (!r.Watched && now - page.Opened < BackWait)
+                return;
+            page.Back = false;
+        }
         var address = r.Address;
         var at = MediaEntry.Web + address;
         if (web != page.Entry)
@@ -529,6 +677,7 @@ public static class MediaDirector
     }
 
     private const int ScrollStep = 64; // of 65535: under a pixel on most pages
+    private const double BackWait = 3; // seconds a page off the shelf may take to say where it is before it syncs as it stands
     private const double WebSendEvery = 0.25, WebSeekEvery = 5;
 
     /// <summary>Back, forward or reload on this peer's page. What comes of it is shared as a click's would be.</summary>
@@ -746,6 +895,8 @@ public static class MediaDirector
         for (var i = 0; i < Pages.Length; i++)
             if (Pages[i].Open)
                 ClosePage(audio, i);
+        for (var k = 0; k < Shelf.Length; k++)
+            Shelf[k].Name = null; // (they go with the helper)
         MediaBrowser.Shutdown();
     }
 }

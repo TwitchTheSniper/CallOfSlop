@@ -19,7 +19,7 @@ internal sealed class Page : IDisposable
     public const string Origin = "https://callofslop.invalid", Address = Origin + "/player.html";
     private const string Report = "SLOP ";
     private readonly int _slot;
-    private readonly SharedBlock _block;
+    private readonly PageSink _sink;
     private readonly ChromiumWebBrowser _web;
     private readonly PageSound _audioHandler;
     private readonly AdSwitch _ads;
@@ -36,12 +36,12 @@ internal sealed class Page : IDisposable
     {
         _slot = slot;
         _ads = new AdSwitch(ads);
-        _block = new SharedBlock(block, width, height);
+        _sink = new PageSink(new SharedBlock(block, width, height), slot);
         var html = Html(id, seconds, width, height);
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
-            RenderHandler = new Painter(_block, slot),
-            AudioHandler = _audioHandler = new PageSound(_block, slot),
+            RenderHandler = new Painter(_sink),
+            AudioHandler = _audioHandler = new PageSound(_sink),
             RequestHandler = new Requests(html, new AdResources(_ads)),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
@@ -57,7 +57,7 @@ internal sealed class Page : IDisposable
             Program.Say($"pfail {_slot} {(e.Frame.IsMain ? "the page" : "YouTube's player")} didn't load ({e.ErrorCode})");
         };
         _web.Size = new System.Drawing.Size(width, height);
-        new Thread(() => PageInput.Run(_block, _web, keys: false, () => _closing, Hands)) { IsBackground = true, Name = "Mouse " + slot }.Start();
+        new Thread(() => PageInput.Run(_sink, _web, keys: false, () => _closing, Hands)) { IsBackground = true, Name = "Mouse " + slot }.Start();
         _web.CreateBrowser(null, new BrowserSettings { WindowlessFrameRate = 30 }); // (settings given to the constructor only count when it creates the browser itself)
     }
 
@@ -234,8 +234,9 @@ internal sealed class Page : IDisposable
     public void Dispose()
     {
         _closing = true;
+        var block = _sink.Detach(); // (a paint or a packet in flight finishes first, and none comes after)
         _web.Dispose();
-        _block.Dispose();
+        block?.Dispose();
     }
 
     private static string Html(string id, double seconds, int width, int height) => string.Create(CultureInfo.InvariantCulture, $$"""
