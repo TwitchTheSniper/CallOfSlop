@@ -1094,7 +1094,7 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
   piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
   so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue (one with no plain conveyor way last); a maker
-  nothing leads from to the destination (no conveyor, join, Splitter, Router, store, rolled-through bed or lifter edge, walked
+  nothing leads from to the destination (no conveyor, chute, join, Splitter, Router, store, rolled-through bed or lifter edge, walked
   backwards by `ConstructLogisticsPlan.Leads`) is never asked, and the row says "no conveyor or arm leads from the X to the Y: link
   one"; a link whose maker stops leading there (an older save, a cut way) takes its lines back off that maker (`Unask`, a look every
   10 s). Before, such a maker made the pieces, they went to storage, and the link asked again without end (the Zero Day works' line

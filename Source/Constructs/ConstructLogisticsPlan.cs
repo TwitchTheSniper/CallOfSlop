@@ -592,7 +592,7 @@ public static class ConstructLogisticsPlan
 
     /// <summary>
     /// Marks (<see cref="_reach"/> equal to <see cref="_reachStamp"/>) every part a piece leaving it could reach part <paramref name="dest"/>
-    /// from: backwards along fed conveyors and lifter edges, on through anything that passes a piece on (joins, Splitters, Routers, stores, run
+    /// from: backwards along fed conveyors, chutes and lifter edges, on through anything that passes a piece on (joins, Splitters, Routers, stores, run
     /// tables, a Panel Former's or a Laser Cutter's bed it rolls through), never through a machine that uses what comes in. Allocates only
     /// when a bigger body is seen first.
     /// </summary>
@@ -624,7 +624,7 @@ public static class ConstructLogisticsPlan
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref readonly var r = ref c.Routes[k];
-                if (r.Type != RouteType.Conveyor || !r.FedEnd || Node(c, r.To) != at)
+                if (r.Type is not (RouteType.Conveyor or RouteType.Chute) || !r.FedEnd || Node(c, r.To) != at)
                     continue;
                 Mark(Node(c, r.Source), queue, ref tail);
             }
@@ -949,7 +949,9 @@ public static class ConstructLogisticsPlan
     {
         if (e.Maker >= c.PartCount || c.Parts[e.Maker].Orders is not { Bill: false } q)
             return;
-        var idle = world.StoreOf(c, e.Maker) is not { JobTicks: > 0 };
+        var md = c.DefOf(e.Maker);
+        var idle = md.IsExtruder && !md.IsPanelFormer ? ConstructExtruder.ProductOf(c, e.Maker) < 0 // (an Extruder's JobTicks are millimetres not yet a step, often 0 mid-piece: the piece on its die says)
+            : world.StoreOf(c, e.Maker) is not { JobTicks: > 0 };
         var changed = false;
         for (var k = q.Count - 1; k >= 0; k--)
         {
