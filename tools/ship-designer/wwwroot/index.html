@@ -936,6 +936,7 @@ window.addEventListener("keydown", e => {
     if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
     else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
   } else if (e.key === "Escape") select(null, 0);
 });
 
