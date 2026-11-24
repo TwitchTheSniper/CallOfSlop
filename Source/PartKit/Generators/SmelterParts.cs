@@ -30,7 +30,7 @@ public sealed class SmelterParts : IPartGenerator
     private const string Brick = "#7d3a24"; // the furnace's darker courses
     private const string Sand = "#a08a64", Soot = "#2b2b2b";
     public const double SockY = 0.25; // the side sockets' height on the Core, a block and the Casting Bed (they weld at one height)
-    public const double BlockTop = 3.0, CoreTop = 2.0, BedTop = 0.42; // (SmelterRender draws over these)
+    public const double BlockTop = SmelterWorks.HearthTop, CoreTop = 2.0, BedTop = 0.42; // (SmelterWorks lays the works over these: its HearthTop and BedTop)
     public const int OutBin = 400, InBin = 200; // the Core's bins at x1 (the old tier 1 Smelter's), grown by its squares' rate
     private const int MaxCells = 50, MaxSide = 10;
 
@@ -168,15 +168,19 @@ public sealed class SmelterParts : IPartGenerator
                 (mn[1], mx[1]) = (y0, y1);
                 return L(mn, mx, colour, finish, paint);
             }
-            p.Add(Seam(On(-0.004, 0.022, -e, e, 0.0, 0.24, MachineLook.Base, "dirty steel"), face));
-            foreach (var a in new[] { -e + 0.02, e - 0.15 })
-                p.Add(Seam(On(-0.004, 0.06, a, a + 0.13, 0.24, t - 0.1, MachineLook.Base), face)); // (buckstays)
-            p.Add(Seam(On(-0.004, 0.034, -e, e, t - 0.1, t - 0.004, MachineLook.Base), face)); // (the cap angle)
-            p.Add(Seam(On(-0.004, 0.02, -e + 0.15, e - 0.15, 1.62, 1.7, MachineLook.Steel, "steel"), face)); // (a tie strap)
-            p.Add(Seam(On(-0.004, 0.014, -e + 0.15, e - 0.15, 0.9, 0.98, Brick, paint: true), face)); // (a darker course)
-            p.Add(Seam(On(-0.004, 0.014, -e + 0.15, e - 0.15, 2.3, 2.38, Brick, paint: true), face));
+            // (Two squares side by side both draw the faces they meet on, 6 mm apart, each reaching into the other's room: the -x and -z
+            // faces' dressing sits a few millimetres off the +x and +z faces' in height and along, so no two of them share a plane.)
+            var v = sg < 0 ? 0.004 : 0.0;
+            var w = sg < 0 ? 0.03 : 0.0;
+            p.Add(Seam(On(-0.004, 0.022, -e + 0.004 + v, e - 0.004 - v, v, 0.24 - 5 * v, MachineLook.Base, "dirty steel"), face)); // (the skirt)
+            foreach (var a in new[] { -e + 0.02 + w, e - 0.15 - w })
+                p.Add(Seam(On(-0.004, 0.06, a, a + 0.13, 0.24 - 5 * v, t - 0.1 - v, MachineLook.Base), face)); // (buckstays)
+            p.Add(Seam(On(-0.004, 0.034, -e + 0.004 + 2 * v, e - 0.004 - 2 * v, t - 0.1 + v, t - 0.004 - v, MachineLook.Base), face)); // (the cap angle)
+            p.Add(Seam(On(-0.004, 0.02, -e + 0.15 + 2 * v, e - 0.15 - 2 * v, 1.62 - 10 * v, 1.7 - 10 * v, MachineLook.Steel, "steel"), face)); // (a tie strap)
+            p.Add(Seam(On(-0.004, 0.014, -e + 0.15 + 2 * v, e - 0.15 - 2 * v, 0.9 - 10 * v, 0.98 - 10 * v, Brick, paint: true), face)); // (a darker course)
+            p.Add(Seam(On(-0.004, 0.014, -e + 0.15 + 2 * v, e - 0.15 - 2 * v, 2.3 - 10 * v, 2.38 - 10 * v, Brick, paint: true), face));
             foreach (var a in new[] { -0.5, 0.0, 0.5 })
-                p.Add(Seam(On(0.022, 0.036, a - 0.02, a + 0.02, 0.1, 0.14, MachineLook.Steel, "steel"), face)); // (the plinth's bolts)
+                p.Add(Seam(On(0.022, 0.036, a - 0.02 + 5 * w, a + 0.02 + 5 * w, 0.1, 0.14, MachineLook.Steel, "steel"), face)); // (the plinth's bolts)
             // The joint strip on top, where a block of its own square is welded on this face.
             double[] smn = new double[3], smx = new double[3];
             (smn[n], smx[n]) = sg > 0 ? (e - 0.05, 1.0) : (-1.0, -e + 0.05);
@@ -184,8 +188,8 @@ public sealed class SmelterParts : IPartGenerator
             (smn[1], smx[1]) = (t - 0.004, t + 0.02);
             p.Add(Fill(L(smn, smx, Body, paintable: true), face));
         }
-        // The top: a darker crown of brick with a raised rim round it (looks over the body's top).
-        p.Add(L([-0.8, t - 0.004, -0.8], [0.8, t + 0.016, 0.8], Brick, paintable: true));
+        // The top: a lone furnace's darker crown of brick (a square's top reads as one: its joints are the seamFill strips).
+        p.Add(Alone(L([-0.8, t - 0.004, -0.8], [0.8, t + 0.016, 0.8], Brick, paintable: true)));
         // ---- Alone (a 1 x 1, or a loose block): its own small furnace ----
         const double fz = -e - 0.012; // (the front face, -z)
         p.Add(Alone(Seam(L([-0.42, 0.8, fz - 0.05], [0.42, 0.86, fz], MachineLook.Base), "-z"))); // (the door's frame)
@@ -249,10 +253,12 @@ public sealed class SmelterParts : IPartGenerator
         p.Add(Box([-e, 0.003, -e], [e, 0.3, e], MachineLook.Base));
         p.Add(Box([-0.94, 0.3, -0.94], [0.94, BedTop, 0.94], Sand));
         // The sand bed's steel kerb round it, hazard paint on its rim (it burns), the moulds pressed into the sand, a HOT plate.
-        p.Add(L([-e, 0.3, -e], [e, BedTop + 0.04, -0.94], MachineLook.Steel, "dirty steel"));
-        p.Add(L([-e, 0.3, 0.94], [e, BedTop + 0.04, e], MachineLook.Steel, "dirty steel"));
-        p.Add(L([-e, 0.3, -0.94], [-0.94, BedTop + 0.04, 0.94], MachineLook.Steel, "dirty steel"));
-        p.Add(L([0.94, 0.3, -0.94], [e, BedTop + 0.04, 0.94], MachineLook.Steel, "dirty steel"));
+        // (its long kerbs stand 9 mm in from its z faces and 45 mm proud: clear of a furnace front's plates and taphole beside it)
+        const double k = e - 0.009, kt = BedTop + 0.045;
+        p.Add(L([-e, 0.3, -k], [e, kt, -0.94], MachineLook.Steel, "dirty steel"));
+        p.Add(L([-e, 0.3, 0.94], [e, kt, k], MachineLook.Steel, "dirty steel"));
+        p.Add(L([-e, 0.3, -0.94], [-0.94, kt, 0.94], MachineLook.Steel, "dirty steel"));
+        p.Add(L([0.94, 0.3, -0.94], [e, kt, 0.94], MachineLook.Steel, "dirty steel"));
         MachineLook.Hazard(p, [-e - 0.012, 0.12, -e - 0.012], [e + 0.012, 0.26, -e]);
         MachineLook.Hazard(p, [-e - 0.012, 0.12, e], [e + 0.012, 0.26, e + 0.012]);
         foreach (var (x0, z0, x1, z1) in Moulds)

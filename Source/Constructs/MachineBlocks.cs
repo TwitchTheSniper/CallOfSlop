@@ -1411,8 +1411,12 @@ public static class MachineBlocks
         for (var a = 0; a < c.MachineAsmCount; a++)
         {
             ref readonly var asm = ref c.MachineAsms[a];
-            sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
-            if (asm.W > 0)
+            var squares = c.Parts[asm.Core].D.BlockSquares;
+            sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {(squares ? ConstructRefining.SizeText(c, asm.Core) : Describe(c, asm))}");
+            if (squares)
+                foreach (ref readonly var q in Squares(c, asm))
+                    sb.Append($" [{q.N}x{q.N} at {q.X0},{q.Z0}, {q.Whole} whole, ends {Convert.ToString(q.Ends, 2)}]");
+            if (asm.W > 0 && !squares)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
             if (asm.LowBed)
                 sb.Append(", low bed (runs roll on and off)");

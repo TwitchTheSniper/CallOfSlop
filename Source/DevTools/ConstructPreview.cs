@@ -367,7 +367,8 @@ public static partial class ConstructPreview
                     floors.Add((bhi.Y, (bhi.X - blo.X) * (bhi.Z - blo.Z), i));
             }
             _partFrames?.Add(Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t));
-            var moving = Boxes(d, i, p.Rot, p.Paint, p.Finish, p.Pos, q, t, pos, nrm, triLook, count: true);
+            var seams = d.HasSeams && i < c.BlockJoined.Length && c.BlockJoined[i] != 0; // (a block machine's cell: drawn by its own welded faces, as the game does)
+            var moving = Boxes(d, i, p.Rot, p.Paint, p.Finish, p.Pos, q, t, pos, nrm, triLook, count: true, joined: seams ? c.BlockJoined[i] : MachineBlocks.InMachine);
             var walled = ConstructStoreVolume.Walled(p, d);
             if (walled)
             {
@@ -400,7 +401,7 @@ public static partial class ConstructPreview
             if (parts.Length > 0)
                 parts.Append(',');
             parts.Append(JsonSerializer.Serialize(new object[] { d.Name, first, triLook.Count - first }));
-            placed.Add((walled || moving ? -1 : KindOf(d, p.Paint, p.Finish), Quaternion.Normalize(Quaternion.Concatenate(Rot24.Quat(p.Rot), q)), Vector3.Transform(p.Pos, q) + t, first, triLook.Count - first));
+            placed.Add((walled || moving || seams ? -1 : KindOf(d, p.Paint, p.Finish), Quaternion.Normalize(Quaternion.Concatenate(Rot24.Quat(p.Rot), q)), Vector3.Transform(p.Pos, q) + t, first, triLook.Count - first));
         }
         // The craft aboard, each part as its kind placed in the ship's frame (body to world to the ship's body).
         foreach (var (b, craft) in aboard ?? [])
@@ -481,7 +482,7 @@ public static partial class ConstructPreview
         }
 
         // A part's drawn boxes into the lists (part i of the ship, or -1 for a kind's own triangles); whether any box is on a moving track.
-        bool Boxes(ConstructPartDef d, int i, byte rot, uint paint, byte finish, Vector3 ppos, Quaternion q, Vector3 t, List<Vector3> P, List<Vector3> N, List<ushort> L, bool count)
+        bool Boxes(ConstructPartDef d, int i, byte rot, uint paint, byte finish, Vector3 ppos, Quaternion q, Vector3 t, List<Vector3> P, List<Vector3> N, List<ushort> L, bool count, byte joined = MachineBlocks.InMachine)
         {
             var anyTrack = false;
             for (var boxIndex = 0; boxIndex < d.Boxes.Length; boxIndex++)
@@ -489,11 +490,11 @@ public static partial class ConstructPreview
                 var b = d.Boxes[boxIndex];
                 var track = i >= 0 ? _trackOf?.Invoke(i, boxIndex) ?? (byte)0 : (byte)0;
                 anyTrack |= track != 0;
-                if (b.Hidden || b.SeamHidden(MachineBlocks.InMachine))
+                if (b.Hidden || b.SeamHidden(joined))
                 {
                     if (count)
                         _skipped++;
-                    continue; // (and a block machine's "seamFill": shown as a lone cell, nothing is welded to it)
+                    continue; // (and a block machine's "seamFill": shown as a lone cell unless the ship's own welds say otherwise)
                 }
                 var centre = t + Vector3.Transform(ppos + Rot24.Apply(rot, b.Center), q);
                 var m = b.Model(rot, Vector3.Zero) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(centre);
