@@ -124,6 +124,11 @@ public static class ConstructFrames
         c.Frame = 0;
         c.FrameNew = false;
         c.FrameDt = 0;
+        if (c.FrameFarSlept)
+        {
+            c.FrameFarSlept = false;
+            c.Wake(); // (put to sleep only for its frame's sake: the world's own rules from here)
+        }
         c.KeepSpeed(); // (a ship's speed: past the physics' limit for a free body, Construct.SpeedKept)
         Leaves++;
     }
@@ -251,7 +256,7 @@ public static class ConstructFrames
                 }
                 if ((f.SpaceShip != 0) != posed)
                     continue; // (the other pass's)
-                Carry(c, f, posed);
+                Carry(c, f, posed, FarFromPeople(w, c, f));
                 continue;
             }
             if (!search || _candCount == 0 || c.Asleep || !CanRide(c) || (_tick + c.Id) % SearchEvery != 0 || !overflow && !NearCandidate(c))
@@ -263,6 +268,23 @@ public static class ConstructFrames
                     Rehome(w, c, frame); // (a truck with a crate aboard driven into a moving carrier: the crate comes into the carrier's frame too)
             }
         }
+    }
+
+    /// <summary>
+    /// Is frame <paramref name="f"/> (with rider <paramref name="c"/>) further than <see cref="ConstructFar.Range"/> from every person? Its riders
+    /// are then carried asleep, with no step (Sean, 2026-11-24: "I don't need to care about the hauler's cargo sliding around inside of it
+    /// when it's way off in the sky"), and settle when someone comes near. <see cref="ConstructFar.Hysteresis"/> either side of the line.
+    /// </summary>
+    private static bool FarFromPeople(ConstructWorld w, Construct c, Construct f)
+    {
+        if (ConstructFar.Range <= 0 || w.PeopleCount == 0 || c.GrabbedBy != 255 || c.NudgeBy != 255)
+            return false;
+        var reach = (c.FrameFarSlept ? ConstructFar.Range - ConstructFar.Hysteresis : ConstructFar.Range + ConstructFar.Hysteresis) + f.Radius;
+        var at = f.WorldCom;
+        for (var k = 0; k < w.PeopleCount; k++)
+            if (Vector3.DistanceSquared(w.People[k], at) < reach * reach)
+                return false;
+        return true;
     }
 
     private static readonly Construct[] _cand = new Construct[64];
@@ -304,7 +326,7 @@ public static class ConstructFrames
     /// velocity there: its move less the frame's motion), then placed by the frame's new pose, its velocity what it is in the
     /// world (so the frame's change of motion is felt), its last pose where the frame's last pose held it (the host's blend).
     /// </summary>
-    private static void Carry(Construct c, Construct f, bool posed)
+    private static void Carry(Construct c, Construct f, bool posed, bool far)
     {
         if (c.FrameNew)
         {
@@ -327,10 +349,17 @@ public static class ConstructFrames
         }
         if (c.Dirty)
             c.Rebuild();
-        if (f.SpaceAway != 0 && !c.Asleep)
+        if ((f.SpaceAway != 0 || far && !c.FrameFarSlept) && !c.Asleep)
         {
-            c.Asleep = true; // (its ship parked far out or in another system: carried there, never stepped at those floats' grain)
+            c.Asleep = true; // (its ship parked far out or in another system: carried there, never stepped at those floats' grain; or nobody came near it: FarFromPeople)
             c.SleepTicks = 0;
+        }
+        if (far)
+            c.FrameFarSlept = true; // (once, as it goes far: something that wakes it after (a lift, a door, a craft landing on it) steps it as before, and it sleeps again by the usual rule)
+        else if (c.FrameFarSlept)
+        {
+            c.FrameFarSlept = false;
+            c.Wake(); // (someone came near: it settles from where it was put to sleep, a step mid-slide or mid-fall)
         }
         var dt = c.FrameDt;
         c.FrameDt = 0;
@@ -377,7 +406,7 @@ public static class ConstructFrames
         if (c.Asleep)
         {
             // Carried with no step: woken when the frame's acceleration at it (the free fall in space aside) would move it.
-            if (SpaceTimeSpeed <= 1 || !posed)
+            if (!far && (SpaceTimeSpeed <= 1 || !posed))
             {
                 var a = (fv - c.FrameV - frameDv) * World.TickRate - c.FrameFree; // (the frame's turning at it, and what of its change is felt)
                 c.FrameFelt += (a.Length() - c.FrameFelt) * 0.3f;
