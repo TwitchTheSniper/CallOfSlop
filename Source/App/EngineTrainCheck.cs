@@ -69,6 +69,8 @@ public static class EngineTrainCheck
                 Console.WriteLine($"  t {now,5:0.0} s: cut {n} pipe(s) into the injector");
             }
             if (t % World.TickRate == 0)
+                Swing(c, w, now);
+            if (t % World.TickRate == 0)
                 for (var k = 0; k < c.ThrusterCount; k++)
                 {
                     ref var th = ref c.Thrusters[k];
@@ -89,5 +91,31 @@ public static class EngineTrainCheck
                 problems++;
             }
         return problems;
+    }
+
+    private static readonly PacketWriter _swingW = new();
+
+    /// <summary>Each swung bell: its gimbal's angles, the push's way against the drawn bell's axis (ConstructRender.GimbalTurn), and what a client is told.</summary>
+    private static void Swing(Construct c, ConstructWorld w, float now)
+    {
+        if (!ConstructThrust.WriteShown(_swingW, c))
+            c.ThrustSentKey = 0; // (unchanged since the last: sent again below)
+        if (c.ThrustSentKey == 0 && !ConstructThrust.WriteShown(_swingW, c))
+            return;
+        var r = new PacketReader(_swingW.Span);
+        r.U8();
+        r.U8();
+        ConstructThrust.ReadShown(ref r, w);
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var th = ref c.Thrusters[k];
+            if (!ConstructRender.GimbalTurn(c, k, true, out var turn))
+                continue;
+            var pushed = Vector3.Normalize(th.Dir + Vector3.Cross(th.GimbalX, th.Dir) * th.AngleX + Vector3.Cross(th.GimbalY, th.Dir) * th.AngleY);
+            var drawn = Vector3.Normalize(Vector3.TransformNormal(th.Dir, turn));
+            ConstructRender.GimbalTurn(c, k, false, out var heard);
+            var client = Vector3.Normalize(Vector3.TransformNormal(th.Dir, heard));
+            Console.WriteLine($"  t {now,5:0.0} s: {c.Parts[th.Part].D.Name}: gimbal {th.AngleX * 180f / MathF.PI:0.00}, {th.AngleY * 180f / MathF.PI:0.00} deg; drawn bell {MathF.Acos(Math.Clamp(Vector3.Dot(th.Dir, drawn), -1, 1)) * 180f / MathF.PI:0.00} deg off straight, {MathF.Acos(Math.Clamp(Vector3.Dot(pushed, drawn), -1, 1)) * 180f / MathF.PI:0.000} deg off the push, a client's {MathF.Acos(Math.Clamp(Vector3.Dot(pushed, client), -1, 1)) * 180f / MathF.PI:0.000} deg");
+        }
     }
 }

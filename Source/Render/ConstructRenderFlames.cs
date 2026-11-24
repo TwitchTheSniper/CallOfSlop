@@ -118,6 +118,8 @@ public static partial class ConstructRender
             if (p.Broken)
                 continue;
             var frame = p.Seg > 0 && p.Seg <= c.JointCount ? SegMatrix(c, p.Seg, alpha) * worldBody : worldBody;
+            if (GimbalTurn(c, c.FlameThruster[n], out var swing))
+                frame = swing * frame; // (a bell swung on its gimbal: its flame with it)
             foreach (var f in d.Flames)
             {
                 var level = FlameLevel(c, i, c.FlameThruster[n], f);

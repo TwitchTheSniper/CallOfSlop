@@ -252,6 +252,8 @@ public static class ConstructBoost
             t.AngleY += Math.Clamp(wantY - t.AngleY, -rate, rate);
             dir = Vector3.Normalize(Vector3.Transform(t.Dir + Vector3.Cross(t.GimbalX, t.Dir) * t.AngleX + Vector3.Cross(t.GimbalY, t.Dir) * t.AngleY, q));
         }
+        else
+            t.AngleX = t.AngleY = 0; // (a Gimbal Ring shot off: the bell stands straight, and is drawn so)
         if (d.ThrustKind == ThrustKind.Repulsor)
         {
             var f = Falloff(t.Gap, d.RepulsorRange);

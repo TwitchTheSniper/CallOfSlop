@@ -19,6 +19,7 @@ public struct CThruster
     public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
+    public float ShownX, ShownY; // a client: its gimbal's angles as the host last said (radians), for the bell's swing
     public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
     public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
     public float LightDelay; // s it takes to light from a standing start: a bell that needs an injector, with no Igniter in its train (0: at once)
@@ -57,6 +58,7 @@ public sealed partial class Construct
     public float HoverRateNow; // on a planet: how fast the height held moves this tick (m/s), which the hold follows as well as the height
     public float LiftHeld; // how long the driver has held Shift or Ctrl (s): on a planet the hold climbs and sinks faster the longer it is held
     public float ThrustShow; // 0..1: how hard its thrusters push, of all they could (server; clients get it in the pose)
+    public bool Swung; // a bell on it stands swung on its gimbal (the host's angles, or what a client was told): only then does the draw look for one (ConstructRender.SwingThruster)
     public long ThrustSentKey; // the server: the levels clients were last told (ConstructThrust.WriteShown)
     public int ThrustDark; // the server: how many times in a row it has told them every thruster is out
     public bool ThrustHeard; // a client: the host has told it each thruster's level since the last rebuild (else a flame burns by ThrustShow)
@@ -759,12 +761,21 @@ public static class ConstructThrust
             return false;
         var key = 17L + n;
         var lit = false;
+        var swung = 0;
         for (var k = 0; k < n; k++)
         {
-            var v = Level(c.Thrusters[k]);
+            ref var t = ref c.Thrusters[k];
+            var v = Level(t);
             key = key * 31 + v;
             lit |= v > 0;
+            if (Angle(t.AngleX) != 0 || Angle(t.AngleY) != 0)
+            {
+                key = (key * 31 + Angle(t.AngleX)) * 31 + Angle(t.AngleY);
+                swung++;
+            }
         }
+        c.Swung = swung > 0;
+        swung = Math.Min(swung, MaxSwung(n)); // (the rest are drawn straight on a client: one message stays under the MTU)
         if (key == c.ThrustSentKey && (lit || c.ThrustDark >= 3))
             return false; // (all out goes three times: it goes unreliably, and a lost one would leave a flame burning)
         c.ThrustDark = lit ? 0 : key == c.ThrustSentKey ? c.ThrustDark + 1 : 1;
@@ -772,8 +783,22 @@ public static class ConstructThrust
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Thrust).U16(c.Id).U16((ushort)n);
         for (var k = 0; k < n; k++)
             w.U8(Level(c.Thrusters[k]));
+        w.U16((ushort)swung); // (protocol 464: then each swung bell's index and its gimbal's two angles, 0.4 degree a step; the rest stand straight)
+        for (var k = 0; k < n && swung > 0; k++)
+            if (Angle(c.Thrusters[k].AngleX) != 0 || Angle(c.Thrusters[k].AngleY) != 0)
+            {
+                w.U16((ushort)k).U8((byte)Angle(c.Thrusters[k].AngleX)).U8((byte)Angle(c.Thrusters[k].AngleY));
+                swung--;
+            }
         return true;
     }
+
+    /// <summary>How many swung bells one message of <paramref name="n"/> levels can carry under <see cref="PacketWriter.Mtu"/> (4 bytes each).</summary>
+    private static int MaxSwung(int n) => Math.Max(0, (PacketWriter.Mtu - 9 - n) / 4);
+
+    private const float AngleStep = 0.4f * MathF.PI / 180f; // (127 steps: 50.8 degrees, past ConstructAero.ThrowMost's 43)
+
+    private static sbyte Angle(float a) => (sbyte)Math.Clamp(MathF.Round(a / AngleStep), -127, 127);
 
     private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level * t.Cap, t.Ab) * 255), 0, 255); // (a drive short of its works burns low)
 
@@ -787,6 +812,20 @@ public static class ConstructThrust
             var v = r.U8();
             if (fits)
                 c!.Thrusters[k].Shown = v / 255f;
+        }
+        if (fits)
+            for (var k = 0; k < n; k++)
+                c!.Thrusters[k].ShownX = c.Thrusters[k].ShownY = 0;
+        var swung = r.U16();
+        if (fits)
+            c!.Swung = swung > 0;
+        for (var m = 0; m < swung; m++)
+        {
+            var k = r.U16();
+            var x = (sbyte)r.U8();
+            var y = (sbyte)r.U8();
+            if (fits && k < n)
+                (c!.Thrusters[k].ShownX, c.Thrusters[k].ShownY) = (x * AngleStep, y * AngleStep);
         }
         if (fits)
             c!.ThrustHeard = true;
