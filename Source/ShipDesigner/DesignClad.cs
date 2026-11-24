@@ -265,9 +265,9 @@ public static partial class DesignScene
                 ob[k] += k % 2 == 0 ? -g : g;
             return ob;
         }).ToList();
-        bool Keep(double[] p)
+        bool Keep(double[] p, bool hull = true)
         {
-            if (!d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
+            if (hull && !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
                 return false;
             foreach (var o in others)
                 if (p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5])
@@ -279,6 +279,11 @@ public static partial class DesignScene
                     return false;
             }
             return true;
+        }
+        if (r.ToHull)
+        {
+            HullShell(d, r, t, colour, p => Keep(p, false), m);
+            return m;
         }
         // A slab: its extent on each world axis, cut along two of them (i across, j along), the third its thickness.
         void Slab(double[] s0, double[] s1, int i, int j)
@@ -334,5 +339,74 @@ public static partial class DesignScene
         if (!noHi)
             Slab(V(wide0 - 0.003 + (r.ToHull ? 0 : 0.006), hi[al], lo[up] + 0.003), V(wide1 + 0.003 - (r.ToHull ? 0 : 0.006), hi[al] + t, hi[up] - 0.003), ax, up);
         return m;
+    }
+
+    /// <summary>
+    /// The shell of a room out to the hull, from the very samples <see cref="RoomMesh"/> draws its volume with (its Span, its Edges at the
+    /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its inner face 5 mm off the hologram,
+    /// its outer face t beyond that. A quad whose middle is in a door, in an older room's shell or a group-mate's room is left out.
+    /// </summary>
+    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m)
+    {
+        const double g = 0.005;
+        var dk = d.DeckOf(r);
+        var (s0, s1) = Span(d, r);
+        var nv = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
+        const int nu = 4;
+        var hgt = dk.Height;
+        (double, double, double) P(double u, double v, double up) { var w = d.World(dk, u, v, up); return (w[0], w[1], w[2]); }
+        double V(int i) => s0 + (s1 - s0) * i / nv;
+        double Up(int k) => hgt * k / nu;
+        var side = DesignMesh.Tone(col, 0.9);
+        // Both faces of a strip of shell: inner (off by g) and outer (off by g + t), dir the plan offset per unit of push.
+        void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c)
+        {
+            var (a, b, cc, dd) = at(g);
+            var mid = new[] { (a.Item1 + cc.Item1) / 2, (a.Item2 + cc.Item2) / 2, (a.Item3 + cc.Item3) / 2 };
+            if (!keep(mid))
+                return;
+            m.Quad(a, b, cc, dd, c, false);
+            var (a2, b2, c2, d2) = at(g + t);
+            m.Quad(a2, b2, c2, d2, c, false);
+            // Its rims, so the shell reads solid edge-on.
+            m.Quad(a, b, b2, a2, side, false);
+            m.Quad(cc, dd, d2, c2, side, false);
+        }
+        for (var i = 0; i < nv; i++)
+        {
+            double va = V(i), vb = V(i + 1);
+            for (var k = 0; k < nu; k++)
+            {
+                double ua = Up(k), ub = Up(k + 1);
+                var (a0, b0) = Edges(d, r, va, ua);
+                var (a1, b1) = Edges(d, r, vb, ua);
+                var (a2, b2) = Edges(d, r, va, ub);
+                var (a3, b3) = Edges(d, r, vb, ub);
+                // Its first and last rows reach on to the floor's and ceiling's outer faces, so the corners close.
+                Two(o => (P(a0 - o, va, k == 0 ? ua - o : ua), P(a1 - o, vb, k == 0 ? ua - o : ua), P(a3 - o, vb, k == nu - 1 ? ub + o : ub), P(a2 - o, va, k == nu - 1 ? ub + o : ub)), col);
+                Two(o => (P(b0 + o, va, k == 0 ? ua - o : ua), P(b1 + o, vb, k == 0 ? ua - o : ua), P(b3 + o, vb, k == nu - 1 ? ub + o : ub), P(b2 + o, va, k == nu - 1 ? ub + o : ub)), col);
+            }
+            var (f0, h0) = Edges(d, r, va, 0);
+            var (f1, h1) = Edges(d, r, vb, 0);
+            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col);
+            var (c0, e0) = Edges(d, r, va, hgt);
+            var (c1, e1) = Edges(d, r, vb, hgt);
+            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col);
+        }
+        // Its ends, less one that runs on (the hologram's ends are at the drawn box's ends).
+        var noLo = r.RunOn && !d.Stacked;
+        var noHi = r.RunAft && !d.Stacked;
+        foreach (var (v, sg) in new[] { (r.Z0, -1.0), (r.Z1, 1.0) })
+        {
+            if (sg < 0 ? noLo : noHi)
+                continue;
+            for (var k = 0; k < nu; k++)
+            {
+                double ua = Up(k), ub = Up(k + 1);
+                var (a0, b0) = Edges(d, r, v, ua);
+                var (a1, b1) = Edges(d, r, v, ub);
+                Two(o => (P(a0 - g, v + sg * o, k == 0 ? ua - g : ua), P(b0 + g, v + sg * o, k == 0 ? ua - g : ua), P(b1 + g, v + sg * o, k == nu - 1 ? ub + g : ub), P(a1 - g, v + sg * o, k == nu - 1 ? ub + g : ub)), col);
+            }
+        }
     }
 }
