@@ -143,7 +143,7 @@ public static class DesignScene
             // the skin however the hull curves (Karl, 2026-11-24: a flat plane cut a box out of a curved side).
             var f = WindowFrame(d, hw);
             if (f is { } q)
-                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0.05));
+                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0));
         }
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
