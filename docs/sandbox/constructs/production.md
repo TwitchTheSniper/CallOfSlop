@@ -284,6 +284,52 @@ frame, allocating nothing; culled past 150 m):
 bunker's mouth on top and the Chute out on the -x side, so a saved chute is laid again to the new ports. **Self-test**: "Machine tier
 looks", "Refining", "Assembling", "Gathering".
 
+### The Scrap Breaker
+
+The Scrap Breaker (2026-11-24) is the Recycler on the block system, beside it: the Recycler stays as it is. Same rule as the refiners
+above (best split, R4, power share, chute load, next-size hint), with wrecks in place of ore. Parts by the part kit's `breaker_parts`
+(`Source/PartKit/Generators/BreakerParts.cs`); the rule is `BreakerWorks`, the take-in `ConstructRecycler.TakeIn`, the drawing
+`BreakerRender`, the hurt `BreakerWorks.AddHazards`.
+
+- **Breaker Core** (`Storage/BreakerCore.json`): 2 x 2 x 2 m, 1 t, 0.6 kW, olive like the Recycler. Its own 1.6 m mouth on top (grizzly
+  bars over the throat, a white rim with hazard paint at the front), the bin inside, **Chute out** on its -x side (`MachineLook.Port`), the
+  screen on its front (-z), a belt hatch under it where the collecting belt comes in, gauges, a mains box, a KEEP CLEAR plate. Nothing on
+  it moves. Alone it is a Recycler that takes a wreck bigger than its bin (below).
+- **Shredder Block** (`Storage/ShredderBlock.json`): 2 x 2 m, 2 t, a pit 0.3 m up to a 2 m rim, sockets on all four sides and the bottom,
+  welded on the Core's +x side. Alone (a 1 x 1) it carries its own small twin rotors, bearings, drive guard and motor and a belt under
+  them; in a square of 2 or more the faces between its blocks lose their dressing and one pair of rotors runs across the square.
+- **Recipes** (`Assembling.cs`'s Tail, at the end of AfterCloche): Breaker Core 260 steel, 4 Gear Sets, 3 Wiring Looms; Shredder Block
+  600 steel, 6 Gear Sets.
+- **The mouth is the whole bed**: the Core's own intake and every square's top, up to 3.6 m over the floor (`BreakerWorks.InMouth`). A
+  wreck (a single wrecked part, let go: `ConstructRecycler.Feedable`) is taken in when its middle is over any of them, the far squares too.
+- **The job**: one wreck at a time, `min(15, 2 + 0.04 kg)` s for each 600 units of its yield (never less than one), over the rate r
+  (`BreakerWorks.JobTicks`): a bare Core works at the Recycler's speed. The yield is the Recycler's (`RecyclingTable.YieldOf`). A wreck
+  bigger than the bin goes into an empty bin and the rest waits in the job until a chute empties it (the Recycler takes only what fits
+  whole). Creative: instant, unpowered, as the Recycler.
+- **Bin**: 600 x r units, at most 60,000 (`Storage.recycler.bin`, `ConstructRefining.RefineOf`). Power: 0.6 kW times the square system's
+  share, only while it works.
+
+| Squares | Rate | Bin | Blocks, mass | A 2 t wreck (1,000 metal) |
+| --- | --- | --- | --- | --- |
+| bare Core | x1 | 600 | 0, 1 t | 25 s |
+| 1x1 | x2.25 | 1,350 | 1, 3 t | 11.1 s |
+| 2x2 | x7 | 4,200 | 4, 9 t | 3.6 s |
+| 2x2, 1x1 (Production Showcase) | x8.25 | 4,950 | 5, 11 t | 3.0 s |
+| 3x3, 2x2, 1x1 | x24 | 14,400 | 14, 29 t | 1.1 s |
+| 4x4 | x33 | 19,800 | 16, 33 t | 0.8 s |
+
+**What is drawn** (`BreakerRender`, in the Core's frame, allocating nothing): each square's two toothed rotors along x (drum radius
+0.25 + 0.05n m, counter-turning while it works, a 1 x 1's too) with bearings, gearbox, motor and guard; a belt along z under them to the
+square's front; one collecting belt along the bed's front into the Core's belt hatch; a funnel skirt round the bed's outer edges (a tilted
+plate per cell edge, flaring 0.55 m out and 0.6 m up, hazard paint on its lip). The wreck being broken is drawn on the square it landed on,
+sinking into the rotors and squashing as the job goes (a draw offset only: its body is gone). **Hurt**: while it works, a box over each
+square from under its rotors to a metre over the rim hurts a player in it (the Smelter's `world.Hazards` and cap). The Core's own mouth
+hurts no one.
+
+**The wire** (protocol 461): a Breaker's store sends the wreck's def (`WriteDef`) and the cell it landed on, under the store's second flags
+byte's last bit (128). It isn't saved: a world loaded mid-job finishes the job but draws no wreck. **Self-test**: "Salvage haul",
+"Refining", "Assembling".
+
 ## Grow beds
 
 Hydroponics (Karl, 2026-11-22: the Cloche is the farmers' hydroponics ship, "it requires water to function"). A storage part with a
@@ -2364,6 +2410,9 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   while its stock lasts), a Press with a Bracket Die, a Lay-down Pad. The crane takes each angle into the press's bay and each bracket
   to the pad (about 8 s a carry and 6 s back at its 1 m carry height; in a minute: two angles in, a bracket out) and takes hand orders at its
   cabinet. The whole blueprint is now 86 by 22 m.
+- **The Scrap Breaker corner** (2026-11-24): its own floor east of the station's (x 82 to 94, z 0 to -14), a Breaker Core facing the
+  front aisle with a 2 x 2 and a 1 x 1 of Shredder Blocks west of it (x8.25, a bin of 4,950) and its Chute out into a Materials Bin;
+  signs "drop wrecks on any square" and KEEP CLEAR. The whole blueprint is now 94 by 22 m ([The Scrap Breaker](#the-scrap-breaker)).
 - **The layout**, left to right as material flows, a 2 m walkway along the front and one behind the first row, every screen, status lamp
   and sign facing a walkway: **power** (a Small Genset on two Fuel Tanks, a Battery, the main Switch with a Charge Gauge); **stock**
   (Storage Volumes, each beside the machine it feeds); **refining** (Smelter on iron ore, Sawmill on wood, Foundry on metal and stone,

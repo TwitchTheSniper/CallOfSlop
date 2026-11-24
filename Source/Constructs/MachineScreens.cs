@@ -401,6 +401,8 @@ public static class MachineScreens
         });
         Amount(card, 2, "Out ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
         card.Bar = st.Busy ? st.Progress / 100f : 0;
+        if (d.IsBreaker && MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part)
+            Squares(c, asm, card, 3); // (a Scrap Breaker: its rate and its shredders by size)
     }
 
     /// <summary>A gathering module's card: it has no screen, so this is what a monitor on its Data out shows (its state, why, its bin).</summary>

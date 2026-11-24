@@ -1100,6 +1100,10 @@ public sealed class Assembling : IPartGenerator
         // tools/MIGRATING.md; after everything: AfterCloche)
         (null, null, Rec("Saw Block", 45, 1, m: [("steel", 190), ("concrete", 40), ("rubber", 40)])),
         (null, null, Rec("Plank Stacker", 20, 1, m: [("steel", 50), ("concrete", 20)])),
+        // (the Scrap Breaker, PR 4 of the refiners: the Recycler's block version beside it, at its tier; its Breaker Core, a hopper over a bin
+        // with the Recycler's drive, and its Shredder Block, a steel pit with two toothed rotors; after everything: AfterCloche)
+        (null, null, Rec("Breaker Core", 40, 2, m: [("steel", 260)], p: [("Gear Set", 4), ("Wiring Loom", 3)])),
+        (null, null, Rec("Shredder Block", 50, 2, m: [("steel", 600)], p: [("Gear Set", 6)])),
     ];
 
     /// <summary>
@@ -1312,7 +1316,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker"];
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker", "Breaker Core", "Shredder Block"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

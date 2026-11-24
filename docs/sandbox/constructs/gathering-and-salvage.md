@@ -69,7 +69,9 @@ first piece of decision 14's refining chain.
   `baseSeconds + mass * secondsPerKg` (2 s + 0.04 s a kg, at most 15), then the material arrives in its bin; the part's
   **class** (its role's entry in the table's `roles`, else its `material`) and mass give the units. If its bin holds another
   material, or has no room, the part stays in the intake until it does. A **chute** (routed link) from the Recycler to a
-  Materials Bin carries the output on (the Recycling Station blueprint does this).
+  Materials Bin carries the output on (the Recycling Station blueprint does this). Its block version, the **Scrap Breaker** (a
+  Breaker Core with Shredder Blocks: a mouth the size of its bed, faster and a bigger bin by its squares), is in production.md
+  "The Scrap Breaker".
 - **Power.** In survival (infinite parts off) it needs the electrical system: a working battery whose links reach it with
   charge in it ("without power nothing happens"), and draws its `power` (600 W) only while it works. In **creative**
   (infinite parts on) it works instantly and needs no power.

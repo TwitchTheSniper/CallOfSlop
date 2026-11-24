@@ -48,7 +48,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         public static Script Build()
         {
-            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 86 by 22 m, and a slope through the back strip buries the panel line's Extruder." };
+            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 94 by 22 m, and a slope through the back strip buries the panel line's Extruder." };
             s.Group = "Production";
             s.Lay();
             return s;
@@ -243,6 +243,7 @@ public sealed class ProductionShowcase : IPartGenerator
             ChainCorner(asm); // (on the panel strip's floor: after it is laid)
             BackStrip(orders);
             CraneBay(); // (arms and cranes phase 7: a Bridge Crane working a line of its own behind the refiners)
+            BreakerCorner(); // (the Scrap Breaker, PR 4 of the refiners: past the Building Station's floor)
 
             Monitors(refine, orders);
             NetworkBoard(router);
@@ -501,6 +502,40 @@ public sealed class ProductionShowcase : IPartGenerator
             On("Lay-down Pad", 12.75f, -16.25f, Flow, "-y.0.0", Hazard);
             Sign(17.75f, -15.25f, CraneCol, "BRIDGE CRANE: die, press, pad. F on its cabinet: orders", false);
             Stripe(5.75f, -18.25f, true);
+        }
+
+        /// <summary>
+        /// The Scrap Breaker's corner (production.md "The Scrap Breaker"), on its own floor past the Building Station's (x 82 to 94, z 0 to
+        /// -14): a Breaker Core at x 90.25 with its screen to the front aisle, its Shredder Blocks west of it (its own +x): a 2 x 2 square and
+        /// a 1 x 1 beside it (x8.25 together), the mouth their whole bed; its Chute out east into a Materials Bin. Drop a wreck on any square.
+        /// </summary>
+        private void BreakerCorner()
+        {
+            for (var j = 0; j < TilesZ; j++)
+                for (var i = TilesX + 9; i < TilesX + 15; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == 0 ? Aisle : Floor);
+                    Finish(t, j == 0 ? "painted deck plate" : "concrete");
+                }
+            var core = On("Breaker Core", 90.25f, -6.25f, Back, paint: Recycling);
+            var b10 = Shred(core, "+x", "-x");
+            var b20 = Shred(b10, "+x", "-x");
+            Shred(b10, "+z", "-z");
+            Shred(b20, "+z", "-z");
+            Shred(b20, "+x", "-x"); // (the 1 x 1, beside the 2 x 2 on the Core's row)
+            Output(core, 92.75f, -6.25f); // (by its Chute out, on its east side)
+            Sign(88.25f, -2.75f, Recycling, "SCRAP BREAKER: drop wrecks on any square; big squares pay");
+            Sign(92.75f, -9.75f, Recycling, "KEEP CLEAR of the rotors while it works");
+        }
+
+        private const string Recycling = "#7d9a4a";
+
+        private VPart Shred(VPart on, string socket, string by)
+        {
+            var b = Onto(on, socket, "Shredder Block", by);
+            Paint(b, Recycling);
+            return b;
         }
 
         /// <summary>A part's socket's place (vehicle coordinates).</summary>
