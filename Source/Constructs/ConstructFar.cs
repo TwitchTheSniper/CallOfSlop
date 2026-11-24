@@ -25,6 +25,9 @@ public static class ConstructFar
 
     private static uint _tick;
 
+    /// <summary>The far LOD's tick count: the far pass steps on the ticks a multiple of <see cref="Every"/> (ConstructCruise.cs lines up with it).</summary>
+    public static uint Tick => _tick;
+
     /// <summary>Marks the far bodies of <paramref name="world"/>, then steps its physics: once as before when none is far, else the near pass and the far pass.</summary>
     public static void Physics(ConstructWorld world, IWorldQuery query, float dt)
     {
@@ -64,6 +67,25 @@ public static class ConstructFar
         {
             ConstructPhysics.Pass = 0;
         }
+    }
+
+    /// <summary>
+    /// Is body <paramref name="c"/> further than <see cref="Range"/> (and its radius) from every person, or falling round a planet on its rail? A Material
+    /// Bundle a box or a bucket would spill is held back then (ConstructScoops.Into) (2026-11-24: two Requisition Crates on a ship 4 km over Caledon poured a 25 kg Material Bundle
+    /// each every second, which fell at 320 m/s for half a minute each, awake, and nobody near to see them). False with nobody given.
+    /// </summary>
+    public static bool Unwatched(ConstructWorld world, Construct c)
+    {
+        if (c.OnRail)
+            return true; // (in free fall nothing runs out of a box)
+        if (Range <= 0 || world.PeopleCount == 0 || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.CarriedBy != 0)
+            return false;
+        var reach = Range + c.Radius;
+        var at = c.WorldCom;
+        for (var k = 0; k < world.PeopleCount; k++)
+            if (Vector3.DistanceSquared(world.People[k], at) < reach * reach)
+                return false;
+        return true;
     }
 
     /// <summary>Is a far body's logic and power due this tick (and so stepped by <see cref="Construct.FarLogic"/> ticks' time)?</summary>

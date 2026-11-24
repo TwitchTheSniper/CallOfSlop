@@ -415,6 +415,8 @@ public static partial class ConstructLifters
                 var d = lo.DefOf(0);
                 if (!zone.Holds(lo, d) || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d) || PickWhy(world, lo) != null)
                     continue;
+                if (b.DefOf(pt.Part).IsBakeOven && ConstructBakeOven.Keeps(world, b, pt.Part, lo))
+                    continue; // (in an oven's tunnel: its doors shut, or it rolls out to its way out first)
                 Freeform.PartWorld(lo, 0, out var pp, out var pr);
                 var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
                 if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
@@ -697,10 +699,11 @@ public static partial class ConstructLifters
                 // (an oven's bed: its clear height over the whole bed, ConstructBakeOven.Bed)
                 if (!MachineBlocks.TryOf(b, part, out var oasm) || oasm.W == 0 || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(b, part), out toCore))
                     return false;
+                // (and on along its way out: a baked part rolls out of the tunnel's far end onto that run, ConstructRollOut.OutOf)
                 var obed = new ConstructBakeOven.Bed(b, oasm);
-                var oo = b.Parts[part].D.BlockOrigin ?? Vector3.Zero;
-                min = new Vector3(oo.X + (obed.X0 - 0.5f) * obed.Cell, obed.Top, oo.Z + (obed.Z0 - 0.5f) * obed.Cell);
-                max = min + new Vector3(obed.W * obed.Cell, MathF.Max(obed.Clear, 0.5f), obed.L * obed.Cell);
+                var a = Vector3.Transform(new Vector3(0, obed.Top, 0), obed.ToCore);
+                var z = Vector3.Transform(new Vector3(obed.Across, obed.Roof, obed.Along + ConstructRollOut.OutReach(b, part)), obed.ToCore);
+                (min, max) = (Vector3.Min(a, z), Vector3.Max(a, z));
                 return true;
             }
             if (ConstructAssembling.FitOf(b, part) is not { Limited: true, W: > 0 } fit || !MachineBlocks.TryOf(b, part, out var asm)

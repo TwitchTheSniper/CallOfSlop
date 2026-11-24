@@ -54,13 +54,16 @@ public static unsafe class SunShadows
     {
         public GlBuffer Vbo, Shapes;
         public int Count, ShapeVerts, Used;
-        public int MainVer = -1, DoorVer = -1; // (ConstructShapeVersion: what this list and Door's were made from)
+        public int MainVer = -1, DoorVer = -1, PieceVer = -1; // (ConstructShapeVersion: what this list, Door's and Piece's were made from)
         public float Radius;
 
         // The door parts (each door and the leaves riding it) as a small list of their own, made again when a door starts or
         // settles; this one holds every other part and is made again only when one of them changed (2026-11-23: a door on the
         // Zero Day works made all of its 250,000 boxes again, a 40 ms frame).
         public Caster? Door;
+
+        // The pieces machines made (ConstructShapeVersion.Pieces), likewise: they come and go a few times a second on a works.
+        public Caster? Piece;
 
         // The boxes and shapes sorted by cell of the body's frame (CellSize), and each non-empty cell's slice and bounds, in
         // cell order: a pass that covers part of a big body (the sun's square, a lamp's reach) draws only the cells it reaches.
@@ -332,7 +335,7 @@ public static unsafe class SunShadows
                 continue;
             var c = Picks[k].Body;
             var cast = CasterOf(c);
-            if (cast.Count == 0 && cast.ShapeVerts == 0 && cast.Door is not { Count: > 0 } && cast.Door is not { ShapeVerts: > 0 })
+            if (cast.Count == 0 && cast.ShapeVerts == 0 && cast.Door is not { Count: > 0 } && cast.Door is not { ShapeVerts: > 0 } && cast.Piece is not { Count: > 0 } && cast.Piece is not { ShapeVerts: > 0 })
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
@@ -344,6 +347,8 @@ public static unsafe class SunShadows
             boxes += DrawCells(cast, at, along, reach, -1, false);
             if (cast.Door != null)
                 boxes += DrawCells(cast.Door, at, along, reach, -1, false);
+            if (cast.Piece != null)
+                boxes += DrawCells(cast.Piece, at, along, reach, -1, false);
             bodies++;
         }
     }
@@ -439,7 +444,8 @@ public static unsafe class SunShadows
     internal static int DrawNear(Construct c, Vector3 at, float reach, int selfLoc, bool self)
     {
         var k = CasterOf(c);
-        return DrawCells(k, at, Vector3.Zero, reach, selfLoc, self) + (k.Door != null ? DrawCells(k.Door, at, Vector3.Zero, reach, selfLoc, self) : 0);
+        return DrawCells(k, at, Vector3.Zero, reach, selfLoc, self) + (k.Door != null ? DrawCells(k.Door, at, Vector3.Zero, reach, selfLoc, self) : 0)
+            + (k.Piece != null ? DrawCells(k.Piece, at, Vector3.Zero, reach, selfLoc, self) : 0);
     }
 
     /// <summary>Binds the depth program and its arrays (<see cref="RoomShade"/>'s passes); false when it can't be made.</summary>
@@ -644,6 +650,17 @@ public static unsafe class SunShadows
             k.MainVer = main;
             Fill(k, c, false);
         }
+        var pieces = ConstructShapeVersion.Pieces(c);
+        if (k.PieceVer != pieces)
+        {
+            k.PieceVer = pieces;
+            if (k.Piece == null)
+            {
+                k.Piece = new Caster { Vbo = GenBuffer() };
+                GlDebug.Label(GL_BUFFER, k.Piece.Vbo.Id, "SunShadows.pieces");
+            }
+            Fill(k.Piece, c, false, true);
+        }
         if (k.DoorVer != doors)
         {
             k.DoorVer = doors;
@@ -658,8 +675,8 @@ public static unsafe class SunShadows
         return k;
     }
 
-    /// <summary>One of <see cref="CasterOf"/>'s lists: the door parts at rest (a moving door left out) or every other part.</summary>
-    private static void Fill(Caster k, Construct c, bool doorParts)
+    /// <summary>One of <see cref="CasterOf"/>'s lists: the door parts at rest (a moving door left out), the machines' pieces (<paramref name="pieces"/>) or every other part.</summary>
+    private static void Fill(Caster k, Construct c, bool doorParts, bool pieces = false)
     {
         var n = 0;
         var sv = 0;
@@ -679,7 +696,7 @@ public static unsafe class SunShadows
         }
         else
             for (var i = 0; i < c.PartCount; i++)
-                if (c.DoorOfListed(i) < 0 && !c.Growing(i))
+                if (c.DoorOfListed(i) < 0 && !c.Growing(i) && ConstructShapeVersion.IsPiece(c, i) == pieces)
                     AddPart(c, i, ref n, ref sv, ref groups); // (a piece growing on a die casts once it is cut or done: its length changes twice a second, Construct.GrowStamp)
         k.Count = n;
         SortCells(k, n, groups, sv);
@@ -879,6 +896,8 @@ public static unsafe class SunShadows
                 Free(k);
                 if (k.Door != null)
                     Free(k.Door);
+                if (k.Piece != null)
+                    Free(k.Piece);
                 Gone.Add(id);
             }
         foreach (var id in Gone)

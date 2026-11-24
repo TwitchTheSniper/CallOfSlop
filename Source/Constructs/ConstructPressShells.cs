@@ -236,22 +236,52 @@ public static partial class ConstructPress
             var face = (edge + 0.5f * sgn) * cell;
             var lo = new Vector3((asm.X0 - 0.5f) * cell + Margin, 0.5f * cell + Margin, sgn > 0 ? face + Margin : face - reach);
             var hi = new Vector3((asm.X0 + asm.W - 0.5f) * cell - Margin, 0.5f * cell + reach, sgn > 0 ? face + reach : face - Margin);
-            for (var j = 0; j < c.PartCount; j++)
+            var first = -1;
+            if (frame == 0)
             {
-                if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0
-                    || c.FrameOf(c.Parts[j].Seg) != frame) // (bounds compare within one frame: a freeform weld's part sits in its own)
-                    continue;
-                c.PartBounds(j, out var mn, out var mx);
-                var a = Vector3.Transform(mn - mid, un);
-                var b = Vector3.Transform(mx - mid, un);
-                Vector3 pl = Vector3.Min(a, b), ph = Vector3.Max(a, b);
-                if (pl.X < hi.X && ph.X > lo.X && pl.Y < hi.Y && ph.Y > lo.Y && pl.Z < hi.Z && ph.Z > lo.Z)
+                // The swing's box in the body (rest) frame from its eight corners (a quarter turn keeps it a box): the part tree's
+                // candidates, the same test, the first of them in part order (2026-11-24: every press's two swings tested all 6,272 parts
+                // of the Zero Day works at each of its rebuilds, a millisecond of each).
+                var q = Rot24.Quat(rot);
+                Vector3 bmin = new(float.MaxValue), bmax = new(float.MinValue);
+                for (var k = 0; k < 8; k++)
                 {
-                    asm.Blocker = (short)j;
-                    return;
+                    var corner = mid + Vector3.Transform(new Vector3((k & 1) != 0 ? hi.X : lo.X, (k & 2) != 0 ? hi.Y : lo.Y, (k & 4) != 0 ? hi.Z : lo.Z), q);
+                    bmin = Vector3.Min(bmin, corner);
+                    bmax = Vector3.Max(bmax, corner);
+                }
+                var pad = new Vector3(0.01f);
+                var n = c.PartsInBox(bmin - pad, bmax + pad, Construct.PartScratch);
+                for (var k = 0; k < n; k++)
+                {
+                    var j = Construct.PartScratch[k];
+                    if ((first < 0 || j < first) && SwingHits(c, j, id, frame, mid, un, lo, hi))
+                        first = j;
                 }
             }
+            else
+                for (var j = 0; j < c.PartCount && first < 0; j++)
+                    if (SwingHits(c, j, id, frame, mid, un, lo, hi))
+                        first = j;
+            if (first >= 0)
+            {
+                asm.Blocker = (short)first;
+                return;
+            }
         }
+    }
+
+    /// <summary>Is part <paramref name="j"/> (not of machine <paramref name="id"/>, solid, in its frame) in a swing's box, in the Core's frame?</summary>
+    private static bool SwingHits(Construct c, int j, int id, int frame, Vector3 mid, Quaternion un, Vector3 lo, Vector3 hi)
+    {
+        if (j < c.BlockAsmOf.Length && c.BlockAsmOf[j] == id || c.Parts[j].Broken || c.SolidCount(j) == 0
+            || c.FrameOf(c.Parts[j].Seg) != frame) // (bounds compare within one frame: a freeform weld's part sits in its own)
+            return false;
+        c.PartBounds(j, out var mn, out var mx);
+        var a = Vector3.Transform(mn - mid, un);
+        var b = Vector3.Transform(mx - mid, un);
+        Vector3 pl = Vector3.Min(a, b), ph = Vector3.Max(a, b);
+        return pl.X < hi.X && ph.X > lo.X && pl.Y < hi.Y && ph.Y > lo.Y && pl.Z < hi.Z && ph.Z > lo.Z;
     }
 
     /// <summary>

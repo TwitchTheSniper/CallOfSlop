@@ -844,8 +844,8 @@ public static partial class ConstructRender
         }
         if (d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } bedStore && ConstructLaserCutter.BlankOnBed(c, i, bedStore, out var blank, out var blankRot, out var blankAt))
             drawn += DrawBlank(gfx, blank, blankRot, blankAt, in p, seg * body, shade, opacity); // (a Laser Cutter's blank lying on its bed while it is cut)
-        else if (d.IsPanelFormer && !d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } formStore && ConstructPanelFormer.BedLook(c, i, formStore, Now, out var sheet, out var sheetRot, out var sheetAt))
-            drawn += DrawBlank(gfx, sheet, sheetRot, sheetAt, in p, seg * body, shade, opacity); // (a Panel Former's blank on its bed, flat; the panel over the pins once they have set)
+        else if (d.IsPanelFormer && !d.IsLaserCutter && world.StoreOf(c, i) is { OnBed: true } formStore && ConstructPanelFormer.BedLook(c, i, formStore, Now, out var sheet, out var sheetRot, out var sheetAt, out var squash))
+            drawn += DrawBlank(gfx, sheet, sheetRot, sheetAt, in p, seg * body, shade, opacity, squash); // (a Panel Former's blank on its bed, flat; the panel stretched over the rising die)
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
         if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
@@ -857,9 +857,13 @@ public static partial class ConstructRender
     }
 
     /// <summary>A part lying on a machine (a Laser Cutter's blank): its drawn boxes, turned by <paramref name="rot"/>, its origin at <paramref name="at"/> in the machine's frame.</summary>
-    private static int DrawBlank(Renderer gfx, ConstructPartDef d, byte rot, Vector3 at, in CPart p, in Matrix4x4 onBody, float shade, float opacity)
+    private static int DrawBlank(Renderer gfx, ConstructPartDef d, byte rot, Vector3 at, in CPart p, in Matrix4x4 onBody, float shade, float opacity) =>
+        DrawBlank(gfx, d, rot, at, in p, in onBody, shade, opacity, Matrix4x4.Identity);
+
+    /// <summary>The same, <paramref name="squash"/> (the machine's frame) applied first: a Panel Former's panel stretched over its rising die.</summary>
+    private static int DrawBlank(Renderer gfx, ConstructPartDef d, byte rot, Vector3 at, in CPart p, in Matrix4x4 onBody, float shade, float opacity, Matrix4x4 squash)
     {
-        var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * onBody;
+        var frame = squash * Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * onBody;
         var drawn = 0;
         foreach (ref readonly var box in d.Boxes.AsSpan())
         {
@@ -1044,14 +1048,9 @@ public static partial class ConstructRender
             case BoxWork.Hinge:
                 break; // (a clamshell leaf elsewhere: no part draws one now; a Press's housings turn their round dies, DrawShellDie)
             case BoxWork.Press:
-                // A Panel Former's upper platen: up while the pins set, down to press, held, then up (drawing 15; one stroke a cycle).
-                model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * ConstructPanelFormer.PressAt(ConstructPanelFormer.Phase(Now))));
-                break;
+                break; // (the old Panel Former's platen: no part draws one now; the stretch former's die is PanelFormerRender's)
             case BoxWork.Pin:
-                // A Bed Block's pin: it rises in a wave to the shape of the panel being formed, read from the order's key (every client alike).
-                if (_workCore >= 0)
-                    model *= Matrix4x4.CreateTranslation(axis * ConstructPanelFormer.PinLift(c, _workCore, centre, box.RigTravel, Now));
-                break;
+                break; // (the old Bed Block's pins: no part draws one now)
             case BoxWork.Ram:
                 // An Extruder's ram: it pushes the billet as the piece grows and comes back for the next with each metre (drawing 11).
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (_pieceCm % 100 / 100f)));

@@ -15,7 +15,7 @@ public sealed partial class ZeroDayWorks
         // skins wait on their pad for the crane and its Building Station, which builds each end before the oven bakes it.
 
         private readonly List<VPart> _stations = new();
-        private readonly List<VPart> _ovens = new(), _ovenMasts = new(); // (each oven's Core; the foot Mast Block on each bed corner)
+        private readonly List<VPart> _ovens = new(); // (each oven's Core)
 
         public const float ExtruderCoreZ = -43f; // an Extruder Core's centre: its die's foot (outBed, 0.75 m south) at z -44, so 16 m of Run-out Tables end at -60
         public const float FormerZ = -69f; // the row north of the Panel Formers' beds (their head row at z -71, their Cores beside it): the feed run's last row
@@ -40,11 +40,15 @@ public sealed partial class ZeroDayWorks
                 // The oven's Core east of its bed's first row, out of the two rows between the bay and the bed, where two Roller Tiles under
                 // both middles roll a finished kit onto the bed (ConstructRollOut.cs); its console runs the line for the station's kits, and
                 // the yard's orders reach the oven (Sean, 2026-11-23: the frigate's interior walls are made on lines A and B).
-                var oven = Oven(east, -139, east - 10, 5, 9, 3, paint, bedZ0: -139, facing: West);
+                // (the tunnel 9 rows long, 18 m: its hearth between the doors takes the longest wall's 17 m kit. Its way out is a Roller
+                // Tile in the row after it, where the first store's pad began: the pad starts a row on, 5 rows long, so a baked wall rolls
+                // straight out of the tunnel onto the tile and the pad)
+                var oven = Oven(east, -139, east - 10, 5, 9, 6, paint, bedZ0: -139, facing: West);
                 Tiles("Roller Tile", east - 6, -135, 1, 2, South, paint);
+                Tiles("Roller Tile", east - 6, -157, 1, 1, South, paint);
                 LineOrders(station, _lineExtruders[line], east + 2, -115, paint, _lineFormers[line]);
                 _makers.Add(oven);
-                Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
+                Stores(line, east - 10, -159, 5, 5, paint, second: true, transferRows: 8);
                 // On the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns): two Long arms by the
                 // station's bay (14 m, 6 t, on a 2 m plinth: the strip is 2 m wide), south of its Core: the first reaches the pick pad at the bay's head, so the plates the cutter's runs roll onto that pad go
                 // straight into the bay (Sean 2026-11-24: the Industrial arms there reached neither the pad nor a 2.3 t wall plate), and two
@@ -68,8 +72,9 @@ public sealed partial class ZeroDayWorks
             var stationC = Station(47, -137, 33, -135, 7, 10, 3, LineC, onPad: (runC[0, 1], "+z low", 0));
             // The oven's Core east of its bed's first row (it stood in the row between the bay and the bed): a finished kit rolls out of the
             // station's bay south along the Roller Tile in that row, straight onto the bed's middle (ConstructRollOut.cs), no crane.
-            var ovenC = Oven(47, -157, 33, 7, 13, 3, LineC, bedZ0: -157, facing: West);
+            var ovenC = Oven(47, -157, 33, 7, 13, 7, LineC, bedZ0: -157, facing: West);
             Tiles("Roller Tile", 39, -155, 1, 1, South, LineC);
+            Tiles("Roller Tile", 39, -183, 1, 1, South, LineC); // (its way out: the row between the tunnel and the store)
             Stores("C", 33, -185, 9, 6, LineC, second: false, transferRows: 0, eastWest: true, masts: 4); // (18 m across the bay, its hold's length east-west: a deck is 17.25 m long, and the gable wall is 12 m south; four masts a corner, an 8 m stack: the Stern's side skins stand 6.4 m)
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
@@ -78,7 +83,11 @@ public sealed partial class ZeroDayWorks
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
             Station(69, -101, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0)); // (welded on the skins' pad: no walkway between them)
-            Oven(61, -119, 53, 8, 8, 6, LineD);
+            // (its Core east of the bed's first row, so the tunnel runs north to south: three rows of Roller Tiles from the station's bay
+            // into it, and one out of it before the store; the bed 7 rows, so that row is free)
+            Oven(69, -121, 53, 8, 7, 12, LineD, bedZ0: -121, facing: West);
+            Tiles("Roller Tile", 59, -115, 2, 3, South, LineD);
+            Tiles("Roller Tile", 59, -135, 2, 1, South, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
             Arm("Heavy Loader Arm", 52, -118); // (two Heavy arms at the station's south corners, either side of the oven's Core: a Plasma's 10 m reached three of its steps, Sean 2026-11-24)
             Arm("Heavy Loader Arm", 63, -118);
@@ -151,17 +160,15 @@ public sealed partial class ZeroDayWorks
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
         private VPart Arm(string part, float x, float z, string by = "-y.0.0") => On(part, x, z, Up, by, Crane);
 
-        /// <summary>A Bake Oven: its Core at (x, z) facing south, its bed south of it from column <paramref name="bedX0"/>, masts on the bed's corners.</summary>
-        private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, int masts, string paint, float? bedZ0 = null, Orient? facing = null)
+        /// <summary>
+        /// A Bake Oven: its Core at (x, z) facing south, its bed south of it from column <paramref name="bedX0"/>, its roller hearth tunnel
+        /// <paramref name="height"/> m clear over the rollers (the Core's Tunnel height). The tunnel runs along the bed's side the Core stands by.
+        /// </summary>
+        private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, float height, string paint, float? bedZ0 = null, Orient? facing = null)
         {
             var core = On("Bake Oven", coreX, coreZ, facing ?? South, paint: paint);
-            var bed = Tiles("Oven Bed Block", bedX0, bedZ0 ?? coreZ - 2, across, along, South, paint);
-            foreach (var c in Corners(bed))
-            {
-                var first = Stack(c, "top", 1);
-                _ovenMasts.Add(first); // (the heat shields and gauges hang on it: Dressing)
-                Stack(first, "top", masts - 1);
-            }
+            Config(core, ("height", height));
+            Tiles("Oven Bed Block", bedX0, bedZ0 ?? coreZ - 2, across, along, South, paint);
             _ovens.Add(core);
             return core;
         }
@@ -230,7 +237,7 @@ public sealed partial class ZeroDayWorks
             _lineCutOuts[line] = CutterStage(run, bedAcross, cutAlong, paint);
         }
 
-        /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
+        /// <summary>The feed run from the extruder's tables, the Panel Former (bed, Out Tables) and a two-row run off it.</summary>
         private VPart[,] FormerStage(VPart[] tableEnds, int dieCells, int bedAcross, int bedAlong, int tables, string paint)
         {
             // The feed run from the tables to the former's bed: as wide as the die, rows down to the bed's head (its tiles butted on the
@@ -241,8 +248,8 @@ public sealed partial class ZeroDayWorks
                 feed[i, 0] = Paint(Onto(tableEnds[dieCells - 1 - i], "roller", "Roller Tile", "-z table"), paint); // (west to east)
             Chain(feed, "Roller Tile", "+z", "-z", "-x", "+x", paint, rowZero: true);
 
-            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east, nothing over the bed (its
-            // upper die is its top, Sean 2026-11-24), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ------------
+            // ---- The Panel Former: bed (welded on the run's last row), its Core beside the bed's head on the east (a stretch former: no
+            // masts, its die sinks into a pocket), Out Tables across the last row (the bed's far end: MachineBlocks.FindOut). ---------------
             var bed = new VPart[bedAcross, bedAlong];
             for (var i = 0; i < bedAcross; i++)
                 bed[i, 0] = Paint(Onto(feed[i, feedRows - 1], "+z", "Bed Block", "-z"), paint);

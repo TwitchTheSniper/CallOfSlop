@@ -108,10 +108,14 @@ public static class ConstructCrafting
 
     // ---- The network -----------------------------------------------------------------------------------------------------
 
-    /// <summary>A hash of what the network follows from: the body's links, its part count and the terminal's place.</summary>
+    /// <summary>A hash of what the network follows from: the body's links, their ends' kinds, its joined parts and the terminal's place.</summary>
     private static uint KeyOf(Construct c, int t)
     {
-        var h = 2166136261u ^ (uint)c.PartCount * 16777619u ^ (uint)t;
+        // (Not the part count: a piece an Extruder makes or hands on comes or goes at the end of the parts, joined by no link, and the
+        // Zero Day works' station built its network again for each, 4 ms a look, 2026-11-24. A part that goes from the middle moves the
+        // links' indices, and a part swapped in place changes a link end's def, which are hashed.)
+        var joined = c.JoinedKey(); // (a pad's tiles: which tile owns a link's end)
+        var h = (2166136261u ^ (uint)t ^ (uint)joined ^ (uint)(joined >> 32)) * 16777619u;
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
@@ -121,6 +125,8 @@ public static class ConstructCrafting
             h = (h ^ (r.Type == RouteType.Conveyor ? (uint)MachineBlocks.Owner(c, r.Source) : r.Source)) * 16777619u; // (an Out Table's machine: it changes as the table is welded on or off)
             h = (h ^ r.To) * 16777619u;
             h = (h ^ (r.FedEnd ? 1u : 0u)) * 16777619u;
+            if (r.Source < c.PartCount && r.To < c.PartCount)
+                h = (h ^ c.Parts[r.Source].Def ^ (uint)c.Parts[r.To].Def << 16) * 16777619u;
         }
         if (ConstructLifters.HasLifter(c))
             h = (h ^ (uint)ConstructLogistics.Map(c).LiftHash) * 16777619u; // (a lifter's edges join machines too: lifters phase 5)

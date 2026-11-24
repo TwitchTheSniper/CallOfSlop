@@ -135,9 +135,7 @@ public static partial class ConstructBakeOven
         if (!WorkOrders.HeadOf(c.Parts[part], out var head) || head.IsPiece || head.Name != null || ConstructParts.Get(head.Part) is not { } d
             || BakeKits.BlueprintOf(d) is not { } bp)
             return;
-        var frame = CoreFrame(c, part);
-        var o = c.Parts[part].D.BlockOrigin ?? Vector3.Zero;
-        var bedMid = Vector3.Transform(new Vector3(o.X + (bed.X0 + (bed.W - 1) * 0.5f) * bed.Cell, bed.Top, o.Z + (bed.Z0 + (bed.L - 1) * 0.5f) * bed.Cell), frame);
+        var bedMid = Vector3.Transform(bed.Mid(bed.Along * 0.5f), CoreFrame(c, part));
         // A kit of this order already at a station: building, or done and waiting in its bay for a lifter.
         int mine = -1, idle = -1;
         float mineDist = float.MaxValue, idleDist = float.MaxValue;
@@ -213,8 +211,8 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>
-    /// Where a kit lands on the bed: its bounds' middle over the bed's middle, its underside 2 cm over the bed's top, turned as it stands
-    /// or a quarter turn about the bed's up, whichever lies on the clear cells. Null, or why it fits neither way.
+    /// Where a kit lands in the tunnel: its bounds' middle over the hearth's middle, its underside 2 cm over the rollers, turned as it stands
+    /// or a quarter turn about the bed's up, whichever lies on the hearth. Null, or why it fits neither way.
     /// </summary>
     public static string? Landing(Construct c, int part, Construct kit, out Vector3 pos, out Quaternion rot)
     {
@@ -230,48 +228,39 @@ public static partial class ConstructBakeOven
         rot = kit.Rot;
         if (kit.Dirty)
             kit.Rebuild();
-        var frame = CoreFrame(c, part);
-        if (!Matrix4x4.Invert(frame, out var toCore))
-            return "the oven's frame";
-        var coreRot = Quaternion.CreateFromRotationMatrix(frame with { M41 = 0, M42 = 0, M43 = 0 });
-        var o = c.Parts[part].D.BlockOrigin ?? Vector3.Zero;
-        var half = bed.Cell * 0.5f;
-        var mid = new Vector3(o.X + (bed.X0 + (bed.W - 1) * 0.5f) * bed.Cell, bed.Top, o.Z + (bed.Z0 + (bed.L - 1) * 0.5f) * bed.Cell);
+        var frame = TunnelFrame(c, part, bed);
+        var tunnelRot = Quaternion.CreateFromRotationMatrix(frame with { M41 = 0, M42 = 0, M43 = 0 });
+        var mid = new Vector3(bed.Across * 0.5f, bed.Roll, bed.Along * 0.5f);
+        var (inLo, inHi) = (bed.InMin, bed.InMax);
         string? why = null;
         for (var turn = 0; turn < 2; turn++)
         {
-            var r = turn == 0 ? kit.Rot : Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Transform(Vector3.UnitY, coreRot), MathF.PI / 2) * kit.Rot);
-            // The kit's rest box in the Core's frame, turned so.
-            var toKitCore = Quaternion.Normalize(Quaternion.Conjugate(coreRot) * r);
+            var r = turn == 0 ? kit.Rot : Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Transform(Vector3.UnitY, tunnelRot), MathF.PI / 2) * kit.Rot);
+            // The kit's rest box in the tunnel's frame, turned so.
+            var toKit = Quaternion.Normalize(Quaternion.Conjugate(tunnelRot) * r);
             Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
             for (var k = 0; k < 8; k++)
             {
                 var corner = new Vector3((k & 1) == 0 ? kit.LocalMin.X : kit.LocalMax.X, (k & 2) == 0 ? kit.LocalMin.Y : kit.LocalMax.Y, (k & 4) == 0 ? kit.LocalMin.Z : kit.LocalMax.Z);
-                var v = Vector3.Transform(corner, toKitCore);
+                var v = Vector3.Transform(corner, toKit);
                 (lo, hi) = (Vector3.Min(lo, v), Vector3.Max(hi, v));
             }
             var shift = new Vector3(mid.X - (lo.X + hi.X) * 0.5f, mid.Y + 0.02f - lo.Y, mid.Z - (lo.Z + hi.Z) * 0.5f);
             lo += shift;
             hi += shift;
-            if (hi.Y > bed.Raised)
+            if (hi.Y > bed.Roof)
             {
-                why = $"{hi.Y - lo.Y:0.0} m tall, the hood clears {bed.Clear:0.0} m";
+                why = $"{hi.Y - lo.Y:0.0} m tall, the tunnel clears {bed.Clear:0.0} m (its Tunnel height setting)";
                 continue;
             }
             const float slack = 0.05f;
-            int cx0 = (int)MathF.Floor((lo.X + slack - o.X + half) / bed.Cell), cx1 = (int)MathF.Floor((hi.X - slack - o.X + half) / bed.Cell);
-            int cz0 = (int)MathF.Floor((lo.Z + slack - o.Z + half) / bed.Cell), cz1 = (int)MathF.Floor((hi.Z - slack - o.Z + half) / bed.Cell);
-            var clear = true;
-            for (var x = cx0; x <= cx1 && clear; x++)
-                for (var z = cz0; z <= cz1 && clear; z++)
-                    clear = bed.Free(c, asm, x, z);
-            if (!clear)
+            if (lo.X < inLo.X - slack || hi.X > inHi.X + slack || lo.Z < inLo.Z - slack || hi.Z > inHi.Z + slack)
             {
-                why = $"{hi.X - lo.X:0.0} x {hi.Z - lo.Z:0.0} m, wider than the bed's clear cells";
+                why = $"{hi.X - lo.X:0.0} x {hi.Z - lo.Z:0.0} m, the hearth {inHi.X - inLo.X:0.0} x {inHi.Z - inLo.Z:0.0} m between the walls and the doors";
                 continue;
             }
-            // The body's origin where the shifted box puts it: the kit's frame turned by r, moved by the shift (in the Core's frame).
-            pos = Vector3.Transform(shift, frame); // (the origin's place in the Core's frame is 0 turned plus the shift)
+            // The body's origin where the shifted box puts it: the kit's frame turned by r, moved by the shift (in the tunnel's frame).
+            pos = Vector3.Transform(shift, frame);
             rot = r;
             return null;
         }

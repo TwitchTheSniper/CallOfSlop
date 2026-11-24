@@ -965,23 +965,46 @@ public sealed partial class Construct
         }
         Array.Sort(keys, order);
         var pairs = new List<long>();
+        // Only pairs in different frames count, so one of the two is in a freeform frame: each part, as the sweep reaches its low end,
+        // is tested against the welded parts still open on the axis, and a welded part against every part still open (2026-11-24: the
+        // sweep over every pair of the Zero Day works' 6,272 parts took 1.8 ms of each rebuild, four rebuilds a second as its machines
+        // ran; the pairs are the same, the order is put back by the sort below).
+        var openF = new List<int>();
+        var openRest = new List<int>();
         for (var a = 0; a < PartCount; a++)
         {
-            var pi = order[a];
-            if (Parts[pi].Broken)
+            var p = order[a];
+            if (Parts[p].Broken)
                 continue;
-            for (var b = a + 1; b < PartCount; b++)
+            var at = mn[p][ax];
+            for (var k = openF.Count - 1; k >= 0; k--)
             {
-                var pj = order[b];
-                if (mn[pj][ax] - pad.X > mx[pi][ax])
-                    break; // (sorted by their low end on the axis: none further on can meet it)
-                if (frame[pi] == frame[pj] || Parts[pj].Broken)
+                var q = openF[k];
+                if (mx[q][ax] + pad.X < at)
+                {
+                    openF[k] = openF[^1];
+                    openF.RemoveAt(openF.Count - 1);
                     continue;
-                if (mn[pi].X - pad.X > mx[pj].X || mn[pj].X - pad.X > mx[pi].X || mn[pi].Y - pad.Y > mx[pj].Y || mn[pj].Y - pad.Y > mx[pi].Y
-                    || mn[pi].Z - pad.Z > mx[pj].Z || mn[pj].Z - pad.Z > mx[pi].Z)
-                    continue;
-                pairs.Add(pi < pj ? (long)pi << 32 | (uint)pj : (long)pj << 32 | (uint)pi);
+                }
+                SeamPair(p, q, frame, mn, mx, pad, pairs);
             }
+            if (frame[p] != 0)
+            {
+                for (var k = openRest.Count - 1; k >= 0; k--)
+                {
+                    var q = openRest[k];
+                    if (mx[q][ax] + pad.X < at)
+                    {
+                        openRest[k] = openRest[^1];
+                        openRest.RemoveAt(openRest.Count - 1);
+                        continue;
+                    }
+                    SeamPair(p, q, frame, mn, mx, pad, pairs);
+                }
+                openF.Add(p);
+            }
+            else
+                openRest.Add(p);
         }
         pairs.Sort();
         // Each part's free structural sockets in the rest frame, made once (a cut plate has dozens and is in many pairs).
@@ -1037,6 +1060,17 @@ public sealed partial class Construct
             socks.Add((s, ToRest(Parts[i].Seg, at), DirToRest(Parts[i].Seg, ConstructParts.DirVector(r))));
         }
         socks.Add((-1, default, default)); // (the end of its run)
+    }
+
+    /// <summary>Two parts of <see cref="BuildSeamLinks"/>' sweep, open together on its axis: a pair when they are in different frames and their bounds meet (with the pad).</summary>
+    private static void SeamPair(int pi, int pj, Span<int> frame, Span<Vector3> mn, Span<Vector3> mx, Vector3 pad, List<long> pairs)
+    {
+        if (frame[pi] == frame[pj])
+            return;
+        if (mn[pi].X - pad.X > mx[pj].X || mn[pj].X - pad.X > mx[pi].X || mn[pi].Y - pad.Y > mx[pj].Y || mn[pj].Y - pad.Y > mx[pi].Y
+            || mn[pi].Z - pad.Z > mx[pj].Z || mn[pj].Z - pad.Z > mx[pi].Z)
+            return;
+        pairs.Add(pi < pj ? (long)pi << 32 | (uint)pj : (long)pj << 32 | (uint)pi);
     }
 
     /// <summary>How many sockets part <paramref name="i"/> has in <paramref name="socks"/> (up to its end mark).</summary>
@@ -1286,6 +1320,32 @@ public sealed partial class Construct
 
     /// <summary>Server: falling free on a rail, out of the physics' list and the per-body systems (ConstructRails.cs). Its pose and speed are true every tick.</summary>
     public bool OnRail;
+
+    /// <summary>
+    /// Server: an NPC ship cruising on a rail far from everyone (ConstructCruise.cs): out of the physics' list, moved each tick at its speed along
+    /// the planet's curve, back in the physics for a far step every <see cref="ConstructCruise.HoldTicks"/> or when anything engages it. Unlike
+    /// <see cref="OnRail"/>, <see cref="Wake"/> doesn't end it (a crew's keys and a stabilizer wake their body every tick).
+    /// </summary>
+    public bool Cruise;
+    /// <summary>Server: the tick its cruise spell ends, and the tick it is looked at again after one (ConstructFar.Tick; 0: none).</summary>
+    public uint CruiseUntil, CruiseRecheck;
+    /// <summary>Server: its speed when last looked at, and that tick (how steady its flight is: ConstructCruise.Steady).</summary>
+    public Vector3 CruiseV0;
+    public uint CruiseT0;
+    /// <summary>Server: its fuel and charge when last looked at; what its physics burned of each a tick before a spell (thrust, rotors, drives: the
+    /// physics' own), the tick the spell began and what it had then. A spell's end takes what the physics would have burned (ConstructCruise.Settle).</summary>
+    public float CruiseF0, CruiseC0, CruiseFuelRate, CruiseChargeRate, CruiseFuelAt, CruiseChargeAt;
+    public uint CruiseFrom;
+    /// <summary>Server: its NPC crew has something to fight, runs, is boarded or scuttles (the captain's look, CrewWorld.Captain): it never cruises.</summary>
+    public bool NpcBusy;
+    /// <summary>Server: the point its NPC crew's order flies it to, while <see cref="CruiseGoalOn"/> (CrewWorld): a cruise spell ends before it gets there (ConstructCruise.SpellFor).</summary>
+    public Vector3 CruiseGoal;
+    public bool CruiseGoalOn;
+    /// <summary>Server: what steers it (its order's point, its autopilot's mode and held point) when its spell began: a change ends the spell (ConstructCruise.SteerKey).</summary>
+    public int CruiseSteer;
+    /// <summary>Server: it was damaged (ConstructWorld.Damage): off its cruise rail, and none for <see cref="ConstructCruise.HitQuiet"/> ticks after (until <see cref="CruiseQuiet"/>).</summary>
+    public bool CruiseHit;
+    public uint CruiseQuiet;
 
     /// <summary>A rail body's lowest distance from the planet's centre until its next check (ConstructRails.cs).</summary>
     public float RailLow;

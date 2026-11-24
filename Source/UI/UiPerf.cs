@@ -469,7 +469,7 @@ public sealed partial class Ui
     /// <summary>The constructs' counts this frame, then each body's own physics and draw, costliest first (PerfBodies.cs).</summary>
     private void DrawPerfBodies(Game game)
     {
-        ImGui.Text($"{PerfBodies.Bodies} bodies, {PerfBodies.Awake} awake; physics stepped {ConstructPhysics.LastSimulated} last tick ({ConstructFar.LastFar} far, stepped every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m), {ConstructPhysics.LastContacts} contacts");
+        ImGui.Text($"{PerfBodies.Bodies} bodies, {PerfBodies.Awake} awake; physics stepped {ConstructPhysics.LastSimulated} last tick ({ConstructFar.LastFar} far, stepped every {ConstructFar.Every} ticks past {ConstructFar.Range:0} m; {ConstructCruise.Count} cruising, {ConstructRails.Count} on rails), {ConstructPhysics.LastContacts} contacts");
         ImGui.Text($"Drawn: {ConstructRender.LastBoxes} boxes ({ConstructRender.LastBatchBoxes} from merged chunks, {ConstructRender.LastLodDropped} left out by far detail); bodies culled {ConstructRender.LastCulled}, as one box {ConstructRender.LastLod}");
         ImGui.Text($"Merged chunks {ConstructRender.LastMergedChunks} ({ConstructRender.LastMergedBuilt} built this frame, {ConstructRender.LastMergedWaiting} waiting), idle machines {ConstructRender.LastDormant}, occlusion queries {ConstructRender.LastOccQueries}");
         if (!game.IsServer)
