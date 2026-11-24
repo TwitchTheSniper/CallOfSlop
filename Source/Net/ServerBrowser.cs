@@ -785,7 +785,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      so a client draws a bell swinging on its gimbal (ConstructThrust.WriteShown).
     // 465: engine trains: the Fuel Selector XS part file moves part ids.
     // 466: engine trains: the Bore Adapter XS part file moves part ids (and train pieces carry a bore).
-    public const ushort ProtocolVersion = 466;
+    // 467: engine trains: the Turbopump Drive XS part file moves part ids (and a big train-fed pressed bell needs a fuel pump).
+    public const ushort ProtocolVersion = 467;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

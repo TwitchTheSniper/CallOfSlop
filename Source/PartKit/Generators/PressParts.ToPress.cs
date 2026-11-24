@@ -108,6 +108,7 @@ public sealed partial class PressParts
         ("housing", "armourcollar", "Armour Collar XS", "armour collar", "hollow 70x70x35 steel", ["hollow"]),
         ("housing", "fuelselector", "Fuel Selector XS", "fuel selector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "boreadapter", "Bore Adapter XS", "bore adapter", "hollow 140x140x75 steel", ["hollow"]),
+        ("housing", "turbopump", "Turbopump Drive XS", "turbopump drive", "hollow 70x70x50 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -274,7 +275,7 @@ public sealed partial class PressParts
     private static List<object?>? EngineTrainScale(string id) => id switch
     {
         "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
-        "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
+        "reactionchamber" or "fuelinjector" or "turbopump" => Py.L(Scale("worksServes", "volume", 1, false)),
         "trainspacer" or "fuelbuffer" or "coolingjacket" or "igniter" or "sensorring" or "throttlevalve" or "mixture" or "reheatring" or "fuelfilter" or "gimbalring" or "armourcollar" or "fuelselector" or "boreadapter" => Py.L(), // (a function piece: what it adds is the same at any size)
         _ => null,
     };

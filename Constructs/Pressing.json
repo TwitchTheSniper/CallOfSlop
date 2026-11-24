@@ -1252,6 +1252,27 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "turbopump",
+     "like": "Turbopump Drive XS",
+     "label": "turbopump drive",
+     "preset": "hollow 70x70x50 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "scale": [
+      {
+       "field": "worksServes",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9205,6 +9226,12 @@
    "die": "housing",
    "pattern": "boreadapter",
    "blank": "hollow 140x140x75 steel"
+  },
+  {
+   "part": "Turbopump Drive XS",
+   "die": "housing",
+   "pattern": "turbopump",
+   "blank": "hollow 70x70x50 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",
