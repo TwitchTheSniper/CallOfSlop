@@ -10,10 +10,11 @@ namespace SlopBrowser;
 /// official iframe player. The game starts it when the first screen goes live and closes its input when the last one stops.
 /// Pictures and sound go to the game through one shared memory block a page; commands come in on stdin, reports go out on stdout.
 /// Stdin closing, which is also what the game crashing looks like, ends the process.
-/// Browser Screens share one request context for the life of the process, in memory, so a sign-in lasts until the game closes (Sean, 2026-11-24: not on disk). A Browser Screen out of range
+/// Browser Screens keep their sign-ins for the life of the process, in memory, so they last until the game closes (Sean, 2026-11-24: not on disk): MINE 1 is the player's own
+/// screens' request context, MINE 0 the one other players' screens share, so a page a stranger chose never runs with the player's sign-ins. A Browser Screen out of range
 /// is parked on the shelf under a name the game gives it (SHELF: letters and digits) rather than closed, and a <c>web</c> naming it takes it back as it was; "-" names none.
 /// <code>
-/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS SHELF | park SLOT SHELF | drop SHELF | ads SLOT ON | go SLOT URL | wscroll SLOT SHARE | wplay SLOT | wpause SLOT | wseek SLOT SECONDS | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
+/// in:  open SLOT ID SECONDS WIDTH HEIGHT MAP ADS | web SLOT URL WIDTH HEIGHT MAP ADS SHELF MINE | park SLOT SHELF | drop SHELF | ads SLOT ON | go SLOT URL | wscroll SLOT SHARE | wplay SLOT | wpause SLOT | wseek SLOT SECONDS | back SLOT | forward SLOT | reload SLOT | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
 /// out: ready VERSION | fail REASON | pfail SLOT REASON | pok SLOT | log TEXT | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE | u SLOT ADDRESS (secrets out) | w SLOT SCROLL HASMEDIA PAUSED TIME
 /// </code>
 /// </summary>
@@ -34,7 +35,7 @@ internal static class Program
     private static readonly Regex ShelfName = new("^[A-Za-z0-9]{1,24}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly IDisposable?[] Pages = new IDisposable?[MaxSlots]; // (a Page, YouTube's locked player; or a WebPage, a Browser Screen's own rules)
     private static readonly List<(string Name, WebPage Page)> Shelf = []; // oldest first
-    private static RequestContext? _webContext;
+    private static RequestContext? _ownContext, _othersContext;
     private static readonly object Out = new();
     private static readonly string Root = Path.Combine(Path.GetTempPath(), "SlopBrowser-" + Environment.ProcessId);
 
@@ -104,7 +105,8 @@ internal static class Program
             CloseSlot(i);
         while (Shelf.Count > 0)
             DropAt(0);
-        _webContext?.Dispose();
+        _ownContext?.Dispose();
+        _othersContext?.Dispose();
         Cef.Shutdown();
         try
         {
@@ -165,9 +167,9 @@ internal static class Program
                 CloseSlot(slot);
                 Pages[slot] = new Page(slot, a[2], Num(a[3]), (int)Num(a[4]), (int)Num(a[5]), a[6], a[7] == "1");
                 break;
-            case "web" when a.Length == 8:
+            case "web" when a.Length == 9:
                 CloseSlot(slot);
-                Web(slot, a[2], (int)Num(a[3]), (int)Num(a[4]), a[5], a[6] == "1", a[7]);
+                Web(slot, a[2], (int)Num(a[3]), (int)Num(a[4]), a[5], a[6] == "1", a[7], a[8] == "1");
                 break;
             case "park" when a.Length == 3 && ShelfName.IsMatch(a[2]):
                 Park(slot, a[2]);
@@ -218,18 +220,23 @@ internal static class Program
         return true;
     }
 
-    /// <summary>The Browser Screens' request context: one for every page of this run, in memory, so a sign-in on one screen holds on the rest and after a page closes, until the game does.</summary>
-    private static RequestContext WebContext => _webContext ??= new RequestContext(new RequestContextSettings { CachePath = "", PersistSessionCookies = false });
+    /// <summary>
+    /// A Browser Screen's request context: the player's own (<paramref name="mine"/>) or the one other players' screens share. Each is one for the run, in memory, so a sign-in on one
+    /// screen holds on the rest that use it and after a page closes, until the game does; neither sees the other's, or the YouTube page's.
+    /// </summary>
+    private static RequestContext WebContext(bool mine) => mine ? _ownContext ??= InMemory() : _othersContext ??= InMemory();
 
-    /// <summary>A Browser Screen's page into the slot: the one shelved as <paramref name="shelf"/> if there is one of this size, else a new one at <paramref name="url"/>.</summary>
-    private static void Web(int slot, string url, int width, int height, string block, bool ads, string shelf)
+    private static RequestContext InMemory() => new(new RequestContextSettings { CachePath = "", PersistSessionCookies = false });
+
+    /// <summary>A Browser Screen's page into the slot: the one shelved as <paramref name="shelf"/> if there is one of this size and store, else a new one at <paramref name="url"/>.</summary>
+    private static void Web(int slot, string url, int width, int height, string block, bool ads, string shelf, bool mine)
     {
         var at = Shelf.FindIndex(s => s.Name == shelf);
         if (at >= 0)
         {
             var kept = Shelf[at].Page;
             Shelf.RemoveAt(at);
-            if (kept.Width == width && kept.Height == height)
+            if (kept.Width == width && kept.Height == height && kept.Mine == mine)
             {
                 Pages[slot] = kept; // (first: if taking it back fails, closing the slot closes it)
                 kept.Return(slot, block, ads);
@@ -237,9 +244,9 @@ internal static class Program
                 return;
             }
             kept.Dispose();
-            Log($"page {slot}: the shelved page was another size, so a new one opens");
+            Log($"page {slot}: the shelved page was another size or sign-in store, so a new one opens");
         }
-        Pages[slot] = new WebPage(slot, url, width, height, block, ads, WebContext);
+        Pages[slot] = new WebPage(slot, url, width, height, block, ads, mine, WebContext(mine));
     }
 
     /// <summary>The slot's Browser Screen page onto the shelf, as <paramref name="name"/>. A YouTube page closes: it comes back on the server's clock anyway.</summary>
@@ -252,8 +259,8 @@ internal static class Program
         }
         Pages[slot] = null;
         Drop(name);
+        Shelf.Add((name, page)); // (first: if shelving it fails, a drop or the exit still closes it)
         page.Shelve();
-        Shelf.Add((name, page));
         while (Shelf.Count > MaxShelf)
             DropAt(0);
         Log($"page {slot}: shelved ({Shelf.Count} on the shelf)");

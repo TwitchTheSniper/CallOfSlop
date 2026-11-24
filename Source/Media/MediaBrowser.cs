@@ -17,6 +17,7 @@ public sealed class MediaReport
     public volatile bool HasMedia, InnerPaused; // its main video or audio
     public volatile float Scroll, InnerTime;
     public volatile string Failure = ""; // the browser's own word on why this page can't show anything ("pfail"), or ""
+    public volatile bool Watched; // a web page's "w" came since the page was opened: Scroll, HasMedia and the rest are its own
 }
 
 /// <summary>
@@ -135,18 +136,20 @@ public static class MediaBrowser
         r.HasMedia = r.InnerPaused = false;
         r.Scroll = r.InnerTime = 0;
         r.Failure = "";
+        r.Watched = false;
         return true;
     }
 
     /// <summary>
-    /// Opens a Browser Screen's page: the one on the shelf as <paramref name="shelf"/> if the helper still has it, as it was, else a new one at <paramref name="url"/>.
+    /// Opens a Browser Screen's page: the one on the shelf as <paramref name="shelf"/> if the helper still has it, as it was, else a new one at <paramref name="url"/>,
+    /// in this player's own sign-in store when <paramref name="mine"/>, else in the one other players' screens share (MediaDirector.OwnStore).
     /// The address has been through <see cref="MediaEntry.Clean"/>. Nothing here logs it.
     /// </summary>
-    public static bool OpenWeb(int page, string url, int width, int height, bool ads, string? shelf)
+    public static bool OpenWeb(int page, string url, int width, int height, bool ads, string? shelf, bool mine)
     {
         if (Problem != null || !Start() || !Prepare(page, width, height))
             return false;
-        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)} {shelf ?? "-"}");
+        Send($"web {page} {url} {width} {height} {Blocks[page]!.Name} {(ads ? 1 : 0)} {shelf ?? "-"} {(mine ? 1 : 0)}");
         _webSession = true;
         return true;
     }
@@ -362,6 +365,7 @@ public static class MediaBrowser
                 w.InnerTime = Num(a[5]);
                 w.InnerPaused = a[4] == "1";
                 w.HasMedia = a[3] == "1";
+                w.Watched = true;
                 break;
             case "u" when a.Length >= 3 && int.TryParse(a[1], out var page3) && (uint)page3 < Reports.Length:
                 Reports[page3].Address = a[2]; // (never logged)

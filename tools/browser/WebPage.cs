@@ -6,8 +6,9 @@ using CefSharp.OffScreen;
 namespace SlopBrowser;
 
 /// <summary>
-/// A Browser Screen's page (docs/sandbox/MEDIA.md, "Browser Screens"): any http or https site. It runs on rules of its own, not the YouTube page's, in the Browser Screens' own request context,
-/// in memory and shared by every Browser Screen page of this run (<see cref="Program"/>'s <c>WebContext</c>), so a sign-in lasts until the game closes and nothing is put on disk.
+/// A Browser Screen's page (docs/sandbox/MEDIA.md, "Browser Screens"): any http or https site. It runs on rules of its own, not the YouTube page's, in one of the Browser Screens' two request
+/// contexts (<see cref="Program"/>'s <c>WebContext</c>: the player's own screens', or other players'), in memory and shared by the pages of this run that use it, so a sign-in lasts until the
+/// game closes and nothing is put on disk.
 /// The address can come from another player, so everything here is the same for every peer's copy: only http and https, no private or local addresses, no downloads, no external programs, no popups
 /// (a link that wants one opens in place), every permission denied, no dialogs or file pickers. URLs are never logged, and a query string never leaves this process in a report.
 /// Out of range, a page goes on the shelf instead of closing (<see cref="Shelve"/>): hidden and unheard, but alive, so it comes back as it was.
@@ -26,8 +27,12 @@ internal sealed class WebPage : IDisposable
 
     public int Height => _sink.Height;
 
-    public WebPage(int slot, string url, int width, int height, string block, bool ads, RequestContext context)
+    /// <summary>In the player's own request context, not other players'.</summary>
+    public readonly bool Mine;
+
+    public WebPage(int slot, string url, int width, int height, string block, bool ads, bool mine, RequestContext context)
     {
+        Mine = mine;
         _ads = new AdSwitch(ads);
         _sink = new PageSink(new SharedBlock(block, width, height), slot);
         _web = new ChromiumWebBrowser(WebPolicy.Allowed(url) ? url : "about:blank", requestContext: context, automaticallyCreateBrowser: false)
@@ -82,13 +87,16 @@ internal sealed class WebPage : IDisposable
     /// <summary>Off the shelf onto a screen in <paramref name="slot"/>: says where it is and what it's called, and paints a whole frame at once.</summary>
     public void Return(int slot, string block, bool ads)
     {
-        _sink.Attach(new SharedBlock(block, _sink.Width, _sink.Height), slot);
         _painter.Again();
         _seen++;
-        if (_address.Length > 0)
-            _sink.Say("u", WebPolicy.Shareable(_address));
-        if (_title.Length > 0)
-            _sink.Say("t", _title);
+        // (said as it goes on the screen, under the sink's lock: an address the page moves to meanwhile is said after it, never before)
+        _sink.Attach(new SharedBlock(block, _sink.Width, _sink.Height), slot, () =>
+        {
+            if (_address.Length > 0)
+                Program.Say($"u {slot} {WebPolicy.Shareable(_address)}");
+            if (_title.Length > 0)
+                Program.Say($"t {slot} {_title}");
+        });
         if (_web.IsBrowserInitialized && _web.GetBrowserHost() is { } host)
         {
             host.WasHidden(false);

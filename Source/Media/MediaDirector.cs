@@ -51,6 +51,8 @@ public static class MediaDirector
         public ushort Scrolled; // the last scroll this page was told to follow
         public double Opened; // when this peer asked for it
         public bool Stuck; // no picture after LoadTimeout: said once in the log
+        public bool Mine; // a Browser Screen page in this player's own sign-in store (OwnStore), for its life
+        public bool Back; // off the shelf: as leader it sends nothing until the page has said where it is (BackWait)
     }
 
     /// <summary>A page on the helper's shelf: whose it is, and under what name the helper keeps it.</summary>
@@ -63,6 +65,7 @@ public static class MediaDirector
         public double Since;
         public int Generation; // the helper that holds it (MediaBrowser.Generation)
         public ConstructWorld? World;
+        public bool Mine; // its sign-in store: it comes back only to a screen that would use the same one
     }
 
     private struct Near
@@ -388,8 +391,9 @@ public static class MediaDirector
         var d = p.D;
         var web = MediaEntry.IsWeb(m.Entry!);
         var ads = web ? BlockWebAds : BlockAds;
-        var shelf = web ? OnShelf(world, body, part, m.Seq) : -1;
-        var opened = web ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight, ads, shelf >= 0 ? Shelf[shelf].Name : null)
+        var mine = web && OwnStore(g, c, m);
+        var shelf = web ? OnShelf(world, body, part, m.Seq, mine) : -1;
+        var opened = web ? MediaBrowser.OpenWeb(free, MediaEntry.WebUrl(m.Entry!), d.MediaWidth, d.MediaHeight, ads, shelf >= 0 ? Shelf[shelf].Name : null, mine)
             : MediaBrowser.Open(free, MediaEntry.VideoId(m.Entry!), m.Position(g.ServerTick), d.MediaWidth, d.MediaHeight, ads);
         if (!opened)
             return;
@@ -405,9 +409,20 @@ public static class MediaDirector
         Pages[free] = new Page
         {
             Open = true, Body = body, Part = part, Seq = m.Seq, Entry = entry, State = MediaState.Playing, NextSync = now + 3, NextSeek = now + 3, // (a joiner whose tick hadn't come in yet opened at 0)
-            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads, Opened = now,
+            Near = d.MediaNear, Hear = d.MediaHear, Ads = ads, Opened = now, Mine = mine, Back = shelf >= 0,
         };
         audio.MediaPage(free, MediaBrowser.Block(free));
+    }
+
+    /// <summary>
+    /// Which of the helper's two sign-in stores a Browser Screen's page opens in: this player's own for a screen on a construct they built or a page they set, so their sign-ins
+    /// hold on every screen of theirs; the other one, shared by other players' screens, for the rest. A page a stranger chose (shown with "Show other players' web pages") never
+    /// runs with this player's sign-ins. A page keeps its store for its life: a friend who takes the lead on an open page doesn't move it.
+    /// </summary>
+    private static bool OwnStore(Game g, Construct c, CMedia m)
+    {
+        var me = g.Local?.Id ?? 255;
+        return me != 255 && (m.By == me || c.Owner == me);
     }
 
     /// <summary>
@@ -442,7 +457,7 @@ public static class MediaDirector
         if (Shelf[at].Name != null)
             DropShelved(at, "the shelf was full");
         var name = "s" + (++_shelfNames).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        Shelf[at] = new Shelved { Name = name, Body = page.Body, Part = page.Part, Seq = page.Seq, Entry = page.Entry, Since = now, Generation = MediaBrowser.Generation, World = world };
+        Shelf[at] = new Shelved { Name = name, Body = page.Body, Part = page.Part, Seq = page.Seq, Entry = page.Entry, Since = now, Generation = MediaBrowser.Generation, World = world, Mine = page.Mine };
         page.Open = false;
         page.Entry = "";
         audio.MediaPage(i, null);
@@ -451,10 +466,10 @@ public static class MediaDirector
         Console.WriteLine($"[media] page {i}: its screen is out of range, shelved as {name} for up to {ShelfSeconds:0} s");
     }
 
-    private static int OnShelf(ConstructWorld world, ushort body, ushort part, uint seq)
+    private static int OnShelf(ConstructWorld world, ushort body, ushort part, uint seq, bool mine)
     {
         for (var k = 0; k < Shelf.Length; k++)
-            if (Shelf[k].Name != null && Shelf[k].World == world && Shelf[k].Body == body && Shelf[k].Part == part && Shelf[k].Seq == seq && Shelf[k].Generation == MediaBrowser.Generation)
+            if (Shelf[k].Name != null && Shelf[k].World == world && Shelf[k].Body == body && Shelf[k].Part == part && Shelf[k].Seq == seq && Shelf[k].Mine == mine && Shelf[k].Generation == MediaBrowser.Generation)
                 return k;
         return -1;
     }
@@ -482,6 +497,7 @@ public static class MediaDirector
                 : c == null ? null
                 : s.Part >= c.PartCount || c.Parts[s.Part].Media is not { State: not MediaState.Stopped } m || m.Seq != s.Seq || m.Entry is not { } line || !MediaEntry.IsWeb(line) ? "its screen closed or changed"
                 : Hidden(m, me) ? "other players' pages are off"
+                : OwnStore(g!, c, m) != s.Mine ? "its screen changed hands"
                 : null;
             if (why != null)
                 DropShelved(k, why);
@@ -594,6 +610,14 @@ public static class MediaDirector
     /// </summary>
     private static void WebSync(Game g, ref Page page, CMedia m, int i, string web, MediaReport r, double now)
     {
+        if (page.Back)
+        {
+            // Off the shelf: until the helper says where the page is, its report holds nothing (Prepare emptied it), and a leader would tell everyone the page
+            // went to the top with no video, or send it to an address it may be on already.
+            if (!r.Watched && now - page.Opened < BackWait)
+                return;
+            page.Back = false;
+        }
         var address = r.Address;
         var at = MediaEntry.Web + address;
         if (web != page.Entry)
@@ -653,6 +677,7 @@ public static class MediaDirector
     }
 
     private const int ScrollStep = 64; // of 65535: under a pixel on most pages
+    private const double BackWait = 3; // seconds a page off the shelf may take to say where it is before it syncs as it stands
     private const double WebSendEvery = 0.25, WebSeekEvery = 5;
 
     /// <summary>Back, forward or reload on this peer's page. What comes of it is shared as a click's would be.</summary>

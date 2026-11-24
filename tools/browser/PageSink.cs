@@ -111,14 +111,18 @@ internal sealed class PageSink(SharedBlock block, int slot)
         }
     }
 
-    /// <summary>Onto a screen again, in slot <paramref name="slot"/>, with that slot's block (the same size as this page's).</summary>
-    public void Attach(SharedBlock to, int slot)
+    /// <summary>
+    /// Onto a screen again, in slot <paramref name="slot"/>, with that slot's block (the same size as this page's). <paramref name="announce"/> runs under the write lock, so what it says
+    /// comes before any report the page makes once it is attached (it calls <see cref="Program.Say"/>, never this sink).
+    /// </summary>
+    public void Attach(SharedBlock to, int slot, Action? announce = null)
     {
         _gate.EnterWriteLock();
         try
         {
             _block = to;
             Volatile.Write(ref _slot, slot);
+            announce?.Invoke();
         }
         finally
         {
