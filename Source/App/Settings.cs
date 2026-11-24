@@ -121,7 +121,7 @@ public sealed class Settings
     public bool ContactShadows = true; // at any Post effects level: a soft shadow on the ground under ships and vehicles (PostFx.Contact.cs)
     public bool EdgeBevels = true; // Materials Medium and High: every box edge drawn as a thin chamfer that catches the light (Surfaces.cs)
     public bool HiddenCulling = true; // big ships: parts hidden behind hulls and walls aren't drawn (ConstructRenderOcclusion.cs)
-    public VideoLevel FarDetail = VideoLevel.Medium; // big ships: how small a far box may get before it is left out (Low 2.5 pixels, Medium 1, High: never)
+    public VideoLevel FarDetail = VideoLevel.Medium; // big ships: how small a far box may get before it is left out (Low 3 pixels, Medium 1.5, High 0.5; the idle machine blocks too)
     public LightingQuality Lighting = LightingQuality.Full; // lit maps: baked light (Off: the classic light everywhere); Full adds muzzle flashes and blasts (LightGrid.cs)
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
     public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
