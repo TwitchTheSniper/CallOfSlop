@@ -268,7 +268,7 @@ public static partial class DesignScene
             CladBody(skin, h, cx, (p, q) =>
             {
                 foreach (var k in cutouts)
-                    if (k.Near(p, q))
+                    if (k.Touches(p, q))
                         return true;
                 var mid = ((p.Item1 + q.Item1) / 2, (p.Item2 + q.Item2) / 2, (p.Item3 + q.Item3) / 2);
                 foreach (var (x, y, z) in new[] { p, q, mid })
@@ -278,6 +278,19 @@ public static partial class DesignScene
             });
         Cap(fore, cx, h, rings[0], DesignMesh.Tone(h.Paint(h.Front, 0.5, 1, 9001), 0.85), Cut);
         Cap(aft, cx, h, rings[^1], DesignMesh.Tone(dark, 1.2), Cut);
+        // The end caps are plated too, in rings round the middle, clear of the drive bells and every other opening (the user, 2026-11-24).
+        if (h.Clad != "Off")
+        {
+            bool Open(double x, double y, double z)
+            {
+                foreach (var k in cutouts)
+                    if (k.Covers((x, y, z)))
+                        return true;
+                return InHole(x, y, z) || CutBody(x, y, z);
+            }
+            CladCap(fore, cx, h, rings[0], false, Open);
+            CladCap(aft, cx, h, rings[^1], true, Open);
+        }
         return (skin, fore, aft);
     }
 
@@ -302,6 +315,47 @@ public static partial class DesignScene
             if (band is { } bd)
                 return mn > bd.Lo - half && mn < bd.Hi + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
                         return Math.Abs(mn) < 0.8 + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
+        }
+
+        /// <summary>
+        /// Whether a cladding cell (by two opposite corners) actually overlaps the opening: its box in the opening's frame meets the outline's
+        /// box (grown by a margin) and crosses the opening's plane (or band). Tighter than <see cref="Near"/>, which only picks the facets worth
+        /// cutting (the user, 2026-11-24: the drives' generous reach left the whole last band bare).
+        /// </summary>
+        public bool Touches((double, double, double) a, (double, double, double) c, double margin = 0.12)
+        {
+            var la = Local(a);
+            var lc = Local(c);
+            double u0 = Math.Min(la.U, lc.U), u1 = Math.Max(la.U, lc.U), v0 = Math.Min(la.V, lc.V), v1 = Math.Max(la.V, lc.V);
+            double n0 = Math.Min(la.N, lc.N), n1 = Math.Max(la.N, lc.N);
+            var (lo, hi) = band ?? (-0.3, 0.3);
+            if (n1 < lo - margin || n0 > hi + margin)
+                return false;
+            return u1 > _u0 - margin && u0 < _u1 + margin && v1 > _v0 - margin && v0 < _v1 + margin;
+        }
+
+        private readonly double _u0 = poly.Min(q => q.U), _u1 = poly.Max(q => q.U), _v0 = poly.Min(q => q.V), _v1 = poly.Max(q => q.V);
+
+        /// <summary>Whether a world point lies inside the outline (on its plane's side within the band or 0.3 m), for an end cap's cells.</summary>
+        public bool Covers((double, double, double) p, double margin = 0.1)
+        {
+            var l = Local(p);
+            var (lo, hi) = band ?? (-0.3, 0.3);
+            if (l.N < lo - margin || l.N > hi + margin)
+                return false;
+            // Convex: inside every edge (grown by the margin), whichever way round the outline runs.
+            double area = 0;
+            for (var i = 0; i < poly.Count; i++)
+                area += poly[i].U * poly[(i + 1) % poly.Count].V - poly[(i + 1) % poly.Count].U * poly[i].V;
+            var sg = area >= 0 ? 1 : -1;
+            for (var i = 0; i < poly.Count; i++)
+            {
+                var (p0, p1) = (poly[i], poly[(i + 1) % poly.Count]);
+                double ex = p1.U - p0.U, ey = p1.V - p0.V, el = Math.Max(1e-9, Math.Sqrt(ex * ex + ey * ey));
+                if (sg * (ex * (l.V - p0.V) - ey * (l.U - p0.U)) / el < -margin)
+                    return false;
+            }
+            return true;
         }
 
         /// <summary>A convex polygon less the opening: the parts outside each of its edges in turn (each convex).</summary>
@@ -1238,8 +1292,9 @@ public static partial class DesignScene
         {
             var j = d.Joins[i];
             if (i > 0) sb.Append(',');
-            sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.W))
-              .Append(",\"h\":").Append(ShipDesign.S(j.H)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
+            sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.WA))
+              .Append(",\"h\":").Append(ShipDesign.S(j.HA)).Append(",\"wb\":").Append(ShipDesign.S(j.WB)).Append(",\"hb\":").Append(ShipDesign.S(j.HB))
+              .Append(",\"twist\":").Append(ShipDesign.S(j.Twist)).Append(",\"sweepUp\":").Append(ShipDesign.S(j.SweepUp)).Append(",\"sweepFore\":").Append(ShipDesign.S(j.SweepFore)).Append(",\"bias\":").Append(ShipDesign.S(j.Bias)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
               .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"mesh\":");

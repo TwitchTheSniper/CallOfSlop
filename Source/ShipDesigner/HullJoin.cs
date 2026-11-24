@@ -22,7 +22,18 @@ public sealed class HullJoin
     public int Id;
     public End A, B;
     public string Section = "Round";
-    public double W = 1.2, H = 1.2;
+    public double WA = 1.2, HA = 1.2, WB = 1.2, HB = 1.2; // each end's size: the strut tapers between (the user, 2026-11-24: wing-like arms)
+    public double Twist; // roll from end A to end B (degrees)
+    public double SweepUp, SweepFore; // the middle line's bow at mid-span (m): up/down and fore/aft
+    public double Bias; // -0.9..0.9: the section's mass shifted up (+) or down (-), one side thicker
+    public const double MaxSweep = 20, MaxTwist = 180, MaxBias = 0.9;
+
+    /// <summary>The sections a connection takes beyond the hull gallery's (the user, 2026-11-24).</summary>
+    public static readonly string[] ExtraSections = ["TriangleUp", "TriangleDown", "Wedge", "Diamond", "Hexagon"];
+
+    /// <summary>Both ends' size at once (the larger end's when read).</summary>
+    public double W { get => Math.Max(WA, WB); set => WA = WB = value; }
+    public double H { get => Math.Max(HA, HB); set => HA = HB = value; }
     public int Segments = 6;
     public bool Mirror = true;
     public double Flare = 1.6, Buttress = 0.8; // the cladding at each end: how much wider it is where it meets the skin, and how far up the strut it runs (m)
@@ -52,7 +63,8 @@ public sealed class HullJoin
 
     public JsonObject ToJson(ShipDesign d) => new()
     {
-        ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(W), ["h"] = ShipDesign.R(H),
+        ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(WA), ["h"] = ShipDesign.R(HA), ["wb"] = ShipDesign.R(WB), ["hb"] = ShipDesign.R(HB),
+        ["twist"] = ShipDesign.R(Twist), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
     };
@@ -80,8 +92,15 @@ public sealed class HullJoin
         }
         if (E(o["a"]) is not { } a || E(o["b"]) is not { } b)
             return null;
-        var j = new HullJoin { Id = id, A = a, B = b, Section = (string?)o["section"] ?? "Round", W = ShipDesign.F(o["w"], 1.2), H = ShipDesign.F(o["h"], 1.2),
+        var j = new HullJoin { Id = id, A = a, B = b, Section = (string?)o["section"] ?? "Round", WA = ShipDesign.F(o["w"], 1.2), HA = ShipDesign.F(o["h"], 1.2),
             Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true, Flare = ShipDesign.F(o["flare"], 1.6), Buttress = ShipDesign.F(o["buttress"], 0.8), SquareHole = (bool?)o["squareHole"] ?? false, OpenA = ShipDesign.F(o["openA"], 0.9), OpenB = ShipDesign.F(o["openB"], 0.9) };
+        // Files from before the taper hold one size: both ends take it.
+        j.WB = ShipDesign.F(o["wb"], j.WA);
+        j.HB = ShipDesign.F(o["hb"], j.HA);
+        j.Twist = ShipDesign.F(o["twist"], 0);
+        j.SweepUp = ShipDesign.F(o["sweepUp"], 0);
+        j.SweepFore = ShipDesign.F(o["sweepFore"], 0);
+        j.Bias = ShipDesign.F(o["bias"], 0);
         if (o["clad"] is JsonObject c)
         {
             j.Clad = (string?)c["kind"] ?? "Off";
@@ -95,10 +114,16 @@ public sealed class HullJoin
 
     public void Tidy()
     {
-        if (Array.FindIndex(DesignTemplates.Sections, s => s.Name == Section) < 0)
+        if (Array.FindIndex(DesignTemplates.Sections, s => s.Name == Section) < 0 && !ExtraSections.Contains(Section))
             Section = "Round";
-        W = Math.Clamp(W, 0.2, 20);
-        H = Math.Clamp(H, 0.2, 20);
+        WA = Math.Clamp(WA, 0.2, 20);
+        HA = Math.Clamp(HA, 0.2, 20);
+        WB = Math.Clamp(WB, 0.2, 20);
+        HB = Math.Clamp(HB, 0.2, 20);
+        Twist = Math.Clamp(Twist, -MaxTwist, MaxTwist);
+        SweepUp = Math.Clamp(SweepUp, -MaxSweep, MaxSweep);
+        SweepFore = Math.Clamp(SweepFore, -MaxSweep, MaxSweep);
+        Bias = Math.Clamp(Bias, -MaxBias, MaxBias);
         Segments = Math.Clamp(Segments, 1, MaxSegments);
         OpenA = Math.Clamp(OpenA, 0, 1.5);
         Flare = Math.Clamp(Flare, 1, 4);
@@ -114,6 +139,8 @@ public sealed class HullJoin
     /// <summary>The section as a closed ring of (across, up) points fitting a unit square (-0.5..0.5), the +x side first.</summary>
     public static List<(double U, double V)> Ring(string section)
     {
+        if (Polygon(section) is { } poly)
+            return poly;
         var p = Array.Find(DesignTemplates.Sections, s => s.Name == section).P ?? DesignTemplates.Sections[0].P;
         var w = p.Max(q => q.H);
         double y0 = p.Min(q => q.Y), y1 = p.Max(q => q.Y);
@@ -125,22 +152,74 @@ public sealed class HullJoin
         return ring;
     }
 
+    /// <summary>The connection's own sections as rings in the unit square (null for a hull gallery section): corners with points along each edge.</summary>
+    private static List<(double U, double V)>? Polygon(string section)
+    {
+        List<(double, double)> Edges((double, double)[] c, int per)
+        {
+            var l = new List<(double, double)>();
+            for (var i = 0; i < c.Length; i++)
+            {
+                var (a, b) = (c[i], c[(i + 1) % c.Length]);
+                for (var k = 0; k < per; k++)
+                    l.Add((a.Item1 + (b.Item1 - a.Item1) * k / per, a.Item2 + (b.Item2 - a.Item2) * k / per));
+            }
+            return l;
+        }
+        switch (section)
+        {
+            case "TriangleUp": return Edges([(0.5, -0.5), (0, 0.5), (-0.5, -0.5)], 6);
+            case "TriangleDown": return Edges([(0.5, 0.5), (-0.5, 0.5), (0, -0.5)], 6);
+            case "Diamond": return Edges([(0.5, 0), (0, 0.5), (-0.5, 0), (0, -0.5)], 4);
+            case "Hexagon":
+            {
+                var c = new (double, double)[6];
+                for (var i = 0; i < 6; i++)
+                    c[i] = (0.5 * Math.Cos(i * Math.PI / 3), 0.5 * Math.Sin(i * Math.PI / 3) / Math.Sin(Math.PI / 3));
+                return Edges(c, 3);
+            }
+            case "Wedge":
+            {
+                // An aerofoil (NACA 00xx thickness): a round leading edge at -U, thinning to a sharp trailing edge at +U, scaled to the full height.
+                static double T(double x) => 0.2969 * Math.Sqrt(x) - 0.126 * x - 0.3516 * x * x + 0.2843 * x * x * x - 0.1036 * x * x * x * x;
+                const int n = 14;
+                var tmax = T(0.3);
+                var l = new List<(double, double)>();
+                for (var k = n; k >= 0; k--)
+                {
+                    var x = 0.5 - 0.5 * Math.Cos(Math.PI * k / n);
+                    l.Add((x - 0.5, 0.5 * T(x) / tmax));
+                }
+                for (var k = 1; k < n; k++)
+                {
+                    var x = 0.5 - 0.5 * Math.Cos(Math.PI * k / n);
+                    l.Add((x - 0.5, -0.5 * T(x) / tmax));
+                }
+                return l;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>A ring point's height with the thickness bias: the up side grows by 1 + bias, the down side shrinks by 1 - bias.</summary>
+    private double Biased(double v) => v * (v > 0 ? 1 + Bias : 1 - Bias);
+
     /// <summary>The join's mesh (and its twin when mirrored off the centreline); empty when an end's body is gone.</summary>
     public DesignMesh Mesh(ShipDesign d) => Build(d, null);
 
     /// <summary>The strut's middle line as rings' frames (middle, across, up), so rooms can run through it (Karl, 2026-11-24).</summary>
-    public List<(double[] C, double[] S, double[] U)> Spine(ShipDesign d)
+    public List<(double[] C, double[] S, double[] U, double W, double H)> Spine(ShipDesign d)
     {
-        var l = new List<(double[] C, double[] S, double[] U)>();
+        var l = new List<(double[] C, double[] S, double[] U, double W, double H)>();
         Build(d, null, l);
         if (Mirror && l.Count > 0 && World(d, A) is { } a && Math.Abs(a.P[0]) > 0.3)
-            foreach (var (c, sd, u) in l.ToArray())
-                l.Add(([-c[0], c[1], c[2]], [-sd[0], sd[1], sd[2]], [-u[0], u[1], u[2]]));
+            foreach (var (c, sd, u, w, hh) in l.ToArray())
+                l.Add(([-c[0], c[1], c[2]], [-sd[0], sd[1], sd[2]], [-u[0], u[1], u[2]], w, hh));
         return l;
     }
 
     /// <summary>Whether a world point is inside a strut's walls (margin m in from them), by its nearest spine frame.</summary>
-    public bool Inside(List<(double[] C, double[] S, double[] U)> spine, double x, double y, double z, double margin)
+    public bool Inside(List<(double[] C, double[] S, double[] U, double W, double H)> spine, double x, double y, double z, double margin)
     {
         var best = double.MaxValue;
         var bi = -1;
@@ -152,14 +231,16 @@ public sealed class HullJoin
         }
         if (bi < 0)
             return false;
-        var (cc, sd, up) = spine[bi];
+        var (cc, sd, up, fw, fh) = spine[bi];
         double qx = x - cc[0], qy = y - cc[1], qz = z - cc[2];
-        var hw = W / 2 - margin;
-        var hh = H / 2 - margin;
+        var hw = fw / 2 - margin;
+        var a = qx * up[0] + qy * up[1] + qz * up[2];
+        // The bias makes the up and down halves different heights.
+        var hh = fh / 2 * (a > 0 ? 1 + Bias : 1 - Bias) - margin;
         if (hw <= 0 || hh <= 0)
             return false;
         var u = (qx * sd[0] + qy * sd[1] + qz * sd[2]) / hw;
-        var v = (qx * up[0] + qy * up[1] + qz * up[2]) / hh;
+        var v = a / hh;
         return u * u + v * v <= 1;
     }
 
@@ -190,7 +271,7 @@ public sealed class HullJoin
         return l;
     }
 
-    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U)>? spine = null)
+    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U, double W, double H)>? spine = null)
     {
         var m = new DesignMesh();
         if (World(d, A) is not { } a || World(d, B) is not { } b)
@@ -252,10 +333,25 @@ public sealed class HullJoin
         if (dl > 1e-4)
             at.Add((s1, Flare));
         var last = at.Count - 1;
+        double[] bowDir = [0, SweepUp, SweepFore];
         for (var i = 0; i <= last; i++)
         {
             var (c, t) = Curve(at[i].S);
             var sc = at[i].Scale;
+            // Along the span 0..1: the taper, the twist and the bow (zero at both ends, so they still meet their skins).
+            var q = Math.Clamp((at[i].S - s0) / (s1 - s0), 0, 1);
+            double rw = WA + (WB - WA) * q, rh = HA + (HB - HA) * q;
+            if (SweepUp != 0 || SweepFore != 0)
+            {
+                var bow = 4 * q * (1 - q);
+                var dbow = 4 * (1 - 2 * q) / ((s1 - s0) * len);
+                for (var e = 0; e < 3; e++)
+                {
+                    c[e] += bowDir[e] * bow;
+                    t[e] += bowDir[e] * dbow;
+                }
+                Norm(t);
+            }
             // The ring's across axis: carried along from the last ring (so the strut doesn't twist), first from the world's up.
             if (side is null)
             {
@@ -268,31 +364,38 @@ public sealed class HullJoin
                 side = [side[0] - t[0] * dot, side[1] - t[1] * dot, side[2] - t[2] * dot];
             }
             Norm(side);
-            var upv = Cross(t, side);
+            var upv0 = Cross(t, side);
+            // The twist rolls this ring's frame round the line; the carried axis stays untwisted.
+            var tw = Twist * q * Math.PI / 180;
+            double cs = Math.Cos(tw), sn = Math.Sin(tw);
+            double[] rs = [side[0] * cs + upv0[0] * sn, side[1] * cs + upv0[1] * sn, side[2] * cs + upv0[2] * sn];
+            double[] upv = [upv0[0] * cs - side[0] * sn, upv0[1] * cs - side[1] * sn, upv0[2] * cs - side[2] * sn];
             // The strut's own rings (not the flared ends), sampled finely enough for the room check.
             if (spine is not null && sc == 1 || spine is not null && i > 0 && i < last)
-                spine.Add((c, [.. side], upv));
+                spine.Add((c, rs, upv, rw, rh));
             if (mouths is not null && (i == 0 || i == last))
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
                 var f = i == 0 ? OpenA : OpenB;
-                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W * f, H * f, SquareHole));
+                // Each end's own size (and the bias's thicker half, so the hole covers it).
+                var mh = rh * f * (1 + Math.Abs(Bias));
+                mouths.Add(new Mouth(hid, c, t, rs, upv, rw * f, mh, SquareHole));
                 if (Mirror && Math.Abs(a.P[0]) > 0.3)
-                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W * f, H * f, SquareHole));
+                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], rw * f, mh, SquareHole));
             }
             var r = new (double, double, double)[ring.Count];
             for (var j = 0; j < ring.Count; j++)
             {
                 var (u, v) = ring[j];
-                double uw = u * W * sc, vh = v * H * sc;
-                r[j] = (c[0] + side[0] * uw + upv[0] * vh, c[1] + side[1] * uw + upv[1] * vh, c[2] + side[2] * uw + upv[2] * vh);
+                double uw = u * rw * sc, vh = Biased(v) * rh * sc;
+                r[j] = (c[0] + rs[0] * uw + upv[0] * vh, c[1] + rs[1] * uw + upv[1] * vh, c[2] + rs[2] * uw + upv[2] * vh);
             }
             // An end ring slid along the line onto its skin, each point where it meets it.
             if (i == 0 || i == last)
             {
                 var h = i == 0 ? ha : hb;
                 var dir = i == 0 ? -1.0 : 1.0;
-                var reach = 3 * Math.Max(W, H) * sc + 2;
+                var reach = 3 * Math.Max(rw, rh) * sc * (1 + Math.Abs(Bias)) + 2;
                 for (var j = 0; j < r.Length; j++)
                 {
                     var v = r[j];
