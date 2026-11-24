@@ -1029,7 +1029,7 @@
      "id": "fuelinjector",
      "like": "Fuel Injector XS",
      "label": "fuel injector",
-     "preset": "hollow 70x70x30 steel",
+     "preset": "hollow 70x70x40 steel",
      "auto": false,
      "blanks": [
       "hollow"
@@ -8810,7 +8810,7 @@
    "part": "Fuel Injector XS",
    "die": "housing",
    "pattern": "fuelinjector",
-   "blank": "hollow 70x70x30 steel"
+   "blank": "hollow 70x70x40 steel"
   },
   {
    "part": "Drive Nozzle XS",

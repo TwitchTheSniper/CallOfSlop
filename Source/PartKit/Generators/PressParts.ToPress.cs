@@ -90,7 +90,7 @@ public sealed partial class PressParts
         ("actuator", "turretring", "Turret Ring S", "turret ring", "solid 100x100x95 steel", ["solid"]),
         // Engine trains (Sean, 2026-11-24, "Ship engines with interior parts"): the minimum viable engine's three pieces, each a pressed housing.
         ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
-        ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x30 steel", ["hollow"]),
+        ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
     ];
 
