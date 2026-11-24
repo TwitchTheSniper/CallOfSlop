@@ -184,7 +184,7 @@ public static class LifterRender
         var floor = ld.Ring - 0.004f;
         var h = s.Y - 0.12f * k - floor;
         var kh = ld.Housing > 0 ? MathF.Min(k, ld.Housing) : k;
-        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f * kh, h, 0.66f * kh), ld.Turret);
+        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f * kh, h, MathF.Max(0.66f * kh, 0.54f * k)), ld.Turret); // (never narrower than the shoulder's yoke cheeks on it)
         var weight = s - heading * 0.5f * kh + new Vector3(0, floor + 0.3f * kh - s.Y, 0);
         Box(gfx, part, turret, weight, new Vector3(0.36f, 0.42f, 0.58f) * kh, ld.Weight);
         Box(gfx, part, turret, weight + side * 0.292f * kh, new Vector3(0.3f, 0.08f, 0.012f) * kh, Accent); // (hazard on the weight's flank)
