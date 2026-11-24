@@ -63,8 +63,11 @@ public static class SawmillRender
             }
         if (ConstructParts.Find("Sawmill") is { } core)
             foreach (var b in core.Boxes)
-                if (b.Shape != 0 && b.Detail && b.Half.Y > 0.5f && b.Half.X < 0.1f)
-                    _cylY = b;
+                if (b.Shape != 0 && b.Detail && b.Half.Y > 0.5f && b.Half.X is > 0.05f and < 0.1f)
+                {
+                    _cylY = b; // (the drop pipe, 12-sided; not the mains conduit beside it, 8-sided and 3 cm thick)
+                    break;
+                }
     }
 
     private static void DrawSawmill(Renderer gfx, Construct c, in CMachineAsm asm, CStore st, bool working, double now)
@@ -115,6 +118,8 @@ public static class SawmillRender
         float rail0 = cut + 0.2f, rail1 = cut + depth - 0.15f;
         float cy0 = floor + SawmillWorks.CarriageY0, cy1 = floor + SawmillWorks.CarriageY1, ry0 = floor + SawmillWorks.RailY0, ry1 = floor + SawmillWorks.RailY1;
 
+        // One sawdust grate in the deck under the track, across the square (its blocks draw none of their own).
+        Box(gfx, frame, new Vector3(mx - h + 0.3f, deck - 0.006f, rail0 + 0.08f), new Vector3(mx + h - 0.3f, deck + 0.006f, rail1 - 0.08f), Dark);
         // The track: sleepers along it and two rails, behind the band, across the square.
         var sleepers = Math.Min(MostSleepers, (int)((2f * h - 0.4f) / 0.6f) + 1);
         for (var k = 0; k < sleepers; k++)
@@ -145,19 +150,28 @@ public static class SawmillRender
                 Shaped(gfx, frame, _cylZ, new Vector3(x, (ry1 - 0.01f + cy0 + 0.07f) * 0.5f, z), new Vector3(0.07f, (cy0 + 0.07f - ry1 + 0.01f) * 0.5f, 0.045f), Steel, SteelSurface);
         Box(gfx, frame, new Vector3(cx - 0.14f, cy0 + 0.01f, cz1 - 0.004f), new Vector3(cx + 0.14f, cy1 - 0.07f, cz1 + 0.12f), Dark); // (the setworks box)
         Box(gfx, frame, new Vector3(cx - 0.05f, cy1 - 0.07f, cz1 + 0.02f), new Vector3(cx + 0.05f, cy1 + 0.12f, cz1 + 0.06f), Yellow); // (its lever)
-        var logMid = new Vector3(cx, cy1 + lr, logZ);
-        Shaped(gfx, frame, _cylX, logMid, new Vector3(len * 0.5f - 0.02f, lr, lr), Bark);
-        foreach (var x in (ReadOnlySpan<float>)[c0 + 0.015f, c1 - 0.015f])
-            Shaped(gfx, frame, _cylX, new Vector3(x, cy1 + lr, logZ), new Vector3(0.009f, lr - 0.03f, lr - 0.03f), Grain);
-        // Where the log has passed the band its front is sawn: a pale face off the cut, a board peeling away from it.
-        var lead = c1 - 0.02f;
-        if (working && lead > mx + rim)
+        // The log: whole where it has not reached the band; where it has passed it, its front sawn flat at the cut (the bark's round drawn
+        // from the cut to its back, a pale sawn face on its front) and, while it saws, the board peeling away in front of it.
+        float l0 = c0 + 0.02f, l1 = c1 - 0.02f, ly = cy1 + lr, sawnZ = (cut + logZ + lr) * 0.5f, sawnHalf = (logZ + lr - cut) * 0.5f;
+        var x0 = working && l1 > mx + rim ? MathF.Max(l0, mx + rim) : l1;
+        if (x0 > l0 + 0.01f)
         {
-            var x0 = MathF.Max(c0 + 0.02f, mx + rim);
-            Box(gfx, frame, new Vector3(x0, cy1 + 0.25f * lr, cut - 0.016f), new Vector3(lead, cy1 + 1.75f * lr, cut - 0.004f), Grain);
-            if (cutting)
-                Box(gfx, frame, new Vector3(x0 + 0.05f, cy1 + 0.3f * lr, cut - 0.4f * lr - 0.05f), new Vector3(lead, cy1 + 1.7f * lr, cut - 0.4f * lr - 0.012f), Grain * 0.9f);
+            Shaped(gfx, frame, _cylX, new Vector3((l0 + x0) * 0.5f, ly, logZ), new Vector3((x0 - l0) * 0.5f, lr, lr), Bark);
+            Shaped(gfx, frame, _cylX, new Vector3(c0 + 0.015f, ly, logZ), new Vector3(0.009f, lr - 0.03f, lr - 0.03f), Grain);
         }
+        if (x0 < l1 - 0.01f)
+        {
+            var s0 = x0 + (x0 > l0 + 0.01f ? 0.003f : 0f);
+            Shaped(gfx, frame, _cylX, new Vector3((s0 + l1) * 0.5f, ly, sawnZ), new Vector3((l1 - s0) * 0.5f, lr, sawnHalf), Bark);
+            Box(gfx, frame, new Vector3(s0 + 0.006f, ly - 0.78f * lr, cut - 0.006f), new Vector3(l1 - 0.006f, ly + 0.78f * lr, cut + 0.3f * lr), Grain); // (the sawn face)
+            Shaped(gfx, frame, _cylX, new Vector3(c1 - 0.015f, ly, sawnZ), new Vector3(0.009f, lr - 0.03f, sawnHalf - 0.03f), Grain);
+            if (x0 <= l0 + 0.01f)
+                Shaped(gfx, frame, _cylX, new Vector3(c0 + 0.015f, ly, sawnZ), new Vector3(0.009f, lr - 0.03f, sawnHalf - 0.03f), Grain);
+            if (cutting)
+                Box(gfx, frame, new Vector3(s0 + 0.05f, ly - 0.7f * lr, cut - 0.4f * lr - 0.05f), new Vector3(l1, ly + 0.7f * lr, cut - 0.4f * lr - 0.012f), Grain * 0.9f); // (the board)
+        }
+        else
+            Shaped(gfx, frame, _cylX, new Vector3(c1 - 0.015f, ly, logZ), new Vector3(0.009f, lr - 0.03f, lr - 0.03f), Grain);
 
         // The band: its cutting run through the log's path (teeth running down it while it saws), the back run in its guard, the slot's guard.
         Box(gfx, frame, new Vector3(mx - rim * 0.8f, deck - 0.03f, cut - 0.006f), new Vector3(mx + rim * 0.8f, wy, cut + 0.006f), Steel, surface: SteelSurface);
@@ -184,13 +198,15 @@ public static class SawmillRender
                 Box(gfx, frame, new Vector3(mx + sx * (colHalf - 0.09f) - 0.025f, y - 0.025f, col0 - 0.026f), new Vector3(mx + sx * (colHalf - 0.09f) + 0.025f, y + 0.025f, col0 - 0.008f), Steel, surface: SteelSurface);
         }
         Box(gfx, frame, new Vector3(mx - colHalf - 0.04f, top - 0.3f, col0 - 0.04f), new Vector3(mx + colHalf + 0.04f, top - 0.05f, col1 + 0.04f), Body); // (the strain housing)
-        Shaped(gfx, frame, _cylY, new Vector3(mx, top - 0.02f, (col0 + col1) * 0.5f), new Vector3(0.16f, 0.03f, 0.16f), Yellow); // (its handwheel)
+        var zc = (col0 + col1) * 0.5f;
+        Box(gfx, frame, new Vector3(mx - colHalf - 0.07f, top - 0.195f, zc - 0.018f), new Vector3(mx - colHalf - 0.02f, top - 0.155f, zc + 0.018f), Steel, surface: SteelSurface); // (its tension screw)
+        Shaped(gfx, frame, _cylX, new Vector3(mx - colHalf - 0.085f, top - 0.175f, zc), new Vector3(0.015f, 0.11f, 0.11f), Yellow); // (its handwheel, on the housing's side: the duct rises over its top)
         var ladderX = mx + colHalf + 0.03f;
         foreach (var z in (ReadOnlySpan<float>)[col0 + 0.06f, col1 - 0.06f])
             Box(gfx, frame, new Vector3(ladderX, deck + 0.06f, z - 0.02f), new Vector3(ladderX + 0.04f, top - 0.3f, z + 0.02f), Yellow);
         for (var y = deck + 0.35f; y < top - 0.4f; y += 0.3f)
             Box(gfx, frame, new Vector3(ladderX + 0.004f, y, col0 + 0.06f), new Vector3(ladderX + 0.036f, y + 0.03f, col1 - 0.06f), Yellow);
-        Shaped(gfx, frame, _cylX, new Vector3(mx, deck + 0.3f + 0.1f * n, col1 + 0.18f + 0.04f * n), new Vector3(0.22f + 0.04f * n, 0.2f + 0.05f * n, 0.18f + 0.04f * n), Dark); // (the motor)
+        Shaped(gfx, frame, _cylX, new Vector3(mx, deck + 0.3f + 0.1f * n, col1 + MotorBack(n) * 0.5f), new Vector3(0.22f + 0.04f * n, 0.2f + 0.05f * n, MotorBack(n) * 0.5f), Dark); // (the motor)
         Box(gfx, frame, new Vector3(mx - 0.09f, deck + 0.5f + 0.2f * n, col1 + 0.06f), new Vector3(mx + 0.09f, wy, col1 + 0.2f), Yellow); // (its belt guard)
 
         // The arms forward to the upper wheel's bearings, the guide over the log on its rod.
@@ -215,12 +231,15 @@ public static class SawmillRender
         Box(gfx, frame, new Vector3(mx - rim - 0.03f, wy + r + 0.04f, axleZ - r * 0.7f), new Vector3(mx + rim + 0.03f, wy + r + 0.1f, col0 + 0.02f), Yellow);
     }
 
-    /// <summary>Behind the headrig's column: up to three logs waiting on two skids.</summary>
+    /// <summary>How far the headrig's motor stands out behind its column (m).</summary>
+    private static float MotorBack(int n) => 0.36f + 0.08f * n;
+
+    /// <summary>Behind the headrig's column and its motor: up to three logs waiting on two skids.</summary>
     private static void LogDeck(Renderer gfx, in Matrix4x4 frame, in SmelterWorks.Grid g, int n, float mx, float mz)
     {
         float lr = SawmillWorks.LogR(n), len = SawmillWorks.Length(n), deck = g.Floor + SawmillWorks.Deck;
         var (_, col1) = SawmillWorks.Column(mz, n);
-        float z0 = col1 + 0.12f, z1 = mz + n * g.Half - 0.05f;
+        float z0 = col1 + MotorBack(n) + 0.04f, z1 = mz + n * g.Half - 0.05f; // (behind the headrig's motor)
         var logs = Math.Min(3, (int)((z1 - z0) / (2f * lr + 0.06f)));
         if (logs <= 0)
             return;
@@ -252,8 +271,12 @@ public static class SawmillRender
             float mx = g.X(q.X0) - g.Half + n * g.Half, mz = g.Z(q.Z0) - g.Half + n * g.Half;
             first = MathF.Min(first, mx - 0.4f);
             // The board slide from the band's front down to the chain, on its own side rails; a board on it while the mill saws.
-            var zf = SawmillWorks.ZFront(mz, n) - 0.05f;
-            var a = new Vector3(mx + 0.3f, deck + 0.03f, zf);
+            // (It leaves the deck past the block's front face and its dressing, so none of it runs inside the block; a lip on the deck
+            // brings the board from the band to it.)
+            float zf = SawmillWorks.ZFront(mz, n) - 0.05f, edge = mz - n * g.Half - 0.06f;
+            if (zf > edge + 0.01f)
+                Box(gfx, frame, new Vector3(mx + 0.06f, deck + 0.004f, edge), new Vector3(mx + 0.54f, deck + 0.024f, zf), Steel, surface: SteelSurface);
+            var a = new Vector3(mx + 0.3f, deck + 0.03f, MathF.Min(edge, zf));
             var b = new Vector3(mx + 0.3f, y1 + 0.01f, line);
             Beam(gfx, frame, a, b, 0.24f, 0.02f, Steel, SteelSurface);
             foreach (var sx in (ReadOnlySpan<float>)[-1f, 1f])

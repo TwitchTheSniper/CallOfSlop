@@ -49,7 +49,6 @@ public sealed class SawmillParts : IPartGenerator
 
     private static PyDict? Alone(PyDict? box) => box?.Update(("alone", true));
 
-    private static PyDict? Merged(PyDict? box) => box?.Update(("merged", true));
 
     private static PyDict? Work(PyDict? b, string kind, string? axis = null, double travel = 0) => MachineLook.Work(b, kind, axis, travel);
 
@@ -225,14 +224,15 @@ public sealed class SawmillParts : IPartGenerator
             double[] smn = new double[3], smx = new double[3];
             (smn[n], smx[n]) = sg > 0 ? (e - 0.05, 1.0) : (-1.0, -e + 0.05);
             (smn[2 - n], smx[2 - n]) = (-1.0, 1.0);
-            (smn[1], smx[1]) = (t - 0.004, t + 0.02);
-            p.Add(Fill(L(smn, smx, Body, paintable: true), face));
+            // (Tread plate a few millimetres under the deck plate's top, so a square's deck reads as one floor; each face's strip 2 mm off the
+            // others', so neither the corners where two cross nor the joints where two blocks' meet share a plane.)
+            (smn[n], smx[n]) = sg > 0 ? (0.93, 1.0) : (-1.0, -0.93);
+            (smn[1], smx[1]) = (t - 0.01, DeckTop - 0.003 - (sg < 0 ? 0.004 : 0.0) - (n == 2 ? 0.002 : 0.0));
+            p.Add(Fill(L(smn, smx, MachineLook.Steel, "tread plate"), face));
         }
         // The deck plate either way: tread plate, the floor the mill stands on.
         p.Add(L([-0.94, t - 0.004, -0.94], [0.94, DeckTop, 0.94], MachineLook.Steel, "tread plate"));
-        // ---- Merged (a block of a square of 2 x 2 or more): sawdust grates in the deck between the rails (the mill over them is SawmillRender's) ----
-        foreach (var x in new[] { -0.5, 0.5 })
-            p.Add(Merged(L([x - 0.3, DeckTop - 0.004, -0.4], [x + 0.3, DeckTop + 0.008, 0.4], MachineLook.Base)));
+        // (In a square of 2 x 2 or more the mill over the deck, and its one sawdust grate under the track, are SawmillRender's.)
         // ---- Alone (a 1 x 1, or a loose block): its own small band mill, SawmillWorks at n 1 about its middle ----
         AloneMill(p);
         // A CUT HAZARD plate low on the front either way, and the maker's plate on the back.
@@ -284,7 +284,7 @@ public sealed class SawmillParts : IPartGenerator
         foreach (var x in new[] { c0 + 0.12, c1 - 0.12 })
             foreach (var z in new[] { rail0, rail1 })
                 p.Add(Alone(Stroke(L([x - 0.07, SW.RailY1 - 0.01, z - 0.045], [x + 0.07, SW.CarriageY0 + 0.07, z + 0.045], MachineLook.Steel, "steel", shape: Cyl("+z", 12))))); // (a wheel)
-        p.Add(Alone(Stroke(L([cx - 0.12, SW.CarriageY0 + 0.01, cz1 - 0.004], [cx + 0.12, SW.CarriageY1 - 0.07, cz1 + 0.1], MachineLook.Base)))); // (the setworks box)
+        p.Add(Alone(Stroke(L([cx - 0.12, SW.CarriageY0 + 0.01, cz1 - 0.004], [cx + 0.12, SW.CarriageY1 - 0.07, cz1 + 0.095], MachineLook.Base)))); // (the setworks box, 5 mm clear of the back run's guard as it passes)
         p.Add(Alone(Stroke(L([c0 + 0.02, SW.CarriageY1, logZ - lr], [c1 - 0.02, R3(SW.CarriageY1 + 2 * lr), logZ + lr], Bark, shape: Cyl("+x", 16))))); // (the log)
         foreach (var (x0, x1) in new[] { (c0 + 0.006, c0 + 0.024), (c1 - 0.024, c1 - 0.006) })
             p.Add(Alone(Stroke(L([x0, SW.CarriageY1 + 0.03, logZ - lr + 0.03], [x1, R3(SW.CarriageY1 + 2 * lr - 0.03), logZ + lr - 0.03], Grain, shape: Cyl("+x", 16))))); // (its sawn end)
@@ -296,7 +296,9 @@ public sealed class SawmillParts : IPartGenerator
         // The column behind, its cap and tension handwheel, a steel face plate, bolts; the arms forward to the upper wheel's bearings.
         p.Add(Alone(L([-colHalf, deck + 0.004, col0], [colHalf, top - 0.25, col1], MachineLook.Base)));
         p.Add(Alone(L([-colHalf + 0.04, top - 0.254, col0 + 0.05], [colHalf - 0.04, top - 0.06, col1 - 0.05], Body, paintable: true))); // (the strain housing)
-        p.Add(Alone(L([-0.12, top - 0.064, (col0 + col1) / 2 - 0.12], [0.12, top - 0.02, (col0 + col1) / 2 + 0.12], MachineLook.Accent, shape: Cyl("+y", 16)))); // (its handwheel)
+        double zc = (col0 + col1) / 2;
+        p.Add(Alone(L([-colHalf - 0.03, top - 0.165, zc - 0.015], [-colHalf + 0.06, top - 0.135, zc + 0.015], MachineLook.Steel, "steel"))); // (the tension screw out of the housing's -x side)
+        p.Add(Alone(L([-colHalf - 0.055, top - 0.24, zc - 0.09], [-colHalf - 0.03, top - 0.06, zc + 0.09], MachineLook.Accent, shape: Cyl("+x", 16)))); // (its handwheel, clear of the duct over the column)
         p.Add(Alone(L([-colHalf + 0.04, deck + 0.4, col0 - 0.012], [colHalf - 0.04, top - 0.5, col0 + 0.004], MachineLook.Steel, "dirty steel"))); // (the face plate)
         foreach (var y in new[] { deck + 0.5, R3((deck + top) / 2), top - 0.6 })
             foreach (var x in new[] { -colHalf + 0.08, colHalf - 0.08 })
