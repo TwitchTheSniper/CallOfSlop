@@ -1083,6 +1083,45 @@
       }
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "trainspacer",
+     "like": "Train Spacer XS",
+     "label": "train spacer",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "fuelbuffer",
+     "like": "Fuel Buffer XS",
+     "label": "fuel buffer",
+     "preset": "hollow 75x75x50 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "coolingjacket",
+     "like": "Cooling Jacket XS",
+     "label": "cooling jacket",
+     "preset": "hollow 75x75x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -8958,6 +8997,24 @@
    "die": "housing",
    "pattern": "drivenozzle",
    "blank": "hollow 85x85x100 steel"
+  },
+  {
+   "part": "Train Spacer XS",
+   "die": "housing",
+   "pattern": "trainspacer",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Fuel Buffer XS",
+   "die": "housing",
+   "pattern": "fuelbuffer",
+   "blank": "hollow 75x75x50 steel"
+  },
+  {
+   "part": "Cooling Jacket XS",
+   "die": "housing",
+   "pattern": "coolingjacket",
+   "blank": "hollow 75x75x60 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",
