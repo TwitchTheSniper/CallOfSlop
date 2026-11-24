@@ -853,6 +853,13 @@ public static class Pressed
             d.Mass = Math.Clamp(MathF.Min(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass); // (never more than its blank: production.md 2026-11-13)
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
+        if (like.TrainBore > 0) // (an engine train piece's bore goes with its blank across: the lesser side, ConstructWorks.Bores)
+        {
+            var wide = MathF.Min(Get(s, axes[0]), Get(s, axes[1]));
+            d.TrainBore = like.TrainBore * wide;
+            d.TrainBoreBack = like.TrainBoreBack * wide;
+            d.Description += $" Its bore is {d.TrainBore:0.00} m{(d.TrainBoreBack != d.TrainBore ? $" in front, {d.TrainBoreBack:0.00} m behind" : "")}.";
+        }
         // A gun part is a sized builder part too (sized-gun-engine-parts.md 3.4): the gun code finds it by the key (Parts.Find).
         d.GunSized = null;
         if (like.Role == PartRole.GunPart && Parts.Find(like.GunPartName) is { } builder)

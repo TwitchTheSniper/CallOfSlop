@@ -1239,6 +1239,19 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "boreadapter",
+     "like": "Bore Adapter XS",
+     "label": "bore adapter",
+     "preset": "hollow 135x135x70 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9186,6 +9199,12 @@
    "die": "housing",
    "pattern": "fuelselector",
    "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Bore Adapter XS",
+   "die": "housing",
+   "pattern": "boreadapter",
+   "blank": "hollow 135x135x70 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

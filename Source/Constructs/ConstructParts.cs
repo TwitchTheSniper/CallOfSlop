@@ -717,6 +717,7 @@ public sealed partial class ConstructPartDef
     public float WorksRating; // "works": {"rating"}: what a head that isn't a thruster asks of its works (a thruster asks its force)
     public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
     public TrainFunction TrainFn; // "worksPiece": {"kind": "train", "function"}: what an engine train's function piece adds (ConstructWorks.TrainFunctions)
+    public float TrainBore, TrainBoreBack; // "worksPiece": {"bore", "boreBack"}: m across an engine train piece's front and back joints (0: not checked; a pressed one's scales with its blank; ConstructWorks.Bores)
     public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick, GunPierce; // a heavy gun's own numbers (GunPierce: a bore's energy budget, ConstructBores.cs)

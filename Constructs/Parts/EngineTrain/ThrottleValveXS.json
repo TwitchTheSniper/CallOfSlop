@@ -10,7 +10,8 @@
   "onBreak": "disable",
   "worksPiece": {
     "kind": "train",
-    "function": "throttle"
+    "function": "throttle",
+    "bore": 0.66
   },
   "config": [
     {
