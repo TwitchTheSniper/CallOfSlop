@@ -43,7 +43,7 @@ public sealed partial class ZeroDayWorks
                 // (the tunnel 9 rows long, 18 m: its hearth between the doors takes the longest wall's 17 m kit. Its way out is a Roller
                 // Tile in the row after it, where the first store's pad began: the pad starts a row on, 5 rows long, so a baked wall rolls
                 // straight out of the tunnel onto the tile and the pad)
-                var oven = Oven(east, -139, east - 10, 5, 9, 5, paint, bedZ0: -139, facing: West);
+                var oven = Oven(east, -139, east - 10, 5, 9, 6, paint, bedZ0: -139, facing: West);
                 Tiles("Roller Tile", east - 6, -135, 1, 2, South, paint);
                 Tiles("Roller Tile", east - 6, -157, 1, 1, South, paint);
                 LineOrders(station, _lineExtruders[line], east + 2, -115, paint, _lineFormers[line]);
@@ -85,7 +85,7 @@ public sealed partial class ZeroDayWorks
             Station(69, -101, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0)); // (welded on the skins' pad: no walkway between them)
             // (its Core east of the bed's first row, so the tunnel runs north to south: three rows of Roller Tiles from the station's bay
             // into it, and one out of it before the store; the bed 7 rows, so that row is free)
-            Oven(69, -121, 53, 8, 7, 8, LineD, bedZ0: -121, facing: West);
+            Oven(69, -121, 53, 8, 7, 12, LineD, bedZ0: -121, facing: West);
             Tiles("Roller Tile", 59, -115, 2, 3, South, LineD);
             Tiles("Roller Tile", 59, -135, 2, 1, South, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);

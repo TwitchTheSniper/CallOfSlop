@@ -80,7 +80,8 @@ public static class BakeOvenRender
         var lining = Vector3.Lerp(Brick * 0.5f + Fill * 0.18f, Hot * 0.9f, heat * 0.6f); // (the fill glow: always a little, more while it bakes)
         var tube = Vector3.Lerp(Tube, Hot, heat);
         // ---- The hearth: two stands along the bed and the ceramic rollers across them, tops at the roll line ----
-        foreach (var x in new[] { 0.33f, bw - 0.45f })
+        for (var hx = 0; hx < 2; hx++)
+            if ((hx == 0 ? 0.33f : bw - 0.45f) is var x)
             Box(gfx, tf, new Vector3(x, top + 0.004f, dz), new Vector3(x + 0.12f, roll - 0.03f, bl - dz), Base);
         if (fine)
             for (var z = dz + 0.25f; z < bl - dz - 0.1f; z += 0.5f)
@@ -130,7 +131,8 @@ public static class BakeOvenRender
             {
                 // The radiant tubes along the inner face, under the rollers' ends and under the roof.
                 var tx = s == 1 ? x0 - 0.13f : x1 + 0.13f;
-                foreach (var y in windows ? new[] { 0.72f, yR - 0.3f } : new[] { roll + bed.Clear * 0.38f, roll + bed.Clear * 0.75f })
+                for (var ty = 0; ty < 2; ty++)
+                    if ((windows ? (ty == 0 ? 0.72f : yR - 0.3f) : roll + bed.Clear * (ty == 0 ? 0.38f : 0.75f)) is var y)
                     Cyl(gfx, tf, 2, new Vector3(tx, y, bl * 0.5f), 0.14f, bl - 2 * dz - 0.2f, tube, 2);
                 // Ribs outside at each 2 m cell line.
                 for (var z = 2f; z < bl - 0.5f; z += 2f)
@@ -193,7 +195,8 @@ public static class BakeOvenRender
                     Box(gfx, lf, new Vector3(a0 + 0.05f, roll + 0.1f, outZ > 0 ? half : -half - 0.03f), new Vector3(a0 + 0.13f, leafTop - 0.1f, outZ > 0 ? half + 0.03f : -half), Trim); // (a stile at each edge)
                     Box(gfx, lf, new Vector3(a1 - 0.13f, roll + 0.1f, outZ > 0 ? half : -half - 0.03f), new Vector3(a1 - 0.05f, leafTop - 0.1f, outZ > 0 ? half + 0.03f : -half), Trim);
                     Stripes(gfx, lf, a0 + 0.004f, a1 - 0.004f, roll + 0.012f, 0.12f, outZ > 0 ? half + 0.002f : -half - 0.008f, 0.006f);
-                    foreach (var y in new[] { roll + 0.4f, leafTop - 0.4f })
+                    for (var ky = 0; ky < 2; ky++)
+                        if ((ky == 0 ? roll + 0.4f : leafTop - 0.4f) is var y)
                         Cyl(gfx, lf, 1, new Vector3(0, y, 0), 0.12f, 0.3f, Steel); // (its hinge knuckles)
                 }
             }

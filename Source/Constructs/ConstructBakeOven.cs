@@ -438,7 +438,7 @@ public static partial class ConstructBakeOven
             return false; // (not in the tunnel: rolled out, or never in)
         if (st.Blocked != (byte)OvenPhase.Open)
             return true;
-        return ConstructRollOut.OutRunOf(c, part) >= 0 && !(world.OvenRolled.TryGetValue(c.Id << 16 | part, out var rolled) && rolled == b.Id); // (once rolled, or stopped short: a lifter's)
+        return ConstructRollOut.OutRunOf(c, part) >= 0 && ConstructRecycler.Powered(world, c, part) && !(world.OvenRolled.TryGetValue(c.Id << 16 | part, out var rolled) && rolled == b.Id); // (once rolled, stopped short or with no power to roll it: a lifter's)
     }
 
     /// <summary>The swing boxes in front of both ends while the doors move, the burn box inside the shut tunnel.</summary>
