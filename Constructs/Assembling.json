@@ -2793,6 +2793,7 @@
     {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
     {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40},
     {"output": "Crucible Block", "materials": {"steel": 380, "concrete": 250}, "seconds": 60},
-    {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25}
+    {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25},
+    {"output": "Head Stand", "materials": {"steel": 240}, "seconds": 20}
   ]
 }

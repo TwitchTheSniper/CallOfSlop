@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Vacuum Head",
+  "description": "A modular arm's head for plates and sheets: a frame of suction cups. Takes a piece whose thin side is a tenth of its long side or less; holds less than a clamp (four tenths).",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 90.0,
+  "health": 400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#f07818",
+  "attachSeconds": 4.0,
+  "armPiece": "vacuum",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.06,
+        0.1
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -0.4,
+        0.056,
+        -0.4
+      ],
+      "max": [
+        0.4,
+        0.136,
+        0.4
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.37,
+        0.136,
+        -0.37
+      ],
+      "max": [
+        -0.19,
+        0.2,
+        -0.19
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.37,
+        0.136,
+        0.19
+      ],
+      "max": [
+        -0.19,
+        0.2,
+        0.37
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.19,
+        0.136,
+        -0.37
+      ],
+      "max": [
+        0.37,
+        0.2,
+        -0.19
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.19,
+        0.136,
+        0.19
+      ],
+      "max": [
+        0.37,
+        0.2,
+        0.37
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        0.06,
+        -0.38
+      ],
+      "max": [
+        0.36,
+        0.13,
+        -0.3
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Magnet Head",
+  "description": "A modular arm's head for steel: an electromagnet disc. Takes any steel or iron piece up to three widths across, whatever its shape; holds eight tenths of a clamp.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 140.0,
+  "health": 400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#f07818",
+  "attachSeconds": 4.0,
+  "armPiece": "magnet",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.06,
+        0.1
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -0.3,
+        0.056,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.156,
+        0.3
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.3,
+        0.15,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.25,
+        0.3
+      ],
+      "color": "#4c5157",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.2,
+        0.148,
+        0.2
+      ],
+      "max": [
+        0.26,
+        0.164,
+        0.26
+      ],
+      "color": "#ff9a1a",
+      "detail": true,
+      "paintable": false,
+      "work": "glow"
+    },
+    {
+      "min": [
+        -0.25,
+        0.07,
+        0.296
+      ],
+      "max": [
+        0.25,
+        0.13,
+        0.308
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

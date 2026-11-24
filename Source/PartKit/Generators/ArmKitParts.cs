@@ -16,14 +16,17 @@ public sealed class ArmKitParts : IPartGenerator
     public string Name => "arm_kit";
 
     /// <summary>The chain pieces: pressed on the Arm die, never an Assembler's row (Assembling.PressedNow).</summary>
-    public static readonly string[] PressedPieces = ["Arm Joint", "Arm Boom", "Arm Wrist", "Pad Clamp", "Arm Counterweight", "Arm Drive Pack"];
+    public static readonly string[] PressedPieces = ["Arm Joint", "Arm Boom", "Arm Wrist", "Pad Clamp", "Arm Counterweight", "Arm Drive Pack",
+        "Spreader", "Vacuum Head", "Magnet Head", "Fork", "Fitter Head"];
 
     private const string Out = "Constructs/Parts/Lifters/ArmKit";
     private const string Yellow = "#e8b81c", Yellow2 = "#c99c18", Dark = "#2b2f34", Steel = "#98a1a9", Pin = "#f07818", Weight = "#4c5157", Screen = "#10161c", Lamp = "#ff9a1a";
 
     // The preset blanks (cm): what each catalogue piece is pressed from on the Arm die.
     public const string JointBlank = "solid 50x50x50 steel", BoomBlank = "hollow 40x40x400 steel", WristBlank = "solid 30x30x40 steel",
-        ClampBlank = "solid 60x30x30 steel", WeightBlank = "solid 200x100x10 steel", PackBlank = "solid 60x40x120 steel";
+        ClampBlank = "solid 60x30x30 steel", WeightBlank = "solid 200x100x10 steel", PackBlank = "solid 60x40x120 steel",
+        SpreaderBlank = "solid 150x30x30 steel", VacuumBlank = "solid 80x20x80 steel", MagnetBlank = "solid 60x25x60 steel", ForkBlank = "solid 80x60x100 steel",
+        FitterBlank = "solid 60x40x40 steel";
 
     private static Part Core()
     {
@@ -170,6 +173,96 @@ public sealed class ArmKitParts : IPartGenerator
         return p;
     }
 
+
+    // ---- Heads (part 2): each hangs on a Wrist's tip by its "base" socket, its width along x (what it holds: ArmKit.HeadRating). A spare sits on
+    // a Head Stand's slot by the same socket; the arm swaps by itself when the next piece needs another.
+    private static Part Head(string name, string desc, string kind, double w, double h, double d, Action<Part> look, double kg)
+    {
+        var p = new Part(name, Small, "Arm kit", desc, group: "Production", color: Pin);
+        p.Add(Box([-0.1, 0, -0.1], [0.1, 0.06, 0.1], Steel)); // (its quick-change coupler)
+        p.Add(Box([-w / 2, 0.056, -d / 2], [w / 2, 0.056 + h * 0.4, d / 2], Dark));
+        look(p);
+        Chain(p, h, tip: false);
+        p.Stats(kg, 400, 8, seconds: 4.0);
+        p.Set(("armPiece", kind), ("collider", "boxes"));
+        return p;
+    }
+
+    private static Part Spreader() => Head("Spreader", "A modular arm's head for long pieces: a beam with a twist-lock hook at each end. Takes beams, hull sections and anything 2 m long or more, up to three widths across; holds a fifth more than a clamp of its width.",
+        "spreader", 1.5, 0.3, 0.3, p =>
+        {
+            foreach (var s in new[] { -1, 1 })
+            {
+                p.Add(Box([s * 0.75 - (s > 0 ? 0.1 : 0), 0.18, -0.1], [s * 0.75 + (s > 0 ? 0 : 0.1), 0.3, 0.1], Yellow)); // (its end blocks, above)
+                p.Add(MachineLook.D([s * 0.68 - 0.03, 0.3 - 0.004, -0.03], [s * 0.68 + 0.03, 0.36, 0.03], Pin)); // (its twist locks)
+            }
+            MachineLook.Hazard(p, [-0.5, 0.06, 0.15 - 0.004], [0.5, 0.15, 0.15 + 0.008]);
+        }, 160);
+
+    private static Part Vacuum() => Head("Vacuum Head", "A modular arm's head for plates and sheets: a frame of suction cups. Takes a piece whose thin side is a tenth of its long side or less; holds less than a clamp (four tenths).",
+        "vacuum", 0.8, 0.2, 0.8, p =>
+        {
+            foreach (var x in new[] { -0.28, 0.28 })
+                foreach (var z in new[] { -0.28, 0.28 })
+                    p.Add(MachineLook.D([x - 0.09, 0.136, z - 0.09], [x + 0.09, 0.2, z + 0.09], Screen, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y")))); // (its cups)
+            p.Add(MachineLook.D([0.2, 0.06, -0.38], [0.36, 0.13, -0.3], Steel, "steel")); // (its vacuum pump)
+        }, 90);
+
+    private static Part Magnet() => Head("Magnet Head", "A modular arm's head for steel: an electromagnet disc. Takes any steel or iron piece up to three widths across, whatever its shape; holds eight tenths of a clamp.",
+        "magnet", 0.6, 0.25, 0.6, p =>
+        {
+            p.Add(MachineLook.D([-0.3, 0.15, -0.3], [0.3, 0.25, 0.3], Weight, shape: Kw(("shape", "cylinder"), ("segments", 24), ("front", "+y"))));
+            p.Add(MachineLook.Work(MachineLook.D([0.2, 0.056 + 0.1 - 0.004, 0.2], [0.26, 0.16, 0.26], Lamp)!, "glow"));
+            MachineLook.Hazard(p, [-0.25, 0.07, 0.3 - 0.004], [0.25, 0.13, 0.3 + 0.008]);
+        }, 140);
+
+    private static Part ForkHead() => Head("Fork", "A modular arm's head of two tines: lifts crates, pallets and blocks from under. Takes anything whose long side is within three widths; holds half again what a clamp does.",
+        "fork", 0.8, 0.6, 0.76, p =>
+        {
+            foreach (var x in new[] { -0.3, 0.3 })
+            {
+                p.Add(Box([x - 0.06, 0.24 - 0.004, -0.38], [x + 0.06, 0.6, -0.26], Steel)); // (its upright)
+                p.Add(Box([x - 0.06, 0.48, -0.26], [x + 0.06, 0.54, 0.37], Steel)); // (a tine)
+            }
+            p.Add(MachineLook.D([-0.4, 0.3, -0.38 - 0.004], [0.4, 0.4, -0.3], Yellow, paintable: true));
+        }, 180);
+
+    private static Part Fitter() => Head("Fitter Head", "A modular arm's head that fits parts at a Building Station: a clamp with a turning wrist and a torque driver. What a clamp of its width takes; the arm then fits as a Module Fitter does.",
+        "fitterHead", 0.6, 0.4, 0.4, p =>
+        {
+            p.Add(MachineLook.D([-0.2, 0.216, -0.2], [0.2, 0.3, 0.2], Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+y"))));
+            foreach (var s in new[] { -1, 1 })
+                p.Add(Box([s > 0 ? 0.22 : -0.3, 0.296, -0.12], [s > 0 ? 0.3 : -0.22, 0.4, 0.12], Pin));
+            p.Add(MachineLook.D([-0.03, 0.296, 0.14], [0.03, 0.38, 0.2], Yellow, paintable: true)); // (its driver)
+        }, 130);
+
+    /// <summary>A stand of three spare heads in reach of an arm kit (ArmKit.Heads): each slot takes a head by its base socket.</summary>
+    private static Part HeadStand()
+    {
+        var p = new Part("Head Stand", Small, "Arm kit",
+            "A rack of three spare heads beside a modular arm: put a head on each slot. An Arm Core in reach swaps to the head its next piece needs by itself (5 s), or by its Head setting.",
+            group: "Production", color: Dark);
+        const double e = 1.5, h = 1.0;
+        p.Add(Box([-e, 0, -0.4], [e, 0.1, 0.4], Weight));
+        foreach (var x in new[] { -1.4, 1.4 })
+            p.Add(Box([x - 0.06, 0.096, -0.06], [x + 0.06, h - 0.1, 0.06], Yellow2));
+        p.Add(Box([-e, h - 0.1, -0.3], [e, h, 0.3], Dark));
+        double[] slots = [-0.95, 0.3, 1.15]; // (room for a 1.5 m Spreader, a Vacuum Head and a Fork side by side)
+        for (var k = 0; k < 3; k++)
+        {
+            var x = slots[k];
+            foreach (var (a, b) in new[] { (-0.14, -0.106), (0.106, 0.14) })
+                p.Add(MachineLook.D([x + a, h - 0.004, -0.14], [x + b, h + 0.03, 0.14], Steel, "steel")); // (its slot's seat cheeks, either side of the coupler)
+            p.Sock($"slot{k}", [x, h, 0], "+y"); // (a head's coupler sits through its seat ring)
+        }
+        MachineLook.Hazard(p, [-1.2, 0.2, 0.06 - 0.004 + 0.0], [1.2, 0.3, 0.06 + 0.008]);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("mount", [0, 1, -0.4], "-z"); // (bolted on an Arm Core's or Pedestal's side, its floor level with theirs)
+        p.Stats(260, 600, 8, seconds: 6.0);
+        p.Set(("armPiece", "headStand"), ("collider", "boxes"));
+        return p;
+    }
+
     private static Part Counterweight()
     {
         var p = new Part("Arm Counterweight", Small, "Arm kit",
@@ -210,12 +303,13 @@ public sealed class ArmKitParts : IPartGenerator
     }
 
     // ---- The presets: blueprints of pressed pieces on a Core (Sean's four: Bench, Line, Heavy, Yard).
-    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs);
+    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs, bool Stand = false);
 
     private static readonly Preset[] Presets =
     [
         new("Bench Arm", "A small kit arm for a bench: about 4 m of reach, a light load.", 0, 30, 25, 150, 25, 20, 150, 20, 40, 0, 10, 0),
         new("Line Arm", "A kit arm for a production line: about 7 m of reach.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 2),
+        new("Line Arm Heads", "A Line Arm with a Head Stand of three spares (a Spreader, a Vacuum Head and a Fork): it swaps to what each piece needs.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 1, Stand: true),
         new("Heavy Arm", "A heavy kit arm on a pedestal: about 9 m of reach, big pieces.", 1, 80, 60, 400, 70, 55, 380, 50, 100, 2, 20, 4),
         new("Yard Arm", "A shipyard kit arm on two pedestals: about 16 m of reach for hull pieces.", 2, 120, 100, 700, 100, 90, 700, 80, 160, 4, 30, 6),
     ];
@@ -261,12 +355,20 @@ public sealed class ArmKitParts : IPartGenerator
             foreach (var side in new[] { "+z", "-z" })
                 if (packs++ < s.Packs)
                     On(hold, side, Key("arm", "drivepack", PackBlank), "base");
+        if (s.Stand)
+        {
+            var stand = On(core, "-z", "Head Stand", "mount");
+            On(stand, "slot0", Key("arm", "spreader", SpreaderBlank), "base");
+            On(stand, "slot1", Key("arm", "vacuum", VacuumBlank), "base");
+            On(stand, "slot2", Key("arm", "fork", ForkBlank), "base");
+        }
         return Kw(("format", "call-of-slop-construct-blueprint/1"), ("name", s.Name), ("description", s.Desc + " Pressed pieces on an Arm Core: it stands as a mast and folds out once powered."), ("steps", steps));
     }
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, [("", Core()), ("", Pedestal()), ("", Joint()), ("", Boom()), ("", WristPiece()), ("", Clamp()), ("", Counterweight()), ("", Pack())]);
+        WriteParts(o, Out, [("", Core()), ("", Pedestal()), ("", Joint()), ("", Boom()), ("", WristPiece()), ("", Clamp()), ("", Counterweight()), ("", Pack()),
+            ("", Spreader()), ("", Vacuum()), ("", Magnet()), ("", ForkHead()), ("", Fitter()), ("", HeadStand())]);
         foreach (var s in Presets)
             o.File($"Constructs/Blueprints/{s.Name.Replace(" ", "")}.json", PyJson.Dumps(Blueprint(s), 2) + "\n");
     }

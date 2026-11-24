@@ -11,7 +11,7 @@ public static class ArmKitRender
 {
     private static readonly Vector3 Ram = new(0.62f, 0.64f, 0.66f), RamBody = new(0.18f, 0.19f, 0.21f), Hose = new(0.08f, 0.08f, 0.09f);
 
-    public static void Draw(Renderer gfx, Construct c, LifterDef ld, ArmSpec s, Matrix4x4 part, float yaw, Vector3 elbow, Vector3 wrist, float fold)
+    public static void Draw(Renderer gfx, Construct c, LifterDef ld, ArmSpec s, Matrix4x4 part, float yaw, Vector3 elbow, Vector3 wrist, float fold, int tipHead = -1)
     {
         var t = fold * fold * (3 - 2 * fold); // (eased: it starts and stops gently)
         var heading = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
@@ -31,7 +31,14 @@ public static class ArmKitRender
         Piece(gfx, c, s.Elbow, e - df * (s.ElbowA * 0.5f), df, side, 1, part);
         Piece(gfx, c, s.ForeBoom, e + df * (s.ElbowA * 0.5f), df, side, 1, part);
         Piece(gfx, c, s.Wrist, tip, dw, side, k, part);
-        Piece(gfx, c, s.Head, tip + dw * (s.WristLen * k), dw, side, k, part);
+        var onTip = tipHead >= 0 && tipHead < s.Heads.Length ? s.Heads[tipHead].Part : s.Head;
+        Piece(gfx, c, onTip, tip + dw * (s.WristLen * k), dw, side, k, part);
+        // The spares on their stands: a slot whose head is on the Wrist holds the arm's own head instead.
+        for (var h = 1; h < s.Heads.Length; h++)
+        {
+            ref readonly var hd = ref s.Heads[h];
+            Piece(gfx, c, h == tipHead ? s.Heads[0].Part : hd.Part, hd.Slot, hd.SlotUp, hd.SlotSide, 1, part);
+        }
         // The rams: the shoulder's from a lug on the Core's top to a third of the way along the upper boom, the elbow's along the upper
         // boom's back to the forearm's root; each a dark barrel and a bright rod, the hose beside it.
         var off = Vector3.Cross(side, du) * (s.JointA * 0.55f);

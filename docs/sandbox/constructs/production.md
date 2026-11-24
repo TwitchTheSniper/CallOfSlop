@@ -2154,6 +2154,23 @@ Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`; the looks ar
   `oven mode bake|unbake` turns the setting.
 - **Not yet.** The no-collide socket hole on a baked part (hull-dress.md) and a Piece out conveyor. Baking by order: [Bake kits](#bake-kits).
 
+### Arm kit heads and the Head Stand (2026-11-24, part 2)
+
+Five more heads go on a Wrist's tip by their "base" socket, each pressed to size on the Arm die (`arm.spreader`, `arm.vacuum`, `arm.magnet`, `arm.fork`, `arm.fitter`). A head's width (its x size) gives the Pad Clamp's rating (`ArmKit.HeadRating`) times its kind's factor, and its kind says what it takes by shape (`ArmKit.Fits`, sides a >= b >= c, w the width):
+
+| Head | Factor | Takes |
+| --- | --- | --- |
+| Pad Clamp | 1 | b <= 1.5 w |
+| Spreader | 1.2 | a >= 2 m and b <= 3 w |
+| Vacuum Head | 0.4 | c <= a / 10 and b <= 6 w |
+| Magnet Head | 0.8 | steel or iron, b <= 3 w |
+| Fork | 1.5 | a <= 3 w |
+| Fitter Head | 1 | as a clamp; an arm built with one fits modules as a Module Fitter |
+
+A **Head Stand** (catalogue part, one Assembling row) holds three spares on its `slot0..2` sockets; it stands on the floor or bolts on a Core's or Pedestal's side by its `mount` socket. Every spare on a stand of the same body whose slot is in the arm's reach joins its heads (`ArmSpec.Heads`: its own first, then the spares, at most 8). The Core's **Head** setting (`CfgKey.ArmHead`, which took the retired `Stations` byte) is a choice: Own, or a head kind (`ArmKit.HeadKinds`; its own head if it is that kind, else the first spare of it, else its own). It saves the kind, never a place in the list, so adding or taking away a stand can't change the head an arm wears after a reload; the chart and payload are the chain's held to that head's rating (`ArmKit.Mount`). A carry asks `Carries` whether any head takes the piece; at its start (`Approach`) the arm keeps the mounted head if it fits, else puts on the strongest that does (`SwapFor`): the setting changes, the body goes to clients, and the move waits `SwapTicks` (2.5 s) while the hand goes to the stand and back. Clients draw the swap from the setting changing (`LifterRender.HeadSwap`): the hand goes to the slot, the heads change places at half way, and the spares are drawn on their slots by `ArmKitRender`. The **Line Arm Heads** preset is a Line Arm with a stand of a Spreader, a Vacuum Head and a Fork.
+
+Not yet: a spare on a stand has no collider while it belongs to an arm (as the chain); two spares of one kind are told apart by their order on the body; and a swap between two spares shows the arm's own head on the first spare's slot until it ends.
+
 ### Roll-out and roll-in (2026-11-23)
 
 Sean: "The oven should allow parts coming in to be rolled directly into it. Also, the construction station should be able to roll out,
