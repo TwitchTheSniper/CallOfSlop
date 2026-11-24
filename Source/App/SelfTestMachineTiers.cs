@@ -11,7 +11,7 @@ public static partial class SelfTest
     private static string TierName(string line, int tier) => TierWords[tier] + line;
 
     /// <summary>
-    /// The five tiers of the four machine lines as data: tier 1 keeps the old numbers, each step up is faster, holds more,
+    /// The five tiers of the machine lines as data (the Smelter is a block machine: its squares, not tiers, set its rate, production.md "Refiners as block machines"): tier 1 keeps the old numbers, each step up is faster, holds more,
     /// is tougher, draws more and weighs more, and a unit costs less power; each is physically larger by its size, boxes, bins
     /// and work box together, with its sockets on the frame grid and a bit that reaches no further under the part; bins hold
     /// what their volume holds; the tiers look different, have no coplanar faces and the top one glows; the Tab inventory has them in order. The "minTier" table values, and bad ones refused.
@@ -19,7 +19,7 @@ public static partial class SelfTest
     private static void MachineTierData(Action<bool, string> want)
     {
         (string Line, string Section, float Rate, float Power, float Mass)[] lines =
-            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160), ("Smelter", "Smelters", 1, 3000, 5145), ("Foundry", "Foundries", 1, 3500, 7680)];
+            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160), ("Foundry", "Foundries", 1, 3500, 7680)];
         float RateOf(ConstructPartDef d) => d.IsGatherer ? d.GatherRate : d.RefineWork / (float)ConstructRefining.BaseWork;
         var cat = SandboxCatalogue.Make();
         foreach (var (line, section, rate, power, mass) in lines)
@@ -68,6 +68,11 @@ public static partial class SelfTest
             want(sec != null && cat.Parts.Groups[sec.Group].Name == "Production", $"no {section} section in Production");
             want(sec != null && sec.Items.Select(i => ConstructParts.All[i].Tier).SequenceEqual([1, 2, 3, 4, 5]), $"the {section} section isn't in tier order: {(sec == null ? "" : string.Join(", ", sec.Items.Select(i => ConstructParts.All[i].Name)))}");
         }
+        // The Smelter: one Core, tier 1, with its Hearth Blocks and Casting Beds beside it in the Smelters section, and no tier names left.
+        var smelter = ConstructParts.Need("Smelter");
+        want(smelter is { Tier: 1, BlockSquares: true, IsRefiner: true, RefineMachine: "smelter" } && ConstructParts.Find("Workshop Smelter") == smelter && ConstructParts.Find("Plasma Smelter") == smelter, $"the Smelter Core: tier {smelter.Tier}, squares {smelter.BlockSquares}");
+        var smelters = cat.Parts.Sections.FirstOrDefault(s => s.Name == "Smelters");
+        want(smelters != null && smelters.Items.Select(i => ConstructParts.All[i].Name).Order().SequenceEqual(["Casting Bed", "Hearth Block", "Smelter"]), $"the Smelters section: {(smelters == null ? "" : string.Join(", ", smelters.Items.Select(i => ConstructParts.All[i].Name)))}");
         // The file's tier and the gate's values.
         var drillFile = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Gathering", "DrillModuleT3.json"));
         foreach (var (from, to, why) in ((string, string, string)[])[("\"tier\": 3", "\"tier\": 6", "tier"), ("\"tier\": 3", "\"tier\": 0", "tier"), ("\"chuteLoad\": 40", "\"chuteLoad\": 5", "chuteLoad")])
@@ -91,21 +96,23 @@ public static partial class SelfTest
         want(RefiningTable.Parse(recipe + ", \"minTier\": 9}]}").Problem.Contains("minTier"), "a recipe's minTier of 9 wasn't refused");
         var refining = RefiningTable.Current;
         var names = RecyclingTable.Current;
+        // A bare Smelter Core smelts every ore (no gates since it became a block machine); the saved recipe indices of the old order still load (ConstructRefining).
         want(refining.Find("smelter", names.IdOf("iron ore"))?.MinTier == 1 && refining.Find("smelter", names.IdOf("sand"))?.MinTier == 1 && refining.Find("sawmill", names.IdOf("wood"))?.MinTier == 1
-            && refining.Find("smelter", names.IdOf("copper ore"))?.MinTier == 2 && refining.Find("smelter", names.IdOf("gold ore"))?.MinTier == 3, "the recipes' minTier");
-        want(refining.Takes("smelter", 1) == "iron ore, sand, dirt, stone" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand, dirt, stone" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand, dirt, stone" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
+            && refining.Find("smelter", names.IdOf("copper ore"))?.MinTier == 1 && refining.Find("smelter", names.IdOf("gold ore"))?.MinTier == 1, "the recipes' minTier");
+        want(refining.Takes("smelter", 1) == refining.Takes("smelter") && refining.Takes("smelter").Contains("copper ore") && refining.Takes("smelter").Contains("gold ore"), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
     }
 
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
     private static readonly Dictionary<string, (float Low, float High)> TierHeights = new()
     {
-        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Smelter"] = (0.8f, 1.42f), ["Foundry"] = (0.8f, 1.24f)
+        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Foundry"] = (0.8f, 1.24f)
     };
 
     /// <summary>
     /// "Machine tier looks": a player tells a machine's line and tier apart at a glance. Every tier of a line differs from every other in colour
     /// and in solid shape, and every tier keeps the line's signature (a drill's bit under a tower, a saw's blade bar and bin, a mill's beds and blade, a furnace's hopper,
-    /// stack and mouth, a foundry's twin stacks, an assembler's posts and arm). Details are looks only: the file says "collider": "boxes", and none covers a
+    /// stack and mouth, a foundry's twin stacks, an assembler's posts and arm; the Smelter is a block machine, whose Core, Hearth Block and Casting Bed
+    /// are checked for theirs: a hopper over a glowing hearth, a stub stack alone and charge doors merged, a low bed). Details are looks only: the file says "collider": "boxes", and none covers a
     /// socket, a port, a bin, a slot, the aisle or the assembler's open front, or strays from the machine. A line's aisle stays walkable across the machine.
     /// </summary>
     private static void CheckMachineTierLooks()
@@ -151,11 +158,12 @@ public static partial class SelfTest
         {
             var shapes = new List<(string Name, bool[] Cells, Vector3 Colour)>();
             var counts = new List<string>();
-            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            string[] members = line == "Smelter" ? ["Smelter", "Hearth Block", "Casting Bed"] : [.. Enumerable.Range(1, ConstructParts.MaxTier).Select(t => TierName(line, t))]; // (a block machine: its Core and blocks, no tiers)
+            foreach (var member in members)
             {
-                var d = ConstructParts.Need(TierName(line, tier));
+                var d = ConstructParts.Need(member);
                 var boxes = d.Boxes;
-                var size = d.IsGatherer ? TierSizes[tier] : d.BoundsMax.X - d.BoundsMin.X;
+                var size = d.IsGatherer ? TierSizes[d.Tier] : d.BoundsMax.X - d.BoundsMin.X;
                 var solids = boxes[..d.SolidBoxes];
                 var details = boxes[d.SolidBoxes..];
                 var hidden = solids.Where(b => b.Hidden).ToArray();
@@ -171,7 +179,7 @@ public static partial class SelfTest
                 {
                     var spot = at + dir * 0.03f;
                     foreach (var b in looks)
-                        Want(!Over(spot - new Vector3(0.02f), spot + new Vector3(0.02f), b.Center - b.Half, b.Center + b.Half), $"{d.Name}: a detail ({b.Center}) covers its {name}");
+                        Want(b.BySeams || !Over(spot - new Vector3(0.02f), spot + new Vector3(0.02f), b.Center - b.Half, b.Center + b.Half), $"{d.Name}: a detail ({b.Center}) covers its {name}"); // (a block's face dressing goes when a block is welded there)
                 }
                 (Vector3 Min, Vector3 Max, string Name)[] rooms = [(d.FillMin, d.FillMax, "bin"), (d.InFillMin, d.InFillMax, "input"), .. d.Slots.Select(s => (s.Min, s.Max, "tray"))];
                 foreach (var (mn, mx, name) in rooms)
@@ -179,7 +187,7 @@ public static partial class SelfTest
                         foreach (var b in looks)
                             Want(!Over(mn + new Vector3(0.01f), mx - new Vector3(0.01f), b.Center - b.Half, b.Center + b.Half), $"{d.Name}: a detail ({b.Center}) stands in its {name}");
                 var margin = new Vector3(0.1f * size);
-                foreach (var b in details)
+                foreach (var b in details.Where(b => !b.Alone)) // (a lone Hearth Block's stub stack rises 2 m over it, as a square's drawn stack does)
                     Want(Vector3.Min(b.Center - b.Half, d.BoundsMin - margin) == d.BoundsMin - margin && Vector3.Max(b.Center + b.Half, d.BoundsMax + margin) == d.BoundsMax + margin, $"{d.Name}: a detail ({b.Center}) strays from the machine");
 
                 // The line's signature.
@@ -198,9 +206,18 @@ public static partial class SelfTest
                         Want(Solid(new Vector3(-0.5f, 0.1f, -0.5f), new Vector3(0.5f, 0.3f, -0.44f)) && Solid(new Vector3(-0.5f, 0.1f, 0.44f), new Vector3(0.5f, 0.3f, 0.5f)), $"{d.Name} has no beds");
                         Want(details.Any(b => b.Half.X < 0.025f * size && b.Half.Y > 0.15f * size && b.Half.Z > 0.15f * size), $"{d.Name} has no blade");
                         break;
-                    case "Smelter" or "Foundry":
+                    case "Smelter":
+                        // The Core's hopper on top with a glowing hearth on its front, a Hearth Block's stub stack alone and charge doors merged, a Casting Bed low.
+                        if (d.BlockSquares)
+                            Want(d.InFillMin.Y >= d.BoundsMax.Y - 0.8f && details.Any(b => b.Work == BoxWork.Glow && b.Center.Z < 0), $"{d.Name} has no hopper on top or no hearth on its front");
+                        else if (d.Name == "Hearth Block")
+                            Want(boxes.Any(b => b.Alone && b.Center.Y > SmelterWorks.HearthTop + 1) && boxes.Any(b => b.MergedOnly && b.Work == BoxWork.Glow), $"{d.Name} has no stub stack alone or no charge doors merged");
+                        else
+                            Want(d.BoundsMax.Y <= 0.5f, $"{d.Name} stands {d.BoundsMax.Y} m tall");
+                        break;
+                    case "Foundry":
                         var stacks = solids.Where(b => b.Half.X < 0.12f * size && b.Half.Y > 0.05f * size && b.Center.Y + b.Half.Y > d.InFillMax.Y).ToArray();
-                        Want(line == "Smelter" ? stacks.Length >= 1 : stacks.Any(b => b.Center.X < 0) && stacks.Any(b => b.Center.X > 0), $"{d.Name} has no stack ({stacks.Length})");
+                        Want(stacks.Any(b => b.Center.X < 0) && stacks.Any(b => b.Center.X > 0), $"{d.Name} has no stack ({stacks.Length})");
                         Want(details.Any(b => b.Center.Z < -0.03f * size && b.Center.Z > -0.25f * size && b.Center.Y < 0.6f * size && MathF.Abs(b.Center.X) < 0.2f * size), $"{d.Name} has no mouth");
                         Want(Solid(d.InFillMin / size - new Vector3(0.05f, 0, 0), d.InFillMin / size + new Vector3(0, 0.1f, 0.2f)), $"{d.Name}'s hopper has no wall");
                         // The aisle runs across the machine: a player walks through, past solid and detail alike.
@@ -240,7 +257,7 @@ public static partial class SelfTest
                         weight += area;
                     }
                 colour /= weight;
-                foreach (var (name, other, tone) in shapes)
+                foreach (var (name, other, tone) in line == "Smelter" ? [] : shapes) // (a Core and its blocks differ by what they are, not by tier)
                 {
                     int both = 0, any = 0;
                     for (var i = 0; i < cells.Length; i++)
@@ -393,33 +410,44 @@ public static partial class SelfTest
 
     private const string GatedForest = "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"minTier\":3,\"cell\":240,\"chance\":0.75,\"radius\":[55,105],\"aspect\":[0.6,1.0],\"units\":60}]}";
 
-    /// <summary>A Smelting Station with a machine of a line and tier in place of the Smelter: on a row of slabs, with its bins on the first one clear of it within a chute segment.</summary>
-    private static Construct? TierStation(ConstructWorld w, string machine, Vector3 spot, Action<bool, string> want)
+    /// <summary>
+    /// A Smelting Station with a machine of a line and tier in place of the Smelter: on a row of slabs, with its bins on the first one clear of it
+    /// within a chute segment. <paramref name="square"/> Hearth Blocks' side (1 or 2) go on a Smelter Core's +x side as one square: the Core then
+    /// stands on the middle slab, its square over the third, and the bins are on the first.
+    /// </summary>
+    private static Construct? TierStation(ConstructWorld w, string machine, Vector3 spot, Action<bool, string> want, int square = 0)
     {
-        var slab = ConstructParts.Need(machine).BoundsMax.X > 3.01f ? 2 : 1;
+        var (host, slab) = square > 0 ? (1, 0) : (0, ConstructParts.Need(machine).BoundsMax.X > 3.01f ? 2 : 1);
+        // Step 7 on the Core's +x, then along +x; a 2 x 2's second row on +z (steps 7 to 10: (1, 0), (2, 0), (1, 1), (2, 1)).
+        var blocks = square switch
+        {
+            1 => """, { "part": "Hearth Block", "on": 3, "socket": "+x", "by": "-x" }""",
+            2 => """, { "part": "Hearth Block", "on": 3, "socket": "+x", "by": "-x" }, { "part": "Hearth Block", "on": 7, "socket": "+x", "by": "-x" }, { "part": "Hearth Block", "on": 7, "socket": "+z", "by": "-z" }, { "part": "Hearth Block", "on": 9, "socket": "+x", "by": "-x" }""",
+            _ => "",
+        };
         var bp = ConstructBuild.ParseBlueprint($$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Tier Station", "steps": [
               { "part": "Concrete Foundation 4x4 m" },
               { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
               { "part": "Concrete Foundation 4x4 m", "on": 1, "socket": "r7", "by": "l7" },
-              { "part": "{{machine}}", "on": 0, "socket": "t7_7", "by": "bottom" },
+              { "part": "{{machine}}", "on": {{host}}, "socket": "t7_7", "by": "bottom" },
               { "part": "Materials Bin", "on": {{slab}}, "socket": "t7_0", "by": "bottom" },
               { "part": "Materials Bin", "on": {{slab}}, "socket": "t7_15", "by": "bottom" },
-              { "part": "Battery", "on": {{slab}}, "socket": "t15_8", "by": "-y" }
+              { "part": "Battery", "on": {{slab}}, "socket": "t15_8", "by": "-y" }{{blocks}}
             ], "links": [ { "type": "chute", "from": 4, "to": 3, "toPort": "Chute in" }, { "type": "chute", "from": 3, "to": 5, "fromPort": "Chute out" } ] }
             """, "tier-station.json");
         var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, spot.X, spot.Z), 0, out var why);
-        want(c != null, $"a station with the {machine}: {why}");
+        want(c != null && c.PartCount == 7 + square * square, $"a station with the {machine} and a {square} x {square}: {why} ({c?.PartCount} parts)");
         if (c != null)
             c.Owner = 255;
         return c;
     }
 
     /// <summary>
-    /// Every tier of Smelter and Sawmill through a real station in survival: a chute feeds it, it makes batches at its speed
-    /// and draws its power, chutes carry a higher tier's bigger load; a step allocates nothing, even finishing several
-    /// batches. The gate: a Smelter below a recipe's minTier refuses a chute and F with the reason on the look line, and a
-    /// machine holding what its tier can't work is blocked. Tier 3 does gold.
+    /// Every tier of Sawmill, and the Smelter bare and with a 1 x 1 and a 2 x 2 of Hearth Blocks, through a real station in survival: a chute
+    /// feeds it, it makes batches at its speed (the Core's: x1, x2.25, x7) and draws its power, chutes carry a bigger machine's bigger load; a
+    /// step allocates nothing, even finishing several batches. A wrecked Hearth Block keeps its square and adds nothing until mended. A bare
+    /// Smelter Core takes every ore (no gates since it became a block machine): copper and gold by chute and by F. Tier 3 does gold.
     /// </summary>
     private static void RefiningTiers(Map yard, Action<bool, string> want)
     {
@@ -446,90 +474,92 @@ public static partial class SelfTest
         yard.RestoreProps();
         World.SetMap(yard);
         foreach (var (line, input, output, machine) in ((string, byte, byte, string)[])[("Smelter", ore, metal, "smelter"), ("Sawmill", wood, planks, "sawmill")])
-            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            for (var tier = 1; tier <= (line == "Smelter" ? 3 : ConstructParts.MaxTier); tier++)
             {
-                var name = TierName(line, tier);
-                if (TierStation(w, name, spot, want) is not { } c)
+                var square = line == "Smelter" ? tier - 1 : 0; // (the Smelter: bare, a 1 x 1, a 2 x 2)
+                var name = line == "Smelter" ? line : TierName(line, tier);
+                var what = square > 0 ? $"{name} with a {square} x {square}" : name;
+                if (TierStation(w, name, spot, want, square) is not { } c)
                     continue;
                 var si = PartNamed(c, name);
                 var binIn = PartNamed(c, "Materials Bin");
                 var binOut = PartNamed(c, "Materials Bin", 1);
                 CStore st = w.StoreOf(c, si)!, sIn = w.StoreOf(c, binIn)!, sOut = w.StoreOf(c, binOut)!;
                 var d = c.DefOf(si);
+                var size = ConstructRefining.RefineOf(c, si);
+                var rate = square switch { 1 => 2.25f, 2 => 7f, _ => 1f };
+                want(size.Rate == rate && size.Shares == 1 + square * square, $"the {what}: x{size.Rate} on {size.Shares} shares, want x{rate}");
                 var recipe = table.Find(machine, input)!;
                 // The chute's load follows the machine at its end.
-                w.Deposit(c, binIn, Math.Min(ConstructParts.Need("Materials Bin").BulkCapacity, d.ChuteLoad * 2), input);
+                w.Deposit(c, binIn, Math.Min(ConstructParts.Need("Materials Bin").BulkCapacity, size.Load * 2), input);
                 var moved = sIn.Amount;
                 for (var t = 0; t < 1.1f * World.TickRate && sIn.Amount == moved; t++)
                     w.Step(q, World.TickDt);
-                want(moved - sIn.Amount == Math.Min(d.ChuteLoad, moved), $"a chute into the {name} moved {moved - sIn.Amount}, want {d.ChuteLoad}");
+                want(moved - sIn.Amount == Math.Min(size.Load, moved), $"a chute into the {what} moved {moved - sIn.Amount}, want {size.Load}");
                 // The rate: the input full, the output kept clear by its chute.
-                w.Feed(c, si, d.InCapacity, input);
+                w.Feed(c, si, size.In, input);
                 const float span = 2f;
                 Run(0.1f);
                 var from = st.Amount + sOut.Amount;
                 Run(span);
                 var perSecond = (st.Amount + sOut.Amount - from) / span;
-                var wanted = recipe.UnitsOut / recipe.Seconds * (d.RefineWork / (float)ConstructRefining.BaseWork);
-                want(st.Busy && st.InMaterial == input && MathF.Abs(perSecond - wanted) <= MathF.Max(1f, wanted * 0.06f), $"the {name} made {perSecond:0.0}/s, want {wanted:0.0}/s (busy {st.Busy}, {st.InAmount}/{d.InCapacity} in, {st.Amount} out)");
-                want(c.PowerUse >= d.PowerDraw, $"the {name} draws {c.PowerUse} W, want {d.PowerDraw}");
-                want(st.Material == output || st.Amount == 0, $"the {name} made {names.NameOf(st.Material)}");
+                var wanted = recipe.UnitsOut / recipe.Seconds * (size.Work / (float)ConstructRefining.BaseWork);
+                want(st.Busy && st.InMaterial == input && MathF.Abs(perSecond - wanted) <= MathF.Max(1f, wanted * 0.06f), $"the {what} made {perSecond:0.0}/s, want {wanted:0.0}/s (busy {st.Busy}, {st.InAmount}/{size.In} in, {st.Amount} out)");
+                want(c.PowerUse >= ConstructRefining.PowerOf(c, si), $"the {what} draws {c.PowerUse} W, want {ConstructRefining.PowerOf(c, si)}");
+                want(st.Material == output || st.Amount == 0, $"the {what} made {names.NameOf(st.Material)}");
                 var before = GC.GetAllocatedBytesForCurrentThread();
                 for (var s = 0; s < 60; s++)
                     ConstructRefining.Step(w);
                 var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-                want(bytes == 0, $"the {name}'s step allocates ({bytes} B)");
+                want(bytes == 0, $"the {what}'s step allocates ({bytes} B)");
                 report += $"{perSecond:0.#}/s ";
+                if (square == 2)
+                {
+                    // A wrecked block keeps its square (the split doesn't change) and adds nothing until it is mended.
+                    var block = PartNamed(c, "Hearth Block", 3);
+                    c.Parts[block].Broken = true;
+                    c.Rebuild();
+                    var hurt = ConstructRefining.RefineOf(c, si);
+                    var hurtOk = MachineBlocks.TryOf(c, si, out var asm) && asm.SquareCount == 1 && asm.Broken == 1;
+                    want(hurtOk && hurt.R4 == size.R4 - (4 + square) && hurt.Shares == size.Shares - 1, $"a wrecked Hearth Block: x{hurt.Rate} on {hurt.Shares} shares, {asm.SquareCount} squares, {asm.Broken} wrecked");
+                    want(ConstructRefining.SizeText(c, si).Contains("wrecked"), $"the {what}'s size text: \"{ConstructRefining.SizeText(c, si)}\"");
+                    c.Parts[block].Broken = false;
+                    c.Rebuild();
+                    want(ConstructRefining.RefineOf(c, si).R4 == size.R4, $"a mended Hearth Block: x{ConstructRefining.RefineOf(c, si).Rate}");
+                }
                 w.Remove(c);
             }
         Line($"machine tiers: refining at {report}");
 
-        // ---- The gate.
+        // ---- No gate: a bare Core takes every ore.
         var low = TierStation(w, "Smelter", spot, want);
         if (low == null)
             return;
         var ls = PartNamed(low, "Smelter");
         var lowIn = PartNamed(low, "Materials Bin");
         CStore ss = w.StoreOf(low, ls)!, src = w.StoreOf(low, lowIn)!;
-        var ld = low.DefOf(ls);
         var inv = new SandboxInventory();
         string Look() => ConstructRefining.Look(low, ls, ss, false, inv);
-        want(Look().Contains("takes iron ore, sand, dirt, stone (copper ore needs tier 2, gold ore needs tier 3, levite ore needs tier 4)"), $"an empty tier 1 Smelter says \"{Look()}\"");
+        want(Look().Contains("copper ore") && Look().Contains("gold ore") && !Look().Contains("needs tier") && Look().Contains("x1: weld its blocks"), $"an empty bare Smelter says \"{Look()}\"");
         w.Deposit(low, lowIn, 20, copper);
         Run(1.5f);
-        want(ss.InAmount == 0 && src.Amount == 20 && ss.Refused == copper, $"copper ore into a tier 1 Smelter (input {ss.InAmount}, bin {src.Amount}, refused {ss.Refused})");
-        want(Look().Contains("chute refused copper ore: needs a tier 2 smelter"), $"the look line: \"{Look()}\"");
-        want(w.Feed(low, ls, 20, goldOre) == 0, "gold ore fed into a tier 1 Smelter");
-        inv.AddMaterial(goldOre, 8);
-        want(ConstructRefining.TipMaterial(inv, low, ls, ss) == 0, "F would tip gold ore into a tier 1 Smelter");
-        inv.AddMaterial(ore, 8);
-        want(ConstructRefining.TipMaterial(inv, low, ls, ss) == ore, "F should tip the iron ore past the gold ore");
-        ss.InMaterial = goldOre;
-        ss.InAmount = 8;
-        Run(0.3f);
-        want(ConstructRefining.StateOf(table, low, ls, ss, out _) == RefineState.TierLow && !ss.Busy && ss.InAmount == 8 && ss.Amount == 0, $"gold ore in a tier 1 Smelter's input ({ss.InAmount}, busy {ss.Busy})");
-        want(Look().Contains("gold ore needs a tier 3 smelter"), $"the look line: \"{Look()}\"");
+        want(src.Amount < 20 && ss.Refused != copper, $"copper ore into a bare Smelter (input {ss.InAmount}, bin {src.Amount}, refused {ss.Refused})");
+        Run(4);
+        var made = w.StoreOf(low, PartNamed(low, "Materials Bin", 1))!;
+        want((ss.Material == names.IdOf("copper") || made.Material == names.IdOf("copper")) && ss.Amount + made.Amount > 0, $"a bare Smelter didn't make copper ({ss.Amount} {names.NameOf(ss.Material)}, bin {made.Amount})");
         w.Remove(low);
-        void Works(string name, byte input, byte output, bool ok)
-        {
-            if (TierStation(w, name, spot, want) is not { } c)
-                return;
-            var si = PartNamed(c, name);
-            var st = w.StoreOf(c, si)!;
-            var fed = w.Feed(c, si, 40, input);
-            want((fed > 0) == ok, $"the {name} and {names.NameOf(input)}: fed {fed}");
-            if (ok)
-            {
-                Run(2);
-                var bin = w.StoreOf(c, PartNamed(c, "Materials Bin", 1))!; // (its chute takes the output on)
-                want((st.Material == output || bin.Material == output) && st.Amount + bin.Amount > 0 && st.InAmount < 40, $"the {name} didn't make {names.NameOf(output)} ({st.Amount} {names.NameOf(st.Material)}, bin {bin.Amount})");
-            }
-            w.Remove(c);
-        }
-        Works("Workshop Smelter", copper, names.IdOf("copper"), true);
-        Works("Workshop Smelter", goldOre, gold, false);
-        Works("Industrial Smelter", goldOre, gold, true);
-        Works("Plasma Smelter", goldOre, gold, true);
+        low = TierStation(w, "Smelter", spot, want);
+        if (low == null)
+            return;
+        ls = PartNamed(low, "Smelter");
+        ss = w.StoreOf(low, ls)!;
+        inv.AddMaterial(goldOre, 8);
+        want(ConstructRefining.TipMaterial(inv, low, ls, ss) == goldOre, "F wouldn't tip gold ore into a bare Smelter");
+        want(w.Feed(low, ls, 20, goldOre) > 0, "gold ore wasn't fed into a bare Smelter");
+        Run(4);
+        made = w.StoreOf(low, PartNamed(low, "Materials Bin", 1))!;
+        want((ss.Material == gold || made.Material == gold) && ss.Amount + made.Amount > 0 && ConstructRefining.StateOf(table, low, ls, ss, out _) != RefineState.TierLow, $"a bare Smelter didn't make gold ({ss.Amount} {names.NameOf(ss.Material)}, bin {made.Amount})");
+        w.Remove(low);
     }
 
     /// <summary>"Gathering network": the gate needs nothing new on the wire: a client works out the drill's refusal from the same table, and hears a higher tier work.</summary>
@@ -566,7 +596,7 @@ public static partial class SelfTest
         yard.RestoreProps();
         World.SetMap(yard);
         var w = new ConstructWorld();
-        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter"])
+        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill"])
             for (var tier = 2; tier <= ConstructParts.MaxTier; tier++)
             {
                 var name = TierName(line, tier);
@@ -594,7 +624,7 @@ public static partial class SelfTest
 
         var hands = FwHands();
         foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter"])
-            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            for (var tier = 1; tier <= (line == "Smelter" ? 1 : ConstructParts.MaxTier); tier++) // (the Smelter Core: one size, its blocks make it bigger)
             {
                 var name = TierName(line, tier);
                 if (SwBody(w, "Foundation", new Vector3(0, 12, 0), Quaternion.Identity, pinned: true) is not { } baseC
