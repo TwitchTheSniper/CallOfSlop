@@ -1,0 +1,447 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ore Silo 4 m",
+  "description": "A tall concrete silo for a works' stock, nearly an 8 m bunker's load on a 4 m floor: chute in and out on its rim, 11.5 m up.",
+  "group": "Production",
+  "section": "Factory",
+  "role": "storage",
+  "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 57971,
+      "chuteLoad": 160,
+      "min": [
+        -1.795,
+        0.205,
+        -1.795
+      ],
+      "max": [
+        1.795,
+        11.45,
+        1.795
+      ]
+    }
+  },
+  "ports": [
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -1.9,
+        11.5,
+        0.0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        1.9,
+        11.5,
+        0.0
+      ],
+      "face": "+y"
+    }
+  ],
+  "config": [
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the bunker holds. Empty, it takes the first stock a chute or a tipper brings."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. Chutes and tippers move this as they run."
+    }
+  ],
+  "mass": 11687.0,
+  "health": 180000,
+  "armour": 20,
+  "material": "concrete",
+  "color": "#8e8a80",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        0.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        0.2,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        0.2,
+        -2.0
+      ],
+      "max": [
+        -1.8,
+        11.5,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        1.8,
+        0.2,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        11.5,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -1.8,
+        0.2,
+        -2.0
+      ],
+      "max": [
+        1.8,
+        11.496,
+        -1.8
+      ]
+    },
+    {
+      "min": [
+        -1.8,
+        0.2,
+        1.8
+      ],
+      "max": [
+        1.8,
+        11.496,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.012,
+        11.497,
+        -2.012
+      ],
+      "max": [
+        -1.788,
+        11.53,
+        2.012
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        1.788,
+        11.497,
+        -2.012
+      ],
+      "max": [
+        2.012,
+        11.53,
+        2.012
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.787,
+        11.497,
+        -2.009
+      ],
+      "max": [
+        1.787,
+        11.527,
+        -1.791
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.787,
+        11.497,
+        1.791
+      ],
+      "max": [
+        1.787,
+        11.527,
+        2.009
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.024,
+        2.0,
+        -2.024
+      ],
+      "max": [
+        -2.004,
+        2.16,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        2.004,
+        2.0,
+        -2.024
+      ],
+      "max": [
+        2.024,
+        2.16,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        2.003,
+        -2.021
+      ],
+      "max": [
+        2.002,
+        2.157,
+        -2.004
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        2.003,
+        2.004
+      ],
+      "max": [
+        2.002,
+        2.157,
+        2.021
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.024,
+        4.5,
+        -2.024
+      ],
+      "max": [
+        -2.004,
+        4.66,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        2.004,
+        4.5,
+        -2.024
+      ],
+      "max": [
+        2.024,
+        4.66,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        4.503,
+        -2.021
+      ],
+      "max": [
+        2.002,
+        4.657,
+        -2.004
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        4.503,
+        2.004
+      ],
+      "max": [
+        2.002,
+        4.657,
+        2.021
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.024,
+        7.0,
+        -2.024
+      ],
+      "max": [
+        -2.004,
+        7.16,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        2.004,
+        7.0,
+        -2.024
+      ],
+      "max": [
+        2.024,
+        7.16,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        7.003,
+        -2.021
+      ],
+      "max": [
+        2.002,
+        7.157,
+        -2.004
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        7.003,
+        2.004
+      ],
+      "max": [
+        2.002,
+        7.157,
+        2.021
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.024,
+        9.5,
+        -2.024
+      ],
+      "max": [
+        -2.004,
+        9.66,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        2.004,
+        9.5,
+        -2.024
+      ],
+      "max": [
+        2.024,
+        9.66,
+        2.024
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        9.503,
+        -2.021
+      ],
+      "max": [
+        2.002,
+        9.657,
+        -2.004
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.002,
+        9.503,
+        2.004
+      ],
+      "max": [
+        2.002,
+        9.657,
+        2.021
+      ],
+      "color": "#5c5a55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        5.75,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        5.75,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}
