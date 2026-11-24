@@ -17,7 +17,7 @@ public sealed class ArmKitParts : IPartGenerator
 
     /// <summary>The chain pieces: pressed on the Arm die, never an Assembler's row (Assembling.PressedNow).</summary>
     public static readonly string[] PressedPieces = ["Arm Joint", "Arm Boom", "Arm Wrist", "Pad Clamp", "Arm Counterweight", "Arm Drive Pack",
-        "Spreader", "Vacuum Head", "Magnet Head", "Fork", "Fitter Head"];
+        "Spreader", "Vacuum Head", "Magnet Head", "Fork", "Fitter Head", "Arm Knuckle"];
 
     private const string Out = "Constructs/Parts/Lifters/ArmKit";
     private const string Yellow = "#e8b81c", Yellow2 = "#c99c18", Dark = "#2b2f34", Steel = "#98a1a9", Pin = "#f07818", Weight = "#4c5157", Screen = "#10161c", Lamp = "#ff9a1a";
@@ -26,7 +26,7 @@ public sealed class ArmKitParts : IPartGenerator
     public const string JointBlank = "solid 50x50x50 steel", BoomBlank = "hollow 40x40x400 steel", WristBlank = "solid 30x30x40 steel",
         ClampBlank = "solid 60x30x30 steel", WeightBlank = "solid 200x100x10 steel", PackBlank = "solid 60x40x120 steel",
         SpreaderBlank = "solid 150x30x30 steel", VacuumBlank = "solid 80x20x80 steel", MagnetBlank = "solid 60x25x60 steel", ForkBlank = "solid 80x60x100 steel",
-        FitterBlank = "solid 60x40x40 steel";
+        FitterBlank = "solid 60x40x40 steel", KnuckleBlank = "solid 40x40x40 steel";
 
     private static Part Core()
     {
@@ -117,6 +117,57 @@ public sealed class ArmKitParts : IPartGenerator
         Chain(p, a);
         p.Stats(1100 * a * a, 900, 12, seconds: 6.0);
         p.Set(("armPiece", "joint"), ("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>A Knuckle (part 3): a joint after the forearm whose drop Boom hangs plumb, so the hand reaches down into a bay over a wall.</summary>
+    private static Part Knuckle()
+    {
+        var p = new Part("Arm Knuckle", Small, "Arm kit",
+            "A modular arm's third bend: fit it on the forearm, then a drop Boom and the Wrist. The drop hangs plumb whatever the arm does, so the hand reaches down into a bay over its wall without losing reach. Pressed to any size on the Arm die.",
+            group: "Production", color: Dark);
+        const double a = 0.4, r = a / 2;
+        p.Add(Box([-r, 0, -r], [r, a, r], Dark));
+        p.Add(MachineLook.D([-r - 0.008, a * 0.2, -r * 0.7], [r + 0.008, a * 0.8, r * 0.7], Pin)); // (orange cheeks: the third bend, told from the joints)
+        p.Add(MachineLook.D([-r - 0.04, a * 0.25, -a * 0.25], [r + 0.04, a * 0.75, a * 0.25], Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x")))); // its pin, across the other way
+        p.Add(MachineLook.D([-r * 0.8, -0.004, -r * 0.8], [r * 0.8, 0.04, r * 0.8], Steel, "steel"));
+        p.Add(MachineLook.D([-r * 0.8, a - 0.04, -r * 0.8], [r * 0.8, a + 0.004, r * 0.8], Steel, "steel"));
+        MachineLook.Hazard(p, [-r * 0.6, a * 0.1, r - 0.004], [r * 0.6, a * 0.2, r + 0.008]);
+        Chain(p, a);
+        p.Stats(1100 * a * a, 900, 12, seconds: 6.0);
+        p.Set(("armPiece", "knuckle"), ("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>A Rail Carriage (part 3): under an Arm Core or its Pedestals, its four wheels on a crane rail along its z.</summary>
+    private static Part Carriage()
+    {
+        var p = new Part("Rail Carriage", Small, "Arm kit",
+            "A wheeled bogie an Arm Core (or its Pedestals) stands on: set it on a Small crane rail (Crane Rail Small 1 m sections laid end to end on the floor) along its length and the whole arm runs along the rail to each job, as far as the rail runs.",
+            group: "Production", color: Dark);
+        const double h = 0.6, l = 1.0, w = 0.8;
+        p.Add(Box([-0.12, 0, -l], [0.12, 0.15, l], Dark, hidden: true)); // (its footing on the rail's top: drawn by its wheels and guide)
+        p.Add(Box([-w, 0.15, -l], [w, h, l], Dark));
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            p.Add(MachineLook.D([sx * w - (sx > 0 ? 0 : 0.008) - (sx > 0 ? 0.004 : 0), 0.22, -l + 0.1], [sx * w + (sx > 0 ? 0.008 : 0.004), h - 0.08, l - 0.1], Yellow, paintable: true)); // (its side skirts)
+            foreach (var z in new[] { -0.7, 0.7 })
+            {
+                var wheel = MachineLook.D([sx * 0.09 - 0.025, 0.003, z - 0.2], [sx * 0.09 + 0.025, 0.403, z + 0.2], Steel, "steel", shape: Kw(("shape", "cylinder"), ("segments", 16), ("front", "+x")))!;
+                wheel["roll"] = true;
+                p.Add(wheel);
+            }
+        }
+        foreach (var sz in new[] { -1.0, 1.0 })
+        {
+            MachineLook.Hazard(p, sz > 0 ? [-w + 0.1, 0.25, l - 0.004] : [-w + 0.1, 0.25, -l - 0.008], sz > 0 ? [w - 0.1, 0.4, l + 0.008] : [w - 0.1, 0.4, -l + 0.004]);
+            p.Add(MachineLook.D([-0.3, 0.05, sz > 0 ? l - 0.004 : -l - 0.1], [0.3, 0.14, sz > 0 ? l + 0.1 : -l + 0.004], Weight)); // (its rail sweeps)
+        }
+        p.Add(MachineLook.Work(MachineLook.D([w - 0.12, h - 0.004, l - 0.12], [w - 0.04, h + 0.06, l - 0.04], Lamp)!, "glow"));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, h, 0], "+y");
+        p.Stats(900, 1500, 10, seconds: 6.0);
+        p.Set(("armPiece", "railCarriage"), ("collider", "boxes"));
         return p;
     }
 
@@ -303,13 +354,15 @@ public sealed class ArmKitParts : IPartGenerator
     }
 
     // ---- The presets: blueprints of pressed pieces on a Core (Sean's four: Bench, Line, Heavy, Yard).
-    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs, bool Stand = false);
+    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs, bool Stand = false, int KnuckleCm = 0, int DropW = 0, int DropL = 0, int Rails = 0);
 
     private static readonly Preset[] Presets =
     [
         new("Bench Arm", "A small kit arm for a bench: about 4 m of reach, a light load.", 0, 30, 25, 150, 25, 20, 150, 20, 40, 0, 10, 0),
         new("Line Arm", "A kit arm for a production line: about 7 m of reach.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 2),
         new("Line Arm Heads", "A Line Arm with a Head Stand of three spares (a Spreader, a Vacuum Head and a Fork): it swaps to what each piece needs.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 1, Stand: true),
+        new("Knuckle Arm", "A kit arm on a pedestal with a Knuckle: its last 2 m hang plumb, to load machine beds over their guards.", 1, 75, 55, 400, 65, 45, 400, 35, 60, 1, 10, 2, KnuckleCm: 45, DropW: 30, DropL: 150),
+        new("Rail Arm", "A Line Arm on a Rail Carriage: it runs along 24 m of crane rail to each job.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 2, Rails: 24),
         new("Heavy Arm", "A heavy kit arm on a pedestal: about 9 m of reach, big pieces.", 1, 80, 60, 400, 70, 55, 380, 50, 100, 2, 20, 4),
         new("Yard Arm", "A shipyard kit arm on two pedestals: about 16 m of reach for hull pieces.", 2, 120, 100, 700, 100, 90, 700, 80, 160, 4, 30, 6),
     ];
@@ -321,15 +374,30 @@ public sealed class ArmKitParts : IPartGenerator
         var steps = new List<object?>();
         int Step(PyDict d) { steps.Add(d); return steps.Count - 1; }
         int On(int on, string socket, string part, string by) => Step(Kw(("part", part), ("on", on), ("socket", socket), ("by", by)));
-        var root = Step(Kw(("part", "Arm Pedestal")));
-        var core = root;
-        if (s.Pedestals == 0)
-            steps.Clear();
-        if (s.Pedestals == 0)
+        int core;
+        var firstPedestal = 0;
+        if (s.Rails > 0)
+        {
+            // A run of Small crane rail (1 m sections end to end along z), the carriage on its middle section, the arm on the carriage.
+            var rail = Step(Kw(("part", "Crane Rail Small 1 m")));
+            var mid = rail;
+            for (var k = 1; k < s.Rails; k++)
+            {
+                rail = On(rail, "+z", "Crane Rail Small 1 m", "-z");
+                if (k == s.Rails / 2)
+                    mid = rail;
+            }
+            var under = On(mid, "+y.0.0", "Rail Carriage", "bottom");
+            firstPedestal = steps.Count;
+            for (var k = 0; k < s.Pedestals; k++)
+                under = On(under, "top", "Arm Pedestal", "bottom");
+            core = On(under, "top", "Arm Core", "bottom");
+        }
+        else if (s.Pedestals == 0)
             core = Step(Kw(("part", "Arm Core")));
         else
         {
-            var below = root;
+            var below = Step(Kw(("part", "Arm Pedestal")));
             for (var k = 1; k < s.Pedestals; k++)
                 below = On(below, "top", "Arm Pedestal", "bottom");
             core = On(below, "top", "Arm Core", "bottom");
@@ -338,7 +406,13 @@ public sealed class ArmKitParts : IPartGenerator
         var b1 = On(j1, "tip", Key("arm", "boom", $"hollow {s.UpperW}x{s.UpperW}x{s.UpperL} steel"), "base");
         var j2 = On(b1, "tip", Key("arm", "joint", $"solid {s.ElbowCm}x{s.ElbowCm}x{s.ElbowCm} steel"), "base");
         var b2 = On(j2, "tip", Key("arm", "boom", $"hollow {s.ForeW}x{s.ForeW}x{s.ForeL} steel"), "base");
-        var w = On(b2, "tip", Key("arm", "wrist", $"solid {s.WristCm}x{s.WristCm}x{(s.WristCm * 4 / 3 + 2) / 5 * 5} steel"), "base");
+        var wristOn = b2;
+        if (s.KnuckleCm > 0)
+        {
+            var kn = On(b2, "tip", Key("arm", "knuckle", $"solid {s.KnuckleCm}x{s.KnuckleCm}x{s.KnuckleCm} steel"), "base");
+            wristOn = On(kn, "tip", Key("arm", "boom", $"hollow {s.DropW}x{s.DropW}x{s.DropL} steel"), "base");
+        }
+        var w = On(wristOn, "tip", Key("arm", "wrist", $"solid {s.WristCm}x{s.WristCm}x{(s.WristCm * 4 / 3 + 2) / 5 * 5} steel"), "base");
         On(w, "tip", Key("arm", "padclamp", $"solid {s.ClampW}x{s.ClampW / 2}x{s.ClampW / 2} steel"), "base");
         var back = core;
         string sock = "weight";
@@ -349,7 +423,7 @@ public sealed class ArmKitParts : IPartGenerator
         }
         var holders = new List<int> { core };
         for (var k = 0; k < s.Pedestals; k++)
-            holders.Add(k); // (the pedestals are steps 0 .. Pedestals - 1)
+            holders.Add(firstPedestal + k); // (the pedestals are the steps from firstPedestal on)
         var packs = 0;
         foreach (var hold in holders)
             foreach (var side in new[] { "+z", "-z" })
@@ -368,7 +442,8 @@ public sealed class ArmKitParts : IPartGenerator
     public void Make(PartOutput o)
     {
         WriteParts(o, Out, [("", Core()), ("", Pedestal()), ("", Joint()), ("", Boom()), ("", WristPiece()), ("", Clamp()), ("", Counterweight()), ("", Pack()),
-            ("", Spreader()), ("", Vacuum()), ("", Magnet()), ("", ForkHead()), ("", Fitter()), ("", HeadStand())]);
+            ("", Spreader()), ("", Vacuum()), ("", Magnet()), ("", ForkHead()), ("", Fitter()), ("", HeadStand()),
+            ("", Knuckle()), ("", Carriage())]);
         foreach (var s in Presets)
             o.File($"Constructs/Blueprints/{s.Name.Replace(" ", "")}.json", PyJson.Dumps(Blueprint(s), 2) + "\n");
     }

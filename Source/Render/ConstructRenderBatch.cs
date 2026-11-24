@@ -207,7 +207,7 @@ public static partial class ConstructRender
             return -1; // (a piece growing on a die: walked, drawn at its length now, so its new length plans nothing: Construct.GrowStamp)
         if (p.Burn > 0 || c.GantryHold || c.MergeOf[i] != 0 || c.Rides(i) || c.PartScale[i] > 1 || c.EngineOf[i] != 0 || _wheelMark[i] == _wheelToken)
             return -1;
-        if (ArmKit.Posed(c, i))
+        if (ArmKit.Drawn(c, i))
             return -1; // (a live arm's chain piece: walked, and DrawPart leaves it to LifterRender, ArmKit.cs)
         if (ModulePullLook.Walks(c, i))
             return -1; // (a fitted module the physics gun strains on: walked, rocking on its seat, ModulePullLook.cs)
@@ -256,7 +256,7 @@ public static partial class ConstructRender
         {
             ref var p = ref c.Parts[i];
             h = Mix(h, RuntimeHelpers.GetHashCode(p.D) | (p.Burn > 0 ? 1L << 40 : 0) | (p.Store != 0 ? 1L << 41 : 0) | (p.D.ShellBody ? (long)ShellFittedLooks.FittedMask(in p, p.D) << 42 : 0) | (p.D.HasSeams && i < c.BlockJoined.Length ? (long)c.BlockJoined[i] << 50 : 0)); // (a shell's fitted modules: walked once one is)
-            if (p.D.ArmPiece != ArmPieceKind.None && ArmKit.Posed(c, i))
+            if ((p.D.ArmPiece != ArmPieceKind.None || p.D.Lifter != null) && ArmKit.Drawn(c, i))
                 h = Mix(h, ~(long)i * 31); // (a live arm's chain piece is walked, drawn by LifterRender)
             else if (p.D.Logic == CLogic.Lamp && ConstructConfig.Get(p, p.D, CfgKey.Blink, 0) > 0)
                 h = Mix(h, i); // (a lamp set blinking is walked)

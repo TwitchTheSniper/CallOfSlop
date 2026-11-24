@@ -190,7 +190,7 @@ public static partial class ConstructLifters
         for (var bi = 0; bi < bodies.Count && l.PointN < MaxPoints; bi++)
         {
             var b = bodies[bi];
-            if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Up + ld.Down + b.Radius)
+            if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Travel + ld.Up + ld.Down + b.Radius)
                 continue;
             PointsOn(b, b == c ? l.Part : -1, ld, shoulder, lr, l.Points, ref l.PointN);
         }
@@ -202,7 +202,7 @@ public static partial class ConstructLifters
     /// </summary>
     private static void PointsOn(Construct b, int self, LifterDef ld, Vector3 shoulder, Quaternion lr, LiftPoint[] pts, ref int n)
     {
-        var far = ld.ReachMax + MathF.Max(ld.Up, ld.Down);
+        var far = ld.ReachMax + ld.Travel + MathF.Max(ld.Up, ld.Down);
         var local = Vector3.Transform(shoulder - b.Pos, Quaternion.Conjugate(b.Rot)); // (the shoulder in the body's frame: a cheap cut for parts on it)
         for (var i = 0; i < b.PartCount && n < pts.Length; i++)
         {

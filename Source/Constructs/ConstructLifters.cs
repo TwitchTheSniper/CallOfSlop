@@ -35,6 +35,9 @@ public sealed class LifterDef
     public bool Hall; // "hall": true: a Hall Crane's Crane Core (design page drawing 24): its span, lift, drop and piece come from its rails (ConstructCraneRails.HallWalk)
     public string? Blocker; // (a copy's, RailWhy 3) the part that stands up into the bridge's way
     public LifterDef? Of; // (a copy's) the part file's own def
+    public float Drop; // (an arm kit with a Knuckle) its last link hangs plumb this far under the forearm's end (m)
+    public float SlideLo, SlideHi; // (an arm kit on a Rail Carriage) how far its shoulder runs along its part's z (m); both 0: it stands still
+    public float Travel => MathF.Max(-SlideLo, SlideHi); // how far its shoulder can be from where it was built, for the distance cuts
     public LifterDef CraneCopy() => (LifterDef)MemberwiseClone();
     public const float Fold = 0.6f; // the elbow never folds the wrist closer to the shoulder than this past the links' difference (no arm through itself)
     public const float Straight = 0.98f; // ...nor reaches past this share of the two links (never stretched straight)
@@ -435,6 +438,8 @@ public static partial class ConstructLifters
                     Ports(c, l);
                     continue;
                 }
+                if (ld.Kit && ld.SlideHi > ld.SlideLo)
+                    ArmKit.Track(c, ld, HandNow(ld, l)); // (a Rail Carriage: its riding parts' colliders follow the hand)
                 if (ld.Kit && KitWaits(world, c, l, ld))
                 {
                     Ports(c, l);
@@ -627,12 +632,36 @@ public static partial class ConstructLifters
             // A crane's box (phase 6): across between its rails, along what both runs share, under the hook's highest point.
             return ld.RailWhy == 0 && d.X >= ld.AcrossMin - 0.01f && d.X <= ld.AcrossMax + 0.01f && d.Z >= ld.RunLo - 0.01f && d.Z <= ld.RunHi + 0.01f
                 && d.Y + lift <= -ld.Depth + 0.01f && d.Y >= -ld.Down - 0.01f;
+        if (ld.SlideHi > ld.SlideLo) // (an arm on a Rail Carriage: measured from where its shoulder runs to for this point)
+        {
+            d.Z -= Slide(ld, d.X, d.Z);
+            far = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+        }
         if (far < ld.ReachMin - 0.01f || far > ld.ReachMax + 0.01f || d.Y > ld.Up + 0.01f || d.Y < -ld.Down - 0.01f)
             return false;
         if (ld.Bridge)
             return true;
-        var wrist = MathF.Sqrt(far * far + (d.Y + lift) * (d.Y + lift));
+        var wy = d.Y + lift + ld.Drop; // (a Knuckle: the wrist hangs its drop over the hand)
+        var wrist = MathF.Sqrt(far * far + wy * wy);
         return wrist <= ld.LinkMax && wrist >= ld.LinkMin;
+    }
+
+    /// <summary>
+    /// Where an arm on a Rail Carriage has its shoulder along its part's z for a hand at (<paramref name="x"/>, <paramref name="z"/>) in its
+    /// frame (from Base): level with the hand, held to its rail, and stepped back along the rail when that would put the hand inside its
+    /// nearest reach. The same on every peer, from the hand alone (nothing sent).
+    /// </summary>
+    public static float Slide(LifterDef ld, float x, float z)
+    {
+        var s = Math.Clamp(z, ld.SlideLo, ld.SlideHi);
+        var rm = ld.ReachMin + 0.1f;
+        if (x * x + (z - s) * (z - s) >= rm * rm)
+            return s;
+        var k = MathF.Sqrt(MathF.Max(0, rm * rm - x * x));
+        float back = z - k, fwd = z + k;
+        var bOk = back >= ld.SlideLo && back <= ld.SlideHi;
+        var fOk = fwd >= ld.SlideLo && fwd <= ld.SlideHi;
+        return bOk && (!fOk || MathF.Abs(back - s) <= MathF.Abs(fwd - s)) ? back : fOk ? fwd : s;
     }
 
     public const float Wrist = 0.35f; // the wrist over the gripper bar
@@ -681,7 +710,7 @@ public static partial class ConstructLifters
                 if (world.StoreOf(sc, t) is not { } tray || !ConstructRecycler.Powered(world, sc, t))
                     continue;
                 ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
-                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
+                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down)
                     continue;
                 // The pick: the nearest point along the hold's side the empty hand reaches, a hand's height over its floor (the user, 2026-11-13).
                 // Phase 5: or a pick pad (a Lay-down Pad among its points) that holds the step's part, for a bay longer than the hold's side reaches.
@@ -1910,7 +1939,9 @@ public static partial class LifterProbe
         for (var a = 0; a <= l.Dur; a += 3)
         {
             var grip = Grip(ld, l, a);
-            var len = (grip + Vector3.UnitY * ConstructLifters.Wrist - ld.Base).Length();
+            if (ld.SlideHi > ld.SlideLo) // (as drawn: a Rail Carriage's shoulder runs with the hand)
+                grip.Z -= ConstructLifters.Slide(ld, grip.X - ld.Base.X, grip.Z - ld.Base.Z);
+            var len = (grip + Vector3.UnitY * (ConstructLifters.Wrist + ld.Drop) - ld.Base).Length();
             lo = MathF.Min(lo, len);
             hi = MathF.Max(hi, len);
             clamped += len < ld.LinkMin - 0.001f || len > ld.LinkMax + 0.001f ? 1 : 0;
@@ -2017,7 +2048,7 @@ public static class ArmIk
     /// <summary>All in the lifter part's frame. <paramref name="grip"/>: where the gripper bar is wanted.</summary>
     public static void Solve(LifterDef ld, Vector3 grip, out float yaw, out Vector3 elbow, out Vector3 wrist)
     {
-        var want = grip + Vector3.UnitY * ConstructLifters.Wrist;
+        var want = grip + Vector3.UnitY * (ConstructLifters.Wrist + ld.Drop); // (a Knuckle: the two links end its drop over the hand)
         var v = want - ld.Base;
         var flat = MathF.Sqrt(v.X * v.X + v.Z * v.Z);
         yaw = flat > 1e-3f ? MathF.Atan2(v.Z, v.X) : 0f;

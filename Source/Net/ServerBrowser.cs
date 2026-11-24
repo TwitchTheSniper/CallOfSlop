@@ -769,7 +769,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Foundry Core's rate, bins and chute load come from its squares as the Smelter's do.
     // 454: the arm kit's heads (Sean 2026-11-24, part 2): the Spreader, Vacuum Head, Magnet Head, Fork, Fitter Head and Head Stand part files
     // move part ids, and an Arm Core's Head setting (CfgKey.ArmHead, the retired Stations key's byte) rides in its CBody.
-    public const ushort ProtocolVersion = 454;
+    // 455: the arm kit's Knuckle and Rail Carriage (Sean 2026-11-24, part 3): the Arm Knuckle and Rail Carriage part files move part ids.
+    public const ushort ProtocolVersion = 455;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

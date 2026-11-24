@@ -1,0 +1,134 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arm Knuckle",
+  "description": "A modular arm's third bend: fit it on the forearm, then a drop Boom and the Wrist. The drop hangs plumb whatever the arm does, so the hand reaches down into a bay over its wall without losing reach. Pressed to any size on the Arm die.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 176.0,
+  "health": 900,
+  "armour": 12,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 6.0,
+  "armPiece": "knuckle",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        0.0,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.4,
+        0.2
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.208,
+        0.08,
+        -0.14
+      ],
+      "max": [
+        0.208,
+        0.32,
+        0.14
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        0.1,
+        -0.1
+      ],
+      "max": [
+        0.24,
+        0.3,
+        0.1
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.16,
+        -0.004,
+        -0.16
+      ],
+      "max": [
+        0.16,
+        0.04,
+        0.16
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.16,
+        0.36,
+        -0.16
+      ],
+      "max": [
+        0.16,
+        0.404,
+        0.16
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.12,
+        0.04,
+        0.196
+      ],
+      "max": [
+        0.12,
+        0.08,
+        0.208
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "tip",
+      "at": [
+        0.0,
+        0.4,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

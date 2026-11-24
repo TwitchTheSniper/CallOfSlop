@@ -385,7 +385,7 @@ public static partial class ConstructLifters
     /// reach. Every count of what serves a station asks this one test (ServesPad, PadCounts). Allocates nothing.
     /// </summary>
     public static bool NearBay(LifterDef ld, Vector3 shoulder, Quaternion lr, Vector3 floor, Quaternion bayRot, Vector3 bay)
-        => ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down;
+        => ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down;
 
     /// <summary>
     /// Does a crane's box (across between its rails, along what both runs share) reach over any of a station's bay floor? A crane's

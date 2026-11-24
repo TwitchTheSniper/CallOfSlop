@@ -255,6 +255,39 @@ public sealed partial class Construct
         return Math.Max(1, n);
     }
 
+    /// <summary>
+    /// An arm kit's Rail Carriage ran (ArmKit.Track): the riding parts' collider leaves go from where they were last put
+    /// (<see cref="ArmSpec.Applied"/> along <see cref="ArmSpec.AxisBody"/> from where they were built) to <paramref name="slide"/>.
+    /// Their parts keep their places (saves, links and the part tree stay as built); only the leaves move. Costs the tree's depth
+    /// a part; allocates nothing. A leaf that can't move has the collider built again, at home.
+    /// </summary>
+    internal void ArmSlideLeaves(ArmSpec s, float slide)
+    {
+        if (_collider == null || _colliderStale)
+        {
+            s.Applied = 0;
+            return;
+        }
+        if (_collider.Version != s.ColliderVersion || !ReferenceEquals(_collider, s.ColliderOf))
+            (s.Applied, s.ColliderVersion, s.ColliderOf) = (0, _collider.Version, _collider);
+        var from = s.AxisBody * s.Applied;
+        var to = s.AxisBody * slide;
+        foreach (var part in s.Carried)
+        {
+            ref var p = ref Parts[part];
+            if (p.Broken)
+                continue;
+            ReachBounds(part, out var mn, out var mx);
+            if (p.Seg != 0 || FuseRough(part) || MergeOf[part] != 0 || Rides(part) || !_collider.MovePart(part, ColliderLeaves(part), mn + from, mx + from, p.Pos + from, p.Pos + to, 0))
+            {
+                ColliderChanged();
+                s.Applied = 0;
+                return;
+            }
+        }
+        s.Applied = slide;
+    }
+
     internal void DoorPartMoved(int part, Vector3 oldMin, Vector3 oldMax, Vector3 oldPos, byte r)
     {
         if (DoorSums(part))
