@@ -88,7 +88,8 @@ public static class PanelFormerRender
         var shut = y0 + 0.007f + thick;
         var open = MathF.Max(shut + 0.3f, MathF.Min(shut + OpenMost, foot + DieTop - DieBody - high));
         var upFlat = shut + (open - shut) * (1 - press);
-        var upTop = upFlat + high * shaping + DieBody; // (the upper die's back: flat, its body over the deepest of its shape)
+        // (the upper die's back: flat, its body over the deepest of its shape, thinner for a deep panel so it stays under the posts' caps)
+        var upTop = MathF.Min(upFlat + high * shaping + DieBody, MathF.Max(foot + DieTop, upFlat + high * shaping + 0.12f));
         if (die == null)
         {
             Box(gfx, frame, new Vector3(dx0, lowBase, dz0), new Vector3(dx1, lowFlat, dz1), DieSteel);

@@ -242,6 +242,7 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Sock("+z", [0, 0.5, 1], "+z");
         p.Sock("-z", [0, 0.5, -1], "-z");
         p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 3.2, 0], "+y"); // (on the lid: older blueprints stood Mast Blocks there; nothing needs one now)
         p.Stats(5200, 2600, 8, 20);
         p.Set(("machineBlock", Kw(("family", "panel"), ("role", "block"))), ("centreSockets", false), ("collider", "boxes"));
         return p;
