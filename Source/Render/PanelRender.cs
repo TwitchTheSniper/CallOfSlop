@@ -179,7 +179,7 @@ public static unsafe class PanelRender
             for (var n = 0; n < d.Panels.Length; n++)
             {
                 var panel = d.Panels[n];
-                var centre = Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, panel.At), seg);
+                var centre = Vector3.Transform(p.Pos + ArmKit.Shift(c, part) + Rot24.Apply(p.Rot, panel.At), seg); // (a Core riding its Rail Carriage: its screen runs with it)
                 var to = eye - centre;
                 if (to.LengthSquared() > panel.Range * panel.Range)
                 {

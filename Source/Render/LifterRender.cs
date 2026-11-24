@@ -92,6 +92,7 @@ public static class LifterRender
                     if (ld.SlideHi > ld.SlideLo) // (on a Rail Carriage: the whole arm runs along its z to the hand, ConstructLifters.Slide)
                     {
                         slide = ConstructLifters.Slide(ld, grip.X - ld.Base.X, grip.Z - ld.Base.Z);
+                        ArmKit.Track(c, ld, grip); // (its screen and riding colliders follow: a client's own; the host's lifter step too)
                         grip.Z -= slide;
                         part = Matrix4x4.CreateTranslation(0, 0, slide) * part;
                     }

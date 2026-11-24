@@ -438,6 +438,8 @@ public static partial class ConstructLifters
                     Ports(c, l);
                     continue;
                 }
+                if (ld.Kit && ld.SlideHi > ld.SlideLo)
+                    ArmKit.Track(c, ld, HandNow(ld, l)); // (a Rail Carriage: its riding parts' colliders follow the hand)
                 if (ld.Kit && KitWaits(world, c, l, ld))
                 {
                     Ports(c, l);

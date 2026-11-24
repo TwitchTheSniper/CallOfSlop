@@ -63,6 +63,10 @@ public sealed class ArmSpec
     public string RailWhy = ""; // ...why it can't run (no rail under it), for its look line
     public int[] Carried = []; // ...the parts that ride with it (Core, Pedestals, Carriage, Counterweights, Drive Packs), drawn by ArmKitRender
     public Matrix4x4[] CarriedM = []; // ...each one's frame in the Core's frame
+    public Vector3 AxisBody; // ...the Core's z in its body's frame: the way the carriage runs
+    public float Slide; // ...where it is now along its rail (each peer, from its hand: ArmKit.Track)
+    public float Applied; // ...where its riding parts' collider leaves were last put (Construct.ArmSlideLeaves)
+    public int ColliderVersion; public object? ColliderOf; // ...the collider they were put in (a rebuild puts them home)
 }
 
 public static class ArmKit
@@ -378,6 +382,7 @@ public static class ArmKit
         for (var w = Next(c, core, "weight", ArmPieceKind.Counterweight); w >= 0; w = Next(c, w, "back", ArmPieceKind.Counterweight))
             list.Add(w);
         s.Carried = list.ToArray();
+        s.AxisBody = Vector3.Transform(Vector3.UnitZ, Rot24.Quat(c.Parts[core].Rot));
         s.CarriedM = new Matrix4x4[s.Carried.Length];
         var inv = Quaternion.Conjugate(Rot24.Quat(c.Parts[core].Rot));
         for (var k = 0; k < s.Carried.Length; k++)
@@ -418,6 +423,31 @@ public static class ArmKit
             (s.SlideLo, s.SlideHi) = (0, 0);
             s.RailWhy = "its rail is too short to run on: lay more sections end to end";
         }
+    }
+
+    /// <summary>
+    /// Where a Rail Carriage arm is along its rail for its hand now (<see cref="ConstructLifters.Slide"/>, the Core's frame): kept on its
+    /// spec for its screen and its riding parts' shifts, and its riding parts' colliders moved there once it has gone 2 cm. Each peer
+    /// calls it (the server's lifter step, a client's drawing), the same from the hand alone. Allocates nothing.
+    /// </summary>
+    public static void Track(Construct c, LifterDef ld, Vector3 hand)
+    {
+        if (ld.Spec is not { Valid: true } s || !(ld.SlideHi > ld.SlideLo))
+            return;
+        s.Slide = ConstructLifters.Slide(ld, hand.X - ld.Base.X, hand.Z - ld.Base.Z);
+        if (MathF.Abs(s.Slide - s.Applied) > 0.02f)
+            c.ArmSlideLeaves(s, s.Slide);
+    }
+
+    /// <summary>How far part <paramref name="i"/> is drawn from where it was built, in its body's frame: a part riding a Rail Carriage (its screen).</summary>
+    public static Vector3 Shift(Construct c, int i)
+    {
+        if (i >= c.ArmCarried.Length || !c.ArmCarried[i])
+            return Vector3.Zero;
+        for (var k = 0; k < c.ArmN; k++)
+            if (c.ArmDefs[k].Def.Spec is { Valid: true } s && Array.IndexOf(s.Carried, i) >= 0)
+                return s.AxisBody * s.Slide;
+        return Vector3.Zero;
     }
 
     private static void CountPacks(Construct c, int part, ArmSpec s)
@@ -736,6 +766,25 @@ public static class ArmKitCheck
                 Console.WriteLine($"[arm]   chart: {string.Join(", ", Enumerable.Range(0, 4).Select(k => $"{s.ChartP[k]:0} kg at {s.ChartR[k]:0.0} m"))} (full reach set by its {s.Weak}); speed {s.Speed:0.00} m/s, {s.Watts / 1000:0.0} kW, handle {ld.Handle:0.00} s, piece {ld.PieceAcross:0.0} x {ld.PieceLong:0.0} m");
                 if (s.Knuckle >= 0 || s.Carriage >= 0)
                     Console.WriteLine($"[arm]   knuckle drop {s.Drop:0.00} m (down {ld.Down:0.0} m); carriage {(s.Carriage >= 0 ? (s.SlideHi > s.SlideLo ? $"runs {s.SlideLo:0.0} to {s.SlideHi:0.0} m along its rail, {s.Carried.Length} parts ride" : s.RailWhy) : "none")}");
+                if (s.SlideHi > s.SlideLo && s.Body is { } body)
+                {
+                    // Its riding colliders: run the carriage 3 m and back, and read where the Core's leaves went.
+                    float CoreZ()
+                    {
+                        var col = body.Collider;
+                        for (var q = 0; q < col.LeafCount; q++)
+                            if (col.Leaves[q].Part == s.Core && !col.Leaves[q].Dead)
+                                return Vector3.Dot(col.Leaves[q].Centre, s.AxisBody);
+                        return float.NaN;
+                    }
+                    var z0 = CoreZ();
+                    var slid = MathF.Min(3f, s.SlideHi);
+                    body.ArmSlideLeaves(s, slid);
+                    var z1 = CoreZ();
+                    body.ArmSlideLeaves(s, 0);
+                    var z2 = CoreZ();
+                    Console.WriteLine($"[arm]   riding colliders: Core leaf {z0:0.00} m, run {slid:0.0} m: {z1:0.00} m, back: {z2:0.00} m ({(MathF.Abs(z1 - z0 - slid) < 0.01f && MathF.Abs(z2 - z0) < 0.01f ? "ok" : "WRONG")})");
+                }
                 if (s.Heads.Length > 0)
                 {
                     var takes = new int[s.Heads.Length];
