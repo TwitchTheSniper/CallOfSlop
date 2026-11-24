@@ -120,6 +120,30 @@ public static class DesignScene
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
+        // Every opening as an outline in its own plane (Karl, 2026-11-24: holes cut clean along their edge, not cell by cell).
+        var cutouts = new List<Cutout>();
+        foreach (var (w, hx, hz, round) in holes)
+            cutouts.Add(new Cutout(w.O, w.X, w.Y, w.Z, round ? Ellipse(hx, hx) : Rect(hx, hz)));
+        foreach (var m in mouths)
+            cutouts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
+        void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
+        {
+            List<List<(double, double, double)>> polys = [[a, b, c, e]];
+            foreach (var k in cutouts)
+            {
+                if (!k.Near(a, c))
+                    continue;
+                var next = new List<List<(double, double, double)>>();
+                foreach (var poly in polys)
+                    next.AddRange(k.Subtract(poly));
+                polys = next;
+                if (polys.Count == 0)
+                    return;
+            }
+            foreach (var poly in polys)
+                for (var i = 1; i < poly.Count - 1; i++)
+                    m.Tri(poly[0], poly[i], poly[i + 1], col, false);
+        }
         bool InHole(double x, double y, double z)
         {
             foreach (var m in mouths)
@@ -136,6 +160,13 @@ public static class DesignScene
                 if (round ? lx * lx + lz * lz < hx * hx : Math.Abs(lx) < hx && Math.Abs(lz) < hz)
                     return true;
             }
+            return false;
+        }
+        bool CutBody(double x, double y, double z)
+        {
+            foreach (var o in near)
+                if (o.Depth(x, y, z) > 0.02)
+                    return true;
             return false;
         }
         bool Cut(double x, double y, double z)
@@ -163,9 +194,9 @@ public static class DesignScene
         void Facet(DesignMesh m, (double X, double Y, double Z) p0, (double X, double Y, double Z) p1, (double X, double Y, double Z) p2, (double X, double Y, double Z) p3,
             (byte, byte, byte) c, bool holed, double step, bool flip)
         {
-            var cutting = Near(p0, p1, p2, p3) || holed;
+            var cutting = Near(p0, p1, p2, p3);
             var nz = !cutting ? 1 : Math.Clamp((int)Math.Ceiling((p2.Z - p0.Z) / step), 1, 80);
-            Strip(m, cx, h, p0, p1, p2, p3, c, nz, cutting, Cut, flip, step);
+            Strip(m, cx, h, p0, p1, p2, p3, c, nz, cutting, CutBody, flip, step, cutouts.Count > 0 ? Emit : null);
         }
 
         var col = DesignMesh.Hex(h.Skin);
@@ -179,7 +210,7 @@ public static class DesignScene
             // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
             var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2)
                 || mouths.Any(q => q.C[2] > h.Z + a.Z - Math.Max(q.W, q.H) && q.C[2] < h.Z + b.Z + Math.Max(q.W, q.H));
-            var step = holed ? 0.2 : 0.5;
+            var step = 0.5;
             foreach (var s in new[] { -1, 1 })
                 for (var k = 0; k < n - 1; k++)
                 {
@@ -197,6 +228,82 @@ public static class DesignScene
         return (skin, fore, aft);
     }
 
+    /// <summary>An opening's outline: a convex polygon (u along X, v along Z) in the plane through O facing Y.</summary>
+    private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly)
+    {
+        private readonly double _reach = poly.Max(q => Math.Sqrt(q.U * q.U + q.V * q.V));
+
+        private (double U, double V, double N) Local((double X, double Y, double Z) p)
+        {
+            double dx = p.X - o[0], dy = p.Y - o[1], dz = p.Z - o[2];
+            return (dx * x[0] + dy * x[1] + dz * x[2], dx * z[0] + dy * z[1] + dz * z[2], dx * y[0] + dy * y[1] + dz * y[2]);
+        }
+
+        /// <summary>Whether a facet (by two opposite corners) may reach the opening.</summary>
+        public bool Near((double, double, double) a, (double, double, double) c)
+        {
+            var la = Local(a);
+            var lc = Local(c);
+            double mu = (la.U + lc.U) / 2, mv = (la.V + lc.V) / 2, mn = (la.N + lc.N) / 2;
+            var half = Math.Sqrt(Math.Pow(la.U - lc.U, 2) + Math.Pow(la.V - lc.V, 2) + Math.Pow(la.N - lc.N, 2)) / 2;
+            return Math.Abs(mn) < 0.8 + half && Math.Sqrt(mu * mu + mv * mv) < _reach + half;
+        }
+
+        /// <summary>A convex polygon less the opening: the parts outside each of its edges in turn (each convex).</summary>
+        public List<List<(double, double, double)>> Subtract(List<(double, double, double)> poly0)
+        {
+            var outv = new List<List<(double, double, double)>>();
+            // Points far off the opening's plane (the skin's far side) are left whole.
+            if (poly0.All(q => Math.Abs(Local(q).N) > 0.8))
+            {
+                outv.Add(poly0);
+                return outv;
+            }
+            var rest = poly0;
+            for (var i = 0; i < poly.Count && rest.Count >= 3; i++)
+            {
+                var (a, b) = (poly[i], poly[(i + 1) % poly.Count]);
+                // Signed side of the line a->b (the polygon runs counter-clockwise: inside is to the left).
+                double Side((double, double, double) q) { var l = Local(q); return (b.U - a.U) * (l.V - a.V) - (b.V - a.V) * (l.U - a.U); }
+                var outside = Clip(rest, q => -Side(q));
+                if (outside.Count >= 3)
+                    outv.Add(outside);
+                rest = Clip(rest, Side);
+            }
+            return outv;
+        }
+
+        /// <summary>The part of a polygon where f is at least 0.</summary>
+        private static List<(double, double, double)> Clip(List<(double, double, double)> p, Func<(double, double, double), double> f)
+        {
+            var r = new List<(double, double, double)>();
+            for (var i = 0; i < p.Count; i++)
+            {
+                var a = p[i];
+                var b = p[(i + 1) % p.Count];
+                double fa = f(a), fb = f(b);
+                if (fa >= 0)
+                    r.Add(a);
+                if ((fa >= 0) != (fb >= 0))
+                {
+                    var t = fa / (fa - fb);
+                    r.Add((a.Item1 + (b.Item1 - a.Item1) * t, a.Item2 + (b.Item2 - a.Item2) * t, a.Item3 + (b.Item3 - a.Item3) * t));
+                }
+            }
+            return r;
+        }
+    }
+
+    private static List<(double U, double V)> Rect(double hu, double hv) => [(-hu, -hv), (hu, -hv), (hu, hv), (-hu, hv)];
+
+    private static List<(double U, double V)> Ellipse(double hu, double hv)
+    {
+        var l = new List<(double, double)>();
+        for (var i = 0; i < 16; i++)
+            l.Add((hu * Math.Cos(i * Math.PI / 8), hv * Math.Sin(i * Math.PI / 8)));
+        return l;
+    }
+
     /// <summary>One copy's box (a mirrored pair's whole box spans the gap between its copies).</summary>
     private static (double, double, double, double, double, double) CopyBox(HullBody o, int c)
     {
@@ -210,7 +317,8 @@ public static class DesignScene
 
     /// <summary>One facet between two stations as a grid of quads (nz along, more across where cutting), leaving out those inside a cutter.</summary>
     private static void Strip(DesignMesh m, double cx, HullBody h, (double X, double Y, double Z) a0, (double X, double Y, double Z) a1, (double X, double Y, double Z) b0,
-        (double X, double Y, double Z) b1, (byte, byte, byte) col, int nz, bool cutting, Func<double, double, double, bool> cut, bool flip, double step = 0.5)
+        (double X, double Y, double Z) b1, (byte, byte, byte) col, int nz, bool cutting, Func<double, double, double, bool> cut, bool flip, double step = 0.5,
+        Action<DesignMesh, (double, double, double), (double, double, double), (double, double, double), (double, double, double), (byte, byte, byte)>? emit = null)
     {
         var across = Math.Sqrt(Math.Pow(a1.X - a0.X, 2) + Math.Pow(a1.Y - a0.Y, 2));
         var nk = cutting ? Math.Clamp((int)Math.Ceiling(across / step), 1, 40) : 1;
@@ -231,10 +339,11 @@ public static class DesignScene
                     if (cut(mx, my, mz))
                         continue;
                 }
-                if (flip)
-                    m.Quad(Pt(u0, v0), Pt(u0, v1), Pt(u1, v1), Pt(u1, v0), col, false);
+                var (q0, q1, q2, q3) = flip ? (Pt(u0, v0), Pt(u0, v1), Pt(u1, v1), Pt(u1, v0)) : (Pt(u0, v0), Pt(u1, v0), Pt(u1, v1), Pt(u0, v1));
+                if (emit is not null)
+                    emit(m, q0, q1, q2, q3, col);
                 else
-                    m.Quad(Pt(u0, v0), Pt(u1, v0), Pt(u1, v1), Pt(u0, v1), col, false);
+                    m.Quad(q0, q1, q2, q3, col, false);
             }
     }
 
