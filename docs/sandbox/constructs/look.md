@@ -119,7 +119,8 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
    its own dull colour at rest: a die), `"smoke"` (puffs from its top), `"ram"` (an Extruder's: `"travel"` along `"axis"` by
    the piece on its die, back each metre), `"shear"` (over an Extruder's die: down and up as a new piece starts) or `"hinge"` (a clamshell leaf: `"pivot"` on
-   the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle). A block
+   the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle; on a Foundry's Crucible Block the lone crucible tips on its trunnions by its square's
+   pour clock, `FoundryWorks.TiltShare`). A block
    machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
    face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is),
    and `"inMachine": true` (drawn only while the part is a cell of a machine) or `"bare": true` (drawn only while it is not):

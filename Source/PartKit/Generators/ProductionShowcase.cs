@@ -122,19 +122,29 @@ public sealed class ProductionShowcase : IPartGenerator
             Onto(h21, "+x", "Casting Bed", "-x"); // (the 2 x 2's, beside the 1 x 1)
             Sign(3.25f, Posts2, Refining, "SMELTER: Hearth Blocks in squares; bigger squares pay more");
             var sawmill = On("Sawmill", 15.25f, Row1, Back, paint: Refining);
-            var foundry = On("Foundry", 20.25f, Row1, Flow, paint: Refining);
+            // The Foundry is one too: its Core on the second row at x 26.75 facing the back aisle, its crucibles west of it (its own +x): a
+            // 2 x 2 square and a 1 x 1 of Crucible Blocks (to x 19.75), a Mould Line past each; its hood stays clear of the Press (x 28.35).
+            var foundry = On("Foundry", 26.75f, -9.75f, Back, paint: Refining);
+            var c10 = Crucible(foundry, "+x", "-x");
+            var c20 = Crucible(c10, "+x", "-x");
+            Crucible(c10, "+z", "-z");
+            var c21 = Crucible(c20, "+z", "-z");
+            var c30 = Crucible(c20, "+x", "-x");
+            Paint(Onto(c30, "+x", "Mould Line", "-x"), Refining); // (the 1 x 1's)
+            Paint(Onto(c21, "+x", "Mould Line", "-x"), Refining); // (the 2 x 2's, beside the 1 x 1)
+            Sign(17.25f, Posts2, Refining, "FOUNDRY: Crucible Blocks in squares; bigger squares pay more");
             Feed(StockOf("iron ore", 15.75f, -12.75f), smelter);
             Feed(StockOf("wood", 12.25f, -3.75f), sawmill);
-            Feed(StockOf("metal", 18.25f, -8.25f), foundry);
-            Feed(StockOf("stone", 19.75f, -8.25f), foundry);
+            Feed(StockOf("metal", 23.25f, -7.75f), foundry);
+            Feed(StockOf("stone", 24.75f, -7.75f), foundry);
             Output(smelter, 15.75f, -9.75f);
             Output(sawmill, 12.75f, -6.25f);
-            Output(foundry, 21.75f, -7.75f);
+            Output(foundry, 26.75f, -7.75f);
             var refine = On("Line Console", 17.75f, Posts1, Front, paint: Control);
             Sign(16.25f, Posts1, Refining, "Press Start on the console: all three refiners run");
             Run(refine, smelter, V(17.5f, 0, -2.5f), V(17.5f, 0, -8.0f), V(13.25f, 0, -8.0f)); // (between the Sawmill and the Foundry to the back aisle)
             Run(refine, sawmill);
-            Run(refine, foundry);
+            Run(refine, foundry, V(19.25f, 0, -2.5f), V(19.25f, 0, -8.4f), V(26.75f, 0, -8.4f)); // (through the old Foundry's place in the first row)
 
             // ---- 4. Extrusion line A (metal): Extruder, conveyor, splitter; one branch to the Press, one through the join to the rack. --
             var exA = On("Extruder", 25.25f, Row1, Flow, paint: LineA);
@@ -641,6 +651,13 @@ public sealed class ProductionShowcase : IPartGenerator
             // (the box from 5 cm over the floor, 1.2 m square and 1 m high; 24% full stays under every open side's lip)
             Config(v, ("sizeX", 1.2), ("sizeY", 1.0), ("sizeZ", 1.2), ("atY", 0.35), ("material", material), ("fill", 24));
             return v;
+        }
+
+        private VPart Crucible(VPart on, string socket, string by)
+        {
+            var c = Onto(on, socket, "Crucible Block", by);
+            Paint(c, Refining);
+            return c;
         }
 
         private VPart Hearth(VPart on, string socket, string by)

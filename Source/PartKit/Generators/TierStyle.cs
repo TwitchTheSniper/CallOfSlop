@@ -18,7 +18,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// cream trim, rivets, one proper stack), Industrial (concrete grey and safety yellow, big pipes, hazard stripes, ladders), Military
 /// (olive armour on slopes, pale stencil bands, sandbags, no bare pipework), Plasma (dark rounded shells, glowing rings and a violet
 /// core). A line still reads as itself at every tier: the drill's bit and tower, the saw's bin and blades, the mill's two beds and blade
-/// frame, the furnace's hopper, stack and mouth, the foundry's twin stacks and the assembler's open gantry and arm. Details stay clear of
+/// frame and the assembler's open gantry and arm (the Smelter and the Foundry are block machines now). Details stay clear of
 /// sockets, ports, bins, aisles and the assembler's open front.
 /// </summary>
 public static class TierStyle
@@ -174,11 +174,6 @@ public static class TierStyle
     ];
 
     private static TB Floor() => S([-0.5, 0, -0.5], [0.5, 0.02, 0.5]);
-
-    /// <summary>The product tray across the aisle (a Foundry's): the same at every tier, the aisle's far side.</summary>
-    private static List<TB> Tray(double hw) =>
-        [S([-hw, 0.02, 0.28], [hw, 0.024, 0.5]), .. Walls(-hw, hw, 0.02, 0.24, 0.26, 0.5, 0.04, "body").Take(2),
-            S([-hw, 0.02, 0.3], [-hw + 0.02, 0.24, 0.46]), S([hw - 0.02, 0.02, 0.3], [hw, 0.24, 0.46])];
 
     /// <summary>The solid service blocks the side and back sockets and the chute port stand on.</summary>
     private static List<TB> Plinths(double z, string role = "frame", double top = 0.46) =>
@@ -422,73 +417,6 @@ public static class TierStyle
         };
     }
 
-    // ---- The foundry: two furnaces, a mouth between them, twin stacks, a long hopper
-
-    private static List<TB> FoundryHop(double y0, double y1, string role = "frame") =>
-        [.. Walls(-0.42, 0.42, y0, y1, -0.44, -0.11, 0.04, role), S([-0.05, y0, -0.4], [0.05, y1, -0.15], role)];
-
-    private static Shape Foundry(int t)
-    {
-        List<TB> floor = [Floor(), .. Tray(0.38)];
-        List<TB> twin = [S([-0.5, 0.02, -0.5], [-0.12, 0.62, -0.05], "core"), S([0.12, 0.02, -0.5], [0.5, 0.62, -0.05], "core")];
-        var back = S([-0.12, 0.02, -0.5], [0.12, 0.3, -0.12], "dark");
-        if (t == 1) // two squat kilns under one timber beam, odd stacks
-            return new Shape
-            {
-                Hopper = (0.585, 0.74),
-                Solid = [.. floor, .. FoundryHop(0.58, 0.76, "timber"),
-                    S([-0.5, 0.02, -0.48], [-0.1, 0.5, -0.06], "core"), S([0.1, 0.02, -0.48], [0.5, 0.46, -0.06], "core"), back, S([-0.46, 0.5, -0.46], [0.46, 0.58, -0.09]),
-                    S([-0.5, 0.58, -0.44], [-0.42, 0.98, -0.34], "dark"), S([0.42, 0.58, -0.3], [0.5, 0.84, -0.2], "dark")],
-                Detail = [
-                    D([-0.11, 0.05, -0.12], [0.11, 0.28, -0.1], "heat"), D([-0.46, 0.3, -0.05], [-0.2, 0.48, -0.04], "plate"), D([0.18, 0.08, -0.05], [0.44, 0.3, -0.04], "plate2"), D([-0.2, 0.32, -0.07], [0.2, 0.38, -0.055], "timber"),
-                    D([-0.44, 0.02, -0.51], [-0.39, 0.58, -0.48], "timber"), D([0.39, 0.02, -0.51], [0.44, 0.58, -0.48], "timber"), D([-0.5, 0.42, -0.52], [0.5, 0.47, -0.49], "timber"), D([-0.52, 0.98, -0.46], [-0.4, 1.02, -0.32], "coil"), D([0.4, 0.84, -0.32], [0.52, 0.88, -0.18], "plate2")],
-            };
-        if (t == 2) // a matched pair of painted towers, two round stacks on the bridge, a cream arch
-            return new Shape
-            {
-                Solid = [.. floor, .. FoundryHop(0.72, 0.9), .. twin, back, S([-0.46, 0.62, -0.46], [0.46, 0.72, -0.09]),
-                    S([-0.3, 0.9, -0.34], [-0.16, 1.22, -0.2], "dark", "cylinder", ("front", "+y"), ("segments", 20)), S([0.16, 0.9, -0.34], [0.3, 1.22, -0.2], "dark", "cylinder", ("front", "+y"), ("segments", 20))],
-                Detail = [
-                    D([-0.11, 0.05, -0.12], [0.11, 0.28, -0.1], "heat"), D([-0.508, 0.03, -0.508], [-0.114, 0.1, -0.042], "frame"), D([0.114, 0.03, -0.508], [0.508, 0.1, -0.042], "frame"),
-                    D([-0.508, 0.54, -0.508], [-0.114, 0.57, -0.042], "trim"), D([0.114, 0.54, -0.508], [0.508, 0.57, -0.042], "trim"), D([-0.14, 0.3, -0.135], [0.14, 0.34, -0.1], "trim"),
-                    Ring([-0.32, 1.17, -0.36], [-0.14, 1.21, -0.18], "trim", "+y", 0.74, ("ends", "closed")), Ring([0.14, 1.17, -0.36], [0.32, 1.21, -0.18], "trim", "+y", 0.74, ("ends", "closed"))],
-            };
-        if (t == 3) // stepped: a tall tower left, a low one right, stacks at both ends, a pipe bridge
-            return new Shape
-            {
-                Hopper = (0.925, 1.08),
-                Solid = [.. floor, .. FoundryHop(0.92, 1.1),
-                    S([-0.5, 0.02, -0.5], [-0.12, 0.92, -0.05], "core"), S([0.12, 0.02, -0.5], [0.5, 0.46, -0.05], "core"), S([0.12, 0.46, -0.46], [0.46, 0.92, -0.09], "trim"), back, S([-0.12, 0.62, -0.46], [0.12, 0.92, -0.09]),
-                    S([-0.5, 0.92, -0.5], [-0.42, 1.22, -0.44], "dark"), S([0.46, 0.46, -0.3], [0.5, 1.22, -0.2], "dark")],
-                Detail = [
-                    D([-0.11, 0.05, -0.12], [0.11, 0.28, -0.1], "heat"), .. Hazard([-0.508, 0.06, -0.04], [-0.12, 0.12, -0.03], 2), .. Hazard([0.12, 0.06, -0.04], [0.508, 0.12, -0.03], 2),
-                    Cyl([-0.42, 1.14, -0.3], [0.46, 1.2, -0.24], "pipe", "+x"), Ring([-0.035, 1.11, -0.325], [0.035, 1.23, -0.215], "coil", "+x", 0.6, ("ends", "closed")), .. SideLadder(-0.42, -0.2, 0.46, 0.92, 0.46, 2, 0.016), D([0.38, 0.46, -0.05], [0.44, 0.52, -0.02], "light")],
-            };
-        if (t == 4) // one low bunker: a long roof with sloped flanks, stub stacks at the ends
-            return new Shape
-            {
-                Hopper = (0.525, 0.68),
-                Solid = [.. floor, .. FoundryHop(0.52, 0.7, "trim"),
-                    S([-0.5, 0.02, -0.5], [0.5, 0.42, -0.22], "core"), S([-0.5, 0.02, -0.22], [-0.16, 0.26, -0.05], "core"), S([0.16, 0.02, -0.22], [0.5, 0.26, -0.05], "core"), S([-0.42, 0.42, -0.46], [0.42, 0.52, -0.09], "body", "bevel", ("radius", 0.2), ("edges", "long"), ("front", "+x")),
-                    S([-0.5, 0.42, -0.44], [-0.42, 0.82, -0.3], "dark", "bevel", ("radius", 0.3), ("edges", "long"), ("front", "+y")), S([0.42, 0.42, -0.44], [0.5, 0.82, -0.3], "dark", "bevel", ("radius", 0.3), ("edges", "long"), ("front", "+y"))],
-                Detail = [
-                    D([-0.13, 0.05, -0.235], [0.13, 0.26, -0.215], "heat"), D([-0.512, 0.32, -0.512], [0.512, 0.37, -0.215], "accent"), Wedge([-0.5, 0.26, -0.22], [-0.16, 0.42, -0.05], "plate", "+z", L(1, 0.1), ("shift", L(0, -0.45))), Wedge([0.16, 0.26, -0.22], [0.5, 0.42, -0.05], "plate", "+z", L(1, 0.1), ("shift", L(0, -0.45))),
-                    Sandbag([-0.5, 0.02, -0.56], [-0.1, 0.07, -0.505]), Sandbag([0.1, 0.02, -0.56], [0.5, 0.07, -0.505]), Sandbag([-0.46, 0.07, -0.56], [-0.14, 0.12, -0.505]), D([0.3, 0.18, -0.05], [0.36, 0.22, -0.04], "light")],
-            };
-        return new Shape // twin capsule pods joined by a coil round a violet core
-        {
-            Hopper = (0.925, 1.08),
-            Solid = [.. floor, .. FoundryHop(0.92, 1.1, "body"), .. Plinths(-0.25, "trim", 0.46).Skip(2),
-                S([-0.5, 0.02, -0.46], [-0.14, 0.92, -0.09], "core", "rounded", ("radius", 0.45), ("edges", "long"), ("front", "+y")), S([0.14, 0.02, -0.46], [0.5, 0.92, -0.09], "core", "rounded", ("radius", 0.45), ("edges", "long"), ("front", "+y")),
-                S([-0.42, 1.1, -0.32], [-0.3, 1.22, -0.2], "plate2", "cylinder", ("front", "+y"), ("segments", 24)),
-                S([0.3, 1.1, -0.32], [0.42, 1.22, -0.2], "plate2", "cylinder", ("front", "+y"), ("segments", 24))],
-            Detail = [
-                Ring([-0.5, 0.56, -0.47], [-0.14, 0.6, -0.08], "stripe", "+y", 0.9, ("segments", 32)), Ring([0.14, 0.56, -0.47], [0.5, 0.6, -0.08], "stripe", "+y", 0.9, ("segments", 32)),
-                Ring([-0.5, 0.26, -0.47], [-0.14, 0.3, -0.08], "stripe", "+y", 0.9, ("segments", 32)), Ring([0.14, 0.26, -0.47], [0.5, 0.3, -0.08], "stripe", "+y", 0.9, ("segments", 32)),
-                Ball([-0.1, 0.06, -0.26], [0.1, 0.26, -0.06], "coil"), Ring([-0.15, 0.02, -0.12], [0.15, 0.32, -0.09], "stripe", "+z", 0.86, ("segments", 32))],
-        };
-    }
-
     // ---- The assembler: an open gantry with a low hopper at the back and an arm over the tray
 
     private static TB AsmFloor() => S([-0.5, 0, -0.5], [0.5, 0.03, 0.5]);
@@ -587,7 +515,6 @@ public static class TierStyle
         "Drill Module" => Drill(tier),
         "Saw Module" => Saw(tier),
         "Sawmill" => Sawmill(tier),
-        "Foundry" => Foundry(tier),
         "Assembler" => Assembler(tier),
         "Thruster Assembler" => ThrusterAssembler(tier),
         "Tailor" => Tailor(tier),

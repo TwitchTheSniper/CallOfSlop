@@ -255,7 +255,7 @@ public static partial class SelfTest
         var bronze = ConstructEdits.DropLoose(w, ConstructParts.Need("Foundry"), new Vector3(18, 10, 0), Quaternion.Identity)!;
         w.AddInput(w.StoreOf(bronze, 0)!, names.IdOf("copper"), 40);
         w.AddInput(w.StoreOf(bronze, 0)!, metal, 40);
-        Says(bronze, "Refused", "Needs tier 2", "bronze in a tier 1 Foundry");
+        Says(bronze, "Fault", "No power", "bronze in a bare Core (a Foundry has no tiers)");
         w.Remove(bronze);
         var asm = ConstructEdits.DropLoose(w, ConstructParts.Need("Assembler"), new Vector3(-9, 10, 0), Quaternion.Identity)!;
         var ast = w.StoreOf(asm, 0)!;
