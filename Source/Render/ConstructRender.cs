@@ -76,6 +76,7 @@ public static partial class ConstructRender
     public struct Flash
     {
         public Vector3 At, Dir;
+        public Vector3 Carry; // m/s: the firing body's speed, so the flash rides with its gun (a ship in orbit)
         public double Born;
         public GunFx Fx;
     }
@@ -157,10 +158,10 @@ public static partial class ConstructRender
         return n;
     }
 
-    public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx)
+    public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx, Vector3 carry = default)
     {
-        Flashes[_flashNext] = new Flash { At = at, Dir = dir, Born = now, Fx = fx };
-        CallOfSlop.Fx.Muzzle(at, dir, fx switch { GunFx.Cannon => 0.7f, GunFx.Rocket => 0.5f, GunFx.Flame => 0.3f, _ => 0.25f });
+        Flashes[_flashNext] = new Flash { At = at, Dir = dir, Carry = carry, Born = now, Fx = fx };
+        CallOfSlop.Fx.Muzzle(at, dir, fx switch { GunFx.Cannon => 0.7f, GunFx.Rocket => 0.5f, GunFx.Flame => 0.3f, _ => 0.25f }, carry);
         _flashNext = (_flashNext + 1) % Flashes.Length;
     }
 
@@ -369,7 +370,7 @@ public static partial class ConstructRender
             if (f.Born <= 0 || age < 0 || age > FlashSeconds)
                 continue;
             var size = f.Fx switch { GunFx.Cannon => 0.55f, GunFx.Rocket => 0.4f, GunFx.Flame => 0.35f, _ => 0.22f } * (1f - (float)(age / FlashSeconds) * 0.5f);
-            gfx.Draw(Matrix4x4.CreateScale(size * 0.6f, size * 0.6f, size) * Basis(f.Dir) * Matrix4x4.CreateTranslation(f.At + f.Dir * size * 0.5f), new Vector3(1f, 0.8f, 0.35f), 0.9f, mode: 2);
+            gfx.Draw(Matrix4x4.CreateScale(size * 0.6f, size * 0.6f, size) * Basis(f.Dir) * Matrix4x4.CreateTranslation(f.At + f.Carry * (float)age + f.Dir * size * 0.5f), new Vector3(1f, 0.8f, 0.35f), 0.9f, mode: 2);
             n++;
         }
         LastBoxes = n;

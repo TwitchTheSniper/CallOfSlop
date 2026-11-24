@@ -22,6 +22,12 @@ public struct Tracer
 
     /// <summary>A travelling round's arc: how far above the straight line it flies at the middle (metres; 0: straight).</summary>
     public float Bow;
+
+    /// <summary>m/s the muzzle end moves at: the firing body's speed, so a ship's tracers leave its gun however fast it goes (default: none).</summary>
+    public Vector3 Carry;
+
+    /// <summary>The far end moves with <see cref="Carry"/> too (the round hit nothing: it flies on with its ship's speed).</summary>
+    public bool CarryEnd;
 }
 
 /// <summary>Ammo / reload state of one weapon slot in the local player's loadout.</summary>

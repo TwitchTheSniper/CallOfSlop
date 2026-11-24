@@ -2297,12 +2297,21 @@ public static unsafe partial class Program
         Gfx.BeginBatch(blended: true); // (one draw however many rounds are in the air)
         Span<Vector4> tracerView = stackalloc Vector4[6];
         TerrainRenderer.FrustumPlanes(Gfx.ViewProj, tracerView);
-        foreach (ref readonly var t in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_game.Tracers))
+        foreach (ref readonly var tr in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_game.Tracers))
         {
+            var age = (float)(now - tr.Born);
+            var t = tr;
+            if (t.Carry != Vector3.Zero)
+            {
+                // A moving gun's round leaves its muzzle as the gun moves on (a ship in orbit: left where it was fired, its streak
+                // reached the ship behind on the same orbit and looked like that ship firing).
+                t.From += t.Carry * age;
+                if (t.CarryEnd)
+                    t.To += t.Carry * age;
+            }
             var pad = new Vector3(t.Bow + 1f);
             if (!TerrainRenderer.Visible(tracerView, Vector3.Min(t.From, t.To) - pad, Vector3.Max(t.From, t.To) + pad))
                 continue;
-            var age = (float)(now - t.Born);
             var alpha = Math.Clamp(1f - age / 0.25f, 0f, 1f);
             var d = t.To - t.From;
             var len = d.Length();
