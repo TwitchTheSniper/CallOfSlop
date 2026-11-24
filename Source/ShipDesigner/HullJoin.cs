@@ -112,6 +112,41 @@ public sealed class HullJoin
     /// <summary>The join's mesh (and its twin when mirrored off the centreline); empty when an end's body is gone.</summary>
     public DesignMesh Mesh(ShipDesign d) => Build(d, null);
 
+    /// <summary>The strut's middle line as rings' frames (middle, across, up), so rooms can run through it (Karl, 2026-11-24).</summary>
+    public List<(double[] C, double[] S, double[] U)> Spine(ShipDesign d)
+    {
+        var l = new List<(double[] C, double[] S, double[] U)>();
+        Build(d, null, l);
+        if (Mirror && l.Count > 0 && World(d, A) is { } a && Math.Abs(a.P[0]) > 0.3)
+            foreach (var (c, sd, u) in l.ToArray())
+                l.Add(([-c[0], c[1], c[2]], [-sd[0], sd[1], sd[2]], [-u[0], u[1], u[2]]));
+        return l;
+    }
+
+    /// <summary>Whether a world point is inside a strut's walls (margin m in from them), by its nearest spine frame.</summary>
+    public bool Inside(List<(double[] C, double[] S, double[] U)> spine, double x, double y, double z, double margin)
+    {
+        var best = double.MaxValue;
+        var bi = -1;
+        for (var i = 0; i < spine.Count; i++)
+        {
+            var c = spine[i].C;
+            var dd = Sq(x - c[0]) + Sq(y - c[1]) + Sq(z - c[2]);
+            if (dd < best) (best, bi) = (dd, i);
+        }
+        if (bi < 0)
+            return false;
+        var (cc, sd, up) = spine[bi];
+        double qx = x - cc[0], qy = y - cc[1], qz = z - cc[2];
+        var hw = W / 2 - margin;
+        var hh = H / 2 - margin;
+        if (hw <= 0 || hh <= 0)
+            return false;
+        var u = (qx * sd[0] + qy * sd[1] + qz * sd[2]) / hw;
+        var v = (qx * up[0] + qy * up[1] + qz * up[2]) / hh;
+        return u * u + v * v <= 1;
+    }
+
     /// <summary>A connection's mouth on a body: where its end ring sits (middle, along, across, up) and the section's size.</summary>
     public readonly record struct Mouth(int Hull, double[] C, double[] T, double[] S, double[] U, double W, double H, bool Square)
     {
@@ -139,7 +174,7 @@ public sealed class HullJoin
         return l;
     }
 
-    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths)
+    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U)>? spine = null)
     {
         var m = new DesignMesh();
         if (World(d, A) is not { } a || World(d, B) is not { } b)
@@ -217,6 +252,9 @@ public sealed class HullJoin
             }
             Norm(side);
             var upv = Cross(t, side);
+            // The strut's own rings (not the flared ends), sampled finely enough for the room check.
+            if (spine is not null && sc == 1 || spine is not null && i > 0 && i < last)
+                spine.Add((c, [.. side], upv));
             if (mouths is not null && (i == 0 || i == last))
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
@@ -259,6 +297,8 @@ public sealed class HullJoin
             }
             rings.Add(r);
         }
+        if (spine is not null)
+            return m;
         for (var i = 0; i < last; i++)
             for (var j = 0; j < ring.Count; j++)
             {

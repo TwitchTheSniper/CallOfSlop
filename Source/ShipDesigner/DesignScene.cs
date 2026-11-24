@@ -262,6 +262,7 @@ public static class DesignScene
     public static Check Run(ShipDesign d)
     {
         var c = new Check();
+        var spines = d.Joins.Select(j => (J: j, S: j.Spine(d))).ToList();
         // Rooms inside the skin (with 6 cm for the plates, as the Zero Day's MustFit), and apart.
         foreach (var r in d.Rooms)
         {
@@ -279,7 +280,7 @@ public static class DesignScene
                         var v = r.Z0 + (r.Z1 - r.Z0) * j / nz;
                         var (el, er) = Edges(d, r, v, up);
                         var w = d.World(dk, i == 0 ? el : i == nx ? er : r.X0 + (r.X1 - r.X0) * i / nx, v, up);
-                        if (!d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06))
+                        if (!d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06) && !spines.Any(q => q.J.Inside(q.S, w[0], w[1], w[2], 0.06)))
                         {
                             ok = false;
                             c.Issues.Add(new("error", $"{Name(r)} on deck {r.Deck + 1} pokes through the skin near x {w[0]:0.0}, y {w[1]:0.0}, z {w[2]:0.0}", $"room:{r.Id}"));
