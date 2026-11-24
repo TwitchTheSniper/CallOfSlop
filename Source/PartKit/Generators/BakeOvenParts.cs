@@ -17,7 +17,7 @@ public sealed class BakeOvenParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/BakeOven";
     private const string Section = "Ovens";
-    private const string Body = "#3a3f46"; // graphite: the oven's frame and cabinet (design page drawing 4)
+    private const string Body = "#a8763a"; // ochre: the oven's body colour (cladding, cabinet, bed sides; look.md "Body")
     private const string Trim = "#2c3036";
     private const string Ceramic = "#6b6259"; // the platen's heater tiles between the steel bars
 

@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Line Arm Heads",
+  "description": "A Line Arm with a Head Stand of three spares (a Spreader, a Vacuum Head and a Fork): it swaps to what each piece needs. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Arm Core"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 50x50x50 steel)",
+      "on": 0,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 40x40x300 steel)",
+      "on": 1,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 45x45x45 steel)",
+      "on": 2,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 35x35x300 steel)",
+      "on": 3,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 30x30x40 steel)",
+      "on": 4,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.padclamp solid 60x30x30 steel)",
+      "on": 5,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x10 steel)",
+      "on": 0,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Head Stand",
+      "on": 0,
+      "socket": "-z",
+      "by": "mount"
+    },
+    {
+      "part": "Pressed Part (arm.spreader solid 150x30x30 steel)",
+      "on": 9,
+      "socket": "slot0",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.vacuum solid 80x20x80 steel)",
+      "on": 9,
+      "socket": "slot1",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.fork solid 80x60x100 steel)",
+      "on": 9,
+      "socket": "slot2",
+      "by": "base"
+    }
+  ]
+}

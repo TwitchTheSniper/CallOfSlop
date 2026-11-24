@@ -2790,6 +2790,7 @@
     {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40},
     {"output": "Crucible Block", "materials": {"steel": 380, "concrete": 250}, "seconds": 60},
     {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25},
+    {"output": "Head Stand", "materials": {"steel": 240}, "seconds": 20},
     {"output": "Saw Block", "materials": {"steel": 190, "concrete": 40, "rubber": 40}, "seconds": 45},
     {"output": "Plank Stacker", "materials": {"steel": 50, "concrete": 20}, "seconds": 20}
   ]

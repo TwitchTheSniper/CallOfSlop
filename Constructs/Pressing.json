@@ -4742,6 +4742,61 @@
      "blanks": [
       "solid"
      ]
+    },
+    {
+     "id": "spreader",
+     "like": "Spreader",
+     "label": "spreader",
+     "preset": "solid 150x30x30 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "vacuum",
+     "like": "Vacuum Head",
+     "label": "vacuum head",
+     "preset": "solid 80x20x80 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "magnet",
+     "like": "Magnet Head",
+     "label": "magnet head",
+     "preset": "solid 60x25x60 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "fork",
+     "like": "Fork",
+     "label": "fork",
+     "preset": "solid 80x60x100 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "fitter",
+     "like": "Fitter Head",
+     "label": "fitter head",
+     "preset": "solid 60x40x40 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
     }
    ]
   },
@@ -7893,6 +7948,36 @@
    "die": "arm",
    "pattern": "drivepack",
    "blank": "solid 60x40x120 steel"
+  },
+  {
+   "part": "Spreader",
+   "die": "arm",
+   "pattern": "spreader",
+   "blank": "solid 150x30x30 steel"
+  },
+  {
+   "part": "Vacuum Head",
+   "die": "arm",
+   "pattern": "vacuum",
+   "blank": "solid 80x20x80 steel"
+  },
+  {
+   "part": "Magnet Head",
+   "die": "arm",
+   "pattern": "magnet",
+   "blank": "solid 60x25x60 steel"
+  },
+  {
+   "part": "Fork",
+   "die": "arm",
+   "pattern": "fork",
+   "blank": "solid 80x60x100 steel"
+  },
+  {
+   "part": "Fitter Head",
+   "die": "arm",
+   "pattern": "fitter",
+   "blank": "solid 60x40x40 steel"
   },
   {
    "part": "Steel Plate",

@@ -1,0 +1,115 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fitter Head",
+  "description": "A modular arm's head that fits parts at a Building Station: a clamp with a turning wrist and a torque driver. What a clamp of its width takes; the arm then fits as a Module Fitter does.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 130.0,
+  "health": 400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#f07818",
+  "attachSeconds": 4.0,
+  "armPiece": "fitterHead",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0.0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.06,
+        0.1
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -0.3,
+        0.056,
+        -0.2
+      ],
+      "max": [
+        0.3,
+        0.216,
+        0.2
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -0.2,
+        0.216,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.3,
+        0.2
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.296,
+        -0.12
+      ],
+      "max": [
+        -0.22,
+        0.4,
+        0.12
+      ],
+      "color": "#f07818"
+    },
+    {
+      "min": [
+        0.22,
+        0.296,
+        -0.12
+      ],
+      "max": [
+        0.3,
+        0.4,
+        0.12
+      ],
+      "color": "#f07818"
+    },
+    {
+      "min": [
+        -0.03,
+        0.296,
+        0.14
+      ],
+      "max": [
+        0.03,
+        0.38,
+        0.2
+      ],
+      "color": "#e8b81c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Head Stand",
+  "description": "A rack of three spare heads beside a modular arm: put a head on each slot. An Arm Core in reach swaps to the head its next piece needs by itself (5 s), or by its Head setting.",
+  "group": "Production",
+  "section": "Arm kit",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 260.0,
+  "health": 600,
+  "armour": 8,
+  "material": "steel",
+  "color": "#2b2f34",
+  "attachSeconds": 6.0,
+  "armPiece": "headStand",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        0.0,
+        -0.4
+      ],
+      "max": [
+        1.5,
+        0.1,
+        0.4
+      ],
+      "color": "#4c5157"
+    },
+    {
+      "min": [
+        -1.46,
+        0.096,
+        -0.06
+      ],
+      "max": [
+        -1.34,
+        0.9,
+        0.06
+      ],
+      "color": "#c99c18"
+    },
+    {
+      "min": [
+        1.34,
+        0.096,
+        -0.06
+      ],
+      "max": [
+        1.46,
+        0.9,
+        0.06
+      ],
+      "color": "#c99c18"
+    },
+    {
+      "min": [
+        -1.5,
+        0.9,
+        -0.3
+      ],
+      "max": [
+        1.5,
+        1.0,
+        0.3
+      ],
+      "color": "#2b2f34"
+    },
+    {
+      "min": [
+        -1.09,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        -1.056,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.844,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        -0.81,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.16,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        0.194,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.406,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        0.44,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.01,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        1.044,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.256,
+        0.996,
+        -0.14
+      ],
+      "max": [
+        1.29,
+        1.03,
+        0.14
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.2,
+        0.2,
+        0.056
+      ],
+      "max": [
+        1.2,
+        0.3,
+        0.068
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "slot0",
+      "at": [
+        -0.95,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "slot1",
+      "at": [
+        0.3,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "slot2",
+      "at": [
+        1.15,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        1.0,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ]
+}

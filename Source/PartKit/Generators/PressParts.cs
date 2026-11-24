@@ -1201,6 +1201,8 @@ public sealed partial class PressParts : IPartGenerator
     [
         ("Arm Joint", "joint", ArmKitParts.JointBlank), ("Arm Boom", "boom", ArmKitParts.BoomBlank), ("Arm Wrist", "wrist", ArmKitParts.WristBlank),
         ("Pad Clamp", "padclamp", ArmKitParts.ClampBlank), ("Arm Counterweight", "counterweight", ArmKitParts.WeightBlank), ("Arm Drive Pack", "drivepack", ArmKitParts.PackBlank),
+        ("Spreader", "spreader", ArmKitParts.SpreaderBlank), ("Vacuum Head", "vacuum", ArmKitParts.VacuumBlank), ("Magnet Head", "magnet", ArmKitParts.MagnetBlank),
+        ("Fork", "fork", ArmKitParts.ForkBlank), ("Fitter Head", "fitter", ArmKitParts.FitterBlank),
     ];
 
     private static List<object?> Presets()
