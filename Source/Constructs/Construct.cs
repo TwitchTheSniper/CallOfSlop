@@ -378,6 +378,7 @@ public sealed partial class Construct
     internal Vector3 FrameUp = Vector3.UnitY, FrameG, FrameFree, FrameGrav, FrameMove, FrameV, FrameW, FrameX0, FrameC0, FrameVc0;
     internal Quaternion FrameQ0 = Quaternion.Identity;
     internal float FrameDt, FrameFelt;
+    internal bool FrameFarSlept; // (carried asleep because nobody was near its frame: woken when someone comes near, ConstructFrames.FarFromPeople)
     internal bool FrameNew, FrameGround, FrameLoaded; // (FrameGround: the last step had it touch the map; FrameLoaded: FramePos/FrameRot came with it from a save)
     /// <summary>Server: in a frame whose pose it has (not still to be joined from the world): the physics reads its speed against the frame's.</summary>
     internal bool Framed => Frame != 0 && !FrameNew;
