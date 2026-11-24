@@ -187,6 +187,7 @@ public sealed class Room
     public double Height; // its own clear height (0: its deck's), so it can rise through the decks above (Karl, 2026-11-24)
     public double[]? Want; // the plan it was drawn at, while a deck move has shrunk it to fit (it grows back to this when it can)
     public List<RoomExt> Exts = []; // the room grown out of a wall or up through its ceiling, in a shape (Karl, 2026-11-24)
+    public bool RunAft; // the same at its aft end, into the stern (Karl, 2026-11-24: an option for the rear as well)
     public bool RunOn; // with ToHull: its open ends run on into the nose or the stern while there is floor (Karl, 2026-11-24), a player's choice
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
@@ -195,7 +196,7 @@ public sealed class Room
     public JsonObject ToJson() => new()
     {
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
-        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
+        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
     };
 
@@ -204,7 +205,7 @@ public sealed class Room
         var r = new Room
         {
             Id = id, Deck = (int?)o["deck"] ?? 0, X0 = ShipDesign.F(o["x0"], -1), X1 = ShipDesign.F(o["x1"], 1), Z0 = ShipDesign.F(o["z0"], 0),
-            Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "", ToHull = (bool?)o["toHull"] ?? false, RunOn = (bool?)o["runOn"] ?? false,
+            Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "", ToHull = (bool?)o["toHull"] ?? false, RunOn = (bool?)o["runOn"] ?? false, RunAft = (bool?)o["runAft"] ?? false,
             Height = Math.Clamp(ShipDesign.F(o["height"], 0), 0, 40), Below = Math.Clamp(ShipDesign.F(o["below"], 0), 0, 40), Group = Math.Max(0, (int?)o["group"] ?? 0),
         };
         if (RoomKinds.Find(r.Kind) is null)

@@ -979,7 +979,7 @@ public static class DesignScene
     /// of its middle), so it follows the hull's shape there too. Its drawn box stays as it is.</summary>
     public static (double V0, double V1) Span(ShipDesign d, Room r)
     {
-        if (!r.ToHull || !r.RunOn || d.Stacked)
+        if (!r.ToHull || !(r.RunOn || r.RunAft) || d.Stacked)
             return (r.Z0, r.Z1);
         var dk = d.DeckOf(r);
         var mid = (r.X0 + r.X1) / 2;
@@ -1002,10 +1002,10 @@ public static class DesignScene
         }
         bool Beyond(bool fore) => d.Rooms.Any(o => o != r && o.Deck == r.Deck && Math.Min(r.X1, o.X1) - Math.Max(r.X0, o.X0) > 0.01 && (fore ? o.Z1 <= r.Z0 + 0.01 : o.Z0 >= r.Z1 - 0.01));
         double v0 = r.Z0, v1 = r.Z1;
-        if (!Beyond(true))
+        if (r.RunOn && !Beyond(true))
             while (v0 - 0.1 > r.Z0 - 30 && Fits(v0 - 0.1))
                 v0 -= 0.1;
-        if (!Beyond(false))
+        if (r.RunAft && !Beyond(false))
             while (v1 + 0.1 < r.Z1 + 30 && Fits(v1 + 0.1))
                 v1 += 0.1;
         return (v0, v1);
@@ -1262,7 +1262,7 @@ public static class DesignScene
                   var (ra, rb) = ExtRings(d, r, e);
                   return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
               }))).Append(']')
-              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
+              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"runAft\":").Append(r.RunAft ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
             if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");

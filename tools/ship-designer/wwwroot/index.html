@@ -1306,7 +1306,8 @@ function inspector() {
     const d = S.decks[r.deck];
     I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1}, ${fmt(r.area)} m2`)),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "tohull", ...(r.toHull ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, toHull: e.target.checked }) }), "Out to the hull (its open sides follow the skin)"),
-      ...(r.toHull && !S.stacked ? [el("label", { class: "row" }, el("input", { type: "checkbox", ...(r.runOn ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, runOn: e.target.checked }) }), "Run on into the nose or stern (its open ends follow the hull; they can't be dragged while on)")] : []),
+      ...(r.toHull && !S.stacked ? [el("label", { class: "row" }, el("input", { type: "checkbox", ...(r.runOn ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, runOn: e.target.checked }) }), "Run on into the nose (its fore end follows the hull; it can't be dragged while on)"),
+        el("label", { class: "row" }, el("input", { type: "checkbox", ...(r.runAft ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, runAft: e.target.checked }) }), "Run on into the stern (its aft end follows the hull; it can't be dragged while on)")] : []),
       el("div", { class: "grid2" }, el("span", {}, "kind"), ks, el("span", {}, "name"), lab,
         el("span", {}, "x from"), num(r.x0, v => cmd({ op: "setRoom", id: r.id, x0: v }), 0.25), el("span", {}, "x to"), num(r.x1, v => cmd({ op: "setRoom", id: r.id, x1: v }), 0.25),
         el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25),

@@ -578,6 +578,7 @@ public sealed class DesignEditor
                     if (o["label"] is not null) q.Label = Str(o, "label");
                     if (o["toHull"] is not null) q.ToHull = (bool)o["toHull"]!;
                     if (o["runOn"] is not null) q.RunOn = (bool)o["runOn"]!;
+                    if (o["runAft"] is not null) q.RunAft = (bool)o["runAft"]!;
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)
