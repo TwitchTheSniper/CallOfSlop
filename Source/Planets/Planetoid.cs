@@ -133,7 +133,7 @@ public sealed class Planetoid
         ["crevasses"] = (["lat", "lon", "radius", "edge", "bearing", "spacing", "length", "width", "depth", "share", "spread", "lip", "seed"], ["lat", "lon", "radius"]),
         ["cave"] = (["lat", "lon", "bearing", "radius", "chamber", "cover", "climb", "wander", "seed"], ["lat", "lon", "bearing"]),
         ["drifts"] = (["lat", "lon", "radius", "edge", "bearing", "amplitude", "scale", "stretch", "octaves", "seed"], ["lat", "lon", "radius", "amplitude"]),
-        ["sea"] = (["lat", "lon", "radius", "edge", "depth", "coast", "rough", "water", "level", "seed"], ["lat", "lon", "radius", "depth"]),
+        ["sea"] = (["lat", "lon", "radius", "edge", "depth", "coast", "rough", "water", "seed"], ["lat", "lon", "radius", "depth"]),
     };
 
     public static IEnumerable<string> FeatureTypes => Schema.Keys;
@@ -259,7 +259,7 @@ public sealed class Planetoid
         //   Sin / Cos of the bearing, J seed
         // drifts: R radius, E edge, A amplitude, B scale (across the wind), D stretch (along it), I octaves, J seed, Sin / Cos
         // sea: R radius, E edge (the shore's width), A depth, H coast (how ragged), B the coast's noise scale, K rough (a dry
-        //   bed's own relief), G the water's level (worked out from the ground round it unless given), Flag water, J seed
+        //   bed's own relief), G the water's level (worked out from the ground round it), Flag water, J seed
         public double A, B, C, D, E, G, H, K, R, Sin, Cos;
         public int I, J;
         public bool Flag;
@@ -360,7 +360,7 @@ public sealed class Planetoid
         }
         for (var k = 0; k < list.Length; k++)
             if (list[k].F.Type == "sea")
-                list[k].G = list[k].F.Has("level") ? list[k].F.Num("level", 0) : SeaLevel(list, k);
+                list[k].G = SeaLevel(list, k); // (always from the rim: a given level could leave the ground outside the bounds Swing promises)
         return list;
     }
 
@@ -521,7 +521,7 @@ public sealed class Planetoid
     /// the old ground slopes down into it. With <c>water</c> the basin holds water up to its level: for now the water is
     /// flat blue ground (<see cref="SeaTint"/>), walked on like any other. Without it the basin is a dried-out sea bed, its
     /// floor a little rough. The level is the ground round the basin's rim (low in it, so the water meets the ground
-    /// almost everywhere) unless the feature gives one.
+    /// almost everywhere).
     /// </summary>
     private double Sea(Placed p, double h, double x, double y, double z, double d)
     {
