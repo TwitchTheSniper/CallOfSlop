@@ -725,7 +725,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, mergeFrom = 0, mergeAcross = null;
+let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, cubbyD = 1.5, mergeFrom = 0, mergeAcross = null;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -1210,11 +1210,12 @@ function inspector() {
       ...(mergeAcross && mergeAcross.a === r.id ? (() => { const o = S.rooms.find(q => q.id === mergeAcross.b); if (!o) return []; const go = owner => { const a = cmd({ op: "mergeRoom", a: mergeAcross.a, b: mergeAcross.b, owner }); mergeAcross = null; if (a.error) toast(a.error); else { const kept = S.rooms.find(q => q.id === (owner === "a" ? r.id : o.id)); if (kept) { deck = kept.deck; select("room", kept.id); } toast("Merged through both decks. Undo splits them again.", true); } };
         return [el("p", { class: "hint" }, `One room through deck ${r.deck + 1} and deck ${o.deck + 1}. Which deck owns it (its plan, and where it is listed)?`),
           el("div", { class: "row" }, el("button", { onclick: () => go("a") }, `Deck ${r.deck + 1} (${r.label || r.kind})`), el("button", { onclick: () => go("b") }, `Deck ${o.deck + 1} (${o.label || o.kind})`), el("button", { onclick: () => { mergeAcross = null; inspector(); } }, "Cancel"))]; })() : []),
-      el("h3", {}, "Cubby with a window"),
+      el("h3", {}, "Cubby"),
       el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
-        el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, size: pieceSize, clad: 0.3 }); if (a.error) toast(a.error); else { toast("Cubby out to the skin, with a window at its end. Pick the window to size it and its cladding.", true); select("room", a.id); } } }, t))),
+        el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, depth: cubbyD }); if (a.error) toast(a.error); else { toast(cubbyD ? "Cubby added, open to the room. A window is its own step: mount one from the cubby." : "Cubby out to the skin, open to the room.", true); select("room", a.id); } } }, t))),
       slider("Cubby width", Math.round(cubbyW * 100), 75, 600, 25, " cm", v => { cubbyW = v / 100; }),
-      el("p", { class: "hint" }, "A nook from this room's wall out to the hull, open to the room, with a window where it meets the skin."),
+      slider("Cubby depth (0: to the skin)", Math.round(cubbyD * 100), 0, 600, 25, " cm", v => { cubbyD = v / 100; }),
+      el("p", { class: "hint" }, "A smaller area off this room's wall, open to it with no door: a nook, a bunk bay, a store. It stops short if the hull is in the way."),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),

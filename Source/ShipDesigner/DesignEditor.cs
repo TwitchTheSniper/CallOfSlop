@@ -630,8 +630,9 @@ public sealed class DesignEditor
             }
             case "addCubby":
             {
-                // A cubby (Karl, 2026-11-24): a nook from a room's wall out to the skin, open to the room (one group), with a window
-                // at its far end. It grows a quarter metre at a time while it still fits inside the hull.
+                // A cubby (Karl, 2026-11-24): a smaller area off a room's wall, open to the room (one group), "depth" metres deep,
+                // or (depth 0) out to the skin, growing a quarter metre at a time while it fits inside the hull. A window is its own
+                // step (mount one from the room).
                 var room = d.RoomById(I(o, "id")) ?? throw new InvalidOperationException("no such room");
                 if (d.Rooms.Count >= ShipDesign.MaxRooms)
                     return $"at most {ShipDesign.MaxRooms} rooms";
@@ -650,7 +651,8 @@ public sealed class DesignEditor
                     }
                 }
                 var deep = 0.0;
-                for (var dep = 0.5; dep <= 40; dep += 0.25)
+                var want = D(o, "depth", 0);
+                for (var dep = 0.5; dep <= (want > 0 ? Snap(want, 0.25) : 40); dep += 0.25)
                 {
                     Span(dep);
                     if (DesignScene.Outside(d, c) > 0)
@@ -659,24 +661,15 @@ public sealed class DesignEditor
                 }
                 if (deep == 0)
                     return "no room for a cubby that way: the skin is right there";
+                if (want > 0 && deep < Snap(want, 0.25) - 0.01)
+                    o["short"] = deep;
                 Span(deep);
                 if (room.Group == 0)
                     room.Group = d.NewId();
                 c.Group = room.Group;
                 d.Rooms.Add(c);
                 o["id"] = c.Id;
-                // Its window, mounted from the middle of its far wall, half way up, outwards.
-                var dk = d.DeckOf(c);
-                double ex = side == "x0" ? c.X0 : side == "x1" ? c.X1 : (c.X0 + c.X1) / 2, ez = side == "z0" ? c.Z0 : side == "z1" ? c.Z1 : (c.Z0 + c.Z1) / 2;
-                var at = d.World(dk, ex, ez, dk.Height / 2);
-                double[] n = side switch { "x0" => [-1, 0, 0], "x1" => [1, 0, 0], _ => d.Stacked ? [0, side == "z0" ? -1 : 1, 0] : [0, 0, side == "z0" ? -1 : 1] };
-                var id = c.Id;
-                var mo = new JsonObject { ["op"] = "mount", ["kind"] = "Window", ["room"] = c.Id, ["x"] = at[0], ["y"] = at[1], ["z"] = at[2], ["nx"] = n[0], ["ny"] = n[1], ["nz"] = n[2],
-                    ["size"] = D(o, "size", 1), ["clad"] = D(o, "clad", 0.3), ["pair"] = false };
-                var err = Run(mo);
-                if (err.Length == 0 && d.PieceById((int?)mo["id"] ?? 0) is { } wp)
-                    wp.Clad = Math.Clamp(D(o, "clad", 0.3), 0, 2);
-                o["id"] = id;
+                o["id"] = c.Id;
                 return "";
             }
             case "mount":
