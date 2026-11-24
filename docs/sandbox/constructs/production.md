@@ -9,9 +9,9 @@ out. Chutes move it between them. [Assembling](#assembling) uses the results. Th
 materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
 from a **Foundry**, which mixes two first tier ones.
 
-- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; the Sawmill and Foundry come in five tiers, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). The **Smelter** is a block machine with no tiers (2026-11-24, [Refiners as block machines](#refiners-as-block-machines)):
+- **The machines** (`Constructs/Parts/Refining`, attach tool, physics-only; the Sawmill comes in five tiers, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). The **Smelter** and the **Foundry** are block machines with no tiers (2026-11-24, [Refiners as block machines](#refiners-as-block-machines)); the Smelter is
   a 2 m Core (3 t, 3 kW) with a hopper on top (its input), a screen and a small glowing hearth on its front and its output bin inside, made bigger by Hearth Blocks welded on its +x side. The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
-  between a trough at the back (input) and a rack at the front (output). The **Foundry** (4 m, 7,680 kg, 3.5 kW): a double furnace with a hopper across its top and twin stacks, with a mixed input. Any part with `storage.refine` is a machine: its
+  between a trough at the back (input) and a rack at the front (output). The **Foundry** is a 2 m Core (3.5 t, 3.5 kW) with two mixer hoppers on top (its mixed input) and a screen and sight glass on its front, made bigger by Crucible Blocks ([The Foundry](#the-foundry)). Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
 - **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
@@ -92,7 +92,7 @@ its own.
 
 ## Refiners as block machines
 
-The Smelter (2026-11-24; the Foundry, the Sawmill and a Scrap Breaker are to follow it) is a block machine with no tiers, as the Assembler
+The Smelter (2026-11-24; the Foundry the same day, [The Foundry](#the-foundry); the Sawmill and a Scrap Breaker are to follow) is a block machine with no tiers, as the Assembler
 and the Press are: a **Smelter Core** and **Hearth Blocks** welded on its +x side, the blocks cut into square furnaces that all work at
 once, and **Casting Beds** past their far edge. Bigger squares pay more than the same blocks in small ones, so a player plans the furnace,
 and every peer works the machine out from its parts alone (`MachineBlocks.Squares`, nothing on the wire). Parts by the part kit's
@@ -177,6 +177,57 @@ working: "Workshop Smelter" to "Plasma Smelter" load as the Smelter Core (`Const
 recipe (`ConstructRefining.SavedRecipe`). **Self-test**: "Machine tier looks", "Refining", "Refining network" (a Hearth Block welded on the
 host reaches the client's look line), "Gathering" (`SelfTestMachineTiers.cs`: a bare Core, a 1 x 1 and a 2 x 2 at x1, x2.25 and x7; a
 wrecked block), "Display screens", "Assembling".
+
+### The Foundry
+
+The Foundry (2026-11-24) is a block machine on the same rule as the Smelter: the same best split, R4, power shares, bins, chute load and
+next-size hint, one recipe at a time, and all of its mixes (ammo, steel, concrete, laminate, rubber, bronze, circuits) at the Core; the
+Foundry's tiers and its recipe gates are gone. Parts by the part kit's `foundry_parts` (`Source/PartKit/Generators/FoundryParts.cs`).
+
+- **Foundry Core** (`Foundry.json`, the old name and file, tier 1): 2 x 2 x 2 m, 3.5 t, 3.5 kW. Its two mixer hoppers on top take the
+  **Chute in** (on the manifold between them), **Chute out** is on its free -x side, a screen and a sight glass on its front (-z); nothing
+  moves but the mixers' paddles. Alone it is the old tier 1: 2 steel a second.
+- **Crucible Block** (`CrucibleBlock.json`): 2 x 2 m, a 1.6 m pit frame, 3 t, sockets on all four sides and the bottom. Alone (a 1 x 1)
+  it carries its own small crucible on trunnions (`"work": "hinge"` boxes, tipping 30 degrees toward the front on the square's clock, its steel shell
+  widening to the rim) with a glowing melt; in a square of 2 or more the faces between its blocks lose their dressing and one crucible 2n - 0.4 m across is drawn over
+  the square.
+- **Mould Line** (`MouldLine.json`): an end piece of the foundry family, 2 x 2 m and 1 m tall, eight sand moulds on a roller deck. Its
+  moulds take the colour of what the Foundry makes as each pour reaches them. Looks only.
+- **Recipes** (`Assembling.cs`'s Tail, at the end of AfterCloche): Crucible Block 380 steel and 250 concrete (about 0.85 of the Core's 745
+  units), Mould Line 110 steel and 30
+  concrete.
+
+| Squares | Rate | Power | Input bin | Output bin | Blocks, mass |
+| --- | --- | --- | --- | --- | --- |
+| bare Core | x1 | 3.5 kW | 200 | 400 | 0, 3.5 t |
+| 1x1 | x2.25 | 7 kW | 450 | 900 | 1, 6.5 t |
+| 2x2 | x7 | 17.5 kW | 1,400 | 2,800 | 4, 15.5 t |
+| 3x3, 2x2, 1x1 | x24 | 52.5 kW | 4,800 | 9,600 | 14, 45.5 t |
+| 5x5 | x57.25 | 91 kW | 11,450 | 22,900 | 25, 78.5 t |
+
+**Where the works go** (`FoundryWorks` places them, `FoundryRender` draws them, `FoundryWorks.AddHazards` burns by them, in the Core's
+frame, allocating nothing; culled past 150 m):
+
+- **Crucibles.** One over each square's middle, 2n - 0.4 m across at the rim and 0.96 + 0.6 (n - 1) m tall, a steel shell in three
+  courses widening about 15% to the rim with dark bands over the joints, a crust round the melt. It hangs on trunnions along x on two
+  A-frame stands in the square's 0.2 m margin (a sector gear and motor on the +x one). Each tips toward the front on its own clock (a
+  cycle of 7 + n s from its corner cell: 1.5 s up, 1.5 + 0.4n s pouring, 1.5 s back) by 30 / sqrt(n) degrees, and stands high enough on
+  its trunnions that the tipped shell clears the pit's top by 5 cm (`FoundryWorks.Bottom`: 1.98 m on a 1 x 1, 2.71 m on a 5 x 5); its
+  spout is long enough that the tipped lip is over the launder's middle (`Spout`). It pours a stream in the colour of the melt (the
+  output's colour while the bin holds any, else the recipe it works, set or picked by its input; iron grey before any).
+- **The launder.** One trough on trestles 0.3 m in front of the frontmost square, from the first crucible's lip to the Mould Line nearest
+  the front (the furthest along x of those), with a lip into its first mould; with no Mould Line it ends in a ladle past the last square.
+  A square behind another pours by a spur when the cells in front of its middle are free, else into a covered launder (not drawn). The
+  launder glows from the first pouring lip on, and the moulds fill one by one in the output's colour.
+- **The hood.** One hood on four posts over the whole bed and its Mould Lines, its eaves at the biggest square's n + 3 m, three stepped
+  courses of plated steel (the top one sooted) with a steel batten and bolts along their edges, a ridge vent, a hazard fascia on the front
+  eave and gutters, all on Base steel posts and braces, and one collared stack to 12 m that smokes while it works.
+- **Burns.** While a Foundry works, each open square's pour and spur, the launder and its lip and every Mould Line are hot (the Smelter's
+  `world.Hazards` and cap). A bare Core burns no one: its melt is behind the sight glass.
+
+**The wire.** Part ids moved (protocol 453). Saves keep working: "Workshop Foundry" to "Plasma Foundry" load as the Foundry Core
+(`ConstructParts.Renamed`), and a saved recipe keeps its recipe (each old tier's list was a start of the full one). **Self-test**:
+"Machine tier looks", "Refining", "Assembling", "Display screens".
 
 ## Grow beds
 
@@ -666,11 +717,11 @@ Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut pla
 
 ## Machine tiers
 
-(History: the Smelter column is gone since 2026-11-24: the Smelter is a block machine with no tiers, [Refiners as block machines](#refiners-as-block-machines), and "Workshop Smelter" to "Plasma Smelter" load as its Core. The Assembler went the same way on 2026-11-21.)
+(History: the Smelter column is gone since 2026-11-24: the Smelter is a block machine with no tiers, [Refiners as block machines](#refiners-as-block-machines), and "Workshop Smelter" to "Plasma Smelter" load as its Core; the Foundry the same day ([The Foundry](#the-foundry)), "Workshop Foundry" to "Plasma Foundry" loading as its Core, so the Smelter and Foundry columns below are history. The Assembler went the same way on 2026-11-21.)
 
 Each of the machine lines comes in five tiers, one for each step of the threat ladder (zombies, raiders, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
-(Drill Module, Saw Module, Sawmill, Foundry); the others are named after their tier ("Industrial Drill Module", "Plasma Foundry").
+(Drill Module, Saw Module, Sawmill); the others are named after their tier ("Industrial Drill Module", "Plasma Sawmill").
 
 The gathering modules are vehicle-sized. The drill's bin is a small buffer ([The drill's buffer and shaft](gathering-and-salvage.md#the-drills-buffer-and-shaft)), so the Bin column is the Saw Module's:
 
@@ -730,7 +781,7 @@ Fitting time grows from x1 to x2.
   `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 256 boxes (it was 32 while each box was a draw; static parts are merged meshes now, docs/render/MERGED-MESHES.md), and a box may reach 16 m from its origin
   (`ConstructParts.MaxPartReach`), for the tier 5 stacks. A box may show its machine working (`"work"`: spin, stroke, glow, smoke; [Machine look](look.md#machine-look)); the tiers here do not use it yet.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
-  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3 (deposits; of the recipes only the Foundry's bronze, 2, and circuits, 3, ask: the Smelter's gates went with its tiers). A drill or saw below it gathers nothing; the look
+  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3 (deposits; no recipe asks now: the Smelter's and the Foundry's gates went with their tiers). A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
   below it takes nothing: a chute's load stays in the source, F passes over that material, and the look line says why
   ("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"; an empty one, "takes iron ore, sand (copper
@@ -2102,6 +2153,23 @@ Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`; the looks ar
   In a window run, the `oven` verb prints each oven and every baked part; `oven put A+B+C` sets a new group of those parts on the bed and
   `oven mode bake|unbake` turns the setting.
 - **Not yet.** The no-collide socket hole on a baked part (hull-dress.md) and a Piece out conveyor. Baking by order: [Bake kits](#bake-kits).
+
+### Arm kit heads and the Head Stand (2026-11-24, part 2)
+
+Five more heads go on a Wrist's tip by their "base" socket, each pressed to size on the Arm die (`arm.spreader`, `arm.vacuum`, `arm.magnet`, `arm.fork`, `arm.fitter`). A head's width (its x size) gives the Pad Clamp's rating (`ArmKit.HeadRating`) times its kind's factor, and its kind says what it takes by shape (`ArmKit.Fits`, sides a >= b >= c, w the width):
+
+| Head | Factor | Takes |
+| --- | --- | --- |
+| Pad Clamp | 1 | b <= 1.5 w |
+| Spreader | 1.2 | a >= 2 m and b <= 3 w |
+| Vacuum Head | 0.4 | c <= a / 10 and b <= 6 w |
+| Magnet Head | 0.8 | steel or iron, b <= 3 w |
+| Fork | 1.5 | a <= 3 w |
+| Fitter Head | 1 | as a clamp; an arm built with one fits modules as a Module Fitter |
+
+A **Head Stand** (catalogue part, one Assembling row) holds three spares on its `slot0..2` sockets; it stands on the floor or bolts on a Core's or Pedestal's side by its `mount` socket. Every spare on a stand of the same body whose slot is in the arm's reach joins its heads (`ArmSpec.Heads`: its own first, then the spares, at most 8). The Core's **Head** setting (`CfgKey.ArmHead`, which took the retired `Stations` byte) says which is on; the chart and payload are the chain's held to that head's rating (`ArmKit.Mount`). A carry asks `Carries` whether any head takes the piece; at its start (`Approach`) the arm keeps the mounted head if it fits, else puts on the strongest that does (`SwapFor`): the setting changes, the body goes to clients, and the move waits `SwapTicks` (2.5 s) while the hand goes to the stand and back. Clients draw the swap from the setting changing (`LifterRender.HeadSwap`): the hand goes to the slot, the heads change places at half way, and the spares are drawn on their slots by `ArmKitRender`. The **Line Arm Heads** preset is a Line Arm with a stand of a Spreader, a Vacuum Head and a Fork.
+
+Not yet: a spare on a stand has no collider while it belongs to an arm (as the chain), and a swap between two spares shows the arm's own head on the first spare's slot until it ends.
 
 ### Roll-out and roll-in (2026-11-23)
 

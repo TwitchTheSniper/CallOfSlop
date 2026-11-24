@@ -10,7 +10,7 @@
   "health": 2000,
   "armour": 8,
   "material": "steel",
-  "color": "#3a3f46",
+  "color": "#a8763a",
   "attachSeconds": 8,
   "machineBlock": {
     "family": "oven",
@@ -139,7 +139,7 @@
         0.496,
         0.927
       ],
-      "color": "#3a3f46",
+      "color": "#a8763a",
       "detail": true,
       "seamFill": "+x"
     },
@@ -299,7 +299,7 @@
         0.496,
         0.927
       ],
-      "color": "#3a3f46",
+      "color": "#a8763a",
       "detail": true,
       "seamFill": "-x"
     },
@@ -459,7 +459,7 @@
         0.496,
         0.993
       ],
-      "color": "#3a3f46",
+      "color": "#a8763a",
       "detail": true,
       "seamFill": "+z"
     },
@@ -619,7 +619,7 @@
         0.496,
         -0.923
       ],
-      "color": "#3a3f46",
+      "color": "#a8763a",
       "detail": true,
       "seamFill": "-z"
     },

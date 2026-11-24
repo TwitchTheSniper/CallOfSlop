@@ -285,9 +285,9 @@ public sealed class FactoryScript : BlueprintScript
     }
 
     /// <summary>
-    /// A squares Core (a Smelter, production.md "Refiners as block machines") and its n x n square of Hearth Blocks welded on its own +x side
-    /// (west, as it stands with its screen to the road), its Core in the square's front row, a Casting Bed past the square's front row; the
-    /// whole centred in its cell.
+    /// A squares Core (a Smelter or a Foundry, production.md "Refiners as block machines") and its n x n square of blocks (Hearth Blocks,
+    /// Crucible Blocks) welded on its own +x side (west, as it stands with its screen to the road), its Core in the square's front row, its
+    /// end piece (a Casting Bed, a Mould Line) past the square's front row; the whole centred in its cell.
     /// </summary>
     private VPart Squares(PlanCell c, string paint)
     {
@@ -295,7 +295,12 @@ public sealed class FactoryScript : BlueprintScript
         var n = o.Square;
         var def = ConstructParts.Find(o.Part)!;
         var cell = def.BlockCell;
-        var block = def.RefineMachine == "smelter" ? "Hearth Block" : throw new VehicleKitException($"no blocks for a {o.Part}");
+        var (block, end) = def.RefineMachine switch
+        {
+            "smelter" => ("Hearth Block", "Casting Bed"),
+            "foundry" => ("Crucible Block", "Mould Line"),
+            _ => throw new VehicleKitException($"no blocks for a {o.Part}"),
+        };
         // Own +x is west and own +z is back (Back); the assembly runs own x -1 to (n + 1.5) cells and own z -0.5 to n - 0.5 cells.
         var core = On(o.Part, c.X + (n + 1) * cell * 0.5f, c.Z + (n - 1) * cell * 0.5f, Back, paint: paint);
         var row = new VPart[n];
@@ -312,7 +317,9 @@ public sealed class FactoryScript : BlueprintScript
             }
             prev = row[i];
         }
-        Onto(row[n - 1], "+x", "Casting Bed", "-x");
+        Onto(row[n - 1], "+x", end, "-x");
+        if (o.Recipe.Length > 0)
+            Config(core, ("recipe", RecipeOf(core, o.Recipe))); // (set, not Auto, as a plain machine's: a mixed one would otherwise take any fellow)
         return core;
     }
 

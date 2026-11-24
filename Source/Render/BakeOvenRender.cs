@@ -9,7 +9,8 @@ namespace CallOfSlop;
 /// heat glass at eye height (a mullion each metre, a heavy sill and head, a rain hood) and radiant tubes below and above it; a roof
 /// lined with firebrick, a rib across it each 2 m and a burner box with its flue every 4 m; ribs outside each 2 m cell line; at each end
 /// a portal (posts over the walls' ends, a head with a hazard edge, a sill with a hazard edge) and a pair of swing doors hinged on its
-/// posts that swing outward, away from the tunnel. The Core's duct runs from its drums' stub to the tunnel, ending at a yellow flange,
+/// posts that swing outward, away from the tunnel. Outside it is clad in the oven's ochre body colour over a dark plinth; inside the
+/// lining shows firebrick courses and steel anchor strips; each portal's head carries its end's band (in white, out orange) and two lit lamps. The Core's duct runs from its drums' stub to the tunnel, ending at a yellow flange,
 /// and its blower's fan spins faster as it heats.
 /// <para>
 /// While it bakes the tubes, the glass and the lining warm and the flues breathe heat haze; it cools; the doors swing open. The lining
@@ -20,10 +21,11 @@ namespace CallOfSlop;
 public static class BakeOvenRender
 {
     public const float DrawNear = 150f, DrawFine = 60f;
-    private static readonly Vector3 Graphite = new(0.227f, 0.247f, 0.275f), Trim = new(0.173f, 0.188f, 0.212f), Base = new(0.133f, 0.149f, 0.169f),
+    private static readonly Vector3 Trim = new(0.173f, 0.188f, 0.212f), Base = new(0.133f, 0.149f, 0.169f),
         Steel = new(0.6f, 0.63f, 0.66f), Mast = new(0.29f, 0.314f, 0.345f), Yellow = new(0.95f, 0.69f, 0.12f), Black = new(0.08f, 0.09f, 0.1f),
         Brick = new(0.54f, 0.294f, 0.204f), Fill = new(0.78f, 0.47f, 0.31f), Hot = new(1f, 0.42f, 0.1f), Roller = new(0.79f, 0.72f, 0.64f),
-        Tube = new(0.29f, 0.23f, 0.2f), Glass = new(1f, 0.82f, 0.63f), Duct = new(0.66f, 0.68f, 0.7f);
+        Tube = new(0.29f, 0.23f, 0.2f), Glass = new(1f, 0.82f, 0.63f), Duct = new(0.66f, 0.68f, 0.7f),
+        Clad = new(0.659f, 0.463f, 0.227f), InBand = new(0.925f, 0.922f, 0.894f), OutBand = new(0.941f, 0.471f, 0.094f), Lamp = new(1f, 0.93f, 0.78f); // (Clad: the oven's body colour, ochre cladding, look.md)
     private const float CoolFade = 3f, LeafThick = 0.18f;
     private static double _last;
     private static CPartBox? _cyl; // a "+y" cylinder box of the Core's own (its drum): the shape the round pieces are drawn with
@@ -98,15 +100,15 @@ public static class BakeOvenRender
             float o = s == 1 ? bw : 0, outS = s == 1 ? 1 : -1; // (its outer face, and which way is out)
             if (!windows)
             {
-                Box(gfx, tf, new Vector3(x0, top, dz), new Vector3(x1, yR, bl - dz), Graphite);
+                Box(gfx, tf, new Vector3(x0, top, dz), new Vector3(x1, yR, bl - dz), Clad);
                 Box(gfx, tf, new Vector3(lx0, top, dz), new Vector3(lx1, yR - 0.03f, bl - dz), lining, 2);
             }
             else
             {
-                Box(gfx, tf, new Vector3(x0, top, dz), new Vector3(x1, wy0, bl - dz), Graphite);
-                Box(gfx, tf, new Vector3(x0, wy1, dz), new Vector3(x1, yR, bl - dz), Graphite);
-                Box(gfx, tf, new Vector3(x0, wy0, dz), new Vector3(x1, wy1, za), Graphite);
-                Box(gfx, tf, new Vector3(x0, wy0, zb), new Vector3(x1, wy1, bl - dz), Graphite);
+                Box(gfx, tf, new Vector3(x0, top, dz), new Vector3(x1, wy0, bl - dz), Clad);
+                Box(gfx, tf, new Vector3(x0, wy1, dz), new Vector3(x1, yR, bl - dz), Clad);
+                Box(gfx, tf, new Vector3(x0, wy0, dz), new Vector3(x1, wy1, za), Clad);
+                Box(gfx, tf, new Vector3(x0, wy0, zb), new Vector3(x1, wy1, bl - dz), Clad);
                 Box(gfx, tf, new Vector3(lx0, top, dz), new Vector3(lx1, wy0, bl - dz), lining, 2);
                 Box(gfx, tf, new Vector3(lx0, wy1, dz), new Vector3(lx1, yR - 0.03f, bl - dz), lining, 2);
                 Box(gfx, tf, new Vector3(lx0, wy0, dz), new Vector3(lx1, wy1, za), lining, 2);
@@ -137,13 +139,30 @@ public static class BakeOvenRender
                 // Ribs outside at each 2 m cell line.
                 for (var z = 2f; z < bl - 0.5f; z += 2f)
                     Box(gfx, tf, Lo(o, outS, 0.08f, top + 0.004f, z - 0.06f), Hi(o, outS, 0.08f, yR - 0.004f, z + 0.06f), Trim);
+                // A dark plinth along the wall's foot outside, under the ribs.
+                Box(gfx, tf, Lo(o, outS, 0.05f, top + 0.008f, dz + 0.004f), Hi(o, outS, 0.05f, top + 0.45f, bl - dz - 0.004f), Base);
+                // The lining's firebrick courses (a mortar line each 0.3 m) and a steel anchor strip each 2 m, proud of its face.
+                var mortar = lining * 0.62f;
+                float mf = s == 1 ? lx0 - 0.004f : lx1 + 0.004f, mb = s == 1 ? lx0 + 0.002f : lx1 - 0.002f, ma = MathF.Min(mf, mb), mz = MathF.Max(mf, mb);
+                for (var y = top + 0.3f; y < yR - 0.15f; y += 0.3f)
+                    if (!windows || y < wy0 - 0.05f || y > wy1 + 0.05f)
+                        Box(gfx, tf, new Vector3(ma, y - 0.012f, dz + 0.02f), new Vector3(mz, y + 0.012f, bl - dz - 0.02f), mortar);
+                float sf = s == 1 ? lx0 - 0.03f : lx1 + 0.03f, sa = MathF.Min(sf, mb), sz = MathF.Max(sf, mb);
+                for (var z = 2f; z < bl - 0.5f; z += 2f)
+                {
+                    Box(gfx, tf, new Vector3(sa, top + 0.05f, z - 0.04f), new Vector3(sz, windows ? wy0 - 0.06f : yR - 0.06f, z + 0.04f), Tube);
+                    if (windows)
+                        Box(gfx, tf, new Vector3(sa, wy1 + 0.06f, z - 0.04f), new Vector3(sz, yR - 0.06f, z + 0.04f), Tube);
+                }
             }
         }
         // ---- The roof and its lining; ribs across it, burner boxes and their flues ----
-        Box(gfx, tf, new Vector3(0, yR, 0), new Vector3(bw, yR + 0.5f, bl), Graphite);
+        Box(gfx, tf, new Vector3(0, yR, 0), new Vector3(bw, yR + 0.5f, bl), Clad);
         Box(gfx, tf, new Vector3(wt + 0.03f, yR - 0.03f, dz), new Vector3(bw - wt - 0.03f, yR, bl - dz), lining, 2);
         if (fine)
         {
+            for (var z = dz + 0.5f; z < bl - dz - 0.2f; z += 0.5f)
+                Box(gfx, tf, new Vector3(wt + 0.05f, yR - 0.034f, z - 0.012f), new Vector3(bw - wt - 0.05f, yR - 0.028f, z + 0.012f), lining * 0.62f);
             for (var z = 2f; z < bl - 0.5f; z += 2f)
                 Box(gfx, tf, new Vector3(-0.04f, yR + 0.5f, z - 0.05f), new Vector3(bw + 0.04f, yR + 0.6f, z + 0.05f), Trim);
             for (var z = 2f; z < bl - 1f; z += 4f)
@@ -173,6 +192,16 @@ public static class BakeOvenRender
             Box(gfx, tf, new Vector3(bw - wt - 0.02f, top, z0), new Vector3(bw + 0.03f, yR, z1), Mast);
             Box(gfx, tf, new Vector3(-0.04f, yR - 0.12f, Math.Min(face, face + outZ * 0.05f)), new Vector3(bw + 0.04f, yR + 0.52f, Math.Max(face, face + outZ * 0.05f)), Trim);
             Stripes(gfx, tf, -0.04f, bw + 0.04f, yR - 0.12f, 0.1f, face + (e == 0 ? -0.056f : 0.05f), 0.006f);
+            // The way-in cues: the in end's white band, the out end's orange one, on the head; a lamp over each leaf, its lens lit.
+            var bz = face + (e == 0 ? -0.058f : 0.053f);
+            Box(gfx, tf, new Vector3(0.3f, yR + 0.1f, bz), new Vector3(bw - 0.3f, yR + 0.26f, bz + 0.005f), e == 0 ? InBand : OutBand);
+            for (var l = 0; l < 2; l++)
+            {
+                var lx = l == 0 ? bw * 0.27f : bw * 0.73f;
+                float h0 = MathF.Min(face, face + outZ * 0.42f), h1 = MathF.Max(face, face + outZ * 0.42f);
+                Box(gfx, tf, new Vector3(lx - 0.22f, yR + 0.3f, h0), new Vector3(lx + 0.22f, yR + 0.5f, h1), Base); // (its housing)
+                Box(gfx, tf, new Vector3(lx - 0.18f, yR + 0.268f, h0 + 0.04f), new Vector3(lx + 0.18f, yR + 0.296f, h1 - 0.04f), Lamp, 2); // (its lens, lit)
+            }
             // The sill the leaves close on, a hazard edge on its outer face.
             Box(gfx, tf, new Vector3(wt + 0.03f, top + 0.004f, z0 + 0.05f), new Vector3(bw - wt - 0.03f, roll - 0.02f, z1 - 0.05f), Base);
             if (fine)
@@ -185,11 +214,15 @@ public static class BakeOvenRender
                 var turn = sd * (e == 0 ? 1 : -1) * open;
                 var lf = Matrix4x4.CreateRotationY(turn) * Matrix4x4.CreateTranslation(hinge) * tf;
                 float a0 = sd > 0 ? 0 : -w, a1 = sd > 0 ? w : 0, half = LeafThick * 0.5f, inS = -outZ; // (inS: towards the tunnel)
-                Box(gfx, lf, new Vector3(a0, roll + 0.01f, -half), new Vector3(a1, leafTop, half), Graphite);
+                Box(gfx, lf, new Vector3(a0, roll + 0.01f, -half), new Vector3(a1, leafTop, half), Clad);
+                float fe0 = sd > 0 ? a1 - 0.045f : a0 + 0.005f, fe1 = sd > 0 ? a1 - 0.005f : a0 + 0.045f; // (its free edge: a yellow strip outside)
+                Box(gfx, lf, new Vector3(fe0, roll + 0.05f, outZ > 0 ? half : -half - 0.02f), new Vector3(fe1, leafTop - 0.05f, outZ > 0 ? half + 0.02f : -half), Yellow);
                 // The firebrick face inside, the ribs outside, a hazard edge along its foot outside.
                 Box(gfx, lf, new Vector3(a0 + 0.08f, roll + 0.09f, inS > 0 ? half : -half - 0.012f), new Vector3(a1 - 0.08f, leafTop - 0.08f, inS > 0 ? half + 0.012f : -half), lining, 2);
                 if (fine)
                 {
+                    for (var y = roll + 0.39f; y < leafTop - 0.2f; y += 0.3f) // (the firebrick face's courses)
+                        Box(gfx, lf, new Vector3(a0 + 0.1f, y - 0.012f, inS > 0 ? half + 0.008f : -half - 0.016f), new Vector3(a1 - 0.1f, y + 0.012f, inS > 0 ? half + 0.016f : -half - 0.008f), lining * 0.62f);
                     for (var y = roll + 0.5f; y < leafTop - 0.2f; y += 0.7f)
                         Box(gfx, lf, new Vector3(a0 + 0.05f, y - 0.04f, outZ > 0 ? half : -half - 0.03f), new Vector3(a1 - 0.05f, y + 0.04f, outZ > 0 ? half + 0.03f : -half), Trim);
                     Box(gfx, lf, new Vector3(a0 + 0.05f, roll + 0.1f, outZ > 0 ? half : -half - 0.03f), new Vector3(a0 + 0.13f, leafTop - 0.1f, outZ > 0 ? half + 0.03f : -half), Trim); // (a stile at each edge)

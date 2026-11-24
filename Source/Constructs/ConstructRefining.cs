@@ -186,7 +186,7 @@ public static class ConstructRefining
     }
 
     /// <summary>The recipe a mixed input picks: one that uses all of what is there, first one with a whole batch. Null: none does.</summary>
-    private static RefineRecipe? MixRecipe(RefiningTable table, ConstructPartDef d, CStore st)
+    internal static RefineRecipe? MixRecipe(RefiningTable table, ConstructPartDef d, CStore st)
     {
         RefineRecipe? first = null;
         foreach (var r in table.MixesOf(d.RefineMachine))

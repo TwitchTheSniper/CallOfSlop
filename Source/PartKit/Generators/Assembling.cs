@@ -1086,6 +1086,11 @@ public sealed class Assembling : IPartGenerator
         // (the arm kit's Core and Pedestal, Sean 2026-11-24: ArmKitParts; its chain pieces are pressed on the Arm die, no row; after everything: AfterCloche)
         ("Lifters/ArmKit", "Arm Core", Rec("Arm Core", 60, m: [("steel", 900), ("copper", 60)])),
         ("Lifters/ArmKit", "Arm Pedestal", Rec("Arm Pedestal", 40, m: [("steel", 700)])),
+        // (the Foundry on the block system, PR 2 of the refiners: its Crucible Block, a steel pit frame lined with brick (about 0.85 of the Core's
+        // 745 units: the design's "a little less than its Core"), and its Mould Line; the
+        // Core keeps the Foundry's row, and the Workshop to Plasma Foundries' rows went: tools/MIGRATING.md; after everything: AfterCloche)
+        (null, null, Rec("Crucible Block", 60, 1, m: [("steel", 380), ("concrete", 250)])),
+        (null, null, Rec("Mould Line", 25, 1, m: [("steel", 110), ("concrete", 30)])),
         // (the arm kit's Head Stand, part 2; its heads are pressed on the Arm die; after everything: AfterCloche)
         ("Lifters/ArmKit", "Head Stand", Rec("Head Stand", 20, m: [("steel", 240)])),
     ];
@@ -1300,7 +1305,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Head Stand"];
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

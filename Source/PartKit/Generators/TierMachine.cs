@@ -5,9 +5,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The machine look on the tiered buildings (docs/sandbox/constructs/look.md, "Machine look"): what <see cref="MachineLook"/> gives the
 /// Extruders and the Press, put over each tier's own body from <see cref="TierStyle"/>. A line keeps one set of cues at every tier (a
-/// Sawmill's carriage on rails through a turning blade; a Foundry's crucible over
-/// moulds; an Assembler's stroking tool head over its trays), and a higher tier is built up further (tier by build: guard rails, pipework,
-/// cladding, a taller stack cap), its silhouette its own.
+/// Sawmill's carriage on rails through a turning blade; an Assembler's stroking tool head over its trays), and a higher tier is built up further (tier by build: guard rails, pipework,
+/// cladding, a taller stack cap), its silhouette its own. (The Smelter and the Foundry went to the block system: SmelterParts, FoundryParts.)
 ///
 /// Everything here is a look box in metres, added after the screen is mounted and the body's faces are settled, so no solid box, socket,
 /// port or screen moves. A box that would cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's open front is
@@ -74,13 +73,7 @@ public static class TierMachine
             for (var a = 0; a < 3; a++)
                 if (mn[a] < _lo[a] - margin || mx[a] > _hi[a] + margin)
                     return false;
-            if (Name == "Foundry") // (the aisle across the machine stays walkable)
-            {
-                double r = 0.41, feet = 0.03 * Size;
-                if (Over(mn, mx, [-0.3 * Size - r, feet, 0.1 * Size - r], [0.3 * Size + r, feet + 1.86, 0.1 * Size + r]))
-                    return false;
-            }
-            else if (Name is not "Sawmill" && Over(mn, mx, U(-0.44, 0.05, 0.47), U(0.44, 0.55, 0.6))) // (an Assembler's open front)
+            if (Name is not "Sawmill" && Over(mn, mx, U(-0.44, 0.05, 0.47), U(0.44, 0.55, 0.6))) // (an Assembler's open front)
                 return false;
             if (clearOfDetails && _old.Any(o => Over(mn, mx, o.Min, o.Max, 0.004)))
                 return false;
@@ -150,9 +143,6 @@ public static class TierMachine
             Port(s, p.At, p.Face, p.In);
         switch (s.Name)
         {
-            case "Foundry":
-                Furnace(s);
-                break;
             case "Sawmill":
                 Sawmill(s);
                 break;
@@ -266,102 +256,6 @@ public static class TierMachine
         s.Add([x0 - Thin, y0, z1 - 0.002], [x1 + Thin, y1, z1 + Thin], MachineLook.Base);
         s.Add([x0 - Thin, y0, z0 + 0.002], [x0 + 0.002, y1, z1 - 0.002], MachineLook.Base);
         s.Add([x1 - 0.002, y0, z0 + 0.002], [x1 + Thin, y1, z1 - 0.002], MachineLook.Base);
-    }
-
-    /// <summary>A band round the outside of a walled room, at its top (a hopper's white rim).</summary>
-    private static void Rim(Site s, double x0, double x1, double z0, double z1, double y0, double y1, string color, double proud)
-    {
-        s.Add([x0 - proud, y0, z0 - proud], [x1 + proud, y1, z0 + 0.003], color);
-        s.Add([x0 - proud, y0, z1 - 0.003], [x1 + proud, y1, z1 + proud], color);
-        s.Add([x0 - proud, y0, z0 + 0.003], [x0 + 0.003, y1, z1 - 0.003], color);
-        s.Add([x1 - 0.003, y0, z0 + 0.003], [x1 + proud, y1, z1 - 0.003], color);
-    }
-
-    /// <summary>The solid stacks of a furnace: slim, tall, standing above its hopper's walls.</summary>
-    private static List<TB> Stacks(Site s, double wallTop) =>
-        [.. s.Shape.Solid.Where(b => !b.Hidden && b.Max[0] - b.Min[0] < 0.24 && b.Max[2] - b.Min[2] < 0.24 && b.Max[1] - b.Min[1] > 0.1 && b.Max[1] > wallTop + 0.01)];
-
-    // ---- The Foundry: a vessel that is charged at the top, burns, and is tapped at the front across the aisle (the Smelter went to the block system: SmelterParts)
-
-    private static void Furnace(Site s)
-    {
-        var t = s.Tier;
-        var (inMin, inMax) = s.Input!.Value;
-        // The hopper: a white rim (the charge goes in here), and from tier 2 a guard rail round it.
-        double hx0 = inMin[0] - s.U(0.045), hx1 = inMax[0] + s.U(0.045), hz0 = inMin[2] - s.U(0.045), hz1 = inMax[2] + s.U(0.045), hTop = inMax[1] + s.U(0.02);
-        var proud = Math.Max(Thin, s.U(0.004));
-        Rim(s, hx0, hx1, hz0, hz1, hTop - s.U(0.035), hTop + 0.004, MachineLook.In, proud);
-        if (t >= 2)
-        {
-            double post = Math.Max(0.03, s.U(0.008)), railY = hTop + s.U(0.07);
-            foreach (var x in new[] { hx0 - proud, hx1 + proud - post })
-                foreach (var z in new[] { hz0 - proud, hz1 + proud - post })
-                    s.Add([x, hTop + 0.006, z], [x + post, railY, z + post], MachineLook.Base, clear: true);
-            s.Add([hx0 - proud + post, railY - post, hz0 - proud + 0.004], [hx1 + proud - post, railY, hz0 - proud + post - 0.004], MachineLook.Accent, clear: true);
-            s.Add([hx0 - proud + post, railY - post, hz1 + proud - post + 0.004], [hx1 + proud - post, railY, hz1 + proud - 0.004], MachineLook.Accent, clear: true);
-        }
-        if (t >= 3) // pipework: a main along the hopper's back with a valve wheel
-        {
-            double r = s.U(0.016), py = hTop - s.U(0.11);
-            s.Add([hx0, py - r, hz0 - proud - 2 * r], [hx1, py + r, hz0 - proud], MachineLook.Steel, "steel", shape: Cylinder("+x"), clear: true);
-            var mx = (hx0 + hx1) / 2;
-            s.Add([mx - 2.2 * r, py - 2.2 * r, hz0 - proud - 2 * r - 0.03], [mx + 2.2 * r, py + 2.2 * r, hz0 - proud - 2 * r + 0.004], MachineLook.Accent, shape: Cylinder("-z"), clear: true);
-        }
-
-        // The stacks: steel collars, a cap and a flue that smokes while the furnace works. A higher tier's cap stands taller.
-        foreach (var k in Stacks(s, hTop / s.Size))
-        {
-            double x0 = s.U(k.Min[0]), x1 = s.U(k.Max[0]), z0 = s.U(k.Min[2]), z1 = s.U(k.Max[2]), y0 = Math.Max(s.U(k.Min[1]), hTop), y1 = s.U(k.Max[1]);
-            var c = Math.Max(Thin, s.U(0.005));
-            var collars = t >= 5 ? 3 : t >= 2 ? 2 : 1;
-            for (var i = 0; i < collars; i++)
-            {
-                var y = y0 + (y1 - y0) * (0.82 - 0.27 * i);
-                s.Add([x0 - c, y, z0 - c], [x1 + c, y + s.U(0.022), z1 + c], MachineLook.Steel, "steel");
-            }
-            var top = s.TopOver(x0, x1, z0, z1);
-            if (top < y1 + 0.02) // (nothing sits on it yet: a cap, taller by the tier)
-            {
-                var capH = s.U(0.012 + 0.006 * t);
-                s.Add([x0 - c * 1.6, y1 + 0.003, z0 - c * 1.6], [x1 + c * 1.6, y1 + 0.003 + capH, z1 + c * 1.6], MachineLook.Base);
-                top = y1 + 0.003 + capH;
-            }
-            double fx = (x1 - x0) * 0.06, fz = (z1 - z0) * 0.06; // (the puffs are as wide as their box)
-            var flue = s.Add([x0 + fx, top - 0.004, z0 + fz], [x1 - fx, top + Math.Max(0.02, s.U(0.008)), z1 - fz], MachineLook.Ink);
-            MachineLook.Work(flue, "smoke");
-        }
-
-        // The mouth across the aisle.
-        var fl0 = s.U(0.02);
-        var mouth = s.Shape.Detail.FirstOrDefault(b => b.Role == "heat");
-        if (mouth is not null && s.Built(mouth, true) is { } m)
-        {
-            double mx0 = C(m, "min", 0), mx1 = C(m, "max", 0), my0 = C(m, "min", 1), my1 = C(m, "max", 1), mz = C(m, "max", 2), mw = mx1 - mx0, mh = my1 - my0, cx = (mx0 + mx1) / 2;
-            // A Foundry: the mouth glows; a steel crucible hangs in front of it with its melt showing, and pours into a row of moulds.
-            Hot(s, m);
-            var room = (0.1 * s.Size - 0.41 - 0.03 - (mz + 0.01)) / 2; // (it stands out of the recess, short of the aisle)
-            double r = Math.Min(Math.Min(mw * 0.3, s.U(0.042)), room), cy = my0 + mh * 0.5, cz = mz + 0.01 + r;
-            s.Add([cx - r, cy, cz - r], [cx + r, cy + 2 * r, cz + r], MachineLook.Steel, "steel", shape: Cylinder("+y"));
-            MachineLook.Work(s.Add([cx - r * 0.7, cy + 2 * r - 0.006, cz - r * 0.7], [cx + r * 0.7, cy + 2 * r + 0.01, cz + r * 0.7], MachineLook.Hot, shape: Cylinder("+y")), "glow");
-            s.Add([cx - r * 1.5, cy + r * 0.8, cz - 0.02], [cx + r * 1.5, cy + r * 1.2, cz + 0.02], MachineLook.Accent); // (its trunnion bar)
-            MachineLook.Work(s.Add([cx - 0.02, fl0 + s.U(0.043), cz + r * 0.5], [cx + 0.02, cy + 0.004, cz + r * 0.5 + 0.03], MachineLook.Hot), "glow"); // (the pour)
-            var mould = mw * 0.3;
-            for (var i = -1; i <= 1; i++)
-            {
-                var x = cx + i * mw * 0.34;
-                s.Add([x - mould / 2, fl0 - 0.004, mz + 0.006], [x + mould / 2, fl0 + s.U(0.045), cz + r * 0.9], MachineLook.Steel, "steel");
-                MachineLook.Work(s.Add([x - mould * 0.32, fl0 + s.U(0.045) - 0.008, mz + 0.006 + mould * 0.15], [x + mould * 0.32, fl0 + s.U(0.045) + 0.006, cz + r * 0.9 - mould * 0.15], MachineLook.Hot), "glow");
-            }
-        }
-
-        // The aisle: tread plate to walk on, hazard paint where a player steps in; the tray's rim says out. Cladding on the tray from tier 4.
-        double fl = s.U(0.02), tx = s.U(0.38);
-        s.Add([s.U(-0.44), fl - 0.004, s.U(-0.03)], [s.U(0.44), fl + 0.01, s.U(0.25)], MachineLook.Steel, "tread plate");
-        s.Add([s.U(-0.497), fl - 0.004, s.U(-0.03)], [s.U(-0.44) - 0.003, fl + 0.012, s.U(0.25)], MachineLook.Accent, "hazard paint");
-        s.Add([s.U(0.44) + 0.003, fl - 0.004, s.U(-0.03)], [s.U(0.497), fl + 0.012, s.U(0.25)], MachineLook.Accent, "hazard paint");
-        s.Add([-tx, s.U(0.2), s.U(0.5) - 0.004], [tx, s.U(0.232), s.U(0.5) + Thin], MachineLook.Out, clear: true);
-        if (t >= 4)
-            s.Add([-tx, s.U(0.03), s.U(0.5) - 0.004], [tx, s.U(0.1), s.U(0.5) + Thin], MachineLook.Base, "tread plate", clear: true);
     }
 
     // ---- The Sawmill: a log carriage on rails over the in bed, through a blade that turns, planks over the out bed

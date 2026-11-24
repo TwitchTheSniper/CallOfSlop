@@ -1619,11 +1619,7 @@
     {"output": "Die Rack", "materials": {"steel": 12, "rubber": 2}, "seconds": 3.8},
     {"output": "Press", "materials": {"steel": 180, "rubber": 36}, "seconds": 29.0},
     {"output": "Pressure Plate", "materials": {"steel": 2, "copper": 3}, "parts": {"Circuit Board": 1}, "seconds": 2.2, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Foundry", "materials": {"steel": 960, "concrete": 480, "rubber": 192}, "parts": {"Gear Set": 2}, "seconds": 180.0},
-    {"output": "Workshop Foundry", "materials": {"steel": 1500, "concrete": 750}, "parts": {"Gear Set": 4, "Wiring Loom": 2}, "seconds": 180.0, "techTier": 2, "needs": ["Power Coupling"]},
-    {"output": "Industrial Foundry", "materials": {"steel": 2000, "concrete": 1268}, "parts": {"Gear Set": 6, "Wiring Loom": 3, "Control Unit": 1}, "seconds": 180.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Military Foundry", "materials": {"steel": 2000, "concrete": 1920}, "parts": {"Gear Set": 8, "Wiring Loom": 4, "Control Unit": 2}, "seconds": 180.0, "techTier": 4, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Plasma Foundry", "materials": {"steel": 2000, "concrete": 2000}, "parts": {"Gear Set": 10, "Wiring Loom": 5, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Foundry", "materials": {"steel": 438, "concrete": 219, "rubber": 88}, "parts": {"Gear Set": 2}, "seconds": 107.0},
     {"output": "Sawmill", "materials": {"steel": 270, "concrete": 135, "rubber": 54}, "parts": {"Gear Set": 2}, "seconds": 66.8},
     {"output": "Workshop Sawmill", "materials": {"steel": 480, "concrete": 240}, "parts": {"Gear Set": 4, "Wiring Loom": 2}, "seconds": 117.2, "techTier": 2, "needs": ["Power Coupling"]},
     {"output": "Industrial Sawmill", "materials": {"steel": 750, "concrete": 375}, "parts": {"Gear Set": 6, "Wiring Loom": 3, "Control Unit": 1}, "seconds": 180.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
@@ -2796,6 +2792,8 @@
     {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25},
     {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
     {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40},
+    {"output": "Crucible Block", "materials": {"steel": 380, "concrete": 250}, "seconds": 60},
+    {"output": "Mould Line", "materials": {"steel": 110, "concrete": 30}, "seconds": 25},
     {"output": "Head Stand", "materials": {"steel": 240}, "seconds": 20}
   ]
 }

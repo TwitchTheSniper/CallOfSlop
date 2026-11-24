@@ -112,7 +112,6 @@ public sealed class MachineTiers : IPartGenerator
     private static readonly Dictionary<string, double[]> BigWidth = new()
     {
         ["Refining/Sawmill"] = [0, 3.0, 4.0, 5.0, 7.0, 9.0],
-        ["Refining/Foundry"] = [0, 4.0, 5.0, 6.5, 8.0, 10.0],
         ["Assembling/Assembler"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
         ["Assembling/ThrusterAssembler"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
         ["Assembling/Tailor"] = [0, 2.0, 2.5, 3.5, 4.5, 6.0],
@@ -162,19 +161,9 @@ public sealed class MachineTiers : IPartGenerator
             Description = "Saws wood into planks, planks into cloth. Needs power.",
             Refine = ("sawmill", 200, B([-0.435, 0.03, -0.435], [0.435, 0.44, -0.165])),
         };
-        var foundry = new Line
-        {
-            File = "Refining/Foundry", Name = "Foundry", Section = "Foundries", Mass = 480, Health = 900, Armour = 10, Power = 3500, Attach = 10.0,
-            Sockets = BigSockets(0.25, -0.25),
-            Ports = ChutePorts(L(0.5, 0.4, -0.25), "+x", L(0.38, 0.12, 0.38), "+x"),
-            Bulk = B([-0.355, 0.025, 0.305], [0.355, 0.22, 0.455]), Capacity = 400,
-            Description = "Mixes two materials into one: a chute for each. Needs power.",
-            Refine = ("foundry", 200, B([-0.375, 0.725, -0.395], [-0.055, 0.88, -0.155])),
-            Gated = new() { [1] = "Bronze needs tier 2 and circuits tier 3.", [2] = "Circuits need tier 3." },
-        };
         return
         [
-            drill, saw, sawmill, foundry, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts; the Smelter to SmelterParts)
+            drill, saw, sawmill, // (the Assembler, the Thruster Assembler and the Tailor went to the block system: AssemblerParts; the Smelter to SmelterParts, the Foundry to FoundryParts)
         ];
     }
 
