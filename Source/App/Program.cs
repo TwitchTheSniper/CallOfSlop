@@ -241,6 +241,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleGenJob.SliceReport(sliceVehicle, args); // seeds made in slices as a dynamic spawn makes them: time, slices, the longest spans by their yields
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
+        if (args.Any(a => a.Equals("--light-test", StringComparison.OrdinalIgnoreCase)))
+            return ConstructPreview.LightTestCli(args); // the Lighting test page: places with their lamps and sky light (Source/DevTools/LightTest.cs)
         if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-shot", StringComparison.OrdinalIgnoreCase) || a.Equals("--anim-gallery", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.Any(a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase)))

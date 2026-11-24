@@ -84,3 +84,19 @@ in the game, so a motion the game can't do yet can't be shown here yet either.
 The model JSON is the preview's with two more keys: `"track"` (base64, one byte a triangle: 0 still, k the k-th track) and
 `"anim"`: `{"seconds", "loop", "marks": [[t, label]...], "tracks": [{"name", "frames": [[x, y, z, qx, qy, qz, qw]...]}]}`,
 each track's pose in the model frame sampled evenly over the seconds (15 a second, at most 121); the page interpolates.
+
+## The Lighting test
+
+`--light-test DIR [--only "id,id"]` (Karl, 2026-11-24: walk round real places on a phone and spot lighting faults) writes the
+places named in `light-test.json` here as one page, `DIR/index.html` (`light-test.html`), `DIR/models/index.json` and one
+`DIR/models/ID.json` each: the construct's model as the gallery writes it, plus every lamp `ConstructLamps` would offer (a lined
+bay's lamps, ceiling strips, Lamp parts as if on: kind 0, 1 and 2), the map's sky light (`Map.Light`: the star's direction and
+colour, the sky and ground ambient) and the views to stand at (a part's middle, a point or outside). Code:
+`Source/DevTools/LightTest.cs`. The Artifact is republished with the changed model files (read or list it first from a new session).
+
+The page lights the model the way `Lighting.Glsl`'s mode 5 does: hemisphere ambient scaled by the dark interiors' eight diagonal
+maps (a near set round the eye and a far set over the whole model, as `RoomShade` blends them), the star with a shadow map round
+the eye, the nearest lamps in reach (`ConstructLamps.Reach`, faded as they hand over, 12 on Phone and 32 on Full) with `DynLight`'s
+falloff, spots and fill, their own six-face shadows and the soft knee, and glow boxes drawn as they glow. Touch: a stick under the
+left thumb, drag to look, up and down buttons; Walk keeps you on floors, off flies through walls. Not shown: material patterns and
+shine, bloom, AO, fog, contact shadows, lamp beams, the lamps' hidden-from-eye ordering, terrain, and dusk's longer lamp throw.

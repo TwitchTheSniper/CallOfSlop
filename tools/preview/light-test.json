@@ -1,0 +1,82 @@
+// The Lighting test's places (tools/preview/README.md "The Lighting test"): --light-test DIR writes each one as a model with
+// its lamps and its map's sky light. A view stands at the first part whose name holds "part" (its "nth" one, from 0), or at
+// "at" (metres in the model's frame); "outside" stands off the whole thing. "space": no ground drawn (in orbit).
+{
+  "places": [
+    {
+      "id": "zero-day", "title": "Zero Day Frigate", "blueprint": "Zero Day Frigate", "map": "Caledon", "space": true,
+      "note": "The Zero Day start's frigate in orbit over Caledon. The torpedo room has no lamps of its own: it should be dark.",
+      "views": [
+        { "name": "Bridge", "part": "Zero Day Flight Computer" },
+        { "name": "CIC (gunnery)", "part": "Gunnery Console" },
+        { "name": "Shell room", "part": "Shell Control Chair" },
+        { "name": "Engine room", "part": "Zero Day Reactor" },
+        { "name": "Mess", "part": "Galley Stove" },
+        { "name": "Medbay", "part": "Medical Station" },
+        { "name": "Torpedo room (unlit)", "part": "Zero Day Torpedo Bay L" },
+        { "name": "Ladder well", "part": "Zero Day Ladder" },
+        { "name": "Lockers", "part": "Zero Day Locker", "nth": 4 },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "highport", "title": "Caledon Highport", "blueprint": "Caledon Highport", "map": "Caledon", "space": true,
+      "note": "The station over Caledon.",
+      "views": [
+        { "name": "Hub", "part": "Highport Hub" },
+        { "name": "Command dome", "part": "Highport Command Dome" },
+        { "name": "Customs drum", "part": "Highport Customs Drum" },
+        { "name": "Engineering", "part": "Highport Engineering" },
+        { "name": "Reactor", "part": "Highport Reactor" },
+        { "name": "Spindle", "part": "Highport Spindle 3" },
+        { "name": "Ring", "part": "Highport Ring 1" },
+        { "name": "Frigate gantry", "part": "Highport Frigate Gantry N" },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "hexkey", "title": "Hexkey Orbital (store)", "blueprint": "Hexkey Orbital", "map": "Cinder", "space": true,
+      "note": "The Traders' store station over Cinder: market hall, warehouse, canteen.",
+      "views": [
+        { "name": "Canteen", "part": "Waiting Bench" },
+        { "name": "Staff seat", "part": "Seat" },
+        { "name": "Pad hatch", "part": "Docking Hatch" },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "rust-bucket", "title": "Rust Bucket on Glacier", "blueprint": "Rust Bucket", "map": "Glacier",
+      "note": "The Rust Bucket start's ship, landed on Glacier's ice.",
+      "views": [
+        { "name": "Cockpit", "part": "Shell Control Chair" },
+        { "name": "Couches", "part": "Worn Flight Couch" },
+        { "name": "Galley", "part": "Ship Galley Range" },
+        { "name": "Desk", "part": "Steel Desk" },
+        { "name": "Engine bay", "part": "Ship Engine Block" },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "refinery", "title": "Militia refinery on Caledon", "blueprint": "Militia Refinery 1", "map": "Caledon",
+      "note": "A generated factory building on Caledon's ground, lit by the star.",
+      "views": [
+        { "name": "Inside", "at": "centre" },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "house", "title": "Two-storey house on Caledon", "blueprint": "Two-Storey House", "map": "Caledon",
+      "views": [
+        { "name": "Inside", "at": "centre" },
+        { "name": "Outside", "outside": true }
+      ]
+    },
+    {
+      "id": "outpost", "title": "Small outpost on Glacier", "blueprint": "Small Outpost", "map": "Glacier",
+      "views": [
+        { "name": "Inside the hut", "at": "centre" },
+        { "name": "Outside", "outside": true }
+      ]
+    }
+  ]
+}
