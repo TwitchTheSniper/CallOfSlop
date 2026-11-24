@@ -143,18 +143,22 @@ public static class PieceKinds
         {
             m.Box(-1.45, 0, -1.8, 1.45, 0.12, -1.6, Armour); m.Box(-1.45, 0, 1.6, 1.45, 0.12, 1.8, Armour);
             m.Box(-1.45, 0, -1.6, -1.25, 0.12, 1.6, Armour); m.Box(1.25, 0, -1.6, 1.45, 0.12, 1.6, Armour);
-            // The ramp as a stair (Karl, 2026-11-24): treads of 0.18 m rise and 0.28 m going down to the ground (about 33 degrees),
-            // each a level step, with side stringers and rails. Its frame's +Y is out of the hull (down on the belly).
-            const int n = 11;
-            const double rise = 0.18, going = 0.28;
+            // The ramp as a stair hanging under the hull (Karl, 2026-11-24): it starts in the opening and goes down to the ground,
+            // 14 level treads of 0.2 m rise and 0.25 m going (about 39 degrees). Its frame's +Y is out of the hull (down on the belly).
+            const int n = 14;
+            const double rise = 0.2, going = 0.25, top = 1.45;
             for (var i = 0; i < n; i++)
             {
-                double y = (i + 1) * rise, z0 = -1.6 - i * going, z1 = z0 - going - 0.03;
-                m.Box(-1.15, y - 0.05, z1, 1.15, y, z0, i % 2 == 0 ? Gun : Armour);              // the tread, its top toward the ship
-                m.Box(-1.25, y - 0.3, z1, -1.15, y + 0.05, z0, Armour);                          // stringers
-                m.Box(1.15, y - 0.3, z1, 1.25, y + 0.05, z0, Armour);
-                m.Box(-1.25, y - 1.0, z1, -1.19, y - 0.9, z0, Amber);                             // hand rails, 0.9 m above the treads
-                m.Box(1.19, y - 1.0, z1, 1.25, y - 0.9, z0, Amber);
+                double y = (i + 1) * rise, z0 = top - i * going, z1 = z0 - going - 0.03;
+                m.Box(-1.1, y - 0.05, z1, 1.1, y, z0, i % 2 == 0 ? Gun : Armour);            // the tread, its walking face toward the ship
+                m.Box(-1.2, y - 0.05, z1, -1.1, y + 0.3, z0, Armour);                          // stringers under the treads' ends
+                m.Box(1.1, y - 0.05, z1, 1.2, y + 0.3, z0, Armour);
+                if (y > 1.0)
+                {
+                    m.Box(-1.2, y - 0.95, z1, -1.14, y - 0.88, z0, Amber);                     // hand rails 0.9 m over the treads, outside the hull
+                    m.Box(1.14, y - 0.95, z1, 1.2, y - 0.88, z0, Amber);
+                    if (i % 3 == 0) { m.Box(-1.2, y - 0.9, z0 - 0.06, -1.14, y - 0.05, z0, Amber); m.Box(1.14, y - 0.9, z0 - 0.06, 1.2, y - 0.05, z0, Amber); }
+                }
             }
             Well(m, 1.25, 1.6, 1.0);
         }),
