@@ -519,6 +519,35 @@ public sealed class DesignEditor
                 d.Doors.RemoveAll(q => q.Id == I(o, "id"));
                 return "";
             }
+            // ---- windows in the hull, on a room's wall that is within a metre of the skin (Karl, 2026-11-24)
+            case "addHullWindow":
+            {
+                var r = d.RoomById(I(o, "room")) ?? throw new InvalidOperationException("no such room");
+                var w = new HullWindow { Id = d.NewId(), Room = r.Id, Side = HullWindow.Sides.Contains(Str(o, "side")) ? Str(o, "side") : "x0" };
+                var dk = d.DeckOf(r);
+                w.H = Math.Min(1.0, dk.Height - 1.2);
+                var (_, _, _, gap, ok, len) = DesignScene.Lay(d, w);
+                if (!ok)
+                    return $"that wall is more than {HullWindow.MaxGap:0} m from the skin: a hull window needs the room within a metre of the hull";
+                w.W = Math.Min(1.5, len);
+                d.Windows.Add(w);
+                o["id"] = w.Id;
+                return "";
+            }
+            case "setHullWindow":
+            {
+                var w = d.Windows.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such window");
+                if (o["t"] is not null) w.T = Math.Clamp(D(o, "t"), 0, 1);
+                if (o["w"] is not null) w.W = Math.Clamp(Snap(D(o, "w"), 0.05), 0.3, 40);
+                if (o["h"] is not null) w.H = Math.Clamp(Snap(D(o, "h"), 0.05), 0.3, 6);
+                if (o["sill"] is not null) w.Sill = Math.Clamp(Snap(D(o, "sill"), 0.05), 0, 6);
+                return "";
+            }
+            case "delHullWindow":
+            {
+                d.Windows.RemoveAll(q => q.Id == I(o, "id"));
+                return "";
+            }
             case "delRiser":
             {
                 d.Risers.RemoveAll(q => q.Id == I(o, "id"));
@@ -588,6 +617,8 @@ public sealed class DesignEditor
                     foreach (var p in d.Pieces)
                         if (p.Room == other.Id)
                             p.Room = own.Id;
+                    foreach (var hw in d.Windows.Where(q => q.Room == other.Id))
+                        hw.Room = own.Id;
                     foreach (var k in d.Doors)
                     {
                         if (k.A == other.Id) k.A = own.Id;
@@ -615,6 +646,8 @@ public sealed class DesignEditor
                     foreach (var p in d.Pieces)
                         if (p.Room == b.Id)
                             p.Room = a.Id;
+                    foreach (var hw in d.Windows.Where(q => q.Room == b.Id))
+                        hw.Room = a.Id;
                     foreach (var k in d.Doors)
                     {
                         if (k.A == b.Id) k.A = a.Id;
@@ -739,6 +772,7 @@ public sealed class DesignEditor
                 var r = Rm();
                 d.Rooms.Remove(r);
                 d.Doors.RemoveAll(q => q.A == r.Id || q.B == r.Id);
+                d.Windows.RemoveAll(q => q.Room == r.Id);
                 foreach (var p in d.Pieces)
                     if (p.Room == r.Id)
                         p.Room = 0;

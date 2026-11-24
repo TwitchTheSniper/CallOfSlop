@@ -29,6 +29,8 @@ public static partial class Api
         var id = 0;
         if (err.Length == 0 && (string?)o["op"] == "connect")
             id = _ed.Design.Joins.Count == 0 ? 0 : _ed.Design.Joins[^1].Id;
+        else if (err.Length == 0 && (string?)o["op"] == "addHullWindow")
+            id = _ed.Design.Windows.Count == 0 ? 0 : _ed.Design.Windows[^1].Id;
         else if (err.Length == 0 && (string?)o["op"] == "addCubby")
             id = _ed.Design.Rooms.Max(r => r.Id);
         else if (err.Length == 0 && (string?)o["op"] == "addDoor")

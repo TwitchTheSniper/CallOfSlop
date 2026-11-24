@@ -300,6 +300,7 @@ function rebuild() {
   if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
   if (view.parts) drawConnectors();
   if (inside() || view.xray) drawRisers();
+  if (view.hull || inside()) drawHullWindows();
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
   if (view.person) drawPerson();
@@ -447,6 +448,25 @@ function otherDeck(i, dir = 1) {
   const order = S.decks.map((d, j) => [d.floor, j]).sort((p, q) => p[0] - q[0]).map(p => p[1]), at = order.indexOf(i);
   if (dir < 0) return at > 0 ? order[at - 1] : -1;
   return at + 1 < order.length ? order[at + 1] : -1;
+}
+
+// Windows in the hull (Karl, 2026-11-24): glass laid on the skin from a grid of points, so it follows the contour, with a frame
+// round its edge. Pickable from the Interior and Pieces views.
+function drawHullWindows() {
+  for (const w of S.hullWindows || []) {
+    const { nu, nv, pts } = w; if (nu < 2 || nv < 2) continue;
+    const picked = sel.kind === "hullwin" && sel.id === w.id;
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    const idx = []; for (let j = 0; j < nv - 1; j++) for (let i = 0; i < nu - 1; i++) { const a = j * nu + i, b = a + 1, c = a + nu, d = c + 1; idx.push(a, b, d, a, d, c); }
+    g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: w.ok ? 0x9fd3ff : 0xff8a70, metalness: 0.3, roughness: 0.1, transparent: true, opacity: 0.55, side: THREE.DoubleSide, emissive: picked ? 0x1d4f86 : 0x0b2236, depthWrite: false }));
+    m.userData = { type: "hullwin", id: w.id }; m.renderOrder = 5; world.add(m); pickables.push(m);
+    const ring = []; const P = k => new THREE.Vector3(pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]);
+    for (let i = 0; i < nu; i++) ring.push(P(i)); for (let j = 1; j < nv; j++) ring.push(P(j * nu + nu - 1));
+    for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu));
+    const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
+    frame.renderOrder = 6; world.add(frame);
+  }
 }
 
 // A socket's connector to a room farther than its reach: a lined shaft like the Limpet's, with rungs when it climbs and a
@@ -622,6 +642,10 @@ renderer.domElement.addEventListener("pointerdown", ev => {
       if (a.error) toast(a.error); else { select("room", from); toast("Merged. Undo splits them again.", true); }
     } else { inspector(); toast("Stopped merging."); }
     return;
+  }
+  if (inside() || mode === "pieces") {
+    const hw = hits.find(h => ["hullwin", "room", "piece"].includes(h.object.userData.type));
+    if (hw?.object.userData.type === "hullwin" && !placingRiser && !mergeFrom) { select("hullwin", hw.object.userData.id); return; }
   }
   if (mode === "interior") {
     const rz = hits.find(h => h.object.userData.type === "riser");
@@ -1119,6 +1143,18 @@ function profileEditor(h, i) {
 function inspector() {
   const I = $("inspect"); I.replaceChildren();
   if (!S) return;
+  if (sel.kind === "hullwin") {
+    const w = (S.hullWindows || []).find(w => w.id === sel.id); if (!w) return;
+    const r = S.rooms.find(r => r.id === w.room);
+    // Sized on letting go: the glass is laid on the skin again then (Karl, 2026-11-24).
+    const sl = (label, key, v, min, max, step, unit, scale) => slider(label, Math.round(v * scale), min, max, step, unit, () => {}, x => cmd({ op: "setHullWindow", id: w.id, [key]: x / scale }));
+    I.append(el("h2", {}, "Hull window", el("span", { class: "n" }, w.ok ? `${fmt(w.gap)} m out` : "too far from the skin")),
+      el("p", { class: "hint" }, `On ${r ? r.label || r.kind : "a room"}'s ${{ x0: "port", x1: "starboard", z0: S.stacked ? "lower" : "fore", z1: S.stacked ? "upper" : "aft" }[w.side]} wall. It follows the hull's contour; sizes apply when you let go.`),
+      sl("Along the wall", "t", w.t, 0, 100, 1, "%", 100), sl("Width", "w", Math.min(w.w, w.len), 30, Math.max(30, Math.round(w.len * 100)), 5, " cm", 100),
+      sl("Height", "h", w.h, 30, 400, 5, " cm", 100), sl("Sill", "sill", w.sill, 0, 300, 5, " cm", 100),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delHullWindow", id: w.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
   if (sel.kind === "door") {
     const p = (S.placedDoors || []).find(p => p.id === sel.id); if (!p) return;
     const nm = id => { const r = S.rooms.find(r => r.id === id); return r ? r.label || r.kind : "?"; };
@@ -1210,6 +1246,10 @@ function inspector() {
       ...(mergeAcross && mergeAcross.a === r.id ? (() => { const o = S.rooms.find(q => q.id === mergeAcross.b); if (!o) return []; const go = owner => { const a = cmd({ op: "mergeRoom", a: mergeAcross.a, b: mergeAcross.b, owner }); mergeAcross = null; if (a.error) toast(a.error); else { const kept = S.rooms.find(q => q.id === (owner === "a" ? r.id : o.id)); if (kept) { deck = kept.deck; select("room", kept.id); } toast("Merged through both decks. Undo splits them again.", true); } };
         return [el("p", { class: "hint" }, `One room through deck ${r.deck + 1} and deck ${o.deck + 1}. Which deck owns it (its plan, and where it is listed)?`),
           el("div", { class: "row" }, el("button", { onclick: () => go("a") }, `Deck ${r.deck + 1} (${r.label || r.kind})`), el("button", { onclick: () => go("b") }, `Deck ${o.deck + 1} (${o.label || o.kind})`), el("button", { onclick: () => { mergeAcross = null; inspector(); } }, "Cancel"))]; })() : []),
+      el("h3", {}, "Hull window"),
+      el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["x0", "Port"], ["x1", "Starboard"], ["z0", "Fore"], ["z1", "Aft"]]).map(([side, t]) =>
+        el("button", { onclick: () => { const a = cmd({ op: "addHullWindow", room: r.id, side }); if (a.error) toast(a.error); else { select("hullwin", a.id); toast("Window on the skin. Size it on the right: it follows the hull when you let go.", true); } } }, t))),
+      el("p", { class: "hint" }, "Glass on the skin outside this room's wall, following the ship's shape. The wall must be within 1 m of the hull."),
       el("h3", {}, "Cubby"),
       el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
         el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, depth: cubbyD }); if (a.error) toast(a.error); else { toast(cubbyD ? "Cubby added, open to the room. A window is its own step: mount one from the cubby." : "Cubby out to the skin, open to the room.", true); select("room", a.id); } } }, t))),
@@ -1287,6 +1327,7 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
     else if (sel.kind === "riser") { cmd({ op: "delRiser", id: sel.id }); select(null, 0); }
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
   } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
 });

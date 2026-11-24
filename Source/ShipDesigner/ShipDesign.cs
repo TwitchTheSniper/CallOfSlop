@@ -62,6 +62,7 @@ public sealed class ShipDesign
     public List<HullJoin> Joins = [];
     public List<Riser> Risers = [];
     public List<RoomDoor> Doors = [];
+    public List<HullWindow> Windows = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -86,6 +87,7 @@ public sealed class ShipDesign
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill) })]),
+            ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill) })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
@@ -129,6 +131,10 @@ public sealed class ShipDesign
                 d.Risers.Add(Riser.FromJson(ro, d.Take(ro)));
         d.Risers.RemoveAll(k => k.From < 0 || k.To < 0 || k.From >= d.Decks.Count || k.To >= d.Decks.Count || k.From == k.To);
         d.Rooms.RemoveAll(r => r.Deck < 0 || r.Deck >= d.Decks.Count);
+        foreach (var j in o["windows"]?.AsArray() ?? [])
+            if (j is JsonObject wo && d.Windows.Count < MaxRooms * 2 && (int?)wo["room"] is int ri && ri >= 0 && ri < d.Rooms.Count)
+                d.Windows.Add(new HullWindow { Id = d.Take(wo), Room = d.Rooms[ri].Id, Side = HullWindow.Sides.Contains((string?)wo["side"]) ? (string)wo["side"]! : "x0",
+                    T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6) });
         // Doors name their rooms by place in the list (room ids are made fresh on reading).
         foreach (var j in o["doors"]?.AsArray() ?? [])
             if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
@@ -148,7 +154,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;
@@ -289,4 +295,17 @@ public sealed class RoomDoor
     public double W = 1.2, H = 0.8, Sill = 1.0;
     public static readonly string[] Shapes = ["Rect", "Round", "Oval", "Arch"];
     public bool Joins(Room a, Room b) => (A == a.Id && B == b.Id) || (A == b.Id && B == a.Id);
+}
+
+
+/// <summary>A window in the hull (Karl, 2026-11-24): on one wall of a room (Side: x0, x1, z0 or z1 of its plan) that is within
+/// MaxGap of the skin, the glass laid on the skin itself so it follows the ship's contour. T is where along the wall its middle
+/// sits (0 to 1, the window kept on the wall), W its width along the wall, H its height and Sill its foot over the floor.</summary>
+public sealed class HullWindow
+{
+    public const double MaxGap = 1.0;
+    public static readonly string[] Sides = ["x0", "x1", "z0", "z1"];
+    public int Id, Room;
+    public string Side = "x0";
+    public double T = 0.5, W = 1.5, H = 1.0, Sill = 0.9;
 }
