@@ -648,7 +648,7 @@ public static class ConstructPanelFormer
     /// <summary>Where a working former is in its drawn stroke, 0 to 1 (the clock's, so every client's beds move alike).</summary>
     public static float Phase(double now) => (float)(now / CycleSeconds % 1.0);
 
-    /// <summary>The upper platen's travel at <paramref name="phase"/>, 0 (up) to 1 (down): up while the pins set, down, held, up.</summary>
+    /// <summary>The upper die's travel at <paramref name="phase"/>, 0 (up) to 1 (down): up while the dies shape, down, held, up.</summary>
     public static float PressAt(float phase)
     {
         const float set = SetSeconds / CycleSeconds;
@@ -730,6 +730,86 @@ public static class ConstructPanelFormer
         return Math.Clamp(height, 0, most) * rise;
     }
 
+    // ---- The shaped dies (Sean, 2026-11-24): the lower and upper dies take on the head order's panel shape and squeeze the blank ----
+
+    /// <summary>
+    /// How far the dies have taken on the panel's shape at <paramref name="phase"/>, 0 (flat) to 1: they shape while open (the lower die
+    /// rises into the shape and lifts the blank on its highest point), hold while the upper die comes down and presses, and go flat again at
+    /// the cycle's end, once the upper die is up, leaving the formed panel on the rails.
+    /// </summary>
+    public static float DieShaping(float phase)
+    {
+        const float set = SetSeconds / CycleSeconds;
+        if (phase < set)
+            return Smooth(phase / (set * 0.9f));
+        if (phase < 0.95f)
+            return 1;
+        return 1 - Smooth((phase - 0.95f) / 0.05f);
+    }
+
+    /// <summary>The head order's panel on a former's bed, for its dies: its shape, length and width (m), lowest and highest lift and sheet thickness (m).</summary>
+    public readonly struct DieInfo
+    {
+        public readonly HullLoft.PanelShape Shape;
+        public readonly float Length, Width, Low, High, Thick;
+        public DieInfo(HullLoft.PanelShape shape, float length, float width, float low, float high, float thick) =>
+            (Shape, Length, Width, Low, High, Thick) = (shape, length, width, low, high, thick);
+
+        /// <summary>The panel's height over its lowest point at <paramref name="s"/> (0 to 1 along) and <paramref name="x"/> (-1 to 1 across); 0 off the sheet.</summary>
+        public float Lift(float s, float x) => s is < 0 or > 1 || x is < -1 or > 1 ? 0 : HullLoft.PanelLift(Shape, s, x) - Low;
+    }
+
+    // The orders whose shapes the dies show (names compared by reference, read once a change): a few slots, so formers working different
+    // panels in one view don't read their keys again every frame.
+    /// <summary>The lower die's face at rest, under the rails' tops (m), and how far it rises over that as it shapes, before the panel's own lift.</summary>
+    public const float DieUnder = 0.03f, DieRise = 0.031f; // (shaped: its face 1 mm over the rails plus the lift, 3 mm under the formed panel)
+
+    private static readonly string?[] _dieName = new string?[8];
+    private static readonly DieInfo?[] _dieInfo = new DieInfo?[8];
+    private static int _dieNext;
+
+    /// <summary>The head order's die shape on Core <paramref name="core"/>, or false (no order, or a vehicle kit's loft with no key shape: flat dies). Allocates only when the order changes.</summary>
+    public static bool Die(Construct c, int core, out DieInfo info)
+    {
+        info = default;
+        if (!WorkOrders.HeadOf(c.Parts[core], out var head) || head.Name is not { } name)
+            return false;
+        for (var k = 0; k < _dieName.Length; k++)
+            if (ReferenceEquals(_dieName[k], name))
+            {
+                if (_dieInfo[k] is not { } got)
+                    return false;
+                info = got;
+                return true;
+            }
+        var at = _dieNext;
+        _dieNext = (_dieNext + 1) % _dieName.Length;
+        _dieName[at] = name;
+        _dieInfo[at] = MakeDie(name);
+        if (_dieInfo[at] is not { } made)
+            return false;
+        info = made;
+        return true;
+    }
+
+    private static DieInfo? MakeDie(string name)
+    {
+        if (HullLoft.PanelOf(name) is not { } sh)
+            return null;
+        float pl = sh.L / 100f, pw = sh.Kind == HullLoft.PanelLoft ? MathF.Max(sh.W, sh.NoseW) / 100f : sh.W / 100f;
+        float lo = float.MaxValue, hi = float.MinValue;
+        const int n = 24;
+        for (var i = 0; i <= n; i++)
+            for (var j = 0; j <= n; j++)
+            {
+                var h = HullLoft.PanelLift(sh, i / (float)n, -1 + 2f * j / n);
+                lo = MathF.Min(lo, h);
+                hi = MathF.Max(hi, h);
+            }
+        var thick = ConstructParts.Find(name) is { } panel ? Math.Max(1, (int)BlankFor(panel).H) / 100f : 0.04f;
+        return new DieInfo(sh, pl, pw, lo, hi, thick);
+    }
+
     private static readonly byte _quarter = QuarterTurn();
 
     private static byte QuarterTurn()
@@ -741,8 +821,8 @@ public static class ConstructPanelFormer
     }
 
     /// <summary>
-    /// What lies on a former's bed (its look, drawn only): the blank, flat on the pins at rest, until the drawn stroke's pins have set; then
-    /// the head order's panel, over the risen pins, until the platen lifts again. Its def, its turn and its origin in the Core's frame, laid
+    /// What lies on a former's bed (its look, drawn only): the blank, flat on the rails at the work height (lifted on the shaping lower die's
+    /// highest point), until the upper die has come down on it; then the head order's panel, its lowest point on the rails. Its def, its turn and its origin in the Core's frame, laid
     /// with its length along the bed and centred on it. Allocates only the first time a blank's key is seen (Extrusion.Def keeps it).
     /// </summary>
     public static bool BedLook(Construct c, int part, CStore st, double now, out ConstructPartDef what, out byte rot, out Vector3 at)
@@ -754,7 +834,7 @@ public static class ConstructPanelFormer
             || head.Name == null || ConstructParts.Find(head.Name) is not { } panel)
             return false;
         var ph = Phase(now);
-        var formed = st.Busy && ph >= SetSeconds / CycleSeconds * 0.8f && ph < 0.92f; // (the wave is nearly up: the sheet lies bent over it)
+        var formed = st.Busy && ph >= SetSeconds / CycleSeconds + 0.1f; // (the upper die has come down on it: the sheet is bent)
         var def = formed ? panel : Extrusion.Def(BlankFor(panel));
         if (def == null)
             return false;
@@ -767,7 +847,11 @@ public static class ConstructPanelFormer
         LaidBounds(def, own, out var lmin, out var lmax);
         var foot = (lmin + lmax) * 0.5f;
         foot.Y = lmin.Y;
-        var lift = formed ? 0.12f + 0.006f : 0.004f; // (over the pins' tops: a formed panel rides on the risen wave, PinLift's 12 cm base)
+        // On the rails at the work height: a formed panel with its lowest point on them (the lower die fits under the rest), the blank flat
+        // on them until the shaping lower die rises under it and lifts it on its highest point.
+        var lift = 0.004f;
+        if (!formed && st.Busy && Die(c, part, out var die))
+            lift = MathF.Max(lift, (DieRise + die.High - die.Low) * DieShaping(ph) - DieUnder + 0.003f);
         at = mid + new Vector3(0, lift, 0) - Rot24.Apply(bed, foot);
         return true;
     }
