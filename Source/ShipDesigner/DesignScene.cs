@@ -135,6 +135,28 @@ public static class DesignScene
             cutouts.Add(new Cutout(w.O, w.X, w.Y, w.Z, round ? Ellipse(hx, hx) : Rect(hx, hz)));
         foreach (var m in mouths)
             cutouts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
+        // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
+        foreach (var hw in d.Windows)
+        {
+            var (pts, nu, nv, _, _, _) = Lay(d, hw);
+            if (nu < 2 || nv < 2)
+                continue;
+            double[] P(int k) => [pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]];
+            double[] c00 = P(0), c10 = P(nu - 1), c01 = P((nv - 1) * nu), c11 = P(nv * nu - 1);
+            double[] o = [(c00[0] + c10[0] + c01[0] + c11[0]) / 4, (c00[1] + c10[1] + c01[1] + c11[1]) / 4, (c00[2] + c10[2] + c01[2] + c11[2]) / 4];
+            double[] ux = [c10[0] - c00[0] + c11[0] - c01[0], c10[1] - c00[1] + c11[1] - c01[1], c10[2] - c00[2] + c11[2] - c01[2]];
+            double[] vz = [c01[0] - c00[0] + c11[0] - c10[0], c01[1] - c00[1] + c11[1] - c10[1], c01[2] - c00[2] + c11[2] - c10[2]];
+            double lu = Math.Sqrt(ux[0] * ux[0] + ux[1] * ux[1] + ux[2] * ux[2]), lv = Math.Sqrt(vz[0] * vz[0] + vz[1] * vz[1] + vz[2] * vz[2]);
+            if (lu < 1e-6 || lv < 1e-6)
+                continue;
+            for (var i = 0; i < 3; i++) { ux[i] /= lu; vz[i] /= lv; }
+            double[] ny = [ux[1] * vz[2] - ux[2] * vz[1], ux[2] * vz[0] - ux[0] * vz[2], ux[0] * vz[1] - ux[1] * vz[0]];
+            var hx = Math.Max(Dist(c00, c10), Dist(c01, c11)) / 2 - 0.01;
+            var hz = Math.Max(Dist(c00, c01), Dist(c10, c11)) / 2 - 0.01;
+            if (hx > 0.05 && hz > 0.05)
+                cutouts.Add(new Cutout(o, ux, ny, vz, Rect(hx, hz)));
+        }
+        static double Dist(double[] a, double[] b) => Math.Sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
             List<List<(double, double, double)>> polys = [[a, b, c, e]];
@@ -526,6 +548,37 @@ public static class DesignScene
         return (pts, nu, nv, gap, ok, len);
     }
 
+    /// <summary>An extension's two rings in world space, the same count each: for a wall, its outline at the floor and at the
+    /// ceiling; up, its profile at either end of the room's longer side. Ok when every point is inside the skin.</summary>
+    public static (List<double[]> A, List<double[]> B) ExtRings(ShipDesign d, Room r, RoomExt e)
+    {
+        var dk = d.DeckOf(r);
+        var (ra, rb) = (new List<double[]>(), new List<double[]>());
+        if (e.Side == "up")
+        {
+            var acrossX = r.X1 - r.X0 <= r.Z1 - r.Z0; // the profile goes across the narrower side
+            double w = acrossX ? r.X1 - r.X0 : r.Z1 - r.Z0, mid = acrossX ? (r.X0 + r.X1) / 2 : (r.Z0 + r.Z1) / 2;
+            double l0 = acrossX ? r.Z0 : r.X0, l1 = acrossX ? r.Z1 : r.X1;
+            foreach (var (a, b) in e.Outline(w))
+            {
+                ra.Add(acrossX ? d.World(dk, mid + a, l0, dk.Height + b) : d.World(dk, l0, mid + a, dk.Height + b));
+                rb.Add(acrossX ? d.World(dk, mid + a, l1, dk.Height + b) : d.World(dk, l1, mid + a, dk.Height + b));
+            }
+            return (ra, rb);
+        }
+        var alongZ = e.Side is "x0" or "x1";
+        double lo = alongZ ? r.Z0 : r.X0, len = (alongZ ? r.Z1 : r.X1) - lo, width = Math.Min(e.Width, len);
+        double m = lo + width / 2 + (len - width) * e.T, wall = e.Side switch { "x0" => r.X0, "x1" => r.X1, "z0" => r.Z0, _ => r.Z1 };
+        var sg = e.Side is "x0" or "z0" ? -1 : 1;
+        foreach (var (a, b) in e.Outline(width))
+        {
+            double u = alongZ ? wall + sg * b : m + a, v = alongZ ? m + a : wall + sg * b;
+            ra.Add(d.World(dk, u, v, 0.02));
+            rb.Add(d.World(dk, u, v, dk.Height - 0.02));
+        }
+        return (ra, rb);
+    }
+
     public static Check Run(ShipDesign d)
     {
         var c = new Check();
@@ -634,6 +687,13 @@ public static class DesignScene
                     c.Issues.Add(new("warn", $"The {k.Kind.ToLowerInvariant()} between {Name(ra)} and {Name(rb)} has no wall to sit in: they need {k.W:0.0} m of shared wall on one deck", $"room:{ra.Id}"));
             }
 
+        foreach (var r in d.Rooms)
+            foreach (var e in r.Exts)
+            {
+                var (ra, rb) = ExtRings(d, r, e);
+                if (ra.Concat(rb).Any(p => !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) >= 0.06)))
+                    c.Issues.Add(new("warn", $"{Name(r)}'s {e.Shape.ToLowerInvariant()} extension ({(e.Side == "up" ? "up" : "out")} {e.Depth:0.0} m) pokes through the skin: make it smaller", $"room:{r.Id}"));
+            }
         foreach (var w in d.Windows)
         {
             var (_, _, _, gap, ok, _) = Lay(d, w);
@@ -1000,6 +1060,11 @@ public static class DesignScene
               .Append(",\"x0\":").Append(ShipDesign.S(r.X0)).Append(",\"x1\":").Append(ShipDesign.S(r.X1)).Append(",\"z0\":").Append(ShipDesign.S(r.Z0)).Append(",\"z1\":").Append(ShipDesign.S(r.Z1))
               .Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"label\":").Append(Q(r.Label)).Append(",\"colour\":").Append(Q(RoomKinds.Find(r.Kind)!.Colour))
               .Append(",\"height\":").Append(ShipDesign.S(d.DeckOf(r).Height)).Append(",\"group\":").Append(r.Group).Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
+              .Append(",\"exts\":[").Append(string.Join(',', r.Exts.Select(e =>
+              {
+                  var (ra, rb) = ExtRings(d, r, e);
+                  return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
+              }))).Append(']')
               .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
             if (r.ToHull)
             {

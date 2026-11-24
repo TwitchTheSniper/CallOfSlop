@@ -339,12 +339,31 @@ function drawRings(h) {
 }
 
 const roomMats = new Map();
+// A room's extensions (Karl, 2026-11-24): two rings of the same count, sides between them and a fan cap on each, in its colour.
+function drawExts(r, dim) {
+  for (const e of r.exts || []) {
+    const A = e.a, B = e.b, n = A.length / 3; if (n < 3 || B.length !== A.length) continue;
+    const pos = [...A, ...B], idx = [];
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; idx.push(i, j, n + j, i, n + j, n + i); }
+    const cap = (off) => { let cx = 0, cy = 0, cz = 0; for (let i = 0; i < n; i++) { cx += pos[3 * (off + i)]; cy += pos[3 * (off + i) + 1]; cz += pos[3 * (off + i) + 2]; }
+      const c = pos.length / 3; pos.push(cx / n, cy / n, cz / n); for (let i = 0; i < n; i++) idx.push(c, off + i, off + (i + 1) % n); };
+    cap(0); cap(n);
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const picked = sel.kind === "room" && sel.id === r.id;
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+    const lines = []; const V = (k) => new THREE.Vector3(pos[3 * k], pos[3 * k + 1], pos[3 * k + 2]);
+    for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
+    world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
+  }
+}
 function drawRooms() {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
     // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
     const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
     const dim = inside() && r.deck !== deck && !through;
+    drawExts(r, dim);
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
       const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
@@ -466,6 +485,17 @@ function drawHullWindows() {
     for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu));
     const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
     frame.renderOrder = 6; world.add(frame);
+    // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide on the skin, standing a little proud, over the cut edge.
+    const u = P(nu - 1).sub(P(0)).add(P(nv * nu - 1)).sub(P((nv - 1) * nu)), v = P((nv - 1) * nu).sub(P(0)).add(P(nv * nu - 1)).sub(P(nu - 1));
+    const n = new THREE.Vector3().crossVectors(u, v).normalize(), cen = new THREE.Vector3(); ring.forEach(q => cen.add(q)); cen.divideScalar(ring.length);
+    const bp = [], bi = [], N = ring.length;
+    ring.forEach(q => { const o = q.clone().sub(cen); o.addScaledVector(n, -o.dot(n)).normalize();
+      const a0 = q.clone().addScaledVector(n, 0.004), a1 = q.clone().addScaledVector(n, 0.04), b1 = a1.clone().addScaledVector(o, 0.1), b0 = q.clone().addScaledVector(o, 0.1).addScaledVector(n, 0.004);
+      bp.push(...a0.toArray(), ...a1.toArray(), ...b1.toArray(), ...b0.toArray()); });
+    for (let k = 0; k < N; k++) { const a = 4 * k, b = 4 * ((k + 1) % N); for (let e = 0; e < 3; e++) bi.push(a + e, b + e, b + e + 1, a + e, b + e + 1, a + e + 1); }
+    const bg = new THREE.BufferGeometry(); bg.setAttribute("position", new THREE.Float32BufferAttribute(bp, 3)); bg.setIndex(bi); bg.computeVertexNormals();
+    const board = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: picked ? 0x4a6f9a : 0x3a3e44, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide }));
+    board.userData = { type: "hullwin", id: w.id }; world.add(board); pickables.push(board);
   }
 }
 
@@ -749,7 +779,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, cubbyD = 1.5, mergeFrom = 0, mergeAcross = null;
+let mounting = null, pieceSize = 1, pieceRecess = 0, extShape = "Box", extUp = "Vault", mergeFrom = 0, mergeAcross = null;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -1253,12 +1283,19 @@ function inspector() {
       el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["x0", "Port"], ["x1", "Starboard"], ["z0", "Fore"], ["z1", "Aft"]]).map(([side, t]) =>
         el("button", { onclick: () => { const a = cmd({ op: "addHullWindow", room: r.id, side }); if (a.error) toast(a.error); else { select("hullwin", a.id); toast("Window on the skin. Size it on the right: it follows the hull when you let go.", true); } } }, t))),
       el("p", { class: "hint" }, "Glass on the skin outside this room's wall, following the ship's shape. The wall must be within 1 m of the hull."),
-      el("h3", {}, "Cubby"),
-      el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
-        el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, depth: cubbyD }); if (a.error) toast(a.error); else { toast(cubbyD ? "Cubby added, open to the room. A window is its own step: mount one from the cubby." : "Cubby out to the skin, open to the room.", true); select("room", a.id); } } }, t))),
-      slider("Cubby width", Math.round(cubbyW * 100), 75, 600, 25, " cm", v => { cubbyW = v / 100; }),
-      slider("Cubby depth (0: to the skin)", Math.round(cubbyD * 100), 0, 600, 25, " cm", v => { cubbyD = v / 100; }),
-      el("p", { class: "hint" }, "A smaller area off this room's wall, open to it with no door: a nook, a bunk bay, a store. It stops short if the hull is in the way."),
+      el("h3", {}, "Extend the room"),
+      el("div", { class: "row" }, ...[["x0", "Port"], ["x1", "Starboard"], ...(S.stacked ? [["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["up", "Ceiling"]])].map(([side, t]) =>
+        el("button", { onclick: () => { const a = cmd({ op: "addExt", id: r.id, side, shape: side === "up" ? extUp : extShape, depth: side === "up" ? 1 : 1.5, width: 2 }); if (a.error) toast(a.error); else { rebuild(); inspector(); toast("The room grows that way. Shape and size it below.", true); } } }, t))),
+      el("div", { class: "row" }, el("span", {}, "Wall shape"), ...["Box", "Bay", "Hex", "Round"].map(k => el("button", { class: extShape === k ? "on" : "", onclick: () => { extShape = k; inspector(); } }, k))),
+      el("div", { class: "row" }, el("span", {}, "Ceiling shape"), ...["Vault", "Gable", "Hex"].map(k => el("button", { class: extUp === k ? "on" : "", onclick: () => { extUp = k; inspector(); } }, k))),
+      ...(r.exts || []).flatMap((e, i) => { const set = o => { const a = cmd({ op: "setExt", id: r.id, i, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
+        return [el("p", { class: "hint" }, `${i + 1}. ${e.shape} ${e.side === "up" ? "ceiling" : "off " + ({ x0: "port", x1: "starboard", z0: S.stacked ? "the bottom" : "fore", z1: S.stacked ? "the top" : "aft" })[e.side]}`),
+          el("div", { class: "row" }, ...(e.side === "up" ? ["Vault", "Gable", "Hex"] : ["Box", "Bay", "Hex", "Round"]).map(k => el("button", { class: e.shape === k ? "on" : "", onclick: () => set({ shape: k }) }, k)),
+            el("button", { onclick: () => { const a = cmd({ op: "delExt", id: r.id, i }); if (a.error) toast(a.error); else { rebuild(); inspector(); } } }, "Delete")),
+          slider(e.side === "up" ? "Rise" : "Depth", Math.round(e.depth * 100), 25, 600, 5, " cm", () => {}, v => set({ depth: v / 100 })),
+          ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
+            slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
+      el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),

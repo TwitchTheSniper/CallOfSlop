@@ -661,48 +661,40 @@ public sealed class DesignEditor
                         (r.Group, r.Kind, r.ToHull) = (g, a.Kind, a.ToHull); // one room: one kind, one way to the skin
                 return "";
             }
-            case "addCubby":
+            // ---- a room grown out of a wall or up through its ceiling (Karl, 2026-11-24; replaces the cubby)
+            case "addExt":
             {
-                // A cubby (Karl, 2026-11-24): a smaller area off a room's wall, open to the room (one group), "depth" metres deep,
-                // or (depth 0) out to the skin, growing a quarter metre at a time while it fits inside the hull. A window is its own
-                // step (mount one from the room).
-                var room = d.RoomById(I(o, "id")) ?? throw new InvalidOperationException("no such room");
-                if (d.Rooms.Count >= ShipDesign.MaxRooms)
-                    return $"at most {ShipDesign.MaxRooms} rooms";
+                var r = Rm();
+                if (r.Exts.Count >= RoomExt.Max)
+                    return $"at most {RoomExt.Max} extensions a room";
                 var side = Str(o, "side");
-                double w = Math.Clamp(Snap(D(o, "w", 1.5), 0.25), 0.75, 6);
-                double cx = Snap((room.X0 + room.X1) / 2, 0.25), cz = Snap((room.Z0 + room.Z1) / 2, 0.25);
-                var c = new Room { Id = d.NewId(), Deck = room.Deck, Kind = "Cubby", Height = room.Height };
-                void Span(double depth)
-                {
-                    switch (side)
-                    {
-                        case "x0": (c.X0, c.X1, c.Z0, c.Z1) = (room.X0 - depth, room.X0, cz - w / 2, cz + w / 2); break;
-                        case "x1": (c.X0, c.X1, c.Z0, c.Z1) = (room.X1, room.X1 + depth, cz - w / 2, cz + w / 2); break;
-                        case "z0": (c.X0, c.X1, c.Z0, c.Z1) = (cx - w / 2, cx + w / 2, room.Z0 - depth, room.Z0); break;
-                        default: (c.X0, c.X1, c.Z0, c.Z1) = (cx - w / 2, cx + w / 2, room.Z1, room.Z1 + depth); break;
-                    }
-                }
-                var deep = 0.0;
-                var want = D(o, "depth", 0);
-                for (var dep = 0.5; dep <= (want > 0 ? Snap(want, 0.25) : 40); dep += 0.25)
-                {
-                    Span(dep);
-                    if (DesignScene.Outside(d, c) > 0)
-                        break;
-                    deep = dep;
-                }
-                if (deep == 0)
-                    return "no room for a cubby that way: the skin is right there";
-                if (want > 0 && deep < Snap(want, 0.25) - 0.01)
-                    o["short"] = deep;
-                Span(deep);
-                if (room.Group == 0)
-                    room.Group = d.NewId();
-                c.Group = room.Group;
-                d.Rooms.Add(c);
-                o["id"] = c.Id;
-                o["id"] = c.Id;
+                if (!RoomExt.Sides.Contains(side))
+                    return "no such side";
+                var shape = Str(o, "shape");
+                var e = new RoomExt { Side = side, Shape = RoomExt.ShapesFor(side).Contains(shape) ? shape : RoomExt.ShapesFor(side)[0],
+                    Depth = Math.Clamp(Snap(D(o, "depth", side == "up" ? 1 : 1.5), 0.05), 0.25, 12), Width = Math.Clamp(Snap(D(o, "width", 2), 0.05), 0.5, 40) };
+                r.Exts.Add(e);
+                return "";
+            }
+            case "setExt":
+            {
+                var r = Rm();
+                var i = I(o, "i");
+                if (i < 0 || i >= r.Exts.Count)
+                    return "no such extension";
+                var e = r.Exts[i];
+                if (o["shape"] is not null && RoomExt.ShapesFor(e.Side).Contains(Str(o, "shape"))) e.Shape = Str(o, "shape");
+                if (o["depth"] is not null) e.Depth = Math.Clamp(Snap(D(o, "depth"), 0.05), 0.25, 12);
+                if (o["width"] is not null) e.Width = Math.Clamp(Snap(D(o, "width"), 0.05), 0.5, 40);
+                if (o["t"] is not null) e.T = Math.Clamp(D(o, "t"), 0, 1);
+                return "";
+            }
+            case "delExt":
+            {
+                var r = Rm();
+                var i = I(o, "i");
+                if (i >= 0 && i < r.Exts.Count)
+                    r.Exts.RemoveAt(i);
                 return "";
             }
             case "mount":

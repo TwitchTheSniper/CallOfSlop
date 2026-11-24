@@ -217,7 +217,6 @@ public static class RoomKinds
         new("Airlock room", "#d9a23d", "Suits and the inner door."),
         new("Hold", "#5a6f8d", "A cargo hold: crates, bulk and containers."),
         new("Shaft", "#6d6aa8", "A stair or ladder well between decks."),
-        new("Cubby", "#8fb8c9", "A nook out from a room to the skin, open to the room: a window seat, a lookout at the hull's end."),
     ];
 
     public static RoomKind? Find(string name) => Array.Find(All, k => k.Name == name);
