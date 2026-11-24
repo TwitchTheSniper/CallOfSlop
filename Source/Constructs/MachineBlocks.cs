@@ -1005,7 +1005,7 @@ public static class MachineBlocks
             if (asm.LowBed)
                 sb.Append(", low bed (runs roll on and off)");
             if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
-                sb.Append($", pins rise {ConstructPanelFormer.PinDepth(c, asm):0} m");
+                sb.Append($", dies form {ConstructPanelFormer.PinDepth(c, asm):0} m deep");
             var faces = 0;
             for (var i = 0; i < c.PartCount && i < c.BlockAsmOf.Length; i++)
                 if (c.BlockAsmOf[i] == a)

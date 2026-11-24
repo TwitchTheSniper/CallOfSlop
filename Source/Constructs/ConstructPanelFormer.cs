@@ -15,14 +15,14 @@ public static class ConstructPanelFormer
 {
     public const float OverMost = 1.25f; // a blank fits a panel up to this much over its flat size, each way (the trim is the offcut)
 
-    public const float PinTravel = 2; // m: how far a Bed Block's pins rise with no masts, and how much more each level of corner masts adds
-    public const int MastLevelsMost = 1; // levels of Mast Blocks on the bed's corners that deepen the stroke (4 m: past the deepest panel, HullLoft's 80 cm crown and 2 m rake)
-
     /// <summary>
-    /// How deep a panel (crown and rake) the bed forms: <see cref="PinTravel"/>, and as much again for each level of Mast Blocks standing on
-    /// all four of the bed's corner cells (the shortest corner column counts, as an oven's masts do), up to <see cref="MastLevelsMost"/>.
+    /// How deep a panel (crown and rake) a bed forms (m): its shaped dies take any panel HullLoft makes (its 80 cm crown and 2 m rake), with
+    /// nothing stood on the bed (Sean, 2026-11-24: the corner masts and the head over them are gone).
     /// </summary>
-    public static float PinDepth(Construct c, in CMachineAsm asm) => PinTravel * (1 + Math.Min(MastLevelsMost, MachineBlocks.CornerColumns(c, asm)));
+    public const float DepthMost = 4;
+
+    /// <summary>How deep a panel this bed forms: <see cref="DepthMost"/>, whatever stands on it.</summary>
+    public static float PinDepth(Construct c, in CMachineAsm asm) => DepthMost;
 
     /// <summary>A panel's depth: the shortest of its bounds' three sides.</summary>
     public static float Depth(ConstructPartDef panel) =>
@@ -96,13 +96,8 @@ public static class ConstructPanelFormer
                     ? "no Out Table: weld one on the bed's far end, across from it"
                     : $"its Out Tables cover {asm.OutCells} of the bed's {nAcross} blocks across: weld more beside them";
             var deep = Depth(panel);
-            var reach = PinDepth(c, asm);
-            if (deep > reach + 0.005f)
-            {
-                return deep > PinTravel * (1 + MastLevelsMost) + 0.005f
-                    ? $"panel too deep for the pins: {deep:0.##} m of crown and rake, the deepest a bed forms is {PinTravel * (1 + MastLevelsMost):0} m"
-                    : $"panel too deep for the pins: {deep:0.##} m of crown and rake, the pins rise {reach:0} m: stand a Mast Block on each of the bed's four corners for {PinTravel * (1 + MastLevelsMost):0} m";
-            }
+            if (deep > PinDepth(c, asm) + 0.005f)
+                return $"panel too deep for the dies: {deep:0.##} m of crown and rake, the deepest a bed forms is {DepthMost:0} m";
         }
         if (a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f)
             return null;
@@ -757,16 +752,31 @@ public static class ConstructPanelFormer
     {
         public const int Along = 48, Across = 24;
         public readonly float Length, Width, High, Thick;
+        /// <summary>True when the shape is the same all along (a bend or a crown across): a die then needs no cells along the bed.</summary>
+        public readonly bool AlongFlat;
         private readonly float[] _h; // (Along + 1) x (Across + 1) lifts over the lowest point, row by row along
-        public DieInfo(float length, float width, float high, float thick, float[] h) => (Length, Width, High, Thick, _h) = (length, width, high, thick, h);
+        public DieInfo(float length, float width, float high, float thick, float[] h)
+        {
+            (Length, Width, High, Thick, _h) = (length, width, high, thick, h);
+            AlongFlat = true;
+            const int row = Across + 1;
+            for (var i = 1; i <= Along && AlongFlat; i++)
+                for (var j = 0; j <= Across; j++)
+                    if (MathF.Abs(h[i * row + j] - h[j]) > 0.01f)
+                    {
+                        AlongFlat = false;
+                        break;
+                    }
+        }
 
-        /// <summary>The panel's lift (m over its lowest point) at <paramref name="along"/> and <paramref name="across"/> m from its footprint's middle; 0 off it.</summary>
+        /// <summary>
+        /// The panel's lift (m over its lowest point) at <paramref name="along"/> and <paramref name="across"/> m from its footprint's middle;
+        /// off the footprint, its nearest edge's (a die carries the shape out to its ends and sides).
+        /// </summary>
         public float LiftAt(float along, float across)
         {
-            var u = (along / MathF.Max(0.01f, Length) + 0.5f) * Along;
-            var v = (across / MathF.Max(0.01f, Width) + 0.5f) * Across;
-            if (u < 0 || u > Along || v < 0 || v > Across)
-                return 0;
+            var u = Math.Clamp((along / MathF.Max(0.01f, Length) + 0.5f) * Along, 0, Along);
+            var v = Math.Clamp((across / MathF.Max(0.01f, Width) + 0.5f) * Across, 0, Across);
             int i = Math.Min((int)u, Along - 1), j = Math.Min((int)v, Across - 1);
             float fu = u - i, fv = v - j;
             var row = Across + 1;
@@ -778,7 +788,7 @@ public static class ConstructPanelFormer
     /// <summary>The lower die's face at rest, under the rails' tops (m), and how far it rises over that as it shapes, before the panel's own lift.</summary>
     public const float DieUnder = 0.03f, DieRise = 0.031f; // (shaped: its face 1 mm over the rails plus the lift, 3 mm under the formed panel)
 
-    /// <summary>The deepest lift the dies take (m): a Bed Block's crosshead (2.96 m) less the work height, the sheet and the upper die's face.</summary>
+    /// <summary>The deepest lift the dies take (m): what a Bed Block's 3.2 m holds over the work height with the dies' faces and bodies; a deeper panel goes through the upper die.</summary>
     public const float DieDeepest = 1.7f;
 
     // The orders whose shapes the dies show (names compared by reference, read once a change): enough slots for every former working a
