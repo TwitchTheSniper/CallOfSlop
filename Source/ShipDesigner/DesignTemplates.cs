@@ -21,6 +21,20 @@ public static class DesignTemplates
         ("Round", L((0.9, -0.8), (2.2, 0.0), (2.8, 1.6), (2.2, 3.2), (0.9, 4.0))),
         ("Tall keel", L((0.6, -2.5), (3.0, -0.5), (4.0, 2.5), (3.4, 5.0), (1.4, 5.8))),
         ("Pod", L((0.6, -1.0), (1.2, -0.6), (1.4, 0.0), (1.2, 0.6), (0.6, 1.0))),
+        ("Wedge", L((0.3, -1.0), (2.6, 0.0), (3.6, 1.6), (2.6, 3.0), (0.4, 4.0))),
+        ("Diamond", L((0.15, -2.0), (1.6, -1.0), (3.2, 1.0), (1.6, 3.0), (0.15, 4.0))),
+        ("Hexagon", L((1.6, -1.3), (3.0, 0.0), (3.0, 2.6), (1.6, 3.9), (0.4, 4.0))),
+        ("Octagon", L((1.2, -1.4), (2.9, -0.7), (3.3, 0.9), (3.3, 2.1), (2.9, 3.7), (1.2, 4.4))),
+        ("Flat top", L((2.5, -1.0), (4.0, 0.0), (4.2, 2.0), (4.2, 3.2), (3.8, 3.4))),
+        ("Stepped", L((2.0, -0.5), (4.0, 0.0), (3.2, 1.5), (3.2, 3.0), (1.5, 3.5))),
+        ("Wide belly", L((4.0, 0.0), (4.2, 0.5), (3.0, 2.5), (1.5, 3.8), (0.5, 4.0))),
+        ("Armoured slab", L((3.5, -0.3), (4.0, 0.0), (4.0, 2.8), (3.5, 3.1), (0.8, 3.3))),
+        ("Teardrop", L((0.2, -2.0), (1.8, -0.5), (2.6, 1.2), (2.2, 2.8), (1.0, 3.6))),
+        ("Tunnel", L((1.5, 0.0), (2.5, 0.2), (2.8, 2.0), (2.4, 3.6), (1.2, 4.2))),
+        ("Shuttle", L((2.0, -0.2), (2.6, 0.4), (2.7, 1.6), (2.0, 2.4), (0.8, 2.7))),
+        ("Tower", L((1.8, -1.0), (2.2, 0.0), (2.2, 6.0), (1.8, 7.0), (0.6, 7.3))),
+        ("Low wing", L((1.5, -0.6), (6.5, 0.0), (6.0, 0.6), (2.5, 1.8), (1.2, 2.6))),
+        ("Barrel", L((1.0, -1.6), (2.4, -0.9), (2.8, 0.6), (2.4, 2.1), (1.0, 2.8))),
     ];
 
     /// <summary>A profile resampled to n points by distance along it (ends kept).</summary>
@@ -74,6 +88,46 @@ public static class DesignTemplates
             s.P = Resample(s.P, 5);
         h.Tidy();
         return h;
+    }
+
+    /// <summary>What a branch off the hull can be: its section, the scale, its length (m).</summary>
+    public static readonly (string Name, string Section, double Scale, double Length)[] Branches =
+    [
+        ("Nacelle", "Barrel", 0.75, 14), ("Missile pod", "Armoured slab", 0.35, 6), ("Sponson", "Stepped", 0.45, 9),
+        ("Boom", "Round", 0.3, 12), ("Pylon fin", "Diamond", 0.3, 5), ("Blister", "Teardrop", 0.4, 4),
+    ];
+
+    /// <summary>
+    /// A body grown off a hull at a skin point: its section's middle set out along the skin's normal so it sinks 40 cm into the parent (cut
+    /// open where they meet), centred on the point along the ship. Off the centreline it is a mirrored pair.
+    /// </summary>
+    public static HullBody Branch(ShipDesign d, string preset, double px, double py, double pz, double nx, double ny, bool pair)
+    {
+        var b = Array.Find(Branches, x => x.Name == preset);
+        if (b.Name is null)
+            throw new InvalidOperationException("no such branch");
+        var sec = Array.Find(Sections, s => s.Name == b.Section).P.Select(q => (q.H * b.Scale, q.Y * b.Scale)).ToList();
+        var y0 = sec.Min(q => q.Item2);
+        var y1 = sec.Max(q => q.Item2);
+        var w = sec.Max(q => q.Item1);
+        var midY = (y0 + y1) / 2;
+        // How far the body's middle stands from its own skin along the normal (an ellipse's reach between half width and half height).
+        var reach = Math.Sqrt(Math.Pow(nx * w, 2) + Math.Pow(ny * (y1 - y0) / 2, 2));
+        var off = Math.Max(0.2, reach - 0.4);
+        var h = new HullBody { Id = d.NewId(), Name = preset, X = Math.Round(px + nx * off, 2), Y = Math.Round(py + ny * off - midY, 2), Z = Math.Round(pz - b.Length / 2, 2), Cut = true };
+        h.Mirror = pair && Math.Abs(h.X) > 0.3;
+        if (preset == "Nacelle" || preset == "Boom")
+            h.Stations = [new() { Z = 0, P = Scale(sec, 0.55) }, new() { Z = 1.5, P = [.. sec] }, new() { Z = b.Length - 2, P = [.. sec] }, new() { Z = b.Length, P = Scale(sec, 0.8) }];
+        else
+            h.Stations = [new() { Z = 0, P = Scale(sec, 0.7) }, new() { Z = 1, P = [.. sec] }, new() { Z = b.Length - 0.6, P = [.. sec] }, new() { Z = b.Length, P = Scale(sec, 0.85) }];
+        h.Tidy();
+        return h;
+    }
+
+    private static List<(double H, double Y)> Scale(List<(double, double)> p, double f)
+    {
+        var mid = (p.Min(q => q.Item2) + p.Max(q => q.Item2)) / 2;
+        return [.. p.Select(q => (q.Item1 * f, mid + (q.Item2 - mid) * f))];
     }
 
     public static readonly string[] Starts = ["Zero Day", "Blank hull"];

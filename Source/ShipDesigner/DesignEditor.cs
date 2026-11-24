@@ -99,6 +99,21 @@ public sealed class DesignEditor
                 d.Hulls.Add(h);
                 return "";
             }
+            case "branch":
+            {
+                // A body grown off the hull where the player clicked (Karl, 2026-11-24: nacelles, missile pods).
+                if (d.Hulls.Count >= ShipDesign.MaxHulls)
+                    return $"at most {ShipDesign.MaxHulls} hull bodies";
+                var parent = H();
+                var copy = Math.Clamp(I(o, "copy"), 0, parent.Copies - 1);
+                double lx = D(o, "x") - parent.CopyX(copy), ly = D(o, "y") - parent.Y, lz = D(o, "z") - parent.Z;
+                var t = parent.NearestT(lx, ly, lz);
+                var s = parent.OnSkin(Math.Clamp(lz, parent.Front, parent.Back), t, lx < -0.01 ? -1 : 1);
+                var h = DesignTemplates.Branch(d, Str(o, "preset", "Nacelle"), parent.CopyX(copy) + s.X, parent.Y + s.Y, parent.Z + s.Z, s.Nx, s.Ny, (bool?)o["pair"] ?? true);
+                d.Hulls.Add(h);
+                o["id"] = h.Id;
+                return "";
+            }
             case "copyHull":
             {
                 if (d.Hulls.Count >= ShipDesign.MaxHulls)
@@ -281,6 +296,13 @@ public sealed class DesignEditor
                 var p = P();
                 if (o["mirror"] is not null) p.Mirror = (bool)o["mirror"]!;
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
+                if (o["room"] is not null)
+                {
+                    var rid = I(o, "room");
+                    if (rid != 0 && d.RoomById(rid) is null)
+                        return "no such room";
+                    p.Room = rid;
+                }
                 return "";
             }
             case "autoRoom":
@@ -389,11 +411,18 @@ public sealed class DesignEditor
                 SetBox(r, o);
                 if (o["kind"] is not null) r.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? r.Kind;
                 if (o["label"] is not null) r.Label = Str(o, "label");
+                if (o["toHull"] is not null) r.ToHull = (bool)o["toHull"]!;
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
                 return "";
             }
             case "delRoom":
-                d.Rooms.Remove(Rm());
+            {
+                var r = Rm();
+                d.Rooms.Remove(r);
+                foreach (var p in d.Pieces)
+                    if (p.Room == r.Id)
+                        p.Room = 0;
+            }
                 return "";
             default:
                 return "unknown command " + op;

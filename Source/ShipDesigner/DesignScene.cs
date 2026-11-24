@@ -223,7 +223,9 @@ public static class DesignScene
                     {
                         if (i != 0 && i != nx && j != 0 && j != nz)
                             continue; // the edges only
-                        var w = d.World(dk, r.X0 + (r.X1 - r.X0) * i / nx, r.Z0 + (r.Z1 - r.Z0) * j / nz, up);
+                        var v = r.Z0 + (r.Z1 - r.Z0) * j / nz;
+                        var (el, er) = Edges(d, r, v, up);
+                        var w = d.World(dk, i == 0 ? el : i == nx ? er : r.X0 + (r.X1 - r.X0) * i / nx, v, up);
                         if (!d.Hulls.Any(h => h.Depth(w[0], w[1], w[2]) >= 0.06))
                         {
                             ok = false;
@@ -311,24 +313,26 @@ public static class DesignScene
                 double[] bestPt = at;
                 foreach (var r in d.Rooms)
                 {
+                    if (p.Room != 0 && r.Id != p.Room)
+                        continue; // the room the player picked for it
                     if (kind.Socket == "cargo" && r.Kind != "Hold")
                         continue;
                     var dk = d.Decks[r.Deck];
                     if (kind.Socket == "shaft" && !d.Stacked && (r.Deck != lowest || at[1] > dk.Floor || at[0] < r.X0 - 0.3 || at[0] > r.X1 + 0.3 || at[2] < r.Z0 - 0.3 || at[2] > r.Z1 + 0.3))
                         continue;
-                    var bx = d.Box(r);
+                    var bx = Outer(d, r);
                     double[] q = [Math.Clamp(at[0], bx[0], bx[1]), Math.Clamp(at[1], bx[2], bx[3]), Math.Clamp(at[2], bx[4], bx[5])];
                     var dist = Math.Sqrt(Math.Pow(q[0] - at[0], 2) + Math.Pow(q[1] - at[1], 2) + Math.Pow(q[2] - at[2], 2));
                     if (dist < bestD)
                         (best, bestD, bestPt) = (r, dist, q);
                 }
                 var linked = best is not null && bestD <= kind.Reach;
-                if (linked)
+                if (linked && kind.Socket != "window")
                     entries.Add(best!.Id);
                 else
                 {
                     ok = false;
-                    c.Issues.Add(new("error", best is null ? $"{p.Kind} needs {kind.Needs} behind it" :
+                    c.Issues.Add(new("error", best is null ? (p.Room != 0 ? $"{p.Kind}'s room is gone or isn't {kind.Needs}: pick another" : $"{p.Kind} needs {kind.Needs} behind it") :
                         $"{p.Kind} is {bestD:0.0} m from {Name(best)} (at most {kind.Reach:0.0} m): move it or the room closer", $"piece:{p.Id}"));
                 }
                 c.Links.Add((at, bestPt, linked));
@@ -353,6 +357,112 @@ public static class DesignScene
         if (!d.Rooms.Any(r => r.Kind == "Bridge"))
             c.Issues.Add(new("warn", "No bridge", ""));
         return c;
+    }
+
+    // ---- rooms out to the hull
+
+    /// <summary>Which sides of a room go out to the skin: those with no room of its deck beyond them.</summary>
+    public static (bool L, bool R) Expands(ShipDesign d, Room r)
+    {
+        if (!r.ToHull)
+            return (false, false);
+        bool Beyond(Func<Room, bool> side) => d.Rooms.Any(o => o != r && o.Deck == r.Deck && Math.Min(r.Z1, o.Z1) - Math.Max(r.Z0, o.Z0) > 0.01 && side(o));
+        return (!Beyond(o => o.X1 <= r.X0 + 0.01), !Beyond(o => o.X0 >= r.X1 - 0.01));
+    }
+
+    /// <summary>A room's two side edges (its X) at a place v on the floor and a height up: its box's, or out to the skin (6 cm in) on a side that expands.</summary>
+    public static (double L, double R) Edges(ShipDesign d, Room r, double v, double up)
+    {
+        var (el, er) = Expands(d, r);
+        if (!el && !er)
+            return (r.X0, r.X1);
+        var w = d.World(d.Decks[r.Deck], 0, v, up);
+        double lo = r.X0, hi = r.X1;
+        foreach (var h in d.Hulls)
+            for (var c = 0; c < h.Copies; c++)
+            {
+                var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
+                if (half < 0.1)
+                    continue;
+                var cx = h.CopyX(c);
+                if (cx + half < r.X0 || cx - half > r.X1)
+                    continue; // a body the room isn't in
+                lo = Math.Min(lo, cx - half + 0.07);
+                hi = Math.Max(hi, cx + half - 0.07);
+            }
+        return (el ? Math.Min(r.X0, lo) : r.X0, er ? Math.Max(r.X1, hi) : r.X1);
+    }
+
+    /// <summary>A room's world box, out to the skin where it expands.</summary>
+    public static double[] Outer(ShipDesign d, Room r)
+    {
+        var b = d.Box(r);
+        if (!r.ToHull)
+            return b;
+        double lo = r.X0, hi = r.X1;
+        var dk = d.Decks[r.Deck];
+        for (var v = r.Z0; v <= r.Z1 + 1e-6; v += Math.Max(0.25, (r.Z1 - r.Z0) / 8))
+            foreach (var up in new[] { 0.05, dk.Height / 2, dk.Height - 0.02 })
+            {
+                var (l, rr) = Edges(d, r, v, up);
+                (lo, hi) = (Math.Min(lo, l), Math.Max(hi, rr));
+            }
+        b[0] = lo; b[1] = hi;
+        return b;
+    }
+
+    /// <summary>A room's floor area (out to the skin where it expands).</summary>
+    public static double Area(ShipDesign d, Room r)
+    {
+        if (!r.ToHull)
+            return r.Area;
+        var n = Math.Max(2, (int)Math.Ceiling((r.Z1 - r.Z0) / 0.25));
+        var a = 0.0;
+        for (var i = 0; i < n; i++)
+        {
+            var (l, rr) = Edges(d, r, r.Z0 + (r.Z1 - r.Z0) * (i + 0.5) / n, 0.05);
+            a += (rr - l) * (r.Z1 - r.Z0) / n;
+        }
+        return a;
+    }
+
+    /// <summary>A room that follows the hull, as triangles: its floor, ceiling, sides and ends, sampled every 50 cm along and four heights up.</summary>
+    public static DesignMesh RoomMesh(ShipDesign d, Room r)
+    {
+        var m = new DesignMesh();
+        var dk = d.Decks[r.Deck];
+        var col = DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour);
+        var nv = Math.Max(1, (int)Math.Ceiling((r.Z1 - r.Z0) / 0.5));
+        const int nu = 4;
+        (double, double, double) P(double u, double v, double up) { var w = d.World(dk, u, v, up); return (w[0], w[1], w[2]); }
+        double V(int i) => r.Z0 + (r.Z1 - r.Z0) * i / nv;
+        double Up(int k) => dk.Height * k / nu;
+        for (var i = 0; i < nv; i++)
+        {
+            for (var k = 0; k < nu; k++)
+            {
+                var (a0, b0) = Edges(d, r, V(i), Up(k));
+                var (a1, b1) = Edges(d, r, V(i + 1), Up(k));
+                var (a2, b2) = Edges(d, r, V(i), Up(k + 1));
+                var (a3, b3) = Edges(d, r, V(i + 1), Up(k + 1));
+                m.Quad(P(a0, V(i), Up(k)), P(a1, V(i + 1), Up(k)), P(a3, V(i + 1), Up(k + 1)), P(a2, V(i), Up(k + 1)), DesignMesh.Tone(col, 0.8), false);
+                m.Quad(P(b0, V(i), Up(k)), P(b1, V(i + 1), Up(k)), P(b3, V(i + 1), Up(k + 1)), P(b2, V(i), Up(k + 1)), DesignMesh.Tone(col, 0.8), false);
+            }
+            var (f0, g0) = Edges(d, r, V(i), 0);
+            var (f1, g1) = Edges(d, r, V(i + 1), 0);
+            m.Quad(P(f0, V(i), 0.02), P(g0, V(i), 0.02), P(g1, V(i + 1), 0.02), P(f1, V(i + 1), 0.02), col, false);
+            var (c0, e0) = Edges(d, r, V(i), dk.Height);
+            var (c1, e1) = Edges(d, r, V(i + 1), dk.Height);
+            m.Quad(P(c0, V(i), dk.Height), P(e0, V(i), dk.Height), P(e1, V(i + 1), dk.Height), P(c1, V(i + 1), dk.Height), DesignMesh.Tone(col, 0.9), false);
+        }
+        foreach (var v in new[] { r.Z0, r.Z1 })
+            for (var k = 0; k < nu; k++)
+            {
+                var (a0, b0) = Edges(d, r, v, Up(k));
+                var (a1, b1) = Edges(d, r, v, Up(k + 1));
+                m.Quad(P(a0, v, Up(k)), P(b0, v, Up(k)), P(b1, v, Up(k + 1)), P(a1, v, Up(k + 1)), DesignMesh.Tone(col, 0.7), false);
+            }
+        return m;
     }
 
     private static double Half(Station s, double y)
@@ -423,7 +533,7 @@ public static class DesignScene
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
+              .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             m.Write(sb);
             sb.Append('}');
@@ -439,6 +549,13 @@ public static class DesignScene
               .Append(",\"x0\":").Append(ShipDesign.S(r.X0)).Append(",\"x1\":").Append(ShipDesign.S(r.X1)).Append(",\"z0\":").Append(ShipDesign.S(r.Z0)).Append(",\"z1\":").Append(ShipDesign.S(r.Z1))
               .Append(",\"kind\":").Append(Q(r.Kind)).Append(",\"label\":").Append(Q(r.Label)).Append(",\"colour\":").Append(Q(RoomKinds.Find(r.Kind)!.Colour))
               .Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
+              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
+            if (r.ToHull)
+            {
+                sb.Append(",\"mesh\":");
+                RoomMesh(d, r).Write(sb);
+            }
+            sb
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');
         }
         sb.Append("],\"doors\":[");
@@ -467,9 +584,9 @@ public static class DesignScene
             var b = h.Bounds();
             (x0, x1, y0, y1, z0, z1) = (Math.Min(x0, b.X0), Math.Max(x1, b.X1), Math.Min(y0, b.Y0), Math.Max(y1, b.Y1), Math.Min(z0, b.Z0), Math.Max(z1, b.Z1));
         }
-        var floor = d.Rooms.Sum(r => r.Area);
-        var hold = d.Rooms.Where(r => r.Kind == "Hold").Sum(r => r.Area * d.Decks[r.Deck].Height);
-        var bunks = d.Rooms.Where(r => r.Kind == "Cabin").Sum(r => Math.Floor(r.Area / 6));
+        var floor = d.Rooms.Sum(r => Area(d, r));
+        var hold = d.Rooms.Where(r => r.Kind == "Hold").Sum(r => Area(d, r) * d.Decks[r.Deck].Height);
+        var bunks = d.Rooms.Where(r => r.Kind == "Cabin").Sum(r => Math.Floor(Area(d, r) / 6));
         sb.Append("{\"length\":").Append(ShipDesign.S(z1 - z0)).Append(",\"beam\":").Append(ShipDesign.S(x1 - x0)).Append(",\"height\":").Append(ShipDesign.S(y1 - y0))
           .Append(",\"floor\":").Append(ShipDesign.S(floor)).Append(",\"hold\":").Append(ShipDesign.S(hold)).Append(",\"bunks\":").Append(bunks)
           .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => p.Mirror ? 2 : 1)).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');

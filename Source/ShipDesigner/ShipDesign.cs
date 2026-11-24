@@ -137,13 +137,14 @@ public sealed class Room
     public double X0, X1, Z0, Z1;
     public string Kind = "Cabin";
     public string Label = "";
+    public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);
 
     public JsonObject ToJson() => new()
     {
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
-        ["kind"] = Kind, ["label"] = Label,
+        ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -151,7 +152,7 @@ public sealed class Room
         var r = new Room
         {
             Id = id, Deck = (int?)o["deck"] ?? 0, X0 = ShipDesign.F(o["x0"], -1), X1 = ShipDesign.F(o["x1"], 1), Z0 = ShipDesign.F(o["z0"], 0),
-            Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "",
+            Z1 = ShipDesign.F(o["z1"], 2), Kind = (string?)o["kind"] ?? "Cabin", Label = (string?)o["label"] ?? "", ToHull = (bool?)o["toHull"] ?? false,
         };
         if (RoomKinds.Find(r.Kind) is null)
             r.Kind = "Cabin";
@@ -185,11 +186,12 @@ public sealed class Piece
     public int Side = 1;
     public bool Mirror;
     public double Turn; // degrees about the skin's normal
+    public int Room; // the room a socket opens into, picked by the player (0: the nearest of the kind it needs)
 
     public JsonObject ToJson() => new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = Math.Round(T, 4), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
-        ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["turn"] = ShipDesign.R(Turn),
+        ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
     };
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
@@ -197,6 +199,6 @@ public sealed class Piece
     {
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
-        Mirror = (bool?)o["mirror"] ?? false, Turn = ShipDesign.F(o["turn"], 0),
+        Mirror = (bool?)o["mirror"] ?? false, Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
     };
 }

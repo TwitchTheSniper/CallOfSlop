@@ -52,6 +52,7 @@ public static partial class Api
         sb.Append("],\"sections\":[");
         sb.AppendJoin(',', DesignTemplates.Sections.Select(s => $"{{\"name\":{DesignScene.Q(s.Name)},\"p\":[{string.Join(',', s.P.Select(q => $"[{ShipDesign.S(q.H)},{ShipDesign.S(q.Y)}]"))}]}}"));
         sb.Append("],\"bodies\":[").AppendJoin(',', DesignTemplates.Bodies.Select(DesignScene.Q));
+        sb.Append("],\"branches\":[").AppendJoin(',', DesignTemplates.Branches.Select(b => DesignScene.Q(b.Name)));
         sb.Append("],\"starts\":[").AppendJoin(',', DesignTemplates.Starts.Select(DesignScene.Q));
         return sb.Append("]}").ToString();
     }

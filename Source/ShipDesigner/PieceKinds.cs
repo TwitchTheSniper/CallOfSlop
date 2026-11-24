@@ -12,7 +12,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
-        "airlock" => (1.15, 0.75, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false), _ => null,
+        "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false), _ => null,
     };
 }
 
@@ -99,6 +99,15 @@ public static class PieceKinds
             m.Box(-1.2, -0.62, -0.05, 1.2, -0.58, 0.05, Amber);
             m.Box(0.9, 0.22, -0.9, 1.05, 0.3, -0.8, Glow);
             Well(m, 1.15, 0.75, 1.2);
+        }),
+        new("Window", "Sockets", "skin", "window", "any room", "A viewport: armoured glass in a frame, cut through the skin. Opens onto the room behind it.", m =>
+        {
+            m.Box(-0.7, 0, -1.05, 0.7, 0.12, -0.9, Armour);
+            m.Box(-0.7, 0, 0.9, 0.7, 0.12, 1.05, Armour);
+            m.Box(-0.7, 0, -0.9, -0.55, 0.12, 0.9, Armour);
+            m.Box(0.55, 0, -0.9, 0.7, 0.12, 0.9, Armour);
+            m.Box(-0.55, -0.2, -0.9, 0.55, -0.16, 0.9, Glow);
+            Well(m, 0.55, 0.9, 0.5);
         }),
         new("Docking collar", "Sockets", "skin", "dock", "any room", "A docking collar for another ship or a station's clamp.", m =>
         {

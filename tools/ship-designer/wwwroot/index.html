@@ -83,6 +83,10 @@ h2 .n { font: 500 11px var(--mono); color: var(--ink2); letter-spacing: .04em; t
 svg.prof { width: 100%; height: auto; background: var(--yard); border-radius: 4px; touch-action: none; }
 svg.prof .pt { cursor: grab; }
 .row input[type=number] { width: 74px; }
+.gal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; max-height: 300px; overflow-y: auto; padding-right: 2px; }
+.gal button { display: grid; gap: 2px; justify-items: center; padding: 4px 2px; font-size: 11px; line-height: 1.2; color: var(--ink); }
+.gal button svg { width: 100%; max-width: 64px; height: auto; color: var(--accent); }
+.gal button.on { background: var(--chip); color: var(--ink); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; width: min(720px, 94vw); }
 dialog::backdrop { background: rgba(0,0,0,.45); }
 dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
@@ -243,7 +247,7 @@ function rebuild() {
   if (!S) return;
   world.clear(); pickables = [];
   $("shipname").textContent = S.name;
-  const ghost = view.xray || mode === "interior";
+  const ghost = view.xray || mode === "interior" || pickRoomFor;
   const fresh = S.hulls.every(h => h.copies);
   if (fresh) hullGeo.clear();
   for (const h of S.hulls) {
@@ -269,7 +273,7 @@ function rebuild() {
     m.userData = { type: "piece", id: p.id };
     world.add(m); pickables.push(m);
   }
-  if (view.rooms && (mode === "interior" || view.xray)) drawRooms();
+  if (view.rooms && (mode === "interior" || view.xray || pickRoomFor)) drawRooms();
   if (view.links && mode !== "hull") drawLinks();
   if (mode === "interior") drawDeckPlane();
   placeGizmo();
@@ -295,6 +299,12 @@ function drawRooms() {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
     const dim = mode === "interior" && r.deck !== deck;
+    if (r.mesh) {
+      // A room out to the hull follows the skin: drawn from its own shape.
+      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
+      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim) pickables.push(m);
+      continue;
+    }
     const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
     const col = new THREE.Color(r.colour);
     const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - 0.06, 0.08, bz1 - bz0 - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
@@ -372,9 +382,24 @@ renderer.domElement.addEventListener("pointerdown", ev => {
   const top = hits[0];
   if (mode === "hull") {
     const st = hits.find(h => h.object.userData.type === "station");
-    if (st) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
+    if (st && !branching) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
     const h = hits.find(h => h.object.userData.type === "hull");
+    if (h && branching) {
+      const u = h.object.userData;
+      const a = cmd({ op: "branch", hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, preset: branchKind, pair: $("bpair")?.checked ?? true });
+      branching = false;
+      if (!a.error) { select("hull", S.hulls[S.hulls.length - 1].id); toast(`${branchKind} branched off the hull. Drag its arrows or its stations to shape it.`, true); }
+      return;
+    }
     if (h) { select("hull", h.object.userData.hull); return; }
+    return;
+  }
+  if (mode === "pieces" && pickRoomFor) {
+    // Picking the room a socket opens into: a click on a room joins them; anywhere else stops picking.
+    const r = hits.find(h => h.object.userData.type === "room"), id = pickRoomFor;
+    pickRoomFor = 0;
+    if (r) { cmd({ op: "setPiece", id, room: r.object.userData.id }); toast("Joined to that room.", true); }
+    select("piece", id); $("tip").textContent = tips[mode];
     return;
   }
   if (mode === "pieces") {
@@ -499,7 +524,8 @@ function hover(ev) {
   if (!S || ev.target !== renderer.domElement) return;
   renderer.domElement.style.cursor = "";
   const hits = cast(ev);
-  if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
+  if (mode === "hull" && branching) renderer.domElement.style.cursor = "crosshair";
+  else if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
     const r = S.rooms.find(x => x.id === hits.find(h => h.object.userData.type === "room").object.userData.id), e = edgesNear(r, deckPoint(ev));
@@ -555,7 +581,20 @@ const tips = {
   pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
   interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
 };
-let roomKind = "Cabin", drawing = true, clip = null;
+let shapePick = "Zero Day beam";
+function shapeIcon(p) {
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  let w = 0.5, y0 = 1e9, y1 = -1e9; for (const [x, y] of p) { w = Math.max(w, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+  const span = Math.max(w * 2, y1 - y0) * 1.15, sc = 64 / span, cx = 36, cy = 36 + ((y0 + y1) / 2) * sc;
+  const pts = [[0, p[0][1]], ...p, [0, p[p.length - 1][1]]];
+  const all = [...pts.map(([x, y]) => [cx + x * sc, cy - y * sc]), ...pts.slice().reverse().map(([x, y]) => [cx - x * sc, cy - y * sc])];
+  svg.setAttribute("viewBox", "0 0 72 72");
+  const poly = document.createElementNS(NS, "polygon"); poly.setAttribute("points", all.map(q => q.map(v => v.toFixed(1)).join(",")).join(" "));
+  poly.setAttribute("fill", "currentColor"); poly.setAttribute("fill-opacity", "0.25"); poly.setAttribute("stroke", "currentColor"); poly.setAttribute("stroke-width", "1.5"); poly.setAttribute("stroke-linejoin", "round");
+  svg.append(poly); return svg;
+}
+let branching = false, branchKind = "Nacelle";
+let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
   mode = m;
@@ -575,7 +614,11 @@ function leftPanel() {
       ...S.hulls.map(h => el("button", { class: sel.kind === "hull" && sel.id === h.id ? "on" : "", onclick: () => select("hull", h.id) }, `${h.name} · ${h.stations.length} stations${h.mirror ? " · pair" : ""}`)),
       el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
         el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
-      el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")));
+      el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
+      el("div", { class: "sec" }, el("h2", {}, "Branch off the hull"),
+        (() => { const s = el("select", { "aria-label": "Branch" }); for (const b of CAT.branches) s.append(el("option", b === branchKind ? { selected: "" } : {}, b)); s.addEventListener("change", () => branchKind = s.value); return s; })(),
+        el("label", { class: "row" }, el("input", { type: "checkbox", id: "bpair", checked: "" }), "As a mirrored pair"),
+        el("button", { class: branching ? "on" : "", onclick: () => { branching = !branching; leftPanel(); $("tip").textContent = branching ? `Click the hull where the ${branchKind} should grow from.` : tips.hull; } }, branching ? "Click the hull..." : "Branch from a point")));
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
@@ -630,11 +673,17 @@ function stationPanel(h) {
   box.append(el("div", { class: "row" },
     el("label", {}, el("input", { type: "checkbox", ...(h.cut ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, cut: e.target.checked }) }), "Cut where it meets"),
     el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
-  const secSel = el("select", { "aria-label": "Section shape" }); for (const s of CAT.sections) secSel.append(el("option", {}, s.name));
+  const secSel = { get value() { return shapePick; } };
+  // The section shapes as a gallery: each drawn whole, three a row, scrolling.
+  const gal = el("div", { class: "gal", role: "listbox", "aria-label": "Section shapes" });
+  for (const s of CAT.sections) {
+    const b = el("button", { class: s.name === shapePick ? "on" : "", title: s.name, onclick: () => { shapePick = s.name; for (const x of gal.children) x.classList.toggle("on", x === b); } }, shapeIcon(s.p), el("span", {}, s.name));
+    gal.append(b);
+  }
   box.append(el("div", { class: "row" },
     el("button", { onclick: () => cmd({ op: "addStationFront", hull: h.id, preset: secSel.value, len: 4 }) }, "+ Segment at bow"),
     el("button", { onclick: () => cmd({ op: "addStation", hull: h.id, i: h.stations.length - 1, preset: secSel.value, len: 4 }) }, "+ Segment at stern")),
-    el("div", { class: "row" }, el("span", { class: "hint" }, "shape"), secSel));
+    el("p", { class: "hint" }, "Pick a shape, then add a segment or use it on the picked station."), gal);
   if (i >= 0 && i < h.stations.length) {
     const s = h.stations[i];
     box.append(profileEditor(h, i));
@@ -722,7 +771,11 @@ function inspector() {
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
-      k.socket ? el("div", { class: "row" }, el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
+      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
+      k.socket ? el("div", { class: "row" },
+        el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room it opens into (the rooms show through the hull)."; } }, "Pick its room"),
+        p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "",
+        el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPiece", id: p.id }); select(null, 0); } }, "Take off")));
   } else if (sel.kind === "room") {
     const r = S.rooms.find(r => r.id === sel.id); if (!r) return;
@@ -730,11 +783,12 @@ function inspector() {
     ks.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, kind: ks.value }));
     const lab = el("input", { type: "text", value: r.label, placeholder: r.kind, id: "roomlabel" }); lab.addEventListener("change", () => cmd({ op: "setRoom", id: r.id, label: lab.value }));
     const d = S.decks[r.deck];
-    I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1} · ${fmt((r.x1 - r.x0) * (r.z1 - r.z0))} m2`)),
+    I.append(el("h2", {}, r.label || r.kind, el("span", { class: "n" }, `deck ${r.deck + 1}, ${fmt(r.area)} m2`)),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "tohull", ...(r.toHull ? { checked: "" } : {}), onchange: e => cmd({ op: "setRoom", id: r.id, toHull: e.target.checked }) }), "Out to the hull (its open sides follow the skin)"),
       el("div", { class: "grid2" }, el("span", {}, "kind"), ks, el("span", {}, "name"), lab,
         el("span", {}, "x from"), num(r.x0, v => cmd({ op: "setRoom", id: r.id, x0: v }), 0.25), el("span", {}, "x to"), num(r.x1, v => cmd({ op: "setRoom", id: r.id, x1: v }), 0.25),
         el("span", {}, "z from"), num(r.z0, v => cmd({ op: "setRoom", id: r.id, z0: v }), 0.25), el("span", {}, "z to"), num(r.z1, v => cmd({ op: "setRoom", id: r.id, z1: v }), 0.25)),
-      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt((r.x1 - r.x0) * (r.z1 - r.z0) * d.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * d.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
   } else if (sel.kind === "hull") {
     const h = S.hulls.find(h => h.id === sel.id); if (!h) return;
