@@ -47,14 +47,20 @@ public static partial class ConstructLifters
             return -1; // (Station only and Carry only keep to their halves; Off does nothing)
         DirectStations(world);
         var lift = WristLift(d);
+        ushort heldBody = 0;
+        var held = -1;
         for (var si = 0; si < _dsN; si++)
         {
             if (onlyBody != 0 && !HasLead(onlyBody, only, _dsBody[si], _dsPart[si]) || world.Get(_dsBody[si]) is not { } b || _dsPart[si] >= b.PartCount)
                 continue;
             var p = (int)_dsPart[si];
-            if (onlyStore != 0 && b.Parts[p].Store != onlyStore
-                && !(ConstructLogistics.PartOfStore(b, (ushort)onlyStore) is var held and >= 0 && ConstructStation.IsOwnPad(b, p, ConstructPads.Owner(b, held))))
-                continue; // (its own store, or one of its own pick pads)
+            if (onlyStore != 0 && b.Parts[p].Store != onlyStore)
+            {
+                if (heldBody != b.Id)
+                    (heldBody, held) = (b.Id, ConstructLogistics.PartOfStore(b, (ushort)onlyStore)); // (once a body: a scan of its parts)
+                if (held < 0 || !ConstructStation.IsOwnPad(b, p, ConstructPads.Owner(b, held)))
+                    continue; // (its own store, or one of its own pick pads)
+            }
             if (b.Parts[p].Station is not { State: StationState.Building, Plan: { } plan, Bp: { } } job || plan.At.Length != job.PartOf.Length)
                 continue;
             var kind = Array.IndexOf(job.KindDef, (ushort)d.Id, 0, job.KindN);

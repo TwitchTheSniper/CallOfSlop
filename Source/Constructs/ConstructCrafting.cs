@@ -1314,13 +1314,21 @@ public static class ConstructCrafting
                 // Two passes: first the machines with a way to this tray (a conveyor through joins and Routers, or a chute), then any.
                 // (A maker whose conveyor feeds another machine, a sheet Extruder's into a Panel Former, took a station's chassis bar it
                 // could never deliver while the Extruder with a way waited: the Factory Showcase, 2026-11-14. Chains rank the same way.)
+                var ovenPass = -1; // (the pass whose ovens were asked: each pass asks only its least queued oven, once)
                 for (var i = 0; i < net.MachineN * 2 && ask > 0; i++)
                 {
                     var m = net.Machines[i % net.MachineN]; // (its way cached with the net: MachineWay)
                     if ((i < net.MachineN) != net.MachineWay[i % net.MachineN])
                         continue;
-                    if (c.DefOf(m).IsBakeOven && LeastOven(world, c, net, i < net.MachineN, o.What with { Count = (ushort)ask, Made = 0 }) is var lo and >= 0)
-                        m = lo; // (of the ovens alike, the shortest queue: the yard's 31 frigate walls shared by lines A and B)
+                    if (c.DefOf(m).IsBakeOven)
+                    {
+                        var pass = i < net.MachineN ? 0 : 1;
+                        if (ovenPass == pass)
+                            continue;
+                        ovenPass = pass;
+                        if (LeastOven(world, c, net, pass == 0, o.What with { Count = (ushort)ask, Made = 0 }) is var lo and >= 0)
+                            m = lo; // (of the ovens alike, the shortest queue: the yard's 31 frigate walls shared by lines A and B)
+                    }
                     var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }, blanks: false); // (its inputs are chained just below: Asked; never asked of a machine that drops it loose)
                     if (why == null)
                     {
