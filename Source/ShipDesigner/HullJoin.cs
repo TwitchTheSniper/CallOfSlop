@@ -41,6 +41,9 @@ public sealed class HullJoin
     public string Clad = "Off"; // plated cladding on the strut (as a body's: HullBody.CladKinds), its seed, panel size and depth
     public int CladSeed = 1;
     public double CladSize = 1.5, CladDepth = 1;
+    public string ButtressClad = "Off"; // plated cladding on the flared ends (the buttresses), apart from the strut's: kind, seed, panel size, depth
+    public int ButtressSeed = 1;
+    public double ButtressSize = 0.8, ButtressDepth = 1;
     public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
@@ -67,6 +70,7 @@ public sealed class HullJoin
         ["twist"] = ShipDesign.R(Twist), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
+        ["buttressClad"] = ButtressClad == "Off" ? null : new JsonObject { ["kind"] = ButtressClad, ["seed"] = ButtressSeed, ["size"] = ShipDesign.R(ButtressSize), ["depth"] = ShipDesign.R(ButtressDepth) },
     };
 
     private static JsonObject EndJson(ShipDesign d, End e) => new()
@@ -108,6 +112,13 @@ public sealed class HullJoin
             j.CladSize = ShipDesign.F(c["size"], 1.5);
             j.CladDepth = ShipDesign.F(c["depth"], 1);
         }
+        if (o["buttressClad"] is JsonObject bc)
+        {
+            j.ButtressClad = (string?)bc["kind"] ?? "Off";
+            j.ButtressSeed = (int?)bc["seed"] ?? 1;
+            j.ButtressSize = ShipDesign.F(bc["size"], 0.8);
+            j.ButtressDepth = ShipDesign.F(bc["depth"], 1);
+        }
         j.Tidy();
         return j;
     }
@@ -134,6 +145,11 @@ public sealed class HullJoin
         CladSeed = Math.Clamp(CladSeed, 0, 99999);
         CladSize = Math.Clamp(CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         CladDepth = Math.Clamp(CladDepth, HullBody.CladDepthMin, HullBody.CladDepthMax);
+        if (!HullBody.CladKinds.Contains(ButtressClad))
+            ButtressClad = "Off";
+        ButtressSeed = Math.Clamp(ButtressSeed, 0, 99999);
+        ButtressSize = Math.Clamp(ButtressSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        ButtressDepth = Math.Clamp(ButtressDepth, HullBody.CladDepthMin, HullBody.CladDepthMax);
     }
 
     /// <summary>The section as a closed ring of (across, up) points fitting a unit square (-0.5..0.5), the +x side first.</summary>
@@ -323,6 +339,7 @@ public sealed class HullJoin
         var rings = new List<(double, double, double)[]>();
         var centres = new List<double[]>();
         double[]? side = null;
+        var ends = new List<Mouth>(); // this build's own two mouths (unmirrored), kept clear of the buttresses' plates
         // Where the rings go: the ends on the skins (flared into the buttresses' cladding), the strut's own rings between.
         var dl = Math.Min(Buttress / len, 0.3 * (s1 - s0));
         var at = new List<(double S, double Scale)>();
@@ -373,14 +390,16 @@ public sealed class HullJoin
             // The strut's own rings (not the flared ends), sampled finely enough for the room check.
             if (spine is not null && sc == 1 || spine is not null && i > 0 && i < last)
                 spine.Add((c, rs, upv, rw, rh));
-            if (mouths is not null && (i == 0 || i == last))
+            if (i == 0 || i == last)
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
                 var f = i == 0 ? OpenA : OpenB;
                 // Each end's own size (and the bias's thicker half, so the hole covers it).
                 var mh = rh * f * (1 + Math.Abs(Bias));
+                ends.Add(new Mouth(hid, c, t, rs, upv, rw * f, mh, SquareHole));
+                if (mouths is not null)
                 mouths.Add(new Mouth(hid, c, t, rs, upv, rw * f, mh, SquareHole));
-                if (Mirror && Math.Abs(a.P[0]) > 0.3)
+                if (mouths is not null && Mirror && Math.Abs(a.P[0]) > 0.3)
                     mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], rw * f, mh, SquareHole));
             }
             var r = new (double, double, double)[ring.Count];
@@ -436,6 +455,13 @@ public sealed class HullJoin
         // The strut's own rings are clad; the flared ends into the skins (dl > 0) stay bare.
         if (Clad != "Off")
             CladStrut(m, rings, centres, dl > 1e-4 ? 1 : 0, dl > 1e-4 ? last - 1 : last, col, ha);
+        // The buttresses: their own cladding, in rows from the strut out to where the flare sinks under each skin.
+        if (ButtressClad != "Off" && dl > 1e-4)
+        {
+            bool Open((double X, double Y, double Z) p) => ends.Any(e => e.Holds(p.X, p.Y, p.Z));
+            CladButtress(m, rings, centres, 1, 0, col, ha, Open, 1);
+            CladButtress(m, rings, centres, last - 1, last, col, ha, Open, 2);
+        }
         if (Mirror && Math.Abs(a.P[0]) > 0.3)
             m.MirrorFrom(0, 0);
         return m;
@@ -522,6 +548,100 @@ public sealed class HullJoin
             (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell));
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
+    }
+
+    /// <summary>
+    /// Plated cladding on one buttress, the flared band between ring iS (on the strut) and ring iE (sunk under the skin): rows along the flare,
+    /// each with its own count of cells round by that row's girth (as on a body's tapering terminus bands), so plates don't sliver where it
+    /// widens. Cells that reach a mouth stay bare; the plates stand off the surface by at least LayPlates' floor (6 mm).
+    /// </summary>
+    private void CladButtress(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int iS, int iE, (byte, byte, byte) col, HullBody ha,
+        Func<(double X, double Y, double Z), bool> open, int end)
+    {
+        var nr = rings[0].Length;
+        var (rs, re) = (rings[iS], rings[iE]);
+        var (cs, ce) = (centres[iS], centres[iE]);
+        static (double X, double Y, double Z) L((double, double, double) p, (double, double, double) q, double f) =>
+            (p.Item1 + (q.Item1 - p.Item1) * f, p.Item2 + (q.Item2 - p.Item2) * f, p.Item3 + (q.Item3 - p.Item3) * f);
+        // The flare as a surface: u round the ring (by point index), v from the strut (0) to the skin (1).
+        (double X, double Y, double Z) S(double u, double v)
+        {
+            var x = (u - Math.Floor(u)) * nr;
+            var j = Math.Min(nr - 1, (int)x);
+            var fu = x - j;
+            var j1 = (j + 1) % nr;
+            return L(L(rs[j], rs[j1], fu), L(re[j], re[j1], fu), Math.Clamp(v, 0, 1));
+        }
+        (double X, double Y, double Z) C(double v) => L((cs[0], cs[1], cs[2]), (ce[0], ce[1], ce[2]), v);
+        double Girth(double v)
+        {
+            var g = 0.0;
+            for (var j = 0; j < nr; j++)
+            {
+                var (p, q) = (L(rs[j], re[j], v), L(rs[(j + 1) % nr], re[(j + 1) % nr], v));
+                g += Math.Sqrt(Sq(q.X - p.X) + Sq(q.Y - p.Y) + Sq(q.Z - p.Z));
+            }
+            return g;
+        }
+        var reach = 0.0;
+        for (var j = 0; j < nr; j++)
+            reach += Math.Sqrt(Sq(re[j].Item1 - rs[j].Item1) + Sq(re[j].Item2 - rs[j].Item2) + Sq(re[j].Item3 - rs[j].Item3)) / nr;
+        if (reach < 0.1 || Girth(0) < 0.3)
+            return;
+        var size = Math.Clamp(ButtressSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        var rows = Math.Clamp((int)Math.Round(reach / size), 1, 24);
+        var heavy = ButtressClad == "Heavy";
+        var rng = new Random(unchecked(ButtressSeed * 1000003 + Id * 7919 + end * 31337));
+        var start = m.Tris;
+        for (var r = 0; r < rows; r++)
+        {
+            double v0 = (double)r / rows, v1 = (double)(r + 1) / rows;
+            var rowArc = Girth((v0 + v1) / 2);
+            var cells = Math.Clamp((int)Math.Round(rowArc / size), 3, 64);
+            var shift = (r & 1) == 1 ? 0.5 / cells : 0;
+            (double X, double Y, double Z) P(double u, double v) => S(u + shift, v0 + (v1 - v0) * v);
+            (double X, double Y, double Z) N(double u, double v)
+            {
+                const double e = 1e-3;
+                var pu = Sub(P(u + e, v), P(u - e, v));
+                var pv = Sub(P(u, v + e), P(u, v - e));
+                double x = pu.Y * pv.Z - pu.Z * pv.Y, y = pu.Z * pv.X - pu.X * pv.Z, z = pu.X * pv.Y - pu.Y * pv.X;
+                var o = Sub(P(u, v), C(v0 + (v1 - v0) * v));
+                var l = Math.Sqrt(x * x + y * y + z * z);
+                if (l < 1e-12)
+                {
+                    var ol = Math.Max(1e-9, Math.Sqrt(o.X * o.X + o.Y * o.Y + o.Z * o.Z));
+                    return (o.X / ol, o.Y / ol, o.Z / ol);
+                }
+                var sg = x * o.X + y * o.Y + z * o.Z >= 0 ? 1 : -1;
+                return (sg * x / l, sg * y / l, sg * z / l);
+            }
+            (double, double, double) W(double u, double v, double off)
+            {
+                var p = P(u, v);
+                var q = N(u, v);
+                return (p.X + q.X * off, p.Y + q.Y * off, p.Z + q.Z * off);
+            }
+            var taken = new bool[cells, 1];
+            for (var a = 0; a < cells; a++)
+            {
+                double u0 = (double)a / cells, u1 = (double)(a + 1) / cells;
+                for (var i = 0; i <= 2 && !taken[a, 0]; i++)
+                    for (var k = 0; k <= 2; k++)
+                    {
+                        var q = W(u0 + (u1 - u0) * i / 2, k / 2.0, 0.004);
+                        if (open((q.Item1, q.Item2, q.Item3)))
+                        {
+                            taken[a, 0] = true;
+                            break;
+                        }
+                    }
+            }
+            DesignScene.LayPlates(m, cells, 1, rowArc, Math.Max(0.05, reach / rows), rng, heavy, ButtressDepth, col, P, N, W, taken,
+                (u, v, cell) => ha.Paint(v0 * reach, u, rowArc, Id * 12289 + end * 5000 + r * 97 + cell));
+        }
+        if (m.Tris - start > DesignScene.MaxCladTris)
+            Console.WriteLine($"ship designer: buttress cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
     }
 
     private static (double X, double Y, double Z) Sub((double X, double Y, double Z) a, (double X, double Y, double Z) b) => (a.X - b.X, a.Y - b.Y, a.Z - b.Z);

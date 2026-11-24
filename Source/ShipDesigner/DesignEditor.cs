@@ -183,6 +183,15 @@ public sealed class DesignEditor
                 if (o["cladSeed"] is not null) j.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
                 if (o["cladSize"] is not null) j.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
                 if (o["cladDepth"] is not null) j.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
+                if (o["buttressClad"] is not null)
+                {
+                    if (!HullBody.CladKinds.Contains(Str(o, "buttressClad")))
+                        return $"unknown buttress cladding {Str(o, "buttressClad")}";
+                    j.ButtressClad = Str(o, "buttressClad");
+                }
+                if (o["buttressSeed"] is not null) j.ButtressSeed = Math.Clamp(I(o, "buttressSeed"), 0, 99999);
+                if (o["buttressSize"] is not null) j.ButtressSize = Math.Clamp(Snap(D(o, "buttressSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["buttressDepth"] is not null) j.ButtressDepth = Math.Clamp(Snap(D(o, "buttressDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 j.Tidy();
                 return "";
             }

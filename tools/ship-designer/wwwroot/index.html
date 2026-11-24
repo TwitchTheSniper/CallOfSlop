@@ -991,8 +991,9 @@ function gallery(pick, onPick, tall = 300) {
 }
 function slider(label, v, min, max, step, unit, onInput, onDone) {
   const r = el("input", { type: "range", min, max, step, value: v, "aria-label": label }), out = el("span", {}, `${v}${unit}`);
-  r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; onInput(+r.value); });
-  if (onDone) r.addEventListener("change", () => onDone(+r.value));
+  // Dragging only moves the shown value; the command goes when the slider is released (the user, 2026-11-24: dragging lagged).
+  r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; });
+  r.addEventListener("change", () => { out.textContent = `${r.value}${unit}`; (onDone || onInput)(+r.value); });
   return el("label", { class: "row" }, `${label} `, r, out);
 }
 function joinControls(o, apply) {
@@ -1001,22 +1002,22 @@ function joinControls(o, apply) {
   for (const [n, label] of [["TriangleUp", "Triangle up"], ["TriangleDown", "Triangle down"], ["Wedge", "Wedge"], ["Diamond", "Diamond"], ["Hexagon", "Hexagon"]])
     extra.append(el("button", { class: o.section === n ? "on" : "", "data-sec": n, onclick: e => { o.section = n; for (const x of [...extra.children, ...gal.children]) x.classList.toggle("on", x === e.currentTarget); apply(); } }, label));
   return [el("h3", {}, "Connection shape"), gal, extra,
-    slider("Width A", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(true); }, () => apply()),
-    slider("Height A", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(true); }, () => apply()),
-    slider("Width B", o.wb, 0.2, 8, 0.1, " m", v => { o.wb = v; apply(true); }, () => apply()),
-    slider("Height B", o.hb, 0.2, 8, 0.1, " m", v => { o.hb = v; apply(true); }, () => apply()),
-    slider("Twist", o.twist, -180, 180, 1, " deg", v => { o.twist = v; apply(true); }, () => apply()),
-    slider("Sweep up", o.sweepUp, -20, 20, 0.1, " m", v => { o.sweepUp = v; apply(true); }, () => apply()),
-    slider("Sweep fore", o.sweepFore, -20, 20, 0.1, " m", v => { o.sweepFore = v; apply(true); }, () => apply()),
-    slider("Thickness bias", Math.round(o.bias * 100), -90, 90, 5, "%", v => { o.bias = v / 100; apply(true); }, () => apply()),
-    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(true); }, () => apply()),
+    slider("Width A", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(); }),
+    slider("Height A", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(); }),
+    slider("Width B", o.wb, 0.2, 8, 0.1, " m", v => { o.wb = v; apply(); }),
+    slider("Height B", o.hb, 0.2, 8, 0.1, " m", v => { o.hb = v; apply(); }),
+    slider("Twist", o.twist, -180, 180, 1, " deg", v => { o.twist = v; apply(); }),
+    slider("Sweep up", o.sweepUp, -20, 20, 0.1, " m", v => { o.sweepUp = v; apply(); }),
+    slider("Sweep fore", o.sweepFore, -20, 20, 0.1, " m", v => { o.sweepFore = v; apply(); }),
+    slider("Thickness bias", Math.round(o.bias * 100), -90, 90, 5, "%", v => { o.bias = v / 100; apply(); }),
+    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(); }),
     el("h3", {}, "Buttress (the cladding where it meets each hull)"),
-    slider("Flare", Math.round(o.flare * 100), 100, 400, 5, "%", v => { o.flare = v / 100; apply(true); }, () => apply()),
-    slider("Runs up", o.buttress, 0, 6, 0.1, " m", v => { o.buttress = v; apply(true); }, () => apply()),
+    slider("Flare", Math.round(o.flare * 100), 100, 400, 5, "%", v => { o.flare = v / 100; apply(); }),
+    slider("Runs up", o.buttress, 0, 6, 0.1, " m", v => { o.buttress = v; apply(); }),
     el("h3", {}, "Sockets (the hole each end cuts)"),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.squareHole; c.addEventListener("change", () => { o.squareHole = c.checked; apply(); }); return c; })(), "Square holes (else oval)"),
-    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(true); }, () => apply()),
-    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(true); }, () => apply()),
+    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(); }),
+    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(); }),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
 }
 function connectSection() {
@@ -1314,6 +1315,7 @@ function inspector() {
     const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
     // Cladding on the strut, as a body's (the user, 2026-11-24: the nacelles' arms had none); the flared ends into the skins stay bare.
     const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+    const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
     I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
       el("h3", {}, "Cladding"),
@@ -1323,7 +1325,15 @@ function inspector() {
         slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 })),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
           el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
-      el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends stay bare."),
+      el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
+      el("h3", {}, "Buttress cladding"),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      ...(bcl.kind === "Off" ? [] : [
+        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 })),
+        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 })),
+        el("div", { class: "row" }, el("span", {}, "Seed"), num(bcl.seed, v => jc({ buttressSeed: Math.round(v) }), 1),
+          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+      el("p", { class: "hint" }, "Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0."),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
     return;
   }
@@ -1332,9 +1342,9 @@ function inspector() {
     const k = CAT.pieces.find(k => k.name === p.kind);
     let firstSize = true, firstRec = true;
     I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
-      slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 }, true)),
-      ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 }, true)); })()] : []),
-      slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 }, true)),
+      slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 })),
+      ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
+      slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
