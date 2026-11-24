@@ -138,11 +138,12 @@ public static class DesignScene
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
         foreach (var hw in d.Windows)
         {
+            // Steep skin (a hull turning under the window) is cut too: only facets almost along the rays are left whole.
             // Cut along the very rays the glass was laid by (straight out of the wall), so the hole is the glass's own outline on
             // the skin however the hull curves (Karl, 2026-11-24: a flat plane cut a box out of a curved side).
             var f = WindowFrame(d, hw);
             if (f is { } q)
-                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01)));
+                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01), 0.05));
         }
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
@@ -247,7 +248,7 @@ public static class DesignScene
     }
 
     /// <summary>An opening's outline: a convex polygon (u along X, v along Z) in the plane through O facing Y.</summary>
-    private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly)
+    private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly, double edgeMin = 0.35)
     {
         private readonly double _reach = poly.Max(q => Math.Sqrt(q.U * q.U + q.V * q.V));
 
@@ -283,7 +284,7 @@ public static class DesignScene
                 fz += (p.Item1 - q.Item1) * (p.Item2 + q.Item2);
             }
             var fl = Math.Sqrt(fx * fx + fy * fy + fz * fz);
-            var edgeOn = fl > 1e-9 && Math.Abs((fx * y[0] + fy * y[1] + fz * y[2]) / fl) < 0.35;
+            var edgeOn = fl > 1e-9 && Math.Abs((fx * y[0] + fy * y[1] + fz * y[2]) / fl) < edgeMin;
             if (edgeOn || poly0.All(q => Math.Abs(Local(q).N) > 0.8))
             {
                 outv.Add(poly0);
