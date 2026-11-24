@@ -761,6 +761,9 @@ public static partial class ConstructRide
         var m = SweptMover.Instance;
         var reach = s.RideVel.Length() * World.TickDt + World.StepHeight + SweptMover.SnapDown + SweptMover.MinStepForward + 0.5f;
         Gather(w, c, s.RideSeg, s.RideLocal, up, reach);
+        if (cmd.MagBoots && s.RideFeltOn && !MmuFloat && !s.Grounded && gravity < ShipGravity.BootsPull
+            && m.FrameCast(s.RideLocal, s.Stance, up, -up, ShipGravity.BootsReach, out _, out _, out _))
+            gravity = ShipGravity.BootsPull; // (magnet boots, floating over a deck: drawn down to it, then held there by Rider)
         s.RideVel += feltPush * World.TickDt;
         m.FrameStep(ref s.RideLocal, ref s.RideVel, ref s.Grounded, ref s.Stance, up, wish * speed, control, gravity,
             buttons, World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));

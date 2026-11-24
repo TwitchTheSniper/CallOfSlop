@@ -9,8 +9,6 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Ui
 {
-    private static readonly float4 BootsOn = new(0.45f, 0.9f, 1f, 1f);
-
     /// <summary>The tool or part in hand, or the gun and its ammo. No strings per frame: the text goes straight into ImGui's frame arena.</summary>
     private void DrawSandboxHeld(Game game, Player local, double now)
     {
@@ -20,14 +18,6 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Orange, line); // (a line out or a head stuck in you: GameSandboxHarpoon.cs)
         if (!game.SeatPanelShown && game.ArtilleryHudLine(local) is { Length: > 0 } arc) // (seated: the panel's STATUS shows it, UiSeatPanel.cs)
             ImGuiSafe.TextColored(Orange, arc); // (a shell gun in your seat: where it lands, GameSandboxShells.cs)
-        if (!game.SandboxSeatedHere && local.Alive && _hudSettings != null)
-        {
-            // Magnet boots and their key (Karl, 2026-11-24: GameSandboxMagBoots.cs).
-            if (game.MagBootsOn)
-                ImGuiSafe.TextColored(BootsOn, $"[{Keybinds.Name(_hudSettings.Bind(GameAction.MagBoots))}] MAG BOOTS ON");
-            else
-                ImGuiSafe.TextColored(Dim, $"[{Keybinds.Name(_hudSettings.Bind(GameAction.MagBoots))}] MAG BOOTS OFF");
-        }
         if (game.SandboxToolCardShown)
             return; // (on the tool's screen)
         var hand = game.SandboxHandText(local);

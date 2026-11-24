@@ -64,6 +64,12 @@ public static class ShipGravity
     /// <summary>Magnet boots on: walking is this share of the speed it would be.</summary>
     public const float BootsSpeed = 0.6f;
 
+    /// <summary>
+    /// Magnet boots on and floating (Karl, 2026-11-24: "attach to the floor of the ship"): a deck within this (m) under their feet
+    /// draws them down to it at <see cref="BootsPull"/> (m/s2), and once they touch it holds them (<see cref="Rider"/>).
+    /// </summary>
+    public const float BootsReach = 2.5f, BootsPull = 9f;
+
     /// <summary>How fast a floating rider's drift goes (m/s) and turns towards what the keys ask (1/s).</summary>
     public const float DriftSpeed = 2f, DriftControl = 1.5f;
 

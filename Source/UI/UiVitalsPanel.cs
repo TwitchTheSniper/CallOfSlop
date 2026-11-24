@@ -9,7 +9,8 @@ namespace CallOfSlop;
 /// the robot shell"): the robot shell panel's glass plate and hologram (UiShellPanel.cs), here a person's figure lit by their health,
 /// with a helmet drawn round the head while suited. Rows, each a label, a bar and a value: health; the suit's air (or NO SUIT); breath
 /// held, while it runs down; the ship's air aboard a ship with life support (ShipAir.cs); the MMU's fuel and its inertia dampeners
-/// while worn, with the pack's icon in the heading (its jets lit while it burns). Under the rows, gravity (Sean, 2026-11-24: the
+/// while worn, with the pack's icon in the heading (its jets lit while it burns); the magnet boots, on or off with their key
+/// (Karl, 2026-11-24: moved in from the bottom right; GameSandboxMagBoots.cs), while standing (seated, the seat holds them). Under the rows, gravity (Sean, 2026-11-24: the
 /// felt-g readout moved in from its own dial left of centre): how many g they feel, a dial with the pull's way seen from behind
 /// them, and the way in words (<see cref="VpGravity"/>). It replaces the green health bar, the HUD's air lines and the felt-g
 /// readout. Strings are made once, or once when their value changes: nothing allocates a frame.
@@ -65,7 +66,8 @@ public sealed partial class Ui
 
         var hp = Math.Clamp(me.Health * 100 / World.MaxHealth, 0, 100);
         var suitPct = Math.Clamp((int)(me.SuitAir * 100 / Eva.SuitSeconds), 0, 100);
-        var rows = 2 + (holding ? 1 : 0) + (ship != null ? 1 : 0) + (mmu ? 2 : 0);
+        var boots = !game.SandboxSeatedHere && _hudSettings != null;
+        var rows = 2 + (holding ? 1 : 0) + (ship != null ? 1 : 0) + (mmu ? 2 : 0) + (boots ? 1 : 0);
         ref var hand = ref game.SandboxHands.Hand(me.Id);
         var g = me.FeltPull.Length() / ShipGravity.G;
         var crushing = ShipGravity.Mode != ShipGravityMode.Deck && g > ShipGravity.Limit(game.Constructs, hand.SeatBody, hand.SeatPart, suited); // (hurt each second: GameShipGravity.cs)
@@ -148,6 +150,8 @@ public sealed partial class Ui
             var coast = game.MmuCoasting;
             VpRow(dl, p0, p1, ref y, "INERTIA", -1, coast ? CmdAmber : CmdCyan, 1f, coast ? "COASTING" : "DAMPED");
         }
+        if (boots)
+            VpRow(dl, p0, p1, ref y, "MAG BOOTS", -1, game.MagBootsOn ? CmdCyan : CmdDim, 1f, VpBootsText(game.MagBootsOn));
         VpGravity(dl, game, me, hand.SeatBody, p0, p1, y, g, crushing, blink);
         if (ship != null && ship.AirWorks && ship.AirUnits > 0)
             CmdText(dl, new float2(p0.X + 108 * s, p1.Y - 16 * s), 10f, CmdDim, 0.8f, VpAboard((int)ship.AirAboard), 0, false);
@@ -299,6 +303,22 @@ public sealed partial class Ui
                 CmdGlow(dl, P(10 * sx, 13 * sy), P(13 * sx, 16 * sy), CmdWhite, 0.55f + 0.35f * blink, 1.6f);
         }
         CmdText(dl, P(18, -6), 10f, col, 0.9f * a, "MMU", 0, false);
+    }
+
+    private string? _vpBootsKey;
+    private string _vpBootsOn = "", _vpBootsOff = "";
+
+    /// <summary>The boots' state and their key ("ON [7]"), made again only when the key is rebound.</summary>
+    private string VpBootsText(bool on)
+    {
+        var key = Keybinds.Name(_hudSettings!.Bind(GameAction.MagBoots));
+        if (!ReferenceEquals(key, _vpBootsKey))
+        {
+            _vpBootsKey = key;
+            _vpBootsOn = $"ON [{key}]";
+            _vpBootsOff = $"OFF [{key}]";
+        }
+        return on ? _vpBootsOn : _vpBootsOff;
     }
 
     private int _vpAboardN = -1;
