@@ -861,6 +861,7 @@ public static class DesignScene
                 // Limpet's shaft from the Zero Day's keel to its lower deck (Karl, 2026-11-24), up to MaxConnector long.
                 // A drive's service socket goes on the inside of the wall the drive is on: straight in from it along the skin's
                 // normal to the first room wall (Karl, 2026-11-24), not on whichever room wall is nearest.
+                var straight = false;
                 if (kind.Service)
                     for (var t = 0.1; t <= kind.Reach; t += 0.05)
                     {
@@ -868,10 +869,14 @@ public static class DesignScene
                         var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 ? InBody(d, h, r) : r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
                         if (hit is not null)
                         {
-                            (best, bestD, bestPt) = (hit, t, q);
+                            (best, bestD, bestPt, straight) = (hit, t, q, true);
                             break;
                         }
                     }
+                // No room straight in (an RCS quad on a sloping side, a drive above its room's ceiling): the socket still goes on the
+                // inside of the wall the thruster is on, like every other (Karl, 2026-11-24); it needs a room within reach of it.
+                if (kind.Service && !straight)
+                    bestPt = [at[0] - n[0] * 0.15, at[1] - n[1] * 0.15, at[2] - n[2] * 0.15];
                 var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? (kind.Opening is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
