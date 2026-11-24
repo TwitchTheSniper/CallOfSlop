@@ -1021,9 +1021,20 @@
      "label": "reaction chamber",
      "preset": "hollow 70x70x110 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "worksServes",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     },
     {
      "id": "fuelinjector",
@@ -1031,9 +1042,20 @@
      "label": "fuel injector",
      "preset": "hollow 70x70x40 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "worksServes",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     },
     {
      "id": "drivenozzle",
@@ -1041,9 +1063,26 @@
      "label": "drive nozzle",
      "preset": "hollow 85x85x100 steel",
      "auto": false,
+     "body": "like",
+     "along": "z",
      "blanks": [
       "hollow"
-     ]
+     ],
+     "scale": [
+      {
+       "field": "thrustForce",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      },
+      {
+       "field": "thrustBurn",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ],
+     "dieFeatures": false
     }
    ]
   },

@@ -29,7 +29,15 @@ public static class Pressed
     private static readonly string[] ClassWords = ["Small", "Medium", "Large", "Capital"];
     private static readonly byte[] DieSocketClass = [ConstructParts.Small, ConstructParts.Medium, ConstructParts.Large, ConstructParts.Capital]; // (a die's mount socket class, by press class)
     private static readonly float[] PressSpeed = [1, 2, 4, 8];
-    public static readonly string[] ScaledFields = ["maxTorque", "motorStrength", "motorSpeed", "sideLoad", "maxLoad", "fuelCapacity", "hoseLength"];
+    public static readonly string[] ScaledFields = ["maxTorque", "motorStrength", "motorSpeed", "sideLoad", "maxLoad", "fuelCapacity", "hoseLength", "thrustForce", "thrustBurn", "worksServes"];
+
+    /// <summary>
+    /// Does a ship works pattern scale what its piece does (an engine train's pieces, Sean 2026-11-24: any length and diameter, what it serves
+    /// by length times diameter squared)? Then it presses any blank its die takes, not only its presets': a thruster scales its thrust, any
+    /// other piece what it serves.
+    /// </summary>
+    public static bool SizesWorks(PressPattern p) =>
+        Array.Exists(p.Scale, s => s.Field == (p.Like.Role == PartRole.Thruster ? "thrustForce" : "worksServes"));
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);
 
@@ -345,6 +353,9 @@ public static class Pressed
         "maxLoad" => d.MaxLoad,
         "fuelCapacity" => d.FuelCapacity,
         "hoseLength" => d.HoseLength,
+        "thrustForce" => d.ThrustForce,
+        "thrustBurn" => d.ThrustBurn,
+        "worksServes" => d.WorksServes,
         _ => 0,
     };
 
@@ -359,6 +370,9 @@ public static class Pressed
             case "maxLoad": d.MaxLoad = v; break;
             case "fuelCapacity": d.FuelCapacity = v; break;
             case "hoseLength": d.HoseLength = v; break;
+            case "thrustForce": d.ThrustForce = v; break;
+            case "thrustBurn": d.ThrustBurn = v; break;
+            case "worksServes": d.WorksServes = v; break;
         }
     }
 
@@ -517,7 +531,7 @@ public static class Pressed
         var solid = bar != null ? bar.SolidBoxes : nb;
         var nf = 0;
         foreach (var f in die.Features)
-            nf += f.On(section) ? 1 : 0;
+            nf += !p.NoDieFeatures && f.On(section) ? 1 : 0;
         foreach (var f in p.Features)
             nf += f.On(section) ? 1 : 0;
         var n = nb + nf;
@@ -661,8 +675,9 @@ public static class Pressed
     private static int PlaceFeatures(PressDie die, PressPattern p, int section, Vector3 size, Span<Vector3> lo, Span<Vector3> hi, Span<byte> proud, byte[] looks, int at, ReadOnlySpan<int> axes, Vector3 centre)
     {
         var half = size * 0.5f;
-        foreach (var f in die.Features)
-            at = Place(f, section, size, half, lo, hi, proud, looks, at, axes, centre);
+        if (!p.NoDieFeatures)
+            foreach (var f in die.Features)
+                at = Place(f, section, size, half, lo, hi, proud, looks, at, axes, centre);
         foreach (var f in p.Features)
             at = Place(f, section, size, half, lo, hi, proud, looks, at, axes, centre);
         return at;
@@ -739,7 +754,7 @@ public static class Pressed
         var nb = like.Boxes.Length;
         var nf = 0;
         foreach (var f in die.Features)
-            nf += f.On(section) ? 1 : 0;
+            nf += !p.NoDieFeatures && f.On(section) ? 1 : 0;
         foreach (var f in p.Features)
             nf += f.On(section) ? 1 : 0;
         var n = nb + nf;
@@ -779,7 +794,7 @@ public static class Pressed
         var cls = across < 200 ? ConstructParts.Small : across < 700 ? ConstructParts.Medium : across < 2400 ? ConstructParts.Large : ConstructParts.Capital;
         var socks = new CSocket[like.Sockets.Length];
         for (var i = 0; i < socks.Length; i++)
-            socks[i] = like.Sockets[i] with { At = Map(like.Sockets[i].At), Class = like.ArmPiece != ArmPieceKind.None ? like.Sockets[i].Class : cls }; // (an arm piece keeps its like's class: every piece of a chain mates whatever its size, ArmKit.cs)
+            socks[i] = like.Sockets[i] with { At = Map(like.Sockets[i].At), Class = like.ArmPiece != ArmPieceKind.None || SizesWorks(p) ? like.Sockets[i].Class : cls }; // (an arm piece or an engine train's piece keeps its like's class: every piece of a chain mates whatever its size, ArmKit.cs)
         var (volume, mass) = VolumeMass(k);
         var thinnest = k.Shape == ExShape.Pipe ? k.Wall / 100f : MathF.Min(w, h);
         var d = like.ShallowCopy();
@@ -834,6 +849,8 @@ public static class Pressed
         }
         if (like.Role == PartRole.Suspension)
             d.Travel = like.Travel * Get(s, along);
+        if (SizesWorks(p)) // (an engine train's piece weighs as its catalogue size by length times diameter, Sean 2026-11-24, so a preset's neighbour weighs as it does)
+            d.Mass = Math.Clamp(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), 0.1f, ConstructParts.MaxPartMass);
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
         // A gun part is a sized builder part too (sized-gun-engine-parts.md 3.4): the gun code finds it by the key (Parts.Find).
