@@ -94,6 +94,7 @@ public enum GameAction
     SpectateCam, // binds version 33: creative Sandbox, a free camera that leaves the body where it stands, within a radius of it (Source/App/Program.Spectate.cs) on Insert
     SeatReactor, // binds version 34: in the pilot's seat, shut the craft's reactor (its power plants) down or start it (ConstructShutdown.ToggleReactor) on P, which is Replace outside a seat
     SeatThrusters, // ...and its thrusters (ConstructShutdown.ToggleThrusters) on I
+    MagBoots, // binds version 35: Sandbox, magnet boots on or off (held to the deck you stand on under felt gravity: ShipGravity.Rider) on 7
     COUNT,
 }
 
@@ -214,7 +215,7 @@ public static class Keybinds
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
-                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook or GameAction.NoclipBoard or GameAction.SpectateCam => BindContext.Sandbox,
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow or GameAction.Logbook or GameAction.NoclipBoard or GameAction.SpectateCam or GameAction.MagBoots => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SeatRollLeft or GameAction.SeatRollRight or GameAction.SeatHook or GameAction.SeatEject or GameAction.SeatRadar or GameAction.SeatDampeners or GameAction.SeatMouseSteer or GameAction.SeatGear or GameAction.SeatReactor or GameAction.SeatThrusters => BindContext.Seat,
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
@@ -430,6 +431,7 @@ public static class Keybinds
         Key(GlfwKey.Insert), // Spectate camera (creative Sandbox): binds version 33
         Key(GlfwKey.P), // Reactor shut down or start, in the pilot's seat: binds version 34 (shares Replace's and the selector's P, which a seat doesn't read)
         Key(GlfwKey.I), // Thrusters shut down or start, in the pilot's seat (I is the Zombies inventory, outside Sandbox)
+        Key(GlfwKey.Number7), // Magnet boots on or off (Sandbox): binds version 35 (every letter is taken)
     ];
 
     /// <summary>
@@ -472,7 +474,7 @@ public static class Keybinds
     /// 33: Spectate camera (creative Sandbox) on Insert added (same rule).
     /// 34: Reactor P and Thrusters I in the pilot's seat added (same rule; P shares Replace's and the selector's key, which a seat doesn't read).
     /// </summary>
-    public const int DefaultsVersion = 34;
+    public const int DefaultsVersion = 35;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -543,6 +545,7 @@ public static class Keybinds
         (33, (int)GameAction.SpectateCam, Unbound, Key(GlfwKey.Insert)),
         (34, (int)GameAction.SeatReactor, Unbound, Key(GlfwKey.P)),
         (34, (int)GameAction.SeatThrusters, Unbound, Key(GlfwKey.I)),
+        (35, (int)GameAction.MagBoots, Unbound, Key(GlfwKey.Number7)),
     ];
 
     /// <summary>
@@ -729,6 +732,7 @@ public static class Keybinds
             GameAction.SpectateCam => "Spectate camera (creative Sandbox: fly the view round your body to look at things; Sprint for faster)",
             GameAction.SeatReactor => "Reactor shut down or start (in the pilot's seat: every power plant aboard; the batteries carry the circuit while it is down)",
             GameAction.SeatThrusters => "Thrusters shut down or start (in the pilot's seat: every thruster aboard; shut down, it falls or coasts)",
+            GameAction.MagBoots => "Magnet boots on or off (Sandbox: hold you to the deck you stand on in a hard burn or weightless; no jumping, slower walking)",
             _ => a.ToString(),
         };
 

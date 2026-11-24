@@ -61,6 +61,9 @@ public static class ShipGravity
     /// <summary>Under this (g) a rider floats: a jump pushes off, and in the air the move keys drift them (Jump up, Crouch down).</summary>
     public const float FloatG = 0.15f;
 
+    /// <summary>Magnet boots on: walking is this share of the speed it would be.</summary>
+    public const float BootsSpeed = 0.6f;
+
     /// <summary>How fast a floating rider's drift goes (m/s) and turns towards what the keys ask (1/s).</summary>
     public const float DriftSpeed = 2f, DriftControl = 1.5f;
 
@@ -138,7 +141,7 @@ public static class ShipGravity
     {
         var a = hull.Length();
         var from = DeckFeltFrom * G;
-        var deck = downW * (World.Gravity * World.GravityScale);
+        var deck = downW * G; // (1 g in felt terms; the mover's own deck gravity is stronger, Rider scales it)
         return a <= from ? deck : deck + hull * ((a - from) / a);
     }
 
@@ -158,7 +161,7 @@ public static class ShipGravity
             var down = Vector3.Transform(-Vector3.UnitY, seat.Rot);
             if (Mode == ShipGravityMode.Deck)
                 return DeckFelt(down, body.Felt);
-            return Active(body) ? body.Felt : down * (World.Gravity * World.GravityScale);
+            return Active(body) ? body.Felt : down * G;
         }
         if (s.RideBody != 0 && s.RideUp != Vector3.Zero && s.RideUpW != Vector3.Zero)
         {
@@ -167,13 +170,13 @@ public static class ShipGravity
                 c.WorldFrame(s.RideSeg, out var q, out _);
                 return Vector3.Transform(s.RideFelt, q);
             }
-            return -Vector3.Normalize(s.RideUpW) * (World.Gravity * World.GravityScale);
+            return -Vector3.Normalize(s.RideUpW) * G; // (the deck's 1 g)
         }
         return s.Grounded ? WorldPull(s.Position) : Vector3.Zero;
     }
 
     /// <summary>A rider's step with the rule on: the pull along their down, the rest as a push, and how much they can still move.</summary>
-    public static float Rider(ref MoveState s, Vector3 up, ref Vector3 wish, ref float speed, ref float control, ref Buttons buttons, out Vector3 push)
+    public static float Rider(ref MoveState s, Vector3 up, ref Vector3 wish, ref float speed, ref float control, ref Buttons buttons, out Vector3 push, bool boots = false)
     {
         var l = s.RideFelt;
         var along = -Vector3.Dot(l, up);
@@ -182,7 +185,7 @@ public static class ShipGravity
         {
             // Deck gravity holds them to the deck: the burn makes them heavier along their down (weak jumps, slow moving,
             // pinned), never slides or lifts them (a turning or braking vehicle keeps its riders on their spots, as before).
-            along = l.Length();
+            along = World.Gravity * World.GravityScale * l.Length() / G; // (the mover's deck gravity is 1 g: scaled by the g felt)
             push = Vector3.Zero;
         }
         var g = l.Length() / G;
@@ -193,6 +196,15 @@ public static class ShipGravity
         }
         else if (g > SlowG)
             speed *= 1f - (1f - PinnedSpeed) * (g - SlowG) / (PinG - SlowG);
+        if (boots && s.Grounded)
+        {
+            // Magnet boots (Karl, 2026-11-24): the deck holds them, whatever pulls them off it or across it. At least the
+            // mover's 1 g along their down, no push, no jump, a slower walk; a pin still pins.
+            push = Vector3.Zero;
+            buttons &= ~Buttons.Jump;
+            speed *= BootsSpeed;
+            return MathF.Max(along, World.Gravity * World.GravityScale);
+        }
         if (g < FloatG && !s.Grounded)
         {
             // Floating: the keys drift them in the frame (Jump up, Crouch down), slowly, as pushing off and pulling along does.

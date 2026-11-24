@@ -735,7 +735,7 @@ public static partial class ConstructRide
         var buttons = cmd.Buttons;
         var feltPush = Vector3.Zero;
         if (s.RideFeltOn && !MmuFloat)
-            gravity = ShipGravity.Rider(ref s, up, ref wish, ref speed, ref control, ref buttons, out feltPush); // (the ship's acceleration, not the deck's 1 g: ShipGravity.cs)
+            gravity = ShipGravity.Rider(ref s, up, ref wish, ref speed, ref control, ref buttons, out feltPush, cmd.MagBoots); // (the ship's acceleration, not the deck's 1 g: ShipGravity.cs)
         if (MmuFloat)
         {
             s.RideVel += Vector3.Transform(MmuPush, Quaternion.Conjugate(q)); // (the pack's push, into the segment's frame)

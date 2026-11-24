@@ -396,6 +396,7 @@ public sealed partial class Game : IDisposable
             Noclip = Local is { NoclipWanted: true },
             Roll = MmuCmdRoll(), // a worn MMU's roll about the look (GameSandboxMmu.cs)
             MmuCoast = MmuCoasting, // a worn MMU's dampeners off (GameSandboxMmu.cs)
+            MagBoots = MagBootsOn, // magnet boots (GameSandboxMagBoots.cs)
             NoclipBoard = NoclipBoardTake(out var boardAt), // the Board inside key, once (GameNoclip.cs)
             NoclipBoardAt = boardAt,
         });
@@ -1013,6 +1014,11 @@ public sealed partial class Game : IDisposable
                 var c = _pendingInputs[_pendingInputs.Count - count + i];
                 _w.U16(c.NoclipBoard).F32(c.NoclipBoardAt.X).F32(c.NoclipBoardAt.Y).F32(c.NoclipBoardAt.Z);
             }
+        var boots = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].MagBoots)
+                boots |= 1 << i;
+        _w.U8((byte)boots); // trailer: magnet boots on, a bit per command (GameSandboxMagBoots.cs; protocol 448)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -2213,6 +2219,12 @@ public sealed partial class Game : IDisposable
                             if (!float.IsFinite(cmds[i].NoclipBoardAt.X + cmds[i].NoclipBoardAt.Y + cmds[i].NoclipBoardAt.Z))
                                 cmds[i].NoclipBoard = 0;
                         }
+                }
+                if (r.Has(1)) // magnet boots on, a bit per command (GameSandboxMagBoots.cs)
+                {
+                    var boots = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        cmds[i].MagBoots = (boots & (1 << i)) != 0;
                 }
                 for (var i = 0; i < read; i++)
                 {
