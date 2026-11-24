@@ -103,7 +103,38 @@ public sealed class HullJoin
     }
 
     /// <summary>The join's mesh (and its twin when mirrored off the centreline); empty when an end's body is gone.</summary>
-    public DesignMesh Mesh(ShipDesign d)
+    public DesignMesh Mesh(ShipDesign d) => Build(d, null);
+
+    /// <summary>A connection's mouth on a body: where its end ring sits (middle, along, across, up) and the section's size.</summary>
+    public readonly record struct Mouth(int Hull, double[] C, double[] T, double[] S, double[] U, double W, double H, List<(double U, double V)> Ring)
+    {
+        /// <summary>Whether a world point is in the opening (the body's skin is left out there, so the connection opens into it).</summary>
+        public bool Holds(double x, double y, double z)
+        {
+            double qx = x - C[0], qy = y - C[1], qz = z - C[2];
+            var reach = Math.Max(W, H);
+            var a = qx * T[0] + qy * T[1] + qz * T[2];
+            if (Math.Abs(a) > reach)
+                return false;
+            var u = (qx * S[0] + qy * S[1] + qz * S[2]) / W * 0.96; // (a little inside its walls, so the skin meets them)
+            var v = (qx * U[0] + qy * U[1] + qz * U[2]) / H * 0.96;
+            var inside = false;
+            for (int i = 0, j = Ring.Count - 1; i < Ring.Count; j = i++)
+                if ((Ring[i].V > v) != (Ring[j].V > v) && u < (Ring[j].U - Ring[i].U) * (v - Ring[i].V) / (Ring[j].V - Ring[i].V) + Ring[i].U)
+                    inside = !inside;
+            return inside;
+        }
+    }
+
+    /// <summary>The mouths at both ends (and the twin's when mirrored).</summary>
+    public List<Mouth> Mouths(ShipDesign d)
+    {
+        var l = new List<Mouth>();
+        Build(d, l);
+        return l;
+    }
+
+    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths)
     {
         var m = new DesignMesh();
         if (World(d, A) is not { } a || World(d, B) is not { } b)
@@ -170,6 +201,13 @@ public sealed class HullJoin
             }
             Norm(side);
             var upv = Cross(t, side);
+            if (mouths is not null && (i == 0 || i == Segments))
+            {
+                var hid = i == 0 ? A.Hull : B.Hull;
+                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W, H, ring));
+                if (Mirror && Math.Abs(a.P[0]) > 0.3)
+                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W, H, ring));
+            }
             var r = new (double, double, double)[ring.Count];
             for (var j = 0; j < ring.Count; j++)
             {

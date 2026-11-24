@@ -109,8 +109,13 @@ public static class DesignScene
                 holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx, op.Hz, op.Round));
             }
         }
+        // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
+        var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
         bool InHole(double x, double y, double z)
         {
+            foreach (var m in mouths)
+                if (m.Holds(x, y, z))
+                    return true;
             foreach (var (w, hx, hz, round) in holes)
             {
                 double dx = x - w.O[0], dy = y - w.O[1], dz = z - w.O[2];
@@ -163,7 +168,8 @@ public static class DesignScene
             var b = h.Stations[i + 1];
             var band = i % 2 == 0 ? 1.0 : 0.94;
             // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
-            var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2);
+            var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2)
+                || mouths.Any(q => q.C[2] > h.Z + a.Z - Math.Max(q.W, q.H) && q.C[2] < h.Z + b.Z + Math.Max(q.W, q.H));
             var step = holed ? 0.2 : 0.5;
             foreach (var s in new[] { -1, 1 })
                 for (var k = 0; k < n - 1; k++)
@@ -535,6 +541,9 @@ public static class DesignScene
             foreach (var p in d.Pieces)
                 if (p.Hull == h.Id && PieceKinds.Find(p.Kind)?.Opening is not null)
                     k.Append('#').Append(p.ToJson().ToJsonString());
+        foreach (var j in d.Joins)
+            if (j.A.Hull == h.Id || j.B.Hull == h.Id)
+                k.Append('&').Append(j.ToJson(d).ToJsonString()).Append(d.Hull(j.A.Hull == h.Id ? j.B.Hull : j.A.Hull)?.ToJson().ToJsonString());
         return k.ToString();
     }
 
