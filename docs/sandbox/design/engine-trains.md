@@ -83,8 +83,18 @@ Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sens
 
 Not yet: a client's push readout and flame don't show the mix (the flame byte is the level).
 
+## Phase 6: the Reheat Ring and the Fuel Filter
+
+- **Reheat Ring XS** (0.4 m, hot): while a wire into its Boost in is on and the bell burns, the drive pushes `reheatBoost` (25%) more at twice the burn, for up to `reheatSeconds` (20 s); spent, nothing until it has all recovered over `reheatRecover` (40 s); off, what it used comes back at that pace (`ConstructPhysics.ReheatStep`, host; `CThruster.ReheatUsed`, `ReheatSpent`, kept over rebuilds). A module's peak thrust counts it boosting, on top of a rich mix (240 kN XS bell: 300 kN with a ring, 330 kN with a mixer too). The stabilizer plans without it (feedback). Glowing ribs and spray bars, two lamps.
+- **Fuel Filter XS** (0.35 m, feed): a breakdown that lands on its train passes half the time (`ConstructWorks.Filtered`, GameSandboxBreakdowns). Two canisters, a manifold, a dial.
+- Both press at any size on the Housing die (`reheatring` 70x70x40, `fuelfilter` 70x70x35).
+- `--engine-check` prints a ring's seconds used: boosted 0 to 20 s at 0.96 l/s, recovered to 60 s at 0.48 l/s, boosted again.
+- Protocol 461 (new part files).
+
+Not yet: the Fuel Filter's Clogged out; a client doesn't see a ring boosting (no wire value).
+
 ## Next
 
-1. The other pieces of the doc one at a time: Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
+1. The other pieces of the doc one at a time: Gimbal Ring, Armour Collar, Fuel Selector, Turbopump Drive, Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.
