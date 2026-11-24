@@ -35,7 +35,9 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   Under deck gravity the deck counts as 1 g (`G`), and the mover's own (stronger) deck gravity is scaled by the g felt.
 - **Magnet boots** (Karl, 2026-11-24; `Game/GameSandboxMagBoots.cs`): key 7 (`GameAction.MagBoots`, binds 35), sent with
   each command (`InputCmd.MagBoots`). On and standing on a deck with a felt pull: held to it (at least the mover's 1 g, no
-  push, no jump, walking at `BootsSpeed`). The bottom-right line shows ON or OFF and the key.
+  push, no jump, walking at `BootsSpeed`). Floating with them on, a deck within `BootsReach` (2.5 m) under the feet draws
+  them down at `BootsPull` (9 m/s2) until they touch it (`ConstructRideMove`). The vitals panel's MAG BOOTS row (bottom
+  left) shows ON or OFF and the key.
 - **Moving.** Past `SlowG` (1.5 g) moving slows, down to a fifth at `PinG` (3 g), where a standing rider can't move or jump.
   Under `FloatG` (0.15 g) a rider in the air drifts: the move keys, Jump up and Crouch down, at 2 m/s. On a floor they still
   walk (no gravity pulls them off it); a jump pushes off.
