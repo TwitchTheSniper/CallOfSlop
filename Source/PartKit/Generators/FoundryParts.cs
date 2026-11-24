@@ -267,8 +267,8 @@ public sealed class FoundryParts : IPartGenerator
             "A Foundry's end piece: weld one on the far (+x) edge of a crucible square, one a row. Its moulds take the colour of what the Foundry makes as each pour reaches them. Looks only: it adds nothing to the rate.",
             group: "Production", color: MachineLook.Base);
         const double e = 0.997, top = LineTop;
-        p.Add(Box([-e, 0.003, -e], [e, 0.2, e], MachineLook.Base));
-        p.Add(Box([-0.9, 0.2, -0.9], [0.9, top - 0.06, 0.9], Trim));
+        p.Add(Box([-e, 0.003, -e], [e, 0.194, e], MachineLook.Base)); // (its top 6 mm under a Crucible Block's skirt's, which reaches over it)
+        p.Add(Box([-0.9, 0.194, -0.9], [0.9, top - 0.06, 0.9], Trim));
         p.Add(Box([-0.94, top - 0.06, -0.94], [0.94, top - 0.03, 0.94], MachineLook.Base)); // (the deck the moulds stand on)
         // The moulds: a dark sand tray each, on the deck; the rails either side they run on and their rollers.
         foreach (var (x0, z0, x1, z1) in Moulds)
