@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Kit Heavy Arm",
+  "description": "The kit arm a Heavy Loader Arm became: 14 m of reach, 16 t, on a pedestal. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Arm Pedestal"
+    },
+    {
+      "part": "Arm Core",
+      "on": 0,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 155x155x155 steel)",
+      "on": 1,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 115x115x660 steel)",
+      "on": 2,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 145x145x145 steel)",
+      "on": 3,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 110x110x640 steel)",
+      "on": 4,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 125x125x165 steel)",
+      "on": 5,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.padclamp solid 160x80x80 steel)",
+      "on": 6,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x70 steel)",
+      "on": 1,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x70 steel)",
+      "on": 8,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x70 steel)",
+      "on": 9,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x70 steel)",
+      "on": 10,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 1,
+      "socket": "-z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "-z",
+      "by": "base"
+    }
+  ]
+}

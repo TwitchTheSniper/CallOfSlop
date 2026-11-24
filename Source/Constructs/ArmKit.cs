@@ -485,8 +485,8 @@ public static class ArmKit
         (d.SlideLo, d.SlideHi) = (s.SlideLo, s.SlideHi);
         d.Payload = s.Payload;
         var hw = s.HeadLen; // (the clamp's width across is its own: read from the part when drawn; here its pads' spread by its length)
-        d.PieceAcross = Math.Clamp(s.Reach * 0.25f, 0.5f, 8f);
-        d.PieceLong = Math.Clamp(s.Reach, 1f, 32f);
+        d.PieceAcross = PieceAcross(s);
+        d.PieceLong = PieceLong(s);
         d.Speed = s.Speed;
         d.Handle = Math.Clamp(0.25f + 0.1f * s.JointA + hw * 0.1f, 0.2f, 2f);
         d.Housing = s.JointA * 2;
@@ -643,16 +643,38 @@ public static class ArmKit
     {
         if (s.Heads.Length == 0)
             return -1;
-        if (Takes(s, s.Mounted, d))
-            return s.Mounted;
-        var best = -1;
-        for (var k = 0; k < s.Heads.Length; k++)
-            if (k != s.Mounted && Takes(s, k, d) && (best < 0 || s.Heads[k].Rating > s.Heads[best].Rating))
-                best = k;
-        return best;
+        // A head whose own grip suits the piece first (the swap goes to it); else any head that holds its mass, the piece within the
+        // arm's size (Sean 2026-11-24: arms take big pieces, never "not the right size", so a kit arm carries what the fixed arm did).
+        for (var loose = 0; loose < 2; loose++)
+        {
+            if (Takes(s, s.Mounted, d, loose == 1))
+                return s.Mounted;
+            var best = -1;
+            for (var k = 0; k < s.Heads.Length; k++)
+                if (k != s.Mounted && Takes(s, k, d, loose == 1) && (best < 0 || s.Heads[k].Rating > s.Heads[best].Rating))
+                    best = k;
+            if (best >= 0)
+                return best;
+        }
+        return -1;
     }
 
-    private static bool Takes(ArmSpec s, int k, ConstructPartDef d) => d.Mass <= PayloadWith(s, k) && Fits(s.Heads[k].Kind, s.Heads[k].Width, d);
+    private static bool Takes(ArmSpec s, int k, ConstructPartDef d, bool loose) =>
+        d.Mass <= PayloadWith(s, k) && (Fits(s.Heads[k].Kind, s.Heads[k].Width, d) || loose && MiddleSide(d) <= PieceAcross(s) + 0.005f);
+
+    /// <summary>
+    /// The biggest piece a kit arm takes: across (its middle side) about half its reach, along a third more than its reach, so each preset
+    /// takes what the fixed arm it replaced took (Shipyard 10 x 24 m at 18 m: ArmKitMigrate, `--arm-swap-carry`).
+    /// </summary>
+    public static float PieceAcross(ArmSpec s) => Math.Clamp(s.Reach * 0.55f, 0.5f, 12f);
+
+    public static float PieceLong(ArmSpec s) => Math.Clamp(s.Reach * 1.35f, 1f, 32f);
+
+    private static float MiddleSide(ConstructPartDef d)
+    {
+        var sz = d.BoundsMax - d.BoundsMin;
+        return sz.X + sz.Y + sz.Z - MathF.Max(sz.X, MathF.Max(sz.Y, sz.Z)) - MathF.Min(sz.X, MathF.Min(sz.Y, sz.Z));
+    }
 
     /// <summary>
     /// Server, at a loaded carry's start: if the mounted head can't take the piece, the head that can goes on (the Core's ArmHead
@@ -724,8 +746,12 @@ public static class ArmKitCheck
 {
     public static int Cli(string[] args)
     {
+        if (Array.Exists(args, a => a == "--arm-swap-base"))
+            foreach (var (f, p) in ArmKitMigrate.Map)
+                if (ConstructParts.Find(f) is { Lifter: { } l } fd)
+                    Console.WriteLine($"[swap] base {f}: {l.Base} socket -y.0.0 {Array.Find(fd.Sockets, x => x.Name == "-y.0.0").At} centre -y {Array.Find(fd.Sockets, x => x.Name == "centre -y").At}");
         var at = Array.FindIndex(args, a => a.Equals("--arm-kit", StringComparison.OrdinalIgnoreCase));
-        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm"];
+        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Bench Arm", "Line Arm", "Line Arm Heads", "Knuckle Arm", "Rail Arm", "Heavy Arm", "Yard Arm", "Kit Loader Arm", "Kit Workshop Arm", "Kit Industrial Arm", "Kit Military Arm", "Kit Plasma Arm", "Kit Long Arm", "Kit Heavy Arm", "Kit Shipyard Arm", "Kit Module Fitter"];
         var bad = 0;
         foreach (var name in names)
         {
@@ -806,5 +832,204 @@ public static class ArmKitCheck
             }
         }
         return bad;
+    }
+}
+
+/// <summary>
+/// The kit arm each fixed arm becomes (part 4, docs/sandbox/constructs/production.md "Arm kit: the fixed arms"): its preset, built to at
+/// least the fixed arm's reach and its load at full reach.
+/// </summary>
+public static class ArmKitMigrate
+{
+    public static readonly (string Fixed, string Preset)[] Map =
+    [
+        ("Loader Arm", "Kit Loader Arm"), ("Workshop Loader Arm", "Kit Workshop Arm"), ("Industrial Loader Arm", "Kit Industrial Arm"),
+        ("Military Loader Arm", "Kit Military Arm"), ("Plasma Loader Arm", "Kit Plasma Arm"), ("Long Loader Arm", "Kit Long Arm"),
+        ("Heavy Loader Arm", "Kit Heavy Arm"), ("Shipyard Loader Arm", "Kit Shipyard Arm"), ("Module Fitter S", "Kit Module Fitter"),
+    ];
+
+    public static string? PresetFor(string fixedName)
+    {
+        foreach (var (f, p) in Map)
+            if (f == fixedName)
+                return p;
+        return null;
+    }
+
+    /// <summary>
+    /// <c>--arm-swap-check [BLUEPRINT,...]</c>: for each fixed arm in each blueprint (default: every shipped one that has any), whether its kit
+    /// preset fits where it stands, its Core's bottom on the fixed arm's bottom, centred on its footprint, turned as it is: every part of the
+    /// preset but its chain (posed, no collider) and its mast as it stands unpowered, against every other part of the body that rises over
+    /// the arm's floor. Prints the parts in the way; writes nothing. Output to stdout and callofslop.log.
+    /// </summary>
+    public static int Cli(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--arm-swap-check", StringComparison.OrdinalIgnoreCase));
+        string[] names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries) : ["Zero Day Works", "Submodule Yard", "Production Showcase"];
+        var presets = new Dictionary<string, List<(string Name, Vector3 Min, Vector3 Max)>>();
+        int fit = 0, blocked = 0;
+        foreach (var name in names)
+        {
+            if (Build(name) is not { } c)
+            {
+                Log($"[swap] {name}: no such blueprint, or it didn't build");
+                blocked++;
+                continue;
+            }
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var d = c.Parts[i].D;
+                if (d.Lifter is not { Kit: false, Bridge: false } || PresetFor(d.Name) is not { } preset)
+                    continue;
+                if (!presets.TryGetValue(preset, out var shape))
+                    presets[preset] = shape = Footprint(preset);
+                c.PartBounds(i, out var amn, out var amx);
+                var rot = Rot24.Quat(c.Parts[i].Rot);
+                var sh = c.Parts[i].Pos + Vector3.Transform(d.Lifter.Base, rot); // (its shoulder: the kit Core's goes over it, so each reaches the same ring)
+                var foot = new Vector3(sh.X, amn.Y, sh.Z);
+                var hits = new List<string>();
+                foreach (var (pn, mn, mx) in shape)
+                {
+                    // The preset's box turned as the arm is, its Core's bottom middle on the arm's.
+                    var lo = new Vector3(float.MaxValue);
+                    var hi = new Vector3(float.MinValue);
+                    for (var k = 0; k < 8; k++)
+                    {
+                        var corner = new Vector3((k & 1) == 0 ? mn.X : mx.X, (k & 2) == 0 ? mn.Y : mx.Y, (k & 4) == 0 ? mn.Z : mx.Z);
+                        var w = foot + Vector3.Transform(corner, rot);
+                        lo = Vector3.Min(lo, w);
+                        hi = Vector3.Max(hi, w);
+                    }
+                    lo += new Vector3(0.02f);
+                    hi -= new Vector3(0.02f); // (touching is fine)
+                    for (var j = 0; j < c.PartCount; j++)
+                    {
+                        if (j == i || c.Parts[j].Broken)
+                            continue;
+                        c.PartBounds(j, out var bmn, out var bmx);
+                        if (bmx.Y <= amn.Y + 0.05f)
+                            continue; // (the floor it stands on)
+                        if (bmn.X < hi.X && bmx.X > lo.X && bmn.Y < hi.Y && bmx.Y > lo.Y && bmn.Z < hi.Z && bmx.Z > lo.Z)
+                        {
+                            var what = $"{pn} meets {c.Parts[j].D.Name} at ({(bmn.X + bmx.X) * 0.5f:0.0}, {bmn.Y:0.0}, {(bmn.Z + bmx.Z) * 0.5f:0.0})";
+                            if (!hits.Contains(what))
+                                hits.Add(what);
+                        }
+                    }
+                }
+                var where = $"{name}: {d.Name} #{i} at ({foot.X:0.0}, {foot.Y:0.0}, {foot.Z:0.0}) -> {preset}";
+                if (hits.Count == 0)
+                {
+                    fit++;
+                    Log($"[swap] FITS {where}");
+                }
+                else
+                {
+                    blocked++;
+                    Log($"[swap] BLOCKED {where}: {string.Join("; ", hits.Take(6))}{(hits.Count > 6 ? $"; and {hits.Count - 6} more" : "")}");
+                }
+            }
+        }
+        Log($"[swap] {fit} fit in place, {blocked} blocked");
+        return blocked;
+    }
+
+    /// <summary>
+    /// <c>--arm-swap-carry [BLUEPRINT]</c> (default the Zero Day Frigate): for each fixed arm and its preset, the parts of the blueprint the fixed
+    /// arm carries and the preset doesn't, and why (each head's payload and size rule).
+    /// </summary>
+    public static int Carry(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--arm-swap-carry", StringComparison.OrdinalIgnoreCase));
+        var name = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
+        if (ConstructBuild.FindBlueprint(name) is not { } bp)
+            return 1;
+        var kinds = new SortedSet<string>();
+        foreach (var st in bp.Steps)
+            kinds.Add(st.Part);
+        var lost = 0;
+        foreach (var (f, p) in Map)
+        {
+            if (ConstructParts.Find(f) is not { Lifter: { } fl } || Build(p) is not { } c)
+                continue;
+            var core = -1;
+            for (var i = 0; i < c.PartCount && core < 0; i++)
+                if (c.Parts[i].D.Lifter is { Kit: true })
+                    core = i;
+            var kl = ArmKit.DefOf(c, core, c.Parts[core].D.Lifter!);
+            var n = 0;
+            foreach (var k in kinds)
+            {
+                if (ConstructParts.Find(k) is not { } d || !ConstructLifters.Carries(fl, d) || ConstructLifters.Carries(kl, d))
+                    continue;
+                n++;
+                var sz = d.BoundsMax - d.BoundsMin;
+                var why = kl.Spec is { Valid: true } s ? string.Join(", ", Enumerable.Range(0, s.Heads.Length).Select(h => $"{s.Heads[h].Kind} {ArmKit.PayloadWith(s, h):0} kg{(ArmKit.Fits(s.Heads[h].Kind, s.Heads[h].Width, d) ? "" : " too big")}")) : "no spec";
+                Log($"[carry] {f} -> {p}: {k} ({d.Mass:0} kg, {sz.X:0.0} x {sz.Y:0.0} x {sz.Z:0.0} m): {why}; long {kl.PieceLong:0.0} m");
+            }
+            Log($"[carry] {f} -> {p}: {n} kind(s) of {name} lost");
+            lost += n;
+        }
+        return lost;
+    }
+
+    private static void Log(string s) => Console.WriteLine(s);
+
+    private static Construct? Build(string name)
+    {
+        if (ConstructBuild.FindBlueprint(name) is not { } bp)
+            return null;
+        var job = new ConstructBuild.GroundJob(new ConstructWorld(), bp);
+        while (!job.Step(100000))
+        {
+        }
+        return job.Join(Vector3.Zero, 0, out _);
+    }
+
+    /// <summary>A preset's boxes in its Core's frame, its bottom middle at the origin: each part but the chain, and the mast as it stands.</summary>
+    private static List<(string, Vector3, Vector3)> Footprint(string preset)
+    {
+        var list = new List<(string, Vector3, Vector3)>();
+        if (Build(preset) is not { } c)
+            return list;
+        var core = -1;
+        for (var i = 0; i < c.PartCount && core < 0; i++)
+            if (c.Parts[i].D.Lifter is { Kit: true })
+                core = i;
+        if (core < 0)
+            return list;
+        var s = ArmKit.Build(c, core);
+        var inv = Quaternion.Conjugate(Rot24.Quat(c.Parts[core].Rot));
+        c.PartBounds(core, out var cmn, out _);
+        var origin = c.Parts[core].Pos + Vector3.Transform(c.Parts[core].D.Lifter!.Base, Rot24.Quat(c.Parts[core].Rot)); // (its shoulder)
+        // Its lowest part's bottom (a pedestal's) is the floor: the Core's bottom middle sits that much higher.
+        var floor = cmn.Y;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            c.PartBounds(i, out var mn, out _);
+            floor = MathF.Min(floor, mn.Y);
+        }
+        origin.Y = floor;
+        var top = float.MinValue;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            c.PartBounds(i, out var mn, out var mx);
+            var d = c.Parts[i].D;
+            if (d.ArmPiece is ArmPieceKind.Joint or ArmPieceKind.Boom or ArmPieceKind.Wrist || ArmKit.IsHead(d.ArmPiece) || d.ArmPiece == ArmPieceKind.Knuckle)
+            {
+                top = MathF.Max(top, mx.Y);
+                continue;
+            }
+            list.Add((d.Name, Local(mn), Local(mx)));
+        }
+        if (top > float.MinValue)
+        {
+            var r = MathF.Max(0.3f, s.JointA * 0.5f);
+            c.PartBounds(core, out _, out var cmx);
+            list.Add(("its mast", Local(c.Parts[core].Pos with { Y = cmx.Y }) - new Vector3(r, 0, r), Local(c.Parts[core].Pos with { Y = top }) + new Vector3(r, 0, r)));
+        }
+        return list;
+
+        Vector3 Local(Vector3 p) => Vector3.Transform(p - origin, inv);
     }
 }

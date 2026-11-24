@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Kit Module Fitter",
+  "description": "The kit arm a Module Fitter S became: a Fitter Head, 8 m of reach, 20 t. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Arm Core"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 130x130x130 steel)",
+      "on": 0,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 100x100x380 steel)",
+      "on": 1,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 120x120x120 steel)",
+      "on": 2,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 100x100x360 steel)",
+      "on": 3,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 110x110x145 steel)",
+      "on": 4,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.fitter solid 140x90x90 steel)",
+      "on": 5,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x60 steel)",
+      "on": 0,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x60 steel)",
+      "on": 7,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x60 steel)",
+      "on": 8,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x60 steel)",
+      "on": 9,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "-z",
+      "by": "base"
+    }
+  ]
+}

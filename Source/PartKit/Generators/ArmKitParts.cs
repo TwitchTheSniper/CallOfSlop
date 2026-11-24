@@ -354,7 +354,7 @@ public sealed class ArmKitParts : IPartGenerator
     }
 
     // ---- The presets: blueprints of pressed pieces on a Core (Sean's four: Bench, Line, Heavy, Yard).
-    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs, bool Stand = false, int KnuckleCm = 0, int DropW = 0, int DropL = 0, int Rails = 0);
+    private sealed record Preset(string Name, string Desc, int Pedestals, int JointCm, int UpperW, int UpperL, int ElbowCm, int ForeW, int ForeL, int WristCm, int ClampW, int Weights, int WeightCm, int Packs, bool Stand = false, int KnuckleCm = 0, int DropW = 0, int DropL = 0, int Rails = 0, bool Fitter = false);
 
     private static readonly Preset[] Presets =
     [
@@ -365,7 +365,30 @@ public sealed class ArmKitParts : IPartGenerator
         new("Rail Arm", "A Line Arm on a Rail Carriage: it runs along 24 m of crane rail to each job.", 0, 50, 40, 300, 45, 35, 300, 30, 60, 1, 10, 2, Rails: 24),
         new("Heavy Arm", "A heavy kit arm on a pedestal: about 9 m of reach, big pieces.", 1, 80, 60, 400, 70, 55, 380, 50, 100, 2, 20, 4),
         new("Yard Arm", "A shipyard kit arm on two pedestals: about 16 m of reach for hull pieces.", 2, 120, 100, 700, 100, 90, 700, 80, 160, 4, 30, 6),
+        // (part 4: one for each fixed arm it replaces, at least its reach and its load at full reach: tools/MIGRATING.md, ArmKitMigrate)
+        new("Kit Loader Arm", "The kit arm a Loader Arm became: 4 m of reach, 500 kg.", 0, 30, 25, 200, 25, 20, 190, 20, 40, 0, 10, 0),
+        new("Kit Workshop Arm", "The kit arm a Workshop Loader Arm became: 5 m of reach, 1 t.", 0, 40, 30, 250, 40, 30, 240, 35, 50, 0, 10, 1),
+        new("Kit Industrial Arm", "The kit arm an Industrial Loader Arm became: 6 m of reach, 2 t.", 0, 60, 45, 290, 55, 40, 280, 35, 70, 2, 20, 2),
+        new("Kit Military Arm", "The kit arm a Military Loader Arm became: 8 m of reach, 4 t.", 0, 85, 60, 390, 80, 55, 370, 70, 90, 3, 30, 4),
+        new("Kit Plasma Arm", "The kit arm a Plasma Loader Arm became: 10 m of reach, 8 t.", 0, 110, 80, 480, 105, 75, 460, 90, 120, 4, 40, 6),
+        new("Kit Long Arm", "The kit arm a Long Loader Arm became: 14 m of reach, 6 t, on a pedestal.", 1, 120, 90, 690, 115, 95, 680, 95, 120, 4, 40, 6),
+        new("Kit Heavy Arm", "The kit arm a Heavy Loader Arm became: 14 m of reach, 16 t, on a pedestal.", 1, 155, 115, 660, 145, 110, 640, 125, 160, 4, 70, 8),
+        new("Kit Shipyard Arm", "The kit arm a Shipyard Loader Arm became: 18 m of reach, 24 t, on two pedestals.", 2, 200, 150, 850, 190, 150, 840, 150, 190, 4, 240, 8),
+        new("Kit Module Fitter", "The kit arm a Module Fitter S became: a Fitter Head, 8 m of reach, 20 t.", 0, 130, 100, 380, 120, 100, 360, 110, 140, 4, 60, 6, Fitter: true),
     ];
+
+    /// <summary>A preset's steps (part, the step it goes on or -1, that step's socket, its own), for a generator that lays one inside a bigger blueprint (ZeroDayWorks.Arm).</summary>
+    public static List<(string Part, int On, string Socket, string By)> PresetSteps(string name)
+    {
+        var s = Array.Find(Presets, x => x.Name == name) ?? throw new InvalidOperationException($"no arm kit preset \"{name}\"");
+        var list = new List<(string, int, string, string)>();
+        foreach (var o in (List<object?>)Blueprint(s)["steps"]!)
+        {
+            var d = (PyDict)o!;
+            list.Add(((string)d["part"]!, d.Has("on") ? (int)d["on"]! : -1, d.Has("socket") ? (string)d["socket"]! : "", d.Has("by") ? (string)d["by"]! : ""));
+        }
+        return list;
+    }
 
     private static string Key(string die, string pattern, string blank) => $"Pressed Part (arm.{pattern} {blank})";
 
@@ -413,7 +436,10 @@ public sealed class ArmKitParts : IPartGenerator
             wristOn = On(kn, "tip", Key("arm", "boom", $"hollow {s.DropW}x{s.DropW}x{s.DropL} steel"), "base");
         }
         var w = On(wristOn, "tip", Key("arm", "wrist", $"solid {s.WristCm}x{s.WristCm}x{(s.WristCm * 4 / 3 + 2) / 5 * 5} steel"), "base");
-        On(w, "tip", Key("arm", "padclamp", $"solid {s.ClampW}x{s.ClampW / 2}x{s.ClampW / 2} steel"), "base");
+        if (s.Fitter)
+            On(w, "tip", Key("arm", "fitter", $"solid {s.ClampW}x{s.ClampW * 2 / 3 / 5 * 5}x{s.ClampW * 2 / 3 / 5 * 5} steel"), "base");
+        else
+            On(w, "tip", Key("arm", "padclamp", $"solid {s.ClampW}x{s.ClampW / 2}x{s.ClampW / 2} steel"), "base");
         var back = core;
         string sock = "weight";
         for (var k = 0; k < s.Weights; k++)

@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Kit Plasma Arm",
+  "description": "The kit arm a Plasma Loader Arm became: 10 m of reach, 8 t. Pressed pieces on an Arm Core: it stands as a mast and folds out once powered.",
+  "steps": [
+    {
+      "part": "Arm Core"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 110x110x110 steel)",
+      "on": 0,
+      "socket": "chain",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 80x80x480 steel)",
+      "on": 1,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.joint solid 105x105x105 steel)",
+      "on": 2,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.boom hollow 75x75x460 steel)",
+      "on": 3,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.wrist solid 90x90x120 steel)",
+      "on": 4,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.padclamp solid 120x60x60 steel)",
+      "on": 5,
+      "socket": "tip",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x40 steel)",
+      "on": 0,
+      "socket": "weight",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x40 steel)",
+      "on": 7,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x40 steel)",
+      "on": 8,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.counterweight solid 200x100x40 steel)",
+      "on": 9,
+      "socket": "back",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Pressed Part (arm.drivepack solid 60x40x120 steel)",
+      "on": 0,
+      "socket": "-z",
+      "by": "base"
+    }
+  ]
+}
