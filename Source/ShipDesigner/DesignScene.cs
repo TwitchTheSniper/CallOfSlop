@@ -644,8 +644,11 @@ public static class DesignScene
                 // Limpet's shaft from the Zero Day's keel to its lower deck (Karl, 2026-11-24), up to MaxConnector long.
                 var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? (kind.Opening is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
-                if (linked && kind.Socket != "window")
-                    entries.Add(best!.Id);
+                if (linked)
+                {
+                    if (kind.Socket != "window")
+                        entries.Add(best!.Id); // a window looks out; it isn't a way aboard
+                }
                 else
                 {
                     ok = false;
@@ -887,13 +890,22 @@ public static class DesignScene
             var w = Where(h, p);
             m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
             kind.Draw(m);
+            if (p.Clad > 0 && kind.Opening is { } op)
+            {
+                // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
+                double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
+                m.Box(-hx - cl, 0.005, -hz - cl, hx + cl, 0.07, -hz, PieceKinds.Armour);
+                m.Box(-hx - cl, 0.005, hz, hx + cl, 0.07, hz + cl, PieceKinds.Armour);
+                m.Box(-hx - cl, 0.005, -hz, -hx, 0.07, hz, PieceKinds.Armour);
+                m.Box(hx, 0.005, -hz, hx + cl, 0.07, hz, PieceKinds.Armour);
+            }
             if (p.Mirror)
                 m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
             if (p.Pair && h.Copies == 2)
                 m.MirrorFrom(0, 0);
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
-              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess))
+              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");

@@ -359,6 +359,7 @@ public sealed class DesignEditor
                 if (o["pair"] is not null) p.Pair = (bool)o["pair"]!;
                 if (o["size"] is not null) p.Size = Math.Clamp(Snap(D(o, "size"), 0.05), 0.25, 4);
                 if (o["recess"] is not null) p.Recess = Math.Clamp(Snap(D(o, "recess"), 0.05), 0, 2);
+                if (o["clad"] is not null) p.Clad = Math.Clamp(Snap(D(o, "clad"), 0.05), 0, 2);
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
                 if (o["room"] is not null)
                 {
@@ -550,6 +551,57 @@ public sealed class DesignEditor
                     r.Height = Math.Abs(hgt - d.Decks[r.Deck].Height) < 0.01 || D(o, "height") <= 0 ? 0 : hgt;
                 }
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
+                return "";
+            }
+            case "addCubby":
+            {
+                // A cubby (Karl, 2026-11-24): a nook from a room's wall out to the skin, open to the room (one group), with a window
+                // at its far end. It grows a quarter metre at a time while it still fits inside the hull.
+                var room = d.RoomById(I(o, "id")) ?? throw new InvalidOperationException("no such room");
+                if (d.Rooms.Count >= ShipDesign.MaxRooms)
+                    return $"at most {ShipDesign.MaxRooms} rooms";
+                var side = Str(o, "side");
+                double w = Math.Clamp(Snap(D(o, "w", 1.5), 0.25), 0.75, 6);
+                double cx = Snap((room.X0 + room.X1) / 2, 0.25), cz = Snap((room.Z0 + room.Z1) / 2, 0.25);
+                var c = new Room { Id = d.NewId(), Deck = room.Deck, Kind = "Cubby", Height = room.Height };
+                void Span(double depth)
+                {
+                    switch (side)
+                    {
+                        case "x0": (c.X0, c.X1, c.Z0, c.Z1) = (room.X0 - depth, room.X0, cz - w / 2, cz + w / 2); break;
+                        case "x1": (c.X0, c.X1, c.Z0, c.Z1) = (room.X1, room.X1 + depth, cz - w / 2, cz + w / 2); break;
+                        case "z0": (c.X0, c.X1, c.Z0, c.Z1) = (cx - w / 2, cx + w / 2, room.Z0 - depth, room.Z0); break;
+                        default: (c.X0, c.X1, c.Z0, c.Z1) = (cx - w / 2, cx + w / 2, room.Z1, room.Z1 + depth); break;
+                    }
+                }
+                var deep = 0.0;
+                for (var dep = 0.5; dep <= 40; dep += 0.25)
+                {
+                    Span(dep);
+                    if (DesignScene.Outside(d, c) > 0)
+                        break;
+                    deep = dep;
+                }
+                if (deep == 0)
+                    return "no room for a cubby that way: the skin is right there";
+                Span(deep);
+                if (room.Group == 0)
+                    room.Group = d.NewId();
+                c.Group = room.Group;
+                d.Rooms.Add(c);
+                o["id"] = c.Id;
+                // Its window, mounted from the middle of its far wall, half way up, outwards.
+                var dk = d.DeckOf(c);
+                double ex = side == "x0" ? c.X0 : side == "x1" ? c.X1 : (c.X0 + c.X1) / 2, ez = side == "z0" ? c.Z0 : side == "z1" ? c.Z1 : (c.Z0 + c.Z1) / 2;
+                var at = d.World(dk, ex, ez, dk.Height / 2);
+                double[] n = side switch { "x0" => [-1, 0, 0], "x1" => [1, 0, 0], _ => d.Stacked ? [0, side == "z0" ? -1 : 1, 0] : [0, 0, side == "z0" ? -1 : 1] };
+                var id = c.Id;
+                var mo = new JsonObject { ["op"] = "mount", ["kind"] = "Window", ["room"] = c.Id, ["x"] = at[0], ["y"] = at[1], ["z"] = at[2], ["nx"] = n[0], ["ny"] = n[1], ["nz"] = n[2],
+                    ["size"] = D(o, "size", 1), ["clad"] = D(o, "clad", 0.3), ["pair"] = false };
+                var err = Run(mo);
+                if (err.Length == 0 && d.PieceById((int?)mo["id"] ?? 0) is { } wp)
+                    wp.Clad = Math.Clamp(D(o, "clad", 0.3), 0, 2);
+                o["id"] = id;
                 return "";
             }
             case "mount":

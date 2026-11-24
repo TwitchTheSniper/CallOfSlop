@@ -218,6 +218,7 @@ public sealed class Piece
     public bool Mirror; // a twin across its own hull copy's centreline
     public bool Pair = true; // on a mirrored pair of bodies, the same piece on the other body too, mirrored across the ship (Karl, 2026-11-24)
     public double Recess; // metres the piece sits back into the wall, behind its hole (Karl, 2026-11-24)
+    public double Clad; // metres of cladding plate round a socket's frame on the skin (Karl, 2026-11-24: sized with the window)
     public double Size = 1; // its scale: a socket's opening and the piece drawn grow with it (Karl, 2026-11-24)
     public double Turn; // degrees about the skin's normal
     public int Room; // the room a socket opens into, picked by the player (0: the nearest of the kind it needs)
@@ -225,7 +226,7 @@ public sealed class Piece
     public JsonObject ToJson() => new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = Math.Round(T, 4), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
-        ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
+        ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
     };
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
@@ -233,7 +234,7 @@ public sealed class Piece
     {
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
-        Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
+        Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Clad = Math.Clamp(ShipDesign.F(o["clad"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
     };
 }
 

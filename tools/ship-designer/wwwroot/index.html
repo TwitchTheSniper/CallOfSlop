@@ -699,7 +699,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null, pieceSize = 1, pieceRecess = 0;
+let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -1132,6 +1132,7 @@ function inspector() {
     let firstSize = true, firstRec = true;
     I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
       slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 }, true)),
+      ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 }, true)); })()] : []),
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 }, true)),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
@@ -1172,6 +1173,11 @@ function inspector() {
         el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
       el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
       el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("h3", {}, "Cubby with a window"),
+      el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
+        el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, size: pieceSize, clad: 0.3 }); if (a.error) toast(a.error); else { toast("Cubby out to the skin, with a window at its end. Pick the window to size it and its cladding.", true); select("room", a.id); } } }, t))),
+      slider("Cubby width", Math.round(cubbyW * 100), 75, 600, 25, " cm", v => { cubbyW = v / 100; }),
+      el("p", { class: "hint" }, "A nook from this room's wall out to the hull, open to the room, with a window where it meets the skin."),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),
