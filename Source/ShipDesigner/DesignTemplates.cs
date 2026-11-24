@@ -90,38 +90,25 @@ public static class DesignTemplates
         return h;
     }
 
-    /// <summary>What a branch off the hull can be: its section, the scale, its length (m).</summary>
-    public static readonly (string Name, string Section, double Scale, double Length)[] Branches =
-    [
-        ("Nacelle", "Barrel", 0.75, 14), ("Missile pod", "Armoured slab", 0.35, 6), ("Sponson", "Stepped", 0.45, 9),
-        ("Boom", "Round", 0.3, 12), ("Pylon fin", "Diamond", 0.3, 5), ("Blister", "Teardrop", 0.4, 4),
-    ];
-
     /// <summary>
-    /// A body grown off a hull at a skin point: its section's middle set out along the skin's normal so it sinks 40 cm into the parent (cut
-    /// open where they meet), centred on the point along the ship. Off the centreline it is a mirrored pair.
+    /// A body made to a size (Karl, 2026-11-24: the second object a connection reaches): a section shape fitted to a width and a height, a
+    /// length cut into segments, its end stations drawn in a little.
     /// </summary>
-    public static HullBody Branch(ShipDesign d, string preset, double px, double py, double pz, double nx, double ny, bool pair)
+    public static HullBody Sized(ShipDesign d, string section, double w, double h, double len, int segments)
     {
-        var b = Array.Find(Branches, x => x.Name == preset);
-        if (b.Name is null)
-            throw new InvalidOperationException("no such branch");
-        var sec = Array.Find(Sections, s => s.Name == b.Section).P.Select(q => (q.H * b.Scale, q.Y * b.Scale)).ToList();
-        var y0 = sec.Min(q => q.Item2);
-        var y1 = sec.Max(q => q.Item2);
-        var w = sec.Max(q => q.Item1);
-        var midY = (y0 + y1) / 2;
-        // How far the body's middle stands from its own skin along the normal (an ellipse's reach between half width and half height).
-        var reach = Math.Sqrt(Math.Pow(nx * w, 2) + Math.Pow(ny * (y1 - y0) / 2, 2));
-        var off = Math.Max(0.2, reach - 0.4);
-        var h = new HullBody { Id = d.NewId(), Name = preset, X = Math.Round(px + nx * off, 2), Y = Math.Round(py + ny * off - midY, 2), Z = Math.Round(pz - b.Length / 2, 2), Cut = true };
-        h.Mirror = pair && Math.Abs(h.X) > 0.3;
-        if (preset == "Nacelle" || preset == "Boom")
-            h.Stations = [new() { Z = 0, P = Scale(sec, 0.55) }, new() { Z = 1.5, P = [.. sec] }, new() { Z = b.Length - 2, P = [.. sec] }, new() { Z = b.Length, P = Scale(sec, 0.8) }];
-        else
-            h.Stations = [new() { Z = 0, P = Scale(sec, 0.7) }, new() { Z = 1, P = [.. sec] }, new() { Z = b.Length - 0.6, P = [.. sec] }, new() { Z = b.Length, P = Scale(sec, 0.85) }];
-        h.Tidy();
-        return h;
+        var sec = Array.Find(Sections, s => s.Name == section).P ?? Sections[0].P;
+        double sw = sec.Max(q => q.H), y0 = sec.Min(q => q.Y), y1 = sec.Max(q => q.Y);
+        List<(double H, double Y)> fit = [.. sec.Select(q => (Math.Round(q.H / sw * w / 2, 3), Math.Round((q.Y - y0) / Math.Max(1e-6, y1 - y0) * h, 3)))];
+        segments = Math.Clamp(segments, 1, ShipDesign.MaxStations - 1);
+        len = Math.Clamp(len, 0.5, 200);
+        var body = new HullBody { Id = d.NewId(), Name = section, Cut = true };
+        for (var i = 0; i <= segments; i++)
+        {
+            var end = i == 0 || i == segments;
+            body.Stations.Add(new Station { Z = Math.Round(len * i / segments, 3), P = end && segments > 1 ? Scale(fit, 0.7) : [.. fit] });
+        }
+        body.Tidy();
+        return body;
     }
 
     private static List<(double H, double Y)> Scale(List<(double, double)> p, double f)

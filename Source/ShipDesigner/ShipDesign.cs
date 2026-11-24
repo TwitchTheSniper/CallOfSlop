@@ -12,7 +12,7 @@ namespace CallOfSlop.ShipDesigner;
 public sealed class ShipDesign
 {
     public const int Version = 1;
-    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24;
+    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40;
 
     public string Name = "New ship";
 
@@ -44,6 +44,7 @@ public sealed class ShipDesign
     public List<Piece> Pieces = [];
     public List<Deck> Decks = [];
     public List<Room> Rooms = [];
+    public List<HullJoin> Joins = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -51,6 +52,7 @@ public sealed class ShipDesign
     public HullBody? Hull(int id) => Hulls.Find(h => h.Id == id);
     public Piece? PieceById(int id) => Pieces.Find(p => p.Id == id);
     public Room? RoomById(int id) => Rooms.Find(r => r.Id == id);
+    public HullJoin? JoinById(int id) => Joins.Find(j => j.Id == id);
 
     // ---- JSON (System.Text.Json.Nodes only: no reflection, so it trims for the web page)
 
@@ -66,6 +68,7 @@ public sealed class ShipDesign
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
+            ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
         return o.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
@@ -99,6 +102,9 @@ public sealed class ShipDesign
                 pc.Hull = d.Hulls[hi].Id;
                 d.Pieces.Add(pc);
             }
+        foreach (var j in o["joins"]?.AsArray() ?? [])
+            if (j is JsonObject jo && d.Joins.Count < MaxJoins && HullJoin.FromJson(d, jo, d.Take(jo)) is { } hj)
+                d.Joins.Add(hj);
         d.Rooms.RemoveAll(r => r.Deck < 0 || r.Deck >= d.Decks.Count);
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
@@ -109,7 +115,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;

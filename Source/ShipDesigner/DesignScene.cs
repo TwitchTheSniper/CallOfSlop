@@ -583,6 +583,17 @@ public static class DesignScene
             }
             sb.Append(Light ? "}" : "]}");
         }
+        sb.Append("],\"joins\":[");
+        for (var i = 0; i < d.Joins.Count; i++)
+        {
+            var j = d.Joins[i];
+            if (i > 0) sb.Append(',');
+            sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.W))
+              .Append(",\"h\":").Append(ShipDesign.S(j.H)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
+              .Append(",\"mesh\":");
+            j.Mesh(d).Write(sb);
+            sb.Append('}');
+        }
         sb.Append("],\"pieces\":[");
         for (var i = 0; i < d.Pieces.Count; i++)
         {

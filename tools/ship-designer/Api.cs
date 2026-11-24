@@ -27,7 +27,9 @@ public static partial class Api
         DesignScene.Light = (bool?)o["light"] ?? false;
         // A new piece or room's id, so the page can select it.
         var id = 0;
-        if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom"))
+        if (err.Length == 0 && (string?)o["op"] == "connect")
+            id = _ed.Design.Joins.Count == 0 ? 0 : _ed.Design.Joins[^1].Id;
+        else if (err.Length == 0 && ((string?)o["op"] is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom"))
             id = Math.Max(_ed.Design.Pieces.Count == 0 ? 0 : _ed.Design.Pieces.Max(p => p.Id), _ed.Design.Rooms.Count == 0 ? 0 : _ed.Design.Rooms.Max(r => r.Id));
         try { return Answer(err, id); }
         finally { DesignScene.Holes = true; DesignScene.Light = false; }
@@ -52,7 +54,6 @@ public static partial class Api
         sb.Append("],\"sections\":[");
         sb.AppendJoin(',', DesignTemplates.Sections.Select(s => $"{{\"name\":{DesignScene.Q(s.Name)},\"p\":[{string.Join(',', s.P.Select(q => $"[{ShipDesign.S(q.H)},{ShipDesign.S(q.Y)}]"))}]}}"));
         sb.Append("],\"bodies\":[").AppendJoin(',', DesignTemplates.Bodies.Select(DesignScene.Q));
-        sb.Append("],\"branches\":[").AppendJoin(',', DesignTemplates.Branches.Select(b => DesignScene.Q(b.Name)));
         sb.Append("],\"starts\":[").AppendJoin(',', DesignTemplates.Starts.Select(DesignScene.Q));
         return sb.Append("]}").ToString();
     }

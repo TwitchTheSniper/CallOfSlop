@@ -276,6 +276,13 @@ function rebuild() {
     }
     if (mode === "hull" && sel.kind === "hull" && sel.id === h.id) drawRings(h);
   }
+  for (const j of S.joins ?? []) {
+    if (!j.mesh.p.length) continue;
+    const m = meshFrom(j.mesh, ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {});
+    if (sel.kind === "join" && sel.id === j.id) m.material.emissive = new THREE.Color(0x1d4f86);
+    m.userData = { type: "join", id: j.id };
+    world.add(m); pickables.push(m);
+  }
   for (const p of S.pieces) {
     const m = meshFrom(p.mesh, mode === "interior" ? { transparent: true, opacity: 0.35, depthWrite: false } : {});
     if (sel.kind === "piece" && sel.id === p.id) m.material.emissive = new THREE.Color(0x1d4f86);
@@ -393,16 +400,16 @@ renderer.domElement.addEventListener("pointerdown", ev => {
   const top = hits[0];
   if (mode === "hull") {
     const st = hits.find(h => h.object.userData.type === "station");
-    if (st && !branching) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
+    if (st && !conn) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
     const h = hits.find(h => h.object.userData.type === "hull");
-    if (h && branching) {
-      const u = h.object.userData;
-      branching = false;
-      branchAt = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, ids: [] };
-      placeBranch(true);
-      leftPanel();
-      return;
+    if (h && conn) {
+      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z };
+      if (conn.step === "a") { conn = { step: "b", a: at, joinId: 0, hullId: 0, newBody: false }; leftPanel(); $("tip").textContent = "Set the connection, then click the second body where it meets, or add a new body."; return; }
+      if (u.hull === conn.hullId) conn.hullId = 0; // (connecting to the body this tool made keeps it)
+      conn.b = at; conn.newBody = false; placeJoin(); leftPanel(); return;
     }
+    const jn = hits.find(h => h.object.userData.type === "join");
+    if (jn && (!h || jn.distance <= h.distance)) { select("join", jn.object.userData.id); return; }
     if (h) { select("hull", h.object.userData.hull); return; }
     return;
   }
@@ -536,7 +543,7 @@ function hover(ev) {
   if (!S || ev.target !== renderer.domElement) return;
   renderer.domElement.style.cursor = "";
   const hits = cast(ev);
-  if (mode === "hull" && branching) renderer.domElement.style.cursor = "crosshair";
+  if (mode === "hull" && conn && conn.step !== "set") renderer.domElement.style.cursor = "crosshair";
   else if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
@@ -606,37 +613,62 @@ function shapeIcon(p) {
   poly.setAttribute("fill", "currentColor"); poly.setAttribute("fill-opacity", "0.25"); poly.setAttribute("stroke", "currentColor"); poly.setAttribute("stroke-width", "1.5"); poly.setAttribute("stroke-linejoin", "round");
   svg.append(poly); return svg;
 }
-let branching = false, branchKind = "Nacelle", branchAt = null;
-const bOpt = { pair: true, count: 1, spread: "along", along: 4, around: 0.2 };
-// Places the branch where the hull was clicked, again on every change of the settings (one undo step in all).
-function branchSection() {
-  const kind = el("select", { "aria-label": "Branch" }); for (const b of CAT.branches) kind.append(el("option", b === branchKind ? { selected: "" } : {}, b));
-  kind.addEventListener("change", () => { branchKind = kind.value; placeBranch(false); });
-  const sec = el("div", { class: "sec" }, el("h2", {}, "Branch off the hull"), kind,
-    el("button", { class: branching ? "on" : "", onclick: () => { branching = !branching; branchAt = null; leftPanel(); $("tip").textContent = branching ? `Click the hull where the ${branchKind} should grow from.` : tips.hull; } },
-      branching ? "Click the hull..." : "Branch"));
-  if (!branchAt) { sec.append(el("p", { class: "hint" }, "Press Branch, then click the hull where it should grow from. Then set the mirroring, the count and the spacing.")); return sec; }
-  const mir = el("input", { type: "checkbox" }); mir.checked = bOpt.pair; mir.addEventListener("change", () => { bOpt.pair = mir.checked; placeBranch(false); });
-  const spread = el("select", { "aria-label": "Repeat" }); for (const [v, t] of [["along", "Repeat along the hull"], ["around", "Repeat round the hull"]]) spread.append(el("option", v === bOpt.spread ? { value: v, selected: "" } : { value: v }, t));
-  const cnt = el("input", { type: "range", min: 1, max: 8, step: 1, value: bOpt.count }), cntL = el("span", {}, `${bOpt.count}`);
-  const sp = el("input", { type: "range" }), spL = el("span", {});
-  const spSet = () => { const al = bOpt.spread === "along"; sp.min = al ? 1 : 0.02; sp.max = al ? 20 : 0.5; sp.step = al ? 0.25 : 0.01; sp.value = bOpt[bOpt.spread]; spL.textContent = al ? `${(+sp.value).toFixed(2)} m` : `${Math.round(sp.value * 100)}% of the side`; };
-  spSet();
-  spread.addEventListener("change", () => { bOpt.spread = spread.value; spSet(); placeBranch(false); });
-  cnt.addEventListener("input", () => { bOpt.count = +cnt.value; cntL.textContent = cnt.value; placeBranch(false); });
-  sp.addEventListener("input", () => { bOpt[bOpt.spread] = +sp.value; spSet(); placeBranch(false); });
-  sec.append(el("label", { class: "row" }, mir, "Mirror to the other side"), spread,
-    el("label", { class: "row" }, "Count ", cnt, cntL), el("label", { class: "row" }, "Spacing ", sp, spL),
-    el("button", { onclick: () => { const id = branchAt.ids[branchAt.ids.length - 1]; branchAt = null; if (id) select("hull", id); else leftPanel(); toast(`${branchKind} placed. Drag its arrows or its stations to shape it.`, true); } }, "Done"));
+// The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
+// on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
+let conn = null;
+const cOpt = { section: "Round", w: 1.2, h: 1.6, segments: 6, mirror: true, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+function gallery(pick, onPick, tall = 300) {
+  const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
+  for (const s of CAT.sections) {
+    const b = el("button", { class: s.name === pick ? "on" : "", title: s.name, onclick: () => { for (const x of gal.children) x.classList.toggle("on", x === b); onPick(s.name); } }, shapeIcon(s.p), el("span", {}, s.name));
+    gal.append(b);
+  }
+  return gal;
+}
+function slider(label, v, min, max, step, unit, onInput, onDone) {
+  const r = el("input", { type: "range", min, max, step, value: v, "aria-label": label }), out = el("span", {}, `${v}${unit}`);
+  r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; onInput(+r.value); });
+  if (onDone) r.addEventListener("change", () => onDone(+r.value));
+  return el("label", { class: "row" }, `${label} `, r, out);
+}
+function joinControls(o, apply) {
+  return [el("h3", {}, "Connection shape"), gallery(o.section, n => { o.section = n; apply(); }, 150),
+    slider("Width", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(true); }, () => apply()),
+    slider("Height", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(true); }, () => apply()),
+    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(true); }, () => apply()),
+    el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
+}
+function connectSection() {
+  const sec = el("div", { class: "sec" }, el("h2", {}, "Connect"),
+    el("button", { class: conn ? "on" : "", onclick: () => { conn = conn ? null : { step: "a" }; leftPanel(); $("tip").textContent = conn ? "Click the hull where the connection starts." : tips.hull; } },
+      conn?.step === "a" ? "Click the first point..." : conn ? "Connecting (press to stop)" : "Connect"));
+  if (!conn || conn.step === "a") { sec.append(el("p", { class: "hint" }, "Press Connect, click a point on the hull, set the connection, then click the second body or add a new one. A pylon, a strut or a neck out to a nacelle or a pod.")); return sec; }
+  const live = () => { if (conn.joinId) placeJoin(); };
+  sec.append(...joinControls(cOpt, live));
+  const B = cOpt.body;
+  const liveBody = () => { if (conn.newBody) placeJoin(); };
+  sec.append(el("h3", {}, "Second object"), el("p", { class: "hint" }, "Click another body where the connection should meet it, or add a new body this far out:"),
+    gallery(B.section, n => { B.section = n; liveBody(); }, 150),
+    slider("Width", B.w, 0.5, 20, 0.25, " m", v => { B.w = v; liveBody(); }),
+    slider("Height", B.h, 0.5, 20, 0.25, " m", v => { B.h = v; liveBody(); }),
+    slider("Length", B.len, 1, 80, 0.5, " m", v => { B.len = v; liveBody(); }),
+    slider("Segments", B.segments, 1, 16, 1, "", v => { B.segments = v; liveBody(); }),
+    slider("Distance", B.dist, 0, 30, 0.25, " m", v => { B.dist = v; liveBody(); }),
+    slider("Slide along", B.slide, -40, 40, 0.25, " m", v => { B.slide = v; liveBody(); }),
+    el("div", { class: "row" },
+      el("button", { onclick: () => { conn.newBody = true; conn.b = null; placeJoin(); leftPanel(); } }, conn.newBody ? "New body placed" : "Add new body"),
+      el("button", { onclick: () => { const id = conn.joinId; conn = null; $("tip").textContent = tips.hull; if (id) select("join", id); else leftPanel(); } }, "Done")));
   return sec;
 }
-function placeBranch(first) {
-  if (!branchAt) return;
-  const before = new Set(S.hulls.map(h => h.id));
-  const a = cmd({ op: "branch", hull: branchAt.hull, copy: branchAt.copy, x: branchAt.x, y: branchAt.y, z: branchAt.z, preset: branchKind,
-    pair: bOpt.pair, count: bOpt.count, spread: bOpt.spread, spacing: bOpt[bOpt.spread], replace: branchAt.ids }, !first);
-  if (a.error) { toast(a.error); return; }
-  branchAt.ids = S.hulls.filter(h => !before.has(h.id)).map(h => h.id);
+// Places the connection again (the first placing is an undo step, the rest merge into it).
+function placeJoin() {
+  if (!conn || (!conn.b && !conn.newBody)) return;
+  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, segments: cOpt.segments, mirror: cOpt.mirror, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
+  if (conn.newBody) op.body = { ...cOpt.body }; else op.b = conn.b;
+  const a = cmd(op, !!conn.joinId);
+  if (a.error) { console.log("connect err", a.error); toast(a.error); return; }
+  conn.joinId = a.id; conn.step = "set";
+  conn.hullId = conn.newBody ? S.hulls[S.hulls.length - 1].id : 0;
 }
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
@@ -648,7 +680,9 @@ function setMode(m) {
   rebuild(); panels();
 }
 
-function panels() { leftPanel(); inspector(); checks(); }
+// A panel whose slider is being moved isn't drawn again under the pointer (the drag would end); it is when it lets go of the focus.
+function holding(id) { const a = document.activeElement; return a?.type === "range" && $(id).contains(a); }
+function panels() { if (!holding("left")) leftPanel(); if (!holding("inspect")) inspector(); checks(); }
 
 function leftPanel() {
   const L = $("left"); L.replaceChildren();
@@ -659,7 +693,7 @@ function leftPanel() {
       el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
         el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
       el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
-      branchSection());
+      connectSection());
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
@@ -802,6 +836,15 @@ function profileEditor(h, i) {
 function inspector() {
   const I = $("inspect"); I.replaceChildren();
   if (!S) return;
+  if (sel.kind === "join") {
+    const j = S.joins.find(j => j.id === sel.id); if (!j) return;
+    const o = { section: j.section, w: j.w, h: j.h, segments: j.segments, mirror: j.mirror };
+    let first = true;
+    const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
+    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
   if (sel.kind === "piece") {
     const p = S.pieces.find(p => p.id === sel.id); if (!p) return;
     const k = CAT.pieces.find(k => k.name === p.kind);
@@ -892,6 +935,7 @@ window.addEventListener("keydown", e => {
   else if (e.key === "Delete" || e.key === "Backspace") {
     if (sel.kind === "piece") { cmd({ op: "delPiece", id: sel.id }); select(null, 0); }
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
   } else if (e.key === "Escape") select(null, 0);
 });
 

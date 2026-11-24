@@ -99,41 +99,74 @@ public sealed class DesignEditor
                 d.Hulls.Add(h);
                 return "";
             }
-            case "branch":
+            case "connect":
             {
-                // A body grown off the hull where the player clicked (Karl, 2026-11-24: nacelles, missile pods).
-                if (d.Hulls.Count >= ShipDesign.MaxHulls)
-                    return $"at most {ShipDesign.MaxHulls} hull bodies";
-                // Placed again with new settings (the page's count and spacing sliders): the last placing's bodies go first.
-                foreach (var r in o["replace"]?.AsArray() ?? [])
-                    if (r is not null && d.Hull((int)r) is { } old && d.Hulls.Count > 1)
-                    {
-                        d.Hulls.Remove(old);
-                        d.Pieces.RemoveAll(p => p.Hull == old.Id);
-                    }
-                var parent = H();
-                var copy = Math.Clamp(I(o, "copy"), 0, parent.Copies - 1);
-                double lx = D(o, "x") - parent.CopyX(copy), ly = D(o, "y") - parent.Y, lz = D(o, "z") - parent.Z;
-                var t = parent.NearestT(lx, ly, lz);
-                var side = lx < -0.01 ? -1 : 1;
-                var n = Math.Clamp(I(o, "count", 1), 1, 8);
-                var around = Str(o, "spread", "along") == "around";
-                var gap = D(o, "spacing", around ? 0.2 : 4);
-                var ids = new JsonArray();
-                for (var k = 0; k < n; k++)
+                // A connection lofted from a skin point to another (Karl, 2026-11-24): to a point on a body already there, or to a new body
+                // set out along the first point's normal at a distance. Placed again as the page's sliders move: "replace" names the
+                // last placing's join and body, which go first.
+                if (d.JoinById(I(o, "replaceJoin")) is { } oldJ)
+                    d.Joins.Remove(oldJ);
+                if (I(o, "replaceHull") is var rh and > 0 && d.Hull(rh) is { } oldH && d.Hulls.Count > 1)
                 {
-                    if (d.Hulls.Count >= ShipDesign.MaxHulls)
-                        break;
-                    var f = k - (n - 1) / 2.0;
-                    var z = Math.Clamp(lz + (around ? 0 : f * gap), parent.Front, parent.Back);
-                    var tk = Math.Clamp(t + (around ? f * gap : 0), 0, 1);
-                    var s = parent.OnSkin(z, tk, side);
-                    var h = DesignTemplates.Branch(d, Str(o, "preset", "Nacelle"), parent.CopyX(copy) + s.X, parent.Y + s.Y, parent.Z + s.Z, s.Nx, s.Ny, (bool?)o["pair"] ?? true);
-                    d.Hulls.Add(h);
-                    ids.Add(JsonValue.Create(h.Id));
+                    d.Hulls.Remove(oldH);
+                    d.Pieces.RemoveAll(p => p.Hull == oldH.Id);
+                    d.Joins.RemoveAll(j => j.A.Hull == oldH.Id || j.B.Hull == oldH.Id);
                 }
-                o["id"] = ids.Count > 0 ? (int)ids[^1]! : 0;
-                o["ids"] = ids;
+                if (d.Joins.Count >= ShipDesign.MaxJoins)
+                    return $"at most {ShipDesign.MaxJoins} connections";
+                var ao = o["a"]?.AsObject() ?? throw new InvalidOperationException("no first point");
+                var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
+                var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), W = D(o, "w", 1.2), H = D(o, "h", 1.2), Segments = I(o, "segments", 6),
+                    Mirror = (bool?)o["mirror"] ?? true };
+                j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"));
+                if (o["b"] is JsonObject bo)
+                {
+                    var hb = d.Hull(I(bo, "hull")) ?? throw new InvalidOperationException("no such hull");
+                    j.B = HullJoin.At(hb, I(bo, "copy"), D(bo, "x"), D(bo, "y"), D(bo, "z"));
+                }
+                else
+                {
+                    var no = o["body"]?.AsObject() ?? throw new InvalidOperationException("no second point or body");
+                    if (d.Hulls.Count >= ShipDesign.MaxHulls)
+                        return $"at most {ShipDesign.MaxHulls} hull bodies";
+                    var (pa, na) = HullJoin.World(d, j.A)!.Value;
+                    var bw = D(no, "w", 3);
+                    var bh = D(no, "h", 3);
+                    var len = D(no, "len", 12);
+                    var body = DesignTemplates.Sized(d, Str(no, "section", "Barrel"), bw, bh, len, I(no, "segments", 4));
+                    // Its middle out along the normal: the gap, then half its own reach that way.
+                    var reach = Math.Sqrt(Math.Pow(na[0] * bw / 2, 2) + Math.Pow(na[1] * bh / 2, 2));
+                    var gap = Math.Clamp(D(no, "dist", 4), 0, 100) + reach;
+                    body.X = Math.Round(pa[0] + na[0] * gap, 2);
+                    body.Y = Math.Round(pa[1] + na[1] * gap - bh / 2, 2);
+                    body.Z = Math.Round(pa[2] - len / 2 + D(no, "slide", 0), 2);
+                    body.Mirror = j.Mirror && Math.Abs(body.X) > 0.3;
+                    body.Skin = ha.Skin;
+                    d.Hulls.Add(body);
+                    o["hullId"] = body.Id;
+                    // The second end: the new body's skin point that faces the first.
+                    j.B = HullJoin.At(body, 0, pa[0], pa[1], pa[2]);
+                }
+                j.Tidy();
+                d.Joins.Add(j);
+                o["id"] = j.Id;
+                return "";
+            }
+            case "setJoin":
+            {
+                var j = d.JoinById(I(o, "id")) ?? throw new InvalidOperationException("no such connection");
+                j.Section = Str(o, "section", j.Section);
+                j.W = D(o, "w", j.W);
+                j.H = D(o, "h", j.H);
+                j.Segments = I(o, "segments", j.Segments);
+                j.Mirror = (bool?)o["mirror"] ?? j.Mirror;
+                j.Tidy();
+                return "";
+            }
+            case "delJoin":
+            {
+                var j = d.JoinById(I(o, "id")) ?? throw new InvalidOperationException("no such connection");
+                d.Joins.Remove(j);
                 return "";
             }
             case "copyHull":
@@ -153,6 +186,7 @@ public sealed class DesignEditor
                 var h = H();
                 d.Hulls.Remove(h);
                 d.Pieces.RemoveAll(p => p.Hull == h.Id);
+                d.Joins.RemoveAll(j => j.A.Hull == h.Id || j.B.Hull == h.Id);
                 return "";
             }
             case "moveHull":
