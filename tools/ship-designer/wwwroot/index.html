@@ -512,12 +512,13 @@ function drawConnectors() {
   for (const l of S.links) {
     if (l.service) {
       // A drive's service socket (Karl, 2026-11-24): a panel on the room's wall facing the drive, with its feed run to it.
-      const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = a.clone().sub(b); if (d.length() < 0.05) continue;
-      const dir = d.clone().normalize(), g = new THREE.Group(); g.position.copy(b); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = a.clone().sub(b);
+      // It faces into the room from the wall the drive is on: along the skin's normal, whatever room wall it landed on.
+      const dir = (l.n ? new THREE.Vector3(...l.n) : d.clone()).normalize(), g = new THREE.Group(); g.position.copy(b); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
       const steel = new THREE.MeshStandardMaterial({ color: 0x6d7682, metalness: 0.5, roughness: 0.5 }), amber = new THREE.MeshStandardMaterial({ color: l.ok ? 0xd8b04a : 0xff5a44, metalness: 0.4, roughness: 0.5 });
       const panel = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.06), steel); panel.position.z = 0.03; g.add(panel);
       for (const [x, y, w, h] of [[0, 0.37, 0.8, 0.05], [0, -0.37, 0.8, 0.05], [0.37, 0, 0.05, 0.8], [-0.37, 0, 0.05, 0.8]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), amber); f.position.set(x, y, 0.04); g.add(f); }
-      const len = d.length(), pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 8), steel); pipe.rotation.x = Math.PI / 2; pipe.position.z = len / 2; g.add(pipe);
+      const len = Math.max(0.05, d.length()), pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 8), steel); pipe.rotation.x = Math.PI / 2; pipe.position.z = len / 2; g.add(pipe);
       g.traverse(o => { o.renderOrder = 4; }); world.add(g);
       continue;
     }

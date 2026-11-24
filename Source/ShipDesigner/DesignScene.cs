@@ -21,7 +21,7 @@ public static class DesignScene
         public readonly List<Issue> Issues = [];
         public readonly Dictionary<int, bool> RoomOk = [];
         public readonly Dictionary<int, bool> PieceOk = [];
-        public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service)> Links = [];
+        public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service, double[] N)> Links = [];
         public readonly List<double[]> Doors = [];
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
@@ -849,6 +849,19 @@ public static class DesignScene
                 }
                 // A socket linked to a room the player picked may be farther than its reach: a lined connector runs to it, like the
                 // Limpet's shaft from the Zero Day's keel to its lower deck (Karl, 2026-11-24), up to MaxConnector long.
+                // A drive's service socket goes on the inside of the wall the drive is on: straight in from it along the skin's
+                // normal to the first room wall (Karl, 2026-11-24), not on whichever room wall is nearest.
+                if (kind.Service)
+                    for (var t = 0.1; t <= kind.Reach; t += 0.05)
+                    {
+                        double[] q = [at[0] - n[0] * t, at[1] - n[1] * t, at[2] - n[2] * t];
+                        var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 || r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
+                        if (hit is not null)
+                        {
+                            (best, bestD, bestPt) = (hit, t, q);
+                            break;
+                        }
+                    }
                 var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? (kind.Opening is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
@@ -868,7 +881,7 @@ public static class DesignScene
                     c.Issues.Add(new("error", best is null ? (p.Room != 0 ? $"{p.Kind}'s room is gone or isn't {kind.Needs}: pick another" : $"{p.Kind} needs {kind.Needs} behind it") :
                         $"{p.Kind} is {bestD:0.0} m from {Name(best)} (at most {kind.Reach:0.0} m, or {MaxConnector:0} m through a connector when you link it to the room): move it or the room closer", $"piece:{p.Id}"));
                 }
-                c.Links.Add((at, bestPt, linked, shaft, kind.Service));
+                c.Links.Add((at, bestPt, linked, shaft, kind.Service, n));
             }
             c.PieceOk[p.Id] = ok;
         }
@@ -1191,9 +1204,9 @@ public static class DesignScene
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {
-            var (a, b, ok, sh, sv) = c.Links[i];
+            var (a, b, ok, sh, sv, nn) = c.Links[i];
             sb.Append(i > 0 ? "," : "").Append("{\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S)))
-              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append('}');
+              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append(",\"n\":[").Append(string.Join(',', nn.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"issues\":[");
         for (var i = 0; i < c.Issues.Count; i++)
