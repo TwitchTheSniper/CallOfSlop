@@ -128,6 +128,8 @@ public static class ArmKit
             d.Spec = spec;
             spec.Def = d;
             if (spec.Valid)
+                Mount(spec, spec.Mounted); // (again, now its def is known: Fitter and payload)
+            if (spec.Valid)
             {
                 Apply(d, ld, spec);
                 foreach (var p in new[] { spec.Shoulder, spec.UpperBoom, spec.Elbow, spec.ForeBoom, spec.Wrist, spec.Head })
@@ -315,7 +317,6 @@ public static class ArmKit
         d.Ring = top.Y;
         d.Upper = s.Upper;
         d.Fore = s.Fore;
-        d.Fitter = file.Fitter || (s.Heads.Length > 0 && s.Heads[0].Kind == ArmPieceKind.FitterHead); // (a Fitter Head built on: it fits modules as a Module Fitter)
         d.ReachMax = s.Reach;
         d.ReachMin = MathF.Min(s.Reach - 0.5f, MathF.Abs(s.Upper - s.Fore) + LifterDef.Fold + 0.3f);
         d.Up = (s.Upper + s.Fore) * 0.7f;
@@ -444,6 +445,11 @@ public static class ArmKit
             s.ChartP[k] = MathF.Min(s.ChainP[k], h.Rating);
         s.Payload = s.ChartP[3];
         s.Weak = s.ChainP[3] > h.Rating ? KindName(h.Kind) : s.ChainWeak;
+        if (s.Def != null) // (a Fitter Head on the Wrist: it fits modules as a Module Fitter, as long as it is the one on)
+        {
+            s.Def.Fitter = (s.Def.Of?.Fitter ?? false) || h.Kind == ArmPieceKind.FitterHead;
+            s.Def.Payload = s.Payload;
+        }
     }
 
     /// <summary>What a head holds on this arm: the chain's full-reach chart held to the head's own limit.</summary>
@@ -497,7 +503,7 @@ public static class ArmKit
     /// <summary>Every Arm Core has its Head (which head is on: 0 its own, then the spares in reach; set by hand or by a carry's swap).</summary>
     internal static void AddSettings(ConstructPartDef d, List<CConfigDef> list)
     {
-        if (d.Lifter is not { Kit: true } || list.Exists(e => e.Id == CfgKey.ArmHead))
+        if (d.Lifter is not { Kit: true } || list.Count >= ConstructConfig.MaxSlots || list.Exists(e => e.Id == CfgKey.ArmHead))
             return;
         list.Add(new CConfigDef { Key = ConstructConfig.KeyName(CfgKey.ArmHead), Id = CfgKey.ArmHead, Type = CfgType.Number, Min = 0, Max = MaxHeads - 1, Step = 1, Default = 0, Label = "Head", Group = "Lifter",
             Tooltip = "Which head is on its Wrist: 0 its own, 1 and up the spares on Head Stands in its reach. It swaps by itself when the next piece needs another." });
