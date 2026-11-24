@@ -661,12 +661,30 @@ public static class SocketWeld
 
     /// <summary>
     /// Does socket <paramref name="socket"/> of part <paramref name="part"/> of <paramref name="c"/> take the piece's socket
-    /// <paramref name="own"/> of a part of kind <paramref name="def"/>: the same socket kind and size class, and a connection
-    /// that mates (the wrench's rules, <see cref="SnapBuild.CanMate"/>)? The markers shown in step 2 (a socket that doesn't can
-    /// still be welded to as a point on its face).
+    /// <paramref name="own"/> of a part of kind <paramref name="def"/>? The same socket kind and size class (what keeps a weld on
+    /// the grid, <see cref="OnRotGrid(Construct, in WeldTarget, Construct, in WeldTarget, float)"/>), and when both ends are
+    /// functional, connections that mate (<see cref="SnapBuild.Mates"/>: a fuel end onto a fuel port, not a power one); a plain
+    /// mount on either end takes anything of its kind. The markers shown in step 2 (any other socket can still be welded to as
+    /// a point on its face).
     /// </summary>
-    public static bool Receives(ConstructPartDef def, int own, Construct c, int part, int socket) =>
-        own >= 0 && own < def.Sockets.Length && SnapBuild.CanMate(c, def, own, part, socket);
+    public static bool Receives(ConstructPartDef def, int own, Construct c, int part, int socket)
+    {
+        if (own < 0 || own >= def.Sockets.Length || part >= c.PartCount)
+            return false;
+        var td = c.DefOf(part);
+        if (socket >= td.Sockets.Length)
+            return false;
+        var ts = td.Sockets[socket];
+        var ds = def.Sockets[own];
+        var leaf = ConstructBuild.OnLeaf(c, part, socket);
+        if (!ConstructBuild.KindsMate(ts.Kind, ds.Kind, leaf) || ts.Kind == SocketKind.Port || ds.Kind == SocketKind.Port || ts.Class != ds.Class)
+            return false;
+        if (leaf || ts.Kind != SocketKind.Struct)
+            return true; // (a special kind or a joint's leaf: the kind says it all)
+        var ot = SnapBuild.OwnType(def, own);
+        var port = SnapBuild.PortType(td, socket);
+        return ot == ConnType.Mount || port == ConnType.Mount || SnapBuild.Mates(ot, port);
+    }
 
     /// <summary>What socket <paramref name="s"/> of part <paramref name="i"/> connects, as its marker shows it.</summary>
     public static WeldLook LookOf(Construct c, int i, int s)
