@@ -85,7 +85,7 @@ public sealed class SawmillParts : IPartGenerator
         p.Sock("+x", [1, SockY, 0], "+x"); // (the bed's first Saw Block)
         p.Stats(1500, 3000, 5, 8);
         var bulk = Kw(("material", "any"), ("capacity", 60000), ("min", Py.L(-0.9, 0.16, -0.55)), ("max", Py.L(-0.3, 0.95, 0.55)));
-        var refine = Kw(("machine", "sawmill"), ("capacity", 30000), ("bin", InBin), ("outBin", OutBin), ("min", Py.L(bx0 + 0.1, 2.32, bz0 + 0.1)), ("max", Py.L(bx1 - 0.1, 2.66, bz1 - 0.1)));
+        var refine = Kw(("machine", "sawmill"), ("capacity", 30000), ("bin", InBin), ("outBin", OutBin), ("min", Py.L(bx0 + 0.1, 2.32, bz0 + 0.1)), ("max", Py.L(bx1 - 0.1, 2.6, bz1 - 0.1)));
         p.Set(("power", 1800), ("storage", Kw(("bulk", bulk), ("refine", refine))),
             ("machineBlock", Kw(("family", "sawmill"), ("role", "core"), ("origin", Py.L(0, 1, 0)), ("squares", true), ("maxCells", MaxCells), ("maxSide", MaxSide))),
             ("config", Py.L(
