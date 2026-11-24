@@ -84,7 +84,7 @@ public sealed class FoundryParts : IPartGenerator
         p.Sock("+x", [1, SockY, 0], "+x"); // (the bed's first Crucible Block)
         p.Stats(3500, 7000, 10, 10);
         var bulk = Kw(("material", "any"), ("capacity", 60000), ("min", Py.L(-0.9, 0.16, -0.55)), ("max", Py.L(-0.3, 0.95, 0.55)));
-        var refine = Kw(("machine", "foundry"), ("capacity", 30000), ("bin", InBin), ("outBin", OutBin), ("min", Py.L(-0.54, 2.2, -0.84)), ("max", Py.L(0.54, 2.5, -0.3)));
+        var refine = Kw(("machine", "foundry"), ("capacity", 30000), ("bin", InBin), ("outBin", OutBin), ("min", Py.L(-0.54, 2.2, -0.84)), ("max", Py.L(0.54, 2.42, -0.3))); // (under the hopper's rim band)
         p.Set(("power", 3500), ("storage", Kw(("bulk", bulk), ("refine", refine))),
             ("machineBlock", Kw(("family", "foundry"), ("role", "core"), ("origin", Py.L(0, 1, 0)), ("squares", true), ("maxCells", MaxCells), ("maxSide", MaxSide))),
             ("config", Py.L(
