@@ -56,8 +56,8 @@ public static class BreakerWorks
     /// <summary>Rows of teeth along a rotor.</summary>
     public static int TeethRows(int n) => 2 * n + 1;
 
-    /// <summary>The rotors' turn (rad/s) while it shreds: the back one the other way.</summary>
-    public const float Spin = 2.2f;
+    /// <summary>The rotors' turn (rad/s) while it shreds: the back one the other way. A lone block's "spin" boxes turn at ConstructRender's 2.4 too.</summary>
+    public const float Spin = 2.4f;
 
     /// <summary>The collecting belt's line (z) in front of the frontmost square (and never behind the Core's front).</summary>
     public static float CollectorZ(in SmelterWorks.Grid g, ReadOnlySpan<CMachineSquare> list) =>
@@ -116,7 +116,7 @@ public static class BreakerWorks
     // ---- The rotors hurt (server: ConstructBakeOven.Step refreshes the list) -------------------------------------------------------
 
     /// <summary>
-    /// Every working Breaker's rotor boxes into <see cref="ConstructWorld.Hazards"/>: over each square, from under its rotors to a metre over
+    /// Every working Breaker's rotor boxes (Running, as BreakerRender spins them: not Blocked with its yield waiting) into <see cref="ConstructWorld.Hazards"/>: over each square, from under its rotors to a metre over
     /// its rim (a player on the mouth stands in it), a 1 x 1's too. The Core's own mouth has none: nothing on it moves. At most <see cref="MostHazards"/>.
     /// </summary>
     public static void AddHazards(ConstructWorld world)
@@ -133,7 +133,7 @@ public static class BreakerWorks
                 if (asm.SquareCount == 0 || asm.Core >= c.PartCount || world.Hazards.Count >= MostHazards)
                     continue;
                 ref readonly var p = ref c.Parts[asm.Core];
-                if (p.Broken || !Is(p.D) || world.StoreOf(c, asm.Core) is not { } st || !st.Busy || st.Held || !ConstructRecycler.Powered(world, c, asm.Core)
+                if (p.Broken || !Is(p.D) || world.StoreOf(c, asm.Core) is not { } st || !st.Busy || ConstructRecycler.LineOf(world, c, asm.Core, st) != LineState.Running // (Blocked: the rotors stand still and hurt nobody)
                     || !Matrix4x4.Invert(ConstructBakeOven.CoreFrame(c, asm.Core), out var toCore))
                     continue;
                 var g = new SmelterWorks.Grid(p.D);

@@ -41,7 +41,7 @@ public sealed class BreakerParts : IPartGenerator
 
     private static PyDict? Alone(PyDict? box) => box?.Update(("alone", true));
 
-    private static PyDict? Spin(PyDict? b) => MachineLook.Work(b, "spin", "+x");
+    private static PyDict? Spin(PyDict? b, bool back = false) => MachineLook.Work(b, "spin", back ? "-x" : "+x"); // (the back drum turns the other way: the pair pulls a wreck down between them)
 
     // ---- The Core ------------------------------------------------------------------------------------------------------------------
 
@@ -182,6 +182,9 @@ public sealed class BreakerParts : IPartGenerator
             // draw the faces they meet on, 6 mm apart, and none of their boxes may share a plane.)
             var v = sg < 0 ? 0.004 : 0.0;
             p.Add(Seam(On(-0.06, 0.004, -e + 0.12 + v, e - 0.12 - v, b + v, rim - 0.006 - v, Body, paint: true), face)); // (the wall plate)
+            // (where the next block along is welded on, the corner posts both hide: a dark joint fills the gap between the two wall plates,
+            // set back a few millimetres behind them and up into the cap angle, so no daylight shows through the rim)
+            p.Add(On(-0.05 - v, -0.003 - v, e - 0.125 + v, e + 0.125 + v, b + 0.003 + v, rim - 0.05 - v, MachineLook.Base)!.Update(("seamFill", n == 2 ? "+x" : "+z")));
             foreach (var a in new[] { -0.45, 0.45 })
             {
                 p.Add(Seam(On(0.004, 0.05, a - 0.05 + v, a + 0.05 + v, b + 0.004, rim - 0.08, MachineLook.Base), face)); // (a rib)
@@ -231,14 +234,14 @@ public sealed class BreakerParts : IPartGenerator
         double x0 = -len / 2, pitch = len / rows;
         foreach (var (z, back) in new[] { (-gap, false), (gap, true) })
         {
-            p.Add(Alone(Spin(L([x0, ay - r * 0.8, z - r * 0.8], [-x0, ay + r * 0.8, z + r * 0.8], MachineLook.Steel, "dirty steel", shape: Cyl("+x", 14))))); // (the drum)
+            p.Add(Alone(Spin(L([x0, ay - r * 0.8, z - r * 0.8], [-x0, ay + r * 0.8, z + r * 0.8], MachineLook.Steel, "dirty steel", shape: Cyl("+x", 14)), back))); // (the drum)
             var count = back ? rows - 1 : rows;
             for (var k = 0; k < count; k++)
             {
                 var x = R3(x0 + (k + (back ? 1.0 : 0.5)) * pitch);
                 var colour = k % 2 == 0 ? MachineLook.Base : MachineLook.Accent;
-                p.Add(Alone(Spin(L([x - 0.035, ay - t, z - 0.06], [x + 0.035, ay + t, z + 0.06], colour)))); // (a tooth bar, up)
-                p.Add(Alone(Spin(L([x - 0.031, ay - 0.056, z - t], [x + 0.031, ay + 0.056, z + t], colour)))); // (and across)
+                p.Add(Alone(Spin(L([x - 0.035, ay - t, z - 0.06], [x + 0.035, ay + t, z + 0.06], colour), back))); // (a tooth bar, up)
+                p.Add(Alone(Spin(L([x - 0.031, ay - 0.056, z - t], [x + 0.031, ay + 0.056, z + t], colour), back))); // (and across)
             }
             foreach (var sx in new[] { -1, 1 })
             {

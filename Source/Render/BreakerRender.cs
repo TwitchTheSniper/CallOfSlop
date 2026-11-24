@@ -6,15 +6,18 @@ namespace CallOfSlop;
 /// What a Scrap Breaker draws across its squares (BreakerWorks lays them out: one rule for every peer; docs/sandbox/constructs/production.md
 /// "The Scrap Breaker"): over each square of 2 or more one pair of toothed rotors across it, counter-turning while it shreds, their bearing
 /// blocks and drive, and the belt under them with its cleats running to the front; a 1 x 1's are its Shredder Block's own "alone" boxes.
-/// For every square the funnel skirt round the bed's outer edges with hazard paint on its lip, the discharge from its front onto the
-/// collecting belt, and the belt along the front into the Core's hatch. The wreck under way (CStore.JobDef) sinks into the rotors of the
+/// For every square the funnel skirt round the bed's outer edges (hazard paint on its lip, the in side's white band along the rim, KEEP
+/// CLEAR on its front, a flat deck over each concave corner of the bed so its top runs on round it), the discharge from its front onto
+/// the collecting belt, and the belt along the front into the Core's hatch (turning end rollers, a hazard guard strip, the out side's
+/// orange band and arrows to the Core). The wreck under way (CStore.JobDef) sinks into the rotors of the
 /// square it landed on, squashed as it goes. Drawn within <see cref="DrawNear"/>. Allocates nothing.
 /// </summary>
 public static class BreakerRender
 {
     public const float DrawNear = 150f;
     private static readonly Vector3 Body = new(0.373f, 0.478f, 0.204f), Dark = new(0.133f, 0.149f, 0.169f), Steel = new(0.6f, 0.63f, 0.66f),
-        Yellow = new(0.95f, 0.69f, 0.12f), Rubber = new(0.106f, 0.114f, 0.122f), Rust = new(0.42f, 0.24f, 0.14f);
+        Yellow = new(0.95f, 0.69f, 0.12f), Rubber = new(0.106f, 0.114f, 0.122f), Rust = new(0.42f, 0.24f, 0.14f),
+        White = new(0.925f, 0.922f, 0.894f), Orange = new(0.94f, 0.47f, 0.094f), Ink = new(0.082f, 0.09f, 0.102f); // (MachineLook's In, Out and Ink)
     private const float CleatEvery = 0.5f, BeltSpeed = 0.8f; // the belts' cleats (m apart) and speed (m/s)
     private const int MostCleats = 24, MostBoxes = 256;
     private static CPartBox _cylX; // (the Shredder Block's lone drum: its cylinder shape, for what is drawn here)
@@ -162,15 +165,44 @@ public static class BreakerRender
                 if (Bed(list, cx + dx, cz + dz))
                     continue;
                 int ax = dz != 0 ? 1 : 0, az = dx != 0 ? 1 : 0; // (along the edge)
-                var lo = -g.Half - (Bed(list, cx - ax, cz - az) ? 0f : BreakerWorks.SkirtOut); // (the run's end at a corner of the bed: on past it)
-                var hi = g.Half + (Bed(list, cx + ax, cz + az) ? 0f : BreakerWorks.SkirtOut);
+                bool lowOn = !Bed(list, cx - ax, cz - az), highOn = !Bed(list, cx + ax, cz + az);
+                var lo = -g.Half - (lowOn ? BreakerWorks.SkirtOut : 0f); // (the run's end at a corner of the bed: on past it)
+                var hi = g.Half + (highOn ? BreakerWorks.SkirtOut : 0f);
                 var mid = new Vector3(g.X(cx), y, g.Z(cz));
                 var outward = new Vector3(dx, 0, dz);
                 var along = new Vector3(ax, 0, az);
                 var a = mid + outward * (g.Half + 0.03f);
                 var b = a + outward * BreakerWorks.SkirtOut + new Vector3(0, BreakerWorks.SkirtUp, 0);
-                Plate(gfx, frame, a + along * ((lo + hi) * 0.5f), b + along * ((lo + hi) * 0.5f), along, hi - lo, 0.03f, Body * 0.9f, DirtySurface);
-                Plate(gfx, frame, b + along * ((lo + hi) * 0.5f) - outward * 0.02f, b + along * ((lo + hi) * 0.5f) + outward * 0.05f + new Vector3(0, 0.02f, 0), along, hi - lo + 0.04f, 0.05f, Yellow, HazardSurface); // (its lip)
+                var mid2 = along * ((lo + hi) * 0.5f);
+                Plate(gfx, frame, a + mid2, b + mid2, along, hi - lo, 0.03f, Body * 0.9f);
+                // Its lip in hazard paint, reaching on past a corner of the bed only (where a neighbour's run goes on straight, the two lips
+                // meet end to end: no overlap in one plane), and the in side's white band along the rim, on the skirt's upper face.
+                float lipLo = lo - (lowOn ? 0.02f : 0f), lipHi = hi + (highOn ? 0.02f : 0f);
+                var lipMid = along * ((lipLo + lipHi) * 0.5f);
+                Plate(gfx, frame, b + lipMid - outward * 0.02f, b + lipMid + outward * 0.07f + new Vector3(0, 0.03f, 0), along, lipHi - lipLo, 0.06f, Yellow, HazardSurface); // (its lip)
+                var up = Vector3.Normalize(Vector3.Cross(along, b - a));
+                if (up.Y < 0)
+                    up = -up;
+                Plate(gfx, frame, a + mid2 + up * 0.02f, Vector3.Lerp(a, b, 0.14f) + mid2 + up * 0.02f, along, hi - lo - 0.01f, 0.01f, White); // (the in band)
+                if (dz < 0 && k == q.N / 2)
+                {
+                    // KEEP CLEAR on the front run's outer face, once a square: a yellow plate with its black word bar.
+                    var face = Vector3.Lerp(a, b, 0.45f) - up * 0.02f;
+                    Plate(gfx, frame, face - (b - a) * 0.12f, face + (b - a) * 0.12f, along, 0.9f, 0.012f, Yellow);
+                    Plate(gfx, frame, face - up * 0.008f - (b - a) * 0.04f, face - up * 0.008f + (b - a) * 0.04f, along, 0.7f, 0.008f, Ink);
+                }
+                // A concave corner of the bed (the run ends against a bigger square's side, which flares across it): a flat deck at the lip's
+                // height over the corner, so the skirt's top runs on round it instead of dipping into a V. Drawn from the front and back runs only.
+                if (dz != 0)
+                    foreach (var sgn in (ReadOnlySpan<int>)[-1, 1])
+                        if (Bed(list, cx + sgn * ax, cz + sgn * az) && Bed(list, cx + sgn * ax + dx, cz + sgn * az + dz))
+                        {
+                            var corner = mid + outward * (g.Half + 0.03f) + along * (sgn * (g.Half - 0.03f));
+                            var span = BreakerWorks.SkirtOut + 0.07f;
+                            var lo3 = corner - along * (sgn * span) + new Vector3(0, BreakerWorks.SkirtUp - 0.035f, 0);
+                            var hi3 = corner + outward * span + new Vector3(0, BreakerWorks.SkirtUp - 0.007f, 0);
+                            Box(gfx, frame, lo3, hi3, Body * 0.9f);
+                        }
                 foreach (var s in (ReadOnlySpan<float>)[-0.6f, 0.6f])
                     Plate(gfx, frame, a + along * s - outward * 0.01f + new Vector3(0, -0.25f, 0), Vector3.Lerp(a, b, 0.7f) + along * s + new Vector3(0, -0.04f, 0), along, 0.06f, 0.05f, Dark); // (a stay under it)
             }
@@ -212,7 +244,18 @@ public static class BreakerRender
         Box(gfx, frame, new Vector3(start, y1 - 0.034f, line - half + 0.03f), new Vector3(far, y1, line + half - 0.03f), Rubber);
         for (var x = start + 0.3f; x < far; x += g.Cell)
             Box(gfx, frame, new Vector3(x - 0.06f, g.Floor + 0.002f, line - half - 0.05f), new Vector3(x + 0.06f, y0, line + half + 0.05f), Yellow, surface: HazardSurface);
-        Box(gfx, frame, new Vector3(far, g.Floor, line - half - 0.03f), new Vector3(far + 0.08f, y1 + 0.25f, line + half + 0.03f), Yellow, surface: HazardSurface);
+        Box(gfx, frame, new Vector3(far + 0.06f, g.Floor, line - half - 0.03f), new Vector3(far + 0.14f, y1 + 0.25f, line + half + 0.03f), Yellow, surface: HazardSurface);
+        // So it reads as a belt running one way: steel end rollers that turn while it works, a hazard guard strip along its open (front)
+        // edge, and the out side's orange band with arrows to the Core along its front face.
+        var roll = working ? -(float)(now * BeltSpeed / 0.07f % Math.Tau) : 0f;
+        foreach (var rx in (ReadOnlySpan<float>)[start + 0.08f, far - 0.02f])
+            Shaped(gfx, frame, _cylX, new Vector3(rx, y1 - 0.035f, line), new Vector3(half - 0.01f, 0.07f, 0.07f), Steel, SteelSurface, roll, alongZ: true);
+        Box(gfx, frame, new Vector3(start + 0.004f, y1 - 0.02f, line - half - 0.035f), new Vector3(far - 0.004f, y1 + 0.045f, line - half + 0.012f), Yellow, surface: HazardSurface); // (the guard strip)
+        var fz = line - half;
+        Box(gfx, frame, new Vector3(start + 0.006f, y0 + 0.04f, fz - 0.006f), new Vector3(far - 0.006f, y0 + 0.07f, fz - 0.002f), Orange); // (the out band)
+        for (var x = start + 0.5f; x < far - 0.3f; x += 1f)
+            foreach (var sy in (ReadOnlySpan<float>)[-1f, 1f])
+                gfx.Draw(Matrix4x4.CreateScale(0.09f, 0.02f, 0.006f) * Matrix4x4.CreateRotationZ(sy * 0.6f) * Matrix4x4.CreateTranslation(x + 0.037f, y0 + 0.055f + sy * 0.025f, fz - 0.01f) * frame, Orange); // (an arrow's two strokes: a "<" to the Core, -x)
         // The spur up to the Core's belt hatch, over the gap to its front.
         var front = g.OZ - g.Half - 0.012f;
         if (line + half < front - 0.01f)
@@ -226,7 +269,7 @@ public static class BreakerRender
             var x = far - 0.15f - shift - k * CleatEvery; // (running to the Core, -x)
             if (x < start + 0.1f)
                 break;
-            Box(gfx, frame, new Vector3(x - 0.015f, y1, line - half + 0.05f), new Vector3(x + 0.015f, y1 + 0.03f, line + half - 0.05f), Dark);
+            Box(gfx, frame, new Vector3(x - 0.015f, y1, line - half + 0.05f), new Vector3(x + 0.015f, y1 + 0.03f, line + half - 0.05f), Steel, surface: SteelSurface); // (light on the black rubber: the run shows)
         }
     }
 
@@ -270,9 +313,12 @@ public static class BreakerRender
     // ---- Helpers ----
 
     /// <summary>A shaped box (the drum's cylinder), turned about x by <paramref name="turn"/> about its middle.</summary>
-    private static void Shaped(Renderer gfx, in Matrix4x4 frame, in CPartBox shape, Vector3 centre, Vector3 half, Vector3 colour, float surface = 0f, float turn = 0f)
+    private static void Shaped(Renderer gfx, in Matrix4x4 frame, in CPartBox shape, Vector3 centre, Vector3 half, Vector3 colour, float surface = 0f, float turn = 0f, bool alongZ = false)
     {
-        var model = shape.Shape == 0 ? Scale(centre - half, centre + half) : (shape with { Half = half }).Model(0, Vector3.Zero) * Matrix4x4.CreateRotationX(turn) * Matrix4x4.CreateTranslation(centre);
+        // (alongZ: the cylinder laid along z instead, a roller across a belt that runs along x; half.X is still its half length)
+        var lay = alongZ ? Matrix4x4.CreateRotationY(MathF.PI * 0.5f) : Matrix4x4.Identity;
+        var model = shape.Shape == 0 ? Scale(centre - (alongZ ? new Vector3(half.Y, half.Y, half.X) : half), centre + (alongZ ? new Vector3(half.Y, half.Y, half.X) : half))
+            : (shape with { Half = half }).Model(0, Vector3.Zero) * Matrix4x4.CreateRotationX(turn) * lay * Matrix4x4.CreateTranslation(centre);
         gfx.Draw(model * frame, colour, shape: shape.Shape, surface: surface);
     }
 
