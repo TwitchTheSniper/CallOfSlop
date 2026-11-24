@@ -523,7 +523,11 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   in, the set the head order needs waits at its sheet (the gates open at its ends, the side jaws 12 cm outside its edges), the other set
   stowed. A **changeover** (a head order of another shape, 4 s): the die sinks, its columns run a travelling wave (amplitude 0.5) while
   their tops tilt to the new shape, and the jaw sets move to the new panel's spots. A key with no shape (a kit's loft, a plain skin) has
-  a flat die. Not done: a sheet narrower than the lanes floats between them while it rolls in. Recipes are the Assembling generator's.
+  a flat die. **Draw cost** (2026-11-24): at most 16 columns each way (Sean), so a die over 4.8 m has wider columns; still, columns
+  on one plane at one height draw as one face (a fold's flats one face each, a big die 8 to 128 draws where it was 2,720); detail goes
+  by the eye's distance from the bed's own outline (rollers, slot linings, pocket ribs within 20 m; tilted faces and the pocket within
+  45 m; past that plain sides and a 10 x 10 die). Not done: a sheet narrower than the lanes floats between them while it rolls in.
+  Recipes are the Assembling generator's.
 - **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
   profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
   comes from the panel's **flat size**: the surface unrolled (`HullLoft.PanelFlat`, three lines each way), its thickness in whole cm
