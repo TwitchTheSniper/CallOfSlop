@@ -64,7 +64,7 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         {
             var s = new Script
             {
-                Description = "The Zero Day works: a 96 x 239 m site that makes every piece of the Zero Day frigate and builds it in its open yard. " +
+                Description = "The Zero Day works: a 96 x 239 m site, with a 32 x 48 m refinery annex on its west side, that makes every piece of the Zero Day frigate and builds it in its open yard. " +
                               "North to south: generator hall, materials row, the inline extruders, three crane bays (armour lines A to D, the general line), the assembly yard. Set it on flat ground on a planet.",
                 Group = "Factories",
             };
@@ -81,8 +81,10 @@ public sealed partial class ZeroDayWorks : IPartGenerator
         private void Lay()
         {
             LayFloor();
+            LayAnnexFloor();
             LayFrame();
             LayMaterials();
+            LayAnnex();
             LayArmourLines();
             LayGeneralLine();
             LayPower();
@@ -113,7 +115,8 @@ public sealed partial class ZeroDayWorks : IPartGenerator
 
         /// <summary>The floor slab under (x, z).</summary>
         private VPart Tile(float x, float z) =>
-            _tiles[(int)MathF.Floor(x / Slab), (int)MathF.Floor(-z / Slab)] ?? throw new VehicleKitException($"no floor at ({x}, {z})");
+            (x < 0 ? _west[(int)MathF.Floor(-x / Slab), (int)MathF.Floor(-z / Slab)] : _tiles[(int)MathF.Floor(x / Slab), (int)MathF.Floor(-z / Slab)])
+            ?? throw new VehicleKitException($"no floor at ({x}, {z})");
 
         /// <summary>Paints a part and hands it back.</summary>
         private new VPart Paint(VPart p, string colour)
