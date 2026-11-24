@@ -120,9 +120,9 @@ public static class DesignScene
             var w = Where(h, p);
             if (!own)
                 w = new Place([-w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
-            holes.Add((w, op.Hx, op.Hz, op.Round));
+            holes.Add((w, op.Hx * p.Size, op.Hz * p.Size, op.Round));
             if (p.Mirror)
-                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx, op.Hz, op.Round));
+                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx * p.Size, op.Hz * p.Size, op.Round));
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
@@ -739,7 +739,7 @@ public static class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var m = new DesignMesh();
             var w = Where(h, p);
-            m.Frame(w.O[0], w.O[1], w.O[2], w.X, w.Y, w.Z);
+            m.Frame(w.O[0], w.O[1], w.O[2], w.X, w.Y, w.Z, p.Size);
             kind.Draw(m);
             if (p.Mirror)
                 m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
@@ -747,7 +747,7 @@ public static class DesignScene
                 m.MirrorFrom(0, 0);
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
-              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false")
+              .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");

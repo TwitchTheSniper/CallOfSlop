@@ -557,7 +557,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null;
+let mounting = null, pieceSize = 1;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -574,7 +574,7 @@ function mountAim(ev) {
   if (!hit) return null;
   const up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
   const n = hit.object.userData.floor ? up.clone().negate() : hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
-  return { op: "mount", kind: mounting.kind, room: mounting.room, x: hit.point.x, y: hit.point.y, z: hit.point.z, nx: n.x, ny: n.y, nz: n.z, mirror: false, pair: true };
+  return { op: "mount", kind: mounting.kind, room: mounting.room, x: hit.point.x, y: hit.point.y, z: hit.point.z, nx: n.x, ny: n.y, nz: n.z, mirror: false, pair: true, size: pieceSize };
 }
 function mountTick() {
   if (!mounting?.pending) return;
@@ -653,7 +653,7 @@ function paletteMove(ev) {
   if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
   const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
   if (!paletteDrag.id) {
-    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, pair: $("ppair")?.checked ?? true, ...at });
+    const a = cmd({ op: "addPiece", preview: true, light: true, kind: paletteDrag.kind, mirror: $("pmirror")?.checked ?? false, pair: $("ppair")?.checked ?? true, size: pieceSize, ...at });
     if (a.error) { paletteDrag = null; return; }
     paletteDrag.id = a.id; dragFirst = false; select("piece", a.id, false);
   } else dragCmd({ op: "movePiece", preview: true, light: true, id: paletteDrag.id, ...at });
@@ -789,7 +789,8 @@ function leftPanel() {
     const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
     L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Mirror on its own body"),
-      el("label", { class: "row" }, el("input", { type: "checkbox", id: "ppair", checked: "" }), "On a mirrored pair of bodies, put it on both")));
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "ppair", checked: "" }), "On a mirrored pair of bodies, put it on both"),
+      slider("Size to place", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; })));
     for (const g of groups) {
       const pal = el("div", { class: "pal" });
       for (const k of CAT.pieces.filter(p => p.group === g)) {
@@ -938,7 +939,9 @@ function inspector() {
   if (sel.kind === "piece") {
     const p = S.pieces.find(p => p.id === sel.id); if (!p) return;
     const k = CAT.pieces.find(k => k.name === p.kind);
+    let firstSize = true;
     I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
+      slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 }, true)),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
