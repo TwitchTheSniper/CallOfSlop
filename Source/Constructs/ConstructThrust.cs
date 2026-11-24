@@ -277,7 +277,7 @@ public static partial class ConstructPhysics
                 wiredHeight = MathF.Max(wiredHeight, p.In1);
             if (t.Lifts && Live(c, ref t, p))
             {
-                liftForce += p.D.ThrustForce * t.Cap;
+                liftForce += c.ThrustOf(k); // (with a Mixture Controller's share, as the trims' weights take it)
                 spool = MathF.Max(spool, p.D.ThrustSpool);
             }
         }
@@ -648,13 +648,15 @@ public static partial class ConstructPhysics
     /// A Mixture Controller's push and burn shares: its dial (or its Mix in, -1..1, when wired) from -100 (80% push at 70% burn) through 0
     /// (as it is) to 100 (110% push at 130% burn). A broken one is as it is.
     /// </summary>
+    public const float MixRichPush = 0.1f, MixLeanPush = 0.2f; // (a Mixture Controller's push at +100 is 1 + rich, at -100 1 - lean: a module's peak thrust counts the rich)
+
     public static (float Push, float Burn) MixOf(Construct c, int mixer)
     {
         if (mixer >= c.PartCount || c.Parts[mixer].Broken)
             return (1, 1);
         ref var m = ref c.Parts[mixer];
         var x = Math.Clamp(m.InCount > 0 ? m.In : ConstructConfig.Get(m, m.D, CfgKey.Strength, 0) / 100f, -1, 1);
-        return (1 + (x < 0 ? 0.2f : 0.1f) * x, 1 + 0.3f * x);
+        return (1 + (x < 0 ? MixLeanPush : MixRichPush) * x, 1 + 0.3f * x);
     }
 
     private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)

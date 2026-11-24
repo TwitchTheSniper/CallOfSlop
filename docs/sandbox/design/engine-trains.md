@@ -78,7 +78,10 @@ Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sens
 - `--engine-check`: a valve at 40% holds the XS bell at 96 kN; wired on, 240 kN; lean 192 kN at 0.28 l/s, rich 264 kN at 0.52 l/s.
 - Protocol 460 (new part files).
 
-Not yet: a Flight Stabilizer plans its shares without the mix (feedback makes up the rest); a client's push readout and flame don't show the mix (the flame byte is the level); a rich XS bell's 264 kN is over its 1 m socket's 250 kN rating, which the fit rule reads from the bell's own rating.
+- A module's thrust for its socket's rating is its peak: a bell whose train has a Mixture Controller (wherever the mixer sits) counts on rich (`ConstructPhysics.MixRichPush`, `CModule.Rich`, `TrainThrust`), both at the fit and when a bell or a mixer is welded into a fitted module; the refusal says "on a rich mix". So the XS bell (240 kN) with a mixer (264 kN peak) needs more than a 1 m socket.
+- A Flight Stabilizer plans each bell's share with its mix's push (`ConstructEffectors.Scan`, at the rebuild), and the hover's trims read it too (`Construct.ThrustOf`); a mix a wire moves is made up by feedback.
+
+Not yet: a client's push readout and flame don't show the mix (the flame byte is the level).
 
 ## Next
 
