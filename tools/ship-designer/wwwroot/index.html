@@ -108,6 +108,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
     <nav class="modes" aria-label="Mode">
       <button id="m-hull" class="on">Hull</button>
       <button id="m-pieces">Pieces</button>
+      <button id="m-sculpt">Sculpt</button>
       <button id="m-interior">Interior</button>
       <button id="m-connectors">Connectors</button>
     </nav>
@@ -295,6 +296,14 @@ function rebuild() {
     if (sel.kind === "piece" && sel.id === p.id) m.material.emissive = new THREE.Color(0x1d4f86);
     if (!p.ok) m.material.emissive = new THREE.Color(0x5a1408);
     m.userData = { type: "piece", id: p.id };
+    world.add(m); pickables.push(m);
+  }
+  for (const pr of S.protrusions ?? []) {
+    if (hideHull && mode !== "sculpt") continue;
+    const m = meshFrom(pr.mesh, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {});
+    if (sel.kind === "protrusion" && sel.id === pr.id) m.material.emissive = new THREE.Color(0x1d4f86);
+    if (!pr.ok) m.material.emissive = new THREE.Color(0x5a1408);
+    m.userData = { type: "protrusion", id: pr.id };
     world.add(m); pickables.push(m);
   }
   if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
@@ -648,6 +657,16 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (!h) select(null, 0);
     return;
   }
+  if (mode === "sculpt") {
+    const p = hits.find(h => h.object.userData.type === "protrusion");
+    if (p && (!top || top.object === p.object || top.distance + 0.01 >= p.distance)) {
+      select("protrusion", p.object.userData.id);
+      drag = { what: "protrusion", id: p.object.userData.id, x0: ev.clientX, y0: ev.clientY, moved: false };
+      controls.enabled = false; dragFirst = true; return;
+    }
+    if (!hits.some(h => h.object.userData.type === "hull")) select(null, 0);
+    return;
+  }
   if (mode === "interior" && mounting) {
     const op = mountAim(ev) ?? mounting.last;
     if (!op) { toast("Click a wall, the floor or the ceiling of the room."); return; }
@@ -748,6 +767,11 @@ window.addEventListener("pointermove", ev => {
     drag.off = !hit;
     if (hit) { const u = hit.object.userData; dragCmd({ op: "movePiece", preview: true, light: true, id: drag.id, hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
     $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
+  } else if (drag.what === "protrusion") {
+    const hit = hullHit(ev);
+    drag.off = !hit;
+    if (hit) { const u = hit.object.userData; if (u.surface === "skin") dragCmd({ op: "setProtrusion", light: true, id: drag.id, hull: u.hull, copy: u.copy, x: hit.point.x, y: hit.point.y, z: hit.point.z }); }
+    $("tip").textContent = hit ? "Release to drop it here." : "Release here to take it off the ship.";
   } else if (drag.what === "room") {
     const at = deckPoint(ev); if (!at || !drag.start) return;
     const dx = Math.round((at.x - drag.start.x) * 4) / 4, dz = Math.round((at.z - drag.start.z) * 4) / 4, r = drag.room, e = drag.edges;
@@ -784,7 +808,10 @@ window.addEventListener("pointerup", ev => {
   if (paletteDrag) { paletteDrop(ev); return; }
   if (!drag) return;
   const d = drag; drag = null; controls.enabled = true;
-  if (d.what === "piece" && d.moved && d.off) {
+  if (d.what === "protrusion" && d.moved && d.off) {
+    pending = null; cmd({ op: "delProtrusion", id: d.id }, !dragFirst); select(null, 0);
+    toast("Taken off the ship. Undo puts it back.", true);
+  } else if (d.what === "piece" && d.moved && d.off) {
     pending = null; cmd({ op: "delPiece", id: d.id }, !dragFirst); select(null, 0);
     toast("Taken off the ship. Undo puts it back.", true);
   } else if (d.what === "draw") {
@@ -890,6 +917,7 @@ function hover(ev) {
   if (mode === "hull" && conn && conn.step !== "set") renderer.domElement.style.cursor = "crosshair";
   else if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
+  else if (mode === "sculpt" && hits[0]?.object.userData.type === "protrusion") renderer.domElement.style.cursor = "grab";
   else if (mode === "connectors" && hits.some(h => h.object.userData.type === "door")) { renderer.domElement.style.cursor = "grab"; $("tip").textContent = "Click to pick the door; drag it along the wall."; }
   else if (mode === "connectors" && hits.some(h => ["riser", "room"].includes(h.object.userData.type))) renderer.domElement.style.cursor = "pointer";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
@@ -905,9 +933,9 @@ function hover(ev) {
 
 // ---------- the palette: drag a piece from the left panel onto the hull
 let paletteDrag = null;
-function paletteStart(ev, kind) {
+function paletteStart(ev, kind, prot = false) {
   ev.preventDefault();
-  paletteDrag = { kind, id: 0 }; dragFirst = true;
+  paletteDrag = { kind, id: 0, prot }; dragFirst = true;
   $("tip").textContent = `Drag the ${kind} onto the hull.`;
 }
 function paletteMove(ev) {
@@ -917,6 +945,16 @@ function paletteMove(ev) {
   if (!hit) { if (paletteDrag.id) $("tip").textContent = "Release here to leave it off."; paletteDrag.off = true; return; }
   paletteDrag.off = false;
   const u = hit.object.userData;
+  if (paletteDrag.prot) {
+    if (u.surface !== "skin") { $("tip").textContent = "A plate goes on a hull's side, keel or spine."; return; }
+    const at = { hull: u.hull, copy: u.copy, x: hit.point.x, y: hit.point.y, z: hit.point.z };
+    if (!paletteDrag.id) {
+      const a = cmd({ op: "addProtrusion", light: true, kind: paletteDrag.kind, mirror: $("prmirror")?.checked ?? true, ...at });
+      if (a.error) { toast(a.error); paletteDrag = null; return; }
+      paletteDrag.id = a.id; dragFirst = false; select("protrusion", a.id, false);
+    } else dragCmd({ op: "setProtrusion", light: true, id: paletteDrag.id, ...at });
+    return;
+  }
   const where = CAT.pieces.find(k => k.name === paletteDrag.kind).where;
   if ((where === "aft" || where === "fore") && u.surface === "skin") { $("tip").textContent = `A ${paletteDrag.kind} goes on a hull's end face.`; return; }
   const at = { hull: u.hull, copy: u.copy, surface: u.surface, x: hit.point.x, y: hit.point.y, z: hit.point.z };
@@ -928,6 +966,12 @@ function paletteMove(ev) {
 }
 function paletteDrop() {
   const p = paletteDrag; paletteDrag = null;
+  if (p.prot) {
+    if (p.id && p.off) { pending = null; cmd({ op: "delProtrusion", id: p.id }, true); select(null, 0); }
+    else { flush(); if (p.id) { take(api.Scene()); select("protrusion", p.id); } }
+    $("tip").textContent = tips[mode];
+    return;
+  }
   if (p.id && p.off) { pending = null; cmd({ op: "delPiece", id: p.id }, true); select(null, 0); }
   else {
     flush();
@@ -947,6 +991,7 @@ function selectStation(hull, i) { sel.kind = "hull"; sel.id = hull; sel.station 
 
 const tips = {
   hull: "Click a hull to pick it and move it with the arrows. Drag a blue station ring along the ship. Shape a station's profile on the left.",
+  sculpt: "Drag a plate from the gallery onto the hull. Drag a plate to move it over the skin; drag it off the ship to take it off.",
   pieces: "Drag a piece from the left onto the hull. Drag a piece to move it; drag it off the ship to take it off.",
   connectors: "Ladders and lifts between decks: pick a room and add one going down or up, or pick Ladder or Lift on the left and click a deck.",
   interior: "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
@@ -962,6 +1007,21 @@ function shapeIcon(p) {
   const poly = document.createElementNS(NS, "polygon"); poly.setAttribute("points", all.map(q => q.map(v => v.toFixed(1)).join(",")).join(" "));
   poly.setAttribute("fill", "currentColor"); poly.setAttribute("fill-opacity", "0.25"); poly.setAttribute("stroke", "currentColor"); poly.setAttribute("stroke-width", "1.5"); poly.setAttribute("stroke-linejoin", "round");
   svg.append(poly); return svg;
+}
+// A plate's gallery icon: its plan (the footprint tapered, the plateau inside the bevel) over its side view.
+function protIcon(g) {
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", "0 0 72 72");
+  const big = Math.max(g.len, g.wid * 1.6), sc = 56 / big, hl = g.len / 2 * sc, hw = g.wid / 2 * sc, cx = 36, cy = 28;
+  const inset = Math.min(0.95, g.chamfer * g.rise * 2.5 / (g.len / 2)), insetW = Math.min(0.95, g.chamfer * g.rise * 2.5 / (g.wid / 2));
+  const w = u => 1 - Math.abs(g.taper) * (g.taper > 0 ? (1 - u) / 2 : (1 + u) / 2);
+  const ring = (a, b) => [[-a, -b * w(-a)], [a, -b * w(a)], [a, b * w(a)], [-a, b * w(-a)]].map(([u, v]) => `${(cx + u * hl).toFixed(1)},${(cy + v * hw).toFixed(1)}`).join(" ");
+  const poly = (pts, op) => { const q = document.createElementNS(NS, "polygon"); q.setAttribute("points", pts); q.setAttribute("fill", "currentColor"); q.setAttribute("fill-opacity", op); q.setAttribute("stroke", "currentColor"); q.setAttribute("stroke-width", "1.2"); q.setAttribute("stroke-linejoin", "round"); svg.append(q); };
+  poly(ring(1, 1), "0.15"); poly(ring(1 - inset, 1 - insetW), "0.4");
+  for (let f = 1; f < g.facets; f++) { const v = -(1 - insetW) + 2 * (1 - insetW) * f / g.facets; const l = document.createElementNS(NS, "line"); l.setAttribute("x1", cx - (1 - inset) * hl); l.setAttribute("x2", cx + (1 - inset) * hl); l.setAttribute("y1", cy + v * hw); l.setAttribute("y2", cy + v * hw); l.setAttribute("stroke", "currentColor"); l.setAttribute("stroke-width", "0.8"); svg.append(l); }
+  // Side view: the rise, exaggerated to read at this size.
+  const rh = Math.min(14, Math.max(3, g.rise * sc * 2)), by = 66, run = inset * hl;
+  poly(`${cx - hl},${by} ${cx - hl + run},${by - rh} ${cx + hl - run},${by - rh} ${cx + hl},${by}`, "0.3");
+  return svg;
 }
 // The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
 // on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
@@ -1032,7 +1092,7 @@ let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 function setMode(m) {
   if (mounting) stopMount();
   mode = m;
-  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
+  for (const k of ["hull", "pieces", "sculpt", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
   if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
   $("tip").textContent = tips[m];
   rebuild(); panels();
@@ -1054,6 +1114,16 @@ function leftPanel() {
       connectSection());
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));
+  } else if (mode === "sculpt") {
+    const gal = el("div", { class: "gal", role: "listbox" });
+    for (const g of CAT.protrusions) {
+      const b = el("button", { title: `${g.name}: ${fmt(g.len)} x ${fmt(g.wid)} m, ${fmt(g.rise)} m proud. Drag onto the hull.` }, protIcon(g), el("span", {}, g.name));
+      b.addEventListener("pointerdown", ev => paletteStart(ev, g.name, true));
+      gal.append(b);
+    }
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Sculpt", el("span", { class: "n" }, `${(S.protrusions ?? []).length}`)),
+      el("p", { class: "hint" }, "Raised plates on the skin: armour, blisters, sponsons, strakes. Drag one onto the hull; it follows the hull's curve. Shape it on the right."),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "prmirror", checked: "" }), "Mirror on the other side"), gal));
   } else if (mode === "pieces") {
     const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
     L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
@@ -1210,6 +1280,25 @@ function profileEditor(h, i) {
 function inspector() {
   const I = $("inspect"); I.replaceChildren();
   if (!S) return;
+  if (sel.kind === "protrusion") {
+    const pr = (S.protrusions || []).find(p => p.id === sel.id); if (!pr) return;
+    // Live while sliding (one command a frame, one undo step a slide).
+    const sl = (label, key, v, min, max, step, unit, scale) => { let f = true; return slider(label, Math.round(v * scale), min, max, step, unit,
+      x => { if (f) { flush(); dragFirst = true; f = false; } dragCmd({ op: "setProtrusion", id: pr.id, light: true, [key]: x / scale }); },
+      () => { flush(); f = true; take(api.Scene()); }); };
+    const pre = el("select", { "aria-label": "Preset" }); pre.append(el("option", { value: "" }, "Apply a preset...")); for (const g of CAT.protrusions) pre.append(el("option", { value: g.name }, g.name));
+    pre.addEventListener("change", () => { if (pre.value) cmd({ op: "setProtrusion", id: pr.id, preset: pre.value }); });
+    const mir = el("input", { type: "checkbox" }); mir.checked = pr.mirror; mir.addEventListener("change", () => cmd({ op: "setProtrusion", id: pr.id, mirror: mir.checked }));
+    I.append(el("h2", {}, pr.kind, el("span", { class: "n" }, pr.ok ? `${fmt(pr.len)} x ${fmt(pr.wid)} m` : "runs off the hull")),
+      el("p", { class: "hint" }, "A raised plate laid on the skin. Drag it over the hull to move it."),
+      sl("Length", "len", pr.len, 30, 4000, 5, " cm", 100), sl("Width", "wid", pr.wid, 20, 2000, 5, " cm", 100), sl("Rise", "rise", pr.rise, 5, 300, 5, " cm", 100),
+      sl("Chamfer", "chamfer", pr.chamfer, 0, 95, 5, "%", 100), sl("Taper", "taper", pr.taper, -90, 90, 5, "%", 100), sl("Facets", "facets", pr.facets, 1, 4, 1, "", 1),
+      sl("Round the hull", "t", pr.t, 0, 100, 1, "%", 100),
+      el("label", { class: "row" }, mir, "Mirror on the other side"), el("div", { class: "row" }, pre),
+      el("div", { class: "row" }, el("button", { onclick: () => { const a = cmd({ op: "dupProtrusion", id: pr.id }); if (!a.error) select("protrusion", a.id); } }, "Duplicate aft"),
+        el("button", { onclick: () => { cmd({ op: "delProtrusion", id: pr.id }); select(null, 0); } }, "Delete")));
+    return;
+  }
   if (sel.kind === "hullwin") {
     const w = (S.hullWindows || []).find(w => w.id === sel.id); if (!w) return;
     const r = S.rooms.find(r => r.id === w.room);
@@ -1371,7 +1460,7 @@ function checks() {
 }
 
 // ---------- the bar
-for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).addEventListener("click", () => setMode(k));
+for (const k of ["hull", "pieces", "sculpt", "interior", "connectors"]) $("m-" + k).addEventListener("click", () => setMode(k));
 $("undo").addEventListener("click", () => { take(api.Undo()); panels(); });
 $("redo").addEventListener("click", () => { take(api.Redo()); panels(); });
 $("start").addEventListener("change", e => { if (!e.target.value) return; cmd({ op: "start", name: e.target.value }); e.target.value = ""; select(null, 0); frame(); });
@@ -1396,12 +1485,12 @@ window.addEventListener("keydown", e => {
   else if (ctrl && (k === "c" || k === "x")) {
     if (!sel.kind) return;
     e.preventDefault(); clip = { kind: sel.kind, id: sel.id };
-    if (k === "x") { if (sel.kind === "piece") cmd({ op: "delPiece", id: sel.id }); else if (sel.kind === "room") cmd({ op: "delRoom", id: sel.id }); else if (sel.kind === "hull") cmd({ op: "delHull", hull: sel.id }); clip.cut = true; select(null, 0); }
+    if (k === "x") { if (sel.kind === "protrusion") cmd({ op: "delProtrusion", id: sel.id }); else if (sel.kind === "piece") cmd({ op: "delPiece", id: sel.id }); else if (sel.kind === "room") cmd({ op: "delRoom", id: sel.id }); else if (sel.kind === "hull") cmd({ op: "delHull", hull: sel.id }); clip.cut = true; select(null, 0); }
     else toast("Copied. Ctrl+V pastes a copy beside it.", true);
   } else if (ctrl && k === "v") {
     if (!clip) return; e.preventDefault();
     if (clip.cut) { $("undo").click(); clip.cut = false; toast("Pasted back.", true); return; } // (a cut thing keeps its place)
-    const a = clip.kind === "piece" ? cmd({ op: "pastePiece", id: clip.id, dz: 2 }) : clip.kind === "room" ? cmd({ op: "pasteRoom", id: clip.id }) : cmd({ op: "copyHull", hull: clip.id });
+    const a = clip.kind === "protrusion" ? cmd({ op: "dupProtrusion", id: clip.id }) : clip.kind === "piece" ? cmd({ op: "pastePiece", id: clip.id, dz: 2 }) : clip.kind === "room" ? cmd({ op: "pasteRoom", id: clip.id }) : cmd({ op: "copyHull", hull: clip.id });
     if (!a.error) { if (clip.kind === "hull") select("hull", S.hulls[S.hulls.length - 1].id); else { select(clip.kind, a.id); clip = { kind: clip.kind, id: a.id }; } }
   } else if (ctrl && k === "d" && sel.kind) { e.preventDefault(); clip = { kind: sel.kind, id: sel.id }; window.dispatchEvent(new KeyboardEvent("keydown", { key: "v", ctrlKey: true })); }
   else if (e.key === "Delete" || e.key === "Backspace") {
@@ -1411,6 +1500,7 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "riser") { cmd({ op: "delRiser", id: sel.id }); select(null, 0); }
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "protrusion") { cmd({ op: "delProtrusion", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
   } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
 });

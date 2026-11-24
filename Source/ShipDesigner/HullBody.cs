@@ -282,6 +282,18 @@ public sealed class HullBody
         return total < 1e-9 ? 0 : bestAt / total;
     }
 
+    /// <summary>The length of the path round the half profile at z (keel middle to spine middle), metres.</summary>
+    public double PathLen(double z)
+    {
+        Span<double> hs = stackalloc double[MaxLoft + 2];
+        Span<double> ys = stackalloc double[MaxLoft + 2];
+        var n = Path(Math.Clamp(z, Front, Back), hs, ys);
+        var total = 0.0;
+        for (var k = 0; k < n - 1; k++)
+            total += Len(hs[k + 1] - hs[k], ys[k + 1] - ys[k]);
+        return total;
+    }
+
     /// <summary>The path round the half profile at z: the keel's middle, the profile's points, the spine's middle.</summary>
     private int Path(double z, Span<double> hs, Span<double> ys)
     {

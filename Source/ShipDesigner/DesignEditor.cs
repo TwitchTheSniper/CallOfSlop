@@ -110,6 +110,7 @@ public sealed class DesignEditor
                 {
                     d.Hulls.Remove(oldH);
                     d.Pieces.RemoveAll(p => p.Hull == oldH.Id);
+                    d.Protrusions.RemoveAll(p => p.Hull == oldH.Id);
                     d.Joins.RemoveAll(j => j.A.Hull == oldH.Id || j.B.Hull == oldH.Id);
                 }
                 if (d.Joins.Count >= ShipDesign.MaxJoins)
@@ -191,6 +192,7 @@ public sealed class DesignEditor
                 var h = H();
                 d.Hulls.Remove(h);
                 d.Pieces.RemoveAll(p => p.Hull == h.Id);
+                d.Protrusions.RemoveAll(p => p.Hull == h.Id);
                 d.Joins.RemoveAll(j => j.A.Hull == h.Id || j.B.Hull == h.Id);
                 return "";
             }
@@ -415,6 +417,56 @@ public sealed class DesignEditor
                 d.Rooms.Add(r);
                 return "";
             }
+            // ---- protrusions (the Sculpt tab)
+            case "addProtrusion":
+            {
+                if (d.Protrusions.Count >= Protrusion.Max)
+                    return $"at most {Protrusion.Max} protrusions";
+                var pr = new Protrusion { Id = d.NewId(), Mirror = (bool?)o["mirror"] ?? true };
+                pr.Preset(Str(o, "kind", "Blister"));
+                PlaceProtrusion(pr, o);
+                d.Protrusions.Add(pr);
+                o["id"] = pr.Id;
+                return "";
+            }
+            case "setProtrusion":
+            {
+                var pr = d.ProtrusionById(I(o, "id")) ?? throw new InvalidOperationException("no such protrusion");
+                if (o["preset"] is not null) pr.Preset(Str(o, "preset"));
+                if (o["kind"] is not null) pr.Kind = Str(o, "kind");
+                if (o["mirror"] is not null) pr.Mirror = (bool)o["mirror"]!;
+                if (o["side"] is not null) pr.Side = I(o, "side") < 0 ? -1 : 1;
+                if (o["t"] is not null) pr.T = Math.Round(D(o, "t"), 4);
+                if (o["len"] is not null) pr.Len = Snap(D(o, "len"), 0.05);
+                if (o["wid"] is not null) pr.Wid = Snap(D(o, "wid"), 0.05);
+                if (o["rise"] is not null) pr.Rise = Snap(D(o, "rise"), 0.05);
+                if (o["chamfer"] is not null) pr.Chamfer = Snap(D(o, "chamfer"), 0.05);
+                if (o["taper"] is not null) pr.Taper = Snap(D(o, "taper"), 0.05);
+                if (o["facets"] is not null) pr.Facets = (int)Math.Round(D(o, "facets"));
+                if (o["x"] is not null && o["y"] is not null)
+                    PlaceProtrusion(pr, o);
+                else if (o["z"] is not null)
+                    pr.Z = Snap(D(o, "z"), 0.05);
+                pr.Clamp();
+                return "";
+            }
+            case "delProtrusion":
+                d.Protrusions.Remove(d.ProtrusionById(I(o, "id")) ?? throw new InvalidOperationException("no such protrusion"));
+                return "";
+            case "dupProtrusion":
+            {
+                if (d.Protrusions.Count >= Protrusion.Max)
+                    return $"at most {Protrusion.Max} protrusions";
+                var src = d.ProtrusionById(I(o, "id")) ?? throw new InvalidOperationException("no such protrusion");
+                var h = d.Hull(src.Hull)!;
+                var pr = Protrusion.FromJson(JsonNode.Parse(src.ToJson().ToJsonString())!.AsObject(), d.NewId()); // (through text: its numbers read back as JSON numbers)
+                pr.Hull = src.Hull;
+                pr.Z = Math.Clamp(src.Z + src.Len + D(o, "gap", 0.5), h.Front, h.Back);
+                d.Protrusions.Add(pr);
+                o["id"] = pr.Id;
+                return "";
+            }
+
             case "delPiece":
                 d.Pieces.Remove(P());
                 return "";
@@ -889,11 +941,28 @@ public sealed class DesignEditor
         }
     }
 
+    /// <summary>Puts a protrusion's middle where the page's pointer met a hull's skin (<c>hull copy x y z</c>), as a skin piece.</summary>
+    private void PlaceProtrusion(Protrusion pr, JsonObject o)
+    {
+        var h = Design.Hull(I(o, "hull", pr.Hull)) ?? throw new InvalidOperationException("no such hull");
+        pr.Hull = h.Id;
+        pr.Copy = Math.Clamp(I(o, "copy", pr.Copy), 0, h.Copies - 1);
+        var lx = D(o, "x") - h.CopyX(pr.Copy);
+        var ly = D(o, "y") - h.Y;
+        var lz = D(o, "z") - h.Z;
+        pr.Z = Snap(Math.Clamp(lz, h.Front, h.Back), 0.05);
+        pr.Side = lx < -0.01 ? -1 : 1;
+        pr.T = Math.Round(h.NearestT(lx, ly, pr.Z), 4);
+    }
+
     /// <summary>After a station moves, a piece past the body's ends stays on its end.</summary>
     private void KeepPieces(HullBody h)
     {
         foreach (var p in Design.Pieces)
             if (p.Hull == h.Id && p.Surface == "skin")
+                p.Z = Math.Clamp(p.Z, h.Front, h.Back);
+        foreach (var p in Design.Protrusions)
+            if (p.Hull == h.Id)
                 p.Z = Math.Clamp(p.Z, h.Front, h.Back);
     }
 }
