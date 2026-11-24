@@ -2,7 +2,7 @@ namespace SlopBrowser;
 
 /// <summary>
 /// Where a page's picture, sound, mouse and reports go: the game's shared block and slot while it is on a screen, and nowhere while it is on the shelf
-/// (a Browser Screen out of range, kept as it was: docs/sandbox/MEDIA.md, "Out of range"). Paints, sound and the mouse read the block under a read lock and
+/// (a Browser Screen out of range, kept as it was: docs/sandbox/MEDIA.md, "Sign-ins and out of range"). Paints, sound and the mouse read the block under a read lock and
 /// <see cref="Detach"/> takes the write lock, so a block is never touched after it was let go, whichever CEF thread is painting. A shelved page says nothing:
 /// its old slot may hold another page by then.
 /// </summary>
