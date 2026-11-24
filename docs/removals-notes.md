@@ -1,3 +1,17 @@
+# Sawmill tiers (2026-11-24)
+
+The Sawmill became a block machine (plan PR 3: docs/sandbox/constructs/production.md "The Sawmill"), so its tiers went:
+`Constructs/Parts/Refining/SawmillT2.json` to `SawmillT5.json` (Workshop, Industrial, Military and Plasma Sawmill), the Sawmill line of the
+part kit's `machine_tiers` (`MachineTiers.cs`, its shape in `TierStyle.cs`: two beds and a blade frame, and its dressing in
+`TierMachine.cs`) and their four Assembler recipe rows. It had no recipe gates.
+
+- **Kept:** the Sawmill's file and name (now the Core, from `SawmillParts.cs`), both its recipes, its Assembler row; the Drill and Saw
+  Modules keep their tiers.
+- **Saves and blueprints:** the four names load as the Core (`ConstructParts.Renamed`); a saved recipe keeps its recipe (both were open at
+  every tier).
+- **Rebuilt:** the Production Showcase (a Core, a 2 x 2 and a 1 x 1 of Saw Blocks with Plank Stackers); the Zero Day works keeps a bare
+  Core (its wood chute laid again to the new Chute in), and the Starter Sawmill keeps a bare Core.
+
 # Foundry tiers (2026-11-24)
 
 The Foundry became a block machine (plan PR 2: docs/sandbox/constructs/production.md "The Foundry"), so its tiers went:
@@ -5,7 +19,7 @@ The Foundry became a block machine (plan PR 2: docs/sandbox/constructs/productio
 part kit's `machine_tiers` (`MachineTiers.cs`, its shape in `TierStyle.cs` and `TierMachine.cs`: the furnace, its hopper and tray), their
 four Assembler recipe rows and the Foundry's recipe gates (bronze 2, circuits 3 in `Refining.json`).
 
-- **Kept:** the Foundry's file and name (now the Core, from `FoundryParts.cs`), all its mixes, its Assembler row; the Sawmill keeps its tiers.
+- **Kept:** the Foundry's file and name (now the Core, from `FoundryParts.cs`), all its mixes, its Assembler row; the Sawmill kept its tiers until its own PR (the same day, above).
 - **Saves and blueprints:** the four names load as the Core (`ConstructParts.Renamed`); a saved recipe keeps its recipe (each old tier's
   list was a start of the full one).
 - **Rebuilt:** the Production Showcase (a Core, a 2 x 2 and a 1 x 1 with Mould Lines), the Militia refineries (`--gen-factory refinery`);
