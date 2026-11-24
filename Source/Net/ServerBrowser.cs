@@ -779,7 +779,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 460: engine trains phase 5: the Throttle Valve and Mixture Controller XS part files move part ids.
     // 461: the Scrap Breaker (Breaker Core, Shredder Block) beside the Recycler: new part files move part ids, a Breaker's bin, chute load
     //      and job time come from its squares, and a store's second flags byte's 128 carries a Breaker's wreck under way (its def and cell).
-    public const ushort ProtocolVersion = 461;
+    // 462: engine trains phase 6: the Reheat Ring and Fuel Filter XS part files move part ids.
+    public const ushort ProtocolVersion = 462;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

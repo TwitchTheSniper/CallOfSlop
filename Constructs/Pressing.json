@@ -1174,6 +1174,32 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "reheatring",
+     "like": "Reheat Ring XS",
+     "label": "reheat ring",
+     "preset": "hollow 70x70x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "fuelfilter",
+     "like": "Fuel Filter XS",
+     "label": "fuel filter",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9091,6 +9117,18 @@
    "die": "housing",
    "pattern": "mixture",
    "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Reheat Ring XS",
+   "die": "housing",
+   "pattern": "reheatring",
+   "blank": "hollow 70x70x40 steel"
+  },
+  {
+   "part": "Fuel Filter XS",
+   "die": "housing",
+   "pattern": "fuelfilter",
+   "blank": "hollow 70x70x35 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

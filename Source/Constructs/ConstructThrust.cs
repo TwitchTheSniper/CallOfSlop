@@ -25,6 +25,10 @@ public struct CThruster
     public float Lit; // ...and how long it has been asked to light (host only)
     public bool Train; // a bell that needs an injector (ConstructWorks.InjectorFedHead): its heat is kept for a Sensor Ring
     public float Heat; // ...0..1: its level eased as the drawn heat is (3 s up, 25 s down; host only, kept over rebuilds)
+    public int Reheat; // ...and its Reheat Ring (-1: none)
+    public float ReheatUsed; // s of boost used (host; it recovers while off, kept over rebuilds)
+    public bool ReheatSpent; // ...used up: no boost until it has all recovered
+    public bool ReheatOn; // ...boosting on the last step (host; ThrustOf reads it)
     public int Valve, Mixer; // a bell that needs an injector: its train's Throttle Valve and Mixture Controller (part indices, -1: none; ConstructWorks.CWorksHead)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
@@ -101,12 +105,16 @@ public sealed partial class Construct
         Span<float> keepAb = stackalloc float[MaxThrusters];
         Span<float> keepBuffer = stackalloc float[MaxThrusters];
         Span<float> keepHeat = stackalloc float[MaxThrusters];
+        Span<float> keepReheat = stackalloc float[MaxThrusters];
+        Span<bool> keepSpent = stackalloc bool[MaxThrusters];
         var old = ThrusterCount;
         for (var k = 0; k < old; k++)
         {
             keepAb[k] = Thrusters[k].Ab;
             keepBuffer[k] = Thrusters[k].Buffer;
             keepHeat[k] = Thrusters[k].Heat;
+            keepReheat[k] = Thrusters[k].ReheatUsed;
+            keepSpent[k] = Thrusters[k].ReheatSpent;
             keep[k] = Thrusters[k].Level;
             keepPart[k] = Thrusters[k].Part;
         }
@@ -152,17 +160,19 @@ public sealed partial class Construct
                 t.Ab = keepAb[kept];
                 t.Buffer = keepBuffer[kept];
                 t.Heat = keepHeat[kept];
+                t.ReheatUsed = keepReheat[kept];
+                t.ReheatSpent = keepSpent[kept];
             }
             if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
             t.Train = ConstructWorks.InjectorFedHead(d);
-            t.Valve = t.Mixer = -1;
+            t.Valve = t.Mixer = t.Reheat = -1;
             if (t.Train)
             {
                 var wl = WorksHeadOf(i);
                 t.LightDelay = wl >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
                 if (wl >= 0)
-                    (t.Valve, t.Mixer) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer);
+                    (t.Valve, t.Mixer, t.Reheat) = (WorksHeads[wl].Valve, WorksHeads[wl].Mixer, WorksHeads[wl].Reheat);
             }
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
                 t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
@@ -384,6 +394,7 @@ public static partial class ConstructPhysics
             if (t.Train)
                 t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 && t.Ab <= 0)
                 continue;
             var push = d.ThrustForce * t.Cap * t.Level; // (what its works let it push)
@@ -393,6 +404,11 @@ public static partial class ConstructPhysics
                 var (mp, mb) = MixOf(c, t.Mixer);
                 push *= mp;
                 burn *= mb;
+            }
+            if (boost)
+            {
+                push *= 1 + ShipWorks.Current.ReheatBoost;
+                burn *= 2;
             }
             if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
                 ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
@@ -554,10 +570,13 @@ public static partial class ConstructPhysics
             if (t.Train)
                 t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
             var (sp, sb) = t.Mixer >= 0 ? MixOf(c, t.Mixer) : (1f, 1f);
+            if (boost)
+                (sp, sb) = (sp * (1 + ShipWorks.Current.ReheatBoost), sb * 2);
             var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level * sp);
             sum += push;
             torque += Vector3.Cross(o + Vector3.Transform(t.At, q) - com, push);
@@ -657,6 +676,29 @@ public static partial class ConstructPhysics
         ref var m = ref c.Parts[mixer];
         var x = Math.Clamp(m.InCount > 0 ? m.In : ConstructConfig.Get(m, m.D, CfgKey.Strength, 0) / 100f, -1, 1);
         return (1 + (x < 0 ? MixLeanPush : MixRichPush) * x, 1 + 0.3f * x);
+    }
+
+    /// <summary>
+    /// A Reheat Ring's step (host): while its Boost in is on and the bell burns it boosts, for up to <see cref="ShipWorks.ReheatSeconds"/>;
+    /// spent, it gives nothing until it has all recovered over <see cref="ShipWorks.ReheatRecover"/>; off, what it used comes back at the
+    /// same pace. True: boosting this tick. A broken ring boosts nothing and recovers.
+    /// </summary>
+    public static bool ReheatStep(Construct c, ref CThruster t, float dt)
+    {
+        var w = ShipWorks.Current;
+        var on = t.Reheat < c.PartCount && c.Parts[t.Reheat] is { Broken: false, InCount: > 0, In: >= 0.5f } && t.Level > 0 && !t.ReheatSpent;
+        t.ReheatOn = on;
+        if (on)
+        {
+            t.ReheatUsed += dt;
+            if (t.ReheatUsed >= w.ReheatSeconds)
+                t.ReheatSpent = true;
+            return true;
+        }
+        t.ReheatUsed = MathF.Max(0, t.ReheatUsed - dt * w.ReheatSeconds / w.ReheatRecover);
+        if (t.ReheatUsed <= 0)
+            t.ReheatSpent = false;
+        return false;
     }
 
     private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)
