@@ -158,8 +158,8 @@ burns by it, every peer alike, all in the Core's frame. The front is -z (the Cor
   runner ends at the Casting Bed nearest the front line (the furthest along x of those), with a short lip into its sow; with no bed it ends
   past the last square's far edge. Each square taps every 4 + n s on its own clock: a glow runs down its spur and the line into the bed,
   sparks fly, and the bed's pigs glow and cool to grey in 3 s.
-- **Stacks.** Each square of 2 or more has one, a column on its back row, its top 1 + n m over the furnace top (a 1 x 1 is a lone block:
-  its own stub stack), with smoke while it works.
+- **Stacks.** Each square of 2 or more has a row of collared stacks along its back row, one for each column, their tops 1 + n m over the
+  furnace top (a 1 x 1 is a lone block: its own stub stack), smoking while it works.
 - **The charging belt** leaves the Core's hopper spout up onto the tops along the Core's row, as far as the furthest square, its rollers
   turning and ore riding it; a square off that row gets a cross belt from it on the cell joint by its middle (stacks stand on the column
   middles). A belt over an empty cell stands on a post.
@@ -778,7 +778,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
 **In survival ([Creative or Survival](overview-and-playing.md#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Its upgrade modules need no module to make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun starts at 1,500 kg (a player's Lift Coils raise it), so a heavy built machine stays where it left until the attach tool fits it.
 
-**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
+**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, the module gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Foundry; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
 Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches an arm (x2 a Feed Buffer), and an Assembler on orders no more than its queued orders still need: materials for the head's part (`ConstructAssembling.OrderedBatches`: one Zero Day Keel takes 208 rubber, never 2,800), parts for every queued order that uses them (`PartRoom`, pooled); the tray is 4 slots of 12; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
 

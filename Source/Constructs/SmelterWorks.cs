@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// face; each square's taphole is in the column of its front row nearest its middle whose cells down to that line are free (none free:
 /// it taps into a covered launder, not drawn), with a spur out to the line. The runner ends at the Casting Bed nearest the front line
 /// (the furthest along x of those), with a short lip into its sow; with no bed it ends past the last square's far edge.</item>
-/// <item>Each square of 2 or more has one stack a column on its back row, its top 1 + n m over the furnace top (a 1 x 1 is a lone
+/// <item>Each square of 2 or more has a stack for each column on its back row, its top 1 + n m over the furnace top (a 1 x 1 is a lone
 /// block: its own stub stack).</item>
 /// <item>The charging belt leaves the Core's hopper spout up onto the tops along the Core's row, as far as the furthest square; a square
 /// off that row gets a cross belt from it, on the cell joint by its middle (stacks stand on the column middles). A belt over an empty cell

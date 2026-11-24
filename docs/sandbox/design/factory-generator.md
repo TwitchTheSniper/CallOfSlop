@@ -90,8 +90,8 @@ consoles, a crew room set, and the brief's defence.
 
 The **programme solver** turns the target rates into machine counts with the game's own tables, never its own numbers:
 for each wanted output it walks `Refining.json`, `Assembling.json`, `Extrusion.json` and the Press presets back to raw
-input, picks the machine for each step (the style's machine choice within the tier: a Workshop Smelter or two plain
-Smelters), and counts machines as `ceil(rate / machine rate * (1 + spare))`. Power is the sum of the machines' draw
+input, picks the machine for each step (the style's machine choice within the tier; a block machine's Core is sized
+instead: a Smelter Core with the n x n of Hearth Blocks its rate needs, `FactoryProgramme.SquareFor`), and counts machines as `ceil(rate / machine rate * (1 + spare))`. Power is the sum of the machines' draw
 plus a margin, then a plant from the style's list (gensets, a reactor at tier 4+). The result is a **programme**: a list
 of objects, each with a role, a part (or a sub-blueprint, 3.4), its throughput and its ports.
 
