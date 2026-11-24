@@ -60,7 +60,8 @@ public static class ConstructRefining
         var d = c.Parts[part].D;
         var held = ConstructGatherer.HeldOff(c, part);
         ConstructGatherer.SetHeld(world, st, held);
-        var state = StateOf(table, d, st, out var recipe);
+        var size = RefineOf(c, part);
+        var state = StateOf(table, d, size, st, out var recipe);
         if (state != RefineState.Ready)
             st.JobTicks = 0;
         if (held || state != RefineState.Ready || !ConstructRecycler.Powered(world, c, part))
@@ -70,16 +71,16 @@ public static class ConstructRefining
         }
         if (world.CreativeRecycling)
         {
-            Creative(world, d, c, part, st, recipe!);
+            Creative(world, size, c, part, st, recipe!);
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
-        st.JobTicks += d.RefineWork;
+        st.JobTicks += size.Work; // (a squares Core's work is its rate's: RefineOf)
         var done = st.JobTicks / (recipe!.Ticks * Milli); // (a fast machine finishes several batches in a step)
         if (done == 0)
             return;
         st.JobTicks -= done * recipe.Ticks * Milli;
-        var fits = Batches(d, st, recipe);
+        var fits = Batches(size, st, recipe);
         if (done > fits)
             st.JobTicks = 0; // (nothing carries over a batch it couldn't make)
         Make(world, c, part, st, recipe, Math.Min(done, fits));
@@ -95,9 +96,9 @@ public static class ConstructRefining
     /// Creative: the whole load that fits is one job, worked at <see cref="CreativeSpeed"/> times the survival rate and never in under
     /// <see cref="CreativeMinSteps"/> steps, then made at once. Unpowered (creative needs no power); Busy while it works.
     /// </summary>
-    private static void Creative(ConstructWorld world, ConstructPartDef d, Construct c, int part, CStore st, RefineRecipe recipe)
+    private static void Creative(ConstructWorld world, in RefineSize size, Construct c, int part, CStore st, RefineRecipe recipe)
     {
-        var fits = Batches(d, st, recipe);
+        var fits = Batches(size, st, recipe);
         if (fits <= 0)
         {
             st.JobTicks = 0;
@@ -105,8 +106,8 @@ public static class ConstructRefining
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
-        st.JobTicks += d.RefineWork;
-        var need = Math.Max((long)fits * recipe.Ticks * Milli / CreativeSpeed, (long)CreativeMinSteps * d.RefineWork);
+        st.JobTicks += size.Work;
+        var need = Math.Max((long)fits * recipe.Ticks * Milli / CreativeSpeed, (long)CreativeMinSteps * size.Work);
         if (st.JobTicks < need)
             return;
         st.JobTicks = 0;
@@ -124,10 +125,10 @@ public static class ConstructRefining
         ProductionLines.Made(world, c, part, batches); // (a batch is a piece to its console's Made count)
     }
 
-    /// <summary>How many batches the input holds and the output has room for.</summary>
-    private static int Batches(ConstructPartDef d, CStore st, RefineRecipe recipe)
+    /// <summary>How many batches the input holds and the output has room for (none while a bin holds more than it takes now: a block taken away).</summary>
+    private static int Batches(in RefineSize size, CStore st, RefineRecipe recipe)
     {
-        var n = (d.BulkCapacity - st.Amount) / recipe.UnitsOut;
+        var n = Math.Max(0, size.Out - st.Amount) / recipe.UnitsOut;
         if (recipe.Mix.Length == 0)
             return Math.Min(n, st.InAmount / recipe.UnitsIn);
         foreach (var (m, units) in recipe.Mix)
@@ -203,7 +204,10 @@ public static class ConstructRefining
     }
 
     /// <summary>Where a machine stands with what it holds, and the recipe its input picks.</summary>
-    public static RefineState StateOf(RefiningTable table, ConstructPartDef d, CStore st, out RefineRecipe? recipe)
+    public static RefineState StateOf(RefiningTable table, Construct c, int part, CStore st, out RefineRecipe? recipe) =>
+        StateOf(table, c.DefOf(part), RefineOf(c, part), st, out recipe);
+
+    private static RefineState StateOf(RefiningTable table, ConstructPartDef d, in RefineSize size, CStore st, out RefineRecipe? recipe)
     {
         if (d.RefineMix)
         {
@@ -225,7 +229,7 @@ public static class ConstructRefining
             return RefineState.Short;
         if (st.Amount > 0 && st.Material != recipe.Output)
             return RefineState.OutputMixed;
-        return d.BulkCapacity - st.Amount < recipe.UnitsOut ? RefineState.OutputFull : RefineState.Ready;
+        return size.Out - st.Amount < recipe.UnitsOut ? RefineState.OutputFull : RefineState.Ready;
     }
 
     private static bool Short(CStore st, RefineRecipe r)
@@ -239,16 +243,18 @@ public static class ConstructRefining
     }
 
     /// <summary>The material a player would tip into this machine's input: what it holds already, else the first one they carry that it takes (0: none, or it is full).</summary>
-    public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st, RefineRecipe? set = null)
+    public static byte TipMaterial(SandboxInventory inv, Construct c, int part, CStore st, RefineRecipe? set = null)
     {
+        var d = c.DefOf(part);
+        var inCap = RefineOf(c, part).In;
         if (d.RefineMix)
         {
             for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
-                if (inv.Materials[m] > 0 && st.MixOf(m) < d.InCapacity && MixTakes(RefiningTable.Current, d, st, m, set))
+                if (inv.Materials[m] > 0 && st.MixOf(m) < inCap && MixTakes(RefiningTable.Current, d, st, m, set))
                     return m;
             return 0;
         }
-        if (st.InAmount >= d.InCapacity)
+        if (st.InAmount >= inCap)
             return 0;
         if (st.InAmount > 0) // (Feed's rule keeps a material the machine's tier can't work out of the input)
             return inv.Materials[st.InMaterial] > 0 && (set == null || set.Input == st.InMaterial) ? st.InMaterial : (byte)0;
@@ -261,11 +267,12 @@ public static class ConstructRefining
     }
 
     /// <summary>What the machine is doing, or why not. Read by the look line on either side.</summary>
-    public static string Status(ConstructPartDef d, CStore st, RefineRecipe? set = null)
+    public static string Status(Construct c, int part, CStore st, RefineRecipe? set = null)
     {
         var names = RecyclingTable.Current;
         var table = RefiningTable.Current;
-        var state = StateOf(table, d, st, out var r);
+        var d = c.DefOf(part);
+        var state = StateOf(table, d, RefineOf(c, part), st, out var r);
         var doing = st.Held ? Program.HeldLook
             : st.Busy ? $", refining {r?.InputName} to {r?.OutputName}"
             : state switch
@@ -321,18 +328,118 @@ public static class ConstructRefining
     }
 
     /// <summary>The whole look line: both bins, what it is doing, what F would do.</summary>
-    public static string Look(ConstructPartDef d, CStore st, bool near, SandboxInventory inv, RefineRecipe? set = null)
+    public static string Look(Construct c, int part, CStore st, bool near, SandboxInventory inv, RefineRecipe? set = null)
     {
         var names = RecyclingTable.Current;
-        var tip = TipMaterial(inv, d, st, set);
+        var d = c.DefOf(part);
+        var size = RefineOf(c, part);
+        var tip = TipMaterial(inv, c, part, st, set);
         var act = !near ? ""
-            : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min((int)inv.Materials[tip], d.InCapacity - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
+            : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min((int)inv.Materials[tip], size.In - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
             : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}"
             : "";
         var output = st.Amount > 0 ? " " + names.NameOf(st.Material) : "";
+        var sized = d.BlockSquares ? $" - {SizeText(c, part)}" : ""; // (a squares Core: its furnaces and rate, what the next size needs)
         if (d.RefineMix)
-            return $"{d.Name}: in {(st.MixN == 0 ? $"0/{d.InCapacity}" : $"{MixHolds(st)} (of {d.InCapacity} each)")}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st, set)}{act}";
+            return $"{d.Name}: in {(st.MixN == 0 ? $"0/{size.In}" : $"{MixHolds(st)} (of {size.In} each)")}, out {st.Amount}/{size.Out}{output}{Status(c, part, st, set)}{sized}{act}";
         var input = st.InAmount > 0 ? " " + names.NameOf(st.InMaterial) : "";
-        return $"{d.Name}: in {st.InAmount}/{d.InCapacity}{input}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st, set)}{act}";
+        return $"{d.Name}: in {st.InAmount}/{size.In}{input}, out {st.Amount}/{size.Out}{output}{Status(c, part, st, set)}{sized}{act}";
     }
+    // ---- A machine's size: a squares Core grows with its blocks (docs/sandbox/constructs/production.md "Refiners as block machines") ----
+
+    /// <summary>
+    /// A production machine's numbers as it stands (<see cref="RefineOf"/>): four times its rate, its work a 10 Hz step, both bins, its
+    /// chute load (survival's: <see cref="ChuteLoadOf"/> adds creative's) and its power shares. A part file's figures, for any machine but a
+    /// squares Core (the Smelter), whose rate is the sum of its squares' (MachineBlocks.Squares).
+    /// </summary>
+    public readonly struct RefineSize(int r4, int work, int outBin, int inBin, int load, int shares)
+    {
+        public readonly int R4 = r4, Work = work, Out = outBin, In = inBin, Load = load, Shares = shares;
+        public float Rate => R4 / 4f;
+    }
+
+    /// <summary>
+    /// What every reader of a production machine's rate, bins, chute load or power goes through, server and client alike (a reader that
+    /// kept the part file's figure would have a batch take its whole input while the bin kept only what fits). A squares Core: rate
+    /// r = R4 / 4 (its own hearth 1, each whole cell of an n x n square 1 + n/4), work and chute load x r, bins x r up to its file's
+    /// capacity, power one share for the Core and each whole cell. Allocates nothing.
+    /// </summary>
+    public static RefineSize RefineOf(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        if (!d.BlockSquares || d.RefineOutBin == 0)
+            return new RefineSize(4, d.RefineWork, d.BulkCapacity, d.InCapacity, d.ChuteLoad, 1);
+        int r4 = 4, shares = 1;
+        if (MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part)
+            (r4, shares) = (Math.Max(4, (int)asm.R4), Math.Max(1, (int)asm.Shares));
+        return Sized(d, r4, shares);
+    }
+
+    /// <summary>A squares Core's numbers at four times rate <paramref name="r4"/> (the FactoryKit sizes one from a plan this way).</summary>
+    public static RefineSize Sized(ConstructPartDef d, int r4, int shares) => new(r4, (int)Math.Min(int.MaxValue, (long)d.RefineWork * r4 / 4),
+        (int)Math.Min(d.BulkCapacity, (long)d.RefineOutBin * r4 / 4), (int)Math.Min(d.InCapacity, (long)d.RefineInBin * r4 / 4),
+        (int)Math.Min(ConstructStorage.MaxBulk, ((long)ConstructRoutes.ChuteLoad * r4 + 3) / 4), shares);
+
+    /// <summary>Four times the rate of a Core with these squares' sides (all whole): 4 + each n^2 (4 + n). 4 + 9 x 7 = 67 for a 3 x 3 (x16.75).</summary>
+    public static int R4Of(ReadOnlySpan<int> sides)
+    {
+        var r4 = 4;
+        foreach (var n in sides)
+            r4 += n * n * (4 + n);
+        return r4;
+    }
+
+    /// <summary>A bin's chute load as it is now: a squares Core's grows with its rate, and in creative (infinite parts on) eight times that, so one chute keeps up with its machine.</summary>
+    public static int ChuteLoadOf(ConstructWorld world, Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        if (!d.BlockSquares || !d.IsRefiner)
+            return d.ChuteLoad;
+        var load = RefineOf(c, part).Load;
+        return world.CreativeRecycling ? Math.Min(ConstructStorage.MaxBulk, load * CreativeSpeed) : load;
+    }
+
+    /// <summary>A squares Core's draw while it works: its part file's power a share (the Core and each whole block in its squares).</summary>
+    public static float PowerOf(Construct c, int part) => c.DefOf(part).PowerDraw * RefineOf(c, part).Shares;
+
+    /// <summary>A squares Core's machine as its look line and screen say it: "furnaces 3x3, 2x2, 1x1: x24", what does nothing, and what the next size needs.</summary>
+    public static string SizeText(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        var noun = d.RefineMachine switch { "smelter" => "furnaces", "foundry" => "crucibles", "sawmill" => "mills", _ => "squares" };
+        return MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part ? MachineBlocks.SquaresText(c, asm, noun) : $"x1: weld its blocks on its +x side";
+    }
+
+    /// <summary>
+    /// A saved recipe choice of a Smelter saved at tier 2 to 5 (it loads as the Smelter Core, ConstructParts.Renamed): its index named a recipe
+    /// of that tier's list, which the gates cut (iron, copper 2, gold 3, sand, dirt, stone, levite 4); the same recipe's place in the Core's
+    /// list now (the old tier 1 recipes stay first, so a tier 1 choice keeps its number). 0 (Auto), or anything unknown, stays as it is.
+    /// </summary>
+    public static float SavedRecipe(ConstructPartDef d, int tier, float v)
+    {
+        string?[] old = ["iron ore", tier >= 2 ? "copper ore" : null, tier >= 3 ? "gold ore" : null, "sand", "dirt", "stone", tier >= 4 ? "levite ore" : null];
+        var k = (int)v;
+        if (d.RefineMachine != "smelter" || k < 1 || k != v)
+            return v;
+        foreach (var name in old)
+        {
+            if (name == null)
+                continue;
+            if (--k > 0)
+                continue;
+            var at = Array.FindIndex(d.RefineChoices, r => r.Mix.Length == 0 && r.InputName == name);
+            return at >= 0 ? at + 1 : 0;
+        }
+        return v;
+    }
+
+    /// <summary>The tier a saved part's name gave a line converted to a squares Core ("Workshop Smelter" 2 to "Plasma Smelter" 5), else 0.</summary>
+    public static int SavedTier(string name) => name.ToLowerInvariant() switch
+    {
+        "workshop smelter" => 2,
+        "industrial smelter" => 3,
+        "military smelter" => 4,
+        "plasma smelter" => 5,
+        _ => 0,
+    };
 }

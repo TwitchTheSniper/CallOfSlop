@@ -949,11 +949,11 @@ public sealed partial class ConstructEdits
             return "nothing to put in";
         var inv = Inventory.Of(player);
         var names = RecyclingTable.Current;
-        if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st, ConstructRefining.SetOf(c.Parts[part], d)) is var feed and not 0)
+        if (d.IsRefiner && ConstructRefining.TipMaterial(inv, c, part, st, ConstructRefining.SetOf(c.Parts[part], d)) is var feed and not 0)
         {
             var fed = world.Feed(c, part, inv.Materials[feed], feed);
             inv.TakeMaterial(feed, fed);
-            Done.Add($"player {player}: tipped {fed} {names.NameOf(feed)} into the {d.Name} (construct {c.Id}): {st.InAmount}/{d.InCapacity}");
+            Done.Add($"player {player}: tipped {fed} {names.NameOf(feed)} into the {d.Name} (construct {c.Id}): {st.InAmount}/{ConstructStorage.InCapacity(c, part)}");
             return null;
         }
         var tip = d.IsRefiner ? (byte)0 : TipMaterial(inv, d, st); // (a production machine's output only ever comes out)

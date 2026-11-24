@@ -141,7 +141,7 @@ public static partial class SelfTest
         CStore sIn = w.StoreOf(c, binIn)!, sOut = w.StoreOf(c, binOut)!;
         var def = c.DefOf(si);
         var inv0 = new SandboxInventory();
-        string Look(bool near = false) => ConstructRefining.Look(def, st, near, inv0);
+        string Look(bool near = false) => ConstructRefining.Look(c, si, st, near, inv0);
         void WantLook(string text)
         {
             var line = Look();
@@ -270,7 +270,7 @@ public static partial class SelfTest
         c.WorldFrame(c.Parts[si].Seg, out var fq, out var ft);
         c.PartBounds(si, out var fmn, out var fmx);
         var eye = ft + Vector3.Transform((fmn + fmx) * 0.5f, fq) + new Vector3(0, 0.5f, 0);
-        Want(ConstructRefining.Look(def, st, true, inv).Contains("F: take 3 glass"), $"the look line offers the output (\"{ConstructRefining.Look(def, st, true, inv)}\")");
+        Want(ConstructRefining.Look(c, si, st, true, inv).Contains("F: take 3 glass"), $"the look line offers the output (\"{ConstructRefining.Look(c, si, st, true, inv)}\")");
         var took = e.UseBin(w, me, eye, c.Id, si);
         Want(took == null && inv.Materials[glass] == 3 && st.Amount == 0, $"F took the glass ({took}, carried {inv.Materials[glass]}, output {st.Amount})");
         Run(6);
@@ -282,7 +282,7 @@ public static partial class SelfTest
         var nothing = e.UseBin(w, me, eye, c.Id, si);
         Want(nothing != null && nothing.Contains("iron ore") && st.InAmount == 0 && inv.Materials[glass] == 3, $"F with nothing it takes (\"{nothing}\", input {st.InAmount})");
         inv.AddMaterial(ore, 300);
-        Want(ConstructRefining.Look(def, st, true, inv).Contains($"F: tip in {def.InCapacity} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(def, st, true, inv)}\")");
+        Want(ConstructRefining.Look(c, si, st, true, inv).Contains($"F: tip in {def.InCapacity} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(c, si, st, true, inv)}\")");
         var tipped = e.UseBin(w, me, eye, c.Id, si);
         Want(tipped == null && st.InAmount == def.InCapacity && st.InMaterial == ore && st.Amount == 0 && inv.Materials[ore] == 300 - def.InCapacity, $"F tipped ore in ({tipped}, input {st.InAmount}, output {st.Amount}, carried {inv.Materials[ore]})");
         w.Deposit(c, si, 150, metal);
@@ -349,7 +349,7 @@ public static partial class SelfTest
         ConstructRoutes.Remove(w, c, Enumerable.Range(0, c.RouteCount).First(k => c.Routes[k].Type == RouteType.Data));
         c.Rebuild();
         c.Charge = 0; // (a flat battery: a switch's wire would hold it off, as any logic with no power)
-        ConstructRefining.StateOf(RefiningTable.Current, def, st, out var creativeRecipe);
+        ConstructRefining.StateOf(RefiningTable.Current, c, si, st, out var creativeRecipe);
         float CreativeSeconds(int batches) // (the steps Creative takes: its need over the work a step does, rounded up)
         {
             var need = Math.Max((long)batches * creativeRecipe!.Ticks * ConstructRefining.Milli / ConstructRefining.CreativeSpeed, (long)ConstructRefining.CreativeMinSteps * def.RefineWork);
@@ -501,7 +501,7 @@ public static partial class SelfTest
                 return done();
             }
             CStore? Store(Game g) => g.Constructs.Get(station.Id) is { } cc ? g.Constructs.StoreOf(cc, si) : null;
-            string LookOf(Game g) => Store(g) is { } s ? ConstructRefining.Look(def, s, false, g.SandboxInventory(g.LocalId)) : "(no store)";
+            string LookOf(Game g) => g.Constructs.Get(station.Id) is { } cc && g.Constructs.StoreOf(cc, si) is { } s ? ConstructRefining.Look(cc, si, s, false, g.SandboxInventory(g.LocalId)) : "(no store)";
 
             // F over the wire: the client's carried ore goes into the input, then both sides see it work.
             server.SandboxInventory(sp.Id).AddMaterial(ore, 60);

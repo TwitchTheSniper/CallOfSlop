@@ -40,7 +40,7 @@ public static class MachineScreens
         if (d.IsBakeOven)
             ConstructBakeOven.Screen(c, part, st, card);
         else if (d.IsRefiner)
-            Refiner(p, d, st, card);
+            Refiner(c, part, d, st, card);
         else if (d.IsAssembler)
             Assembler(p, d, st, card, ConstructAssembling.FitOf(c, part));
         else if (d.IsExtruder)
@@ -73,10 +73,11 @@ public static class MachineScreens
             card.Add(line, amount).Add(line, ' ').Add(line, material);
     }
 
-    private static void Refiner(in CPart p, ConstructPartDef d, CStore st, PanelCard card)
+    private static void Refiner(Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)
     {
+        ref readonly var p = ref c.Parts[part];
         var names = RecyclingTable.Current;
-        var state = ConstructRefining.StateOf(RefiningTable.Current, d, st, out var r);
+        var state = ConstructRefining.StateOf(RefiningTable.Current, c, part, st, out var r);
         if (st.Held)
             Say(card, PanelState.Idle, "Held off");
         else if (st.Busy)
@@ -111,7 +112,32 @@ public static class MachineScreens
         else
             Amount(card, 2, "In ", st.InAmount, names.NameOf(st.InMaterial));
         Amount(card, 3, "Out ", st.Amount, names.NameOf(st.Material));
-        card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
+        card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, ConstructStorage.Capacity(c, part)), 0, 1);
+        if (d.BlockSquares && MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part)
+            Squares(c, asm, card, 4);
+    }
+
+    /// <summary>A squares Core's squares by size and its rate on one line ("3x3 2x2 4x 1x1 x24"), built with no string made.</summary>
+    private static void Squares(Construct c, in CMachineAsm asm, PanelCard card, int line)
+    {
+        var list = MachineBlocks.Squares(c, asm);
+        for (var n = MachineBlocks.MaxSquare; n >= 1; n--)
+        {
+            var k = 0;
+            foreach (ref readonly var q in list)
+                k += q.N == n ? 1 : 0;
+            if (k == 0)
+                continue;
+            if (k > 1)
+                card.Add(line, k).Add(line, "x ");
+            card.Add(line, n).Add(line, 'x').Add(line, n).Add(line, ' ');
+        }
+        var r4 = Math.Max(4, (int)asm.R4);
+        card.Add(line, 'x').Add(line, r4 / 4);
+        if (r4 % 4 != 0)
+            card.Add(line, r4 % 4 == 2 ? ".5" : r4 % 4 == 1 ? ".25" : ".75");
+        if (asm.Broken > 0)
+            card.Add(line, ", ").Add(line, asm.Broken).Add(line, " wrecked");
     }
 
     /// <summary>The first upgrade module in <paramref name="bits"/> (MachineBlocks.TierPieceNames), for a screen line.</summary>

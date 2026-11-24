@@ -148,7 +148,7 @@ public static partial class SelfTest
         var d = c.DefOf(fi);
         int a = PartNamed(c, "Materials Bin"), b = PartNamed(c, "Materials Bin", 1), o = PartNamed(c, "Materials Bin", 2);
         var inv = new SandboxInventory();
-        string Look() => ConstructRefining.Look(d, st, false, inv);
+        string Look() => ConstructRefining.Look(c, fi, st, false, inv);
         void WantLook(string text)
         {
             var line = Look();
@@ -177,9 +177,9 @@ public static partial class SelfTest
         // Tier 2 and 3 recipes.
         want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
         WantLook("needs a tier 2 foundry");
-        want(ConstructRefining.TipMaterial(inv, d, st) == 0, "nothing carried, nothing to tip");
+        want(ConstructRefining.TipMaterial(inv, c, fi, st) == 0, "nothing carried, nothing to tip");
         inv.AddMaterial(stone, 5);
-        want(ConstructRefining.TipMaterial(inv, d, st) == stone, "a Foundry holding metal takes stone from what you carry");
+        want(ConstructRefining.TipMaterial(inv, c, fi, st) == stone, "a Foundry holding metal takes stone from what you carry");
 
         // The bytes, and the mass of the mixed input.
         w.Feed(c, fi, 8, stone);
@@ -325,7 +325,7 @@ public static partial class SelfTest
         Line($"assembling: the chain made an Engine in {waited} s: steel {st.MixOf(steel)}, {st.KindN} kinds left, Smelter {smelter.InAmount} in, Foundry holds {foundry.MixN}");
         if (Made() is not { } built)
         {
-            Fail($"assembling: no Engine after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works.DefOf(PartNamed(works, "Foundry")), foundry, false, inv)}\"");
+            Fail($"assembling: no Engine after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works, PartNamed(works, "Foundry"), foundry, false, inv)}\"");
             return;
         }
         Want(Inputs(st) <= 2, $"the batch used its inputs: \"{Look()}\"");

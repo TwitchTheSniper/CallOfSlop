@@ -485,6 +485,47 @@ public static class MachineBlocks
         return s;
     }
 
+    /// <summary>
+    /// A squares Core's machine (docs/sandbox/constructs/production.md "Refiners as block machines"): its squares by size and its rate
+    /// ("furnaces 3x3, 2x2, 4 x 1x1: x24"), wrecked blocks, blocks that do nothing and why, and what the largest square's next size needs.
+    /// UI text (it allocates).
+    /// </summary>
+    public static string SquaresText(Construct c, in CMachineAsm asm, string noun)
+    {
+        var list = Squares(c, asm);
+        var rate = (asm.R4 > 0 ? asm.R4 : 4) / 4f;
+        var s = list.Length == 0 ? $"x{rate:0.##}: weld its blocks on its +x side" : noun + " ";
+        if (list.Length > 0)
+        {
+            var first = true;
+            for (var n = MaxSquare; n >= 1; n--)
+            {
+                var k = 0;
+                foreach (ref readonly var q in list)
+                    k += q.N == n ? 1 : 0;
+                if (k == 0)
+                    continue;
+                s += (first ? "" : ", ") + (k > 1 ? $"{k} x {n}x{n}" : $"{n}x{n}");
+                first = false;
+            }
+            s += $": x{rate:0.##}";
+        }
+        if (asm.Broken > 0)
+            s += $", {asm.Broken} wrecked (mend {(asm.Broken > 1 ? "them" : "it")})";
+        if (asm.OffSide > 0)
+            s += $", {asm.OffSide} off its +x side do nothing";
+        if (asm.OffTop > 0)
+            s += $", {asm.OffTop} stacked do nothing";
+        if (asm.Over > 0)
+            s += $", over {c.Parts[asm.Core].D.BlockMaxCells} blocks: {asm.Over} do nothing";
+        if (list.Length > 0 && list[0].N < MaxSquare)
+        {
+            int n = list[0].N, more = (n + 1) * (n + 1) - n * n;
+            s += $" - {more} more beside the {n}x{n} make it a {n + 1}x{n + 1}";
+        }
+        return s;
+    }
+
     /// <summary>The tiers' names (drawing 21, as the machine lines' tiers: docs "Machine tiers") and the piece that brings each, by tier.</summary>
     public static readonly string[] TierNames = ["", "Scrap", "Workshop", "Industrial", "Military", "Plasma"];
     public static readonly string[] TierPieceNames = ["", "", "Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner"];
@@ -826,21 +867,27 @@ public static class MachineBlocks
         }
         asm.SquareFirst = (short)c.MachineSquareCount;
         int r4 = 4, shares = 1, broken = 0;
-        // The cells in scan order (x, then z), each one's number in the index grid (sum, free here: a squares Core has no rectangle).
+        // The cells in scan order, each one's number in the index grid (sum, free here: a squares Core has no rectangle). The scan's outer
+        // loop runs along the patch's longer side (x on a tie), so the search's frontier is its shorter side: about 1,100 states for 50
+        // cells, where a 3 x 16 strip scanned across its short side took 70,000. The order is the bounds', so every peer scans alike.
         Span<byte> px = stackalloc byte[SplitMost], pz = stackalloc byte[SplitMost];
         var cellsN = 0;
         sum.Clear();
-        for (var x = minX; x <= maxX && left > 0; x++)
-            for (var z = minZ; z <= maxZ; z++)
-                if ((mark[x * GridSide + z] & 0x0F) == Free)
+        var alongZ = maxZ - minZ > maxX - minX;
+        int outer0 = alongZ ? minZ : minX, outer1 = alongZ ? maxZ : maxX, inner0 = alongZ ? minX : minZ, inner1 = alongZ ? maxX : maxZ;
+        for (var a = outer0; a <= outer1 && left > 0; a++)
+            for (var b = inner0; b <= inner1; b++)
+            {
+                var (x, z) = alongZ ? (b, a) : (a, b);
+                if ((mark[x * GridSide + z] & 0x0F) != Free)
+                    continue;
+                if (cellsN < SplitMost)
                 {
-                    if (cellsN < SplitMost)
-                    {
-                        (px[cellsN], pz[cellsN]) = ((byte)x, (byte)z);
-                        sum[x * GridSide + z] = (short)(cellsN + 1);
-                    }
-                    cellsN++;
+                    (px[cellsN], pz[cellsN]) = ((byte)x, (byte)z);
+                    sum[x * GridSide + z] = (short)(cellsN + 1);
                 }
+                cellsN++;
+            }
         Span<byte> pick = stackalloc byte[SplitMost]; // (the split: each square's corner cell and side, in the order the search took them)
         Span<byte> pickN = stackalloc byte[SplitMost];
         var picks = cellsN <= SplitMost ? BestSplit(px[..cellsN], pz[..cellsN], sum, pick, pickN) : -1;

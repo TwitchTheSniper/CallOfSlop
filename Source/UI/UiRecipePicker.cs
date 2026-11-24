@@ -79,9 +79,20 @@ public sealed partial class Ui
             || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0;
     }
 
-    /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), else "".</summary>
+    /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), a squares Core's rate ("r4:67": its times), else "".</summary>
     public static string RecipeVariant(Construct c, int part) =>
-        c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
+        c.DefOf(part) is { BlockSquares: true, IsRefiner: true } ? RateVariant(ConstructRefining.RefineOf(c, part).R4)
+        : c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
+
+    private static int _rateVariantR4 = -1;
+    private static string _rateVariant = "";
+
+    private static string RateVariant(int r4)
+    {
+        if (r4 != _rateVariantR4)
+            (_rateVariantR4, _rateVariant) = (r4, "r4:" + r4); // (asked every frame the picker is open: made once a size)
+        return _rateVariant;
+    }
 
     /// <summary>The variant the open picker was made for (it closes when its machine's changes: a die fitted or taken out).</summary>
     public string RecipePickerVariant => _rcpVariant;
@@ -221,6 +232,8 @@ public sealed partial class Ui
             return MakeMakerSet(d, key, variant);
         var names = RecyclingTable.Current;
         var speed = MathF.Max(0.01f, d.RefineWork / (float)ConstructRefining.BaseWork);
+        if (d.BlockSquares && variant.StartsWith("r4:", StringComparison.Ordinal) && int.TryParse(variant.AsSpan(3), out var r4))
+            speed *= r4 / 4f; // (a squares Core works at its squares' rate: RecipeVariant)
         var tiles = new List<RpTile>();
         var groups = new List<string> { "All" };
         void Inputs(RpTile t, IReadOnlyList<(int Slot, string Text, ImColor8 Swatch)> ins)

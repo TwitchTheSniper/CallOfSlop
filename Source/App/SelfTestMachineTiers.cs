@@ -493,7 +493,7 @@ public static partial class SelfTest
         CStore ss = w.StoreOf(low, ls)!, src = w.StoreOf(low, lowIn)!;
         var ld = low.DefOf(ls);
         var inv = new SandboxInventory();
-        string Look() => ConstructRefining.Look(ld, ss, false, inv);
+        string Look() => ConstructRefining.Look(low, ls, ss, false, inv);
         want(Look().Contains("takes iron ore, sand, dirt, stone (copper ore needs tier 2, gold ore needs tier 3, levite ore needs tier 4)"), $"an empty tier 1 Smelter says \"{Look()}\"");
         w.Deposit(low, lowIn, 20, copper);
         Run(1.5f);
@@ -501,13 +501,13 @@ public static partial class SelfTest
         want(Look().Contains("chute refused copper ore: needs a tier 2 smelter"), $"the look line: \"{Look()}\"");
         want(w.Feed(low, ls, 20, goldOre) == 0, "gold ore fed into a tier 1 Smelter");
         inv.AddMaterial(goldOre, 8);
-        want(ConstructRefining.TipMaterial(inv, ld, ss) == 0, "F would tip gold ore into a tier 1 Smelter");
+        want(ConstructRefining.TipMaterial(inv, low, ls, ss) == 0, "F would tip gold ore into a tier 1 Smelter");
         inv.AddMaterial(ore, 8);
-        want(ConstructRefining.TipMaterial(inv, ld, ss) == ore, "F should tip the iron ore past the gold ore");
+        want(ConstructRefining.TipMaterial(inv, low, ls, ss) == ore, "F should tip the iron ore past the gold ore");
         ss.InMaterial = goldOre;
         ss.InAmount = 8;
         Run(0.3f);
-        want(ConstructRefining.StateOf(table, ld, ss, out _) == RefineState.TierLow && !ss.Busy && ss.InAmount == 8 && ss.Amount == 0, $"gold ore in a tier 1 Smelter's input ({ss.InAmount}, busy {ss.Busy})");
+        want(ConstructRefining.StateOf(table, low, ls, ss, out _) == RefineState.TierLow && !ss.Busy && ss.InAmount == 8 && ss.Amount == 0, $"gold ore in a tier 1 Smelter's input ({ss.InAmount}, busy {ss.Busy})");
         want(Look().Contains("gold ore needs a tier 3 smelter"), $"the look line: \"{Look()}\"");
         w.Remove(low);
         void Works(string name, byte input, byte output, bool ok)

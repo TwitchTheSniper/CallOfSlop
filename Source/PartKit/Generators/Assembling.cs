@@ -1077,6 +1077,10 @@ public sealed class Assembling : IPartGenerator
         // (the Zero Day works' plinths, Sean 2026-11-22: an Extruder raised level with its run; FactoryShellParts.Plinths, after everything: AfterCloche)
         ("Factory/Plinths", "Extruder Plinth", Rec("Extruder Plinth", 40, m: [("concrete", 320), ("steel", 20)])),
         ("Factory/Plinths", "Run-out Table Stand", Rec("Run-out Table Stand", 20, m: [("steel", 60)])),
+        // (the Smelter on the block system, PR 1 of the refiners: its Hearth Block, fire brick in a steel case, and its Casting Bed; the Core
+        // keeps the Smelter's row, and the Workshop to Plasma Smelters' rows went: tools/MIGRATING.md)
+        (null, null, Rec("Hearth Block", 60, 1, m: [("concrete", 320), ("steel", 140)])),
+        (null, null, Rec("Casting Bed", 25, 1, m: [("concrete", 90), ("steel", 80)])),
     ];
 
     /// <summary>

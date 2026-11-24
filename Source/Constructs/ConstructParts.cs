@@ -759,6 +759,7 @@ public sealed partial class ConstructPartDef
     public int AsmBatches = 4; // an Assembler: how many batches of each input it buffers
     public Vector3 AsmOutAt = Vector3.Zero, AsmOutDir = Vector3.UnitZ; // an Assembler: where a finished body leaves, and which way (part frame)
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
+    public int RefineInBin, RefineOutBin; // a squares Core (the Smelter, MachineBlocks.Squares): its input and output bins at x1 ("bin", "outBin" in storage.refine), grown by its squares' rate up to its "capacity" keys (ConstructRefining.RefineOf)
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
     public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
@@ -1389,6 +1390,7 @@ public static partial class ConstructParts
         "wheel former" or "medium wheel former" or "large wheel former" or "capital wheel former"
             or "fan former" or "medium fan former" or "large fan former" or "capital fan former"
             or "airframe former" or "medium airframe former" or "large airframe former" or "capital airframe former" => "Grow Former", // (one block machine, 2026-11-21: its blocks now decide the size, its Makes setting the shape)
+        "workshop smelter" or "industrial smelter" or "military smelter" or "plasma smelter" => "Smelter", // (a block machine, 2026-11-24: its Hearth Blocks' squares decide its rate; a saved recipe choice keeps its recipe, ConstructRefining.SavedRecipe)
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
         _ => null,
     };

@@ -57,7 +57,7 @@ public static partial class ProductionLines
             return LineState.Idle;
         if (st.Busy)
             return LineState.Running;
-        return ConstructRefining.StateOf(RefiningTable.Current, d, st, out _) switch
+        return ConstructRefining.StateOf(RefiningTable.Current, c, part, st, out _) switch
         {
             RefineState.Empty or RefineState.Short => LineState.Starved,
             RefineState.OutputFull or RefineState.OutputMixed => LineState.Blocked,
@@ -449,7 +449,7 @@ public static partial class ProductionLines
         var set = ConstructRefining.SetOf(mp, md);
         if (why && world.StoreOf(c, m) is { } rs)
         {
-            var state = ConstructRefining.StateOf(RefiningTable.Current, md, rs, out var r);
+            var state = ConstructRefining.StateOf(RefiningTable.Current, c, m, rs, out var r);
             card.Add(line, state switch
             {
                 RefineState.Empty => "needs input",
@@ -473,7 +473,7 @@ public static partial class ProductionLines
             card.Add(line, "makes ").Add(line, set.OutputName);
         else if (world.StoreOf(c, m) is { } ast2)
         {
-            ConstructRefining.StateOf(RefiningTable.Current, md, ast2, out var next);
+            ConstructRefining.StateOf(RefiningTable.Current, c, m, ast2, out var next);
             AutoNext(md, ast2, next, card, line);
         }
         else
