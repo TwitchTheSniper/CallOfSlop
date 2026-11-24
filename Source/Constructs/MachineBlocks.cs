@@ -1270,8 +1270,37 @@ public static class MachineBlocks
     /// <summary>The tier of the machine part <paramref name="part"/> is in (1 with no tier pieces, or not a block machine).</summary>
     public static int TierOf(Construct c, int part) => TryOf(c, part, out var asm) && asm.Tier > 0 ? asm.Tier : 1;
 
+    /// <summary>
+    /// <see cref="LargestRectangle"/>'s answers by a hash of its bed cells and limits (2026-11-24: the Zero Day works' 50 machines took 1.2 ms
+    /// of each rebuild here, and a rebuild for a piece an Extruder made changes no machine's bed). Per thread, since bodies are built on
+    /// worker threads too; emptied past <see cref="RectCacheMax"/>.
+    /// </summary>
+    [ThreadStatic] private static Dictionary<ulong, uint>? _rectCache;
+    private const int RectCacheMax = 4096;
+
     /// <summary>The largest full rectangle of bed cells beside the Core (holding a cell next to its own), at most <paramref name="maxSide"/> a side and <paramref name="maxCells"/> in all; of equals, the one nearest the Core.</summary>
     private static void LargestRectangle(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded, int maxSide, int maxCells)
+    {
+        var key = (14695981039346656037UL ^ (seeded ? 1UL : 0) ^ (ulong)maxSide << 1 ^ (ulong)maxCells << 9) * 1099511628211UL; // (mixed before the cells' indices, which would overlap these bits)
+        for (var g = 0; g < grid.Length; g++)
+            if ((grid[g] & 0x80) != 0)
+                key = (key ^ (ulong)g) * 1099511628211UL;
+        var cache = _rectCache ??= new Dictionary<ulong, uint>();
+        if (cache.TryGetValue(key, out var got))
+        {
+            asm.X0 = (sbyte)((int)(got & 0xFF) - Mid);
+            asm.Z0 = (sbyte)((int)(got >> 8 & 0xFF) - Mid);
+            asm.W = (byte)(got >> 16 & 0xFF);
+            asm.L = (byte)(got >> 24);
+            return;
+        }
+        Largest(grid, sum, ref asm, seeded, maxSide, maxCells);
+        if (cache.Count >= RectCacheMax)
+            cache.Clear();
+        cache[key] = (uint)(asm.X0 + Mid) | (uint)(asm.Z0 + Mid) << 8 | (uint)asm.W << 16 | (uint)asm.L << 24;
+    }
+
+    private static void Largest(ReadOnlySpan<byte> grid, Span<short> sum, ref CMachineAsm asm, bool seeded, int maxSide, int maxCells)
     {
         const int S = GridSide + 1;
         for (var x = 0; x <= GridSide; x++)
@@ -1287,6 +1316,8 @@ public static class MachineBlocks
                 {
                     if ((grid[(x0 + w - 1) * GridSide + z0] & 0x80) == 0)
                         break;
+                    if (w * Math.Min(Math.Min(maxSide, GridSide - z0), maxCells / w) < best)
+                        continue; // (no length makes this width as big as the best yet: 2026-11-24, 1.9 ms of each Zero Day works rebuild went to these loops)
                     for (var l = 1; l <= maxSide && z0 + l <= GridSide && w * l <= maxCells; l++)
                     {
                         var area = w * l;
