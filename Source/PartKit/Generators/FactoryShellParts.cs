@@ -20,7 +20,7 @@ public sealed partial class FactoryShellParts : IPartGenerator
     private const int UnitsPerM3 = 400; // (Recycling.json binUnitsPerCubicMetre: a bunker holds what a Storage Volume of its inside would)
 
     /// <summary>An open-topped bin: walls <paramref name="t"/> thick round a floor, chute in and out on its rim, a socket under the middle.</summary>
-    private static Part Bunker(string name, double w, double h, double t, string desc, bool hazard)
+    private static Part Bunker(string name, double w, double h, double t, string desc, bool hazard, double? massAs = null)
     {
         var c = Small;
         var p = new Part(name, c, "Factory", desc, role: "storage", material: "concrete", color: Concrete, group: "Production");
@@ -37,6 +37,14 @@ public sealed partial class FactoryShellParts : IPartGenerator
             p.Add(Box([x0 + t + 0.013, h - 0.003, a], [x1 - t - 0.013, h + 0.027, b], Rim, detail: true));
         if (hazard)
             p.Add(Box([x0 + 0.05, h * 0.35, x1 + 0.003], [x1 - 0.05, h * 0.65, x1 + 0.009], Hazard, detail: true));
+        // A tall silo: steel hoops every 2.5 m up, 4 mm off the walls; the hoops on the z faces stop short of the x faces' (no shared planes).
+        for (var y = 2.0; h > 4 && y < h - 1.0; y += 2.5)
+        {
+            foreach (var (a, b) in new[] { (x0 - 0.024, x0 - 0.004), (x1 + 0.004, x1 + 0.024) })
+                p.Add(Box([a, y, x0 - 0.024], [b, y + 0.16, x1 + 0.024], Rim, detail: true));
+            foreach (var (a, b) in new[] { (x0 - 0.021, x0 - 0.004), (x1 + 0.004, x1 + 0.021) })
+                p.Add(Box([x0 - 0.002, y + 0.003, a], [x1 + 0.002, y + 0.157, b], Rim, detail: true));
+        }
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [x1, h * 0.5, 0], "+x");
         p.Sock("-x", [x0, h * 0.5, 0], "-x");
@@ -54,7 +62,7 @@ public sealed partial class FactoryShellParts : IPartGenerator
         var area = w * w + 4 * w * h;
         // The mass (and so the recipe): the 2 and 3 m ones as they were; past 3 m it grows more slowly than the concrete, so every size costs more
         // than the one below and the 8 m one stays under the recipes' cap (Assembling's MaxUnits, 2000).
-        var mass = w <= 3 ? area * t * 2400 * 0.5 : 5940 * Math.Pow(w / 3, 0.69);
+        var mass = w <= 3 ? area * t * 2400 * 0.5 : 5940 * Math.Pow((massAs ?? w) / 3, 0.69); // (a silo costs as the bunker that holds as much)
         p.Stats(mass, area * 900, 20);
         return p;
     }
@@ -231,6 +239,8 @@ public sealed partial class FactoryShellParts : IPartGenerator
             ("", Bunker("Ore Bunker 5 m", 5.0, 2.5, 0.2, "A large open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Ore Bunker 6 m", 6.0, 3.0, 0.2, "A huge open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Ore Bunker 8 m", 8.0, 3.0, 0.25, "A huge open concrete bin for a works' stock: chute in and out on its rim, or tip a load in from above.", false)),
+            // A tall Ore Bunker 4 m (Sean, 2026-11-24: big hoppers for a works' refined stock): nearly an 8 m bunker's 60,000 units (57,960) on a 4 m bunker's floor.
+            ("", Bunker("Ore Silo 4 m", 4.0, 11.5, 0.2, "A tall concrete silo for a works' stock, nearly an 8 m bunker's load on a 4 m floor: chute in and out on its rim, 11.5 m up.", false, massAs: 8.0)),
             ("", Grate(4.0, 6000)),
             ("", Grate(6.0, 12000)),
             ("", Auger(4.0)),
