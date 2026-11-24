@@ -61,6 +61,53 @@ public sealed class AssemblingTable
     /// <summary>The Assembler families: "" the plain Assembler, then the machines that took flight parts over (docs/sandbox/CONSTRUCTS.md "Flight in survival").</summary>
     public static readonly string[] Machines = ["", "thruster", "tailor"];
 
+    /// <summary>
+    /// Written into every world file's key names (WorldNames): a file that has it saved its Assemblers' recipe choices against the
+    /// table as it is now. A file without it was saved before the refiner block machines (PRs 611, 618, 624, 2026-11-24) took the
+    /// Workshop to Plasma Smelter, Foundry and Sawmill rows out of the plain Assembler's list, so its choices after them are moved
+    /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
+    /// is ever taken out again, its place is kept here the same way, under a new mark.
+    /// </summary>
+    public const string RowsMark = "asm-rows-2026-11-24";
+
+    /// <summary>The rows the refiner block machines took out, each group right after its Core's row, in this order.</summary>
+    private static readonly (string Core, string[] Gone)[] Removed =
+    [
+        ("Foundry", ["Workshop Foundry", "Industrial Foundry", "Military Foundry", "Plasma Foundry"]),
+        ("Sawmill", ["Workshop Sawmill", "Industrial Sawmill", "Military Sawmill", "Plasma Sawmill"]),
+        ("Smelter", ["Workshop Smelter", "Industrial Smelter", "Military Smelter", "Plasma Smelter"]),
+    ];
+
+    private int[][]? _legacy; // per family: an old choice (1 + its place in the old list) to this table's choice
+
+    /// <summary>
+    /// An Assembler's recipe choice from a world saved before <see cref="RowsMark"/>, in this table's numbering: a row that was
+    /// taken out (a Workshop Smelter) becomes its Core's, and every row after one moves back by the rows taken out before it.
+    /// </summary>
+    public float LegacyChoice(int machine, float v)
+    {
+        if (machine < 0 || machine >= ByMachine.Length || v < 1 || v != MathF.Floor(v))
+            return v;
+        _legacy ??= new int[ByMachine.Length][];
+        var map = _legacy[machine] ??= LegacyMap(ByMachine[machine]);
+        var k = (int)v - 1;
+        return k < map.Length ? map[k] : v - (map.Length - ByMachine[machine].Length);
+    }
+
+    private static int[] LegacyMap(AssembleRecipe[] now)
+    {
+        var map = new List<int>(now.Length + 12);
+        foreach (var r in now)
+        {
+            map.Add(r.Choice);
+            foreach (var (core, gone) in Removed)
+                if (r.Name.Equals(core, StringComparison.OrdinalIgnoreCase))
+                    foreach (var _ in gone)
+                        map.Add(r.Choice); // (a Workshop Smelter's Assembler now builds the Smelter Core: Renamed maps the part the same way)
+        }
+        return [.. map];
+    }
+
     public AssembleRecipe[] Recipes = [];
     public string[] Choices = [NoRecipe];
     public AssembleRecipe[][] ByMachine = [[], [], []]; // per family: its recipes, in the file's order

@@ -10,6 +10,9 @@ public sealed class WorldNames
     private readonly Dictionary<string, ushort> _keys = new();
     public readonly List<string> Parts = new(), Keys = new();
 
+    /// <summary>Every file names <see cref="AssemblingTable.RowsMark"/>: its Assemblers' recipe choices are this table's.</summary>
+    public WorldNames() => Key(AssemblingTable.RowsMark);
+
     /// <summary>A part's number in this file (the extrusions' names hold their whole key).</summary>
     public ushort Part(ushort def)
     {
@@ -70,6 +73,7 @@ public sealed class WorldNamesRead
     public ushort[] Parts = [];
     public string[] PartNames = [];
     public string[] Keys = [];
+    public bool RowsKept = true; // the file names AssemblingTable.RowsMark: false moves its Assemblers' old recipe choices (LegacyChoice)
     public byte[] Materials = [];
     public string[] MaterialNames = [];
     public readonly Dictionary<string, int> Missing = new();
@@ -89,6 +93,7 @@ public sealed class WorldNamesRead
         Keys = new string[n];
         for (var k = 0; k < n; k++)
             Keys[k] = r.Str();
+        RowsKept = Array.IndexOf(Keys, AssemblingTable.RowsMark) >= 0;
         n = r.Count(4);
         Materials = new byte[n + 1];
         MaterialNames = new string[n + 1];
@@ -837,6 +842,8 @@ public sealed partial class ConstructWorld
             var slot = Array.FindIndex(d.Config, e => !e.Bound && e.Key == names.Keys[key]);
             if (slot >= 0 && float.IsFinite(v) && tiers != null && tiers[part] > 1 && slot == d.CfgSlot[(int)CfgKey.Recipe])
                 v = ConstructRefining.SavedRecipe(d, tiers[part], v);
+            else if (slot >= 0 && float.IsFinite(v) && !names.RowsKept && d.IsAssembler && slot == d.CfgSlot[(int)CfgKey.Recipe])
+                v = AssemblingTable.Current.LegacyChoice(d.AsmMachine, v);
             if (slot >= 0 && float.IsFinite(v))
                 parts[part].Cfg[slot] = d.Config[slot].Clamp(v);
             else if (slot < 0 && d.TextSlots > 0 && float.IsFinite(v))
