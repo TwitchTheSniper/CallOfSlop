@@ -716,6 +716,7 @@ public sealed partial class ConstructPartDef
     public bool WorksOutside; // "service": "outside" on a head ("works") or a mount ("worksPiece"): an engine in a nacelle, mended through its hatch from outside
     public float WorksRating; // "works": {"rating"}: what a head that isn't a thruster asks of its works (a thruster asks its force)
     public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
+    public TrainFunction TrainFn; // "worksPiece": {"kind": "train", "function"}: what an engine train's function piece adds (ConstructWorks.TrainFunctions)
     public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick, GunPierce; // a heavy gun's own numbers (GunPierce: a bore's energy budget, ConstructBores.cs)
@@ -900,7 +901,7 @@ public sealed partial class ConstructPartDef
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
-    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns || WorksKind is WorksKind.Pump or WorksKind.Turbopump or WorksKind.Injector; // (a lift cell burns by its gas: ConstructWorld.CanBurn; a drive's pumps are full of fuel)
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns || WorksKind is WorksKind.Pump or WorksKind.Turbopump or WorksKind.Injector || TrainFn == TrainFunction.Buffer; // (a lift cell burns by its gas: ConstructWorld.CanBurn; a drive's pumps are full of fuel)
 
     /// <summary>Burns whatever its material: a designed weapon with a motor's propellant or a tank's fuel in it (OrdnanceDesign.Build).</summary>
     public bool Burns;

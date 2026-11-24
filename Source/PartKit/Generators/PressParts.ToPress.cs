@@ -93,6 +93,10 @@ public sealed partial class PressParts
         ("housing", "reactionchamber", "Reaction Chamber XS", "reaction chamber", "hollow 70x70x110 steel", ["hollow"]),
         ("housing", "fuelinjector", "Fuel Injector XS", "fuel injector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "drivenozzle", "Drive Nozzle XS", "drive nozzle", "hollow 85x85x100 steel", ["hollow"]),
+        // ...and its function pieces (phase 3): a Spacer, a Fuel Buffer and a Cooling Jacket, at any size too.
+        ("housing", "trainspacer", "Train Spacer XS", "train spacer", "hollow 70x70x40 steel", ["hollow"]),
+        ("housing", "fuelbuffer", "Fuel Buffer XS", "fuel buffer", "hollow 75x75x50 steel", ["hollow"]),
+        ("housing", "coolingjacket", "Cooling Jacket XS", "cooling jacket", "hollow 75x75x60 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -260,13 +264,14 @@ public sealed partial class PressParts
     {
         "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
         "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
+        "trainspacer" or "fuelbuffer" or "coolingjacket" => Py.L(), // (a function piece: what it adds is the same at any size)
         _ => null,
     };
 
     /// <summary>A train piece's pattern: its own round look stretched to the blank along its axis (z), none of the housing die's corner bosses.</summary>
     private static PyDict EngineTrainPattern((string Die, string Id, string Like, string Label, string Blank, string[]? Only) m, List<object?> scale)
     {
-        var p = Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, scale: scale, along: "z", auto: false);
+        var p = Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, scale: scale.Count > 0 ? scale : null, along: "z", auto: false);
         p["dieFeatures"] = false;
         return p;
     }

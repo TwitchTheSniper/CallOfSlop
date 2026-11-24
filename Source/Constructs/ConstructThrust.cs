@@ -145,8 +145,10 @@ public sealed partial class Construct
                 t.Ab = keepAb[kept];
                 t.Buffer = keepBuffer[kept];
             }
+            if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
+                t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
-                t.Buffer = ShipWorks.Current.InjectorBuffer; // (fed: its injector is full)
+                t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)

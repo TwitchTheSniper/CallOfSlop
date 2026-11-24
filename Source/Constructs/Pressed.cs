@@ -36,7 +36,7 @@ public static class Pressed
     /// by length times diameter squared)? Then it presses any blank its die takes, not only its presets': a thruster scales its thrust, any
     /// other piece what it serves.
     /// </summary>
-    public static bool SizesWorks(PressPattern p) =>
+    public static bool SizesWorks(PressPattern p) => p.Like.WorksKind == WorksKind.Train ||
         Array.Exists(p.Scale, s => s.Field == (p.Like.Role == PartRole.Thruster ? "thrustForce" : "worksServes"));
 
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal);

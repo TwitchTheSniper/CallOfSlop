@@ -259,6 +259,111 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(120, 700, 20);
     }
 
+    // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
+
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6;
+
+    /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
+    private static void Flanges(Part p, double d)
+    {
+        Cyl(p, 0, 0, FlangeR - 0.004, -0.05, -0.003, Trim, "dirty steel", segments: 24);
+        Bolts(p, FlangeR - 0.03, -0.015, -0.001, 8, Math.PI / 8);
+        Cyl(p, 0, 0, FlangeR - 0.001, -d + 0.05, -d + 0.003, Trim, "dirty steel", segments: 24);
+        Bolts(p, FlangeR - 0.03, -d + 0.001, -d + 0.015, 8);
+    }
+
+    private static void TrainPiece(Part p, double d, string function)
+    {
+        TrainSolid(p, d);
+        p.Sock("front", P(0, 0, 0), "+z");
+        p.Sock("back", P(0, 0, -d), "-z");
+        p.Set(("worksPiece", Kw(("kind", "train"), ("function", function))));
+    }
+
+    /// <summary>
+    /// The Train Spacer XS: an empty shell that fills length in an engine train, any zone. Plain cladding between its flanges, two
+    /// pass-through pipes along its top and a cable along its underside, so the lines of the pieces either side run on across it.
+    /// </summary>
+    private static Part Spacer()
+    {
+        var d = SpacerD;
+        var p = new Part("Train Spacer XS", Small, Section,
+            "An empty engine section, 0.4 m long: weld it anywhere in an engine train to give it length (to reach a socket, or to space pieces). It adds nothing else, and carries the train's pipes and cables across.",
+            role: "frame", tool: "welder", material: "steel", color: Clad, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.004, -0.047, -d + 0.047, Clad, "painted plating", segments: 24); // (the shell)
+        Cyl(p, 0, 0, Bore + 0.008, -d * 0.5 - 0.02, -d * 0.5 + 0.02, Hazard, "hazard paint", inner: Math.Round((Bore - 0.01) / (Bore + 0.008), 3), segments: 24); // (its stripe)
+        foreach (var x in new[] { -0.09, 0.09 })
+            Cyl(p, x, Bore + 0.03, 0.022, -d + 0.052, -0.052, Copper, "copper", segments: 8); // (pass-through pipes)
+        Look(p, -0.03, -Bore - 0.035, -d + 0.06, 0.03, -Bore + 0.002, -0.06, Cable, "rubber"); // (the cable run)
+        TrainPiece(p, d, "spacer");
+        return p.Stats(60, 600, 20);
+    }
+
+    /// <summary>
+    /// The Fuel Buffer XS: a feed piece, a fat tank ring round the train that holds 15 s more of full burn for a cut line, each one adds.
+    /// Six lamps round its band run with the burn as the injector's do (steady green fed, dark unfed), a sight glass glows with the spray,
+    /// and a dial's needle sweeps. It is full of fuel, and burns when it is holed.
+    /// </summary>
+    private static Part Buffer()
+    {
+        var d = BufferD;
+        var p = new Part("Fuel Buffer XS", Small, Section,
+            "A fuel buffer for an engine train, 0.5 m long: weld it in the feed zone (behind the chambers, with the injectors). Each one holds 15 s more of full burn: cut the train's fuel pipe and the drive runs that much longer before it stops. It is full of fuel, and burns when it is holed.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.01, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var rt = FlangeR - 0.012;
+        Cyl(p, 0, 0, rt, -0.07, -d + 0.07, "#6a5a30", "painted plating", inner: Math.Round((Bore - 0.012) / rt, 3), segments: 24); // (the tank ring)
+        foreach (var z in new[] { -0.09, -d + 0.09 })
+            Cyl(p, 0, 0, rt + 0.006, z - 0.012, z + 0.012, Dark, "dirty steel", inner: Math.Round((rt - 0.004) / (rt + 0.006), 3), segments: 24); // (its straps)
+        Cyl(p, 0, 0, rt + 0.003, -d * 0.5 - 0.03, -d * 0.5 + 0.03, Hazard, "hazard paint", inner: Math.Round((rt - 0.004) / (rt + 0.003), 3), segments: 24); // (the fuel band)
+        for (var k = 0; k < 6; k++)
+        {
+            var a = Math.PI / 6 + k * Math.PI / 3;
+            var (x, y) = ((rt + 0.012) * Math.Cos(a), (rt + 0.012) * Math.Sin(a));
+            Look(p, x - 0.012, y - 0.012, -d * 0.5 - 0.06, x + 0.012, y + 0.012, -d * 0.5 - 0.042, Lamp, "", work: "chase"); // (a level lamp)
+        }
+        Look(p, rt - 0.01, -0.05, -d * 0.5 + 0.05, rt + 0.025, 0.05, -d * 0.5 + 0.13, Dark, "dirty steel"); // (the sight glass's frame...)
+        Look(p, rt + 0.02, -0.035, -d * 0.5 + 0.065, rt + 0.04, 0.035, -d * 0.5 + 0.115, Quartz, "", work: "glow"); // (...and its glass)
+        Look(p, -0.07, rt - 0.01, -d * 0.5 + 0.05, 0.07, rt + 0.02, -d * 0.5 + 0.17, Dark, "painted plating"); // (the dial board, on top)
+        Look(p, -0.045, rt + 0.02, -d * 0.5 + 0.075, 0.045, rt + 0.028, -d * 0.5 + 0.145, "#d8d4c8", "painted plating"); // (its face)
+        Look(p, -0.004, rt + 0.028, -d * 0.5 + 0.08, 0.004, rt + 0.034, -d * 0.5 + 0.13, "#c03020", "", work: "spin", axis: "+y"); // (its needle)
+        TrainPiece(p, d, "buffer");
+        return p.Stats(150, 700, 20);
+    }
+
+    /// <summary>
+    /// The Cooling Jacket XS: a hot piece, a finned jacket round the chamber line with coolant pipes in and out; the train burns 10% less
+    /// fuel at the same push. Its fins glow dull red to orange with the chamber's heat.
+    /// </summary>
+    private static Part Jacket()
+    {
+        var d = JacketD;
+        var p = new Part("Cooling Jacket XS", Small, Section,
+            "A cooling jacket for an engine train, 0.6 m long: weld it in the hot zone (with the chambers, before the injectors). The train burns 10% less fuel at the same push (once a train). Its fins glow with the chamber's heat.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.006, -0.047, -d + 0.047, Chamber, "steel", segments: 24); // (the liner)
+        var n = 0;
+        for (var z = -0.08; z > -d + 0.08; z -= 0.044)
+        {
+            var rf = FlangeR - 0.01 - (n % 2) * 0.004; // (neighbours a little different)
+            Cyl(p, 0, 0, rf, z - 0.008, z + 0.008, n % 3 == 1 ? Coil : Dark, "dirty steel", inner: Math.Round((Bore - 0.008) / rf, 3), segments: 24, work: n % 3 == 1 ? "glow" : null); // (a fin; every third glows with the heat)
+            n++;
+        }
+        // Coolant in and out: two pipes along the top to elbows, and a header box between them.
+        foreach (var (x, zz) in new[] { (-0.1, -0.12), (0.1, -d + 0.12) })
+        {
+            Cyl(p, x, FlangeR + 0.02, 0.025, -d + 0.06, -0.06, Copper, "copper", segments: 8);
+            Look(p, x - 0.03, FlangeR - 0.012, zz - 0.03, x + 0.03, FlangeR + 0.05, zz + 0.03, Copper, "copper");
+        }
+        Look(p, -0.06, FlangeR - 0.025, -d * 0.5 - 0.07, 0.06, FlangeR + 0.06, -d * 0.5 + 0.07, Dark, "painted plating"); // (the header)
+        Look(p, -0.04, FlangeR + 0.06, -d * 0.5 - 0.02, 0.04, FlangeR + 0.075, -d * 0.5 + 0.02, Hazard, "hazard paint"); // (its cap)
+        TrainPiece(p, d, "jacket");
+        return p.Stats(180, 1200, 30);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -276,7 +381,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }
