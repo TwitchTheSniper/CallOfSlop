@@ -62,6 +62,15 @@ public static class ArmKit
         return i < c.ArmPosed.Length && c.ArmPosed[i];
     }
 
+    /// <summary>Has a piece of a whole arm's chain broken since its spec was made (a body's rebuild after damage is put off)?</summary>
+    public static bool ChainBroken(Construct c, ArmSpec s)
+    {
+        foreach (var i in (ReadOnlySpan<int>)[s.Shoulder, s.UpperBoom, s.Elbow, s.ForeBoom, s.Wrist, s.Head])
+            if (i < 0 || i >= c.PartCount || c.Parts[i].Broken)
+                return true;
+        return false;
+    }
+
     public static void Refresh(Construct c)
     {
         if (c.ArmStamp == c.StructStamp && c.ArmPartCount == c.PartCount)

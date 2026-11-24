@@ -1364,15 +1364,22 @@ public static partial class ConstructLifters
     private static bool KitWaits(ConstructWorld world, Construct c, CLift l, LifterDef ld)
     {
         l.FoldServer = true;
+        if (ld.Spec is { Valid: true } live && ArmKit.ChainBroken(c, live))
+        {
+            c.ArmStamp = -1; // (a piece broken before the body's rebuild: the chain is worked out again now, not at full payload with a gap)
+            ld = ConstructLifters.DefOf(c, l.Part) ?? ld;
+        }
         if (ld.Spec is not { Valid: true })
         {
+            // Not a whole arm (a piece taken off or broken, even mid-move): it stops where it is, its piece in its hand, and says what to fit.
             l.Fold = MathF.Max(0, l.Fold - Dt / ArmKit.FoldSeconds);
-            if (l.State == LiftState.Idle)
+            Why(world, l, LiftWhy.ArmChain);
+            if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)
             {
-                Why(world, l, LiftWhy.ArmChain);
-                return true;
+                l.PowerWait = true;
+                Freeze(world, l, Now);
             }
-            return false;
+            return true;
         }
         if (l.Fold >= 1)
         {
