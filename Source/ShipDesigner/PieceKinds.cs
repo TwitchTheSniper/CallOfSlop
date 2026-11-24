@@ -143,14 +143,18 @@ public static class PieceKinds
         {
             m.Box(-1.45, 0, -1.8, 1.45, 0.12, -1.6, Armour); m.Box(-1.45, 0, 1.6, 1.45, 0.12, 1.8, Armour);
             m.Box(-1.45, 0, -1.6, -1.25, 0.12, 1.6, Armour); m.Box(1.25, 0, -1.6, 1.45, 0.12, 1.6, Armour);
-            // The ramp: from the hinge out and down at about 35 degrees, 3.4 m long, with side rails.
-            const int n = 8;
+            // The ramp as a stair (Karl, 2026-11-24): treads of 0.18 m rise and 0.28 m going down to the ground (about 33 degrees),
+            // each a level step, with side stringers and rails. Its frame's +Y is out of the hull (down on the belly).
+            const int n = 11;
+            const double rise = 0.18, going = 0.28;
             for (var i = 0; i < n; i++)
             {
-                double t0 = 3.4 * i / n, t1 = 3.4 * (i + 1) / n, c = Math.Cos(0.61), sn = Math.Sin(0.61);
-                m.Box(-1.2, t0 * sn, -1.6 - t1 * c, 1.2, t0 * sn + 0.1, -1.6 - t0 * c, i % 2 == 0 ? Gun : Armour);
-                m.Box(-1.25, t0 * sn + 0.1, -1.6 - t1 * c, -1.15, t0 * sn + 0.35, -1.6 - t0 * c, Amber);
-                m.Box(1.15, t0 * sn + 0.1, -1.6 - t1 * c, 1.25, t0 * sn + 0.35, -1.6 - t0 * c, Amber);
+                double y = (i + 1) * rise, z0 = -1.6 - i * going, z1 = z0 - going - 0.03;
+                m.Box(-1.15, y - 0.05, z1, 1.15, y, z0, i % 2 == 0 ? Gun : Armour);              // the tread, its top toward the ship
+                m.Box(-1.25, y - 0.3, z1, -1.15, y + 0.05, z0, Armour);                          // stringers
+                m.Box(1.15, y - 0.3, z1, 1.25, y + 0.05, z0, Armour);
+                m.Box(-1.25, y - 1.0, z1, -1.19, y - 0.9, z0, Amber);                             // hand rails, 0.9 m above the treads
+                m.Box(1.19, y - 1.0, z1, 1.25, y - 0.9, z0, Amber);
             }
             Well(m, 1.25, 1.6, 1.0);
         }),
