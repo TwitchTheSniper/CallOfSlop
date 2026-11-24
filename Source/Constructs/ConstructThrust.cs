@@ -28,6 +28,7 @@ public struct CThruster
     public int Reheat; // ...and its Reheat Ring (-1: none)
     public float ReheatUsed; // s of boost used (host; it recovers while off, kept over rebuilds)
     public bool ReheatSpent; // ...used up: no boost until it has all recovered
+    public bool ReheatOn; // ...boosting on the last step (host; ThrustOf reads it)
     public int Valve, Mixer; // a bell that needs an injector: its train's Throttle Valve and Mixture Controller (part indices, -1: none; ConstructWorks.CWorksHead)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
@@ -393,6 +394,7 @@ public static partial class ConstructPhysics
             if (t.Train)
                 t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 && t.Ab <= 0)
                 continue;
             var push = d.ThrustForce * t.Cap * t.Level; // (what its works let it push)
@@ -403,7 +405,7 @@ public static partial class ConstructPhysics
                 push *= mp;
                 burn *= mb;
             }
-            if (t.Reheat >= 0 && ReheatStep(c, ref t, dt))
+            if (boost)
             {
                 push *= 1 + ShipWorks.Current.ReheatBoost;
                 burn *= 2;
@@ -568,11 +570,12 @@ public static partial class ConstructPhysics
             if (t.Train)
                 t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
+            var boost = t.Reheat >= 0 && ReheatStep(c, ref t, dt); // (before the skip: an off ring recovers)
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
             var (sp, sb) = t.Mixer >= 0 ? MixOf(c, t.Mixer) : (1f, 1f);
-            if (t.Reheat >= 0 && ReheatStep(c, ref t, dt))
+            if (boost)
                 (sp, sb) = (sp * (1 + ShipWorks.Current.ReheatBoost), sb * 2);
             var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level * sp);
             sum += push;
@@ -684,6 +687,7 @@ public static partial class ConstructPhysics
     {
         var w = ShipWorks.Current;
         var on = t.Reheat < c.PartCount && c.Parts[t.Reheat] is { Broken: false, InCount: > 0, In: >= 0.5f } && t.Level > 0 && !t.ReheatSpent;
+        t.ReheatOn = on;
         if (on)
         {
             t.ReheatUsed += dt;

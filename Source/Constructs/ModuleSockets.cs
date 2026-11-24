@@ -62,6 +62,7 @@ public struct CModule
     public float TrainThrust; // N: its bells that need an injector (engine trains), at their peak so far
     public bool Rich; // a bell in it has a Mixture Controller in its train: counted at ConstructPhysics.MixRichPush more
     public bool Reheated; // ...a Reheat Ring: counted boosting (ShipWorks.ReheatBoost more)
+    public float TrainNoMix, TrainNoReheat; // N: TrainThrust's bells with no Mixture Controller, and with no Reheat Ring (what one welded in later raises)
     public int Guns, Stores, Harvest;
     public Vector3 Min, Max; // its bounds (the plug's segment rest frame)
     public bool Bridged; // its parts reach the hull other than through its plug (welded to more than its socket)
@@ -488,6 +489,7 @@ public static class ModuleSockets
             var seg = c.Parts[i].Seg;
             m.TrainThrust = 0;
             m.Rich = m.Reheated = false;
+            m.TrainNoMix = m.TrainNoReheat = 0;
             while (top > 0)
             {
                 var at = stack[--top];
@@ -514,6 +516,10 @@ public static class ModuleSockets
                     }
                     m.Thrust += (peak - 1) * pd.ThrustForce;
                     m.TrainThrust += peak * pd.ThrustForce; // (a mixer or a ring welded in later raises these)
+                    if (wh < 0 || c.WorksHeads[wh].Mixer < 0)
+                        m.TrainNoMix += peak * pd.ThrustForce;
+                    if (wh < 0 || c.WorksHeads[wh].Reheat < 0)
+                        m.TrainNoReheat += peak * pd.ThrustForce;
                 }
                 if (pd.Role == PartRole.Generator)
                     m.Made += pd.PlantRate;
@@ -1123,8 +1129,8 @@ public static class ModuleSockets
             if (c.Modules[mi].Mass + def.Mass > t.MassRating(s))
                 return $"the module would weigh {(c.Modules[mi].Mass + def.Mass) / 1000f:0.#} t: the socket holds {t.MassRating(s) / 1000f:0.#} t";
             var adds = def.Role == PartRole.Thruster ? def.ThrustForce + def.AbForce + (ConstructWorks.InjectorFedHead(def) ? ((c.Modules[mi].Rich ? 1 + ConstructPhysics.MixRichPush : 1) * (c.Modules[mi].Reheated ? 1 + ShipWorks.Current.ReheatBoost : 1) - 1) * def.ThrustForce : 0)
-                : def.TrainFn == TrainFunction.Mixture && !c.Modules[mi].Rich ? ConstructPhysics.MixRichPush * c.Modules[mi].TrainThrust
-                : def.TrainFn == TrainFunction.Reheat && !c.Modules[mi].Reheated ? ShipWorks.Current.ReheatBoost * c.Modules[mi].TrainThrust : 0; // (at its peak: a Mixture Controller's rich mix)
+                : def.TrainFn == TrainFunction.Mixture ? ConstructPhysics.MixRichPush * c.Modules[mi].TrainNoMix
+                : def.TrainFn == TrainFunction.Reheat ? ShipWorks.Current.ReheatBoost * c.Modules[mi].TrainNoReheat : 0; // (at its peak; the bells still without one, since a second train may take it)
             if (adds > 0 && c.Modules[mi].Thrust + adds > t.ThrustRating(s))
                 return $"the module would push more than its socket's {t.ThrustRating(s) / 1000f:0} kN{(def.TrainFn is TrainFunction.Mixture or TrainFunction.Reheat || c.Modules[mi].Rich || c.Modules[mi].Reheated ? " at its peak (rich mix, reheat)" : "")}";
         }
