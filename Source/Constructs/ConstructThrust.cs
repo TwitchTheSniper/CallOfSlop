@@ -21,6 +21,10 @@ public struct CThruster
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
     public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
     public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
+    public float LightDelay; // s it takes to light from a standing start: a bell that needs an injector, with no Igniter in its train (0: at once)
+    public float Lit; // ...and how long it has been asked to light (host only)
+    public bool Train; // a bell that needs an injector (ConstructWorks.InjectorFedHead): its heat is kept for a Sensor Ring
+    public float Heat; // ...0..1: its level eased as the drawn heat is (3 s up, 25 s down; host only, kept over rebuilds)
     public float Buffer; // a bell fed through a Fuel Injector (ConstructWorks.InjectorFedHead): seconds of full burn its injector holds, run down while its pipe is cut (host only; kept over rebuilds)
 }
 
@@ -95,11 +99,13 @@ public sealed partial class Construct
         Span<ushort> keepPart = stackalloc ushort[MaxThrusters];
         Span<float> keepAb = stackalloc float[MaxThrusters];
         Span<float> keepBuffer = stackalloc float[MaxThrusters];
+        Span<float> keepHeat = stackalloc float[MaxThrusters];
         var old = ThrusterCount;
         for (var k = 0; k < old; k++)
         {
             keepAb[k] = Thrusters[k].Ab;
             keepBuffer[k] = Thrusters[k].Buffer;
+            keepHeat[k] = Thrusters[k].Heat;
             keep[k] = Thrusters[k].Level;
             keepPart[k] = Thrusters[k].Part;
         }
@@ -144,9 +150,15 @@ public sealed partial class Construct
                 t.Level = keep[kept];
                 t.Ab = keepAb[kept];
                 t.Buffer = keepBuffer[kept];
+                t.Heat = keepHeat[kept];
             }
+            if (WorksHeadOf(i) is var wb and >= 0 && ConstructWorks.InjectorFedHead(d))
+                t.Buffer = MathF.Min(t.Buffer, WorksHeads[wb].BufferMax); // (a Fuel Buffer shot off takes its seconds with it)
+            t.Train = ConstructWorks.InjectorFedHead(d);
+            if (t.Train)
+                t.LightDelay = WorksHeadOf(i) is var wl and >= 0 && WorksHeads[wl].Igniter ? 0 : ShipWorks.Current.LightSeconds;
             if (t.Fed && ConstructWorks.InjectorFedHead(d))
-                t.Buffer = ShipWorks.Current.InjectorBuffer; // (fed: its injector is full)
+                t.Buffer = WorksHeadOf(i) is var wk and >= 0 ? WorksHeads[wk].BufferMax : ShipWorks.Current.InjectorBuffer; // (fed: its injector and its Fuel Buffers are full)
             ThrusterCount++;
         }
         for (var k = 0; k < ThrusterCount; k++)
@@ -356,8 +368,12 @@ public static partial class ConstructPhysics
                 else if (c.Driven)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
             }
+            if (t.LightDelay > 0)
+                Lighting(ref t, ref want, dt);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
+            if (t.Train)
+                t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
             if (t.Level <= 0 && t.Ab <= 0)
                 continue;
@@ -512,8 +528,12 @@ public static partial class ConstructPhysics
             var want = 0f;
             if (Live(c, ref t, p))
                 want = owned && t.Scanned ? Math.Clamp(t.Command, 0, 1) : d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
+            if (t.LightDelay > 0)
+                Lighting(ref t, ref want, dt);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
+            if (t.Train)
+                t.Heat += (t.Level * t.Cap - t.Heat) * (1 - MathF.Exp(-dt / (t.Level * t.Cap > t.Heat ? 3f : 25f)));
             all += d.ThrustForce;
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
@@ -586,6 +606,21 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>
+    /// <summary>A bell with no Igniter in its train, asked to burn from cold, waits <see cref="CThruster.LightDelay"/> before its level rises (a warm one, off for a moment, relights at once).</summary>
+    private const float WarmRelight = 0.05f; // (a bell's heat over this relights at once: about 75 s after a full burn stops)
+
+    private static void Lighting(ref CThruster t, ref float want, float dt)
+    {
+        if (t.Level > 0 || want <= 0 || t.Heat > WarmRelight)
+        {
+            t.Lit = 0;
+            return;
+        }
+        t.Lit += dt;
+        if (t.Lit < t.LightDelay)
+            want = 0;
+    }
+
     public static bool ThrusterLive(Construct c, ref CThruster t, in CPart p) => Live(c, ref t, p);
 
     private static bool Live(Construct c, ref CThruster t, in CPart p)

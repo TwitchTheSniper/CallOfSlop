@@ -129,7 +129,7 @@ public sealed partial class Game
             return c.DefOf(i).WorksNeeds == 0 ? i : -1;
         }
         var j = c.WorksPieces[k - c.ThrusterCount];
-        return ConstructWorks.IsDrivePiece(c.DefOf(j)) ? j : -1;
+        return ConstructWorks.IsDrivePiece(c.DefOf(j)) && c.DefOf(j).TrainFn != TrainFunction.Spacer ? j : -1; // (a Spacer does nothing to break)
     }
 
     private static int BreakdownCandidates(Construct c) => c.ThrusterCount + c.WorksPieceCount;

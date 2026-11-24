@@ -912,7 +912,7 @@ public static class ConstructStorage
         var more = drive || mix || machine || pull || progress || slabs || s.OnBed || wreck; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0) | (s.OnBed ? 64 : 0) | (wreck ? 128 : 0))); // (64: a Laser Cutter's blank on its bed, no bytes; 128: a Scrap Breaker's wreck, protocol 458)
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0) | (s.OnBed ? 64 : 0) | (wreck ? 128 : 0))); // (64: a Laser Cutter's blank on its bed, no bytes; 128: a Scrap Breaker's wreck, protocol 460)
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (progress)
@@ -992,7 +992,7 @@ public static class ConstructStorage
         var flags = r.U8();
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
-        var more = (flags & 64) != 0 ? r.U8() : 0; // (every bit of it is used: 128 is a Scrap Breaker's wreck, protocol 458)
+        var more = (flags & 64) != 0 ? r.U8() : 0; // (every bit of it is used: 128 is a Scrap Breaker's wreck, protocol 460)
         s.OnBed = (more & 64) != 0;
         if ((more & 1) != 0)
         {

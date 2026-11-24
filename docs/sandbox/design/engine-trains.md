@@ -46,8 +46,31 @@ Example: a 1.7 x 2 m bell (`Pressed Part (housing.drivenozzle hollow 170x170x200
 
 The pieces don't check that their diameters match yet; the Bore Adapter and the zone rules come later.
 
+## Phase 3: zones, stacking and the first function pieces
+
+- **Stacking**: every drive piece welded into the train counts; pieces of one kind add up (two chambers serve their sum).
+- **Zones** (`ConstructWorks.Zones`, for a bell that needs an injector): counted back from the bell along its axis, hot pieces first (chambers, Cooling Jacket), then feed (injectors, Fuel Buffer), then supply (pumps, exchangers, turbopumps); a Spacer goes anywhere. At most `trainPieces` (16, ShipWorks.json). The first piece that breaks a rule and every piece behind it are left out of the engine: the bell's look line and the works report say which and why (`CWorksHead.Stray`). Older bells (Drive Core trains) are not zoned.
+- **Function pieces**: a new works kind, `train`, with `"worksPiece": {"kind": "train", "function": ...}` (`TrainFunction`). They serve no amount; what they add is read at the rebuild (`TrainFunctions`):
+  - **Train Spacer XS** (0.4 m): length, and its pipes and cable carry across.
+  - **Fuel Buffer XS** (0.5 m, feed): +15 s (`fuelBuffer`) on a cut line, each one adds (`CWorksHead.BufferMax`). Its band's lamps run with the burn as the injector's do; it burns when holed.
+  - **Cooling Jacket XS** (0.6 m, hot): 10% less fuel at the same push (`jacketSaving`), once a train; behind an older Drive Core engine too. Every third fin glows with the heat.
+- All three press at any size on the Housing die (patterns `trainspacer`, `fuelbuffer`, `coolingjacket`); what they add doesn't change with size.
+- `--engine-check` on chamber, jacket, injector, two buffers and a spacer: a 40 s buffer, 90% burn. A jacket welded behind the injector is left out, with the reason.
+
+Not yet: a piece in the wrong zone is not refused at its socket, only left out at the rebuild; the Fuel Buffer's Buffer out data port.
+
+## Phase 4: the Igniter and the Sensor Ring
+
+- **Igniter XS** (0.35 m, feed): a bell that needs an injector takes `lightSeconds` (3 s, ShipWorks.json) to light from cold, its level held at 0 while it waits (a warm bell, its heat over 5%, relights at once: about 75 s after a full burn) (`CThruster.LightDelay`, `Lit`, host only); with a working Igniter in its train it lights at once (`CWorksHead.Igniter`). Four spark plugs set into the bore, their tips glowing with the burn, a coil box whose lamps run with it, and a burst of sparks at light-off as the injector's. The works report says "lights at once" or "lights in 3 s (no Igniter)".
+- **Sensor Ring XS** (0.35 m, supply): four data outputs, `level` (% of full push), `buffer` (s), `health` (% of the weakest working piece, the bell's own included) and `heat` (%), whole numbers (`ConstructWorks.SensorPort`). The heat is the bell's level eased 3 s up and 25 s down on the host (`CThruster.Heat`, kept over rebuilds), as the drawn heat is. Its outputs never wake a sleeping body (as a gauge's). Four gauges whose needles sweep with the heat, four lamps that run with the burn, a junction box for the cables.
+- Both press at any size on the Housing die (`igniter`, `sensorring`, blank 70x70x35).
+- `--engine-check` prints a Sensor Ring's outputs once a second. With an Igniter the XS engine is at full push in 1 s, without one in 4 s; with the pipe cut at 6 s the ring's buffer counts 10 down to 0 and the heat falls from 99.
+- Protocol 459 (new part files).
+
+Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sensor Ring's outputs are not shown on a client's own copy (the logic runs on the host).
+
 ## Next
 
-1. The other pieces of the doc one at a time: Gimbal Ring, Reheat Ring, Cooling Jacket, Armour Collar, Igniter, Throttle Valve, Mixture Controller, Fuel Buffer, Fuel Filter, Turbopump Drive, Fuel Selector, Sensor Ring, Spacer, Bore Adapter.
+1. The other pieces of the doc one at a time: Throttle Valve, Mixture Controller, Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

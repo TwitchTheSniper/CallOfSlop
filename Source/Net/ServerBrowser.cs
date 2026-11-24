@@ -774,9 +774,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      their Press patterns take any blank size (phase 2), so a sized piece's key now names a part an older build refuses.
     // 457: the Sawmill is a block machine (Core, Saw Block, Plank Stacker; Sawmill T2-T5 gone): new part files move part ids, and a
     //      Sawmill Core's rate, bins and chute load come from its squares as the Smelter's and the Foundry's do.
-    // 458: the Scrap Breaker (Breaker Core, Shredder Block) beside the Recycler: new part files move part ids, a Breaker's bin, chute load
+    // 458: engine trains phase 3: the Train Spacer, Fuel Buffer and Cooling Jacket XS part files move part ids.
+    // 459: engine trains phase 4: the Igniter and Sensor Ring XS part files move part ids.
+    // 460: the Scrap Breaker (Breaker Core, Shredder Block) beside the Recycler: new part files move part ids, a Breaker's bin, chute load
     //      and job time come from its squares, and a store's second flags byte's 128 carries a Breaker's wreck under way (its def and cell).
-    public const ushort ProtocolVersion = 458;
+    public const ushort ProtocolVersion = 460;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
