@@ -57,8 +57,8 @@ public static partial class ConstructRender
             ref var h = ref c.DriveHeat[i];
             var tau = _driveLevel > h ? HeatUp : HeatDown;
             h += (_driveLevel - h) * (1 - MathF.Exp(-dt / tau));
-            // Light-off: one burst of sparks at the injector as the level first passes 2%.
-            if (d.WorksKind == WorksKind.Injector && c.DriveLast[i] <= LightOff && _driveLevel > LightOff && Fx.On)
+            // Light-off: one burst of sparks at the injector (and an Igniter) as the level first passes 2%.
+            if ((d.WorksKind == WorksKind.Injector || d.TrainFn == TrainFunction.Igniter) && c.DriveLast[i] <= LightOff && _driveLevel > LightOff && Fx.On)
                 LightOffSparks(gfx, c, i, onBody);
             c.DriveLast[i] = _driveLevel;
         }

@@ -184,6 +184,11 @@ public static class ConstructLogic
                 p.Count = (ushort)(grab ? 1 : 0);
                 p.State = (byte)(count2[i] > 0 && sum2[i] >= 0.5f ? p.State | ConstructWorld.WinchPaysOut : p.State & ~ConstructWorld.WinchPaysOut);
             }
+            else if (d.TrainFn == TrainFunction.Sensor)
+            {
+                next = ConstructWorks.SensorPort(c, i, 0); // (level; buffer on its second output, health and heat read as wired: ConstructModules.Output)
+                p.Out1 = ConstructWorks.SensorPort(c, i, 1);
+            }
             else if (d.Role != PartRole.Logic)
                 next = 0;
             else
@@ -485,7 +490,7 @@ public static class ConstructLogic
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            if (p.Out != p.OutNext && !p.D.Logic.IsReadout())
+            if (p.Out != p.OutNext && !p.D.Logic.IsReadout() && p.D.TrainFn != TrainFunction.Sensor)
                 changed = true; // (a gauge's dial moving doesn't wake the body: a battery bank charging kept a 1 km ship's physics awake for minutes; what reads it wakes it by its own change)
             p.Out = p.OutNext;
             p.Keys = 0;

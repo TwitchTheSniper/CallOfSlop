@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// <c>--engine-check FILE [--seconds S] [--cut-at S]</c>: an engine train run headless (the "Ship engines with interior parts" design).
 /// The blueprint is built on a flat floor and held there; each thruster is given full throttle through its wire (a Toggle that starts
-/// on, wired to the bell, is the rig's way), and once a second its level, cap, feed and injector buffer are printed. With
+/// on, wired to the bell, is the rig's way), and once a second its level, cap, feed and injector buffer are printed, and any Sensor Ring's four outputs. With
 /// <c>--cut-at</c> the fuel pipes into the train are removed at that time, as a shot through them would, so the buffer's run-down and
 /// the stop show. A tool: it allocates, never on a tick.
 /// </summary>
@@ -64,6 +64,10 @@ public static class EngineTrainCheck
                     var h = c.WorksHeadOf(th.Part);
                     Console.WriteLine($"  t {now,5:0.0} s: {c.Parts[th.Part].D.Name}: level {th.Level:0.00}, cap {th.Cap * 100:0}%, fed {(th.Fed ? "yes" : "no")}, buffer {th.Buffer:0.0} s, push {c.Parts[th.Part].D.ThrustForce * th.Cap * th.Level / 1000:0} kN, fuel {c.FuelLeft:0.00} l{(h >= 0 ? "" : " (no works)")}");
                 }
+            if (t % World.TickRate == 0)
+                for (var i = 0; i < c.PartCount; i++)
+                    if (c.Parts[i].D.TrainFn == TrainFunction.Sensor)
+                        Console.WriteLine($"  t {now,5:0.0} s: Sensor Ring outputs: level {c.Parts[i].Out:0}, buffer {c.Parts[i].Out1:0}, health {ConstructModules.Output(c, i, 2):0}, heat {ConstructModules.Output(c, i, 3):0}");
             c.Wake(); // (held still, it would sleep: a drive at work keeps stepping)
             w.Step(q, World.TickDt);
         }

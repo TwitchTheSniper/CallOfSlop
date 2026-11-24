@@ -59,8 +59,18 @@ The pieces don't check that their diameters match yet; the Bore Adapter and the 
 
 Not yet: a piece in the wrong zone is not refused at its socket, only left out at the rebuild; the Fuel Buffer's Buffer out data port.
 
+## Phase 4: the Igniter and the Sensor Ring
+
+- **Igniter XS** (0.35 m, feed): a bell that needs an injector takes `lightSeconds` (3 s, ShipWorks.json) to light from cold, its level held at 0 while it waits (a warm bell, its heat over 5%, relights at once: about 75 s after a full burn) (`CThruster.LightDelay`, `Lit`, host only); with a working Igniter in its train it lights at once (`CWorksHead.Igniter`). Four spark plugs set into the bore, their tips glowing with the burn, a coil box whose lamps run with it, and a burst of sparks at light-off as the injector's. The works report says "lights at once" or "lights in 3 s (no Igniter)".
+- **Sensor Ring XS** (0.35 m, supply): four data outputs, `level` (% of full push), `buffer` (s), `health` (% of the weakest working piece, the bell's own included) and `heat` (%), whole numbers (`ConstructWorks.SensorPort`). The heat is the bell's level eased 3 s up and 25 s down on the host (`CThruster.Heat`, kept over rebuilds), as the drawn heat is. Its outputs never wake a sleeping body (as a gauge's). Four gauges whose needles sweep with the heat, four lamps that run with the burn, a junction box for the cables.
+- Both press at any size on the Housing die (`igniter`, `sensorring`, blank 70x70x35).
+- `--engine-check` prints a Sensor Ring's outputs once a second. With an Igniter the XS engine is at full push in 1 s, without one in 4 s; with the pipe cut at 6 s the ring's buffer counts 10 down to 0 and the heat falls from 99.
+- Protocol 459 (new part files).
+
+Not yet: the Igniter's `Ignite in` (the drive lights only when wired on); a Sensor Ring's outputs are not shown on a client's own copy (the logic runs on the host).
+
 ## Next
 
-1. The other pieces of the doc one at a time: Igniter, Sensor Ring, Throttle Valve, Mixture Controller, Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
+1. The other pieces of the doc one at a time: Throttle Valve, Mixture Controller, Reheat Ring, Gimbal Ring, Armour Collar, Fuel Filter, Fuel Selector, Turbopump Drive, Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

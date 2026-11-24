@@ -1122,6 +1122,32 @@
       "hollow"
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "igniter",
+     "like": "Igniter XS",
+     "label": "igniter",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
+    },
+    {
+     "id": "sensorring",
+     "like": "Sensor Ring XS",
+     "label": "sensor ring",
+     "preset": "hollow 70x70x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "hollow"
+     ],
+     "dieFeatures": false
     }
    ]
   },
@@ -9015,6 +9041,18 @@
    "die": "housing",
    "pattern": "coolingjacket",
    "blank": "hollow 75x75x60 steel"
+  },
+  {
+   "part": "Igniter XS",
+   "die": "housing",
+   "pattern": "igniter",
+   "blank": "hollow 70x70x35 steel"
+  },
+  {
+   "part": "Sensor Ring XS",
+   "die": "housing",
+   "pattern": "sensorring",
+   "blank": "hollow 70x70x35 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",
