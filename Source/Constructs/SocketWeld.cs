@@ -78,6 +78,7 @@ public static class SocketWeld
     public const float ShowRange = 7f; // metres: markers fade out by here
     public const float PullReach = 30f; // metres: how far off the piece to move may be, in survival and creative (the target stays in reach)
     public const float FitStep = 15f; // degrees: the steps tried to tell whether any angle fits (the spin's own snaps)
+    public const float IconStand = 0.22f; // metres (times the marker's Size): how far out along its facing a socket's icon stands, on a thin stem to the exact point (Sean 2026-11-24)
     public const float PickSine = 0.07f; // a marker within about 4 degrees of the crosshair is picked (the magnet)
     public const float NearSine = 0.25f; // bodies within about 14 degrees of the crosshair (plus their size) show markers
     public const float Step = 15f, FineStep = 5f; // degrees: the spin's snaps (Ctrl: the fine ones; Shift: free)
@@ -630,6 +631,12 @@ public static class SocketWeld
                     if (fade <= 0 || Vector3.Dot(to, dir) <= 0.05f)
                         continue;
                     var offRay = (to - dir * Vector3.Dot(to, dir)).Length() / dist;
+                    var wDir = Vector3.Transform(ConstructParts.DirVector(sdir), q);
+                    var size = MathF.Max(1f, dist / ShowRange);
+                    var toIcon = to + wDir * (IconStand * size);
+                    var iconDist = toIcon.Length();
+                    if (iconDist > 1e-4f) // (the icon picks it as well as the point)
+                        offRay = MathF.Min(offRay, (toIcon - dir * Vector3.Dot(toIcon, dir)).Length() / iconDist);
                     var used = c.SocketUsed(i, s);
                     var receiving = targets && c.Id != sourceBody;
                     // (picking where it goes: only the free sockets that take the picked socket's connection, Sean 2026-11-24)
@@ -639,7 +646,7 @@ public static class SocketWeld
                         : used ? WeldMarkerState.Used
                         : receiving ? WeldMarkerState.Target : WeldMarkerState.Free;
                     var sd = c.DefOf(i);
-                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay, Size = MathF.Max(1f, dist / ShowRange),
+                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = wDir, State = state, Fade = fade, Off = offRay, Size = size,
                         Look = LookOf(c, i, s), Side = JointSides.SocketSide(sd, s), Class = sd.Sockets[s].Class };
                     if (n < cap)
                     {
