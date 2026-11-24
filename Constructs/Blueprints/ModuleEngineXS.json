@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Module Engine XS",
+  "description": "A 1 m round module: the minimum viable engine, a Drive Nozzle XS on the plug with its Reaction Chamber XS and Fuel Injector XS welded on behind it, through the plug's hole. Fit it to a Round Module Socket 1 m in Opening style and run a fuel pipe into the injector's Fuel in. Written by the part kit (engine_train).",
+  "module": { "w": 1, "l": 1, "round": true, "primary": "engine", "tags": ["engine"] },
+  "steps": [
+    { "part": "Round Module Plug 1 m" },
+    { "part": "Drive Nozzle XS", "on": 0, "socket": "s0.0", "by": "mount" },
+    { "part": "Reaction Chamber XS", "on": 1, "socket": "train", "by": "front" },
+    { "part": "Fuel Injector XS", "on": 2, "socket": "back", "by": "front" }
+  ]
+}

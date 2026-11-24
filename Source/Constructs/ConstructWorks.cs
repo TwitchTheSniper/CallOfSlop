@@ -23,6 +23,7 @@ public enum WorksKind : byte
     Loader, // a ring's autoloader (guns of its size)
     Lasergen, // a laser emitter's generator (kW of beam)
     Hoist, // a launcher's reload hoist (kg of one weapon)
+    Injector, // a torch drive's fuel injector (N): the train's fuel goes in through it (a pipe into its Fuel in), and it holds the buffer a cut line runs on
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -36,6 +37,7 @@ public struct CWorksHead
     public float Cap; // 0..1: the share of its rating its works let it have (a thruster never under ShipWorks.BareShare)
     public float Burn; // a thruster: its burn at full level, as a share of its file's burnRate (above Cap when it is short of works: it burns at a jet's rate)
     public WorksKind Short; // the kind that holds it back most (None: nothing does)
+    public bool Fed; // a head that needs a Fuel Injector: a pipe from a working tank reaches a working injector's Fuel in in its engine (touching tanks don't count)
 }
 
 /// <summary>
@@ -55,6 +57,7 @@ public sealed class ShipWorks
     public float LoaderReload = 0.4f; // a gun of six rounds or fewer on a ring with its autoloaders reloads in this share of its time
     public float HoistSeconds = 6f; // s a Reload Hoist takes to move a weapon of HoistMass (ship-works.md 6)
     public float HoistMass = 80f; // kg: the weapon that takes HoistSeconds; the time grows with the square root of the mass
+    public float InjectorBuffer = 10f; // s of full burn a Fuel Injector holds: a bell whose pipe is cut runs this long, then stops (Sean, 2026-11-24, a first figure)
     public string Problem = "";
 
     /// <summary>Per drive type, the thrust (N) from which each kind is needed, in order: torch, then rocket and ion.</summary>
@@ -90,7 +93,7 @@ public sealed class ShipWorks
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "drives"))
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "injectorBuffer" or "drives"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             t.JetMost = Num(root, "jetMost", 1, 1e9f);
             t.BareShare = Num(root, "bareShare", 0, 1);
@@ -102,6 +105,8 @@ public sealed class ShipWorks
             t.LoaderReload = Num(root, "loaderReload", 0.05f, 1);
             t.HoistSeconds = Num(root, "hoistSeconds", 0.5f, 120);
             t.HoistMass = Num(root, "hoistMass", 1, 100_000);
+            if (root.TryGetProperty("injectorBuffer", out _))
+                t.InjectorBuffer = Num(root, "injectorBuffer", 0, 600);
             t.Drives.Clear();
             foreach (var type in root.GetProperty("drives").EnumerateObject())
             {
@@ -186,10 +191,10 @@ public sealed partial class Construct
 /// </summary>
 public static class ConstructWorks
 {
-    public const int KindCount = 11; // (WorksKind's values)
+    public const int KindCount = 12; // (WorksKind's values)
     private const int MountSteps = 4; // joints a head may stand on between it and its mount (a gun's hinge and ring)
 
-    public static readonly string[] KindNames = ["", "mount", "core", "pump", "exchanger", "turbopump", "manifold", "conditioner", "loader", "lasergen", "hoist"];
+    public static readonly string[] KindNames = ["", "mount", "core", "pump", "exchanger", "turbopump", "manifold", "conditioner", "loader", "lasergen", "hoist", "injector"];
 
     /// <summary>The piece a player knows a kind by, in a look line ("no Drive Core behind it").</summary>
     public static string KindPiece(WorksKind k) => k switch
@@ -204,6 +209,7 @@ public static class ConstructWorks
         WorksKind.Loader => "Autoloader",
         WorksKind.Lasergen => "Laser Generator",
         WorksKind.Hoist => "Reload Hoist",
+        WorksKind.Injector => "Fuel Injector",
         _ => "works",
     };
 
@@ -213,8 +219,8 @@ public static class ConstructWorks
     /// <summary>Is this part a works piece or a mount?</summary>
     public static bool IsPiece(ConstructPartDef d) => d.WorksKind != WorksKind.None;
 
-    /// <summary>A drive's works piece (a core, pump, exchanger, turbopump, manifold or conditioner): what a breakdown picks on a hull drive.</summary>
-    public static bool IsDrivePiece(ConstructPartDef d) => d.WorksKind is >= WorksKind.Core and <= WorksKind.Conditioner;
+    /// <summary>A drive's works piece (a core, pump, exchanger, turbopump, manifold, conditioner or injector): what a breakdown picks on a hull drive. An explicit set: a range would miss a kind appended later.</summary>
+    public static bool IsDrivePiece(ConstructPartDef d) => d.WorksKind is WorksKind.Core or WorksKind.Pump or WorksKind.Exchanger or WorksKind.Turbopump or WorksKind.Manifold or WorksKind.Conditioner or WorksKind.Injector;
 
     /// <summary>Either: it has a works line on the look.</summary>
     public static bool Has(ConstructPartDef d) => IsHead(d) || IsPiece(d);
@@ -424,8 +430,24 @@ public static class ConstructWorks
                     wh.Burn = cap;
             }
             wh.Cap = cap;
+            wh.Fed = Needs(d, WorksKind.Injector) && wh.Asm >= 0 && InjectorFed(c, wh.Asm);
         }
     }
+
+    /// <summary>Does a pipe from a working tank reach the Fuel in of a working Fuel Injector in assembly <paramref name="asm"/> (Sean, 2026-11-24: a pipe only; a tank touching the train feeds nothing)?</summary>
+    private static bool InjectorFed(Construct c, short asm)
+    {
+        for (var k = 0; k < c.WorksPieceCount; k++)
+            if (c.WorksPieceAsm[k] == asm && c.Parts[c.WorksPieces[k]] is { Working: true } p && p.D.WorksKind == WorksKind.Injector && ConstructRoutes.PipeFeeds(c, c.WorksPieces[k]))
+                return true;
+        return false;
+    }
+
+    /// <summary>Is a thruster a head whose fuel comes only through its engine's Fuel Injector (its works need one)?</summary>
+    public static bool InjectorFedHead(ConstructPartDef d) => (d.WorksNeeds & (1 << (int)WorksKind.Injector)) != 0;
+
+    /// <summary>A head that takes its fuel through an injector: is a pipe into one (<see cref="CWorksHead.Fed"/>)? Called at the thrusters' rebuild.</summary>
+    public static bool TrainFed(Construct c, int part) => c.WorksHeadOf(part) is var h and >= 0 && c.WorksHeads[h].Fed;
 
     private const float LineReach = 0.15f; // m: how far off a thruster's thrust line a works piece's axis may lie and still be in line with it
     private static readonly float LineCos = MathF.Cos(5f * MathF.PI / 180f); // (and within 5 degrees of it)
@@ -457,6 +479,20 @@ public static class ConstructWorks
     {
         taken = false;
         var (at, dir) = ThrustLine(c, head);
+        // A bell welded straight to its train (an engine module on a Round Module Plug, Sean 2026-11-24): the piece welded to its back.
+        // Only a bell fed through an injector looks there, so older bells find their pieces as they always did.
+        for (var e = InjectorFedHead(c.Parts[head].D) ? c.FirstLink(head) : -1; e >= 0; e = c.NextLink(e))
+        {
+            var o = c.OtherEnd(e);
+            if (!IsDrivePiece(c.Parts[o].D) || !OnLine(c, o, at, dir))
+                continue;
+            if (asmOf[o] >= 0)
+            {
+                taken = true;
+                continue;
+            }
+            return o;
+        }
         for (var e = c.FirstLink(mount); e >= 0; e = c.NextLink(e))
         {
             var o = c.OtherEnd(e);
@@ -509,6 +545,8 @@ public static class ConstructWorks
                         return o;
                     if (d.ModPart == ModPart.Plug && ModuleSockets.EngineMountOf(c, o) is var plate and >= 0)
                         return MountUnder(c, head, plate); // (a module's thruster on its plug: an engine socket's plate is its mount, module-sockets.md 2.2)
+                    if (d.ModPart == ModPart.Plug && c.Parts[head].D.Role == PartRole.Thruster && InjectorFedHead(c.Parts[head].D))
+                        return o; // (a bell on any other plug, a whole engine module: the plug is its mount and its train is welded to the bell, Sean 2026-11-24)
                     if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
                         queue[n++] = (ushort)o;
                 }
@@ -699,6 +737,8 @@ public static class ConstructWorks
             var why = Why(c, h);
             if (why.Length > 0 && d.Role == PartRole.Thruster && h.Cap <= ShipWorks.Current.BareShare + 1e-3f)
                 why += ": running at a quarter";
+            if (why.Length == 0 && InjectorFedHead(d) && !h.Fed)
+                why = "no fuel pipe into its Fuel Injector: it runs on the injector's buffer, then stops";
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), State(c, h), wrecked), why, action);
         }
         if (IsRing(d))
@@ -825,7 +865,7 @@ public static class ConstructWorks
         var key = (long)c.RebuildStamp;
         var k = c.WorksHeadOf(part);
         if (k >= 0)
-            key = key * 31 + (int)(c.WorksHeads[k].Cap * 1000);
+            key = key * 31 + (int)(c.WorksHeads[k].Cap * 1000) + (c.WorksHeads[k].Fed ? 7 : 0);
         if (c.Parts[part].D.WorksKind == WorksKind.Hoist)
             key = key * 31 + (c.Parts[part].Powered ? 1 : 0) + (c.PowerOn ? 2 : 0); // (a hoist says when it has no power)
         return key;
@@ -913,6 +953,8 @@ public static class ConstructWorks
                         sb.Append($" {c.Parts[c.WorksPieces[j]].D.Name} (part {c.WorksPieces[j]})");
             }
             sb.Append($"; cap {h.Cap * 100:0}%");
+            if (InjectorFedHead(d))
+                sb.Append(h.Fed ? "; fed by a pipe into its Fuel Injector" : "; NOT FED: no pipe from a working tank into its Fuel Injector (it runs on the buffer, then stops)");
             if (h.Cap < 0.999f)
             {
                 sb.Append(": ").Append(Why(c, h));

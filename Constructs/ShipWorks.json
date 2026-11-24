@@ -17,5 +17,6 @@
   "mendPerTonne": 2, // ...this much a tonne of the piece, at least 1
   "loaderReload": 0.4, // a gun of six rounds or fewer on a Turret Ring with its Autoloaders reloads in this share of its time (a belt-fed one doesn't stop)
   "hoistSeconds": 6, // s a Reload Hoist takes to move a weapon of hoistMass from its magazine onto its launcher...
-  "hoistMass": 80 // ...kg (a 25 cm missile is about that); the time grows with the square root of the mass
+  "hoistMass": 80, // ...kg (a 25 cm missile is about that); the time grows with the square root of the mass
+  "injectorBuffer": 10 // s of full burn a Fuel Injector holds: a bell fed through one (its works need an injector) whose pipe is cut runs this long, then stops (Sean, 2026-11-24)
 }
