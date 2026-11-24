@@ -233,7 +233,7 @@ public static partial class Program
             var rule = SocketWeld.Check(g.Constructs, World.Query, mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle, ReadOnlySpan<Vector3>.Empty);
             _swWhy = rule ?? (ConstructEdits.SalvageRefusal(mover, g.LocalId) != null || ConstructEdits.SalvageRefusal(target, g.LocalId) != null
                 ? "that construct is someone else's" : null);
-            var where = w.Face ? target.DefOf(w.Part).Name : $"{target.DefOf(w.Part).Name}, {target.DefOf(w.Part).Sockets[w.Socket].Name}";
+            var where = w.Face ? target.DefOf(w.Part).Name : $"{target.DefOf(w.Part).Name}, {target.DefOf(w.Part).Sockets[w.Socket].Name} ({SocketWeld.LookLabel(SocketWeld.LookOf(target, w.Part, w.Socket))})";
             var grid = SocketWeld.OnRotGrid(mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle);
             var how = grid ? "on the grid" : SocketWeld.Rolling(mover) ? "freeform: its wheel won't roll (attach it to a socket to roll)" : "freeform";
             if (SocketWeld.OnLeaf(target, w))
