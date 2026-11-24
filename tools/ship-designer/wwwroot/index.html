@@ -344,7 +344,7 @@ function drawRooms() {
     const col = new THREE.Color(r.colour);
     const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - 0.06, 0.08, bz1 - bz0 - 0.06), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
     floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.04, st ? bz1 - 0.04 : (bz0 + bz1) / 2);
-    floor.userData = { type: "room", id: r.id };
+    floor.userData = { type: "room", id: r.id, floor: true };
     world.add(floor); if (!dim) pickables.push(floor);
     const box = new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, bz1 - bz0 - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
     box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
@@ -450,6 +450,15 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (!h) select(null, 0);
     return;
   }
+  if (mode === "interior" && mounting) {
+    const op = mountAim(ev) ?? mounting.last;
+    if (!op) { toast("Click a wall, the floor or the ceiling of the room."); return; }
+    const a = cmd({ ...op, preview: false, light: false, replace: mounting.pid }, !!mounting.pid);
+    if (a.error) { toast(a.error); return; }
+    const kind = mounting.kind; mounting.pid = 0; stopMount(true);
+    toast(`${kind} fitted: it cuts the hull there and opens into the room.`, true);
+    return;
+  }
   if (mode === "interior") {
     const r = hits.find(h => h.object.userData.type === "room");
     if (r) {
@@ -476,6 +485,7 @@ renderer.domElement.addEventListener("pointerdown", ev => {
 
 window.addEventListener("pointermove", ev => {
   if (paletteDrag) { paletteMove(ev); return; }
+  if (mounting && !drag) { const op = mountAim(ev); if (op) mounting.pending = op; return; }
   if (!drag) { hover(ev); return; }
   if (Math.hypot(ev.clientX - drag.x0, ev.clientY - drag.y0) > 4) drag.moved = true;
   if (!drag.moved) return;
@@ -539,6 +549,34 @@ function axisZ(ev, h) {
   const w = o.clone().sub(p), b = u.dot(d), dd = u.dot(w), e = d.dot(w), den = 1 - b * b;
   if (Math.abs(den) < 1e-4) return null;
   return p.z + (dd - b * e) / den;
+}
+// Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
+// line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
+let mounting = null;
+function startMount(kind, room) {
+  stopMount();
+  mounting = { kind, room, pid: 0, pending: null, last: null };
+  $("tip").textContent = `Move over a wall of the room (its floor or ceiling for a hatch). The ${kind} shows where it would cut the hull; click to fit it.`;
+  inspector();
+}
+function stopMount(keep = false) {
+  if (!mounting) return;
+  if (!keep && mounting.pid) cmd({ op: "delPiece", id: mounting.pid }, true);
+  mounting = null; $("tip").textContent = tips[mode] ?? ""; inspector();
+}
+function mountAim(ev) {
+  const hit = cast(ev).find(h => h.object.userData.type === "room" && h.object.userData.id === mounting.room);
+  if (!hit) return null;
+  const up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+  const n = hit.object.userData.floor ? up.clone().negate() : hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+  return { op: "mount", kind: mounting.kind, room: mounting.room, x: hit.point.x, y: hit.point.y, z: hit.point.z, nx: n.x, ny: n.y, nz: n.z, mirror: false, pair: true };
+}
+function mountTick() {
+  if (!mounting?.pending) return;
+  const op = { ...mounting.pending, replace: mounting.pid, preview: true, light: true }; mounting.pending = null;
+  const a = cmd(op, !!mounting.pid);
+  if (a.error) { $("tip").textContent = a.error; mounting.pid = 0; return; }
+  mounting.pid = a.id; mounting.last = op;
 }
 function rayAt(ev) {
   const r = renderer.domElement.getBoundingClientRect();
@@ -718,6 +756,7 @@ function placeJoin() {
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
+  if (mounting) stopMount();
   mode = m;
   for (const k of ["hull", "pieces", "interior"]) $("m-" + k).classList.toggle("on", k === m);
   if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
@@ -922,6 +961,8 @@ function inspector() {
         el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
       el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
       el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("h3", {}, "Mount a socket from this room"),
+      el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       el("div", { class: "row" },
         el("button", { onclick: () => { const a = cmd({ op: "splitRoom", id: r.id }); if (!a.error) select("room", a.id); } }, "Split"),
         el("button", { onclick: () => { cmd({ op: "delRoom", id: r.id }); select(null, 0); } }, "Remove room")));
@@ -988,11 +1029,11 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
     else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
-  } else if (e.key === "Escape") select(null, 0);
+  } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
 });
 
 window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls }; // (for a page test)
-function loop() { requestAnimationFrame(loop); flush(); controls.update(); renderer.render(scene, camera); }
+function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
 
 try {
   await bootCs();

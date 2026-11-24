@@ -483,6 +483,48 @@ public sealed class DesignEditor
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
                 return "";
             }
+            case "mount":
+            {
+                // A socket mounted from a room (Karl, 2026-11-24): from a point on the room's wall, floor or ceiling, out along that face's
+                // normal to where the line leaves the hull; the piece goes on the skin there and opens into the room. "replace" names the
+                // last preview's piece, which goes first.
+                if (d.PieceById(I(o, "replace")) is { } old)
+                    d.Pieces.Remove(old);
+                var room = d.RoomById(I(o, "room")) ?? throw new InvalidOperationException("no such room");
+                var kind = PieceKinds.Find(Str(o, "kind")) ?? throw new InvalidOperationException("no such piece");
+                if (kind.Where != "skin")
+                    throw new InvalidOperationException($"a {kind.Name} goes on an end of a hull, not from a room");
+                if (d.Pieces.Count >= ShipDesign.MaxPieces)
+                    return $"at most {ShipDesign.MaxPieces} pieces";
+                double x = D(o, "x"), y = D(o, "y"), z = D(o, "z"), nx = D(o, "nx"), ny = D(o, "ny"), nz = D(o, "nz");
+                var nl = Math.Sqrt(nx * nx + ny * ny + nz * nz);
+                if (nl < 1e-6)
+                    return "no direction to cut in";
+                (nx, ny, nz) = (nx / nl, ny / nl, nz / nl);
+                HullBody? inside = null;
+                double ex = 0, ey = 0, ez = 0;
+                for (var f = 0.0; f < 60; f += 0.05)
+                {
+                    double px = x + nx * f, py = y + ny * f, pz = z + nz * f;
+                    var h = d.Hulls.FirstOrDefault(b => b.Depth(px, py, pz) > 0);
+                    if (h is null)
+                    {
+                        if (inside is not null)
+                            break;
+                        continue;
+                    }
+                    inside = h;
+                    (ex, ey, ez) = (px, py, pz);
+                }
+                if (inside is null)
+                    return "no hull that way";
+                var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Room = room.Id };
+                var copy = inside.Copies == 2 && Math.Abs(ex - inside.CopyX(1)) < Math.Abs(ex - inside.CopyX(0)) ? 1 : 0;
+                d.Pieces.Add(p);
+                Attach(p, new JsonObject { ["hull"] = inside.Id, ["copy"] = copy, ["surface"] = "skin", ["x"] = ex, ["y"] = ey, ["z"] = ez });
+                o["id"] = p.Id;
+                return "";
+            }
             case "splitRoom":
             {
                 // A room cut in two across its longer side; the parts stay one room (a group), each sized on its own.
