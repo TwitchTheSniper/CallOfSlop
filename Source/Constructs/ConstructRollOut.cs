@@ -5,6 +5,7 @@ namespace CallOfSlop;
 public sealed partial class ConstructWorld
 {
     internal readonly List<ConstructRollOut.Roll> BodyRolls = new(4); // server: bodies rolling along Roller Tile runs (ConstructRollOut.cs). Not saved
+    internal readonly Dictionary<int, ushort> OvenRolled = new(4); // server: the last body each oven ((body << 16) | part) rolled out, or tried to. Not saved
 }
 
 /// <summary>
@@ -32,7 +33,7 @@ public static class ConstructRollOut
     internal sealed class Roll
     {
         public ushort Body, Host; // the rolling body and the construct its run is on
-        public int Run, Oven = -1; // the run's conveyor link (at the start); the Bake Oven's Core that takes it, or -1
+        public int Run, Oven = -1, FromOven = -1; // the run's conveyor link (at the start); the Bake Oven's Core that takes it, or -1; the oven it rolls out of, or -1
         public Vector3 A, B, C, D; // the body's origin in the host's frame: where it started, lined up on the run, at the run's end, on the bed
         public Quaternion Rot, RotD; // its turn in the host's frame, and on the bed
         public byte Leg; // 0: A to B, 1: B to C, 2: waits at C for the bed, 3: C to D (turning to RotD)
@@ -103,9 +104,71 @@ public static class ConstructRollOut
         return -1;
     }
 
-    /// <summary>The Bake Oven that takes run <paramref name="k"/> (its line, run on past its last tile, meets the oven's bed), or -1.</summary>
-    public static int OvenOf(Construct c, int k) =>
-        Line(c, k, out _, out var n1, out var dir) ? OvenAt(c, n1 + dir * (RollerRuns.EndIn + Probe)) : -1;
+    /// <summary>A body-frame point and way of <paramref name="c"/> in oven <paramref name="part"/>'s tunnel frame (ConstructBakeOven.Bed).</summary>
+    private static bool InTunnel(Construct c, int part, Vector3 at, Vector3 way, out Vector3 local, out Vector3 dir, out ConstructBakeOven.Bed bed)
+    {
+        (local, dir, bed) = (default, default, default);
+        if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
+            return false;
+        bed = new ConstructBakeOven.Bed(c, asm);
+        if (!Matrix4x4.Invert(bed.ToCore, out var toTunnel))
+            return false;
+        ref readonly var p = ref c.Parts[part];
+        var inv = MachineBlocks.Rot24Inverse(p.Rot);
+        local = Vector3.Transform(Rot24.Apply(inv, at - p.Pos), toTunnel);
+        dir = Vector3.TransformNormal(Rot24.Apply(inv, way), toTunnel);
+        return true;
+    }
+
+    /// <summary>
+    /// The Bake Oven that takes run <paramref name="k"/> (its line, run on past its last tile, meets the oven's bed at its tunnel's in
+    /// end, running along the tunnel), or -1.
+    /// </summary>
+    public static int OvenOf(Construct c, int k)
+    {
+        if (!Line(c, k, out _, out var n1, out var dir))
+            return -1;
+        var at = n1 + dir * (RollerRuns.EndIn + Probe);
+        var oven = OvenAt(c, at);
+        if (oven < 0 || !InTunnel(c, oven, at, dir, out var local, out var way, out var bed))
+            return -1;
+        return way.Z > 0.9f && local.Z < bed.Along * 0.5f ? oven : -1;
+    }
+
+    /// <summary>
+    /// Oven <paramref name="part"/>'s way out: a run whose line, run back past its first tile, meets the bed at the tunnel's out end and
+    /// leads on along the tunnel. Its link, or -1.
+    /// </summary>
+    public static int OutRunOf(Construct c, int part)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            if (c.Routes[k].Type != RouteType.Conveyor || !Line(c, k, out var n0, out _, out var dir))
+                continue;
+            var at = n0 - dir * (RollerRuns.EndIn + Probe);
+            if (OvenAt(c, at) == part && InTunnel(c, part, at, dir, out var local, out var way, out var bed) && way.Z > 0.9f && local.Z > bed.Along * 0.5f)
+                return k;
+        }
+        return -1;
+    }
+
+    /// <summary>How far past the tunnel's out end oven <paramref name="part"/>'s way out reaches (m), or 0 with none.</summary>
+    public static float OutReach(Construct c, int part)
+    {
+        var k = OutRunOf(c, part);
+        if (k < 0 || !Line(c, k, out _, out var n1, out var dir) || !InTunnel(c, part, n1 + dir * RollerRuns.EndIn, dir, out var local, out _, out var bed))
+            return 0;
+        return MathF.Max(0, local.Z - bed.Along);
+    }
+
+    /// <summary>Is a baked part rolling out of oven <paramref name="part"/>'s tunnel? (Nothing rolls in until it is out.)</summary>
+    public static bool RollingOut(ConstructWorld world, Construct c, int part)
+    {
+        foreach (var r in world.BodyRolls)
+            if (r.Host == c.Id && r.FromOven == part)
+                return true;
+        return false;
+    }
 
     // ---- Starting a roll ---------------------------------------------------------------------------------------------------
 
@@ -192,8 +255,8 @@ public static class ConstructRollOut
         if (c.ConveyedCount == 0 || world.OvenKits.ContainsKey(c.Id << 16 | part))
             return false;
         foreach (var r in world.BodyRolls)
-            if (r.Host == c.Id && r.Oven == part)
-                return false; // (a body already on its way)
+            if (r.Host == c.Id && (r.Oven == part || r.FromOven == part))
+                return false; // (a body already on its way in, or the last one still on its way out)
         for (var k = 0; k < c.RouteCount; k++)
         {
             if (c.Routes[k].Type != RouteType.Conveyor || OvenOf(c, k) != part || RollerRuns.WaitingLead(c, k) is not (var lead and >= 0))
@@ -209,6 +272,100 @@ public static class ConstructRollOut
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Server, oven <paramref name="part"/>'s step with body <paramref name="body"/> done in its tunnel and the doors open: it rolls out of
+    /// the out end along the oven's way out (<see cref="OutRunOf"/>), level, until its back is clear of the tunnel or its front is at the
+    /// run's end, whichever is further, and is let go there for a crane or an arm. Nothing happens with no way out, while something lies
+    /// in its way at the run, or once it is rolling.
+    /// </summary>
+    public static void OutOf(ConstructWorld world, Construct c, int part, int body)
+    {
+        if (world.Get((ushort)body) is not { } b || b == c || b.HeldBy != 0 || b.CarriedBy != 0 || b.GrabbedBy != 255 || Of(world, b.Id) != null
+            || ConstructLifters.CarryingBody(world, b.Id) != null || world.OvenRolled.TryGetValue(c.Id << 16 | part, out var was) && was == b.Id)
+            return;
+        var k = OutRunOf(c, part);
+        if (k < 0 || !Line(c, k, out var n0, out var n1, out var dir))
+            return;
+        if (b.Dirty)
+            b.Rebuild();
+        c.WorldFrame(0, out var q, out var o);
+        var inv = Quaternion.Conjugate(q);
+        var lr = Quaternion.Normalize(inv * b.Rot);
+        var lp = Vector3.Transform(b.Pos - o, inv);
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var corner = new Vector3((i & 1) == 0 ? b.LocalMin.X : b.LocalMax.X, (i & 2) == 0 ? b.LocalMin.Y : b.LocalMax.Y, (i & 4) == 0 ? b.LocalMin.Z : b.LocalMax.Z);
+            var v = lp + Vector3.Transform(corner, lr);
+            (lo, hi) = (Vector3.Min(lo, v), Vector3.Max(hi, v));
+        }
+        var s = n0 - dir * RollerRuns.EndIn; // (the run's in end: the tunnel's out end)
+        var len = Vector3.Dot(n1 + dir * RollerRuns.EndIn - s, dir);
+        var half = MathF.Abs(Vector3.Dot(hi - lo, dir)) * 0.5f;
+        var at0 = Vector3.Dot((lo + hi) * 0.5f - s, dir);
+        var at1 = MathF.Max(half + 0.3f, len - half);
+        if (at1 <= at0 + 0.05f)
+            return;
+        // It is lifted onto the run's line first if it lies lower (settled on the bed's platen between the rollers).
+        var rise = MathF.Max(0f, s.Y + Lift - lo.Y);
+        var lp1 = lp + Vector3.UnitY * rise;
+        (lo, hi) = (lo + Vector3.UnitY * rise, hi + Vector3.UnitY * rise);
+        // Something lying where it would go (the last part, not yet taken): it waits.
+        var side = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, dir));
+        var wide = MathF.Abs(Vector3.Dot(hi - lo, side)) * 0.5f;
+        var mid = Vector3.Dot((lo + hi) * 0.5f, side);
+        foreach (var other in world.Bodies)
+        {
+            if (other == c || other == b || other.PartCount == 0)
+                continue;
+            var at = Vector3.Transform(other.WorldCom - o, inv);
+            var along = Vector3.Dot(at - s, dir);
+            if (along > at0 + half && along < at1 + half + other.Radius && MathF.Abs(Vector3.Dot(at, side) - mid) < wide + other.Radius && MathF.Abs(at.Y - lo.Y) < 4f)
+                return;
+        }
+        // The site's own parts in the way past its front (a pad's corner masts): it stops short of the first one.
+        var front = at0 + half;
+        var stop = at1 + half;
+        var blocker = -1;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref readonly var p = ref c.Parts[i];
+            var pd = p.D;
+            if (p.Seg != 0 || pd.IsRollerTile || i == part || i < c.BlockAsmOf.Length && c.BlockAsmOf[i] >= 0 && c.BlockAsmOf[i] < c.MachineAsmCount
+                && c.MachineAsms[c.BlockAsmOf[i]].Core == part)
+                continue; // (a run, its own Core and bed)
+            if (pd.IsPieceRack && Rot24.Apply(p.Rot, Vector3.UnitY).Y > 0.99f && p.Pos.Y + pd.RackHoldMin.Y <= lo.Y + 0.15f)
+                continue; // (a pad whose deck is under it: it rolls on over the deck, as a run's pieces do; its masts still stop it)
+            var b0 = p.Pos + Rot24.Apply(p.Rot, pd.BoundsMin);
+            var b1 = p.Pos + Rot24.Apply(p.Rot, pd.BoundsMax);
+            var (pl, ph) = (Vector3.Min(b0, b1), Vector3.Max(b0, b1));
+            if (ph.Y <= lo.Y + 0.15f || pl.Y >= hi.Y)
+                continue; // (under its underside, a floor or a pad's deck, or over it)
+            float a0 = Vector3.Dot(pl - s, dir), a1 = Vector3.Dot(ph - s, dir), s0 = Vector3.Dot(pl, side) - mid, s1 = Vector3.Dot(ph, side) - mid;
+            if (MathF.Min(s0, s1) >= wide || MathF.Max(s0, s1) <= -wide)
+                continue;
+            var near = MathF.Min(a0, a1);
+            if (MathF.Max(a0, a1) > front && near < stop)
+                (stop, blocker) = (MathF.Max(front, near - 0.1f), i);
+        }
+        at1 = MathF.Min(at1, stop - half);
+        world.OvenRolled[c.Id << 16 | part] = b.Id; // (once: what stops short is taken from where it stops)
+        if (at1 <= at0 + 0.5f)
+        {
+            Console.WriteLine($"[rollout] body {b.Id} stays in the {c.DefOf(part).Name} {part}'s tunnel on construct {c.Id}: the {(blocker >= 0 ? c.DefOf(blocker).Name + " " + blocker : "run's end")} is in its way out");
+            return;
+        }
+        var r = new Roll { Body = b.Id, Host = c.Id, Run = k, FromOven = part, Rot = lr, RotD = lr, A = lp, B = lp1, Leg = (byte)(rise > 0.01f ? 0 : 1) };
+        r.C = r.D = lp1 + dir * (at1 - at0);
+        r.WasFrozen = b.Frozen;
+        b.Frozen = true;
+        b.HeldBy = c.Id;
+        b.Vel = b.AngVel = Vector3.Zero;
+        world.BodyRolls.Add(r);
+        Console.WriteLine($"[rollout] body {b.Id} ({b.PartCount} parts) rolls out of the {c.DefOf(part).Name} {part}'s tunnel on construct {c.Id}: {(at1 - at0) / ConstructConveyor.Speed:0.0} s"
+            + (blocker >= 0 ? $", stopping short of the {c.DefOf(blocker).Name} {blocker}" : ""));
     }
 
     // ---- The step ----------------------------------------------------------------------------------------------------------
@@ -267,7 +424,7 @@ public static class ConstructRollOut
             r.D = r.C;
             return true;
         }
-        if (st.Blocked != (byte)OvenPhase.Open || st.Refused != (byte)OvenStall.Empty)
+        if (st.Blocked != (byte)OvenPhase.Open || st.Refused != (byte)OvenStall.Empty || RollingOut(world, c, r.Oven))
             return false;
         var key = c.Id << 16 | r.Oven;
         if (world.OvenKits.TryGetValue(key, out var bound) && bound != b.Id && world.Get(bound) != null)

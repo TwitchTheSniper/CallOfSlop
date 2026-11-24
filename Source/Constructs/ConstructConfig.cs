@@ -885,6 +885,7 @@ public static class ConstructConfig
                 CfgKey.Mode => d.Logic == CLogic.Delay || d.IsBakeOven, // (a Bake Oven: Bake or Un-bake)
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
+                CfgKey.Height when d.IsBakeOven => true, // (a Bake Oven: its tunnel's clear height over the rollers)
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
                 (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage or (>= CfgKey.ShellKit0 and <= CfgKey.ShellKit2) => d.ShellBody || d.ShellPod != null, // (a pod keeps its docked shell's: ConstructShellPod.cs)

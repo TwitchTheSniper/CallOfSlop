@@ -4,12 +4,12 @@ using static CallOfSlop.PartKit.MachineLookShort;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Bake Oven on the block system (design page drawing 19; MachineBlocks.cs, ConstructBakeOven.cs, BakeOvenRender.cs):
-/// Constructs/Parts/BakeOven. One Oven Core (the "Bake Oven": its screen, Mode, Run, power and status lamp, its burner stack and
-/// gas train) and any number of identical 2 x 2 m Oven Bed Blocks welded beside it, the bed being their largest full rectangle.
-/// The shared 2 m Mast Block stacks on the bed's four corner cells; the machine draws its hood and the hood's screw columns
-/// between those masts (BakeOvenRender.cs), so nothing here moves; it has no crane of its own. A bed block's skirt, kerb, side panels and hazard
-/// edge are "seam" boxes: drawn only on the machine's open edges, so a bed of blocks reads as one platen.
+/// The Bake Oven, a roller hearth tunnel on the block system (Bake Oven Lab, Sean 2026-11-24; MachineBlocks.cs, ConstructBakeOven.cs,
+/// BakeOvenRender.cs): Constructs/Parts/BakeOven. One Oven Core (the "Bake Oven", the Recuperator: its screen, Mode, Tunnel height,
+/// Run, power and status lamp, its heat drums, blower and gas pipe) and any number of identical 2 x 2 m Oven Bed Blocks welded beside
+/// it, the bed being their largest full rectangle. The machine draws the tunnel over the bed (its hearth rollers, walls, roof, ribbon
+/// windows and swing doors) and the Core's duct to it (BakeOvenRender.cs); it has no crane of its own. A bed block's skirt, kerb, side
+/// panels and hazard edge are "seam" boxes: drawn only on the machine's open edges, so a bed of blocks reads as one platen.
 /// </summary>
 public sealed class BakeOvenParts : IPartGenerator
 {
@@ -21,8 +21,8 @@ public sealed class BakeOvenParts : IPartGenerator
     private const string Trim = "#2c3036";
     private const string Ceramic = "#6b6259"; // the platen's heater tiles between the steel bars
 
-    /// <summary>The bed's top (m above the foot): a mast stands on it, and the hood comes down onto it (ConstructBakeOven.BedTop).</summary>
-    public const double BedTop = 0.6;
+    /// <summary>The bed's top (m above the foot), and the hearth rollers' tops over it: a Roller Tile's, so a kit rolls in level.</summary>
+    public const double BedTop = 0.6, RollTop = OutTableParts.WorkY;
     private const double OriginY = BedTop / 2; // the Core names its cell's middle at the bed layer's, so bed blocks are its layer and masts the ones over it
     private const int BlockKw = 3500, CoreMass = 2600, BlockMass = 1800;
 
@@ -35,134 +35,103 @@ public sealed class BakeOvenParts : IPartGenerator
     private static PyDict Cyl(int segments, string front) => Kw(("shape", "cylinder"), ("segments", segments), ("front", front));
 
     /// <summary>
-    /// The Oven Core: a 2 m control cabinet with its burner. On the -x face (the aisle side) the screen, its lamp and the button shelf,
-    /// a HOT sign and a maker's plate; on +z the gas train (a pipe with two valves and a pressure gauge) down to the burner box; on top
-    /// the flue stack, which smokes while it bakes, a louvred vent that glows, and the cable conduit to the bed. Bed blocks weld to any
-    /// of its four sides at the foot.
+    /// The Oven Core, the Recuperator (Bake Oven Lab, Sean 2026-11-24): twin insulated heat drums on a plinth with a header over them and
+    /// a stub up to where the duct leaves for the tunnel's wall (BakeOvenRender.cs draws the duct, its yellow flange and the blower's fan,
+    /// which spins faster with the heat); a blower at its foot; on the -x face (the aisle) an instrument cabinet with a big screen on a
+    /// frame, its lamp and buttons, a HOT sign; a gauge on the drums, a red gas pipe with a valve and a beacon on a post that glows while
+    /// it bakes. Bed blocks weld to any of its four sides at the foot.
     /// </summary>
     private static Part Core()
     {
         var p = new Part("Bake Oven", Small, Section,
-            "An Oven Core: bakes a welded group of subparts set on its bed under a heavy hood. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m) and stack Mast Blocks on the bed's four corners: the shortest corner mast sets the clear height under the hood. It has no crane of its own: loaded and emptied by a hall crane, a Loader Arm, a Roller Tile run that meets the bed, or the physics gun. The hood comes down on whatever is on the bed. Needs power.",
+            "An Oven Core, the Recuperator: bakes a welded group of subparts in a roller hearth tunnel. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m): the oven draws a tunnel over the bed, along the side the Core is welded to, with swing doors at both ends. A kit rolls in on a Roller Tile run that meets the end nearer the Core, the doors shut, it bakes, the doors open, and it rolls out along a run that starts at the far end (or waits for a crane or an arm). Its Tunnel height setting is the clear height over the rollers. Needs power.",
             role: "storage", group: "Production", color: Body);
-        const double e = 0.997, h = 1.997;
-        // The cabinet: a plinth, the body sunk 6 cm between a corner post at each edge, a cornice on top.
-        p.Add(Box([-e, 0.003, -e], [e, 0.16, e], MachineLook.Base)!.Update(("paintable", false)));
-        p.Add(Box([-e + 0.06, 0.16, -e + 0.06], [e - 0.06, 1.86, e - 0.06]));
-        foreach (var (sx, sz) in new[] { (1, 1), (1, -1), (-1, 1), (-1, -1) })
-            p.Add(Box([sx > 0 ? e - 0.12 : -e, 0.16, sz > 0 ? e - 0.12 : -e], [sx > 0 ? e : -e + 0.12, 1.86, sz > 0 ? e : -e + 0.12], Trim));
-        p.Add(Box([-e, 1.86, -e], [e, h, e], Trim));
-        // Its sockets: on the floor, and a bed block's at the foot of each side (the bed blocks' own height), a mast or a stack on top.
+        const double e = 0.997;
+        const string Drum = "#a9aeb2";
+        // The plinth, a hazard edge on its aisle side.
+        p.Add(Box([-e, 0.003, -e], [e, 0.2, e], MachineLook.Base)!.Update(("paintable", false)));
+        MachineLook.Hazard(p, [-e - 0.012, 0.2, -e], [-e + 0.02, 0.28, e]);
+        // The instrument cabinet on the aisle side, under the screen (a solid box: the screen's buttons are touched on it).
+        p.Add(Box([-e, 0.2, -e + 0.04], [-0.45, 1.98, -0.08]));
+        p.Add(L([-e - 0.004, 1.98, -e + 0.02], [-0.43, 2.05, -0.06], Trim, paintable: true)); // (its cap)
+        // The twin heat drums: insulated steel, banded, capped; the header over both; the stub up to the duct's elbow.
+        foreach (var x in new[] { 0.15, 0.65 })
+        {
+            p.Add(L([x - 0.25, 0.2, 0.0], [x + 0.25, 3.3, 0.5], Drum, shape: Cyl(20, "+y")));
+            foreach (var y in new[] { 0.6, 1.4, 2.2, 3.0 })
+                p.Add(L([x - 0.27, y - 0.025, -0.02], [x + 0.27, y + 0.025, 0.52], MachineLook.Base, shape: Cyl(20, "+y")));
+            p.Add(L([x - 0.15, 3.3, 0.1], [x + 0.15, 3.36, 0.4], MachineLook.Base, shape: Cyl(14, "+y")));
+        }
+        p.Add(Box([-0.08, 0.2, 0.02], [0.88, 3.28, 0.48], hidden: true)); // (the drums' solid, for collision: they are round looks)
+        p.Add(Box([-0.05, 3.3, -0.05], [0.85, 3.62, 0.55], Drum)); // (the header)
+        foreach (var x in new[] { -0.03, 0.83 })
+            foreach (var z in new[] { -0.03, 0.53 })
+                p.Add(L([x - 0.02, 3.36, z - 0.02], [x + 0.02, 3.6, z + 0.02], MachineLook.Steel, "steel")); // (its corner bolts)
+        p.Add(L([0.19, 3.62, 0.04], [0.61, 4.3, 0.46], Drum, "steel", shape: Cyl(16, "+y"))); // (the stub up to the elbow: the duct leaves it for the tunnel)
+        p.Add(L([0.17, 4.3, 0.02], [0.63, 4.52, 0.48], MachineLook.Base, shape: Cyl(16, "+y"))); // (the elbow's cap)
+        // The blower at the foot: its housing, the yellow ring round its intake, its motor, the shaft. (The fan is drawn spinning.)
+        p.Add(L([0.15, 0.35, -1.0], [0.65, 1.15, -0.2], MachineLook.Base, shape: Cyl(18, "+x")));
+        p.Add(L([0.11, 0.37, -0.98], [0.15, 1.13, -0.22], MachineLook.Accent, shape: Cyl(18, "+x")));
+        p.Add(L([0.55, 0.2, -0.95], [0.95, 0.5, -0.25], Body, paintable: true));
+        p.Add(L([0.15, 0.72, -0.63], [0.75, 0.78, -0.57], MachineLook.Steel, "steel", shape: Cyl(8, "+x")));
+        // The screen's frame posts beside the cabinet.
+        foreach (var z in new[] { -0.9, -0.3 })
+            p.Add(L([-0.45, 0.2, z - 0.04], [-0.37, 2.0, z + 0.04], Trim));
+        // A gauge on the near drum, the red gas pipe up its side with a valve, the beacon on its post.
+        p.Add(L([-0.33, 2.65, 0.1], [-0.28, 2.95, 0.4], "#e8e6df", shape: Cyl(14, "+x")));
+        p.Add(L([-0.345, 2.78, 0.24], [-0.33, 2.9, 0.26], MachineLook.Ink));
+        p.Add(L([-0.1, 2.78, 0.22], [-0.33, 2.82, 0.28], MachineLook.Steel, "steel")); // (its tap)
+        p.Add(L([-0.2, 0.2, 0.8], [-0.1, 2.2, 0.9], "#b8322a", shape: Cyl(10, "+y")));
+        p.Add(L([-0.25, 1.5, 0.88], [-0.05, 1.7, 0.92], MachineLook.Accent, shape: Cyl(12, "+z")));
+        p.Add(L([-0.24, 1.55, 0.78], [-0.06, 1.65, 0.88], MachineLook.Base)); // (the valve's body)
+        p.Add(L([-0.65, 0.2, -0.65], [-0.55, 2.9, -0.55], Trim));
+        p.Add(MachineLook.Work(L([-0.68, 2.9, -0.68], [-0.52, 3.1, -0.52], MachineLook.Out, shape: Cyl(12, "+y")), "glow"));
+        // Its sockets: on the floor, and a bed block's at the foot of each side (the bed blocks' own height).
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("+x", [1, OriginY, 0], "+x");
         p.Sock("-x", [-1, OriginY, 0], "-x");
         p.Sock("+z", [0, OriginY, 1], "+z");
         p.Sock("-z", [0, OriginY, -1], "-z");
-        p.Sock("top", [0, 2, 0], "+y");
         p.Stats(CoreMass, 3000, 8, 10);
-        p.Set(("power", 2000), ("storage", Kw(("bake", Kw(("bedTop", BedTop), ("kwBlock", BlockKw / 1000.0), ("hoodSpeed", 1), ("partSeconds", 2), ("partsBlock", 16), ("maxParts", 255))))),
+        p.Set(("power", 2000), ("storage", Kw(("bake", Kw(("bedTop", BedTop), ("rollTop", RollTop), ("kwBlock", BlockKw / 1000.0), ("doorSeconds", 3), ("partSeconds", 2), ("partsBlock", 16), ("maxParts", 255))))),
             ("machineBlock", BlockKey("core")),
             ("config", Py.L(
                 Kw(("key", "mode"), ("label", "Mode"), ("group", "Oven"), ("options", Py.L("Bake", "Un-bake")), ("default", 0),
-                    ("tooltip", "Bake: the welded group on the bed becomes one part. Un-bake: a baked part on the bed is set back out as its subparts.")),
+                    ("tooltip", "Bake: the welded group in the tunnel becomes one part. Un-bake: a baked part in the tunnel is set back out as its subparts.")),
+                Kw(("key", "height"), ("label", "Tunnel height"), ("group", "Oven"), ("unit", "m"), ("min", 1.5), ("max", 12), ("step", 0.5), ("default", 3),
+                    ("tooltip", "The tunnel's clear height over the rollers: the tallest kit it bakes.")),
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
             ("collider", "boxes"));
-        // The control face on -x: screen, lamp, button shelf.
+        // The big screen on the aisle face, facing the in feed, its lamp and button shelf.
         var keepClear = p.Sockets.Select(k => (new[] { Py.D(((List<object?>)k["at"]!)[0]), Py.D(((List<object?>)k["at"]!)[1]), Py.D(((List<object?>)k["at"]!)[2]) }, (string)k["dir"]!)).ToList();
-        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x"], rows: 4, width: 0.84, lamp: true);
+        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x"], rows: 4, width: 0.8, lamp: true);
         PartScreens.Fit(p.Boxes, plate, most: 200);
         MachineLook.Buttons(p, plate, (string)panel["face"]!);
         if (lamp is not null)
             p.Boxes.Add(lamp);
         p.Set(("panels", Py.L(panel)));
-        // ---- The look ----
-        MachineLook.Skirt(p, -1, 1, -1, 1, 0, 0.16, 0.012);
-        // Recessed panels on the three plain sides: a raised frame round a sunk panel, a stiffener rib across the middle.
-        foreach (var (n, sg) in new[] { (0, 1), (2, 1), (2, -1) })
-        {
-            var f = sg * (e - 0.06); // the body's face
-            double[] P(double a, double y, double depth) { var v = new double[3]; v[n] = f + sg * depth; v[2 - n] = a; v[1] = y; return v; }
-            void Slab(double a0, double a1, double y0, double y1, double d0, double d1, string colour, bool paint = false)
-            {
-                var lo = P(a0, y0, Math.Min(d0, d1));
-                var hi = P(a1, y1, Math.Max(d0, d1));
-                p.Add(L([Math.Min(lo[0], hi[0]), lo[1], Math.Min(lo[2], hi[2])], [Math.Max(lo[0], hi[0]), hi[1], Math.Max(lo[2], hi[2])], colour, paintable: paint));
-            }
-            Slab(-0.86, 0.86, 1.7, 1.78, 0.004, 0.03, Body, true); // (the frame round the panel)
-            Slab(-0.86, 0.86, 0.26, 0.34, 0.004, 0.03, Body, true);
-            Slab(-0.86, -0.78, 0.34, 1.7, 0.004, 0.03, Body, true);
-            Slab(0.78, 0.86, 0.34, 1.7, 0.004, 0.03, Body, true);
-            Slab(-0.78, 0.78, 0.98, 1.04, 0.004, 0.022, Body, true); // (the stiffener rib)
-            foreach (var a in new[] { -0.82, 0.82 })
-                foreach (var y in new[] { 0.3, 1.0, 1.74 })
-                    Slab(a - 0.016, a + 0.016, y - 0.016, y + 0.016, 0.03, 0.046, MachineLook.Steel); // (bolt heads on the frame)
-        }
-        // A louvred vent low on +x, glowing while it bakes; the burner's air intake.
-        for (var k = 0; k < 6; k++)
-        {
-            var y = 0.44 + k * 0.08;
-            p.Add(L([e - 0.05, y, -0.55], [e + 0.01, y + 0.035, -0.12], MachineLook.Base));
-        }
-        p.Add(MachineLook.Work(L([e - 0.058, 0.42, -0.56], [e - 0.046, 0.92, -0.11], MachineLook.Hot), "glow"));
-        // The gas train on +z: a supply pipe down the face to the burner box, two valves with yellow handwheels, a pressure gauge.
-        p.Add(L([0.42, 0.34, e + 0.03], [0.52, 1.7, e + 0.13], "#b8322a", shape: Cyl(10, "+y")));
-        p.Add(L([0.36, 0.28, e - 0.004], [0.94, 0.62, e + 0.2], MachineLook.Base)); // (the burner box)
-        p.Add(L([0.4, 0.62, e + 0.05], [0.88, 0.66, e + 0.16], MachineLook.Steel, "steel")); // (its lid's lip)
-        foreach (var y in new[] { 0.9, 1.35 })
-        {
-            p.Add(L([0.39, y - 0.06, e + 0.02], [0.55, y + 0.06, e + 0.14], MachineLook.Base)); // (a valve body)
-            p.Add(L([0.36, y - 0.11, e + 0.15], [0.58, y + 0.11, e + 0.18], MachineLook.Accent, shape: Cyl(10, "+z"))); // (its handwheel)
-        }
-        p.Add(L([0.6, 1.4, e + 0.004], [0.8, 1.6, e + 0.044], "#e8e6df", shape: Cyl(12, "+z"))); // (the gauge's face)
-        p.Add(L([0.69, 1.47, e + 0.044], [0.73, 1.56, e + 0.06], MachineLook.Ink)); // (its needle)
-        p.Add(L([0.52, 1.47, e + 0.04], [0.6, 1.53, e + 0.08], MachineLook.Steel, "steel")); // (its tap off the pipe)
-        // The cable conduit from the cabinet down to the bed's side, clipped at three points, with a junction box.
-        p.Add(L([-0.5, 0.18, e + 0.03], [-0.42, 1.62, e + 0.11], MachineLook.Base, shape: Cyl(8, "+y")));
-        foreach (var y in new[] { 0.4, 0.95, 1.5 })
-            p.Add(L([-0.53, y - 0.025, e - 0.004], [-0.39, y + 0.025, e + 0.12], MachineLook.Steel));
-        p.Add(L([-0.74, 1.6, e - 0.004], [-0.2, 1.82, e + 0.1], MachineLook.Base));
-        // The HOT sign on the aisle face, under the screen's shelf: yellow plate, a black border, the word in black bars.
+        // The HOT sign on the cabinet, under the screen: yellow plate, a black border, the word in black bars.
         const double sx0 = -e - 0.032;
-        p.Add(L([sx0, 0.3, -0.42], [-e + 0.004, 0.62, 0.42], MachineLook.Ink));
-        p.Add(L([sx0 - 0.012, 0.32, -0.4], [sx0 + 0.002, 0.6, 0.4], MachineLook.Accent));
-        void Bar(double z0, double z1, double y0, double y1) => p.Add(L([sx0 - 0.026, y0, -z1], [sx0 - 0.01, y1, -z0], MachineLook.Ink)); // (mirrored: facing -x, the aisle's right is +z)
-        // H (laid out +z to -z, then mirrored by Bar, so the word reads left to right from the aisle)
-        Bar(0.24, 0.28, 0.37, 0.55); Bar(0.12, 0.16, 0.37, 0.55); Bar(0.16, 0.24, 0.445, 0.475);
-        // O
-        Bar(0.02, 0.06, 0.37, 0.55); Bar(-0.1, -0.06, 0.37, 0.55); Bar(-0.06, 0.02, 0.37, 0.4); Bar(-0.06, 0.02, 0.52, 0.55);
-        // T
-        Bar(-0.32, -0.16, 0.52, 0.55); Bar(-0.26, -0.22, 0.37, 0.52);
-        // The maker's plate beside the sign, two rivets on it.
-        p.Add(L([-e - 0.03, 0.3, 0.5], [-e + 0.004, 0.46, 0.8], MachineLook.In));
-        p.Add(L([-e - 0.044, 0.36, 0.53], [-e - 0.03, 0.4, 0.77], MachineLook.Ink));
-        // On top: the flue stack (it smokes while it bakes), its rain cap, and a vent hood over the cabinet with a glowing slot.
-        p.Add(L([0.35, h, -0.65], [0.65, 2.7, -0.35], MachineLook.Base, shape: Cyl(14, "+y")));
-        p.Add(L([0.31, 2.48, -0.69], [0.69, 2.52, -0.31], MachineLook.Steel, "steel", shape: Cyl(14, "+y"))); // (a band round it)
-        p.Add(MachineLook.Work(L([0.3, 2.78, -0.7], [0.7, 2.82, -0.3], MachineLook.Base, shape: Cyl(14, "+y")), "smoke"));
-        foreach (var (x, z) in new[] { (0.36, -0.68), (0.64, -0.68), (0.36, -0.32), (0.64, -0.32) })
-            p.Add(L([x - 0.012, 2.7, z - 0.012], [x + 0.012, 2.78, z + 0.012], MachineLook.Base)); // (the cap's legs)
-        p.Add(L([-0.8, h, -0.4], [-0.1, 2.2, 0.5], Trim, paintable: true));
-        p.Add(MachineLook.Work(L([-0.7, 2.2, -0.3], [-0.2, 2.214, 0.4], MachineLook.Hot), "glow"));
-        foreach (var z in new[] { -0.15, 0.05, 0.25 })
-            p.Add(L([-0.72, 2.214, z - 0.02], [-0.18, 2.23, z + 0.02], MachineLook.Base)); // (bars over the slot)
-        // Lifting eyes at the cornice's corners.
-        foreach (var (x, z) in new[] { (0.85, 0.85), (-0.85, 0.85), (0.85, -0.85), (-0.85, -0.85) })
-            p.Add(L([x - 0.05, h, z - 0.015], [x + 0.05, h + 0.08, z + 0.015], MachineLook.Steel, "steel"));
-        // A hazard band round the cornice: it bakes and burns whatever is on its bed.
-        MachineLook.Hazard(p, [-e - 0.014, 1.88, -e - 0.014], [e + 0.014, 1.97, -e]);
-        MachineLook.Hazard(p, [-e - 0.014, 1.88, e], [e + 0.014, 1.97, e + 0.014]);
+        p.Add(L([sx0, 0.3, -0.86], [-e + 0.004, 0.56, -0.22], MachineLook.Ink));
+        p.Add(L([sx0 - 0.012, 0.32, -0.84], [sx0 + 0.002, 0.54, -0.24], MachineLook.Accent));
+        void Bar(double z0, double z1, double y0, double y1) => p.Add(L([sx0 - 0.026, y0, -0.54 - z1], [sx0 - 0.01, y1, -0.54 - z0], MachineLook.Ink));
+        Bar(0.18, 0.21, 0.36, 0.5); Bar(0.09, 0.12, 0.36, 0.5); Bar(0.12, 0.18, 0.415, 0.445);
+        Bar(0.01, 0.04, 0.36, 0.5); Bar(-0.08, -0.05, 0.36, 0.5); Bar(-0.05, 0.01, 0.36, 0.39); Bar(-0.05, 0.01, 0.47, 0.5);
+        Bar(-0.25, -0.12, 0.47, 0.5); Bar(-0.2, -0.17, 0.36, 0.47);
+        // A maker's plate on the cabinet's end.
+        p.Add(L([-0.8, 1.2, -e + 0.004], [-0.55, 1.34, -e + 0.04], MachineLook.In));
         return p;
     }
 
     /// <summary>
     /// An Oven Bed Block: one 2 x 2 m cell of the bed, 0.6 m deep. A steel platen on top laid with ceramic heater tiles between bars,
     /// bolted at its corners; a kerb, an orange heated edge, a hazard edge and a skirt on its sides, each a seam (drawn only on the
-    /// machine's open edges); sunk side panels with louvres and a terminal box. A mast or another block welds on any face.
+    /// machine's open edges); sunk side panels with louvres and a terminal box. Another block welds on any face.
     /// </summary>
     private static Part BedBlock()
     {
         var p = new Part("Oven Bed Block", Small, Section,
-            "Weld it beside an Oven Core, or beside another Oven Bed Block: 2 x 2 m more heated bed. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles. Stack Mast Blocks on the bed's four corners for the hood.",
+            "Weld it beside an Oven Core, or beside another Oven Bed Block: 2 x 2 m more heated bed, and the tunnel over it 2 m longer or wider. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
             group: "Production", color: Body);
         const double e = 0.997, t = BedTop, k = 0.07; // (k: how far the side panels are sunk)
         // The body: a core sunk k on every side, with full-width ribs at its ends and its middle, and the platen on top.
@@ -172,7 +141,8 @@ public sealed class BakeOvenParts : IPartGenerator
             p.Add(Box([a - 0.06, 0.003, -e], [a + 0.06, t - 0.1, e]));
             p.Add(Box([-e, 0.003, a - 0.06], [e, t - 0.1, a + 0.06]));
         }
-        p.Add(Box([-e, t - 0.1, -e], [e, t, e])); // (the platen's slab: a mast stands on it)
+        p.Add(Box([-e, t - 0.1, -e], [e, t, e])); // (the platen's slab)
+        p.Add(Box([-e, t + 0.003, -e], [e, RollTop - 0.003, e], hidden: true)); // (solid to the rollers' tops: a kit rests on the roll line)
         foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
             // A fill in the body's tone closes the sunk panel where a block is welded on, so no slot runs between blocks.
@@ -210,7 +180,7 @@ public sealed class BakeOvenParts : IPartGenerator
         p.Sock("-x", [-1, OriginY, 0], "-x");
         p.Sock("+z", [0, OriginY, 1], "+z");
         p.Sock("-z", [0, OriginY, -1], "-z");
-        p.Sock("top", [0, t, 0], "+y");
+        p.Sock("top", [0, RollTop, 0], "+y");
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Stats(BlockMass, 2000, 8, 8);
         p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false), ("collider", "boxes"));

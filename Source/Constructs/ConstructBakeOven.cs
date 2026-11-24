@@ -8,22 +8,25 @@ public enum OvenStall : byte
 {
     None,
     NoBed, // no full rectangle of Oven Bed Blocks beside the Core
-    NoMasts, // a corner of the bed has no Mast Block on it
-    NoRoom, // every bed cell has a mast on it: nowhere to set a group
-    Empty, // nothing on the bed
-    Several, // more than one body on the bed
-    Overhang, // the group stands off the bed's clear cells (over its edge, or on a mast's cell)
-    TooTall, // the group is higher than the raised hood
+    NoMasts, // (unused since the roller hearth tunnel, 2026-11-24: the byte's numbers stay as they were)
+    NoRoom, // (unused since the roller hearth tunnel)
+    Empty, // nothing in the tunnel
+    Several, // more than one body in the tunnel
+    Overhang, // the group stands off the hearth (into a wall or a door's swing)
+    TooTall, // the group is higher than the tunnel's roof
     TooMany, // more subparts than the bed takes
     Moving, // the group is still moving (it settles first)
-    Done, // baked (or un-baked): lift it off
+    Done, // baked (or un-baked): roll it out or lift it off
     NoPower,
     CantBake, // Bake: a part on the bed that isn't plain structure, a joint, a weld off the grid, or too many boxes (BakedParts.CanBake)
     NotBaked, // Un-bake: the group isn't one baked part (BakedParts.CanUnbake)
     Failed, // the bake or un-bake at the end of the heat was refused (the log says why); the group is as it went in
 }
 
-/// <summary>Where a Bake Oven's cycle is (its store's Blocked byte: on the wire, so every peer draws the hood the same).</summary>
+/// <summary>
+/// Where a Bake Oven's cycle is (its store's Blocked byte: on the wire, so every peer draws the doors the same). The numbers are the
+/// old hood's (Drop: the doors swing shut; Lift: they swing open), so saves keep their meaning.
+/// </summary>
 public enum OvenPhase : byte { Open, Drop, Heat, Cool, Lift }
 
 /// <summary>A place where a machine hurts whoever stands in it this step (server; Game reads and clears them each tick).</summary>
@@ -41,36 +44,47 @@ public sealed partial class ConstructWorld
 }
 
 /// <summary>
-/// The Bake Oven (design page drawing 19): an Oven Core, the Oven Bed Blocks welded beside it (MachineBlocks.cs finds them: the bed is
-/// their largest full rectangle) and a shared Mast Block column on each of the bed's four corners. The shortest corner column sets
-/// the clear height under the raised hood: 2 m a mast less the hood's 0.5 m. A welded group is set on the bed from above (a crane,
-/// a Lifter, the physics gun); with power, Run on (or nothing wired to it) and the group wholly on the bed's clear cells, settled, under
-/// the hood and within the subpart limit (16 a bed block, at most 255), the cycle runs: the hood drops at 1 m/s, the bed heats for 2 s
-/// a subpart times 12 over the bed's blocks (at least 0.5 s a subpart), it cools for 3 s, and the hood lifts. Each bed block draws
-/// 3.5 kW while it heats; the screws draw the Core's own power while the hood moves.
+/// The Bake Oven, a roller hearth tunnel (Sean, 2026-11-24: the Bake Oven Lab's design; docs production.md "Bake Oven and baked parts"):
+/// an Oven Core (the Recuperator) and the Oven Bed Blocks welded beside it (MachineBlocks.cs finds them: the bed is their largest full
+/// rectangle). The machine draws a tunnel over the whole bed (BakeOvenRender.cs): ceramic hearth rollers with their tops at the roll line
+/// (<see cref="ConstructPartDef.BakeRollTop"/>, a Roller Tile's, so a kit rolls in level), fixed side walls and a roof lined with
+/// firebrick, ribbon windows on both walls and a pair of swing doors at each end. The tunnel runs along the bed's side the Core is
+/// welded to; its in end is the end nearer the Core, its out end the other (<see cref="Bed"/>). The clear height over the rollers is
+/// the Core's Tunnel height setting.
 /// <para>
-/// The hood drops on whatever is on the bed: anyone under it is crushed, and anyone inside while it is down is burned (machines never
-/// stop for people: hazard stripes and the HOT sign are the warning). The hood and its screw columns are drawn
-/// by BakeOvenRender.cs from the phase byte; nothing new goes on the wire.
+/// A kit comes in on a Roller Tile run that meets the in end (ConstructRollOut.cs), or is set in from above by a crane or an arm. With
+/// power, Run on (or nothing wired to it) and the group wholly over the hearth, settled, under the roof and within the subpart limit
+/// (16 a bed block, at most 255), the cycle runs: both doors swing shut (<see cref="ConstructPartDef.BakeDoorSeconds"/>), it heats for 2 s
+/// a subpart times 12 over the bed's blocks (at least 0.5 s a subpart), cools for 3 s, and the doors swing open. Then the baked part
+/// rolls out of the out end along a run that starts there (ConstructRollOut.OutOf), or waits for a lifter. Each bed block draws 3.5 kW
+/// while it heats; the Core its own while the doors move.
+/// </para>
+/// <para>
+/// The doors swing outward on whatever stands in their way, and whoever is in the closed tunnel is burned (machines never stop for
+/// people: hazard edges and the HOT sign are the warning). The doors and the tunnel are drawn from the phase byte; nothing new goes on
+/// the wire.
 /// </para>
 /// <para>
 /// The bake (BakedParts.cs): at the end of the heat, in Bake mode the group becomes a new body of one <c>Baked (#hash)</c> part (its Module
 /// Socket plates stay real parts beside it), its design kept in the world's store; in Un-bake mode a baked part becomes its subparts again.
-/// What can't be baked or un-baked is refused before the hood drops (<see cref="OvenStall.CantBake"/>, <see cref="OvenStall.NotBaked"/>).
+/// What can't be baked or un-baked is refused before the doors shut (<see cref="OvenStall.CantBake"/>, <see cref="OvenStall.NotBaked"/>).
 /// </para>
 /// </summary>
 public static partial class ConstructBakeOven
 {
     private const int Every = World.TickRate / 10; // a step is 0.1 s
-    public const float HoodThick = 0.5f; // m: the hood's own height, taken off the masts' (drawing 19)
     private const float CoolSeconds = 3f;
-    private const int CrushDamage = 2000, BurnDamage = 1; // per 60 Hz game tick (GameMachineHazards reads the list every tick): the skirts landing on someone, and the heat inside a closed hood (60 a second)
-    private const float Settled = 0.05f; // m/s: a group moving slower than this has settled on the bed
+    public const float Wall = 0.4f; // m: the tunnel's side walls, over the bed's outer edge
+    public const float DoorZone = 0.45f; // m in from each end of the bed: the portal, its sill and the doors' leaves
+    public const float SwingDeg = 100f; // how far a leaf swings out, degrees
+    public const float DefaultClear = 3f; // m: the Tunnel height setting's default
+    private const int SwingDamage = 4, BurnDamage = 1; // per 60 Hz game tick (GameMachineHazards reads the list every tick): a swinging leaf, the heat in the closed tunnel
+    private const float Settled = 0.05f; // m/s: a group moving slower than this has settled on the hearth
 
     /// <summary>The <c>"bake"</c> block of a Core's <c>"storage"</c>.</summary>
     public static void Parse(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        ConstructParts.Known(b, ["bedTop", "kwBlock", "hoodSpeed", "partSeconds", "partsBlock", "maxParts"], $"{bw}.bake");
+        ConstructParts.Known(b, ["bedTop", "rollTop", "kwBlock", "doorSeconds", "partSeconds", "partsBlock", "maxParts"], $"{bw}.bake");
         float Num(string key, float lo, float hi)
         {
             var v = ConstructParts.Num(ConstructParts.Need(b, key, $"{bw}.bake"), file, $"storage.bake.{key}");
@@ -78,8 +92,9 @@ public static partial class ConstructBakeOven
             return v;
         }
         d.BakeBedTop = Num("bedTop", 0.1f, 2f);
+        d.BakeRollTop = Num("rollTop", d.BakeBedTop, 3f);
         d.BakeKwBlock = Num("kwBlock", 0.1f, 1000f);
-        d.BakeHoodSpeed = Num("hoodSpeed", 0.1f, 10f);
+        d.BakeDoorSeconds = Num("doorSeconds", 0.5f, 30f);
         d.BakePartSeconds = Num("partSeconds", 0.1f, 60f);
         d.BakePartsBlock = (int)Num("partsBlock", 1, 255);
         d.BakeMaxParts = (int)Num("maxParts", 1, 255);
@@ -87,31 +102,56 @@ public static partial class ConstructBakeOven
         d.DataIn = [ConstructGatherer.RunPort];
     }
 
-    /// <summary>An oven's bed as its blocks make it: the rectangle (Core cell frame), its corner masts and the clear height (0 with no bed or masts).</summary>
+    /// <summary>
+    /// An oven's bed as its blocks make it, and its tunnel. The tunnel's own frame (<see cref="ToCore"/>, the Bake Oven Lab's machine frame):
+    /// metres, y up from the Core's foot, x across the bed from 0 to <see cref="Across"/>, z along it from the in end (0) to the out end
+    /// (<see cref="Along"/>). The tunnel runs along the bed's edge the Core is welded beside; the in end is the one nearer the Core.
+    /// </summary>
     public readonly struct Bed
     {
-        public readonly int X0, Z0, W, L, Columns, Blocks;
-        public readonly float Cell, Top, Clear;
+        public readonly int X0, Z0, W, L, Blocks;
+        public readonly float Cell, Top, Roll, Clear, Across, Along;
+        public readonly bool AlongZ; // the tunnel runs along the Core frame's z (else its x)
+        public readonly bool Reversed; // the work flows towards the Core frame's lower z (or x)
+        public readonly Matrix4x4 ToCore; // the tunnel's frame to the Core part's
 
         public Bed(Construct c, in CMachineAsm asm)
         {
             var d = c.Parts[asm.Core].D;
-            (X0, Z0, W, L, Cell, Top) = (asm.X0, asm.Z0, asm.W, asm.L, d.BlockCell, d.BakeBedTop);
+            (X0, Z0, W, L, Cell, Top, Roll) = (asm.X0, asm.Z0, asm.W, asm.L, d.BlockCell, d.BakeBedTop, d.BakeRollTop);
             Blocks = W * L;
-            Columns = MachineBlocks.CornerColumns(c, asm);
-            Clear = Columns > 0 ? Columns * Cell - HoodThick : 0;
+            Clear = W > 0 ? Math.Clamp(ConstructConfig.Get(c.Parts[asm.Core], d, CfgKey.Height, DefaultClear), 1f, 16f) : 0;
+            // Beside the bed across x (the Core's cell 0 within the bed's rows): the tunnel runs along z, and the other way round.
+            AlongZ = W == 0 || 0 >= Z0 && 0 <= Z0 + L - 1 || !(0 >= X0 && 0 <= X0 + W - 1);
+            Reversed = AlongZ ? -Z0 > Z0 + L - 1 : -X0 > X0 + W - 1; // (the Core nearer the bed's high end: that is the in end)
+            var o = d.BlockOrigin ?? Vector3.Zero;
+            var half = Cell * 0.5f;
+            float minX = o.X + X0 * Cell - half, maxX = minX + W * Cell, minZ = o.Z + Z0 * Cell - half, maxZ = minZ + L * Cell;
+            (Across, Along) = AlongZ ? (W * Cell, L * Cell) : (L * Cell, W * Cell);
+            // A turn about y (never a mirror) that takes the lab's (x across, z along) onto the Core's frame, and the in end's corner.
+            var (turn, at) = (AlongZ, Reversed) switch
+            {
+                (true, false) => (0f, new Vector3(minX, 0, minZ)),
+                (true, true) => (MathF.PI, new Vector3(maxX, 0, maxZ)),
+                (false, false) => (MathF.PI / 2, new Vector3(minX, 0, maxZ)),
+                _ => (-MathF.PI / 2, new Vector3(maxX, 0, minZ)),
+            };
+            ToCore = Matrix4x4.CreateRotationY(turn) * Matrix4x4.CreateTranslation(at);
         }
 
-        /// <summary>Is cell (x, z) of the Core's frame a bed cell with nothing stacked on it?</summary>
-        public bool Free(Construct c, in CMachineAsm asm, int x, int z) =>
-            x >= X0 && x < X0 + W && z >= Z0 && z < Z0 + L && MachineBlocks.ColumnAt(c, asm, x, z) == 0;
+        /// <summary>The hearth a kit lies on, in the tunnel's frame: inside the walls and the doors' zones, from the rollers to the roof.</summary>
+        public Vector3 InMin => new(Wall + 0.05f, Roll, DoorZone);
+        public Vector3 InMax => new(Across - Wall - 0.05f, Roll + Clear, Along - DoorZone);
 
-        /// <summary>The cell's middle in the Core part's frame (its origin: the bed layer's middle).</summary>
-        public Vector3 CellMid(ConstructPartDef core, int x, int z) => (core.BlockOrigin ?? Vector3.Zero) + new Vector3(x * Cell, 0, z * Cell);
+        /// <summary>The roof's underside (tunnel frame y), and the width of one door leaf.</summary>
+        public float Roof => Roll + Clear;
+        public float Leaf => MathF.Max(0.5f, (Across - 0.2f) * 0.5f);
 
-        /// <summary>The hood's underside when raised, and the masts' top, in the Core part's frame.</summary>
-        public float Raised => Top + Clear;
-        public float MastTop => Top + Columns * Cell;
+        /// <summary>The tunnel's middle line at the roll height, in the Core part's frame, at <paramref name="z"/> along it.</summary>
+        public Vector3 Mid(float z) => Vector3.Transform(new Vector3(Across * 0.5f, Roll, z), ToCore);
+
+        /// <summary>The tunnel's axis (in to out) in the Core part's frame.</summary>
+        public Vector3 Axis => Vector3.TransformNormal(Vector3.UnitZ, ToCore);
     }
 
     /// <summary>The Core part's frame in the world (part frame to world).</summary>
@@ -122,6 +162,9 @@ public static partial class ConstructBakeOven
         return Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
     }
 
+    /// <summary>The tunnel's frame in the world (tunnel frame to world).</summary>
+    public static Matrix4x4 TunnelFrame(Construct c, int part, in Bed bed) => bed.ToCore * CoreFrame(c, part);
+
     /// <summary>Seconds of heat a group of <paramref name="parts"/> subparts takes on a bed of <paramref name="blocks"/> blocks.</summary>
     public static float HeatSeconds(ConstructPartDef d, int parts, int blocks) =>
         parts * MathF.Max(0.5f, d.BakePartSeconds * 12f / Math.Max(1, blocks));
@@ -130,14 +173,11 @@ public static partial class ConstructBakeOven
     public static int MaxParts(ConstructPartDef d, int blocks) => Math.Min(d.BakeMaxParts, d.BakePartsBlock * blocks);
 
     /// <summary>
-    /// How far down the hood is, 0 (raised) to 1 (on the bed), by its phase and the share of the phase gone (<paramref name="t"/>, 0 to 1).
-    /// <paramref name="row"/>/<paramref name="rows"/>: a section's place in the ripple (each section starts a little after the one before).
+    /// How far the doors are shut, 0 (open) to 1 (shut), by the phase and the share of the phase gone (<paramref name="t"/>, 0 to 1), eased.
     /// </summary>
-    public static float HoodDown(OvenPhase phase, float t, int row = 0, int rows = 1)
+    public static float DoorsShut(OvenPhase phase, float t)
     {
-        const float Spread = 0.35f; // (the last section starts this share of the way in, and every section takes the rest)
-        var lag = rows > 1 ? Spread * row / (rows - 1) : 0f;
-        var s = Math.Clamp((t - lag) / (rows > 1 ? 1f - Spread : 1f), 0f, 1f);
+        var s = Math.Clamp(t, 0f, 1f);
         s = s * s * (3 - 2 * s);
         return phase switch
         {
@@ -148,7 +188,7 @@ public static partial class ConstructBakeOven
         };
     }
 
-    /// <summary>The power an oven draws now (W): each bed block's heat while it heats, the Core's own while the hood moves.</summary>
+    /// <summary>The power an oven draws now (W): each bed block's heat while it heats, the Core's own while the doors move.</summary>
     public static float PowerOf(ConstructWorld world, Construct c, int part)
     {
         var d = c.Parts[part].D;
@@ -179,7 +219,7 @@ public static partial class ConstructBakeOven
                     Work(world, c, core, a, st);
             }
         }
-        ConstructAssembling.AddHazards(world); // (after the ovens', so their crush boxes always have room: Assemblers' working beds, the arms strike and the weld burns)
+        ConstructAssembling.AddHazards(world); // (after the ovens', so their boxes always have room: Assemblers' working beds, the arms strike and the weld burns)
         SmelterWorks.AddHazards(world); // (working Smelters' charge doors, runners and Casting Beds burn: SmelterWorks.cs)
     }
 
@@ -198,13 +238,17 @@ public static partial class ConstructBakeOven
             var why = Check(world, c, part, asm, bed, out var group, out var parts);
             if (group != 0 && why is not (OvenStall.Several or OvenStall.Empty) && st.Refused is (byte)OvenStall.Done or (byte)OvenStall.Failed && st.JobAmount == group
                 && st.OvenUnbaked == Unbaking(p, d))
-                why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it waits to be lifted off, or the mode turned)
+            {
+                why = (OvenStall)st.Refused; // (this group is done, or was refused at the end: it rolls out, or waits to be lifted off, or the mode turned)
+                if (powered && !held && !p.Broken)
+                    ConstructRollOut.OutOf(world, c, part, group); // (along the run that starts at the tunnel's out end, if there is one)
+            }
             else if (why == OvenStall.None && !powered)
                 why = OvenStall.NoPower;
             if (powered && !held && !p.Broken && p.Orders is { Count: > 0 })
                 Kits(world, c, part, asm, bed, why, group); // (its orders: a kit built at a station and set on the bed, ConstructBakeOvenOrders.cs)
             if (why == OvenStall.Empty && powered && !held && !p.Broken)
-                ConstructRollOut.RiderOnto(world, c, part); // (a piece waiting at the end of a run the oven takes rolls onto the bed: ConstructRollOut.cs)
+                ConstructRollOut.RiderOnto(world, c, part); // (a piece waiting at the end of a run the oven takes rolls into the tunnel: ConstructRollOut.cs)
             if (why != OvenStall.None || held || p.Broken)
             {
                 SetStall(world, st, why);
@@ -212,16 +256,16 @@ public static partial class ConstructBakeOven
                 MachineScreens.SetProgress(world, st, 0);
                 return;
             }
-            // Start: the hood comes down.
+            // Start: the doors swing shut.
             st.JobAmount = group;
             st.OvenParts = parts; // (not JobMaterial: a save reads that byte as a material)
-            st.JobFull = Steps(DropSeconds(bed, d)) + Steps(HeatSeconds(d, parts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d));
-            Enter(world, st, OvenPhase.Drop, Steps(DropSeconds(bed, d)));
+            st.JobFull = Full(d, parts, bed);
+            Enter(world, st, OvenPhase.Drop, Steps(d.BakeDoorSeconds));
             ConstructGatherer.SetBusy(world, st, true);
             SetStall(world, st, OvenStall.None);
             return;
         }
-        // Under way: it stops for nothing but power (a wire off doesn't lift a hood that is down).
+        // Under way: it stops for nothing but power (a wire off doesn't open doors that are shut).
         if (!powered)
         {
             SetStall(world, st, OvenStall.NoPower);
@@ -230,16 +274,16 @@ public static partial class ConstructBakeOven
         }
         SetStall(world, st, OvenStall.None);
         ConstructGatherer.SetBusy(world, st, true);
-        AddHazards(world, c, part, asm, bed, phase, st);
+        AddHazards(world, c, part, bed, phase);
         if (st.JobFull == 0) // (loaded mid-cycle: the total isn't saved, so count it again from here)
-            st.JobFull = Steps(DropSeconds(bed, d)) + Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d));
+            st.JobFull = Full(d, st.OvenParts, bed);
         if (--st.JobTicks > 0)
         {
             var left = st.JobTicks + phase switch
             {
-                OvenPhase.Drop => Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)) + Steps(CoolSeconds) + Steps(DropSeconds(bed, d)),
-                OvenPhase.Heat => Steps(CoolSeconds) + Steps(DropSeconds(bed, d)),
-                OvenPhase.Cool => Steps(DropSeconds(bed, d)),
+                OvenPhase.Drop => Steps(HeatSeconds(d, st.OvenParts, bed.Blocks)) + Steps(CoolSeconds) + Steps(d.BakeDoorSeconds),
+                OvenPhase.Heat => Steps(CoolSeconds) + Steps(d.BakeDoorSeconds),
+                OvenPhase.Cool => Steps(d.BakeDoorSeconds),
                 _ => 0,
             };
             MachineScreens.SetProgress(world, st, 100 - left * 100 / Math.Max(1, st.JobFull));
@@ -255,7 +299,7 @@ public static partial class ConstructBakeOven
                 Enter(world, st, OvenPhase.Cool, Steps(CoolSeconds));
                 break;
             case OvenPhase.Cool:
-                Enter(world, st, OvenPhase.Lift, Steps(DropSeconds(bed, d)));
+                Enter(world, st, OvenPhase.Lift, Steps(d.BakeDoorSeconds));
                 break;
             default:
                 Enter(world, st, OvenPhase.Open, 0);
@@ -265,6 +309,9 @@ public static partial class ConstructBakeOven
                 break;
         }
     }
+
+    private static int Full(ConstructPartDef d, int parts, in Bed bed) =>
+        Steps(d.BakeDoorSeconds) + Steps(HeatSeconds(d, parts, bed.Blocks)) + Steps(CoolSeconds) + Steps(d.BakeDoorSeconds);
 
     /// <summary>Un-bake mode is the Core's Mode setting on.</summary>
     public static bool Unbaking(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.Mode, 0) >= 0.5f;
@@ -277,7 +324,7 @@ public static partial class ConstructBakeOven
         if (world.Get((ushort)st.JobAmount) is not { } group)
         {
             st.OvenFailed = true;
-            Console.WriteLine($"[oven] construct {c.Id}: the group on the bed (construct {st.JobAmount}) went while the hood was down");
+            Console.WriteLine($"[oven] construct {c.Id}: the group in the tunnel (construct {st.JobAmount}) went while the doors were shut");
             return;
         }
         var want = WorkOrders.HeadOf(c.Parts[part], out var order) && !order.IsPiece && order.Name == null ? order.Part : (ushort)0; // (two parts with one kit: the one ordered)
@@ -288,14 +335,13 @@ public static partial class ConstructBakeOven
             Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-bake" : "bake")} of construct {group.Id} REFUSED: {BakedParts.LastRefusal}");
             return;
         }
-        st.JobAmount = made.Id; // (the new body is the one that waits to be lifted off)
+        st.JobAmount = made.Id; // (the new body is the one that rolls out or waits to be lifted off)
         if (!unbake && made.PartCount > 0 && WorkOrders.HeadOf(c.Parts[part], out var head) && !head.IsPiece && head.Name == null
             && Array.FindIndex(made.Parts, 0, made.PartCount, q => q.Def == head.Part) >= 0)
             WorkOrders.Made(world, c, c.Parts[part].Orders); // (a kit of its head order baked into the part: one made, ConstructBakeOvenOrders.cs)
         Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-baked" : "baked")} construct {group.Id} into construct {made.Id} ({made.PartCount} parts)");
     }
 
-    private static float DropSeconds(in Bed bed, ConstructPartDef d) => MathF.Max(1f, bed.Clear / d.BakeHoodSpeed);
     private static int Steps(float seconds) => Math.Max(1, (int)MathF.Ceiling(seconds * 10));
 
     private static void Enter(ConstructWorld world, CStore st, OvenPhase phase, int steps)
@@ -317,101 +363,100 @@ public static partial class ConstructBakeOven
         world.StoreDirty.Add(st.Handle);
     }
 
+    /// <summary>A body's rest box in the tunnel's frame (the eight corners of its box through the world).</summary>
+    public static void BoundsIn(Construct b, in Matrix4x4 toTunnel, out Vector3 lo, out Vector3 hi)
+    {
+        b.WorldFrame(0, out var bq, out var bt);
+        lo = new Vector3(float.MaxValue);
+        hi = new Vector3(float.MinValue);
+        for (var k = 0; k < 8; k++)
+        {
+            var corner = new Vector3((k & 1) == 0 ? b.LocalMin.X : b.LocalMax.X, (k & 2) == 0 ? b.LocalMin.Y : b.LocalMax.Y, (k & 4) == 0 ? b.LocalMin.Z : b.LocalMax.Z);
+            var v = Vector3.Transform(bt + Vector3.Transform(corner, bq), toTunnel);
+            lo = Vector3.Min(lo, v);
+            hi = Vector3.Max(hi, v);
+        }
+    }
+
     /// <summary>
-    /// What stands on the bed, and why it can't bake (None: <paramref name="group"/> is the body's id, <paramref name="parts"/> its parts).
-    /// A body counts as on the bed when its bounds reach into the clear space over it; it must lie wholly over the bed's clear cells.
+    /// What stands in the tunnel, and why it can't bake (None: <paramref name="group"/> is the body's id, <paramref name="parts"/> its parts).
+    /// A body counts as in the tunnel when its bounds reach over the bed under the roof; it must lie wholly over the hearth.
     /// </summary>
     public static OvenStall Check(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, out int group, out int parts)
     {
         group = parts = 0;
         if (asm.W == 0)
             return OvenStall.NoBed;
-        if (bed.Columns == 0)
-            return OvenStall.NoMasts;
         var d = c.Parts[part].D;
-        var frame = CoreFrame(c, part);
-        if (!Matrix4x4.Invert(frame, out var toCore))
+        if (!Matrix4x4.Invert(TunnelFrame(c, part, bed), out var toTunnel))
             return OvenStall.NoBed;
-        var o = d.BlockOrigin ?? Vector3.Zero;
-        float half = bed.Cell * 0.5f, bx0 = o.X + bed.X0 * bed.Cell - half, bz0 = o.Z + bed.Z0 * bed.Cell - half;
-        float bx1 = bx0 + bed.W * bed.Cell, bz1 = bz0 + bed.L * bed.Cell;
-        var free = false;
-        for (var x = bed.X0; x < bed.X0 + bed.W && !free; x++)
-            for (var z = bed.Z0; z < bed.Z0 + bed.L && !free; z++)
-                free = bed.Free(c, asm, x, z);
-        if (!free)
-            return OvenStall.NoRoom;
         var why = OvenStall.Empty;
         var bodies = world.Bodies;
+        const float slack = 0.05f;
+        var (inLo, inHi) = (bed.InMin, bed.InMax);
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var b = bodies[bi];
             if (b == c || b.PartCount == 0 || b.HeldBy != 0)
-                continue; // (a body held, a kit still on a lifter's hook, isn't on the bed yet)
-            // Its bounds in the Core's frame (the eight corners of its rest-frame box, through the world).
-            b.WorldFrame(0, out var bq, out var bt);
-            Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
-            for (var k = 0; k < 8; k++)
-            {
-                var corner = new Vector3((k & 1) == 0 ? b.LocalMin.X : b.LocalMax.X, (k & 2) == 0 ? b.LocalMin.Y : b.LocalMax.Y, (k & 4) == 0 ? b.LocalMin.Z : b.LocalMax.Z);
-                var v = Vector3.Transform(bt + Vector3.Transform(corner, bq), toCore);
-                lo = Vector3.Min(lo, v);
-                hi = Vector3.Max(hi, v);
-            }
-            const float slack = 0.05f;
-            if (hi.X <= bx0 + slack || lo.X >= bx1 - slack || hi.Z <= bz0 + slack || lo.Z >= bz1 - slack || hi.Y <= bed.Top + slack || lo.Y >= bed.MastTop)
+                continue; // (a body held, a kit still on a lifter's hook or rolling, isn't in yet)
+            BoundsIn(b, toTunnel, out var lo, out var hi);
+            if (hi.X <= slack || lo.X >= bed.Across - slack || hi.Z <= slack || lo.Z >= bed.Along - slack || hi.Y <= bed.Top + slack || lo.Y >= bed.Roof + 0.5f)
                 continue; // (not over the bed)
             if (group != 0)
                 return OvenStall.Several;
             group = b.Id;
             parts = b.PartCount;
-            // Wholly over clear cells: every cell its footprint touches is a bed cell with no mast on it.
-            int cx0 = (int)MathF.Floor((lo.X + slack - o.X + half) / bed.Cell), cx1 = (int)MathF.Floor((hi.X - slack - o.X + half) / bed.Cell);
-            int cz0 = (int)MathF.Floor((lo.Z + slack - o.Z + half) / bed.Cell), cz1 = (int)MathF.Floor((hi.Z - slack - o.Z + half) / bed.Cell);
             why = OvenStall.None;
-            for (var x = cx0; x <= cx1 && why == OvenStall.None; x++)
-                for (var z = cz0; z <= cz1 && why == OvenStall.None; z++)
-                    if (!bed.Free(c, asm, x, z))
-                        why = OvenStall.Overhang;
-            if (why == OvenStall.None && hi.Y > bed.Raised + slack)
+            if (lo.X < inLo.X - slack || hi.X > inHi.X + slack || lo.Z < inLo.Z - slack || hi.Z > inHi.Z + slack)
+                why = OvenStall.Overhang;
+            else if (hi.Y > bed.Roof + slack)
                 why = OvenStall.TooTall;
-            else if (why == OvenStall.None && parts > MaxParts(d, bed.Blocks))
+            else if (parts > MaxParts(d, bed.Blocks))
                 why = OvenStall.TooMany;
-            else if (why == OvenStall.None && (b.Vel - c.Vel).LengthSquared() > Settled * Settled)
+            else if ((b.Vel - c.Vel).LengthSquared() > Settled * Settled)
                 why = OvenStall.Moving;
-            else if (why == OvenStall.None)
+            else
                 why = Unbaking(c.Parts[part], d) ? BakedParts.CanUnbake(b, out _, tell: false) == null ? OvenStall.None : OvenStall.NotBaked
                     : BakedParts.CanBake(b, tell: false) == null ? OvenStall.None : OvenStall.CantBake;
         }
         return why;
     }
 
-    /// <summary>The crush box under the skirts' foot while they come down (a body's height deep), the burn box under a closed hood.</summary>
-    private static void AddHazards(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, OvenPhase phase, CStore st)
+    /// <summary>
+    /// Does the oven keep body <paramref name="b"/>, lying in its tunnel, from a lifter: its doors aren't open yet, or it will roll out
+    /// along the oven's way out (ConstructRollOut.OutOf) and be taken at the run instead?
+    /// </summary>
+    public static bool Keeps(ConstructWorld world, Construct c, int part, Construct b)
     {
-        if (world.Hazards.Count > 60 || phase is not (OvenPhase.Drop or OvenPhase.Heat or OvenPhase.Cool))
+        if ((uint)part >= (uint)c.PartCount || !c.DefOf(part).IsBakeOven || world.StoreOf(c, part) is not { } st || !MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
+            return false;
+        var bed = new Bed(c, asm);
+        if (!Matrix4x4.Invert(TunnelFrame(c, part, bed), out var toTunnel))
+            return false;
+        BoundsIn(b, toTunnel, out var lo, out var hi);
+        if (hi.X <= 0 || lo.X >= bed.Across || hi.Z <= 0.3f || lo.Z >= bed.Along - 0.3f || hi.Y <= bed.Top || lo.Y >= bed.Roof + 0.5f)
+            return false; // (not in the tunnel: rolled out, or never in)
+        if (st.Blocked != (byte)OvenPhase.Open)
+            return true;
+        return ConstructRollOut.OutRunOf(c, part) >= 0 && !(world.OvenRolled.TryGetValue(c.Id << 16 | part, out var rolled) && rolled == b.Id); // (once rolled, or stopped short: a lifter's)
+    }
+
+    /// <summary>The swing boxes in front of both ends while the doors move, the burn box inside the shut tunnel.</summary>
+    private static void AddHazards(ConstructWorld world, Construct c, int part, in Bed bed, OvenPhase phase)
+    {
+        if (world.Hazards.Count > 60 || phase is not (OvenPhase.Drop or OvenPhase.Heat or OvenPhase.Cool or OvenPhase.Lift))
             return;
-        if (!Matrix4x4.Invert(CoreFrame(c, part), out var toCore))
+        if (!Matrix4x4.Invert(TunnelFrame(c, part, bed), out var toTunnel))
             return;
-        var d = c.Parts[part].D;
-        var o = d.BlockOrigin ?? Vector3.Zero;
-        var half = bed.Cell * 0.5f;
-        var min = new Vector3(o.X + bed.X0 * bed.Cell - half, bed.Top, o.Z + bed.Z0 * bed.Cell - half);
-        var max = new Vector3(min.X + bed.W * bed.Cell, bed.Raised, min.Z + bed.L * bed.Cell);
-        if (phase == OvenPhase.Drop)
+        if (phase is OvenPhase.Drop or OvenPhase.Lift)
         {
-            var steps = Steps(DropSeconds(bed, d));
-            var under = bed.Raised - bed.Clear * HoodDown(phase, 1f - st.JobTicks / (float)steps);
-            // Only under the skirts: a band round the bed's edge (the roof stays up; whoever is inside is shut in, not crushed).
-            var lo = MathF.Max(bed.Top, under - 1.9f);
-            const float band = 0.45f;
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = lo }, Max = new Vector3(max.X, under, min.Z + band), Damage = CrushDamage });
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(min.X, lo, max.Z - band), Max = max with { Y = under }, Damage = CrushDamage });
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min with { Y = lo }, Max = new Vector3(min.X + band, under, max.Z), Damage = CrushDamage });
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = new Vector3(max.X - band, lo, min.Z), Max = max with { Y = under }, Damage = CrushDamage });
+            // Each end's leaves sweep out to a leaf's width past the portal, from the sill to the head.
+            var reach = bed.Leaf;
+            world.Hazards.Add(new MachineHazard { ToLocal = toTunnel, Min = new Vector3(0, bed.Roll, -reach), Max = new Vector3(bed.Across, bed.Roof, DoorZone), Damage = SwingDamage });
+            world.Hazards.Add(new MachineHazard { ToLocal = toTunnel, Min = new Vector3(0, bed.Roll, bed.Along - DoorZone), Max = new Vector3(bed.Across, bed.Roof, bed.Along + reach), Damage = SwingDamage });
         }
         else
-            world.Hazards.Add(new MachineHazard { ToLocal = toCore, Min = min, Max = max, Damage = BurnDamage }); // (the skirts are down: whoever is under the hood is shut in with the bake)
+            world.Hazards.Add(new MachineHazard { ToLocal = toTunnel, Min = new Vector3(Wall, bed.Top, DoorZone * 0.5f), Max = new Vector3(bed.Across - Wall, bed.Roof, bed.Along - DoorZone * 0.5f), Damage = BurnDamage }); // (shut in with the bake)
     }
 
     // ---- What every peer shows: its line state, its screen ---------------------------------------------------------------------
@@ -436,23 +481,22 @@ public static partial class ConstructBakeOven
     public static string StallText(OvenStall s) => s switch
     {
         OvenStall.NoBed => "Weld bed blocks",
-        OvenStall.NoMasts => "Masts on corners",
-        OvenStall.NoRoom => "No clear bed cell",
-        OvenStall.Empty => "Bed empty",
+        OvenStall.NoMasts or OvenStall.NoRoom => "No hearth",
+        OvenStall.Empty => "Tunnel empty",
         OvenStall.Several => "One group only",
-        OvenStall.Overhang => "Off the clear bed",
-        OvenStall.TooTall => "Too tall for hood",
+        OvenStall.Overhang => "Off the hearth",
+        OvenStall.TooTall => "Too tall for tunnel",
         OvenStall.TooMany => "Too many subparts",
         OvenStall.Moving => "Settling",
-        OvenStall.Done => "Done: lift it off",
+        OvenStall.Done => "Done: roll it out",
         OvenStall.CantBake => "Can't bake that",
         OvenStall.NotBaked => "Not a baked part",
-        OvenStall.Failed => "Refused: lift it off",
+        OvenStall.Failed => "Refused: take it out",
         OvenStall.NoPower => "No power",
         _ => "Ready",
     };
 
-    /// <summary>The Core's screen (MachineScreens.Fill): what it is doing, its mode and bed, its clear height, and the cycle's bar.</summary>
+    /// <summary>The Core's screen (MachineScreens.Fill): what it is doing, its mode and bed, its tunnel, and the cycle's bar.</summary>
     public static void Screen(Construct c, int part, CStore st, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -461,7 +505,7 @@ public static partial class ConstructBakeOven
         if (st.Busy || phase != OvenPhase.Open)
         {
             card.State = PanelState.Working;
-            card.Add(0, phase switch { OvenPhase.Drop => "Hood down", OvenPhase.Heat => "Baking", OvenPhase.Cool => "Cooling", OvenPhase.Lift => "Hood up", _ => "Working" });
+            card.Add(0, phase switch { OvenPhase.Drop => "Doors shutting", OvenPhase.Heat => "Baking", OvenPhase.Cool => "Cooling", OvenPhase.Lift => "Doors opening", _ => "Working" });
         }
         else if (st.Held)
         {
@@ -478,14 +522,9 @@ public static partial class ConstructBakeOven
         if (MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0)
         {
             var bed = new Bed(c, asm);
-            card.Add(1, asm.W).Add(1, 'x').Add(1, asm.L).Add(1, " bed");
-            if (bed.Columns > 0)
-            {
-                var dm = (int)MathF.Round(bed.Clear * 10);
-                card.Add(2, "Clear ").Add(2, dm / 10).Add(2, '.').Add(2, dm % 10).Add(2, " m, ").Add(2, MaxParts(d, bed.Blocks)).Add(2, " parts");
-            }
-            else
-                card.Add(2, "No corner masts");
+            card.Add(1, (int)MathF.Round(bed.Across / bed.Cell)).Add(1, 'x').Add(1, (int)MathF.Round(bed.Along / bed.Cell)).Add(1, " tunnel");
+            var dm = (int)MathF.Round(bed.Clear * 10);
+            card.Add(2, "Clear ").Add(2, dm / 10).Add(2, '.').Add(2, dm % 10).Add(2, " m, ").Add(2, MaxParts(d, bed.Blocks)).Add(2, " parts");
         }
         else
             card.Add(1, "no bed");
