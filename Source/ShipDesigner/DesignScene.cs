@@ -1317,6 +1317,16 @@ public static partial class DesignScene
                 sb.Append(",\"wallMesh\":");
                 RoomShell(d, r, c.Doors).Write(sb);
             }
+            sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
+              .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false");
+            if (r.Interior != "Off")
+            {
+                var (solid, glow) = RoomInterior(d, r, c.Doors);
+                sb.Append(",\"intMesh\":");
+                solid.Write(sb);
+                sb.Append(",\"intGlow\":");
+                glow.Write(sb);
+            }
             sb
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');
         }

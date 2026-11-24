@@ -191,6 +191,15 @@ public sealed class Room
     public bool RunOn; // with ToHull: its open ends run on into the nose or the stern while there is floor (Karl, 2026-11-24), a player's choice
     public double WallThick = 0.1; // its walls' shell, built outward from its box (Karl, 2026-11-24)
     public const double WallThickMax = 0.3;
+    // Its interior cladding (the user's corridor references, 2026-11-24): a style, the ribs' spacing, two colours and its lights.
+    public static readonly string[] InteriorStyles = ["Off", "Clean", "Industrial"];
+    public string Interior = "Off";
+    public double RibSpacing = 2;
+    public const double RibSpacingMin = 1, RibSpacingMax = 4;
+    public string PanelColour = "#d9dee3";
+    public string TrimColour = "#e0a526";
+    public bool Lights = true;
+    public static string Colour(string? v, string or) => v is { Length: 7 } && v[0] == '#' && v.Skip(1).All(Uri.IsHexDigit) ? v.ToLowerInvariant() : or;
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);
@@ -201,6 +210,7 @@ public sealed class Room
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
         ["wallThick"] = ShipDesign.R(WallThick),
+        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -223,6 +233,11 @@ public sealed class Room
                 r.Exts.Add(e);
             }
         r.WallThick = Math.Clamp(ShipDesign.F(o["wallThick"], 0.1), 0, WallThickMax);
+        r.Interior = InteriorStyles.FirstOrDefault(k => string.Equals(k, (string?)o["interior"], StringComparison.OrdinalIgnoreCase)) ?? "Off";
+        r.RibSpacing = Math.Clamp(ShipDesign.F(o["ribSpacing"], 2), RibSpacingMin, RibSpacingMax);
+        r.PanelColour = Colour((string?)o["panelColour"], "#d9dee3");
+        r.TrimColour = Colour((string?)o["trimColour"], "#e0a526");
+        r.Lights = (bool?)o["lights"] ?? true;
         r.Normalise();
         return r;
     }

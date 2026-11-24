@@ -629,6 +629,11 @@ public sealed class DesignEditor
                     if (o["runOn"] is not null) q.RunOn = (bool)o["runOn"]!;
                     if (o["runAft"] is not null) q.RunAft = (bool)o["runAft"]!;
                     if (o["wallThick"] is not null) q.WallThick = Math.Clamp(Snap(D(o, "wallThick"), 0.01), 0, Room.WallThickMax);
+                    if (o["interior"] is not null) q.Interior = Room.InteriorStyles.FirstOrDefault(k => string.Equals(k, Str(o, "interior"), StringComparison.OrdinalIgnoreCase)) ?? q.Interior;
+                    if (o["ribSpacing"] is not null) q.RibSpacing = Math.Clamp(Snap(D(o, "ribSpacing"), 0.25), Room.RibSpacingMin, Room.RibSpacingMax);
+                    if (o["panelColour"] is not null) q.PanelColour = Room.Colour(Str(o, "panelColour"), q.PanelColour);
+                    if (o["trimColour"] is not null) q.TrimColour = Room.Colour(Str(o, "trimColour"), q.TrimColour);
+                    if (o["lights"] is not null) q.Lights = (bool)o["lights"]!;
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)

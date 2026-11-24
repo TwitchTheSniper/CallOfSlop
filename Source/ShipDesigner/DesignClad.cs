@@ -240,6 +240,12 @@ public static partial class DesignScene
         int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
         var lo = new[] { b[0], b[2], b[4] };
         var hi = new[] { b[1], b[3], b[5] };
+        // Its inner faces 5 mm off the box's own (and so off the room's markers and the deck), never on them.
+        for (var k = 0; k < 3; k++)
+        {
+            lo[k] -= 0.005;
+            hi[k] += 0.005;
+        }
         var colour = DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
         double wide0 = lo[ax], wide1 = hi[ax];
@@ -250,7 +256,15 @@ public static partial class DesignScene
                 wide0 = Math.Min(wide0, x0);
                 wide1 = Math.Max(wide1, x1);
             }
-        var others = d.Rooms.Where(o => o != r && ((r.Group != 0 && o.Group == r.Group) || o.Id < r.Id)).Select(d.Box).ToList();
+        // Grown by their own shells, so where two shells would share a plane (side by side, floor under floor) only the older draws.
+        var others = d.Rooms.Where(o => o != r && ((r.Group != 0 && o.Group == r.Group) || o.Id < r.Id)).Select(o =>
+        {
+            var ob = (double[])d.Box(o).Clone();
+            var g = o.Group != 0 && o.Group == r.Group ? 0 : Math.Clamp(o.WallThick, 0, Room.WallThickMax) + 0.005;
+            for (var k = 0; k < 6; k++)
+                ob[k] += k % 2 == 0 ? -g : g;
+            return ob;
+        }).ToList();
         bool Keep(double[] p)
         {
             if (!d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
