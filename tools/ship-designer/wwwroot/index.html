@@ -387,9 +387,10 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     const h = hits.find(h => h.object.userData.type === "hull");
     if (h && branching) {
       const u = h.object.userData;
-      const a = cmd({ op: "branch", hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, preset: branchKind, pair: $("bpair")?.checked ?? true });
       branching = false;
-      if (!a.error) { select("hull", S.hulls[S.hulls.length - 1].id); toast(`${branchKind} branched off the hull. Drag its arrows or its stations to shape it.`, true); }
+      branchAt = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, ids: [] };
+      placeBranch(true);
+      leftPanel();
       return;
     }
     if (h) { select("hull", h.object.userData.hull); return; }
@@ -595,7 +596,38 @@ function shapeIcon(p) {
   poly.setAttribute("fill", "currentColor"); poly.setAttribute("fill-opacity", "0.25"); poly.setAttribute("stroke", "currentColor"); poly.setAttribute("stroke-width", "1.5"); poly.setAttribute("stroke-linejoin", "round");
   svg.append(poly); return svg;
 }
-let branching = false, branchKind = "Nacelle";
+let branching = false, branchKind = "Nacelle", branchAt = null;
+const bOpt = { pair: true, count: 1, spread: "along", along: 4, around: 0.2 };
+// Places the branch where the hull was clicked, again on every change of the settings (one undo step in all).
+function branchSection() {
+  const kind = el("select", { "aria-label": "Branch" }); for (const b of CAT.branches) kind.append(el("option", b === branchKind ? { selected: "" } : {}, b));
+  kind.addEventListener("change", () => { branchKind = kind.value; placeBranch(false); });
+  const sec = el("div", { class: "sec" }, el("h2", {}, "Branch off the hull"), kind,
+    el("button", { class: branching ? "on" : "", onclick: () => { branching = !branching; branchAt = null; leftPanel(); $("tip").textContent = branching ? `Click the hull where the ${branchKind} should grow from.` : tips.hull; } },
+      branching ? "Click the hull..." : "Branch"));
+  if (!branchAt) { sec.append(el("p", { class: "hint" }, "Press Branch, then click the hull where it should grow from. Then set the mirroring, the count and the spacing.")); return sec; }
+  const mir = el("input", { type: "checkbox" }); mir.checked = bOpt.pair; mir.addEventListener("change", () => { bOpt.pair = mir.checked; placeBranch(false); });
+  const spread = el("select", { "aria-label": "Repeat" }); for (const [v, t] of [["along", "Repeat along the hull"], ["around", "Repeat round the hull"]]) spread.append(el("option", v === bOpt.spread ? { value: v, selected: "" } : { value: v }, t));
+  const cnt = el("input", { type: "range", min: 1, max: 8, step: 1, value: bOpt.count }), cntL = el("span", {}, `${bOpt.count}`);
+  const sp = el("input", { type: "range" }), spL = el("span", {});
+  const spSet = () => { const al = bOpt.spread === "along"; sp.min = al ? 1 : 0.02; sp.max = al ? 20 : 0.5; sp.step = al ? 0.25 : 0.01; sp.value = bOpt[bOpt.spread]; spL.textContent = al ? `${(+sp.value).toFixed(2)} m` : `${Math.round(sp.value * 100)}% of the side`; };
+  spSet();
+  spread.addEventListener("change", () => { bOpt.spread = spread.value; spSet(); placeBranch(false); });
+  cnt.addEventListener("input", () => { bOpt.count = +cnt.value; cntL.textContent = cnt.value; placeBranch(false); });
+  sp.addEventListener("input", () => { bOpt[bOpt.spread] = +sp.value; spSet(); placeBranch(false); });
+  sec.append(el("label", { class: "row" }, mir, "Mirror to the other side"), spread,
+    el("label", { class: "row" }, "Count ", cnt, cntL), el("label", { class: "row" }, "Spacing ", sp, spL),
+    el("button", { onclick: () => { const id = branchAt.ids[branchAt.ids.length - 1]; branchAt = null; if (id) select("hull", id); else leftPanel(); toast(`${branchKind} placed. Drag its arrows or its stations to shape it.`, true); } }, "Done"));
+  return sec;
+}
+function placeBranch(first) {
+  if (!branchAt) return;
+  const before = new Set(S.hulls.map(h => h.id));
+  const a = cmd({ op: "branch", hull: branchAt.hull, copy: branchAt.copy, x: branchAt.x, y: branchAt.y, z: branchAt.z, preset: branchKind,
+    pair: bOpt.pair, count: bOpt.count, spread: bOpt.spread, spacing: bOpt[bOpt.spread], replace: branchAt.ids }, !first);
+  if (a.error) { toast(a.error); return; }
+  branchAt.ids = S.hulls.filter(h => !before.has(h.id)).map(h => h.id);
+}
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
@@ -617,10 +649,7 @@ function leftPanel() {
       el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
         el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
       el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
-      el("div", { class: "sec" }, el("h2", {}, "Branch off the hull"),
-        (() => { const s = el("select", { "aria-label": "Branch" }); for (const b of CAT.branches) s.append(el("option", b === branchKind ? { selected: "" } : {}, b)); s.addEventListener("change", () => branchKind = s.value); return s; })(),
-        el("label", { class: "row" }, el("input", { type: "checkbox", id: "bpair", checked: "" }), "As a mirrored pair"),
-        el("button", { class: branching ? "on" : "", onclick: () => { branching = !branching; leftPanel(); $("tip").textContent = branching ? `Click the hull where the ${branchKind} should grow from.` : tips.hull; } }, branching ? "Click the hull..." : "Branch from a point")));
+      branchSection());
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
@@ -703,7 +732,7 @@ function stationPanel(h) {
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower")));
   }
   const pts = el("select", { "aria-label": "Points a profile" });
-  for (let n = 3; n <= 8; n++) pts.append(el("option", n === h.stations[0].p.length ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
+  for (let n = 3; n <= 16; n++) pts.append(el("option", n === h.stations[0].p.length ? { selected: "" } : {}, `${n} points (${(n - 1) * 2 + 2} facets round)`));
   pts.addEventListener("change", () => cmd({ op: "points", hull: h.id, n: pts.selectedIndex + 3 }));
   box.append(el("div", { class: "row" }, pts));
   box.append(el("div", { class: "row" },

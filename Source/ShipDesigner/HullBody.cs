@@ -19,7 +19,7 @@ public sealed class Station
 /// </summary>
 public sealed class HullBody
 {
-    public const int MinPoints = 3, MaxPoints = 8;
+    public const int MinPoints = 3, MaxPoints = 16;
     public const double MinGap = 0.25; // between stations
 
     public int Id;

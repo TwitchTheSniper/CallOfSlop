@@ -104,14 +104,36 @@ public sealed class DesignEditor
                 // A body grown off the hull where the player clicked (Karl, 2026-11-24: nacelles, missile pods).
                 if (d.Hulls.Count >= ShipDesign.MaxHulls)
                     return $"at most {ShipDesign.MaxHulls} hull bodies";
+                // Placed again with new settings (the page's count and spacing sliders): the last placing's bodies go first.
+                foreach (var r in o["replace"]?.AsArray() ?? [])
+                    if (r is not null && d.Hull((int)r) is { } old && d.Hulls.Count > 1)
+                    {
+                        d.Hulls.Remove(old);
+                        d.Pieces.RemoveAll(p => p.Hull == old.Id);
+                    }
                 var parent = H();
                 var copy = Math.Clamp(I(o, "copy"), 0, parent.Copies - 1);
                 double lx = D(o, "x") - parent.CopyX(copy), ly = D(o, "y") - parent.Y, lz = D(o, "z") - parent.Z;
                 var t = parent.NearestT(lx, ly, lz);
-                var s = parent.OnSkin(Math.Clamp(lz, parent.Front, parent.Back), t, lx < -0.01 ? -1 : 1);
-                var h = DesignTemplates.Branch(d, Str(o, "preset", "Nacelle"), parent.CopyX(copy) + s.X, parent.Y + s.Y, parent.Z + s.Z, s.Nx, s.Ny, (bool?)o["pair"] ?? true);
-                d.Hulls.Add(h);
-                o["id"] = h.Id;
+                var side = lx < -0.01 ? -1 : 1;
+                var n = Math.Clamp(I(o, "count", 1), 1, 8);
+                var around = Str(o, "spread", "along") == "around";
+                var gap = D(o, "spacing", around ? 0.2 : 4);
+                var ids = new JsonArray();
+                for (var k = 0; k < n; k++)
+                {
+                    if (d.Hulls.Count >= ShipDesign.MaxHulls)
+                        break;
+                    var f = k - (n - 1) / 2.0;
+                    var z = Math.Clamp(lz + (around ? 0 : f * gap), parent.Front, parent.Back);
+                    var tk = Math.Clamp(t + (around ? f * gap : 0), 0, 1);
+                    var s = parent.OnSkin(z, tk, side);
+                    var h = DesignTemplates.Branch(d, Str(o, "preset", "Nacelle"), parent.CopyX(copy) + s.X, parent.Y + s.Y, parent.Z + s.Z, s.Nx, s.Ny, (bool?)o["pair"] ?? true);
+                    d.Hulls.Add(h);
+                    ids.Add(JsonValue.Create(h.Id));
+                }
+                o["id"] = ids.Count > 0 ? (int)ids[^1]! : 0;
+                o["ids"] = ids;
                 return "";
             }
             case "copyHull":
