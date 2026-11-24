@@ -27,7 +27,7 @@ Code: `Source/Constructs/ShipGravity.cs` (the rule), `Source/Game/GameShipGravit
   gravity (Karl not asked).
 - **Felt-g readout** (Karl, 2026-11-24; `UI/UiGForce.cs`): left of centre, a dial and the figure, "1.0 g down". The server
   works out each person's pull (`ShipGravity.PersonPull`: seated, standing aboard, on the ground, or nothing in free fall) and
-  the owner's snapshot carries it (protocol 448). Amber from 1.5 g, red and PINNED from 3 g. Shown aboard, or off 1 g.
+  the owner's snapshot carries it (protocol 449). Amber from 1.5 g, red and PINNED from 3 g. Shown aboard, or off 1 g.
   Under deck gravity the deck counts as 1 g (`G`), and the mover's own (stronger) deck gravity is scaled by the g felt.
 - **Magnet boots** (Karl, 2026-11-24; `Game/GameSandboxMagBoots.cs`): key 7 (`GameAction.MagBoots`, binds 35), sent with
   each command (`InputCmd.MagBoots`). On and standing on a deck with a felt pull: held to it (at least the mover's 1 g, no

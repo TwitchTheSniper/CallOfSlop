@@ -39,11 +39,19 @@ public sealed partial class ZeroDayWorks
             Chute(sand, smeltGlass);
             Chute(wood, sawmill);
             Chute(stone, foundry);
-            Chute(smelt, Bin("metal", 33f));
+            // The metal and the steel (Sean, 2026-11-24: the refinery starved the works; a Smelter and the Foundry each make 2 units a
+            // second): each refiner fills a tall Ore Silo 4 m in the hall (57,960 units, nearly five 4 m bins), which keeps its bin on the
+            // row full; full of its stock, the bin too, when spawned in creative. The silos stand between the stock yard's two rows of
+            // chutes (z -12 and -21), their chutes over everything at 13 to 14.5 m.
+            var metalSilo = Silo(57f, "metal");
+            var steelSilo = Silo(63f, "steel");
+            Chute(smelt, metalSilo, 13f);
+            Chute(metalSilo, Full(Bin("metal", 33f), "metal"), 13.5f);
             Chute(smeltCu, Bin("copper", 41f));
             Chute(smeltGlass, Bin("glass", 49f));
             Chute(_bins["metal"], foundry);
-            Chute(foundry, Bin("steel", 57f));
+            Chute(foundry, steelSilo, 14f);
+            Chute(steelSilo, Full(Bin("steel", 57f), "steel"), 14.5f);
             Chute(sawmill, Bin("planks", 81f));
             // Two more Foundries, each set to one recipe (the block Assembler's frigate pieces want concrete and rubber): stone and sand to
             // concrete at x 63, planks and sand to rubber at x 75 (a Foundry's choices: ammo, steel, concrete, laminate, rubber).
@@ -89,6 +97,18 @@ public sealed partial class ZeroDayWorks
             var b = On(part, x, RawRow, Up, paint: Stock, finish: "concrete");
             Config(b, ("material", stock), ("fill", 100));
             return b;
+        }
+
+        public const float SiloZ = -17f; // (a slab's sockets are on the metres 1 to 7 past its edge: not on a multiple of 8)
+
+        /// <summary>A tall Ore Silo 4 m in the generator hall at x, z <see cref="SiloZ"/>, full of <paramref name="stock"/> when spawned in creative.</summary>
+        private VPart Silo(float x, string stock) => Full(On("Ore Silo 4 m", x, SiloZ, Up, paint: Stock, finish: "concrete"), stock);
+
+        /// <summary>The bin, full of <paramref name="stock"/> when spawned in creative.</summary>
+        private VPart Full(VPart bin, string stock)
+        {
+            Config(bin, ("material", stock), ("fill", 100));
+            return bin;
         }
 
         private VPart Refiner(string part, float x) => On(part, x, RawRow, Up, paint: Refining);

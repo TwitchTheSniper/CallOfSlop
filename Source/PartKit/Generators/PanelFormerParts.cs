@@ -7,10 +7,10 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Panel Former on the block system: Constructs/Parts/PanelFormer (design page drawing 15; docs/sandbox/constructs/production.md "The
 /// Panel Former"; MachineBlocks.cs). A Panel Former Core holds the machine's brain (screen and queue, Orders, Run, power, the offcut bin,
 /// Piece in, where one blank a panel comes in, and the in rollers); identical 2 x 2 m Bed Blocks welded on its far side make the bed, and an Out Table (OutTableParts) closes
-/// the bed's far end. The largest panel is the rectangle of blocks. Each Bed Block is a pin bed: a field of steel pins below that rise in a
-/// wave to the panel's shape, an upper die above (one solid block, Sean 2026-11-23) that comes down and presses the sheet over them (the renderer's "pin" and "press"
-/// work: ConstructPanelFormer.PinLift, PressAt). A block's skirts, posts, die's hazard band and side fittings are drawn only where no cell of its
-/// machine is welded ("seam"), so a bed of blocks reads as one machine: one solid die, posts at its corners, one oil manifold down one side and
+/// the bed's far end. The largest panel is the rectangle of blocks. Each Bed Block is a cell of a die bed: a lower die and an upper die that
+/// take on the panel's shape and squeeze the blank between them, on small rails at the work height (Sean 2026-11-24; drawn across the whole
+/// bed by PanelFormerRender.DrawDies). A block's skirts, posts and side fittings are drawn only where no cell of its
+/// machine is welded ("seam"), so a bed of blocks reads as one machine: one pair of dies, posts at its corners, one oil manifold down one side and
 /// a hazard edge round the outside. Born in the Machine look (look.md): three tones, bare steel working parts, white in, orange out.
 /// </summary>
 public sealed class PanelFormerParts : IPartGenerator
@@ -21,12 +21,11 @@ public sealed class PanelFormerParts : IPartGenerator
     private const string Green = "#5d7f3c"; // the Panel Formers' body colour
     private const string Trim = "#46602d";
     private const double E = 0.997; // a cell's body stops 3 mm short of its 2 m, so two cells' faces never meet on one plane
-    private const double H = 3.197; // a cell's top (3.2 m: the bed under, the die and its crosshead over)
-    private const double WorkY = OutTableParts.WorkY; // the pins' tops at rest and the in rollers' nip: the sheet's height on the bed
-    private const double DeckY = 0.86; // the lower bed's deck the pins come up through
+    private const double H = 3.197; // a cell's top (3.2 m: the bed under, the dies and the crosshead over)
+    private const double WorkY = OutTableParts.WorkY; // the rails' tops and the in rollers' nip: the sheet's height on the bed
+    private const double DeckY = 0.86; // the lower bed's deck, where the lower die stands
     private const double Head = 2.96; // the crosshead's underside
-    private const double PlatenLo = 2.4, PressTravel = 1.0, PinMost = 0.38; // (the upper die's foot 6 cm under PlatenLo: 1.34 at the bottom of its stroke)
-    private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
+        private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
     private const double OffX = -0.5, OffY = 2.8; // the Offcut port, on the bin's back wall
 
     private static PyDict Seam(PyDict? box, string face) => box!.Update(("seam", face));
@@ -109,7 +108,7 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Add(L([0.105, cab + 0.16, -E - 0.032], [0.175, cab + 0.36, -E - 0.02], MachineLook.Accent)); // (its float)
         p.Add(L([0.3, cab + 0.3, -E - 0.016], [0.8, cab + 0.5, -E], MachineLook.Out)); // (its label: "OFFCUT", out)
         p.Add(L([0.34, cab + 0.37, -E - 0.028], [0.76, cab + 0.43, -E - 0.016], MachineLook.Ink));
-        // The in rollers in the slot: lower rollers level with the bed's pins, pinch rollers over them; they turn while it works.
+        // The in rollers in the slot: lower rollers level with the bed's rails, pinch rollers over them; they turn while it works.
         var rr = 0.06;
         foreach (var z in new[] { E - 0.24, E - 0.09 })
         {
@@ -161,8 +160,8 @@ public sealed class PanelFormerParts : IPartGenerator
     }
 
     /// <summary>
-    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed (its pins come up through a steel deck), an upper die
-    /// (one solid block) driven down from the crosshead, and its own power. Welds to the Core, to another block's four sides,
+    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed with a steel deck, where the lower die stands, a crosshead
+    /// the upper die hangs from, and its own power. Welds to the Core, to another block's four sides,
     /// or to an Out Table.
     /// </summary>
     private static Part BedBlock()
@@ -171,7 +170,7 @@ public sealed class PanelFormerParts : IPartGenerator
             "Weld it on a Panel Former Core's front, or beside another Bed Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core, an Out Table on its far end; a block outside it idles.",
             group: "Production", color: Green);
         const double d = 0.07, rib = 0.13; // (the lower body's sides are sunk between ribs: its frame at the edges and a cross rib at the middle)
-        // Solid: the lower bed (a sunk body, framed by ribs) and the crosshead over it. Everything between is drawn (posts, pins, the die).
+        // Solid: the lower bed (a sunk body, framed by ribs) and the crosshead over it. Between them: the posts here, the dies and rails by the renderer.
         p.Add(Box([-E + d, 0.003, -E + d], [E - d, DeckY, E - d]));
         foreach (var (a, b) in new[] { (-E, -E + rib), (-0.065, 0.065), (E - rib, E) })
         {
@@ -186,41 +185,21 @@ public sealed class PanelFormerParts : IPartGenerator
             (mn[n], mx[n]) = sg > 0 ? (E - d - 0.01, E - 0.004) : (-E + 0.004, -E + d + 0.01);
             p.Add(Fill(L(mn, mx, Green, paintable: true), side));
         }
-        // The deck over the lower bed: tread plate, screw heads, and the pins coming up through it.
+        // The deck over the lower bed: tread plate and screw heads.
         p.Add(L([-E + 0.004, DeckY, -E + 0.004], [E - 0.004, DeckY + 0.014, E - 0.004], MachineLook.Steel, "tread plate"));
         foreach (var x in new[] { -0.9, 0.9 })
             foreach (var z in new[] { -0.9, 0.9 })
                 p.Add(L([x - 0.014, DeckY + 0.014, z - 0.014], [x + 0.014, DeckY + 0.026, z + 0.014], MachineLook.Base));
-        const double pitch = 0.36, ph = 0.065;
-        for (var i = -2; i <= 2; i++)
-            for (var k = -2; k <= 2; k++)
-            {
-                double x = i * pitch, z = k * pitch;
-                p.Add(MachineLook.Work(L([x - ph, 0.03, z - ph], [x + ph, WorkY - 0.005, z + ph], MachineLook.Steel, "steel"), "pin", "+y", PinMost)); // (they rise in a wave to the panel's shape)
-                p.Add(L([x - ph - 0.022, DeckY + 0.014, z - ph - 0.022], [x + ph + 0.022, DeckY + 0.032, z + ph + 0.022], MachineLook.Base)); // (its bushing in the deck)
-            }
-        // The upper die (Sean, 2026-11-23): one solid block filling the cell, hung under the crosshead between the corner posts, that comes
-        // down to press the sheet over the risen pins: no grid of pins or ram under it. It spans the whole cell, so a bed of blocks reads as one solid piece
-        // (neighbours 2 mm apart); a hazard band round its foot on the bed's outside only (crush: it never stops for anyone on the bed).
-        const double pe = 0.999, dieLo = PlatenLo - 0.06, dieHi = Head - 0.004; // (its foot at 1.34 at the bottom of its stroke, as the old platen's pins)
-        p.Add(MachineLook.Work(L([-pe, dieLo, -pe], [pe, dieHi, pe], MachineLook.Steel, "steel"), "press", "-y", PressTravel));
-        foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
-        {
-            int u = 2 - n;
-            double[] mn = new double[3], mx = new double[3];
-            (mn[n], mx[n]) = sg > 0 ? (pe, pe + 0.014) : (-pe - 0.014, -pe);
-            (mn[u], mx[u]) = (-pe, pe);
-            (mn[1], mx[1]) = (dieLo + 0.03, dieLo + 0.15);
-            p.Add(Seam(MachineLook.Work(MachineLook.D(mn, mx, MachineLook.Accent, "hazard paint"), "press", "-y", PressTravel), side));
-        }
-        // The ram: a cylinder on the crosshead, driving the die inside it.
+        // Between the deck and the crosshead the dies and the rails are drawn by the renderer (PanelFormerRender.DrawDies, Sean 2026-11-24):
+        // a lower and an upper die that take on the panel's shape and squeeze the blank, on rails at the work height.
+        // The ram: a cylinder on the crosshead, driving the upper die.
         // (Under a Mast Block, which stands on the crosshead to deepen the stroke, the cylinder's head is the mast's: not drawn.)
         p.Add(Seam(L([-0.22, H - 0.004, -0.22], [0.22, H + 0.52, 0.22], MachineLook.Base, shape: Cyl("+y", 16)), "+y"));
         p.Add(Seam(L([-0.25, H + 0.52, -0.25], [0.25, H + 0.58, 0.25], MachineLook.Steel, "steel", shape: Cyl("+y", 16)), "+y"));
         foreach (var (x, z) in new[] { (0.2, 0.2), (-0.2, 0.2), (0.2, -0.2), (-0.2, -0.2) })
             p.Add(Seam(L([x - 0.018, H + 0.58, z - 0.018], [x + 0.018, H + 0.61, z + 0.018], MachineLook.Base), "+y")); // (its head's bolts)
         p.Add(L([0.3, H - 0.004, -0.04], [0.85, H + 0.06, 0.04], MachineLook.Steel, "steel")); // (its oil line along the crosshead)
-        // The corner posts: drawn only at the bed's outer corners (a post's two faces both free), the die's guides.
+        // The corner posts: drawn only at the bed's outer corners (a post's two faces both free), the upper die's guides.
         foreach (var (sx, xs) in new[] { (1, "+x"), (-1, "-x") })
             foreach (var (sz, zs) in new[] { (1, "+z"), (-1, "-z") })
             {
@@ -230,7 +209,7 @@ public sealed class PanelFormerParts : IPartGenerator
                 var pz = Z(E - 0.15, E - 0.004);
                 p.Add(Seam(L([px[0], DeckY + 0.034, pz[0]], [px[1], Head - 0.004, pz[1]], MachineLook.Base), xs, zs));
                 var gx = X(E - 0.17, E - 0.15);
-                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], Head - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the die)
+                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], Head - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the upper die)
                 var fx = X(E - 0.2, E - 0.004);
                 var fz = Z(E - 0.2, E - 0.004);
                 p.Add(Seam(L([fx[0], DeckY + 0.032, fz[0]], [fx[1], DeckY + 0.09, fz[1]], MachineLook.Base), xs, zs)); // (its foot plate)

@@ -956,7 +956,7 @@ public static partial class ConstructRender
         var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
         var foot = (def.BoundsMin + def.BoundsMax) * 0.5f;
         foot.Y = def.BoundsMin.Y;
-        at = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, o.Y + 0.5f * d.BlockCell + 0.006f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell) - foot;
+        at = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, o.Y + (asm.LowBed ? RollerRuns.RunY + ConstructConveyor.BedTop - 0.5f * d.BlockCell - 0.006f : 0.5f * d.BlockCell) + 0.006f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell) - foot;
         return true;
     }
 

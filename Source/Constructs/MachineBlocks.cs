@@ -39,6 +39,7 @@ public struct CMachineAsm
     public byte Masts; // an Assembler's masts outside its bed: the shortest of its four corner columns, in cells (0: a corner has none)
     public byte Tool; // the tool block docked in an Assembler's Tool Bay: an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
     public ushort ToolPart; // that block's part (ushort.MaxValue: none)
+    public bool LowBed; // a Press whose bed between its housings' rows is Press Bed Blocks, at the rollers' height: runs roll blanks on and made parts off (its Core's Bed in and Bed out)
 }
 
 public sealed partial class Construct
@@ -266,7 +267,7 @@ public static class MachineBlocks
     }
 
     /// <summary>
-    /// The Core of a bed fed by conveyor (a Panel Former's, a Laser Cutter's) whose bed holds body point <paramref name="at"/> (within its
+    /// The Core of a bed fed by conveyor (a Panel Former's, a Laser Cutter's, a low-bedded Press's) whose bed holds body point <paramref name="at"/> (within its
     /// rectangle's outline, up to a cell over its foot), or -1. A run whose end meets a bed off its cells' grid (a Laser Cutter's 1 m Core
     /// puts its bed half a tile off its feed's) still feeds it (RollerRuns.Butted). Server, at a run's laying; allocates nothing.
     /// </summary>
@@ -278,8 +279,8 @@ public static class MachineBlocks
             if (asm.W == 0 || (uint)asm.Core >= (uint)c.PartCount)
                 continue;
             ref readonly var p = ref c.Parts[asm.Core];
-            if (!p.D.IsPanelFormer || p.D.BlockRole != BlockRole.Core)
-                continue;
+            if (!(p.D.IsPanelFormer || p.D.IsPress && asm.LowBed) || p.D.BlockRole != BlockRole.Core)
+                continue; // (a Press's bed only when it is low: Press Bed Blocks at the rollers' height)
             var cell = p.D.BlockCell;
             var rel = Rot24.Apply(Rot24Inverse(p.Rot), at - p.Pos);
             var mid = Rot24.Apply(Rot24Inverse(p.Rot), CoreMid(c, asm.Core) - p.Pos);
@@ -687,7 +688,15 @@ public static class MachineBlocks
         if (assembler)
             AssemblerCounts(c, id, ref asm, queue[..count], cx, cz, grid);
         if (asm.W > 0 && Families[asm.Family] == "press")
+        {
+            for (var k = 1; k < count && !asm.LowBed; k++)
+            {
+                var kd = c.Parts[queue[k]].D;
+                asm.LowBed = cy[k] == 0 && kd.BlockRole == BlockRole.Block && kd.BoundsMax.Y - kd.BoundsMin.Y < 0.6f * cell
+                    && cx[k] >= asm.X0 && cx[k] < asm.X0 + asm.W && cz[k] > asm.Z0 && cz[k] < asm.Z0 + asm.L - 1; // (a Press Bed Block between the housings' rows)
+            }
             ConstructPress.SwingCheck(c, ref asm, id); // (its shells' swing: a fixed part in the way stops it, and the screen names it)
+        }
         // Bed cells outside the rectangle idle; each cell's welded faces to its own machine (for the seam boxes).
         var bed = 0;
         foreach (var g in grid)
@@ -993,6 +1002,8 @@ public static class MachineBlocks
             sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {Describe(c, asm)}");
             if (asm.W > 0)
                 sb.Append($", corner columns {CornerColumns(c, asm)}");
+            if (asm.LowBed)
+                sb.Append(", low bed (runs roll on and off)");
             if (asm.W > 0 && c.Parts[asm.Core].D is { IsPanelFormer: true, IsLaserCutter: false })
                 sb.Append($", pins rise {ConstructPanelFormer.PinDepth(c, asm):0} m");
             var faces = 0;

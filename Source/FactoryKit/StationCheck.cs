@@ -271,7 +271,7 @@ public static class StationCheck
         {
             ref readonly var cr = ref c.Conveyed[i];
             ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
-            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}, from the {c.DefOf(c.Routes[cr.Route].From).Name} {c.Routes[cr.Route].From} to the {(c.Routes[cr.Route].To < c.PartCount ? c.DefOf(c.Routes[cr.Route].To).Name : "-")} {c.Routes[cr.Route].To} ({c.Routes[cr.Route].Count} legs)");
         }
         foreach (var b in w.Bodies)
             if (b != c)
@@ -444,7 +444,7 @@ public static class StationCheck
         {
             ref readonly var cr = ref c.Conveyed[i];
             ConstructConveyor.WorldPose(c, cr.Route, cr, ConstructParts.Def(cr.Def)!, out var rp, out _);
-            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}");
+            Console.WriteLine($"  riding: {ConstructParts.Def(cr.Def)?.Name} on link {cr.Route} at {cr.At:0.0} of {ConstructConveyor.Length(c, cr.Route):0.0} m ({rp.X:0}, {rp.Z:0}), dest {cr.Dest} tag {cr.Tag}, from the {c.DefOf(c.Routes[cr.Route].From).Name} {c.Routes[cr.Route].From} to the {(c.Routes[cr.Route].To < c.PartCount ? c.DefOf(c.Routes[cr.Route].To).Name : "-")} {c.Routes[cr.Route].To} ({c.Routes[cr.Route].Count} legs)");
         }
         foreach (var b in w.Bodies)
             if (b != c)

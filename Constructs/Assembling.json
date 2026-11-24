@@ -1261,6 +1261,7 @@
     {"output": "Ore Bunker 5 m", "materials": {"concrete": 1437, "steel": 359}, "seconds": 180.0},
     {"output": "Ore Bunker 6 m", "materials": {"concrete": 1629, "steel": 407}, "seconds": 180.0},
     {"output": "Ore Bunker 8 m", "materials": {"concrete": 1987, "steel": 496}, "seconds": 180.0},
+    {"output": "Ore Silo 4 m", "materials": {"concrete": 1987, "steel": 496}, "seconds": 180.0},
     {"output": "Portal Column 8 m", "materials": {"steel": 276, "concrete": 55}, "seconds": 43.4},
     {"output": "Portal Rafter 11.5 m", "materials": {"steel": 162, "concrete": 32}, "seconds": 26.4},
     {"output": "Portal Rafter 13.5 m", "materials": {"steel": 191, "concrete": 38}, "seconds": 30.6},
@@ -2790,6 +2791,7 @@
     {"output": "Console Arc Desk R0.7 120", "materials": {"steel": 3, "concrete": 1}, "seconds": 2.4},
     {"output": "Console Arc Desk R0.8 180", "materials": {"steel": 4, "concrete": 1}, "seconds": 2.6},
     {"output": "Extruder Plinth", "materials": {"concrete": 320, "steel": 20}, "seconds": 40},
-    {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20}
+    {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20},
+    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40}
   ]
 }

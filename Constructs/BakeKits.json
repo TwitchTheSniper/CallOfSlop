@@ -3,10 +3,45 @@
   // Parts made from a kit of extrusions welded at a Building Station and baked whole in a Bake Oven, never assembled
   // (Sean, 2026-11-23: the large deck parts). Each part's kit is worked out from its solid boxes (BakeKits.cs).
   "material": "steel",
+  // (Sean, 2026-11-23: the decks, keel and hull pieces on line C, whose oven's bed is 7 x 13 cells; the walls on lines A and B, 5 x 9)
+  "bigBed": { "cells": 80, "prefixes": [ "Zero Day Lower Deck", "Zero Day Upper Deck", "Zero Day Keel", "Zero Day Spine", "Zero Day Stern",
+    "Zero Day Lower Fore Hull", "Zero Day Lower Aft Hull", "Zero Day Upper Fore Hull", "Zero Day Upper Aft Hull" ] },
   "parts": [
     "Zero Day Lower Deck Fore",
     "Zero Day Lower Deck Aft",
     "Zero Day Upper Deck Fore",
-    "Zero Day Upper Deck Aft"
+    "Zero Day Upper Deck Aft",
+    // (Sean, 2026-11-23: the interior walls too, on extrusion lines A and B: their plates extruded, welded at the line's dress station, baked)
+    "Zero Day Lower Aft Wall 1",
+    "Zero Day Lower Aft Wall 2",
+    "Zero Day Lower Aft Wall 3",
+    "Zero Day Lower Aft Wall 4",
+    "Zero Day Lower Aft Wall 5",
+    "Zero Day Lower Aft Wall 6",
+    "Zero Day Lower Fore Wall 1",
+    "Zero Day Lower Fore Wall 2",
+    "Zero Day Lower Fore Wall 3",
+    "Zero Day Lower Fore Wall 4",
+    "Zero Day Lower Fore Wall 5",
+    "Zero Day Lower Fore Wall 6",
+    "Zero Day Lower Fore Wall 7",
+    "Zero Day Upper Aft Wall 1",
+    "Zero Day Upper Aft Wall 2",
+    "Zero Day Upper Aft Wall 3",
+    "Zero Day Upper Aft Wall 4",
+    "Zero Day Upper Aft Wall 5",
+    "Zero Day Upper Aft Wall 6",
+    "Zero Day Upper Aft Wall 7",
+    "Zero Day Upper Fore Wall 1",
+    "Zero Day Upper Fore Wall 2",
+    "Zero Day Upper Fore Wall 3",
+    "Zero Day Upper Fore Wall 4",
+    "Zero Day Upper Fore Wall 5",
+    "Zero Day Upper Fore Wall 6",
+    "Zero Day Upper Fore Wall 7",
+    "Zero Day Upper Fore Wall 8",
+    "Zero Day Upper Fore Wall 9",
+    "Zero Day Upper Fore Wall 10",
+    "Zero Day Upper Fore Wall 11"
   ]
 }

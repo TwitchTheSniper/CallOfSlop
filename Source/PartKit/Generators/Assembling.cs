@@ -756,6 +756,7 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Bay Block", 40, 1, m: [("steel", 420), ("rubber", 20)], p: [("Wiring Loom", 1)])),
         // (the Press on the block system, Sean 2026-11-21: its Press Block, a 2 m cube of the bed or a wall; the Core keeps the Press's row)
         (null, null, Rec("Press Block", 60, 1, m: [("steel", 400), ("concrete", 200)], p: [("Gear Set", 1)])),
+        (null, null, Rec("Press Bed Block", 40, 1, m: [("steel", 240), ("concrete", 120)])), // (a low bed cell at the rollers' height, Sean 2026-11-23)
         // (the Satchel, the Traders' courier, Karl 2026-11-21: CourierParts; in the folder's file order of 2026-11-21)
         ("Satchel", "Satchel Bay", null),
         ("Satchel", "Satchel Bay Ceiling", null),
@@ -1287,7 +1288,7 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames];
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

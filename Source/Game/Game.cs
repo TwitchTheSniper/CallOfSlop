@@ -1018,7 +1018,7 @@ public sealed partial class Game : IDisposable
         for (var i = 0; i < count; i++)
             if (_pendingInputs[_pendingInputs.Count - count + i].MagBoots)
                 boots |= 1 << i;
-        _w.U8((byte)boots); // trailer: magnet boots on, a bit per command (GameSandboxMagBoots.cs; protocol 448)
+        _w.U8((byte)boots); // trailer: magnet boots on, a bit per command (GameSandboxMagBoots.cs; protocol 449)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 

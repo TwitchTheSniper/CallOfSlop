@@ -74,7 +74,7 @@ public struct InputCmd
     public ushort RideBody; // contraption space: the construct this look is measured on (0: Yaw and Pitch are all there is; ConstructRideMove.cs)
     public float RideYaw, RidePitch; // the look in that construct's frame, about the rider's up
     public float Roll; // a worn MMU's roll about the look (PilotGear.MmuAxes), quantised by World.QuantRoll; 0 otherwise
-    public bool MagBoots; // Sandbox: magnet boots on (ShipGravity.Rider: held to the deck under felt gravity; protocol 448)
+    public bool MagBoots; // Sandbox: magnet boots on (ShipGravity.Rider: held to the deck under felt gravity; protocol 449)
     public bool MmuCoast; // a worn MMU's dampeners off: with no key held it keeps its speed (false, the default: it brakes to the nearest craft's motion; PilotGear.MmuBrake)
     public ushort NoclipBoard; // creative Sandbox's Board inside key: the construct to be set down inside (0: none; ConstructRideInterior.cs), on the input that leaves noclip
     public Vector3 NoclipBoardAt; // where the look met it, in its rest frame

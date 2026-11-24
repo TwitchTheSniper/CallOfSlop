@@ -21,6 +21,7 @@ public sealed partial class ZeroDayWorks
         public const float FormerZ = -69f; // the row north of the Panel Formers' beds (their head row at z -71, their Cores beside it): the feed run's last row
 
         private readonly List<(string Line, VPart Store)> _stores = new();
+        private readonly Dictionary<string, VPart[]> _lineCutOuts = new();
 
         private void LayArmourLines()
         {
@@ -30,8 +31,15 @@ public sealed partial class ZeroDayWorks
                 ArmourLine(line, x0, paint, bedAcross: 3, bedAlong: 7, tables: 2, cutAlong: 7);
                 // The dress station (a small Building Station: Core east of a 5 x 9 bay, Mast Blocks 3 high on its corners), its Bake Oven,
                 // then two piece stores of 5 x 6 Pad Tiles with a run between them, and the transfer run south to the yard.
-                Station(east, -119, east - 10, -117, 5, 9, 3, paint);
-                Oven(east - 6, -137, east - 10, 5, 9, 3, paint);
+                var station = Station(east, -119, east - 10, -117, 5, 9, 3, paint);
+                RollThrough(_lineCutOuts[line], 2, paint); // (the cutter's runs end at z -109: a row on, then the pad at -113 and -115, the bay from -117)
+                // The oven's Core east of its bed's first row, out of the two rows between the bay and the bed, where two Roller Tiles under
+                // both middles roll a finished kit onto the bed (ConstructRollOut.cs); its console runs the line for the station's kits, and
+                // the yard's orders reach the oven (Sean, 2026-11-23: the frigate's interior walls are made on lines A and B).
+                var oven = Oven(east, -139, east - 10, 5, 9, 3, paint, bedZ0: -139, facing: West);
+                Tiles("Roller Tile", east - 6, -135, 1, 2, South, paint);
+                LineOrders(station, _lineExtruders[line], east + 2, -115, paint, _lineFormers[line]);
+                _makers.Add(oven);
                 Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
                 // Four Industrial arms on the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns).
                 foreach (var z in new[] { -127f, -133f, -143f, -149f })
@@ -178,7 +186,7 @@ public sealed partial class ZeroDayWorks
                 Stack(skins[0, 0], "top", 1);
                 return;
             }
-            CutterStage(run, bedAcross, cutAlong, paint);
+            _lineCutOuts[line] = CutterStage(run, bedAcross, cutAlong, paint);
         }
 
         /// <summary>The feed run from the extruder's tables, the Panel Former (bed, corner masts, Out Tables) and a two-row run off it.</summary>
@@ -216,7 +224,7 @@ public sealed partial class ZeroDayWorks
         }
 
         /// <summary>The Laser Cutter straight on a run's end: its bed, its Core on the bed's east side, Out Tables and pick runs.</summary>
-        private void CutterStage(VPart[,] run, int bedAcross, int cutAlong, string paint)
+        private VPart[] CutterStage(VPart[,] run, int bedAcross, int cutAlong, string paint)
         {
             // ---- The Laser Cutter (Sean, 2026-11-23: the gantry's legs on the long sides, the run feeding straight in): its bed welded on the
             // run's last row, as wide as the run and cutAlong blocks south, so each blank rides off the rollers straight onto the bed's north
@@ -228,13 +236,31 @@ public sealed partial class ZeroDayWorks
             Chain(cut, "Laser Bed Block", "+z", "-z", "-x", "+x", paint, rowZero: false);
             var cutter = Paint(Onto(cut[bedAcross - 1, 0], "-x", "Laser Cutter", "+x"), paint); // (a block's own -x is east)
             OrdersOnly(cutter);
+            var ends = new VPart[bedAcross];
             for (var i = 0; i < bedAcross; i++)
             {
                 var t = Paint(Onto(cut[i, cutAlong - 1], "+z", "Out Table", "-z"), paint);
-                // The pick run: two rows south of the table, no way on, so the cut piece waits at its end for the Hall Crane.
-                var r1 = Paint(Onto(t, "+z", "Roller Tile", "-z"), paint);
-                Paint(Onto(r1, "+z", "Roller Tile", "-z"), paint);
+                // The pick run: rows south of the table, so the cut piece waits at its end for the Hall Crane, or rolls on onto a pad.
+                var r = Paint(Onto(t, "+z", "Roller Tile", "-z"), paint);
+                ends[i] = Paint(Onto(r, "+z", "Roller Tile", "-z"), paint);
             }
+            return ends;
+        }
+
+        /// <summary>
+        /// Lines A and B's roll-through (Sean, 2026-11-23): the cutter's out runs on one row more onto a raised pad of Pad Tiles butted on the
+        /// dress station's bay's north end, which the station takes as its pick pad. Each piece rolls from the Extruder through the Panel Former
+        /// and the Laser Cutter (across a bed it has no work on) to that pad, where the station's crane picks it (ConstructStation pick pads).
+        /// </summary>
+        private void RollThrough(VPart[] ends, int rows, string paint)
+        {
+            var pad = new VPart[ends.Length, rows];
+            for (var i = 0; i < ends.Length; i++)
+            {
+                var r = Paint(Onto(ends[i], "+z", "Roller Tile", "-z"), paint);
+                pad[i, 0] = Paint(Onto(r, "+z low", "Pad Tile", "-z"), Stock);
+            }
+            Chain(pad, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: true);
         }
 
         /// <summary>

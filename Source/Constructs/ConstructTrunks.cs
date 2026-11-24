@@ -15,7 +15,7 @@ public static partial class ConstructPhysics
     private static void TrunkContacts(Construct c, short index, ResourceField field, float dt)
     {
         var com = c.WorldCom;
-        var reach = c.Radius + c.Vel.Length() * dt + ResourceField.MaxTrunkRadius;
+        var reach = c.Radius + MathF.Min(ConstructPhysics.MaxSweep, c.Vel.Length() * dt) + ResourceField.MaxTrunkRadius;
         for (var iz = ResourceField.Lattice(com.Z - reach); iz <= ResourceField.Lattice(com.Z + reach); iz++)
             for (var ix = ResourceField.Lattice(com.X - reach); ix <= ResourceField.Lattice(com.X + reach); ix++)
             {

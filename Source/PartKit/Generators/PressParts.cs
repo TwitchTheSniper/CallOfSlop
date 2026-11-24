@@ -374,6 +374,61 @@ public sealed partial class PressParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// A Press Bed Block (Sean, 2026-11-23: "parts can roll into the big press bay and roll out"): a bed cell whose deck is at the
+    /// rollers' height (<see cref="OutTableParts.WorkY"/>), so a Roller Tile run butted on the bed's open end carries a blank straight
+    /// onto it and a run at the other end carries the made part away (the Core's "Bed in" and "Bed out": ConstructPorts.cs). It goes
+    /// between the two rows of Press Blocks that carry the housings; nothing stacks on it.
+    /// </summary>
+    private static Part PressBedBlock()
+    {
+        var p = new Part("Press Bed Block", Small, Section,
+            "A low cell of a Press's bed, its deck at the rollers' height. Weld rows of them between the two rows of Press Blocks that carry the housings: then a Roller Tile run butted on the bed's open end rolls blanks onto it, and a run leaving the other end rolls the made parts away. Nothing stacks on it.",
+            group: "Production", color: Blue);
+        const double e = 0.997; // (the cell less 3 mm, as a Press Block's)
+        const double top = OutTableParts.WorkY - 0.004; // (the deck's top: 4 mm under the rollers' tops, where a piece's underside rides)
+        const double slab = top - 0.15; // (the deck slab's underside)
+        const double leg = 0.26, inset = e - leg;
+        p.Add(Box([-e, 0.003, -e], [e, top, e], hidden: true)); // (solid to the deck: a person stands on the bed, a piece rolls on it)
+        p.Add(MachineLook.D([-e, slab, -e], [e, top - 0.036, e], Blue, paintable: true)); // (the deck slab, in the press's paint)
+        p.Add(MachineLook.D([-e + 0.004, top - 0.036, -e + 0.004], [e - 0.004, top, e - 0.004], MachineLook.Steel, "tread plate")); // (the working top: bare steel tread, lighter than the housings' dark feet, so the bed reads at a glance)
+        p.Add(MachineLook.D([-inset, 0.003, -inset], [inset, slab - 0.004, inset], MachineLook.Base)); // (the body, set back between the legs)
+        foreach (var x in new[] { -e, e - leg })
+            foreach (var z in new[] { -e, e - leg })
+                p.Add(MachineLook.D([x, 0.003, z], [x + leg, slab - 0.004, z + leg], Blue, paintable: true)); // (a leg)
+        foreach (var (side, axis, sign) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
+        {
+            var u = axis == 0 ? 2 : 0;
+            PyDict? On(double out0, double out1, double a0, double a1, double y0, double y1, string colour, string? finish = null)
+            {
+                double[] lo = new double[3], hi = new double[3];
+                (lo[axis], hi[axis]) = sign > 0 ? (out0, out1) : (-out1, -out0);
+                (lo[u], hi[u], lo[1], hi[1]) = (a0, a1, y0, y1);
+                return MachineLook.D(lo, hi, colour, finish);
+            }
+            // Welded to a cell of its press: the body runs on under the deck to the neighbour's. Open: the deck's hazard edge (the bed's
+            // ends, where the runs butt on), a kick band and the shadow line under the deck.
+            p.Add(On(inset - 0.01, e - 0.004, -inset + 0.004, inset - 0.004, 0.012, slab - 0.008, MachineLook.Base)!.Update(("seamFill", side)));
+            p.Add(Seam(On(e - 0.004, e + 0.008, -e + 0.03, e - 0.03, slab + 0.03, top - 0.05, MachineLook.Accent, "hazard paint")!, side));
+            p.Add(Seam(On(inset - 0.004, inset + 0.016, -inset + 0.004, inset - 0.004, 0.007, 0.14, MachineLook.Steel, "steel")!, side));
+            p.Add(Seam(On(inset - 0.004, inset + 0.012, -inset + 0.004, inset - 0.004, slab - 0.05, slab - 0.012, Hose)!, side));
+        }
+        // On the Press's 2 m lattice (its sides' middles 1 m up, as a Press Block's), and at a Roller Tile's side sockets (0.5 m up), so a
+        // run's end butted on the bed welds to it.
+        p.Sock("+x", [1, 1, 0], "+x");
+        p.Sock("-x", [-1, 1, 0], "-x");
+        p.Sock("+z", [0, 1, 1], "+z");
+        p.Sock("-z", [0, 1, -1], "-z");
+        p.Sock("+x low", [1, 0.5, 0], "+x");
+        p.Sock("-x low", [-1, 0.5, 0], "-x");
+        p.Sock("+z low", [0, 0.5, 1], "+z");
+        p.Sock("-z low", [0, 0.5, -1], "-z");
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Stats(BlockMass / 2, BlockHealth, 8, 20);
+        p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false));
+        return p;
+    }
+
     private const string Lid = "#7d8690"; // a Press Block's shell lid: bare gunmetal, lighter than any bed paint
 
     private static PyDict Seam(PyDict box, string face) => box.Update(("seam", face));
@@ -1270,6 +1325,7 @@ public sealed partial class PressParts : IPartGenerator
         var parts = new List<(string, Part)>();
         parts.Add(("", PressCore()));
         parts.Add(("", PressBlock()));
+        parts.Add(("", PressBedBlock()));
         parts.Add(("", Lathe()));
         foreach (var (family, _, colour) in Families)
             parts.Add(("Dies", Die(family, colour)));
