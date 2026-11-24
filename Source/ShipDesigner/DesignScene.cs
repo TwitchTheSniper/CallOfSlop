@@ -92,7 +92,9 @@ public static class DesignScene
         var aft = new DesignMesh();
         var cx = h.CopyX(copy);
         var (bx0, bx1, by0, by1, bz0, bz1) = h.Bounds();
-        var cutters = d.Hulls.Where(o => o != h && (o.Cut || h.Cut) && Overlap(o.Bounds(), (bx0, bx1, by0, by1, bz0, bz1))).ToList();
+        // The bodies that cut this one, each with its box, so a facet only tests (and is only cut finely by) those its own box meets.
+        var cutters = d.Hulls.Where(o => o != h && (o.Cut || h.Cut)).SelectMany(o => Enumerable.Range(0, o.Copies).Select(c => (B: o, Box: CopyBox(o, c)))).Where(o => Overlap(o.Box, (bx0, bx1, by0, by1, bz0, bz1))).ToList();
+        var near = new List<HullBody>();
         // The openings the sockets on this copy cut through the skin (each a frame and its half sizes).
         var holes = new List<(Place W, double Hx, double Hz, bool Round)>();
         foreach (var p in Holes ? d.Pieces : [])
@@ -122,7 +124,35 @@ public static class DesignScene
             }
             return false;
         }
-        bool Cut(double x, double y, double z) => InHole(x, y, z) || cutters.Any(o => o.Depth(x, y, z) > 0.02);
+        bool Cut(double x, double y, double z)
+        {
+            if (InHole(x, y, z))
+                return true;
+            foreach (var o in near)
+                if (o.Depth(x, y, z) > 0.02)
+                    return true;
+            return false;
+        }
+        // Picks the cutters a facet's box (grown 5 cm) meets; true when there is one.
+        bool Near((double X, double Y, double Z) p0, (double X, double Y, double Z) p1, (double X, double Y, double Z) p2, (double X, double Y, double Z) p3)
+        {
+            near.Clear();
+            double x0 = cx + Math.Min(Math.Min(p0.X, p1.X), Math.Min(p2.X, p3.X)) - 0.05, x1 = cx + Math.Max(Math.Max(p0.X, p1.X), Math.Max(p2.X, p3.X)) + 0.05;
+            double y0 = h.Y + Math.Min(Math.Min(p0.Y, p1.Y), Math.Min(p2.Y, p3.Y)) - 0.05, y1 = h.Y + Math.Max(Math.Max(p0.Y, p1.Y), Math.Max(p2.Y, p3.Y)) + 0.05;
+            double z0 = h.Z + Math.Min(p0.Z, p2.Z) - 0.05, z1 = h.Z + Math.Max(p0.Z, p2.Z) + 0.05;
+            foreach (var o in cutters)
+                if (Overlap(o.Box, (x0, x1, y0, y1, z0, z1)))
+                    if (!near.Contains(o.B))
+                        near.Add(o.B);
+            return near.Count > 0;
+        }
+        void Facet(DesignMesh m, (double X, double Y, double Z) p0, (double X, double Y, double Z) p1, (double X, double Y, double Z) p2, (double X, double Y, double Z) p3,
+            (byte, byte, byte) c, bool holed, double step, bool flip)
+        {
+            var cutting = Near(p0, p1, p2, p3) || holed;
+            var nz = !cutting ? 1 : Math.Clamp((int)Math.Ceiling((p2.Z - p0.Z) / step), 1, 80);
+            Strip(m, cx, h, p0, p1, p2, p3, c, nz, cutting, Cut, flip, step);
+        }
 
         var col = DesignMesh.Hex(h.Skin);
         var dark = DesignMesh.Hex("#3a3e44");
@@ -135,21 +165,29 @@ public static class DesignScene
             // A band with a socket's opening in it is cut finely (20 cm), one another body cuts at 50 cm, the rest whole.
             var holed = holes.Any(q => q.W.O[2] > h.Z + a.Z - 2 && q.W.O[2] < h.Z + b.Z + 2);
             var step = holed ? 0.2 : 0.5;
-            var cutting = holed || cutters.Count > 0;
-            var nz = !cutting ? 1 : Math.Clamp((int)Math.Ceiling((b.Z - a.Z) / step), 1, 80);
             foreach (var s in new[] { -1, 1 })
                 for (var k = 0; k < n - 1; k++)
                 {
                     var shade = DesignMesh.Tone(col, band * (k % 2 == 0 ? 1.0 : 0.9));
-                    Strip(skin, cx, h, (s * a.P[k].H, a.P[k].Y, a.Z), (s * a.P[k + 1].H, a.P[k + 1].Y, a.Z), (s * b.P[k].H, b.P[k].Y, b.Z), (s * b.P[k + 1].H, b.P[k + 1].Y, b.Z), shade, nz, cutting, Cut, s < 0, step);
+                    Facet(skin, (s * a.P[k].H, a.P[k].Y, a.Z), (s * a.P[k + 1].H, a.P[k + 1].Y, a.Z), (s * b.P[k].H, b.P[k].Y, b.Z), (s * b.P[k + 1].H, b.P[k + 1].Y, b.Z), shade, holed, step, s < 0);
                 }
             // The keel (across the bottom) and the spine (across the top).
-            Strip(skin, cx, h, (-a.P[0].H, a.P[0].Y, a.Z), (a.P[0].H, a.P[0].Y, a.Z), (-b.P[0].H, b.P[0].Y, b.Z), (b.P[0].H, b.P[0].Y, b.Z), DesignMesh.Tone(dark, band), nz, cutting, Cut, false, step);
-            Strip(skin, cx, h, (a.P[n - 1].H, a.P[n - 1].Y, a.Z), (-a.P[n - 1].H, a.P[n - 1].Y, a.Z), (b.P[n - 1].H, b.P[n - 1].Y, b.Z), (-b.P[n - 1].H, b.P[n - 1].Y, b.Z), DesignMesh.Tone(col, band * 1.05), nz, cutting, Cut, false, step);
+            Facet(skin, (-a.P[0].H, a.P[0].Y, a.Z), (a.P[0].H, a.P[0].Y, a.Z), (-b.P[0].H, b.P[0].Y, b.Z), (b.P[0].H, b.P[0].Y, b.Z), DesignMesh.Tone(dark, band), holed, step, false);
+            Facet(skin, (a.P[n - 1].H, a.P[n - 1].Y, a.Z), (-a.P[n - 1].H, a.P[n - 1].Y, a.Z), (b.P[n - 1].H, b.P[n - 1].Y, b.Z), (-b.P[n - 1].H, b.P[n - 1].Y, b.Z), DesignMesh.Tone(col, band * 1.05), holed, step, false);
         }
+        near.Clear();
+        near.AddRange(cutters.Select(o => o.B).Distinct());
         Cap(fore, cx, h, h.Stations[0], DesignMesh.Tone(col, 0.85), Cut);
         Cap(aft, cx, h, h.Stations[^1], DesignMesh.Tone(dark, 1.2), Cut);
         return (skin, fore, aft);
+    }
+
+    /// <summary>One copy's box (a mirrored pair's whole box spans the gap between its copies).</summary>
+    private static (double, double, double, double, double, double) CopyBox(HullBody o, int c)
+    {
+        var b = o.Bounds();
+        var w = o.Copies == 1 ? 0 : (b.X1 - b.X0 - Math.Abs(o.CopyX(1) - o.CopyX(0))) / 2;
+        return o.Copies == 1 ? b : (o.CopyX(c) - w, o.CopyX(c) + w, b.Y0, b.Y1, b.Z0, b.Z1);
     }
 
     private static bool Overlap((double, double, double, double, double, double) a, (double, double, double, double, double, double) b) =>
@@ -482,8 +520,28 @@ public static class DesignScene
 
     // ---- the page's JSON
 
+    // Each hull copy's mesh as last written, under the key of all it was made from: an edit that leaves a body, the bodies that cut it and
+    // its openings alone (a room, a deck, another body far off) sends the same text without lofting and cutting it again.
+    private static readonly Dictionary<(int, int), (string Key, string Json)> Meshes = [];
+
+    private static string MeshKey(ShipDesign d, HullBody h)
+    {
+        var k = new StringBuilder(h.ToJson().ToJsonString()).Append(Holes ? 'H' : 'h');
+        var box = h.Bounds();
+        foreach (var o in d.Hulls)
+            if (o != h && Overlap(o.Bounds(), box))
+                k.Append('|').Append(o.ToJson().ToJsonString());
+        if (Holes)
+            foreach (var p in d.Pieces)
+                if (p.Hull == h.Id && PieceKinds.Find(p.Kind)?.Opening is not null)
+                    k.Append('#').Append(p.ToJson().ToJsonString());
+        return k.ToString();
+    }
+
     public static string Json(ShipDesign d)
     {
+        if (Meshes.Count > 4 * ShipDesign.MaxHulls)
+            Meshes.Clear();
         var c = Run(d);
         var sb = new StringBuilder(1 << 16);
         sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
@@ -504,17 +562,24 @@ public static class DesignScene
                 sb.Append("]}");
             }
             sb.Append("],\"copies\":").Append(Light ? "null" : "[");
+            var key = Light ? "" : MeshKey(d, h);
             for (var copy = 0; copy < (Light ? 0 : h.Copies); copy++)
             {
-                var (skin, fore, aft) = HullMesh(d, h, copy);
                 if (copy > 0) sb.Append(',');
-                sb.Append("{\"copy\":").Append(copy).Append(",\"skin\":");
-                skin.Write(sb);
-                sb.Append(",\"fore\":");
-                fore.Write(sb);
-                sb.Append(",\"aft\":");
-                aft.Write(sb);
-                sb.Append('}');
+                if (!Meshes.TryGetValue((h.Id, copy), out var hit) || hit.Key != key)
+                {
+                    var (skin, fore, aft) = HullMesh(d, h, copy);
+                    var one = new StringBuilder(1 << 14);
+                    one.Append("{\"copy\":").Append(copy).Append(",\"skin\":");
+                    skin.Write(one);
+                    one.Append(",\"fore\":");
+                    fore.Write(one);
+                    one.Append(",\"aft\":");
+                    aft.Write(one);
+                    one.Append('}');
+                    Meshes[(h.Id, copy)] = hit = (key, one.ToString());
+                }
+                sb.Append(hit.Json);
             }
             sb.Append(Light ? "}" : "]}");
         }

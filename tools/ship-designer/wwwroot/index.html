@@ -213,6 +213,7 @@ camera.position.set(38, 22, -12);
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 3, 22);
 controls.enableDamping = true;
+controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE; // Karl, 2026-11-24: the middle button turns the view (the wheel zooms)
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x2a3036, 1.25));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(30, 50, -20); scene.add(sun);
 const fill = new THREE.DirectionalLight(0x9fc0e0, 0.5); fill.position.set(-30, -10, 40); scene.add(fill);
@@ -221,10 +222,17 @@ const world = new THREE.Group(); scene.add(world);
 const gizmo = new TransformControls(camera, renderer.domElement);
 gizmo.setTranslationSnap(0.25); gizmo.setSize(0.8);
 scene.add(gizmo);
-gizmo.addEventListener("dragging-changed", e => { controls.enabled = !e.value; if (e.value) { dragFirst = true; } else flush(); });
+gizmo.addEventListener("dragging-changed", e => {
+  controls.enabled = !e.value;
+  if (e.value) { dragFirst = true; return; }
+  flush();
+  const o = gizmo.object;
+  if (o?.userData.hullId && !dragFirst) cmd({ op: "moveHull", hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z }, true);
+});
 gizmo.addEventListener("objectChange", () => {
   const o = gizmo.object; if (!o || !o.userData.hullId) return;
-  dragCmd({ op: "moveHull", hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
+  // While dragging, the body's last mesh is drawn moved (no lofting or cutting a frame); the release cuts it where it lands.
+  dragCmd({ op: "moveHull", light: true, preview: true, hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
 });
 const gizmoTarget = new THREE.Object3D(); scene.add(gizmoTarget);
 
@@ -257,8 +265,10 @@ function rebuild() {
         const selHull = sel.kind === "hull" && sel.id === h.id;
         // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
         const key = `${h.id}/${c.copy}/${surf}`;
-        if (!hullGeo.has(key)) hullGeo.set(key, meshFrom(c[surf]).geometry);
-        const m = meshFrom(null, ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {}, hullGeo.get(key));
+        if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: meshFrom(c[surf]).geometry, at: [h.x, h.y, h.z] });
+        const hg = hullGeo.get(key);
+        const m = meshFrom(null, ghost ? { transparent: true, opacity: mode === "interior" ? 0.12 : 0.28, depthWrite: false } : {}, hg.g);
+        m.position.set((c.copy === 1 ? -1 : 1) * (h.x - hg.at[0]), h.y - hg.at[1], h.z - hg.at[2]);
         if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
         m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
         world.add(m); pickables.push(m);
