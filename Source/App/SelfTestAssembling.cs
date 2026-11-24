@@ -86,14 +86,14 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The big machines are buildings, not bricks: the size table; less than half of their bounds solid; a player fits their aisle;
+    /// The big machines are buildings, not bricks (the Smelter is a 2 m block machine's Core now, grown by its blocks): the size table; less than half of their bounds solid; a player fits their aisle;
     /// a body can leave and a player can reach from beside a 10 m machine; every chute port on the outside.
     /// </summary>
     private static void BigMachineChecks(Action<bool, string> want)
     {
         (string Line, float[] Across)[] lines =
         [
-            ("Smelter", [0, 3.5f, 4.5f, 6, 8, 10]), ("Sawmill", [0, 3, 4, 5, 7, 9]), ("Foundry", [0, 4, 5, 6.5f, 8, 10]),
+            ("Sawmill", [0, 3, 4, 5, 7, 9]), ("Foundry", [0, 4, 5, 6.5f, 8, 10]),
         ];
         foreach (var (line, across) in lines)
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
@@ -110,7 +110,7 @@ public static partial class SelfTest
                 want(solid < size.X * size.Y * size.Z * 0.55f, $"{d.Name} is a brick: {solid:0} of {size.X * size.Y * size.Z:0} m3 solid");
                 want(d.NamedPorts.Count(p => p.Type == RouteType.Chute) == 2, $"{d.Name}'s chute ports");
                 want(d.SolidBoxes <= ConstructParts.MaxBoxes, $"{d.Name}'s boxes");
-                if (line is "Smelter" or "Foundry")
+                if (line is "Foundry")
                 {
                     // The aisle: a player stands between the body and the tray, on the floor plate.
                     var feet = new Vector3(0, 0.03f * across[tier], 0.1f * across[tier]);
@@ -148,7 +148,7 @@ public static partial class SelfTest
         var d = c.DefOf(fi);
         int a = PartNamed(c, "Materials Bin"), b = PartNamed(c, "Materials Bin", 1), o = PartNamed(c, "Materials Bin", 2);
         var inv = new SandboxInventory();
-        string Look() => ConstructRefining.Look(d, st, false, inv);
+        string Look() => ConstructRefining.Look(c, fi, st, false, inv);
         void WantLook(string text)
         {
             var line = Look();
@@ -177,9 +177,9 @@ public static partial class SelfTest
         // Tier 2 and 3 recipes.
         want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
         WantLook("needs a tier 2 foundry");
-        want(ConstructRefining.TipMaterial(inv, d, st) == 0, "nothing carried, nothing to tip");
+        want(ConstructRefining.TipMaterial(inv, c, fi, st) == 0, "nothing carried, nothing to tip");
         inv.AddMaterial(stone, 5);
-        want(ConstructRefining.TipMaterial(inv, d, st) == stone, "a Foundry holding metal takes stone from what you carry");
+        want(ConstructRefining.TipMaterial(inv, c, fi, st) == stone, "a Foundry holding metal takes stone from what you carry");
 
         // The bytes, and the mass of the mixed input.
         w.Feed(c, fi, 8, stone);
@@ -325,7 +325,7 @@ public static partial class SelfTest
         Line($"assembling: the chain made an Engine in {waited} s: steel {st.MixOf(steel)}, {st.KindN} kinds left, Smelter {smelter.InAmount} in, Foundry holds {foundry.MixN}");
         if (Made() is not { } built)
         {
-            Fail($"assembling: no Engine after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works.DefOf(PartNamed(works, "Foundry")), foundry, false, inv)}\"");
+            Fail($"assembling: no Engine after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works, PartNamed(works, "Foundry"), foundry, false, inv)}\"");
             return;
         }
         Want(Inputs(st) <= 2, $"the batch used its inputs: \"{Look()}\"");
@@ -371,8 +371,8 @@ public static partial class SelfTest
 
         // Something on the output point: the batch waits with its inputs, says why, and leaves when it clears.
         var outDir = Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutDir), fq);
-        var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle: its floor just off the ground, whatever its height)
-        var block = ConstructEdits.DropLoose(w, blocker, outPoint + outDir * 2.2f + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
+        var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle, its near side 0.45 m past the point: its floor just off the ground, whatever its height)
+        var block = ConstructEdits.DropLoose(w, blocker, outPoint + outDir * ((blocker.BoundsMax.X - blocker.BoundsMin.X) * 0.5f + 0.45f) + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
         block.Pinned = true;
         block.Rebuild();
         known = w.Bodies.Select(b => b.Id).ToHashSet();
@@ -463,16 +463,16 @@ public static partial class SelfTest
         Want(edits.UseBin(w, me, eye, bay.Id, asm) is { } empty && empty.Contains("no recipe"), "F at an empty machine with no recipe says why");
 
         // ---- From beside a 10 m machine: the server measures reach to the part's nearest point, not its centre.
-        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Plasma Smelter"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
+        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Plasma Foundry"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
         {
             huge.Rebuild();
             var side = farSpot + new Vector3(5.8f, 1.6f, -2f);
-            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside a Plasma Smelter F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
+            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside a Plasma Foundry F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
             Want(edits.UseBin(w, me, farSpot + new Vector3(12f, 1.6f, -2f), huge.Id, 0) == "too far away", "from 7 m off it's still in reach");
             w.Remove(huge);
         }
         else
-            Want(false, "no room for a Plasma Smelter");
+            Want(false, "no room for a Plasma Foundry");
 
         // ---- Creative: instant and unpowered; a broken machine spills its input.
         ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Wall Clock"));
@@ -622,8 +622,8 @@ public static partial class SelfTest
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");
 
             // Finished, the body reaches everyone; before that, a blocked output's reason does.
-            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 2.2f), fq);
-            var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle: its floor just off the ground, whatever its height)
+            var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle, its near side 0.45 m past the point: its floor just off the ground, whatever its height)
+            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * ((blocker.BoundsMax.X - blocker.BoundsMin.X) * 0.5f + 0.45f)), fq);
             var block = ConstructEdits.DropLoose(w, blocker, outAt + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
             block.Pinned = true;
             block.Rebuild();

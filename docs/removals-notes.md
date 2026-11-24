@@ -1,3 +1,16 @@
+# Smelter tiers (2026-11-24)
+
+The Smelter became a block machine (plan PR 1: docs/sandbox/constructs/production.md "Refiners as block machines"), so its tiers went:
+`Constructs/Parts/Refining/SmelterT2.json` to `SmelterT5.json` (Workshop, Industrial, Military and Plasma Smelter), the Smelter line of the
+part kit's `machine_tiers` (`MachineTiers.cs`, its shape in `TierStyle.cs` and `TierMachine.cs`), their four Assembler recipe rows and
+the Smelter's recipe gates (copper 2, gold 3, levite 4 in `Refining.json`).
+
+- **Kept:** the Smelter's file and name (now the Core), its Assembler row; the Foundry and Sawmill keep their tiers until their own PRs.
+- **Saves and blueprints:** the four names load as the Core (`ConstructParts.Renamed`), and a saved recipe choice keeps its recipe
+  (`ConstructRefining.SavedRecipe`).
+- **Rebuilt:** the Zero Day works' copper smelter (Core and a 1 x 1), the Production Showcase, the Militia refineries (`--gen-factory
+  refinery`); the Starter Smelter and Smelting Station keep a bare Core.
+
 # The IT vehicles (2026-11-21)
 
 Karl asked (2026-11-21) for the IT vehicles to go as well: "We will work on implementing new vehicles for the new factions

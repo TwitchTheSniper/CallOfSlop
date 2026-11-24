@@ -25,10 +25,12 @@ public sealed partial class ZeroDayWorks
             var stone = Raw("Ore Bunker 4 m", 25f, "stone");
             var wood = Raw("Ore Bunker 4 m", 89f, "wood");
 
-            // Three Smelters (iron ore to metal, copper ore to copper at tier 2, sand to glass), the Foundry (metal and stone to steel),
-            // the Sawmill (wood to planks) and the Recycler, each over the bin it fills.
+            // Three Smelters (iron ore to metal, copper ore to copper, sand to glass), the Foundry (metal and stone to steel), the Sawmill
+            // (wood to planks) and the Recycler, each over the bin it fills. A Smelter is a Core (x1, the old tier 1); the copper one has a
+            // Hearth Block on its +x side, a 1 x 1 furnace (x2.25, over the old Workshop Smelter's x2: production.md "Refiners as block machines").
             var smelt = Refiner("Smelter", 33f);
-            var smeltCu = Refiner("Workshop Smelter", 41f);
+            var smeltCu = Refiner("Smelter", 41f);
+            Paint(Onto(smeltCu, "+x", "Hearth Block", "-x"), Refining);
             var smeltGlass = Refiner("Smelter", 49f);
             var foundry = Refiner("Foundry", 57f);
             var sawmill = Refiner("Sawmill", 81f);

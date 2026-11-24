@@ -1,0 +1,363 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Casting Bed",
+  "description": "A Smelter's end piece: weld one on the far (+x) edge of a furnace square, one a row. Its pig moulds fill orange as each furnace taps and cool to grey. Looks only: it adds nothing to the rate.",
+  "group": "Production",
+  "section": "Smelters",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 900.0,
+  "health": 1600,
+  "armour": 6,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 6,
+  "machineBlock": {
+    "family": "smelter",
+    "role": "end"
+  },
+  "centreSockets": false,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.997,
+        0.003,
+        -0.997
+      ],
+      "max": [
+        0.997,
+        0.3,
+        0.997
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.94,
+        0.3,
+        -0.94
+      ],
+      "max": [
+        0.94,
+        0.42,
+        0.94
+      ],
+      "color": "#a08a64"
+    },
+    {
+      "min": [
+        -0.997,
+        0.3,
+        -0.988
+      ],
+      "max": [
+        0.997,
+        0.465,
+        -0.94
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.997,
+        0.3,
+        0.94
+      ],
+      "max": [
+        0.997,
+        0.465,
+        0.988
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.997,
+        0.3,
+        -0.94
+      ],
+      "max": [
+        -0.94,
+        0.465,
+        0.94
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.94,
+        0.3,
+        -0.94
+      ],
+      "max": [
+        0.997,
+        0.465,
+        0.94
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.009,
+        0.12,
+        -1.009
+      ],
+      "max": [
+        1.009,
+        0.26,
+        -0.997
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.009,
+        0.12,
+        0.997
+      ],
+      "max": [
+        1.009,
+        0.26,
+        1.009
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.92,
+        0.416,
+        -0.1
+      ],
+      "max": [
+        0.92,
+        0.432,
+        0.1
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.82,
+        0.416,
+        -0.78
+      ],
+      "max": [
+        -0.5,
+        0.432,
+        -0.12
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.82,
+        0.416,
+        0.12
+      ],
+      "max": [
+        -0.5,
+        0.432,
+        0.78
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.38,
+        0.416,
+        -0.78
+      ],
+      "max": [
+        -0.06,
+        0.432,
+        -0.12
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.38,
+        0.416,
+        0.12
+      ],
+      "max": [
+        -0.06,
+        0.432,
+        0.78
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        0.416,
+        -0.78
+      ],
+      "max": [
+        0.38,
+        0.432,
+        -0.12
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.06,
+        0.416,
+        0.12
+      ],
+      "max": [
+        0.38,
+        0.432,
+        0.78
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.5,
+        0.416,
+        -0.78
+      ],
+      "max": [
+        0.82,
+        0.432,
+        -0.12
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.5,
+        0.416,
+        0.12
+      ],
+      "max": [
+        0.82,
+        0.432,
+        0.78
+      ],
+      "color": "#5d5247",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.0,
+        0.14,
+        -0.3
+      ],
+      "max": [
+        1.012,
+        0.24,
+        0.3
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.05,
+        -0.62
+      ],
+      "max": [
+        0.06,
+        0.09,
+        -0.58
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.06,
+        0.05,
+        -0.02
+      ],
+      "max": [
+        0.06,
+        0.09,
+        0.02
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.06,
+        0.05,
+        0.58
+      ],
+      "max": [
+        0.06,
+        0.09,
+        0.62
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.25,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

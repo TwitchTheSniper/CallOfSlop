@@ -506,7 +506,7 @@ public static class ConstructStorage
         var d = c.Parts[part].D;
         if (d.IsVolumeStore)
             return ConstructStoreVolume.Fill(c, part, st, out centre, out half);
-        if (d.IsGrowFormer) // (its bin grows with its bed and tier: the level is of what it holds now)
+        if (d.IsGrowFormer || d.BlockSquares && d.IsRefiner) // (its bin grows with its bed and tier, or a squares Core's with its squares: the level is of what it holds now)
         {
             centre = half = Vector3.Zero;
             return d.IsBin && Level(c.Parts[part], d.FillMin, d.FillMax, st.Amount, Capacity(c, part), out centre, out half);
@@ -518,7 +518,26 @@ public static class ConstructStorage
     public static int Capacity(Construct c, int part)
     {
         var d = c.DefOf(part);
-        return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.IsGrowFormer ? ConstructExtruder.GrowBinOf(c, part) : d.BulkCapacity;
+        return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.IsGrowFormer ? ConstructExtruder.GrowBinOf(c, part)
+            : d.BlockSquares && d.IsRefiner ? ConstructRefining.RefineOf(c, part).Out : d.BulkCapacity;
+    }
+
+    /// <summary>What a production machine's input takes in all (a mixed input: of each material): its file's, or a squares Core's from its squares (ConstructRefining.RefineOf).</summary>
+    public static int InCapacity(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        return d.BlockSquares && d.IsRefiner ? ConstructRefining.RefineOf(c, part).In : d.InCapacity;
+    }
+
+    /// <summary>A production machine's input fill on its construct, as <see cref="InputBox(in CPart, ConstructPartDef, int, out Vector3, out Vector3)"/> against its input's size now.</summary>
+    public static bool InputBox(Construct c, int part, int amount, out Vector3 centre, out Vector3 half)
+    {
+        var cd = c.Parts[part].D;
+        if (!cd.BlockSquares)
+            return InputBox(c.Parts[part], cd, amount, out centre, out half);
+        centre = half = Vector3.Zero;
+        var cap = InCapacity(c, part);
+        return cd.IsRefiner && Level(c.Parts[part], cd.InFillMin, cd.InFillMax, amount, cd.RefineMix ? cap * 2 : cap, out centre, out half);
     }
 
     /// <summary>A production machine's input fill, as <see cref="FillBox"/>; false when empty.</summary>
@@ -754,7 +773,7 @@ public static class ConstructStorage
         {
             if (rf.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsGrower)
                 throw new ConstructPartException($"{file}: storage \"refine\" is an object (machine, capacity, min, max: its input) on a bin: its output");
-            ConstructParts.Known(rf, ["machine", "capacity", "min", "max", "speed"], $"{bw}.refine");
+            ConstructParts.Known(rf, ["machine", "capacity", "min", "max", "speed", "bin", "outBin"], $"{bw}.refine");
             d.RefineMachine = ConstructParts.Str(ConstructParts.Need(rf, "machine", $"{bw}.refine"), file, "storage.refine.machine");
             if (RefiningTable.Current.Takes(d.RefineMachine).Length == 0)
                 throw new ConstructPartException($"{file}: storage.refine.machine \"{d.RefineMachine}\" has no recipes in Refining.json ({string.Join(", ", RefiningTable.Current.Machines)})");
@@ -765,6 +784,15 @@ public static class ConstructStorage
             var speed = ConstructParts.Opt(rf, "speed") is { } sp ? ConstructParts.Num(sp, file, "storage.refine.speed") : 1f;
             ConstructParts.Range(speed, 0.1f, 100, file, "storage.refine.speed");
             d.RefineWork = (int)MathF.Round(speed * ConstructRefining.BaseWork);
+            if (d.BlockSquares) // (a squares Core: its bins at x1 grow with its squares, up to its "capacity" keys: ConstructRefining.RefineOf)
+            {
+                d.RefineInBin = (int)ConstructParts.Num(ConstructParts.Need(rf, "bin", $"{bw}.refine"), file, "storage.refine.bin");
+                ConstructParts.Range(d.RefineInBin, RefiningTable.MaxUnits, d.InCapacity, file, "storage.refine.bin");
+                d.RefineOutBin = (int)ConstructParts.Num(ConstructParts.Need(rf, "outBin", $"{bw}.refine"), file, "storage.refine.outBin");
+                ConstructParts.Range(d.RefineOutBin, RefiningTable.MaxUnits, d.BulkCapacity, file, "storage.refine.outBin");
+            }
+            else if (ConstructParts.Opt(rf, "bin") != null || ConstructParts.Opt(rf, "outBin") != null)
+                throw new ConstructPartException($"{file}: storage.refine's \"bin\" and \"outBin\" are a squares Core's (machineBlock.squares): its bins at x1");
             d.InFillMin = ConstructParts.Vec(ConstructParts.Need(rf, "min", $"{bw}.refine"), file, "storage.refine.min");
             d.InFillMax = ConstructParts.Vec(ConstructParts.Need(rf, "max", $"{bw}.refine"), file, "storage.refine.max");
             if (d.InFillMax.X - d.InFillMin.X < 0.05f || d.InFillMax.Y - d.InFillMin.Y < 0.05f || d.InFillMax.Z - d.InFillMin.Z < 0.05f)
@@ -1303,7 +1331,7 @@ public sealed partial class ConstructWorld
             }
             return 0;
         }
-        var n = Math.Min(amount, d.InCapacity - st.InAmount);
+        var n = Math.Min(amount, ConstructStorage.InCapacity(c, part) - st.InAmount); // (an input over its size now, a block taken away: it takes no more until below)
         if (n <= 0)
             return 0;
         st.InMaterial = material;
@@ -1321,7 +1349,7 @@ public sealed partial class ConstructWorld
             NoteRefused(st, material);
             return 0;
         }
-        var n = Math.Min(amount, d.InCapacity - st.MixOf(material));
+        var n = Math.Min(amount, ConstructStorage.InCapacity(c, part) - st.MixOf(material));
         if (n <= 0)
             return 0;
         AddInput(st, material, n);
@@ -1543,7 +1571,7 @@ public sealed partial class ConstructWorld
             best = fd;
             found = -1;
         }
-        if (ConstructStorage.InputBox(p, cd, st.InTotal, out var ic, out var ih) && Geometry.RayAabb(ic - ih, ic + ih, lo, ld, best) is { } id && id < best)
+        if (ConstructStorage.InputBox(c, i, st.InTotal, out var ic, out var ih) && Geometry.RayAabb(ic - ih, ic + ih, lo, ld, best) is { } id && id < best)
         {
             best = id;
             found = -1;

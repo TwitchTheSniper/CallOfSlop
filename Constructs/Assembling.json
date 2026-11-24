@@ -1629,11 +1629,7 @@
     {"output": "Industrial Sawmill", "materials": {"steel": 750, "concrete": 375}, "parts": {"Gear Set": 6, "Wiring Loom": 3, "Control Unit": 1}, "seconds": 180.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Military Sawmill", "materials": {"steel": 1470, "concrete": 735}, "parts": {"Gear Set": 8, "Wiring Loom": 4, "Control Unit": 2}, "seconds": 180.0, "techTier": 4, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Plasma Sawmill", "materials": {"steel": 2000, "concrete": 1215}, "parts": {"Gear Set": 10, "Wiring Loom": 5, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Smelter", "materials": {"steel": 643, "concrete": 322, "rubber": 129}, "parts": {"Gear Set": 2}, "seconds": 156.3},
-    {"output": "Workshop Smelter", "materials": {"steel": 1063, "concrete": 532}, "parts": {"Gear Set": 4, "Wiring Loom": 2}, "seconds": 180.0, "techTier": 2, "needs": ["Power Coupling"]},
-    {"output": "Industrial Smelter", "materials": {"steel": 1890, "concrete": 945}, "parts": {"Gear Set": 6, "Wiring Loom": 3, "Control Unit": 1}, "seconds": 180.0, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Military Smelter", "materials": {"steel": 2000, "concrete": 1680}, "parts": {"Gear Set": 8, "Wiring Loom": 4, "Control Unit": 2}, "seconds": 180.0, "techTier": 4, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Plasma Smelter", "materials": {"steel": 2000, "concrete": 2000}, "parts": {"Gear Set": 10, "Wiring Loom": 5, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Smelter", "materials": {"steel": 375, "concrete": 188, "rubber": 75}, "parts": {"Gear Set": 2}, "seconds": 92.0},
     {"output": "Camera", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "Camera Screen", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Drone Battery", "materials": {"steel": 1, "copper": 2}, "parts": {"Control Unit": 1}, "seconds": 2.1, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
@@ -2796,6 +2792,8 @@
     {"output": "Heavy Loader Arm", "materials": {"steel": 931}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 141.7, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Shipyard Loader Arm", "materials": {"steel": 1900}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Long Loader Arm", "materials": {"steel": 931}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 141.7, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Hearth Block", "materials": {"concrete": 320, "steel": 140}, "seconds": 60},
+    {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25},
     {"output": "Arm Core", "materials": {"steel": 900, "copper": 60}, "seconds": 60, "needs": ["Power Coupling"]},
     {"output": "Arm Pedestal", "materials": {"steel": 700}, "seconds": 40}
   ]
