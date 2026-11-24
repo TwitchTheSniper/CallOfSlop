@@ -481,6 +481,8 @@ public sealed class DesignEditor
                 if (o["kind"] is not null) k.Kind = Str(o, "kind") == "Lift" ? "Lift" : "Ladder";
                 if (o["x"] is not null) k.X = Snap(D(o, "x"), 0.25);
                 if (o["z"] is not null) k.Z = Snap(D(o, "z"), 0.25);
+                if (o["w"] is not null) k.W = Math.Clamp((int)Math.Round(D(o, "w")), 1, 8);
+                if (o["l"] is not null) k.L = Math.Clamp((int)Math.Round(D(o, "l")), 1, 8);
                 var (f, t) = (o["from"] is null ? k.From : I(o, "from"), o["to"] is null ? k.To : I(o, "to"));
                 if (f < 0 || t < 0 || f >= d.Decks.Count || t >= d.Decks.Count || f == t)
                     return "pick two different decks";

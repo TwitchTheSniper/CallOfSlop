@@ -244,19 +244,20 @@ public sealed class Riser
     public string Kind = "Ladder"; // Ladder or Lift
     public double X, Z;
     public int From, To;
+    public int W = 2, L = 2; // a lift's car, whole metres across and along (Karl, 2026-11-24: sizes in steps of 1 m)
 
     /// <summary>Its footprint (half sizes across and along): a ladder's well, a lift's car.</summary>
-    public (double Hx, double Hz) Half => Kind == "Lift" ? (0.8, 0.8) : (0.4, 0.35);
+    public (double Hx, double Hz) Half => Kind == "Lift" ? (W / 2.0, L / 2.0) : (0.4, 0.35);
 
     public JsonObject ToJson() => new()
     {
-        ["id"] = Id, ["kind"] = Kind, ["x"] = ShipDesign.R(X), ["z"] = ShipDesign.R(Z), ["from"] = From, ["to"] = To,
+        ["id"] = Id, ["kind"] = Kind, ["x"] = ShipDesign.R(X), ["z"] = ShipDesign.R(Z), ["from"] = From, ["to"] = To, ["w"] = W, ["l"] = L,
     };
 
     public static Riser FromJson(JsonObject o, int id) => new()
     {
         Id = id, Kind = (string?)o["kind"] == "Lift" ? "Lift" : "Ladder", X = ShipDesign.F(o["x"], 0), Z = ShipDesign.F(o["z"], 0),
-        From = (int?)o["from"] ?? 0, To = (int?)o["to"] ?? 1,
+        From = (int?)o["from"] ?? 0, To = (int?)o["to"] ?? 1, W = Math.Clamp((int?)o["w"] ?? 2, 1, 8), L = Math.Clamp((int?)o["l"] ?? 2, 1, 8),
     };
 }
 

@@ -932,7 +932,7 @@ public static class DesignScene
             var a = d.World(lo, k.X, k.Z, 0);
             var b = d.World(hi, k.X, k.Z, hi.Height);
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(k.Id).Append(",\"kind\":").Append(Q(k.Kind)).Append(",\"x\":").Append(ShipDesign.S(k.X)).Append(",\"z\":").Append(ShipDesign.S(k.Z))
-              .Append(",\"from\":").Append(k.From).Append(",\"to\":").Append(k.To).Append(",\"hx\":").Append(ShipDesign.S(k.Half.Hx)).Append(",\"hz\":").Append(ShipDesign.S(k.Half.Hz))
+              .Append(",\"from\":").Append(k.From).Append(",\"to\":").Append(k.To).Append(",\"w\":").Append(k.W).Append(",\"l\":").Append(k.L).Append(",\"hx\":").Append(ShipDesign.S(k.Half.Hx)).Append(",\"hz\":").Append(ShipDesign.S(k.Half.Hz))
               .Append(",\"ok\":").Append(c.RiserOk.GetValueOrDefault(k.Id) ? "true" : "false")
               .Append(",\"stops\":[").Append(string.Join(',', d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).Select(q => ShipDesign.S(q.Floor)))).Append(']')
               .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append("]}");

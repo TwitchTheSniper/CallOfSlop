@@ -937,7 +937,7 @@ function leftPanel() {
       L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), dsel),
       el("div", { class: "sec" }, el("h2", {}, "Ladders and lifts"),
         el("div", { class: "row" }, ...["Ladder", "Lift"].map(k => el("button", { class: placingRiser?.kind === k && !placingRiser.room ? "on" : "", onclick: () => { placingRiser = placingRiser?.kind === k && !placingRiser.room ? null : { kind: k, dir: 1, room: 0 }; leftPanel(); $("tip").textContent = placingRiser ? `Click this deck where the ${k.toLowerCase()} goes: it runs to the deck above.` : ""; } }, k))),
-        el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room, a lift 1.6 x 1.6 m.")));
+        el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).")));
       return;
     }
     const orient = el("div", { class: "row" },
@@ -1082,6 +1082,9 @@ function inspector() {
       el("div", { class: "row" }, ...["Ladder", "Lift"].map(t => el("button", { class: k.kind === t ? "on" : "", onclick: () => cmd({ op: "setRiser", id: k.id, kind: t }) }, t))),
       el("div", { class: "grid2" }, el("span", {}, "from"), deckSel(k.from, "from"), el("span", {}, "to"), deckSel(k.to, "to"),
         el("span", {}, "x"), num(k.x, v => cmd({ op: "setRiser", id: k.id, x: v }), 0.25), el("span", {}, S.stacked ? "y" : "z"), num(k.z, v => cmd({ op: "setRiser", id: k.id, z: v }), 0.25)),
+      ...(k.kind === "Lift" ? [el("div", { class: "grid2" },
+        el("span", {}, "car across m"), (() => { const s = el("select", { "aria-label": "car across" }); for (let i = 1; i <= 8; i++) s.append(el("option", { value: i, ...(i === k.w ? { selected: "" } : {}) }, `${i} m`)); s.addEventListener("change", () => cmd({ op: "setRiser", id: k.id, w: +s.value })); return s; })(),
+        el("span", {}, "car along m"), (() => { const s = el("select", { "aria-label": "car along" }); for (let i = 1; i <= 8; i++) s.append(el("option", { value: i, ...(i === k.l ? { selected: "" } : {}) }, `${i} m`)); s.addEventListener("change", () => cmd({ op: "setRiser", id: k.id, l: +s.value })); return s; })())] : []),
       el("p", { class: "hint" }, "It stops at every deck between its two ends, and joins the room round it on each."),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delRiser", id: k.id }); select(null, 0); } }, "Delete")));
     return;
