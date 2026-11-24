@@ -131,6 +131,6 @@ public static partial class ConstructExtruder
         _ => "extruding",
     };
 
-    /// <summary>Where the press cuts its piece now (cm; 0: it grows to its cap): its order's length or Cut every, inside what it reaches.</summary>
-    public static int PressCutCm(Construct c, int part) => CutDueCm(c, part, c.Parts[part], c.Parts[part].D);
+    /// <summary>Where the press cuts its piece now (cm; 0: it grows to its cap): its order's length or Cut every (walks nothing: read per frame).</summary>
+    public static int PressCutCm(Construct c, int part) => CutAtCm(c.Parts[part], c.Parts[part].D);
 }
