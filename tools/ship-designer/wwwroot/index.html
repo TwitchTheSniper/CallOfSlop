@@ -189,7 +189,14 @@ function take(answerText) {
   if (S.hulls.every(h => h.copies)) try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
   return a;
 }
-function cmd(op, merge = false) { op.merge = merge; return take(api.Apply(JSON.stringify(op))); }
+const timing = { cs: 0, js: 0, size: 0 }; // the last command's time in C# and in the page, and its answer's length (for a page test)
+function cmd(op, merge = false) {
+  op.merge = merge;
+  const t0 = performance.now(), text = api.Apply(JSON.stringify(op)), t1 = performance.now();
+  const a = take(text);
+  timing.cs = t1 - t0; timing.js = performance.now() - t1; timing.size = text.length; if (timing.keep) timing.text = text;
+  return a;
+}
 
 // A drag sends a command a frame at most; its first is an undo step, the rest merge into it.
 let pending = null, dragFirst = true;
@@ -244,12 +251,37 @@ function resize() { const r = yard.getBoundingClientRect(); renderer.setSize(r.w
 new ResizeObserver(resize).observe(yard);
 
 const hullGeo = new Map(), hullCopies = new Map();
+// Geometry by the mesh's key ("k", new each time C# makes that mesh again): an edit rebuilds only the meshes it changed, the rest are
+// drawn from the geometry they had. Kept while a rebuild draws them; the rest are let go (disposed) at the next.
+const meshGeo = new Map(), geoUsed = new Set();
+function geoOf(m) {
+  let g = m.k ? meshGeo.get(m.k) : null;
+  if (!g) {
+    g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(m.p, 3));
+    g.setAttribute("color", new THREE.Uint8BufferAttribute(m.c, 3, true));
+    g.computeVertexNormals();
+    if (m.k) { g.userData.key = m.k; meshGeo.set(m.k, g); }
+  }
+  if (m.k) geoUsed.add(m.k);
+  return g;
+}
+// Before a rebuild: the old scene's materials and unkept geometry let go.
+function clearWorld() {
+  world.traverse(o => {
+    if (o.material) for (const x of [].concat(o.material)) x.dispose();
+    if (o.geometry && !o.geometry.userData.key) o.geometry.dispose();
+  });
+  world.clear();
+  geoUsed.clear();
+}
+// After one: keyed geometry nothing drew this time let go.
+function dropUnused() {
+  for (const [k, g] of meshGeo) if (!geoUsed.has(k)) { g.dispose(); meshGeo.delete(k); }
+}
 function meshFrom(m, opts = {}, geo = null) {
-  if (!m) { return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(m.p, 3));
-  g.setAttribute("color", new THREE.Uint8BufferAttribute(m.c, 3, true));
-  g.computeVertexNormals();
+  if (!m) { if (geo?.userData.key) geoUsed.add(geo.userData.key); return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
+  const g = geoOf(m);
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts });
   return new THREE.Mesh(g, mat);
 }
@@ -257,7 +289,7 @@ function meshFrom(m, opts = {}, geo = null) {
 let pickables = [];
 function rebuild() {
   if (!S) return;
-  world.clear(); pickables = [];
+  clearWorld(); pickables = [];
   $("shipname").textContent = S.name;
   const ghost = view.xray || inside() || pickRoomFor;
   const fresh = S.hulls.every(h => h.copies);
@@ -271,7 +303,7 @@ function rebuild() {
         const selHull = sel.kind === "hull" && sel.id === h.id;
         // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
         const key = `${h.id}/${c.copy}/${surf}`;
-        if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: meshFrom(c[surf]).geometry, at: [h.x, h.y, h.z] });
+        if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: geoOf(c[surf]), at: [h.x, h.y, h.z] });
         const hg = hullGeo.get(key);
         const m = meshFrom(null, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}, hg.g);
         m.position.set((c.copy === 1 ? -1 : 1) * (h.x - hg.at[0]), h.y - hg.at[1], h.z - hg.at[2]);
@@ -304,6 +336,7 @@ function rebuild() {
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
   if (view.person) drawPerson();
+  dropUnused();
   placeGizmo();
 }
 // A person for scale (1.8 m), standing on the floor of the bridge (else the first room), else beside the ship.
@@ -374,8 +407,7 @@ function drawRooms() {
       const im = meshFrom(r.intMesh, { transparent: dim, opacity: dim ? 0.12 : 1, metalness: 0.25, roughness: 0.55 });
       im.userData = { type: "room", id: r.id }; world.add(im);
       if (r.intGlow && r.intGlow.p.length) {
-        const gg = new THREE.BufferGeometry(); gg.setAttribute("position", new THREE.Float32BufferAttribute(r.intGlow.p, 3)); gg.setAttribute("color", new THREE.Uint8BufferAttribute(r.intGlow.c, 3, true));
-        world.add(new THREE.Mesh(gg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: dim, opacity: dim ? 0.12 : 1 })));
+        world.add(new THREE.Mesh(geoOf(r.intGlow), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, transparent: dim, opacity: dim ? 0.12 : 1 })));
       }
     }
     if (r.mesh) {
@@ -1500,7 +1532,7 @@ window.addEventListener("keydown", e => {
   } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
 });
 
-window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls }; // (for a page test)
+window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
 function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
 
 try {

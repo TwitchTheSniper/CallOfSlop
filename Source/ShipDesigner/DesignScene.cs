@@ -137,26 +137,8 @@ public static partial class DesignScene
             cutouts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
         foreach (var hw in d.Windows)
-        {
-            // Steep skin (a hull turning under the window) is cut too: only facets almost along the rays are left whole.
-            // Cut along the very rays the glass was laid by (straight out of the wall), so the hole is the glass's own outline on
-            // the skin however the hull curves (Karl, 2026-11-24: a flat plane cut a box out of a curved side).
-            var f = WindowFrame(d, hw);
-            if (f is { } q)
-            {
-                // Only the skin the glass lies on: a band along the rays from just inside its nearest point to just past its
-                // farthest, so a cut never runs on through a nose or a far wall (Karl, 2026-11-24: a window took a nose off).
-                var (lp, _, _, _, _, _) = Lay(d, hw);
-                double lo = double.MaxValue, hi = double.MinValue;
-                for (var k = 0; k + 2 < lp.Length; k += 3)
-                {
-                    var nn = (lp[k] - q.O[0]) * q.N[0] + (lp[k + 1] - q.O[1]) * q.N[1] + (lp[k + 2] - q.O[2]) * q.N[2];
-                    lo = Math.Min(lo, nn); hi = Math.Max(hi, nn);
-                }
-                if (lo <= hi)
-                    cutouts.Add(new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx - 0.01, q.Hz - 0.01) : HullWindow.Rim(hw.Shape, q.Hx - 0.01, q.Hz - 0.01), 0, (lo - 0.12, hi + 0.08)));
-            }
-        }
+            if (WindowCut(d, hw).Cut is { } wc)
+                cutouts.Add(wc);
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
             List<List<(double, double, double)>> polys = [[a, b, c, e]];
@@ -849,7 +831,7 @@ public static partial class DesignScene
             }
         foreach (var w in d.Windows)
         {
-            var (_, _, _, gap, ok, _) = Lay(d, w);
+            var (_, _, _, gap, ok, _) = LayOnce(d, w);
             var r = d.RoomById(w.Room);
             if (!ok && r is not null)
                 c.Issues.Add(new("warn", $"The hull window in {Name(r)} is more than {HullWindow.MaxGap:0} m from the skin: move the room out to the hull or the window along", $"room:{r.Id}"));
@@ -1234,9 +1216,12 @@ public static partial class DesignScene
             foreach (var p in d.Pieces)
                 if (p.Hull == h.Id && PieceKinds.Find(p.Kind)?.Opening is not null)
                     k.Append('#').Append(p.ToJson().ToJsonString());
+        // The connections' mouths (their shapes, not their cladding) and the windows' cuts.
         foreach (var j in d.Joins)
             if (j.A.Hull == h.Id || j.B.Hull == h.Id)
-                k.Append('&').Append(j.ToJson(d).ToJsonString()).Append(d.Hull(j.A.Hull == h.Id ? j.B.Hull : j.A.Hull)?.ToJson().ToJsonString());
+                k.Append('&').Append(j.GeomKey(d));
+        foreach (var hw in d.Windows)
+            k.Append('~').Append(WindowCut(d, hw).Key);
         return k.ToString();
     }
 
@@ -1244,7 +1229,20 @@ public static partial class DesignScene
     {
         if (Meshes.Count > 4 * ShipDesign.MaxHulls)
             Meshes.Clear();
-        var c = Run(d);
+        if (Parts.Count > 4096)
+            Parts.Clear();
+        var (shapes, plans) = (ShipDesign.Whole(() => Shapes(d)), ShipDesign.Whole(() => Plans(d)));
+        _frames = shapes + "#" + plans;
+        var was = ShipDesign.Exact;
+        ShipDesign.Exact = true; // every key below from whole numbers (the scene's own text is written by S, which rounds anyway)
+        try { return Json(d, shapes, plans); }
+        finally { _frames = null; ShipDesign.Exact = was; }
+    }
+
+    private static string Json(ShipDesign d, string shapes, string plans)
+    {
+        var c = Checks(d);
+        var doorKey = Doors(c.Doors);
         var sb = new StringBuilder(1 << 16);
         sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
         for (var i = 0; i < d.Hulls.Count; i++)
@@ -1278,11 +1276,11 @@ public static partial class DesignScene
                     var (skin, fore, aft) = HullMesh(d, h, copy);
                     var one = new StringBuilder(1 << 14);
                     one.Append("{\"copy\":").Append(copy).Append(",\"skin\":");
-                    skin.Write(one);
+                    skin.Write(one, Made($"h{h.Id}.{copy}.skin"));
                     one.Append(",\"fore\":");
-                    fore.Write(one);
+                    fore.Write(one, Made($"h{h.Id}.{copy}.fore"));
                     one.Append(",\"aft\":");
-                    aft.Write(one);
+                    aft.Write(one, Made($"h{h.Id}.{copy}.aft"));
                     one.Append('}');
                     Meshes[(h.Id, copy)] = hit = (key, one.ToString());
                 }
@@ -1302,7 +1300,8 @@ public static partial class DesignScene
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
               .Append(",\"mesh\":");
-            j.Mesh(d).Write(sb);
+            sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
+                () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); }));
             sb.Append('}');
         }
         sb.Append("],\"pieces\":[");
@@ -1311,41 +1310,48 @@ public static partial class DesignScene
             var p = d.Pieces[i];
             var h = d.Hull(p.Hull)!;
             var kind = PieceKinds.Find(p.Kind)!;
-            var m = new DesignMesh();
             var w = Where(h, p);
-            m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
-            if (kind.Socket == "ramp")
+            // Its mesh follows its body's shape and (a ramp) the rooms' plans.
+            var mesh = Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : ""), () =>
             {
-                // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
-                // skin to that floor, and the stair hangs from there down out of the hatch.
-                var t = RampDepth(d, p, w);
-                PieceKinds.RampFrame(m, t ?? 1.0);
-                var dd = (t ?? 0) + p.Recess;
-                m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size);
-                PieceKinds.RampStair(m, t ?? 0);
-            }
-            else
-                kind.Draw(m);
-            if (p.Clad > 0 && kind.Opening is { } op)
-            {
-                // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
-                double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
-                m.Box(-hx - cl, 0.005, -hz - cl, hx + cl, 0.07, -hz, PieceKinds.Armour);
-                m.Box(-hx - cl, 0.005, hz, hx + cl, 0.07, hz + cl, PieceKinds.Armour);
-                m.Box(-hx - cl, 0.005, -hz, -hx, 0.07, hz, PieceKinds.Armour);
-                m.Box(hx, 0.005, -hz, hx + cl, 0.07, hz, PieceKinds.Armour);
-            }
-            if (p.Mirror)
-                m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
-            if (p.Pair && h.Copies == 2)
-                m.MirrorFrom(0, 0);
+                var m = new DesignMesh();
+                m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
+                if (kind.Socket == "ramp")
+                {
+                    // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
+                    // skin to that floor, and the stair hangs from there down out of the hatch.
+                    var t = RampDepth(d, p, w);
+                    PieceKinds.RampFrame(m, t ?? 1.0);
+                    var dd = (t ?? 0) + p.Recess;
+                    m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size);
+                    PieceKinds.RampStair(m, t ?? 0);
+                }
+                else
+                    kind.Draw(m);
+                if (p.Clad > 0 && kind.Opening is { } op)
+                {
+                    // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
+                    double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
+                    m.Box(-hx - cl, 0.005, -hz - cl, hx + cl, 0.07, -hz, PieceKinds.Armour);
+                    m.Box(-hx - cl, 0.005, hz, hx + cl, 0.07, hz + cl, PieceKinds.Armour);
+                    m.Box(-hx - cl, 0.005, -hz, -hx, 0.07, hz, PieceKinds.Armour);
+                    m.Box(hx, 0.005, -hz, hx + cl, 0.07, hz, PieceKinds.Armour);
+                }
+                if (p.Mirror)
+                    m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
+                if (p.Pair && h.Copies == 2)
+                    m.MirrorFrom(0, 0);
+                var text = new StringBuilder();
+                m.Write(text, Made("p" + p.Id));
+                return text.ToString();
+            });
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
-            m.Write(sb);
+            sb.Append(mesh);
             sb.Append('}');
         }
         sb.Append("],\"decks\":[");
@@ -1365,26 +1371,33 @@ public static partial class DesignScene
                   return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
               }))).Append(']')
               .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"runAft\":").Append(r.RunAft ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
+            // A room's meshes follow the skin, its own plan and others' (edges, shared walls) and the doors.
+            var rk = r.Id + ":" + shapes + "|" + plans + "|" + doorKey; // its own plan is in plans
+            var ik = rk + "|" + r.ToJson().ToJsonString(); // its interior's look too
             if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
-                RoomMesh(d, r).Write(sb);
+                sb.Append(MeshPart("rm" + r.Id, rk, () => RoomMesh(d, r)));
             }
             sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
             if (r.WallThick > 0.005)
             {
                 sb.Append(",\"wallMesh\":");
-                RoomShell(d, r, c.Doors).Write(sb);
+                sb.Append(MeshPart("rs" + r.Id, rk, () => RoomShell(d, r, c.Doors)));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
               .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false");
             if (r.Interior != "Off")
             {
-                var (solid, glow) = RoomInterior(d, r, c.Doors);
-                sb.Append(",\"intMesh\":");
-                solid.Write(sb);
-                sb.Append(",\"intGlow\":");
-                glow.Write(sb);
+                sb.Append(Part("ri" + r.Id, ik, () =>
+                {
+                    var (solid, glow) = RoomInterior(d, r, c.Doors);
+                    var t = new StringBuilder(",\"intMesh\":");
+                    solid.Write(t, Made("ri" + r.Id));
+                    t.Append(",\"intGlow\":");
+                    glow.Write(t, Made("rg" + r.Id));
+                    return t.ToString();
+                }));
             }
             sb
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');
@@ -1406,13 +1419,18 @@ public static partial class DesignScene
         for (var i = 0; i < d.Windows.Count; i++)
         {
             var w = d.Windows[i];
-            var (pts, nu, nv, gap, ok, len) = Lay(d, w);
-            sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(w.Id).Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
-              .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
-              .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
-              .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
-            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.045);
-            sb.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
+            sb.Append(i > 0 ? "," : "").Append(Part("w" + w.Id, WindowKey(w) + FrameKey(d), () =>
+            {
+                var t = new StringBuilder();
+                var (pts, nu, nv, gap, ok, len) = LayOnce(d, w);
+                t.Append("{\"id\":").Append(w.Id).Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
+                  .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
+                  .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
+                  .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
+                var (fp, fnu, fnv, _, _, _) = LayOnce(d, w, 0.1, 0.045);
+                t.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
+                return t.ToString();
+            }));
         }
         sb.Append("],\"risers\":[");
         for (var i = 0; i < d.Risers.Count; i++)

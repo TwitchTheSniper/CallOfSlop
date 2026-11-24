@@ -44,12 +44,16 @@ public sealed class DesignMesh
     /// <summary>A triangle in the frame's space.</summary>
     public void Tri((double, double, double) a, (double, double, double) b, (double, double, double) c, (byte R, byte G, byte B) col, bool mapped = true)
     {
-        foreach (var (x, y, z) in new[] { a, b, c })
-        {
-            var (wx, wy, wz) = mapped ? Map(x, y, z) : (x, y, z);
-            P.Add(wx); P.Add(wy); P.Add(wz);
-            C.Add(col.R); C.Add(col.G); C.Add(col.B);
-        }
+        Vertex(a, col, mapped);
+        Vertex(b, col, mapped);
+        Vertex(c, col, mapped);
+    }
+
+    private void Vertex((double X, double Y, double Z) v, (byte R, byte G, byte B) col, bool mapped)
+    {
+        var (wx, wy, wz) = mapped ? Map(v.X, v.Y, v.Z) : v;
+        P.Add(wx); P.Add(wy); P.Add(wz);
+        C.Add(col.R); C.Add(col.G); C.Add(col.B);
     }
 
     public void Quad((double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) d, (byte, byte, byte) col, bool mapped = true)
@@ -122,9 +126,10 @@ public sealed class DesignMesh
             }
     }
 
-    public void Write(StringBuilder sb)
+    /// <summary>The mesh as JSON; with a key (the page's cache: the same key is the same mesh), that first as "k".</summary>
+    public void Write(StringBuilder sb, string? key = null)
     {
-        sb.Append("{\"p\":[");
+        sb.Append(key is null ? "{\"p\":[" : "{\"k\":\"" + key + "\",\"p\":[");
         for (var i = 0; i < P.Count; i++)
         {
             if (i > 0) sb.Append(',');

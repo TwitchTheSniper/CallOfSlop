@@ -75,7 +75,7 @@ public sealed class HullJoin
 
     private static JsonObject EndJson(ShipDesign d, End e) => new()
     {
-        ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["z"] = ShipDesign.R(e.Z), ["t"] = Math.Round(e.T, 4), ["side"] = e.Side,
+        ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["z"] = ShipDesign.R(e.Z), ["t"] = ShipDesign.R4(e.T), ["side"] = e.Side,
     };
 
     /// <summary>Reads a join; null when an end names no body.</summary>
@@ -226,11 +226,15 @@ public sealed class HullJoin
     /// <summary>The strut's middle line as rings' frames (middle, across, up), so rooms can run through it (Karl, 2026-11-24).</summary>
     public List<(double[] C, double[] S, double[] U, double W, double H)> Spine(ShipDesign d)
     {
+        var key = GeomKey(d);
+        if (_spine is { } hit && hit.Key == key)
+            return hit.L;
         var l = new List<(double[] C, double[] S, double[] U, double W, double H)>();
         Build(d, null, l);
         if (Mirror && l.Count > 0 && World(d, A) is { } a && Math.Abs(a.P[0]) > 0.3)
             foreach (var (c, sd, u, w, hh) in l.ToArray())
                 l.Add(([-c[0], c[1], c[2]], [-sd[0], sd[1], sd[2]], [-u[0], u[1], u[2]], w, hh));
+        _spine = (key, l);
         return l;
     }
 
@@ -282,10 +286,27 @@ public sealed class HullJoin
     /// <summary>The mouths at both ends (and the twin's when mirrored).</summary>
     public List<Mouth> Mouths(ShipDesign d)
     {
+        var key = GeomKey(d);
+        if (_mouths is { } hit && hit.Key == key)
+            return hit.L;
         var l = new List<Mouth>();
         Build(d, l);
+        _mouths = (key, l);
         return l;
     }
+
+    // The last mouths and spine worked out, under the key of all they come from (the checks ask for them once a room).
+    private (string Key, List<Mouth> L)? _mouths;
+    private (string Key, List<(double[] C, double[] S, double[] U, double W, double H)> L)? _spine;
+
+    /// <summary>Everything the connection's shape comes from (not its cladding), with the shapes of the bodies it joins, as text.</summary>
+    public string GeomKey(ShipDesign d) => ShipDesign.Whole(() =>
+    {
+        var o = ToJson(d);
+        o.Remove("clad");
+        o.Remove("buttressClad");
+        return Id + ":" + o.ToJsonString() + "|" + d.Hull(A.Hull)?.ShapeKey() + "|" + d.Hull(B.Hull)?.ShapeKey();
+    });
 
     private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U, double W, double H)>? spine = null)
     {
@@ -441,8 +462,8 @@ public sealed class HullJoin
             rings.Add(r);
             centres.Add(c);
         }
-        if (spine is not null)
-            return m;
+        if (spine is not null || mouths is not null)
+            return m; // the mouths and the spine are known by here: what follows only draws
         for (var i = 0; i < last; i++)
             for (var j = 0; j < ring.Count; j++)
             {

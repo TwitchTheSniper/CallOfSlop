@@ -163,7 +163,21 @@ public sealed class ShipDesign
     internal int HullIndex(int id) => Hulls.FindIndex(h => h.Id == id);
 
     internal static double F(JsonNode? n, double or) => n is null ? or : (double)n;
-    internal static double R(double v) => Math.Round(v, 3);
+    internal static double R(double v) => Exact ? v : Math.Round(v, 3);
+    internal static double R4(double v) => Exact ? v : Math.Round(v, 4);
+
+    /// <summary>While set, ToJson writes every number whole (not rounded), for the page's cache keys: a value moved under a millimetre
+    /// (or a design read back rounded, as an undo does) must not find the mesh made from the other.</summary>
+    [ThreadStatic] internal static bool Exact;
+
+    /// <summary>Text made with <see cref="Exact"/> set.</summary>
+    internal static string Whole(Func<string> make)
+    {
+        var was = Exact;
+        Exact = true;
+        try { return make(); }
+        finally { Exact = was; }
+    }
     internal static string S(double v) => Math.Round(v, 3).ToString(CultureInfo.InvariantCulture);
 }
 
@@ -276,7 +290,7 @@ public sealed class Piece
 
     public JsonObject ToJson() => new()
     {
-        ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = Math.Round(T, 4), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
+        ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
     };
 

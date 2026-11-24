@@ -236,6 +236,15 @@ public sealed class HullBody
         return o;
     }
 
+    /// <summary>Everything the body's shape comes from (not its cladding or paint), as text: a cache key for what only its shape decides.</summary>
+    public string ShapeKey() => ShipDesign.Whole(() =>
+    {
+        var o = Json0();
+        if (RoundFore > 0) o["roundFore"] = ShipDesign.R(RoundFore);
+        if (RoundAft > 0) o["roundAft"] = ShipDesign.R(RoundAft);
+        return Id + ":" + o.ToJsonString();
+    });
+
     private JsonObject Json0() => new()
     {
         ["name"] = Name, ["x"] = ShipDesign.R(X), ["y"] = ShipDesign.R(Y), ["z"] = ShipDesign.R(Z), ["mirror"] = Mirror, ["cut"] = Cut, ["skin"] = Skin,
