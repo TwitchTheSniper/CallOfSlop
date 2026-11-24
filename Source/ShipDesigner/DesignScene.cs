@@ -507,7 +507,7 @@ public static class DesignScene
         return (o, u, vv, n, width / 2, (top - foot) / 2);
     }
 
-    public static (double[] Pts, int Nu, int Nv, double Gap, bool Ok, double Len) Lay(ShipDesign d, HullWindow w, double grow = 0, double lift = 0.012)
+    public static (double[] Pts, int Nu, int Nv, double Gap, bool Ok, double Len) Lay(ShipDesign d, HullWindow w, double grow = 0, double lift = 0.03)
     {
         var r = d.RoomById(w.Room);
         if (r is null)
@@ -522,7 +522,7 @@ public static class DesignScene
         var top = Math.Min(w.Sill + w.H, dk.Height - 0.05);
         var foot = Math.Min(w.Sill, top - 0.2);
         (width, top, foot) = (width + 2 * grow, top + grow, foot - grow); // the boarding's outer edge, laid the same way
-        int nu = Math.Max(2, (int)Math.Ceiling(width / 0.1) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.1) + 1);
+        int nu = Math.Max(2, (int)Math.Ceiling(width / 0.1) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.05) + 1);
         var pts = new double[nu * nv * 3];
         var ray = new double[nu * nv * 3];
         var gap = 0.0;
@@ -1140,7 +1140,7 @@ public static class DesignScene
               .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill))
               .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
               .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
-            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.025);
+            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.045);
             sb.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"risers\":[");
