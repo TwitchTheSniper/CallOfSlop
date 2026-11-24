@@ -7,7 +7,11 @@ namespace CallOfSlop.ShipDesigner;
 public sealed record PieceKind(string Name, string Group, string Where, string? Socket, string Needs, string Desc, Action<DesignMesh> Draw)
 {
     /// <summary>How far a socket may be from the room it opens into (the void between a room's wall and the skin, then a little).</summary>
-    public double Reach => Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => 2.6, _ => 2.2 };
+    /// <summary>A drive's service socket (Karl, 2026-11-24): placed on the skin, it gets a socket on the inside, opposite it, in the
+    /// room behind (its feed and access panel). It cuts no hole and is not a way aboard.</summary>
+    public bool Service => Group == "Drives";
+
+    public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => 2.6, _ => 2.2 };
 
     /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
     public (double Hx, double Hz, bool Round)? Opening => Socket switch

@@ -510,6 +510,17 @@ function drawHullWindows() {
 // hatch frame at the room's end (Karl, 2026-11-24). Drawn with the parts, whether or not the links are shown.
 function drawConnectors() {
   for (const l of S.links) {
+    if (l.service) {
+      // A drive's service socket (Karl, 2026-11-24): a panel on the room's wall facing the drive, with its feed run to it.
+      const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = a.clone().sub(b); if (d.length() < 0.05) continue;
+      const dir = d.clone().normalize(), g = new THREE.Group(); g.position.copy(b); g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+      const steel = new THREE.MeshStandardMaterial({ color: 0x6d7682, metalness: 0.5, roughness: 0.5 }), amber = new THREE.MeshStandardMaterial({ color: l.ok ? 0xd8b04a : 0xff5a44, metalness: 0.4, roughness: 0.5 });
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.06), steel); panel.position.z = 0.03; g.add(panel);
+      for (const [x, y, w, h] of [[0, 0.37, 0.8, 0.05], [0, -0.37, 0.8, 0.05], [0.37, 0, 0.05, 0.8], [-0.37, 0, 0.05, 0.8]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.08), amber); f.position.set(x, y, 0.04); g.add(f); }
+      const len = d.length(), pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 8), steel); pipe.rotation.x = Math.PI / 2; pipe.position.z = len / 2; g.add(pipe);
+      g.traverse(o => { o.renderOrder = 4; }); world.add(g);
+      continue;
+    }
     if (!(l.shaft > 0)) continue;
     const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = b.clone().sub(a), len = d.length(); if (len < 0.1) continue;
     const g = new THREE.Group(), w = l.shaft + 0.2, dir = d.clone().normalize();
@@ -1250,6 +1261,10 @@ function inspector() {
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
+      k.group === "Drives" ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
+      k.group === "Drives" ? el("div", { class: "row" },
+        el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
+        p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
       k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
       k.socket ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room it opens into (the rooms show through the hull)."; } }, "Pick its room"),

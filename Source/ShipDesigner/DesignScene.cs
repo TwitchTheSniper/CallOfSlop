@@ -21,7 +21,7 @@ public static class DesignScene
         public readonly List<Issue> Issues = [];
         public readonly Dictionary<int, bool> RoomOk = [];
         public readonly Dictionary<int, bool> PieceOk = [];
-        public readonly List<(double[] A, double[] B, bool Ok, double Shaft)> Links = [];
+        public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service)> Links = [];
         public readonly List<double[]> Doors = [];
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
@@ -825,9 +825,10 @@ public static class DesignScene
                     ok = false;
                     c.Issues.Add(new("warn", $"{p.Kind} sits where the skin is cut away (inside {OtherName(d, h, at)})", $"piece:{p.Id}"));
                 }
-                if (kind.Socket is null)
+                if (kind.Socket is null && !kind.Service)
                     continue;
-                anySocket = true;
+                if (kind.Socket is not null)
+                    anySocket = true;
                 Room? best = null;
                 var bestD = double.MaxValue;
                 double[] bestPt = at;
@@ -852,8 +853,14 @@ public static class DesignScene
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
                 {
-                    if (kind.Socket != "window")
+                    if (kind.Socket is not null && kind.Socket != "window")
                         entries.Add(best!.Id); // a window looks out; it isn't a way aboard
+                }
+                else if (kind.Service)
+                {
+                    // A drive still works without one; it only has no way in from inside to feed and mend it.
+                    c.Issues.Add(new("warn", best is null ? $"{p.Kind} has no room behind it for its service socket" :
+                        $"{p.Kind}'s service socket is {bestD:0.0} m from {Name(best)} (at most {kind.Reach:0.0} m, or link it to the room): it has no way in from inside", $"piece:{p.Id}"));
                 }
                 else
                 {
@@ -861,7 +868,7 @@ public static class DesignScene
                     c.Issues.Add(new("error", best is null ? (p.Room != 0 ? $"{p.Kind}'s room is gone or isn't {kind.Needs}: pick another" : $"{p.Kind} needs {kind.Needs} behind it") :
                         $"{p.Kind} is {bestD:0.0} m from {Name(best)} (at most {kind.Reach:0.0} m, or {MaxConnector:0} m through a connector when you link it to the room): move it or the room closer", $"piece:{p.Id}"));
                 }
-                c.Links.Add((at, bestPt, linked, shaft));
+                c.Links.Add((at, bestPt, linked, shaft, kind.Service));
             }
             c.PieceOk[p.Id] = ok;
         }
@@ -1184,9 +1191,9 @@ public static class DesignScene
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {
-            var (a, b, ok, sh) = c.Links[i];
+            var (a, b, ok, sh, sv) = c.Links[i];
             sb.Append(i > 0 ? "," : "").Append("{\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S)))
-              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append('}');
+              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append('}');
         }
         sb.Append("],\"issues\":[");
         for (var i = 0; i < c.Issues.Count; i++)
