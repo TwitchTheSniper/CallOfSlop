@@ -393,7 +393,7 @@ public static class ConstructRefining
     public static int ChuteLoadOf(ConstructWorld world, Construct c, int part)
     {
         var d = c.DefOf(part);
-        if (!d.BlockSquares || !d.IsRefiner)
+        if (!d.BlockSquares || !d.IsRefiner && !d.IsRecycler) // (a squares Core: a refiner, or a Scrap Breaker)
             return d.ChuteLoad;
         var load = RefineOf(c, part).Load;
         return world.CreativeRecycling ? Math.Min(ConstructStorage.MaxBulk, load * CreativeSpeed) : load;
@@ -406,7 +406,7 @@ public static class ConstructRefining
     public static string SizeText(Construct c, int part)
     {
         var d = c.DefOf(part);
-        var noun = d.RefineMachine switch { "smelter" => "furnaces", "foundry" => "crucibles", "sawmill" => "mills", _ => "squares" };
+        var noun = d.IsBreaker ? "shredders" : d.RefineMachine switch { "smelter" => "furnaces", "foundry" => "crucibles", "sawmill" => "mills", _ => "squares" };
         return MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part ? MachineBlocks.SquaresText(c, asm, noun) : "speed x1: weld its blocks on its +x side";
     }
 

@@ -748,6 +748,8 @@ public sealed partial class ConstructPartDef
     public bool IsVolumeStore; // a Storage Volume: a bin with a player-sized box (its capacity comes from the box; ConstructStoreVolume.cs)
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
+    /// <summary>A Scrap Breaker Core: a recycler whose Shredder Blocks split into squares (machineBlock.squares), its mouth the whole bed, its rate, bin and chute load from its squares (BreakerWorks, ConstructRefining.RefineOf).</summary>
+    public bool IsBreaker => IsRecycler && BlockSquares;
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
     public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
     public RefineRecipe[] RefineChoices = [];

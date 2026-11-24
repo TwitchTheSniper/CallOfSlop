@@ -1176,7 +1176,8 @@ public static unsafe partial class Program
             var rec = cd.IsRecycler ? RecyclerLook(g, cd, st, hit)
                 : cd.IsGatherer ? GathererLook(cd, st, hit, g)
                 : cd.IsGrower ? ConstructGrowing.Look(hit.Body, hit.Part, st) : "";
-            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
+            var sized = cd.IsBreaker ? $" - {ConstructRefining.SizeText(hit.Body, hit.Part)}" : ""; // (a Scrap Breaker: its shredders and rate, its bin theirs)
+            return _sbStoreText = $"{cd.Name}: {st.Amount}/{(cd.IsBreaker ? ConstructStorage.Capacity(hit.Body, hit.Part) : cd.BulkCapacity)}{holds}{rec}{sized}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)
         {
