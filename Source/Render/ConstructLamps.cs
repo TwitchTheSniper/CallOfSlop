@@ -316,7 +316,7 @@ public static class ConstructLamps
     }
 
     /// <summary>A Lamp part's light colour: its Colour setting as its glow shows it, at most 1 a channel, times its Brightness (100%: 1).</summary>
-    private static Vector3 LampColour(Construct c, int i, ConstructPartDef d)
+    internal static Vector3 LampColour(Construct c, int i, ConstructPartDef d)
     {
         ref var p = ref c.Parts[i];
         var col = ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99));

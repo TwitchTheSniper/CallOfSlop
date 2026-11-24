@@ -1,0 +1,720 @@
+<title>Lighting Walkabout</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* One full-screen viewport; a slim top bar of place and room pickers, a fold-out light panel, the stick bottom-left. Single dark look: a viewer. */
+:root {
+  --ink: #0b0d10;        /* page ground behind the canvas */
+  --panel: #14181dee;    /* bars and the light panel */
+  --line: #2a323b;
+  --fg: #dfe5ea;
+  --dim: #8b98a5;
+  --amber: #ffcf73;      /* the sodium-lamp accent: lit things, picked things */
+  --warn: #ff8a5c;
+  --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--ink); color: var(--fg); font: 14px/1.35 var(--display); overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+#view { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+.bar { position: fixed; left: 0; right: 0; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 6px); padding-bottom: 6px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: linear-gradient(var(--panel), #14181d99 75%, transparent); }
+select, button { font: 600 14px var(--display); color: var(--fg); background: #1d232a; border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; min-height: 36px; }
+select { max-width: 46vw; }
+button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.grow { flex: 1 1 auto; }
+#stats { font: 11px/1.3 var(--mono); color: var(--dim); white-space: pre; position: fixed; z-index: 4;
+  left: max(16px, env(safe-area-inset-left, 0px)); top: calc(env(safe-area-inset-top, 0px) + 96px); pointer-events: none; text-shadow: 0 1px 2px #000; }
+#panel { position: fixed; z-index: 6; right: max(16px, env(safe-area-inset-right, 0px)); top: calc(env(safe-area-inset-top, 0px) + 54px);
+  width: min(320px, calc(100vw - 32px)); max-height: calc(100% - 120px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 10px; }
+#panel h2 { font: 700 13px var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 4px 0 0; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+label.sl { display: grid; grid-template-columns: 82px 1fr 44px; gap: 8px; align-items: center; font-size: 13px; }
+label.sl output { font: 12px var(--mono); color: var(--dim); text-align: right; }
+input[type=range] { width: 100%; accent-color: var(--amber); }
+#note { font-size: 13px; color: var(--dim); }
+#spot { font: 11px var(--mono); width: 100%; background: #0e1114; color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+#stick { position: fixed; z-index: 4; width: 120px; height: 120px; border-radius: 50%; border: 2px solid #ffffff30; background: #00000030; pointer-events: none; display: none; }
+#knob { position: absolute; width: 48px; height: 48px; left: 36px; top: 36px; border-radius: 50%; background: #ffcf7360; border: 2px solid var(--amber); }
+.updown { position: fixed; z-index: 4; display: flex; flex-direction: column; gap: 8px;
+  right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); }
+.updown button { width: 52px; height: 52px; font-size: 18px; background: #1d232acc; }
+#hint { position: fixed; z-index: 4; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); font-size: 13px; color: var(--dim);
+  background: #0b0d10cc; padding: 6px 10px; border-radius: 6px; pointer-events: none; text-align: center; max-width: calc(100vw - 160px); }
+#load { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; font: 600 16px var(--display); color: var(--dim); pointer-events: none; }
+#cross { position: fixed; z-index: 3; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; border-radius: 50%; background: #ffffff70; pointer-events: none; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<canvas id="view"></canvas>
+<div id="cross"></div>
+<div class="bar">
+  <select id="place" aria-label="Place"></select>
+  <select id="room" aria-label="Room"></select>
+  <span class="grow"></span>
+  <button id="walk" aria-pressed="true" title="Walk on floors (off: fly through walls)">Walk</button>
+  <button id="tPanel" aria-pressed="false" aria-controls="panel">Light</button>
+</div>
+<div id="stats"></div>
+<div id="panel" hidden>
+  <div id="note"></div>
+  <h2>What lights it</h2>
+  <div class="row">
+    <button id="tPower" aria-pressed="true" title="Ceiling strips and mains lamps go out with the ship's power">Ship power</button>
+    <button id="tLamps" aria-pressed="true">Lamps</button>
+    <button id="tLampSh" aria-pressed="true">Lamp shadows</button>
+    <button id="tSunSh" aria-pressed="true">Sun shadows</button>
+    <button id="tRoom" aria-pressed="true" title="Shut rooms lose the sky's light (the game's Dark interiors)">Dark interiors</button>
+  </div>
+  <h2>The star</h2>
+  <label class="sl">Height<input id="sunEl" type="range" min="-30" max="90" step="1"><output id="oEl"></output></label>
+  <label class="sl">Bearing<input id="sunAz" type="range" min="0" max="359" step="1"><output id="oAz"></output></label>
+  <div class="row"><button id="sunReset">Map's own star</button></div>
+  <h2>Look at</h2>
+  <div class="row">
+    <button id="dAlbedo" aria-pressed="false" title="Every surface mid grey: the light alone">Light only</button>
+    <button id="dRoom" aria-pressed="false" title="Red: shut (no sky light), green: open">Sky reach</button>
+    <button id="dMarks" aria-pressed="false" title="A dot at every lamp: amber lit, grey out of reach">Lamp dots</button>
+  </div>
+  <h2>Quality</h2>
+  <div class="row">
+    <button id="qPhone" aria-pressed="false">Phone</button>
+    <button id="qFull" aria-pressed="false">Full</button>
+  </div>
+  <h2>Report a spot</h2>
+  <input id="spot" readonly aria-label="Where you stand">
+  <div class="row"><button id="copySpot">Copy where I stand</button></div>
+</div>
+<div id="stick"><div id="knob"></div></div>
+<div class="updown"><button id="up" aria-label="Up">&#9650;</button><button id="down" aria-label="Down">&#9660;</button></div>
+<div id="hint">Left thumb: move. Right thumb: look.</div>
+<div id="load">Loading...</div>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { computeBoundsTree, acceleratedRaycast } from "three-mesh-bvh";
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+// ---- The game's numbers (Source/Render/ConstructLamps.cs, RoomShade.cs, Lighting.Glsl) ----
+const REACH = 16;            // ConstructLamps.Reach: how far from the eye a lamp is lit
+const EYE = 1.65, STEP = 0.55, RADIUS = 0.3, SPEED = 3.2;
+const QUALITY = {
+  phone: { dpr: 1, lamps: 12, lampRes: 256, roomRes: 512, sunRes: 1024 },
+  full:  { dpr: Math.min(devicePixelRatio, 2), lamps: 32, lampRes: 384, roomRes: 1024, sunRes: 2048 },
+};
+const $ = id => document.getElementById(id);
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const phoneLike = matchMedia("(pointer: coarse)").matches;
+let qName = store.get("lt-quality") || (phoneLike ? "phone" : "full");
+let Q = QUALITY[qName];
+
+const canvas = $("view");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace; // (the game writes its shader's colour straight to the screen: no sRGB step, no tone map)
+renderer.setPixelRatio(Q.dpr);
+renderer.autoClear = true;
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, 1, 0.05, 3000);
+camera.rotation.order = "YXZ";
+
+// ---- Depth packing (RGBA8 works on every phone) ----
+const PACK = `
+vec4 packD(float v) { v = clamp(v, 0.0, 0.99999); vec4 e = fract(v * vec4(1.0, 255.0, 65025.0, 16581375.0)); e -= e.yzww * vec4(1.0/255.0, 1.0/255.0, 1.0/255.0, 0.0); return e; }
+float unpackD(vec4 e) { return dot(e, vec4(1.0, 1.0/255.0, 1.0/65025.0, 1.0/16581375.0)); }`;
+const orthoDepthMat = new THREE.ShaderMaterial({
+  vertexShader: `void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: PACK + `void main(){ gl_FragColor = packD(gl_FragCoord.z); }`, side: THREE.DoubleSide });
+const lampDepthMat = new THREE.ShaderMaterial({
+  uniforms: { uLamp: { value: new THREE.Vector4() } },
+  vertexShader: `varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+  // (a box within 16 cm of the lamp is its own fitting and casts nothing: LampShadows.cs)
+  fragmentShader: PACK + `uniform vec4 uLamp; varying vec3 vW; void main(){ float d = length(vW - uLamp.xyz); if (d < 0.16) discard; gl_FragColor = packD(d / uLamp.w); }`,
+  side: THREE.DoubleSide });
+
+// ---- The main shader: Lighting.Glsl's mode 5 (an unlit map's light plus the frame's lamps) ----
+function mainShader(maxL) {
+  return {
+    vertexShader: `
+      attribute vec3 color; attribute float glow;
+      varying vec3 vW, vN, vC; varying float vGlow;
+      void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); vC = color; vGlow = glow;
+        gl_Position = projectionMatrix * viewMatrix * w; }`,
+    fragmentShader: `
+      precision highp float; precision highp sampler2DArray;
+      #define MAXL ${maxL}
+      ${PACK}
+      uniform vec3 uSunDir, uSunColor, uAmbSky, uAmbGround, uFog, uUp; uniform float uSkyTint;
+      uniform sampler2D uSun; uniform mat4 uSunVP; uniform vec4 uSunQ;          // x on, y normal offset, z bias (0..1 depth), w texel
+      uniform sampler2DArray uRoom; uniform mat4 uRoomVP[16]; uniform vec4 uRoomQ; // x on, y floor (3%), z near normal offset, w far normal offset
+      uniform vec4 uRoomB;                                                      // x near bias, y far bias, z texel near, w texel far
+      uniform sampler2DArray uLampSh; uniform mat3 uFace[6]; uniform vec4 uLampQ; // x on
+      uniform vec4 uLP[MAXL], uLC[MAXL], uLS[MAXL]; uniform int uLN;
+      uniform vec4 uDebug; uniform float uAlpha;
+      varying vec3 vW, vN, vC; varying float vGlow;
+
+      float tapOrtho(sampler2D m, vec3 s, float bias) { return s.z - bias <= unpackD(texture(m, s.xy)) ? 1.0 : 0.0; }
+      float SunShadow(vec3 p, vec3 n) {
+        if (uSunQ.x < 0.5) return 1.0;
+        vec4 c = uSunVP * vec4(p + n * uSunQ.y, 1.0); vec3 s = c.xyz * 0.5 + 0.5;
+        if (s.x <= 0.0 || s.x >= 1.0 || s.y <= 0.0 || s.y >= 1.0) return 1.0;
+        float t = uSunQ.w;
+        return 0.25 * (tapOrtho(uSun, s + vec3(-t, -t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(t, -t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(-t, t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(t, t, 0), uSunQ.z));
+      }
+      float roomTap(int i, vec3 s, float bias, float t) {
+        float a = s.z - bias <= unpackD(texture(uRoom, vec3(s.xy + vec2(-t, -t), float(i)))) ? 1.0 : 0.0;
+        float b = s.z - bias <= unpackD(texture(uRoom, vec3(s.xy + vec2(t, t), float(i)))) ? 1.0 : 0.0;
+        return 0.5 * (a + b);
+      }
+      // RoomShade: of the eight diagonal directions in front of the surface, the share that sees past every box (near maps blending into the far ones).
+      float RoomShade(vec3 p, vec3 n) {
+        if (uRoomQ.x < 0.5) return 1.0;
+        float sa = 0.0, wa = 0.0;
+        for (int i = 0; i < 8; i++) {
+          vec3 d = vec3((i & 1) == 0 ? -0.57735 : 0.57735, (i & 2) == 0 ? -0.57735 : 0.57735, (i & 4) == 0 ? -0.57735 : 0.57735);
+          float w = max(dot(n, d), 0.0);
+          if (w <= 0.0) continue;
+          vec3 s = (uRoomVP[i] * vec4(p + n * uRoomQ.z, 1.0)).xyz * 0.5 + 0.5;
+          vec2 e = abs(s.xy - 0.5) * 2.0; float edge = max(e.x, e.y);
+          float t = edge < 1.0 ? smoothstep(0.8, 1.0, edge) : 1.0;
+          float lit = t < 1.0 ? roomTap(i, s, uRoomB.x, uRoomB.z) : 1.0;
+          if (t > 0.0) {
+            vec3 f = (uRoomVP[i + 8] * vec4(p + n * uRoomQ.w, 1.0)).xyz * 0.5 + 0.5;
+            vec2 fe = abs(f.xy - 0.5) * 2.0;
+            float farLit = max(fe.x, fe.y) < 1.0 ? roomTap(i + 8, f, uRoomB.y, uRoomB.w) : 1.0;
+            lit = mix(lit, farLit, t);
+          }
+          sa += lit * w; wa += w;
+        }
+        float open = wa > 0.0 ? sa / wa : 1.0;
+        return mix(uRoomQ.y, 1.0, open);
+      }
+      float LampShadow(int slot, vec3 l, float range, vec3 n) {
+        if (uLampQ.x < 0.5 || slot < 0) return 1.0;
+        vec3 v = -l; vec3 a = abs(v); int f;
+        if (a.x >= a.y && a.x >= a.z) f = v.x > 0.0 ? 0 : 1; else if (a.y >= a.z) f = v.y > 0.0 ? 2 : 3; else f = v.z > 0.0 ? 4 : 5;
+        mat3 R = f == 0 ? uFace[0] : f == 1 ? uFace[1] : f == 2 ? uFace[2] : f == 3 ? uFace[3] : f == 4 ? uFace[4] : uFace[5];
+        vec3 q = R * v; vec2 uv = q.xy / -q.z * 0.5 + 0.5;
+        float d = length(v), bias = 0.04 + 0.015 * d, layer = float(slot * 6 + f), t = uLampQ.y;
+        float lit = 0.0;
+        lit += d - bias <= unpackD(texture(uLampSh, vec3(uv + vec2(-t, -t), layer))) * range ? 1.0 : 0.0;
+        lit += d - bias <= unpackD(texture(uLampSh, vec3(uv + vec2(t, -t), layer))) * range ? 1.0 : 0.0;
+        lit += d - bias <= unpackD(texture(uLampSh, vec3(uv + vec2(-t, t), layer))) * range ? 1.0 : 0.0;
+        lit += d - bias <= unpackD(texture(uLampSh, vec3(uv + vec2(t, t), layer))) * range ? 1.0 : 0.0;
+        return lit * 0.25;
+      }
+      const float SpotFill = 0.14;
+      vec3 DynLight(int i, vec3 p, vec3 n) {
+        vec3 l = uLP[i].xyz - p; float d = length(l);
+        float q = clamp(d / uLP[i].w, 0.0, 1.0); float f = (1.0 - q * q) * (1.0 - q * q);
+        if (f <= 0.0) return vec3(0.0);
+        vec3 ld = l / max(d, 1e-3);
+        float face = max(dot(n, ld) * 0.8 + 0.2, 0.0);
+        if (face <= 0.0) return vec3(0.0);
+        vec4 s = uLS[i]; int slot = int(uLC[i].a + 0.5) - 1;
+        if (s.w < -1.0) return uLC[i].rgb * f * face * LampShadow(slot, l, uLP[i].w, n);
+        float cd = dot(-ld, s.xyz);
+        float cone = smoothstep(s.w, mix(s.w, 1.0, 0.35), cd), wide = smoothstep(s.w - 0.35, s.w, cd);
+        if (wide <= 0.0) return vec3(0.0);
+        return uLC[i].rgb * f * (face * cone + SpotFill * wide) * LampShadow(slot, l, uLP[i].w, n);
+      }
+      void main() {
+        vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n;
+        vec3 albedo = uDebug.x > 0.5 ? vec3(0.55) : vC;
+        if (vGlow > 0.5) { gl_FragColor = vec4(min(albedo * 1.15, vec3(1.0)), uAlpha); return; }
+        float room = RoomShade(vW, n);
+        if (uDebug.y > 0.5) { float o = (room - uRoomQ.y) / (1.0 - uRoomQ.y); gl_FragColor = vec4(mix(vec3(0.9, 0.15, 0.1), vec3(0.2, 0.85, 0.3), o) * (0.6 + 0.4 * abs(n.y)), 1.0); return; }
+        float shade = SunShadow(vW, n);
+        float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
+        vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
+        vec3 amb = mix(uAmbGround, sky, dot(n, uUp) * 0.5 + 0.5) * room;
+        float diff = max(dot(n, uSunDir), 0.0) * shade;
+        vec3 dl = vec3(0.0);
+        for (int i = 0; i < MAXL; i++) { if (i >= uLN) break; dl += DynLight(i, vW, n); }
+        dl = dl / (1.0 + 0.45 * max(max(dl.r, dl.g), dl.b)); // the soft knee on the brightest channel
+        gl_FragColor = vec4(albedo * (amb + uSunColor * diff) + albedo * dl, uAlpha);
+      }`,
+  };
+}
+
+// ---- State ----
+let index = null, place = null, M = null, solid = null, glass = null, ground = null, stars = null, marks = null;
+let lamps = [], views = [], light = null, bounds = new THREE.Box3(), radius = 10;
+let sun = { el: 45, az: 0, own: null };
+const toggles = { power: true, lamps: true, lampSh: true, sunSh: true, room: true, albedo: false, roomDbg: false, marks: false, walk: true };
+let mat = null, glassMat = null;
+const uni = {
+  uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunColor: { value: new THREE.Vector3() }, uAmbSky: { value: new THREE.Vector3() }, uAmbGround: { value: new THREE.Vector3() },
+  uFog: { value: new THREE.Vector3() }, uUp: { value: new THREE.Vector3(0, 1, 0) }, uSkyTint: { value: 0.2 },
+  uSun: { value: null }, uSunVP: { value: new THREE.Matrix4() }, uSunQ: { value: new THREE.Vector4() },
+  uRoom: { value: null }, uRoomVP: { value: Array.from({ length: 16 }, () => new THREE.Matrix4()) }, uRoomQ: { value: new THREE.Vector4() }, uRoomB: { value: new THREE.Vector4() },
+  uLampSh: { value: null }, uFace: { value: [] }, uLampQ: { value: new THREE.Vector4() },
+  uLP: { value: [] }, uLC: { value: [] }, uLS: { value: [] }, uLN: { value: 0 },
+  uDebug: { value: new THREE.Vector4() }, uAlpha: { value: 1 },
+};
+
+// ---- Shadow targets ----
+let sunRT, roomRT, lampRT;
+const sunCam = new THREE.OrthographicCamera(), roomCams = Array.from({ length: 16 }, () => new THREE.OrthographicCamera());
+const faceCam = new THREE.PerspectiveCamera(90, 1, 0.05, 40);
+const FACES = [[1, 0, 0, 0, -1, 0], [-1, 0, 0, 0, -1, 0], [0, 1, 0, 0, 0, 1], [0, -1, 0, 0, 0, -1], [0, 0, 1, 0, -1, 0], [0, 0, -1, 0, -1, 0]];
+const faceRot = FACES.map(f => { const c = new THREE.PerspectiveCamera(90, 1, 0.05, 40); c.up.set(f[3], f[4], f[5]); c.lookAt(f[0], f[1], f[2]); c.updateMatrixWorld(); return new THREE.Matrix3().setFromMatrix4(c.matrixWorldInverse); });
+uni.uFace.value = faceRot;
+let slots = [], slotQueue = [], nearCentre = null, sunCentre = null, sunDirty = true, roomFarDirty = true;
+const NEAR_HALF = 32, SUN_HALF = 48;
+
+function makeTargets() {
+  for (const t of [sunRT, roomRT, lampRT]) t?.dispose();
+  const opt = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false, depthBuffer: true };
+  sunRT = new THREE.WebGLRenderTarget(Q.sunRes, Q.sunRes, opt);
+  roomRT = new THREE.WebGLArrayRenderTarget(Q.roomRes, Q.roomRes, 16, opt);
+  lampRT = new THREE.WebGLArrayRenderTarget(Q.lampRes, Q.lampRes, Q.lamps * 6, opt);
+  for (const t of [roomRT, lampRT]) { t.texture.minFilter = t.texture.magFilter = THREE.NearestFilter; t.texture.generateMipmaps = false; }
+  uni.uSun.value = sunRT.texture; uni.uRoom.value = roomRT.texture; uni.uLampSh.value = lampRT.texture;
+  uni.uLP.value = Array.from({ length: Q.lamps }, () => new THREE.Vector4());
+  uni.uLC.value = Array.from({ length: Q.lamps }, () => new THREE.Vector4());
+  uni.uLS.value = Array.from({ length: Q.lamps }, () => new THREE.Vector4(0, 0, 0, -2));
+  slots = Array.from({ length: Q.lamps }, () => ({ lamp: -1, ready: false, used: 0 }));
+  slotQueue = []; nearCentre = null; sunDirty = true; roomFarDirty = true;
+}
+
+function makeMaterials() {
+  mat?.dispose(); glassMat?.dispose();
+  const s = mainShader(Q.lamps);
+  mat = new THREE.ShaderMaterial({ uniforms: uni, vertexShader: s.vertexShader, fragmentShader: s.fragmentShader, side: THREE.DoubleSide });
+  const gu = { ...uni, uAlpha: { value: 0.35 } };
+  glassMat = new THREE.ShaderMaterial({ uniforms: gu, vertexShader: s.vertexShader, fragmentShader: s.fragmentShader, side: THREE.DoubleSide, transparent: true, depthWrite: false });
+  for (const o of [solid, ground]) if (o) o.material = mat;
+  if (glass) glass.material = glassMat;
+}
+
+const white = new THREE.Color(1, 1, 1);
+function clearWhite() { renderer.setClearColor(white, 1); }
+
+function drawCasters(cam, material, target, layer) {
+  scene.overrideMaterial = material;
+  const vis = [glass?.visible, stars?.visible, marks?.visible, ground?.visible], bg = scene.background;
+  // (glass casts nothing; nor does the ground: the game's shadow and dark-interior maps hold the bodies' boxes alone)
+  if (glass) glass.visible = false; if (stars) stars.visible = false; if (marks) marks.visible = false; if (ground) ground.visible = false;
+  scene.background = null;
+  renderer.setRenderTarget(target, layer ?? 0);
+  clearWhite(); renderer.clear();
+  renderer.render(scene, cam);
+  if (glass) glass.visible = vis[0]; if (stars) stars.visible = vis[1]; if (marks) marks.visible = vis[2]; if (ground) ground.visible = vis[3];
+  scene.overrideMaterial = null; scene.background = bg;
+}
+
+function orthoAlong(cam, dir, centre, half, depth) {
+  cam.left = -half; cam.right = half; cam.top = half; cam.bottom = -half; cam.near = 0.1; cam.far = depth * 2;
+  cam.position.copy(centre).addScaledVector(dir, depth);
+  cam.up.set(Math.abs(dir.y) > 0.9 ? 1 : 0, Math.abs(dir.y) > 0.9 ? 0 : 1, 0);
+  cam.lookAt(centre); cam.updateProjectionMatrix(); cam.updateMatrixWorld();
+}
+
+const DIAG = Array.from({ length: 8 }, (_, i) => new THREE.Vector3(i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? 1 : -1).normalize());
+function updateShadowMaps() {
+  const eye = camera.position, depth = radius * 2 + 60;
+  const farHalf = radius + 2, centre = bounds.getCenter(new THREE.Vector3());
+  if (roomFarDirty) {
+    for (let i = 0; i < 8; i++) { orthoAlong(roomCams[i + 8], DIAG[i], centre, farHalf, depth); drawCasters(roomCams[i + 8], orthoDepthMat, roomRT, i + 8); uni.uRoomVP.value[i + 8].multiplyMatrices(roomCams[i + 8].projectionMatrix, roomCams[i + 8].matrixWorldInverse); }
+    roomFarDirty = false;
+  }
+  if (!nearCentre || nearCentre.distanceTo(eye) > NEAR_HALF * 0.3) {
+    nearCentre = snap(eye, 4);
+    for (let i = 0; i < 8; i++) { orthoAlong(roomCams[i], DIAG[i], nearCentre, NEAR_HALF, depth); drawCasters(roomCams[i], orthoDepthMat, roomRT, i); uni.uRoomVP.value[i].multiplyMatrices(roomCams[i].projectionMatrix, roomCams[i].matrixWorldInverse); }
+  }
+  if (sunDirty || !sunCentre || sunCentre.distanceTo(eye) > SUN_HALF * 0.3) {
+    sunCentre = snap(eye, 4);
+    orthoAlong(sunCam, uni.uSunDir.value, sunCentre, SUN_HALF, depth); drawCasters(sunCam, orthoDepthMat, sunRT);
+    uni.uSunVP.value.multiplyMatrices(sunCam.projectionMatrix, sunCam.matrixWorldInverse); sunDirty = false;
+  }
+  const nearTex = NEAR_HALF * 2 / Q.roomRes, farTex = farHalf * 2 / Q.roomRes, sunTex = SUN_HALF * 2 / Q.sunRes;
+  uni.uRoomQ.value.set(toggles.room ? 1 : 0, light.roomFloor, 2.2 * nearTex, 2.2 * farTex);
+  uni.uRoomB.value.set(0.05 / (depth * 2), 0.15 / (depth * 2), 0.5 / Q.roomRes, 0.5 / Q.roomRes);
+  uni.uSunQ.value.set(toggles.sunSh ? 1 : 0, 1.5 * sunTex, 0.05 / (depth * 2), 0.75 / Q.sunRes);
+}
+const snap = (v, s) => new THREE.Vector3(Math.round(v.x / s) * s, Math.round(v.y / s) * s, Math.round(v.z / s) * s);
+
+// ---- Lamps: the nearest few in reach, faded as they hand over (ConstructLamps.AddLights) ----
+const tmpV = new THREE.Vector3(), tmpA = new THREE.Vector3();
+let lastLit = 0, lastNear = 0;
+function lampOn(L) { return toggles.lamps && (L.kind === 0 || toggles.power); }
+function pickLamps() {
+  const eye = camera.position, cand = [];
+  for (let k = 0; k < lamps.length; k++) {
+    const L = lamps[k]; if (!lampOn(L)) continue;
+    let d = L.pos.distanceTo(eye);
+    if (L.range > 4.5) {
+      if (L.cos >= -1) { const t = Math.min(Math.max(tmpV.copy(eye).sub(L.pos).dot(L.dir), 0), L.range * 0.8); d = tmpA.copy(L.pos).addScaledVector(L.dir, t).distanceTo(eye); }
+      else d = Math.max(d - (L.range - 4.5), 0);
+    }
+    if (d <= REACH) cand.push([d, k]);
+  }
+  cand.sort((a, b) => a[0] - b[0]);
+  lastNear = cand.length;
+  const free = Q.lamps, lit = Math.min(cand.length, free); let n = 0;
+  const wanted = new Set();
+  for (let j = 0; j < lit; j++) {
+    const [d, k] = cand[j], L = lamps[k];
+    let fade = Math.min(Math.max((REACH - d) / 3, 0), 1);
+    if (cand.length > free) fade *= Math.min(Math.max((cand[free][0] - d) / 1.5, 0), 1);
+    if (fade <= 0.01) continue;
+    wanted.add(k);
+    const slot = slotOf(k);
+    uni.uLP.value[n].set(L.pos.x, L.pos.y, L.pos.z, L.range);
+    uni.uLC.value[n].set(L.col.x * L.strength * fade, L.col.y * L.strength * fade, L.col.z * L.strength * fade, slot >= 0 && slots[slot].ready ? slot + 1 : 0);
+    uni.uLS.value[n].set(L.dir.x, L.dir.y, L.dir.z, L.cos);
+    n++;
+  }
+  uni.uLN.value = n; lastLit = n;
+  if (marks) { for (let k = 0; k < lamps.length; k++) marks.setColorAt(k, wanted.has(k) ? MARK_ON : lampOn(lamps[k]) ? MARK_FAR : MARK_OFF); marks.instanceColor.needsUpdate = true; }
+}
+const MARK_ON = new THREE.Color(1, 0.8, 0.4), MARK_FAR = new THREE.Color(0.35, 0.35, 0.38), MARK_OFF = new THREE.Color(0.25, 0.05, 0.05);
+let frameNo = 0;
+function slotOf(k) {
+  let s = slots.findIndex(x => x.lamp === k);
+  if (s < 0) {
+    s = 0; for (let i = 1; i < slots.length; i++) if (slots[i].used < slots[s].used) s = i; // (the one used longest ago)
+    slots[s] = { lamp: k, ready: false, used: frameNo }; slotQueue.push(s);
+  }
+  slots[s].used = frameNo;
+  return s;
+}
+function drawLampSlots(budget) {
+  while (budget-- > 0 && slotQueue.length) {
+    const s = slotQueue.shift(), L = lamps[slots[s].lamp]; if (!L) continue;
+    lampDepthMat.uniforms.uLamp.value.set(L.pos.x, L.pos.y, L.pos.z, L.range);
+    faceCam.far = L.range + 0.5; faceCam.updateProjectionMatrix(); faceCam.position.copy(L.pos);
+    for (let f = 0; f < 6; f++) {
+      const F = FACES[f]; faceCam.up.set(F[3], F[4], F[5]); faceCam.lookAt(L.pos.x + F[0], L.pos.y + F[1], L.pos.z + F[2]); faceCam.updateMatrixWorld();
+      drawCasters(faceCam, lampDepthMat, lampRT, s * 6 + f);
+    }
+    slots[s].ready = true;
+  }
+  uni.uLampQ.value.set(toggles.lampSh ? 1 : 0, 0.6 / Q.lampRes, 0, 0);
+}
+
+// ---- Loading a place ----
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+function unpack(M) {
+  if (!M.tpl) {
+    const p16 = new Int16Array(b64(M.pos).buffer), n8 = new Int8Array(b64(M.nrm).buffer), pos = new Float32Array(p16.length), nrm = new Float32Array(n8.length);
+    for (let i = 0; i < p16.length; i++) pos[i] = p16[i] / M.scale;
+    for (let i = 0; i < n8.length; i++) nrm[i] = n8[i] / 127;
+    return { pos, nrm, look: new Uint16Array(b64(M.look).buffer) };
+  }
+  const kinds = M.tpl.map(t => ({ p: new Int16Array(b64(t.pos).buffer), n: new Int8Array(b64(t.nrm).buffer), l: new Uint16Array(b64(t.look).buffer), s: t.scale }));
+  const raw = b64(M.inst), dv = new DataView(raw.buffer), count = raw.length / 30;
+  let tris = 0; for (let k = 0; k < count; k++) tris += kinds[dv.getUint16(k * 30, true)].l.length;
+  const pos = new Float32Array(tris * 9), nrm = new Float32Array(tris * 9), look = new Uint16Array(tris), q = new THREE.Quaternion(), v = new THREE.Vector3();
+  for (let k = 0, at = 0; k < count; k++) {
+    const o = k * 30, K = kinds[dv.getUint16(o, true)], tx = dv.getFloat32(o + 2, true), ty = dv.getFloat32(o + 6, true), tz = dv.getFloat32(o + 10, true);
+    q.set(dv.getFloat32(o + 14, true), dv.getFloat32(o + 18, true), dv.getFloat32(o + 22, true), dv.getFloat32(o + 26, true));
+    for (let i = 0, b = at * 9; i < K.p.length; i += 3) {
+      v.set(K.p[i] / K.s, K.p[i + 1] / K.s, K.p[i + 2] / K.s).applyQuaternion(q); pos[b + i] = v.x + tx; pos[b + i + 1] = v.y + ty; pos[b + i + 2] = v.z + tz;
+      v.set(K.n[i] / 127, K.n[i + 1] / 127, K.n[i + 2] / 127).applyQuaternion(q); nrm[b + i] = v.x; nrm[b + i + 1] = v.y; nrm[b + i + 2] = v.z;
+    }
+    look.set(K.l, at); at += K.l.length;
+  }
+  return { pos, nrm, look };
+}
+const hexRgb = h => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255]; // (raw, as the game reads a colour: no sRGB conversion)
+function geometryOf(U, glassSide) {
+  const idx = []; for (let t = 0; t < U.look.length; t++) if ((M.looks[U.look[t]][1] > 0) === glassSide) idx.push(t);
+  const p = new Float32Array(idx.length * 9), n = new Float32Array(idx.length * 9), c = new Float32Array(idx.length * 9), g = new Float32Array(idx.length * 3);
+  const rgb = M.looks.map(l => hexRgb(l[0]));
+  idx.forEach((t, k) => {
+    p.set(U.pos.subarray(t * 9, t * 9 + 9), k * 9); n.set(U.nrm.subarray(t * 9, t * 9 + 9), k * 9);
+    const L = M.looks[U.look[t]], col = rgb[U.look[t]];
+    for (let j = 0; j < 3; j++) { c[k * 9 + j * 3] = col[0]; c[k * 9 + j * 3 + 1] = col[1]; c[k * 9 + j * 3 + 2] = col[2]; g[k * 3 + j] = L[2] ? 1 : 0; }
+  });
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(p, 3)); geo.setAttribute("normal", new THREE.BufferAttribute(n, 3));
+  geo.setAttribute("color", new THREE.BufferAttribute(c, 3)); geo.setAttribute("glow", new THREE.BufferAttribute(g, 1));
+  return geo;
+}
+
+function clearPlace() {
+  for (const o of [solid, glass, ground, stars, marks]) if (o) { scene.remove(o); o.geometry.dispose(); }
+  solid = glass = ground = stars = marks = null;
+}
+
+async function loadPlace(id, viewName) {
+  $("load").hidden = false; $("load").textContent = "Loading " + (index.places.find(p => p.id === id)?.title ?? id) + "...";
+  place = index.places.find(p => p.id === id) ?? index.places[0];
+  const res = await fetch("models/" + place.id + ".json");
+  M = await res.json();
+  clearPlace();
+  const U = unpack(M);
+  solid = new THREE.Mesh(geometryOf(U, false), mat); glass = new THREE.Mesh(geometryOf(U, true), glassMat);
+  solid.geometry.computeBoundsTree(); glass.geometry.computeBoundsTree();
+  solid.geometry.computeBoundingBox(); bounds.copy(solid.geometry.boundingBox);
+  radius = bounds.getSize(new THREE.Vector3()).length() * 0.5;
+  scene.add(solid, glass);
+  light = M.light;
+  const set = (u, a) => u.value.set(a[0], a[1], a[2]);
+  set(uni.uAmbSky, light.ambSky); set(uni.uAmbGround, light.ambGround); set(uni.uFog, light.fog); uni.uSkyTint.value = light.skyTint;
+  const sd = new THREE.Vector3(...light.sunDir).normalize();
+  sun.own = { el: Math.round(THREE.MathUtils.radToDeg(Math.asin(sd.y))), az: Math.round((THREE.MathUtils.radToDeg(Math.atan2(sd.x, sd.z)) + 360) % 360) };
+  sun.el = sun.own.el; sun.az = sun.own.az;
+  if (!place.space) {
+    const g = new THREE.PlaneGeometry(1200, 1200, 1, 1); g.rotateX(-Math.PI / 2);
+    const col = new Float32Array(12), glw = new Float32Array(4);
+    for (let i = 0; i < 4; i++) col.set(light.ground, i * 3);
+    g.setAttribute("color", new THREE.BufferAttribute(col, 3)); g.setAttribute("glow", new THREE.BufferAttribute(glw, 1));
+    ground = new THREE.Mesh(g, mat); ground.position.set(bounds.getCenter(tmpV).x, 0, bounds.getCenter(tmpV).z); scene.add(ground);
+    scene.background = null;
+  } else {
+    const n = 1800, sp = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { const v = new THREE.Vector3().randomDirection().multiplyScalar(2000); sp.set([v.x, v.y, v.z], i * 3); }
+    const sg = new THREE.BufferGeometry(); sg.setAttribute("position", new THREE.BufferAttribute(sp, 3));
+    stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xc8d0dc, size: 1.6, sizeAttenuation: false }));
+    scene.add(stars);
+  }
+  lamps = M.lamps.map(a => ({ pos: new THREE.Vector3(a[0], a[1], a[2]), col: new THREE.Vector3(a[3], a[4], a[5]), range: a[6], strength: a[7], dir: new THREE.Vector3(a[8], a[9], a[10]), cos: a[11], kind: a[12] }));
+  const dot = new THREE.SphereGeometry(0.06, 8, 6);
+  marks = new THREE.InstancedMesh(dot, new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: true }), Math.max(lamps.length, 1));
+  lamps.forEach((L, k) => { marks.setMatrixAt(k, new THREE.Matrix4().makeTranslation(L.pos.x, L.pos.y, L.pos.z)); marks.setColorAt(k, MARK_FAR); });
+  marks.count = lamps.length; marks.visible = toggles.marks; scene.add(marks);
+  views = M.views.map(v => ({ name: v[0], at: new THREE.Vector3(v[1], v[2], v[3]), outside: !!v[4], look: v.length > 5 ? new THREE.Vector3(v[5], v[6], v[7]) : null }));
+  $("room").innerHTML = views.map((v, i) => `<option value="${i}">${v.name}</option>`).join("");
+  $("note").textContent = (place.note ? place.note + " " : "") + `${lamps.length} lamps, ${(U.look.length / 1000).toFixed(0)}k triangles. Light from ${place.map}'s sky.`;
+  slots.forEach(s => { s.lamp = -1; s.ready = false; }); slotQueue = []; nearCentre = null; sunDirty = true; roomFarDirty = true;
+  applySun();
+  const vi = Math.max(0, views.findIndex(v => slug(v.name) === viewName));
+  $("room").value = vi; goTo(vi);
+  $("load").hidden = true;
+}
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+function applySun() {
+  const el = THREE.MathUtils.degToRad(sun.el), az = THREE.MathUtils.degToRad(sun.az);
+  const d = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize();
+  // SkySettings.Light: the key light fades as the star sets (Grazing keeps a set sun's direction a little up); in orbit nothing sets it.
+  const day = place.space ? 1 : THREE.MathUtils.smoothstep(Math.sin(el), -0.04, 0.10);
+  if (!place.space && d.y < 0.05) { d.y = 0.05; d.normalize(); }
+  uni.uSunDir.value.copy(d);
+  uni.uSunColor.value.set(light.key[0] * day, light.key[1] * day, light.key[2] * day);
+  $("sunEl").value = sun.el; $("sunAz").value = sun.az; $("oEl").textContent = sun.el + "°"; $("oAz").textContent = sun.az + "°";
+  if (place.space) { scene.background = new THREE.Color(0x030406); }
+  else {
+    const z = light.zenith, h = light.horizon, k = 0.35 + 0.65 * day;
+    scene.background = new THREE.Color((z[0] + h[0]) * 0.5 * k, (z[1] + h[1]) * 0.5 * k, (z[2] + h[2]) * 0.5 * k);
+  }
+  sunDirty = true;
+}
+
+// ---- Moving: walk on floors (a ray down, rays ahead) or fly ----
+const ray = new THREE.Raycaster(); ray.firstHitOnly = true;
+let yaw = 0, pitch = 0, vy = 0;
+function hit(from, dir, far) {
+  ray.set(from, dir); ray.far = far;
+  const h = ray.intersectObjects(glass ? [solid, glass, ...(ground ? [ground] : [])] : [solid], false);
+  return h.length ? h[0].distance : Infinity;
+}
+const DOWN = new THREE.Vector3(0, -1, 0);
+function floorUnder(p, above = STEP, far = 8) { const d = hit(tmpA.set(p.x, p.y - EYE + above, p.z), DOWN, far); return d === Infinity ? null : p.y - EYE + above - d; }
+
+function standNear(at) {
+  for (let r = 0.6; r <= 4; r += 0.35) for (let a = 0; a < 16; a++) {
+    const ang = a * Math.PI / 8, x = at.x + Math.sin(ang) * r, z = at.z + Math.cos(ang) * r;
+    const down = hit(tmpA.set(x, at.y + 0.4, z), DOWN, 3); if (down === Infinity) continue;
+    const floor = at.y + 0.4 - down, up = hit(tmpA.set(x, floor + 0.3, z), UP, 6);
+    if (up < 1.6 || up === Infinity) continue;
+    return new THREE.Vector3(x, floor + EYE, z);
+  }
+  return null;
+}
+const UP = new THREE.Vector3(0, 1, 0);
+function goTo(i) {
+  const v = views[i]; if (!v) return;
+  if (v.outside) {
+    const c = bounds.getCenter(new THREE.Vector3()), r = Math.max(radius, 6);
+    camera.position.set(c.x + r * 0.9, c.y + r * 0.35, c.z + r * 1.1);
+    yaw = Math.atan2(camera.position.x - c.x, camera.position.z - c.z); pitch = -0.25;
+    setWalk(false);
+  } else {
+    let p, look = v.look;
+    if (look) p = v.at.clone(); // (the export found a floor with a ceiling and a clear line to the part)
+    else {
+      // No stand point from the export: look round the part's middle in rings for a floor with a ceiling over it, else drop to a floor.
+      look = v.at;
+      p = standNear(v.at);
+      if (!p) { p = v.at.clone(); const fl = floorUnder(tmpV.set(p.x, p.y + EYE, p.z), 0.6, 10); p.y = (fl ?? p.y - 0.5) + EYE; }
+    }
+    camera.position.copy(p);
+    const dx = look.x - p.x, dz = look.z - p.z;
+    yaw = Math.hypot(dx, dz) > 0.2 ? Math.atan2(-dx, -dz) : 0; pitch = Math.atan2(look.y - p.y, Math.max(Math.hypot(dx, dz), 0.5)) * 0.6;
+    setWalk(true);
+  }
+  vy = 0;
+  store.set("lt-last", place.id + "--" + slug(v.name));
+  shownHash = "#" + place.id + "--" + slug(v.name);
+  try { history.replaceState(null, "", shownHash); } catch {}
+}
+
+const move = { x: 0, z: 0, y: 0 }, keys = new Set();
+function step(dt) {
+  let mx = move.x, mz = move.z, my = move.y;
+  if (keys.has("KeyW")) mz -= 1; if (keys.has("KeyS")) mz += 1; if (keys.has("KeyA")) mx -= 1; if (keys.has("KeyD")) mx += 1;
+  if (keys.has("KeyE") || keys.has("Space")) my += 1; if (keys.has("KeyQ") || keys.has("ShiftLeft")) my -= 1;
+  const speed = SPEED * (keys.has("ShiftRight") ? 3 : 1) * (toggles.walk ? 1 : Math.max(1, radius / 25));
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const p = camera.position;
+  if (!toggles.walk) {
+    const f3 = new THREE.Vector3(0, 0, -1).applyEuler(camera.rotation);
+    p.addScaledVector(f3, -mz * speed * dt).addScaledVector(right, mx * speed * dt); p.y += my * speed * dt; return;
+  }
+  const want = new THREE.Vector3().addScaledVector(fwd, -mz).addScaledVector(right, mx);
+  if (want.lengthSq() > 1) want.normalize();
+  want.multiplyScalar(speed * dt);
+  const len = want.length();
+  if (len > 1e-5) {
+    const dir = want.clone().divideScalar(len);
+    // Walls: rays at the knee, the waist and the head; slide along a wall by trying each axis alone.
+    const blocked = d => [EYE - STEP - 0.05, EYE - 0.9, 0.1].some(h => hit(tmpV.set(p.x, p.y - h, p.z), d, len + RADIUS) < len + RADIUS);
+    if (!blocked(dir)) p.add(want);
+    else for (const ax of [new THREE.Vector3(Math.sign(want.x), 0, 0), new THREE.Vector3(0, 0, Math.sign(want.z))]) {
+      const part = Math.abs(ax.x ? want.x : want.z); if (part < 1e-5) continue;
+      if (hit(tmpV.set(p.x, p.y - (EYE - 0.9), p.z), ax, part + RADIUS) >= part + RADIUS && hit(tmpV.set(p.x, p.y - (EYE - STEP - 0.05), p.z), ax, part + RADIUS) >= part + RADIUS) p.addScaledVector(ax, part);
+    }
+  }
+  if (my !== 0) { p.y += my * speed * dt; vy = 0; return; } // (the up and down buttons still climb a ladder well in walk mode)
+  const fl = floorUnder(p);
+  if (fl !== null && p.y - EYE - fl < 0.05) { p.y = fl + EYE; vy = 0; }
+  else { vy = Math.max(vy - 9.81 * dt, -12); p.y += vy * dt; const f2 = floorUnder(p, STEP, 1); if (f2 !== null && p.y < f2 + EYE) { p.y = f2 + EYE; vy = 0; } }
+  if (p.y < bounds.min.y - 30) { goTo(+$("room").value); }
+}
+function setWalk(on) { toggles.walk = on; $("walk").setAttribute("aria-pressed", on); }
+
+// Touch: the left part of the screen is a stick wherever the thumb lands, the rest drags the view.
+const stickEl = $("stick"), knob = $("knob");
+let stickId = null, lookId = null, stick0 = null, look0 = null;
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  if (e.pointerType !== "mouse" && e.clientX < innerWidth * 0.45 && stickId === null) {
+    stickId = e.pointerId; stick0 = [e.clientX, e.clientY];
+    stickEl.style.display = "block"; stickEl.style.left = e.clientX - 60 + "px"; stickEl.style.top = e.clientY - 60 + "px";
+  } else if (lookId === null) { lookId = e.pointerId; look0 = [e.clientX, e.clientY]; }
+  $("hint").hidden = true;
+});
+canvas.addEventListener("pointermove", e => {
+  if (e.pointerId === stickId) {
+    let dx = e.clientX - stick0[0], dy = e.clientY - stick0[1]; const l = Math.hypot(dx, dy), m = 48;
+    if (l > m) { dx *= m / l; dy *= m / l; }
+    knob.style.left = 36 + dx + "px"; knob.style.top = 36 + dy + "px";
+    move.x = dx / m; move.z = dy / m;
+  } else if (e.pointerId === lookId) {
+    const k = e.pointerType === "mouse" ? 0.0042 : 0.0058;
+    yaw -= (e.clientX - look0[0]) * k; pitch -= (e.clientY - look0[1]) * k; pitch = Math.max(-1.5, Math.min(1.5, pitch));
+    look0 = [e.clientX, e.clientY];
+  }
+});
+const endPointer = e => {
+  if (e.pointerId === stickId) { stickId = null; move.x = move.z = 0; stickEl.style.display = "none"; knob.style.left = knob.style.top = "36px"; }
+  if (e.pointerId === lookId) lookId = null;
+};
+canvas.addEventListener("pointerup", endPointer); canvas.addEventListener("pointercancel", endPointer);
+for (const [id, v] of [["up", 1], ["down", -1]]) {
+  const b = $(id);
+  b.addEventListener("pointerdown", e => { e.preventDefault(); move.y = v; });
+  for (const ev of ["pointerup", "pointerleave", "pointercancel"]) b.addEventListener(ev, () => { move.y = 0; });
+}
+addEventListener("keydown", e => { if (e.target.tagName !== "SELECT") keys.add(e.code); });
+addEventListener("keyup", e => keys.delete(e.code));
+addEventListener("blur", () => keys.clear());
+
+// ---- Panel ----
+function toggle(id, key, after) {
+  const b = $(id); b.setAttribute("aria-pressed", toggles[key]);
+  b.addEventListener("click", () => { toggles[key] = !toggles[key]; b.setAttribute("aria-pressed", toggles[key]); after?.(); });
+}
+toggle("tPower", "power"); toggle("tLamps", "lamps"); toggle("tLampSh", "lampSh"); toggle("tSunSh", "sunSh"); toggle("tRoom", "room");
+toggle("dAlbedo", "albedo"); toggle("dRoom", "roomDbg"); toggle("dMarks", "marks", () => { if (marks) marks.visible = toggles.marks; });
+$("walk").addEventListener("click", () => setWalk(!toggles.walk));
+$("tPanel").addEventListener("click", () => { const p = $("panel"); p.hidden = !p.hidden; $("tPanel").setAttribute("aria-pressed", !p.hidden); });
+$("sunEl").addEventListener("input", e => { sun.el = +e.target.value; applySun(); });
+$("sunAz").addEventListener("input", e => { sun.az = +e.target.value; applySun(); });
+$("sunReset").addEventListener("click", () => { sun.el = sun.own.el; sun.az = sun.own.az; applySun(); });
+$("place").addEventListener("change", e => loadPlace(e.target.value));
+$("room").addEventListener("change", e => { goTo(+e.target.value); e.target.blur(); });
+function setQuality(name) {
+  qName = name; Q = QUALITY[name]; store.set("lt-quality", name);
+  $("qPhone").setAttribute("aria-pressed", name === "phone"); $("qFull").setAttribute("aria-pressed", name === "full");
+  renderer.setPixelRatio(Q.dpr); resize(); makeTargets(); makeMaterials();
+}
+$("qPhone").addEventListener("click", () => setQuality("phone")); $("qFull").addEventListener("click", () => setQuality("full"));
+function spotText() {
+  const p = camera.position, v = views[+$("room").value];
+  return `${place.id} / ${v?.name ?? ""}: at ${p.x.toFixed(2)} ${p.y.toFixed(2)} ${p.z.toFixed(2)}, facing ${((THREE.MathUtils.radToDeg(-yaw) % 360 + 360) % 360).toFixed(0)} deg, star ${sun.el}/${sun.az}`;
+}
+$("copySpot").addEventListener("click", () => {
+  const t = spotText(); $("spot").value = t;
+  navigator.clipboard?.writeText(t).then(() => { $("copySpot").textContent = "Copied"; setTimeout(() => $("copySpot").textContent = "Copy where I stand", 1500); }, () => { $("spot").select(); });
+});
+
+function resize() {
+  const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w < h ? 80 : 70; camera.updateProjectionMatrix();
+}
+addEventListener("resize", resize);
+
+// ---- The frame ----
+let last = performance.now(), fpsT = 0, fpsN = 0, fps = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((now - last) / 1000, 0.1); last = now; frameNo++;
+  if (!solid) return;
+  step(dt);
+  camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld();
+  camera.near = toggles.walk ? 0.05 : Math.max(0.05, radius / 400);
+  camera.far = Math.max(600, radius * 8); camera.updateProjectionMatrix();
+  pickLamps();
+  updateShadowMaps();
+  drawLampSlots(qName === "phone" ? 1 : 2);
+  uni.uDebug.value.set(toggles.albedo ? 1 : 0, toggles.roomDbg ? 1 : 0, 0, 0);
+  if (stars) stars.position.copy(camera.position);
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(scene.background ?? new THREE.Color(0), 1);
+  renderer.render(scene, camera);
+  fpsN++; fpsT += dt; if (fpsT > 0.5) { fps = fpsN / fpsT; fpsN = 0; fpsT = 0; }
+  if (frameNo % 10 === 0) {
+    $("stats").textContent = `${fps.toFixed(0)} fps  ${qName}\nlamps lit ${lastLit}/${Q.lamps}, in reach ${lastNear}, on ship ${lamps.length}`;
+    $("spot").value = spotText();
+  }
+}
+
+// A link to a place and room (#zero-day--engine-room) works on load and when the address changes.
+let shownHash = "";
+addEventListener("hashchange", () => {
+  if (location.hash === shownHash) return;
+  const [pid, vname] = location.hash.slice(1).split("--");
+  if (!index?.places.some(p => p.id === pid)) return;
+  if (place?.id === pid) { const vi = views.findIndex(v => slug(v.name) === vname); if (vi >= 0) { $("room").value = vi; goTo(vi); } }
+  else { $("place").value = pid; loadPlace(pid, vname); }
+});
+
+// ---- Start ----
+(async () => {
+  try {
+    index = await (await fetch("models/index.json")).json();
+    $("place").innerHTML = index.places.map(p => `<option value="${p.id}">${p.title}</option>`).join("");
+    resize(); makeTargets(); makeMaterials();
+    $("qPhone").setAttribute("aria-pressed", qName === "phone"); $("qFull").setAttribute("aria-pressed", qName === "full");
+    const want = (location.hash.slice(1) || store.get("lt-last") || "").split("--");
+    const first = index.places.find(p => p.id === want[0]) ? want[0] : index.places[0].id;
+    $("place").value = first;
+    await loadPlace(first, want[1]);
+    requestAnimationFrame(frame);
+  } catch (err) {
+    $("load").hidden = false; $("load").textContent = "Could not load the places: " + err.message;
+    console.error(err);
+  }
+})();
+</script>
