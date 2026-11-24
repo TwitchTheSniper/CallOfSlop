@@ -145,7 +145,8 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Set(("power", BlockPower), ("storage", Kw(
                 ("bulk", Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(-0.935, 1.705, -0.685)), ("max", Py.L(0.935, 1.995, -0.055)))),
                 ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, CoreDieY, Face)), ("maxSection", Py.L(32, 32)), ("maxLength", 16), ("pushForce", BlockPush),
-                    ("growLength", 192), ("blockPush", BlockPush), ("blockPower", BlockPower))))),
+                    ("growLength", 192), ("blockPush", BlockPush), ("blockPower", BlockPower),
+                    ("press", Py.L(5, 3, 1.5, 3, 2)))))), // (on Die Blocks a billet press: fill, load, upset, saw and ram back seconds, the Extruder Lab's)
             ("machineBlock", BlockKey("core")),
             ("config", ExtruderConfig(0.5, 32, 192, "Die Blocks")));
         WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
@@ -182,18 +183,62 @@ public sealed class ExtrusionParts : IPartGenerator
             p.Add(L([x - 0.03, 0.14, Face - 0.004], [x + 0.03, 1.16, Face + 0.03], MachineLook.Base));
         p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.33, Face + 0.006], [0.37, CoreDieY + 0.41, Face + 0.03], MachineLook.Steel, "steel"), "shear", "-y", 0.3));
         p.Add(MachineLook.Work(L([-0.37, CoreDieY + 0.314, Face + 0.01], [0.37, CoreDieY + 0.33, Face + 0.026], MachineLook.Accent, "hazard paint"), "shear", "-y", 0.3));
-        // On top: the fume stack (it puffs while it works) and the feed screw's motor, its coupling turning.
-        p.Add(L([0.6, 1.996, 0.3], [0.8, 2.45, 0.5], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))));
-        p.Add(MachineLook.Work(L([0.58, 2.45, 0.28], [0.82, 2.5, 0.52], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y"))), "smoke"));
-        p.Add(L([-0.85, 1.996, 0.15], [-0.6, 2.25, 0.45], MachineLook.Base, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
-        p.Add(MachineLook.Work(L([-0.6, 2.04, 0.21], [-0.5, 2.2, 0.39], MachineLook.Accent, shape: Kw(("shape", "cylinder"), ("segments", 8), ("front", "+x"))), "spin", "+x"));
-        p.Add(L([-0.5, 1.996, 0.25], [-0.36, 2.16, 0.35], MachineLook.Base)); // (the screw's bearing housing, into the hopper's side)
+        Silo(p);
         // On its back: a pressure gauge and the maker's plate.
         p.Add(L([0.64, 1.2, -0.786], [0.84, 1.4, -0.744], "#e8e6df", shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "-z"))));
         p.Add(L([0.72, 1.28, -0.798], [0.76, 1.37, -0.782], MachineLook.Ink));
         p.Add(L([-0.86, 1.2, -0.774], [-0.6, 1.36, -0.744], MachineLook.In));
         p.Add(L([-0.83, 1.26, -0.786], [-0.63, 1.3, -0.77], MachineLook.Ink));
         return p;
+    }
+
+    private static PyDict Round(string front, int segments = 24) => Kw(("shape", "cylinder"), ("segments", segments), ("front", front));
+
+    /// <summary>
+    /// The Core's silo tower (the Extruder Lab's silo Core, Sean 2026-11-24): a tall red bin on four legs over the hopper, banded, a capped
+    /// top with its fume stack (it puffs while it works), a level glass down its -x side (ExtruderRender.cs lights it to the bin's level),
+    /// and a ladder up its +z side from the cabinet's top. Look boxes only: it has no collision, so nothing laid over a Core before is in its way.
+    /// The chute from its wall to the press's feed throat is drawn by ExtruderRender.cs (it depends on the Die Blocks).
+    /// </summary>
+    private static void Silo(Part p)
+    {
+        const string Graphite = "#3a3f46";
+        foreach (var sx in new[] { -0.7, 0.7 })
+            foreach (var sz in new[] { -0.55, 0.55 })
+                p.Add(L([sx - 0.05, 1.998, sz - 0.05], [sx + 0.05, 2.6, sz + 0.05], Graphite));
+        p.Add(L([-0.45, 2.5, -0.45], [0.45, 2.996, 0.45], Red, paintable: true, shape: Round("+y", 20))); // (its neck down to the hopper)
+        p.Add(L([-0.75, 2.6, -0.75], [0.75, 5.2, 0.75], Red, paintable: true, shape: Round("+y")));
+        p.Add(L([-0.78, 5.204, -0.78], [0.78, 5.32, 0.78], MachineLook.Base, shape: Round("+y")));
+        foreach (var y in new[] { 3.0, 4.0, 4.9 })
+            p.Add(L([-0.77, y - 0.03, -0.77], [0.77, y + 0.03, 0.77], MachineLook.Base, shape: Round("+y")));
+        p.Add(L([-0.79, 2.8, -0.08], [-0.735, 5.0, 0.08], MachineLook.Base)); // (the level glass's frame: ExtruderRender lights the glass)
+        foreach (var sx in new[] { -0.22, 0.22 })
+            p.Add(L([sx - 0.02, 1.9, 0.78], [sx + 0.02, 5.4, 0.82], MachineLook.Accent));
+        for (var y = 2.1; y < 5.3; y += 0.3)
+            p.Add(L([-0.2, y, 0.79], [0.2, y + 0.03, 0.81], MachineLook.Accent));
+        p.Add(L([-0.5, 5.324, -0.5], [0.5, 5.364, 0.5], Graphite));
+        p.Add(L([0.36, 5.368, 0.11], [0.54, 5.85, 0.29], MachineLook.Base, shape: Round("+y", 12)));
+        p.Add(MachineLook.Work(L([0.34, 5.85, 0.09], [0.56, 5.9, 0.31], MachineLook.Base, shape: Round("+y", 12)), "smoke"));
+    }
+
+    /// <summary>
+    /// On a Die Block, what it draws as a cell of an Extruder is the billet press over the whole die (ExtruderRender.cs): every drawn box is
+    /// "bare" (drawn only while the block is no machine's cell), and each solid box keeps a hidden copy, so it collides as it always did.
+    /// </summary>
+    private static void BareWhenInMachine(Part p)
+    {
+        foreach (var b in p.Boxes.ToList())
+        {
+            if (b.Get("hidden") is true)
+                continue;
+            if (b.Get("detail") is not true)
+            {
+                var solid = Kw(("min", b["min"]), ("max", b["max"]), ("hidden", true));
+                p.Boxes.Add(solid);
+                b["detail"] = true;
+            }
+            b["bare"] = true;
+        }
     }
 
     /// <summary>
@@ -328,6 +373,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Sock("outBed", [0, 0, Face], "+z", kind: "runOut"); // (a Run-out Table under this block's share of the die)
         p.Stats(6000, 3000, 8, 20);
         p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false), ("collider", "boxes"));
+        BareWhenInMachine(p);
         return p;
     }
 

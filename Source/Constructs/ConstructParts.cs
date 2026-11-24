@@ -770,6 +770,7 @@ public sealed partial class ConstructPartDef
     public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most its Die Blocks can make (metres across, up the face)
     public float ExtGrowLength; // ...the longest piece with its Run-out Tables ("growLength", else maxLength)
     public float ExtBlockPush, ExtBlockPower; // ...an Extruder Core: what each Die Block in its die adds to its push (N) and its draw (W) ("blockPush", "blockPower")
+    public float[]? ExtPress; // ...an Extruder Core on Die Blocks: its billet press's step seconds, by PressPhase from Fill to Back ("press": fill, load, upset, saw, back; ConstructExtruderPress.cs)
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
