@@ -158,6 +158,8 @@ public sealed partial class Game
         {
             if (BreakdownCandidate(c, k) is not (var i and >= 0) || !c.Parts[i].Working || pick-- > 0)
                 continue;
+            if (ConstructWorks.Filtered(c, i) && _bdRng.Next(2) == 0)
+                return; // (a Fuel Filter in its train: half the breakdowns that land there pass; the next try is a full wait away)
             c.BdDef = c.Parts[i].Def;
             c.BdPos = c.Parts[i].Pos;
             c.BdLeft = (int)(t.WarnSeconds * World.TickRate);
