@@ -553,6 +553,49 @@ public sealed class DesignEditor
                 if (o["deck"] is not null && I(o, "deck") >= 0 && I(o, "deck") < d.Decks.Count) r.Deck = I(o, "deck");
                 return "";
             }
+            case "mergeRoom":
+            {
+                // Two rooms made one (Karl, 2026-11-24): when together they make a rectangle, one box; otherwise one group
+                // of segments, open to each other with no door. Its sockets, doors and windows move to the room kept.
+                var (a, b) = (d.RoomById(I(o, "a")), d.RoomById(I(o, "b")));
+                if (a is null || b is null || a == b)
+                    return "pick two rooms";
+                if (a.Deck != b.Deck)
+                    return "rooms on different decks join with a ladder or a lift, not a merge";
+                const double e = 0.02;
+                var rect = (Math.Abs(a.Z0 - b.Z0) < e && Math.Abs(a.Z1 - b.Z1) < e && (Math.Abs(a.X1 - b.X0) < e || Math.Abs(b.X1 - a.X0) < e))
+                        || (Math.Abs(a.X0 - b.X0) < e && Math.Abs(a.X1 - b.X1) < e && (Math.Abs(a.Z1 - b.Z0) < e || Math.Abs(b.Z1 - a.Z0) < e));
+                var touch = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) >= -e && Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0) >= -e;
+                if (!touch)
+                    return "they don't touch: move one against the other first";
+                d.Doors.RemoveAll(k => k.Joins(a, b));
+                if (rect)
+                {
+                    (a.X0, a.X1, a.Z0, a.Z1) = (Math.Min(a.X0, b.X0), Math.Max(a.X1, b.X1), Math.Min(a.Z0, b.Z0), Math.Max(a.Z1, b.Z1));
+                    a.Height = Math.Max(a.Height, b.Height);
+                    a.Want = null;
+                    if (b.Group != 0)
+                        foreach (var r in d.Rooms)
+                            if (r != b && r.Group == b.Group)
+                                r.Group = a.Group != 0 ? a.Group : (a.Group = d.NewId());
+                    d.Rooms.Remove(b);
+                    foreach (var p in d.Pieces)
+                        if (p.Room == b.Id)
+                            p.Room = a.Id;
+                    foreach (var k in d.Doors)
+                    {
+                        if (k.A == b.Id) k.A = a.Id;
+                        if (k.B == b.Id) k.B = a.Id;
+                    }
+                    return "";
+                }
+                var g = a.Group != 0 ? a.Group : b.Group != 0 ? b.Group : d.NewId();
+                foreach (var r in d.Rooms)
+                    if (r == a || r == b || (r.Group != 0 && (r.Group == a.Group || r.Group == b.Group)))
+                        r.Group = g;
+                b.Kind = a.Kind;
+                return "";
+            }
             case "addCubby":
             {
                 // A cubby (Karl, 2026-11-24): a nook from a room's wall out to the skin, open to the room (one group), with a window

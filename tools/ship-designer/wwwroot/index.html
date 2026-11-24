@@ -597,6 +597,14 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (h) select(h.object.userData.type, h.object.userData.id); else select(null, 0);
     return;
   }
+  if (mode === "interior" && mergeFrom) {
+    const h = hits.find(h => h.object.userData.type === "room"), from = mergeFrom; mergeFrom = 0;
+    if (h && h.object.userData.id !== from) {
+      const a = cmd({ op: "mergeRoom", a: from, b: h.object.userData.id });
+      if (a.error) toast(a.error); else { select("room", from); toast("Merged. Undo splits them again.", true); }
+    } else { inspector(); toast("Stopped merging."); }
+    return;
+  }
   if (mode === "interior") {
     const rz = hits.find(h => h.object.userData.type === "riser");
     if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
@@ -699,7 +707,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
-let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5;
+let mounting = null, pieceSize = 1, pieceRecess = 0, cubbyW = 1.5, mergeFrom = 0;
 function startMount(kind, room) {
   stopMount();
   mounting = { kind, room, pid: 0, pending: null, last: null };
@@ -1180,6 +1188,7 @@ function inspector() {
         el("span", {}, "height"), num(r.height, v => cmd({ op: "setRoom", id: r.id, height: v }), 0.25)),
       el("p", { class: "hint" }, "Drag its top to make it taller (through the decks above). Split cuts it in two parts that stay one room, each sized on its own."),
       el("p", { class: "hint" }, r.kind === "Hold" ? `${fmt(r.area * r.height)} m3 of cargo.` : (r.reached ? "Reached from a way aboard." : "Not reached from any way aboard yet.")),
+      el("div", { class: "row" }, el("button", { class: mergeFrom === r.id ? "on" : "", onclick: () => { mergeFrom = mergeFrom === r.id ? 0 : r.id; inspector(); $("tip").textContent = mergeFrom ? "Click the room to merge into this one." : tips[mode]; } }, "Merge with...")),
       el("h3", {}, "Cubby with a window"),
       el("div", { class: "row" }, ...(S.stacked ? [["x0", "Port"], ["x1", "Starboard"], ["z0", "Down"], ["z1", "Up"]] : [["z0", "Fore"], ["z1", "Aft"], ["x0", "Port"], ["x1", "Starboard"]]).map(([side, t]) =>
         el("button", { onclick: () => { const a = cmd({ op: "addCubby", id: r.id, side, w: cubbyW, size: pieceSize, clad: 0.3 }); if (a.error) toast(a.error); else { toast("Cubby out to the skin, with a window at its end. Pick the window to size it and its cladding.", true); select("room", a.id); } } }, t))),
