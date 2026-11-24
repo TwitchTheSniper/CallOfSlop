@@ -53,7 +53,7 @@ The pieces don't check that their diameters match yet; the Bore Adapter and the 
 - **Function pieces**: a new works kind, `train`, with `"worksPiece": {"kind": "train", "function": ...}` (`TrainFunction`). They serve no amount; what they add is read at the rebuild (`TrainFunctions`):
   - **Train Spacer XS** (0.4 m): length, and its pipes and cable carry across.
   - **Fuel Buffer XS** (0.5 m, feed): +15 s (`fuelBuffer`) on a cut line, each one adds (`CWorksHead.BufferMax`). Its band's lamps run with the burn as the injector's do; it burns when holed.
-  - **Cooling Jacket XS** (0.6 m, hot): 10% less fuel at the same push (`jacketSaving`), once a train. Every third fin glows with the heat.
+  - **Cooling Jacket XS** (0.6 m, hot): 10% less fuel at the same push (`jacketSaving`), once a train; behind an older Drive Core engine too. Every third fin glows with the heat.
 - All three press at any size on the Housing die (patterns `trainspacer`, `fuelbuffer`, `coolingjacket`); what they add doesn't change with size.
 - `--engine-check` on chamber, jacket, injector, two buffers and a spacer: a 40 s buffer, 90% burn. A jacket welded behind the injector is left out, with the reason.
 

@@ -484,8 +484,8 @@ public static class ConstructWorks
             wh.Cap = cap;
             wh.Fed = Needs(d, WorksKind.Injector) && wh.Asm >= 0 && InjectorFed(c, wh.Asm);
             wh.BufferMax = t.InjectorBuffer;
-            if (wh.Asm >= 0 && InjectorFedHead(d))
-                TrainFunctions(c, ref wh, t);
+            if (wh.Asm >= 0 && d.Role == PartRole.Thruster)
+                TrainFunctions(c, ref wh, t); // (any drive's engine: a Cooling Jacket welded behind a Drive Core saves fuel too)
         }
     }
 
@@ -884,7 +884,7 @@ public static class ConstructWorks
         if (asm < 0 && d.WorksKind == WorksKind.Mount && HeadsThrough(c, part) is var through and > 0)
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(through == 1 ? "mount for 1 drive" : $"mount for {through} drives", wrecked), null, action);
         if (asm < 0 && (d.WorksKind == WorksKind.Train || d.WorksKind == WorksKind.Injector))
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Train ? "" : $"serves {PieceServes(d)}", wrecked), "in no engine: weld it into a train behind a drive's bell, hot pieces first, then feed, then supply", action);
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Train ? "" : $"serves {PieceServes(d)}", wrecked), "not in an engine: a train behind a drive's bell takes hot pieces first, then feed, then supply, and at most 16 (the bell's look says what it left out)", action);
         if (asm < 0 && IsDrivePiece(d))
             return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", wrecked), "in line with no bell: bolt it to a Hull Mount right behind a drive's nozzle, on its axis", action);
         if (d.WorksKind == WorksKind.Loader)
