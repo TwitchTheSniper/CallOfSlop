@@ -285,6 +285,8 @@ public static partial class ConstructExtruder
         {
             if (press && Sawing(world, c, part, st, asked))
                 return false; // (a billet press: its hot saw runs across before the piece comes off: ConstructExtruderPress.cs)
+            if (press)
+                (asked, st.PressAsked) = (asked || st.PressAsked, false);
             if (forOrder && FormerPresets.PartOf(head) is { } made)
             {
                 // A former's preset (FormerPresets.cs): the catalogue part it names comes off in the piece's place, paid as the piece was.
@@ -814,9 +816,11 @@ public static partial class ConstructExtruder
     }
 
     /// <summary>Is a finished piece waiting on this machine's die for a chute (a Cut asked for, or its Cut every length reached)?</summary>
-    public static bool DueOff(Construct c, int part, int product)
+    public static bool DueOff(Construct c, int part, int product, CStore? st = null)
     {
         ref var p = ref c.Parts[part];
+        if (!OffTheSaw(c, part, st))
+            return false; // (a billet press: not until its saw is through)
         return (p.State & CutPending) != 0 || CutDueCm(c, part, p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
     }
 

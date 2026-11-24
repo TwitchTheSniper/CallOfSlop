@@ -411,15 +411,15 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 - **The billet press** (Sean, 2026-11-24: the Extruder Lab's direct billet press with the silo tower Core, approved as v12; https://claude.ai/artifact/29CuAK9qB1fhuhhkGRUtXF,
   model `lab-machines/extruder.js` in the project files). The Extruder Core carries a silo tower over its hopper (look boxes only, no collision: legs, bands, a capped top
   with the fume stack, a ladder up its +z side from the cabinet's top, a level glass down its -x side lit to the bin's level). On Die Blocks it is a direct billet press,
-  drawn over the die's rectangle by `ExtruderRender.cs` (the Die Blocks' own boxes are all `"bare"`, drawn only while a block is no machine's cell, each solid box keeping a
-  hidden copy, so they collide as before; a block outside the die's rectangle is drawn by nothing): a front platen with the die plate and the glowing aperture, a cylinder
+  drawn over the die's rectangle by `ExtruderRender.cs` (the press's frame and container enclose the Die Blocks' bodies; only a block's die face details and the ram housing behind it are
+  `"bare"`, drawn only while it is no machine's cell, so ghosts, stores, paint, a far die and an idle block still show the blocks): a front platen with the die plate and the glowing aperture, a cylinder
   platen about 9 m behind the die face with the main and side cylinders, four chrome tie bars, a fixed long container on floor rails from the front platen back to the ram's
   rest face, a ram whose long push bar keeps its head out of the container, a heated feed throat over the container's back end with a sight glass and a slide gate, the chute
   to it from the silo's wall aimed at the silo's axis, a butt shear parked over the die, a hot saw on a trolley riding a beam across the line (its posts clear of the parked
   blade and hood), and a puller carriage on its own rail along the tables' +x side whose hinged arm holds a pad (the section's size, at most 1.2 x 0.9 m) on the piece's nose
   at the section's mid height. It runs as one (`ConstructExtruderPress.cs`): each piece is a charge, **Fill charge** (the bin must hold material), **Load**, **Upset**,
   **Extruding** (the ram's travel follows the piece's length against its cut length), **Saw** (when the piece is due off; the cut lands as the saw finishes, a Cut signal is
-  kept until then), **Ram back**. The step is the store's `Blocked` byte (`PressPhase`, on the wire and in saves), each step's seconds part data (`storage.extrude.press`:
+  kept until then, and a press's chute takes the piece only once the saw is through: `DueOff`), **Ram back**. The step is the store's `Blocked` byte (`PressPhase`, on the wire and in saves), each step's seconds part data (`storage.extrude.press`:
   5, 3, 1.5, 3 and 2 s, the Lab's), so a block Extruder spends 14.5 s a piece besides growing it. Run held, no power or no orders stop the steps where they stand. A Core on
   its own die is no press: it runs on as before (the presses' feed Extruders on the Zero Day works). The press is drawn only (no collision past the blocks), and it reaches
   about 6 m further back than the blocks did. Not tried: a joined client's view, a die taller than two blocks.

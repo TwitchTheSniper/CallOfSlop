@@ -222,22 +222,22 @@ public sealed class ExtrusionParts : IPartGenerator
     }
 
     /// <summary>
-    /// On a Die Block, what it draws as a cell of an Extruder is the billet press over the whole die (ExtruderRender.cs): every drawn box is
-    /// "bare" (drawn only while the block is no machine's cell), and each solid box keeps a hidden copy, so it collides as it always did.
+    /// On a Die Block, as a cell of an Extruder the billet press is drawn over the whole die (ExtruderRender.cs): its frame and container
+    /// enclose the blocks' bodies, so those stay as they are (ghosts, the selection, stores, paint and materials, a far die and an idle
+    /// block outside the die's rectangle all still show them). What would stand out of the press is "bare" (drawn only while the block is
+    /// no machine's cell): the die face's plate, frame, bolts and shear (the press's front platen carries its own die plate), and the ram's
+    /// housing, gussets, hoses, gauge and plates behind the block's back. All of those are look boxes, so collision is unchanged.
     /// </summary>
     private static void BareWhenInMachine(Part p)
     {
-        foreach (var b in p.Boxes.ToList())
+        foreach (var b in p.Boxes)
         {
-            if (b.Get("hidden") is true)
+            if (b.Get("detail") is not true || b.Get("hidden") is true)
                 continue;
-            if (b.Get("detail") is not true)
-            {
-                var solid = Kw(("min", b["min"]), ("max", b["max"]), ("hidden", true));
-                p.Boxes.Add(solid);
-                b["detail"] = true;
-            }
-            b["bare"] = true;
+            var mn = (List<object?>)b["min"]!;
+            var mx = (List<object?>)b["max"]!;
+            if (Py.D(mx[2]) <= BlockBack + 0.01 || Py.D(mn[2]) >= Face - 0.03)
+                b["bare"] = true;
         }
     }
 

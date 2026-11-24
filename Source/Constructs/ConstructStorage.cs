@@ -79,6 +79,7 @@ public sealed class CStore
     public byte OvenSeen; // a Bake Oven or an Extruder's billet press: the phase this peer last drew (never sent: BakeOvenRender.cs, ExtruderRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
     public int PressTicks; // an Extruder's billet press: ticks into its phase (server only, never sent or saved: ConstructExtruderPress.cs)
+    public bool PressAsked; // ...a Cut signal came while its saw ran: kept for when the saw is through (server only)
     public float PressNose; // ...where its puller last stood, from the die face (never sent: ExtruderRender.cs runs it home from there)
     public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
     public bool OvenFailed, OvenUnbaked; // a Bake Oven: its last bake or un-bake was refused at the end of the heat; that last was an un-bake (server only: ConstructBakeOven.cs)
@@ -154,6 +155,7 @@ public sealed class CStore
         OvenSince = 0;
         OvenParts = 0;
         PressTicks = 0;
+        PressAsked = false;
         PressNose = 0;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;

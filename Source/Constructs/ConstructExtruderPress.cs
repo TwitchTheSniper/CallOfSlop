@@ -72,14 +72,21 @@ public static partial class ConstructExtruder
         var d = c.Parts[part].D;
         if (PhaseOf(st) != PressPhase.Saw)
             SetPhase(world, st, PressPhase.Saw);
-        else if (st.PressTicks >= PhaseSeconds(d, PressPhase.Saw) * World.TickRate - 0.5f || PhaseDone(d, st, PressPhase.Saw))
+        else if (SawDone(d, st) || PhaseDone(d, st, PressPhase.Saw))
             return false;
         if (asked)
-            c.Parts[part].State |= CutPending; // (a Cut signal is kept until the saw is through)
+            st.PressAsked = true; // (a Cut signal is kept until the saw is through; not as CutPending, which a press's chute reads as "take it": DueOff)
         ConstructGatherer.SetBusy(world, st, true);
         SetStall(world, st, ExtrudeStall.None);
         return true;
     }
+
+    /// <summary>Has the saw run its seconds?</summary>
+    private static bool SawDone(ConstructPartDef d, CStore st) => st.PressTicks >= PhaseSeconds(d, PressPhase.Saw) * World.TickRate - 0.5f;
+
+    /// <summary>Is a press's piece off the saw (its cut through, so a chute or a conveyor may take it)? True for a machine that isn't a press.</summary>
+    public static bool OffTheSaw(Construct c, int part, CStore? st) =>
+        st == null || c.Parts[part].D.ExtPress == null || !IsPress(c, part) || PhaseOf(st) == PressPhase.Saw && SawDone(c.Parts[part].D, st);
 
     /// <summary>
     /// The steps before a piece grows: the ram back, the charge filled, loaded and upset. True while one runs (the machine is busy and

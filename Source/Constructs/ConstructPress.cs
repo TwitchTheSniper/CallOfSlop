@@ -978,7 +978,7 @@ public static partial class ConstructPress
         if (fd.IsExtruder && !fd.IsWheelFormer)
         {
             var piece = ConstructExtruder.ProductOf(cf, from);
-            if (piece < 0 || !cf.Parts[piece].D.IsExtrusion || !ConstructExtruder.DueOff(cf, from, piece))
+            if (piece < 0 || !cf.Parts[piece].D.IsExtrusion || !ConstructExtruder.DueOff(cf, from, piece, src))
                 return false;
             var key = cf.Parts[piece].D.ExKey;
             if (BayFor(PressTable.Current, world, null, ct, to, key, cf.Parts[piece].D, out var why, out var bay) < 0)

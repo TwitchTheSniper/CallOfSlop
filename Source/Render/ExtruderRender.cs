@@ -147,7 +147,7 @@ public static class ExtruderRender
             if (fine)
                 Box(gfx, tf, new Vector3(x - 0.04f, 0.004f, ZR1), new Vector3(x + 0.04f, 0.04f, ZF0), Chrome);
         }
-        Box(gfx, tf, new Vector3(-dieW * 0.5f - 0.25f, 0.04f, ZK0), new Vector3(dieW * 0.5f + 0.25f, dieH + 0.22f, ZC1 - 0.003f), Graphite);
+        Box(gfx, tf, new Vector3(-dieW * 0.5f - 0.25f, 0.001f, ZK0), new Vector3(dieW * 0.5f + 0.25f, dieH + 0.22f, ZC1 - 0.003f), Graphite);
         var heat = working || phase is PressPhase.Upset or PressPhase.Load ? Heat : Hot * 1.4f;
         for (var k = 0; k < 2; k++)
         {

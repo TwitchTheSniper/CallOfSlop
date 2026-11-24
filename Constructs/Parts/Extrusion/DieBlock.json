@@ -30,9 +30,7 @@
         0.927,
         1.91,
         0.55
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -44,9 +42,7 @@
         0.907,
         1.927,
         0.55
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -58,9 +54,7 @@
         0.995,
         1.91,
         -1.38
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -72,9 +66,7 @@
         0.907,
         1.995,
         -1.38
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -86,9 +78,7 @@
         0.995,
         1.91,
         -0.5
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -100,9 +90,7 @@
         0.907,
         1.995,
         -0.5
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -117,8 +105,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "+x",
-      "bare": true
+      "seamFill": "+x"
     },
     {
       "min": [
@@ -133,8 +120,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "-x",
-      "bare": true
+      "seamFill": "-x"
     },
     {
       "min": [
@@ -149,8 +135,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "+y",
-      "bare": true
+      "seamFill": "+y"
     },
     {
       "min": [
@@ -165,8 +150,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -181,8 +165,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -198,8 +181,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -215,8 +197,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -232,8 +213,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -249,8 +229,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -266,8 +245,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -283,8 +261,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -301,8 +278,7 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint",
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -317,8 +293,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -333,8 +308,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -350,8 +324,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -367,8 +340,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -384,8 +356,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -401,8 +372,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -418,8 +388,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -435,8 +404,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -453,8 +421,7 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint",
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -469,8 +436,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -485,8 +451,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -498,9 +463,7 @@
         0.997,
         1.997,
         0.75
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -525,9 +488,7 @@
         0.747,
         1.747,
         -2.997
-      ],
-      "detail": true,
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -576,8 +537,7 @@
         ]
       ],
       "paintable": true,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -592,8 +552,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "+x",
-      "bare": true
+      "seamFill": "+x"
     },
     {
       "min": [
@@ -642,8 +601,7 @@
         ]
       ],
       "paintable": true,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -658,8 +616,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "-x",
-      "bare": true
+      "seamFill": "-x"
     },
     {
       "min": [
@@ -708,8 +665,7 @@
         ]
       ],
       "paintable": true,
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -724,8 +680,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "+y",
-      "bare": true
+      "seamFill": "+y"
     },
     {
       "min": [
@@ -774,8 +729,7 @@
         ]
       ],
       "paintable": true,
-      "seam": "-y",
-      "bare": true
+      "seam": "-y"
     },
     {
       "min": [
@@ -790,8 +744,7 @@
       ],
       "color": "#b5452b",
       "detail": true,
-      "seamFill": "-y",
-      "bare": true
+      "seamFill": "-y"
     },
     {
       "min": [
@@ -838,8 +791,7 @@
       "seam": [
         "+x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -888,8 +840,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "+x",
-      "bare": true
+      "seamFill": "+x"
     },
     {
       "min": [
@@ -938,8 +889,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "+y",
-      "bare": true
+      "seamFill": "+y"
     },
     {
       "min": [
@@ -986,8 +936,7 @@
       "seam": [
         "+x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1036,8 +985,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "+x",
-      "bare": true
+      "seamFill": "+x"
     },
     {
       "min": [
@@ -1086,8 +1034,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "-y",
-      "bare": true
+      "seamFill": "-y"
     },
     {
       "min": [
@@ -1134,8 +1081,7 @@
       "seam": [
         "-x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1184,8 +1130,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "-x",
-      "bare": true
+      "seamFill": "-x"
     },
     {
       "min": [
@@ -1234,8 +1179,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "+y",
-      "bare": true
+      "seamFill": "+y"
     },
     {
       "min": [
@@ -1282,8 +1226,7 @@
       "seam": [
         "-x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1332,8 +1275,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "-x",
-      "bare": true
+      "seamFill": "-x"
     },
     {
       "min": [
@@ -1382,8 +1324,7 @@
         ]
       ],
       "paintable": true,
-      "seamFill": "-y",
-      "bare": true
+      "seamFill": "-y"
     },
     {
       "min": [
@@ -1699,8 +1640,7 @@
       "seam": [
         "+x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1745,8 +1685,7 @@
       "seam": [
         "+x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1764,8 +1703,7 @@
       "seamFill": [
         "+x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1788,8 +1726,7 @@
       "seam": [
         "+x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1834,8 +1771,7 @@
       "seam": [
         "+x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1853,8 +1789,7 @@
       "seamFill": [
         "+x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1877,8 +1812,7 @@
       "seam": [
         "-x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1923,8 +1857,7 @@
       "seam": [
         "-x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1942,8 +1875,7 @@
       "seamFill": [
         "-x",
         "+y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -1966,8 +1898,7 @@
       "seam": [
         "-x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -2012,8 +1943,7 @@
       "seam": [
         "-x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -2031,8 +1961,7 @@
       "seamFill": [
         "-x",
         "-y"
-      ],
-      "bare": true
+      ]
     },
     {
       "min": [
@@ -2048,8 +1977,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2066,8 +1994,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2084,8 +2011,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2102,8 +2028,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2119,8 +2044,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2136,8 +2060,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -2154,8 +2077,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -2172,8 +2094,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -2190,8 +2111,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -2207,8 +2127,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-x",
-      "bare": true
+      "seam": "-x"
     },
     {
       "min": [
@@ -2224,8 +2143,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -2242,8 +2160,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -2260,8 +2177,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -2278,8 +2194,7 @@
       "detail": true,
       "paintable": false,
       "work": "glow",
-      "seam": "+y",
-      "bare": true
+      "seam": "+y"
     },
     {
       "min": [
@@ -2298,8 +2213,7 @@
       "segments": 8,
       "front": "+z",
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2318,8 +2232,7 @@
       "segments": 8,
       "front": "+z",
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2335,8 +2248,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2352,8 +2264,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2369,8 +2280,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2386,8 +2296,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "+x",
-      "bare": true
+      "seam": "+x"
     },
     {
       "min": [
@@ -2445,8 +2354,7 @@
       "color": "#22262b",
       "detail": true,
       "paintable": false,
-      "seam": "-y",
-      "bare": true
+      "seam": "-y"
     },
     {
       "min": [
@@ -2953,110 +2861,6 @@
       "paintable": false,
       "seam": "-y",
       "bare": true
-    },
-    {
-      "min": [
-        -0.927,
-        0.09,
-        -2.997
-      ],
-      "max": [
-        0.927,
-        1.91,
-        0.55
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.907,
-        0.003,
-        -2.997
-      ],
-      "max": [
-        0.907,
-        1.927,
-        0.55
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.997,
-        0.09,
-        -2.22
-      ],
-      "max": [
-        0.997,
-        1.91,
-        -1.38
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.907,
-        0.003,
-        -2.22
-      ],
-      "max": [
-        0.907,
-        1.997,
-        -1.38
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.997,
-        0.09,
-        -0.62
-      ],
-      "max": [
-        0.997,
-        1.91,
-        -0.5
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.907,
-        0.003,
-        -0.62
-      ],
-      "max": [
-        0.907,
-        1.997,
-        -0.5
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.997,
-        0.003,
-        0.55
-      ],
-      "max": [
-        0.997,
-        1.997,
-        0.75
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.747,
-        0.253,
-        -3.247
-      ],
-      "max": [
-        0.747,
-        1.747,
-        -2.997
-      ],
-      "hidden": true
     }
   ],
   "sockets": [
