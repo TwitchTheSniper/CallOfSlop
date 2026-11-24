@@ -262,7 +262,8 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4, AdapterD = 0.75;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35, SelectorD = 0.4, AdapterD = 0.75, TurbopumpD = 0.5;
+    public const double TurbopumpServes = 7e5; // (twice a Fuel Pump M's thrust for its blank's volume: 6 MN over 2.2 x 1.9 x 1 m against 0.7 x 0.7 x 0.5 m, Sean 2026-11-24)
     public const double GimbalDegrees = 6; // (the doc: the bell swings up to 6 degrees)
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
@@ -727,6 +728,40 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(120, 700, 20);
     }
 
+    /// <summary>
+    /// The Turbopump Drive XS: a supply piece, a fuel pump for its train that runs on a tap of the chamber's gas, so it draws no power.
+    /// The turbopump hangs on a bracket on the train's +x side: a hot-gas tap from the front flange into the turbine casing, the turbine's
+    /// exhaust stub glowing with the burn, an open shaft whose coupling turns with the drive, the pump casing and its outlet into the
+    /// train. It serves 700 kN of bell as a fuel pump (a train-fed bell past 2 MN needs one), twice a Fuel Pump's for its size.
+    /// </summary>
+    private static Part Turbopump()
+    {
+        var d = TurbopumpD;
+        var p = new Part("Turbopump Drive XS", Small, Section,
+            "A turbopump for an engine train, 0.5 m long: weld it in the supply zone (at the back). It is the train's fuel pump and serves 700 kN of bell, twice a Fuel Pump's for its size; it runs on gas tapped from the chamber, so it draws no power. A drive fed through an injector needs a fuel pump in its train past 2 MN.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.006, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        Cyl(p, 0, 0, Bore + 0.008, -d * 0.5 - 0.02, -d * 0.5 + 0.02, Hazard, "hazard paint", inner: Math.Round((Bore - 0.01) / (Bore + 0.008), 3), segments: 24); // (its stripe)
+        var ux = Bore + 0.12; // (the turbopump's own axis, along z on the +x side)
+        Look(p, Bore - 0.01, -0.03, -d + 0.1, ux - 0.07, 0.03, -0.1, Dark, "dirty steel"); // (the bracket)
+        Cyl(p, ux, 0, 0.09, -0.2, -0.06, "#4a4440", "dirty steel", segments: 16); // (the turbine casing)
+        Look(p, ux - 0.025, 0.085, -0.15, ux + 0.025, 0.15, -0.11, Dark, "dirty steel"); // (its exhaust stub)
+        Look(p, ux - 0.02, 0.15, -0.146, ux + 0.02, 0.158, -0.114, Throat, "", work: "glow"); // (its mouth, glowing with the burn)
+        Look(p, FlangeR - 0.03, -0.018, -0.045, ux + 0.018, 0.018, -0.02, Copper, "copper"); // (the hot-gas tap off the front flange)
+        Cyl(p, ux, 0, 0.02, -0.31, -0.19, Bolt, "steel", segments: 10); // (the open shaft)
+        Look(p, ux - 0.06, -0.008, -0.262, ux + 0.06, 0.008, -0.238, Hazard, "hazard paint", work: "spin", axis: "+z"); // (the coupling's two bars, which turn with the drive)
+        Look(p, ux - 0.009, -0.06, -0.261, ux + 0.009, 0.06, -0.239, Hazard, "hazard paint", work: "spin", axis: "+z");
+        Cyl(p, ux, 0, 0.08, -0.44, -0.3, Clad, "painted plating", segments: 16); // (the pump casing)
+        Look(p, Bore - 0.01, -0.02, -0.4, ux - 0.07, 0.02, -0.36, Copper, "copper"); // (its outlet into the train)
+        Look(p, ux + 0.08, -0.012, -0.384, ux + 0.092, 0.012, -0.356, Lamp, "", work: "chase"); // (a run lamp)
+        TrainSolid(p, d);
+        p.Sock("front", P(0, 0, 0), "+z");
+        p.Sock("back", P(0, 0, -d), "-z");
+        p.Set(("worksPiece", Kw(("kind", "pump"), ("serves", TurbopumpServes), ("bore", Across))));
+        return p.Stats(120, 700, 20);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -744,7 +779,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar(), FuelSelector(), BoreAdapter() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar(), FuelSelector(), BoreAdapter(), Turbopump() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }

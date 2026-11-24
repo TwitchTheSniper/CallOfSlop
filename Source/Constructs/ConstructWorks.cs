@@ -861,6 +861,19 @@ public static class ConstructWorks
     /// <summary>Is a thruster a head whose fuel comes only through its engine's Fuel Injector (its works need one)?</summary>
     public static bool InjectorFedHead(ConstructPartDef d) => (d.WorksNeeds & (1 << (int)WorksKind.Injector)) != 0;
 
+    /// <summary>
+    /// A pressed bell fed through an injector needs a fuel pump in its train past the torch drive's pump thrust (ShipWorks.json "drives",
+    /// 2 MN): a Fuel Pump, or a Turbopump Drive (Sean 2026-11-24: a compact pump on the chamber's gas, twice a Fuel Pump's thrust for its size).
+    /// </summary>
+    public static void TrainBellNeeds(ConstructPartDef d)
+    {
+        if (!InjectorFedHead(d) || !ShipWorks.Current.Drives.TryGetValue("torch", out var rows))
+            return;
+        foreach (var (kind, from) in rows)
+            if (kind == WorksKind.Pump)
+                d.WorksNeeds = (ushort)(d.ThrustForce > from ? d.WorksNeeds | 1 << (int)WorksKind.Pump : d.WorksNeeds & ~(1 << (int)WorksKind.Pump));
+    }
+
     /// <summary>A head that takes its fuel through an injector: is a pipe into one (<see cref="CWorksHead.Fed"/>)? Called at the thrusters' rebuild.</summary>
     public static bool TrainFed(Construct c, int part) => c.WorksHeadOf(part) is var h and >= 0 && c.WorksHeads[h].Fed;
 

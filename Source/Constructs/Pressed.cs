@@ -853,6 +853,7 @@ public static class Pressed
             d.Mass = Math.Clamp(MathF.Min(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass); // (never more than its blank: production.md 2026-11-13)
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
+        ConstructWorks.TrainBellNeeds(d); // (a big train-fed bell needs a pump in its train)
         if (like.TrainBore > 0) // (an engine train piece's bore goes with its blank's across over its preset's, so a preset's neighbour has about its bore; every bored preset is 70 cm across: ConstructWorks.Bores)
         {
             var wide = Across(k) / (float)Math.Max(1, Across(p.Preset));

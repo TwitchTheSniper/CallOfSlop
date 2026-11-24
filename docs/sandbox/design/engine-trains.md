@@ -120,8 +120,21 @@ Not yet: "runs dry" by a tank's own contents (the plain fuel tanks are one pool;
 - `--engine-check` prints each drive piece's bore and whether it is in the train.
 - Protocol 466 (new part file).
 
+## Phase 10: the Turbopump Drive
+
+Sean chose (2026-11-24) "a compact pump on chamber gas": fuel pumps draw no power today, so the Turbopump Drive is the train's fuel pump at twice a Fuel Pump's thrust for its size.
+
+- **Turbopump Drive XS** (0.5 m, supply): a works piece of kind pump that serves 700 kN (a Fuel Pump M's 6 MN over its 2.2 x 1.9 x 1 m blank, doubled, for a 0.7 x 0.7 x 0.5 m blank). It presses on the Housing die (`turbopump` 70x70x50) at any size, and what it serves goes with the blank's volume.
+- **Looks:** the turbopump hangs on a bracket on the +x side.
+  - A hot-gas tap runs off the front flange into the turbine casing.
+  - The exhaust stub's mouth glows with the burn.
+  - The coupling on the open shaft turns with the drive (`ConstructRender.DriveFx`: a pump's `spin` box turns by an angle kept per part, `Construct.DriveTurn`, up to 9 turns a second with its heat).
+  - The pump casing has its outlet into the train, and a run lamp.
+- **A big train-fed bell needs a fuel pump:** a pressed bell fed through an injector, past the torch drive's pump thrust in ShipWorks.json (2 MN), needs a fuel pump in its train (`ConstructWorks.TrainBellNeeds`, from `Pressed.BuildLike`). A Fuel Pump or a Turbopump Drive serves it. Without one the bell is held to the bare share.
+  - In `--engine-check`, a 2.15 MN bell runs at a cap of 25% without a pump and 100% with a 140x140x70 Turbopump Drive.
+- Protocol 467 (new part file).
+
 ## Next
 
-1. The other pieces of the doc: Turbopump Drive (what it does waits on Sean: fuel pumps draw no power today).
-2. Bigger bores: a socket's hole against the first piece's bore, a bell's collar against its chamber.
+1. Bigger bores: a socket's hole against the first piece's bore, a bell's collar against its chamber.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

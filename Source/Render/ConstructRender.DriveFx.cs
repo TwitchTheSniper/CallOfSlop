@@ -13,6 +13,7 @@ namespace CallOfSlop;
 public sealed partial class Construct
 {
     public float[] DriveHeat = [], DriveLast = []; // a drive part's eased heat and the level it last saw, by part index (drawn only: ConstructRender.DrivePrepare)
+    public float[] DriveTurn = []; // a turbopump's rotor angle (rad), by part index: turned by its own speed each frame, so a speed change never jumps it
     public double[] DriveAt = []; // ...and when it was last stepped
 }
 
@@ -22,7 +23,7 @@ public static partial class ConstructRender
     private static readonly Vector3 LampFed = new(0.25f, 0.95f, 0.4f), LampDark = new(0.05f, 0.09f, 0.06f);
 
     // The part being drawn's drive state (DrivePrepare), for its boxes.
-    private static float _driveLevel, _driveHeat;
+    private static float _driveLevel, _driveHeat, _driveTurn;
     private static bool _driveFed;
 
     /// <summary>Is this part a drive part whose boxes show the burn (a thruster or a drive piece with "work" boxes)?</summary>
@@ -47,6 +48,7 @@ public static partial class ConstructRender
         {
             Array.Resize(ref c.DriveHeat, c.PartCount + 8); // (once as a body grows: never in a steady frame; kept through a hit or an edit, so a burning engine stays hot)
             Array.Resize(ref c.DriveLast, c.PartCount + 8);
+            Array.Resize(ref c.DriveTurn, c.PartCount + 8);
             Array.Resize(ref c.DriveAt, c.PartCount + 8);
         }
         var dt = (float)Math.Clamp(Now - c.DriveAt[i], 0, 120); // (time since this part was last stepped: far or culled, it catches up)
@@ -61,10 +63,13 @@ public static partial class ConstructRender
             if ((d.WorksKind == WorksKind.Injector || d.TrainFn == TrainFunction.Igniter) && c.DriveLast[i] <= LightOff && _driveLevel > LightOff && Fx.On)
                 LightOffSparks(gfx, c, i, onBody);
             c.DriveLast[i] = _driveLevel;
+            if (d.WorksKind == WorksKind.Pump) // (a turbopump's rotor: up to 9 turns a second on the chamber's gas, run down with its heat)
+                c.DriveTurn[i] = (c.DriveTurn[i] + dt * 56f * h) % MathF.Tau;
         }
         if (dt > 0 || c.DriveAt[i] == 0)
             c.DriveAt[i] = Now;
         _driveHeat = c.DriveHeat[i];
+        _driveTurn = c.DriveTurn[i];
         return true;
     }
 
@@ -150,6 +155,9 @@ public static partial class ConstructRender
         var axis = Rot24.Apply(p.Rot, ConstructParts.DirVector(box.WorkAxis));
         switch (box.Work)
         {
+            case BoxWork.Spin when d.WorksKind == WorksKind.Pump: // (a turbopump's rotor turns round its axis)
+                model = model * Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(axis, _driveTurn) * Matrix4x4.CreateTranslation(centre);
+                break;
             case BoxWork.Spin:
                 model = model * Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(axis, 2.4f * MathF.Min(1, _driveHeat * 1.2f) - 1.2f) * Matrix4x4.CreateTranslation(centre); // (a dial's needle: from its stop to full as the heat rises)
                 break;
