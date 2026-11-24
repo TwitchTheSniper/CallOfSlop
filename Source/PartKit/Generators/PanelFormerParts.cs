@@ -4,14 +4,16 @@ using static CallOfSlop.PartKit.MachineLookShort;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Panel Former on the block system: Constructs/Parts/PanelFormer (design page drawing 15; docs/sandbox/constructs/production.md "The
-/// Panel Former"; MachineBlocks.cs). A Panel Former Core holds the machine's brain (screen and queue, Orders, Run, power, the offcut bin,
-/// Piece in, where one blank a panel comes in, and the in rollers); identical 2 x 2 m Bed Blocks welded on its far side make the bed, and an Out Table (OutTableParts) closes
-/// the bed's far end. The largest panel is the rectangle of blocks. Each Bed Block is a cell of a die bed: a lower die and an upper die that
-/// take on the panel's shape and squeeze the blank between them, on small rails at the work height (Sean 2026-11-24; drawn across the whole
-/// bed by PanelFormerRender.DrawDies). A block's skirts, posts and side fittings are drawn only where no cell of its
-/// machine is welded ("seam"), so a bed of blocks reads as one machine: one pair of dies, posts at its corners, one oil manifold down one side and
-/// a hazard edge round the outside. Born in the Machine look (look.md): three tones, bare steel working parts, white in, orange out.
+/// The Panel Former on the block system, a stretch former (Sean, 2026-11-24: the Panel Former Lab): Constructs/Parts/PanelFormer
+/// (docs/sandbox/constructs/production.md "The Panel Former"; MachineBlocks.cs). A slim "Stack" Core holds the machine's brain (screen and
+/// queue, Orders, Run, power, the offcut bin, Piece in) and stands beside the bed's head row, its screen facing the in-feed, tied to the
+/// bed's side by a low ribbed base link under the parked side jaw. Identical 2 x 2 m Bed Blocks welded beside it make the bed, a Roller
+/// Tile run butted on its head rolls each blank in at 1 m (the Core's Bed in) and an Out Table closes its far end. Everything over and in
+/// the bed is drawn across the whole rectangle by PanelFormerRender, as one machine: roller lanes along both long sides at the roll line,
+/// the post zones outside them with the side jaws' out-rigger rails through slots, the closed pocket under the floor between the lanes, the
+/// die of 0.3 m columns that rises from it, the swing-out end gates and the side jaws. A Bed Block's own boxes are its collision (solid to
+/// the roll line, as a Press Bed Block is), the skirt round the bed's outline and, on a block that is in no machine, a plain bed cell's look.
+/// Born in the Machine look (look.md): three tones, bare steel working parts, white in, orange out.
 /// </summary>
 public sealed class PanelFormerParts : IPartGenerator
 {
@@ -21,15 +23,16 @@ public sealed class PanelFormerParts : IPartGenerator
     private const string Green = "#5d7f3c"; // the Panel Formers' body colour
     private const string Trim = "#46602d";
     private const double E = 0.997; // a cell's body stops 3 mm short of its 2 m, so two cells' faces never meet on one plane
-    private const double H = 3.197; // a cell's top (3.2 m: the bed under, the dies over, the corner posts' caps)
-    private const double WorkY = OutTableParts.WorkY; // the rails' tops and the in rollers' nip: the sheet's height on the bed
-    private const double DeckY = 0.86; // the lower bed's deck, where the lower die stands
-        private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
-    private const double OffX = -0.5, OffY = 2.8; // the Offcut port, on the bin's back wall
+    private const double WorkY = OutTableParts.WorkY; // the roll line: the lanes' rollers' tops, the sheet's height on the bed
+    private const int BlockPower = 900, CorePower = 1200, CoreBin = 60000; // (the Core's bin is its offcut: what blanks leave over their panels)
+    // The Stack Core in its own frame: the bed is on its +z side (the base link runs to it), the in-feed on its -x side (the screen faces
+    // it), its back (-z) the aisle. Its column and the modules bolted on it:
+    private const double Back = -0.37, Front = 0.25; // the modules' back and bed-side faces (z)
+    private const double Deck = 2.5, CageTop = 3.2; // the tread deck's underside, the trim cage's top (the offcut bin inside the cage)
+    private const double OffX = -0.2, OffY = 2.97; // the Offcut port, on the cage's back wall
 
     private static PyDict Seam(PyDict? box, string face) => box!.Update(("seam", face));
-    private static PyDict Seam(PyDict? box, string a, string b) => box!.Update(("seam", Py.L(a, b)));
-    private static PyDict Fill(PyDict? box, string face) => box!.Update(("seamFill", face));
+    private static PyDict Bare(PyDict? box) => box!.Update(("bare", true));
 
     private static List<object?> Buttons() => Py.L(
         Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.2, 0.12)), ("label", "Queue")),
@@ -42,47 +45,47 @@ public sealed class PanelFormerParts : IPartGenerator
     private static PyDict Cyl(string front, int segments = 12) => Kw(("shape", "cylinder"), ("segments", segments), ("front", front));
 
     /// <summary>
-    /// The Panel Former Core: one 2 x 2 m cell, 3.2 m tall, at the bed's in end. The offcut bin on its back half (the trim a blank leaves:
-    /// out by chute from its Offcut port), Piece in low on its back (a blank a panel off a conveyor), the control face on its left (the
-    /// aisle side), and on its front, where the first Bed Block welds, a slot at the work height with the in rollers that feed the blank onto the bed.
+    /// The Panel Former Core, the "Stack" (Sean, 2026-11-24): one 2 x 2 m cell beside the bed's head row. Modules bolted on a lattice
+    /// column: a low module (the controls' cabinet, the hydraulic unit behind it), the screen module over it, its screen facing the
+    /// in-feed (-x), a tread deck and trim cage on top holding the offcut bin, a beacon on the cage, hazard bands. A low ribbed base link
+    /// with its hose and cable runs ties it to the bed's side (+z) under the parked side jaw. Piece in (a blank by conveyor or arm) on its
+    /// back; a run butted on the bed's head is the usual way in (the Core's Bed in).
     /// </summary>
     private static Part Core()
     {
         var p = new Part("Panel Former", Small, "Extrusion",
-            "A Panel Former Core: forms body panels by order, each from one blank, on the bed of Bed Blocks welded to its front (2 x 2 m each, up to 32 x 32 m), an Out Table on the bed's far end. The largest panel is the bed's rectangle. A blank is a flat extruded sheet of the panel's material and thickness, its flat size to 25% over, in by conveyor at the white end; the trim drops into its offcut bin. Needs power.",
+            "A Panel Former Core: a stretch former that forms body panels by order, each from one blank, on the bed of Bed Blocks welded beside it (2 x 2 m each, up to 32 x 32 m), its Core beside the bed's head and an Out Table on the bed's far end. A Roller Tile run butted on the bed's head rolls each blank in; the jaws grip it and a die of columns rises from the pocket under the bed and stretches it to shape. The largest panel is the bed's rectangle. A blank is a flat extruded sheet of the panel's material and thickness, its flat size to 25% over; the trim drops into its offcut bin. Needs power.",
             role: "storage", group: "Production", color: Green);
-        const double slotLo = WorkY - 0.16, slotHi = WorkY + 0.16, slotD = 0.32, cab = 2.4; // (the in slot's height and depth, the cabinet's top)
-        // Solid: the cabinet (its front slotted for the in rollers), the offcut bin's walls on the back half of its top, a deck on the front half.
-        p.Add(Box([-E, 0.003, -E], [E, slotLo, E]));
-        p.Add(Box([-E, slotLo, -E], [E, slotHi, E - slotD]));
-        p.Add(Box([-E, slotLo, E - slotD], [-E + 0.08, slotHi, E])); // (the slot's two cheeks)
-        p.Add(Box([E - 0.08, slotLo, E - slotD], [E, slotHi, E]));
-        p.Add(Box([-E, slotHi, -E], [E, cab, E]));
-        const double hz1 = 0.0, wall = 0.06;
-        p.Add(Box([-E, cab, -E], [E, H, -E + wall], Trim));
-        p.Add(Box([-E, cab, hz1 - wall], [E, H, hz1], Trim));
-        p.Add(Box([-E, cab, -E + wall], [-E + wall, H, hz1 - wall], Trim));
-        p.Add(Box([E - wall, cab, -E + wall], [E, H, hz1 - wall], Trim));
-        p.Add(Box([-E, cab, hz1], [E, cab + 0.24, E])!.Update(("finish", "tread plate")));
-        var bulk = Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(R(-E + wall + 0.005), R(cab + 0.005), R(-E + wall + 0.005))), ("max", Py.L(R(E - wall - 0.005), R(H - 0.005), R(hz1 - wall - 0.005))));
+        // Solid: the column, the base link to the bed, the two modules and the tread deck under the cage.
+        p.Add(Box([-0.25, 0.003, -0.2], [0.25, Deck, 0.1], Trim));
+        p.Add(Box([-0.6, 0.003, 0.05], [0.6, 0.28, E], MachineLook.Base)); // (the base link: under the parked side jaw, out to the bed's side)
+        p.Add(Box([-0.9, 0.35, Back], [0.9, 1.15, Front])); // (the low module: the controls' cabinet)
+        p.Add(Box([-0.7, 1.5, -0.42], [0.4, 2.3, 0.3])); // (the screen module, facing the in-feed)
+        p.Add(Box([-0.45, Deck, Back], [0.45, Deck + 0.24, Front])!.Update(("finish", "tread plate")));
+        // The trim cage on the deck: the offcut bin's walls.
+        const double wall = 0.06, cy = Deck + 0.24;
+        p.Add(Box([-0.45, cy, Back], [0.45, CageTop, Back + wall], Trim));
+        p.Add(Box([-0.45, cy, Front - wall], [0.45, CageTop, Front], Trim));
+        p.Add(Box([-0.45, cy, Back + wall], [-0.45 + wall, CageTop, Front - wall], Trim));
+        p.Add(Box([0.45 - wall, cy, Back + wall], [0.45, CageTop, Front - wall], Trim));
+        var bulk = Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(R(-0.45 + wall + 0.005), R(cy + 0.005), R(Back + wall + 0.005))), ("max", Py.L(R(0.45 - wall - 0.005), R(CageTop - 0.005), R(Front - wall - 0.005))));
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("+z", [0, 0.5, 1], "+z"); // (the first Bed Block: the bed runs on from its front)
-        p.Sock("-z", [0, 0.5, -1], "-z"); // (a Roller Tile's run butted on its Piece in: RollerRuns.Butted)
-        p.Stats(2400, 2200, 6, 10);
+        p.Sock("+z", [0, 0.5, 1], "+z"); // (the bed's head row: the Core stands beside it)
+        p.Stats(1800, 2200, 6, 10);
         p.Set(("power", CorePower), ("storage", Kw(("bulk", bulk),
                 ("panel", Kw(("speed", 1), ("at", Py.L(0, WorkY, 0)), ("maxWidth", 32), ("maxLength", 32), ("blockPower", BlockPower))))),
-            ("machineBlock", Kw(("family", "panel"), ("role", "core"), ("origin", Py.L(0, 1.6, 0)))),
+            ("machineBlock", Kw(("family", "panel"), ("role", "core"), ("origin", Py.L(0, 1.0, 0)))), // (its cell's middle level with the low Bed Blocks')
             ("config", Py.L(
                 Kw(("key", "recipe"), ("label", "Preset"), ("group", "Orders"), ("options", Py.L([.. HullLoft.PanelPresets.Select(x => (object?)x.Label)])), ("default", 0),
                     ("tooltip", "The panel its Queue button orders, at the preset's own size, in steel; Queue also asks a linked Extruder for its blanks. The Preset button on its screen opens a picker of them.")),
                 ExtrusionParts.OrderCount,
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
-            ("ports", Py.L(Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, 0.5, -E)), ("face", "-z"), ("opening", Py.L(32, 0.6))), // (a blank as wide as the widest bed's panel)
-                Kw(("name", "Offcut"), ("type", "chute"), ("dir", "out"), ("at", Py.L(OffX, OffY, -E)), ("face", "-z")))),
+            ("ports", Py.L(Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0.5, 0.75, Back)), ("face", "-z"), ("opening", Py.L(32, 0.6))), // (a blank as wide as the widest bed's panel)
+                Kw(("name", "Offcut"), ("type", "chute"), ("dir", "out"), ("at", Py.L(OffX, OffY, Back)), ("face", "-z")))),
             ("collider", "boxes"));
-        // The control face on its left: screen at a standing eye, a lamp over it, the button shelf under it.
+        // The control face on the screen module's in-feed side: screen at a standing eye, a lamp over it, the button shelf under it.
         var keepClear = p.Sockets.Select(k => (new[] { Py.D(((List<object?>)k["at"]!)[0]), Py.D(((List<object?>)k["at"]!)[1]), Py.D(((List<object?>)k["at"]!)[2]) }, (string)k["dir"]!)).ToList();
-        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x"], rows: 8, width: 0.84, lamp: true);
+        var (plate, panel, lamp) = PartScreens.Mount(p.Boxes, keepClear, faces: ["-x"], rows: 6, width: 0.6, lamp: true);
         PartScreens.Fit(p.Boxes, plate, most: 200);
         MachineLook.Buttons(p, plate, (string)panel["face"]!);
         if (lamp is not null)
@@ -90,160 +93,101 @@ public sealed class PanelFormerParts : IPartGenerator
         panel["touch"] = Buttons();
         p.Set(("panels", Py.L(panel)));
         // ---- The look ----
-        MachineLook.Skirt(p, -E, E, -E, E, 0.003, 0.14, 0.012);
-        // Piece in on its back, the shared port look, an arrow in at its mouth and the in band (the white side).
-        MachineLook.Port(p, [0, 0.5, -E], 2, -1, 0.3, 0.12, true);
-        MachineLook.Arrow(p, 2, -E - 0.02, -1, 0, -1, 0.64, 0.5, 0.36, 0.22, MachineLook.In); // (beside the mouth, pointing at it: in)
-        p.Add(L([-E - 0.014, 1.1, -E - 0.014], [E + 0.014, 1.22, -E], MachineLook.In)); // (the in band across its back)
-        // The offcut bin: a dark rim with a hazard edge, its grating, a level gauge, its Offcut port (the shared port look, orange: out) and its label.
-        p.Add(L([-E - 0.004, H - 0.06, -E - 0.006], [E + 0.004, H + 0.004, -E + wall], MachineLook.Base));
-        p.Add(L([-E - 0.006, H - 0.06, -E + wall], [-E + wall, H + 0.004, hz1 + 0.004], MachineLook.Base));
-        p.Add(L([E - wall, H - 0.06, -E + wall], [E + 0.006, H + 0.004, hz1 + 0.004], MachineLook.Base));
-        MachineLook.Hazard(p, [-E - 0.006, H - 0.12, -E - 0.012], [E + 0.006, H - 0.064, -E - 0.006]);
-        foreach (var x in new[] { -0.5, 0, 0.5 })
-            p.Add(L([x - 0.015, H - 0.04, -E + wall], [x + 0.015, H - 0.012, hz1 - wall], MachineLook.Base));
-        MachineLook.Port(p, [OffX, OffY, -E], 2, -1, 0.14, 0.12, false);
-        p.Add(L([0.12, cab + 0.12, -E - 0.02], [0.16, H - 0.16, -E], MachineLook.Base)); // (its level gauge's tube, the bin's height)
-        p.Add(L([0.105, cab + 0.16, -E - 0.032], [0.175, cab + 0.36, -E - 0.02], MachineLook.Accent)); // (its float)
-        p.Add(L([0.3, cab + 0.3, -E - 0.016], [0.8, cab + 0.5, -E], MachineLook.Out)); // (its label: "OFFCUT", out)
-        p.Add(L([0.34, cab + 0.37, -E - 0.028], [0.76, cab + 0.43, -E - 0.016], MachineLook.Ink));
-        // The in rollers in the slot: lower rollers level with the bed's rails, pinch rollers over them; they turn while it works.
-        var rr = 0.06;
-        foreach (var z in new[] { E - 0.24, E - 0.09 })
-        {
-            p.Add(MachineLook.Work(L([-E + 0.084, WorkY - 2 * rr, z - rr], [E - 0.084, WorkY, z + rr], MachineLook.Steel, "steel", shape: Cyl("+x")), "spin", "+x"));
-            p.Add(MachineLook.Work(L([-E + 0.09, WorkY + 0.012, z - rr * 0.8], [E - 0.09, WorkY + 0.012 + 1.6 * rr, z + rr * 0.8], MachineLook.Accent, shape: Cyl("+x")), "spin", "-x"));
-        }
-        p.Add(L([-E + 0.084, slotLo + 0.004, E - slotD + 0.004], [E - 0.084, WorkY - 2 * rr - 0.01, E - 0.01], MachineLook.Base)); // (the rollers' trough)
-        // Over the slot: hazard paint (it takes hands as well as sheet), the orange band of the bed's way and a lintel with bolts.
-        MachineLook.Hazard(p, [-E + 0.08, slotHi + 0.02, E], [E - 0.08, slotHi + 0.14, E + 0.012]);
-        MachineLook.Hazard(p, [-E + 0.08, slotLo - 0.14, E], [E - 0.08, slotLo - 0.02, E + 0.012]);
-        p.Add(L([-E, 2.0, E], [E, 2.12, E + 0.014], MachineLook.Out));
-        MachineLook.Arrow(p, 2, E + 0.014, 1, 0, 1, 0, 2.06, 0.5, 0.08, MachineLook.Ink);
-        foreach (var x in new[] { -0.8, -0.4, 0.4, 0.8 })
-            p.Add(L([x - 0.02, slotHi + 0.17, E - 0.004], [x + 0.02, slotHi + 0.21, E + 0.016], MachineLook.Steel));
-        // The hydraulic power unit on its right side: a tank, the pump's motor and its fan turning, the pressure line up to the deck.
-        p.Add(L([E, 0.14, -0.85], [E + 0.24, 0.8, -0.15], MachineLook.Base));
-        p.Add(L([E + 0.24, 0.2, -0.75], [E + 0.29, 0.74, -0.25], Trim, paintable: true)); // (the tank's sight panel)
-        p.Add(L([E + 0.248, 0.3, -0.6], [E + 0.3, 0.62, -0.56], "#3a8fd0")); // (its oil level, behind glass)
-        p.Add(L([E, 0.2, 0.0], [E + 0.3, 0.56, 0.36], MachineLook.Base, shape: Cyl("+x", 14))); // (the motor)
-        p.Add(MachineLook.Work(L([E + 0.3, 0.24, 0.04], [E + 0.34, 0.52, 0.32], MachineLook.Accent, shape: Cyl("+x", 10)), "spin", "+x")); // (its fan cowl's spinner)
-        p.Add(L([E + 0.06, 0.8, -0.5], [E + 0.12, 2.38, -0.44], MachineLook.Steel, "steel")); // (the pressure line, up)
-        p.Add(L([E + 0.04, 1.3, -0.54], [E + 0.14, 1.36, -0.4], MachineLook.Base)); // (its clamps)
-        p.Add(L([E + 0.04, 1.9, -0.54], [E + 0.14, 1.96, -0.4], MachineLook.Base));
-        p.Add(L([E + 0.02, 1.0, -0.36], [E + 0.06, 1.24, -0.12], "#e8e6df", shape: Cyl("+x"))); // (its pressure gauge)
-        p.Add(L([E + 0.06, 1.1, -0.25], [E + 0.075, 1.2, -0.23], MachineLook.Ink));
-        // The electrical cabinet on its right, over the pump: a door with its frame, louvres, a handle and a warning plate.
-        p.Add(L([E, 1.0, 0.1], [E + 0.03, 2.2, 0.85], Trim, paintable: true));
-        p.Add(L([E + 0.03, 1.04, 0.14], [E + 0.046, 2.16, 0.81], Green, paintable: true));
-        foreach (var y in new[] { 1.85, 1.92, 1.99 })
-            p.Add(L([E + 0.046, y, 0.24], [E + 0.06, y + 0.03, 0.7], MachineLook.Base));
-        p.Add(L([E + 0.046, 1.45, 0.72], [E + 0.08, 1.6, 0.76], MachineLook.Accent));
-        p.Add(L([E + 0.046, 1.2, 0.3], [E + 0.06, 1.4, 0.55], MachineLook.Accent, "hazard paint")); // (high voltage)
-        // Cable runs: from the cabinet up the right side to the deck, and along the deck's edge to the front (the bed's power).
-        p.Add(L([E + 0.006, 2.2, 0.4], [E + 0.08, H - 0.4, 0.5], MachineLook.Base));
-        p.Add(L([0.6, cab + 0.24, hz1 + 0.06], [0.72, cab + 0.3, E - 0.02], MachineLook.Base));
-        // Cladding: sunk-panel frames on its back and right (the body's tone, so they take its paint), a maker's plate on its back.
-        foreach (var x in new[] { -0.5, 0.5 })
-            p.Add(L([x - 0.03, 0.16, -E - 0.016], [x + 0.03, 2.38, -E], Trim, paintable: true));
-        p.Add(L([-E, 2.26, -E - 0.016], [E, 2.34, -E], Trim, paintable: true));
-        p.Add(L([0.55, 0.7, -E - 0.024], [0.85, 0.9, -E], MachineLook.In));
-        p.Add(L([0.58, 0.78, -E - 0.036], [0.82, 0.82, -E - 0.02], MachineLook.Ink));
-        // On its deck: the screw jacks' drive box and a beacon by the lamp's side, and a crush warning on the deck's front edge.
-        p.Add(L([-0.85, cab + 0.24, 0.3], [-0.35, cab + 0.6, 0.8], MachineLook.Base));
-        p.Add(MachineLook.Work(L([-0.35, cab + 0.34, 0.45], [-0.25, cab + 0.5, 0.65], MachineLook.Accent, shape: Cyl("+x", 10)), "spin", "+x"));
-        p.Add(L([0.2, cab + 0.24, 0.5], [0.4, cab + 0.6, 0.7], MachineLook.Base, shape: Cyl("+y")));
-        p.Add(MachineLook.Work(L([0.18, cab + 0.6, 0.48], [0.42, cab + 0.66, 0.72], MachineLook.Base, shape: Cyl("+y")), "smoke")); // (the oil cooler's vent: it steams while it works)
-        MachineLook.Hazard(p, [-E, cab + 0.12, E], [E, cab + 0.22, E + 0.012]);
+        // The column: a foot plate, its lattice rings where no module covers it, bolt flanges where each module is bolted on.
+        p.Add(L([-0.9, 0.006, -0.65], [0.9, 0.06, Front + 0.004], MachineLook.Base));
+        foreach (var y in new[] { 0.16, 1.22, 1.38, 2.36 })
+            p.Add(L([-0.27, y, -0.222], [0.27, y + 0.05, 0.122], MachineLook.Base));
+        foreach (var x in new[] { -0.2, 0.2 })
+            foreach (var y in new[] { 0.3, 1.45 })
+                p.Add(L([x - 0.03, y - 0.004, 0.1], [x + 0.03, y + 0.06, 0.126], MachineLook.Steel)); // (the modules' bolts into the column's face)
+        // The base link: a hazard top, three ribs across it, and the hose and cable runs along it into the bed's side.
+        p.Add(L([-0.596, 0.28, 0.054], [0.596, 0.3, 0.993], MachineLook.Accent, "hazard paint"));
+        foreach (var x in new[] { -0.45, 0.0, 0.45 })
+            p.Add(L([x - 0.04, 0.006, 0.06], [x + 0.04, 0.32, 0.99], Trim));
+        p.Add(L([0.15, 0.302, 0.11], [0.25, 0.402, 0.99], MachineLook.Accent, shape: Cyl("+z"))); // (the oil hose)
+        p.Add(L([0.26, 0.302, 0.11], [0.4, 0.442, 0.99], MachineLook.Ink, shape: Cyl("+z"))); // (the power cable)
+        p.Add(L([0.15, 0.302, 0.11], [0.25, 0.346, 0.21], MachineLook.Accent, shape: Cyl("+y"))); // (the hose's riser up into the low module)
+        // The low module: a hazard band round its foot, its cabinet door on the back with louvres, a handle and a warning plate.
+        p.Add(L([-0.912, 0.35, Back - 0.012], [0.912, 0.45, Front + 0.012], MachineLook.Accent, "hazard paint"));
+        p.Add(L([0.1, 0.5, Back - 0.03], [0.82, 1.1, Back], Trim, paintable: true));
+        p.Add(L([0.14, 0.54, Back - 0.046], [0.78, 1.06, Back - 0.03], Green, paintable: true));
+        foreach (var y in new[] { 0.9, 0.96, 1.02 })
+            p.Add(L([0.24, y, Back - 0.06], [0.68, y + 0.03, Back - 0.046], MachineLook.Base));
+        p.Add(L([0.7, 0.7, Back - 0.08], [0.74, 0.84, Back - 0.046], MachineLook.Accent));
+        p.Add(L([0.22, 0.6, Back - 0.06], [0.42, 0.76, Back - 0.046], MachineLook.Accent, "hazard paint")); // (high voltage)
+        // Piece in on the low module's back: the shared port look, white (in), an arrow in at its mouth.
+        MachineLook.Port(p, [0.5, 0.75, Back], 2, -1, 0.14, 0.1, true);
+        // The hydraulic unit behind the low module, on the foot plate: a tank with its sight panel, the pump's motor and its fan turning,
+        // the pressure line up to the screen module, its gauge.
+        p.Add(L([-0.85, 0.06, -0.62], [-0.3, 0.8, Back + 0.004], MachineLook.Base));
+        p.Add(L([-0.8, 0.12, -0.636], [-0.35, 0.74, -0.62], Trim, paintable: true));
+        p.Add(L([-0.7, 0.3, -0.648], [-0.64, 0.62, -0.636], "#3a8fd0")); // (its oil level, behind glass)
+        p.Add(L([-0.26, 0.062, -0.6], [0.04, 0.362, -0.4], MachineLook.Base, shape: Cyl("+x", 14))); // (the motor)
+        p.Add(MachineLook.Work(L([0.04, 0.09, -0.58], [0.08, 0.33, -0.42], MachineLook.Accent, shape: Cyl("+x", 10)), "spin", "+x")); // (its fan cowl's spinner)
+        p.Add(L([-0.62, 0.8, -0.44], [-0.56, 1.5, -0.38], MachineLook.Steel, "steel")); // (the pressure line, up)
+        p.Add(L([-0.64, 1.0, -0.452], [-0.54, 1.06, -0.37], MachineLook.Base)); // (its clamp)
+        p.Add(L([-0.72, 0.84, -0.66], [-0.54, 1.02, -0.62], "#e8e6df", shape: Cyl("-z"))); // (its pressure gauge)
+        p.Add(L([-0.64, 0.92, -0.672], [-0.62, 1.0, -0.66], MachineLook.Ink));
+        // Between the modules: two cable loops; the screen module's orange band, bolts on its back.
+        foreach (var x in new[] { 0.15, 0.3 })
+            p.Add(L([x - 0.03, 1.153, 0.15], [x + 0.03, 1.497, 0.21], MachineLook.Ink, shape: Cyl("+y")));
+        p.Add(L([-0.712, 2.15, -0.432], [0.412, 2.23, 0.312], MachineLook.Out));
+        foreach (var x in new[] { -0.55, 0.25 })
+            foreach (var y in new[] { 1.6, 2.05 })
+                p.Add(L([x - 0.025, y - 0.025, -0.45], [x + 0.025, y + 0.025, -0.42], MachineLook.Steel, shape: Cyl("-z")));
+        // The cage on the deck: a dark rim with a hazard edge, its grating, a level gauge, its Offcut port (orange: out) and its label.
+        p.Add(L([-0.454, CageTop - 0.06, Back - 0.006], [0.454, CageTop + 0.004, Back + wall], MachineLook.Base));
+        p.Add(L([-0.454, CageTop - 0.06, Front - wall], [0.454, CageTop + 0.004, Front + 0.006], MachineLook.Base));
+        MachineLook.Hazard(p, [-0.456, CageTop - 0.12, Back - 0.012], [0.456, CageTop - 0.064, Back - 0.006]);
+        foreach (var x in new[] { -0.2, 0.0, 0.2 })
+            p.Add(L([x - 0.015, CageTop - 0.04, Back + wall], [x + 0.015, CageTop - 0.012, Front - wall], MachineLook.Base));
+        MachineLook.Port(p, [OffX, OffY, Back], 2, -1, 0.1, 0.1, false);
+        p.Add(L([0.32, cy + 0.04, Back - 0.02], [0.36, CageTop - 0.14, Back], MachineLook.Base)); // (its level gauge's tube)
+        p.Add(L([0.305, cy + 0.06, Back - 0.032], [0.375, cy + 0.2, Back - 0.02], MachineLook.Accent)); // (its float)
+        p.Add(L([0.05, cy + 0.06, Back - 0.016], [0.28, cy + 0.2, Back], MachineLook.Out)); // (its label: "OFFCUT", out)
+        p.Add(L([0.07, cy + 0.11, Back - 0.028], [0.26, cy + 0.15, Back - 0.016], MachineLook.Ink));
+        // A beacon on the cage's bed-side corner, turning while the machine is on.
+        p.Add(L([0.28, CageTop + 0.003, Front - 0.1], [0.42, CageTop + 0.05, Front + 0.004], MachineLook.Base));
+        p.Add(MachineLook.Work(L([0.3, CageTop + 0.05, Front - 0.09], [0.4, CageTop + 0.2, Front - 0.01], MachineLook.Out, shape: Cyl("+y", 10)), "spin", "+y"));
+        // A maker's plate on the screen module's bed side, the in band round the low module's in-feed end.
+        p.Add(L([-0.5, 1.8, 0.3], [-0.2, 2.0, 0.316], MachineLook.In));
+        p.Add(L([-0.47, 1.88, 0.316], [-0.23, 1.92, 0.328], MachineLook.Ink));
+        p.Add(L([-0.916, 0.98, Back - 0.016], [-0.9, 1.1, Front + 0.016], MachineLook.In));
         return p;
     }
 
     /// <summary>
-    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed, 3.2 m tall. A lower bed with a steel deck, where the lower die stands, corner
-    /// posts the upper die rides between (nothing over it: the upper die is the machine's top, Sean 2026-11-24), and its own power. Welds to the Core, to another block's four sides,
-    /// or to an Out Table.
+    /// A Bed Block: one 2 x 2 m cell of a Panel Former's bed. Solid to the roll line (a person stands on the bed, a dropped panel lies on
+    /// it), a skirt round the bed's outline; the lanes, post zones, pocket, die and jaws over a machine's whole bed are PanelFormerRender's.
+    /// A block that is in no machine draws a plain bed cell (its "bare" boxes) so it never stands invisible.
     /// </summary>
     private static Part BedBlock()
     {
         var p = new Part("Bed Block", Small, "Extrusion",
-            "Weld it on a Panel Former Core's front, or beside another Bed Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core, an Out Table on its far end; a block outside it idles.",
+            "Weld it beside a Panel Former Core, or beside another Bed Block: 2 x 2 m more bed. The bed is the largest full rectangle of blocks next to the Core, an Out Table on its far end; a block outside it idles. Its roller lanes, die pocket and jaws are the machine's, drawn across the whole bed.",
             group: "Production", color: Green);
-        const double d = 0.07, rib = 0.13; // (the lower body's sides are sunk between ribs: its frame at the edges and a cross rib at the middle)
-        // Solid: the lower bed (a sunk body, framed by ribs), and a lid over the upper die's back that isn't drawn (the cell's 3.2 m, which the
-        // block system measures, and something to stand on over the die). Over the deck: the posts here, the dies and rails by the renderer.
-        p.Add(Box([-E + d, 0.003, -E + d], [E - d, DeckY, E - d]));
-        p.Add(Box([-E, H - 0.02, -E], [E, H, E], hidden: true));
-        foreach (var (a, b) in new[] { (-E, -E + rib), (-0.065, 0.065), (E - rib, E) })
-        {
-            p.Add(Box([-E, 0.003, a], [E, DeckY, b]));
-            p.Add(Box([a, 0.003, -E], [b, DeckY, E]));
-        }
-        // Where a block is welded on, a fill in the body's tone closes the sunk panels, so no slot runs between two blocks.
-        foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
-        {
-            double[] mn = [-E + rib, 0.003, -E + rib], mx = [E - rib, DeckY - 0.004, E - rib];
-            (mn[n], mx[n]) = sg > 0 ? (E - d - 0.01, E - 0.004) : (-E + 0.004, -E + d + 0.01);
-            p.Add(Fill(L(mn, mx, Green, paintable: true), side));
-        }
-        // The deck over the lower bed: tread plate and screw heads.
-        p.Add(L([-E + 0.004, DeckY, -E + 0.004], [E - 0.004, DeckY + 0.014, E - 0.004], MachineLook.Steel, "tread plate"));
-        foreach (var x in new[] { -0.9, 0.9 })
-            foreach (var z in new[] { -0.9, 0.9 })
-                p.Add(L([x - 0.014, DeckY + 0.014, z - 0.014], [x + 0.014, DeckY + 0.026, z + 0.014], MachineLook.Base));
-        // Over the deck the dies and the rails are drawn by the renderer (PanelFormerRender.DrawDies, Sean 2026-11-24): a lower and an upper
-        // die that take on the panel's shape and squeeze the blank, on rails at the work height.
-        // The corner posts: drawn only at the bed's outer corners (a post's two faces both free), the upper die's guides.
-        foreach (var (sx, xs) in new[] { (1, "+x"), (-1, "-x") })
-            foreach (var (sz, zs) in new[] { (1, "+z"), (-1, "-z") })
-            {
-                double[] X(double a, double b) => sx > 0 ? [a, b] : [-b, -a];
-                double[] Z(double a, double b) => sz > 0 ? [a, b] : [-b, -a];
-                var px = X(E - 0.15, E - 0.004);
-                var pz = Z(E - 0.15, E - 0.004);
-                p.Add(Seam(L([px[0], DeckY + 0.034, pz[0]], [px[1], H - 0.004, pz[1]], MachineLook.Base), xs, zs));
-                var gx = X(E - 0.17, E - 0.15);
-                p.Add(Seam(L([gx[0], DeckY + 0.3, pz[0] + 0.03], [gx[1], H - 0.2, pz[1] - 0.03], MachineLook.Steel, "steel"), xs, zs)); // (its guide strip, polished by the upper die)
-                var fx = X(E - 0.2, E - 0.004);
-                var fz = Z(E - 0.2, E - 0.004);
-                p.Add(Seam(L([fx[0], DeckY + 0.032, fz[0]], [fx[1], DeckY + 0.09, fz[1]], MachineLook.Base), xs, zs)); // (its foot plate)
-                p.Add(Seam(L([fx[0], H - 0.06, fz[0]], [fx[1], H - 0.002, fz[1]], MachineLook.Base), xs, zs)); // (its cap)
-            }
-        // On each side, drawn while nothing of its machine is welded there: the skirt, the hazard edge along the bed's lip, louvres in the
-        // sunk panels.
+        const double top = WorkY - 0.004; // (solid to 4 mm under the rollers' tops, where a piece's underside rides)
+        p.Add(Box([-E, 0.003, -E], [E, top, E], hidden: true));
+        // The skirt along the bed's outline: drawn on each face no cell of its machine is welded on.
         foreach (var (side, n, sg) in new[] { ("+x", 0, 1), ("-x", 0, -1), ("+z", 2, 1), ("-z", 2, -1) })
         {
             int u = 2 - n;
-            PyDict? Face(double out0, double out1, double u0, double u1, double y0, double y1, string colour, string? finish = null)
-            {
-                double[] mn = new double[3], mx = new double[3];
-                (mn[n], mx[n]) = sg > 0 ? (E + out0, E + out1) : (-E - out1, -E - out0);
-                (mn[u], mx[u]) = (u0, u1);
-                (mn[1], mx[1]) = (y0, y1);
-                return L(mn, mx, colour, finish);
-            }
-            p.Add(Seam(Face(0, 0.014, -E, E, 0.003, 0.14, MachineLook.Base), side));
-            p.Add(Seam(Face(0, 0.014, -E + 0.02, E - 0.02, DeckY - 0.12, DeckY - 0.02, MachineLook.Accent, "hazard paint"), side));
-            foreach (var (a, b) in new[] { (-E + rib + 0.06, -0.065 - 0.06), (0.065 + 0.06, E - rib - 0.06) })
-                foreach (var y in new[] { 0.36, 0.46, 0.56 })
-                    p.Add(Seam(Face(-d + 0.004, -d + 0.03, a, b, y, y + 0.04, MachineLook.Base), side)); // (louvres in the sunk panel)
+            double[] mn = new double[3], mx = new double[3];
+            (mn[n], mx[n]) = sg > 0 ? (E, E + 0.014) : (-E - 0.014, -E);
+            (mn[u], mx[u]) = (-E, E);
+            (mn[1], mx[1]) = (0.006, 0.14);
+            p.Add(Seam(L(mn, mx, MachineLook.Base), side));
         }
-        // The oil manifold down its right side (one side of the bed): a pipe with a valve block, a gauge and a hose up to the dies.
-        p.Add(Seam(L([E + 0.01, 0.48, -E + 0.004], [E + 0.09, 0.56, E - 0.004], MachineLook.Steel, "steel", shape: Cyl("+z")), "+x"));
-        p.Add(Seam(L([E + 0.004, 0.4, -0.22], [E + 0.14, 0.64, 0.02], MachineLook.Base), "+x"));
-        p.Add(Seam(L([E + 0.14, 0.44, -0.18], [E + 0.18, 0.6, -0.02], MachineLook.Accent), "+x")); // (its valve's hand wheel)
-        p.Add(Seam(L([E + 0.06, 0.64, 0.08], [E + 0.11, DeckY + 1.3, 0.13], MachineLook.Base), "+x")); // (the hose up)
-        p.Add(Seam(L([E + 0.004, 0.68, 0.3], [E + 0.03, 0.84, 0.46], "#e8e6df", shape: Cyl("+x")), "+x")); // (its gauge)
-        p.Add(Seam(L([E + 0.03, 0.75, 0.37], [E + 0.044, 0.82, 0.39], MachineLook.Ink), "+x"));
-        // A maker's plate on its left side.
-        p.Add(Seam(L([-E - 0.024, 0.66, 0.3], [-E - 0.004, 0.8, 0.6], MachineLook.In), "-x"));
-        p.Add(Seam(L([-E - 0.036, 0.71, 0.33], [-E - 0.022, 0.75, 0.57], MachineLook.Ink), "-x"));
+        // A block in no machine: a plain bed cell, a green body under a tread deck with a hazard edge.
+        p.Add(Bare(L([-E + 0.004, 0.006, -E + 0.004], [E - 0.004, top - 0.03, E - 0.004], Green, paintable: true)));
+        p.Add(Bare(L([-E + 0.008, top - 0.03, -E + 0.008], [E - 0.008, top - 0.004, E - 0.008], MachineLook.Steel, "tread plate")));
+        p.Add(Bare(L([-E, top - 0.16, -E - 0.004], [E, top - 0.08, E + 0.004], MachineLook.Accent, "hazard paint")));
         p.Sock("+x", [1, 0.5, 0], "+x");
         p.Sock("-x", [-1, 0.5, 0], "-x");
         p.Sock("+z", [0, 0.5, 1], "+z");
         p.Sock("-z", [0, 0.5, -1], "-z");
         p.Sock("bottom", [0, 0, 0], "-y");
-        p.Sock("top", [0, 3.2, 0], "+y"); // (on the lid: older blueprints stood Mast Blocks there; nothing needs one now)
-        p.Stats(5200, 2600, 8, 20);
+        p.Stats(3600, 2600, 8, 20);
         p.Set(("machineBlock", Kw(("family", "panel"), ("role", "block"))), ("centreSockets", false), ("collider", "boxes"));
         return p;
     }

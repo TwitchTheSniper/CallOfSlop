@@ -15,28 +15,19 @@ public static class ConstructPanelFormer
 {
     public const float OverMost = 1.25f; // a blank fits a panel up to this much over its flat size, each way (the trim is the offcut)
 
-    /// <summary>
-    /// How deep a panel (crown and rake) a bed forms (m): its shaped dies take any panel HullLoft makes (its 80 cm crown and 2 m rake), with
-    /// nothing stood on the bed (Sean, 2026-11-24: the corner masts and the head over them are gone).
-    /// </summary>
-    public const float DepthMost = 4;
-
-    /// <summary>How deep a panel this bed forms: <see cref="DepthMost"/>, whatever stands on it.</summary>
-    public static float PinDepth(Construct c, in CMachineAsm asm) => DepthMost;
-
     /// <summary>A panel's depth: the shortest of its bounds' three sides.</summary>
     public static float Depth(ConstructPartDef panel) =>
         MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, MathF.Min(panel.BoundsMax.Y - panel.BoundsMin.Y, panel.BoundsMax.Z - panel.BoundsMin.Z));
-    public const float SetSeconds = 4, PressSeconds = 8; // a stroke on the block bed: the pins set, then the upper platen presses
+    public const float StrokeSeconds = 12; // a stroke on the block bed: the jaws grip, the die rises and wraps the sheet, holds, and lets go
 
     /// <summary>
     /// Seconds a panel takes on a former of speed 1. On the block bed (a Core) the blocks work together, so every stroke is the same: the
-    /// pins set and the platen presses (drawing 15). An older former's: 4 s and 2 s a square metre of its largest face.
+    /// jaws grip the blank, the die rises and stretches it, holds and lets go (<see cref="Pose"/>). An older former's: 4 s and 2 s a square metre of its largest face.
     /// </summary>
     public static float Seconds(ConstructPartDef former, ConstructPartDef panel)
     {
         if (former.BlockRole == BlockRole.Core)
-            return SetSeconds + PressSeconds;
+            return StrokeSeconds;
         Sides(panel, out var a, out var b);
         return 4 + 2 * a * b;
     }
@@ -71,15 +62,13 @@ public static class ConstructPanelFormer
         {
             if (along <= 0 || !MachineBlocks.TryOf(c, part, out var asm) || asm.Out == ushort.MaxValue || asm.OutCells < nAcross)
                 return false;
-            if (Depth(panel) > PinDepth(c, asm) + 0.005f)
-                return false;
         }
         return a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f;
     }
 
     /// <summary>
     /// Server and client: why this former can't form <paramref name="panel"/> now, or null. A Core: no bed, no Out Table on its far end, a
-    /// panel bigger than its bed (in blocks: "needs a 4 x 3 bed, this one is 3 x 2") or deeper than its pins rise.
+    /// panel bigger than its bed (in blocks: "needs a 4 x 3 bed, this one is 3 x 2"). Any depth: the die sinks into a pocket as deep as its shape needs.
     /// </summary>
     public static string? BedRefusal(Construct c, int part, ConstructPartDef panel)
     {
@@ -95,9 +84,6 @@ public static class ConstructPanelFormer
                 return asm.Out == ushort.MaxValue
                     ? "no Out Table: weld one on the bed's far end, across from it"
                     : $"its Out Tables cover {asm.OutCells} of the bed's {nAcross} blocks across: weld more beside them";
-            var deep = Depth(panel);
-            if (deep > PinDepth(c, asm) + 0.005f)
-                return $"panel too deep for the dies: {deep:0.##} m of crown and rake, the deepest a bed forms is {DepthMost:0} m";
         }
         if (a <= MathF.Max(along, across) + 0.005f && b <= MathF.Min(along, across) + 0.005f)
             return null;
@@ -636,143 +622,126 @@ public static class ConstructPanelFormer
         d.DataIn = [ConstructGatherer.RunPort];
     }
 
-    // ---- What the renderer reads (drawing 15's animations: drawn only, nothing on the server or the wire) ---------------------------
+    // ---- What the renderer reads (the stretch former's animation: drawn only, nothing on the server or the wire) ----------------------
 
-    public const float CycleSeconds = SetSeconds + PressSeconds; // one drawn stroke: the pins set (the first third), the platen presses
-
-    /// <summary>Where a working former is in its drawn stroke, 0 to 1 (the clock's, so every client's beds move alike).</summary>
-    public static float Phase(double now) => (float)(now / CycleSeconds % 1.0);
-
-    /// <summary>The upper die's travel at <paramref name="phase"/>, 0 (up) to 1 (down): up while the dies shape, down, held, up.</summary>
-    public static float PressAt(float phase)
+    /// <summary>
+    /// Where a former is in its look (Sean, 2026-11-24: the Panel Former Lab's stretch former), worked out from its store each frame:
+    /// a stroke runs from when the drawing first saw it at work (or back from its Progress, joined mid-stroke); a changeover runs when the
+    /// head order's panel shape is not the one the die shows. Stage 0 ready (or idle), 1 the jaws grip, 2 the die rises and wraps the
+    /// sheet, 3 it holds, 4 it lets go and sinks; 6 a changeover (<see cref="Morph"/> 0 to 1). All values 0 to 1.
+    /// </summary>
+    public struct FormPose
     {
-        const float set = SetSeconds / CycleSeconds;
-        if (phase < set)
-            return 0;
-        if (phase < set + 0.1f)
-            return Smooth((phase - set) / 0.1f);
-        if (phase < 0.88f)
-            return 1;
-        return 1 - Smooth((phase - 0.88f) / 0.12f);
+        public int Stage;
+        public float U; // the stage's own progress, eased
+        public float Rise; // the die: 0 at rest under the roll line, 1 its lowest point at the roll line
+        public float Grip; // the jaws in use: 0 open at their ready spot, 1 closed on the sheet's edge
+        public float Hold; // the jaws ride with the sheet's edge height (1) or are back down at the roll line (0)
+        public float Shape; // the sheet: 0 the flat blank, 1 the formed panel (the die's shape exactly)
+        public float Morph; // a changeover's progress, or -1
+        public DieInfo? Die, From; // the shape the die shows and, in a changeover, the one it leaves
     }
+
+    /// <summary>The fractions of a stroke each stage ends at: the jaws grip, the die wraps, holds, then lets go and sinks.</summary>
+    public const float GripEnd = 0.15f, WrapEnd = 0.6f, HoldEnd = 0.75f;
+    public const float ChangeSeconds = 4; // a changeover between two panels' shapes: the columns drop, wave to the new shape and the jaws set
+    public const float DieBelow = 0.05f; // the die's highest point at rest, under the roll line
 
     private static float Smooth(float t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 
-    // The orders whose shapes the pins show (names compared by reference, read once a change): a few slots, so formers working different
-    // panels in one view don't read their keys again every frame.
-    private static readonly string?[] _pinName = new string?[8];
-    private static readonly HullLoft.PanelShape?[] _pinShape = new HullLoft.PanelShape?[8];
-    private static int _pinNext;
-
-    private static HullLoft.PanelShape? PinShape(string name)
-    {
-        for (var k = 0; k < _pinName.Length; k++)
-            if (ReferenceEquals(_pinName[k], name))
-                return _pinShape[k];
-        var at = _pinNext;
-        _pinNext = (_pinNext + 1) % _pinName.Length;
-        (_pinName[at], _pinShape[at]) = (name, HullLoft.PanelOf(name));
-        return _pinShape[at];
-    }
-
     /// <summary>
-    /// How far a Bed Block's pin at <paramref name="at"/> (the body frame) stands up (m, at most <paramref name="most"/>) on Core
-    /// <paramref name="core"/>'s bed now: in a wave from the Core's end while the pins set, to the height of the head order's panel over that
-    /// pin (centred on the bed, its length along the bed's), held while the platen presses, then down. Allocates only when the order changes.
+    /// The former's pose now (client draw; also what <see cref="BedLook"/> lays the sheet by). Keeps its clocks on the store (never sent).
+    /// Allocates only when a new order's shape is first read (<see cref="Die"/>).
     /// </summary>
-    public static float PinLift(Construct c, int core, Vector3 at, float most, double now)
+    public static FormPose Pose(Construct c, int core, CStore st, double now)
     {
-        if ((uint)core >= (uint)c.PartCount || !MachineBlocks.TryOf(c, core, out var asm) || asm.W == 0)
-            return 0;
-        ref readonly var p = ref c.Parts[core];
-        var d = p.D;
-        var cell = d.BlockCell;
-        var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var rel = Rot24.Apply(Rot24Back(p.Rot), at - p.Pos) - o; // (the Core's frame, from its own cell's middle)
-        // Along the bed (from the Core's end, 0 to 1) and across it (-1 to 1).
-        float x0 = (asm.X0 - 0.5f) * cell, z0 = (asm.Z0 - 0.5f) * cell, w = asm.W * cell, l = asm.L * cell;
-        float u, v, bedLong, bedWide;
-        switch (asm.OutSide)
+        var d = c.Parts[core].D;
+        var head = WorkOrders.HeadOf(c.Parts[core], out _);
+        var shaped = head && Die(c, core, out var die) ? die : null;
+        if (st.StrokeAt != now)
         {
-            case 4: (u, v, bedLong, bedWide) = ((rel.Z - z0) / l, (rel.X - x0) / w * 2 - 1, l, w); break;
-            case 5: (u, v, bedLong, bedWide) = (1 - (rel.Z - z0) / l, 1 - (rel.X - x0) / w * 2, l, w); break;
-            case 0: (u, v, bedLong, bedWide) = ((rel.X - x0) / w, 1 - (rel.Z - z0) / l * 2, w, l); break;
-            default: (u, v, bedLong, bedWide) = (1 - (rel.X - x0) / w, (rel.Z - z0) / l * 2 - 1, w, l); break;
-        }
-        // The shape: the head order's panel, laid with its length along the bed and centred on it.
-        float height;
-        if (WorkOrders.HeadOf(p, out var head) && head.Name is { } name)
-        {
-            if (PinShape(name) is { } sh)
+            st.StrokeAt = now;
+            // The shape the die shows: a new head order's starts a changeover (at once while it works: a client that joined mid-stroke).
+            if (head && (!st.FormSeen || !ReferenceEquals(shaped, st.FormDie)))
             {
-                float pl = sh.L / 100f, pw = sh.Kind == HullLoft.PanelLoft ? MathF.Max(sh.W, sh.NoseW) / 100f : sh.W / 100f;
-                var s = ((u - 0.5f) * bedLong + pl * 0.5f) / MathF.Max(0.01f, pl);
-                var x = v * bedWide * 0.5f / MathF.Max(0.01f, pw * 0.5f);
-                height = s is < 0 or > 1 || x is < -1 or > 1 ? 0.04f : 0.12f + HullLoft.PanelLift(sh, s, x); // (outside the sheet: barely up)
+                (st.FormDieFrom, st.FormDie) = (st.FormDie, shaped);
+                st.FormChangeAt = !st.FormSeen || st.Busy ? -1e9 : now;
+                st.FormSeen = true;
             }
-            else
-                height = 0.3f; // (a vehicle kit's loft: no key shape to read, an even rise)
+            var dur = StrokeSeconds / MathF.Max(0.05f, d.ExtSpeed);
+            if (st.Busy && (!st.StrokeOn || st.Progress + 10 < st.StrokeSeen))
+                (st.StrokeOn, st.StrokeSince) = (true, now - st.Progress / 100.0 * dur);
+            else if (!st.Busy)
+                st.StrokeOn = false;
+            st.StrokeSeen = st.Progress;
+            st.StrokeEnd = dur;
         }
-        else
-            height = 0.3f;
-        // The wave: each pin starts as the one before it is under way, from the Core's end; it holds while the platen presses.
-        var ph = Phase(now);
-        const float set = SetSeconds / CycleSeconds;
-        var start = Math.Clamp(u, 0, 1) * set * 0.6f;
-        var rise = Smooth((ph - start) / (set * 0.4f));
-        if (ph > 0.9f)
-            rise *= 1 - Smooth((ph - 0.9f) / 0.1f);
-        return Math.Clamp(height, 0, most) * rise;
+        var pose = new FormPose { Morph = -1, Die = st.FormDie };
+        if (st.StrokeOn)
+        {
+            var ph = (float)Math.Clamp((now - st.StrokeSince) / Math.Max(0.1, st.StrokeEnd), 0, 1);
+            (pose.Stage, pose.U) = ph < GripEnd ? (1, ph / GripEnd) : ph < WrapEnd ? (2, (ph - GripEnd) / (WrapEnd - GripEnd))
+                : ph < HoldEnd ? (3, (ph - WrapEnd) / (HoldEnd - WrapEnd)) : (4, (ph - HoldEnd) / (1 - HoldEnd));
+            pose.U = Smooth(pose.U);
+        }
+        else if (now - st.FormChangeAt < ChangeSeconds)
+        {
+            pose.Stage = 6;
+            pose.Morph = Smooth((float)((now - st.FormChangeAt) / ChangeSeconds));
+            pose.From = st.FormDieFrom;
+        }
+        var u = pose.U;
+        pose.Rise = pose.Stage switch { 2 => u, 3 => 1, 4 => 1 - u, _ => 0 };
+        pose.Grip = pose.Stage switch { 1 => u, 2 or 3 => 1, 4 => 1 - Smooth(Math.Min(1, u * 2)), _ => 0 };
+        pose.Hold = pose.Stage switch { 2 or 3 => 1, 4 => 1 - Smooth(Math.Clamp((u - 0.5f) * 2, 0, 1)), _ => 0 };
+        // The sheet takes the die's shape as the die's top passes the roll line: it is stretched over the highest point first.
+        var hi = pose.Die?.High ?? 0;
+        pose.Shape = pose.Stage switch
+        {
+            2 => hi > 0.01f ? Math.Clamp((hi - (1 - pose.Rise) * (DieBelow + hi)) / hi, 0, 1) : pose.Rise,
+            3 or 4 => 1,
+            _ => 0,
+        };
+        return pose;
     }
 
-    // ---- The shaped dies (Sean, 2026-11-24): the lower and upper dies take on the head order's panel shape and squeeze the blank ----
-
     /// <summary>
-    /// How far the dies have taken on the panel's shape at <paramref name="phase"/>, 0 (flat) to 1: they shape while open (the lower die
-    /// rises into the shape and lifts the blank on its highest point), hold while the upper die comes down and presses, and go flat again at
-    /// the cycle's end, once the upper die is up, leaving the formed panel on the rails.
-    /// </summary>
-    public static float DieShaping(float phase)
-    {
-        const float set = SetSeconds / CycleSeconds;
-        if (phase < set)
-            return Smooth(phase / (set * 0.9f));
-        if (phase < 0.95f)
-            return 1;
-        return 1 - Smooth((phase - 0.95f) / 0.05f);
-    }
-
-    /// <summary>
-    /// The head order's panel on a former's bed, for its dies: a height map of its top over its footprint as it lies (the key's surface
+    /// The head order's panel on a former's bed, for its die: a height map of its top over its footprint as it lies (the key's surface
     /// sampled through <see cref="HullLoft.PanelAt"/>, so a fold's arc and upright land where the formed panel has them), its footprint's
-    /// length along the bed and width across (m), its highest lift and its sheet thickness (m). Lifts are capped at <see cref="DieDeepest"/>,
-    /// what fits under a Bed Block's crosshead: a deeper panel goes through the upper die, as it went through the platen before.
+    /// length along the bed and width across (m), its highest lift, its sheet thickness (m) and which jaws grip it: the side jaws when its
+    /// shape runs across the bed (its bend lines with the roll), else the end gates. No depth cap: the die sinks into a pocket as deep as
+    /// its shape needs (the Lab's cheat).
     /// </summary>
     public sealed class DieInfo
     {
         public const int Along = 48, Across = 24;
         public readonly float Length, Width, High, Thick;
-        /// <summary>True when the shape is the same all along (a bend or a crown across): a die then needs no cells along the bed.</summary>
-        public readonly bool AlongFlat;
+        public readonly bool SideGrip;
         private readonly float[] _h; // (Along + 1) x (Across + 1) lifts over the lowest point, row by row along
         public DieInfo(float length, float width, float high, float thick, float[] h)
         {
             (Length, Width, High, Thick, _h) = (length, width, high, thick, h);
-            AlongFlat = true;
-            const int row = Across + 1;
-            for (var i = 1; i <= Along && AlongFlat; i++)
+            // Which way its shape runs: the biggest change along a row (across) against the biggest along a column (along).
+            float across = 0, along = 0;
+            var row = Across + 1;
+            for (var i = 0; i <= Along; i++)
+            {
+                float lo = float.MaxValue, hi = float.MinValue;
                 for (var j = 0; j <= Across; j++)
-                    if (MathF.Abs(h[i * row + j] - h[j]) > 0.01f)
-                    {
-                        AlongFlat = false;
-                        break;
-                    }
+                    (lo, hi) = (MathF.Min(lo, h[i * row + j]), MathF.Max(hi, h[i * row + j]));
+                across = MathF.Max(across, hi - lo);
+            }
+            for (var j = 0; j <= Across; j++)
+            {
+                float lo = float.MaxValue, hi = float.MinValue;
+                for (var i = 0; i <= Along; i++)
+                    (lo, hi) = (MathF.Min(lo, h[i * row + j]), MathF.Max(hi, h[i * row + j]));
+                along = MathF.Max(along, hi - lo);
+            }
+            SideGrip = across > along;
         }
 
-        /// <summary>
-        /// The panel's lift (m over its lowest point) at <paramref name="along"/> and <paramref name="across"/> m from its footprint's middle;
-        /// off the footprint, its nearest edge's (a die carries the shape out to its ends and sides).
-        /// </summary>
+        /// <summary>The panel's lift (m over its lowest point) at <paramref name="along"/> and <paramref name="across"/> m from its footprint's middle; past its edge, the edge's (the shape runs on to the jaws).</summary>
         public float LiftAt(float along, float across)
         {
             var u = Math.Clamp((along / MathF.Max(0.01f, Length) + 0.5f) * Along, 0, Along);
@@ -785,19 +754,13 @@ public static class ConstructPanelFormer
         }
     }
 
-    /// <summary>The lower die's face at rest, under the rails' tops (m), and how far it rises over that as it shapes, before the panel's own lift.</summary>
-    public const float DieUnder = 0.03f, DieRise = 0.031f; // (shaped: its face 1 mm over the rails plus the lift, 3 mm under the formed panel)
-
-    /// <summary>The deepest lift the dies take (m): what a Bed Block's 3.2 m holds over the work height with the dies' faces and bodies; a deeper panel goes through the upper die.</summary>
-    public const float DieDeepest = 1.7f;
-
     // The orders whose shapes the dies show (names compared by reference, read once a change): enough slots for every former working a
     // different panel in one view, so none is made again every frame.
     private static readonly string?[] _dieName = new string?[32];
     private static readonly DieInfo?[] _dieInfo = new DieInfo?[32];
     private static int _dieNext;
 
-    /// <summary>The head order's die shape on Core <paramref name="core"/>, or false (no order, or a key with no shape: a kit's loft, a plain skin; flat dies). Allocates only when the order changes.</summary>
+    /// <summary>The head order's die shape on Core <paramref name="core"/>, or false (no order, or a key with no shape: a kit's loft, a plain skin; a flat die). Allocates only when the order changes.</summary>
     public static bool Die(Construct c, int core, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out DieInfo? info)
     {
         info = null;
@@ -836,7 +799,7 @@ public static class ConstructPanelFormer
         {
             int i = (int)MathF.Round((q.Z - z0) / len * ra), j = (int)MathF.Round((q.X - x0) / wid * rc);
             ref var cell = ref h[Math.Clamp(i, 0, ra) * row + Math.Clamp(j, 0, rc)];
-            var lift = MathF.Min(DieDeepest, q.Y - y0);
+            var lift = q.Y - y0;
             cell = float.IsNaN(cell) ? lift : MathF.Max(cell, lift);
         }
         // Cells no sample fell in (a steep slope's gaps) take their row's nearest, then their column's.
@@ -875,55 +838,48 @@ public static class ConstructPanelFormer
     }
 
     /// <summary>
-    /// What lies on a former's bed (its look, drawn only): the blank, flat on the rails at the work height (lifted on the shaping lower die's
-    /// highest point), until the upper die has come down on it; then the head order's panel, its lowest point on the rails. Its def, its turn and its origin in the Core's frame, laid
-    /// with its length along the bed and centred on it. Allocates only the first time a blank's key is seen (Extrusion.Def keeps it).
+    /// What lies on a former's bed (its look, drawn only): the blank, flat on the lanes at the roll line, while it rolls in and the jaws
+    /// grip; once the rising die's top passes the roll line, the head order's panel, stretched over the die: drawn squashed toward the
+    /// flat blank by <paramref name="squash"/> (the Core's frame: its height scaled by <see cref="FormPose.Shape"/>, its length and width
+    /// from the blank's to its own), until it is the formed panel, its lowest point on the roll line. Its def, its turn and its origin in
+    /// the Core's frame, laid with its length along the bed and centred on it. Allocates only the first time a blank's key is seen
+    /// (Extrusion.Def keeps it).
     /// </summary>
-    public static bool BedLook(Construct c, int part, CStore st, double now, out ConstructPartDef what, out byte rot, out Vector3 at)
+    public static bool BedLook(Construct c, int part, CStore st, double now, out ConstructPartDef what, out byte rot, out Vector3 at, out Matrix4x4 squash)
     {
-        (what, rot, at) = (null!, 0, default);
+        (what, rot, at, squash) = (null!, 0, default, Matrix4x4.Identity);
         ref var p = ref c.Parts[part];
         var d = p.D;
         if (!st.OnBed || d.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0 || !WorkOrders.HeadOf(p, out var head)
             || head.Name == null || ConstructParts.Find(head.Name) is not { } panel)
             return false;
-        var ph = Phase(now);
-        var formed = st.Busy && ph >= SetSeconds / CycleSeconds + 0.1f; // (the upper die has come down on it: the sheet is bent)
-        var def = formed ? panel : Extrusion.Def(BlankFor(panel));
+        var pose = Pose(c, part, st, now);
+        var formed = pose.Shape > 0.002f;
+        var blank = Extrusion.Def(BlankFor(panel));
+        var def = formed ? panel : blank;
         if (def == null)
             return false;
         what = def;
         var own = formed ? LayOf(def) : (byte)0; // (a hull skin lies turned, its shallowest side up)
-        var bed = asm.OutSide is 0 or 1 ? _quarter : (byte)0; // (its length along the bed: z, or x on a bed that runs along x)
+        var alongX = asm.OutSide is 0 or 1;
+        var bed = alongX ? _quarter : (byte)0; // (its length along the bed: z, or x on a bed that runs along x)
         rot = own == 0 ? bed : Rot24.Compose(bed, own);
         var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
         var mid = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, d.ExtDieAt.Y, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell);
         LaidBounds(def, own, out var lmin, out var lmax);
         var foot = (lmin + lmax) * 0.5f;
         foot.Y = lmin.Y;
-        // On the rails at the work height: a formed panel with its lowest point on them (the lower die fits under the rest), the blank flat
-        // on them until the shaping lower die rises under it and lifts it on its highest point.
-        var lift = 0.004f;
-        if (!formed && st.Busy && Die(c, part, out var die))
-            lift = MathF.Max(lift, (DieRise + die.High) * DieShaping(ph) - DieUnder + 0.003f);
-        at = mid + new Vector3(0, lift, 0) - Rot24.Apply(bed, foot);
+        at = mid + new Vector3(0, 0.004f, 0) - Rot24.Apply(bed, foot); // (on the lanes: 4 mm over the rollers' tops)
+        if (formed && pose.Shape < 0.999f && blank != null)
+        {
+            // Stretched over the die: its height by the shape, its footprint from the blank's to its own.
+            var ps = Rot24.ApplyHalf(rot, def.BoundsMax - def.BoundsMin);
+            var bs = Rot24.ApplyHalf(bed, blank.BoundsMax - blank.BoundsMin);
+            var s = pose.Shape;
+            float kx = 1 + (MathF.Max(0.01f, bs.X) / MathF.Max(0.01f, ps.X) - 1) * (1 - s), kz = 1 + (MathF.Max(0.01f, bs.Z) / MathF.Max(0.01f, ps.Z) - 1) * (1 - s);
+            var pivot = mid + new Vector3(0, 0.004f, 0);
+            squash = Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateScale(kx, MathF.Max(0.02f, s), kz) * Matrix4x4.CreateTranslation(pivot);
+        }
         return true;
     }
-
-    private static readonly byte[] _back = BackTurns();
-
-    private static byte[] BackTurns()
-    {
-        var inv = new byte[Rot24.Count];
-        for (byte r = 0; r < Rot24.Count; r++)
-            for (byte q = 0; q < Rot24.Count; q++)
-                if (Vector3.Distance(Rot24.Apply(q, Rot24.Apply(r, Vector3.UnitX)), Vector3.UnitX) < 1e-3f && Vector3.Distance(Rot24.Apply(q, Rot24.Apply(r, Vector3.UnitY)), Vector3.UnitY) < 1e-3f)
-                {
-                    inv[r] = q;
-                    break;
-                }
-        return inv;
-    }
-
-    private static byte Rot24Back(byte r) => _back[r % Rot24.Count];
 }
