@@ -1296,7 +1296,7 @@ public static partial class DesignScene
             sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.WA))
               .Append(",\"h\":").Append(ShipDesign.S(j.HA)).Append(",\"wb\":").Append(ShipDesign.S(j.WB)).Append(",\"hb\":").Append(ShipDesign.S(j.HB))
               .Append(",\"twist\":").Append(ShipDesign.S(j.Twist)).Append(",\"sweepUp\":").Append(ShipDesign.S(j.SweepUp)).Append(",\"sweepFore\":").Append(ShipDesign.S(j.SweepFore)).Append(",\"bias\":").Append(ShipDesign.S(j.Bias)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
-              .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
+              .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"follow\":").Append(j.Follow ? "true" : "false").Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
               .Append(",\"mesh\":");
@@ -1377,13 +1377,19 @@ public static partial class DesignScene
             if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
-                sb.Append(MeshPart("rm" + r.Id, rk, () => RoomMesh(d, r)));
+                sb.Append(MeshPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset); return hm; }));
+            }
+            else
+            {
+                // Its box as a mesh, bent inside the skin where the hull curves over it.
+                sb.Append(",\"boxMesh\":");
+                sb.Append(MeshPart("rb" + r.Id, rk, () => RoomBoxMesh(d, r)));
             }
             sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
             if (r.WallThick > 0.005)
             {
                 sb.Append(",\"wallMesh\":");
-                sb.Append(MeshPart("rs" + r.Id, rk, () => RoomShell(d, r, c.Doors)));
+                sb.Append(MeshPart("rs" + r.Id, rk, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
               .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false");
@@ -1392,6 +1398,8 @@ public static partial class DesignScene
                 sb.Append(Part("ri" + r.Id, ik, () =>
                 {
                     var (solid, glow) = RoomInterior(d, r, c.Doors);
+                    ClipToHulls(d, solid, InteriorInset);
+                    ClipToHulls(d, glow, InteriorInset);
                     var t = new StringBuilder(",\"intMesh\":");
                     solid.Write(t, Made("ri" + r.Id));
                     t.Append(",\"intGlow\":");
