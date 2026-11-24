@@ -487,6 +487,29 @@ public sealed class DesignEditor
                 (k.From, k.To) = (f, t);
                 return "";
             }
+            // ---- doors placed between rooms (Karl, 2026-11-24)
+            case "addDoor":
+            {
+                var (a, b) = (d.RoomById(I(o, "a")), d.RoomById(I(o, "b")));
+                if (a is null || b is null || a == b)
+                    return "pick two rooms";
+                var k = d.Doors.Find(q => q.Joins(a, b));
+                if (k is null)
+                    d.Doors.Add(k = new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id });
+                k.T = Math.Clamp(D(o, "t", k.T), 0, 1);
+                return "";
+            }
+            case "setDoor":
+            {
+                var k = d.Doors.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such door");
+                if (o["t"] is not null) k.T = Math.Clamp(D(o, "t"), 0, 1);
+                return "";
+            }
+            case "delDoor":
+            {
+                d.Doors.RemoveAll(q => q.Id == I(o, "id"));
+                return "";
+            }
             case "delRiser":
             {
                 d.Risers.RemoveAll(q => q.Id == I(o, "id"));
@@ -587,6 +610,7 @@ public sealed class DesignEditor
             {
                 var r = Rm();
                 d.Rooms.Remove(r);
+                d.Doors.RemoveAll(q => q.A == r.Id || q.B == r.Id);
                 foreach (var p in d.Pieces)
                     if (p.Room == r.Id)
                         p.Room = 0;

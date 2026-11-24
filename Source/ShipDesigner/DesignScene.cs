@@ -24,6 +24,7 @@ public static class DesignScene
         public readonly List<(double[] A, double[] B, bool Ok, double Shaft)> Links = [];
         public readonly List<double[]> Doors = [];
         public readonly Dictionary<int, bool> RiserOk = [];
+        public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
         public readonly HashSet<int> Reached = [];
     }
 
@@ -508,10 +509,26 @@ public static class DesignScene
                     var oz = Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0);
                     var ox = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0);
                     double[]? door = null;
+                    // The wall they share (plan ends), and where along it the door is: a placed door's T, else the middle.
+                    var placed = d.Doors.Find(k => k.Joins(a, b));
+                    var t = placed?.T ?? 0.5;
+                    double[]? s0 = null, s1 = null;
                     if (oz >= 0.9 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02))
-                        door = d.World(dk, Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0, (Math.Max(a.Z0, b.Z0) + Math.Min(a.Z1, b.Z1)) / 2, 0);
+                    {
+                        var xw = Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0;
+                        double lo = Math.Max(a.Z0, b.Z0) + 0.45, hi = Math.Min(a.Z1, b.Z1) - 0.45;
+                        door = d.World(dk, xw, lo + (hi - lo) * t, 0);
+                        (s0, s1) = (d.World(dk, xw, lo, 0), d.World(dk, xw, hi, 0));
+                    }
                     else if (ox >= 0.9 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02))
-                        door = d.World(dk, (Math.Max(a.X0, b.X0) + Math.Min(a.X1, b.X1)) / 2, Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0, 0);
+                    {
+                        var zw = Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0;
+                        double lo = Math.Max(a.X0, b.X0) + 0.45, hi = Math.Min(a.X1, b.X1) - 0.45;
+                        door = d.World(dk, lo + (hi - lo) * t, zw, 0);
+                        (s0, s1) = (d.World(dk, lo, zw, 0), d.World(dk, hi, zw, 0));
+                    }
+                    if (placed is not null && door is not null)
+                        c.Placed.Add((placed.Id, door, s0!, s1!));
                     var segments = a.Group != 0 && a.Group == b.Group && (ox >= -0.02 && oz > 0.01 || oz >= -0.02 && ox > 0.01);
                     if (door is not null || segments)
                     {
@@ -530,6 +547,14 @@ public static class DesignScene
                     var hi = d.Decks[a.Deck].Floor > d.Decks[b.Deck].Floor != d.Stacked ? d.Decks[a.Deck] : d.Decks[b.Deck];
                     c.Doors.Add(d.World(hi, (s.X0 + s.X1) / 2, (s.Z0 + s.Z1) / 2, 0));
                 }
+            }
+
+        foreach (var k in d.Doors)
+            if (!c.Placed.Any(q => q.Id == k.Id))
+            {
+                var (ra, rb) = (d.RoomById(k.A), d.RoomById(k.B));
+                if (ra is not null && rb is not null)
+                    c.Issues.Add(new("warn", $"The door between {Name(ra)} and {Name(rb)} has no wall to sit in: they need 0.9 m of shared wall on one deck", $"room:{ra.Id}"));
             }
 
         // Ladders and lifts: each joins the rooms it stands in on every deck it stops at (Karl, 2026-11-24).
@@ -890,6 +915,15 @@ public static class DesignScene
         sb.Append("],\"doors\":[");
         for (var i = 0; i < c.Doors.Count; i++)
             sb.Append(i > 0 ? "," : "").Append('[').Append(ShipDesign.S(c.Doors[i][0])).Append(',').Append(ShipDesign.S(c.Doors[i][1])).Append(',').Append(ShipDesign.S(c.Doors[i][2])).Append(']');
+        sb.Append("],\"placedDoors\":[");
+        for (var i = 0; i < c.Placed.Count; i++)
+        {
+            var (id, at, s0, s1) = c.Placed[i];
+            var k = d.Doors.Find(q => q.Id == id)!;
+            sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(id).Append(",\"a\":").Append(k.A).Append(",\"b\":").Append(k.B).Append(",\"t\":").Append(ShipDesign.S(k.T))
+              .Append(",\"at\":[").Append(string.Join(',', at.Select(ShipDesign.S))).Append("],\"s0\":[").Append(string.Join(',', s0.Select(ShipDesign.S)))
+              .Append("],\"s1\":[").Append(string.Join(',', s1.Select(ShipDesign.S))).Append("]}");
+        }
         sb.Append("],\"risers\":[");
         for (var i = 0; i < d.Risers.Count; i++)
         {

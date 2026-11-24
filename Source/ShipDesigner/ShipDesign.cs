@@ -49,6 +49,7 @@ public sealed class ShipDesign
     public List<Room> Rooms = [];
     public List<HullJoin> Joins = [];
     public List<Riser> Risers = [];
+    public List<RoomDoor> Doors = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -72,6 +73,7 @@ public sealed class ShipDesign
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
+            ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T) })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
@@ -115,6 +117,14 @@ public sealed class ShipDesign
                 d.Risers.Add(Riser.FromJson(ro, d.Take(ro)));
         d.Risers.RemoveAll(k => k.From < 0 || k.To < 0 || k.From >= d.Decks.Count || k.To >= d.Decks.Count || k.From == k.To);
         d.Rooms.RemoveAll(r => r.Deck < 0 || r.Deck >= d.Decks.Count);
+        // Doors name their rooms by place in the list (room ids are made fresh on reading).
+        foreach (var j in o["doors"]?.AsArray() ?? [])
+            if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
+            {
+                var (a, b) = ((int?)dob["a"] ?? -1, (int?)dob["b"] ?? -1);
+                if (a >= 0 && b >= 0 && a < d.Rooms.Count && b < d.Rooms.Count && a != b)
+                    d.Doors.Add(new RoomDoor { Id = d.Take(dob), A = d.Rooms[a].Id, B = d.Rooms[b].Id, T = Math.Clamp(F(dob["t"], 0.5), 0, 1) });
+            }
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
         return d;
@@ -124,7 +134,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;
@@ -248,4 +258,14 @@ public sealed class Riser
         Id = id, Kind = (string?)o["kind"] == "Lift" ? "Lift" : "Ladder", X = ShipDesign.F(o["x"], 0), Z = ShipDesign.F(o["z"], 0),
         From = (int?)o["from"] ?? 0, To = (int?)o["to"] ?? 1,
     };
+}
+
+
+/// <summary>A door placed between two rooms (Karl, 2026-11-24): where along the wall they share (T, 0 to 1). Rooms that
+/// share a wall get a door in its middle without one; a placed door moves it.</summary>
+public sealed class RoomDoor
+{
+    public int Id, A, B;
+    public double T = 0.5;
+    public bool Joins(Room a, Room b) => (A == a.Id && B == b.Id) || (A == b.Id && B == a.Id);
 }
