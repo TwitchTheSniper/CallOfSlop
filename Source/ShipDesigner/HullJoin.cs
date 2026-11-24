@@ -27,6 +27,9 @@ public sealed class HullJoin
     public bool Mirror = true;
     public double Flare = 1.6, Buttress = 0.8; // the cladding at each end: how much wider it is where it meets the skin, and how far up the strut it runs (m)
     public double OpenA = 0.9, OpenB = 0.9;
+    public string Clad = "Off"; // plated cladding on the strut (as a body's: HullBody.CladKinds), its seed, panel size and depth
+    public int CladSeed = 1;
+    public double CladSize = 1.5, CladDepth = 1;
     public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
@@ -51,6 +54,7 @@ public sealed class HullJoin
     {
         ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(W), ["h"] = ShipDesign.R(H),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
+        ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
     };
 
     private static JsonObject EndJson(ShipDesign d, End e) => new()
@@ -78,6 +82,13 @@ public sealed class HullJoin
             return null;
         var j = new HullJoin { Id = id, A = a, B = b, Section = (string?)o["section"] ?? "Round", W = ShipDesign.F(o["w"], 1.2), H = ShipDesign.F(o["h"], 1.2),
             Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true, Flare = ShipDesign.F(o["flare"], 1.6), Buttress = ShipDesign.F(o["buttress"], 0.8), SquareHole = (bool?)o["squareHole"] ?? false, OpenA = ShipDesign.F(o["openA"], 0.9), OpenB = ShipDesign.F(o["openB"], 0.9) };
+        if (o["clad"] is JsonObject c)
+        {
+            j.Clad = (string?)c["kind"] ?? "Off";
+            j.CladSeed = (int?)c["seed"] ?? 1;
+            j.CladSize = ShipDesign.F(c["size"], 1.5);
+            j.CladDepth = ShipDesign.F(c["depth"], 1);
+        }
         j.Tidy();
         return j;
     }
@@ -93,6 +104,11 @@ public sealed class HullJoin
         Flare = Math.Clamp(Flare, 1, 4);
         Buttress = Math.Clamp(Buttress, 0, 10);
         OpenB = Math.Clamp(OpenB, 0, 1.5);
+        if (!HullBody.CladKinds.Contains(Clad))
+            Clad = "Off";
+        CladSeed = Math.Clamp(CladSeed, 0, 99999);
+        CladSize = Math.Clamp(CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        CladDepth = Math.Clamp(CladDepth, HullBody.CladDepthMin, HullBody.CladDepthMax);
     }
 
     /// <summary>The section as a closed ring of (across, up) points fitting a unit square (-0.5..0.5), the +x side first.</summary>
@@ -224,6 +240,7 @@ public sealed class HullJoin
         if (s1 <= s0 + 1e-3)
             return m;
         var rings = new List<(double, double, double)[]>();
+        var centres = new List<double[]>();
         double[]? side = null;
         // Where the rings go: the ends on the skins (flared into the buttresses' cladding), the strut's own rings between.
         var dl = Math.Min(Buttress / len, 0.3 * (s1 - s0));
@@ -300,6 +317,7 @@ public sealed class HullJoin
                 }
             }
             rings.Add(r);
+            centres.Add(c);
         }
         if (spine is not null)
             return m;
@@ -310,10 +328,97 @@ public sealed class HullJoin
                 var shade = DesignMesh.Tone(col, (i % 2 == 0 ? 1.0 : 0.94) * (j % 2 == 0 ? 1.0 : 0.9));
                 m.Quad(rings[i][j], rings[i + 1][j], rings[i + 1][j1], rings[i][j1], shade, false);
             }
+        // The strut's own rings are clad; the flared ends into the skins (dl > 0) stay bare.
+        if (Clad != "Off")
+            CladStrut(m, rings, centres, dl > 1e-4 ? 1 : 0, dl > 1e-4 ? last - 1 : last, col);
         if (Mirror && Math.Abs(a.P[0]) > 0.3)
             m.MirrorFrom(0, 0);
         return m;
     }
+
+    /// <summary>
+    /// Plated cladding on the strut between rings i0 and i1 (the user, 2026-11-24: the nacelles' arms had none): a grid round the ring
+    /// (by its length) and along the strut (by the middle line's), laid with the bodies' plates (<see cref="DesignScene.LayPlates"/>),
+    /// each plate's normal out from the middle line. Seeded, so the same design always clads the same.
+    /// </summary>
+    private void CladStrut(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int i0, int i1, (byte, byte, byte) col)
+    {
+        if (i1 <= i0)
+            return;
+        var nr = rings[0].Length;
+        // Across: the share of the way round the ring, by the length of the strut's middle ring; along: by the middle line's length.
+        var mid = rings[(i0 + i1) / 2];
+        var cu = new double[nr + 1];
+        for (var j = 0; j < nr; j++)
+        {
+            var (p, q) = (mid[j], mid[(j + 1) % nr]);
+            cu[j + 1] = cu[j] + Math.Sqrt(Sq(q.Item1 - p.Item1) + Sq(q.Item2 - p.Item2) + Sq(q.Item3 - p.Item3));
+        }
+        var cv = new double[i1 - i0 + 1];
+        for (var i = i0; i < i1; i++)
+            cv[i - i0 + 1] = cv[i - i0] + Math.Sqrt(Sq(centres[i + 1][0] - centres[i][0]) + Sq(centres[i + 1][1] - centres[i][1]) + Sq(centres[i + 1][2] - centres[i][2]));
+        double arc = cu[nr], len = cv[^1];
+        if (arc < 0.3 || len < 0.3)
+            return;
+        static (int K, double F) Find(double[] c, double x)
+        {
+            var l = Math.Clamp(x, 0, 1) * c[^1];
+            for (var k = 0; k < c.Length - 2; k++)
+                if (l <= c[k + 1])
+                    return (k, c[k + 1] - c[k] < 1e-9 ? 0 : (l - c[k]) / (c[k + 1] - c[k]));
+            var n = c.Length - 2;
+            return (n, c[n + 1] - c[n] < 1e-9 ? 0 : Math.Clamp((l - c[n]) / (c[n + 1] - c[n]), 0, 1));
+        }
+        (double X, double Y, double Z) Lerp((double, double, double) p, (double, double, double) q, double f) =>
+            (p.Item1 + (q.Item1 - p.Item1) * f, p.Item2 + (q.Item2 - p.Item2) * f, p.Item3 + (q.Item3 - p.Item3) * f);
+        (double X, double Y, double Z) P(double u, double v)
+        {
+            var (j, fu) = Find(cu, u);
+            var (i, fv) = Find(cv, v);
+            i += i0;
+            var j1 = (j + 1) % nr;
+            var p = Lerp(rings[i][j], rings[i][j1], fu);
+            var q = Lerp(rings[i + 1][j], rings[i + 1][j1], fu);
+            return Lerp(p, q, fv);
+        }
+        (double X, double Y, double Z) Centre(double v)
+        {
+            var (i, fv) = Find(cv, v);
+            i += i0;
+            var (a, b) = (centres[i], centres[i + 1]);
+            return Lerp((a[0], a[1], a[2]), (b[0], b[1], b[2]), fv);
+        }
+        (double X, double Y, double Z) Nrm(double u, double v)
+        {
+            const double e = 1e-3;
+            var pu = Sub(P(Math.Min(1, u + e), v), P(Math.Max(0, u - e), v));
+            var pv = Sub(P(u, Math.Min(1, v + e)), P(u, Math.Max(0, v - e)));
+            double x = pu.Y * pv.Z - pu.Z * pv.Y, y = pu.Z * pv.X - pu.X * pv.Z, z = pu.X * pv.Y - pu.Y * pv.X;
+            var l = Math.Sqrt(x * x + y * y + z * z);
+            var o = Sub(P(u, v), Centre(v));
+            if (l < 1e-12)
+            {
+                var ol = Math.Max(1e-9, Math.Sqrt(o.X * o.X + o.Y * o.Y + o.Z * o.Z));
+                return (o.X / ol, o.Y / ol, o.Z / ol);
+            }
+            var sg = x * o.X + y * o.Y + z * o.Z >= 0 ? 1 : -1;
+            return (sg * x / l, sg * y / l, sg * z / l);
+        }
+        (double, double, double) W(double u, double v, double off)
+        {
+            var p = P(u, v);
+            var q = Nrm(u, v);
+            return (p.X + q.X * off, p.Y + q.Y * off, p.Z + q.Z * off);
+        }
+        var size = Math.Clamp(CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
+        var start = m.Tris;
+        DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(CladSeed * 1000003 + Id * 7919)), Clad == "Heavy", CladDepth, col, P, Nrm, W, new bool[nu, nv]);
+        if (m.Tris - start > DesignScene.MaxCladTris)
+            Console.WriteLine($"ship designer: cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
+    }
+
+    private static (double X, double Y, double Z) Sub((double X, double Y, double Z) a, (double X, double Y, double Z) b) => (a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
     private static (double, double, double) Nearest(HullBody h, double x, double y, double z)
     {

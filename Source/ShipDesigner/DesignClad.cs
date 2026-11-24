@@ -29,7 +29,6 @@ public static partial class DesignScene
         var ca = new double[HullBody.MaxLoft + 2];
         var cb = new double[HullBody.MaxLoft + 2];
         var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
-        var rise = (heavy ? 0.20 : 0.08) - CladMin;
         for (var i = 0; i < h.Stations.Count - 1; i++)
         {
             var n = h.Pair(i, ah, ay, bh, by);
@@ -47,7 +46,6 @@ public static partial class DesignScene
                 continue;
             int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
-            double du = CladSeam / arc, dv = CladSeam / len;
             foreach (var s in new[] { 1, -1 })
             {
                 if (m.Tris - start > MaxCladTris)
@@ -92,80 +90,93 @@ public static partial class DesignScene
                         double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
                         taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
                     }
-                var last = -1.0;
-                for (var b = 0; b < nv; b++)
-                    for (var a = 0; a < nu; a++)
-                    {
-                        if (taken[a, b])
-                            continue;
-                        int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
-                        var hgt = CladMin + rise * rng.NextDouble();
-                        var tone = 0.88 + 0.18 * rng.NextDouble();
-                        var greeble = heavy && rng.NextDouble() < 0.35;
-                        var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
-                        // Grow across then along while the cells are free.
-                        var cu = 1;
-                        while (cu < wu && a + cu < nu && !taken[a + cu, b])
-                            cu++;
-                        var cv = 1;
-                        while (cv < wv && b + cv < nv && Enumerable.Range(a, cu).All(k => !taken[k, b + cv]))
-                            cv++;
-                        for (var x = a; x < a + cu; x++)
-                            for (var y = b; y < b + cv; y++)
-                                taken[x, y] = true;
-                        // Staggered: never within 5 mm of the plate before (a 5 mm step, and at least 1 cm up).
-                        hgt = Math.Round(hgt / 0.005) * 0.005;
-                        if (Math.Abs(hgt - last) < 0.005)
-                            hgt += hgt + 0.005 <= CladMin + rise ? 0.005 : -0.005;
-                        last = hgt;
-                        hgt *= h.CladDepth;
-                        hgt = Math.Max(hgt, 0.004 + 0.002);
-                        double pu0 = (double)a / nu + du, pu1 = (double)(a + cu) / nu - du, pv0 = (double)b / nv + dv, pv1 = (double)(b + cv) / nv - dv;
-                        if (pu1 <= pu0 || pv1 <= pv0)
-                            continue;
-                        var top = DesignMesh.Tone(col, tone);
-                        var side = DesignMesh.Tone(col, tone * 0.72);
-                        // The top follows the skin's curve: one quad a cell.
-                        double U(int k) => pu0 + (pu1 - pu0) * k / cu;
-                        double V(int k) => pv0 + (pv1 - pv0) * k / cv;
-                        for (var x = 0; x < cu; x++)
-                            for (var y = 0; y < cv; y++)
-                                m.Quad(W(U(x), V(y), hgt), W(U(x + 1), V(y), hgt), W(U(x + 1), V(y + 1), hgt), W(U(x), V(y + 1), hgt), top, false);
-                        // The skirt, sunk into the hull.
-                        for (var x = 0; x < cu; x++)
-                        {
-                            m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), W(U(x + 1), pv0, hgt), W(U(x), pv0, hgt), side, false);
-                            m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), W(U(x + 1), pv1, hgt), W(U(x), pv1, hgt), side, false);
-                        }
-                        for (var y = 0; y < cv; y++)
-                        {
-                            m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), W(pu0, V(y + 1), hgt), W(pu0, V(y), hgt), side, false);
-                            m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), W(pu1, V(y + 1), hgt), W(pu1, V(y), hgt), side, false);
-                        }
-                        if (greeble)
-                        {
-                            double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
-                            if (pw < 0.4 || pl < 0.4)
-                                continue;
-                            // A small box on the plate, its own axes the skin's there (across, out, along).
-                            double gu = pu0 + (pu1 - pu0) * (0.25 + 0.5 * gr.Item1), gv = pv0 + (pv1 - pv0) * (0.25 + 0.5 * gr.Item2);
-                            var o = W(gu, gv, hgt);
-                            var nn = Nrm(gu, gv);
-                            var t = Sub(P(Math.Min(1, gu + 1e-3), gv), P(Math.Max(0, gu - 1e-3), gv));
-                            var tl = Math.Sqrt(t.X * t.X + t.Y * t.Y + t.Z * t.Z);
-                            if (tl < 1e-12)
-                                continue;
-                            double[] xa = [t.X / tl, t.Y / tl, t.Z / tl], ya = [nn.X, nn.Y, nn.Z];
-                            double[] zz = [xa[1] * ya[2] - xa[2] * ya[1], xa[2] * ya[0] - xa[0] * ya[2], xa[0] * ya[1] - xa[1] * ya[0]];
-                            double gx = Math.Min(0.08 + 0.15 * gr.Item3, pw / 4), gz = Math.Min(0.1 + 0.25 * gr.Item1, pl / 4), gh = 0.04 + 0.08 * gr.Item2;
-                            m.Frame(o.Item1, o.Item2, o.Item3, xa, ya, zz);
-                            var g = DesignMesh.Tone(col, tone * 0.8);
-                            m.Box(-gx, -0.02, -gz, gx, gh, gz, $"#{g.Item1:x2}{g.Item2:x2}{g.Item3:x2}");
-                            m.World();
-                        }
-                    }
+                LayPlates(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, taken);
             }
         }
+    }
+
+    /// <summary>
+    /// Lays plates on a grid of cells over a surface P(u, v) (u across, v along, both 0..1; its outward normal Nrm, and W the world point
+    /// off it by a distance): free cells merged at random into plates of one to four cells each way, each inset by a seam, raised by a varied
+    /// step along the normal, its skirt sunk into the skin. Shared by bodies and connections; cells set in <paramref name="taken"/> stay bare.
+    /// </summary>
+    internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
+        Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken)
+    {
+        var rise = (heavy ? 0.20 : 0.08) - CladMin;
+        double du = CladSeam / arc, dv = CladSeam / len;
+        var last = -1.0;
+        for (var b = 0; b < nv; b++)
+            for (var a = 0; a < nu; a++)
+            {
+                if (taken[a, b])
+                    continue;
+                int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
+                var hgt = CladMin + rise * rng.NextDouble();
+                var tone = 0.88 + 0.18 * rng.NextDouble();
+                var greeble = heavy && rng.NextDouble() < 0.35;
+                var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
+                // Grow across then along while the cells are free.
+                var cu = 1;
+                while (cu < wu && a + cu < nu && !taken[a + cu, b])
+                    cu++;
+                var cv = 1;
+                while (cv < wv && b + cv < nv && Enumerable.Range(a, cu).All(k => !taken[k, b + cv]))
+                    cv++;
+                for (var x = a; x < a + cu; x++)
+                    for (var y = b; y < b + cv; y++)
+                        taken[x, y] = true;
+                // Staggered: never within 5 mm of the plate before (a 5 mm step, and at least 1 cm up).
+                hgt = Math.Round(hgt / 0.005) * 0.005;
+                if (Math.Abs(hgt - last) < 0.005)
+                    hgt += hgt + 0.005 <= CladMin + rise ? 0.005 : -0.005;
+                last = hgt;
+                hgt *= depth;
+                hgt = Math.Max(hgt, 0.004 + 0.002);
+                double pu0 = (double)a / nu + du, pu1 = (double)(a + cu) / nu - du, pv0 = (double)b / nv + dv, pv1 = (double)(b + cv) / nv - dv;
+                if (pu1 <= pu0 || pv1 <= pv0)
+                    continue;
+                var top = DesignMesh.Tone(col, tone);
+                var side = DesignMesh.Tone(col, tone * 0.72);
+                // The top follows the skin's curve: one quad a cell.
+                double U(int k) => pu0 + (pu1 - pu0) * k / cu;
+                double V(int k) => pv0 + (pv1 - pv0) * k / cv;
+                for (var x = 0; x < cu; x++)
+                    for (var y = 0; y < cv; y++)
+                        m.Quad(W(U(x), V(y), hgt), W(U(x + 1), V(y), hgt), W(U(x + 1), V(y + 1), hgt), W(U(x), V(y + 1), hgt), top, false);
+                // The skirt, sunk into the hull.
+                for (var x = 0; x < cu; x++)
+                {
+                    m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), W(U(x + 1), pv0, hgt), W(U(x), pv0, hgt), side, false);
+                    m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), W(U(x + 1), pv1, hgt), W(U(x), pv1, hgt), side, false);
+                }
+                for (var y = 0; y < cv; y++)
+                {
+                    m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), W(pu0, V(y + 1), hgt), W(pu0, V(y), hgt), side, false);
+                    m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), W(pu1, V(y + 1), hgt), W(pu1, V(y), hgt), side, false);
+                }
+                if (greeble)
+                {
+                    double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
+                    if (pw < 0.4 || pl < 0.4)
+                        continue;
+                    // A small box on the plate, its own axes the skin's there (across, out, along).
+                    double gu = pu0 + (pu1 - pu0) * (0.25 + 0.5 * gr.Item1), gv = pv0 + (pv1 - pv0) * (0.25 + 0.5 * gr.Item2);
+                    var o = W(gu, gv, hgt);
+                    var nn = Nrm(gu, gv);
+                    var t = Sub(P(Math.Min(1, gu + 1e-3), gv), P(Math.Max(0, gu - 1e-3), gv));
+                    var tl = Math.Sqrt(t.X * t.X + t.Y * t.Y + t.Z * t.Z);
+                    if (tl < 1e-12)
+                        continue;
+                    double[] xa = [t.X / tl, t.Y / tl, t.Z / tl], ya = [nn.X, nn.Y, nn.Z];
+                    double[] zz = [xa[1] * ya[2] - xa[2] * ya[1], xa[2] * ya[0] - xa[0] * ya[2], xa[0] * ya[1] - xa[1] * ya[0]];
+                    double gx = Math.Min(0.08 + 0.15 * gr.Item3, pw / 4), gz = Math.Min(0.1 + 0.25 * gr.Item1, pl / 4), gh = 0.04 + 0.08 * gr.Item2;
+                    m.Frame(o.Item1, o.Item2, o.Item3, xa, ya, zz);
+                    var g = DesignMesh.Tone(col, tone * 0.8);
+                    m.Box(-gx, -0.02, -gz, gx, gh, gz, $"#{g.Item1:x2}{g.Item2:x2}{g.Item3:x2}");
+                    m.World();
+                }
+            }
     }
 
     private static int Centre(double[] hs, double[] ys, int n)

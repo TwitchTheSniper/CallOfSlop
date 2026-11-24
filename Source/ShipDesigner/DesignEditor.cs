@@ -165,6 +165,15 @@ public sealed class DesignEditor
                 j.SquareHole = (bool?)o["squareHole"] ?? j.SquareHole;
                 j.Buttress = D(o, "buttress", j.Buttress);
                 j.OpenB = D(o, "openB", j.OpenB);
+                if (o["clad"] is not null)
+                {
+                    if (!HullBody.CladKinds.Contains(Str(o, "clad")))
+                        return $"unknown cladding {Str(o, "clad")}";
+                    j.Clad = Str(o, "clad");
+                }
+                if (o["cladSeed"] is not null) j.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
+                if (o["cladSize"] is not null) j.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["cladDepth"] is not null) j.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 j.Tidy();
                 return "";
             }

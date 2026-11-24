@@ -1275,7 +1275,18 @@ function inspector() {
     const o = { section: j.section, w: j.w, h: j.h, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, squareHole: j.squareHole, openA: j.openA, openB: j.openB };
     let first = true;
     const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
+    // Cladding on the strut, as a body's (the user, 2026-11-24: the nacelles' arms had none); the flared ends into the skins stay bare.
+    const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+    const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
     I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
+      el("h3", {}, "Cladding"),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      ...(clad.kind === "Off" ? [] : [
+        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 })),
+        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 })),
+        el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
+          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+      el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends stay bare."),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
     return;
   }
