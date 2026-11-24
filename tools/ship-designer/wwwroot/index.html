@@ -476,7 +476,7 @@ renderer.domElement.addEventListener("pointerdown", ev => {
         drag = { what: "roomTop", id: room.id, h0: room.height, at: hp.clone(), x0: ev.clientX, y0: ev.clientY, moved: false };
         controls.enabled = false; dragFirst = true; return;
       }
-      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false, edges: edgesNear(room, onPlan) };
+      drag = { what: "room", id: room.id, room: { ...room }, start: at, x0: ev.clientX, y0: ev.clientY, moved: false, edges: edgesNear(room, onPlan, r) };
       controls.enabled = false; dragFirst = true; return;
     }
     if (ev.shiftKey || drawing) {
@@ -600,11 +600,14 @@ function deckPoint(ev) {
   if (!ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -dk.floor), pt)) return null;
   return { x: Math.round(pt.x * 4) / 4, z: Math.round(pt.z * 4) / 4 };
 }
-// Which edges of a room a deck point is on (within 45 cm, inside the room or just outside it).
-function edgesNear(r, at) {
+// Which edges of a room a plan point is grabbing: only inside its box, within 45 cm (less on a small room), and only from its
+// floor or top (a wall, or the part of a room that runs out to the skin, moves it: Karl, 2026-11-24, rooms were hard to move).
+function edgesNear(r, at, hit) {
   if (!at) return { any: false };
-  const m = 0.45, inZ = at.z > r.z0 - m && at.z < r.z1 + m, inX = at.x > r.x0 - m && at.x < r.x1 + m;
-  const e = { x0: inZ && Math.abs(at.x - r.x0) < m, x1: inZ && Math.abs(at.x - r.x1) < m, z0: inX && Math.abs(at.z - r.z0) < m, z1: inX && Math.abs(at.z - r.z1) < m };
+  const n = hit?.face?.normal; if (n && Math.abs(S.stacked ? n.z : n.y) < 0.7) return { any: false };
+  const mx = Math.min(0.45, (r.x1 - r.x0) * 0.2), mz = Math.min(0.45, (r.z1 - r.z0) * 0.2);
+  if (at.x < r.x0 || at.x > r.x1 || at.z < r.z0 || at.z > r.z1) return { any: false };
+  const e = { x0: at.x - r.x0 < mx, x1: r.x1 - at.x < mx, z0: at.z - r.z0 < mz, z1: r.z1 - at.z < mz };
   e.any = e.x0 || e.x1 || e.z0 || e.z1; return e;
 }
 let preview = null;
@@ -629,7 +632,7 @@ function hover(ev) {
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
     const hit = hits.find(h => h.object.userData.type === "room"), r = S.rooms.find(x => x.id === hit.object.userData.id);
-    const e = edgesNear(r, S.stacked ? { x: hit.point.x, z: hit.point.y } : { x: hit.point.x, z: hit.point.z });
+    const e = edgesNear(r, S.stacked ? { x: hit.point.x, z: hit.point.y } : { x: hit.point.x, z: hit.point.z }, hit);
     renderer.domElement.style.cursor = !e.any ? "move" : (e.x0 || e.x1) && (e.z0 || e.z1) ? "nwse-resize" : (e.x0 || e.x1) ? "ew-resize" : "ns-resize";
   }
   else if (mode === "interior" && drawing) renderer.domElement.style.cursor = "crosshair";
