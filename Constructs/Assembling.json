@@ -2792,6 +2792,9 @@
     {"output": "Console Arc Desk R0.8 180", "materials": {"steel": 4, "concrete": 1}, "seconds": 2.6},
     {"output": "Extruder Plinth", "materials": {"concrete": 320, "steel": 20}, "seconds": 40},
     {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20},
-    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40}
+    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40},
+    {"output": "Heavy Loader Arm", "materials": {"steel": 931}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 141.7, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Shipyard Loader Arm", "materials": {"steel": 1900}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 180.0, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Long Loader Arm", "materials": {"steel": 931}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 141.7, "techTier": 5, "needs": ["Power Coupling", "Servo Rack"]}
   ]
 }

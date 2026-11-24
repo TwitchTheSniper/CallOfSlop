@@ -180,12 +180,14 @@ public static class LifterRender
         var side = new Vector3(-heading.Z, 0, heading.X);
         var turret = Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw)); // (+x towards the hand)
         // The turret: a squat housing on the slewing ring (sunk 4 mm into it), a counterweight behind, the shoulder's yoke on top.
+        // (a big arm's housing and weight keep to its pedestal, "housing": its links outgrow it, LifterParts.BigArms)
         var floor = ld.Ring - 0.004f;
         var h = s.Y - 0.12f * k - floor;
-        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f, h / k, 0.66f) * k, ld.Turret);
-        var weight = s - heading * 0.5f * k + new Vector3(0, floor + 0.3f * k - s.Y, 0);
-        Box(gfx, part, turret, weight, new Vector3(0.36f, 0.42f, 0.58f) * k, ld.Weight);
-        Box(gfx, part, turret, weight + side * 0.292f * k, new Vector3(0.3f, 0.08f, 0.012f) * k, Accent); // (hazard on the weight's flank)
+        var kh = ld.Housing > 0 ? MathF.Min(k, ld.Housing) : k;
+        Box(gfx, part, turret, new Vector3(s.X, floor + h * 0.5f, s.Z), new Vector3(0.72f * kh, h, MathF.Max(0.66f * kh, 0.54f * k)), ld.Turret); // (never narrower than the shoulder's yoke cheeks on it)
+        var weight = s - heading * 0.5f * kh + new Vector3(0, floor + 0.3f * kh - s.Y, 0);
+        Box(gfx, part, turret, weight, new Vector3(0.36f, 0.42f, 0.58f) * kh, ld.Weight);
+        Box(gfx, part, turret, weight + side * 0.292f * kh, new Vector3(0.3f, 0.08f, 0.012f) * kh, Accent); // (hazard on the weight's flank)
         Box(gfx, part, turret, s + side * 0.22f * k, new Vector3(0.3f, 0.34f, 0.1f) * k, ld.Joint);
         Box(gfx, part, turret, s - side * 0.22f * k, new Vector3(0.3f, 0.34f, 0.1f) * k, ld.Joint);
         Box(gfx, part, turret, s, new Vector3(0.24f, 0.24f, 0.56f) * k, ld.Pin); // (the shoulder's pin: what moves)

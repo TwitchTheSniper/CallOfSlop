@@ -16,6 +16,8 @@ public sealed class LifterDef
     public int Tier = 1; // the part's tier (its "tier" key): the drawn half's dressing
     public bool Fitter; // "fitter": true: a Module Fitter (module-sockets.md 7): it carries modules to sockets and welds them on (ConstructModuleFitters.cs); its hand is a tool head
     public float Ring; // the slewing ring's top in the part's frame, where the drawn turret stands ("ring"; default 0.66 m under the shoulder)
+    public float Housing; // "housing": the drawn turret housing's and counterweight's size, at most the links' (Upper / 2.3); 0: the links'. A big arm's links outgrow its pedestal (LifterParts.BigArms)
+    public string? Grade, Screen; // (from the part's name, "<Grade> Loader Arm": the station's Fitters line and the arm's own screen; null: by tier)
     public Vector3 Turret = new(0.478f, 0.267f, 0.196f), Weight = new(0.184f, 0.165f, 0.149f), UpperCol = new(0.478f, 0.267f, 0.196f),
         ForeCol = new(0.42f, 0.29f, 0.21f), Joint = new(0.545f, 0.522f, 0.478f), Pin = new(0.94f, 0.47f, 0.09f); // the drawn half's colours ("look")
     // ---- A Bridge Crane (kind "bridge", phase 6: ConstructCraneRails.cs). Its frame: +x across the span from the near rail's top
@@ -42,7 +44,7 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall" or "ramp"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth" or "fitter" or "hall" or "ramp" or "housing"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
@@ -78,6 +80,7 @@ public sealed class LifterDef
                 throw new ConstructPartException($"{file}: lifter.arm is [upper arm, forearm] in m, each 0.3 m or more and near enough alike to bend");
         }
         d.Ring = e.TryGetProperty("ring", out var rg) ? Num(e, "ring", -64, 64, file) : d.Base.Y - 0.66f;
+        d.Housing = e.TryGetProperty("housing", out _) ? Num(e, "housing", 0.2f, 32, file) : 0;
         if (d.Ring > d.Base.Y - 0.2f)
             throw new ConstructPartException($"{file}: lifter.ring (the slewing ring's top) is 0.2 m or more under the shoulder (base)");
         if (e.TryGetProperty("look", out var look))
@@ -1313,7 +1316,7 @@ public static partial class ConstructLifters
                 if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 n++;
-                tiers.Append(tiers.Length > 0 ? ", " : "").Append(ld.Bridge ? "Bridge Crane" : TierName(ld.Tier));
+                tiers.Append(tiers.Length > 0 ? ", " : "").Append(ld.Bridge ? "Bridge Crane" : ld.Grade ?? TierName(ld.Tier));
                 rate += 1f / (ld.Handle * 1.25f + 2 * Vector3.Distance(hold, middle) / (ld.Bridge ? MathF.Min(ld.Speed, ld.Hoist) : ld.Speed)); // (a crane: its slower of travel and hoist)
             }
         }
@@ -1416,7 +1419,7 @@ public static partial class ConstructLifters
         var d = c.DefOf(part);
         if (d.Lifter is not { } ld)
             return;
-        card.Add(0, ld.Hall ? "HALL CRANE" : ld.Bridge ? "BRIDGE CRANE" : ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        card.Add(0, ld.Hall ? "HALL CRANE" : ld.Bridge ? "BRIDGE CRANE" : ld.Screen ?? ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
         if (c.Parts[part].Broken)
         {
             card.State = PanelState.Fault;

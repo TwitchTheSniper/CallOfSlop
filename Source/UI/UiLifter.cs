@@ -115,7 +115,7 @@ public sealed partial class Ui
                     }
                 }
                 if (!any)
-                    ImGuiSafe.TextColored(Dim, "Nothing it can take from is in reach: a rack, a Lay-down Pad or a machine's Piece out with no conveyor.");
+                    ImGuiSafe.TextColored(Dim, "Nothing it can take from is in reach: a rack, a pad, a roller run's end or a machine's Piece out with no conveyor.");
             }
             ImGui.EndChild();
             ImGui.SameLine();

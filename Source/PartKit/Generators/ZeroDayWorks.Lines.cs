@@ -45,8 +45,13 @@ public sealed partial class ZeroDayWorks
                 LineOrders(station, _lineExtruders[line], east + 2, -115, paint, _lineFormers[line]);
                 _makers.Add(oven);
                 Stores(line, east - 10, -157, 5, 6, paint, second: true, transferRows: 8);
-                // Four Industrial arms on the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns).
-                foreach (var z in new[] { -127f, -133f, -143f, -149f })
+                // On the 4 m strip east of the station's and the oven's beds (west of the next line's or the columns): two Long arms by the
+                // station's bay (14 m, 6 t, on a 2 m plinth: the strip is 2 m wide), south of its Core: the first reaches the pick pad at the bay's head, so the plates the cutter's runs roll onto that pad go
+                // straight into the bay (Sean 2026-11-24: the Industrial arms there reached neither the pad nor a 2.3 t wall plate), and two
+                // Industrial arms by the oven's bed.
+                foreach (var z in new[] { -124f, -132f })
+                    Arm("Long Loader Arm", east, z);
+                foreach (var z in new[] { -143f, -149f })
                     Arm("Industrial Loader Arm", east, z);
             }
             // Bay 2 west span (x 32 to 50): line C, the wide flat pieces.
@@ -69,14 +74,14 @@ public sealed partial class ZeroDayWorks
             LineOrders(stationC, _lineExtruders["C"], 49, -133, LineC, _lineFormers["C"]); // (the former too: the keel's skins are its orders)
             _makers.Add(ovenC); // (the yard's station orders the frigate's decks of it: BakeKits.cs)
             foreach (var z in new[] { -143f, -148f, -153f })
-                Arm("Industrial Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there)
+                Arm("Long Loader Arm", 47, z); // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there; a Long arm's 2 m plinth does, and it lifts the deck plates, Sean 2026-11-24)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
             Station(69, -101, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0)); // (welded on the skins' pad: no walkway between them)
             Oven(61, -119, 53, 8, 8, 6, LineD);
             Stores("D", 53, -137, 8, 6, LineD, second: false, transferRows: 25);
-            Arm("Plasma Loader Arm", 52, -118); // (two Plasma arms at the station's south corners, either side of the oven's Core)
-            Arm("Plasma Loader Arm", 63, -118);
+            Arm("Heavy Loader Arm", 52, -118); // (two Heavy arms at the station's south corners, either side of the oven's Core: a Plasma's 10 m reached three of its steps, Sean 2026-11-24)
+            Arm("Heavy Loader Arm", 63, -118);
         }
 
         /// <summary>
@@ -144,7 +149,7 @@ public sealed partial class ZeroDayWorks
         }
 
         /// <summary>A Loader Arm whose base's south-west corner is at (<paramref name="x"/>, <paramref name="z"/>), the base reaching north and east.</summary>
-        private VPart Arm(string part, float x, float z) => On(part, x, z, Up, "-y.0.0", Crane);
+        private VPart Arm(string part, float x, float z, string by = "-y.0.0") => On(part, x, z, Up, by, Crane);
 
         /// <summary>A Bake Oven: its Core at (x, z) facing south, its bed south of it from column <paramref name="bedX0"/>, masts on the bed's corners.</summary>
         private VPart Oven(float coreX, float coreZ, float bedX0, int across, int along, int masts, string paint, float? bedZ0 = null, Orient? facing = null)
