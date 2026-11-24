@@ -850,7 +850,7 @@ public static class Pressed
         if (like.Role == PartRole.Suspension)
             d.Travel = like.Travel * Get(s, along);
         if (SizesWorks(p)) // (an engine train's piece weighs as its catalogue size by length times diameter, Sean 2026-11-24, so a preset's neighbour weighs as it does)
-            d.Mass = Math.Clamp(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), 0.1f, ConstructParts.MaxPartMass);
+            d.Mass = Math.Clamp(MathF.Min(like.Mass * Measure(PressMeasure.Length, k) * Across(k) / MathF.Max(Measure(PressMeasure.Length, p.Preset) * Across(p.Preset), 1e-6f), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass); // (never more than its blank: production.md 2026-11-13)
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
         // A gun part is a sized builder part too (sized-gun-engine-parts.md 3.4): the gun code finds it by the key (Parts.Find).

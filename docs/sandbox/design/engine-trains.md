@@ -36,7 +36,9 @@ The three patterns (`PressParts.ToPress.cs`, `EngineTrainPattern`) press any hol
 
 - The piece is its own look stretched to the blank, its length along z (`"body": "like"`, `"along": "z"`), without the housing die's seams and corner bosses (new pattern key `"dieFeatures": false`, `PressPattern.NoDieFeatures`).
 - What it does scales with the blank's volume, so with length times diameter squared: the bell's `thrustForce` and `thrustBurn`, a chamber's or injector's `worksServes` (new scaled fields in `Pressed.ScaledFields`). A preset's blank is still the catalogue part.
-- Mass goes with length times diameter from the catalogue piece's (`Pressed.BuildLike`), so a piece one step off its preset weighs about as it does.
+- Mass goes with length times diameter from the catalogue piece's (`Pressed.BuildLike`), so a piece one step off its preset weighs about as it does; never more than its blank (`CostMass`).
+- The press's scale clamp (64 times the preset) stops thrust and serves growing past it, for the bell and its pieces alike: about a 2.5 m engine 4 m long.
+- Protocol 455: the phase 1 part files moved part ids, and a sized piece's key is refused by older builds.
 - The sockets keep their class whatever the size, so any pieces weld together.
 - `Pressed.SizesWorks` decides this: a works pattern that scales its thrust or serves is not presets-only. Drive Core XS and the other ship works stay presets-only.
 
