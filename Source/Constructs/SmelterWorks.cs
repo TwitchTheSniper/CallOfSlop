@@ -156,18 +156,18 @@ public static class SmelterWorks
                 {
                     float xa = g.X(q.X0) - g.Half, xb = g.X(q.X0 + q.N - 1) + g.Half, za = g.Z(q.Z0) - g.Half;
                     Add(world, toCore, new Vector3(xa, g.Floor + 1.3f, za - 0.6f), new Vector3(xb, g.Floor + 2.5f, za)); // (the charge doors' heat)
-                    var col = TapColumn(list, q);
-                    if (col < 0)
-                        continue;
-                    var tx = g.X(col);
-                    x0 = MathF.Min(x0, tx);
-                    Add(world, toCore, new Vector3(tx - 0.4f, g.Floor, line - 0.4f), new Vector3(tx + 0.4f, g.Floor + 0.9f, za)); // (its spur)
                     for (var k = 0; k < q.N; k++)
                         if (((q.Ends >> k) & 1) != 0)
                         {
                             float bx = g.X(q.X0 + q.N), bz = g.Z(q.Z0 + k);
-                            Add(world, toCore, new Vector3(bx - g.Half, g.Floor, bz - g.Half), new Vector3(bx + g.Half, g.Floor + 1f, bz + g.Half)); // (a Casting Bed)
+                            Add(world, toCore, new Vector3(bx - g.Half, g.Floor, bz - g.Half), new Vector3(bx + g.Half, g.Floor + 1f, bz + g.Half)); // (a Casting Bed: it burns while the machine works, runner or not)
                         }
+                    var col = TapColumn(list, q);
+                    if (col < 0)
+                        continue; // (fronted by another square: no taphole of its own, so no spur)
+                    var tx = g.X(col);
+                    x0 = MathF.Min(x0, tx);
+                    Add(world, toCore, new Vector3(tx - 0.4f, g.Floor, line - 0.4f), new Vector3(tx + 0.4f, g.Floor + 0.9f, za)); // (its spur)
                 }
                 if (x0 < float.MaxValue)
                 {

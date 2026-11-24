@@ -1749,7 +1749,7 @@ public static class SubBlueprints
             if (o.Config != null && ConstructParts.Find(f.Steps[k].Part) is { } cdef)
             {
                 using var doc = JsonDocument.Parse(o.Config);
-                f.StepConfig[k] = ConstructConfig.ParseValues(cdef, doc.RootElement, $"{where}'s step {o.Step}");
+                f.StepConfig[k] = ConstructConfig.ParseValues(cdef, doc.RootElement, $"{where}'s step {o.Step}", ConstructRefining.SavedTier(f.Steps[k].Part));
             }
         }
     }

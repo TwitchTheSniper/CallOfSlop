@@ -402,12 +402,12 @@ public static class ConstructRefining
     /// <summary>A squares Core's draw while it works: its part file's power a share (the Core and each whole block in its squares).</summary>
     public static float PowerOf(Construct c, int part) => c.DefOf(part).PowerDraw * RefineOf(c, part).Shares;
 
-    /// <summary>A squares Core's machine as its look line and screen say it: "furnaces 3x3, 2x2, 1x1: x24", what does nothing, and what the next size needs.</summary>
+    /// <summary>A squares Core's machine as its look line and screen say it: "furnaces 3x3, 2x2, 1x1: speed x24", what does nothing, and what the next size needs.</summary>
     public static string SizeText(Construct c, int part)
     {
         var d = c.DefOf(part);
         var noun = d.RefineMachine switch { "smelter" => "furnaces", "foundry" => "crucibles", "sawmill" => "mills", _ => "squares" };
-        return MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part ? MachineBlocks.SquaresText(c, asm, noun) : $"x1: weld its blocks on its +x side";
+        return MachineBlocks.TryOf(c, part, out var asm) && asm.Core == part ? MachineBlocks.SquaresText(c, asm, noun) : "speed x1: weld its blocks on its +x side";
     }
 
     /// <summary>

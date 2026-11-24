@@ -487,14 +487,14 @@ public static class MachineBlocks
 
     /// <summary>
     /// A squares Core's machine (docs/sandbox/constructs/production.md "Refiners as block machines"): its squares by size and its rate
-    /// ("furnaces 3x3, 2x2, 4 x 1x1: x24"), wrecked blocks, blocks that do nothing and why, and what the largest square's next size needs.
+    /// ("furnaces 3x3, 2x2, 4 x 1x1: speed x24"), wrecked blocks, blocks that do nothing and why, and what the largest square's next size needs.
     /// UI text (it allocates).
     /// </summary>
     public static string SquaresText(Construct c, in CMachineAsm asm, string noun)
     {
         var list = Squares(c, asm);
         var rate = (asm.R4 > 0 ? asm.R4 : 4) / 4f;
-        var s = list.Length == 0 ? $"x{rate:0.##}: weld its blocks on its +x side" : noun + " ";
+        var s = list.Length == 0 ? $"speed x{rate:0.##}: weld its blocks on its +x side" : noun + " ";
         if (list.Length > 0)
         {
             var first = true;
@@ -508,7 +508,7 @@ public static class MachineBlocks
                 s += (first ? "" : ", ") + (k > 1 ? $"{k} x {n}x{n}" : $"{n}x{n}");
                 first = false;
             }
-            s += $": x{rate:0.##}";
+            s += $": speed x{rate:0.##}";
         }
         if (asm.Broken > 0)
             s += $", {asm.Broken} wrecked (mend {(asm.Broken > 1 ? "them" : "it")})";
@@ -518,12 +518,32 @@ public static class MachineBlocks
             s += $", {asm.OffTop} stacked do nothing";
         if (asm.Over > 0)
             s += $", over {c.Parts[asm.Core].D.BlockMaxCells} blocks: {asm.Over} do nothing";
-        if (list.Length > 0 && list[0].N < MaxSquare)
-        {
-            int n = list[0].N, more = (n + 1) * (n + 1) - n * n;
-            s += $" - {more} more beside the {n}x{n} make it a {n + 1}x{n + 1}";
-        }
+        if (list.Length > 0 && list[0].N < MaxSquare && NextSize(c, asm, list[0]) is var more and > 0)
+            s += $" - {more} more beside the {list[0].N}x{list[0].N} fill a {list[0].N + 1}x{list[0].N + 1}";
         return s;
+    }
+
+    /// <summary>
+    /// The fewest blocks that fill an (n+1) x (n+1) holding the largest square <paramref name="q"/>, on the Core's +x side: its cells that
+    /// no square holds yet (a cell another square holds is counted as there). 0 when none fits the grid, or one is full already.
+    /// </summary>
+    private static int NextSize(Construct c, in CMachineAsm asm, in CMachineSquare q)
+    {
+        var grid = c.BlockColumns.AsSpan(asm.Grid, GridSide * GridSide); // (bit 7: a cell in a square, Squares)
+        int n = q.N + 1, best = int.MaxValue;
+        for (var a = 0; a <= 1; a++)
+            for (var b = 0; b <= 1; b++)
+            {
+                int x0 = q.X0 - a + Mid, z0 = q.Z0 - b + Mid;
+                if (x0 < Mid + 1 || z0 < 0 || x0 + n > GridSide || z0 + n > GridSide)
+                    continue; // (off the Core's +x side or the grid)
+                var miss = 0;
+                for (var x = x0; x < x0 + n; x++)
+                    for (var z = z0; z < z0 + n; z++)
+                        miss += (grid[x * GridSide + z] & 0x80) == 0 ? 1 : 0;
+                best = Math.Min(best, miss);
+            }
+        return best == int.MaxValue ? 0 : best; // (0 too when it is full already: the split chose otherwise, and no number would help)
     }
 
     /// <summary>The tiers' names (drawing 21, as the machine lines' tiers: docs "Machine tiers") and the piece that brings each, by tier.</summary>
@@ -691,16 +711,10 @@ public static class MachineBlocks
                     if (os >= d.Sockets.Length || d.Sockets[os].Dir != 5)
                         continue;
                 }
-                var counted = !squares || d.BlockRole == BlockRole.Block; // (a squares Core's cap counts its blocks: its end pieces are looks)
-                if (counted && cellCount >= maxCells)
+                if (!squares && cellCount >= maxCells)
                 {
                     asm.Capped = true;
                     Caps.Hit("cells in one block machine", maxCells, cellCount + 1);
-                    if (squares && overN < over.Length)
-                    {
-                        over[overN++] = (ushort)o; // (marked so a second weld to it doesn't count it again)
-                        c.BlockAsmOf[o] = OverMark;
-                    }
                     continue;
                 }
                 // A block turned off the Core's lattice (its cell's square not in the Core's grid plane) isn't part of the machine.
@@ -735,6 +749,20 @@ public static class MachineBlocks
                     continue;
                 if (y > 0 && d.BlockRole == BlockRole.Block && assembler)
                     continue; // (a bed block stacked on an Assembler's bed isn't part of it: its masts stand outside the bed, Masts) // (a Bed Block stacked on a Panel Former's bed isn't a mast: only shared cells deepen its stroke, ConstructPanelFormer.PinDepth)
+                // A squares Core's cap counts only the blocks that can work, on its own layer off its +x side (a block stacked or off its
+                // side does nothing and takes no place under the cap; its end pieces are looks); the flood's scratch bounds the rest.
+                var counted = !squares || d.BlockRole == BlockRole.Block && y == 0 && x >= 1;
+                if (squares && (counted && cellCount >= maxCells || count >= queue.Length))
+                {
+                    asm.Capped = true;
+                    Caps.Hit("cells in one block machine", maxCells, cellCount + 1);
+                    if (overN < over.Length)
+                    {
+                        over[overN++] = (ushort)o; // (marked so a second weld to it doesn't count it again)
+                        c.BlockAsmOf[o] = OverMark;
+                    }
+                    continue;
+                }
                 c.BlockAsmOf[o] = id;
                 c.BlockCellOf[o] = Pack(x, y, z);
                 if (counted)
@@ -1413,6 +1441,8 @@ public static class MachineBlocks
             ref readonly var asm = ref c.MachineAsms[a];
             var squares = c.Parts[asm.Core].D.BlockSquares;
             sb.Append($"  {c.Parts[asm.Core].D.Name} (part {asm.Core}, family {Families[asm.Family]}): {asm.Cells} cells, {(squares ? ConstructRefining.SizeText(c, asm.Core) : Describe(c, asm))}");
+            if (squares && c.Parts[asm.Core].D is { RefineChoices.Length: > 0 } rd && (int)ConstructConfig.Get(c.Parts[asm.Core], rd, CfgKey.Recipe, 0) is var rc)
+                sb.Append(rc >= 1 && rc <= rd.RefineChoices.Length ? $", recipe {rc} ({rd.RefineChoices[rc - 1].InputName})" : ", recipe Auto");
             if (squares)
                 foreach (ref readonly var q in Squares(c, asm))
                     sb.Append($" [{q.N}x{q.N} at {q.X0},{q.Z0}, {q.Whole} whole, ends {Convert.ToString(q.Ends, 2)}]");

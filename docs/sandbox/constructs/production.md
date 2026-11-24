@@ -129,8 +129,10 @@ furnace. **Several squares** are fine and all work at once; they need not touch 
 - **Do nothing** (the look line says how many and why): a block stacked on another, one off the Core's +x side, and blocks past 50 cells.
   A **wrecked** block keeps its place in the split, so the squares don't change, and adds nothing until it is mended. A block taken away
   splits the rest again; an input or output over its new size takes no more until it is below it.
-- **Look line and screen**: "Smelter: in 120/1400 iron ore, out 30/2800 metal - REFINING iron ore to metal - furnaces 2x2: x7"; a bare
-  Core says "x1: weld its blocks on its +x side", and the size text names wrecked and idle blocks (`ConstructRefining.SizeText`,
+- **Look line and screen**: "Smelter: in 120/1400 iron ore, out 30/2800 metal - REFINING iron ore to metal - furnaces 2x2: speed x7 - 4 more
+  beside the 2x2 fill a 3x3" (the fewest blocks that fill the next size round the largest square, counting cells other squares hold);
+  its screen says "Speed x7: 2x2". A bare Core says "speed x1: weld its blocks on its +x side", and the size text names wrecked
+  blocks, blocks that do nothing (off its +x side, stacked, or past its 50: only blocks that can work count to the 50) (`ConstructRefining.SizeText`,
   `MachineBlocks.SquaresText`). `--machine-blocks` prints each Core's squares as `[NxN at x,z, whole, ends bits]`.
 
 ### The numbers

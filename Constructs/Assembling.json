@@ -2565,8 +2565,6 @@
     {"output": "Grapnel Ladder Section 1", "materials": {"steel": 5}, "parts": {"Bearing": 1}, "seconds": 2.7, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Grapnel Ladder Section 2", "materials": {"steel": 5}, "parts": {"Bearing": 1}, "seconds": 2.7, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Grapnel Ladder Section 3", "materials": {"steel": 5}, "parts": {"Bearing": 1}, "seconds": 2.7, "techTier": 2, "needs": ["Coolant Loop"]},
-    {"output": "Hearth Block", "materials": {"concrete": 320, "steel": 140}, "seconds": 60},
-    {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25},
     {"output": "Capital Lift Cell", "materials": {"cloth": 2000, "steel": 500}, "seconds": 212.0, "techTier": 4, "tool": "tailor"},
     {"output": "Large Lift Cell", "materials": {"cloth": 900, "steel": 225}, "seconds": 29.0, "techTier": 3, "tool": "tailor"},
     {"output": "Lift Cell", "materials": {"cloth": 20, "steel": 5}, "seconds": 2.6, "tool": "tailor"},
@@ -2790,6 +2788,8 @@
     {"output": "Console Arc Desk R0.8 180", "materials": {"steel": 4, "concrete": 1}, "seconds": 2.6},
     {"output": "Extruder Plinth", "materials": {"concrete": 320, "steel": 20}, "seconds": 40},
     {"output": "Run-out Table Stand", "materials": {"steel": 60}, "seconds": 20},
-    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40}
+    {"output": "Press Bed Block", "materials": {"steel": 240, "concrete": 120}, "seconds": 40},
+    {"output": "Hearth Block", "materials": {"concrete": 320, "steel": 140}, "seconds": 60},
+    {"output": "Casting Bed", "materials": {"concrete": 90, "steel": 80}, "seconds": 25}
   ]
 }

@@ -117,10 +117,16 @@ public static class MachineScreens
             Squares(c, asm, card, 4);
     }
 
-    /// <summary>A squares Core's squares by size and its rate on one line ("3x3 2x2 4x 1x1 x24"), built with no string made.</summary>
+    /// <summary>A squares Core's rate and its squares by size on one line ("Speed x24: 3x3 2x2 4x 1x1"), built with no string made.</summary>
     private static void Squares(Construct c, in CMachineAsm asm, PanelCard card, int line)
     {
         var list = MachineBlocks.Squares(c, asm);
+        var r4 = Math.Max(4, (int)asm.R4);
+        card.Add(line, "Speed x").Add(line, r4 / 4);
+        if (r4 % 4 != 0)
+            card.Add(line, r4 % 4 == 2 ? ".5" : r4 % 4 == 1 ? ".25" : ".75");
+        if (list.Length > 0)
+            card.Add(line, ':');
         for (var n = MachineBlocks.MaxSquare; n >= 1; n--)
         {
             var k = 0;
@@ -128,14 +134,11 @@ public static class MachineScreens
                 k += q.N == n ? 1 : 0;
             if (k == 0)
                 continue;
+            card.Add(line, ' ');
             if (k > 1)
                 card.Add(line, k).Add(line, "x ");
-            card.Add(line, n).Add(line, 'x').Add(line, n).Add(line, ' ');
+            card.Add(line, n).Add(line, 'x').Add(line, n);
         }
-        var r4 = Math.Max(4, (int)asm.R4);
-        card.Add(line, 'x').Add(line, r4 / 4);
-        if (r4 % 4 != 0)
-            card.Add(line, r4 % 4 == 2 ? ".5" : r4 % 4 == 1 ? ".25" : ".75");
         if (asm.Broken > 0)
             card.Add(line, ", ").Add(line, asm.Broken).Add(line, " wrecked");
     }

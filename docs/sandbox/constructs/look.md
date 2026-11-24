@@ -137,7 +137,8 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    hand works or what moves. Base, steel, accent and markings are `"paintable": false`, so a machine painted whole (a
    station's colour in a blueprint) keeps its three tones; only the body takes the paint.
 5. **Tier by build**: more guarding, cladding and piping at a higher tier, the same silhouette
-   ([Machine tiers](production.md#machine-tiers)).
+   ([Machine tiers](production.md#machine-tiers)). Block machines whose blocks make squares, the Smelter first, have no
+   tiers: they **dress by size** instead (below).
 6. **One control face** on the aisle side: the screen's middle about 1.5 m above the machine's floor, the status lamp
    over it (`PartScreens.Mount(..., lamp: true)`), and under the plate a shelf of three accent buttons and a red stop at
    about 1.3 m (`MachineLook.Buttons`). A machine lower than that stands its screen on a board (the small Extruder's).
@@ -205,7 +206,7 @@ keeps a dark stack and a steel blade.
 - **Flow**: a band over or under each chute port (white in, orange out) with a black arrow pointing back to front,
   hazard paint on the port's other side; tread plate and hazard ends on a furnace's aisle; an orange strip on the
   tray or the trays' lip.
-- **Tier by build** adds, never reshapes: tier 2 a guard rail round the hopper, a second stack collar, a door frame,
+- **Tier by build** (a squares machine, the Smelter, dresses by size instead: "Dress by size" above) adds, never reshapes: tier 2 a guard rail round the hopper, a second stack collar, a door frame,
   hazard strips at the blade and on an Assembler's front posts; tier 3 a pipe main with a valve wheel, a third plank,
   a cable run; tier 4 steel or tread-plate cladding; tier 5 a third collar. A stack's cap grows with the tier.
 - A box added with `clear: true` gives way to a detail the tier already has there, so a tier's own dressing wins.

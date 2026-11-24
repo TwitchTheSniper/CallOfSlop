@@ -856,8 +856,13 @@ public sealed partial class ConstructWorld
             var l = new CLink { A = r.U16(), B = r.U16(), SA = r.U8(), SB = r.U8() };
             if (l.A >= n || l.B >= n)
                 throw new WorldFileException("a link to a part that isn't there");
-            if (stand[l.A] || stand[l.B] || SocketGone(parts[l.A], l.SA) || SocketGone(parts[l.B], l.SB))
-                continue; // (a socket a part file has since lost goes like the link's part would)
+            if (stand[l.A] || stand[l.B])
+                continue;
+            if (SocketGone(parts[l.A], l.SA) || SocketGone(parts[l.B], l.SB))
+            { // (a socket a part file has since lost goes like the link's part would: an old Smelter's -x and back faces, tools/MIGRATING.md)
+                Console.WriteLine($"[world] a weld between {parts[l.A].D.Name} socket {l.SA} and {parts[l.B].D.Name} socket {l.SB}: the socket is gone, the weld dropped");
+                continue;
+            }
             linkList[keptLinks++] = l;
         }
         var joints = r.Count(64);

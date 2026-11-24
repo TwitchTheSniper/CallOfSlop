@@ -546,7 +546,7 @@ public static partial class SelfTest
             {
                 station.Rebuild();
                 var sized = ConstructRefining.RefineOf(station, si);
-                if (!Await(() => LookOf(a).Contains("furnaces 1x1: x2.25") && LookOf(a).Contains($"/{sized.In}"), 3, [a]) || sized.Rate != 2.25f)
+                if (!Await(() => LookOf(a).Contains("furnaces 1x1: speed x2.25") && LookOf(a).Contains($"/{sized.In}"), 3, [a]) || sized.Rate != 2.25f)
                     Fail($"refining network: the client's look line for a 1 x 1 (host x{sized.Rate}, in {sized.In}): \"{LookOf(a)}\"");
             }
 
