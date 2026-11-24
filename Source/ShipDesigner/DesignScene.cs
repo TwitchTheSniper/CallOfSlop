@@ -1076,7 +1076,9 @@ public static partial class DesignScene
         var mid = (r.X0 + r.X1) / 2;
         bool Fits(double v)
         {
-            foreach (var up in new[] { 0.3, Math.Min(1.8, dk.Height - 0.1) })
+            // A person's room at the floor and head height, and skin round every height the volume and shell are drawn at (floor to
+            // ceiling): past that the slices would fall back to the room's middle at some heights and not others, and fold.
+            foreach (var (up, need) in new[] { (0.3, 0.45), (Math.Min(1.8, dk.Height - 0.1), 0.45), (0.0, 0.1), (dk.Height / 4, 0.1), (dk.Height / 2, 0.1), (dk.Height * 3 / 4, 0.1), (dk.Height, 0.1) })
             {
                 var w = d.World(dk, mid, v, up);
                 var any = false;
@@ -1084,7 +1086,7 @@ public static partial class DesignScene
                     for (var c = 0; c < h.Copies && !any; c++)
                     {
                         var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
-                        any = half > 0.5 && Math.Abs(h.CopyX(c) - mid) < half - 0.45;
+                        any = half > need + 0.05 && Math.Abs(h.CopyX(c) - mid) < half - need;
                     }
                 if (!any)
                     return false;
@@ -1189,7 +1191,8 @@ public static partial class DesignScene
             var (c1, e1) = Edges(d, r, V(i + 1), dk.Height);
             m.Quad(P(c0, V(i), dk.Height), P(e0, V(i), dk.Height), P(e1, V(i + 1), dk.Height), P(c1, V(i + 1), dk.Height), DesignMesh.Tone(col, 0.9), false);
         }
-        foreach (var v in new[] { r.Z0, r.Z1 })
+        // Its ends where it stops, the run-on ones too (closed across the skin there).
+        foreach (var v in new[] { s0, s1 })
             for (var k = 0; k < nu; k++)
             {
                 var (a0, b0) = Edges(d, r, v, Up(k));

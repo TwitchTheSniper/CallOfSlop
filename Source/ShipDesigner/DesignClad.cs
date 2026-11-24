@@ -529,13 +529,9 @@ public static partial class DesignScene
             var (c1, e1) = Edges(d, r, vb, hgt);
             Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col);
         }
-        // Its ends, less one that runs on (the hologram's ends are at the drawn box's ends).
-        var noLo = r.RunOn && !d.Stacked;
-        var noHi = r.RunAft && !d.Stacked;
-        foreach (var (v, sg) in new[] { (r.Z0, -1.0), (r.Z1, 1.0) })
+        // Its ends where the hologram's are: at its Span, a run-on end closed across the skin where it stops.
+        foreach (var (v, sg) in new[] { (s0, -1.0), (s1, 1.0) })
         {
-            if (sg < 0 ? noLo : noHi)
-                continue;
             for (var k = 0; k < nu; k++)
             {
                 double ua = Up(k), ub = Up(k + 1);

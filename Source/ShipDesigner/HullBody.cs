@@ -362,7 +362,7 @@ public sealed class HullBody
             return -1;
         for (var k = 0; k < n - 1; k++)
             if (y <= ys[k + 1])
-                return hs[k] + (hs[k + 1] - hs[k]) * (y - ys[k]) / (ys[k + 1] - ys[k]);
+                return ys[k + 1] - ys[k] < 1e-9 ? Math.Max(hs[k], hs[k + 1]) : hs[k] + (hs[k + 1] - hs[k]) * (y - ys[k]) / (ys[k + 1] - ys[k]);
         return hs[n - 1];
     }
 
