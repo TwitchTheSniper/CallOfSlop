@@ -261,7 +261,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35;
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
     private static void Flanges(Part p, double d)
@@ -364,6 +364,98 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(180, 1200, 30);
     }
 
+    /// <summary>
+    /// The Igniter XS: a feed piece, a short collar with four spark plugs set radially into the train's bore and their leads run to a coil
+    /// box on top. With one in its train a drive lights at once; without, a bell that needs an injector takes 3 s to light. Its plug tips
+    /// glow with the burn, the coil's lamps run with it, and it throws a burst of sparks at light-off.
+    /// </summary>
+    private static Part Igniter()
+    {
+        var d = IgniterD;
+        var p = new Part("Igniter XS", Small, Section,
+            "An igniter for an engine train, 0.35 m long: weld it in the feed zone (behind the chambers, with the injectors). The drive lights the moment it is asked; without one it takes 3 s to light from cold.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.008, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var rc = FlangeR - 0.02;
+        Cyl(p, 0, 0, rc, -0.08, -d + 0.08, Dark, "dirty steel", inner: Math.Round((Bore - 0.01) / rc, 3), segments: 24); // (the plug collar)
+        Cyl(p, 0, 0, rc + 0.004, -d * 0.5 - 0.012, -d * 0.5 + 0.012, Hazard, "hazard paint", inner: Math.Round((rc - 0.004) / (rc + 0.004), 3), segments: 24); // (its band)
+        var zm = -d * 0.5;
+        for (var k = 0; k < 4; k++)
+        {
+            // A plug at each diagonal: its steel boss on the collar, a white insulator standing out, a cap and a lead.
+            var a = Math.PI / 4 + k * Math.PI / 2;
+            var (cx, cy) = (Math.Cos(a), Math.Sin(a));
+            void At(double r0, double r1, double w, double z0, double z1, string col, string fin, string? work = null)
+            {
+                var (x0, y0, x1, y1) = (cx * r0, cy * r0, cx * r1, cy * r1);
+                Look(p, Math.Min(x0, x1) - w, Math.Min(y0, y1) - w, z0, Math.Max(x0, x1) + w, Math.Max(y0, y1) + w, z1, col, fin, work: work);
+            }
+            At(rc - 0.004, rc + 0.025, 0.022, zm - 0.03, zm + 0.03, Trim, "steel"); // (the boss)
+            At(rc + 0.025, rc + 0.075, 0.013, zm - 0.015, zm + 0.015, "#e4e0d6", "painted plating"); // (the insulator)
+            At(rc + 0.075, rc + 0.09, 0.009, zm - 0.009, zm + 0.009, Bolt, "steel"); // (the cap)
+            At(Bore - 0.03, Bore - 0.012, 0.01, zm - 0.01, zm + 0.01, Throat, "", work: "glow"); // (the tip in the bore, glowing with the burn)
+        }
+        // The coil box on top, its two lamps, and the leads down to the upper plugs.
+        Look(p, -0.07, rc + 0.03, zm - 0.07, 0.07, rc + 0.1, zm + 0.07, Dark, "painted plating");
+        Look(p, -0.045, rc + 0.1, zm - 0.045, 0.045, rc + 0.112, zm + 0.045, "#2a2c2e", "rubber"); // (its lid)
+        foreach (var x in new[] { -0.03, 0.03 })
+            Look(p, x - 0.01, rc + 0.112, zm + 0.02, x + 0.01, rc + 0.124, zm + 0.04, Lamp, "", work: "chase");
+        foreach (var sx in new[] { -1.0, 1.0 })
+        {
+            var px = sx * (rc + 0.08) * Math.Cos(Math.PI / 4);
+            Look(p, Math.Min(sx * 0.07, px) - 0.006, rc + 0.055, zm - 0.006, Math.Max(sx * 0.07, px) + 0.006, rc + 0.067, zm + 0.006, Cable, "rubber"); // (a lead)
+        }
+        TrainPiece(p, d, "igniter");
+        return p.Stats(70, 500, 20);
+    }
+
+    /// <summary>
+    /// The Sensor Ring XS: a supply piece, a thin instrument ring with four gauges, one for each of its data outputs (the drive's level,
+    /// its buffer, its health and its heat), and a junction box where the data cables plug in. The gauges' needles sweep with the heat
+    /// and its four lamps run with the burn.
+    /// </summary>
+    private static Part SensorRing()
+    {
+        var d = SensorD;
+        var p = new Part("Sensor Ring XS", Small, Section,
+            "An instrument ring for an engine train, 0.35 m long: weld it in the supply zone (at the back, with the pumps). Its four data outputs give the drive's level (%), buffer (seconds), health (% of its weakest piece) and heat (%), for gauges, displays and logic.",
+            role: "frame", tool: "welder", material: "steel", color: Clad, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.004, -0.047, -d + 0.047, Clad, "painted plating", segments: 24); // (the shell)
+        var rr = FlangeR - 0.016;
+        Cyl(p, 0, 0, rr, -0.07, -d + 0.07, Steel, "painted plating", inner: Math.Round((Bore - 0.006) / rr, 3), segments: 24); // (the ring)
+        var zm = -d * 0.5;
+        for (var k = 0; k < 4; k++)
+        {
+            // A gauge at each side: its bezel, face and needle, and a lamp beside it.
+            var a = k * Math.PI / 2;
+            var (cx, cy) = (Math.Cos(a), Math.Sin(a));
+            var axis = k switch { 0 => "+x", 1 => "+y", 2 => "-x", _ => "-y" };
+            void Radial(double r0, double r1, double w, double h, string col, string fin, string? work = null, string? ax = null)
+            {
+                var (x0, y0, x1, y1) = (cx * r0, cy * r0, cx * r1, cy * r1);
+                var (wx, wy) = (Math.Abs(cy) * w + 0.0005, Math.Abs(cx) * w + 0.0005);
+                Look(p, Math.Min(x0, x1) - wx, Math.Min(y0, y1) - wy, zm - h, Math.Max(x0, x1) + wx, Math.Max(y0, y1) + wy, zm + h, col, fin, work: work, axis: ax);
+            }
+            Radial(rr - 0.006, rr + 0.02, 0.05, 0.05, Dark, "painted plating"); // (the bezel)
+            Radial(rr + 0.02, rr + 0.026, 0.038, 0.038, "#d8d4c8", "painted plating"); // (the face)
+            Radial(rr + 0.026, rr + 0.032, 0.004, 0.026, "#c03020", "", work: "spin", ax: axis); // (the needle)
+            var b = a + Math.PI / 4;
+            var (lx, ly) = ((rr + 0.008) * Math.Cos(b), (rr + 0.008) * Math.Sin(b));
+            Look(p, lx - 0.012, ly - 0.012, zm - 0.012, lx + 0.012, ly + 0.012, zm + 0.012, Lamp, "", work: "chase"); // (a lamp)
+        }
+        // The junction box under the ring, and its four data cables' plugs.
+        Look(p, -0.08, -rr - 0.06, zm - 0.06, 0.08, -rr + 0.004, zm + 0.06, Dark, "painted plating");
+        for (var k = 0; k < 4; k++)
+        {
+            var x = -0.054 + k * 0.036;
+            Look(p, x - 0.012, -rr - 0.075, zm - 0.012, x + 0.012, -rr - 0.06, zm + 0.012, Cable, "rubber");
+        }
+        TrainPiece(p, d, "sensor");
+        return p.Stats(50, 400, 20);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -381,7 +473,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }

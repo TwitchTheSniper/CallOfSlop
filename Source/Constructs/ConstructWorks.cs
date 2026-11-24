@@ -34,6 +34,8 @@ public enum TrainFunction : byte
     Spacer, // an empty shell: length, and the pass-throughs; any zone
     Buffer, // feed: 15 s more running on a cut line, each one adds
     Jacket, // hot: 10% less fuel at the same push (once)
+    Igniter, // feed: the drive lights at once (without one, a bell that needs an injector takes ShipWorks.LightSeconds to light)
+    Sensor, // supply: the drive's level, buffer, health and heat on four data outputs (SensorPort)
 }
 
 /// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
@@ -49,6 +51,7 @@ public struct CWorksHead
     public WorksKind Short; // the kind that holds it back most (None: nothing does)
     public bool Fed; // a head that needs a Fuel Injector: a pipe from a working tank reaches a working injector's Fuel in in its engine (touching tanks don't count)
     public float BufferMax; // such a head: seconds of full burn its injector holds (ShipWorks.InjectorBuffer, and each working Fuel Buffer's)
+    public bool Igniter; // such a head: a working Igniter is in its train, so it lights at once
     public int Stray; // such a head: the first piece welded into its train in the wrong zone or past the piece limit, left out of it (-1: none)
 }
 
@@ -71,6 +74,7 @@ public sealed class ShipWorks
     public float HoistMass = 80f; // kg: the weapon that takes HoistSeconds; the time grows with the square root of the mass
     public float FuelBufferSeconds = 15f; // s more a Fuel Buffer adds to its train's (each one, Sean 2026-11-24 doc, a first figure)
     public float JacketSaving = 0.1f; // the share of fuel a Cooling Jacket saves at the same push (once a train)
+    public float LightSeconds = 3f; // s a bell that needs an injector takes to light with no Igniter in its train (Sean 2026-11-24 doc)
     public int TrainPieces = 16; // the most pieces an engine train holds (its walk and its looks stay bounded)
     public float InjectorBuffer = 10f; // s of full burn a Fuel Injector holds: a bell whose pipe is cut runs this long, then stops (Sean, 2026-11-24, a first figure)
     public string Problem = "";
@@ -108,7 +112,7 @@ public sealed class ShipWorks
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "injectorBuffer" or "fuelBuffer" or "jacketSaving" or "trainPieces" or "drives"))
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "injectorBuffer" or "fuelBuffer" or "jacketSaving" or "trainPieces" or "lightSeconds" or "drives"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             t.JetMost = Num(root, "jetMost", 1, 1e9f);
             t.BareShare = Num(root, "bareShare", 0, 1);
@@ -126,6 +130,8 @@ public sealed class ShipWorks
                 t.FuelBufferSeconds = Num(root, "fuelBuffer", 0, 600);
             if (root.TryGetProperty("jacketSaving", out _))
                 t.JacketSaving = Num(root, "jacketSaving", 0, 0.9f);
+            if (root.TryGetProperty("lightSeconds", out _))
+                t.LightSeconds = Num(root, "lightSeconds", 0, 60);
             if (root.TryGetProperty("trainPieces", out _))
                 t.TrainPieces = (int)Num(root, "trainPieces", 1, Construct.MaxWorksAssembly);
             t.Drives.Clear();
@@ -235,7 +241,7 @@ public static class ConstructWorks
         _ => "works",
     };
 
-    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket"];
+    public static readonly string[] TrainFunctionNames = ["", "spacer", "buffer", "jacket", "igniter", "sensor"];
 
     /// <summary>An engine train piece's zone, counted back from the bell (Sean 2026-11-24): 0 hot, 1 feed, 2 supply; -1 any zone (a Spacer) or none.</summary>
     public static int ZoneOf(ConstructPartDef d) => d.WorksKind switch
@@ -243,7 +249,7 @@ public static class ConstructWorks
         WorksKind.Core => 0,
         WorksKind.Injector => 1,
         WorksKind.Pump or WorksKind.Exchanger or WorksKind.Turbopump => 2,
-        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket => 0, TrainFunction.Buffer => 1, _ => -1 },
+        WorksKind.Train => d.TrainFn switch { TrainFunction.Jacket => 0, TrainFunction.Buffer or TrainFunction.Igniter => 1, TrainFunction.Sensor => 2, _ => -1 },
         _ => -1,
     };
 
@@ -327,6 +333,8 @@ public static class ConstructWorks
                 var fn = ConstructParts.Str(ConstructParts.Need(wp, "function", $"{file}: \"worksPiece\" of kind train"), file, "worksPiece.function");
                 var at = Array.IndexOf(TrainFunctionNames, fn);
                 d.TrainFn = at >= 1 ? (TrainFunction)at : throw new ConstructPartException($"{file}: \"worksPiece.function\" is one of {string.Join(", ", TrainFunctionNames.Skip(1))}, not \"{fn}\"");
+                if (d.TrainFn == TrainFunction.Sensor)
+                    d.DataOut = SensorPorts;
                 if (ConstructParts.Opt(wp, "serves") != null || ConstructParts.Opt(wp, "service") != null)
                     throw new ConstructPartException($"{file}: an engine train's function piece serves no amount (no \"worksPiece.serves\" or \"service\")");
             }
@@ -552,6 +560,50 @@ public static class ConstructWorks
             : $"the {sd.Name} and what is behind it are out of the engine: a train holds at most {ShipWorks.Current.TrainPieces} pieces";
     }
 
+    public static readonly string[] SensorPorts = ["level", "buffer", "health", "heat"]; // (a Sensor Ring's data outputs, by index: add at the end)
+
+    /// <summary>
+    /// A Sensor Ring's output <paramref name="port"/> (<see cref="SensorPorts"/>), read by the logic tick: its bell's level (% of full push),
+    /// buffer (s), health (% of its weakest working piece, the bell's own included) and heat (%), each a whole number so a wire's value
+    /// changes only as the drive does. 0 when the ring is in no bell's train. Bounded by the body's works pieces and thrusters.
+    /// </summary>
+    public static float SensorPort(Construct c, int part, int port)
+    {
+        var asm = AsmOfPiece(c, part);
+        if (asm < 0)
+            return 0;
+        var head = -1;
+        for (var k = 0; k < c.WorksHeadCount && head < 0; k++)
+            if (c.WorksHeads[k].Asm == asm)
+                head = c.WorksHeads[k].Part;
+        if (head < 0)
+            return 0;
+        if (port == 2)
+        {
+            var low = Share(c.Parts[head]);
+            for (var k = 0; k < c.WorksPieceCount; k++)
+                if (c.WorksPieceAsm[k] == asm)
+                    low = MathF.Min(low, Share(c.Parts[c.WorksPieces[k]]));
+            return MathF.Round(low * 100);
+        }
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var t = ref c.Thrusters[k];
+            if (t.Part != head)
+                continue;
+            return port switch
+            {
+                0 => MathF.Round(t.Level * t.Cap * 100),
+                1 => MathF.Round(t.Buffer),
+                3 => MathF.Round(t.Heat * 100),
+                _ => 0,
+            };
+        }
+        return 0;
+
+        static float Share(in CPart p) => p.Broken ? 0 : p.D.Health > 0 ? Math.Clamp(p.Health / p.D.Health, 0, 1) : 1;
+    }
+
     /// <summary>What a train's working function pieces add to its bell (read at the rebuild): each Fuel Buffer's seconds, a Cooling Jacket's saving.</summary>
     private static void TrainFunctions(Construct c, ref CWorksHead wh, ShipWorks t)
     {
@@ -564,6 +616,8 @@ public static class ConstructWorks
                 wh.BufferMax += t.FuelBufferSeconds;
             else if (p.D.TrainFn == TrainFunction.Jacket)
                 jacket = true;
+            else if (p.D.TrainFn == TrainFunction.Igniter)
+                wh.Igniter = true;
         }
         if (jacket)
             wh.Burn *= 1 - t.JacketSaving;
@@ -1005,6 +1059,8 @@ public static class ConstructWorks
     {
         TrainFunction.Buffer => $"+{ShipWorks.Current.FuelBufferSeconds:0} s of buffer",
         TrainFunction.Jacket => $"{ShipWorks.Current.JacketSaving * 100:0}% less fuel",
+        TrainFunction.Igniter => "lights the drive at once",
+        TrainFunction.Sensor => "level, buffer, health and heat out",
         TrainFunction.Spacer => "spacer",
         _ => "",
     };
@@ -1106,7 +1162,7 @@ public static class ConstructWorks
             if (InjectorFedHead(d))
                 sb.Append(h.Fed ? "; fed by a pipe into its Fuel Injector" : "; NOT FED: no pipe from a working tank into its Fuel Injector (it runs on the buffer, then stops)");
             if (InjectorFedHead(d))
-                sb.Append(CultureInfo.InvariantCulture, $"; buffer {h.BufferMax:0} s, burn {h.Burn * 100:0}%");
+                sb.Append(CultureInfo.InvariantCulture, $"; buffer {h.BufferMax:0} s, burn {h.Burn * 100:0}%, {(h.Igniter ? "lights at once" : $"lights in {ShipWorks.Current.LightSeconds:0} s (no Igniter)")}");
             if (h.Stray >= 0)
                 sb.Append($"; LEFT OUT: {StrayWhy(c, h)}");
             if (h.Cap < 0.999f)

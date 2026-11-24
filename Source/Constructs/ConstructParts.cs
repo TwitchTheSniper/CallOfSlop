@@ -969,6 +969,7 @@ public sealed partial class ConstructPartDef
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || PlantShaft > 0 || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet // (a data lead's inlet puts out what the lead carries)
+                             || TrainFn == TrainFunction.Sensor // (a Sensor Ring's four outputs: ConstructWorks.SensorPort)
                              || ModData > 0; // (a module plate's or plug's Data k: a pass-through, ModuleSockets.PassWires; no value of its own)
 
     /// <summary>

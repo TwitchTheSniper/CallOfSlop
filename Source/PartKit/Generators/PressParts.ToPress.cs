@@ -97,6 +97,8 @@ public sealed partial class PressParts
         ("housing", "trainspacer", "Train Spacer XS", "train spacer", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "fuelbuffer", "Fuel Buffer XS", "fuel buffer", "hollow 75x75x50 steel", ["hollow"]),
         ("housing", "coolingjacket", "Cooling Jacket XS", "cooling jacket", "hollow 75x75x60 steel", ["hollow"]),
+        ("housing", "igniter", "Igniter XS", "igniter", "hollow 70x70x35 steel", ["hollow"]),
+        ("housing", "sensorring", "Sensor Ring XS", "sensor ring", "hollow 70x70x35 steel", ["hollow"]),
     ];
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
@@ -264,7 +266,7 @@ public sealed partial class PressParts
     {
         "drivenozzle" => Py.L(Scale("thrustForce", "volume", 1, false), Scale("thrustBurn", "volume", 1, false)),
         "reactionchamber" or "fuelinjector" => Py.L(Scale("worksServes", "volume", 1, false)),
-        "trainspacer" or "fuelbuffer" or "coolingjacket" => Py.L(), // (a function piece: what it adds is the same at any size)
+        "trainspacer" or "fuelbuffer" or "coolingjacket" or "igniter" or "sensorring" => Py.L(), // (a function piece: what it adds is the same at any size)
         _ => null,
     };
 
