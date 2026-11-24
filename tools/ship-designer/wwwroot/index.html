@@ -746,10 +746,17 @@ function deckPoint(ev) {
 // floor or top (a wall, or the part of a room that runs out to the skin, moves it: Karl, 2026-11-24, rooms were hard to move).
 function edgesNear(r, at, hit) {
   if (!at) return { any: false };
-  const n = hit?.face?.normal; if (n && Math.abs(S.stacked ? n.z : n.y) < 0.7) return { any: false };
-  const mx = Math.min(0.45, (r.x1 - r.x0) * 0.2), mz = Math.min(0.45, (r.z1 - r.z0) * 0.2);
-  if (at.x < r.x0 || at.x > r.x1 || at.z < r.z0 || at.z > r.z1) return { any: false };
-  const e = { x0: at.x - r.x0 < mx, x1: r.x1 - at.x < mx, z0: at.z - r.z0 < mz, z1: r.z1 - at.z < mz };
+  // A wall grabbed in its middle moves the room; grabbed near its foot (the floor's edge, 0.6 m) or its top (0.3 m) it sizes it.
+  const n = hit?.face?.normal;
+  if (n && Math.abs(S.stacked ? n.z : n.y) < 0.7) {
+    const b = r.box, up = S.stacked ? b[5] - hit.point.z : hit.point.y - b[2], h = S.stacked ? b[5] - b[4] : b[3] - b[2];
+    if (up > 0.6 && up < h - 0.3) return { any: false };
+  }
+  // Its edges as drawn: a room out to the hull is drawn (and grabbed) out to the skin, past its plan.
+  const b = r.box, X0 = Math.min(r.x0, b[0]), X1 = Math.max(r.x1, b[1]), Z0 = S.stacked ? Math.min(r.z0, b[2]) : Math.min(r.z0, b[4]), Z1 = S.stacked ? Math.max(r.z1, b[3]) : Math.max(r.z1, b[5]);
+  const mx = Math.min(0.45, (X1 - X0) * 0.2), mz = Math.min(0.45, (Z1 - Z0) * 0.2), t = 0.05;
+  if (at.x < X0 - t || at.x > X1 + t || at.z < Z0 - t || at.z > Z1 + t) return { any: false };
+  const e = { x0: at.x - X0 < mx, x1: X1 - at.x < mx, z0: at.z - Z0 < mz, z1: Z1 - at.z < mz };
   e.any = e.x0 || e.x1 || e.z0 || e.z1; return e;
 }
 let preview = null;
