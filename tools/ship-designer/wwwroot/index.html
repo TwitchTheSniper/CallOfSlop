@@ -297,6 +297,7 @@ function rebuild() {
     world.add(m); pickables.push(m);
   }
   if (view.rooms && (mode === "interior" || view.xray || pickRoomFor)) drawRooms();
+  if (view.parts) drawConnectors();
   if (view.links && mode !== "hull") drawLinks();
   if (mode === "interior") drawDeckPlane();
   if (view.person) drawPerson();
@@ -361,6 +362,33 @@ function drawRooms() {
   for (const [x, y, z] of S.doors) {
     const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
     m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
+  }
+}
+
+// A socket's connector to a room farther than its reach: a lined shaft like the Limpet's, with rungs when it climbs and a
+// hatch frame at the room's end (Karl, 2026-11-24). Drawn with the parts, whether or not the links are shown.
+function drawConnectors() {
+  for (const l of S.links) {
+    if (!(l.shaft > 0)) continue;
+    const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = b.clone().sub(a), len = d.length(); if (len < 0.1) continue;
+    const g = new THREE.Group(), w = l.shaft + 0.2, dir = d.clone().normalize();
+    g.position.copy(a).addScaledVector(d, 0.5);
+    g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    const wall = new THREE.MeshStandardMaterial({ color: 0x6d7682, metalness: 0.4, roughness: 0.6, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false });
+    const tube = new THREE.Mesh(new THREE.BoxGeometry(w, len, w, 1, 1, 1), wall); g.add(tube);
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(tube.geometry), new THREE.LineBasicMaterial({ color: l.ok ? 0xd8b04a : 0xff5a44 })); g.add(edge);
+    const amber = new THREE.MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.5, roughness: 0.4 });
+    // The hazard frames at both mouths.
+    for (const y of [-len / 2, len / 2]) for (const [sx, sz, bx, bz] of [[0, w / 2, w + 0.1, 0.08], [0, -w / 2, w + 0.1, 0.08], [w / 2, 0, 0.08, w + 0.1], [-w / 2, 0, 0.08, w + 0.1]]) {
+      const f = new THREE.Mesh(new THREE.BoxGeometry(bx, 0.1, bz), amber); f.position.set(sx, y, sz); g.add(f);
+    }
+    // A ladder up its side when it climbs more than it runs: two rails and rungs every 0.3 m.
+    if (Math.abs(dir.y) > 0.6) {
+      const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4 }), z = -w / 2 + 0.12;
+      for (const x of [-0.22, 0.22]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.04, len, 0.04), steel); r.position.set(x, 0, z); g.add(r); }
+      for (let y = -len / 2 + 0.15; y < len / 2; y += 0.3) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.03, 0.03), steel); r.position.set(0, y, z); g.add(r); }
+    }
+    g.traverse(o => { o.renderOrder = 4; }); world.add(g);
   }
 }
 
