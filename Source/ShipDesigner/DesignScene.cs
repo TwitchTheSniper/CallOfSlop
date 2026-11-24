@@ -138,25 +138,12 @@ public static class DesignScene
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
         foreach (var hw in d.Windows)
         {
-            var (pts, nu, nv, _, _, _) = Lay(d, hw);
-            if (nu < 2 || nv < 2)
-                continue;
-            double[] P(int k) => [pts[3 * k], pts[3 * k + 1], pts[3 * k + 2]];
-            double[] c00 = P(0), c10 = P(nu - 1), c01 = P((nv - 1) * nu), c11 = P(nv * nu - 1);
-            double[] o = [(c00[0] + c10[0] + c01[0] + c11[0]) / 4, (c00[1] + c10[1] + c01[1] + c11[1]) / 4, (c00[2] + c10[2] + c01[2] + c11[2]) / 4];
-            double[] ux = [c10[0] - c00[0] + c11[0] - c01[0], c10[1] - c00[1] + c11[1] - c01[1], c10[2] - c00[2] + c11[2] - c01[2]];
-            double[] vz = [c01[0] - c00[0] + c11[0] - c10[0], c01[1] - c00[1] + c11[1] - c10[1], c01[2] - c00[2] + c11[2] - c10[2]];
-            double lu = Math.Sqrt(ux[0] * ux[0] + ux[1] * ux[1] + ux[2] * ux[2]), lv = Math.Sqrt(vz[0] * vz[0] + vz[1] * vz[1] + vz[2] * vz[2]);
-            if (lu < 1e-6 || lv < 1e-6)
-                continue;
-            for (var i = 0; i < 3; i++) { ux[i] /= lu; vz[i] /= lv; }
-            double[] ny = [ux[1] * vz[2] - ux[2] * vz[1], ux[2] * vz[0] - ux[0] * vz[2], ux[0] * vz[1] - ux[1] * vz[0]];
-            var hx = Math.Max(Dist(c00, c10), Dist(c01, c11)) / 2 - 0.01;
-            var hz = Math.Max(Dist(c00, c01), Dist(c10, c11)) / 2 - 0.01;
-            if (hx > 0.05 && hz > 0.05)
-                cutouts.Add(new Cutout(o, ux, ny, vz, Rect(hx, hz)));
+            // Cut along the very rays the glass was laid by (straight out of the wall), so the hole is the glass's own outline on
+            // the skin however the hull curves (Karl, 2026-11-24: a flat plane cut a box out of a curved side).
+            var f = WindowFrame(d, hw);
+            if (f is { } q)
+                cutouts.Add(new Cutout([q.O[0] + q.N[0] * 0.5, q.O[1] + q.N[1] * 0.5, q.O[2] + q.N[2] * 0.5], q.U, q.N, q.V, Rect(q.Hx - 0.01, q.Hz - 0.01)));
         }
-        static double Dist(double[] a, double[] b) => Math.Sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
             List<List<(double, double, double)>> polys = [[a, b, c, e]];
@@ -494,7 +481,32 @@ public static class DesignScene
     /// <summary>A hull window laid on the skin: a grid of points (nu along the wall, nv up) found by going out from the room's
     /// wall along its normal to where the line leaves the hull, so the glass follows the ship's contour. Gap is the farthest the
     /// skin is from the wall; Ok when every point found the skin within <see cref="HullWindow.MaxGap"/>.</summary>
-    public static (double[] Pts, int Nu, int Nv, double Gap, bool Ok, double Len) Lay(ShipDesign d, HullWindow w)
+    /// <summary>A hull window's frame on its wall: middle, unit axes along the wall (U), up (V) and out (N, the ray it is laid by),
+    /// and half its size; null when its room is gone.</summary>
+    public static (double[] O, double[] U, double[] V, double[] N, double Hx, double Hz)? WindowFrame(ShipDesign d, HullWindow w)
+    {
+        var r = d.RoomById(w.Room);
+        if (r is null)
+            return null;
+        var dk = d.DeckOf(r);
+        var alongZ = w.Side is "x0" or "x1";
+        double lo = alongZ ? r.Z0 : r.X0, hi = alongZ ? r.Z1 : r.X1, len = hi - lo;
+        double wallAt = w.Side switch { "x0" => r.X0, "x1" => r.X1, "z0" => r.Z0, _ => r.Z1 };
+        double du = w.Side == "x0" ? -1 : w.Side == "x1" ? 1 : 0, dv = w.Side == "z0" ? -1 : w.Side == "z1" ? 1 : 0;
+        var width = Math.Min(w.W, len);
+        var mid = lo + width / 2 + (len - width) * w.T;
+        var top = Math.Min(w.Sill + w.H, dk.Height - 0.05);
+        var foot = Math.Min(w.Sill, top - 0.2);
+        double pu = alongZ ? wallAt : mid, pv = alongZ ? mid : wallAt, up = (foot + top) / 2;
+        var o = d.World(dk, pu, pv, up);
+        double[] Dir(double[] q) { var v = new[] { q[0] - o[0], q[1] - o[1], q[2] - o[2] }; var l = Math.Sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); return l < 1e-9 ? v : [v[0] / l, v[1] / l, v[2] / l]; }
+        var u = Dir(d.World(dk, pu + (alongZ ? 0 : 1), pv + (alongZ ? 1 : 0), up));
+        var vv = Dir(d.World(dk, pu, pv, up + 1));
+        var n = Dir(d.World(dk, pu + du, pv + dv, up));
+        return (o, u, vv, n, width / 2, (top - foot) / 2);
+    }
+
+    public static (double[] Pts, int Nu, int Nv, double Gap, bool Ok, double Len) Lay(ShipDesign d, HullWindow w, double grow = 0, double lift = 0.012)
     {
         var r = d.RoomById(w.Room);
         if (r is null)
@@ -508,6 +520,7 @@ public static class DesignScene
         var mid = lo + width / 2 + (len - width) * w.T;
         var top = Math.Min(w.Sill + w.H, dk.Height - 0.05);
         var foot = Math.Min(w.Sill, top - 0.2);
+        (width, top, foot) = (width + 2 * grow, top + grow, foot - grow); // the boarding's outer edge, laid the same way
         int nu = Math.Max(2, (int)Math.Ceiling(width / 0.25) + 1), nv = Math.Max(2, (int)Math.Ceiling((top - foot) / 0.25) + 1);
         var pts = new double[nu * nv * 3];
         var gap = 0.0;
@@ -543,7 +556,7 @@ public static class DesignScene
                 }
                 gap = Math.Max(gap, f);
                 var k = (j * nu + i) * 3;
-                (pts[k], pts[k + 1], pts[k + 2]) = (p[0] + nx * (f + 0.012), p[1] + ny * (f + 0.012), p[2] + nz * (f + 0.012));
+                (pts[k], pts[k + 1], pts[k + 2]) = (p[0] + nx * (f + lift), p[1] + ny * (f + lift), p[2] + nz * (f + lift));
             }
         return (pts, nu, nv, gap, ok, len);
     }
@@ -1095,7 +1108,9 @@ public static class DesignScene
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(w.Id).Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
               .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill))
               .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
-              .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]}");
+              .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
+            var (fp, fnu, fnv, _, _, _) = Lay(d, w, 0.1, 0.03);
+            sb.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"risers\":[");
         for (var i = 0; i < d.Risers.Count; i++)

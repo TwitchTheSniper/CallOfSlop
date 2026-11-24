@@ -485,14 +485,21 @@ function drawHullWindows() {
     for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu));
     const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
     frame.renderOrder = 6; world.add(frame);
-    // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide on the skin, standing a little proud, over the cut edge.
-    const u = P(nu - 1).sub(P(0)).add(P(nv * nu - 1)).sub(P((nv - 1) * nu)), v = P((nv - 1) * nu).sub(P(0)).add(P(nv * nu - 1)).sub(P(nu - 1));
-    const n = new THREE.Vector3().crossVectors(u, v).normalize(), cen = new THREE.Vector3(); ring.forEach(q => cen.add(q)); cen.divideScalar(ring.length);
-    const bp = [], bi = [], N = ring.length;
-    ring.forEach(q => { const o = q.clone().sub(cen); o.addScaledVector(n, -o.dot(n)).normalize();
-      const a0 = q.clone().addScaledVector(n, 0.004), a1 = q.clone().addScaledVector(n, 0.04), b1 = a1.clone().addScaledVector(o, 0.1), b0 = q.clone().addScaledVector(o, 0.1).addScaledVector(n, 0.004);
-      bp.push(...a0.toArray(), ...a1.toArray(), ...b1.toArray(), ...b0.toArray()); });
-    for (let k = 0; k < N; k++) { const a = 4 * k, b = 4 * ((k + 1) % N); for (let e = 0; e < 3; e++) bi.push(a + e, b + e, b + e + 1, a + e, b + e + 1, a + e + 1); }
+    // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide laid on the skin by the same rays as the glass (fpts), from
+    // the glass's edge out to its own, standing a little proud, so it follows the contour and covers the cut edge.
+    if (!(w.fnu >= 2 && w.fnv >= 2)) continue;
+    const sides = (q, a, b) => { const Q = k => new THREE.Vector3(q[3 * k], q[3 * k + 1], q[3 * k + 2]), s4 = [[], [], [], []];
+      for (let i = 0; i < a; i++) s4[0].push(Q(i)); for (let j = 0; j < b; j++) s4[1].push(Q(j * a + a - 1));
+      for (let i = a - 1; i >= 0; i--) s4[2].push(Q((b - 1) * a + i)); for (let j = b - 1; j >= 0; j--) s4[3].push(Q(j * a)); return s4; };
+    const resample = (line, K) => { const L = [0]; for (let i = 1; i < line.length; i++) L.push(L[i - 1] + line[i].distanceTo(line[i - 1])); const T = L[L.length - 1] || 1, out = [];
+      for (let k = 0; k < K; k++) { const t = T * k / (K - 1); let i = 1; while (i < line.length - 1 && L[i] < t) i++; const f = (t - L[i - 1]) / ((L[i] - L[i - 1]) || 1); out.push(line[i - 1].clone().lerp(line[i], Math.min(1, Math.max(0, f)))); } return out; };
+    const si = sides(pts, nu, nv), so = sides(w.fpts, w.fnu, w.fnv), inner = [], outer = [];
+    for (let e = 0; e < 4; e++) { const K = Math.max(si[e].length, so[e].length) * 2; const a = resample(si[e], K), b = resample(so[e], K); a.pop(); b.pop(); inner.push(...a); outer.push(...b); }
+    const N = inner.length;
+    const bp = [], bi = [];
+    for (let k = 0; k < N; k++) { const o = outer[k], ii = inner[k];
+      bp.push(...ii.toArray(), ...o.toArray()); }
+    for (let k = 0; k < N; k++) { const a = 2 * k, b = 2 * ((k + 1) % N); bi.push(a, b, b + 1, a, b + 1, a + 1); }
     const bg = new THREE.BufferGeometry(); bg.setAttribute("position", new THREE.Float32BufferAttribute(bp, 3)); bg.setIndex(bi); bg.computeVertexNormals();
     const board = new THREE.Mesh(bg, new THREE.MeshStandardMaterial({ color: picked ? 0x4a6f9a : 0x3a3e44, roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide }));
     board.userData = { type: "hullwin", id: w.id }; world.add(board); pickables.push(board);
