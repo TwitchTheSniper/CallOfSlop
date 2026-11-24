@@ -961,7 +961,7 @@ public static class DesignScene
     /// of its middle), so it follows the hull's shape there too. Its drawn box stays as it is.</summary>
     public static (double V0, double V1) Span(ShipDesign d, Room r)
     {
-        if (!r.ToHull || d.Stacked)
+        if (!r.ToHull || !r.RunOn || d.Stacked)
             return (r.Z0, r.Z1);
         var dk = d.DeckOf(r);
         var mid = (r.X0 + r.X1) / 2;
@@ -1233,7 +1233,7 @@ public static class DesignScene
                   var (ra, rb) = ExtRings(d, r, e);
                   return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
               }))).Append(']')
-              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
+              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
             if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
