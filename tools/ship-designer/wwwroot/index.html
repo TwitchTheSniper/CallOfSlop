@@ -366,12 +366,29 @@ function drawRooms() {
     const along = new THREE.Vector3(...p.s1).sub(new THREE.Vector3(...p.s0)), across = Math.abs(along.x) > 1e-3 || along.length() < 1e-3 ? "z" : "x";
     const picked = sel.kind === "door" && sel.id === p.id, g = new THREE.Group(); g.position.set(...p.at);
     if (S.stacked) g.rotation.x = -Math.PI / 2;
-    if (across === "x") g.rotation.y = Math.PI / 2; // a door in a wall along z: turn it to face across x
+    if (across === "x") g.rotation.y = Math.PI / 2; // in a wall along z: turn it to face across x
     const m = new THREE.MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.4, roughness: 0.5, emissive: picked ? 0x1d4f86 : 0x000000 });
-    const leaf = new THREE.MeshStandardMaterial({ color: 0x5c6b7a, transparent: true, opacity: 0.55, emissive: picked ? 0x1d4f86 : 0x000000 });
-    for (const [w, h, x, y] of [[0.1, 2.1, -0.5, 1.05], [0.1, 2.1, 0.5, 1.05], [1.1, 0.1, 0, 2.1]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), m); b.position.set(x, y, 0); b.userData = { type: "door", id: p.id }; g.add(b); pickables.push(b); }
-    const hit = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.05, 0.08), leaf); hit.position.set(0, 1.02, 0); hit.userData = { type: "door", id: p.id }; g.add(hit);
-    g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
+    const pane = new THREE.MeshStandardMaterial({ color: p.kind === "Window" ? 0x9fd3ff : 0x5c6b7a, transparent: true, opacity: p.kind === "Window" ? 0.35 : 0.55, emissive: picked ? 0x1d4f86 : 0x000000, side: THREE.DoubleSide });
+    const part = (geo, mat, x, y, rz = 0) => { const b = new THREE.Mesh(geo, mat); b.position.set(x, y, 0); b.rotation.z = rz; b.userData = { type: "door", id: p.id }; g.add(b); pickables.push(b); return b; };
+    if (p.kind !== "Window") {
+      const w = p.w, h = p.h;
+      for (const [bw, bh, x, y] of [[0.1, h, -w / 2 - 0.05, h / 2], [0.1, h, w / 2 + 0.05, h / 2], [w + 0.2, 0.1, 0, h + 0.05]]) part(new THREE.BoxGeometry(bw, bh, 0.2), m, x, y);
+      if (w > 1.3) { part(new THREE.BoxGeometry(w / 2 - 0.02, h - 0.03, 0.08), pane, -w / 4, h / 2); part(new THREE.BoxGeometry(w / 2 - 0.02, h - 0.03, 0.08), pane, w / 4, h / 2); } // two leaves
+      else part(new THREE.BoxGeometry(w, h - 0.03, 0.08), pane, 0, h / 2);
+    } else {
+      // A window's outline as points round its middle (sill + h/2 up): a rectangle, a circle, an oval or an arch.
+      const w = p.w, h = p.shape === "Round" ? p.w : p.h, cy = p.sill + h / 2, pts = [];
+      if (p.shape === "Rect") pts.push([-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]);
+      else if (p.shape === "Arch") { const r = w / 2, sh = Math.max(0, h - r); pts.push([-r, -h / 2], [r, -h / 2], [r, -h / 2 + sh]); for (let i = 1; i < 12; i++) { const t = Math.PI * i / 12; pts.push([r * Math.cos(t), -h / 2 + sh + r * Math.sin(t)]); } pts.push([-r, -h / 2 + sh]); }
+      else for (let i = 0; i < 24; i++) { const t = 2 * Math.PI * i / 24; pts.push([w / 2 * Math.cos(t), h / 2 * Math.sin(t)]); }
+      const shape = new THREE.Shape(pts.map(([x, y]) => new THREE.Vector2(x, y)));
+      part(new THREE.ShapeGeometry(shape), pane, 0, cy);
+      for (let i = 0; i < pts.length; i++) {
+        const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % pts.length], len = Math.hypot(x1 - x0, y1 - y0);
+        part(new THREE.BoxGeometry(len + 0.06, 0.08, 0.18), m, (x0 + x1) / 2, cy + (y0 + y1) / 2, Math.atan2(y1 - y0, x1 - x0));
+      }
+    }
+    g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true);
   }
   for (const [x, y, z] of S.doors) {
     const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
@@ -381,7 +398,7 @@ function drawRooms() {
 
 // Ladders and lifts between decks (Karl, 2026-11-24): a ladder is two rails and rungs up a well, a lift a glass shaft with
 // corner posts and its car at the lowest stop; amber frames mark where it passes each deck. Pickable in the interior.
-let placingRiser = null, doorFrom = 0;
+let placingRiser = null, doorFrom = 0, doorKind = "Door";
 const inside = () => mode === "interior" || mode === "connectors";
 function drawRisers() {
   for (const k of S.risers || []) {
@@ -563,11 +580,11 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (doorFrom) {
       const from = doorFrom; doorFrom = 0;
       if (h?.object.userData.type === "room" && h.object.userData.id !== from) {
-        const a = cmd({ op: "addDoor", a: from, b: h.object.userData.id });
+        const a = cmd({ op: "addDoor", a: from, b: h.object.userData.id, kind: doorKind });
         if (a.error) { toast(a.error); return; }
-        const p = (S.placedDoors || []).find(p => (p.a === from && p.b === h.object.userData.id) || (p.b === from && p.a === h.object.userData.id));
-        if (p) { select("door", p.id); toast("Door placed. Drag it along the wall.", true); }
-        else { select(null, 0); toast("Those rooms share no 0.9 m of wall on one deck, so the door has nowhere to go: it is kept, and the checks say so."); }
+        const p = (S.placedDoors || []).find(p => p.id === a.id);
+        if (p) { select("door", p.id); toast(`${doorKind} placed. Drag it along the wall.`, true); }
+        else { select(null, 0); toast(`Those rooms share too little wall on one deck, so the ${doorKind.toLowerCase()} has nowhere to go: it is kept, and the checks say so.`); }
       } else { inspector(); toast("Stopped placing the door."); }
       return;
     }
@@ -1073,9 +1090,17 @@ function inspector() {
     const p = (S.placedDoors || []).find(p => p.id === sel.id); if (!p) return;
     const nm = id => { const r = S.rooms.find(r => r.id === id); return r ? r.label || r.kind : "?"; };
     let first = true;
-    I.append(el("h2", {}, "Door"), el("p", { class: "hint" }, `Between ${nm(p.a)} and ${nm(p.b)}. Drag it along their wall, or:`),
-      slider("Along the wall", Math.round(p.t * 100), 0, 100, 1, "%", v => { cmd({ op: "setDoor", id: p.id, t: v / 100, light: true }, !first); first = false; }, v => cmd({ op: "setDoor", id: p.id, t: v / 100 }, true)),
-      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDoor", id: p.id }); select(null, 0); } }, "Back to the middle")));
+    const sl = (label, key, v, min, max, step, unit, scale) => { let f = true; return slider(label, Math.round(v * scale), min, max, step, unit, x => { cmd({ op: "setDoor", id: p.id, [key]: x / scale, light: true }, !f); f = false; }, x => cmd({ op: "setDoor", id: p.id, [key]: x / scale }, true)); };
+    I.append(el("h2", {}, p.kind), el("p", { class: "hint" }, `Between ${nm(p.a)} and ${nm(p.b)}. Drag it along their wall, or:`),
+      sl("Along the wall", "t", p.t, 0, 100, 1, "%", 100));
+    if (p.kind === "Door")
+      I.append(el("div", { class: "row" }, ...[["Narrow", 0.75, 2.0], ["Standard", 0.9, 2.1], ["Wide", 1.2, 2.1], ["Double", 1.8, 2.1], ["Cargo", 3, 2.8], ["Bay", 5, 3]].map(([n, w, h]) =>
+          el("button", { class: Math.abs(p.w - w) < 0.01 && Math.abs(p.h - h) < 0.01 ? "on" : "", onclick: () => cmd({ op: "setDoor", id: p.id, w, h }) }, `${n} ${w} m`))),
+        sl("Width", "w", p.w, 50, 600, 5, " cm", 100), sl("Height", "h", p.h, 150, 300, 5, " cm", 100));
+    if (p.kind === "Window")
+      I.append(el("div", { class: "row" }, ...["Rect", "Round", "Oval", "Arch"].map(sh => el("button", { class: p.shape === sh ? "on" : "", onclick: () => cmd({ op: "setDoor", id: p.id, shape: sh }) }, sh === "Rect" ? "Square" : sh))),
+        sl("Width", "w", p.w, 30, 400, 5, " cm", 100), ...(p.shape === "Round" ? [] : [sl("Height", "h", p.h, 30, 240, 5, " cm", 100)]), sl("Sill", "sill", p.sill, 0, 200, 5, " cm", 100));
+    I.append(el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDoor", id: p.id }); select(null, 0); } }, p.kind === "Window" ? "Delete" : "Back to the middle")));
     return;
   }
   if (sel.kind === "riser") {
@@ -1130,9 +1155,9 @@ function inspector() {
         el("button", { class: placingRiser?.room === r.id && placingRiser.kind === k && placingRiser.dir === dir ? "on" : "", ...(otherDeck(r.deck, dir) < 0 ? { disabled: "" } : {}),
           onclick: () => { placingRiser = { kind: k, dir, room: r.id }; deck = r.deck; rebuild(); inspector(); $("tip").textContent = `Click where in ${r.label || r.kind} the ${k.toLowerCase()} goes (it reaches the room ${dir < 0 ? "below" : "above"}).`; } }, t))),
         el("p", { class: "hint" }, "Then click where in the room it goes; off the room puts it in the middle."),
-        el("h3", {}, "Door"),
-        el("div", { class: "row" }, el("button", { class: doorFrom === r.id ? "on" : "", onclick: () => { doorFrom = doorFrom === r.id ? 0 : r.id; inspector(); $("tip").textContent = doorFrom ? `Click the room the door from ${r.label || r.kind} opens into.` : tips[mode]; } }, "Add a door")),
-        el("p", { class: "hint" }, "Then click the other room: the door goes in the wall they share, and you can drag it along."));
+        el("h3", {}, "Doors and windows"),
+        el("div", { class: "row" }, ...["Door", "Window"].map(kd => el("button", { class: doorFrom === r.id && doorKind === kd ? "on" : "", onclick: () => { const on = doorFrom === r.id && doorKind === kd; doorFrom = on ? 0 : r.id; doorKind = kd; inspector(); $("tip").textContent = doorFrom ? `Click the room the ${kd.toLowerCase()} from ${r.label || r.kind} looks into.` : tips[mode]; } }, `Add a ${kd.toLowerCase()}`))),
+        el("p", { class: "hint" }, "Then click the other room: it goes in the wall they share, and you can drag it along. One door a pair of rooms; as many windows as fit."));
       return;
     }
     const ks = el("select", { "aria-label": "Room kind" }); for (const k of CAT.rooms) ks.append(el("option", k.name === r.kind ? { selected: "" } : {}, k.name));

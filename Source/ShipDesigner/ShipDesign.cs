@@ -73,7 +73,7 @@ public sealed class ShipDesign
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
-            ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T) })]),
+            ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill) })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
@@ -123,7 +123,9 @@ public sealed class ShipDesign
             {
                 var (a, b) = ((int?)dob["a"] ?? -1, (int?)dob["b"] ?? -1);
                 if (a >= 0 && b >= 0 && a < d.Rooms.Count && b < d.Rooms.Count && a != b)
-                    d.Doors.Add(new RoomDoor { Id = d.Take(dob), A = d.Rooms[a].Id, B = d.Rooms[b].Id, T = Math.Clamp(F(dob["t"], 0.5), 0, 1) });
+                    d.Doors.Add(new RoomDoor { Id = d.Take(dob), A = d.Rooms[a].Id, B = d.Rooms[b].Id, T = Math.Clamp(F(dob["t"], 0.5), 0, 1),
+                        Kind = (string?)dob["kind"] == "Window" ? "Window" : "Door", Shape = RoomDoor.Shapes.Contains((string?)dob["shape"]) ? (string)dob["shape"]! : "Rect",
+                        W = Math.Clamp(F(dob["w"], (string?)dob["kind"] == "Window" ? 1.2 : 0.9), 0.3, 6), H = Math.Clamp(F(dob["h"], (string?)dob["kind"] == "Window" ? 0.8 : 2.1), 0.3, 3), Sill = Math.Clamp(F(dob["sill"], 1), 0, 3) });
             }
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
@@ -268,5 +270,9 @@ public sealed class RoomDoor
 {
     public int Id, A, B;
     public double T = 0.5;
+    public string Kind = "Door"; // Door, or Window (Karl, 2026-11-24: windows between rooms, sized, in shapes)
+    public string Shape = "Rect"; // a window's: Rect, Round, Oval, Arch
+    public double W = 1.2, H = 0.8, Sill = 1.0;
+    public static readonly string[] Shapes = ["Rect", "Round", "Oval", "Arch"];
     public bool Joins(Room a, Room b) => (A == a.Id && B == b.Id) || (A == b.Id && B == a.Id);
 }

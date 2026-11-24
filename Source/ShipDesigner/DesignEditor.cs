@@ -495,9 +495,11 @@ public sealed class DesignEditor
                 var (a, b) = (d.RoomById(I(o, "a")), d.RoomById(I(o, "b")));
                 if (a is null || b is null || a == b)
                     return "pick two rooms";
-                var k = d.Doors.Find(q => q.Joins(a, b));
+                // One door a pair of rooms (placing it again moves it); windows, as many as fit.
+                var window = Str(o, "kind") == "Window";
+                var k = window ? null : d.Doors.Find(q => q.Kind == "Door" && q.Joins(a, b));
                 if (k is null)
-                    d.Doors.Add(k = new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id });
+                    d.Doors.Add(k = new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id, Kind = window ? "Window" : "Door", W = window ? 1.2 : 0.9, H = window ? 0.8 : 2.1 });
                 k.T = Math.Clamp(D(o, "t", k.T), 0, 1);
                 return "";
             }
@@ -505,6 +507,10 @@ public sealed class DesignEditor
             {
                 var k = d.Doors.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such door");
                 if (o["t"] is not null) k.T = Math.Clamp(D(o, "t"), 0, 1);
+                if (o["w"] is not null) k.W = Math.Clamp(Snap(D(o, "w"), 0.05), 0.3, 6);
+                if (o["h"] is not null) k.H = Math.Clamp(Snap(D(o, "h"), 0.05), 0.3, 3);
+                if (o["sill"] is not null) k.Sill = Math.Clamp(Snap(D(o, "sill"), 0.05), 0, 3);
+                if (o["shape"] is not null && RoomDoor.Shapes.Contains(Str(o, "shape"))) k.Shape = Str(o, "shape");
                 return "";
             }
             case "delDoor":

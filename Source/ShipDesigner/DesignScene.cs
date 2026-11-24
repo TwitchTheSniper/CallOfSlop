@@ -510,25 +510,33 @@ public static class DesignScene
                     var ox = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0);
                     double[]? door = null;
                     // The wall they share (plan ends), and where along it the door is: a placed door's T, else the middle.
-                    var placed = d.Doors.Find(k => k.Joins(a, b));
+                    // The wall they share (on plan: along x at zw, or along z at xw, from w0 to w1), if any.
+                    bool alongZ = oz > 0.01 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02);
+                    bool alongX = !alongZ && ox > 0.01 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02);
+                    double wall = alongZ ? (Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0) : (Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0);
+                    double w0 = alongZ ? Math.Max(a.Z0, b.Z0) : Math.Max(a.X0, b.X0), w1 = alongZ ? Math.Min(a.Z1, b.Z1) : Math.Min(a.X1, b.X1);
+                    double[] At(double s, double up) => alongZ ? d.World(dk, wall, s, up) : d.World(dk, s, wall, up);
+                    // A door (0.9 m) or a placed window (its width) slides between the wall's ends kept clear by half its width.
+                    foreach (var k in d.Doors)
+                    {
+                        if (!k.Joins(a, b) || !(alongZ || alongX))
+                            continue;
+                        var half = k.W / 2; // a door or a window: its own width (Karl, 2026-11-24: more door sizes)
+                        if (w1 - w0 < 2 * half - 0.01)
+                            continue; // too short a wall: the check says so below
+                        double lo = w0 + half, hi = w1 - half, mid = lo + (hi - lo) * k.T;
+                        c.Placed.Add((k.Id, At(mid, 0), At(lo, 0), At(hi, 0)));
+                    }
+                    var placed = d.Doors.Find(k => k.Kind == "Door" && k.Joins(a, b));
                     var t = placed?.T ?? 0.5;
                     double[]? s0 = null, s1 = null;
-                    if (oz >= 0.9 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02))
+                    var dw = placed?.W ?? 0.9;
+                    if ((alongZ || alongX) && w1 - w0 >= dw - 0.01)
                     {
-                        var xw = Math.Abs(a.X1 - b.X0) < 0.02 ? a.X1 : a.X0;
-                        double lo = Math.Max(a.Z0, b.Z0) + 0.45, hi = Math.Min(a.Z1, b.Z1) - 0.45;
-                        door = d.World(dk, xw, lo + (hi - lo) * t, 0);
-                        (s0, s1) = (d.World(dk, xw, lo, 0), d.World(dk, xw, hi, 0));
+                        double lo = w0 + dw / 2, hi = w1 - dw / 2;
+                        door = At(lo + (hi - lo) * t, 0);
+                        (s0, s1) = (At(lo, 0), At(hi, 0));
                     }
-                    else if (ox >= 0.9 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02))
-                    {
-                        var zw = Math.Abs(a.Z1 - b.Z0) < 0.02 ? a.Z1 : a.Z0;
-                        double lo = Math.Max(a.X0, b.X0) + 0.45, hi = Math.Min(a.X1, b.X1) - 0.45;
-                        door = d.World(dk, lo + (hi - lo) * t, zw, 0);
-                        (s0, s1) = (d.World(dk, lo, zw, 0), d.World(dk, hi, zw, 0));
-                    }
-                    if (placed is not null && door is not null)
-                        c.Placed.Add((placed.Id, door, s0!, s1!));
                     var segments = a.Group != 0 && a.Group == b.Group && (ox >= -0.02 && oz > 0.01 || oz >= -0.02 && ox > 0.01);
                     if (door is not null || segments)
                     {
@@ -554,7 +562,7 @@ public static class DesignScene
             {
                 var (ra, rb) = (d.RoomById(k.A), d.RoomById(k.B));
                 if (ra is not null && rb is not null)
-                    c.Issues.Add(new("warn", $"The door between {Name(ra)} and {Name(rb)} has no wall to sit in: they need 0.9 m of shared wall on one deck", $"room:{ra.Id}"));
+                    c.Issues.Add(new("warn", $"The {k.Kind.ToLowerInvariant()} between {Name(ra)} and {Name(rb)} has no wall to sit in: they need {k.W:0.0} m of shared wall on one deck", $"room:{ra.Id}"));
             }
 
         // Ladders and lifts: each joins the rooms it stands in on every deck it stops at (Karl, 2026-11-24).
@@ -921,6 +929,7 @@ public static class DesignScene
             var (id, at, s0, s1) = c.Placed[i];
             var k = d.Doors.Find(q => q.Id == id)!;
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(id).Append(",\"a\":").Append(k.A).Append(",\"b\":").Append(k.B).Append(",\"t\":").Append(ShipDesign.S(k.T))
+              .Append(",\"kind\":").Append(Q(k.Kind)).Append(",\"shape\":").Append(Q(k.Shape)).Append(",\"w\":").Append(ShipDesign.S(k.W)).Append(",\"h\":").Append(ShipDesign.S(k.H)).Append(",\"sill\":").Append(ShipDesign.S(k.Sill))
               .Append(",\"at\":[").Append(string.Join(',', at.Select(ShipDesign.S))).Append("],\"s0\":[").Append(string.Join(',', s0.Select(ShipDesign.S)))
               .Append("],\"s1\":[").Append(string.Join(',', s1.Select(ShipDesign.S))).Append("]}");
         }
