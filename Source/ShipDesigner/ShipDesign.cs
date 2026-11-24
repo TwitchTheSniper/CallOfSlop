@@ -189,6 +189,7 @@ public sealed class Room
     public List<RoomExt> Exts = []; // the room grown out of a wall or up through its ceiling, in a shape (Karl, 2026-11-24)
     public bool RunAft; // the same at its aft end, into the stern (Karl, 2026-11-24: an option for the rear as well)
     public bool RunOn; // with ToHull: its open ends run on into the nose or the stern while there is floor (Karl, 2026-11-24), a player's choice
+    public List<RoomWall> Walls = []; // partition walls inside it (across or along, each with an optional door gap)
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
     public double Area => (X1 - X0) * (Z1 - Z0);
@@ -198,6 +199,7 @@ public sealed class Room
         ["deck"] = Deck, ["x0"] = ShipDesign.R(X0), ["x1"] = ShipDesign.R(X1), ["z0"] = ShipDesign.R(Z0), ["z1"] = ShipDesign.R(Z1),
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
+        ["walls"] = new JsonArray([.. Walls.Select(w => (JsonNode)w.ToJson())]),
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -219,6 +221,9 @@ public sealed class Room
                     e.Shape = RoomExt.ShapesFor(e.Side)[0];
                 r.Exts.Add(e);
             }
+        foreach (var j in o["walls"]?.AsArray() ?? [])
+            if (j is JsonObject wo && r.Walls.Count < RoomWall.Max)
+                r.Walls.Add(RoomWall.FromJson(wo));
         r.Normalise();
         return r;
     }
@@ -406,4 +411,22 @@ public sealed class RoomExt
                 return [(-h, 0), (-h, d), (h, d), (h, 0)];
         }
     }
+}
+
+/// <summary>A partition wall inside a room: across it (Axis "x", at T of the way along its Z) or along it (Axis "z", at T of the way across
+/// its X), full height and 10 cm thick, with a door gap of DoorW metres (0: none) centred DoorT of the way along the wall.</summary>
+public sealed class RoomWall
+{
+    public const int Max = 8;
+    public const double Thick = 0.1, DoorH = 2.0, DoorMax = 4;
+    public string Axis = "x";
+    public double T = 0.5, DoorW, DoorT = 0.5;
+
+    public JsonObject ToJson() => new() { ["axis"] = Axis, ["t"] = ShipDesign.R(T), ["door"] = ShipDesign.R(DoorW), ["doorT"] = ShipDesign.R(DoorT) };
+
+    public static RoomWall FromJson(JsonObject o) => new()
+    {
+        Axis = (string?)o["axis"] == "z" ? "z" : "x", T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0.02, 0.98),
+        DoorW = Math.Clamp(ShipDesign.F(o["door"], 0), 0, DoorMax), DoorT = Math.Clamp(ShipDesign.F(o["doorT"], 0.5), 0, 1),
+    };
 }

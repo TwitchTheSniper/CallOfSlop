@@ -209,6 +209,15 @@ public sealed class DesignEditor
                 if (o["mirror"] is not null) h.Mirror = (bool)o["mirror"]!;
                 if (o["cut"] is not null) h.Cut = (bool)o["cut"]!;
                 if (o["skin"] is not null && Str(o, "skin").Length == 7) h.Skin = Str(o, "skin");
+                if (o["clad"] is not null)
+                {
+                    if (!HullBody.CladKinds.Contains(Str(o, "clad")))
+                        return "cladding is Off, Plates or Heavy";
+                    h.Clad = Str(o, "clad");
+                }
+                if (o["cladSeed"] is not null) h.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
+                if (o["cladSize"] is not null) h.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 return "";
             }
             case "moveStation":
@@ -718,6 +727,38 @@ public sealed class DesignEditor
                     r.Exts.RemoveAt(i);
                 return "";
             }
+            case "addWall":
+            {
+                var r = Rm();
+                if (r.Walls.Count >= RoomWall.Max)
+                    return $"at most {RoomWall.Max} walls a room";
+                var w = RoomWall.FromJson(o);
+                r.Walls.Add(w);
+                o["i"] = r.Walls.Count - 1;
+                return "";
+            }
+            case "setWall":
+            {
+                var r = Rm();
+                var i = I(o, "i", -1);
+                if (i < 0 || i >= r.Walls.Count)
+                    return "no such wall";
+                var w = r.Walls[i];
+                if (o["axis"] is not null) w.Axis = Str(o, "axis") == "z" ? "z" : "x";
+                if (o["t"] is not null) w.T = Math.Clamp(D(o, "t"), 0.02, 0.98);
+                if (o["door"] is not null) w.DoorW = Math.Clamp(Snap(D(o, "door"), 0.05), 0, RoomWall.DoorMax);
+                if (o["doorT"] is not null) w.DoorT = Math.Clamp(D(o, "doorT"), 0, 1);
+                return "";
+            }
+            case "delWall":
+            {
+                var r = Rm();
+                var i = I(o, "i", -1);
+                if (i < 0 || i >= r.Walls.Count)
+                    return "no such wall";
+                r.Walls.RemoveAt(i);
+                return "";
+            }
             case "mount":
             {
                 // A socket mounted from a room (Karl, 2026-11-24): from a point on the room's wall, floor or ceiling, out along that face's
@@ -774,6 +815,7 @@ public sealed class DesignEditor
                     r.Group = d.NewId();
                 var n = Room.FromJson(r.ToJson(), d.NewId());
                 n.Height = r.Height;
+                n.Walls.Clear();
                 var mid = Snap((alongX ? r.X0 : r.Z0) + len / 2, 0.25);
                 if (alongX) { r.X1 = mid; n.X0 = mid; } else { r.Z1 = mid; n.Z0 = mid; }
                 d.Rooms.Add(n);

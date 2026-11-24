@@ -364,6 +364,11 @@ function drawRooms() {
     const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
     const dim = inside() && r.deck !== deck && !through;
     drawExts(r, dim);
+    if (r.wallMesh) {
+      // Its partition walls, solid so they read inside the see-through room.
+      const wm = meshFrom(r.wallMesh, { transparent: dim, opacity: dim ? 0.15 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
+      wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
+    }
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
       const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
@@ -1119,6 +1124,16 @@ function stationPanel(h) {
   box.append(el("div", { class: "row" },
     el("label", {}, el("input", { type: "checkbox", ...(h.cut ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, cut: e.target.checked }) }), "Cut where it meets"),
     el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
+  // Cladding (the user's Star Destroyer flank, 2026-11-24): plates of varied size laid on the skin, raised a few cm, off every opening.
+  const clad = h.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+  box.append(el("h3", {}, "Cladding"),
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    ...(clad.kind === "Off" ? [] : [
+      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 })),
+      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 })),
+      el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
+        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
   const secSel = { get value() { return shapePick; } };
   // The section shapes as a gallery: each drawn whole, three a row, scrolling.
   const gal = el("div", { class: "gal", role: "listbox", "aria-label": "Section shapes" });
@@ -1339,6 +1354,16 @@ function inspector() {
           ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
             slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
       el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
+      el("h3", {}, "Internal walls"),
+      el("div", { class: "row" }, ...[["x", "Across"], ["z", "Along"]].map(([ax, t]) => el("button", { onclick: () => { const a = cmd({ op: "addWall", id: r.id, axis: ax, t: 0.5 }); if (a.error) toast(a.error); } }, `Add a wall ${t.toLowerCase()}`))),
+      ...(r.walls || []).flatMap((w, i) => { const set = o => { const a = cmd({ op: "setWall", id: r.id, i, ...o }); if (a.error) toast(a.error); };
+        return [el("p", { class: "hint" }, `${i + 1}. Wall ${w.axis === "x" ? "across" : "along"}${w.door > 0 ? `, door ${Math.round(w.door * 100)} cm` : ""}`),
+          el("div", { class: "row" }, ...[["x", "Across"], ["z", "Along"]].map(([ax, t]) => el("button", { class: w.axis === ax ? "on" : "", onclick: () => set({ axis: ax }) }, t)),
+            el("button", { onclick: () => { const a = cmd({ op: "delWall", id: r.id, i }); if (a.error) toast(a.error); } }, "Delete")),
+          slider("Position", Math.round(w.t * 100), 2, 98, 1, "%", () => {}, v => set({ t: v / 100 })),
+          slider("Door width", Math.round(w.door * 100), 0, 400, 5, " cm", () => {}, v => set({ door: v / 100 })),
+          ...(w.door > 0 ? [slider("Door along", Math.round(w.doorT * 100), 0, 100, 1, "%", () => {}, v => set({ doorT: v / 100 }))] : [])]; }),
+      el("p", { class: "hint" }, "A partition across the room or along it, full height, 10 cm thick, with an optional door gap (0: none)."),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),

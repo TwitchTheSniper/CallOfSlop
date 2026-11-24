@@ -29,6 +29,13 @@ public sealed class HullBody
     public bool Cut = true;
     public string Skin = "#c9cdd2";
     public List<Station> Stations = [];
+    /// <summary>Plated cladding on the skin (Off, Plates, Heavy): panels between stations from a seeded grid, merged into plates of
+    /// varied size, each raised a little, Heavy higher and with small box greebles. Size is a grid cell (m), Depth scales the rise.</summary>
+    public static readonly string[] CladKinds = ["Off", "Plates", "Heavy"];
+    public string Clad = "Off";
+    public int CladSeed = 1;
+    public double CladSize = 1.5, CladDepth = 1;
+    public const double CladSizeMin = 0.4, CladSizeMax = 6, CladDepthMin = 0.25, CladDepthMax = 2.5;
 
     public int Copies => Mirror && Math.Abs(X) > 0.01 ? 2 : 1;
     public double CopyX(int copy) => copy == 1 ? -X : X;
@@ -92,7 +99,15 @@ public sealed class HullBody
     public double Front => Stations[0].Z;
     public double Back => Stations[^1].Z;
 
-    public JsonObject ToJson() => new()
+    public JsonObject ToJson()
+    {
+        var o = Json0();
+        if (Clad != "Off")
+            o["clad"] = new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) };
+        return o;
+    }
+
+    private JsonObject Json0() => new()
     {
         ["name"] = Name, ["x"] = ShipDesign.R(X), ["y"] = ShipDesign.R(Y), ["z"] = ShipDesign.R(Z), ["mirror"] = Mirror, ["cut"] = Cut, ["skin"] = Skin,
         ["stations"] = new JsonArray([.. Stations.Select(s => (JsonNode)new JsonObject
@@ -122,6 +137,14 @@ public sealed class HullBody
         // Stations may have different point counts (Karl, 2026-11-24): each segment is lofted through both ends' corners.
         if (h.Stations.Count < 2 || h.Stations.Any(s => s.P.Count < MinPoints))
             throw new FormatException($"hull \"{h.Name}\": needs 2 or more stations of {MinPoints} to {MaxPoints} points each");
+        if (o["clad"] is JsonObject c)
+        {
+            var k = (string?)c["kind"] ?? "Off";
+            h.Clad = CladKinds.Contains(k) ? k : "Off";
+            h.CladSeed = Math.Clamp((int?)c["seed"] ?? 1, 0, 99999);
+            h.CladSize = Math.Clamp(ShipDesign.F(c["size"], 1.5), CladSizeMin, CladSizeMax);
+            h.CladDepth = Math.Clamp(ShipDesign.F(c["depth"], 1), CladDepthMin, CladDepthMax);
+        }
         h.Tidy();
         return h;
     }
@@ -129,6 +152,7 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth,
     };
 
     /// <summary>

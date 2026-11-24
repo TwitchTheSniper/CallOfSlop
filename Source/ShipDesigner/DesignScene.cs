@@ -6,7 +6,7 @@ namespace CallOfSlop.ShipDesigner;
 /// Everything the designer shows and checks, worked out from a design: the hull skins (cut where bodies meet), the pieces where they sit, the
 /// rooms and their doors, each socket's link to its room, the issues and the totals. Written as one JSON object for the page.
 /// </summary>
-public static class DesignScene
+public static partial class DesignScene
 {
     /// <summary>False while a piece is being dragged: its opening is cut when it is let go (Karl, 2026-11-23).</summary>
     public static bool Holes = true;
@@ -259,6 +259,19 @@ public static class DesignScene
         }
         near.Clear();
         near.AddRange(cutters.Select(o => o.B).Distinct());
+        // Cladding stays off every opening: a cell any socket, mouth or window may reach, or another body cuts, is left bare.
+        if (h.Clad != "Off")
+            CladBody(skin, h, cx, (p, q) =>
+            {
+                foreach (var k in cutouts)
+                    if (k.Near(p, q))
+                        return true;
+                var mid = ((p.Item1 + q.Item1) / 2, (p.Item2 + q.Item2) / 2, (p.Item3 + q.Item3) / 2);
+                foreach (var (x, y, z) in new[] { p, q, mid })
+                    if (InHole(x, y, z) || CutBody(x, y, z))
+                        return true;
+                return false;
+            });
         Cap(fore, cx, h, h.Stations[0], DesignMesh.Tone(col, 0.85), Cut);
         Cap(aft, cx, h, h.Stations[^1], DesignMesh.Tone(dark, 1.2), Cut);
         return (skin, fore, aft);
@@ -1180,6 +1193,7 @@ public static class DesignScene
             sb.Append("{\"id\":").Append(h.Id).Append(",\"name\":").Append(Q(h.Name))
               .Append(",\"x\":").Append(ShipDesign.S(h.X)).Append(",\"y\":").Append(ShipDesign.S(h.Y)).Append(",\"z\":").Append(ShipDesign.S(h.Z))
               .Append(",\"mirror\":").Append(h.Mirror ? "true" : "false").Append(",\"cut\":").Append(h.Cut ? "true" : "false").Append(",\"skin\":").Append(Q(h.Skin))
+              .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append('}')
               .Append(",\"stations\":[");
             for (var s = 0; s < h.Stations.Count; s++)
             {
@@ -1287,6 +1301,12 @@ public static class DesignScene
             {
                 sb.Append(",\"mesh\":");
                 RoomMesh(d, r).Write(sb);
+            }
+            sb.Append(",\"walls\":[").Append(string.Join(',', r.Walls.Select(w => w.ToJson().ToJsonString()))).Append(']');
+            if (r.Walls.Count > 0)
+            {
+                sb.Append(",\"wallMesh\":");
+                WallMesh(d, r).Write(sb);
             }
             sb
               .Append(",\"ok\":").Append(c.RoomOk.GetValueOrDefault(r.Id, true) ? "true" : "false").Append(",\"reached\":").Append(c.Reached.Contains(r.Id) ? "true" : "false").Append('}');
