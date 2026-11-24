@@ -369,7 +369,7 @@ function drawRooms() {
     if (across === "x") g.rotation.y = Math.PI / 2; // a door in a wall along z: turn it to face across x
     const m = new THREE.MeshStandardMaterial({ color: 0xd8b04a, metalness: 0.4, roughness: 0.5, emissive: picked ? 0x1d4f86 : 0x000000 });
     const leaf = new THREE.MeshStandardMaterial({ color: 0x5c6b7a, transparent: true, opacity: 0.55, emissive: picked ? 0x1d4f86 : 0x000000 });
-    for (const [w, h, x, y] of [[0.1, 2.1, -0.5, 1.05], [0.1, 2.1, 0.5, 1.05], [1.1, 0.1, 0, 2.1]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), m); b.position.set(x, y, 0); g.add(b); }
+    for (const [w, h, x, y] of [[0.1, 2.1, -0.5, 1.05], [0.1, 2.1, 0.5, 1.05], [1.1, 0.1, 0, 2.1]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.2), m); b.position.set(x, y, 0); b.userData = { type: "door", id: p.id }; g.add(b); pickables.push(b); }
     const hit = new THREE.Mesh(new THREE.BoxGeometry(0.9, 2.05, 0.08), leaf); hit.position.set(0, 1.02, 0); hit.userData = { type: "door", id: p.id }; g.add(hit);
     g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
   }
@@ -558,7 +558,8 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     return;
   }
   if (mode === "connectors") {
-    const h = hits.find(h => ["door", "riser", "room"].includes(h.object.userData.type));
+    // Doors and ladders win over the rooms round them (a room's walls are in front of its doors from most angles).
+    const by = t => hits.find(h => h.object.userData.type === t), h = by("door") ?? by("riser") ?? by("room");
     if (doorFrom) {
       const from = doorFrom; doorFrom = 0;
       if (h?.object.userData.type === "room" && h.object.userData.id !== from) {
@@ -754,6 +755,8 @@ function hover(ev) {
   if (mode === "hull" && conn && conn.step !== "set") renderer.domElement.style.cursor = "crosshair";
   else if (mode === "hull" && hits.some(h => h.object.userData.type === "station")) renderer.domElement.style.cursor = "ew-resize";
   else if (mode === "pieces" && hits[0]?.object.userData.type === "piece") renderer.domElement.style.cursor = "grab";
+  else if (mode === "connectors" && hits.some(h => h.object.userData.type === "door")) { renderer.domElement.style.cursor = "grab"; $("tip").textContent = "Click to pick the door; drag it along the wall."; }
+  else if (mode === "connectors" && hits.some(h => ["riser", "room"].includes(h.object.userData.type))) renderer.domElement.style.cursor = "pointer";
   else if (mode === "interior" && hits.some(h => h.object.userData.type === "room")) {
     const hit = hits.find(h => h.object.userData.type === "room"), r = S.rooms.find(x => x.id === hit.object.userData.id);
     const e = edgesNear(r, S.stacked ? { x: hit.point.x, z: hit.point.y } : { x: hit.point.x, z: hit.point.z }, hit);
