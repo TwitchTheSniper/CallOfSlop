@@ -117,7 +117,7 @@ public sealed class DesignEditor
                 var ao = o["a"]?.AsObject() ?? throw new InvalidOperationException("no first point");
                 var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), W = D(o, "w", 1.2), H = D(o, "h", 1.2), Segments = I(o, "segments", 6),
-                    Mirror = (bool?)o["mirror"] ?? true, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
+                    Mirror = (bool?)o["mirror"] ?? true, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
                 j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"));
                 if (o["b"] is JsonObject bo)
                 {
@@ -161,6 +161,9 @@ public sealed class DesignEditor
                 j.Segments = I(o, "segments", j.Segments);
                 j.Mirror = (bool?)o["mirror"] ?? j.Mirror;
                 j.OpenA = D(o, "openA", j.OpenA);
+                j.Flare = D(o, "flare", j.Flare);
+                j.SquareHole = (bool?)o["squareHole"] ?? j.SquareHole;
+                j.Buttress = D(o, "buttress", j.Buttress);
                 j.OpenB = D(o, "openB", j.OpenB);
                 j.Tidy();
                 return "";

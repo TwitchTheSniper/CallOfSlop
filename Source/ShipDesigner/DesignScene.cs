@@ -608,7 +608,7 @@ public static class DesignScene
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(j.Id).Append(",\"section\":").Append(Q(j.Section)).Append(",\"w\":").Append(ShipDesign.S(j.W))
               .Append(",\"h\":").Append(ShipDesign.S(j.H)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
-              .Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
+              .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
               .Append(",\"mesh\":");
             j.Mesh(d).Write(sb);
             sb.Append('}');

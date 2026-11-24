@@ -25,7 +25,9 @@ public sealed class HullJoin
     public double W = 1.2, H = 1.2;
     public int Segments = 6;
     public bool Mirror = true;
-    public double OpenA = 0.9, OpenB = 0.9; // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
+    public double Flare = 1.6, Buttress = 0.8; // the cladding at each end: how much wider it is where it meets the skin, and how far up the strut it runs (m)
+    public double OpenA = 0.9, OpenB = 0.9;
+    public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
     public static End At(HullBody h, int copy, double x, double y, double z)
@@ -48,7 +50,7 @@ public sealed class HullJoin
     public JsonObject ToJson(ShipDesign d) => new()
     {
         ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(W), ["h"] = ShipDesign.R(H),
-        ["segments"] = Segments, ["mirror"] = Mirror, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
+        ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
     };
 
     private static JsonObject EndJson(ShipDesign d, End e) => new()
@@ -75,7 +77,7 @@ public sealed class HullJoin
         if (E(o["a"]) is not { } a || E(o["b"]) is not { } b)
             return null;
         var j = new HullJoin { Id = id, A = a, B = b, Section = (string?)o["section"] ?? "Round", W = ShipDesign.F(o["w"], 1.2), H = ShipDesign.F(o["h"], 1.2),
-            Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true, OpenA = ShipDesign.F(o["openA"], 0.9), OpenB = ShipDesign.F(o["openB"], 0.9) };
+            Segments = (int?)o["segments"] ?? 6, Mirror = (bool?)o["mirror"] ?? true, Flare = ShipDesign.F(o["flare"], 1.6), Buttress = ShipDesign.F(o["buttress"], 0.8), SquareHole = (bool?)o["squareHole"] ?? false, OpenA = ShipDesign.F(o["openA"], 0.9), OpenB = ShipDesign.F(o["openB"], 0.9) };
         j.Tidy();
         return j;
     }
@@ -88,6 +90,8 @@ public sealed class HullJoin
         H = Math.Clamp(H, 0.2, 20);
         Segments = Math.Clamp(Segments, 1, MaxSegments);
         OpenA = Math.Clamp(OpenA, 0, 1.5);
+        Flare = Math.Clamp(Flare, 1, 4);
+        Buttress = Math.Clamp(Buttress, 0, 10);
         OpenB = Math.Clamp(OpenB, 0, 1.5);
     }
 
@@ -109,7 +113,7 @@ public sealed class HullJoin
     public DesignMesh Mesh(ShipDesign d) => Build(d, null);
 
     /// <summary>A connection's mouth on a body: where its end ring sits (middle, along, across, up) and the section's size.</summary>
-    public readonly record struct Mouth(int Hull, double[] C, double[] T, double[] S, double[] U, double W, double H, List<(double U, double V)> Ring)
+    public readonly record struct Mouth(int Hull, double[] C, double[] T, double[] S, double[] U, double W, double H, bool Square)
     {
         /// <summary>Whether a world point is in the opening (the body's skin is left out there, so the connection opens into it).</summary>
         public bool Holds(double x, double y, double z)
@@ -123,11 +127,7 @@ public sealed class HullJoin
                 return false;
             var u = (qx * S[0] + qy * S[1] + qz * S[2]) / W;
             var v = (qx * U[0] + qy * U[1] + qz * U[2]) / H;
-            var inside = false;
-            for (int i = 0, j = Ring.Count - 1; i < Ring.Count; j = i++)
-                if ((Ring[i].V > v) != (Ring[j].V > v) && u < (Ring[j].U - Ring[i].U) * (v - Ring[i].V) / (Ring[j].V - Ring[i].V) + Ring[i].U)
-                    inside = !inside;
-            return inside;
+            return Square ? Math.Abs(u) <= 0.5 && Math.Abs(v) <= 0.5 : u * u + v * v <= 0.25;
         }
     }
 
@@ -190,9 +190,20 @@ public sealed class HullJoin
             return m;
         var rings = new List<(double, double, double)[]>();
         double[]? side = null;
-        for (var i = 0; i <= Segments; i++)
+        // Where the rings go: the ends on the skins (flared into the buttresses' cladding), the strut's own rings between.
+        var dl = Math.Min(Buttress / len, 0.3 * (s1 - s0));
+        var at = new List<(double S, double Scale)>();
+        if (dl > 1e-4)
+            at.Add((s0, Flare));
+        for (var q = 0; q <= Segments; q++)
+            at.Add((s0 + dl + (s1 - s0 - 2 * dl) * q / Segments, dl > 1e-4 ? 1 : Flare));
+        if (dl > 1e-4)
+            at.Add((s1, Flare));
+        var last = at.Count - 1;
+        for (var i = 0; i <= last; i++)
         {
-            var (c, t) = Curve(s0 + (s1 - s0) * i / Segments);
+            var (c, t) = Curve(at[i].S);
+            var sc = at[i].Scale;
             // The ring's across axis: carried along from the last ring (so the strut doesn't twist), first from the world's up.
             if (side is null)
             {
@@ -206,26 +217,27 @@ public sealed class HullJoin
             }
             Norm(side);
             var upv = Cross(t, side);
-            if (mouths is not null && (i == 0 || i == Segments))
+            if (mouths is not null && (i == 0 || i == last))
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
                 var f = i == 0 ? OpenA : OpenB;
-                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W * f, H * f, ring));
+                mouths.Add(new Mouth(hid, c, t, [.. side], upv, W * f, H * f, SquareHole));
                 if (Mirror && Math.Abs(a.P[0]) > 0.3)
-                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W * f, H * f, ring));
+                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-side[0], side[1], side[2]], [-upv[0], upv[1], upv[2]], W * f, H * f, SquareHole));
             }
             var r = new (double, double, double)[ring.Count];
             for (var j = 0; j < ring.Count; j++)
             {
                 var (u, v) = ring[j];
-                r[j] = (c[0] + side[0] * u * W + upv[0] * v * H, c[1] + side[1] * u * W + upv[1] * v * H, c[2] + side[2] * u * W + upv[2] * v * H);
+                double uw = u * W * sc, vh = v * H * sc;
+                r[j] = (c[0] + side[0] * uw + upv[0] * vh, c[1] + side[1] * uw + upv[1] * vh, c[2] + side[2] * uw + upv[2] * vh);
             }
             // An end ring slid along the line onto its skin, each point where it meets it.
-            if (i == 0 || i == Segments)
+            if (i == 0 || i == last)
             {
                 var h = i == 0 ? ha : hb;
                 var dir = i == 0 ? -1.0 : 1.0;
-                var reach = 2 * Math.Max(W, H) + 1;
+                var reach = 2 * Math.Max(W, H) * sc + 1;
                 for (var j = 0; j < r.Length; j++)
                 {
                     var v = r[j];
@@ -247,7 +259,7 @@ public sealed class HullJoin
             }
             rings.Add(r);
         }
-        for (var i = 0; i < Segments; i++)
+        for (var i = 0; i < last; i++)
             for (var j = 0; j < ring.Count; j++)
             {
                 var j1 = (j + 1) % ring.Count;
