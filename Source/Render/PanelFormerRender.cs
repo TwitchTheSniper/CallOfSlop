@@ -85,16 +85,16 @@ public static class PanelFormerRender
         // Where the dies are in the stroke, and the panel's shape (none: flat dies, as a kit's loft or a plain skin has no key shape).
         var ph = ConstructPanelFormer.Phase(now);
         float shaping = busy ? ConstructPanelFormer.DieShaping(ph) : 0, press = busy ? ConstructPanelFormer.PressAt(ph) : 0;
-        ConstructPanelFormer.DieInfo die = default;
+        ConstructPanelFormer.DieInfo? die = null;
         var shaped = busy && ConstructPanelFormer.Die(c, asm.Core, out die);
-        var thick = shaped ? die.Thick : 0.04f;
-        var high = shaped ? die.High - die.Low : 0;
+        var thick = die?.Thick ?? 0.04f;
+        var high = die?.High ?? 0;
         var gap = Math.Clamp(Head - 0.08f - (WorkY + 0.007f + thick + high), 0, DieGap); // (open: the upper die's lift, under the crosshead)
         float dx0 = bx0 + DieInset, dx1 = bx1 - DieInset, dz0 = bz0 + DieInset, dz1 = bz1 - DieInset; // (inside the corner posts)
         float lowBase = foot + DeckY + 0.02f, upTop = foot + Head - 0.004f;
         // The sheet's footprint over the bed (none when flat), and the flat blocks round it.
         float sx0 = xc, sx1 = xc, sz0 = zc, sz1 = zc;
-        if (shaped)
+        if (die != null)
         {
             float hl = die.Length * 0.5f, hw = die.Width * 0.5f;
             (sx0, sx1, sz0, sz1) = alongZ ? (xc - hw, xc + hw, zc - hl, zc + hl) : (xc - hl, xc + hl, zc - hw, zc + hw);
@@ -106,7 +106,7 @@ public static class PanelFormerRender
         FlatDies(gfx, frame, dx0, dx1, sz1, dz1, lowBase, lowFlat, upFlat, upTop); // (after it)
         FlatDies(gfx, frame, dx0, sx0, sz0, sz1, lowBase, lowFlat, upFlat, upTop); // (beside it)
         FlatDies(gfx, frame, sx1, dx1, sz0, sz1, lowBase, lowFlat, upFlat, upTop);
-        if (!shaped || sx1 - sx0 < 0.01f || sz1 - sz0 < 0.01f)
+        if (die == null || sx1 - sx0 < 0.01f || sz1 - sz0 < 0.01f)
             return;
         // Over the sheet: cells, each a column and a face plate turned to the shape's slope through its corners.
         var res = fine ? 0.5f : 1.5f;
@@ -152,18 +152,13 @@ public static class PanelFormerRender
         gfx.Draw(m * frame, colour);
     }
 
-    /// <summary>The panel's lift (m over its lowest point) over the Core-frame point (<paramref name="x"/>, <paramref name="z"/>), the sheet laid along the bed and centred on it.</summary>
-    private static float Lift(in ConstructPanelFormer.DieInfo die, float x, float z, float xc, float zc, byte outSide)
-    {
-        var (a, b) = outSide switch
-        {
-            4 => (z - zc, x - xc),
-            5 => (zc - z, xc - x),
-            0 => (x - xc, zc - z),
-            _ => (xc - x, z - zc),
-        };
-        return die.Lift((a + die.Length * 0.5f) / MathF.Max(0.01f, die.Length), b / MathF.Max(0.01f, die.Width * 0.5f));
-    }
+    /// <summary>
+    /// The panel's lift (m over its lowest point) over the Core-frame point (<paramref name="x"/>, <paramref name="z"/>), laid as
+    /// ConstructPanelFormer.BedLook lays it: centred on the bed, its length along z on a bed that runs along z (either way), along x
+    /// (a quarter turn, its across then against z) on one that runs along x.
+    /// </summary>
+    private static float Lift(ConstructPanelFormer.DieInfo die, float x, float z, float xc, float zc, byte outSide) =>
+        outSide is 4 or 5 ? die.LiftAt(z - zc, x - xc) : die.LiftAt(x - xc, zc - z);
 
     private static void DrawHead(Renderer gfx, Construct c, in CMachineAsm asm, int levels, bool working, double now)
     {

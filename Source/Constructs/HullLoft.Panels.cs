@@ -282,6 +282,9 @@ public static partial class HullLoft
     /// <summary>The panel's surface height (m) at <paramref name="s"/> along (0 to 1) and <paramref name="x"/> across (-1 to 1): what a Bed Block's pins rise to.</summary>
     public static float PanelLift(in PanelShape p, float s, float x) => PanelPoint(p, Math.Clamp(s, 0, 1), Math.Clamp(x, -1, 1)).Y;
 
+    /// <summary>The panel's surface point (m: x across, y up, z along) at <paramref name="s"/> along the sheet (0 to 1) and <paramref name="x"/> across (-1 to 1): its dies' shape (ConstructPanelFormer.DieInfo).</summary>
+    public static Vector3 PanelAt(in PanelShape p, float s, float x) => PanelPoint(p, Math.Clamp(s, 0, 1), Math.Clamp(x, -1, 1));
+
     /// <summary>
     /// A panel's flat size (m): its surface measured along its length and across its width, each the longest of three lines over it (its
     /// edges and its middle), so a crown, a rake or a fold is unrolled. What a Panel Former's blank must cover (ConstructPanelFormer.FlatOf).
