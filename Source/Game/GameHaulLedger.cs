@@ -44,8 +44,8 @@ public sealed partial class Game
     {
         if (run.LedgerUntil != 0)
         {
-            if (!LedgerAll && LedgerSeen(run, c))
-                LedgerBreak(run, c); // (a person comes near part way: it flies the rest from where it is, nothing moved before their eyes)
+            if (!LedgerAll && (LedgerSeen(run, c) || HasRiders(run, c)))
+                LedgerBreak(run, c); // (a person comes near part way: it flies the rest from where it is, nothing moved before their eyes; or something came to ride in it, OutOfBubble)
             else if (run.Trip is { } going)
             {
                 if (LedgerAll || s.Flight is not { } tf || !(going.Far ? LedgerFarStep(tf, run, c, going, def, planet) : LedgerTripStep(tf, run, c, going, planet))) // (on the fast clock space time stands still: it is put at its station)
@@ -151,11 +151,17 @@ public sealed partial class Game
             if (e.Hauler == run.Ship && Constructs.Get(e.Ship) is { SpaceShip: 0 })
                 return false;
         // Nothing of the bubble rides in it (2026-11-24: Material Bundles poured from a hauler's Requisition Crate rode in its frame, were
-        // carried at its ledger leg's pace, 1.6 million m/s, and froze Sean's game for 7.7 s): with riders it flies the leg as before.
+        // carried at its ledger leg's pace, 1.6 million m/s, and froze Sean's game for 7.7 s): with riders it flies the leg as before, and one that comes to ride mid-leg takes it off the ledger.
+        return !HasRiders(run, c);
+    }
+
+    /// <summary>Does a body of the bubble ride in the hauler's or one of its escorts' frame?</summary>
+    private bool HasRiders(HaulRun run, Construct c)
+    {
         foreach (var b in Constructs.Bodies)
             if (b.Frame != 0 && (b.Frame == c.Id || EscortOf(run, b.Frame)))
-                return false;
-        return true;
+                return true;
+        return false;
     }
 
     private bool EscortOf(HaulRun run, ushort ship)
