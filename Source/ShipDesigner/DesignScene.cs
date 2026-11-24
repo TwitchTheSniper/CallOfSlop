@@ -844,6 +844,8 @@ public static class DesignScene
                 {
                     if (p.Room != 0 && r.Id != p.Room)
                         continue; // the room the player picked for it
+                    if (p.Room == 0 && !InBody(d, h, r))
+                        continue; // a socket on one body opens into that body's rooms, not a neighbour's (Karl, 2026-11-24)
                     if (kind.Socket == "cargo" && r.Kind != "Hold")
                         continue;
                     var dk = d.DeckOf(r);
@@ -863,7 +865,7 @@ public static class DesignScene
                     for (var t = 0.1; t <= kind.Reach; t += 0.05)
                     {
                         double[] q = [at[0] - n[0] * t, at[1] - n[1] * t, at[2] - n[2] * t];
-                        var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 || r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
+                        var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 ? InBody(d, h, r) : r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
                         if (hit is not null)
                         {
                             (best, bestD, bestPt) = (hit, t, q);
@@ -929,6 +931,14 @@ public static class DesignScene
             }
         }
         return null;
+    }
+
+    /// <summary>Whether a room is in a hull body: the middle of its floor, or of the room, inside that body's skin.</summary>
+    private static bool InBody(ShipDesign d, HullBody h, Room r)
+    {
+        var b = d.Box(r);
+        double cx = (b[0] + b[1]) / 2, cz = (b[4] + b[5]) / 2;
+        return h.Depth(cx, b[2] + 0.3, cz) > 0 || h.Depth(cx, (b[2] + b[3]) / 2, cz) > 0;
     }
 
     // ---- rooms out to the hull
