@@ -71,6 +71,11 @@ public sealed class CStore
     public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public ushort JobDef = ConstructParts.None; // a Scrap Breaker: the wreck it is breaking (on the wire, drawn sinking into its rotors: BreakerRender; never saved, so a loaded job shows none)
+    public sbyte JobCellX, JobCellZ; // ...the cell of its mouth it landed on, in the Core's cell frame (0, 0: the Core's own mouth)
+    public byte SinkSeen; // a Scrap Breaker: the Progress the drawing last saw, when, and how fast it went (never sent: BreakerRender runs the sink on between sends)
+    public double SinkAt;
+    public float SinkRate;
     public byte OvenSeen; // a Bake Oven: the phase this peer last drew (never sent: BakeOvenRender.cs)
     public double OvenSince; // ...when it saw it change (ConstructRender.Now)
     public int OvenParts; // a Bake Oven: the parts in the group under way (server only, never sent or saved: ConstructBakeOven.cs)
@@ -138,6 +143,8 @@ public sealed class CStore
         Blocked = 0;
         MixN = 0;
         JobTicks = JobAmount = 0;
+        JobDef = ConstructParts.None;
+        JobCellX = JobCellZ = 0;
         JobMaterial = 0;
         JobFull = 0;
         OnBed = false;
@@ -509,7 +516,7 @@ public static class ConstructStorage
         var d = c.Parts[part].D;
         if (d.IsVolumeStore)
             return ConstructStoreVolume.Fill(c, part, st, out centre, out half);
-        if (d.IsGrowFormer || d.BlockSquares && d.IsRefiner) // (its bin grows with its bed and tier, or a squares Core's with its squares: the level is of what it holds now)
+        if (d.IsGrowFormer || d.BlockSquares && (d.IsRefiner || d.IsRecycler)) // (its bin grows with its bed and tier, or a squares Core's with its squares, a Scrap Breaker's too: the level is of what it holds now)
         {
             centre = half = Vector3.Zero;
             return d.IsBin && Level(c.Parts[part], d.FillMin, d.FillMax, st.Amount, Capacity(c, part), out centre, out half);
@@ -522,7 +529,7 @@ public static class ConstructStorage
     {
         var d = c.DefOf(part);
         return d.IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : d.IsLaserCutter ? ConstructLaserCutter.BinOf(c, part) : d.IsGrowFormer ? ConstructExtruder.GrowBinOf(c, part)
-            : d.BlockSquares && d.IsRefiner ? ConstructRefining.RefineOf(c, part).Out : d.BulkCapacity;
+            : d.BlockSquares && (d.IsRefiner || d.IsRecycler) ? ConstructRefining.RefineOf(c, part).Out : d.BulkCapacity; // (a Scrap Breaker's bin: 600 x its rate)
     }
 
     /// <summary>What a production machine's input takes in all (a mixed input: of each material): its file's, or a squares Core's from its squares (ConstructRefining.RefineOf).</summary>
@@ -715,7 +722,7 @@ public static class ConstructStorage
         {
             if (rec.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0)
                 throw new ConstructPartException($"{file}: storage \"recycler\" is an object (intake: min, max) on a bin: its output");
-            ConstructParts.Known(rec, ["min", "max"], $"{bw}.recycler");
+            ConstructParts.Known(rec, ["min", "max", "bin"], $"{bw}.recycler");
             d.IntakeMin = ConstructParts.Vec(ConstructParts.Need(rec, "min", $"{bw}.recycler"), file, "storage.recycler.min");
             d.IntakeMax = ConstructParts.Vec(ConstructParts.Need(rec, "max", $"{bw}.recycler"), file, "storage.recycler.max");
             if (d.IntakeMax.X - d.IntakeMin.X < 0.2f || d.IntakeMax.Y - d.IntakeMin.Y < 0.2f || d.IntakeMax.Z - d.IntakeMin.Z < 0.2f)
@@ -724,6 +731,13 @@ public static class ConstructStorage
                 throw new ConstructPartException($"{file}: a recycler's bin takes \"{Any}\" material");
             d.IsRecycler = true;
             d.DataIn = [ConstructGatherer.RunPort];
+            if (d.BlockSquares) // (a Scrap Breaker Core: its bin at x1 grows with its squares' rate, up to its "capacity": ConstructRefining.RefineOf)
+            {
+                d.RefineOutBin = (int)ConstructParts.Num(ConstructParts.Need(rec, "bin", $"{bw}.recycler"), file, "storage.recycler.bin");
+                ConstructParts.Range(d.RefineOutBin, 1, d.BulkCapacity, file, "storage.recycler.bin");
+            }
+            else if (ConstructParts.Opt(rec, "bin") != null)
+                throw new ConstructPartException($"{file}: storage.recycler's \"bin\" is a squares Core's (machineBlock.squares, the Scrap Breaker): its bin at x1");
         }
         if (ConstructParts.Opt(b, "gather") is { } gat)
         {
@@ -894,10 +908,11 @@ public static class ConstructStorage
         var pull = s.PullWaiting > 0; // (a Smart Terminal under way: its panel, on every peer)
         var progress = s.Progress > 0;
         var slabs = s.SlabN > 0 && s.SlabSum == s.ItemCount; // (a Piece Rack's columns: ConstructRackPack.cs)
-        var more = drive || mix || machine || pull || progress || slabs || s.OnBed; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
+        var wreck = s.JobDef != ConstructParts.None; // (a Scrap Breaker's wreck under way: its def and the cell it landed on)
+        var more = drive || mix || machine || pull || progress || slabs || s.OnBed || wreck; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0) | (s.OnBed ? 64 : 0))); // (64: a Laser Cutter's blank on its bed, no bytes)
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0) | (s.OnBed ? 64 : 0) | (wreck ? 128 : 0))); // (64: a Laser Cutter's blank on its bed, no bytes; 128: a Scrap Breaker's wreck, protocol 460)
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (progress)
@@ -936,6 +951,11 @@ public static class ConstructStorage
         }
         if (slabs)
             ConstructRackPack.Write(w, s);
+        if (wreck)
+        {
+            WriteDef(w, s.JobDef);
+            w.U8((byte)s.JobCellX).U8((byte)s.JobCellZ);
+        }
     }
 
     /// <summary>A stored part's id, or a run-time piece's key (its id is this machine's own: protocol 244).</summary>
@@ -972,9 +992,7 @@ public static class ConstructStorage
         var flags = r.U8();
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
-        var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 128)
-            throw new MalformedPacketException($"a store with more flags {more}");
+        var more = (flags & 64) != 0 ? r.U8() : 0; // (every bit of it is used: 128 is a Scrap Breaker's wreck, protocol 460)
         s.OnBed = (more & 64) != 0;
         if ((more & 1) != 0)
         {
@@ -1061,6 +1079,14 @@ public static class ConstructStorage
             s.PackedFor = 0; // (the writer's columns, packed for the hold as the writer has it)
             if (s.SlabSum != s.ItemCount)
                 throw new MalformedPacketException($"a rack of {s.ItemCount} pieces placed {s.SlabSum}");
+        }
+        if ((more & 128) != 0)
+        {
+            s.JobDef = ReadDef(ref r); // (a Scrap Breaker's wreck under way, drawn sinking: BreakerRender)
+            s.JobCellX = (sbyte)r.U8();
+            s.JobCellZ = (sbyte)r.U8();
+            if (ConstructParts.Get(s.JobDef) == null)
+                throw new MalformedPacketException($"a breaker's wreck {s.JobDef}");
         }
         s.Live = true;
         s.Version++;

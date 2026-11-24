@@ -2793,6 +2793,8 @@
     {"output": "Head Stand", "materials": {"steel": 240}, "seconds": 20},
     {"output": "Rail Carriage", "materials": {"steel": 520, "rubber": 20}, "seconds": 40},
     {"output": "Saw Block", "materials": {"steel": 190, "concrete": 40, "rubber": 40}, "seconds": 45},
-    {"output": "Plank Stacker", "materials": {"steel": 50, "concrete": 20}, "seconds": 20}
+    {"output": "Plank Stacker", "materials": {"steel": 50, "concrete": 20}, "seconds": 20},
+    {"output": "Breaker Core", "materials": {"steel": 260}, "parts": {"Gear Set": 4, "Wiring Loom": 3}, "seconds": 40, "techTier": 2, "needs": ["Power Coupling"]},
+    {"output": "Shredder Block", "materials": {"steel": 600}, "parts": {"Gear Set": 6}, "seconds": 50, "techTier": 2}
   ]
 }

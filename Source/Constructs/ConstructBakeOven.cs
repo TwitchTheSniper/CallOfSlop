@@ -223,6 +223,7 @@ public static partial class ConstructBakeOven
         SmelterWorks.AddHazards(world); // (working Smelters' charge doors, runners and Casting Beds burn: SmelterWorks.cs)
         FoundryWorks.AddHazards(world); // (working Foundries' pours, launders and Mould Lines burn: FoundryWorks.cs)
         SawmillWorks.AddHazards(world); // (working Sawmills' bands and carriages cut: SawmillWorks.cs)
+        BreakerWorks.AddHazards(world); // (working Scrap Breakers' rotors: BreakerWorks.cs)
     }
 
     private static void Work(ConstructWorld world, Construct c, int part, int asmIndex, CStore st)

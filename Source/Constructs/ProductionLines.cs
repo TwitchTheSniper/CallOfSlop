@@ -396,7 +396,7 @@ public static partial class ProductionLines
                 card.Add(line, md.IsGatherer ? ConstructGatherer.StallWord(md, (GatherStall)gst.Blocked) : s == LineState.Blocked ? "output full" : "no wrecks in").Add(line, ", ");
             else if (s == LineState.Running)
                 card.Add(line, md.IsRecycler ? "recycling, " : md.GatherSaw ? "cutting, " : "drilling, ");
-            card.Add(line, gst.Amount).Add(line, '/').Add(line, md.BulkCapacity);
+            card.Add(line, gst.Amount).Add(line, '/').Add(line, ConstructStorage.Capacity(c, m)); // (a Scrap Breaker's bin: its squares')
             if (gst.Amount > 0)
                 card.Add(line, ' ').Add(line, RecyclingTable.Current.NameOf(gst.Material));
             return;

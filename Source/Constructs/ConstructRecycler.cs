@@ -100,6 +100,7 @@ public static class ConstructRecycler
         }
         SetBlocked(world, st, false);
         st.JobMaterial = 0;
+        st.JobDef = ConstructParts.None;
         st.Busy = false;
         st.Progress = 0;
         world.StoreDirty.Add(st.Handle);
@@ -112,6 +113,8 @@ public static class ConstructRecycler
         var bodies = world.Bodies;
         var table = RecyclingTable.Current;
         var d = c.Parts[part].D;
+        var breaker = d.IsBreaker; // (a Scrap Breaker: its mouth is the whole bed, its rate and bin its squares': BreakerWorks)
+        var cap = ConstructStorage.Capacity(c, part);
         var waiting = false; // (a wreck in the intake with no room for what it gives)
         for (var bi = 0; bi < bodies.Count; bi++)
         {
@@ -120,7 +123,8 @@ public static class ConstructRecycler
                 continue;
             if (b.Dirty)
                 b.Rebuild();
-            if (!InIntake(c, part, b.WorldCom))
+            sbyte cellX = 0, cellZ = 0;
+            if (breaker ? !BreakerWorks.InMouth(c, part, b.WorldCom, out cellX, out cellZ) : !InIntake(c, part, b.WorldCom))
                 continue;
             var (mat, amount) = table.YieldOf(b.Parts[0]);
             if (mat == 0 || amount <= 0)
@@ -128,15 +132,36 @@ public static class ConstructRecycler
                 world.Events.Add($"recycler {c.Id}: a wrecked {b.Parts[0].D.Name} has nothing to give back");
                 continue;
             }
-            if (st.Amount > 0 && st.Material != mat || d.BulkCapacity - st.Amount < amount)
+            if (st.Amount > 0 && (st.Material != mat || cap - st.Amount < amount))
             {
                 waiting = true;
                 continue; // (its output holds another material, or hasn't room: it stays in the intake until it does)
             }
+            if (!breaker && cap - st.Amount < amount)
+            {
+                waiting = true;
+                continue; // (a Recycler takes only what fits whole; a Breaker takes a wreck bigger than its bin into an empty bin, and the rest waits in the job for a chute)
+            }
             var mass = b.Parts[0].D.Mass;
             var name = b.Parts[0].D.Name;
+            var def = b.Parts[0].Def;
             world.Remove(b);
-            if (world.CreativeRecycling)
+            if (world.CreativeRecycling && breaker)
+            {
+                var put = world.Deposit(c, part, amount, mat);
+                world.Events.Add($"recycler {c.Id}: {name} -> {put} {table.NameOf(mat)} (instant{(put < amount ? $", {amount - put} wait for room" : "")})");
+                if (put < amount)
+                {
+                    st.JobAmount = amount - put; // (more than its bin holds: the rest goes in as a chute empties it, Finish)
+                    st.JobMaterial = mat;
+                    st.JobTicks = 0;
+                    st.JobFull = 1;
+                    st.Busy = true;
+                    world.StoreDirty.Add(st.Handle);
+                    st.Version++;
+                }
+            }
+            else if (world.CreativeRecycling)
             {
                 world.Deposit(c, part, amount, mat);
                 world.Events.Add($"recycler {c.Id}: {name} -> {amount} {table.NameOf(mat)} (instant)");
@@ -145,8 +170,11 @@ public static class ConstructRecycler
             {
                 st.JobAmount = amount;
                 st.JobMaterial = mat;
-                st.JobTicks = st.JobFull = Math.Max(1, (int)MathF.Ceiling(table.SecondsFor(mass) * World.TickRate));
+                st.JobTicks = st.JobFull = breaker ? BreakerWorks.JobTicks(table, mass, amount, ConstructRefining.RefineOf(c, part).R4)
+                    : Math.Max(1, (int)MathF.Ceiling(table.SecondsFor(mass) * World.TickRate));
                 st.Busy = true;
+                if (breaker)
+                    (st.JobDef, st.JobCellX, st.JobCellZ) = (def, cellX, cellZ); // (drawn sinking into the rotors where it landed: BreakerRender)
                 world.StoreDirty.Add(st.Handle);
                 st.Version++;
                 world.Events.Add($"recycler {c.Id}: took in {name} ({mass:0} kg): {amount} {table.NameOf(mat)} in {st.JobTicks / (float)World.TickRate:0.0} s");
@@ -176,7 +204,7 @@ public static class ConstructRecycler
             return LineState.NoPower;
         if (st.Held)
             return LineState.Idle;
-        if (st.Blocked != 0 || st.Amount >= c.DefOf(part).BulkCapacity)
+        if (st.Blocked != 0 || st.Amount >= ConstructStorage.Capacity(c, part)) // (a Scrap Breaker's bin: its squares')
             return LineState.Blocked;
         return st.Busy ? LineState.Running : LineState.Starved;
     }

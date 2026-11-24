@@ -88,6 +88,7 @@ public static class PartKit
         new Generators.MachineTierParts(), // (the block machines' tier pieces, drawing 21: the Power Coupling to the Plasma Conditioner)
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
+        new Generators.BreakerParts(), // (the Scrap Breaker, the Recycler's block version beside it: Breaker Core, Shredder Block)
         new Generators.PanelFormerParts(),
         new Generators.LaserCutterParts(),
         new Generators.SmelterParts(), // (the Smelter on the block system: Core, Hearth Block, Casting Bed; beside the Foundry's and the Sawmill's in Refining/)
