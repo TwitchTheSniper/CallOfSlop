@@ -1093,7 +1093,12 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   asked, free stock of the kind in the root's network's stores with a conveyor way to the destination (`ConstructCrafting.RouteTo`,
   joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
   piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
-  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue; the chained
+  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue (one with no plain conveyor way last); a maker
+  nothing leads from to the destination (no conveyor, join, Splitter, Router, store, rolled-through bed or lifter edge, walked
+  backwards by `ConstructLogisticsPlan.Leads`) is never asked, and the row says "no conveyor or arm leads from the X to the Y: link
+  one"; a link whose maker stops leading there (an older save, a cut way) takes its lines back off that maker (`Unask`, a look every
+  10 s). Before, such a maker made the pieces, they went to storage, and the link asked again without end (the Zero Day works' line
+  Extruders and the Leg Pod Housing XL blanks, 2026-11-24). The chained
   line goes ahead of the first line in that queue it is an input for (else a machine asked for a part and for that part's input
   would wait on itself; that line has no batch under way, an Assembler starts one only with every input in). Cancelling drops a
   chained head line too when its Assembler has no batch under way. **Rank:** roots compete by priority class, then age (the user,

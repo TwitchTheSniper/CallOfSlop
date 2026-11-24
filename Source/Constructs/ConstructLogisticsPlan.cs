@@ -514,6 +514,7 @@ public static class ConstructLogisticsPlan
         string? refusal = null;
         var best = -1;
         var bestScore = int.MaxValue;
+        string? noWay = null;
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
@@ -531,7 +532,17 @@ public static class ConstructLogisticsPlan
             }
             var score = (c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1) * 256;
             if (ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
-                score += 1000 * 256; // (no conveyor way through joins and Routers to it: last; a Splitter's line may still bring it in turn)
+            {
+                // No plain conveyor way through joins and Routers: a Splitter's line, a bed it rolls through or an arm may still bring it
+                // (last). A maker nothing at all leads from is never asked: its pieces could never arrive, the link asked it again each
+                // time its order ended, and the works' line Extruders made Housing blanks for a Press without end (Sean, 2026-11-24).
+                if (!Leads(c, mk, e.Dest))
+                {
+                    noWay ??= $"no conveyor or arm leads from the {c.DefOf(mk).Name} to the {c.DefOf(e.Dest).Name}: link one";
+                    continue;
+                }
+                score += 1000 * 256;
+            }
             if (c.DefOf(mk).IsBakeOven && MachineBlocks.TryOf(c, mk, out var oa))
                 score += Math.Min(255, oa.W * oa.L); // (of ovens alike, the smallest bed that takes it: the works' walls on lines A and B, its decks on line C)
             if (score < bestScore)
@@ -551,9 +562,91 @@ public static class ConstructLogisticsPlan
         var sheet = refusal != null && c.DefOf(e.Dest) is { IsPanelFormer: true, IsLaserCutter: false } && ConstructParts.Get(e.Kind) is { IsExtrusion: true } sd && Extrusion.IsSheet(sd.ExKey)
             ? TooWideText(c, net, sd.ExKey.W, sd.ExKey.H, sd.ExKey.L) : null;
         var remote = sheet == null && refusal == null ? LinkPlan.AskChain(world, c, e.Id, e.Kind, count) : null; // (a linked network: linked-logistics.md 4.2)
-        var reason = sheet ?? remote ?? (refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network or linked networks makes it");
+        var reason = sheet ?? remote ?? (noWay != null ? $"waiting on {name}: {noWay}" : refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network or linked networks makes it");
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
+    }
+
+    private static int[] _reach = [];
+    private static int _reachStamp;
+    private static bool _reachFull; // (the walk ran out of room: nothing it missed is refused)
+    private static (int Body, int Dest, int Struct, int Parts, int Routes, ulong Lifts) _reachKey = (-1, -1, 0, 0, 0, 0);
+
+    /// <summary>
+    /// Could a piece leaving machine <paramref name="from"/> ever reach <paramref name="dest"/> (<see cref="WaysTo"/>)? The walk is kept
+    /// until the body's links or lifters change or another destination is asked.
+    /// </summary>
+    internal static bool Leads(Construct c, int from, int dest)
+    {
+        if (ConstructCrafting.RouteTo(c, from, dest) != -1)
+            return true;
+        var lifts = ConstructLogistics.Map(c).LiftHash;
+        var key = ((int)c.Id, dest, c.StructStamp, c.PartCount, c.RouteCount, lifts);
+        if (key != _reachKey || _reach.Length < c.PartCount)
+        {
+            WaysTo(c, dest);
+            _reachKey = key;
+        }
+        return _reachFull || Node(c, from) is var n and >= 0 && _reach[n] == _reachStamp;
+    }
+
+    /// <summary>
+    /// Marks (<see cref="_reach"/> equal to <see cref="_reachStamp"/>) every part a piece leaving it could reach part <paramref name="dest"/>
+    /// from: backwards along fed conveyors and lifter edges, on through anything that passes a piece on (joins, Splitters, Routers, stores, run
+    /// tables, a Panel Former's or a Laser Cutter's bed it rolls through), never through a machine that uses what comes in. Allocates only
+    /// when a bigger body is seen first.
+    /// </summary>
+    private static void WaysTo(Construct c, int dest)
+    {
+        if (_reach.Length < c.PartCount)
+            _reach = new int[Math.Max(c.PartCount, _reach.Length * 2)];
+        if (++_reachStamp == int.MaxValue)
+        {
+            Array.Clear(_reach);
+            _reachStamp = 1;
+        }
+        Span<ushort> queue = stackalloc ushort[2048];
+        _reachFull = false;
+        var head = 0;
+        var tail = 0;
+        dest = Node(c, dest);
+        if (dest < 0)
+            return;
+        _reach[dest] = _reachStamp;
+        queue[tail++] = (ushort)dest;
+        var lifts = ConstructLogistics.Map(c); // (its lifter edges: made with the map)
+        while (head < tail)
+        {
+            int at = queue[head++];
+            var passes = at == dest || c.DefOf(at) is var d && (d.Monitor != MonitorKind.Machine || d.IsPanelFormer || d.IsLaserCutter);
+            if (!passes)
+                continue; // (it uses what comes in: its own pieces leave it, not what reached it)
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                ref readonly var r = ref c.Routes[k];
+                if (r.Type != RouteType.Conveyor || !r.FedEnd || Node(c, r.To) != at)
+                    continue;
+                Mark(Node(c, r.Source), queue, ref tail);
+            }
+            for (var k = 0; k < lifts.LiftN; k++)
+                if (Node(c, lifts.Lifts[k].To) == at)
+                    Mark(Node(c, lifts.Lifts[k].From), queue, ref tail);
+        }
+    }
+
+    /// <summary>A part as the walk sees it: a machine's block as its Core, a Pad Tile as its pad's owner tile.</summary>
+    private static int Node(Construct c, int part) =>
+        (uint)part >= (uint)c.PartCount ? -1 : MachineBlocks.AsmOf(c, part) is var a and >= 0 ? c.MachineAsms[a].Core : ConstructPads.Owner(c, part);
+
+    private static void Mark(int part, Span<ushort> queue, ref int tail)
+    {
+        if (part < 0 || _reach[part] == _reachStamp)
+            return;
+        _reach[part] = _reachStamp;
+        if (tail < queue.Length)
+            queue[tail++] = (ushort)part;
+        else
+            _reachFull = true;
     }
 
     /// <summary>
@@ -649,6 +742,14 @@ public static class ConstructLogisticsPlan
                 Remove(world, i);
                 continue;
             }
+            if (e.Maker != NoPart && e.Maker < c!.PartCount && (world.ChainStepNo + e.Id) % LeadsEvery == 0 && !Leads(c, e.Maker, e.Dest))
+            {
+                // (asked before nothing-leads was a refusal, or its way was cut since: a saved world's line Extruders kept making
+                // Housing blanks for a Press they never reach. Its lines there stop; asked again of a maker with a way, or it says why)
+                Unask(world, c, e);
+                e.Maker = NoPart;
+                e.Flags &= unchecked((byte)~ChainFlags.Expanded);
+            }
             var riding = Riding(world, c!, e);
             var held = world.Reserve.Held(c!.Parts[e.Dest].Store, e.Id);
             if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && riding + held + e.Made < e.Asked)
@@ -726,6 +827,9 @@ public static class ConstructLogisticsPlan
             }
         }
     }
+
+    /// <summary>Plan steps (0.5 s each: 10 s) between one link's looks at whether its maker still leads to it (<see cref="Leads"/>), spread by its id.</summary>
+    private const int LeadsEvery = 20;
 
     /// <summary>Plan steps (0.5 s each: a minute) a link nobody would make waits at most before it is asked again with nothing seen changing.</summary>
     public const int RetrySteps = 120;
@@ -835,6 +939,38 @@ public static class ConstructLogisticsPlan
                 q.RemoveAt(k);
                 world.OrdersChanged(c);
             }
+    }
+
+    /// <summary>
+    /// The entry's lines leave its maker's queue: an unstarted one goes, a started one stops at what it made (a head under way finishes
+    /// the piece it is making). Its claims stay: they are the destination's.
+    /// </summary>
+    private static void Unask(ConstructWorld world, Construct c, in ChainEntry e)
+    {
+        if (e.Maker >= c.PartCount || c.Parts[e.Maker].Orders is not { Bill: false } q)
+            return;
+        var idle = world.StoreOf(c, e.Maker) is not { JobTicks: > 0 };
+        var changed = false;
+        for (var k = q.Count - 1; k >= 0; k--)
+        {
+            ref var o = ref q.Items[k];
+            if (o.Chain != e.Id)
+                continue;
+            var keep = o.Made + (k == 0 && !idle ? 1 : 0);
+            if (keep == o.Made)
+                q.RemoveAt(k); // (nothing under way: it is done with what it made)
+            else if (keep < o.Count)
+                o.Count = (ushort)keep;
+            else
+                continue;
+            changed = true;
+        }
+        if (changed)
+        {
+            Console.WriteLine($"[chain] body {c.Id}: the {c.DefOf(e.Maker).Name} (part {e.Maker}) stops making {ConstructParts.Get(e.Kind)?.Name} for the {c.DefOf(e.Dest).Name} (part {e.Dest}): nothing leads from it there");
+            q.Recount();
+            world.OrdersChanged(c);
+        }
     }
 
     private static void Remove(ConstructWorld world, int i)
