@@ -55,7 +55,7 @@ public sealed partial class ZeroDayWorks
             // too long for a station's hold, so the bay crane lays them there off the extruder's run and fits them from it)
             // (the cutter's six runs end at z -129.75, 4.25 m short of the bay: two rows more of Roller Tiles, and the bay welded on the runs'
             // ends, so the runs touch the bay (Sean 2026-11-24, "the lines should touch"). No pick pad between: a deck's 10 m plates and the
-            // skins' 18 m are longer than the strip would hold, so they wait at the runs' ends, where the bay crane fits them from.)
+            // skins' 18 m are longer than the strip would hold, so they wait at the runs' ends, where the bay's Hall Crane fits them from.)
             var runC = new VPart[_lineCutOuts["C"].Length, 2];
             for (var i = 0; i < runC.GetLength(0); i++)
                 runC[i, 0] = Paint(Onto(_lineCutOuts["C"][i], "+z", "Roller Tile", "-z"), LineC);
@@ -286,14 +286,12 @@ public sealed partial class ZeroDayWorks
         /// dress station's bay's north end, which the station takes as its pick pad. Each piece rolls from the Extruder through the Panel Former
         /// and the Laser Cutter (across a bed it has no work on) to that pad, where the station's crane picks it (ConstructStation pick pads).
         /// </summary>
-        private VPart[,] RollThrough(VPart[] ends, int rows, string paint, int rollers = 1)
+        private VPart[,] RollThrough(VPart[] ends, int rows, string paint)
         {
             var pad = new VPart[ends.Length, rows];
             for (var i = 0; i < ends.Length; i++)
             {
-                var r = ends[i];
-                for (var k = 0; k < rollers; k++)
-                    r = Paint(Onto(r, "+z", "Roller Tile", "-z"), paint);
+                var r = Paint(Onto(ends[i], "+z", "Roller Tile", "-z"), paint);
                 pad[i, 0] = Paint(Onto(r, "+z low", "Pad Tile", "-z"), Stock);
             }
             Chain(pad, "Pad Tile", "+z", "-z", "-x", "+x", Stock, rowZero: true);
