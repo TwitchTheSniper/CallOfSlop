@@ -235,7 +235,7 @@ public static class PanelFormerRender
             Box(gfx, m, Lo(beam, gy - 0.22f, -len, back), Hi(beam, gy - gap, len, back), Base);
             Box(gfx, m, Lo(beam, gy + gap + open, -len, back), Hi(beam, gy + 0.22f + open, len, back), Base);
             Box(gfx, m, Lo(face, gy - gap - 0.016f, -len + 0.02f, beam + sd * 0.2f), Hi(face, gy - gap, len - 0.02f, beam + sd * 0.2f), Accent); // (its grip pad, out to the lips)
-            Box(gfx, m, Lo(face, gy + gap + open, -len + 0.02f, beam), Hi(face, gy + gap + open + 0.016f, len - 0.02f, beam), Base); // (the upper lip)
+            Box(gfx, m, Lo(face, gy + gap + open, -len + 0.02f, beam), Hi(face, gy + gap + open + 0.016f, len - 0.02f, beam), Steel); // (the upper lip)
             Box(gfx, m, Lo(back, gy + 0.06f, -len, back + sd * 0.012f), Hi(back, gy + 0.14f, len, back + sd * 0.012f), Accent); // (hazard on its back)
             for (var k = 0; k < n; k++)
             {
