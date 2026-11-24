@@ -9,12 +9,20 @@ namespace CallOfSlop;
 /// the robot shell"): the robot shell panel's glass plate and hologram (UiShellPanel.cs), here a person's figure lit by their health,
 /// with a helmet drawn round the head while suited. Rows, each a label, a bar and a value: health; the suit's air (or NO SUIT); breath
 /// held, while it runs down; the ship's air aboard a ship with life support (ShipAir.cs); the MMU's fuel and its inertia dampeners
-/// while worn, with the pack's icon in the heading (its jets lit while it burns). It replaces the
-/// green health bar and the HUD's air lines. Strings are made once, or once when their value changes: nothing allocates a frame.
+/// while worn, with the pack's icon in the heading (its jets lit while it burns). Under the rows, gravity (Sean, 2026-11-24: the
+/// felt-g readout moved in from its own dial left of centre): how many g they feel, a dial with the pull's way seen from behind
+/// them, and the way in words (<see cref="VpGravity"/>). It replaces the green health bar, the HUD's air lines and the felt-g
+/// readout. Strings are made once, or once when their value changes: nothing allocates a frame.
 /// </summary>
 public sealed partial class Ui
 {
     private static readonly string[] VpMins = MakeVpCount(" MIN", 60), VpSecs = MakeVpCount(" S", 30);
+    private static readonly string[] VpWayWords = ["DOWN", "UP", "FORWARD", "BACK", "RIGHT", "LEFT"];
+    private static readonly string[] VpWays = MakeVpWays(); // (a way's words by VpWay's index: one word, or two)
+    private static readonly string[] VpG = new string[1000]; // ("0.0 G" to "99.9 G", each made the first time it shows)
+
+    /// <summary>The gravity block's height under the rows (before the UI scale).</summary>
+    private const float VpGravityH = 34;
     private long _vpShipKey = -1;
     private string _vpShipTime = "";
 
@@ -56,15 +64,18 @@ public sealed partial class Ui
         var hp = Math.Clamp(me.Health * 100 / World.MaxHealth, 0, 100);
         var suitPct = Math.Clamp((int)(me.SuitAir * 100 / Eva.SuitSeconds), 0, 100);
         var rows = 2 + (holding ? 1 : 0) + (ship != null ? 1 : 0) + (mmu ? 2 : 0);
+        ref var hand = ref game.SandboxHands.Hand(me.Id);
+        var g = me.FeltPull.Length() / ShipGravity.G;
+        var crushing = ShipGravity.Mode != ShipGravityMode.Deck && g > ShipGravity.Limit(game.Constructs, hand.SeatBody, hand.SeatPart, suited); // (hurt each second: GameShipGravity.cs)
 
         // The plate, bottom left where the health bar was.
         var w = 292 * s;
-        var h = (64 + rows * 19.5f + 20) * s;
+        var h = (64 + rows * 19.5f + 20 + VpGravityH) * s;
         h = MathF.Max(h, 150 * s);
         var p0 = new float2(pos.X + 20 * s, pos.Y + size.Y - 30 * s - h);
         var p1 = p0 + new float2(w, h);
         var hpCol = SpColour(hp, 50);
-        var danger = vacuum && (!suited || me.SuitAir <= 0) || hp <= 15;
+        var danger = vacuum && (!suited || me.SuitAir <= 0) || hp <= 15 || crushing;
         CmdPlate(dl, p0, p1, 1f, danger ? CmdRed : vacuum && suited && suitPct < 25 ? CmdAmber : CmdCyan);
 
         // The heading: who, where they breathe, their health large on the right.
@@ -134,9 +145,113 @@ public sealed partial class Ui
             var coast = game.MmuCoasting;
             VpRow(dl, p0, p1, ref y, "INERTIA", -1, coast ? CmdAmber : CmdCyan, 1f, coast ? "COASTING" : "DAMPED");
         }
+        VpGravity(dl, game, me, hand.SeatBody, p0, p1, y, g, crushing, blink);
         if (ship != null && ship.AirWorks && ship.AirUnits > 0)
             CmdText(dl, new float2(p0.X + 108 * s, p1.Y - 16 * s), 10f, CmdDim, 0.8f, VpAboard((int)ship.AirAboard), 0, false);
     }
+
+    /// <summary>
+    /// The gravity block under the rows (felt gravity, ShipGravity.cs: the server's pull, <see cref="ShipGravity.PersonPull"/>, the
+    /// owner's snapshot on a client). On the left GRAVITY and the pull's way in words (or WEIGHTLESS); in the bars' column a dial,
+    /// the pull as seen from behind them facing forward (right is right, down is down), its end filled while it presses them back
+    /// (into the seat or the aft bulkhead) and a ring while it pulls them forward (past a tenth of a g); on the right the g. Cyan, amber from
+    /// <see cref="ShipGravity.SlowG"/> (moving slows), red and PINNED from <see cref="ShipGravity.PinG"/>; past the g they take
+    /// unhurt (<see cref="ShipGravity.Limit"/>, not under deck gravity) it blinks CRUSHING and the plate turns red.
+    /// </summary>
+    private void VpGravity(ImDrawListPtr dl, Game game, Player me, ushort seatBody, float2 p0, float2 p1, float y, float g, bool crushing, float blink)
+    {
+        var s = _scale;
+        var felt = me.FeltPull;
+
+        // Their frame: up from the seat's vehicle, the deck they stand on, or the ground; forward their look, levelled.
+        var up = seatBody != 0 && game.Constructs.Get(seatBody) is { } seat ? Vector3.Transform(Vector3.UnitY, seat.Rot)
+            : me.Sim.RideBody != 0 && me.Sim.RideUpW != Vector3.Zero ? Vector3.Normalize(me.Sim.RideUpW)
+            : GravityFrames.UpAt(me.Position);
+        var cam = Hud.Camera;
+        var look = cam.Valid ? cam.Forward : Vector3.Zero;
+        var fwd = look - up * Vector3.Dot(look, up);
+        if (fwd.LengthSquared() < 1e-6f)
+            fwd = Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ);
+        fwd = Vector3.Normalize(fwd);
+        var right = Vector3.Cross(fwd, up);
+        float down = -Vector3.Dot(felt, up), ahead = Vector3.Dot(felt, fwd), side = Vector3.Dot(felt, right);
+
+        var floating = g < ShipGravity.FloatG;
+        var col = crushing || g >= ShipGravity.PinG ? CmdRed : g >= ShipGravity.SlowG ? CmdAmber : floating ? CmdDim : CmdCyan;
+        var a = crushing ? blink : 1f;
+        var x = p0.X + 108 * s;
+        CmdText(dl, new float2(x, y), 11f, col == CmdCyan ? CmdWhite : col, 0.9f * a, "GRAVITY", 0, false);
+        CmdText(dl, new float2(x, y + 15 * s), 10f, CmdDim, 0.95f, floating ? "WEIGHTLESS" : VpWays[VpWay(down, ahead, side)], 0, false);
+
+        // The dial, in the bars' column.
+        var c = new float2(p0.X + 201 * s, y + 15 * s);
+        var r = 14 * s;
+        ImDrawListExtensions.AddCircleFilled(dl, in c, r, Hud.Colour(col, 0.07f), 32);
+        CmdRing(dl, c, r, CmdDim, 0.85f, 1f);
+        CmdLine(dl, new float2(c.X - r, c.Y), new float2(c.X + r, c.Y), CmdDim, 0.3f);
+        CmdLine(dl, new float2(c.X, c.Y - r), new float2(c.X, c.Y + r), CmdDim, 0.3f);
+        if (!floating)
+        {
+            // The arrow grows with the g, full at the pin (by its root, so 1 g still reads: over half way); a pull straight ahead
+            // or back is short, its end's fill saying which (none under a tenth of a g that way, so a still seat doesn't flicker).
+            var flat = MathF.Sqrt(side * side + down * down);
+            var reach = r * 0.85f * MathF.Sqrt(MathF.Min(1f, g / ShipGravity.PinG)) * flat / (g * ShipGravity.G);
+            var tip = flat > 1e-3f ? new float2(c.X + side / flat * reach, c.Y + down / flat * reach) : c;
+            CmdGlow(dl, c, tip, col, a, 1.6f);
+            if (ahead < -0.1f * ShipGravity.G)
+                ImDrawListExtensions.AddCircleFilled(dl, in tip, 3.2f * s, Hud.Colour(col, a), 12);
+            else if (ahead > 0.1f * ShipGravity.G)
+                CmdRing(dl, tip, 3.2f * s, col, a, 1.4f);
+        }
+
+        // The g, and what it does to them.
+        CmdText(dl, new float2(p1.X - 10 * s, y), 13.5f, col, a, VpGText(g), 2, false);
+        if (crushing || g >= ShipGravity.PinG)
+            CmdText(dl, new float2(p1.X - 10 * s, y + 17 * s), 10f, col, 0.9f * a, crushing ? "CRUSHING" : "PINNED", 2, false);
+    }
+
+    private static string VpGText(float g)
+    {
+        var k = Math.Clamp((int)MathF.Round(g * 10), 0, VpG.Length - 1);
+        return VpG[k] ??= $"{k / 10}.{k % 10} G";
+    }
+
+    private static string[] MakeVpWays()
+    {
+        var s = new string[6 * 7];
+        for (var a = 0; a < 6; a++)
+            for (var b = -1; b < 6; b++)
+                s[a * 7 + b + 1] = b < 0 ? VpWayWords[a] : VpWayWords[a] + ", " + VpWayWords[b];
+        return s;
+    }
+
+    /// <summary>The pull's way as an index into <see cref="VpWays"/>: the strongest of down/up, forward/back and right/left, and a second one when it is a third of the first or more.</summary>
+    private static int VpWay(float down, float ahead, float side)
+    {
+        float ad = MathF.Abs(down), aa = MathF.Abs(ahead), asd = MathF.Abs(side);
+        var first = ad >= aa && ad >= asd ? 0 : aa >= asd ? 1 : 2;
+        var firstMag = first == 0 ? ad : first == 1 ? aa : asd;
+        var second = -1;
+        var secondMag = 0f;
+        for (var k = 0; k < 3; k++)
+        {
+            var m = k == 0 ? ad : k == 1 ? aa : asd;
+            if (k != first && m > secondMag)
+            {
+                second = k;
+                secondMag = m;
+            }
+        }
+        var also = second >= 0 && secondMag >= firstMag * 0.35f ? VpWayWord(second, down, ahead, side) : -1;
+        return VpWayWord(first, down, ahead, side) * 7 + also + 1;
+    }
+
+    private static int VpWayWord(int k, float down, float ahead, float side) => k switch
+    {
+        0 => down >= 0 ? 0 : 1,
+        1 => ahead >= 0 ? 2 : 3,
+        _ => side >= 0 ? 4 : 5,
+    };
 
     /// <summary>
     /// The pack's icon in the heading while an MMU is worn: its box seen from behind, the two arms forward to their hand
