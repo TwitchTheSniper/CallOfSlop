@@ -66,6 +66,15 @@ public static partial class Program
         return true;
     }
 
+    /// <summary>Is any socket of another body shown (step 2 shows only those that take the picked socket)?</summary>
+    private static bool AnyTarget(ReadOnlySpan<WeldMarker> marks, ushort source)
+    {
+        foreach (ref readonly var m in marks)
+            if (m.Body != source && m.State == WeldMarkerState.Target)
+                return true;
+        return false;
+    }
+
     /// <summary>The welder put away or switched to freeform: the socket weld being set up goes.</summary>
     private static void SocketWeldIdle()
     {
@@ -122,7 +131,7 @@ public static partial class Program
                 var body = world.Get(m.Body)!;
                 var why = WeldPieceWhy(g, body);
                 if (NewLook(11, m.Body, m.Part, m.Socket, body.PartCount * 2 + (why == null ? 0 : 1)))
-                    _swText = why ?? SandboxKeys.Line(body.DefOf(m.Part).Name, body.DefOf(m.Part).Sockets[m.Socket].Name, null, SandboxKeys.Do(SandboxKeys.Fire, "pick") + ", " + SandboxKeys.Do(SandboxKeys.Sprint, "point attach"));
+                    _swText = why ?? SandboxKeys.Line(body.DefOf(m.Part).Name, body.DefOf(m.Part).Sockets[m.Socket].Name + " (" + SocketWeld.LookLabel(m.Look) + ")", null, SandboxKeys.Do(SandboxKeys.Fire, "pick") + ", " + SandboxKeys.Do(SandboxKeys.Sprint, "point attach"));
                 g.SandboxLookText = _swText;
                 g.SandboxWeldHint = SandboxKeys.SocketWeld1;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
@@ -158,8 +167,10 @@ public static partial class Program
                 g.SandboxWeldHint = SandboxKeys.SocketWeld2;
                 if (!have || world.Get(w.Body) is not { } target)
                 {
-                    if (NewLook(12, flow.Source, flow.SourcePart, flow.SourceSocket, 0))
-                        _swText = "Aim at a socket or flat face on the construct";
+                    var any = AnyTarget(marks, flow.Source);
+                    if (NewLook(12, flow.Source, flow.SourcePart, flow.SourceSocket, any ? 1 : 0))
+                        _swText = any ? "Aim at a socket or flat face on the construct"
+                            : "No free socket here takes this one: aim at a flat face, or at another construct";
                     g.SandboxLookText = _swText;
                     return;
                 }

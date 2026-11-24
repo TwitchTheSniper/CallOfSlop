@@ -1570,6 +1570,12 @@ public static partial class ConstructParts
         if (d.Lifter != null)
         {
             d.Lifter.Tier = d.Tier; // (its drawn half's dressing)
+            if (d.Name.EndsWith(" Loader Arm", StringComparison.Ordinal) && d.Name.Length > " Loader Arm".Length)
+            {
+                // (named by its grade, not its tier: the big arms past the Plasma are tier 5 by their machine tier)
+                d.Lifter.Grade = d.Name[..^" Loader Arm".Length];
+                d.Lifter.Screen = d.Lifter.Grade.ToUpperInvariant() + " ARM";
+            }
             d.DataIn = [ConstructGatherer.RunPort];
             d.DataOut = ConstructLifters.OutPorts; // (Busy, Alarm, Moved: ConstructLifters.Ports)
         }

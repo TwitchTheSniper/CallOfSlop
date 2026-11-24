@@ -172,7 +172,7 @@ burns by it, every peer alike, all in the Core's frame. The front is -z (the Cor
   burns no one: its hearth is behind a door. A HOT plate on the Hearth Block and the Casting Bed says so.
 - **Cost.** All of it is worked out from the squares each frame and tick, allocating nothing; drawn spans are culled past 150 m.
 
-**The wire.** Part ids moved (protocol 450); nothing else is new: the blocks' joins and the squares are each peer's own. Saves keep
+**The wire.** Part ids moved (protocol 451); nothing else is new: the blocks' joins and the squares are each peer's own. Saves keep
 working: "Workshop Smelter" to "Plasma Smelter" load as the Smelter Core (`ConstructParts.Renamed`), and a saved recipe choice keeps its
 recipe (`ConstructRefining.SavedRecipe`). **Self-test**: "Machine tier looks", "Refining", "Refining network" (a Hearth Block welded on the
 host reaches the client's look line), "Gathering" (`SelfTestMachineTiers.cs`: a bare Core, a 1 x 1 and a 2 x 2 at x1, x2.25 and x7; a
@@ -506,20 +506,20 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   other, and **Out Tables** (role `end`) welded across the bed's last row, which carry **Piece out** (a conveyor off a table is its
   machine's: `MachineBlocks.Owner`). The bed is the largest full rectangle of blocks between Core and tables (at most 16 x 16, 128 in
   all). A panel fits when its longest side fits the bed's length and the next its width (it is laid along the bed) and it is no deeper
-  than the pins' travel: 2 m, or 4 m with **Mast Blocks** standing on all four of the bed's corner Bed Blocks (on their crossheads,
-  socket `top`; one level, past the deepest panel HullLoft allows; a Bed Block stacked there is not a mast and idles;
-  `ConstructPanelFormer.PinDepth`; the Zero Day's upper hull pieces need it) (`ConstructPanelFormer.Bed`, `BedRefusal`, which names the masts it needs; `BedFits`
-  per step). With corner masts the former draws its deep head (`PanelFormerRender.cs`): ring girders on the mast tops, a cross girder
-  over each row seam, an oil main with a drop hose to each row, a booster cylinder on each corner mast whose collar rides with the
-  stroke, and corner lamps lit while it forms; a corner block's ram head isn't drawn under its mast (seam `+y`). One stroke is 4 s set and 8 s press at any
+  than the dies form: 4 m of crown and rake, past the deepest panel HullLoft allows (`ConstructPanelFormer.DepthMost`, `PinDepth`;
+  `ConstructPanelFormer.Bed`, `BedRefusal`; `BedFits` per step). Nothing stands over the bed (Sean, 2026-11-24): no crosshead, no corner
+  masts, no head; the upper die is the machine's top, between the corner posts, under a solid lid that isn't drawn. One stroke is 4 s set and 8 s press at any
   size. Seams between cells are hidden (`seam`, `seamFill` boxes), so a bed reads as one machine: posts at its corners, an oil manifold
   down one side, a hazard edge round the outside. **Shaped dies** (Sean, 2026-11-24; `PanelFormerRender.DrawDies`, drawn only): small
   rails run along the bed at the work height (the in rollers' and Out Tables' height, `OutTableParts.WorkY`), a metre apart; a lower die
-  stands on the deck under them and an upper die hangs under the crosshead, each one solid steel inside the corner posts. While the
+  stands on the deck under them and an upper die over them, each one solid steel across the bed inside the corner posts. While the
   former works, both take on the head order's panel shape (`ConstructPanelFormer.DieShaping`, `Die`: the key's `PanelLift`, cached per
   name): the lower die rises into it and lifts the blank on its highest point, the upper die comes down (`PressAt`) and squeezes it into
-  the panel, then lifts, and the lower die goes flat, leaving the panel with its lowest point on the rails (`BedLook`). Over the sheet the
-  dies are half-metre cells, a column and a face plate turned to the slope; a key with no shape (a kit's loft, a plain skin) keeps them
+  the panel, then lifts, and the lower die goes flat, leaving the panel with its lowest point on the rails (`BedLook`). The shape covers the
+  whole die, its edges carried out to the die's ends and sides, so seen head-on along the bed each die's end shows the bend it makes
+  (Sean, 2026-11-24): cells a quarter metre across the bed, along it only where the shape changes along (`DieInfo.AlongFlat`), each a
+  column and a face plate turned to the slope; the shape is a height map of the panel as it lies (`HullLoft.PanelAt`, so a fold's arc
+  lands where it is formed), its lift capped at `DieDeepest`; a key with no shape (a kit's loft, a plain skin) keeps them
   flat. The in rollers spin. The Medium Panel Former is gone (2026-11-21). Recipes are the Assembling generator's.
 - **Stock is one blank a panel** (Sean, 2026-11-21; no stock bin, hopper or chute in). A blank is a flat sheet off an Extruder's Sheet
   profile (`Extrusion.IsSheet`: a solid section, full mask, 1 to 10 cm thick), riding a conveyor into the Core's **Piece in**. Its size
@@ -1185,7 +1185,12 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   asked, free stock of the kind in the root's network's stores with a conveyor way to the destination (`ConstructCrafting.RouteTo`,
   joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
   piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
-  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue; the chained
+  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue (one with no plain conveyor way last); a maker
+  nothing leads from to the destination (no conveyor, chute, join, Splitter, Router, store, rolled-through bed or lifter edge, walked
+  backwards by `ConstructLogisticsPlan.Leads`) is never asked, and the row says "no conveyor or arm leads from the X to the Y: link
+  one"; a link whose maker stops leading there (an older save, a cut way) takes its lines back off that maker (`Unask`, a look every
+  10 s). Before, such a maker made the pieces, they went to storage, and the link asked again without end (the Zero Day works' line
+  Extruders and the Leg Pod Housing XL blanks, 2026-11-24). The chained
   line goes ahead of the first line in that queue it is an input for (else a machine asked for a part and for that part's input
   would wait on itself; that line has no batch under way, an Assembler starts one only with every input in). Cancelling drops a
   chained head line too when its Assembler has no batch under way. **Rank:** roots compete by priority class, then age (the user,
@@ -1591,7 +1596,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
   network and orders are [the terminal's](#crafting-terminal). It is a block machine's Core (`"machineBlock"`, family `station`;
   `MachineBlocks.cs`), with sockets for Bay Blocks along both sides and under it.
-- **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles,
+- **The bay** is built, not set (2026-11-21; the bay settings are gone). **Bay Blocks** (`BayBlock.json`, 2 x 2 m tread-plate floor tiles, a 1 m deck level with the roller runs and the raised Pad Tiles, Sean
+  2026-11-24; the Core stays on the floor, its screen at hand height; their side sockets at a Pad Tile's, 0.1 m, so a bay welds butted on a pad,
   their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 32 cells a
   side and 512 cells in all, masts included (the station's own limit, `"maxSide"` and `"maxCells"` in its `"machineBlock"`; Sean 2026-11-21,
   so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
@@ -1830,14 +1836,35 @@ inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter
 | 3 | Industrial Loader Arm | 1.5 to 6 m | 2 t | 1.5 by 6 m | 6 m/s | 0.45 s | 1.9 kW |
 | 4 | Military Loader Arm | 2 to 8 m | 4 t | 2.0 by 8 m | 9 m/s | 0.3 s | 3.4 kW |
 | 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
+| big | Heavy Loader Arm | 3 to 14 m | 16 t | 6 by 16 m | 10 m/s | 0.3 s | 12 kW |
+| big | Shipyard Loader Arm | 3.5 to 18 m | 24 t | 10 by 24 m | 9 m/s | 0.4 s | 20 kW |
+| big | Long Loader Arm | 3 to 14 m | 6 t | 4 by 16 m | 10 m/s | 0.3 s | 8 kW |
 
 Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
 cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
 Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
 
+**The big arms** (Sean, 2026-11-24: arms that carry a shipyard's pieces from the line pads straight into its building bay;
+`LifterParts.BigArms`, folder `Lifters/BigArms`) are past the tiers: a 3.5 m square pedestal (14 cells, `"centre -y"` stands it
+by its middle; the Long arm's is 2 m, the Industrial's, for a narrow strip between two bays) with the Industrial look (yellow, hydraulic) scaled up, the shoulder 4.6 and 6.5 m up and the links 3.5 and 5 times
+the tier-1 arm's (the drawing scales by `Upper / 2.3`; the lifter key's `"housing"` keeps the drawn housing and counterweight to the
+pedestal's size, so they turn within 1.6 m of its middle). Their screens and the station's Fitters line name them by the part's name
+("Shipyard"), not by their machine tier (5). They carry the hull pieces, decks and keel bands a Plasma arm can't (the Zero Day frigate's run
+to 14 t and 22 m), and work as every arm does: a piece on a pad or a run's end in reach goes straight to a ready step
+(`ConstructLifterDirect.cs`), and the station's offers give them steps whose part lies on a pad they reach. Their Assembling rows
+are the last in the table (`AfterCloche`).
+
+`--station-check SITE --build NAME --seconds 3 --reach` reports, for every arm by a station's bay: the steps of the build it can fit
+(size, payload and reach at the part's middle with its wrist lift), whether it reaches the hold, and how much of each pad's deck
+(the station's own pick pads and any pad within 30 m of the bay) is in its reach; then each pad's cover by any arm, and the steps no
+arm fits with the reason.
+
 - **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
   later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it
-  turns; capped so the arm never stretches straight).
+  turns; capped so the arm never stretches straight). A loaded carry goes higher when something stands in its way: the server
+  looks along the arc the piece makes round the base (its footprint as it turns) for the tallest box under the arm's highest carry
+  and lifts the piece 0.3 m over it, as a crane does over its straight run (`ConstructLifterClear.cs`, 2026-11-24, for the big arms'
+  17 m decks); what stands taller than the arm can reach is passed through.
 - **Ports**: in **Run** (a wire held low keeps it from starting a move); out **Busy** (a move runs), **Alarm** (it holds a piece
   nothing takes), **Moved** (parts it fitted since the world loaded).
 - **Looking at it**: the look line says what it does or waits on ("fitting a Wheel Hub to the Buggy, step 12 of 26", "waiting:

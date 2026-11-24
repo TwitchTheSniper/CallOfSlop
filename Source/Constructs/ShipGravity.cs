@@ -146,7 +146,7 @@ public static class ShipGravity
     }
 
     /// <summary>
-    /// Server, each tick: the pull a person feels now, world axes (the felt-g readout, UiGForce.cs): seated, the seat's
+    /// Server, each tick: the pull a person feels now, world axes (the felt-g readout, UiVitalsPanel.cs): seated, the seat's
     /// vehicle's; standing aboard, their ride's; on the ground, the world's; falling or floating, nothing.
     /// </summary>
     public static Vector3 PersonPull(in MoveState s, ConstructWorld w, ushort seatBody, bool alive)
@@ -223,19 +223,30 @@ public static class ShipGravity
     /// <summary>How much a person feels now (g), and the limit before it hurts them: riding, seated, or neither (0).</summary>
     public static float FeltG(in MoveState s, ConstructWorld w, ushort seatBody, ushort seatPart, out float limit, bool suit)
     {
-        limit = HarmG * (suit ? SuitFactor : 1f);
+        limit = Limit(w, seatBody, seatPart, suit);
         if (Mode == ShipGravityMode.Deck)
             return 0;
         if (seatBody != 0)
         {
             if (w.Get(seatBody) is not { } seat)
                 return 0;
-            var rated = seatPart < seat.PartCount ? seat.DefOf(seatPart).SeatG : 0; // (a crash couch's own rating: "seat"."g")
-            limit = rated > 0 ? MathF.Max(rated, limit) : limit * SeatFactor;
             var body = seat.CarriedBy != 0 && w.Get(seat.CarriedBy) is { } carrier ? carrier : seat;
             return Active(body) ? body.Felt.Length() / G : 0;
         }
         return s.RideFeltOn ? s.RideFelt.Length() / G : 0;
+    }
+
+    /// <summary>
+    /// The felt g a person takes unhurt (<see cref="FeltG"/>'s limit; the vitals panel shows it, UiVitalsPanel.cs): <see cref="HarmG"/>,
+    /// <see cref="SuitFactor"/> times in a suit; seated, a rated seat's own if more, else <see cref="SeatFactor"/> times.
+    /// </summary>
+    public static float Limit(ConstructWorld w, ushort seatBody, ushort seatPart, bool suit)
+    {
+        var limit = HarmG * (suit ? SuitFactor : 1f);
+        if (seatBody == 0 || w.Get(seatBody) is not { } seat)
+            return limit;
+        var rated = seatPart < seat.PartCount ? seat.DefOf(seatPart).SeatG : 0; // (a crash couch's own rating: "seat"."g")
+        return rated > 0 ? MathF.Max(rated, limit) : limit * SeatFactor;
     }
 
     // ---- Cargo in 0 g ---------------------------------------------------------------------------------------------

@@ -484,6 +484,8 @@ public sealed unsafe partial class PlanetRenderer
             var (col, rock) = TerrainData.ColourOf(here, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
             if (r.Src.Ore is { } ore)
                 col = ore.TintGround(px, py, pz, col, rock); // (each resource's own earth over its deposits)
+            if (pl.HasSeasCached)
+                col = pl.SeaTint(up.X, up.Y, up.Z, h, col); // (the seas' water, beaches and dry beds: Planetoid.Sea)
             // Hollows darken with how far they sit below their neighbours (a cheap cavity term): a crevasse reads as a
             // crack going down into shadow, not a strip of lit wall, and gullies and dips get a little depth.
             var cavity = (float)((wh[k - 1] + wh[k + 1] + wh[k - Apron] + wh[k + Apron]) * 0.25 - h) / cellSize;

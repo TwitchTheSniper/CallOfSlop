@@ -1077,6 +1077,8 @@ public sealed class Assembling : IPartGenerator
         // (the Zero Day works' plinths, Sean 2026-11-22: an Extruder raised level with its run; FactoryShellParts.Plinths, after everything: AfterCloche)
         ("Factory/Plinths", "Extruder Plinth", Rec("Extruder Plinth", 40, m: [("concrete", 320), ("steel", 20)])),
         ("Factory/Plinths", "Run-out Table Stand", Rec("Run-out Table Stand", 20, m: [("steel", 60)])),
+        // (the big arms past the Plasma, Sean 2026-11-24: a shipyard's arms; LifterParts.BigArms, by rule, after everything: AfterCloche)
+        .. LifterParts.BigArmNames.Select(n => ((string?)"Lifters/BigArms", (string?)n, (PyDict?)null)),
         // (the Smelter on the block system, PR 1 of the refiners: its Hearth Block, fire brick in a steel case, and its Casting Bed; the Core
         // keeps the Smelter's row, and the Workshop to Plasma Smelters' rows went: tools/MIGRATING.md; after everything: AfterCloche)
         (null, null, Rec("Hearth Block", 60, 1, m: [("concrete", 320), ("steel", 140)])),
@@ -1292,7 +1294,7 @@ public sealed class Assembling : IPartGenerator
     private static bool AfterFoldedFolder(string output) => output.StartsWith("Cloche ", StringComparison.Ordinal);
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
-    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block",
+    private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
         "Hearth Block", "Casting Bed"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>

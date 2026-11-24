@@ -1389,6 +1389,8 @@ public sealed partial class PlanetEdits : IDigGround
         dirt = here.Dirt;
         rockCol = here.Rock;
         var (col, rock) = TerrainData.ColourOf(here, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+        if (_p.HasSeasCached)
+            col = _p.SeaTint(x, y, z, h, col); // (as the drawing does: PlanetRenderer.MakePage)
         return new Vector4(col, Math.Clamp(rock, 0f, 1f));
     }
 }

@@ -2392,7 +2392,10 @@ public sealed partial class ConstructWorld
         ConstructFar.Physics(this, query, dt); // (every body, or the near ones then the far ones whose turn it is: ConstructFar.cs)
         var r0 = System.Diagnostics.Stopwatch.GetTimestamp();
         AllocProfile.Mark("c: rails");
-        ConstructRails.Step(this, query, dt); // (free bodies falling alone round a planet, out of the physics: ConstructRails.cs)
+        using (Perf.Measure(PerfArea.CPhysRails))
+            ConstructRails.Step(this, query, dt); // (free bodies falling alone round a planet, out of the physics: ConstructRails.cs)
+        if (Perf.On)
+            PerfBodies.Ticks++; // (the F9 window's costliest bodies: their physics per tick)
         var p1 = System.Diagnostics.Stopwatch.GetTimestamp();
         PhysicsMs += (p1 - p0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         ConstructSlowTick.End(this, p0, r0, p1);
@@ -2402,6 +2405,7 @@ public sealed partial class ConstructWorld
         StepPart(5);
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Production);
+        part = Perf.Measure(PerfArea.PRaw);
         AllocProfile.Mark("machines: ConstructRecycler");
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         AllocProfile.Mark("machines: ConstructGatherer");
@@ -2412,32 +2416,58 @@ public sealed partial class ConstructWorld
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
         AllocProfile.Mark("machines: ConstructGrowing");
         ConstructGrowing.Step(this); // (grow beds grow produce on the water aboard)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PAssembly);
         AllocProfile.Mark("machines: ConstructAssembling");
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PExtruders);
         AllocProfile.Mark("machines: ConstructExtruder");
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PConveyors);
         AllocProfile.Mark("machines: ConstructConveyor");
         ConstructConveyor.Step(this, query); // (pieces ride their conveyors to the racks: only bodies with riders)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PAssembly);
         AllocProfile.Mark("machines: ConstructCrafting");
         ConstructCrafting.Step(this); // (Crafting Terminals fetch and order: 2 Hz, only bodies with open orders)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PStations);
         AllocProfile.Mark("machines: ConstructStation");
         ConstructStation.Step(this); // (Building Stations cost, order and fit: only bodies whose stations have a job)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PLogistics);
         AllocProfile.Mark("machines: LinkedLogistics");
         LinkedLogistics.Step(this); // (link ends, remote lines, Cargo Docks, routes and Dispatchers: linked-logistics.md; once a second)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PStations);
         AllocProfile.Mark("machines: ConstructLifters");
         ConstructLifters.Step(this, query); // (Loader Arms fit parts at the stations they reach and carry between points: lifters phase 4)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PExtruders);
         AllocProfile.Mark("machines: ConstructPress");
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PRaw);
         AllocProfile.Mark("machines: ConstructBakeOven");
         ConstructBakeOven.Step(this); // (Bake Ovens: the group on the bed, the hood's cycle, the crush and burn boxes)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PAssembly);
         AllocProfile.Mark("machines: ProductionLines");
         ProductionLines.Step(this); // (Line Consoles: their Alarm and Running outputs, a new Start, Stop after; 10 Hz)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PLogistics);
         AllocProfile.Mark("machines: Beacons");
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PSeals);
         AllocProfile.Mark("machines: ConstructSeal");
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);
         AllocProfile.Mark("machines: ConstructLift");
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.PCargo);
         AllocProfile.Mark("after: LoadStep");
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         AllocProfile.Mark("after: ModuleCut");
@@ -2450,6 +2480,7 @@ public sealed partial class ConstructWorld
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         AllocProfile.Mark("after: Frames.After");
         ConstructFrames.After(this, posed: false); // (loose bodies aboard moving constructs: their move through the frame taken, placed by its new pose: ConstructFrames.cs)
+        part.Dispose();
         StepPart(6);
         perf.Dispose();
         AllocProfile.Mark("after: Gravity.Refresh");

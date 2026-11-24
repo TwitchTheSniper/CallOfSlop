@@ -112,6 +112,21 @@ public static class PlanetCli
         }
         Console.WriteLine($"ground: {rock * 100.0 / n:0}% cliff, {dirt * 100.0 / n:0}% slope, {sand * 100.0 / n:0}% low ground, {snow * 100.0 / n:0}% above the snow line; {walk * 100.0 / n:0}% under 40 degrees");
 
+        // Seas (WORLDS.md "Seas"): each one's level, and how much of the world is water or dry sea bed.
+        if (p.HasSeasCached)
+        {
+            int water = 0, all = 0;
+            for (var j = 0; j < hgt; j += 2)
+            for (var i = 0; i < w; i += 2)
+            {
+                Dir(Math.Asin(1 - (j + 0.5) * 2.0 / hgt), (i + 0.5) * 2 * Math.PI / w - Math.PI, out var x, out var y, out var z);
+                all++;
+                if (p.IsWater(x, y, z, hs[j * w + i]))
+                    water++;
+            }
+            Console.WriteLine($"seas: {string.Join("; ", p.SeaSummary())}; {water * 100.0 / all:0.0}% of the ground is water");
+        }
+
         // Ore: what the world's ground holds (WORLDS.md "Ore"), and how much of the sampled ground lies over a deposit.
         if (m.Resources is { } ore)
         {
@@ -291,6 +306,11 @@ public static class PlanetCli
                     here = pb.SurfaceAt(surf, bx, by, bz, p.Radius, h, slope); // (the biomes' ground: PlanetBiomes.cs)
                 }
                 var (col, _) = TerrainData.ColourOf(here, new Vector3(MathF.Sqrt(MathF.Max(0, 1 - nrm.Y * nrm.Y)), nrm.Y, 0), h, (byte)rule, i * 7f, j * 7f);
+                if (p.HasSeasCached)
+                {
+                    Dir(lat, (i + 0.5) * 2 * Math.PI / w - Math.PI, out var sx, out var sy, out var sz);
+                    col = p.SeaTint(sx, sy, sz, h, col);
+                }
                 var light = 0.35f + 0.75f * MathF.Max(Vector3.Dot(nrm, sun), 0);
                 var o = (j * w + i) * 3;
                 rgb[o] = (byte)Math.Clamp(col.X * light * 255, 0, 255);

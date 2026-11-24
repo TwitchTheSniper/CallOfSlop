@@ -42,7 +42,10 @@
       "dusting": 0.8,
       "ice": "#9ec3df",
       "icePatches": 0.22,
-      "iceScale": 90
+      "iceScale": 90,
+      "sea": "#c4dcec",
+      "seaDeep": "#7fa8c8",
+      "seaShore": "#e4ecf3"
     },
     "biomes": {
       "seed": 12,
@@ -827,6 +830,39 @@
         "scale": 12,
         "octaves": 2,
         "seed": 9
+      },
+      {
+        "type": "sea",
+        "lat": 8.09,
+        "lon": 227.6,
+        "radius": 10400,
+        "depth": 100,
+        "edge": 2400,
+        "coast": 0.46,
+        "water": true,
+        "seed": 330
+      },
+      {
+        "type": "sea",
+        "lat": 29.22,
+        "lon": 314.62,
+        "radius": 7200,
+        "depth": 90,
+        "edge": 1800,
+        "coast": 0.43,
+        "water": true,
+        "seed": 331
+      },
+      {
+        "type": "sea",
+        "lat": 25.59,
+        "lon": 27.69,
+        "radius": 4800,
+        "depth": 80,
+        "edge": 1400,
+        "coast": 0.44,
+        "water": true,
+        "seed": 332
       },
       {
         "type": "flatten",
