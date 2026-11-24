@@ -153,7 +153,7 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 | Accent | `#f2b01e` | buttons, pulleys, chucks, a ram's hazard edge |
 | In / Out | `#ecebe4` / `#f07818` | the band and arrow of each side |
 | Stop | `#d02a1e` | the stop button |
-| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020`, Smelter `#9a4a2c` (fire brick) | cladding; takes paint |
+| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020`, Smelter `#9a4a2c` (fire brick), Bake Oven `#a8763a` (ochre) | cladding; takes paint |
 
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
