@@ -1287,6 +1287,27 @@ public sealed partial class Construct
     /// <summary>Server: falling free on a rail, out of the physics' list and the per-body systems (ConstructRails.cs). Its pose and speed are true every tick.</summary>
     public bool OnRail;
 
+    /// <summary>
+    /// Server: an NPC ship cruising on a rail far from everyone (ConstructCruise.cs): out of the physics' list, moved each tick at its speed along
+    /// the planet's curve, back in the physics for a far step every <see cref="ConstructCruise.HoldTicks"/> or when anything engages it. Unlike
+    /// <see cref="OnRail"/>, <see cref="Wake"/> doesn't end it (a crew's keys and a stabilizer wake their body every tick).
+    /// </summary>
+    public bool Cruise;
+    /// <summary>Server: the tick its cruise spell ends, and the tick it is looked at again after one (ConstructFar.Tick; 0: none).</summary>
+    public uint CruiseUntil, CruiseRecheck;
+    /// <summary>Server: its speed when last looked at, and that tick (how steady its flight is: ConstructCruise.Steady).</summary>
+    public Vector3 CruiseV0;
+    public uint CruiseT0;
+    /// <summary>Server: its fuel and charge when last looked at; what its physics burned of each a tick before a spell (thrust, rotors, drives: the
+    /// physics' own), the tick the spell began and what it had then. A spell's end takes what the physics would have burned (ConstructCruise.Settle).</summary>
+    public float CruiseF0, CruiseC0, CruiseFuelRate, CruiseChargeRate, CruiseFuelAt, CruiseChargeAt;
+    public uint CruiseFrom;
+    /// <summary>Server: its NPC crew has something to fight, runs, is boarded or scuttles (the captain's look, CrewWorld.Captain): it never cruises.</summary>
+    public bool NpcBusy;
+    /// <summary>Server: the point its NPC crew's order flies it to, while <see cref="CruiseGoalOn"/> (CrewWorld): a cruise spell ends before it gets there (ConstructCruise.SpellFor).</summary>
+    public Vector3 CruiseGoal;
+    public bool CruiseGoalOn;
+
     /// <summary>A rail body's lowest distance from the planet's centre until its next check (ConstructRails.cs).</summary>
     public float RailLow;
 

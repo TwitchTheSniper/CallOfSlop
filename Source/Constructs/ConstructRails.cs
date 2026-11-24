@@ -40,6 +40,12 @@ public static class ConstructRails
     /// </summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
+        StepRails(world, query, dt);
+        ConstructCruise.Step(world, query, dt, _tick); // (far NPC ships cruising: ConstructCruise.cs)
+    }
+
+    private static void StepRails(ConstructWorld world, IWorldQuery query, float dt)
+    {
         _tick++;
         if (!On || !world.UseGrid || GravityFrames.Point is not { } planet || world.PeopleCount == 0) // (a small world steps every body: no rails there)
         {
@@ -50,7 +56,7 @@ public static class ConstructRails
             return;
         }
         var ground = World.Map?.Planetoid;
-        Index(world);
+        IndexOnce(world, _tick);
         var n = 0;
         var slice = (int)(_tick % Every);
         foreach (var c in world.Bodies)
@@ -91,8 +97,20 @@ public static class ConstructRails
 
     private static int CellOf(float v) => (int)MathF.Floor(v / HashCell);
 
+    private static long _indexed = -1;
+
+    /// <summary>The hash for this tick, made once (the rails' step makes it; the cruise's when the rails didn't run: ConstructCruise.cs).</summary>
+    internal static void IndexOnce(ConstructWorld world, long tick)
+    {
+        if (_indexed == tick)
+            return;
+        Index(world);
+        _indexed = tick;
+    }
+
     private static void Index(ConstructWorld world)
     {
+        _indexed = -1;
         _head.Clear();
         _big.Clear();
         var bodies = world.Bodies;
@@ -126,7 +144,7 @@ public static class ConstructRails
     /// station or a ship unseen: what is within its sphere, a tick and a half of its speed and the fastest body's, and a tick
     /// more for the hash's centres (made before this tick's rail steps). The physics' own list takes it back too (SimList).
     /// </summary>
-    private static bool Meets(ConstructWorld world, Construct c, float dt)
+    internal static bool Meets(ConstructWorld world, Construct c, float dt)
     {
         var at = c.WorldCom;
         var ahead = 1.5f * dt; // (a tick of closing, and half again: what it finds is the physics' from the next tick, which meets it with its own speed margin)
