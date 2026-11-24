@@ -119,7 +119,8 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
    `"axis"`, through its own centre), `"stroke"` (`"travel"` metres along `"axis"` and back: a ram), `"glow"` (hot orange,
    its own dull colour at rest: a die), `"smoke"` (puffs from its top), `"ram"` (an Extruder's: `"travel"` along `"axis"` by
    the piece on its die, back each metre), `"shear"` (over an Extruder's die: down and up as a new piece starts) or `"hinge"` (a clamshell leaf: `"pivot"` on
-   the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle). A block
+   the hinge line, `"axis"` the way it opens, `"travel"` degrees; it swings open and slams shut in the Press's shell cycle; on a Foundry's Crucible Block the lone crucible tips on its trunnions by its square's
+   pour clock, `FoundryWorks.TiltShare`). A block
    machine's cell shows its Core's work, a Run-out Table its Extruder's. A block machine's detail box may say `"seam"` (one
    face or a list: not drawn while a cell of its machine is welded on any of them) or `"seamFill"` (drawn only while one is),
    and `"inMachine": true` (drawn only while the part is a cell of a machine) or `"bare": true` (drawn only while it is not):
@@ -152,7 +153,7 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 | Accent | `#f2b01e` | buttons, pulleys, chucks, a ram's hazard edge |
 | In / Out | `#ecebe4` / `#f07818` | the band and arrow of each side |
 | Stop | `#d02a1e` | the stop button |
-| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020`, Smelter `#9a4a2c` (fire brick) | cladding; takes paint |
+| Body | Extruder `#b5452b`, Formers `#8050a8`, Press `#2f5f8f`, Die Lathe `#2a6878`, console `#e0b020`, Smelter `#9a4a2c` (fire brick), Bake Oven `#a8763a` (ochre) | cladding; takes paint |
 
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a

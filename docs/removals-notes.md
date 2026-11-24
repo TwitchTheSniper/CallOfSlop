@@ -1,3 +1,16 @@
+# Foundry tiers (2026-11-24)
+
+The Foundry became a block machine (plan PR 2: docs/sandbox/constructs/production.md "The Foundry"), so its tiers went:
+`Constructs/Parts/Refining/FoundryT2.json` to `FoundryT5.json` (Workshop, Industrial, Military and Plasma Foundry), the Foundry line of the
+part kit's `machine_tiers` (`MachineTiers.cs`, its shape in `TierStyle.cs` and `TierMachine.cs`: the furnace, its hopper and tray), their
+four Assembler recipe rows and the Foundry's recipe gates (bronze 2, circuits 3 in `Refining.json`).
+
+- **Kept:** the Foundry's file and name (now the Core, from `FoundryParts.cs`), all its mixes, its Assembler row; the Sawmill keeps its tiers.
+- **Saves and blueprints:** the four names load as the Core (`ConstructParts.Renamed`); a saved recipe keeps its recipe (each old tier's
+  list was a start of the full one).
+- **Rebuilt:** the Production Showcase (a Core, a 2 x 2 and a 1 x 1 with Mould Lines), the Militia refineries (`--gen-factory refinery`);
+  the Zero Day works keeps a bare Core where each Foundry stood; the Foundry Works and the Starter Foundry keep a bare Core.
+
 # Smelter tiers (2026-11-24)
 
 The Smelter became a block machine (plan PR 1: docs/sandbox/constructs/production.md "Refiners as block machines"), so its tiers went:
@@ -5,7 +18,7 @@ The Smelter became a block machine (plan PR 1: docs/sandbox/constructs/productio
 part kit's `machine_tiers` (`MachineTiers.cs`, its shape in `TierStyle.cs` and `TierMachine.cs`), their four Assembler recipe rows and
 the Smelter's recipe gates (copper 2, gold 3, levite 4 in `Refining.json`).
 
-- **Kept:** the Smelter's file and name (now the Core), its Assembler row; the Foundry and Sawmill keep their tiers until their own PRs.
+- **Kept:** the Smelter's file and name (now the Core), its Assembler row; the Foundry and Sawmill kept their tiers until their own PRs (the Foundry's went the same day, above).
 - **Saves and blueprints:** the four names load as the Core (`ConstructParts.Renamed`), and a saved recipe choice keeps its recipe
   (`ConstructRefining.SavedRecipe`).
 - **Rebuilt:** the Zero Day works' copper smelter (Core and a 1 x 1), the Production Showcase, the Militia refineries (`--gen-factory

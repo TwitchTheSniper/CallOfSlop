@@ -765,7 +765,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      (Arm Core, Arm Pedestal, the arm pieces' like parts, the Arm Die) move part ids.
     // 452: the Smelter is a block machine (Core, Hearth Block, Casting Bed; Smelter T2-T5 gone): new part files move part ids, and a
     //      Core's rate, bins and chute load come from its squares, which each peer works out from the parts (MachineBlocks.Squares).
-    public const ushort ProtocolVersion = 452;
+    // 453: the Foundry is a block machine (Core, Crucible Block, Mould Line; Foundry T2-T5 gone): new part files move part ids, and a
+    //      Foundry Core's rate, bins and chute load come from its squares as the Smelter's do.
+    public const ushort ProtocolVersion = 453;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -833,7 +833,7 @@ public static partial class ConstructRender
                 gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
             else if (drive && box.Work is BoxWork.Glow or BoxWork.Chase && DriveColour(c, i, in box) is { } driveGlow)
                 gfx.Draw(model, driveGlow, opacity, mode: 2, shape: box.Shape); // (a drive's coil, throat or ring lamp, by the burn)
-            else if (box.Work is BoxWork.Glow or BoxWork.Beam && working)
+            else if ((box.Work is BoxWork.Glow or BoxWork.Beam || box.Work == BoxWork.Hinge && Vector3.DistanceSquared(box.Color, HingeMelt) < 1e-4f) && working) // (and a tipping crucible's melt: a "hinge" box in the machines' dull hot colour)
                 gfx.Draw(model, WorkHot * (0.85f + 0.15f * MathF.Sin((float)Now * 5f + i)), opacity, mode: 2, shape: box.Shape); // (a hot die, bright while the machine runs; its own dull colour otherwise)
             else if (box.Glow)
                 gfx.Draw(model, box.Color * shade, opacity, mode: 2, shape: box.Shape); // (a box that always glows, "glow" in the part file)
@@ -987,6 +987,7 @@ public static partial class ConstructRender
     }
 
     private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
+    private static readonly Vector3 HingeMelt = new(0x5a / 255f, 0x24 / 255f, 0x14 / 255f); // (MachineLook.Hot: a die's or a melt's colour at rest)
     private static readonly Vector3 RouterOrder = new(1f, 0.5f, 0.1f), RouterStore = new(0.95f, 0.95f, 0.9f), RouterStuck = new(1f, 0.12f, 0.08f);
 
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
@@ -1033,8 +1034,24 @@ public static partial class ConstructRender
                 var at = (float)(Now * 0.8 % 1.0); // (down fast, up slowly: a press.s stroke)
                 model *= Matrix4x4.CreateTranslation(axis * (box.RigTravel * (at < 0.25f ? at * 4f : (1f - at) / 0.75f)));
                 break;
+            case BoxWork.Hinge when _workCore >= 0 && _workCore < c.PartCount && FoundryWorks.Is(c.Parts[_workCore].D):
+            {
+                // A lone Crucible Block's crucible, tipped toward the front on its square's own clock (FoundryWorks.TiltShare, as FoundryRender's pours):
+                // about the line through its "pivot" across the part's up and the "axis" it opens toward.
+                ref readonly var core = ref c.Parts[_workCore];
+                var cd = core.D;
+                var rel = Rot24.Apply(Rot24.Inverse(core.Rot), p.Pos - core.Pos) - (cd.BlockOrigin ?? Vector3.Zero);
+                var share = FoundryWorks.TiltShare(Now, 1, (int)MathF.Round(rel.X / cd.BlockCell), (int)MathF.Round(rel.Z / cd.BlockCell), out _);
+                var up = Rot24.Apply(p.Rot, Vector3.UnitY);
+                var turn = Vector3.Cross(up, axis);
+                if (share <= 0 || turn.LengthSquared() < 0.5f)
+                    break;
+                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(turn), share * box.RigTravel * MathF.PI / 180f) * Matrix4x4.CreateTranslation(pivot);
+                break;
+            }
             case BoxWork.Hinge:
-                break; // (a clamshell leaf: no part draws one now; a Press's housings turn their round dies, DrawShellDie)
+                break; // (a clamshell leaf elsewhere: no part draws one now; a Press's housings turn their round dies, DrawShellDie)
             case BoxWork.Press:
                 break; // (the old Panel Former's platen: no part draws one now; the stretch former's die is PanelFormerRender's)
             case BoxWork.Pin:

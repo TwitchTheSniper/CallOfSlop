@@ -86,14 +86,14 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The big machines are buildings, not bricks (the Smelter is a 2 m block machine's Core now, grown by its blocks): the size table; less than half of their bounds solid; a player fits their aisle;
+    /// The big machines are buildings, not bricks (the Smelter and the Foundry are 2 m block machines' Cores now, grown by their blocks): the size table; less than half of their bounds solid; a player fits their aisle;
     /// a body can leave and a player can reach from beside a 10 m machine; every chute port on the outside.
     /// </summary>
     private static void BigMachineChecks(Action<bool, string> want)
     {
         (string Line, float[] Across)[] lines =
         [
-            ("Sawmill", [0, 3, 4, 5, 7, 9]), ("Foundry", [0, 4, 5, 6.5f, 8, 10]),
+            ("Sawmill", [0, 3, 4, 5, 7, 9]),
         ];
         foreach (var (line, across) in lines)
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
@@ -110,20 +110,12 @@ public static partial class SelfTest
                 want(solid < size.X * size.Y * size.Z * 0.55f, $"{d.Name} is a brick: {solid:0} of {size.X * size.Y * size.Z:0} m3 solid");
                 want(d.NamedPorts.Count(p => p.Type == RouteType.Chute) == 2, $"{d.Name}'s chute ports");
                 want(d.SolidBoxes <= ConstructParts.MaxBoxes, $"{d.Name}'s boxes");
-                if (line is "Foundry")
-                {
-                    // The aisle: a player stands between the body and the tray, on the floor plate.
-                    var feet = new Vector3(0, 0.03f * across[tier], 0.1f * across[tier]);
-                    var body = new Obb(feet + new Vector3(0, World.PlayerHeight * 0.5f, 0), new Vector3(World.PlayerRadius, World.PlayerHeight * 0.5f, World.PlayerRadius), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
-                    for (var b = 0; b < d.SolidBoxes; b++)
-                        want(!Geometry.ObbOverlap(body, new Obb(d.Boxes[b].Center, d.Boxes[b].Half, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ)), $"{d.Name}: box {b} stands in the aisle");
-                }
             }
     }
 
     /// <summary>
     /// The Foundry, on the real step with real chutes: two bins into one port make steel at the recipe's rate; a batch short of one
-    /// input waits; a third material and a higher tier's recipe are refused; the pair picks the recipe; the bytes; the mass; a spill.
+    /// input waits; a third material is refused; every mix is open (no tiers); the pair picks the recipe; the bytes; the mass; a spill.
     /// </summary>
     private static void RefiningFoundry(Map yard, Action<bool, string> want)
     {
@@ -174,9 +166,10 @@ public static partial class SelfTest
         want(w.Feed(c, fi, 10, wood) == 0 && st.Refused == wood, "wood at a Foundry");
         WantLook("metal + stone"); // (the list of what it takes: steel + bronze for ammo comes first)
 
-        // Tier 2 and 3 recipes.
-        want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
-        WantLook("needs a tier 2 foundry");
+        // No tiers: every mix is the Core's own (bronze and circuits were tier 2 and 3), and a saved tier machine loads as the Core.
+        want(RefiningTable.Current.MixesOf("foundry").All(r => r.MinTier <= 1) && RefiningTable.Current.MixesOf("foundry").Any(r => r.Uses(copper)) && RefiningTable.Current.MixesOf("foundry").Any(r => r.Uses(gold)), "every Foundry mix works at the Core");
+        foreach (var old in (string[])["Workshop Foundry", "Industrial Foundry", "Military Foundry", "Plasma Foundry"])
+            want(ConstructParts.Find(old) is { Name: "Foundry" }, $"a saved {old} loads as the Foundry");
         want(ConstructRefining.TipMaterial(inv, c, fi, st) == 0, "nothing carried, nothing to tip");
         inv.AddMaterial(stone, 5);
         want(ConstructRefining.TipMaterial(inv, c, fi, st) == stone, "a Foundry holding metal takes stone from what you carry");
@@ -225,9 +218,6 @@ public static partial class SelfTest
         var bundles = w.Bodies.Where(x => !ids.Contains(x.Id) && x.Wreck && x.PartCount == 1).ToList();
         want(spilled == 2 && bundles.Any(x => x.Parts[0].Setting == metal) && bundles.Any(x => x.Parts[0].Setting == stone), $"a broken Foundry's spill ({bundles.Count} bundles)");
 
-        // The curve, at a higher tier: bronze at tier 2, circuits at tier 3.
-        foreach (var (machine, input, tier) in ((string, byte, int)[])[("Workshop Foundry", copper, 2), ("Industrial Foundry", gold, 3)])
-            want(ConstructParts.Need(machine) is { RefineMix: true } big && big.Tier == tier && RefiningTable.Current.MixesOf("foundry").Any(r => r.Uses(input) && r.MinTier == tier), $"{machine} works {names.NameOf(input)}");
     }
 
     private static int Inputs(CStore st)
@@ -462,17 +452,17 @@ public static partial class SelfTest
         Want(st.Items == 0 && st.MixN == 0 && st.KindN == 0 && inv.Materials[steel] > before, $"F took everything back (tray {st.Items}, mix {st.MixN}, kinds {st.KindN}, steel {inv.Materials[steel]} from {before})");
         Want(edits.UseBin(w, me, eye, bay.Id, asm) is { } empty && empty.Contains("no recipe"), "F at an empty machine with no recipe says why");
 
-        // ---- From beside a 10 m machine: the server measures reach to the part's nearest point, not its centre.
-        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Plasma Foundry"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
+        // ---- From beside a 9 m machine: the server measures reach to the part's nearest point, not its centre.
+        if (OpenSpot(w) is { } farSpot && ConstructBuild.PlaceNew(w, ConstructParts.Need("Plasma Sawmill"), new FreePlacement { Pos = farSpot, Rot = Quaternion.Identity, Anchor = true }) is { } huge)
         {
             huge.Rebuild();
             var side = farSpot + new Vector3(5.8f, 1.6f, -2f);
-            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside a Plasma Foundry F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
-            Want(edits.UseBin(w, me, farSpot + new Vector3(12f, 1.6f, -2f), huge.Id, 0) == "too far away", "from 7 m off it's still in reach");
+            Want(edits.UseBin(w, me, side, huge.Id, 0) is null or { } and not "too far away", $"beside a Plasma Sawmill F is \"too far away\": {edits.UseBin(w, me, side, huge.Id, 0)}");
+            Want(edits.UseBin(w, me, farSpot + new Vector3(12f, 1.6f, -2f), huge.Id, 0) == "too far away", "from 7.5 m off it is too far");
             w.Remove(huge);
         }
         else
-            Want(false, "no room for a Plasma Foundry");
+            Want(false, "no room for a Plasma Sawmill");
 
         // ---- Creative: instant and unpowered; a broken machine spills its input.
         ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Wall Clock"));

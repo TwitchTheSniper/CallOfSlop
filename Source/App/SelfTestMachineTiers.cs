@@ -19,7 +19,7 @@ public static partial class SelfTest
     private static void MachineTierData(Action<bool, string> want)
     {
         (string Line, string Section, float Rate, float Power, float Mass)[] lines =
-            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160), ("Foundry", "Foundries", 1, 3500, 7680)];
+            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160)];
         float RateOf(ConstructPartDef d) => d.IsGatherer ? d.GatherRate : d.RefineWork / (float)ConstructRefining.BaseWork;
         var cat = SandboxCatalogue.Make();
         foreach (var (line, section, rate, power, mass) in lines)
@@ -105,14 +105,14 @@ public static partial class SelfTest
     /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
     private static readonly Dictionary<string, (float Low, float High)> TierHeights = new()
     {
-        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Foundry"] = (0.8f, 1.24f)
+        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f)
     };
 
     /// <summary>
     /// "Machine tier looks": a player tells a machine's line and tier apart at a glance. Every tier of a line differs from every other in colour
-    /// and in solid shape, and every tier keeps the line's signature (a drill's bit under a tower, a saw's blade bar and bin, a mill's beds and blade, a furnace's hopper,
-    /// stack and mouth, a foundry's twin stacks, an assembler's posts and arm; the Smelter is a block machine, whose Core, Hearth Block and Casting Bed
-    /// are checked for theirs: a hopper over a glowing hearth, a stub stack alone and charge doors merged, a low bed). Details are looks only: the file says "collider": "boxes", and none covers a
+    /// and in solid shape, and every tier keeps the line's signature (a drill's bit under a tower, a saw's blade bar and bin, a mill's beds and blade, an assembler's posts and arm; the Smelter and the Foundry are block machines, whose
+    /// Cores, blocks and end pieces are checked for theirs: a hopper over a glowing hearth, a stub stack alone and charge doors merged, a low bed; mixer
+    /// hoppers over a sight glass, a crucible alone that tips over a pit, a low Mould Line). Details are looks only: the file says "collider": "boxes", and none covers a
     /// socket, a port, a bin, a slot, the aisle or the assembler's open front, or strays from the machine. A line's aisle stays walkable across the machine.
     /// </summary>
     private static void CheckMachineTierLooks()
@@ -158,7 +158,12 @@ public static partial class SelfTest
         {
             var shapes = new List<(string Name, bool[] Cells, Vector3 Colour)>();
             var counts = new List<string>();
-            string[] members = line == "Smelter" ? ["Smelter", "Hearth Block", "Casting Bed"] : [.. Enumerable.Range(1, ConstructParts.MaxTier).Select(t => TierName(line, t))]; // (a block machine: its Core and blocks, no tiers)
+            string[] members = line switch // (a block machine: its Core and blocks, no tiers)
+            {
+                "Smelter" => ["Smelter", "Hearth Block", "Casting Bed"],
+                "Foundry" => ["Foundry", "Crucible Block", "Mould Line"],
+                _ => [.. Enumerable.Range(1, ConstructParts.MaxTier).Select(t => TierName(line, t))],
+            };
             foreach (var member in members)
             {
                 var d = ConstructParts.Need(member);
@@ -216,18 +221,14 @@ public static partial class SelfTest
                             Want(d.BoundsMax.Y <= 0.5f, $"{d.Name} stands {d.BoundsMax.Y} m tall");
                         break;
                     case "Foundry":
-                        var stacks = solids.Where(b => b.Half.X < 0.12f * size && b.Half.Y > 0.05f * size && b.Center.Y + b.Half.Y > d.InFillMax.Y).ToArray();
-                        Want(stacks.Any(b => b.Center.X < 0) && stacks.Any(b => b.Center.X > 0), $"{d.Name} has no stack ({stacks.Length})");
-                        Want(details.Any(b => b.Center.Z < -0.03f * size && b.Center.Z > -0.25f * size && b.Center.Y < 0.6f * size && MathF.Abs(b.Center.X) < 0.2f * size), $"{d.Name} has no mouth");
-                        Want(Solid(d.InFillMin / size - new Vector3(0.05f, 0, 0), d.InFillMin / size + new Vector3(0, 0.1f, 0.2f)), $"{d.Name}'s hopper has no wall");
-                        // The aisle runs across the machine: a player walks through, past solid and detail alike.
-                        var feet = 0.03f * size;
-                        for (var x = -0.3f; x <= 0.3f; x += 0.1f)
-                        {
-                            var p = new Vector3(x * size, feet, 0.1f * size);
-                            Vector3 lo = p - new Vector3(World.PlayerRadius, 0, World.PlayerRadius), hi = p + new Vector3(World.PlayerRadius, World.PlayerHeight, World.PlayerRadius);
-                            Want(!boxes.Any(b => !b.Hidden && Over(lo, hi, b.Center - b.Half, b.Center + b.Half)), $"{d.Name}: something stands in the aisle at x {p.X:0.0}");
-                        }
+                        // The Core's mixer hoppers on top with a sight glass on its front, a Crucible Block's own crucible alone that tips on its
+                        // trunnions (hinge) over a pit, a Mould Line low.
+                        if (d.BlockSquares)
+                            Want(d.InFillMin.Y >= d.BoundsMax.Y - 0.8f && details.Any(b => b.Work == BoxWork.Glow && b.Center.Z < 0), $"{d.Name} has no hoppers on top or no sight glass on its front");
+                        else if (d.Name == "Crucible Block")
+                            Want(boxes.Any(b => b.Alone && b.Work == BoxWork.Hinge && b.Center.Y > FoundryWorks.PitTop) && solids.All(b => b.Center.Y + b.Half.Y <= FoundryWorks.PitTop + 0.01f), $"{d.Name} has no crucible alone, or its pit frame stands over {FoundryWorks.PitTop} m");
+                        else
+                            Want(d.BoundsMax.Y <= FoundryWorks.MouldTop + 0.1f, $"{d.Name} stands {d.BoundsMax.Y} m tall");
                         break;
                     default:
                         foreach (var (x, z) in ((float, float)[])[(-0.48f, -0.48f), (0.48f, -0.48f), (-0.48f, 0.48f), (0.48f, 0.48f)])
@@ -257,7 +258,7 @@ public static partial class SelfTest
                         weight += area;
                     }
                 colour /= weight;
-                foreach (var (name, other, tone) in line == "Smelter" ? [] : shapes) // (a Core and its blocks differ by what they are, not by tier)
+                foreach (var (name, other, tone) in line is "Smelter" or "Foundry" ? [] : shapes) // (a Core and its blocks differ by what they are, not by tier)
                 {
                     int both = 0, any = 0;
                     for (var i = 0; i < cells.Length; i++)

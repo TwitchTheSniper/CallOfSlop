@@ -90,7 +90,8 @@ public static class PartKit
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
         new Generators.LaserCutterParts(),
-        new Generators.SmelterParts(), // (the Smelter on the block system: Core, Hearth Block, Casting Bed; beside machine_tiers' Foundry and Sawmill in Refining/)
+        new Generators.SmelterParts(), // (the Smelter on the block system: Core, Hearth Block, Casting Bed; beside machine_tiers' Sawmill in Refining/)
+        new Generators.FoundryParts(), // (the Foundry on the block system: Core, Crucible Block, Mould Line)
         new Generators.BakeOvenParts(),
         new Generators.AssemblerParts(), // (the Assembler on the block system: Core, Assembly Bed Block, Gantry Carriage, Overdrive Unit, Feed Buffer; before Assembling, which reads them)
         new Generators.ConveyorJunctionParts(),
