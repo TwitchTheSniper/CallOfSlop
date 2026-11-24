@@ -1234,7 +1234,7 @@ public static class ConstructConveyor
             if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
                 return ThroughReaches(world, c, r.To, d, holder, depth + 1);
             if (c.DefOf(r.To).IsRouter)
-                return true; // (a Router sends it on: to the order's holder by a way that takes it, else to storage, never lost; a piece no pad can hold was shorn into offcuts here once pads stopped taking its address, 2026-11-24)
+                return ConstructLogistics.Reaches(c, r.To, holder); // (a Router with a way to the holder sends it on: to the order's holder by a way that takes it, else to storage, never lost; a piece no pad can hold was shorn into offcuts here once pads stopped taking its address, 2026-11-24)
         }
         return r.Count == 2 && RollerRuns.IsRun(c, o) && ConstructLifters.PicksRunEnd(world, c.Id, c.RouteNodes[r.Start + 1].Host);
     }
