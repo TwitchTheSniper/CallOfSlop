@@ -761,7 +761,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      the input packet ends with a u8 of magnet-boots bits, one per command (InputCmd.MagBoots, GameSandboxMagBoots.cs).
     // 450: the Heavy, Shipyard and Long Loader Arms (Sean 2026-11-24: big arms that carry the yard's pieces into its bay): three new part
     //      files move part ids.
-    public const ushort ProtocolVersion = 450;
+    // 451: the arm kit (Sean 2026-11-24, modular loader arms): LiftWhy gains Folding and ArmChain on the lift word, and new part files
+    //      (Arm Core, Arm Pedestal, the arm pieces' like parts, the Arm Die) move part ids.
+    public const ushort ProtocolVersion = 451;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

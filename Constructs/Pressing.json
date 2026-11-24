@@ -343,6 +343,24 @@
      "use": 0.25
     }
    ]
+  },
+  {
+   "output": "Arm Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
   }
  ],
  "strength": {
@@ -4632,6 +4650,102 @@
    ]
   },
   {
+   "die": "Arm",
+   "blanks": [
+    "solid",
+    "hollow"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    20,
+    200
+   ],
+   "length": [
+    10,
+    1600
+   ],
+   "aspect": [
+    0.05,
+    64.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.01
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "joint",
+     "like": "Arm Joint",
+     "label": "arm joint",
+     "preset": "solid 50x50x50 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "boom",
+     "like": "Arm Boom",
+     "label": "arm boom",
+     "preset": "hollow 40x40x400 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "wrist",
+     "like": "Arm Wrist",
+     "label": "arm wrist",
+     "preset": "solid 30x30x40 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "padclamp",
+     "like": "Pad Clamp",
+     "label": "pad clamp",
+     "preset": "solid 60x30x30 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "counterweight",
+     "like": "Arm Counterweight",
+     "label": "arm counterweight",
+     "preset": "solid 200x100x10 steel",
+     "body": "like",
+     "along": "x",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "id": "drivepack",
+     "like": "Arm Drive Pack",
+     "label": "arm drive pack",
+     "preset": "solid 60x40x120 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ]
+    }
+   ]
+  },
+  {
    "die": "Barrel",
    "blanks": [
     "round",
@@ -7743,6 +7857,42 @@
    "die": "drive",
    "pattern": "liveaxle",
    "blank": "hollow 50x50x160 steel"
+  },
+  {
+   "part": "Arm Joint",
+   "die": "arm",
+   "pattern": "joint",
+   "blank": "solid 50x50x50 steel"
+  },
+  {
+   "part": "Arm Boom",
+   "die": "arm",
+   "pattern": "boom",
+   "blank": "hollow 40x40x400 steel"
+  },
+  {
+   "part": "Arm Wrist",
+   "die": "arm",
+   "pattern": "wrist",
+   "blank": "solid 30x30x40 steel"
+  },
+  {
+   "part": "Pad Clamp",
+   "die": "arm",
+   "pattern": "padclamp",
+   "blank": "solid 60x30x30 steel"
+  },
+  {
+   "part": "Arm Counterweight",
+   "die": "arm",
+   "pattern": "counterweight",
+   "blank": "solid 200x100x10 steel"
+  },
+  {
+   "part": "Arm Drive Pack",
+   "die": "arm",
+   "pattern": "drivepack",
+   "blank": "solid 60x40x120 steel"
   },
   {
    "part": "Steel Plate",
