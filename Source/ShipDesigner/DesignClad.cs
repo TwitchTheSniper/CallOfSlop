@@ -22,12 +22,12 @@ public static partial class DesignScene
         var heavy = h.Clad == "Heavy";
         var start = m.Tris;
         var col = DesignMesh.Hex(h.Skin);
-        var ah = new double[HullBody.MaxLoft];
-        var ay = new double[HullBody.MaxLoft];
-        var bh = new double[HullBody.MaxLoft];
-        var by = new double[HullBody.MaxLoft];
-        var ca = new double[HullBody.MaxLoft];
-        var cb = new double[HullBody.MaxLoft];
+        var ah = new double[HullBody.MaxLoft + 2];
+        var ay = new double[HullBody.MaxLoft + 2];
+        var bh = new double[HullBody.MaxLoft + 2];
+        var by = new double[HullBody.MaxLoft + 2];
+        var ca = new double[HullBody.MaxLoft + 2];
+        var cb = new double[HullBody.MaxLoft + 2];
         var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         var rise = (heavy ? 0.20 : 0.08) - CladMin;
         for (var i = 0; i < h.Stations.Count - 1; i++)
@@ -35,6 +35,10 @@ public static partial class DesignScene
             var n = h.Pair(i, ah, ay, bh, by);
             if (n < 2)
                 continue;
+            // The profile runs out to the keel and spine strips (Karl, 2026-11-24: the top and bottom were left bare): a point on the
+            // centreline at each end, so each side's plating reaches the middle and meets its mirror there.
+            n = Centre(ah, ay, n);
+            Centre(bh, by, n - 2);
             double za = h.Stations[i].Z, zb = h.Stations[i + 1].Z;
             Cum(ah, ay, n, ca);
             Cum(bh, by, n, cb);
@@ -162,6 +166,20 @@ public static partial class DesignScene
                     }
             }
         }
+    }
+
+    private static int Centre(double[] hs, double[] ys, int n)
+    {
+        for (var k = n; k > 0; k--)
+        {
+            hs[k] = hs[k - 1];
+            ys[k] = ys[k - 1];
+        }
+        hs[0] = 0;
+        ys[0] = ys[1];
+        hs[n + 1] = 0;
+        ys[n + 1] = ys[n];
+        return n + 2;
     }
 
     private static (double X, double Y, double Z) Sub((double X, double Y, double Z) a, (double X, double Y, double Z) b) => (a.X - b.X, a.Y - b.Y, a.Z - b.Z);
