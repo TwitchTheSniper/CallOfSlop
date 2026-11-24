@@ -65,7 +65,7 @@ public struct SnapOwn
     public ushort RideLadderPart;
     public Vector3 RideClimbNext, RideClimbLast;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
-    public Vector3 Felt; // the pull they feel, world axes (protocol 449: the felt-g readout, UiGForce.cs)
+    public Vector3 Felt; // the pull they feel, world axes (protocol 449: the felt-g readout, UiVitalsPanel.cs)
     public bool RideFeltOn; // ship gravity (protocol 444): the pull they feel in the frame, the server's, for the replay (ShipGravity.cs)
     public Vector3 RideFelt;
     public bool Worn; // what they wear follows (PilotGear.cs)
