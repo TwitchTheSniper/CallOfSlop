@@ -38,6 +38,25 @@ public struct WeldMarker
     public WeldMarkerState State;
     public float Fade, Off; // alpha share (distance), and how far off the crosshair's ray (the sine of the angle)
     public float Size; // the dot's scale: past ShowRange it grows with distance, so a far piece's sockets can be seen and picked
+    public WeldLook Look; // what the socket connects (its marker's shape and colour: SocketWeld.LookOf)
+    public byte Side; // a joint part's side (JointSides: base or moving side), 0 otherwise
+    public byte Class; // its size class (ConstructParts.ClassNames): the marker grows with it
+}
+
+/// <summary>
+/// What a socket marker of the socket weld says it connects (Sean 2026-11-24: one look per connection type, so the many
+/// modular parts are easier to put together): the snappy-build connection types (<see cref="ConnType"/>, same values) for
+/// the structural and functional sockets, then the special socket kinds that only take one thing.
+/// </summary>
+public enum WeldLook : byte
+{
+    // (0..16: ConnType's values, in its order)
+    Die = 32, // an Extruder's die
+    PressDie, // a press's die slot or a die's mount
+    RunOut, // an out bed or a Run-out Table's end
+    Module, // a Module Socket's face or a Module Plug
+    Tier, // a block machine's tier slot or a tier piece's mount
+    Port, // a shaft port's stand: nothing bolts here
 }
 
 /// <summary>
@@ -589,6 +608,8 @@ public static class SocketWeld
         }
         var n = 0;
         var cap = Math.Min(into.Length, MaxMarkers);
+        var srcDef = targets && sourceBody != 0 && world.Get(sourceBody) is { } src && sourcePart >= 0 && sourcePart < src.PartCount
+            && sourceSocket >= 0 && sourceSocket < src.DefOf(sourcePart).Sockets.Length ? src.DefOf(sourcePart) : null; // (null: a face point, which goes anywhere)
         for (var b = 0; b < nb; b++)
         {
             if (world.Get(bodies[b]) is not { } c)
@@ -610,10 +631,16 @@ public static class SocketWeld
                         continue;
                     var offRay = (to - dir * Vector3.Dot(to, dir)).Length() / dist;
                     var used = c.SocketUsed(i, s);
+                    var receiving = targets && c.Id != sourceBody;
+                    // (picking where it goes: only the free sockets that take the picked socket's connection, Sean 2026-11-24)
+                    if (receiving && (used || srcDef != null && !Receives(srcDef, sourceSocket, c, i, s)))
+                        continue;
                     var state = c.Id == sourceBody && i == sourcePart && s == sourceSocket ? WeldMarkerState.Selected
                         : used ? WeldMarkerState.Used
-                        : targets && c.Id != sourceBody ? WeldMarkerState.Target : WeldMarkerState.Free;
-                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay, Size = MathF.Max(1f, dist / ShowRange) };
+                        : receiving ? WeldMarkerState.Target : WeldMarkerState.Free;
+                    var sd = c.DefOf(i);
+                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay, Size = MathF.Max(1f, dist / ShowRange),
+                        Look = LookOf(c, i, s), Side = JointSides.SocketSide(sd, s), Class = sd.Sockets[s].Class };
                     if (n < cap)
                     {
                         into[n++] = m;
@@ -631,6 +658,75 @@ public static class SocketWeld
         }
         return n;
     }
+
+    /// <summary>
+    /// Does socket <paramref name="socket"/> of part <paramref name="part"/> of <paramref name="c"/> take the piece's socket
+    /// <paramref name="own"/> of a part of kind <paramref name="def"/>? The same socket kind and size class (what keeps a weld on
+    /// the grid, <see cref="OnRotGrid(Construct, in WeldTarget, Construct, in WeldTarget, float)"/>), and when both ends are
+    /// functional, connections that mate (<see cref="SnapBuild.Mates"/>: a fuel end onto a fuel port, not a power one); a plain
+    /// mount on either end takes anything of its kind. The markers shown in step 2 (any other socket can still be welded to as
+    /// a point on its face).
+    /// </summary>
+    public static bool Receives(ConstructPartDef def, int own, Construct c, int part, int socket)
+    {
+        if (own < 0 || own >= def.Sockets.Length || part >= c.PartCount)
+            return false;
+        var td = c.DefOf(part);
+        if (socket >= td.Sockets.Length)
+            return false;
+        var ts = td.Sockets[socket];
+        var ds = def.Sockets[own];
+        var leaf = ConstructBuild.OnLeaf(c, part, socket);
+        if (!ConstructBuild.KindsMate(ts.Kind, ds.Kind, leaf) || ts.Kind == SocketKind.Port || ds.Kind == SocketKind.Port || ts.Class != ds.Class)
+            return false;
+        if (leaf || ts.Kind != SocketKind.Struct)
+            return true; // (a special kind or a joint's leaf: the kind says it all)
+        var ot = SnapBuild.OwnType(def, own);
+        var port = SnapBuild.PortType(td, socket);
+        return ot == ConnType.Mount || port == ConnType.Mount || SnapBuild.Mates(ot, port);
+    }
+
+    /// <summary>What socket <paramref name="s"/> of part <paramref name="i"/> connects, as its marker shows it.</summary>
+    public static WeldLook LookOf(Construct c, int i, int s)
+    {
+        var d = c.DefOf(i);
+        return d.Sockets[s].Kind switch
+        {
+            SocketKind.Axle => (WeldLook)ConnType.Hub,
+            SocketKind.Leaf => (WeldLook)ConnType.Leaf,
+            SocketKind.Die => WeldLook.Die,
+            SocketKind.PressDie => WeldLook.PressDie,
+            SocketKind.RunOut => WeldLook.RunOut,
+            SocketKind.Module => WeldLook.Module,
+            SocketKind.Tier => WeldLook.Tier,
+            SocketKind.Port => WeldLook.Port,
+            _ => d.HasJoint && s == d.LeafIndex ? (WeldLook)ConnType.Leaf : (WeldLook)SnapBuild.PortType(d, s),
+        };
+    }
+
+    /// <summary>The connection a look names, for the look line ("fuel", "press die"...).</summary>
+    public static string LookLabel(WeldLook l) => l switch
+    {
+        WeldLook.Die => "extruder die",
+        WeldLook.PressDie => "press die",
+        WeldLook.RunOut => "run-out",
+        WeldLook.Module => "module",
+        WeldLook.Tier => "tier slot",
+        WeldLook.Port => "shaft port",
+        _ => SnapBuild.Label((ConnType)l),
+    };
+
+    /// <summary>The marker colour of a look.</summary>
+    public static Vector3 LookColour(WeldLook l) => l switch
+    {
+        WeldLook.Die => new Vector3(1f, 0.45f, 0.1f),
+        WeldLook.PressDie => new Vector3(0.85f, 0.3f, 0.95f),
+        WeldLook.RunOut => new Vector3(0.55f, 0.9f, 0.2f),
+        WeldLook.Module => new Vector3(0.2f, 0.95f, 0.95f),
+        WeldLook.Tier => new Vector3(1f, 0.8f, 0.1f),
+        WeldLook.Port => new Vector3(0.5f, 0.5f, 0.55f),
+        _ => SnapBuild.Colour((ConnType)l),
+    };
 
     /// <summary>The marker the crosshair magnet-snaps to: the one nearest the ray within <see cref="PickSine"/> (only on <paramref name="onlyBody"/>, never on <paramref name="notBody"/>, free sockets only), or -1.</summary>
     public static int PickMarker(ReadOnlySpan<WeldMarker> markers, ushort onlyBody = 0, ushort notBody = 0)

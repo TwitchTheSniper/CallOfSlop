@@ -164,12 +164,24 @@ public static class SocketWeldRender
             var mAt = At(mk, m.At);
             var mDir = Dir(mk, m.Dir);
             var hot = k == Hot;
-            var col = hot && m.State != WeldMarkerState.Selected ? new Vector3(1f, 1f, 1f) : Colour(m.State);
-            var a = m.Fade * (hot || m.State == WeldMarkerState.Selected ? 0.95f : 0.6f);
-            var size = (hot ? 0.07f : 0.045f) * m.Size;
+            var sel = m.State == WeldMarkerState.Selected;
+            var used = m.State == WeldMarkerState.Used;
+            // The shape and colour say what the socket connects (Sean 2026-11-24); the state is the size, a white core when
+            // the crosshair is on it, a pulsing orange shell on the picked source, and grey and faint when in use.
+            var col = m.Side != 0 ? (m.Side == JointSides.Leaf ? JointSides.LeafColour : JointSides.BaseColour) : SocketWeld.LookColour(m.Look);
+            if (used)
+                col = Vector3.Lerp(col, Colour(WeldMarkerState.Used), 0.7f);
+            var a = m.Fade * (hot || sel ? 0.95f : used ? 0.35f : 0.7f);
+            var cls = 1f + 0.25f * MathF.Min(m.Class, (byte)3);
+            var size = (hot ? 0.065f : used ? 0.03f : 0.045f) * m.Size * cls;
             var at = mAt + mDir * 0.02f;
-            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(at), col, a, mode: 2);
-            Bar(gfx, at, at + mDir * (hot ? 0.16f : 0.11f) * m.Size, size * 0.35f, col, a);
+            Glyph(gfx, m.Look, m.Side, at, mDir, col, a, size);
+            if (hot)
+                gfx.Draw(Matrix4x4.CreateScale(size * 0.9f) * Matrix4x4.CreateTranslation(at + mDir * size * 0.6f), new Vector3(1f, 1f, 1f), 0.95f * m.Fade, mode: 2);
+            if (sel)
+                gfx.Draw(Matrix4x4.CreateScale(size * 4.2f) * Matrix4x4.CreateTranslation(at), Colour(WeldMarkerState.Selected), 0.3f * pulse * m.Fade, mode: 2);
+            if (!used)
+                Bar(gfx, at, at + mDir * (hot ? 0.16f : 0.11f) * m.Size * cls, size * 0.3f, col, a);
             MarkersDrawn++;
         }
         if (PointOn)
@@ -228,6 +240,58 @@ public static class SocketWeldRender
         var ta = Angle * MathF.PI / 180f;
         var mark = axisRef * MathF.Cos(ta) + y * MathF.Sin(ta);
         Bar(gfx, axisAt, axisAt + mark * (r + 0.1f), 0.014f, tint, 0.9f);
+    }
+
+    /// <summary>
+    /// One socket marker's shape, flat across the socket's facing: snappy building's for the connection types (cube: a mount,
+    /// a bar with a tip: a shaft, diamond: a gun part, cross: fuel, power or data, disc: a hub or a leaf; a joint's sides their
+    /// own), and for the special kinds: an open ring (an extruder die), a square frame (a press die), a pair of rails (a
+    /// run-out), a frame with a bar across (a module), a stack of three plates (a tier slot) and a small dot (a shaft port).
+    /// </summary>
+    private static void Glyph(Renderer gfx, WeldLook look, byte side, Vector3 at, Vector3 dir, Vector3 col, float a, float size)
+    {
+        if (side != 0 || (byte)look < (byte)WeldLook.Die)
+        {
+            SnapRender.Marker(gfx, (ConnType)Math.Min((byte)look, (byte)ConnType.EngineStack), at, dir, col, a, size, side);
+            return;
+        }
+        var z = dir.LengthSquared() < 1e-6f ? Vector3.UnitY : Vector3.Normalize(dir);
+        var x = MathF.Abs(z.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z)) : Vector3.UnitX;
+        var y = Vector3.Cross(z, x);
+        var t = size * 0.4f;
+        switch (look)
+        {
+            case WeldLook.Die:
+                for (var k = 0; k < 6; k++)
+                {
+                    var a0 = k * MathF.PI / 3f;
+                    var a1 = a0 + MathF.PI / 3f;
+                    Bar(gfx, at + (x * MathF.Cos(a0) + y * MathF.Sin(a0)) * size * 1.2f, at + (x * MathF.Cos(a1) + y * MathF.Sin(a1)) * size * 1.2f, t, col, a);
+                }
+                break;
+            case WeldLook.PressDie or WeldLook.Module:
+                for (var k = 0; k < 4; k++)
+                {
+                    var u = (k & 1) == 0 ? x : y;
+                    var v = (k & 1) == 0 ? y : x;
+                    var o = (k < 2 ? 1f : -1f) * size * 1.1f;
+                    Bar(gfx, at + u * o - v * size * 1.1f, at + u * o + v * size * 1.1f, t, col, a);
+                }
+                if (look == WeldLook.Module)
+                    Bar(gfx, at - x * size * 1.1f, at + x * size * 1.1f, t, col, a);
+                break;
+            case WeldLook.RunOut:
+                Bar(gfx, at - x * size * 0.6f - y * size * 1.3f, at - x * size * 0.6f + y * size * 1.3f, t, col, a);
+                Bar(gfx, at + x * size * 0.6f - y * size * 1.3f, at + x * size * 0.6f + y * size * 1.3f, t, col, a);
+                break;
+            case WeldLook.Tier:
+                for (var k = 0; k < 3; k++)
+                    Bar(gfx, at + z * size * 0.55f * k - x * size, at + z * size * 0.55f * k + x * size, size * 0.3f, col, a);
+                break;
+            default:
+                gfx.Draw(Matrix4x4.CreateScale(size * 0.6f) * Matrix4x4.CreateTranslation(at), col, a, mode: 2);
+                break;
+        }
     }
 
     private static Vector3 PullAt(Vector3 p) => _pullOn.Body == 0 ? p : _pullOn.To + Vector3.Transform(p - _pullOn.Pos, _pullOn.Turn);
