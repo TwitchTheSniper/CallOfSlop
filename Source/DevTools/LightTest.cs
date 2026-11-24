@@ -70,6 +70,7 @@ public static partial class ConstructPreview
             var extra = new StringBuilder();
             var lamps = LampsOf(c, extra);
             extra.Append(",\"light\":").Append(LightOf(map, space));
+            extra.Append(",\"body\":").Append(BodyOf(mapName, place));
             extra.Append(",\"views\":").Append(ViewsOf(c, world, place, id));
             var json = model[..model.LastIndexOf('}')] + extra + "}";
             var file = Path.Combine(dir, "models", id + ".json");
@@ -133,6 +134,38 @@ public static partial class ConstructPreview
         }
         sb.Append(']');
         return count;
+    }
+
+    /// <summary>
+    /// The day and night clock (Karl, 2026-11-24: "based on orbit, night and day cycle"): the body the place's map is played on,
+    /// from the star system file (radius, GM, its solar day: 0 when locked to its star, so the ground's star never moves) and
+    /// the place's <c>"altitude"</c> (m over the ground, in orbit) or <c>"latitude"</c> (degrees, on the ground; 35 when not given).
+    /// </summary>
+    private static string BodyOf(string mapName, JsonElement place)
+    {
+        foreach (var e in Space.StarSystems.All)
+            foreach (var b in e.System.Bodies)
+            {
+                if (!string.Equals(b.Map, mapName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                // The solar day: the spin against the year (a moon's year is its parent's). Locked to the star: no day at all.
+                var yearOf = b;
+                while (yearOf.Parent > 0)
+                    yearOf = e.System.Bodies[yearOf.Parent];
+                var year = yearOf.Parent == 0 ? yearOf.Orbit.Period : 0;
+                double solar = 0;
+                if (b.RotationPeriod > 0 && year > 0 && Math.Abs(b.RotationPeriod - year) > 1)
+                    solar = 1 / (1 / b.RotationPeriod - 1 / year);
+                else if (b.RotationPeriod > 0 && year <= 0)
+                    solar = b.RotationPeriod;
+                var alt = place.TryGetProperty("altitude", out var a) ? a.GetDouble() : 0;
+                var lat = place.TryGetProperty("latitude", out var l) ? l.GetDouble() : 35;
+                return "{" + $"\"name\":{JsonSerializer.Serialize(b.Name)},\"radius\":{b.Radius.ToString("0", CultureInfo.InvariantCulture)},\"mu\":{b.Mu.ToString("0.####e0", CultureInfo.InvariantCulture)}," +
+                    $"\"solarDay\":{Math.Abs(solar).ToString("0", CultureInfo.InvariantCulture)},\"tilt\":{(b.Tilt * 180 / Math.PI).ToString("0.##", CultureInfo.InvariantCulture)}," +
+                    $"\"altitude\":{alt.ToString("0", CultureInfo.InvariantCulture)},\"latitude\":{lat.ToString("0.##", CultureInfo.InvariantCulture)}" + "}";
+            }
+        Console.WriteLine($"light test: no body in a star system is played on map \"{mapName}\": no day and night");
+        return "null";
     }
 
     /// <summary>The map's sky light at its own sun (<see cref="Map.Light"/>), and what the page needs to aim the star elsewhere.</summary>

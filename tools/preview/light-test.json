@@ -1,10 +1,11 @@
 // The Lighting test's places (tools/preview/README.md "The Lighting test"): --light-test DIR writes each one as a model with
 // its lamps and its map's sky light. A view stands at the first part whose name holds "part" (its "nth" one, from 0), or at
-// "at" (metres in the model's frame); "outside" stands off the whole thing. "space": no ground drawn (in orbit).
+// "at" (metres in the model's frame); "outside" stands off the whole thing. "space": no ground drawn (in orbit), "altitude" its
+// orbit's height (m: Story/Opening/ZeroDay.json, a station's "orbit" in Crew/Stations.json in km); on the ground "latitude" (deg).
 {
   "places": [
     {
-      "id": "zero-day", "title": "Zero Day Frigate", "blueprint": "Zero Day Frigate", "map": "Caledon", "space": true,
+      "id": "zero-day", "title": "Zero Day Frigate", "blueprint": "Zero Day Frigate", "map": "Caledon", "space": true, "altitude": 5800,
       "note": "The Zero Day start's frigate in orbit over Caledon. The torpedo room has no lamps of its own: it should be dark.",
       "views": [
         { "name": "Bridge", "part": "Zero Day Flight Computer" },
@@ -20,7 +21,7 @@
       ]
     },
     {
-      "id": "highport", "title": "Caledon Highport", "blueprint": "Caledon Highport", "map": "Caledon", "space": true,
+      "id": "highport", "title": "Caledon Highport", "blueprint": "Caledon Highport", "map": "Caledon", "space": true, "altitude": 40000,
       "note": "The station over Caledon.",
       "views": [
         { "name": "Hub", "part": "Highport Hub" },
@@ -35,7 +36,7 @@
       ]
     },
     {
-      "id": "hexkey", "title": "Hexkey Orbital (store)", "blueprint": "Hexkey Orbital", "map": "Cinder", "space": true,
+      "id": "hexkey", "title": "Hexkey Orbital (store)", "blueprint": "Hexkey Orbital", "map": "Cinder", "space": true, "altitude": 46000,
       "note": "The Traders' store station over Cinder: market hall, warehouse, canteen.",
       "views": [
         { "name": "Canteen", "part": "Waiting Bench" },

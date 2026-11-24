@@ -72,10 +72,10 @@ input[type=range] { width: 100%; accent-color: var(--amber); }
     <button id="tSunSh" aria-pressed="true">Sun shadows</button>
     <button id="tRoom" aria-pressed="true" title="Shut rooms lose the sky's light (the game's Dark interiors)">Dark interiors</button>
   </div>
-  <h2>The star</h2>
-  <label class="sl">Height<input id="sunEl" type="range" min="-30" max="90" step="1"><output id="oEl"></output></label>
-  <label class="sl">Bearing<input id="sunAz" type="range" min="0" max="359" step="1"><output id="oAz"></output></label>
-  <div class="row"><button id="sunReset">Map's own star</button></div>
+  <h2>Day and night</h2>
+  <div id="clock"></div>
+  <label class="sl">Time<input id="tCycle" type="range" min="0" max="1000" step="1"><output id="oCycle"></output></label>
+  <div class="row" id="speeds"></div>
   <h2>Look at</h2>
   <div class="row">
     <button id="dAlbedo" aria-pressed="false" title="Every surface mid grey: the light alone">Light only</button>
@@ -154,7 +154,7 @@ function mainShader(maxL) {
       uniform vec3 uSunDir, uSunColor, uAmbSky, uAmbGround, uFog, uUp; uniform float uSkyTint;
       uniform sampler2D uSun; uniform mat4 uSunVP; uniform vec4 uSunQ;          // x on, y normal offset, z bias (0..1 depth), w texel
       uniform sampler2DArray uRoom; uniform mat4 uRoomVP[16]; uniform vec4 uRoomQ; // x on, y floor (3%), z near normal offset, w far normal offset
-      uniform vec4 uRoomB;                                                      // x near bias, y far bias, z texel near, w texel far
+      uniform vec4 uRoomB;                                                      // x near bias, y far bias, z near blur radius, w far blur radius (map units)
       uniform sampler2DArray uLampSh; uniform mat3 uFace[6]; uniform vec4 uLampQ; // x on
       uniform vec4 uLP[MAXL], uLC[MAXL], uLS[MAXL]; uniform int uLN;
       uniform vec4 uDebug; uniform float uAlpha;
@@ -168,10 +168,17 @@ function mainShader(maxL) {
         float t = uSunQ.w;
         return 0.25 * (tapOrtho(uSun, s + vec3(-t, -t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(t, -t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(-t, t, 0), uSunQ.z) + tapOrtho(uSun, s + vec3(t, t, 0), uSunQ.z));
       }
-      float roomTap(int i, vec3 s, float bias, float t) {
-        float a = s.z - bias <= unpackD(texture(uRoom, vec3(s.xy + vec2(-t, -t), float(i)))) ? 1.0 : 0.0;
-        float b = s.z - bias <= unpackD(texture(uRoom, vec3(s.xy + vec2(t, t), float(i)))) ? 1.0 : 0.0;
-        return 0.5 * (a + b);
+      // A soft, wide look (half a metre and more) into one diagonal map: the sky's fill is light from everywhere, so it shades a
+      // place gently and never draws edges of its own; only the star throws sharp shadows. Six taps on a disc, turned per pixel.
+      float roomTap(int i, vec3 s, float bias, float r) {
+        float a0 = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715)))) * 6.2831853;
+        float lit = 0.0;
+        for (int k = 0; k < 6; k++) {
+          float a = a0 + float(k) * 2.3999632, d = r * sqrt((float(k) + 0.5) / 6.0);
+          vec2 o = vec2(cos(a), sin(a)) * d;
+          lit += s.z - bias <= unpackD(texture(uRoom, vec3(s.xy + o, float(i)))) ? 1.0 : 0.0;
+        }
+        return lit / 6.0;
       }
       // RoomShade: of the eight diagonal directions in front of the surface, the share that sees past every box (near maps blending into the far ones).
       float RoomShade(vec3 p, vec3 n) {
@@ -247,7 +254,10 @@ function mainShader(maxL) {
 // ---- State ----
 let index = null, place = null, M = null, solid = null, glass = null, ground = null, stars = null, marks = null;
 let lamps = [], views = [], light = null, bounds = new THREE.Box3(), radius = 10;
-let sun = { el: 45, az: 0, own: null };
+// The clock (Karl, 2026-11-24: "based on orbit, night and day cycle"): in orbit the star goes round once an orbit and sets behind the
+// planet's limb; on the ground once a solar day. Seconds of game time into the cycle, and how fast it runs.
+let sun = { night: 0, t: 0, period: 0, speed: 1, orbit: false, h: new THREE.Vector3(0, 0, 1), side: new THREE.Vector3(1, 0, 0), dip: 0, el: 0, day: 1, last: new THREE.Vector3() };
+const SPEEDS = [0, 1, 10, 100, 1000];
 const toggles = { power: true, lamps: true, lampSh: true, sunSh: true, room: true, albedo: false, roomDbg: false, marks: false, walk: true };
 let mat = null, glassMat = null;
 const uni = {
@@ -336,8 +346,12 @@ function updateShadowMaps() {
     uni.uSunVP.value.multiplyMatrices(sunCam.projectionMatrix, sunCam.matrixWorldInverse); sunDirty = false;
   }
   const nearTex = NEAR_HALF * 2 / Q.roomRes, farTex = farHalf * 2 / Q.roomRes, sunTex = SUN_HALF * 2 / Q.sunRes;
-  uni.uRoomQ.value.set(toggles.room ? 1 : 0, light.roomFloor, 2.2 * nearTex, 2.2 * farTex);
-  uni.uRoomB.value.set(0.05 / (depth * 2), 0.15 / (depth * 2), 0.5 / Q.roomRes, 0.5 / Q.roomRes);
+
+  // (the blur radius in metres; the point looked from is lifted off its surface by as much, so a floor seen slantwise doesn't shade
+  // itself, while the depth bias stays small and a thin wall still shuts a room)
+  const nearR = 0.45, farR = Math.max(1.2, farHalf * 2 / Q.roomRes * 3);
+  uni.uRoomQ.value.set(toggles.room ? 1 : 0, light.roomFloor, Math.max(2.2 * nearTex, nearR), Math.max(2.2 * farTex, farR * 0.6));
+  uni.uRoomB.value.set(0.05 / (depth * 2), 0.15 / (depth * 2), nearR / (NEAR_HALF * 2), farR / (farHalf * 2));
   uni.uSunQ.value.set(toggles.sunSh ? 1 : 0, 1.5 * sunTex, 0.05 / (depth * 2), 0.75 / Q.sunRes);
 }
 const snap = (v, s) => new THREE.Vector3(Math.round(v.x / s) * s, Math.round(v.y / s) * s, Math.round(v.z / s) * s);
@@ -462,8 +476,7 @@ async function loadPlace(id, viewName) {
   const set = (u, a) => u.value.set(a[0], a[1], a[2]);
   set(uni.uAmbSky, light.ambSky); set(uni.uAmbGround, light.ambGround); set(uni.uFog, light.fog); uni.uSkyTint.value = light.skyTint;
   const sd = new THREE.Vector3(...light.sunDir).normalize();
-  sun.own = { el: Math.round(THREE.MathUtils.radToDeg(Math.asin(sd.y))), az: Math.round((THREE.MathUtils.radToDeg(Math.atan2(sd.x, sd.z)) + 360) % 360) };
-  sun.el = sun.own.el; sun.az = sun.own.az;
+  setupClock(sd);
   if (!place.space) {
     const g = new THREE.PlaneGeometry(1200, 1200, 1, 1); g.rotateX(-Math.PI / 2);
     const col = new Float32Array(12), glw = new Float32Array(4);
@@ -487,29 +500,81 @@ async function loadPlace(id, viewName) {
   $("room").innerHTML = views.map((v, i) => `<option value="${i}">${v.name}</option>`).join("");
   $("note").textContent = (place.note ? place.note + " " : "") + `${lamps.length} lamps, ${(U.look.length / 1000).toFixed(0)}k triangles. Light from ${place.map}'s sky.`;
   slots.forEach(s => { s.lamp = -1; s.ready = false; }); slotQueue = []; nearCentre = null; sunDirty = true; roomFarDirty = true;
-  applySun();
+  applySun(true);
   const vi = Math.max(0, views.findIndex(v => slug(v.name) === viewName));
   $("room").value = vi; goTo(vi);
   $("load").hidden = true;
 }
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-function applySun() {
-  const el = THREE.MathUtils.degToRad(sun.el), az = THREE.MathUtils.degToRad(sun.az);
-  const d = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).normalize();
-  // SkySettings.Light: the key light fades as the star sets (Grazing keeps a set sun's direction a little up); in orbit nothing sets it.
-  const day = place.space ? 1 : THREE.MathUtils.smoothstep(Math.sin(el), -0.04, 0.10);
-  if (!place.space && d.y < 0.05) { d.y = 0.05; d.normalize(); }
+function setupClock(sd) {
+  const B = M.body;
+  // The map's own star sets the bearing: noon (or the top of the orbit) is towards it.
+  const h = new THREE.Vector3(sd.x, 0, sd.z); if (h.lengthSq() < 1e-4) h.set(0, 0, 1); h.normalize();
+  sun.h.copy(h); sun.side.set(0, 1, 0).cross(h).normalize();
+  sun.orbit = !!(place.space && B); sun.dip = 0;
+  if (sun.orbit) {
+    const r = B.radius + B.altitude;
+    sun.period = 2 * Math.PI * Math.sqrt(r * r * r / B.mu); // (a circular orbit's period)
+    sun.dip = Math.sqrt(Math.max(0, 1 - B.radius * B.radius / (r * r))); // PlanetRenderer.HorizonDip: how far below level the limb is
+    sun.speed = 1; sun.t = sun.period * 0.08; // (morning, an orbit at real speed)
+  } else if (B && B.solarDay > 0) {
+    sun.period = B.solarDay; sun.speed = 100; sun.t = sun.period * (0.5 - 3 / 24); // (nine in the morning, a day in a few minutes)
+  } else { sun.period = 0; sun.speed = 0; sun.t = 0; }
+  sun.night = sun.orbit ? nightShare() : 0;
+  $("speeds").innerHTML = sun.period ? SPEEDS.map(v => `<button data-speed="${v}" aria-pressed="${v === sun.speed}">${v ? v + "x" : "Stop"}</button>`).join("") : "";
+  $("tCycle").disabled = !sun.period;
+}
+
+function starDir(out) {
+  const B = M.body, up = tmpA.set(0, 1, 0);
+  if (!sun.period) return out.set(...light.sunDir).normalize();
+  const a = sun.t / sun.period * Math.PI * 2;
+  if (sun.orbit) {
+    // The ship (or station) holds itself level over the planet: the star goes round its sky once an orbit, 15 degrees off the
+    // orbit's plane, and is gone while the planet is in front of it.
+    const b = THREE.MathUtils.degToRad(15), phi = a; // (0: rising on the horizon)
+    return out.copy(sun.h).multiplyScalar(Math.cos(phi) * Math.cos(b)).addScaledVector(up, Math.sin(phi) * Math.cos(b)).addScaledVector(sun.side, Math.sin(b)).normalize();
+  }
+  // The ground: the planet turns once a solar day at the place's latitude, with the star at a fixed declination (half the tilt).
+  const lat = THREE.MathUtils.degToRad(B.latitude), dec = THREE.MathUtils.degToRad(B.tilt * 0.5), H = a - Math.PI; // (H 0: noon, at the cycle's middle)
+  const sx = Math.cos(dec) * Math.cos(H), sy = Math.cos(dec) * Math.sin(H), sz = Math.sin(dec);
+  const u = sx * Math.cos(lat) + sz * Math.sin(lat), e = sy, n = -sx * Math.sin(lat) + sz * Math.cos(lat);
+  // (north is away from the noon star for a northern place: noon's star is towards the map's own star's bearing)
+  return out.set(0, 0, 0).addScaledVector(up, u).addScaledVector(sun.h, -n).addScaledVector(sun.side, -e).normalize();
+}
+
+function applySun(force) {
+  const d = starDir(new THREE.Vector3());
+  // SkySettings.Light: the key light is the star's share of being up (past the limb in orbit), and a set star still grazes from just over it.
+  const el = d.y; sun.el = el;
+  const day = THREE.MathUtils.smoothstep(el, -0.04 - sun.dip, 0.10 - sun.dip); sun.day = day;
+  const floor = 0.05 - sun.dip;
+  if (el < floor) { d.y += floor - el; d.normalize(); }
   uni.uSunDir.value.copy(d);
   uni.uSunColor.value.set(light.key[0] * day, light.key[1] * day, light.key[2] * day);
-  $("sunEl").value = sun.el; $("sunAz").value = sun.az; $("oEl").textContent = sun.el + "°"; $("oAz").textContent = sun.az + "°";
-  if (place.space) { scene.background = new THREE.Color(0x030406); }
+  if (place.space) scene.background = BLACK;
   else {
-    const z = light.zenith, h = light.horizon, k = 0.35 + 0.65 * day;
-    scene.background = new THREE.Color((z[0] + h[0]) * 0.5 * k, (z[1] + h[1]) * 0.5 * k, (z[2] + h[2]) * 0.5 * k);
+    const z = light.zenith, h = light.horizon, k = 0.12 + 0.88 * day;
+    sky.setRGB((z[0] + h[0]) * 0.5 * k, (z[1] + h[1]) * 0.5 * k, (z[2] + h[2]) * 0.5 * k); scene.background = sky;
   }
-  sunDirty = true;
+  if (force || d.angleTo(sun.last) > 0.004) { sun.last.copy(d); sunDirty = true; } // (the shadow map again only when the star has moved a little)
+  showClock();
 }
+const BLACK = new THREE.Color(0x030406), sky = new THREE.Color();
+const hms = s => { s = Math.floor(s); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+function showClock() {
+  const B = M.body, state = sun.day > 0.99 ? "day" : sun.day < 0.01 ? "night" : sun.el > 0 ? "sunset or sunrise" : "the star at the limb";
+  let text;
+  if (!sun.period) text = B ? `${B.name} keeps one face to its star: no day and night here.` : "No star system data: the map's own star.";
+  else if (sun.orbit) text = `Orbit ${(B.altitude / 1000).toFixed(1)} km over ${B.name}: ${hms(sun.t)} of ${hms(sun.period)}, ${state}. Night is ${sun.night}% of each orbit.`;
+  else { const clock = (sun.t / sun.period * 24 + 24) % 24; text = `${B.name}, ${B.latitude} deg: ${String(Math.floor(clock)).padStart(2, "0")}:${String(Math.floor(clock % 1 * 60)).padStart(2, "0")} of a ${(sun.period / 3600).toFixed(1)} h day, ${state}.`; }
+  if (clockShown !== text) { $("clock").textContent = text; clockShown = text; }
+  if (document.activeElement !== $("tCycle") && sun.period) { $("tCycle").value = Math.round(sun.t / sun.period * 1000); }
+  $("oCycle").textContent = sun.period ? Math.round(sun.t / sun.period * 100) + "%" : "";
+}
+let clockShown = "";
+function nightShare() { let n = 0; const save = sun.t, v = new THREE.Vector3(); for (let k = 0; k < 360; k++) { sun.t = sun.period * k / 360; starDir(v); if (v.y < -sun.dip) n++; } sun.t = save; return Math.round(n / 3.6); }
 
 // ---- Moving: walk on floors (a ray down, rays ahead) or fly ----
 const ray = new THREE.Raycaster(); ray.firstHitOnly = true;
@@ -647,9 +712,11 @@ toggle("tPower", "power"); toggle("tLamps", "lamps"); toggle("tLampSh", "lampSh"
 toggle("dAlbedo", "albedo"); toggle("dRoom", "roomDbg"); toggle("dMarks", "marks", () => { if (marks) marks.visible = toggles.marks; });
 $("walk").addEventListener("click", () => setWalk(!toggles.walk));
 $("tPanel").addEventListener("click", () => { const p = $("panel"); p.hidden = !p.hidden; $("tPanel").setAttribute("aria-pressed", !p.hidden); });
-$("sunEl").addEventListener("input", e => { sun.el = +e.target.value; applySun(); });
-$("sunAz").addEventListener("input", e => { sun.az = +e.target.value; applySun(); });
-$("sunReset").addEventListener("click", () => { sun.el = sun.own.el; sun.az = sun.own.az; applySun(); });
+$("tCycle").addEventListener("input", e => { if (!sun.period) return; sun.t = +e.target.value / 1000 * sun.period; applySun(); });
+$("speeds").addEventListener("click", e => {
+  const b = e.target.closest("button[data-speed]"); if (!b) return;
+  sun.speed = +b.dataset.speed; for (const x of $("speeds").children) x.setAttribute("aria-pressed", x === b);
+});
 $("place").addEventListener("change", e => loadPlace(e.target.value));
 $("room").addEventListener("change", e => { goTo(+e.target.value); e.target.blur(); });
 function setQuality(name) {
@@ -660,7 +727,7 @@ function setQuality(name) {
 $("qPhone").addEventListener("click", () => setQuality("phone")); $("qFull").addEventListener("click", () => setQuality("full"));
 function spotText() {
   const p = camera.position, v = views[+$("room").value];
-  return `${place.id} / ${v?.name ?? ""}: at ${p.x.toFixed(2)} ${p.y.toFixed(2)} ${p.z.toFixed(2)}, facing ${((THREE.MathUtils.radToDeg(-yaw) % 360 + 360) % 360).toFixed(0)} deg, star ${sun.el}/${sun.az}`;
+  return `${place.id} / ${v?.name ?? ""}: at ${p.x.toFixed(2)} ${p.y.toFixed(2)} ${p.z.toFixed(2)}, facing ${((THREE.MathUtils.radToDeg(-yaw) % 360 + 360) % 360).toFixed(0)} deg, ${sun.period ? (sun.orbit ? "orbit " : "day ") + Math.round(sun.t / sun.period * 100) + "%" : ""}`;
 }
 $("copySpot").addEventListener("click", () => {
   const t = spotText(); $("spot").value = t;
@@ -681,6 +748,7 @@ function frame(now) {
   if (!solid) return;
   if (navigator.webdriver && idleFrames++ > 24) return; // (an automated check's software GPU: stop drawing once settled, so a screenshot can be taken)
   step(dt);
+  if (sun.period && sun.speed) { sun.t = (sun.t + dt * sun.speed) % sun.period; applySun(); }
   camera.rotation.set(pitch, yaw, 0); camera.updateMatrixWorld();
   camera.near = toggles.walk ? 0.05 : Math.max(0.05, radius / 400);
   camera.far = Math.max(600, radius * 8); camera.updateProjectionMatrix();
