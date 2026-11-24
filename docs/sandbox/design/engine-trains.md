@@ -89,12 +89,22 @@ Not yet: a client's push readout and flame don't show the mix (the flame byte is
 - **Fuel Filter XS** (0.35 m, feed): a breakdown that lands on its train passes half the time (`ConstructWorks.Filtered`, GameSandboxBreakdowns). Two canisters, a manifold, a dial.
 - Both press at any size on the Housing die (`reheatring` 70x70x40, `fuelfilter` 70x70x35).
 - `--engine-check` prints a ring's seconds used: boosted 0 to 20 s at 0.96 l/s, recovered to 60 s at 0.48 l/s, boosted again.
-- Protocol 461 (new part files).
+- Protocol 462 (new part files).
 
 Not yet: the Fuel Filter's Clogged out; a client doesn't see a ring boosting (no wire value).
 
+## Phase 7: the Gimbal Ring and the Armour Collar
+
+- **Gimbal Ring XS** (0.4 m, hot): the bell swings up to the ring's `"worksPiece.gimbal"` (6 degrees, against a Drive Nozzle XS's own 3) at 40 degrees a second, under the Flight Stabilizer or the bell's own gimbal pitch and yaw wires (`ConstructBoost.GimbalOf`: the ring when it swings further, its Throw, Expo and Reverse settings then; `CThruster.Ring`, `CWorksHead.Gimbal`). It takes no wires. A bell with no gimbal of its own gains one. Two rings on crossed trunnions, pitch and yaw actuators whose rods stroke.
+- **Armour Collar XS** (0.35 m, hot): each working one takes `collarArmour` (15) more off every hit on its train's bell and the pieces of its hot zone (`ConstructWorks.TrainArmour`, read in `ConstructWorld.DamagePart`; `CWorksHead.Collars`). Its own armour is 60 and it weighs 260 kg. Twelve bolted segments with lips.
+- Both press at any size on the Housing die (`gimbalring` 75x75x40, `armourcollar` 70x70x35: a Housing blank is at least half as long as it is across).
+- `--engine-check` prints what swings each bell and how far, and the collars' armour.
+- Protocol 463 (new part files).
+
+Not yet: the bell isn't drawn swinging (no gimballed nozzle is: the angle is host-only).
+
 ## Next
 
-1. The other pieces of the doc one at a time: Gimbal Ring, Armour Collar, Fuel Selector, Turbopump Drive, Bore Adapter.
+1. The other pieces of the doc one at a time: Fuel Selector, Turbopump Drive, Bore Adapter.
 2. The zone rules (hot, feed, supply; at most 16 pieces) and bigger bores.
 3. Renaming Drive Core to Reaction Chamber waits: it changes many blueprints.

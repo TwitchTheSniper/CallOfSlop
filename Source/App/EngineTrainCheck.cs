@@ -41,6 +41,15 @@ public static class EngineTrainCheck
         Console.WriteLine($"{bp.Name}: {c.PartCount} parts, {c.ThrusterCount} thruster(s), fuel {c.FuelLeft:0.0} l");
         foreach (var m in c.Modules)
             Console.WriteLine($"  module on its plug: peak push {m.Thrust / 1000:0} kN{(m.Rich ? " (a Mixture Controller: on rich)" : "")}, {m.Mass:0} kg");
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var th = ref c.Thrusters[k];
+            var gp = ConstructBoost.GimbalOf(c, th);
+            if (gp >= 0)
+                Console.WriteLine($"  {c.Parts[th.Part].D.Name}: swings {c.Parts[gp].D.ThrustGimbal * 180f / MathF.PI:0.#} deg ({(gp == th.Part ? "its own gimbal" : c.Parts[gp].D.Name)}), throw {ConstructAero.ThrowOf(c.Parts[gp], c.Parts[gp].D, c.Parts[gp].D.ThrustGimbal) * 180f / MathF.PI:0.#} deg");
+            if (ConstructWorks.TrainArmour(c, th.Part) is var arm and > 0)
+                Console.WriteLine($"  {c.Parts[th.Part].D.Name}: Armour Collars take {arm:0} more off each hit on it and its hot zone");
+        }
         var problems = 0;
         var ticks = (int)(seconds * World.TickRate);
         var cut = false;

@@ -25,5 +25,6 @@
   "reheatBoost": 0.25, // a Reheat Ring on Boost in: this share more push at twice the burn...
   "reheatSeconds": 20, // ...for up to this long...
   "reheatRecover": 40, // ...then this long to recover from spent (Sean, 2026-11-24 doc)
+  "collarArmour": 15, // flat damage each Armour Collar in a train takes off every hit on its bell and its hot zone's pieces (Sean, 2026-11-24 doc)
   "injectorBuffer": 10 // s of full burn a Fuel Injector holds: a bell fed through one (its works need an injector) whose pipe is cut runs this long, then stops (Sean, 2026-11-24)
 }

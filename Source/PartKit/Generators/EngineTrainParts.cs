@@ -261,7 +261,8 @@ public sealed class EngineTrainParts : IPartGenerator
 
     // ---- function pieces (phase 3) ---------------------------------------------------------------------------------
 
-    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35;
+    public const double SpacerD = 0.4, BufferD = 0.5, JacketD = 0.6, IgniterD = 0.35, SensorD = 0.35, ValveD = 0.4, MixerD = 0.4, ReheatD = 0.4, FilterD = 0.35, GimbalD = 0.4, CollarD = 0.35;
+    public const double GimbalDegrees = 6; // (the doc: the bell swings up to 6 degrees)
 
     /// <summary>A function piece's flanges: front 4 mm under the flange it meets, back at the flange radius, each 3 mm short of its face.</summary>
     private static void Flanges(Part p, double d)
@@ -595,6 +596,68 @@ public sealed class EngineTrainParts : IPartGenerator
         return p.Stats(90, 600, 20);
     }
 
+    /// <summary>
+    /// The Gimbal Ring XS: a hot piece by the bell, two rings on crossed trunnion pins (the outer one on the train, the inner one on the
+    /// bell's line) and a pitch and a yaw actuator whose rods stroke with the drive. The bell swings up to 6 degrees (a Drive Nozzle's own
+    /// gimbal 3) under the flight control or the bell's gimbal wires; it takes no wires itself, and its Throw, Expo and Reverse take over.
+    /// </summary>
+    private static Part GimbalRing()
+    {
+        var d = GimbalD;
+        var p = new Part("Gimbal Ring XS", Small, Section,
+            "A gimbal ring for an engine train, 0.4 m long: weld it in the hot zone, next to the bell. The bell swings up to 6 degrees (a Drive Nozzle's own gimbal swings 3), under the Flight Stabilizer or the bell's gimbal wires, so the drive steers harder. Its Throw, Expo and Reverse settings take over from the bell's.",
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.006, -0.047, -d + 0.047, Chamber, "steel", segments: 24); // (the liner)
+        var zm = -d * 0.5;
+        var ro = FlangeR + 0.012;
+        Cyl(p, 0, 0, ro, zm - 0.045, zm + 0.045, "#3c4650", "painted plating", inner: Math.Round((ro - 0.03) / ro, 3), segments: 24); // (the outer ring)
+        var ri = ro - 0.034;
+        Cyl(p, 0, 0, ri, zm - 0.06, zm + 0.06, Trim, "dirty steel", inner: Math.Round((Bore + 0.004) / ri, 3), segments: 24); // (the inner ring)
+        // The trunnion pins: the outer ring's left and right, the inner ring's top and bottom, each a boss.
+        foreach (var sx in new[] { -1.0, 1.0 })
+            Look(p, sx > 0 ? ro - 0.004 : -ro - 0.028, -0.025, zm - 0.025, sx > 0 ? ro + 0.028 : -ro + 0.004, 0.025, zm + 0.025, Bolt, "steel");
+        foreach (var sy in new[] { -1.0, 1.0 })
+            Look(p, -0.022, sy > 0 ? ri - 0.002 : -ri - 0.024, zm - 0.022, 0.022, sy > 0 ? ri + 0.024 : -ri + 0.002, zm + 0.022, Bolt, "steel");
+        // Two actuators: a pitch one under, a yaw one at the side, each a cylinder box with a rod that strokes, and a lamp.
+        Look(p, -0.03, -ro - 0.07, -d + 0.07, 0.03, -ro - 0.01, zm - 0.05, Dark, "painted plating");
+        Look(p, -0.01, -ro - 0.05, zm - 0.05, 0.01, -ro - 0.03, zm + 0.02, Bolt, "steel", work: "stroke", travel: 0.025, axis: "+z"); // (the pitch rod)
+        Look(p, ro + 0.04, -0.03, -d + 0.07, ro + 0.1, 0.03, zm - 0.05, Dark, "painted plating");
+        Look(p, ro + 0.06, -0.01, zm - 0.05, ro + 0.08, 0.01, zm + 0.02, Bolt, "steel", work: "stroke", travel: 0.025, axis: "+z"); // (the yaw rod)
+        Look(p, ro + 0.1, -0.012, -d + 0.09, ro + 0.112, 0.012, -d + 0.114, Lamp, "", work: "chase");
+        TrainPiece(p, d, "gimbal");
+        p.Set(("worksPiece", Kw(("kind", "train"), ("function", "gimbal"), ("gimbal", GimbalDegrees), ("gimbalRate", 40)))); // (how far it swings its bell, degrees, and how fast, degrees a second)
+        return p.Stats(140, 700, 25);
+    }
+
+    /// <summary>
+    /// The Armour Collar XS: a hot piece, a thick ring of bolted armour segments round the chamber line with a lip at each end. Each one
+    /// takes 15 more off every hit on its train's bell and hot zone; it is heavy, and its own armour is high.
+    /// </summary>
+    private static Part ArmourCollar()
+    {
+        var d = CollarD;
+        var p = new Part("Armour Collar XS", Small, Section,
+            "An armour collar for an engine train, 0.35 m long: weld it in the hot zone (with the chambers). Each one takes 15 more off every hit on its drive's bell and its hot zone's pieces. It is heavy.",
+            role: "frame", tool: "welder", material: "steel", color: "#4a4e48", group: Group);
+        Flanges(p, d);
+        Cyl(p, 0, 0, Bore - 0.006, -0.047, -d + 0.047, Steel, "painted plating", segments: 24); // (the core tube)
+        var ra = FlangeR + 0.03;
+        Cyl(p, 0, 0, ra, -0.06, -d + 0.06, "#4a4e48", "dirty steel", inner: Math.Round((Bore - 0.002) / ra, 3), segments: 12); // (the armour ring: twelve flat segments)
+        foreach (var z in new[] { -0.055, -d + 0.055 })
+            Cyl(p, 0, 0, ra + 0.008, z - 0.008, z + 0.008, Dark, "dirty steel", inner: Math.Round((ra - 0.01) / (ra + 0.008), 3), segments: 12); // (its lips)
+        // A bolt head on each segment, and a hazard stripe across the top.
+        for (var k = 0; k < 12; k++)
+        {
+            var a = Math.PI / 12 + k * Math.PI / 6;
+            var rb = ra * Math.Cos(Math.PI / 12);
+            var (x, y) = (rb * Math.Cos(a), rb * Math.Sin(a));
+            Look(p, x - 0.012, y - 0.012, -d * 0.5 - 0.012, x + 0.012, y + 0.012, -d * 0.5 + 0.012, Bolt, "steel");
+        }
+        TrainPiece(p, d, "collar");
+        return p.Stats(260, 1600, 60);
+    }
+
     /// <summary>The minimum viable engine as a module design: the 1 m round plug, the bell on its middle, the chamber and injector behind it.</summary>
     private static string ModuleText() =>
         "{\n" +
@@ -612,7 +675,7 @@ public sealed class EngineTrainParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter() }.Select(p => ("", p)));
+        WriteParts(o, Out, new[] { Nozzle(), ReactionChamber(), Injector(), Spacer(), Buffer(), Jacket(), Igniter(), SensorRing(), ThrottleValve(), MixtureController(), ReheatRing(), FuelFilter(), GimbalRing(), ArmourCollar() }.Select(p => ("", p)));
         o.File($"{BpOut}/ModuleEngineXS.json", ModuleText());
     }
 }
