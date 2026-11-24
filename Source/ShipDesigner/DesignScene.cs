@@ -21,7 +21,7 @@ public static class DesignScene
         public readonly List<Issue> Issues = [];
         public readonly Dictionary<int, bool> RoomOk = [];
         public readonly Dictionary<int, bool> PieceOk = [];
-        public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service, double[] N)> Links = [];
+        public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service, double[] N, string Sock)> Links = [];
         public readonly List<double[]> Doors = [];
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
@@ -889,7 +889,7 @@ public static class DesignScene
                     c.Issues.Add(new("error", best is null ? (p.Room != 0 ? $"{p.Kind}'s room is gone or isn't {kind.Needs}: pick another" : $"{p.Kind} needs {kind.Needs} behind it") :
                         $"{p.Kind} is {bestD:0.0} m from {Name(best)} (at most {kind.Reach:0.0} m, or {MaxConnector:0} m through a connector when you link it to the room): move it or the room closer", $"piece:{p.Id}"));
                 }
-                c.Links.Add((at, bestPt, linked, shaft, kind.Service, n));
+                c.Links.Add((at, bestPt, linked, shaft, kind.Service, n, kind.Socket ?? ""));
             }
             c.PieceOk[p.Id] = ok;
         }
@@ -911,6 +911,24 @@ public static class DesignScene
         if (!d.Rooms.Any(r => r.Kind == "Bridge"))
             c.Issues.Add(new("warn", "No bridge", ""));
         return c;
+    }
+
+    /// <summary>How far in from the skin the floor of the room a ramp opens into is, straight in from it (null: no room there).</summary>
+    private static double? RampDepth(ShipDesign d, Piece p, Place w)
+    {
+        for (var t = 0.0; t <= 2.6; t += 0.02)
+        {
+            double x = w.O[0] - w.Y[0] * t, y = w.O[1] - w.Y[1] * t, z = w.O[2] - w.Y[2] * t;
+            foreach (var r in d.Rooms)
+            {
+                if (p.Room != 0 && r.Id != p.Room)
+                    continue;
+                var b = Outer(d, r);
+                if (x >= b[0] && x <= b[1] && y >= b[2] - 0.01 && y <= b[3] && z >= b[4] && z <= b[5])
+                    return t;
+            }
+        }
+        return null;
     }
 
     // ---- rooms out to the hull
@@ -1194,7 +1212,18 @@ public static class DesignScene
             var m = new DesignMesh();
             var w = Where(h, p);
             m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
-            kind.Draw(m);
+            if (kind.Socket == "ramp")
+            {
+                // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
+                // skin to that floor, and the stair hangs from there down out of the hatch.
+                var t = RampDepth(d, p, w);
+                PieceKinds.RampFrame(m, t ?? 1.0);
+                var dd = (t ?? 0) + p.Recess;
+                m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size);
+                PieceKinds.RampStair(m, t ?? 0);
+            }
+            else
+                kind.Draw(m);
             if (p.Clad > 0 && kind.Opening is { } op)
             {
                 // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
@@ -1283,9 +1312,9 @@ public static class DesignScene
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {
-            var (a, b, ok, sh, sv, nn) = c.Links[i];
+            var (a, b, ok, sh, sv, nn, sk) = c.Links[i];
             sb.Append(i > 0 ? "," : "").Append("{\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S)))
-              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append(",\"n\":[").Append(string.Join(',', nn.Select(ShipDesign.S))).Append("]}");
+              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append(",\"n\":[").Append(string.Join(',', nn.Select(ShipDesign.S))).Append("],\"sock\":").Append(Q(sk)).Append('}');
         }
         sb.Append("],\"issues\":[");
         for (var i = 0; i < c.Issues.Count; i++)
