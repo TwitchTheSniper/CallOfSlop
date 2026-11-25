@@ -265,4 +265,70 @@ public static class ConstructPlace
         }
         return false;
     }
+
+    // ---- Roller Tiles set down beside a run --------------------------------------------------------------------------
+
+    /// <summary>How far a free-placed tile's spot may be from a neighbour's side for it to snap there (m: half a tile).</summary>
+    public const float TileSnapReach = 1f;
+
+    /// <summary>Does free placement snap and join this part to a Roller Tile or Turntable Tile beside it (Sean, 2026-11-25)?</summary>
+    public static bool JoinsTiles(ConstructPartDef def) => def.IsRollerTile || def.IsTurntable;
+
+    /// <summary>
+    /// A Roller Tile or Turntable Tile set down on the ground beside another body's tile: the placement moves (at most
+    /// <see cref="TileSnapReach"/>) and squares up so one of its free structural sockets meets one of the neighbour's, so it
+    /// is welded into that body when it is done (<see cref="ConstructEdits"/> PlaceNew, <see cref="JoinsTiles"/>): tiles set
+    /// down together are one body and one run. Shared by the ghost and the server. The body it snapped to, or null (as it was).
+    /// </summary>
+    public static Construct? TileSnap(ConstructWorld world, ConstructPartDef def, ref FreePlacement fp)
+    {
+        if (!JoinsTiles(def))
+            return null;
+        Construct? best = null;
+        var bestD = TileSnapReach * TileSnapReach;
+        FreePlacement snapped = fp;
+        foreach (var o in world.Bodies)
+        {
+            if (o.Dirty)
+                o.Rebuild();
+            if (Vector3.Distance(o.WorldCom, fp.Pos) > o.Radius + 4f || o.Vel.LengthSquared() > 0.25f || o.AngVel.LengthSquared() > 0.01f)
+                continue; // (far, or moving: a tile only snaps to a run standing still)
+            var k = Rot24.Nearest(Quaternion.Conjugate(o.Rot) * fp.Rot, out var match);
+            if (match < 0.97f)
+                continue; // (more than about 14 degrees off square: not set down beside it)
+            var rot = Quaternion.Normalize(o.Rot * Rot24.Quat(k));
+            var at = o.ToLocal(fp.Pos);
+            var hits = Construct.PartScratch;
+            var n = o.PartsInBox(at - new Vector3(3f), at + new Vector3(3f), hits);
+            for (var hi = 0; hi < n; hi++)
+            {
+                var j = hits[hi];
+                if (o.Parts[j].Seg != 0 || o.Parts[j].Broken || !JoinsTiles(o.DefOf(j)))
+                    continue;
+                var od = o.DefOf(j);
+                for (var t = 0; t < od.Sockets.Length; t++)
+                {
+                    if (od.Sockets[t].Kind != SocketKind.Struct || o.SocketUsed(j, t))
+                        continue;
+                    o.SocketAt(j, t, out var oat, out var odir);
+                    var wat = o.ToWorld(oat);
+                    for (var s = 0; s < def.Sockets.Length; s++)
+                    {
+                        var sk = def.Sockets[s];
+                        if (sk.Kind != SocketKind.Struct || sk.Class != od.Sockets[t].Class || Rot24.ApplyDir(k, Rot24.ApplyDir(fp.Turn, sk.Dir)) != (odir ^ 1))
+                            continue;
+                        var pos = wat - Vector3.Transform(Rot24.Apply(fp.Turn, sk.At), rot);
+                        var d = Vector3.DistanceSquared(pos, fp.Pos);
+                        if (d >= bestD)
+                            continue;
+                        bestD = d;
+                        best = o;
+                        snapped = new FreePlacement { Pos = pos, Rot = rot, Turn = fp.Turn, Anchor = fp.Anchor };
+                    }
+                }
+            }
+        }
+        fp = snapped;
+        return best;
+    }
 }

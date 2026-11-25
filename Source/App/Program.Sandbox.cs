@@ -715,6 +715,7 @@ public static unsafe partial class Program
                     if (pl.Alive && feetN < _sbFeet.Length)
                         _sbFeet[feetN++] = pl.Position;
                 var why = ConstructPlace.Pose(World.Query, held, surf.Point, surf.Normal, g.LookYaw, _sbTurn, (flags & ConstructPlace.FlagGrid) != 0, out var fp);
+                var tileJoin = why == null ? ConstructPlace.TileSnap(g.Constructs, held, ref fp) : null; // (a tile beside a run squares up to it and joins it: as the server does)
                 if (why == null)
                 {
                     why = ConstructPlace.LimitRefusal(g.Constructs, me.Id) ?? ConstructPlace.Fits(g.Constructs, World.Query, held, fp, _sbFeet.AsSpan(0, feetN));
@@ -723,7 +724,7 @@ public static unsafe partial class Program
                     ConstructRender.PlaceTurn = fp.Turn;
                     ConstructRender.PlaceValid = why == null;
                 }
-                var gkey = held.Id | (_sbTurn << 8) | (flags << 16) | (ConstructBuild.ToolFits(h.Tool, held) ? 1 << 20 : 0) | (int)(_sbTurnBinds & 0xff) << 21;
+                var gkey = held.Id | (_sbTurn << 8) | (flags << 16) | (ConstructBuild.ToolFits(h.Tool, held) ? 1 << 20 : 0) | (int)(_sbTurnBinds & 0xff) << 21 | (tileJoin != null ? 1 << 29 : 0);
                 if (gkey != _sbGroundKey || !ReferenceEquals(why, _sbGroundWhy))
                 {
                     _sbGroundKey = gkey;
@@ -731,7 +732,7 @@ public static unsafe partial class Program
                     var how = SandboxKeys.Join((flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "", (flags & ConstructPlace.FlagGrid) != 0 ? "on the grid" : "");
                     _sbGroundText = why != null ? $"Can't place here: {why}"
                         : !ConstructBuild.ToolFits(h.Tool, held) ? $"Needs the {held.Tool.Label()}"
-                        : SandboxKeys.Line("New construct", how, null, $"hold {SandboxKeys.Fire}: place");
+                        : SandboxKeys.Line(tileJoin != null ? "Joins the tiles beside it" : "New construct", how, null, $"hold {SandboxKeys.Fire}: place");
                 }
                 g.SandboxLookText = _sbGroundText;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
