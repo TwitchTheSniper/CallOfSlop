@@ -1,0 +1,16 @@
+{
+  // The Zero Day Works II test start's opening (Story/Starts/ZeroDayWorks2.json, docs/story/STARTS.md "A site start"): no ship, no
+  // wreck; the works is built whole on the ground and everyone wakes "siteGap" m past its front (its low-z end), facing it (GameSiteStart.cs).
+  // The beats are as short as a beat goes: it is for quick testing.
+  "format": "call-of-slop-opening/1",
+  "warden": "",
+  "wreck": "",
+  "site": "Zero Day Works II", // Source/PartKit/Generators/ZeroDayWorks2.cs
+  "siteGap": 20, // m past the yard's south edge
+  "siteIdle": true, // its Line Console built stopped: nothing ordered until someone starts it
+  "beats": {
+    "placeholder": { "time": 0.5, "caption": "Zero Day Works II." },
+    "wake": { "time": 0.5, "lines": [] }
+  },
+  "skip": "skip the opening"
+}
