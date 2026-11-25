@@ -20,12 +20,48 @@ public static partial class DesignScene
     private static string Made(string slot) => slot + "." + ++_made;
 
     /// <summary>A mesh's text with its key, kept in a slot as <see cref="Part"/> keeps it.</summary>
-    private static string MeshPart(string slot, string key, Func<DesignMesh> make) => Part(slot, key, () =>
+    private static string MeshPart(string slot, string key, Func<DesignMesh> make) => Ref(Part(slot, key, () =>
     {
         var t = new StringBuilder();
         make().Write(t, Made(slot));
         return t.ToString();
-    });
+    }));
+
+    /// <summary>
+    /// A hull or station drag's step ("drag" on the command): the room meshes pulled inside the skin keep their last shape, since
+    /// re-clipping every room each step took 1.5 s on the page (2026-11-25). The drag's last command, sent without it, fits them.
+    /// </summary>
+    public static bool Dragging;
+
+    /// <summary>A room mesh that follows the skin: during a drag the last one made, if any, else as <see cref="MeshPart"/>.</summary>
+    private static string SkinPart(string slot, string key, Func<DesignMesh> make) =>
+        Dragging && Parts.TryGetValue(slot, out var hit) ? Ref(hit.Json) : MeshPart(slot, key, make);
+
+    /// <summary>
+    /// Set by the web page's exports: a mesh the last answer carried goes as its key alone ({"k":...}), and the page draws it from the
+    /// arrays it kept (2026-11-25: a drag sent 2.8 MB of unchanged room meshes every frame). The game's own screen leaves it off.
+    /// </summary>
+    public static bool MeshRefs;
+
+    private static HashSet<string> _sentLast = [], _sentNow = [];
+
+    /// <summary>A keyed mesh's text, or its key alone when the last answer carried it whole or as a key.</summary>
+    private static string Ref(string json)
+    {
+        const string head = "{\"k\":\"";
+        if (!MeshRefs || !json.StartsWith(head, StringComparison.Ordinal))
+            return json;
+        var key = json[head.Length..json.IndexOf('"', head.Length)];
+        _sentNow.Add(key);
+        return _sentLast.Contains(key) ? head + key + "\"}" : json;
+    }
+
+    /// <summary>At the start of an answer: what the last one carried is what the page holds now.</summary>
+    private static void NewAnswer()
+    {
+        (_sentLast, _sentNow) = (_sentNow, _sentLast);
+        _sentNow.Clear();
+    }
 
     /// <summary>The text under a slot when its key still matches, else made again and kept.</summary>
     private static string Part(string slot, string key, Func<string> make)

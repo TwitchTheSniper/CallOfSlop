@@ -801,6 +801,15 @@ public static partial class DesignScene
 
     public static Check Run(ShipDesign d)
     {
+        if (_outerMemo is not null)
+            return RunNow(d);
+        _outerMemo = [];
+        try { return RunNow(d); }
+        finally { _outerMemo = null; }
+    }
+
+    private static Check RunNow(ShipDesign d)
+    {
         var c = new Check();
         var spines = d.Joins.Select(j => (J: j, S: j.Spine(d))).ToList();
         // Rooms inside the skin (with 6 cm for the plates, as the Zero Day's MustFit), and apart.
@@ -955,6 +964,8 @@ public static partial class DesignScene
         var lowest = d.Decks.Count == 0 ? -1 : d.Decks.IndexOf(d.Decks.MinBy(k => k.Floor)!);
         var entries = new List<int>();
         var anySocket = false;
+        var inBody = new Dictionary<(int, int), bool>();
+        bool In(HullBody hb, Room r) => inBody.TryGetValue((hb.Id, r.Id), out var v) ? v : inBody[(hb.Id, r.Id)] = InBody(d, hb, r);
         foreach (var p in d.Pieces)
         {
             var h = d.Hull(p.Hull)!;
@@ -988,7 +999,7 @@ public static partial class DesignScene
                 {
                     if (p.Room != 0 && r.Id != p.Room)
                         continue; // the room the player picked for it
-                    if (p.Room == 0 && !InBody(d, h, r))
+                    if (p.Room == 0 && !In(h, r))
                         continue; // a socket on one body opens into that body's rooms, not a neighbour's (Karl, 2026-11-24)
                     if (kind.Socket == "cargo" && r.Kind != "Hold")
                         continue;
@@ -1010,7 +1021,7 @@ public static partial class DesignScene
                     for (var t = 0.1; t <= kind.Reach; t += 0.05)
                     {
                         double[] q = [at[0] - n[0] * t, at[1] - n[1] * t, at[2] - n[2] * t];
-                        var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 ? InBody(d, h, r) : r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
+                        var hit = d.Rooms.FirstOrDefault(r => (p.Room == 0 ? In(h, r) : r.Id == p.Room) && Outer(d, r) is var bx && q[0] >= bx[0] && q[0] <= bx[1] && q[1] >= bx[2] && q[1] <= bx[3] && q[2] >= bx[4] && q[2] <= bx[5]);
                         if (hit is not null)
                         {
                             (best, bestD, bestPt, straight) = (hit, t, q, true);
@@ -1176,8 +1187,21 @@ public static partial class DesignScene
         return (v0, v1);
     }
 
+    // Each room's outer box within one scene or check (the design doesn't change in one), since the piece checks ask for every room's
+    // for every step of every socket's ray (2026-11-25: 370 ms of a drag step on the page). Callers only read it.
+    private static Dictionary<int, double[]>? _outerMemo;
+
     /// <summary>A room's world box, out to the skin where it expands.</summary>
     public static double[] Outer(ShipDesign d, Room r)
+    {
+        if (_outerMemo is null)
+            return OuterNow(d, r);
+        if (!_outerMemo.TryGetValue(r.Id, out var b))
+            _outerMemo[r.Id] = b = OuterNow(d, r);
+        return b;
+    }
+
+    private static double[] OuterNow(ShipDesign d, Room r)
     {
         var b = d.Box(r);
         if (!r.ToHull)
@@ -1323,12 +1347,14 @@ public static partial class DesignScene
             Meshes.Clear();
         if (Parts.Count > 4096)
             Parts.Clear();
+        NewAnswer();
         var (shapes, plans) = (ShipDesign.Whole(() => Shapes(d)), ShipDesign.Whole(() => Plans(d)));
         _frames = shapes + "#" + plans;
+        _outerMemo = [];
         var was = ShipDesign.Exact;
         ShipDesign.Exact = true; // every key below from whole numbers (the scene's own text is written by S, which rounds anyway)
         try { return Json(d, shapes, plans); }
-        finally { _frames = null; ShipDesign.Exact = was; }
+        finally { _frames = null; _outerMemo = null; ShipDesign.Exact = was; }
     }
 
     private static string Json(ShipDesign d, string shapes, string plans)
@@ -1421,8 +1447,8 @@ public static partial class DesignScene
             if (shown is not null)
                 sb.Append(empty);
             else
-            sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + (j.MatchClad || j.MatchButtress ? "@" + (d.Hull(j.A.Hull) is { } jha ? CladKeyOf(d.CladSource(jha)) : "") : "") + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
-                () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); }));
+            sb.Append(Ref(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + (j.MatchClad || j.MatchButtress ? "@" + (d.Hull(j.A.Hull) is { } jha ? CladKeyOf(d.CladSource(jha)) : "") : "") + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
+                () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); })));
             sb.Append('}');
         }
         sb.Append("],\"pieces\":[");
@@ -1472,7 +1498,7 @@ public static partial class DesignScene
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
-            sb.Append(mesh);
+            sb.Append(Ref(mesh));
             sb.Append('}');
         }
         sb.Append("],\"decks\":[");
@@ -1499,7 +1525,7 @@ public static partial class DesignScene
             {
                 // Its extensions' holograms, pulled inside the skin (the page drew its raw rings, which stuck out as wings).
                 sb.Append(",\"extMesh\":");
-                sb.Append(MeshPart("re" + r.Id, ik, () =>
+                sb.Append(SkinPart("re" + r.Id, ik, () =>
                 {
                     var all = new DesignMesh();
                     foreach (var e in r.Exts)
@@ -1516,13 +1542,15 @@ public static partial class DesignScene
             else if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
-                sb.Append(MeshPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset, r); return hm; }));
+                sb.Append(SkinPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset, r); return hm; }));
             }
             else
             {
                 // Its box as a mesh, bent inside the skin where the hull curves over it.
                 sb.Append(",\"boxMesh\":");
-                sb.Append(MeshPart("rb" + r.Id, rk, () => RoomBoxMesh(d, r)));
+                // Its key is only what it reads (its own box and colour, the skin): another room moved or a door placed leaves it be.
+                var bk = r.Id + ":" + r.Kind + ":" + string.Join(',', d.Box(r).Select(v => v.ToString("R"))) + "|" + shapes;
+                sb.Append(SkinPart("rb" + r.Id, bk, () => RoomBoxMesh(d, r)));
             }
             sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
             if (full && (r.WallThick > 0.005 || r.Floor is not ("Plates" or "Hex")))

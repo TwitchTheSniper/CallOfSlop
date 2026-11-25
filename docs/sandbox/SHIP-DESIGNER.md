@@ -19,7 +19,7 @@ centreline), y up, z along the ship with the bow at the smallest z, metres.
 - `ShipDesign`: hull bodies, pieces, decks and rooms; the design file (JSON, `"format": "CallOfSlop ship design"`).
 - `HullBody`: a lofted, faceted body between stations, each a half profile of 3 to 8 points keel first (the Zero Day's `At`,
   `SkinHalf` and `MustFit`, and a Hull Section's profile). Every station of a body has the same point count. Offset, Mirror
-  (a pair at -x) and Cut (where it meets another body, the skin inside the other is left out).
+  (a pair at -x) and Cut (off unless ticked: where it meets another body, the skin inside the other is left out).
 - `PieceKinds`: drives (on a body's end face), RCS, guns, systems, and the sockets: Airlock, Docking collar, Cargo hatch and
   Boarding hatch (the boarding shaft kit's belly hatch). Each draws itself in its own frame (X across, Y out of the skin, Z
   towards the bow). A piece sits at a station position and a place round the profile, or on an end face.
