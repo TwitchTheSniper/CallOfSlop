@@ -1763,6 +1763,34 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 (the job, the bay, the wire, saves, `StationPreview`), `ConstructBuild.FitStep` (a blueprint's one step, shared with the loader),
 `Source/UI/UiStation.cs` (the panel), `RouteRender.DrawBays` (the outline and the effects); the parts from the part kit's `BuildStationParts.cs`; the crane `StationRender.cs`.
 
+**Rovers and docks (2026-11-24, Sean: "Okay, I like it. Build it.", the Building Station Lab's rover design).** The crane, the hold and
+the fitting arms below are history: the station's fitting is done by rovers. Code: `ConstructStationRovers.cs` (the classes, the docks,
+the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order, the trips, the wire), `StationRender.cs` (the drawing).
+
+- **The Core** is a flat dock pad for one rover (4 x 2 m, its deck level with the Bay Blocks at 1 m), a console at its back end with the
+  screen tilted to the player, and a link-stock hopper with the **Chute in** on top; also **Fluid in** and **Orders**. Its mouth
+  (`+x.0`) welds to a Bay Block's side; its foot is `-y.0.0`. It has no hold (`"noHold"` on its pieces store, `StationNoHold`): every
+  piece goes to its pick pads (`RackCheck` 3), and an order is taken there (`ConstructCrafting.RouteTo` counts a run ending on one of its
+  own pick pads, or a Router with a way there, as the route to the station). A station with no hold orders only what a step can take
+  (no pad batches): its pads are its hold, and a piece waits at its store ("waits for room on a pick pad") until the rovers clear one.
+  A Piece Rack or pad whose gaps together hold a piece closes its columns up (`ConstructRackPack.Place`).
+- **Dock Expansions** (`stationDock`: small 4 x 2 m, medium 6 x 4, large 12 x 8; Assembler recipes at the end of its list) each hold one
+  more rover. A dock is the station's when its mouth lies on the bay's edge (within 0.35 m) and opens into the bay; one on two
+  stations' edges is the first station's.
+- **Classes** (`StationRovers.Classes`): Small 9 m reach, 8 t, 5 m/s, 4 wheels, 5 m mast; Medium 15 m, 52 t, 3 m/s, 6 wheels, 9 m;
+  Large 26 m, 120 t, 1.5 m/s, 8 wheels, 13 m. A piece up to 8 t and 3 m wants a small rover, up to 52 t and 10 m a medium, the rest a
+  large; another class takes it only when it would be 90 s per class sooner (`ClassPenalty`).
+- **Trips**: a rover drives (it never teleports): it turns on the spot, then drives straight, round the build by the corners of its
+  keep-out ring (the build's footprint grown by the rover's half width and 0.6 m); out of and into its dock straight by the mouth; it
+  squares up with its short end to the work, never drives onto a pick pad (a piece lies against the pad's bay-side edge) and swings its
+  arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
+  start, waiting up to 300 s. An idle rover waits 15 s and drives home. Plans are sent whole (keys of base and hook), and both peers
+  play them from the start time; the mast rises as a rover leaves its dock and folds down with its arm when parked.
+- **The build order** (`BuildOrder`): Keel pieces first, then what lies wholly under the lowest deck, then deck by deck (structure, then
+  fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`).
+- **Zero Day Works**: every station keeps its Core's Small rover; the yard has two Large Dock Expansions between and east of its pick
+  pads (where two Shipyard Loader Arms stood). `--station-check SITE --build NAME` lists the riders on the station's conveyors.
+
 - **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, the station's Core, 2 by 6 m, 600 W while it builds; drawing 18 of
   the block machines' design page, Sean 2026-11-21): an intake housing with the Piece in face and the chute lid, the hold down its
   length, and a control cabinet with the screen, the work top and the power meter. It is a Crafting Terminal by

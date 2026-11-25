@@ -1104,6 +1104,11 @@ public sealed class Assembling : IPartGenerator
         // with the Recycler's drive, and its Shredder Block, a steel pit with two toothed rotors; after everything: AfterCloche)
         (null, null, Rec("Breaker Core", 40, 2, m: [("steel", 260)], p: [("Gear Set", 4), ("Wiring Loom", 3)])),
         (null, null, Rec("Shredder Block", 50, 2, m: [("steel", 600)], p: [("Gear Set", 6)])),
+        // (the Building Station's rover docks, Sean 2026-11-24: a Dock Expansion pad for each rover class; the rover comes with its pad for
+        // now, until rovers are made from the part system; BuildStationParts; after everything: AfterCloche)
+        (null, null, Rec("Dock Expansion", 40, 1, m: [("steel", 500), ("rubber", 40), ("copper", 20)], p: [("Wiring Loom", 1), ("Gear Set", 2)])),
+        (null, null, Rec("Medium Dock Expansion", 70, 2, m: [("steel", 1400), ("rubber", 90), ("copper", 40)], p: [("Wiring Loom", 2), ("Gear Set", 4)])),
+        (null, null, Rec("Large Dock Expansion", 120, 3, m: [("steel", 2000), ("rubber", 200), ("copper", 80)], p: [("Wiring Loom", 3), ("Gear Set", 8)])),
     ];
 
     /// <summary>

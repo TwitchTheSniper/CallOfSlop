@@ -786,7 +786,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 465: engine trains: the Fuel Selector XS part file moves part ids.
     // 466: engine trains: the Bore Adapter XS part file moves part ids (and train pieces carry a bore).
     // 467: engine trains: the Turbopump Drive XS part file moves part ids (and a big train-fed pressed bell needs a fuel pump).
-    public const ushort ProtocolVersion = 467;
+    // 468: the rover Building Station: a station's arms are rovers on the wire (dock count, rest poses, driving plans), the Dock Expansion part files move part ids.
+    public const ushort ProtocolVersion = 468;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

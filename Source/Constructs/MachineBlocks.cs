@@ -1489,7 +1489,7 @@ public static class MachineBlocks
             if (c.Parts[asm.Core].D.IsBuildStation)
             {
                 Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
-                sb.Append($", {ConstructStation.Arms(c, asm.Core)} fitting arms, {ConstructStation.OwnPads(c, asm.Core, pads)} pick pads under its crane");
+                sb.Append($", {ConstructStation.Arms(c, asm.Core)} rover docks, {ConstructStation.OwnPads(c, asm.Core, pads)} pick pads");
             }
             if (asm.Out != ushort.MaxValue)
                 sb.Append($", out table {asm.OutCells} of {(asm.OutSide is 4 or 5 ? asm.W : asm.L)} cells");

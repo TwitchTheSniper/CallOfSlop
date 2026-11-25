@@ -208,6 +208,10 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
 
 The fixed Loader Arms (Loader, Workshop, Industrial, Military, Plasma, Heavy, Shipyard, Long) and the Module Fitter S are gone. A saved one comes back as its kit arm (Kit Loader Arm and so on), standing where it stood. An Assembler that was set to build one now builds an Arm Core.
 
+### Building Stations in a saved world (rovers, 2026-11-25)
+
+A Building Station no longer has a hold or a crane: its Core is a dock pad for one rover, which fits every piece from the station's pick pads. A station in an older world loads with its old Core's place and sockets changed, so look at it: weld Bay Blocks to its pad's mouth, lay Pad Tiles just past the bay's edge for its parts (it says "no pick pad" until you do), and weld Dock Expansions to the bay for more rovers or heavier pieces (a Small rover lifts 8 t, a Medium 52 t, a Large 120 t). A conveyor into the old Core's Piece in now ends at nothing: run it onto the pad instead.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

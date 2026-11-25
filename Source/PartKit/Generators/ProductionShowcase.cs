@@ -354,9 +354,10 @@ public sealed class ProductionShowcase : IPartGenerator
         }
 
         /// <summary>
-        /// The Building Station (production.md "Building station"), on its own floor past the end (x 64 to 82): the station with its bay
-        /// on its far side, the orders console's wire into its Orders port, a kit rack behind the bay holding every part of the Swing Arm
-        /// Buggy with a conveyor into the station's Piece in, and copper for its wires chuted to it (steel is the Assembler's stock).
+        /// The Building Station (production.md "Building station"), on its own floor past the end (x 64 to 82): the Core's dock pad with
+        /// its bay out of the pad's mouth, the orders console's wire into its Orders port, a kit rack behind the bay holding every part of
+        /// the Swing Arm Buggy with a conveyor round onto a Part Pad past the bay's far end (its rover picks them there), and copper for its
+        /// wires chuted to it (steel is the Assembler's stock).
         /// </summary>
         private VPart StationBay(VPart orders)
         {
@@ -367,43 +368,50 @@ public sealed class ProductionShowcase : IPartGenerator
                     Paint(t, j == 0 ? Aisle : Floor);
                     Finish(t, j == 0 ? "painted deck plate" : "concrete");
                 }
-            var station = On("Building Station", 65.25f, -9.25f, Front, "-y.0.0");
-            foreach (var cell in new[] { "+x.1", "+x.2" }) // (its bay, drawing 18: four Bay Blocks beside the Core, 4 x 4 m, 2 m high with no masts)
-                Onto(Onto(station, cell, "Bay Block", "-x"), "+x", "Bay Block", "-x");
+            var station = On("Building Station", 67.25f, -9.25f, Front, "-y.0.0"); // (its pad x 64.25 to 68.25, clear of the Crafting Terminal's corner)
+            // The bay: four Bay Blocks out of the pad's mouth, 4 x 4 m (x 68.25 to 72.25, z -10.25 to -6.25).
+            var b0 = Onto(station, "+x.0", "Bay Block", "-x");
+            Onto(b0, "+x", "Bay Block", "-x");
+            Onto(Onto(b0, "+z", "Bay Block", "-z"), "+x", "Bay Block", "-x");
             Link("data", orders, station, null, "Orders", Control, true, null,
                 new[] { V(24.25f, 0, -2.05f), V(31.75f, 0, -2.05f), V(39.25f, 0, -2.05f), V(46.75f, 0, -2.05f), V(54.25f, 0, -2.05f), V(60.5f, 0, -2.05f), V(64.6f, 0, -2.05f), V(64.6f, 0, -6.0f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
             Feed(StockOf("copper", 65.25f, -3.25f), station);
-            var kit = On("Long Piece Rack", 81.25f, -13.75f, Toward, "-y.0.0", Assembly); // (15 kinds, a column each along its 12 m)
+            // The Part Pad: four Pad Tiles past the bay's +x end, within its span (the rover reaches over the bay's edge to them).
+            var pad = new VPart[2, 2];
+            for (var i = 0; i < 2; i++)
+                for (var j = 0; j < 2; j++)
+                    pad[i, j] = On("Pad Tile", 73.25f + 2 * i, -9.25f + 2 * j, Front, "bottom", Hazard);
+            // A Long Piece Rack behind the bay (x 66.25 to 79, z -10.75 to -13.6): the Router's parts come in at its west end, its Piece out
+            // at the east end runs round to the Part Pad's east side.
+            var kit = KitRack = On("Long Piece Rack", 66.25f, -10.75f, Flow, "-y.0.0", Assembly); // (15 kinds, a column each along its 12 m)
             foreach (var (part, n) in new[]
                      {
                          ("Differential", 1), ("Engine", 1), ("Transmission", 1), ("Tow Hitch", 1), ("Fuel Tank", 1), ("Driving Module", 1), ("Seat", 1),
                          ("Wedge 1:1 0.25 m", 3), ("Square Beam 0.5 m", 2), ("Square Beam 2 m", 2), ("Plate Steel 1 m", 1), ("Square Beam 0.75 m", 1),
                          ("Swing Arm", 4), ("Wheel", 4), ("Steering Pivot", 2),
                      })
-                Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride in)
+                Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride to its pad)
             var from = PortAt(kit, "Piece out");
-            var to = PortAt(station, "Piece in");
-            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V((from.X + to.X) * 0.5f, from.Y, from.Z), V(to.X, from.Y, from.Z), V(to.X, from.Y, (from.Z + to.Z) * 0.5f)); // (out of the rack's end, then straight up to the hold's back)
-            Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
-            // Loader Arms (production.md "The Loader Arm") at the bay's two corners by the hold (the window tool's "lifter place" slots 0 and 1),
-            // on this body: its mains power them (a placed arm is a body of its own, with no battery: "No power" in a timed world). Each picks
-            // along the hold's side. (Slots 2 and 3, 6 m further along the bay, are out of a Loader Arm's 4 m reach of the hold: "NoPoint".)
-            KitArm("Kit Loader Arm", 71.98f, -7.03f); // (a Kit Loader Arm: the fixed Loader Arm's place, 2.6 m west and 3.1 m south of here, put its Core in the Long Piece Rack; here it reaches the hold's Bay Blocks as that did, --arm-swap-find, Sean 2026-11-24)
-            // (its second arm stood where the bay's Bay Blocks are now, drawing 18: the station's own arms fit parts there)
+            var to = PortAt(pad[1, 1], "Piece in +x");
+            Convey(kit, "Piece out", pad[1, 1], "Piece in +x", Assembly, null, V(from.X + 0.8f, from.Y, from.Z), V(from.X + 0.8f, from.Y, to.Z)); // (out of the rack's end, north, then west onto the pad)
+            Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start");
             return station;
         }
 
+        /// <summary>The station's kit rack, which the Assembler's parts ride into (StationFeed).</summary>
+        private VPart? KitRack;
+
         /// <summary>
         /// The Assembler's parts to the station (verification 2026-11-13c: a store part an order asked for had no way there): the Router's
-        /// way 2, south past the part rack, along the row's back edge and up between the terminal and the station into its Piece in 2.
+        /// way 2, south past the part rack, along the row's back edge and into the station's kit rack, which sends them on to its Part Pad.
         /// </summary>
         private void StationFeed(VPart router, VPart station)
         {
             var o = PortAt(router, "Piece out 2");
-            var i = PortAt(station, "Piece in 2");
-            Convey(router, "Piece out 2", station, "Piece in 2", Assembly, null,
-                V(o.X, o.Y, -13.6f), V(59.0f, o.Y, -13.6f), V(i.X - 0.6f, o.Y, -13.6f), V(i.X - 0.6f, o.Y, (i.Z - 13.6f) * 0.5f), V(i.X - 0.6f, o.Y, i.Z));
+            var i = PortAt(KitRack!, "Piece in");
+            Convey(router, "Piece out 2", KitRack!, "Piece in", Assembly, null,
+                V(o.X, o.Y, -13.6f), V(59.0f, o.Y, -13.6f), V(i.X - 0.8f, o.Y, -13.6f), V(i.X - 0.8f, o.Y, i.Z));
         }
 
         /// <summary>

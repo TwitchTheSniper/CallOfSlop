@@ -134,7 +134,27 @@ public static class ConstructRackPack
             at = sl.Z0Mm + sl.LenMm + gap;
         }
         if (i == st.SlabN && at + lenMm > hold)
-            return 4;
+        {
+            // No gap long enough, but the gaps together are (pieces taken out of the middle, as a station's rovers take them off a pad):
+            // the columns close up along the rack, in order, and it goes on the end.
+            var used = 0;
+            for (var k = 0; k < st.SlabN; k++)
+                used += st.Slabs![k].LenMm + gap;
+            if (used + lenMm > hold)
+                return 4;
+            if (dryRun)
+            {
+                slab = st.SlabN;
+                return 0;
+            }
+            at = 0;
+            for (var k = 0; k < st.SlabN; k++)
+            {
+                st.Slabs![k].Z0Mm = (ushort)at;
+                at += st.Slabs[k].LenMm + gap;
+            }
+            i = st.SlabN;
+        }
         slab = i;
         lane = 0;
         if (dryRun)
@@ -189,6 +209,12 @@ public static class ConstructRackPack
         var at = 0;
         for (var i = 0; i < slab && i < st.SlabN; i++)
             at = st.Slabs![i].Z0Mm + st.Slabs[i].LenMm + gap; // (Place's gap walk, up to the column it would go before)
+        if (slab >= st.SlabN && at + lenMm > HoldMm(rd))
+        {
+            at = 0; // (it goes in only once the columns close up: on the end of them closed up)
+            for (var i = 0; i < st.SlabN; i++)
+                at += st.Slabs![i].LenMm + gap;
+        }
         origin = Origin(rd, new RackSlab { Def = d.Id, Z0Mm = (ushort)at, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers }, d, 0, 0);
         return true;
     }

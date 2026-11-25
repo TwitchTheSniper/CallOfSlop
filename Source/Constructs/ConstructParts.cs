@@ -804,6 +804,8 @@ public sealed partial class ConstructPartDef
     public bool HasSeams; // its "seam" boxes (a block machine's: MachineBlocks.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
+    public bool StationNoHold; // a Building Station with no hold ("storage.pieces.noHold"): RackCheck refuses every piece, so all are ordered onto its pads
+    public byte StationDock; // a Dock Expansion ("stationDock": small 1, medium 2, large 3): a dock pad holding one arm rover of that class (ConstructStationRovers.cs)
     public float StationLiftKg; // a Building Station ("storage.pieces.lift"): the heaviest piece its crane picks off a pick pad of its own (0: none; ConstructStation.PadPick)
     public bool IsCargoHold; // a Heavy Container's piece hold (storage.pieces.cargo): what a hauler carries for a store, physics-only pieces and new empty stores alike (GameStationHaulers.HaulParts)
     public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
@@ -1483,7 +1485,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece", "stationDock",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1554,6 +1556,8 @@ public static partial class ConstructParts
         if (d.IsRouter && d.TextSlots == 0)
             d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
         d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
+        if (Opt(root, "stationDock") is { } sdk)
+            d.StationDock = Str(sdk, file, "stationDock") switch { "small" => 1, "medium" => 2, "large" => 3, var x => throw new ConstructPartException($"{file}: stationDock is small, medium or large, not \"{x}\"") };
         if (Opt(root, "armPiece") is { ValueKind: JsonValueKind.String } ap)
             d.ArmPiece = Enum.TryParse<ArmPieceKind>(ap.GetString(), true, out var apk) && apk != ArmPieceKind.None ? apk : throw new ConstructPartException($"{file}: armPiece is boom, joint, wrist, padClamp, counterweight or drivePack");
         d.HallRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.String } hr && hr.GetString() == "hall";

@@ -83,7 +83,7 @@ public sealed partial class ZeroDayWorks
                 // (on the station's east side between the columns: a Plasma arm's 3.6 m base doesn't fit there; a Long arm's 2 m plinth does, and it lifts the deck plates, Sean 2026-11-24)
             // Bay 2 east span (x 52 to 70): line D, the heavy ends: no cutter; its Building Station builds each end from skins, frames and fittings.
             ArmourLine("D", 53, LineD, bedAcross: 6, bedAlong: 8, tables: 1, cutAlong: 0);
-            Station(69, -101, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0)); // (welded on the skins' pad: no walkway between them)
+            Station(69, -103, 53, -99, 8, 8, 6, LineD, onPad: (_skinPads["D"][0, 1], "+z", 0), coreRow: 2); // (welded on the skins' pad: no walkway between them)
             // (its Core east of the bed's first row, so the tunnel runs north to south: three rows of Roller Tiles from the station's bay
             // into it, and one out of it before the store; the bed 7 rows, so that row is free)
             Oven(69, -121, 53, 8, 7, 12, LineD, bedZ0: -121, facing: West);
@@ -101,7 +101,7 @@ public sealed partial class ZeroDayWorks
         /// of it. The bay is welded on that socket and the Core on the bay (a pad or run laid off the floor's grid), not stood on the floor.
         /// </summary>
         private VPart Station(float coreX, float coreZ, float bayX0, float bayZ0, int across, int along, int masts, string paint, Orient? turned = null,
-            (VPart Tile, string Socket, int Column)? onPad = null)
+            (VPart Tile, string Socket, int Column)? onPad = null, int coreRow = 1)
         {
             VPart core;
             VPart[,] bay;
@@ -114,16 +114,16 @@ public sealed partial class ZeroDayWorks
                 for (var i = col + 1; i < across; i++)
                     bay[i, 0] = Paint(Onto(bay[i - 1, 0], "-x", "Bay Block", "+x"), paint);
                 Chain(bay, "Bay Block", "+z", "-z", "-x", "+x", paint, rowZero: true);
-                // The Core east of the bay, its middle cell beside the bay's second row, turned as one stood South would be.
-                core = Paint(Onto(bay[across - 1, 1], "-x", "Building Station", "+x.1", spin: 0), paint);
+                // The Core (a dock pad, its mouth welded to the bay) east of the bay beside its row coreRow (the second unless that is taken), turned as one stood South would be.
+                core = Paint(Onto(bay[across - 1, coreRow], "-x", "Building Station", "+x.0", spin: 0), paint);
                 var want = V(coreX, 0, coreZ) - V(bayX0, 0, bayZ0);
-                var got = SocketAt(core, "-y.0.1") - SocketAt(bay[0, 0], "bottom");
-                if (MathF.Abs(got.X - want.X) > 0.01f || MathF.Abs(got.Z - want.Z) > 0.01f || SocketAt(core, "-y.0.0").Z < SocketAt(core, "-y.0.2").Z)
+                var got = SocketAt(core, "-y.0.0") - SocketAt(bay[0, 0], "bottom");
+                if (MathF.Abs(got.X - want.X) > 0.01f || MathF.Abs(got.Z - want.Z) > 0.01f)
                     throw new VehicleKitException($"Zero Day Works: a station's Core welded on its bay sits at {got} from the bay, not {want}");
             }
             else
             {
-                core = On("Building Station", coreX, coreZ, turned ?? South, "-y.0.1", paint);
+                core = On("Building Station", coreX, coreZ, turned ?? South, "-y.0.0", paint);
                 bay = Tiles("Bay Block", bayX0, bayZ0, across, along, South, paint);
             }
             foreach (var c in Corners(bay))
@@ -149,7 +149,7 @@ public sealed partial class ZeroDayWorks
             var at = SocketAt(console, "bottom");
             var to = SocketAt(extruder, extruder.Def.Sockets[0].Name);
             Link("data", console, extruder, null, "Run", paint, false, null, Cut(at, V(at.X, up, at.Z), V(at.X, up, to.Z), V(to.X, up, to.Z)));
-            var s = SocketAt(station, "-y.0.1");
+            var s = SocketAt(station, "-y.0.0");
             Link("data", console, station, null, "Orders", paint, false, null, Cut(at, V(at.X, up, at.Z), V(s.X, up, at.Z), V(s.X, up, s.Z)));
             if (former != null)
             {

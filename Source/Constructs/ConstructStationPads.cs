@@ -50,7 +50,17 @@ public static partial class ConstructStation
     }
 
     /// <summary>The heaviest piece station <paramref name="t"/>'s crane picks off its pick pads (kg; 0: it takes none).</summary>
-    public static float LiftKg(Construct c, int t) => c.DefOf(t).StationLiftKg;
+    public static float LiftKg(Construct c, int t)
+    {
+        if (!c.DefOf(t).StationNoHold)
+            return c.DefOf(t).StationLiftKg;
+        Span<StationDock> docks = stackalloc StationDock[MaxArms]; // (a rover station lifts what its largest rover lifts)
+        var n = StationRovers.Docks(c, t, docks);
+        var kg = 0f;
+        for (var a = 0; a < n; a++)
+            kg = MathF.Max(kg, StationRovers.Classes[docks[a].Cls].Kg);
+        return MathF.Min(kg, c.DefOf(t).StationLiftKg);
+    }
 
     /// <summary>
     /// A pad's deck in station <paramref name="t"/>'s bay frame (x across, z along, from the middle of its floor): its middle and its
@@ -114,7 +124,7 @@ public static partial class ConstructStation
                 taken++;
             }
             if (taken > 0)
-                Console.WriteLine($"[station] body {c.Id} part {t}: {taken} pick pad{(taken == 1 ? "" : "s")} under its crane");
+                Console.WriteLine($"[station] body {c.Id} part {t}: {taken} pick pad{(taken == 1 ? "" : "s")} for its rovers");
         }
     }
 
@@ -148,7 +158,7 @@ public static partial class ConstructStation
     /// Where an arm picks a step's part of kind <paramref name="def"/> from: the hold (-1) when it has more of it than the arms already
     /// carry from it, else the first pick pad that does and whose piece the crane lifts; -2: nowhere.
     /// </summary>
-    private static int PickFrom(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, int kind, ConstructPartDef d)
+    private static int PickFrom(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, int kind, ConstructPartDef d, float maxKg)
     {
         var def = j.KindDef[kind];
         var fromHold = 0;
@@ -157,7 +167,7 @@ public static partial class ConstructStation
                 fromHold++;
         if (ConstructCrafting.Holds(tray, def) > fromHold)
             return -1;
-        if (d.Mass > LiftKg(c, t))
+        if (d.Mass > MathF.Min(maxKg, LiftKg(c, t)))
             return -2;
         Span<ushort> pads = stackalloc ushort[MaxOwnPads];
         var n = OwnPads(c, t, pads);
@@ -175,12 +185,22 @@ public static partial class ConstructStation
         return -2;
     }
 
-    /// <summary>Where the hook takes a part off pad <paramref name="pad"/>, in the bay's frame: over its deck's middle, the piece's top on the deck.</summary>
+    /// <summary>
+    /// Where the hook takes a part off pad <paramref name="pad"/>, in the bay's frame: the piece's top, lying against the pad's bay-side edge
+    /// (pieces roll in against it, so a rover standing on the bay beside it reaches; never past the deck's middle).
+    /// </summary>
     private static Vector3 PadPickAt(Construct c, int t, int pad, ConstructPartDef d)
     {
-        if (!PadInBay(c, t, pad, out var mid, out _))
+        if (!PadInBay(c, t, pad, out var mid, out var half))
             return Vector3.Zero;
-        return mid with { Y = mid.Y + MathF.Min(d.BoundsMax.Y - d.BoundsMin.Y, 4f) };
+        var bay = BaySize(c, t);
+        var s = d.BoundsMax - d.BoundsMin;
+        var ph = MathF.Max(s.X, s.Z) * 0.5f + 0.3f; // (half its longest side: it may lie either way on the deck)
+        if (MathF.Abs(mid.X) - half.X >= bay.X * 0.5f - 0.05f)
+            mid.X -= MathF.Sign(mid.X) * MathF.Max(0, half.X - ph);
+        else if (MathF.Abs(mid.Z) - half.Z >= bay.Z * 0.5f - 0.05f)
+            mid.Z -= MathF.Sign(mid.Z) * MathF.Max(0, half.Z - ph);
+        return mid with { Y = mid.Y + MathF.Min(s.Y, 4f) };
     }
 
     /// <summary>Has station <paramref name="t"/> any pick pad (its stuck note says where a long part goes)?</summary>
