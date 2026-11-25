@@ -1,0 +1,17 @@
+{
+  // A test start (Sean, 2026-11-25: "a starting point in the game that spawns you in front of an idle, full Zero Day factory,
+  // for quicker testing"): Zero Day Works II (Sean's Factory Lab layout, Source/PartKit/Generators/ZeroDayWorks2.cs) built on the flattest dry ground
+  // near Caledon's spawn, every machine in place and its Line Console stopped, and everyone waking past its assembly yard,
+  // looking at it (Story/Opening/ZeroDayWorks2.json, "site": GameSiteStart.cs). In Creative its bunkers, silos and fuel come
+  // full, as any creative spawn of the works; in Survival they are empty and there is no kit.
+  "format": "call-of-slop-start/1",
+  "name": "Zero Day works II (test)",
+  "order": 21, // last: a developer's start
+  "character": "Works manager",
+  "background": "",
+  "about": "TEST START. You stand in front of Zero Day Works II on Caledon, Sean's Factory Lab layout built with no walls or roof and every machine in place, idle until you start its Line Console. In Creative its bunkers and fuel come full.",
+  "map": "Caledon",
+  "opening": "ZeroDayWorks2.json",
+  "tutorial": "none",
+  "kit": [] // no kit: the works is the start
+}

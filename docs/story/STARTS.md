@@ -79,6 +79,10 @@ kit. The save keeps the wake spot (the Opening section's crash site). A site and
   factory, for quicker testing"): the whole Zero Day works (docs/sandbox/constructs/zeroday-works.md) on Caledon's flattened
   pole (the landing ground, 175 m across: WORLDS.md "Places kept flat"), its Line Consoles stopped, everyone waking 20 m south
   of its assembly yard, looking north into it. A site start (above); no kit. Survival and Creative.
+- `ZeroDayWorks2` (TEST START, after it; Sean, 2026-11-25): Zero Day Works II, Sean's Factory Lab layout (`zeroday_works2`,
+  Source/PartKit/Generators/ZeroDayWorks2.cs, the layout in Constructs/Factories/Layouts/ZeroDayWorks2.json) with no walls or roof,
+  224 x 216 m (its corners 156 m from its middle, inside the pole's 175 m), Line Consoles stopped, everyone waking 20 m past its
+  low-z end. A site start; no kit. Survival and Creative.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` was removed with the colony and its induction (2026-11-17): a world made with it plays the any-map start.
