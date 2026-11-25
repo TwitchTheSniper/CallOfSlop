@@ -36,9 +36,20 @@ public static unsafe class ShipDesignerRenderer
         uniform vec4 uTint;     // linear colour, alpha
         uniform vec3 uEmit;     // linear
         uniform vec3 uMode;     // x: 1 unlit; y: metalness; z: 1 vertex colours
+        uniform vec3 uSurf;     // x: roughness; y: clearcoat; z: environment strength (0: painted, no reflections)
+        uniform vec4 uPlane;    // Room view's cutaway: n.p + d < 0 is cut, when uCut is 1 (three.js clipping planes)
+        uniform float uCut;
         out vec4 oColor;
+        // The page's small reflection room: a bright horizon band between a blue-grey sky and a dark ground (linear).
+        vec3 envAt(vec3 r)
+        {
+            vec3 sky = vec3(0.275, 0.381, 0.509), hor = vec3(0.807, 0.855, 0.906), gnd = vec3(0.024, 0.030, 0.037);
+            return r.y > 0.0 ? mix(hor, sky, min(1.0, r.y * 1.6)) : mix(hor, gnd, min(1.0, -r.y * 3.0));
+        }
         void main()
         {
+            if (uCut > 0.5 && dot(uPlane.xyz, vW) + uPlane.w < 0.0)
+                discard;
             vec3 base = mix(vec3(1.0), vC.rgb, uMode.z) * uTint.rgb;
             vec3 c;
             if (uMode.x > 0.5)
@@ -55,6 +66,19 @@ public static unsafe class ShipDesignerRenderer
                 vec3 fill = vec3(0.347, 0.527, 0.745) * max(dot(n, normalize(vec3(-30.0, -10.0, 40.0))), 0.0) * 0.5;
                 c = base * (1.0 - uMode.y) * (hemi + vec3(sun) + fill) / 3.14159;
                 c += 0.04 * (hemi + vec3(sun)) * 0.12; // (a touch of the specular three's standard material shows)
+                if (uSurf.z > 0.0)
+                {
+                    // Metals and plastics (the page's materials): the room reflected, blurred toward its mean by roughness.
+                    vec3 v = normalize(uEye - vW), r = reflect(-v, n);
+                    vec3 env = mix(envAt(r), vec3(0.45, 0.5, 0.56), clamp(uSurf.x, 0.0, 1.0));
+                    vec3 f0 = mix(vec3(0.04), base, uMode.y);
+                    float fres = pow(1.0 - max(dot(n, v), 0.0), 5.0);
+                    vec3 spec = (f0 + (1.0 - f0) * fres * (1.0 - uSurf.x)) * env * uSurf.z;
+                    vec3 hv = normalize(v + normalize(vec3(30.0, 50.0, -20.0)));
+                    float shin = mix(200.0, 8.0, clamp(uSurf.x, 0.0, 1.0));
+                    spec += f0 * pow(max(dot(n, hv), 0.0), shin) * 1.6 * (1.0 - uSurf.x * 0.7);
+                    c += spec + uSurf.y * (0.04 + 0.96 * fres) * envAt(r) * 0.6;
+                }
             }
             c += uEmit;
             oColor = vec4(pow(clamp(c, 0.0, 1.0), vec3(1.0 / 2.2)), uTint.a * vC.a);
@@ -62,7 +86,10 @@ public static unsafe class ShipDesignerRenderer
         """;
 
     private static GlProgram _prog;
-    private static int _lVP, _lOff, _lEye, _lTint, _lEmit, _lMode;
+    private static int _lVP, _lOff, _lEye, _lTint, _lEmit, _lMode, _lSurf, _lPlane, _lCut;
+
+    /// <summary>Room view's cutaway plane (n, d: n.p + d below 0 is cut), or null for none.</summary>
+    public static Vector4? Cut;
     private static bool _ready, _broken;
     private static readonly List<DesignGeo> _free = [];
 
@@ -97,6 +124,9 @@ public static unsafe class ShipDesignerRenderer
             _lTint = Loc("uTint\0"u8);
             _lEmit = Loc("uEmit\0"u8);
             _lMode = Loc("uMode\0"u8);
+            _lSurf = Loc("uSurf\0"u8);
+            _lPlane = Loc("uPlane\0"u8);
+            _lCut = Loc("uCut\0"u8);
             _ready = true;
         }
         catch (Exception ex)
@@ -174,6 +204,9 @@ public static unsafe class ShipDesignerRenderer
         var vp = gfx.ViewProj;
         Native.glUniformMatrix4fv(_lVP, 1, false, &vp.M11);
         Native.glUniform3f(_lEye, eye.X, eye.Y, eye.Z);
+        var cut = Cut ?? default;
+        Native.glUniform4f(_lPlane, cut.X, cut.Y, cut.Z, cut.W);
+        Native.glUniform1f(_lCut, Cut.HasValue ? 1 : 0);
 
         var opaque = new List<DesignObj>(objs.Count);
         var see = new List<(DesignObj O, float D)>();
@@ -212,6 +245,7 @@ public static unsafe class ShipDesignerRenderer
         Native.glUniform4f(_lTint, o.Tint.X, o.Tint.Y, o.Tint.Z, o.Alpha);
         Native.glUniform3f(_lEmit, o.Emissive.X, o.Emissive.Y, o.Emissive.Z);
         Native.glUniform3f(_lMode, o.Unlit || g.Lines ? 1 : 0, o.Metal, o.VertexColours ? 1 : 0);
+        Native.glUniform3f(_lSurf, o.Rough, o.Coat, o.Env);
         g.Vao.Bind();
         Native.glDrawArrays(g.Lines ? GL_LINES : GL_TRIANGLES, 0, g.Count);
         PerfCounters.Draw(g.Count);
@@ -256,7 +290,7 @@ public sealed class DesignObj
     public DesignGeo Geo = null!;
     public Vector3 Pos;
     public Vector3 Tint = Vector3.One;
-    public float Alpha = 1, Metal = 0.15f;
+    public float Alpha = 1, Metal = 0.15f, Rough = 0.7f, Coat, Env;
     public Vector3 Emissive;
     public bool VertexColours, Unlit, Transparent, DepthWrite = true, DepthTest = true, Visible = true;
     public int Order;

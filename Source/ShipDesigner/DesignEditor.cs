@@ -117,15 +117,17 @@ public sealed class DesignEditor
                 var ao = o["a"]?.AsObject() ?? throw new InvalidOperationException("no first point");
                 var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), WA = D(o, "w", 1.2), HA = D(o, "h", 1.2), Segments = I(o, "segments", 6),
-                    Twist = D(o, "twist", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
-                    Mirror = (bool?)o["mirror"] ?? true, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
+                    Twist = D(o, "twist", 0), RotA = D(o, "rotA", 0), RotB = D(o, "rotB", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
+                    Mirror = (bool?)o["mirror"] ?? false, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9),
+                    LeaveA = D(o, "leaveA", 0), LeaveB = D(o, "leaveB", 0), LeaveForeA = D(o, "leaveForeA", 0), LeaveForeB = D(o, "leaveForeB", 0), TanA = D(o, "tanA", 0.9), TanB = D(o, "tanB", 0.9),
+                    Collar = (bool?)o["collar"] ?? true, CollarHeight = D(o, "collarHeight", 0.22), CollarMargin = D(o, "collarMargin", 0.25), CollarBevel = D(o, "collarBevel", 0.05) };
                 j.WB = D(o, "wb", j.WA);
                 j.HB = D(o, "hb", j.HA);
-                j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"));
+                j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"), (string?)ao["face"]);
                 if (o["b"] is JsonObject bo)
                 {
                     var hb = d.Hull(I(bo, "hull")) ?? throw new InvalidOperationException("no such hull");
-                    j.B = HullJoin.At(hb, I(bo, "copy"), D(bo, "x"), D(bo, "y"), D(bo, "z"));
+                    j.B = HullJoin.At(hb, I(bo, "copy"), D(bo, "x"), D(bo, "y"), D(bo, "z"), (string?)bo["face"]);
                 }
                 else
                 {
@@ -137,12 +139,12 @@ public sealed class DesignEditor
                     var bh = D(no, "h", 3);
                     var len = D(no, "len", 12);
                     var body = DesignTemplates.Sized(d, Str(no, "section", "Barrel"), bw, bh, len, I(no, "segments", 4));
-                    // Its middle out along the normal: the gap, then half its own reach that way.
-                    var reach = Math.Sqrt(Math.Pow(na[0] * bw / 2, 2) + Math.Pow(na[1] * bh / 2, 2));
+                    // Its middle out along the normal: the gap, then half its own reach that way (along z too, off a cap).
+                    var reach = Math.Sqrt(Math.Pow(na[0] * bw / 2, 2) + Math.Pow(na[1] * bh / 2, 2) + Math.Pow(na[2] * len / 2, 2));
                     var gap = Math.Clamp(D(no, "dist", 4), 0, 100) + reach;
                     body.X = Math.Round(pa[0] + na[0] * gap, 2);
                     body.Y = Math.Round(pa[1] + na[1] * gap - bh / 2, 2);
-                    body.Z = Math.Round(pa[2] - len / 2 + D(no, "slide", 0), 2);
+                    body.Z = Math.Round(pa[2] + na[2] * gap - len / 2 + D(no, "slide", 0), 2);
                     body.Mirror = j.Mirror && Math.Abs(body.X) > 0.3;
                     body.Skin = ha.Skin;
                     d.Hulls.Add(body);
@@ -164,9 +166,17 @@ public sealed class DesignEditor
                 j.WB = D(o, "wb", j.WB);
                 j.HB = D(o, "hb", j.HB);
                 j.Twist = D(o, "twist", j.Twist);
+                j.RotA = D(o, "rotA", j.RotA);
+                j.RotB = D(o, "rotB", j.RotB);
                 j.SweepUp = D(o, "sweepUp", j.SweepUp);
                 j.SweepFore = D(o, "sweepFore", j.SweepFore);
                 j.Bias = D(o, "bias", j.Bias);
+                j.LeaveA = D(o, "leaveA", j.LeaveA);
+                j.LeaveB = D(o, "leaveB", j.LeaveB);
+                j.LeaveForeA = D(o, "leaveForeA", j.LeaveForeA);
+                j.LeaveForeB = D(o, "leaveForeB", j.LeaveForeB);
+                j.TanA = D(o, "tanA", j.TanA);
+                j.TanB = D(o, "tanB", j.TanB);
                 j.Segments = I(o, "segments", j.Segments);
                 j.Mirror = (bool?)o["mirror"] ?? j.Mirror;
                 j.OpenA = D(o, "openA", j.OpenA);
@@ -175,6 +185,10 @@ public sealed class DesignEditor
                 j.Buttress = D(o, "buttress", j.Buttress);
                 j.Follow = (bool?)o["follow"] ?? j.Follow;
                 j.OpenB = D(o, "openB", j.OpenB);
+                j.Collar = (bool?)o["collar"] ?? j.Collar;
+                j.CollarHeight = D(o, "collarHeight", j.CollarHeight);
+                j.CollarMargin = D(o, "collarMargin", j.CollarMargin);
+                j.CollarBevel = D(o, "collarBevel", j.CollarBevel);
                 if (o["clad"] is not null)
                 {
                     if (!HullBody.CladKinds.Contains(Str(o, "clad")))
@@ -192,6 +206,10 @@ public sealed class DesignEditor
                 }
                 if (o["buttressSeed"] is not null) j.ButtressSeed = Math.Clamp(I(o, "buttressSeed"), 0, 99999);
                 if (o["buttressSize"] is not null) j.ButtressSize = Math.Clamp(Snap(D(o, "buttressSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["matchClad"] is not null) j.MatchClad = (bool)o["matchClad"]!;
+                if (o["matchButtress"] is not null) j.MatchButtress = (bool)o["matchButtress"]!;
+                if (o["matchColour"] is not null) j.MatchColour = (bool)o["matchColour"]!;
+                j.SetOwnPaint(o["paint"] as JsonObject);
                 if (o["buttressDepth"] is not null) j.ButtressDepth = Math.Clamp(Snap(D(o, "buttressDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 j.Tidy();
                 return "";
@@ -220,6 +238,9 @@ public sealed class DesignEditor
                 d.Hulls.Remove(h);
                 d.Pieces.RemoveAll(p => p.Hull == h.Id);
                 d.Joins.RemoveAll(j => j.A.Hull == h.Id || j.B.Hull == h.Id);
+                foreach (var o2 in d.Hulls)
+                    if (o2.CladFrom == h.Id)
+                        o2.CladFrom = 0;
                 return "";
             }
             case "moveHull":
@@ -240,8 +261,16 @@ public sealed class DesignEditor
                 if (o["clad"] is not null)
                 {
                     if (!HullBody.CladKinds.Contains(Str(o, "clad")))
-                        return "cladding is Off, Plates or Heavy";
+                        return "cladding is Off, Plates, Heavy or Hex";
                     h.Clad = Str(o, "clad");
+                }
+                if (o.ContainsKey("cladFrom"))
+                {
+                    var f = o["cladFrom"] is null ? 0 : I(o, "cladFrom");
+                    if (f == 0) h.CladFrom = 0;
+                    else if (d.Hull(f) is not { } src) return "no such body to match";
+                    else if (!d.CanMatchClad(h, src)) return "that would match the cladding round in a loop";
+                    else h.CladFrom = f;
                 }
                 if (o["cladSeed"] is not null) h.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
                 if (o["cladSize"] is not null) h.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
@@ -259,6 +288,20 @@ public sealed class DesignEditor
                 if (o["wear"] is not null) h.Wear = Math.Clamp(D(o, "wear"), 0, 1);
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
+                if (o["material"] is not null)
+                {
+                    if (!HullBody.Materials.Contains(Str(o, "material")))
+                        return "unknown material " + Str(o, "material");
+                    h.Material = Str(o, "material");
+                }
+                if (o["cladMaterial"] is not null)
+                {
+                    if (Str(o, "cladMaterial") != "Hull" && !HullBody.Materials.Contains(Str(o, "cladMaterial")))
+                        return "unknown cladding material " + Str(o, "cladMaterial");
+                    h.CladMaterial = Str(o, "cladMaterial");
+                }
+                if (o["damage"] is not null) h.Damage = Math.Clamp(Math.Round(D(o, "damage"), 2), 0, 1);
+                if (o["damageSeed"] is not null) h.DamageSeed = Math.Clamp(I(o, "damageSeed"), 0, 99999);
                 return "";
             }
             case "moveStation":
@@ -653,6 +696,10 @@ public sealed class DesignEditor
                     if (o["panelColour"] is not null) q.PanelColour = Room.Colour(Str(o, "panelColour"), q.PanelColour);
                     if (o["trimColour"] is not null) q.TrimColour = Room.Colour(Str(o, "trimColour"), q.TrimColour);
                     if (o["lights"] is not null) q.Lights = (bool)o["lights"]!;
+                    if (o["wallStyle"] is not null) q.WallStyle = Room.WallStyles.FirstOrDefault(k => string.Equals(k, Str(o, "wallStyle"), StringComparison.OrdinalIgnoreCase)) ?? q.WallStyle;
+                    if (o["wallColour"] is not null) q.WallColour = Str(o, "wallColour") is { Length: > 0 } wc ? Room.Colour(wc, q.WallColour) : "";
+                    if (o["seed"] is not null) q.Seed = Math.Clamp((int)Math.Round(D(o, "seed")), 0, Room.SeedMax);
+                    if (o["floor"] is not null) q.Floor = Room.FloorKinds.FirstOrDefault(k => string.Equals(k, Str(o, "floor"), StringComparison.OrdinalIgnoreCase)) ?? q.Floor;
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)

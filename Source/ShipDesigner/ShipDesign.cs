@@ -68,6 +68,34 @@ public sealed class ShipDesign
     public int NewId() => _next++;
 
     public HullBody? Hull(int id) => Hulls.Find(h => h.Id == id);
+
+    /// <summary>The body whose cladding h draws with: h's own, or the end of its chain of matched bodies.</summary>
+    public HullBody CladSource(HullBody h)
+    {
+        var s = h;
+        for (var i = 0; i < MaxHulls && s.CladFrom != 0; i++)
+        {
+            if (Hull(s.CladFrom) is not { } n || n == h)
+                break;
+            s = n;
+        }
+        return s;
+    }
+
+    /// <summary>Whether h may follow src's cladding: another body, whose own chain doesn't lead back to h.</summary>
+    public bool CanMatchClad(HullBody h, HullBody src)
+    {
+        var s = src;
+        for (var i = 0; i <= MaxHulls; i++)
+        {
+            if (s == h)
+                return false;
+            if (s.CladFrom == 0 || Hull(s.CladFrom) is not { } n)
+                return true;
+            s = n;
+        }
+        return false;
+    }
     public Piece? PieceById(int id) => Pieces.Find(p => p.Id == id);
     public Room? RoomById(int id) => Rooms.Find(r => r.Id == id);
     public HullJoin? JoinById(int id) => Joins.Find(j => j.Id == id);
@@ -82,7 +110,7 @@ public sealed class ShipDesign
             ["version"] = Version,
             ["name"] = Name,
             ["decks orientation"] = Stacked ? "stacked" : "along",
-            ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; return (JsonNode)j; })]),
+            ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; if (h.CladFrom != 0 && HullIndex(h.CladFrom) is var ci && ci >= 0) j["cladFrom"] = ci; return (JsonNode)j; })]),
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
@@ -106,6 +134,11 @@ public sealed class ShipDesign
         foreach (var h in o["hulls"]?.AsArray() ?? [])
             if (h is JsonObject ho && d.Hulls.Count < MaxHulls)
                 d.Hulls.Add(HullBody.FromJson(ho, d.Take(ho)));
+        // A body's matched cladding names the other by its place in the list; one that would close a loop is dropped.
+        var hl = o["hulls"]?.AsArray().OfType<JsonObject>().Take(d.Hulls.Count).ToList() ?? [];
+        for (var i = 0; i < hl.Count; i++)
+            if ((int?)hl[i]["cladFrom"] is int ci && ci >= 0 && ci < d.Hulls.Count && d.CanMatchClad(d.Hulls[i], d.Hulls[ci]))
+                d.Hulls[i].CladFrom = d.Hulls[ci].Id;
         foreach (var k in o["decks"]?.AsArray() ?? [])
             if (k is JsonObject ko && d.Decks.Count < MaxDecks)
                 d.Decks.Add(new Deck { Floor = F(ko["floor"], 0.25), Height = Math.Clamp(F(ko["height"], 3), 2.2, 8) });
@@ -203,7 +236,7 @@ public sealed class Room
     public List<RoomExt> Exts = []; // the room grown out of a wall or up through its ceiling, in a shape (Karl, 2026-11-24)
     public bool RunAft; // the same at its aft end, into the stern (Karl, 2026-11-24: an option for the rear as well)
     public bool RunOn; // with ToHull: its open ends run on into the nose or the stern while there is floor (Karl, 2026-11-24), a player's choice
-    public double WallThick = 0.1; // its walls' shell, built outward from its box (Karl, 2026-11-24)
+    public double WallThick = 0.1; // its walls' shell, inside its box (Karl, 2026-11-25; outward before)
     public const double WallThickMax = 0.3;
     // Its interior cladding (the user's corridor references, 2026-11-24): a style, the ribs' spacing, two colours and its lights.
     public static readonly string[] InteriorStyles = ["Off", "Clean", "Industrial"];
@@ -213,6 +246,15 @@ public sealed class Room
     public string PanelColour = "#d9dee3";
     public string TrimColour = "#e0a526";
     public bool Lights = true;
+    /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
+    public static readonly string[] FloorKinds = ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"];
+    /// <summary>Its walls' relief in Room view when it has no interior cladding (Karl, 2026-11-25).</summary>
+    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"];
+    public string WallStyle = "Plain";
+    public string WallColour = ""; // empty: its kind's colour, darkened
+    public int Seed; // varies the random parts of its walls and floor
+    public const int SeedMax = 999;
+    public string Floor = "Plates";
     public static string Colour(string? v, string or) => v is { Length: 7 } && v[0] == '#' && v.Skip(1).All(Uri.IsHexDigit) ? v.ToLowerInvariant() : or;
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
@@ -224,7 +266,7 @@ public sealed class Room
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
         ["wallThick"] = ShipDesign.R(WallThick),
-        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights,
+        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights, ["floor"] = Floor, ["wallStyle"] = WallStyle, ["wallColour"] = WallColour, ["seed"] = Seed,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -252,6 +294,10 @@ public sealed class Room
         r.PanelColour = Colour((string?)o["panelColour"], "#d9dee3");
         r.TrimColour = Colour((string?)o["trimColour"], "#e0a526");
         r.Lights = (bool?)o["lights"] ?? true;
+        r.Floor = FloorKinds.FirstOrDefault(k => string.Equals(k, (string?)o["floor"], StringComparison.OrdinalIgnoreCase)) ?? "Plates";
+        r.WallStyle = WallStyles.FirstOrDefault(k => string.Equals(k, (string?)o["wallStyle"], StringComparison.OrdinalIgnoreCase)) ?? "Plain";
+        r.WallColour = (string?)o["wallColour"] is { Length: > 0 } wc ? Colour(wc, "") : "";
+        r.Seed = Math.Clamp((int?)o["seed"] ?? 0, 0, SeedMax);
         r.Normalise();
         return r;
     }

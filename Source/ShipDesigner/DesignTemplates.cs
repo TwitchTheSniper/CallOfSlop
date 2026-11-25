@@ -101,7 +101,7 @@ public static class DesignTemplates
         List<(double H, double Y)> fit = [.. sec.Select(q => (Math.Round(q.H / sw * w / 2, 3), Math.Round((q.Y - y0) / Math.Max(1e-6, y1 - y0) * h, 3)))];
         segments = Math.Clamp(segments, 1, ShipDesign.MaxStations - 1);
         len = Math.Clamp(len, 0.5, 200);
-        var body = new HullBody { Id = d.NewId(), Name = section, Cut = true };
+        var body = new HullBody { Id = d.NewId(), Name = section };
         for (var i = 0; i <= segments; i++)
         {
             var end = i == 0 || i == segments;

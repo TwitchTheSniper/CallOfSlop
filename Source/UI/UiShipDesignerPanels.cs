@@ -14,33 +14,31 @@ public sealed partial class Ui
     private string _shapePick = "Zero Day beam";
     private string _newBody = "Main hull";
 
-    /// <summary>The Connect tool's settings (the page's cOpt).</summary>
+    /// <summary>The Connect tool's settings (the page's cOpt): the section, the numbers by their command keys, and three ticks.</summary>
     private sealed class JoinOpt
     {
+        public static readonly string[] Keys = ["w", "h", "wb", "hb", "twist", "rotA", "rotB", "sweepUp", "sweepFore", "bias", "segments", "flare", "buttress",
+            "openA", "openB", "leaveA", "leaveB", "leaveForeA", "leaveForeB", "tanA", "tanB"];
+
         public string Section = "Round";
-        public double W = 1.2, H = 1.6, Wb = 1.2, Hb = 1.6, Twist, SweepUp, SweepFore, Bias, Flare = 1.6, Buttress = 0.8, OpenA = 0.9, OpenB = 0.9;
-        public int Segments = 6;
-        public bool Mirror = true, Follow, SquareHole;
+        public readonly Dictionary<string, double> N = new()
+        {
+            ["w"] = 1.2, ["h"] = 1.6, ["wb"] = 1.2, ["hb"] = 1.6, ["twist"] = 0, ["rotA"] = 0, ["rotB"] = 0, ["sweepUp"] = 0, ["sweepFore"] = 0, ["bias"] = 0,
+            ["segments"] = 6, ["flare"] = 1.6, ["buttress"] = 0.8, ["openA"] = 0.9, ["openB"] = 0.9, ["leaveA"] = 0, ["leaveB"] = 0, ["leaveForeA"] = 0,
+            ["leaveForeB"] = 0, ["tanA"] = 0.9, ["tanB"] = 0.9,
+        };
+        public bool Mirror, Follow, SquareHole;
+
+        public double this[string k] { get => N[k]; set => N[k] = value; }
 
         public void Into(JsonObject o)
         {
             o["section"] = Section;
-            o["w"] = W;
-            o["h"] = H;
-            o["wb"] = Wb;
-            o["hb"] = Hb;
-            o["twist"] = Twist;
-            o["sweepUp"] = SweepUp;
-            o["sweepFore"] = SweepFore;
-            o["bias"] = Bias;
-            o["segments"] = Segments;
+            foreach (var (k, v) in N)
+                o[k] = k == "segments" ? (int)Math.Round(v) : v;
             o["mirror"] = Mirror;
-            o["flare"] = Flare;
-            o["buttress"] = Buttress;
             o["follow"] = Follow;
             o["squareHole"] = SquareHole;
-            o["openA"] = OpenA;
-            o["openB"] = OpenB;
         }
     }
 
@@ -165,6 +163,32 @@ public sealed partial class Ui
                 }
                 EndRow();
             }
+            if (_roomView is { } rv)
+            {
+                var vr = ById(rooms, rv.Room);
+                H2("Room view");
+                ImGui.Text(Found(vr) ? $"{RoomName(vr)} (deck {I(vr, "deck") + 1})" : "");
+                Checkbox("Show connected rooms##sdrvconn", rv.Connected, v => EnterRoomView(rv.Room, v));
+                Checkbox("Opaque##sdrvopq", _roomOpaque, v => { _roomOpaque = v; Rebuild(); });
+                // Live while dragging: only the plane moves.
+                ImGui.Text("Cutaway"u8);
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(-30 * _scale);
+                var cut = (float)_roomCut;
+                if (ImGui.SliderFloat("##sdrvcut"u8, ref cut, 0, 100, "%.0f%%"u8, ImGuiSliderFlags.AlwaysClamp))
+                {
+                    _roomCut = Math.Round(cut);
+                    ApplyCut();
+                }
+                ImGui.SameLine();
+                if (ImGui.SmallButton("R##sdrvcutr"u8))
+                {
+                    _roomCut = 100;
+                    ApplyCut();
+                }
+                Hint("Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.");
+                return;
+            }
             var d = _sdDeck < decks.Count ? decks[_sdDeck] : default;
             if (_sdMode == "connectors")
             {
@@ -277,31 +301,92 @@ public sealed partial class Ui
         Row();
         Checkbox("Mirrored pair##sdmir", B(h, "mirror"), v => Cmd(C("setHull", ("hull", hid), ("mirror", v))));
 
-        // Cladding: plates of varied size laid on the skin, raised a few cm, off every opening.
+        void Hs(params (string, JsonNode?)[] kv) => Cmd(C("setHull", [("hull", hid), .. kv]));
+
+        H3("Material");
+        MatCombo("hm" + hid, Str(h, "material", "Painted"), MatNames, v => Hs(("material", v)));
+        Row();
+        if (ResetAll("hmat", "Material back to its default"))
+            Hs(DfltOf("hull", "material"));
+        Hint("Painted is the flat look; metals reflect the room and tint the paint. Connections take hull A's material.");
+
+        // Cladding: plates of varied size laid on the skin, raised a few cm, off every opening. Match body follows another body's live.
         var clad = Get(h, "clad");
         var ck = Str(clad, "kind", "Off");
         H3("Cladding");
-        foreach (var k in new[] { "Off", "Plates", "Heavy" })
+        var hulls = Arr(S, "hulls").ToList();
+        var from = I(h, "cladFrom");
+        bool Reaches(int a, int b)
         {
-            if (OnButton($"{k}##sdhc{k}", ck == k))
-                Cmd(C("setHull", ("hull", hid), ("clad", k)));
-            Row();
+            var x = ById(hulls, a);
+            for (var n = 0; Found(x) && n <= hulls.Count; n++, x = ById(hulls, I(x, "cladFrom")))
+                if (I(x, "id") == b)
+                    return true;
+            return false;
         }
-        ImGui.NewLine();
-        if (ck != "Off")
+        ImGui.Text("Match body"u8);
+        Row();
+        var src = from != 0 ? ById(hulls, from) : default;
+        ImGui.SetNextItemWidth(170 * _scale);
+        if (ImGui.BeginCombo("##sdcladmatch"u8, Found(src) ? Str(src, "name") : "None"))
         {
-            Slider("Panel size", Math.Round(D(clad, "size", 1.5) * 100), 40, 600, 5, " cm", v => Cmd(C("setHull", ("hull", hid), ("cladSize", v / 100))), "hcs");
-            Slider("Depth", Math.Round(D(clad, "depth", 1) * 100), 25, 250, 5, "%", v => Cmd(C("setHull", ("hull", hid), ("cladDepth", v / 100))), "hcd");
-            SeedRow("hcseed", I(clad, "seed", 1), v => Cmd(C("setHull", ("hull", hid), ("cladSeed", v))));
+            if (ImGui.Selectable("None##sdcmnone"u8, from == 0))
+                Hs(("cladFrom", null));
+            foreach (var o in hulls.Where(o => I(o, "id") != hid))
+            {
+                var loop = Reaches(I(o, "id"), hid);
+                if (ImGui.Selectable($"{Str(o, "name")}##sdcm{I(o, "id")}", from == I(o, "id"), loop ? ImGuiSelectableFlags.Disabled : ImGuiSelectableFlags.None))
+                    Hs(("cladFrom", I(o, "id")));
+            }
+            ImGui.EndCombo();
         }
-        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare.");
+        if (Found(src))
+            Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
+        else
+        {
+            foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
+            {
+                if (OnButton($"{k}##sdhc{k}", ck == k))
+                    Hs(("clad", k));
+                Row();
+            }
+            ImGui.NewLine();
+            if (ck != "Off")
+            {
+                ImGui.Text("Material"u8);
+                Row();
+                MatCombo("hcm" + hid, Str(clad, "material", "Hull"), MatNames.Prepend("Hull"), v => Hs(("cladMaterial", v)));
+                Row();
+                if (ResetAll("hcmat", "Cladding material back to the hull's"))
+                    Hs(DfltOf("hull", "cladMaterial"));
+                Slider("Panel size", Math.Round(D(clad, "size", 1.5) * 100), 40, 600, 5, " cm", v => Hs(("cladSize", v / 100)), "hcs", Dflt("hull", "cladSize", 100));
+                var fit = _hullCopies.TryGetValue(hid, out var kc) && kc.Count > 0 ? kc[0].CladFit : 0;
+                if (fit > 0)
+                    Hint($"{(ck == "Hex" ? "Hex" : "Panel")} size raised to {Math.Round(fit * 100)} cm to fit");
+                Slider("Depth", Math.Round(D(clad, "depth", 1) * 100), 25, 250, 5, "%", v => Hs(("cladDepth", v / 100)), "hcd", Dflt("hull", "cladDepth", 100));
+                if (ResetAll("hcsd", "Panel size and depth back to their defaults"))
+                    Hs(DfltOf("hull", "cladSize", "cladDepth"));
+                SeedRow("hcseed", I(clad, "seed", 1), v => Hs(("cladSeed", v)));
+            }
+        }
+        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare.");
+
+        // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
+        H3("Damage");
+        Slider("Damage", Math.Round(D(h, "damage") * 100), 0, 100, 1, "%", v => Hs(("damage", v / 100)), "hdmg", Dflt("hull", "damage", 100));
+        SeedRow("hdseed", I(h, "damageSeed", 1), v => Hs(("damageSeed", v)));
+        if (ResetAll("hdmg", "Damage and its seed back to their defaults"))
+            Hs(DfltOf("hull", "damage", "damageSeed"));
+        Hint("Plates and tiles go missing, lift or dent; scorch and grime darken patches; past 60% the skin itself dents (drawn only: placement is unchanged). Connections take hull A's.");
 
         // Rounded ends: the skin curves into the cap over this radius.
         var rMaxF = Math.Max(0, Math.Floor(D(h, "roundMaxFore") * 20) * 5);
         var rMaxA = Math.Max(0, Math.Floor(D(h, "roundMaxAft") * 20) * 5);
         H3("Rounded ends");
-        Slider("Fore radius", Math.Round(Math.Min(D(h, "roundFore"), D(h, "roundMaxFore")) * 100), 0, rMaxF, 5, " cm", v => Cmd(C("setHull", ("hull", hid), ("roundFore", v / 100))), "rf");
-        Slider("Aft radius", Math.Round(Math.Min(D(h, "roundAft"), D(h, "roundMaxAft")) * 100), 0, rMaxA, 5, " cm", v => Cmd(C("setHull", ("hull", hid), ("roundAft", v / 100))), "ra");
+        Slider("Fore radius", Math.Round(Math.Min(D(h, "roundFore"), D(h, "roundMaxFore")) * 100), 0, rMaxF, 5, " cm", v => Hs(("roundFore", v / 100)), "rf", Dflt("hull", "roundFore", 100));
+        Slider("Aft radius", Math.Round(Math.Min(D(h, "roundAft"), D(h, "roundMaxAft")) * 100), 0, rMaxA, 5, " cm", v => Hs(("roundAft", v / 100)), "ra", Dflt("hull", "roundAft", 100));
+        if (ResetAll("hround", "Both radii back to their defaults"))
+            Hs(DfltOf("hull", "roundFore", "roundAft"));
         Hint("0: a hard edge. At most half the end's smallest half-size, and short of the next station.");
 
         // Paint: mostly dark with bold accent areas, over the facets and the cladding plates.
@@ -309,24 +394,26 @@ public sealed partial class Ui
         H3("Paint");
         ImGui.Text("Base"u8);
         Row();
-        Colour("base" + hid, Str(h, "skin"), v => Cmd(C("setHull", ("hull", hid), ("skin", v))));
+        Colour("base" + hid, Str(h, "skin"), v => Hs(("skin", v)));
         Row();
         ImGui.Text("Accent"u8);
         Row();
-        Colour("accent" + hid, Str(pa, "accent", "#d8742a"), v => Cmd(C("setHull", ("hull", hid), ("accent", v))));
-        Slider("Accent amount", Math.Round(D(pa, "amount") * 100), 0, 100, 1, "%", v => Cmd(C("setHull", ("hull", hid), ("accentAmount", v / 100))), "pam");
+        Colour("accent" + hid, Str(pa, "accent", "#d8742a"), v => Hs(("accent", v)));
+        Slider("Accent amount", Math.Round(D(pa, "amount") * 100), 0, 100, 1, "%", v => Hs(("accentAmount", v / 100)), "pam", Dflt("hull", "accentAmount", 100));
         ImGui.Text("Pattern"u8);
         var pat = Str(pa, "pattern", "Blocks");
         foreach (var k in new[] { "Blocks", "Stripes", "Bands" })
         {
             Row();
             if (OnButton($"{k}##sdpat{k}", pat == k))
-                Cmd(C("setHull", ("hull", hid), ("pattern", k)));
+                Hs(("pattern", k));
         }
         if (pat != "Blocks")
-            Slider("Stripe width", Math.Round(D(pa, "stripe", 1.5) * 100), 20, 1000, 5, " cm", v => Cmd(C("setHull", ("hull", hid), ("stripe", v / 100))), "pst");
-        Slider("Wear", Math.Round(D(pa, "wear") * 100), 0, 100, 1, "%", v => Cmd(C("setHull", ("hull", hid), ("wear", v / 100))), "pw");
-        SeedRow("pseed", I(pa, "seed", 1), v => Cmd(C("setHull", ("hull", hid), ("paintSeed", v))));
+            Slider("Stripe width", Math.Round(D(pa, "stripe", 1.5) * 100), 20, 1000, 5, " cm", v => Hs(("stripe", v / 100)), "pst", Dflt("hull", "stripe", 100));
+        Slider("Wear", Math.Round(D(pa, "wear") * 100), 0, 100, 1, "%", v => Hs(("wear", v / 100)), "pw", Dflt("hull", "wear", 100));
+        if (ResetAll("hpaint", "Accent amount, stripe width and wear back to their defaults"))
+            Hs(DfltOf("hull", "accentAmount", "stripe", "wear"));
+        SeedRow("pseed", I(pa, "seed", 1), v => Hs(("paintSeed", v)));
         Hint("Blocks: that share of facets and plates in the accent. Stripes run along the ship, bands across it. Wear darkens and varies the tones. Connections take hull A's paint.");
 
         H3("Segments");
@@ -635,8 +722,21 @@ public sealed partial class Ui
 
     private void JoinControls(JoinOpt o, Action apply, string id)
     {
+        // Each slider resets to HullJoin's default (the catalogue's), as its own step.
+        void Js(string label, string key, double scale, double min, double max, double step, string unit) =>
+            Slider(label, Math.Round(o[key] * scale * 1e6) / 1e6, min, max, step, unit, v => { o[key] = v / scale; apply(); }, id + key, Dflt("join", key, scale));
+        void All(string rid, params string[] keys)
+        {
+            if (ResetAll(id + rid, "Every slider here back to its default"))
+            {
+                foreach (var k in keys)
+                    o[k] = Dflt("join", k);
+                apply();
+            }
+        }
         H3("Connection shape");
         Gallery("sdjg" + id, o.Section, n => { o.Section = n; apply(); }, 150);
+        EndRow();
         EndRow();
         foreach (var (n, label) in new[] { ("TriangleUp", "Triangle up"), ("TriangleDown", "Triangle down"), ("Wedge", "Wedge"), ("Diamond", "Diamond"), ("Hexagon", "Hexagon") })
             if (WrapButton($"{label}##sdjx{id}{n}", o.Section == n))
@@ -645,30 +745,60 @@ public sealed partial class Ui
                 apply();
             }
         EndRow();
-        Slider("Width A", o.W, 0.2, 8, 0.1, " m", v => { o.W = v; apply(); }, id + "wa");
-        Slider("Height A", o.H, 0.2, 8, 0.1, " m", v => { o.H = v; apply(); }, id + "ha");
-        Slider("Width B", o.Wb, 0.2, 8, 0.1, " m", v => { o.Wb = v; apply(); }, id + "wb");
-        Slider("Height B", o.Hb, 0.2, 8, 0.1, " m", v => { o.Hb = v; apply(); }, id + "hb");
-        Slider("Twist", o.Twist, -180, 180, 1, " deg", v => { o.Twist = v; apply(); }, id + "tw");
-        Slider("Sweep up", o.SweepUp, -20, 20, 0.1, " m", v => { o.SweepUp = v; apply(); }, id + "su");
-        Slider("Sweep fore", o.SweepFore, -20, 20, 0.1, " m", v => { o.SweepFore = v; apply(); }, id + "sf");
-        Slider("Thickness bias", Math.Round(o.Bias * 100), -90, 90, 5, "%", v => { o.Bias = v / 100; apply(); }, id + "bi");
-        Slider("Segments", o.Segments, 1, 24, 1, "", v => { o.Segments = (int)v; apply(); }, id + "sg");
+        Js("Width A", "w", 1, 0.2, 8, 0.1, " m");
+        Js("Height A", "h", 1, 0.2, 8, 0.1, " m");
+        Js("Width B", "wb", 1, 0.2, 8, 0.1, " m");
+        Js("Height B", "hb", 1, 0.2, 8, 0.1, " m");
+        Js("Twist", "twist", 1, -180, 180, 1, " deg");
+        Js("Rotate end A", "rotA", 1, -180, 180, 1, " deg");
+        Js("Rotate end B", "rotB", 1, -180, 180, 1, " deg");
+        H3("Arch (how each end leaves its hull)");
+        Js("Leave A toward B", "leaveA", 1, -80, 80, 1, " deg");
+        Js("Leave A along hull", "leaveForeA", 1, -80, 80, 1, " deg");
+        Js("Tangent length A", "tanA", 100, 5, 250, 5, "%");
+        Js("Leave B toward A", "leaveB", 1, -80, 80, 1, " deg");
+        Js("Leave B along hull", "leaveForeB", 1, -80, 80, 1, " deg");
+        Js("Tangent length B", "tanB", 100, 5, 250, 5, "%");
+        All("arch", "leaveA", "leaveForeA", "tanA", "leaveB", "leaveForeB", "tanB");
+        H3("Sweep and bias");
+        Js("Sweep up", "sweepUp", 1, -20, 20, 0.1, " m");
+        Js("Sweep fore", "sweepFore", 1, -20, 20, 0.1, " m");
+        Js("Thickness bias", "bias", 100, -90, 90, 5, "%");
+        Js("Segments", "segments", 1, 1, 24, 1, "");
+        All("shape", "w", "h", "wb", "hb", "twist", "rotA", "rotB", "sweepUp", "sweepFore", "bias", "segments");
         H3("Buttress (the cladding where it meets each hull)");
-        Slider("Flare", Math.Round(o.Flare * 100), 100, 400, 5, "%", v => { o.Flare = v / 100; apply(); }, id + "fl");
-        Slider("Runs up", o.Buttress, 0, 6, 0.1, " m", v => { o.Buttress = v; apply(); }, id + "ru");
+        Js("Flare", "flare", 100, 100, 400, 5, "%");
+        Js("Runs up", "buttress", 1, 0, 6, 0.1, " m");
+        All("butt", "flare", "buttress");
         Checkbox($"Follow the hull (its base laid onto the skin)##sdfol{id}", o.Follow, v => { o.Follow = v; apply(); });
         H3("Sockets (the hole each end cuts)");
         Checkbox($"Square holes (else oval)##sdsq{id}", o.SquareHole, v => { o.SquareHole = v; apply(); });
-        Slider("First end", Math.Round(o.OpenA * 100), 0, 150, 5, "%", v => { o.OpenA = v / 100; apply(); }, id + "oa");
-        Slider("Second end", Math.Round(o.OpenB * 100), 0, 150, 5, "%", v => { o.OpenB = v / 100; apply(); }, id + "ob");
+        Js("First end", "openA", 100, 0, 150, 5, "%");
+        Js("Second end", "openB", 100, 0, 150, 5, "%");
+        All("open", "openA", "openB");
         Checkbox($"Mirror to the other side##sdjm{id}", o.Mirror, v => { o.Mirror = v; apply(); });
     }
 
-    private void CladControls(string id, JsonElement clad, double defSize, string kindKey, string sizeKey, string depthKey, string seedKey, Action<JsonObject> set)
+    /// <summary>The page's material drop-down.</summary>
+    private void MatCombo(string id, string value, IEnumerable<string> names, Action<string> set, float width = 170)
+    {
+        ImGui.SetNextItemWidth(width * _scale);
+        if (ImGui.BeginCombo("##sdmat" + id, value))
+        {
+            foreach (var n in names)
+                if (ImGui.Selectable(n, n == value))
+                    set(n);
+            ImGui.EndCombo();
+        }
+    }
+
+    private static IEnumerable<string> MatNames => SdMats.Select(m => m.Name);
+
+    private void CladControls(string id, JsonElement clad, double defSize, string kindKey, string sizeKey, string depthKey, string seedKey, Action<JsonObject> set,
+        string dfltKind = "join")
     {
         var kind = Str(clad, "kind", "Off");
-        foreach (var k in new[] { "Off", "Plates", "Heavy" })
+        foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
         {
             if (OnButton($"{k}##sdcl{id}{k}", kind == k))
                 set(new JsonObject { [kindKey] = k });
@@ -677,8 +807,10 @@ public sealed partial class Ui
         ImGui.NewLine();
         if (kind == "Off")
             return;
-        Slider("Panel size", Math.Round(D(clad, "size", defSize) * 100), 40, 600, 5, " cm", v => set(new JsonObject { [sizeKey] = v / 100 }), id + "s");
-        Slider("Depth", Math.Round(D(clad, "depth", 1) * 100), 25, 250, 5, "%", v => set(new JsonObject { [depthKey] = v / 100 }), id + "d");
+        Slider("Panel size", Math.Round(D(clad, "size", defSize) * 100), 40, 600, 5, " cm", v => set(new JsonObject { [sizeKey] = v / 100 }), id + "s", Dflt(dfltKind, sizeKey, 100));
+        Slider("Depth", Math.Round(D(clad, "depth", 1) * 100), 25, 250, 5, "%", v => set(new JsonObject { [depthKey] = v / 100 }), id + "d", Dflt(dfltKind, depthKey, 100));
+        if (ResetAll(id + "sd", "Panel size and depth back to their defaults"))
+            set(new JsonObject { [sizeKey] = Dflt(dfltKind, sizeKey), [depthKey] = Dflt(dfltKind, depthKey) });
         SeedRow(id + "seed", I(clad, "seed", 1), v => set(new JsonObject { [seedKey] = v }));
     }
 
@@ -849,25 +981,74 @@ public sealed partial class Ui
             if (!Found(j))
                 return;
             var jid = I(j, "id");
-            var o = new JoinOpt
-            {
-                Section = Str(j, "section"), W = D(j, "w"), H = D(j, "h"), Wb = D(j, "wb", D(j, "w")), Hb = D(j, "hb", D(j, "h")), Twist = D(j, "twist"),
-                SweepUp = D(j, "sweepUp"), SweepFore = D(j, "sweepFore"), Bias = D(j, "bias"), Segments = I(j, "segments"), Mirror = B(j, "mirror"),
-                Flare = D(j, "flare"), Buttress = D(j, "buttress"), Follow = B(j, "follow"), SquareHole = B(j, "squareHole"), OpenA = D(j, "openA"), OpenB = D(j, "openB"),
-            };
+            var o = new JoinOpt { Section = Str(j, "section"), Mirror = B(j, "mirror"), Follow = B(j, "follow"), SquareHole = B(j, "squareHole") };
+            foreach (var k in JoinOpt.Keys)
+                o[k] = Has(j, k) ? D(j, k) : k == "wb" ? D(j, "w") : k == "hb" ? D(j, "h") : o[k];
             H2("Connection");
+            string Face(string k) => Str(j, k, "Side") is var f && f != "Side" ? $"{f.ToLowerInvariant()} cap" : "side skin";
+            Hint($"Face: end A on the {Face("faceA")}, end B on the {Face("faceB")}.");
             JoinControls(o, () =>
             {
                 var op = C("setJoin", ("id", jid));
                 o.Into(op);
                 Cmd(op);
             }, "j" + jid);
-            // Cladding on the strut, as a body's; the flared ends into the skins have their own.
+            void Jc(params (string, JsonNode?)[] kv) => Cmd(C("setJoin", [("id", jid), .. kv]));
+
+            // The base plate: a pad on the skin under each end that the buttress stands on.
+            H3("Base plate");
+            var collar = B(j, "collar", true);
+            Checkbox("Base plate##sdcollar", collar, v => Jc(("collar", v)));
+            if (collar)
+            {
+                Slider("Height", Math.Round(D(j, "collarHeight", 0.22) * 100), 2, 100, 1, " cm", v => Jc(("collarHeight", v / 100)), "jch", Dflt("join", "collarHeight", 100));
+                Slider("Margin", Math.Round(D(j, "collarMargin", 0.25) * 100), 0, 200, 1, " cm", v => Jc(("collarMargin", v / 100)), "jcm", Dflt("join", "collarMargin", 100));
+                Slider("Bevel", Math.Round(D(j, "collarBevel", 0.05) * 100), 0, 50, 1, " cm", v => Jc(("collarBevel", v / 100)), "jcb", Dflt("join", "collarBevel", 100));
+                if (ResetAll("jcol", "Height, margin and bevel back to their defaults"))
+                    Jc(DfltOf("join", "collarHeight", "collarMargin", "collarBevel"));
+            }
+            Hint("A pad laid over the skin round each end, following its curve; its top sits just above Heavy cladding (20 cm). The hull's plates stop at its edge and the buttress stands on it.");
+
+            // Match hull colour: the arm, its cladding and its base plates in hull A's paint and material; unticked, its own.
+            H3("Colour");
+            var matchColour = B(j, "matchColour", true);
+            Checkbox("Match hull colour##sdjmc", matchColour, v => Jc(("matchColour", v)));
+            if (matchColour)
+                Hint("Follows hull A's paint and material (base, accent, pattern, wear, seed). Untick for this connection's own.");
+            else
+            {
+                var jp = Get(j, "paint");
+                void Jp(string k, JsonNode? v) => Jc(("paint", new JsonObject { [k] = v }));
+                ImGui.Text("base"u8);
+                Row();
+                Colour("jpb" + jid, Str(jp, "skin", "#c9cdd2"), v => Jp("skin", v));
+                Row();
+                ImGui.Text("accent"u8);
+                Row();
+                Colour("jpa" + jid, Str(jp, "accent", "#d8742a"), v => Jp("accent", v));
+                Row();
+                MatCombo("jpat" + jid, Str(jp, "pattern", "Blocks"), ["Blocks", "Stripes", "Bands"], v => Jp("pattern", v), 110);
+                Slider("Accent", Math.Round(D(jp, "amount") * 100), 0, 100, 1, "%", v => Jp("amount", v / 100), "jpam");
+                Slider("Wear", Math.Round(D(jp, "wear") * 100), 0, 100, 1, "%", v => Jp("wear", v / 100), "jpw");
+                MatCombo("jpm" + jid, Str(jp, "material", "Painted"), MatNames, v => Jp("material", v));
+                SeedRow("jps" + jid, I(jp, "seed", 1), v => Jp("seed", v));
+            }
+
+            // Cladding on the strut, as a body's; the flared ends into the skins have their own. Match hull follows hull A's live.
+            const string matchHint = "Follows hull A's cladding (kind, seed, panel size, depth, material and damage). Untick for this connection's own.";
             H3("Cladding");
-            CladControls("jc", Get(j, "clad"), 1.5, "clad", "cladSize", "cladDepth", "cladSeed", v => Merge("setJoin", jid, v));
+            Checkbox("Match hull##sdjmcl", B(j, "matchClad"), v => Jc(("matchClad", v)));
+            if (B(j, "matchClad"))
+                Hint(matchHint);
+            else
+                CladControls("jc", Get(j, "clad"), 1.5, "clad", "cladSize", "cladDepth", "cladSeed", v => Merge("setJoin", jid, v));
             Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below.");
             H3("Buttress cladding");
-            CladControls("jb", Get(j, "buttressClad"), 0.8, "buttressClad", "buttressSize", "buttressDepth", "buttressSeed", v => Merge("setJoin", jid, v));
+            Checkbox("Match hull##sdjmbu", B(j, "matchButtress"), v => Jc(("matchButtress", v)));
+            if (B(j, "matchButtress"))
+                Hint(matchHint);
+            else
+                CladControls("jb", Get(j, "buttressClad"), 0.8, "buttressClad", "buttressSize", "buttressDepth", "buttressSeed", v => Merge("setJoin", jid, v));
             Hint("Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0.");
             if (ImGui.Button("Delete##sdjdel"u8))
             {
@@ -1172,42 +1353,69 @@ public sealed partial class Ui
             }
         }
         Hint("Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin.");
-        H3("Walls");
-        Slider("Wall thickness", Math.Round(D(r, "wallThick", 0.1) * 100), 0, 30, 1, " cm", v =>
+        if (_roomView == null)
+            Hint("Walls and interior cladding are set in Room view (the drop-down by the Interior tab).");
+        else
         {
-            var a = Cmd(C("setRoom", ("id", rid), ("wallThick", v / 100)));
-            if (Str(a, "error").Length > 0)
-                Toast(Str(a, "error"));
-        }, "wt");
-        Hint("A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none).");
-        H3("Interior");
-        void SetI(JsonObject x)
-        {
-            var a = Merge("setRoom", rid, x);
-            if (Str(a, "error").Length > 0)
-                Toast(Str(a, "error"));
-        }
-        ImGui.Text("Style"u8);
-        var style = Str(r, "interior", "Off");
-        foreach (var k in new[] { "Off", "Clean", "Industrial" })
-        {
+            H3("Walls");
+            void SetW(params (string, JsonNode?)[] kv)
+            {
+                var a = Cmd(C("setRoom", [("id", rid), .. kv]));
+                if (Str(a, "error").Length > 0)
+                    Toast(Str(a, "error"));
+            }
+            Slider("Wall thickness", Math.Round(D(r, "wallThick", 0.1) * 100), 0, 30, 1, " cm", v => SetW(("wallThick", v / 100)), "wt", Dflt("room", "wallThick", 100));
+            if (ResetAll("rwt", "Wall thickness back to its default"))
+                SetW(DfltOf("room", "wallThick"));
+            Hint("A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none).");
+            ImGui.Text("Cladding"u8);
             Row();
-            if (OnButton($"{k}##sdis{k}", style == k))
-                SetI(new JsonObject { ["interior"] = k });
+            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"], v => SetW(("wallStyle", v)), 120);
+            Row();
+            ImGui.Text("Colour"u8);
+            Row();
+            Colour("rwc" + rid, Str(r, "wallColour", "#6b7480"), v => SetW(("wallColour", v)));
+            Row();
+            if (ImGui.Button("Kind's##sdrwck"u8))
+                SetW(("wallColour", ""));
+            ImGui.Text("Floor"u8);
+            Row();
+            MatCombo("rfl" + rid, Str(r, "floor", "Plates"), ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], v => SetW(("floor", v)), 120);
+            Slider("Seed", I(r, "seed"), 0, 999, 1, "", v => SetW(("seed", (int)v)), "rseed", Dflt("room", "seed"));
+            if (ResetAll("rwall", "Cladding, colour, floor and seed back to their defaults"))
+                SetW(DfltOf("room", "wallStyle", "wallColour", "floor", "seed"));
+            Hint("Cladding is relief on the walls when the interior style is Off (the interior has its own). Plates and Hex floors are the interior's plate layer; the others are laid with or without it.");
+            H3("Interior");
+            void SetI(JsonObject x)
+            {
+                var a = Merge("setRoom", rid, x);
+                if (Str(a, "error").Length > 0)
+                    Toast(Str(a, "error"));
+            }
+            ImGui.Text("Style"u8);
+            var style = Str(r, "interior", "Off");
+            foreach (var k in new[] { "Off", "Clean", "Industrial" })
+            {
+                Row();
+                if (OnButton($"{k}##sdis{k}", style == k))
+                    SetI(new JsonObject { ["interior"] = k });
+            }
+            Slider("Rib spacing", D(r, "ribSpacing", 2), 1, 4, 0.25, " m", v => SetI(new JsonObject { ["ribSpacing"] = v }), "rib", Dflt("room", "ribSpacing"));
+            if (ResetAll("rrib", "Rib spacing back to its default"))
+                SetW(DfltOf("room", "ribSpacing"));
+            ImGui.Text("Panels"u8);
+            Row();
+            Colour("panel" + rid, Str(r, "panelColour", "#d9dee3"), v => SetI(new JsonObject { ["panelColour"] = v }));
+            Row();
+            ImGui.Text("Trim"u8);
+            Row();
+            Colour("trim" + rid, Str(r, "trimColour", "#e0a526"), v => SetI(new JsonObject { ["trimColour"] = v }));
+            Row();
+            var lights = B(r, "lights", true);
+            if (OnButton(lights ? "Lights on##sdli" : "Lights off##sdli", lights))
+                SetI(new JsonObject { ["lights"] = !lights });
+            Hint("Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.");
         }
-        Slider("Rib spacing", D(r, "ribSpacing", 2), 1, 4, 0.25, " m", v => SetI(new JsonObject { ["ribSpacing"] = v }), "rib");
-        ImGui.Text("Panels"u8);
-        Row();
-        Colour("panel" + rid, Str(r, "panelColour", "#d9dee3"), v => SetI(new JsonObject { ["panelColour"] = v }));
-        Row();
-        ImGui.Text("Trim"u8);
-        Row();
-        Colour("trim" + rid, Str(r, "trimColour", "#e0a526"), v => SetI(new JsonObject { ["trimColour"] = v }));
-        Row();
-        var lights = B(r, "lights", true);
-        if (OnButton(lights ? "Lights on##sdli" : "Lights off##sdli", lights))
-            SetI(new JsonObject { ["lights"] = !lights });
-        Hint("Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.");
         H3("Mount a socket from this room");
         EndRow();
         foreach (var k in Arr(CAT, "pieces").Where(k => Has(k, "socket") && Str(k, "where") == "skin"))
