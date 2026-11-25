@@ -214,7 +214,7 @@ public sealed partial class ZeroDayWorks2
 
         private void Fill(VPart? store, string material)
         {
-            if (store != null)
+            if (store != null && store.Name != "Materials Bin") // (a bin takes any material and has no settings: it fills from its chute)
                 Config(store, ("material", material), ("fill", 100));
         }
 
