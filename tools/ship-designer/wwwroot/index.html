@@ -672,6 +672,21 @@ function drawHullWindows() {
     if (shaped) { for (let i = 0; i <= nu; i++) ring.push(P((nv - 1) * nu + i % nu)); }
     else { for (let i = 0; i < nu; i++) ring.push(P(i)); for (let j = 1; j < nv; j++) ring.push(P(j * nu + nu - 1));
       for (let i = nu - 2; i >= 0; i--) ring.push(P((nv - 1) * nu + i)); for (let j = nv - 2; j >= 0; j--) ring.push(P(j * nu)); }
+    // Double glazing (Karl, 2026-11-25): the glass above is the outer pane, on the skin; an inner pane sits w.depth in along the window's
+    // ray (never on the outer's plane), and a reveal lines the tunnel between their rims. Single glazed: the one pane at that depth instead.
+    if (w.n && w.depth > 0) {
+      const dn = new THREE.Vector3(...w.n).multiplyScalar(-Math.max(0.05, w.depth));
+      const ip = new Float32Array(pts.length); for (let k = 0; k < pts.length; k += 3) { ip[k] = pts[k] + dn.x; ip[k + 1] = pts[k + 1] + dn.y; ip[k + 2] = pts[k + 2] + dn.z; }
+      const ig = new THREE.BufferGeometry(); ig.setAttribute("position", new THREE.Float32BufferAttribute(ip, 3)); ig.setIndex(idx); ig.computeVertexNormals();
+      const im = new THREE.Mesh(ig, m.material); im.userData = m.userData; im.renderOrder = 5; world.add(im); pickables.push(im);
+      if (w.double === false) m.visible = false;
+      const rp = [], ri = [], R = ring.length;
+      for (const v of ring) rp.push(v.x, v.y, v.z, v.x + dn.x, v.y + dn.y, v.z + dn.z);
+      for (let k = 0; k < R - 1; k++) { const a = 2 * k, b = 2 * (k + 1); ri.push(a, b, b + 1, a, b + 1, a + 1); }
+      const rg = new THREE.BufferGeometry(); rg.setAttribute("position", new THREE.Float32BufferAttribute(rp, 3)); rg.setIndex(ri); rg.computeVertexNormals();
+      const rv = new THREE.Mesh(rg, new THREE.MeshStandardMaterial({ color: 0x4b5058, roughness: 0.7, metalness: 0.3, side: THREE.DoubleSide }));
+      rv.userData = m.userData; world.add(rv); pickables.push(rv);
+    }
     const frame = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), new THREE.LineBasicMaterial({ color: picked ? 0x6fb0ff : 0x2f3237 }));
     frame.renderOrder = 6; world.add(frame);
     // Boarding round the glass (Karl, 2026-11-24): a band 10 cm wide laid on the skin by the same rays as the glass (fpts), from
@@ -1200,6 +1215,21 @@ function swatchPick(label, value, options, onPick) {
   box.append(btn);
   return box;
 }
+// A cutout's sliders (Karl, 2026-11-25): how far the hull cladding keeps clear (reset: auto, worked out from the plates' depth), the
+// hole's size, and a window's glazing (the inner pane's depth, double glazed or not).
+function cutControls(o, send, kind, glass) {
+  if (kind === "piece" && !o.cut) return [];
+  const D = CAT.defaults[kind] || { gap: -1, hole: 1, depth: 0.2, double: true };
+  const auto = Math.round((o.gapAuto ?? 0.15) * 100);
+  const out = [
+    slider(o.gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", o.gap < 0 ? auto : Math.round(o.gap * 100), 0, 100, 1, " cm", () => {}, v => send({ gap: v / 100 }), auto, () => send({ gap: D.gap })),
+    slider("Hole size", Math.round((o.hole ?? 1) * 100), 50, 250, 5, "%", () => {}, v => send({ hole: v / 100 }), Math.round(D.hole * 100), () => send({ hole: D.hole }))];
+  if (glass) out.push(
+    slider("Depth", Math.round((o.depth ?? 0.2) * 100), 5, 100, 1, " cm", () => {}, v => send({ depth: v / 100 }), Math.round(D.depth * 100), () => send({ depth: D.depth })),
+    el("div", { class: "row" }, el("label", {}, el("input", { type: "checkbox", ...(o.double !== false ? { checked: "" } : {}), onchange: e => send({ double: e.target.checked }) }), "Double glazed"),
+      el("button", { class: "reset", title: "Glazing back to its default", onclick: () => send({ depth: D.depth, double: D.double }) }, "\u21ba")));
+  return out;
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1536,6 +1566,7 @@ function inspector() {
       el("p", { class: "hint" }, `On ${r ? r.label || r.kind : "a room"}'s ${{ x0: "port", x1: "starboard", z0: S.stacked ? "lower" : "fore", z1: S.stacked ? "upper" : "aft" }[w.side]} wall. It follows the hull's contour; sizes apply when you let go.`),
       sl("Along the wall", "t", w.t, 0, 100, 1, "%", 100), sl("Width", "w", Math.min(w.w, w.len), 30, Math.max(30, Math.round(w.len * 100)), 5, " cm", 100),
       sl("Height", "h", w.h, 30, 400, 5, " cm", 100), sl("Sill", "sill", w.sill, 0, 300, 5, " cm", 100),
+      ...cutControls(w, o => cmd({ op: "setHullWindow", id: w.id, ...o }), "hullWindow", true),
       el("div", { class: "row" }, el("span", {}, "Shape"), ...[["Rect", "Square"], ["Round", "Round"], ["Oval", "Oval"], ["Arch", "Arched"], ["Hex", "Hexagon"]].map(([k, t]) =>
         el("button", { class: (w.shape || "Rect") === k ? "on" : "", onclick: () => cmd({ op: "setHullWindow", id: w.id, shape: k }) }, t))),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delHullWindow", id: w.id }); select(null, 0); } }, "Delete")));
@@ -1642,6 +1673,7 @@ function inspector() {
       slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 })),
       ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
+      ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),

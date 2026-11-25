@@ -23,6 +23,13 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
         "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
         "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false), _ => null,
     };
+
+    /// <summary>What keeps hull cladding clear: the opening, or a drive's base on the skin (it cuts no hole). Pieces with one get the
+    /// clearance and hole size sliders (Karl, 2026-11-25).</summary>
+    public (double Hx, double Hz, bool Round)? Footprint => Opening ?? Name switch
+    {
+        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => null,
+    };
 }
 
 public static class PieceKinds
@@ -111,12 +118,8 @@ public static class PieceKinds
         }),
         new("Window", "Sockets", "skin", "window", "any room", "A viewport: armoured glass in a frame, cut through the skin. Opens onto the room behind it.", m =>
         {
-            m.Box(-0.7, 0, -1.05, 0.7, 0.12, -0.9, Armour);
-            m.Box(-0.7, 0, 0.9, 0.7, 0.12, 1.05, Armour);
-            m.Box(-0.7, 0, -0.9, -0.55, 0.12, 0.9, Armour);
-            m.Box(0.55, 0, -0.9, 0.7, 0.12, 0.9, Armour);
-            m.Box(-0.55, -0.2, -0.9, 0.55, -0.16, 0.9, Glow);
-            Well(m, 0.55, 0.9, 0.5);
+            WindowFrame(m);
+            Glazing(m, 0.55, 0.9, 0.2, true);
         }),
         new("Docking collar", "Sockets", "skin", "dock", "any room", "A docking collar for another ship or a station's clamp.", m =>
         {
@@ -215,6 +218,30 @@ public static class PieceKinds
         m.Box(-hx - 0.06, -depth, hz, hx + 0.06, 0.02, hz + 0.06, Gun);
         m.Box(-hx - 0.06, -depth, -hz, -hx, 0.02, hz, Gun);
         m.Box(hx, -depth, -hz, hx + 0.06, 0.02, hz, Gun);
+    }
+
+    /// <summary>A window socket's armoured frame round its 1.1 x 1.8 m opening.</summary>
+    public static void WindowFrame(DesignMesh m)
+    {
+        m.Box(-0.7, 0, -1.05, 0.7, 0.12, -0.9, Armour);
+        m.Box(-0.7, 0, 0.9, 0.7, 0.12, 1.05, Armour);
+        m.Box(-0.7, 0, -0.9, -0.55, 0.12, 0.9, Armour);
+        m.Box(0.55, 0, -0.9, 0.7, 0.12, 0.9, Armour);
+    }
+
+    /// <summary>
+    /// A window's glass (Karl, 2026-11-25): double glazed, an outer pane just under the frame (1-3 cm in) and an inner one
+    /// <paramref name="depth"/> in (at least 5 cm, so the panes never share a plane), with a reveal lining the tunnel from the skin to just
+    /// past the inner pane; single glazed, one pane at that depth in the same reveal. Panes stop 4 mm short of the reveal's faces.
+    /// </summary>
+    public static void Glazing(DesignMesh m, double hx, double hz, double depth, bool dbl)
+    {
+        depth = Math.Max(depth, 0.05);
+        Well(m, hx, hz, depth + 0.06);
+        double gx = hx - 0.004, gz = hz - 0.004;
+        if (dbl)
+            m.Box(-gx, -0.03, -gz, gx, -0.012, gz, Glow);
+        m.Box(-gx, -depth - 0.018, -gz, gx, -depth, gz, Glow);
     }
 
     public static PieceKind? Find(string name) => Array.Find(All, k => k.Name == name);

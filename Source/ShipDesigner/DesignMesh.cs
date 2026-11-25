@@ -18,16 +18,18 @@ public sealed class DesignMesh
     private double[] _x = [1, 0, 0], _y = [0, 1, 0], _z = [0, 0, 1];
     private double _scale = 1;
 
-    public void Frame(double ox, double oy, double oz, double[] xa, double[] ya, double[] za, double scale = 1)
+    public void Frame(double ox, double oy, double oz, double[] xa, double[] ya, double[] za, double scale = 1, double across = 1)
     {
-        (_ox, _oy, _oz, _x, _y, _z, _scale) = (ox, oy, oz, xa, ya, za, scale);
+        (_ox, _oy, _oz, _x, _y, _z, _scale, _across) = (ox, oy, oz, xa, ya, za, scale, across);
     }
+
+    private double _across = 1; // an extra scale along x and z (a piece's hole size, Karl 2026-11-25)
 
     public void World() => Frame(0, 0, 0, [1, 0, 0], [0, 1, 0], [0, 0, 1]);
 
     private (double, double, double) Map(double x, double y, double z)
     {
-        x *= _scale; y *= _scale; z *= _scale;
+        x *= _scale * _across; y *= _scale; z *= _scale * _across;
         return (_ox + x * _x[0] + y * _y[0] + z * _z[0], _oy + x * _x[1] + y * _y[1] + z * _z[1], _oz + x * _x[2] + y * _y[2] + z * _z[2]);
     }
 

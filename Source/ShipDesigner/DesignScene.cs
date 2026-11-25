@@ -131,10 +131,14 @@ public static partial class DesignScene
         var near = new List<HullBody>();
         // The openings the sockets on this copy cut through the skin (each a frame and its half sizes).
         var holes = new List<(Place W, double Hx, double Hz, bool Round)>();
+        var holeCut = new List<(double Gap, double Band, bool CladOnly)>();
         foreach (var p in Holes ? d.Pieces : [])
         {
-            if (p.Hull != h.Id || PieceKinds.Find(p.Kind)?.Opening is not { } op)
+            if (p.Hull != h.Id || PieceKinds.Find(p.Kind) is not { } pk || pk.Footprint is not { } op)
                 continue;
+            var fo = pk.Opening is null;
+            var hs = p.Size * p.Hole;
+            var cut = (p.Gap, fo ? 0 : 0.15 * hs + p.Clad, fo);
             var own = Math.Min(p.Copy, h.Copies - 1) == copy;
             // On the other body of a pair, its twin across the ship.
             if (!own && !(p.Pair && h.Copies == 2))
@@ -143,20 +147,27 @@ public static partial class DesignScene
             var w = Where(h, p);
             if (!own)
                 w = new Place([-w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
-            holes.Add((w, op.Hx * p.Size, op.Hz * p.Size, op.Round));
+            holes.Add((w, op.Hx * hs, op.Hz * hs, op.Round));
+            holeCut.Add(cut);
             if (p.Mirror)
-                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx * p.Size, op.Hz * p.Size, op.Round));
+            {
+                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx * hs, op.Hz * hs, op.Round));
+                holeCut.Add(cut);
+            }
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
         var feet = d.Joins.SelectMany(j => j.Feet(d)).Where(f => f.Hull == h.Id).ToList();
         // Every opening as an outline in its own plane (Karl, 2026-11-24: holes cut clean along their edge, not cell by cell).
         var cutouts = new List<Cutout>();
-        foreach (var (w, hx, hz, round) in holes)
-            cutouts.Add(new Cutout(w.O, w.X, w.Y, w.Z, round ? Ellipse(hx, hx) : Rect(hx, hz)));
+        for (var i = 0; i < holes.Count; i++)
+        {
+            var (w, hx, hz, round) = holes[i];
+            cutouts.Add(new Cutout(w.O, w.X, w.Y, w.Z, round ? Ellipse(hx, hx) : Rect(hx, hz)) { GapSet = holeCut[i].Gap, Band = holeCut[i].Band, CladOnly = holeCut[i].CladOnly });
+        }
         var mouthCuts = new List<Cutout>();
         foreach (var m in mouths)
-            mouthCuts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
+            mouthCuts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)) { GapSet = 0.12 });
         cutouts.AddRange(mouthCuts);
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
         foreach (var hw in d.Windows)
@@ -167,7 +178,7 @@ public static partial class DesignScene
             List<List<(double, double, double)>> polys = [[a, b, c, e]];
             foreach (var k in cutouts)
             {
-                if (!k.Near(a, c))
+                if (k.CladOnly || !k.Near(a, c))
                     continue;
                 var next = new List<List<(double, double, double)>>();
                 foreach (var poly in polys)
@@ -189,8 +200,11 @@ public static partial class DesignScene
         }
         bool InSocket(double x, double y, double z)
         {
-            foreach (var (w, hx, hz, round) in holes)
+            for (var hi = 0; hi < holes.Count; hi++)
             {
+                if (holeCut[hi].CladOnly)
+                    continue;
+                var (w, hx, hz, round) = holes[hi];
                 double dx = x - w.O[0], dy = y - w.O[1], dz = z - w.O[2];
                 var ly = dx * w.Y[0] + dy * w.Y[1] + dz * w.Y[2];
                 if (Math.Abs(ly) > 0.8)
@@ -290,17 +304,33 @@ public static partial class DesignScene
         var cladSize = 0.0;
         CladFitSize = 0;
         var hc = CladView(d, h);
+        // Each opening's clearance from the plates' height (Karl, 2026-11-25: a default that keeps plates off the frame).
+        foreach (var k in cutouts)
+            k.Resolve((hc.Clad == "Heavy" ? 0.20 : 0.08) * hc.CladDepth);
         if (hc.Clad != "Off")
             cladSize = CladBody(skinClad, hc, cx, (p, q) =>
             {
+                var mid = ((p.Item1 + q.Item1) / 2, (p.Item2 + q.Item2) / 2, (p.Item3 + q.Item3) / 2);
+                foreach (var (x, y, z) in new[] { p, q, mid })
+                    if (CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z)))
+                        return true;
+                return false;
+            }, (p, q) =>
+            {
                 foreach (var k in cutouts)
-                    if (k.Touches(p, q))
+                    if (k.Touches(p, q, k.Margin))
                         return true;
                 var mid = ((p.Item1 + q.Item1) / 2, (p.Item2 + q.Item2) / 2, (p.Item3 + q.Item3) / 2);
                 foreach (var (x, y, z) in new[] { p, q, mid })
-                    if (InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z)))
+                    if (InHole(x, y, z))
                         return true;
                 return false;
+            }, pt =>
+            {
+                foreach (var k in cutouts)
+                    if (k.Within(pt))
+                        return true;
+                return InHole(pt.Item1, pt.Item2, pt.Item3) || CutBody(pt.Item1, pt.Item2, pt.Item3) || feet.Any(f => f.Holds(pt.Item1, pt.Item2, pt.Item3));
             });
         // The caps: the sockets and other bodies drop whole fan triangles as before; the connections' mouths are cut along their outlines,
         // as on the skin (the user, 2026-11-25: connections on the fore and aft ends).
@@ -329,7 +359,7 @@ public static partial class DesignScene
             bool Open(double x, double y, double z)
             {
                 foreach (var k in cutouts)
-                    if (k.Covers((x, y, z)))
+                    if (k.Covers((x, y, z), k.Margin))
                         return true;
                 return InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z));
             }
@@ -337,6 +367,13 @@ public static partial class DesignScene
             CladCap(aftClad, cx, hc, rings[^1], true, Open, cladSize);
         }
         return (skin, fore, aft, skinClad, foreClad, aftClad);
+    }
+
+    /// <summary>The clearance cladding keeps from a cutout by default: its frame band, half the body's plates' rise, and 3 cm.</summary>
+    private static double AutoGap(ShipDesign d, HullBody h, double band)
+    {
+        var c = CladView(d, h);
+        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * (c.Clad == "Heavy" ? 0.20 : 0.08) * c.CladDepth + 0.03;
     }
 
     /// <summary>The body as its cladding is laid: itself, or (matched) a copy with the other body's cladding and damage, its own paint and shape.</summary>
@@ -364,6 +401,40 @@ public static partial class DesignScene
     private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly, double edgeMin = 0.35, (double Lo, double Hi)? band = null)
     {
         private readonly double _reach = poly.Max(q => Math.Sqrt(q.U * q.U + q.V * q.V));
+
+        /// <summary>The clearance the piece asks for (below 0: auto), the width of its frame or ring round the hole, and the clearance
+        /// worked out for the cladding being laid (Karl, 2026-11-25: plates are trimmed round the hole, not dropped whole).</summary>
+        public double GapSet = -1, Band, Margin = 0.12;
+
+        /// <summary>Cuts only the cladding (a drive's footprint), not the skin.</summary>
+        public bool CladOnly;
+
+        /// <summary>The clearance for plates rising up to <paramref name="rise"/> metres: the frame, half the plate rise, and 3 cm.</summary>
+        public void Resolve(double rise) => Margin = GapSet >= 0 ? GapSet : Band + 0.5 * rise + 0.03;
+
+        /// <summary>Whether a world point is within <see cref="Margin"/> of the outline (in its plane, inside its band).</summary>
+        public bool Within((double, double, double) p)
+        {
+            var l = Local(p);
+            var (lo, hi) = band ?? (-0.3, 0.3);
+            if (l.N < lo - 0.1 || l.N > hi + 0.1)
+                return false;
+            if (Math.Sqrt(l.U * l.U + l.V * l.V) > _reach + Margin)
+                return false;
+            double area = 0;
+            for (var i = 0; i < poly.Count; i++)
+                area += poly[i].U * poly[(i + 1) % poly.Count].V - poly[(i + 1) % poly.Count].U * poly[i].V;
+            var sg = area >= 0 ? 1 : -1;
+            // Convex: the farthest outside any edge is (near enough) the distance to the outline.
+            var dmax = double.MinValue;
+            for (var i = 0; i < poly.Count; i++)
+            {
+                var (p0, p1) = (poly[i], poly[(i + 1) % poly.Count]);
+                double ex = p1.U - p0.U, ey = p1.V - p0.V, el = Math.Max(1e-9, Math.Sqrt(ex * ex + ey * ey));
+                dmax = Math.Max(dmax, -sg * (ex * (l.V - p0.V) - ey * (l.U - p0.U)) / el);
+            }
+            return dmax < Margin;
+        }
 
         private (double U, double V, double N) Local((double X, double Y, double Z) p)
         {
@@ -1436,7 +1507,8 @@ public static partial class DesignScene
             var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : ""), () =>
             {
                 var m = new DesignMesh();
-                m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
+                var across = kind.Footprint is not null ? p.Hole : 1;
+                m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
                 if (kind.Socket == "ramp")
                 {
                     // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
@@ -1444,8 +1516,14 @@ public static partial class DesignScene
                     var t = RampDepth(d, p, w);
                     PieceKinds.RampFrame(m, t ?? 1.0);
                     var dd = (t ?? 0) + p.Recess;
-                    m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size);
+                    m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size, across);
                     PieceKinds.RampStair(m, t ?? 0);
+                }
+                else if (kind.Socket == "window")
+                {
+                    // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
+                    PieceKinds.WindowFrame(m);
+                    PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
                 }
                 else
                     kind.Draw(m);
@@ -1469,6 +1547,9 @@ public static partial class DesignScene
             if (i > 0) sb.Append(',');
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
+              .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
+              .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
+              .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
@@ -1567,7 +1648,7 @@ public static partial class DesignScene
         for (var i = 0; i < (shown is null ? d.Windows.Count : 0); i++)
         {
             var w = d.Windows[i];
-            sb.Append(i > 0 ? "," : "").Append(Part("w" + w.Id, WindowKey(w) + FrameKey(d), () =>
+            var wpart = Part("w" + w.Id, WindowKey(w) + FrameKey(d), () =>
             {
                 var t = new StringBuilder();
                 var (pts, nu, nv, gap, ok, len) = LayOnce(d, w);
@@ -1575,10 +1656,16 @@ public static partial class DesignScene
                   .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
                   .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
                   .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
-                var (fp, fnu, fnv, _, _, _) = LayOnce(d, w, 0.1, 0.045);
+                var (fp, fnu, fnv, _, _, _) = LayOnce(d, w, WindowGrow(d, w), 0.045);
+                var wf = WindowFrame(d, w);
+                t.Append(",\"hole\":").Append(ShipDesign.S(w.Hole)).Append(",\"gap\":").Append(ShipDesign.S(w.Gap)).Append(",\"depth\":").Append(ShipDesign.S(w.Depth)).Append(",\"double\":").Append(w.Double ? "true" : "false")
+                  .Append(",\"n\":[").Append(wf is { } wq ? string.Join(',', wq.N.Select(ShipDesign.S)) : "0,0,0").Append(']');
                 t.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
                 return t.ToString();
-            }));
+            });
+            // The auto clearance follows the thickest cladding on any body (a window's cut reaches every body it lies on).
+            var wAuto = d.Hulls.Count == 0 ? 0.13 : d.Hulls.Max(q => AutoGap(d, q, 0.1));
+            sb.Append(i > 0 ? "," : "").Append(wpart, 0, wpart.Length - 1).Append(",\"gapAuto\":").Append(ShipDesign.S(wAuto)).Append('}');
         }
         sb.Append("],\"risers\":[");
         for (var i = 0; i < d.Risers.Count; i++)

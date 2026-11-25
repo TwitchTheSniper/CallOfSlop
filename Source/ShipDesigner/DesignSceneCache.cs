@@ -123,7 +123,7 @@ public static partial class DesignScene
     }
 
     private static string WindowKey(HullWindow w) =>
-        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}";
+        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}:{w.Hole:R}:{w.Gap:R}:{w.Depth:R}:{w.Double}";
 
     // Each window's Lay answers (glass and boarding) under the key of all they come from: the window, every body's shape and every room's
     // plan. A body's cut and the window's own JSON both ask; a room's interior or a body's cladding changing leaves them be.
@@ -145,6 +145,10 @@ public static partial class DesignScene
     }
 
     /// <summary>The cut a window makes in the skin it lies on (null when it lies on none), and that cut as text for a body's key.</summary>
+    /// <summary>How far a hull window's boarding reaches past the glass: 10 cm, plus what its hole scale adds.</summary>
+    private static double WindowGrow(ShipDesign d, HullWindow w) =>
+        WindowFrame(d, w) is { } q ? Math.Max(0.02, 0.1 + (w.Hole - 1) * Math.Min(q.Hx, q.Hz)) : 0.1;
+
     private static (Cutout? Cut, string Key) WindowCut(ShipDesign d, HullWindow hw)
     {
         // Steep skin (a hull turning under the window) is cut too: only facets almost along the rays are left whole.
@@ -163,9 +167,10 @@ public static partial class DesignScene
         }
         if (lo > hi)
             return (null, "");
-        var key = new StringBuilder(hw.Shape);
+        var key = new StringBuilder(hw.Shape).Append(',').Append(hw.Gap.ToString("R")).Append(',').Append(hw.Hole.ToString("R"));
+        var ex = (hw.Hole - 1) * Math.Min(q.Hx, q.Hz);
         foreach (var v in q.O.Concat(q.U).Concat(q.N).Concat(q.V).Append(q.Hx).Append(q.Hz).Append(lo).Append(hi))
             key.Append(',').Append(v.ToString("R"));
-        return (new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx - 0.01, q.Hz - 0.01) : HullWindow.Rim(hw.Shape, q.Hx - 0.01, q.Hz - 0.01), 0, (lo - 0.12, hi + 0.08)), key.ToString());
+        return (new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx + ex - 0.01, q.Hz + ex - 0.01) : HullWindow.Rim(hw.Shape, q.Hx + ex - 0.01, q.Hz + ex - 0.01), 0, (lo - 0.12, hi + 0.08)) { GapSet = hw.Gap, Band = 0.1 }, key.ToString());
     }
 }

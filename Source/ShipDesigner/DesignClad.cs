@@ -22,7 +22,7 @@ public static partial class DesignScene
     /// </summary>
     /// <returns>The panel size used: the body's own, or larger when its cladding wouldn't fit <see cref="MaxCladTris"/> (2026-11-25: the cap
     /// used to cut the cladding off part way, leaving most of a big hull bare; now the whole body is always covered, in bigger panels).</returns>
-    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, Func<(double, double, double), (double, double, double), bool> nearCut, Func<(double, double, double), bool> fine)
     {
         CladFitSize = 0;
         var own = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
@@ -30,7 +30,7 @@ public static partial class DesignScene
         var start = m.Tris;
         for (var tries = 0; ; tries++)
         {
-            CladBodyAt(m, h, cx, blocked, size);
+            CladBodyAt(m, h, cx, new(blocked, nearCut, fine), size);
             var made = m.Tris - start;
             if (made <= MaxCladTris)
                 break;
@@ -53,7 +53,7 @@ public static partial class DesignScene
         return size;
     }
 
-    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, double size)
+    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, CladMask blocked, double size)
     {
         var heavy = h.Clad == "Heavy";
         var hex = h.Clad == "Hex";
@@ -246,16 +246,115 @@ public static partial class DesignScene
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
         var taken = new bool[nu, nv];
+        var trim = new bool[nu, nv];
+        var any = false;
         for (var a = 0; a < nu; a++)
             for (var b = 0; b < nv; b++)
             {
                 double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
-                taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
+                var (p0, p1, p2, p3) = (W(u0, v0, 0), W(u1, v1, 0), W(u1, v0, 0), W(u0, v1, 0));
+                taken[a, b] = mask.Blocked(p0, p1) || mask.Blocked(p2, p3);
+                // A cell an opening reaches is trimmed round it, not dropped (Karl, 2026-11-25); hex tiles still drop whole.
+                if (!taken[a, b] && (mask.Near(p0, p1) || mask.Near(p2, p3)))
+                {
+                    taken[a, b] = true;
+                    trim[a, b] = !hex;
+                    any |= !hex;
+                }
             }
+        // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
+        var trng = new Random(rng.Next());
         LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed);
+        if (!any)
+            return;
+        for (var a = 0; a < nu; a++)
+            for (var b = 0; b < nv; b++)
+                if (trim[a, b])
+                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed);
+    }
+
+    /// <summary>What may hold cladding: Blocked cells stay bare, Near cells (an opening's clearance reaches them) are trimmed point by point with Fine.</summary>
+    private sealed record CladMask(Func<(double, double, double), (double, double, double), bool> Blocked,
+        Func<(double, double, double), (double, double, double), bool> Near, Func<(double, double, double), bool> Fine);
+
+    /// <summary>
+    /// One cell an opening reaches, as a plate trimmed round it (Karl, 2026-11-25: whole plates dropped left a big bare square round a
+    /// porthole): the cell split into a fine grid (about 5 cm, at most 20 a side), a sub-cell left bare when any corner or its middle is in the
+    /// opening's clearance, the rest laid as rows of strips at one height (runs merged across, equal runs merged along), seamed at the cell's
+    /// edge, a skirt on every edge that borders bare.
+    /// </summary>
+    private static void TrimCell(DesignMesh m, int a, int b, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
+        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
+    {
+        double cw = arc / nu, cl = len / nv;
+        int nx = Math.Clamp((int)Math.Ceiling(cw / 0.05), 2, 20), ny = Math.Clamp((int)Math.Ceiling(cl / 0.05), 2, 20);
+        double du = CladSeam / arc, dv = CladSeam / len;
+        double ua = (double)a / nu + du, ub = (double)(a + 1) / nu - du, va = (double)b / nv + dv, vb = (double)(b + 1) / nv - dv;
+        if (ub <= ua || vb <= va)
+            return;
+        double U(int i) => ua + (ub - ua) * i / nx;
+        double V(int j) => va + (vb - va) * j / ny;
+        var free = new bool[nx, ny];
+        var pts = new bool[nx + 1, ny + 1];
+        for (var i = 0; i <= nx; i++)
+            for (var j = 0; j <= ny; j++)
+                pts[i, j] = fine(W(U(i), V(j), 0));
+        var anyFree = false;
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < ny; j++)
+            {
+                free[i, j] = !(pts[i, j] || pts[i + 1, j] || pts[i, j + 1] || pts[i + 1, j + 1] || fine(W((U(i) + U(i + 1)) / 2, (V(j) + V(j + 1)) / 2, 0)));
+                anyFree |= free[i, j];
+            }
+        var rise = (heavy ? 0.20 : 0.08) - CladMin;
+        var hgt = Math.Max((CladMin + rise * rng.NextDouble()) * depth, 0.006);
+        var tone = 0.88 + 0.18 * rng.NextDouble();
+        if (!anyFree)
+            return;
+        var pc = paint?.Invoke((ua + ub) / 2, (va + vb) / 2, b * 64 + a) ?? col;
+        var fx = Fx(damage, dseed, W((ua + ub) / 2, (va + vb) / 2, 0));
+        if (fx.Gone)
+            return;
+        var top = DesignMesh.Tone(pc, tone * fx.Tone);
+        var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+        (double, double, double) T(double u, double v) => W(u, v, hgt);
+        (double, double, double) S(double u, double v) => W(u, v, -CladSink);
+        // Tops: runs across each row, a run carried along while the next row has the same.
+        var done = new bool[nx, ny];
+        for (var j = 0; j < ny; j++)
+            for (var i = 0; i < nx; i++)
+            {
+                if (!free[i, j] || done[i, j])
+                    continue;
+                var i1 = i;
+                while (i1 + 1 < nx && free[i1 + 1, j] && !done[i1 + 1, j])
+                    i1++;
+                var j1 = j;
+                while (j1 + 1 < ny && Enumerable.Range(i, i1 - i + 1).All(k => free[k, j1 + 1] && !done[k, j1 + 1]) && (i == 0 || !free[i - 1, j1 + 1]) && (i1 == nx - 1 || !free[i1 + 1, j1 + 1]))
+                    j1++;
+                for (var x = i; x <= i1; x++)
+                    for (var y = j; y <= j1; y++)
+                        done[x, y] = true;
+                m.Quad(T(U(i), V(j)), T(U(i1 + 1), V(j)), T(U(i1 + 1), V(j1 + 1)), T(U(i), V(j1 + 1)), top, false);
+            }
+        // Skirts on every sub-cell edge between plate and bare (or the cell's edge), the same winding as LayPlates.
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < ny; j++)
+            {
+                if (!free[i, j])
+                    continue;
+                if (j == 0 || !free[i, j - 1])
+                    m.Quad(S(U(i), V(j)), S(U(i + 1), V(j)), T(U(i + 1), V(j)), T(U(i), V(j)), side, false);
+                if (j == ny - 1 || !free[i, j + 1])
+                    m.Quad(S(U(i), V(j + 1)), S(U(i + 1), V(j + 1)), T(U(i + 1), V(j + 1)), T(U(i), V(j + 1)), side, false);
+                if (i == 0 || !free[i - 1, j])
+                    m.Quad(S(U(i), V(j)), S(U(i), V(j + 1)), T(U(i), V(j + 1)), T(U(i), V(j)), side, false);
+                if (i == nx - 1 || !free[i + 1, j])
+                    m.Quad(S(U(i + 1), V(j)), S(U(i + 1), V(j + 1)), T(U(i + 1), V(j + 1)), T(U(i + 1), V(j)), side, false);
+            }
     }
 
     /// <summary>

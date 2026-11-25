@@ -459,6 +459,10 @@ public sealed class DesignEditor
                 if (o["recess"] is not null) p.Recess = Math.Clamp(Snap(D(o, "recess"), 0.05), 0, 2);
                 if (o["clad"] is not null) p.Clad = Math.Clamp(Snap(D(o, "clad"), 0.05), 0, 2);
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
+                if (o["gap"] is not null) p.Gap = D(o, "gap") < 0 ? -1 : Math.Clamp(Snap(D(o, "gap"), 0.01), 0, 2);
+                if (o["hole"] is not null) p.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
+                if (o["depth"] is not null) p.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
+                if (o["double"] is not null) p.Double = (bool)o["double"]!;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
@@ -653,6 +657,10 @@ public sealed class DesignEditor
                 if (o["h"] is not null) w.H = Math.Clamp(Snap(D(o, "h"), 0.05), 0.3, 6);
                 if (o["sill"] is not null) w.Sill = Math.Clamp(Snap(D(o, "sill"), 0.05), 0, 6);
                 if (o["shape"] is not null && HullWindow.Shapes.Contains(Str(o, "shape"))) w.Shape = Str(o, "shape");
+                if (o["gap"] is not null) w.Gap = D(o, "gap") < 0 ? -1 : Math.Clamp(Snap(D(o, "gap"), 0.01), 0, 2);
+                if (o["hole"] is not null) w.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
+                if (o["depth"] is not null) w.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
+                if (o["double"] is not null) w.Double = (bool)o["double"]!;
                 return "";
             }
             case "delHullWindow":

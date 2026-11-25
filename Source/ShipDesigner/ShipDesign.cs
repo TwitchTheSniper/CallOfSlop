@@ -115,7 +115,7 @@ public sealed class ShipDesign
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
-            ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
+            ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape, ["gap"] = R(k.Gap), ["hole"] = R(k.Hole), ["depth"] = R(k.Depth), ["double"] = k.Double })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
         };
@@ -167,7 +167,8 @@ public sealed class ShipDesign
         foreach (var j in o["windows"]?.AsArray() ?? [])
             if (j is JsonObject wo && d.Windows.Count < MaxRooms * 2 && (int?)wo["room"] is int ri && ri >= 0 && ri < d.Rooms.Count)
                 d.Windows.Add(new HullWindow { Id = d.Take(wo), Room = d.Rooms[ri].Id, Side = HullWindow.Sides.Contains((string?)wo["side"]) ? (string)wo["side"]! : "x0",
-                    T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6), Shape = HullWindow.Shapes.Contains((string?)wo["shape"]) ? (string)wo["shape"]! : "Rect" });
+                    T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6), Shape = HullWindow.Shapes.Contains((string?)wo["shape"]) ? (string)wo["shape"]! : "Rect",
+                    Gap = Math.Clamp(F(wo["gap"], -1), -1, 2), Hole = Math.Clamp(F(wo["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(F(wo["depth"], 0.2), 0.05, 1), Double = (bool?)wo["double"] ?? true });
         // Doors name their rooms by place in the list (room ids are made fresh on reading).
         foreach (var j in o["doors"]?.AsArray() ?? [])
             if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
@@ -344,11 +345,16 @@ public sealed class Piece
     public double Size = 1; // its scale: a socket's opening and the piece drawn grow with it (Karl, 2026-11-24)
     public double Turn; // degrees about the skin's normal
     public int Room; // the room a socket opens into, picked by the player (0: the nearest of the kind it needs)
+    public double Gap = -1; // metres the hull cladding keeps clear of its cutout; below 0: worked out from the plates' depth (Karl, 2026-11-25)
+    public double Hole = 1; // the cutout (skin hole, frame, ring) scaled across the skin (Karl, 2026-11-25)
+    public double Depth = 0.2; // a window's: how far in its inner pane sits behind the outer one (Karl, 2026-11-25)
+    public bool Double = true; // a window's: double glazed (an outer and an inner pane, a reveal between)
 
     public JsonObject ToJson() => new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
+        ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
     };
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
@@ -357,6 +363,7 @@ public sealed class Piece
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
         Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Clad = Math.Clamp(ShipDesign.F(o["clad"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
+        Gap = Math.Clamp(ShipDesign.F(o["gap"], -1), -1, 2), Hole = Math.Clamp(ShipDesign.F(o["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(ShipDesign.F(o["depth"], 0.2), 0.05, 1), Double = (bool?)o["double"] ?? true,
     };
 }
 
@@ -412,6 +419,8 @@ public sealed class HullWindow
     public string Side = "x0";
     public double T = 0.5, W = 1.5, H = 1.0, Sill = 0.9;
     public string Shape = "Rect"; // its outline (Karl, 2026-11-24): Rect, Round, Oval, Arch or Hex
+    public double Gap = -1, Hole = 1, Depth = 0.2; // cladding clearance (below 0: auto), the cut and boarding's scale, the inner pane's depth (Karl, 2026-11-25)
+    public bool Double = true; // double glazed: an outer pane on the skin, an inner one Depth in, a reveal between
     public static readonly string[] Shapes = ["Rect", "Round", "Oval", "Arch", "Hex"];
 
     /// <summary>A shaped window's outline round its middle, counter-clockwise, as (across, up) offsets, in RimPoints points evenly
