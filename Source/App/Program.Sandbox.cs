@@ -715,10 +715,10 @@ public static unsafe partial class Program
                     if (pl.Alive && feetN < _sbFeet.Length)
                         _sbFeet[feetN++] = pl.Position;
                 var why = ConstructPlace.Pose(World.Query, held, surf.Point, surf.Normal, g.LookYaw, _sbTurn, (flags & ConstructPlace.FlagGrid) != 0, out var fp);
-                var tileJoin = why == null ? ConstructPlace.TileSnap(g.Constructs, held, ref fp) : null; // (a tile beside a run squares up to it and joins it: as the server does)
+                var tileJoin = why == null ? ConstructPlace.TileSnap(g.Constructs, held, ref fp, me.Id) : null; // (a tile beside a run squares up to it and joins it: as the server does)
                 if (why == null)
                 {
-                    why = ConstructPlace.LimitRefusal(g.Constructs, me.Id) ?? ConstructPlace.Fits(g.Constructs, World.Query, held, fp, _sbFeet.AsSpan(0, feetN));
+                    why = (tileJoin != null ? null : ConstructPlace.LimitRefusal(g.Constructs, me.Id)) ?? ConstructPlace.Fits(g.Constructs, World.Query, held, fp, _sbFeet.AsSpan(0, feetN));
                     ConstructRender.PlaceAt = fp.Pos;
                     ConstructRender.PlaceRot = fp.Rot;
                     ConstructRender.PlaceTurn = fp.Turn;

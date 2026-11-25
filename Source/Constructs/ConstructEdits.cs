@@ -314,11 +314,11 @@ public sealed partial class ConstructEdits
         var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
         if (anchor && !InfiniteParts)
             return "anchoring to the ground is for creative: build on a foundation instead";
-        if (ConstructPlace.LimitRefusal(world, player) is { } full)
-            return full;
         if (ConstructPlace.Pose(Query, def, point, normal, yaw, turn, (flags & ConstructPlace.FlagGrid) != 0, out var fp) is { } where)
             return where;
-        ConstructPlace.TileSnap(world, def, ref fp); // (a tile beside a run squares up to it, so it joins it when done)
+        // A tile beside a run the player may join squares up to it and joins it when done, so it adds no construct to the limit.
+        if (ConstructPlace.TileSnap(world, def, ref fp, player) == null && ConstructPlace.LimitRefusal(world, player) is { } full)
+            return full;
         if (ConstructPlace.Fits(world, Query, def, fp, Feet(world)) is { } blocked)
             return blocked;
         h.Edit = EditKind.PlaceNew;
@@ -546,13 +546,12 @@ public sealed partial class ConstructEdits
                 }
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
-                SnapAfter(player, ref h, def, c, i);
                 MirrorAttach(world, player, ref h, c, def, i, eye); // (a Mirror Table: its image too; ConstructEditsAids.cs)
-                var bodyId = c.Id;
                 var tiles = ConstructPlace.JoinsTiles(def) ? JoinTiles(world, player, ref c, ref i) : 0;
+                SnapAfter(player, ref h, def, c, i); // (after the tiles' join: the undo names the body the part is in now)
                 var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the attach tool joins them)" : "";
-                var joined = tiles > 0 ? $" (tiles beside it joined: {tiles} construct{(tiles == 1 ? "" : "s")} into construct {c.Id})" : "";
-                return $"ok: {def.Name} as part {i} of construct {bodyId}{(claim ? " (claimed)" : "")}{joined}{touches}";
+                var joined = tiles > 0 ? $" (tiles beside it joined: {tiles} construct{(tiles == 1 ? "" : "s")})" : "";
+                return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{joined}{touches}";
             }
             case EditKind.PlaceNew:
             {
@@ -560,7 +559,8 @@ public sealed partial class ConstructEdits
                     return "failed: nothing to place";
                 // Checked again: something may have moved there meanwhile.
                 var fp = new FreePlacement { Pos = h.At, Rot = h.PlaceRot, Turn = h.PlaceTurn, Anchor = h.PlaceAnchor };
-                if ((ConstructPlace.LimitRefusal(world, player) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
+                var joinsRun = ConstructPlace.JoinsTiles(def) && ConstructPlace.TileSnap(world, def, ref fp, player) != null; // (a tile joining a run adds no construct)
+                if (((joinsRun ? null : ConstructPlace.LimitRefusal(world, player)) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
                     return $"failed: {why}";
                 if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
@@ -571,10 +571,11 @@ public sealed partial class ConstructEdits
                 ConstructAmmo.Fitted(world, c, 0, def, ref h, InfiniteParts); // (a magazine set down keeps what is in it)
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
-                SnapAfter(player, ref h, def, c, 0);
                 var part = 0;
                 var newId = c.Id;
-                if (ConstructPlace.JoinsTiles(def) && JoinTiles(world, player, ref c, ref part) > 0)
+                var joinedTiles = ConstructPlace.JoinsTiles(def) && JoinTiles(world, player, ref c, ref part) > 0;
+                SnapAfter(player, ref h, def, c, part); // (after the tiles' join: the undo names the body the tile is in now)
+                if (joinedTiles)
                     return $"ok: {def.Name} joined onto the tiles beside it, as part {part} of construct {c.Id}";
                 return $"ok: {def.Name} as new construct {newId}";
             }

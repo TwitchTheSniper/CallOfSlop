@@ -278,9 +278,9 @@ public static class ConstructPlace
     /// A Roller Tile or Turntable Tile set down on the ground beside another body's tile: the placement moves (at most
     /// <see cref="TileSnapReach"/>) and squares up so one of its free structural sockets meets one of the neighbour's, so it
     /// is welded into that body when it is done (<see cref="ConstructEdits"/> PlaceNew, <see cref="JoinsTiles"/>): tiles set
-    /// down together are one body and one run. Shared by the ghost and the server. The body it snapped to, or null (as it was).
+    /// down together are one body and one run. Only bodies <paramref name="player"/> may join. Shared by the ghost and the server. The body it snapped to, or null (as it was).
     /// </summary>
-    public static Construct? TileSnap(ConstructWorld world, ConstructPartDef def, ref FreePlacement fp)
+    public static Construct? TileSnap(ConstructWorld world, ConstructPartDef def, ref FreePlacement fp, byte player)
     {
         if (!JoinsTiles(def))
             return null;
@@ -293,6 +293,8 @@ public static class ConstructPlace
                 o.Rebuild();
             if (Vector3.Distance(o.WorldCom, fp.Pos) > o.Radius + 4f || o.Vel.LengthSquared() > 0.25f || o.AngVel.LengthSquared() > 0.01f)
                 continue; // (far, or moving: a tile only snaps to a run standing still)
+            if (o.Driver != 255 || o.HeldBy != 0 || ConstructEdits.SalvageRefusal(o, player) != null)
+                continue; // (one the player may not join: as ConstructEdits.JoinTiles, so the ghost promises no join the server refuses)
             var k = Rot24.Nearest(Quaternion.Conjugate(o.Rot) * fp.Rot, out var match);
             if (match < 0.97f)
                 continue; // (more than about 14 degrees off square: not set down beside it)
