@@ -59,6 +59,12 @@ public sealed class HullJoin
     public int ButtressSeed = 1;
     public double ButtressSize = 0.8, ButtressDepth = 1;
     public bool MatchClad, MatchButtress; // the strut's or the buttresses' cladding follows hull A's (its own values kept for when it's unticked)
+    /// <summary>The mounting collar (Karl, 2026-11-25): a flat pad on the skin round each end's footprint, its top Height off the skin
+    /// (default a little above Heavy cladding's 20 cm), Margin wider than the footprint, its outer edge bevelled; the buttress and strut
+    /// stand on its top and the hull's plates stop at its edge.</summary>
+    public bool Collar = true;
+    public double CollarHeight = 0.22, CollarMargin = 0.25, CollarBevel = 0.05;
+    public const double MaxCollarHeight = 1, MaxCollarMargin = 2, CollarSinkDepth = 0.05;
     public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
@@ -157,6 +163,7 @@ public sealed class HullJoin
         ["twist"] = ShipDesign.R(Twist), ["rotA"] = ShipDesign.R(RotA), ["rotB"] = ShipDesign.R(RotB), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["follow"] = Follow, ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
         ["leaveA"] = ShipDesign.R(LeaveA), ["leaveB"] = ShipDesign.R(LeaveB), ["leaveForeA"] = ShipDesign.R(LeaveForeA), ["leaveForeB"] = ShipDesign.R(LeaveForeB), ["tanA"] = ShipDesign.R(TanA), ["tanB"] = ShipDesign.R(TanB),
+        ["collar"] = Collar, ["collarHeight"] = ShipDesign.R(CollarHeight), ["collarMargin"] = ShipDesign.R(CollarMargin), ["collarBevel"] = ShipDesign.R(CollarBevel),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
         ["buttressClad"] = ButtressClad == "Off" ? null : new JsonObject { ["kind"] = ButtressClad, ["seed"] = ButtressSeed, ["size"] = ShipDesign.R(ButtressSize), ["depth"] = ShipDesign.R(ButtressDepth) },
         ["matchClad"] = MatchClad ? true : null,
@@ -211,6 +218,10 @@ public sealed class HullJoin
         j.LeaveForeB = ShipDesign.F(o["leaveForeB"], 0);
         j.TanA = ShipDesign.F(o["tanA"], 0.9);
         j.TanB = ShipDesign.F(o["tanB"], 0.9);
+        j.Collar = (bool?)o["collar"] ?? true;
+        j.CollarHeight = ShipDesign.F(o["collarHeight"], 0.22);
+        j.CollarMargin = ShipDesign.F(o["collarMargin"], 0.25);
+        j.CollarBevel = ShipDesign.F(o["collarBevel"], 0.05);
         if (o["clad"] is JsonObject c)
         {
             j.Clad = (string?)c["kind"] ?? "Off";
@@ -255,6 +266,9 @@ public sealed class HullJoin
         OpenA = Math.Clamp(OpenA, 0, 1.5);
         Flare = Math.Clamp(Flare, 1, 4);
         Buttress = Math.Clamp(Buttress, 0, 10);
+        CollarHeight = Math.Clamp(CollarHeight, 0.02, MaxCollarHeight);
+        CollarMargin = Math.Clamp(CollarMargin, 0, MaxCollarMargin);
+        CollarBevel = Math.Clamp(CollarBevel, 0, Math.Min(CollarHeight, CollarMargin) * 0.9);
         OpenB = Math.Clamp(OpenB, 0, 1.5);
         if (!HullBody.CladKinds.Contains(Clad))
             Clad = "Off";
@@ -515,6 +529,7 @@ public sealed class HullJoin
         var rings = new List<(double, double, double)[]>();
         var centres = new List<double[]>();
         double[]? side = null;
+        var collars = new List<(double, double, double)[][]>();
         var ends = new List<Mouth>(); // this build's own two mouths (unmirrored), kept clear of the buttresses' plates
         // Where the rings go: the ends on the skins (flared into the buttresses' cladding), the strut's own rings between.
         var dl = Math.Min(Buttress / len, 0.3 * (s1 - s0));
@@ -632,8 +647,8 @@ public sealed class HullJoin
                     for (var j = 0; j < n; j++)
                     {
                         double du = pu[j] - mu, dv = pv[j] - mv, l = Math.Max(1e-9, Math.Sqrt(du * du + dv * dv));
-                        pu[j] += du / l * FootMargin;
-                        pv[j] += dv / l * FootMargin;
+                        pu[j] += du / l * (FootMargin + (Collar ? CollarMargin : 0));
+                        pv[j] += dv / l * (FootMargin + (Collar ? CollarMargin : 0));
                     }
                     var hid = i == 0 ? A.Hull : B.Hull;
                     var reachF = far + 0.5;
@@ -642,19 +657,31 @@ public sealed class HullJoin
                         feet.Add(new Foot(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], pu, pv, reachF));
                 }
             }
+            if ((i == 0 || i == last) && Collar && spine is null && mouths is null)
+            {
+                // The collar round this end (drawn below), then the ring lifted onto its top: the buttress stands on the pad.
+                var h = i == 0 ? ha : hb;
+                var face = i == 0 ? A.Face : B.Face;
+                collars.Add(CollarRing(r, c, rs, upv, h, face));
+                for (var j = 0; j < r.Length; j++)
+                    r[j] = OnTop(h, face, r[j].Item1, r[j].Item2, r[j].Item3, CollarHeight - 0.005);
+            }
             rings.Add(r);
             centres.Add(c);
         }
         if (spine is not null || mouths is not null)
-            return m; // the mouths and the spine are known by here: what follows only draws
+            return m;
+        foreach (var cr in collars)
+            DrawCollar(m, cr, col); // the mouths and the spine are known by here: what follows only draws
         // Follow the hull: each flared end's outer ring laid onto the skin 4 mm off it, the rings between blending from the strut's section
         // out to that footprint, so the buttress's base wraps the hull's curve and meets it flush.
         var blend = 0;
         if (Follow && dl > 1e-4)
         {
             blend = FollowRings;
-            FollowEnd(rings, centres, 0, 1, ha, A.Face);
-            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb, B.Face);
+            var lift = Collar ? CollarHeight - 0.005 : FollowLift;
+            FollowEnd(rings, centres, 0, 1, ha, A.Face, lift);
+            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb, B.Face, lift);
             last = rings.Count - 1;
         }
         for (var i = 0; i < last; i++)
@@ -887,18 +914,75 @@ public sealed class HullJoin
     public const double FollowLift = 0.004;
 
     /// <summary>
+    /// A collar's rings round one end (Karl, 2026-11-25): from the footprint r (on the skin) out, each laid on the skin by its normal:
+    /// [0] inner foot (sunk), [1] inner top (at the footprint), [2] outer top (Margin less the bevel out), [3] the bevel's foot on the
+    /// outer edge (Height less the bevel), [4] the outer edge's foot (sunk). The outline grows from its middle in the end frame (rs, upv).
+    /// </summary>
+    private (double, double, double)[][] CollarRing((double, double, double)[] r, double[] c, double[] rs, double[] upv, HullBody h, int face)
+    {
+        var n = r.Length;
+        double mu = 0, mv = 0;
+        var pu = new double[n];
+        var pv = new double[n];
+        for (var j = 0; j < n; j++)
+        {
+            double qx = r[j].Item1 - c[0], qy = r[j].Item2 - c[1], qz = r[j].Item3 - c[2];
+            pu[j] = qx * rs[0] + qy * rs[1] + qz * rs[2];
+            pv[j] = qx * upv[0] + qy * upv[1] + qz * upv[2];
+            mu += pu[j] / n;
+            mv += pv[j] / n;
+        }
+        var o = new (double, double, double)[5][];
+        for (var k = 0; k < 5; k++)
+            o[k] = new (double, double, double)[n];
+        for (var j = 0; j < n; j++)
+        {
+            double du = pu[j] - mu, dv = pv[j] - mv, l = Math.Max(1e-9, Math.Sqrt(du * du + dv * dv));
+            (double, double, double) Out(double g, double lift)
+            {
+                double u = pu[j] + du / l * g, v = pv[j] + dv / l * g;
+                return OnTop(h, face, c[0] + rs[0] * u + upv[0] * v, c[1] + rs[1] * u + upv[1] * v, c[2] + rs[2] * u + upv[2] * v, lift);
+            }
+            o[0][j] = Out(0, -CollarSinkDepth);
+            o[1][j] = Out(0, CollarHeight);
+            o[2][j] = Out(CollarMargin - CollarBevel, CollarHeight);
+            o[3][j] = Out(CollarMargin, CollarHeight - CollarBevel);
+            o[4][j] = Out(CollarMargin, -CollarSinkDepth);
+        }
+        return o;
+    }
+
+    /// <summary>Draws a collar's rings as a closed band: the inner wall, the flat top, the bevel and the outer wall (the page
+    /// draws both sides of every face), the top a shade lighter than the walls.</summary>
+    private static void DrawCollar(DesignMesh m, (double, double, double)[][] o, (byte, byte, byte) col)
+    {
+        var n = o[0].Length;
+        var top = DesignMesh.Tone(col, 0.86);
+        var wall = DesignMesh.Tone(col, 0.68);
+        for (var k = 0; k < 4; k++)
+        {
+            var c = k == 1 ? top : k == 2 ? DesignMesh.Tone(col, 0.78) : wall;
+            for (var j = 0; j < n; j++)
+            {
+                var j1 = (j + 1) % n;
+                m.Quad(o[k][j], o[k + 1][j], o[k + 1][j1], o[k][j1], c, false);
+            }
+        }
+    }
+
+    /// <summary>
     /// A following buttress at one end: ring iEnd (the flared ring already slid onto the skin) laid onto the skin FollowLift off it, by the
     /// nearest skin point (its normal), and FollowRings rings put in between it and the strut's ring iStrut, each point's offset from the
     /// middle line growing from the strut's to the footprint's on an easing curve (a fillet), held FollowLift off the skin where it would dip in.
     /// </summary>
-    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h, int face)
+    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h, int face, double lift)
     {
         var nr = rings[iEnd].Length;
         var foot = new (double, double, double)[nr];
         for (var j = 0; j < nr; j++)
         {
             var (x, y, z) = rings[iEnd][j];
-            foot[j] = OnTop(h, face, x, y, z, FollowLift);
+            foot[j] = OnTop(h, face, x, y, z, lift);
         }
         double[] cf = [0, 0, 0];
         foreach (var (x, y, z) in foot)
@@ -918,7 +1002,7 @@ public sealed class HullJoin
                 double ox = rsS[j].Item1 - csS[0], oy = rsS[j].Item2 - csS[1], oz = rsS[j].Item3 - csS[2];
                 double fx = foot[j].Item1 - cf[0], fy = foot[j].Item2 - cf[1], fz = foot[j].Item3 - cf[2];
                 double px = c[0] + ox + (fx - ox) * e, py = c[1] + oy + (fy - oy) * e, pz = c[2] + oz + (fz - oz) * e;
-                r[j] = h.Depth(px, py, pz) > -FollowLift ? OnTop(h, face, px, py, pz, FollowLift) : (px, py, pz);
+                r[j] = h.Depth(px, py, pz) > -lift ? OnTop(h, face, px, py, pz, lift) : (px, py, pz);
             }
             add.Add((r, c));
         }

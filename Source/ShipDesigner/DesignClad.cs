@@ -310,7 +310,10 @@ public static partial class DesignScene
                 var pc = paint?.Invoke((pu0 + pu1) / 2, (pv0 + pv1) / 2, b * 64 + a) ?? col;
                 var fx = Fx(damage, dseed, W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0));
                 if (fx.Gone)
+                {
+                    Under(m, pu0 - du, pu1 + du, pv0 - dv, pv1 + dv, arc, len, W, pc, dseed);
                     continue;
+                }
                 var top = DesignMesh.Tone(pc, tone * fx.Tone);
                 var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
                 // Damage: a lift along one edge (a tilted plate) and a dent pushing the top's middle in towards the skin.
@@ -388,6 +391,82 @@ public static partial class DesignScene
                     m.World();
                 }
             }
+    }
+
+    /// <summary>The primer under a missing plate (Karl, 2026-11-25): dark and matte, no paint pattern.</summary>
+    private static readonly (byte, byte, byte) Primer = (0x3a, 0x3d, 0x3c), FrameCol = (0x4e, 0x50, 0x52), Char = (0x16, 0x14, 0x12);
+
+    /// <summary>
+    /// What shows where a plate is gone (Karl, 2026-11-25), over the cell rectangle u0..u1, v0..v1 (shares; arc and len its metres): the
+    /// inner skin (matte primer, 4 mm off the hull), the frame (ribs along the seams, 2.5 cm up, and a bolt stub at each corner), a scorch
+    /// ring just inside the edge (7 mm up), and one or two torn plate edges bent up off the seam. Only built for missing plates, so an
+    /// intact hull costs nothing; about 40 triangles a gap. Heights all differ by at least 3 mm, so no faces share a plane.
+    /// </summary>
+    internal static void Under(DesignMesh m, double u0, double u1, double v0, double v1, double arc, double len,
+        Func<double, double, double, (double, double, double)> W, (byte, byte, byte) paint, int dseed)
+    {
+        if (u1 <= u0 || v1 <= v0)
+            return;
+        m.Quad(W(u0, v0, 0.004), W(u1, v0, 0.004), W(u1, v1, 0.004), W(u0, v1, 0.004), Primer, false);
+        // Scorch ring: a charred band round the inside of the gap.
+        double su = Math.Min(0.12 / arc, (u1 - u0) / 4), sv = Math.Min(0.12 / len, (v1 - v0) / 4);
+        const double hs = 0.007;
+        m.Quad(W(u0, v0, hs), W(u1, v0, hs), W(u1 - su, v0 + sv, hs), W(u0 + su, v0 + sv, hs), Char, false);
+        m.Quad(W(u1, v0, hs), W(u1, v1, hs), W(u1 - su, v1 - sv, hs), W(u1 - su, v0 + sv, hs), Char, false);
+        m.Quad(W(u1, v1, hs), W(u0, v1, hs), W(u0 + su, v1 - sv, hs), W(u1 - su, v1 - sv, hs), Char, false);
+        m.Quad(W(u0, v1, hs), W(u0, v0, hs), W(u0 + su, v0 + sv, hs), W(u0 + su, v1 - sv, hs), Char, false);
+        // Ribs (along v, at the u seams) and stringers (along u, at the v seams): a top and two sides each, 3 cm wide.
+        double ru = 0.015 / arc, rv = 0.015 / len;
+        const double hr = 0.025;
+        void Rib(double ua, double ub, double va, double vb)
+        {
+            m.Quad(W(ua, va, hr), W(ub, va, hr), W(ub, vb, hr), W(ua, vb, hr), FrameCol, false);
+            m.Quad(W(ua, va, -0.02), W(ua, va, hr), W(ua, vb, hr), W(ua, vb, -0.02), DesignMesh.Tone(FrameCol, 0.75), false);
+            m.Quad(W(ub, vb, -0.02), W(ub, vb, hr), W(ub, va, hr), W(ub, va, -0.02), DesignMesh.Tone(FrameCol, 0.75), false);
+        }
+        Rib(u0, u0 + ru, v0, v1);
+        Rib(u1 - ru, u1, v0, v1);
+        Rib(u0 + ru, u1 - ru, v0, v0 + rv);
+        Rib(u0 + ru, u1 - ru, v1 - rv, v1);
+        // Bolt stubs: a little pyramid on each corner bracket, 5 cm up.
+        double bu = 0.025 / arc, bv = 0.025 / len;
+        foreach (var (cu, cv) in new[] { (u0 + ru, v0 + rv), (u1 - ru, v0 + rv), (u1 - ru, v1 - rv), (u0 + ru, v1 - rv) })
+        {
+            var tip = W(cu, cv, 0.05);
+            (double, double, double) B(double a, double b) => W(cu + a * bu, cv + b * bv, hr + 0.003);
+            var bc = DesignMesh.Tone(FrameCol, 1.15);
+            m.Tri(B(-1, -1), B(1, -1), tip, bc, false);
+            m.Tri(B(1, -1), B(1, 1), tip, bc, false);
+            m.Tri(B(1, 1), B(-1, 1), tip, DesignMesh.Tone(bc, 0.8), false);
+            m.Tri(B(-1, 1), B(-1, -1), tip, DesignMesh.Tone(bc, 0.8), false);
+        }
+        // Torn edges: one or two ragged strips of the old plate still on a seam, bent up and out.
+        var mid = W((u0 + u1) / 2, (v0 + v1) / 2, 0);
+        var torn = DesignMesh.Tone(paint, 0.55);
+        var count = 1 + (DHash(dseed, mid, 70) < 0.5 ? 1 : 0);
+        for (var k = 0; k < count; k++)
+        {
+            var edge = (int)(DHash(dseed, mid, 71 + k) * 4) & 3;
+            double a = 0.15 + 0.3 * DHash(dseed, mid, 75 + k), b = a + 0.25 + 0.3 * DHash(dseed, mid, 79 + k);
+            b = Math.Min(b, 0.95);
+            var rise = 0.06 + 0.1 * DHash(dseed, mid, 83 + k);
+            var inward = 0.08 + 0.08 * DHash(dseed, mid, 87 + k);
+            (double, double, double) Pt(double s, double off, double h) => edge switch
+            {
+                0 => W(u0 + off / arc, v0 + (v1 - v0) * s, h),
+                1 => W(u1 - off / arc, v0 + (v1 - v0) * s, h),
+                2 => W(u0 + (u1 - u0) * s, v0 + off / len, h),
+                _ => W(u0 + (u1 - u0) * s, v1 - off / len, h),
+            };
+            // The bent lip: from the seam (on the frame) up to a jagged tip line partway in.
+            var r0 = Pt(a, 0.005, hr + 0.006);
+            var r1 = Pt(b, 0.005, hr + 0.006);
+            var t1 = Pt(b - 0.05, inward * 0.7, hr + rise * 0.8);
+            var tm = Pt((a + b) / 2, inward, hr + rise);
+            var t0 = Pt(a + 0.04, inward * 0.8, hr + rise * 0.6);
+            m.Quad(r0, r1, t1, t0, torn, false);
+            m.Tri(t0, t1, tm, torn, false);
+        }
     }
 
     /// <summary>A colour lightened toward bare metal by a plate's wear (0..1).</summary>
@@ -495,9 +574,14 @@ public static partial class DesignScene
                 hgt = Math.Max(hgt * depth, 0.006);
                 double uc = gx / arc, vc = gy / len;
                 var fx = Fx(damage, dseed, W(uc, vc, 0));
-                if (fx.Gone)
-                    continue;
                 var pc = paint?.Invoke(uc, vc, Cv(gy) * 64 + Cu(gx)) ?? col;
+                if (fx.Gone)
+                {
+                    // The tile's middle as a box (inside its outline, so the frame stays clear of the tiles round it).
+                    double hx = (poly.Max(q => q.X) - poly.Min(q => q.X)) * 0.36, hy = (poly.Max(q => q.Y) - poly.Min(q => q.Y)) * 0.36;
+                    Under(m, (gx - hx) / arc, (gx + hx) / arc, (gy - hy) / len, (gy + hy) / len, arc, len, W, pc, dseed);
+                    continue;
+                }
                 var top = DesignMesh.Tone(pc, tone * fx.Tone);
                 var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
                 // Cheap tiles (2026-11-25: a ringed, edge-cut tile cost ~60 triangles and the body's cap left most hulls bare): a flat top

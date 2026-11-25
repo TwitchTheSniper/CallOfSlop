@@ -191,6 +191,7 @@ let deck = 0;
 // Room view (Interior tab): only one room (and, ticked, the rooms a door or a riser joins to it) with its walls and interior; the model
 // builds nothing else while it is on. { room, connected } or null.
 let roomView = null;
+let roomOpaque = false; // Room view's Opaque box (Karl, 2026-11-25): shells, walls and floor drawn solid
 
 function take(answerText) {
   const a = JSON.parse(answerText);
@@ -238,9 +239,11 @@ function frameRoom() {
   const box = new THREE.Box3();
   world.traverse(o => { if (o.isMesh && o.userData.type === "room" && (!roomView || o.userData.id === roomView.room)) box.expandByObject(o); });
   if (box.isEmpty()) return;
-  const c = box.getCenter(new THREE.Vector3()), r = Math.max(2, box.getSize(new THREE.Vector3()).length() / 2);
+  // Karl, 2026-11-25: keep the camera's angle and distance, only the orbit target moves to the room's middle.
+  const c = box.getCenter(new THREE.Vector3()), off = camera.position.clone().sub(controls.target);
   controls.target.copy(c);
-  camera.position.copy(c).add(new THREE.Vector3(r * 2.0, r * 1.6, -r * 1.5));
+  camera.position.copy(c).add(off);
+  controls.update();
 }
 function cmd(op, merge = false) {
   op.merge = merge;
@@ -496,7 +499,8 @@ function drawRooms(only = null) {
     if (r.wallMesh) {
       // Its walls: a solid shell round the outside of the room, a little darker than its colour.
       // In Room view see-through, so its interior shows from outside.
-      const wm = meshFrom(r.wallMesh, { transparent: dim || !!only, opacity: dim ? 0.15 : only ? 0.3 : 1, depthWrite: !only, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
+      const see = !!only && !roomOpaque;
+      const wm = meshFrom(r.wallMesh, { transparent: dim || see, opacity: dim ? 0.15 : see ? 0.3 : 1, depthWrite: !see, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
       wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
     }
     if (r.intMesh && r.intMesh.p.length) {
@@ -509,7 +513,8 @@ function drawRooms(only = null) {
     }
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
-      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
+      const solid = !!only && roomOpaque && !dim;
+      const m = meshFrom(r.mesh, { transparent: !solid, opacity: solid ? 1 : dim ? 0.08 : 0.38, depthWrite: solid, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
       m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
       continue;
     }
@@ -1284,6 +1289,7 @@ function leftPanel() {
       const r = S.rooms.find(r => r.id === roomView.room);
       L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"), el("p", {}, r ? `${r.label || r.kind} (deck ${r.deck + 1})` : ""),
         el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms"),
+        el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvopaque", ...(roomOpaque ? { checked: "" } : {}), onchange: e => { roomOpaque = e.target.checked; rebuild(); } }), "Opaque"),
         el("p", { class: "hint" }, "Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.")));
       return;
     }
@@ -1542,6 +1548,15 @@ function inspector() {
     const matchBox = (key, on) => el("label", { class: "row" }, el("input", { type: "checkbox", id: key, ...(on ? { checked: "" } : {}), onchange: e => jc({ [key]: e.target.checked }) }), "Match hull");
     const matchHint = el("p", { class: "hint" }, "Follows hull A's cladding (kind, seed, panel size, depth, material and damage). Untick for this connection's own.");
     I.append(el("h2", {}, "Connection"), el("p", { class: "hint" }, `Face: end A on the ${(j.faceA || "Side").toLowerCase()}${j.faceA && j.faceA !== "Side" ? " cap" : " skin"}, end B on the ${(j.faceB || "Side").toLowerCase()}${j.faceB && j.faceB !== "Side" ? " cap" : " skin"}.`), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
+      // The mounting collar (Karl, 2026-11-25): a pad on the skin under each end that the buttress stands on.
+      el("h3", {}, "Collar"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "collar", ...(j.collar !== false ? { checked: "" } : {}), onchange: e => jc({ collar: e.target.checked }) }), "Mounting collar"),
+      ...(j.collar === false ? [] : [
+        slider("Height", Math.round((j.collarHeight ?? 0.22) * 100), 2, 100, 1, " cm", () => {}, v => jc({ collarHeight: v / 100 }), dflt("join", "collarHeight", 100)),
+        slider("Margin", Math.round((j.collarMargin ?? 0.25) * 100), 0, 200, 1, " cm", () => {}, v => jc({ collarMargin: v / 100 }), dflt("join", "collarMargin", 100)),
+        slider("Bevel", Math.round((j.collarBevel ?? 0.05) * 100), 0, 50, 1, " cm", () => {}, v => jc({ collarBevel: v / 100 }), dflt("join", "collarBevel", 100)),
+        el("div", { class: "row" }, resetAll("Height, margin and bevel back to their defaults", () => jc(dfltOf("join", ["collarHeight", "collarMargin", "collarBevel"]))))]),
+      el("p", { class: "hint" }, "A flat pad on the skin round each end; its top sits just above Heavy cladding (20 cm). The hull's plates stop at its edge and the buttress stands on it."),
       el("h3", {}, "Cladding"),
       matchBox("matchClad", !!j.matchClad),
       ...(j.matchClad ? [matchHint] : [

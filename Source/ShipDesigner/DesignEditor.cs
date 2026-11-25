@@ -119,7 +119,8 @@ public sealed class DesignEditor
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), WA = D(o, "w", 1.2), HA = D(o, "h", 1.2), Segments = I(o, "segments", 6),
                     Twist = D(o, "twist", 0), RotA = D(o, "rotA", 0), RotB = D(o, "rotB", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
                     Mirror = (bool?)o["mirror"] ?? false, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9),
-                    LeaveA = D(o, "leaveA", 0), LeaveB = D(o, "leaveB", 0), LeaveForeA = D(o, "leaveForeA", 0), LeaveForeB = D(o, "leaveForeB", 0), TanA = D(o, "tanA", 0.9), TanB = D(o, "tanB", 0.9) };
+                    LeaveA = D(o, "leaveA", 0), LeaveB = D(o, "leaveB", 0), LeaveForeA = D(o, "leaveForeA", 0), LeaveForeB = D(o, "leaveForeB", 0), TanA = D(o, "tanA", 0.9), TanB = D(o, "tanB", 0.9),
+                    Collar = (bool?)o["collar"] ?? true, CollarHeight = D(o, "collarHeight", 0.22), CollarMargin = D(o, "collarMargin", 0.25), CollarBevel = D(o, "collarBevel", 0.05) };
                 j.WB = D(o, "wb", j.WA);
                 j.HB = D(o, "hb", j.HA);
                 j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"), (string?)ao["face"]);
@@ -184,6 +185,10 @@ public sealed class DesignEditor
                 j.Buttress = D(o, "buttress", j.Buttress);
                 j.Follow = (bool?)o["follow"] ?? j.Follow;
                 j.OpenB = D(o, "openB", j.OpenB);
+                j.Collar = (bool?)o["collar"] ?? j.Collar;
+                j.CollarHeight = D(o, "collarHeight", j.CollarHeight);
+                j.CollarMargin = D(o, "collarMargin", j.CollarMargin);
+                j.CollarBevel = D(o, "collarBevel", j.CollarBevel);
                 if (o["clad"] is not null)
                 {
                     if (!HullBody.CladKinds.Contains(Str(o, "clad")))

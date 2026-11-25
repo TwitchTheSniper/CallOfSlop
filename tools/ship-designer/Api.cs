@@ -40,6 +40,7 @@ public static partial class Api
                 ["w"] = j.WA, ["h"] = j.HA, ["wb"] = j.WB, ["hb"] = j.HB, ["twist"] = j.Twist, ["rotA"] = j.RotA, ["rotB"] = j.RotB, ["sweepUp"] = j.SweepUp, ["sweepFore"] = j.SweepFore,
                 ["bias"] = j.Bias, ["segments"] = j.Segments, ["flare"] = j.Flare, ["buttress"] = j.Buttress, ["openA"] = j.OpenA, ["openB"] = j.OpenB,
                 ["leaveA"] = j.LeaveA, ["leaveB"] = j.LeaveB, ["leaveForeA"] = j.LeaveForeA, ["leaveForeB"] = j.LeaveForeB, ["tanA"] = j.TanA, ["tanB"] = j.TanB,
+                ["collar"] = j.Collar, ["collarHeight"] = j.CollarHeight, ["collarMargin"] = j.CollarMargin, ["collarBevel"] = j.CollarBevel,
                 ["cladSize"] = j.CladSize, ["cladDepth"] = j.CladDepth, ["buttressSize"] = j.ButtressSize, ["buttressDepth"] = j.ButtressDepth, ["matchClad"] = j.MatchClad, ["matchButtress"] = j.MatchButtress,
             },
             ["hull"] = new JsonObject
