@@ -20,7 +20,7 @@ public sealed class ShipBatteryParts : IPartGenerator
         Charge = "#40e070", ChargeOff = "#24402c", Copper = "#b87333", Red = "#c03028";
 
     /// <summary>A size: its name, width, height, depth, kJ held, mass, health, and the cells behind each window (columns, rows).</summary>
-    private sealed record Size(string Name, double W, double H, double D, double Kj, double Mass, double Health, int Cols, int Rows, int Modules = 1);
+    private sealed record Size(string Name, double W, double H, double D, double Kj, double Mass, double Health, int Cols, int Rows, int Modules = 1, double CableKw = 0);
 
     private static readonly Size[] Sizes =
     [
@@ -28,6 +28,9 @@ public sealed class ShipBatteryParts : IPartGenerator
         new("Ship Battery S", 0.8, 1.2, 0.36, 2000, 130, 300, 3, 3),
         new("Ship Battery M", 0.8, 2.0, 0.5, 6000, 320, 600, 3, 5),
         new("Ship Battery Bank", 2.4, 2.0, 0.8, 24000, 600, 2000, 3, 5, Modules: 3),
+        // A heavy power terminal (Sean, 2026-11-25: a genset on its own body feeds the works by a heavy power cable): a power cable between two
+        // constructs' terminals carries 1 MW, not 5 kW (WorldLinks.CableKw). Its cells are a buffer, two seconds of that.
+        new("Heavy Power Terminal", 0.8, 1.2, 0.5, 2000, 180, 600, 3, 3, CableKw: 1000),
     ];
 
     private static PyDict F(string finish) => Kw(("finish", finish));
@@ -40,7 +43,9 @@ public sealed class ShipBatteryParts : IPartGenerator
     private static Part Battery(Size s)
     {
         var (hw, h, hd) = (s.W / 2, s.H, s.D / 2);
-        var desc = s.Modules > 1
+        var desc = s.CableKw > 0
+            ? $"A heavy power terminal: a cabinet of cells ({Py.G(s.Kj / 1000)} MJ) for a heavy power cable between two constructs. A power cable from one terminal to another carries {Py.G(s.CableKw / 1000)} MW, not a plain cable's 5 kW: a genset on its own skid feeds a works by one. Stands on a floor or hangs on a wall."
+            : s.Modules > 1
             ? $"A ship's battery bank: three tall cells on one plinth, {Py.G(s.Kj / 1000)} MJ for the circuit it is on (the lamps, the logic, the starter, and what the capacitors refill from). Weld it to a deck by its foot."
             : $"A ship battery: {Py.G(s.Kj / 1000)} MJ for the circuit it is on (the lamps, the logic, the starter, and what the capacitors refill from). Hangs on a wall by its back or stands on a deck.";
         var p = new Part(s.Name, Small, Section, desc, role: "battery", tool: "wrench", material: "steel", color: Steel, group: Group);
@@ -134,7 +139,7 @@ public sealed class ShipBatteryParts : IPartGenerator
         p.Sock("top", [0, h, 0], "+y");
         p.Sock("+x", [hw, Math.Round(h / 2, 2), 0], "+x");
         p.Sock("-x", [-hw, Math.Round(h / 2, 2), 0], "-x");
-        p.Set(("battery", Kw(("capacity", s.Kj))),
+        p.Set(("battery", s.CableKw > 0 ? Kw(("capacity", s.Kj), ("cableKw", s.CableKw)) : Kw(("capacity", s.Kj))),
             ("ports", Py.L(
                 Kw(("name", "Power out"), ("type", "power"), ("dir", "out"), ("at", new object[] { hw, Math.Round(h / 2, 2), 0 }), ("face", "+x")),
                 Kw(("name", "Power in"), ("type", "power"), ("dir", "in"), ("noEffect", true), ("at", new object[] { -hw, Math.Round(h / 2, 2), 0 }), ("face", "-x")))));

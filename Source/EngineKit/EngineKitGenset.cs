@@ -57,7 +57,7 @@ public static class EngineKitGenset
     }
 
     /// <summary>Builds a set for <paramref name="r"/> (its engine through <see cref="EngineKit"/>) in <paramref name="style"/>'s colours ("" plain).</summary>
-    public static Result Make(EngineRequest r, string style = "", string name = "")
+    public static Result Make(EngineRequest r, string style = "", string name = "", string terminal = "")
     {
         r = Request(r);
         var engine = EngineKit.Request(r);
@@ -75,7 +75,7 @@ public static class EngineKitGenset
         var s = new BlueprintScript(setName) { Group = "Engine Kit", Description = $"An engine generator set made by the Engine Kit for {r}: a {engine.Name} turning a {head}. It runs as the circuit asks." };
         try
         {
-            Build(s, r, plan with { }, engine, head, tanks, batteries, r.Paint.Length > 0 ? r.Paint : paintFrame, paintPower, paintMachine);
+            Build(s, r, plan with { }, engine, head, tanks, batteries, r.Paint.Length > 0 ? r.Paint : paintFrame, paintPower, paintMachine, terminal);
         }
         catch (VehicleKitException ex)
         {
@@ -112,6 +112,14 @@ public static class EngineKitGenset
         var (_, battZ) = Rows(headLen);
         var rowW = MathF.Max(tanks * 1f, batteries * 0.5f); // (tanks a metre apart, batteries half: whole steps of the socket grid)
         return (MathF.Min(-width / 2 - 0.5f, -0.5f - rowW / 2), MathF.Max(width / 2 + 0.5f, -0.5f + rowW / 2), -headLen / 2 - engine.Dims.X - 0.5f, battZ + 0.6f);
+    }
+
+    /// <summary>Where a set's terminal stands from its head's feet (<see cref="Make"/>'s <c>terminal</c>): the battery row's +x end, past the footprint; its skid reaches 0.6 m past it.</summary>
+    public static Vector3 TerminalAt(EngineResult engine, string head, int tanks, int batteries)
+    {
+        var hd = ConstructParts.Find(head) ?? throw new VehicleKitException($"no part named {head}");
+        var (_, x1, _, _) = Footprint(engine, head, tanks, batteries);
+        return new Vector3(MathF.Ceiling((x1 + 0.5f) * 2) / 2, 0, Rows(hd.BoundsMax.Z - hd.BoundsMin.Z).Battery);
     }
 
     /// <summary>The tank row's and the battery row's z from the head's feet (on the 0.5 m grid when the feet are).</summary>
@@ -165,11 +173,15 @@ public static class EngineKitGenset
         return new Placed(gen, fly, tankParts, battParts);
     }
 
-    /// <summary>A set on its own skid: 2 m Foundations (top at 0.3 m) under it all, so it anchors where it is set down.</summary>
-    private static void Build(BlueprintScript s, EngineRequest r, EnginePlan p, EngineResult engine, string head, int tanks, int batteries, string? paintEngine, string? paintPower, string? paintMachine)
+    /// <summary>A set on its own skid: 2 m Foundations (top at 0.3 m) under it all, so it anchors where it is set down. <paramref name="terminal"/>: a part
+    /// (a Heavy Power Terminal) stood at the battery row's +x end on the skid made wider for it, so a heavy power cable takes its output to another body.</summary>
+    private static void Build(BlueprintScript s, EngineRequest r, EnginePlan p, EngineResult engine, string head, int tanks, int batteries, string? paintEngine, string? paintPower, string? paintMachine, string terminal = "")
     {
         var feet = new Vector3(0.25f, 0.3f, 0.25f); // (on the Foundations' top socket grid)
         var (x0, x1, z0, z1) = Footprint(engine, head, tanks, batteries);
+        var term = TerminalAt(engine, head, tanks, batteries);
+        if (terminal.Length > 0)
+            x1 = term.X + 0.6f;
         (x0, x1, z0, z1) = (x0 + feet.X, x1 + feet.X, z0 + feet.Z, z1 + feet.Z);
         int i0 = (int)MathF.Floor((x0 + 1) / 2), i1 = (int)MathF.Ceiling((x1 - 1) / 2);
         int j0 = (int)MathF.Floor((z0 + 1) / 2), j1 = (int)MathF.Ceiling((z1 - 1) / 2);
@@ -188,6 +200,12 @@ public static class EngineKitGenset
                     }
         }
         Place(s, feet, r, p, head, tanks, batteries, paintEngine, paintPower, paintMachine);
+        if (terminal.Length > 0)
+        {
+            var t = s.Stand(terminal, feet + term, Ahead, null, "bottom");
+            if (paintPower != null)
+                s.Paint(t, paintPower);
+        }
     }
 
     /// <summary>How many Large Fuel Tanks and Batteries a set of <paramref name="engine"/> carries: <see cref="EnduranceMinutes"/> at full throttle, five seconds of full output.</summary>

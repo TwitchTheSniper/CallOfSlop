@@ -26,7 +26,7 @@ public sealed partial class Game
             return false;
         }
         var g0 = ConstructWorld.Ground(World.Query, from);
-        var c = ConstructBuild.BuildOnGround(Constructs, bp, g0, 0, out var why);
+        var c = ConstructBuild.BuildOnGround(Constructs, bp, g0, 0, out var why, beside: false); // (its bodies beside it once it stands where it stays, below)
         if (c == null)
         {
             Log($"[opening] the site {script.Site} didn't build: {why}");
@@ -67,7 +67,7 @@ public sealed partial class Game
         }
         // Built again there: upright on the ground at the spot, its footprint's middle on it, its floor on the highest ground under it.
         var gb = ConstructWorld.Ground(World.Query, best);
-        c = ConstructBuild.BuildOnGround(Constructs, bp, gb, 0, out why);
+        c = ConstructBuild.BuildOnGround(Constructs, bp, gb, 0, out why, beside: false);
         if (c == null)
         {
             Log($"[opening] the site {script.Site} didn't build at {best.X:0},{best.Z:0}: {why}");
@@ -80,6 +80,7 @@ public sealed partial class Game
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         c.NetHistReset();
         c.Rebuild();
+        var beside = ConstructBuild.SpawnBeside(Constructs, c, bp); // (Zero Day Works II's gensets, each its own body on a heavy power cable)
         var stopped = script.SiteIdle ? SiteStopConsoles(c) : 0;
         // Everyone wakes past its front (the blueprint's low z), facing it.
         var front = c.Pos + Vector3.Transform(new Vector3(mid.X, 0, min.Z - script.SiteGap), rot);
@@ -88,7 +89,7 @@ public sealed partial class Game
         _opWakeYaw = GravityFrames.YawOf(wake, Vector3.Transform(Vector3.UnitZ, rot));
         Constructs.Events.Add($"opening: the site ({script.Site}) as construct {c.Id}");
         Log($"[opening] the site {script.Site} is construct {c.Id}, {max.X - min.X:0} x {max.Z - min.Z:0} m, its middle {Vector3.Distance(best, g0):0} m from the spawn on ground varying {bestSpread:0.0} m "
-            + $"({tried} spots tried, {sw.Elapsed.TotalMilliseconds:0} ms){(script.SiteIdle ? $", {stopped} Line Console(s) stopped" : "")}; everyone wakes at {wake.X:0},{wake.Y:0},{wake.Z:0}");
+            + $"({tried} spots tried, {sw.Elapsed.TotalMilliseconds:0} ms){(script.SiteIdle ? $", {stopped} Line Console(s) stopped" : "")}{(beside.Count > 0 ? $", {beside.Count} body(ies) beside it" : "")}; everyone wakes at {wake.X:0},{wake.Y:0},{wake.Z:0}");
         return true;
     }
 

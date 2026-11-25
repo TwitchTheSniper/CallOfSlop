@@ -601,6 +601,7 @@ public sealed partial class ConstructPartDef
     // Milestone 3: power, couplings, gauges (docs/sandbox/CONSTRUCTS.md, "Milestone 3")
     public float PowerDraw; // watts while it works (a lamp lit, a horn sounding, a logic part on; a motor: idling, on top of its work)
     public float BatteryCapacity; // battery: kJ (comes full)
+    public float CableKw; // battery "cableKw": a heavy power terminal; a power cable between two constructs' terminals carries the lower of their ratings (WorldLinks.CableKw), not 5 kW
     public float CapacitorKJ, CapacitorKW; // "capacitor": {"capacity", "rate"}: a Capacitor Bank's kJ and the kW the circuit refills it at (ship-works.md 8: energy guns fire from these only)
     public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
     public float StarterKJ = ConstructPower.StarterKJ; // engine: what its starter takes from the batteries
@@ -2026,9 +2027,14 @@ public static partial class ConstructParts
                 ParseTransfer(d, block!.Value, file, bw);
                 break;
             case PartRole.Battery:
-                Known(block!.Value, ["capacity"], bw);
+                Known(block!.Value, ["capacity", "cableKw"], bw);
                 d.BatteryCapacity = Num(Need(block.Value, "capacity", bw), file, "battery.capacity");
                 Range(d.BatteryCapacity, 1, 100_000_000_000f, file, "battery.capacity");
+                if (block.Value.TryGetProperty("cableKw", out var ck))
+                {
+                    d.CableKw = Num(ck, file, "battery.cableKw");
+                    Range(d.CableKw, 5, 100_000, file, "battery.cableKw");
+                }
                 break;
             case PartRole.Alternator:
                 Known(block!.Value, ["rate"], bw);
