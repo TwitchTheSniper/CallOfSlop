@@ -852,6 +852,8 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     const rz = hits.find(h => h.object.userData.type === "riser");
     if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
     const r = hits.find(h => h.object.userData.type === "room");
+    // In Room view a click on a connected room makes it the room shown (Karl, 2026-11-25): the drop-down and its neighbours follow.
+    if (r && roomView && r.object.userData.id !== roomView.room) { enterRoomView(r.object.userData.id); return; }
     if (r) {
       select("room", r.object.userData.id);
       const room = S.rooms.find(x => x.id === r.object.userData.id);
