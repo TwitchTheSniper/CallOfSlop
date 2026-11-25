@@ -37,7 +37,7 @@ client), apart from the skip key; the start kit's notice waits until they wake. 
 
 Format `call-of-slop-opening/1`: `"warden"` (who says the lines),
 `"wreck"` (a blueprint or part left 70 to 140 m out, `"crashFrom"`/`"crashTo"`), `"skip"` (the hint), `"ship"`,
-`"orbit"` (m over the ground, at most 150 km), `"hold"` (true: the ship is built at rest and its flight computer holds it
+`"orbit"` (m over the ground, at most 150 km), `"site"`, `"siteGap"` and `"siteIdle"` (a blueprint built on the ground with everyone waking in front of it: STARTS.md "A site start"), `"hold"` (true: the ship is built at rest and its flight computer holds it
 there, not orbiting; a driver at the controls takes it back), `"wake"` and `"company"` (a ship start), and `"beats"` with `"placeholder"` and `"wake"` (each `"time"`,
 `"caption"`, `"lines"`). A `"colony"` key is refused (the penal colony was removed). Text is ASCII; a bad file is refused
 with a reason and there is no opening.

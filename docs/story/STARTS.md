@@ -35,6 +35,17 @@ along it (negative: ahead; 150 m to 5 km), crewed by that NPC faction kind (Crew
 so friends who join later wake aboard it too. A ship start works in Creative too (no kit; the parts menu has
 everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code: `Source/Game/GameSpaceStart.cs`.
 
+## A site start
+
+An opening whose `"site"` names a blueprint (Sean, 2026-11-25: the Zero Day works test start) builds it whole on the ground,
+on the flattest dry ground within 1.5 km of the map's spawn (its footprint's ground varying under 2.5 m is taken at once, else
+the least varied; never a sea's water), its floor on the highest ground under it, turned as the blueprint is. Everyone wakes
+`"siteGap"` m (default 15) out past its front, the blueprint's low-z end, facing it. `"siteIdle": true` builds every Line Console
+on it stopped (its "start on" setting off too, so a save keeps it so). Survival and Creative: in Creative its stores come
+as any creative spawn of the blueprint (the works' bunkers, silos and fuel full), in Survival empty, and `"kit": []` gives no
+kit. The save keeps the wake spot (the Opening section's crash site). A site and a ship are not both allowed. Code:
+`Source/Game/GameSiteStart.cs`.
+
 ## How a world picks its start
 
 - **New world**: the host's choice (the Start row on the Single player or Multiplayer page; `Settings.PlayedStartId`), on
@@ -64,6 +75,10 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
   The ship is a placeholder: the opening's `"ship"` (and its `"wake"` points) take any blueprint. Survival and Creative.
 - `CapitalDuel` (two Mainframes held 10 km apart off Redrock) was removed with the Mainframe (Karl, 2026-11-20: capital ships
   on the back burner): docs/archive/capital/mainframe.md says how to bring both back. The openings' `"hold"` stays.
+- `ZeroDayWorks` (TEST START, last; Sean, 2026-11-25: "a starting point that spawns you in front of an idle, full Zero Day
+  factory, for quicker testing"): the whole Zero Day works (docs/sandbox/constructs/zeroday-works.md) on Caledon's flattened
+  pole (the landing ground, 175 m across: WORLDS.md "Places kept flat"), its Line Consoles stopped, everyone waking 20 m south
+  of its assembly yard, looking north into it. A site start (above); no kit. Survival and Creative.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` was removed with the colony and its induction (2026-11-17): a world made with it plays the any-map start.

@@ -117,6 +117,8 @@ public sealed partial class Game
         Log($"[opening] the {PlayedStart.Name} start on {World.Map.Name} (GameStoryStart.cs)");
         if (script.Ship.Length > 0 && OpeningShip(script, from))
             return from; // (aboard a ship in orbit: GameSpaceStart.cs)
+        if (script.Site.Length > 0 && OpeningSite(script, from))
+            return _opWake; // (on the ground in front of a pre-built: GameSiteStart.cs)
         return OpeningBuildAlone(script, from);
     }
 
@@ -432,6 +434,9 @@ public sealed class OpeningScript
     public string Ship = ""; // a ship start: the blueprint everyone wakes aboard, in orbit (GameSpaceStart.cs)
     public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
     public bool Hold; // held still there by its own flight computer instead of going round (a deep-space start: GameSpaceStart.cs)
+    public string Site = ""; // a site start: a blueprint built whole on the ground, everyone waking in front of it (GameSiteStart.cs)
+    public float SiteGap = 15; // m out past the site's front (its low-z end) where people wake
+    public bool SiteIdle; // its Line Consoles built stopped: nothing is ordered until someone starts one
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
     public readonly record struct Companion(string Ship, string Faction, float Behind, float Away = 0);
@@ -472,6 +477,15 @@ public sealed class OpeningScript
             t.Ship = Text(root, "ship", "");
             if (t.Ship.Length > 0 && ConstructBuild.FindBlueprint(t.Ship) == null)
                 throw new FormatException($"no blueprint named \"{t.Ship}\" (the ship)");
+            t.Site = Text(root, "site", "");
+            if (t.Site.Length > 0 && ConstructBuild.FindBlueprint(t.Site) == null)
+                throw new FormatException($"no blueprint named \"{t.Site}\" (the site)");
+            if (t.Site.Length > 0 && t.Ship.Length > 0)
+                throw new FormatException("\"site\" or \"ship\", not both");
+            if (root.TryGetProperty("siteGap", out var sg))
+                t.SiteGap = Math.Clamp(sg.GetSingle(), 3, 100);
+            if (root.TryGetProperty("siteIdle", out var si))
+                t.SiteIdle = si.GetBoolean();
             // (at most 150 km: past the World's 200 km reach from the planet's centre a ship is parked, GameSpaceJump.SpaceFarDistance,
             // and company held "away" past it has to fit in too)
             if (root.TryGetProperty("orbit", out var ob))

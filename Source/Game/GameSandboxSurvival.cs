@@ -94,8 +94,8 @@ public sealed partial class Game
         var from = s.RackParts.Count > 0 ? s.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;
         if (kit == null)
         {
-            if (!SandboxSurvivalOption && OpScript is { Problem.Length: 0, Ship.Length: > 0 })
-                OpeningBuild(from); // (Creative aboard a ship start's ship, the rust bucket: no kit, the parts menu has everything; GameSpaceStart.cs)
+            if (!SandboxSurvivalOption && OpScript is { Problem.Length: 0 } op && (op.Ship.Length > 0 || op.Site.Length > 0))
+                OpeningBuild(from); // (Creative aboard a ship start's ship, the rust bucket, or before a site start's site: no kit, the parts menu has everything; GameSpaceStart.cs, GameSiteStart.cs)
             return;
         }
         if (SandboxSurvivalOption)
