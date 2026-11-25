@@ -67,8 +67,12 @@ public static partial class ConstructPress
         return y == 0 && x >= asm.X0 && x < asm.X0 + asm.W && z >= asm.Z0 && z < asm.Z0 + asm.L;
     }
 
-    /// <summary>The hinge side in the Core's cell frame: +1 when the hinge row is the bed's last row along the Core's z, -1 its first (the row away from the Core).</summary>
-    public static int HingeSide(in CMachineAsm asm) => asm.Z0 + asm.L - 1 + asm.Z0 >= 0 ? 1 : -1;
+    /// <summary>
+    /// The hinge side in the Core's cell frame: the bed's long edge farther from the Core's own row, +1 along the Core's z, -1 against it.
+    /// A bed centred on the Core's row (a small press: Core and blocks in one row) hinges on -z (the Zero Day works' small presses have
+    /// the block Assembler's masts 1 m off their +z side and only low belts on their -z side).
+    /// </summary>
+    public static int HingeSide(in CMachineAsm asm) => asm.Z0 + asm.L - 1 + asm.Z0 > 0 ? 1 : -1;
 
     /// <summary>The bed's deck (where the blank lies) over the machine's floor (m): a low bed's at the rollers' height, else the blocks' top.</summary>
     public static float DeckOf(in CMachineAsm asm, float cell) => asm.LowBed ? RollerRuns.RunY + ConstructConveyor.BedTop : cell;

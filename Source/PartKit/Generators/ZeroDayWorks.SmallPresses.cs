@@ -11,7 +11,7 @@ public sealed partial class ZeroDayWorks
         // The frigate's bill, counted through its Assembler recipes, wants 48 Circuit Boards and 29 Gear Sets, the most of any pressed part,
         // and both are pressed from blanks under 0.45 m across, which a Press Core takes alone: the big 3 x 4 presses were wasted on them.
         // So two small presses stand in the free band south of the block Assembler (z -141 to -146, between its masts and the stores'
-        // pads), each a Core with a 2-block bed east of it (no walls: no shells to swing, no swing strip), fed by its own Extruder east
+        // pads), each a Core with a 2-block bed east of it (its swing lid hinges on the south side, away from the masts), fed by its own Extruder east
         // of the bed, turned to face it. Their parts go on a belt into a Large Conveyor Join east of the Assembler and on into the press
         // belts' first Join, so the Router sends them where the order wants them, as the big presses' are.
 

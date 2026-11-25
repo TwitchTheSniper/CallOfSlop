@@ -274,13 +274,14 @@ public sealed partial class PressParts : IPartGenerator
         p.Sock("dieslot", [R3(mid), R3(deck), R3(zm)], "+y", kind: "pressdie");
         p.Stats(CoreMass, CoreHealth, c.Armour, 4);
         var bayList = centres.Select((bx, i) => (object?)Kw(("socket", $"bay{i + 1}"), ("min", Py.L(R3(bx - k * 0.95), R3(bayY - 0.3), R3(z0 - k * 1.5))), ("max", Py.L(R3(bx + k * 0.95), R3(bayY + 0.3), R3(z0 + k * 1.5))))).ToList();
-        // (the Power Pack's big screens: the die's 1.7 x 0.45 m across the bed side over the bays' mouths, the bays' 0.82 x 0.62 m on the front)
+        // (the Power Pack's big screens: the die's 1.7 x 0.35 m across the bed side over the bays' mouths, the bays' 0.82 x 0.34 m on the front;
+        // no taller, or a line runs off: PanelRender.Columns gives 33 and 20 characters, so "Auto: Limited-Slip Differential" and, beside a bay's icon, "L-angle/Plate" fit)
         var proud = 0.004;
-        var dieScreen = Kw(("source", "press.die"), ("at", Py.L(R3(mid), R3(y0 + 0.91), Py.Round(z0 - proud, 4))), ("size", Py.L(1.7, 0.45)), ("face", "-z"), ("up", "+y"), ("rows", 4),
+        var dieScreen = Kw(("source", "press.die"), ("at", Py.L(R3(mid), R3(y0 + 0.91), Py.Round(z0 - proud, 4))), ("size", Py.L(1.7, 0.35)), ("face", "-z"), ("up", "+y"), ("rows", 4),
             ("touch", Py.L(Kw(("action", "machine.recipe"), ("at", Py.L(0.44, 0.02, 0.70, 0.24)), ("label", "Recipe")), Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern")))));
         var screens = new List<object?>();
         for (var i = 0; i < 2; i++)
-            screens.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(R3(i == 0 ? mid + 0.43 : mid - 0.43), R3(y0 + 0.55), Py.Round(z1 + proud, 4))), ("size", Py.L(0.82, 0.62)), ("face", "+z"), ("up", "+y"), ("rows", 5)));
+            screens.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(R3(i == 0 ? mid + 0.43 : mid - 0.43), R3(y0 + 0.55), Py.Round(z1 + proud, 4))), ("size", Py.L(0.82, 0.34)), ("face", "+z"), ("up", "+y"), ("rows", 5)));
         screens.Add(dieScreen);
         p.Set(("power", CorePower), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
                 ("tooltip", "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them.")))),

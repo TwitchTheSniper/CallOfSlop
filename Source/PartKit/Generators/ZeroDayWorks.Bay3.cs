@@ -83,7 +83,7 @@ public sealed partial class ZeroDayWorks
             Arm("Plasma Loader Arm", 89, -87);
             Arm("Plasma Loader Arm", 89, -93);
 
-            // ---- Four Presses (3 x 4 beds, the shells one block high: a 2 m swing strip north and south of each) in two rows. ---------
+            // ---- Four Presses (3 x 4 low beds under swing lids, each opening over a strip south of its bed) in two rows. ---------------
             // Each starts with a die (the yard's frigate wants ten families; four presses hold four: the leg pods' canopy plates, the
             // housings, the buttons and switches, the leg pods' brackets; the Circuit Boards and Gear Sets have their own small presses,
             // ZeroDayWorks.SmallPresses.cs). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
@@ -108,7 +108,7 @@ public sealed partial class ZeroDayWorks
 
             // ---- The block Assembler: Core at x 75, a 4 x 4 bed east of it, 2-block masts outside the bed's corners, a Gantry Carriage
             // a bed row, the Thruster Jig docked on its west side (its Tool Bay), three upgrade modules; the Block Rack east of the bed. ----
-            var asm = Assembler(75, -132); // (its north masts 1 m clear of the south presses' shell swing: the presses moved south 2 m for the belt aisle, 2026-11-23)
+            var asm = Assembler(75, -132); // (its north masts 1 m clear of the south presses' beds: the presses moved south 2 m for the belt aisle, 2026-11-23)
             _makers.Add(asm);
             _blockAssembler = asm;
             // Its stock: a chute from each bin its frigate orders draw on (Orders pull their inputs from the stores chuted in), at 9.5 to
