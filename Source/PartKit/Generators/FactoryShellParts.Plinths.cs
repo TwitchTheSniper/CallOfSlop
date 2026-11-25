@@ -38,6 +38,9 @@ public sealed partial class FactoryShellParts
         p.Sock("top", [0, h, 0], "+y");
         p.Sock("+x", [1, h * 0.5, 0], "+x");
         p.Sock("-x", [-1, h * 0.5, 0], "-x");
+        // (stood by this one the plinth's middle is a quarter metre ahead of the floor socket, so its machine's die face lands on a whole metre: a
+        // Run-out Table's far end then meets a Roller Tile already laid on the floor's grid; Zero Day Works II)
+        p.Sock("bottom ahead", [0, 0, -0.25], "-y");
         p.Stats(2 * (front - back) * h * 2400 * 0.5, 4000, 20);
         p.Set(("collider", "boxes"));
         return p;
