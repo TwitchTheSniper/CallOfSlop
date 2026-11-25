@@ -732,12 +732,44 @@ public static partial class DesignScene
         }
         var shell = t >= 0.005;
         if (shell && r.ToHull)
-            HullShell(d, r, t, colour, p => Keep(p, p, false), m);
+            HullShell(d, r, t, colour, p => Keep(p, p, false), m, doors);
         double[] V(double a, double b2, double u) { var v = new double[3]; v[ax] = a; v[al] = b2; v[up] = u; return v; }
+        // A slab: its extent on each world axis, cut along two of them (i, j), the third (n) its thickness; out is the side its outer face is on.
+        // A door's opening edges on one world axis (Karl, 2026-11-25: both rooms cut the very same opening, so the cells split at its
+        // edges, not on each room's own 30 cm grid, which put each room's opening somewhere else along the shared wall).
+        void DoorEdges(int k, List<double> e)
+        {
+            foreach (var q in doors)
+                if (k == up)
+                {
+                    if (d.Stacked) { e.Add(q[up] - 2.1); e.Add(q[up] + 0.3); }
+                    else { e.Add(q[up] - 0.3); e.Add(q[up] + 2.1); }
+                }
+                else { e.Add(q[k] - 0.55); e.Add(q[k] + 0.55); }
+        }
+        List<double> Breaks(double a, double b, int k)
+        {
+            var n0 = Math.Clamp((int)Math.Ceiling((b - a) / 0.3), 1, 160);
+            var e = new List<double>(n0 + 8);
+            for (var q = 0; q <= n0; q++)
+                e.Add(a + (b - a) * q / n0);
+            var at = e.Count;
+            DoorEdges(k, e);
+            for (var q = e.Count - 1; q >= at; q--)
+                if (e[q] <= a + 0.002 || e[q] >= b - 0.002)
+                    e.RemoveAt(q);
+            e.Sort();
+            for (var q = e.Count - 1; q > 0; q--)
+                if (e[q] - e[q - 1] < 0.002 && q != e.Count - 1)
+                    e.RemoveAt(q);
+            return e;
+        }
         // A slab: its extent on each world axis, cut along two of them (i, j), the third (n) its thickness; out is the side its outer face is on.
         void Slab(double[] s0, double[] s1, int i, int j, int n, double out_)
         {
-            int ni = Math.Clamp((int)Math.Ceiling((s1[i] - s0[i]) / 0.3), 1, 160), nj = Math.Clamp((int)Math.Ceiling((s1[j] - s0[j]) / 0.3), 1, 160);
+            var ei = Breaks(s0[i], s1[i], i);
+            var ej = Breaks(s0[j], s1[j], j);
+            int ni = ei.Count - 1, nj = ej.Count - 1;
             var p = new double[3];
             var pr = new double[3];
             var c0 = new double[3];
@@ -752,8 +784,8 @@ public static partial class DesignScene
                     {
                         for (var k = 0; k < 3; k++)
                             p[k] = (s0[k] + s1[k]) / 2;
-                        p[i] = s0[i] + (s1[i] - s0[i]) * (bi + 0.5) / ni;
-                        p[j] = s0[j] + (s1[j] - s0[j]) * (bj + 0.5) / nj;
+                        p[i] = (ei[bi] + ei[bi + 1]) / 2;
+                        p[j] = (ej[bj] + ej[bj + 1]) / 2;
                         Array.Copy(p, pr, 3);
                         pr[n] = (out_ < 0 ? s0[n] : s1[n]) + out_ * 0.03;
                         keep = Keep(p, n == up ? null : pr);
@@ -764,10 +796,10 @@ public static partial class DesignScene
                     {
                         Array.Copy(s0, c0, 3);
                         Array.Copy(s1, c1, 3);
-                        c0[i] = s0[i] + (s1[i] - s0[i]) * run / ni;
-                        c1[i] = s0[i] + (s1[i] - s0[i]) * bi / ni;
-                        c0[j] = s0[j] + (s1[j] - s0[j]) * bj / nj;
-                        c1[j] = s0[j] + (s1[j] - s0[j]) * (bj + 1) / nj;
+                        c0[i] = ei[run];
+                        c1[i] = ei[bi];
+                        c0[j] = ej[bj];
+                        c1[j] = ej[bj + 1];
                         m.Box(c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], hex);
                         run = -1;
                     }
@@ -1116,17 +1148,37 @@ public static partial class DesignScene
     /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its outer face 4 mm in from the hologram,
     /// its inner face t further in (Karl, 2026-11-25: inside its own room). A quad whose outside is in a door or a group-mate's room is left out.
     /// </summary>
-    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m)
+    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m, List<double[]> doors)
     {
         const double g = ShellGap;
         var dk = d.DeckOf(r);
         var (s0, s1) = Span(d, r);
-        var nv = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
-        const int nu = 4;
         var hgt = dk.Height;
+        // Slices along the room and rows up it, split at every door's edges (Karl, 2026-11-25: both rooms cut the same opening).
+        int va_ = d.Stacked ? 1 : 2, up_ = d.Stacked ? 2 : 1;
+        var vs = new List<double>();
+        var n0 = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
+        for (var q = 0; q <= n0; q++)
+            vs.Add(s0 + (s1 - s0) * q / n0);
+        var us = new List<double> { 0, hgt / 4, hgt / 2, hgt * 3 / 4, hgt };
+        foreach (var q in doors)
+        {
+            foreach (var e in new[] { q[va_] - 0.55, q[va_] + 0.55 })
+                if (e > s0 + 0.002 && e < s1 - 0.002)
+                    vs.Add(e);
+            var fu = d.Stacked ? dk.Floor - q[up_] : q[up_] - dk.Floor;
+            if (Math.Abs(fu) < 0.05)
+                foreach (var e in new[] { fu + 2.1 })
+                    if (e > 0.002 && e < hgt - 0.002)
+                        us.Add(e);
+        }
+        vs.Sort();
+        us.Sort();
+        var nv = vs.Count - 1;
+        var nu = us.Count - 1;
         (double, double, double) P(double u, double v, double up) { var w = d.World(dk, u, v, up); return (w[0], w[1], w[2]); }
-        double V(int i) => s0 + (s1 - s0) * i / nv;
-        double Up(int k) => hgt * k / nu;
+        double V(int i) => vs[i];
+        double Up(int k) => us[k];
         var side = DesignMesh.Tone(col, 0.9);
         // Both faces of a strip of shell: inner (off by g) and outer (off by g + t), dir the plan offset per unit of push.
         void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c)
