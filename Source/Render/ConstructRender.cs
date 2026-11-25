@@ -544,6 +544,8 @@ public static partial class ConstructRender
             return 0; // (a live arm's chain piece, or a part riding its Rail Carriage: LifterRender poses it, ArmKit.cs)
         if (d.ModPart != ModPart.None && ModuleSockets.HiddenLook(c, i))
             return 0; // (a socket connector set hidden: Hide connector, ModuleSockets.HiddenLook)
+        if (d.BlockRole == BlockRole.Block && ConstructPress.Covered(c, i))
+            return 0; // (a cell of a Press's bed: its Core draws the press over it, ConstructRenderPress.cs)
         // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
         var mergeScale = 0f;
         var mergeOrigin = Vector3.Zero;
@@ -713,10 +715,10 @@ public static partial class ConstructRender
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         var drive = DriveLooks(d) && !p.Broken && DrivePrepare(gfx, c, i, d, seg * body); // (a bell and its engine's pieces show the burn: ConstructRender.DriveFx.cs)
         // A Press Core has no work boxes of its own (Sean 2026-11-23: no clamshell on the control module), so its store is read here.
-        var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) : null;
-        if (pressStore != null)
+        var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) ?? IdlePress : null; // (a body with no store, a ghost or a preview, draws its lid at rest: its bed cells draw nothing of their own, ConstructPress.Covered)
+        if (pressStore != null && pressStore != IdlePress)
             ConstructPress.StrokeUpdate(c, i, pressStore, Now); // (this peer's note of the stroke: when it began, what it presses and makes)
-        var pressWorking = pressStore != null && ProductionLines.Working(world, c, i, pressStore, Now);
+        var pressWorking = pressStore != null && pressStore != IdlePress && ProductionLines.Working(world, c, i, pressStore, Now);
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
@@ -737,14 +739,6 @@ public static partial class ConstructRender
         var seams = d.HasSeams && i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0;
         var boxSlots = hideSlots != 0 ? ConstructGantry.BoxSlots(d) : null;
         var frame = d.HasMiddle && ModuleSockets.FrameLook(c, i); // (an Opening socket's plate, or the plug on one: a frame with a hole)
-        ConstructPress.ShellPose shellPose = default;
-        var shellOn = d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out shellPose); // (a Press's wall block: a clamshell segment, swung about its hinge: ConstructPressShells.cs)
-        var shellStore = shellOn && !c.Parts[shellPose.Core].Broken ? world.StoreOf(c, shellPose.Core) : null;
-        if (shellStore != null)
-            ConstructPress.StrokeUpdate(c, shellPose.Core, shellStore, Now); // (once a frame per press: the Core may be culled while its housings show)
-        var dieOpen = shellStore != null
-            ? ConstructPress.DieOpen(shellStore, shellPose.Index, Now, ProductionLines.Working(world, c, shellPose.Core, shellStore, Now), out _)
-            : 1f; // (its round die's swing: stowed open, closing on the blank, shut while it is pressed, opening on the new part)
         var swing = Matrix4x4.Identity;
         var swung = !p.Broken && GimbalTurn(c, SwingThruster(c, i, d), out swing); // (a bell on its gimbal, swung as the host steers it: whole, about its mount)
         for (var b = 0; b < d.Boxes.Length; b++)
@@ -858,11 +852,8 @@ public static partial class ConstructRender
             drawn += DrawBlank(gfx, sheet, sheetRot, sheetAt, in p, seg * body, shade, opacity, squash); // (a Panel Former's blank on its bed, flat; the panel stretched over the rising die)
         if ((fitted & ~offSlots) != 0)
             drawn += DrawFitted(gfx, c, i, d, fitted & ~offSlots, seg * body, shade, wear, opacity);
-        if (shellOn && shellPose.Top && shellPose.Gap > 0.05f)
-            drawn += DrawShellDie(gfx, in shellPose, dieOpen, ConstructPress.DieIn(c, shellPose.Core) is var fittedDie and >= 0 ? c.Parts[fittedDie].D : null,
-                seg * body, shade, opacity);
-        else if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null && PressBed(c, i, d, pressStore, pressWorking, out var onBed, out var bedAt))
-            drawn += DrawBlank(gfx, onBed, 0, bedAt, in p, seg * body, shade, opacity); // (the blank on the bed under the open dies, then the part they made)
+        if (d.IsPress && d.BlockRole == BlockRole.Core && pressStore != null)
+            drawn += DrawPressLid(gfx, c, i, pressStore, pressWorking, seg * body, shade, opacity); // (a press with a bed: the swing-lid press over it, ConstructRenderPress.cs)
         return drawn;
     }
 
@@ -906,89 +897,6 @@ public static partial class ConstructRender
             }
         }
         return drawn;
-    }
-
-    private static readonly Vector3 DieSteel = new(0.46f, 0.48f, 0.51f), DieEdge = new(0.82f, 0.16f, 0.12f);
-    private static readonly ushort DieShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = 0, Angle = 90, Dir = 45, Segments = 8 });
-    private const float DieLinerInner = 0.95f; // (a die's liner: a ring the same quarter, its inner radius this share of its outer, hidden inside the die)
-    private static readonly ushort DieLinerShape = PartShapes.For(new PartBox { Shape = "arc", Size = Vector3.One, Inner = DieLinerInner, Angle = 90, Dir = 45, Segments = 8 });
-
-    /// <summary>
-    /// A Press housing's round die (Sean, 2026-11-23): a solid quarter round turning about its own centre, the top of the housing's inner
-    /// edge, its radius over the bed. Shut, it reaches down that face to the bed and in to the bed's centre line, where the other side's
-    /// point meets it, its curved face down over the blank (an arch); turned <paramref name="open"/> of the way, it rolls down and out
-    /// into its housing. The fitted die (<paramref name="die"/>) lines the curved face in its colours, so a bigger press shows a bigger
-    /// die; a red strip marks the point. Drawn only: the housing's cell is the collider.
-    /// </summary>
-    private static int DrawShellDie(Renderer gfx, in ConstructPress.ShellPose s, float open, ConstructPartDef? die, in Matrix4x4 onBody, float shade, float opacity)
-    {
-        var r = s.Gap - 0.008f; // (its point 3 mm short of the centre line; its foot 4 mm over the bed; open, within its housing)
-        var centre = s.Hinge - s.Out * 0.005f + s.Up * (r + 0.004f); // (5 mm in front of the housing's face: its flat side never lies on it)
-        var turn = open <= 0 ? Matrix4x4.Identity
-            : Matrix4x4.CreateTranslation(-centre) * Matrix4x4.CreateFromAxisAngle(Vector3.Normalize(s.Axis), -open * MathF.PI * 0.5f) * Matrix4x4.CreateTranslation(centre);
-        var m = turn * onBody;
-        var along = Vector3.Dot(Vector3.Cross(s.Along, s.Up), s.Out) < 0 ? -s.Along : s.Along; // (handed: a mirrored model turns its faces inside out)
-        var len = s.Cell - 0.02f; // (its ends 7 mm inside its housing's)
-        gfx.Draw(Quarter(along, s.Up, s.Out, centre, len, r - (die != null ? 0.045f : 0)) * m, DieSteel * shade, opacity, mode: 0, shape: DieShape); // (with a die, its liner makes up the radius)
-        gfx.Draw(Matrix4x4.CreateScale(len - 0.02f, 0.05f, 0.06f) * Basis(along, s.Up, s.Out, centre - s.Out * (r - 0.03f) + s.Up * 0.029f) * m, DieEdge * shade, opacity); // (its point: on its flat top, 4 mm proud)
-        if (die == null)
-            return 2;
-        // The die's colours on the curved face: its biggest box's as a liner the whole length, the colour least like it (its insert) as
-        // a band down the middle, standing a little proud of the liner.
-        Vector3 baseColour = DieSteel, insert = DieSteel;
-        float most = -1, far = -1;
-        foreach (ref readonly var box in die.Boxes.AsSpan())
-        {
-            if (box.Hidden || box.Bare || box.MergedOnly)
-                continue;
-            var v = box.Half.X * box.Half.Y * box.Half.Z;
-            if (v > most)
-                (most, baseColour) = (v, box.Color);
-        }
-        foreach (ref readonly var box in die.Boxes.AsSpan())
-        {
-            if (box.Hidden || box.Bare || box.MergedOnly)
-                continue;
-            var d = Vector3.DistanceSquared(box.Color, baseColour);
-            if (d > far)
-                (far, insert) = (d, box.Color);
-        }
-        // (the rings' flat ends sit 3 and 6 mm inside the steel's: no shared planes)
-        gfx.Draw(Quarter(along, s.Up, s.Out, centre - (s.Up + s.Out) * 0.003f, len - 0.01f, r - 0.015f) * m, baseColour * shade, opacity, mode: 0, shape: DieLinerShape);
-        gfx.Draw(Quarter(along, s.Up, s.Out, centre - (s.Up + s.Out) * 0.006f, len * 0.7f, r) * m, insert * shade, opacity, mode: 0, shape: DieLinerShape);
-        return 4;
-    }
-
-    /// <summary>A frame with these axes (unit length) and origin.</summary>
-    private static Matrix4x4 Basis(Vector3 x, Vector3 y, Vector3 z, Vector3 at) => new(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, at.X, at.Y, at.Z, 1);
-
-    /// <summary>A quarter round's model (DieShape's arc: down and in from its centre), <paramref name="radius"/> about <paramref name="centre"/>.</summary>
-    private static Matrix4x4 Quarter(Vector3 along, Vector3 up, Vector3 @out, Vector3 centre, float len, float radius)
-    {
-        var at = centre - (up + @out) * (radius * 0.5f);
-        return new Matrix4x4(
-            along.X * len, along.Y * len, along.Z * len, 0,
-            up.X * radius, up.Y * radius, up.Z * radius, 0,
-            @out.X * radius, @out.Y * radius, @out.Z * radius, 0,
-            at.X, at.Y, at.Z, 1);
-    }
-
-    /// <summary>What a Press shows on its bed now (<see cref="ConstructPress.DieOpen"/> of its last segment, the last to shut and open) and where, in the Core's own frame.</summary>
-    private static bool PressBed(Construct c, int core, ConstructPartDef d, CStore st, bool working, out ConstructPartDef what, out Vector3 at)
-    {
-        (what, at) = (null!, default);
-        if (!MachineBlocks.TryOf(c, core, out var asm) || asm.W == 0 || asm.L < 3)
-            return false;
-        ConstructPress.DieOpen(st, Math.Min(asm.W - 1, ConstructPress.RippleMax), Now, working, out var show);
-        var def = show == ConstructPress.BedShow.Blank ? st.StrokeBlank : show == ConstructPress.BedShow.Made ? (working ? st.StrokeLast : st.StrokeMade) : null; // (back to back, the dies open on the last stroke's part)
-        if (def == null)
-            return false;
-        what = def;
-        var o = d.BlockOrigin ?? (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var foot = (def.BoundsMin + def.BoundsMax) * 0.5f;
-        foot.Y = def.BoundsMin.Y;
-        at = new Vector3(o.X + (asm.X0 + (asm.W - 1) * 0.5f) * d.BlockCell, o.Y + (asm.LowBed ? RollerRuns.RunY + ConstructConveyor.BedTop - 0.5f * d.BlockCell - 0.006f : 0.5f * d.BlockCell) + 0.006f, o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * d.BlockCell) - foot;
-        return true;
     }
 
     private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
@@ -1067,7 +975,7 @@ public static partial class ConstructRender
                 break;
             }
             case BoxWork.Hinge:
-                break; // (a clamshell leaf elsewhere: no part draws one now; a Press's housings turn their round dies, DrawShellDie)
+                break; // (a clamshell leaf elsewhere: no part draws one now; a Press's lid is its Core's, DrawPressLid)
             case BoxWork.Press:
                 break; // (the old Panel Former's platen: no part draws one now; the stretch former's die is PanelFormerRender's)
             case BoxWork.Pin:

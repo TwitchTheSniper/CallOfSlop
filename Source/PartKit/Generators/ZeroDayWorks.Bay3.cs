@@ -83,7 +83,7 @@ public sealed partial class ZeroDayWorks
             Arm("Plasma Loader Arm", 89, -87);
             Arm("Plasma Loader Arm", 89, -93);
 
-            // ---- Four Presses (3 x 4 beds, the shells one block high: a 2 m swing strip north and south of each) in two rows. ---------
+            // ---- Four Presses (3 x 4 low beds under swing lids, each opening over a strip south of its bed) in two rows. ---------------
             // Each starts with a die (the yard's frigate wants ten families; four presses hold four: the leg pods' canopy plates, the
             // housings, the buttons and switches, the leg pods' brackets; the Circuit Boards and Gear Sets have their own small presses,
             // ZeroDayWorks.SmallPresses.cs). A press swaps its die from a Die Rack chuted into it (PressDieSwap); the works' Die Racks
@@ -108,7 +108,7 @@ public sealed partial class ZeroDayWorks
 
             // ---- The block Assembler: Core at x 75, a 4 x 4 bed east of it, 2-block masts outside the bed's corners, a Gantry Carriage
             // a bed row, the Thruster Jig docked on its west side (its Tool Bay), three upgrade modules; the Block Rack east of the bed. ----
-            var asm = Assembler(75, -132); // (its north masts 1 m clear of the south presses' shell swing: the presses moved south 2 m for the belt aisle, 2026-11-23)
+            var asm = Assembler(75, -132); // (its north masts 1 m clear of the south presses' beds: the presses moved south 2 m for the belt aisle, 2026-11-23)
             _makers.Add(asm);
             _blockAssembler = asm;
             // Its stock: a chute from each bin its frigate orders draw on (Orders pull their inputs from the stores chuted in), at 9.5 to
@@ -143,8 +143,8 @@ public sealed partial class ZeroDayWorks
 
         /// <summary>
         /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed east of it, Press Blocks under the housings and Press Bed Blocks between (3 along x, the flow, from the Core's +x;
-        /// 4 rows south: the bed is the blocks beside the Core, not the Core), and one block on each cell of the north and south rows for
-        /// the shells (a 2 m swing strip north and south).
+        /// 4 rows south: the bed is the blocks beside the Core, not the Core). Its swing lid hinges on the south row and opens over a strip
+        /// south of it (ConstructPress.SwingReach).
         /// </summary>
         private VPart Press(float x, float z)
         {
@@ -158,10 +158,7 @@ public sealed partial class ZeroDayWorks
                 for (var i = 0; i < 3; i++)
                     bed[i, j] = Paint(Onto(bed[i, j - 1], "-z", "Press Bed Block", "+z"), General); // (the low bed between the housings' rows, at the rollers' height: Sean 2026-11-23)
             Chain(bed, "Press Block", "-z", "+z", "+x", "-x", General, rowZero: true);
-            foreach (var j in new[] { 0, 3 })
-                for (var i = 0; i < 3; i++)
-                    Paint(Onto(bed[i, j], "top", "Press Block", "bottom"), General);
-            return core;
+            return core; // (no wall blocks since the swing lid, 2026-11-25: the lid lies over the bed and opens over the south row's strip)
         }
 
         /// <summary>

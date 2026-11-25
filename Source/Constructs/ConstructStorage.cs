@@ -90,9 +90,12 @@ public sealed class CStore
     public byte DrawnProgress; // the Progress the drawing last saw, and when (ConstructRender.Now): it runs the job on between sends (AssemblerRender)
     public double DrawnAt;
     public byte StrokeSeen; // a Press: the Progress the drawing last saw, whether it was at work, when its stroke began and ended (ConstructRender.Now; never sent: ConstructPress.StrokeUpdate)
-    public bool StrokeOn, StrokeFromRest; // ...the stroke began with the dies standing open
+    public bool StrokeOn; // ...whether it was at work
+    public float StrokeLidFrom; // ...the lid's angle when the stroke began (open, or still opening)
     public double StrokeSince, StrokeEnd, StrokeAt; // ...StrokeAt: the frame it was last looked at
-    public ConstructPartDef? StrokeBlank, StrokeMade, StrokeLast; // ...the blank on the bed, the part it makes, the last stroke's part (drawn on the bed)
+    public ConstructPartDef? StrokeBlank, StrokeMade, StrokeLast, StrokeBlankPrev; // ...the blank on the die, the part it makes, the last stroke's part, the last blank on this die (the jaws run from its size)
+    public PressDie? StrokeDie; // ...the die the stroke pressed with
+    public byte LidCool; // a Press (server only): press steps until its lid is open again and the next stroke may start (ConstructPress.LidOpenSteps)
     public bool FormSeen; // a Panel Former: the drawing has read its head order's shape; the shape its die shows, the one it left and when that changeover began (ConstructPanelFormer.Pose; never sent)
     public ConstructPanelFormer.DieInfo? FormDie, FormDieFrom;
     public double FormChangeAt = -1e9; // (long past: never MinValue in a subtraction)

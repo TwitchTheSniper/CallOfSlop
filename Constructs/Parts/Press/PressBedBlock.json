@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Press Bed Block",
-  "description": "A low cell of a Press's bed, its deck at the rollers' height. Weld rows of them between the two rows of Press Blocks that carry the housings: then a Roller Tile run butted on the bed's open end rolls blanks onto it, and a run leaving the other end rolls the made parts away. Nothing stacks on it.",
+  "description": "A low cell of a Press's bed, its deck at the rollers' height. Weld rows of them between the two rows of Press Blocks that make the side frames: then a Roller Tile run butted on the bed's open end rolls blanks onto the lower die, and a run leaving the other end rolls the made parts away. Nothing stacks on it.",
   "group": "Production",
   "section": "Presses",
   "role": "frame",
