@@ -1185,6 +1185,7 @@ const SWATCH = {
   Ribbed: "repeating-linear-gradient(90deg,#4d565e 0 4px,#8c97a0 4px 11px)", Padded: "radial-gradient(circle,#b9c2c9 55%,#7b858d 60%) 0 0/11px 11px,#7b858d",
   Grate: "repeating-linear-gradient(0deg,#8a9097 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,#8a9097 0 2px,#4a5056 2px 12px)",
   Conduit: "linear-gradient(transparent 20%,#6f7a80 20% 32%,transparent 32% 66%,#6f7a80 66% 80%,transparent 80%),#8c97a0",
+  Corridor: "linear-gradient(transparent 12%,#f2f6ff 12% 18%,transparent 18% 84%,#3a4046 84%),repeating-linear-gradient(90deg,#8a9097 0 4px,#a3adb5 4px 18px)",
   Industrial: "linear-gradient(transparent 62%,#b48a3c 62% 68%,#4d565e 68%),repeating-linear-gradient(90deg,#8a9097 0 3px,#a3adb5 3px 16px)",
 };
 function swatchPick(label, value, options, onPick) {
@@ -1715,11 +1716,11 @@ function inspector() {
       (() => { const setW = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
         const wc = el("input", { type: "color", value: r.wallColour || "#6b7480", "aria-label": "Wall colour" }); wc.addEventListener("change", () => setW({ wallColour: wc.value }));
         return el("div", {},
-          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"], k => setW({ wallStyle: k })),
+          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"], k => setW({ wallStyle: k })),
             el("span", {}, "Colour"), wc, el("button", { onclick: () => setW({ wallColour: "" }) }, "Kind's")),
           el("div", { class: "row" }, el("span", {}, "Floor"), swatchPick("Floor", r.floor || "Plates", ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], k => setW({ floor: k }))),
           slider("Seed", r.seed ?? 0, 0, 999, 1, "", () => {}, v => setW({ seed: v }), dflt("room", "seed")),
-          el("div", { class: "row" }, resetAll("Cladding, colour, floor and seed back to their defaults", () => setW(dfltOf("room", ["wallStyle", "wallColour", "floor", "seed"])))),
+          el("div", { class: "row" }, resetAll("Cladding, colour, floor and seed back to their defaults", () => setW({ ...dfltOf("room", ["wallStyle", "wallColour", "floor", "seed"]), ...(r.kind === "Corridor" ? CAT.defaults.corridor || {} : {}) }))),
           el("p", { class: "hint" }, "Cladding is relief on the walls when the interior style is Off (the interior has its own). Plates and Hex floors are the interior's plate layer; the others are laid with or without it.")); })(),
       el("h3", {}, "Interior"),
       (() => { const setI = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };

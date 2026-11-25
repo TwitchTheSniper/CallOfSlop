@@ -682,6 +682,7 @@ public static partial class DesignScene
 
     /// <summary>The most triangles one room's wall cladding and floor dressing may add together; past it the rest is left plain.</summary>
     public const int MaxShellDressTris = 9000;
+    const double CorridorFrame = 1.35; // the Corridor lining's frame spacing, m
 
     /// <summary>How far in from its box a room's shell reaches (0 without one): the interior cladding starts there.</summary>
     public static double ShellDepth(Room r)
@@ -980,6 +981,39 @@ public static partial class DesignScene
                             }
                         break;
                     }
+                    case "Corridor":
+                    {
+                        // A ship corridor (Karl, 2026-11-25): arch frames every ~1.35 m (met by the ceiling's below), recessed
+                        // panels between, a kick plate, a cable tray under the ceiling and a light strip in each top corner.
+                        var ns = Math.Max(1, (int)Math.Round(len / CorridorFrame));
+                        Run(w0, w1, bot, bot + 0.16, 0.035, hDark);                       // kick plate
+                        Run(w0, w1, bot + 0.163, bot + 0.185, 0.045, brass);               // its trim
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.07, s + 0.07, bot, top, 0.085, metal);              // the frame's leg
+                            Rel(s - 0.035, s + 0.035, bot + 0.25, top - 0.55, 0.098, hDark); // its rib
+                        }
+                        for (var i = 0; i < ns; i++)
+                        {
+                            double s0 = w0 + len * i / ns + 0.075, s1 = w0 + len * (i + 1) / ns - 0.075;
+                            // The recessed panel: a frame around a face set back from it.
+                            Rel(s0, s1, bot + 0.19, top - 0.5, 0.012, hLight);
+                            Rel(s0 + 0.003, s1 - 0.003, bot + 0.19, bot + 0.25, 0.034, hMid);
+                            Rel(s0 + 0.003, s1 - 0.003, top - 0.56, top - 0.5, 0.034, hMid);
+                            if (rnd.NextDouble() < 0.35)
+                                Rel((s0 + s1) / 2 - 0.12, (s0 + s1) / 2 + 0.12, bot + 1.05, bot + 1.3, 0.02, hDark); // a service hatch
+                        }
+                        // The cable tray: a shelf, its lip and two cable runs on it.
+                        Run(w0, w1, top - 0.42, top - 0.39, 0.16, metal);
+                        Run(w0, w1, top - 0.387, top - 0.33, 0.165, metal);
+                        Run(w0, w1, top - 0.385, top - 0.34, 0.09, pipe);
+                        Run(w0, w1, top - 0.385, top - 0.355, 0.135, "#a0442c");
+                        // The light strip where wall meets ceiling.
+                        Run(w0, w1, top - 0.06, top - 0.024, 0.05, "#f2f6ff");
+                        Run(w0, w1, top - 0.02, top, 0.06, hDark);
+                        break;
+                    }
                     case "Industrial":
                     {
                         Run(w0, w1, bot, bot + 0.9, 0.025, hDark);
@@ -1000,6 +1034,27 @@ public static partial class DesignScene
                         }
                         break;
                     }
+                }
+            }
+            // The corridor's arches close over the ceiling, across its narrow way, at the frames' spacing along its long way.
+            if (r.WallStyle == "Corridor")
+            {
+                bool longAl = il1 - il0 >= ia1 - ia0;
+                double l0 = longAl ? il0 : ia0, l1 = longAl ? il1 : ia1, c0 = longAl ? ia0 : il0, c1 = longAl ? ia1 : il1;
+                var ns = Math.Max(1, (int)Math.Round((l1 - l0) / CorridorFrame));
+                for (var i = 0; i <= ns && budget >= 24; i++)
+                {
+                    var s = l0 + (l1 - l0) * i / ns;
+                    double[] P(double c, double sAt, double h) => longAl ? V(c, sAt, Up(h)) : V(sAt, c, Up(h));
+                    void B(double[] p, double[] q, string col)
+                    {
+                        m.Box(Math.Min(p[0], q[0]), Math.Min(p[1], q[1]), Math.Min(p[2], q[2]), Math.Max(p[0], q[0]), Math.Max(p[1], q[1]), Math.Max(p[2], q[2]), col);
+                        budget -= 12;
+                    }
+                    // Between the legs (4 mm short of their faces) and 5 mm into the ceiling; the rib a little lower.
+                    double sa = Math.Max(s - 0.07, l0 + 0.004), sb = Math.Min(s + 0.07, l1 - 0.004);
+                    B(P(c0 + 0.089, sa + 0.002, cBot + 0.005), P(c1 - 0.089, sb - 0.002, cBot - 0.085), metal);
+                    B(P(c0 + 0.24, s - 0.033, cBot - 0.08), P(c1 - 0.24, s + 0.033, cBot - 0.103), hDark);
                 }
             }
         }

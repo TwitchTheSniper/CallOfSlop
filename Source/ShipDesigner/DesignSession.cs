@@ -88,6 +88,8 @@ public sealed class DesignSession
                 ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing, ["wallStyle"] = r.WallStyle, ["wallColour"] = r.WallColour, ["seed"] = r.Seed, ["floor"] = r.Floor },
+            // A corridor's own defaults (Room.KindDefaults), over the room's.
+            ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },
         };
         return c.ToJsonString();
     }

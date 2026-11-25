@@ -146,8 +146,8 @@ public static class DesignTemplates
         d.Decks.Add(new Deck { Floor = 0.25, Height = 3.0 });
         d.Decks.Add(new Deck { Floor = 3.5, Height = 3.0 });
 
-        void R(int deck, double x0, double x1, double z0, double z1, string kind, string label = "") =>
-            d.Rooms.Add(new Room { Id = d.NewId(), Deck = deck, X0 = x0, X1 = x1, Z0 = z0, Z1 = z1, Kind = kind, Label = label });
+        void R(int deck, double x0, double x1, double z0, double z1, string kind, string label = "")
+        { var r = new Room { Id = d.NewId(), Deck = deck, X0 = x0, X1 = x1, Z0 = z0, Z1 = z1, Kind = kind, Label = label }; r.KindDefaults(); d.Rooms.Add(r); }
         R(0, -1, 1, 8.5, 13, "Corridor");
         R(0, -3.5, -1, 9, 13, "Airlock room");
         R(0, 1, 3.5, 9, 13, "Armoury");

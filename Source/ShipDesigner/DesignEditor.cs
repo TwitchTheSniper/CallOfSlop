@@ -673,6 +673,7 @@ public sealed class DesignEditor
                 if (deck < 0 || deck >= d.Decks.Count)
                     return "no such deck";
                 var r = new Room { Id = d.NewId(), Deck = deck, Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? "Cabin" };
+                r.KindDefaults();
                 SetBox(r, o);
                 d.Rooms.Add(r);
                 o["id"] = r.Id;
@@ -685,7 +686,7 @@ public sealed class DesignEditor
                 // A room in parts is one room: its kind, name and way to the skin go to every part.
                 foreach (var q in d.Rooms.Where(q => q == r || (r.Group != 0 && q.Group == r.Group)))
                 {
-                    if (o["kind"] is not null) q.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? q.Kind;
+                    if (o["kind"] is not null) { q.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? q.Kind; if (o["wallStyle"] is null && o["floor"] is null) q.KindDefaults(); }
                     if (o["label"] is not null) q.Label = Str(o, "label");
                     if (o["toHull"] is not null) q.ToHull = (bool)o["toHull"]!;
                     if (o["runOn"] is not null) q.RunOn = (bool)o["runOn"]!;

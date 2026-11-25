@@ -249,8 +249,16 @@ public sealed class Room
     /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
     public static readonly string[] FloorKinds = ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"];
     /// <summary>Its walls' relief in Room view when it has no interior cladding (Karl, 2026-11-25).</summary>
-    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"];
+    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"];
     public string WallStyle = "Plain";
+    /// <summary>A corridor's own lining and grating (Karl, 2026-11-25): a room of kind Corridor whose walls and floor are still the plain defaults takes them. Styles the user set are kept.</summary>
+    public void KindDefaults()
+    {
+        if (Kind != "Corridor")
+            return;
+        if (WallStyle == "Plain") WallStyle = "Corridor";
+        if (Floor == "Plates") Floor = "Grating";
+    }
     public string WallColour = ""; // empty: its kind's colour, darkened
     public int Seed; // varies the random parts of its walls and floor
     public const int SeedMax = 999;
@@ -298,6 +306,9 @@ public sealed class Room
         r.WallStyle = WallStyles.FirstOrDefault(k => string.Equals(k, (string?)o["wallStyle"], StringComparison.OrdinalIgnoreCase)) ?? "Plain";
         r.WallColour = (string?)o["wallColour"] is { Length: > 0 } wc ? Colour(wc, "") : "";
         r.Seed = Math.Clamp((int?)o["seed"] ?? 0, 0, SeedMax);
+        // A saved design that set its styles keeps them; only an older one with neither key takes the kind's.
+        if (o["wallStyle"] is null && o["floor"] is null)
+            r.KindDefaults();
         r.Normalise();
         return r;
     }
