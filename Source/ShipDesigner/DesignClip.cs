@@ -17,6 +17,9 @@ public static partial class DesignScene
             return;
         // Its top (Karl, 2026-11-25): pulled onto the skin, a vertex never rises above the room's own ceiling (plus over).
         double top = double.NaN;
+        // Only the room's own body (Karl, 2026-11-25: a vertex above the main hull went to the nearer side nacelle and the room flared out
+        // in wings across the gap): a room follows the skin of the body its floor is in, never another's.
+        var home = cap is null ? null : HomeBody(d, cap);
         if (cap is not null)
         {
             var dk = d.DeckOf(cap);
@@ -28,14 +31,15 @@ public static partial class DesignScene
             double x = p[i], y = p[i + 1], z = p[i + 2];
             for (var pass = 0; pass < 3; pass++)
             {
-                HullBody? best = null;
-                var bd = double.NegativeInfinity;
-                foreach (var h in d.Hulls)
-                {
-                    var dh = h.Depth(x, y, z);
-                    if (dh > bd)
-                        (bd, best) = (dh, h);
-                }
+                HullBody? best = home;
+                var bd = home?.Depth(x, y, z) ?? double.NegativeInfinity; // -infinity above or below its skin: still pulled onto it
+                if (home is null)
+                    foreach (var h in d.Hulls)
+                    {
+                        var dh = h.Depth(x, y, z);
+                        if (dh > bd)
+                            (bd, best) = (dh, h);
+                    }
                 if (best is null || bd >= inset * 0.95)
                     break;
                 var h0 = best;
@@ -52,6 +56,22 @@ public static partial class DesignScene
             }
             (p[i], p[i + 1], p[i + 2]) = (x, y, z);
         }
+    }
+
+    /// <summary>The hull body a room belongs to: the one its floor's middle is deepest inside (null with no bodies).</summary>
+    public static HullBody? HomeBody(ShipDesign d, Room r)
+    {
+        var b = d.Box(r);
+        double cx = (b[0] + b[1]) / 2, cz = (b[4] + b[5]) / 2, fy = d.Stacked ? b[2] : b[2] + 0.3;
+        HullBody? best = null;
+        var bd = double.NegativeInfinity;
+        foreach (var h in d.Hulls)
+        {
+            var dh = Math.Max(h.Depth(cx, fy, cz), h.Depth(cx, (b[2] + b[3]) / 2, cz));
+            if (dh > bd)
+                (bd, best) = (dh, h);
+        }
+        return best;
     }
 
     /// <summary>

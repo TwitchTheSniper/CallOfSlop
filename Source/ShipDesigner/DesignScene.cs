@@ -1109,7 +1109,9 @@ public static partial class DesignScene
             return (r.X0, r.X1);
         var w = d.World(d.Decks[r.Deck], 0, v, up);
         double lo = r.X0, hi = r.X1, slo = double.MaxValue, shi = double.MinValue;
+        var home = HomeBody(d, r);
         foreach (var h in d.Hulls)
+            if (h != home) continue; else
             for (var c = 0; c < h.Copies; c++)
             {
                 var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
@@ -1142,6 +1144,7 @@ public static partial class DesignScene
             return (r.Z0, r.Z1);
         var dk = d.DeckOf(r);
         var mid = (r.X0 + r.X1) / 2;
+        var home = HomeBody(d, r);
         bool Fits(double v)
         {
             // A person's room at the floor and head height, and skin round every height the volume and shell are drawn at (floor to
@@ -1151,6 +1154,7 @@ public static partial class DesignScene
                 var w = d.World(dk, mid, v, up);
                 var any = false;
                 foreach (var h in d.Hulls)
+                    if (h != home) continue; else
                     for (var c = 0; c < h.Copies && !any; c++)
                     {
                         var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
