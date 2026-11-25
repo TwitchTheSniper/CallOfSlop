@@ -56,8 +56,8 @@ public static partial class ConstructLaserCutter
 
     // ---- The look: the bridge and its heads follow the cut's outline -------------------------------------------------------------
 
-    /// <summary>How far the bridge parks in from the bed's in edge, the blank's margin, and the closest two heads come (a carriage's width, m).</summary>
-    private const float HeadRest = 0.48f, Margin = 0.25f, HeadGap = 0.4f;
+    /// <summary>How far the bridge parks in from the bed's in edge, the blank's margin, the closest two heads come (a carriage is 0.34 m wide), and how far past the bed's edge a head may ride onto the bridge's end truck (m).</summary>
+    private const float HeadRest = 0.48f, Margin = 0.25f, HeadGap = 0.36f, EndRoom = 0.2f;
 
     /// <summary>
     /// The heads' plan for one cut key on one size of bed (Laser Cutter Lab, Sean 2026-11-24): every head rides the bridge on its own
@@ -167,18 +167,39 @@ public static partial class ConstructLaserCutter
             var k0 = Math.Clamp((int)MathF.Round((mid - aLo) / cell - m * 0.5f), 0, n - m);
             var lo = group.Min(g => Span(g).Item1);
             var hi = group.Max(g => Span(g).Item2);
+            // The working heads: a block of neighbours, so the rest park clear at the ends; when the cuts reach too near the ends for
+            // that (a pair of corners), the first and last heads take the outermost and the idle ones wait between them.
+            var idx = new int[m];
+            var block = lo - gap * k0 >= aLo - 1e-3f && hi + gap * (n - k0 - m) <= aHi + 1e-3f || m == 1;
+            for (var r = 0; r < m; r++)
+                idx[r] = block ? k0 + r : (int)MathF.Round(r * (n - 1) / (float)(m - 1));
             var a = new float[n];
+            var on = new bool[n];
+            for (var r = 0; r < m; r++)
+            {
+                a[idx[r]] = cuts[group[r]][0].Y;
+                on[idx[r]] = true;
+            }
             for (var h = 0; h < n; h++)
-                a[h] = h < k0 ? MathF.Min(aLo + 0.2f + gap * h, lo - gap * (k0 - h))
-                    : h >= k0 + m ? MathF.Max(aHi - 0.2f - gap * (n - 1 - h), hi + gap * (h - k0 - m + 1))
-                    : cuts[group[h - k0]][0].Y;
+            {
+                if (on[h])
+                    continue;
+                int below = -1, above = -1;
+                for (var r = 0; r < m; r++)
+                {
+                    if (idx[r] < h)
+                        below = idx[r];
+                    if (idx[r] > h && above < 0)
+                        above = idx[r];
+                }
+                a[h] = below < 0 ? MathF.Max(aLo + gap * h, MathF.Min(aLo + 0.2f + gap * h, lo - gap * (idx[0] - h))) // (out to the bridge's end, never past it)
+                    : above < 0 ? MathF.Min(aHi - gap * (n - 1 - h), MathF.Max(aHi - 0.2f - gap * (n - 1 - h), hi + gap * (h - idx[m - 1])))
+                    : float.Lerp(a[below], a[above], (h - below) / (float)(above - below));
+            }
             var move = MathF.Abs(cuts[group[0]][0].X - curU);
             for (var h = 0; h < n; h++)
                 move = MathF.Max(move, MathF.Abs(a[h] - cur[h]));
             Frame(move * 0.25f, cuts[group[0]][0].X, a, null);
-            var on = new bool[n];
-            for (var h = k0; h < k0 + m; h++)
-                on[h] = true;
             Frame(0.1f, curU, a, on); // (the pierce)
             for (var k = 1; k < cuts[group[0]].Length; k++)
             {
@@ -187,9 +208,19 @@ public static partial class ConstructLaserCutter
                 for (var r = 0; r < m; r++)
                 {
                     var q = cuts[group[r]];
-                    b[k0 + r] = q[k].Y;
+                    b[idx[r]] = q[k].Y;
                     w = MathF.Max(w, Vector2.Distance(q[k], q[k - 1]));
                 }
+                // An idle head is pushed ahead of a working one that comes near it (a cut out to the blank's edge), onto the end truck if need be.
+                for (var h = 1; h < n; h++)
+                    if (!on[h])
+                        b[h] = MathF.Max(b[h], b[h - 1] + gap);
+                for (var h = n - 2; h >= 0; h--)
+                    if (!on[h])
+                        b[h] = MathF.Min(b[h], b[h + 1] - gap);
+                for (var h = 0; h < n; h++)
+                    if (!on[h])
+                        b[h] = Math.Clamp(b[h], aLo - EndRoom + gap * h, aHi + EndRoom - gap * (n - 1 - h));
                 Frame(w, cuts[group[0]][k].X, b, on);
             }
         }
@@ -230,13 +261,18 @@ public static partial class ConstructLaserCutter
         // The blank lies in the middle of the bed, its length along the bed's longer side; the plan is read once per key and bed size.
         var along = asm.L >= asm.W;
         var key = asm.W * 64 + asm.L;
-        if (j.Plan == null || j.Plan.Key != key)
+        HeadPlan? plan = null;
+        foreach (var q in j.Plans) // (a job is shared by every cutter on that key: one plan for each size of bed it lies on)
+            if (q != null && q.Key == key)
+                plan = q;
+        if (plan == null)
         {
             j.Path ??= HullLoft.CutOutline(order.Name, j.Longest, j.Next) ?? [Vector2.Zero, new Vector2(j.Longest, 0)];
-            j.Plan = PlanHeads(j.Path, j.Longest, j.Next, asm.W, asm.L, cell, along);
-            j.Plan.Key = key;
+            plan = PlanHeads(j.Path, j.Longest, j.Next, asm.W, asm.L, cell, along);
+            plan.Key = key;
+            j.Plans[j.NextPlan] = plan;
+            j.NextPlan = (j.NextPlan + 1) % j.Plans.Length;
         }
-        var plan = j.Plan;
         var secs = Seconds(j, c, core);
         var f = (float)(now % secs / secs);
         int k = 0, lo = 0, hi = plan.Time.Length - 1;

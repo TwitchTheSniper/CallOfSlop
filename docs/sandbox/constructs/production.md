@@ -796,8 +796,8 @@ are no size classes. Code: `ConstructLaserCutterBed.cs`.
   heads follow the cut's outline over the blank lying on the bed (`LookPose`, the path from `HullLoft.CutOutline`), the beam glows and
   sparks fly where it meets the plate. The heads cut at once (`HeadPlan`, Laser Cutter Lab, Sean 2026-11-24): each rides the bridge on
   its own carriage; cuts that run through the same stations along the bed (an opening repeated across the sheet, a pair of corners) are
-  one pass, a block of neighbouring heads taking one each, and the heads with nothing to cut run out to the bridge's ends, packed 0.4 m
-  apart. The plan is walked over the cut's own time; the time law is unchanged. Ports use `MachineLook.Port`. Body `#a8365e`.
+  one pass, a block of neighbouring heads taking one each, and the heads with nothing to cut run out to the bridge's ends, packed 0.36 m
+  apart (a carriage is 0.34 m), pushed ahead of a head cutting out to the blank's edge, onto the end truck if need be. The plan is walked over the cut's own time; the time law is unchanged. Ports use `MachineLook.Port`. Body `#a8365e`.
 
 - **Orders only.** A cut key is a named order; the cutter refuses anything else ("nothing to cut: a Panel Former's order", "too large for
   this cutter", "too tall for the bed", the key's own rule broken). Every other machine refuses a cut key: "a cut part is a Laser Cutter's
