@@ -192,6 +192,8 @@ let deck = 0;
 // builds nothing else while it is on. { room, connected } or null.
 let roomView = null;
 let roomOpaque = false; // Room view's Opaque box (Karl, 2026-11-25): shells, walls and floor drawn solid
+let roomCut = 100; // Room view's Cutaway slider, % of the room's height (100: no cut); a horizontal clipping plane on every mesh drawn
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
 
 function take(answerText) {
   const a = JSON.parse(answerText);
@@ -383,6 +385,7 @@ function rebuild() {
     // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
     drawRooms(new Set(S.roomView));
     if (view.person) drawPerson();
+    applyCut(true);
     dropUnused();
     gizmo.detach();
     return;
@@ -487,6 +490,31 @@ function drawExts(r, dim) {
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
   }
+}
+// Room view's cutaway: the plane runs from the room's floor (0%) to a little over its ceiling (100%, nothing cut). Every material in
+// the world gets it (only Room view's are, since rebuild makes new ones elsewhere); cut faces drawn by going double-sided while cut.
+function applyCut(all = false) {
+  const r = roomView && S?.rooms.find(r => r.id === roomView.room);
+  if (!r) return;
+  const b = r.box, st = S.stacked, cut = roomCut < 100;
+  if (st) { // stacked decks: the floor faces the bow at z = b[5], the room rising to b[4]
+    const top = b[4] - 0.3, h = b[5] + (top - b[5]) * roomCut / 100;
+    cutPlane.normal.set(0, 0, 1); cutPlane.constant = -h; // keeps z >= h
+  } else {
+    const top = b[3] + 0.3, h = b[2] + (top - b[2]) * roomCut / 100;
+    cutPlane.normal.set(0, -1, 0); cutPlane.constant = h; // keeps y <= h
+  }
+  if (!all && cut === applyCut.was) return;
+  applyCut.was = cut;
+  world.traverse(o => {
+    if (!o.material) return;
+    for (const m of [].concat(o.material)) {
+      if (m.userData.side0 === undefined) m.userData.side0 = m.side;
+      m.clippingPlanes = cut ? [cutPlane] : null;
+      m.side = cut ? THREE.DoubleSide : m.userData.side0;
+      m.needsUpdate = true;
+    }
+  });
 }
 function drawRooms(only = null) {
   for (const r of S.rooms) {
@@ -1290,6 +1318,8 @@ function leftPanel() {
       L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"), el("p", {}, r ? `${r.label || r.kind} (deck ${r.deck + 1})` : ""),
         el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms"),
         el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvopaque", ...(roomOpaque ? { checked: "" } : {}), onchange: e => { roomOpaque = e.target.checked; rebuild(); } }), "Opaque"),
+        (() => { const c = slider("Cutaway", roomCut, 0, 100, 1, "%", v => { roomCut = +v; applyCut(); }, undefined, 100); // live while dragging: only the plane moves
+          c.querySelector("input").addEventListener("input", e => { roomCut = +e.target.value; applyCut(); }); return c; })(),
         el("p", { class: "hint" }, "Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.")));
       return;
     }
