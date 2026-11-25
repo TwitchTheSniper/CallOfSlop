@@ -195,26 +195,9 @@ let roomOpaque = false; // Room view's Opaque box (Karl, 2026-11-25): shells, wa
 let roomCut = 100; // Room view's Cutaway slider, % of the room's height (100: no cut); a horizontal clipping plane on every mesh drawn
 const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
 
-// Each keyed mesh of the last answer by its key: a mesh the model sent last time comes as {k} alone and is drawn from these
-// (2026-11-25: a drag carried 2.8 MB of unchanged room meshes every frame). Only what this answer names is kept.
-let meshData = new Map();
-function resolveMeshes(S) {
-  const now = new Map();
-  const fix = (o, f) => {
-    const m = o[f]; if (!m?.k) return;
-    if (m.p) { now.set(m.k, m); return; }
-    const had = meshData.get(m.k);
-    if (had) { o[f] = had; now.set(m.k, had); } else { console.error("ship designer: mesh " + m.k + " came as a key the page doesn't hold"); o[f] = { p: [], c: [] }; }
-  };
-  for (const r of S.rooms) for (const f of ["boxMesh", "extMesh", "mesh", "wallMesh"]) fix(r, f);
-  for (const p of S.pieces) fix(p, "mesh");
-  for (const j of S.joins ?? []) fix(j, "mesh");
-  meshData = now;
-}
 function take(answerText) {
   const a = JSON.parse(answerText);
   S = a.scene;
-  resolveMeshes(S);
   if (roomView && !S.roomView) { roomView = null; viewCmd(); return a; } // its room went (deleted, undone): back to the ship
   for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, cladFit: c.cladFit, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
   $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
@@ -349,7 +332,7 @@ gizmo.addEventListener("dragging-changed", e => {
 gizmo.addEventListener("objectChange", () => {
   const o = gizmo.object; if (!o || !o.userData.hullId) return;
   // While dragging, the body's last mesh is drawn moved (no lofting or cutting a frame); the release cuts it where it lands.
-  dragCmd({ op: "moveHull", light: true, preview: true, drag: true, hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
+  dragCmd({ op: "moveHull", light: true, preview: true, hull: o.userData.hullId, x: o.position.x, y: o.position.y, z: o.position.z });
 });
 const gizmoTarget = new THREE.Object3D(); scene.add(gizmoTarget);
 
@@ -947,7 +930,7 @@ window.addEventListener("pointermove", ev => {
   if (!drag.moved) return;
   if (drag.what === "station") {
     const h = S.hulls.find(h => h.id === drag.hull);
-    const z = axisZ(ev, h); if (z !== null) dragCmd({ op: "moveStation", drag: true, hull: h.id, i: drag.i, z: z - h.z });
+    const z = axisZ(ev, h); if (z !== null) dragCmd({ op: "moveStation", hull: h.id, i: drag.i, z: z - h.z });
   } else if (drag.what === "piece") {
     const hit = hullHit(ev);
     drag.off = !hit;
@@ -998,7 +981,7 @@ window.addEventListener("pointerup", ev => {
       const x0 = Math.min(d.start.x, d.end.x), x1 = Math.max(d.start.x, d.end.x), z0 = Math.min(d.start.z, d.end.z), z1 = Math.max(d.start.z, d.end.z);
       if (x1 - x0 >= 0.9 && z1 - z0 >= 0.9) { const a = cmd({ op: "addRoom", deck, kind: roomKind, x0, x1, z0, z1 }); if (!a.error) select("room", a.id); }
     }
-  } else { flush(); if (d.what === "piece" || d.what === "room" || (d.what === "station" && d.moved)) take(api.Scene()); } // (a station drag's rooms fitted to the skin it left)
+  } else { flush(); if (d.what === "piece" || d.what === "room") take(api.Scene()); }
   $("tip").textContent = tips[mode];
 });
 
@@ -1316,7 +1299,7 @@ function leftPanel() {
       ...S.hulls.map(h => el("button", { class: sel.kind === "hull" && sel.id === h.id ? "on" : "", onclick: () => select("hull", h.id) }, `${h.name} · ${h.stations.length} stations${h.mirror ? " · pair" : ""}`)),
       el("div", { class: "row" }, (() => { const s = el("select", { id: "newbody", "aria-label": "Body to add" }); for (const b of CAT.bodies) s.append(el("option", {}, b)); return s; })(),
         el("button", { onclick: () => { cmd({ op: "addHull", preset: $("newbody").value }); const h = S.hulls[S.hulls.length - 1]; select("hull", h.id); } }, "Add body")),
-      el("p", { class: "hint" }, "Bodies that meet stay whole. Tick Cut where it meets on a body to open it where it touches another, so a pod or a dorsal block opens into the main hull.")),
+      el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
       connectSection());
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
     if (h) L.append(stationPanel(h));

@@ -8,9 +8,6 @@ public static partial class Api
 {
     private static readonly DesignSession _s = new();
 
-    // The page keeps each mesh's arrays by key, so a mesh it already has comes as its key alone (DesignScene.MeshRefs).
-    static Api() => DesignScene.MeshRefs = true;
-
     public static void Main() { }
 
     [JSExport]

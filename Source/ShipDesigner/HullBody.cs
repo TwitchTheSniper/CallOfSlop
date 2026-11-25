@@ -276,7 +276,7 @@ public sealed class HullBody
         var h = new HullBody
         {
             Id = id, Name = (string?)o["name"] ?? "Hull", X = ShipDesign.F(o["x"], 0), Y = ShipDesign.F(o["y"], 0), Z = ShipDesign.F(o["z"], 0),
-            Mirror = (bool?)o["mirror"] ?? false, Cut = (bool?)o["cut"] ?? false, Skin = (string?)o["skin"] ?? "#c9cdd2",
+            Mirror = (bool?)o["mirror"] ?? false, Cut = (bool?)o["cut"] ?? true, Skin = (string?)o["skin"] ?? "#c9cdd2",
         };
         foreach (var s in o["stations"]?.AsArray() ?? [])
         {

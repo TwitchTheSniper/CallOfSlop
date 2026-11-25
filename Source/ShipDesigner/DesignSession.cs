@@ -39,7 +39,6 @@ public sealed class DesignSession
         var err = _ed.Apply(o.ToJsonString());
         DesignScene.Holes = !((bool?)o["preview"] ?? false);
         DesignScene.Light = (bool?)o["light"] ?? false;
-        DesignScene.Dragging = (bool?)o["drag"] ?? false;
         // A new piece or room's id, so the page can select it.
         var id = 0;
         var op = (string?)o["op"];
@@ -54,7 +53,7 @@ public sealed class DesignSession
         else if (err.Length == 0 && op is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom" or "splitRoom" or "mount")
             id = Math.Max(_ed.Design.Pieces.Count == 0 ? 0 : _ed.Design.Pieces.Max(p => p.Id), _ed.Design.Rooms.Count == 0 ? 0 : _ed.Design.Rooms.Max(r => r.Id));
         try { return Answer(err, id); }
-        finally { DesignScene.Holes = true; DesignScene.Light = false; DesignScene.Dragging = false; }
+        finally { DesignScene.Holes = true; DesignScene.Light = false; }
     }
 
     public string Undo() { _ed.Undo(); return Answer(""); }

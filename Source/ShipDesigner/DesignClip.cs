@@ -26,17 +26,9 @@ public static partial class DesignScene
             top = d.Stacked ? dk.Floor - dk.Height - over : dk.Floor + dk.Height + over;
         }
         var p = m.P;
-        // A corner shared by up to six triangles is pulled in once (the page's interpreted .NET took seconds over every room).
-        var done = new Dictionary<(double, double, double), (double, double, double)>(p.Count / 9);
         for (var i = 0; i + 2 < p.Count; i += 3)
         {
             double x = p[i], y = p[i + 1], z = p[i + 2];
-            if (done.TryGetValue((x, y, z), out var hit))
-            {
-                (p[i], p[i + 1], p[i + 2]) = hit;
-                continue;
-            }
-            var at = (x, y, z);
             for (var pass = 0; pass < 3; pass++)
             {
                 HullBody? best = home;
@@ -63,7 +55,6 @@ public static partial class DesignScene
                 else y = Math.Min(y, top);
             }
             (p[i], p[i + 1], p[i + 2]) = (x, y, z);
-            done[at] = (x, y, z);
         }
     }
 
