@@ -208,6 +208,8 @@ public sealed class DesignEditor
                 if (o["buttressSize"] is not null) j.ButtressSize = Math.Clamp(Snap(D(o, "buttressSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
                 if (o["matchClad"] is not null) j.MatchClad = (bool)o["matchClad"]!;
                 if (o["matchButtress"] is not null) j.MatchButtress = (bool)o["matchButtress"]!;
+                if (o["matchColour"] is not null) j.MatchColour = (bool)o["matchColour"]!;
+                j.SetOwnPaint(o["paint"] as JsonObject);
                 if (o["buttressDepth"] is not null) j.ButtressDepth = Math.Clamp(Snap(D(o, "buttressDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 j.Tidy();
                 return "";

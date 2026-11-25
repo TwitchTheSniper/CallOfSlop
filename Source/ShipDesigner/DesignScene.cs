@@ -1410,7 +1410,9 @@ public static partial class DesignScene
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
               .Append(",\"matchClad\":").Append(j.MatchClad ? "true" : "false").Append(",\"matchButtress\":").Append(j.MatchButtress ? "true" : "false")
-              .Append(",\"material\":").Append(Q(d.Hull(j.A.Hull)?.Material ?? "Painted")).Append(",\"cladMaterial\":").Append(Q(d.Hull(j.A.Hull)?.CladMaterial ?? "Hull"))
+              .Append(",\"matchColour\":").Append(j.MatchColour ? "true" : "false")
+              .Append(",\"paint\":{\"skin\":").Append(Q(j.Own.Skin)).Append(",\"accent\":").Append(Q(j.Own.Accent)).Append(",\"amount\":").Append(ShipDesign.S(j.Own.AccentAmount)).Append(",\"pattern\":").Append(Q(j.Own.Pattern)).Append(",\"wear\":").Append(ShipDesign.S(j.Own.Wear)).Append(",\"seed\":").Append(j.Own.PaintSeed).Append(",\"material\":").Append(Q(j.Own.Material)).Append('}')
+              .Append(",\"material\":").Append(Q(j.PaintOf(d).Material)).Append(",\"cladMaterial\":").Append(Q(j.MatchColour ? d.Hull(j.A.Hull)?.CladMaterial ?? "Hull" : "Hull"))
               .Append(",\"mesh\":");
             if (shown is not null)
                 sb.Append(empty);

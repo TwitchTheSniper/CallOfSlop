@@ -1548,15 +1548,30 @@ function inspector() {
     const matchBox = (key, on) => el("label", { class: "row" }, el("input", { type: "checkbox", id: key, ...(on ? { checked: "" } : {}), onchange: e => jc({ [key]: e.target.checked }) }), "Match hull");
     const matchHint = el("p", { class: "hint" }, "Follows hull A's cladding (kind, seed, panel size, depth, material and damage). Untick for this connection's own.");
     I.append(el("h2", {}, "Connection"), el("p", { class: "hint" }, `Face: end A on the ${(j.faceA || "Side").toLowerCase()}${j.faceA && j.faceA !== "Side" ? " cap" : " skin"}, end B on the ${(j.faceB || "Side").toLowerCase()}${j.faceB && j.faceB !== "Side" ? " cap" : " skin"}.`), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
-      // The mounting collar (Karl, 2026-11-25): a pad on the skin under each end that the buttress stands on.
-      el("h3", {}, "Collar"),
-      el("label", { class: "row" }, el("input", { type: "checkbox", id: "collar", ...(j.collar !== false ? { checked: "" } : {}), onchange: e => jc({ collar: e.target.checked }) }), "Mounting collar"),
+      // The base plate (Karl, 2026-11-25; was the collar): a pad on the skin under each end that the buttress stands on.
+      el("h3", {}, "Base plate"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "collar", ...(j.collar !== false ? { checked: "" } : {}), onchange: e => jc({ collar: e.target.checked }) }), "Base plate"),
       ...(j.collar === false ? [] : [
         slider("Height", Math.round((j.collarHeight ?? 0.22) * 100), 2, 100, 1, " cm", () => {}, v => jc({ collarHeight: v / 100 }), dflt("join", "collarHeight", 100)),
         slider("Margin", Math.round((j.collarMargin ?? 0.25) * 100), 0, 200, 1, " cm", () => {}, v => jc({ collarMargin: v / 100 }), dflt("join", "collarMargin", 100)),
         slider("Bevel", Math.round((j.collarBevel ?? 0.05) * 100), 0, 50, 1, " cm", () => {}, v => jc({ collarBevel: v / 100 }), dflt("join", "collarBevel", 100)),
         el("div", { class: "row" }, resetAll("Height, margin and bevel back to their defaults", () => jc(dfltOf("join", ["collarHeight", "collarMargin", "collarBevel"]))))]),
-      el("p", { class: "hint" }, "A flat pad on the skin round each end; its top sits just above Heavy cladding (20 cm). The hull's plates stop at its edge and the buttress stands on it."),
+      el("p", { class: "hint" }, "A pad laid over the skin round each end, following its curve; its top sits just above Heavy cladding (20 cm). The hull's plates stop at its edge and the buttress stands on it."),
+      // Match hull colour (Karl, 2026-11-25): the arm, its cladding and its base plates in hull A's paint and material; unticked, its own.
+      el("h3", {}, "Colour"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "matchColour", ...(j.matchColour !== false ? { checked: "" } : {}), onchange: e => jc({ matchColour: e.target.checked }) }), "Match hull colour"),
+      ...(j.matchColour !== false ? [el("p", { class: "hint" }, "Follows hull A's paint and material (base, accent, pattern, wear, seed). Untick for this connection's own.")] : (() => {
+        const p = j.paint || {};
+        const jp = v => jc({ paint: v });
+        const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => jp({ [key]: c.value })); return c; };
+        const pat = el("select", { "aria-label": "Pattern" }); for (const k of ["Blocks", "Stripes", "Bands"]) pat.append(el("option", { value: k, ...(k === p.pattern ? { selected: "" } : {}) }, k)); pat.addEventListener("change", () => jp({ pattern: pat.value }));
+        return [
+          el("div", { class: "grid2" }, el("span", {}, "base"), colour(p.skin || "#c9cdd2", "Base colour", "skin"), el("span", {}, "accent"), colour(p.accent || "#d8742a", "Accent colour", "accent"), el("span", {}, "pattern"), pat),
+          slider("Accent", Math.round((p.amount ?? 0) * 100), 0, 100, 1, "%", () => {}, v => jp({ amount: v / 100 })),
+          slider("Wear", Math.round((p.wear ?? 0) * 100), 0, 100, 1, "%", () => {}, v => jp({ wear: v / 100 })),
+          el("div", { class: "row" }, (() => { const s = el("select", { "aria-label": "Material" }); for (const n of MAT_NAMES) s.append(el("option", n === (p.material || "Painted") ? { selected: "" } : {}, n)); s.addEventListener("change", () => jp({ material: s.value })); return s; })(),
+            el("span", {}, "Seed"), num(p.seed ?? 1, v => jp({ seed: Math.round(v) }), 1))];
+      })()),
       el("h3", {}, "Cladding"),
       matchBox("matchClad", !!j.matchClad),
       ...(j.matchClad ? [matchHint] : [

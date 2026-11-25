@@ -55,6 +55,8 @@ public static partial class DesignScene
             j.AsObject().Remove("buttressClad");
             j.AsObject().Remove("matchClad");
             j.AsObject().Remove("matchButtress");
+            j.AsObject().Remove("matchColour");
+            j.AsObject().Remove("paint");
         }
         foreach (var r in o["rooms"]!.AsArray())
             foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor", "wallStyle", "wallColour", "seed" })
