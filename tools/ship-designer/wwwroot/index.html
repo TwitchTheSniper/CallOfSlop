@@ -178,10 +178,14 @@ const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
 const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true };
 let deck = 0;
+// Room view (Interior tab): only one room (and, ticked, the rooms a door or a riser joins to it) with its walls and interior; the model
+// builds nothing else while it is on. { room, connected } or null.
+let roomView = null;
 
 function take(answerText) {
   const a = JSON.parse(answerText);
   S = a.scene;
+  if (roomView && !S.roomView) { roomView = null; viewCmd(); return a; } // its room went (deleted, undone): back to the ship
   for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
   $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
   if (a.error) toast(a.error);
@@ -191,6 +195,31 @@ function take(answerText) {
   return a;
 }
 const timing = { cs: 0, js: 0, size: 0 }; // the last command's time in C# and in the page, and its answer's length (for a page test)
+// Room view in or out: a scene with only the rooms it needs (no edit, no undo step).
+function viewCmd(fit = false) {
+  const t0 = performance.now(), text = api.Apply(JSON.stringify({ op: "view", roomView })), t1 = performance.now();
+  const a = take(text);
+  if (fit) frameRoom();
+  timing.cs = t1 - t0; timing.js = performance.now() - t1; timing.size = text.length;
+  return a;
+}
+function enterRoomView(id, connected = roomView?.connected ?? false) {
+  if (!S.rooms.some(r => r.id === id)) { toast("Pick a room first."); return; }
+  if (mode !== "interior") { mode = "interior"; for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === mode); }
+  const r = S.rooms.find(r => r.id === id); deck = r.deck;
+  roomView = { room: id, connected }; sel.kind = "room"; sel.id = id; sel.station = -1;
+  viewCmd(true);
+}
+function exitRoomView() { if (!roomView) return; roomView = null; viewCmd(); frame(); }
+// The camera on the room (and its neighbours when they show).
+function frameRoom() {
+  const box = new THREE.Box3();
+  world.traverse(o => { if (o.isMesh && o.userData.type === "room" && (!roomView || o.userData.id === roomView.room)) box.expandByObject(o); });
+  if (box.isEmpty()) return;
+  const c = box.getCenter(new THREE.Vector3()), r = Math.max(2, box.getSize(new THREE.Vector3()).length() / 2);
+  controls.target.copy(c);
+  camera.position.copy(c).add(new THREE.Vector3(r * 2.0, r * 1.6, -r * 1.5));
+}
 function cmd(op, merge = false) {
   op.merge = merge;
   const t0 = performance.now(), text = api.Apply(JSON.stringify(op)), t1 = performance.now();
@@ -317,6 +346,14 @@ function rebuild() {
   if (!S) return;
   clearWorld(); pickables = [];
   $("shipname").textContent = S.name;
+  if (S.roomView) {
+    // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
+    drawRooms(new Set(S.roomView));
+    if (view.person) drawPerson();
+    dropUnused();
+    gizmo.detach();
+    return;
+  }
   const ghost = view.xray || inside() || pickRoomFor;
   const fresh = S.hulls.every(h => h.copies);
   if (fresh) hullGeo.clear();
@@ -418,16 +455,18 @@ function drawExts(r, dim) {
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
   }
 }
-function drawRooms() {
+function drawRooms(only = null) {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
+    if (only && !only.has(r.id)) continue;
     // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
     const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
-    const dim = inside() && r.deck !== deck && !through;
+    const dim = !only && inside() && r.deck !== deck && !through;
     drawExts(r, dim);
     if (r.wallMesh) {
       // Its walls: a solid shell round the outside of the room, a little darker than its colour.
-      const wm = meshFrom(r.wallMesh, { transparent: dim, opacity: dim ? 0.15 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
+      // In Room view see-through, so its interior shows from outside.
+      const wm = meshFrom(r.wallMesh, { transparent: dim || !!only, opacity: dim ? 0.15 : only ? 0.3 : 1, depthWrite: !only, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
       wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
     }
     if (r.intMesh && r.intMesh.p.length) {
@@ -499,7 +538,9 @@ function drawRooms() {
     }
     g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true);
   }
+  const nearShown = (x, y, z) => S.rooms.some(r => only.has(r.id) && x >= r.box[0] - 0.3 && x <= r.box[1] + 0.3 && y >= r.box[2] - 0.3 && y <= r.box[3] + 0.3 && z >= r.box[4] - 0.3 && z <= r.box[5] + 0.3);
   for (const [x, y, z] of S.doors) {
+    if (only && !nearShown(x, y, z)) continue;
     const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
     m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
   }
@@ -1131,6 +1172,7 @@ let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
   if (mounting) stopMount();
+  if (roomView && m !== "interior") { roomView = null; mode = m; viewCmd(); frame(); }
   mode = m;
   for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
   if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
@@ -1170,6 +1212,16 @@ function leftPanel() {
       L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
     }
   } else {
+    if (mode === "interior") {
+      const pick = el("select", { "aria-label": "Room to view" });
+      for (const r of S.rooms) pick.append(el("option", { value: r.id, ...((roomView ? roomView.room : sel.kind === "room" ? sel.id : 0) === r.id ? { selected: "" } : {}) }, `${r.label || r.kind} (deck ${r.deck + 1})`));
+      pick.addEventListener("change", () => { const id = +pick.value; if (roomView) enterRoomView(id); else select("room", id); });
+      L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"),
+        el("div", { class: "row" }, pick, el("button", { id: "roomview", class: roomView ? "on" : "", onclick: () => roomView ? exitRoomView() : enterRoomView(+pick.value || sel.id) }, roomView ? "Exit room view" : "Room view")),
+        roomView ? el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms") : "",
+        el("p", { class: "hint" }, roomView ? "Only this room, with its walls and interior. Esc goes back to the ship." : "Shows one room alone with its walls and interior, to set them.")));
+      if (roomView) return;
+    }
     const dsel = el("div", { class: "row" });
     S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
     dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
@@ -1508,7 +1560,7 @@ function inspector() {
           ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
             slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
       el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
-      el("h3", {}, "Walls"),
+      ...(roomView ? [el("h3", {}, "Walls"),
       slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }, dflt("room", "wallThick", 100)),
       el("div", { class: "row" }, resetAll("Wall thickness back to its default", () => { const a = cmd({ op: "setRoom", id: r.id, ...dfltOf("room", ["wallThick"]) }); if (a.error) toast(a.error); })),
       el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
@@ -1522,7 +1574,7 @@ function inspector() {
           el("div", { class: "row" }, resetAll("Rib spacing back to its default", () => setI(dfltOf("room", ["ribSpacing"])))),
           el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),
             el("button", { class: r.lights !== false ? "on" : "", onclick: () => setI({ lights: r.lights === false }) }, r.lights !== false ? "Lights on" : "Lights off")),
-          el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })(),
+          el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })()] : [el("p", { class: "hint" }, "Walls and interior cladding are set in Room view (left).")]),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),
@@ -1596,10 +1648,10 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
-  } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
+  } else if (e.key === "Escape") { if (mounting) stopMount(); else if (roomView) exitRoomView(); else select(null, 0); }
 });
 
-window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
+window.shipDesigner = { cmd, enterRoomView, exitRoomView, roomView: () => roomView, world, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
 function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
 
 try {

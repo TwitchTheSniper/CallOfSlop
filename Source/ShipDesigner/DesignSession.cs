@@ -30,6 +30,12 @@ public sealed class DesignSession
     public string Apply(string command)
     {
         var o = JsonNode.Parse(command)!.AsObject();
+        if ((string?)o["op"] == "view")
+        {
+            // Room view in or out (no edit, no undo step): {op:"view", roomView:{room, connected}} or roomView null.
+            DesignScene.RoomView = o["roomView"] is JsonObject rv ? ((int?)rv["room"] ?? 0, (bool?)rv["connected"] ?? false) : null;
+            return Answer("");
+        }
         var err = _ed.Apply(o.ToJsonString());
         DesignScene.Holes = !((bool?)o["preview"] ?? false);
         DesignScene.Light = (bool?)o["light"] ?? false;

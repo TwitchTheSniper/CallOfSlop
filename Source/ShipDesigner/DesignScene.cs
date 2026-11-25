@@ -14,6 +14,11 @@ public static partial class DesignScene
     /// <summary>True while a room or a piece is being dragged: the hulls' meshes are left out (the page keeps the last ones), so a drag stays quick.</summary>
     public static bool Light;
 
+    /// <summary>Room view (the page's Interior tab): only this room (and, with Connected, the rooms a door or a riser joins to it) gets
+    /// its meshes (hologram, wall shell, interior); no hull, connection or piece mesh is built or sent. Null: the normal scene, whose
+    /// rooms are plain holograms with no shell or interior. Set by the session's "view" op and kept until it is set again.</summary>
+    public static (int Room, bool Connected)? RoomView;
+
     public sealed record Issue(string Level, string Text, string What);
 
     public sealed class Check
@@ -26,6 +31,8 @@ public static partial class DesignScene
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
         public readonly HashSet<int> Reached = [];
+        /// <summary>Each room's neighbours through a door, a shaft or a riser (what Room view's connected rooms are).</summary>
+        public Dictionary<int, List<int>> Joined = [];
     }
 
     // ---- where a piece sits
@@ -791,6 +798,7 @@ public static partial class DesignScene
 
         // Doors: rooms on one deck that share at least 0.9 m of wall; shafts join the decks they overlap.
         var joins = d.Rooms.ToDictionary(r => r.Id, _ => new List<int>());
+        c.Joined = joins;
         foreach (var a in d.Rooms)
             foreach (var b in d.Rooms)
             {
@@ -1279,8 +1287,17 @@ public static partial class DesignScene
     {
         var c = Checks(d);
         var doorKey = Doors(c.Doors);
+        HashSet<int>? shown = null;
+        if (RoomView is { } rv && d.RoomById(rv.Room) is not null)
+        {
+            shown = [rv.Room];
+            if (rv.Connected && c.Joined.TryGetValue(rv.Room, out var nb))
+                shown.UnionWith(nb);
+        }
+        var bare = shown is not null || Light; // no hull meshes
+        var empty = "{\"p\":[],\"c\":[]}";
         var sb = new StringBuilder(1 << 16);
-        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
+        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"roomView\":").Append(shown is null ? "null" : "[" + string.Join(',', shown) + "]").Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
         for (var i = 0; i < d.Hulls.Count; i++)
         {
             var h = d.Hulls[i];
@@ -1303,9 +1320,9 @@ public static partial class DesignScene
                     sb.Append(k > 0 ? "," : "").Append('[').Append(ShipDesign.S(h.Stations[s].P[k].H)).Append(',').Append(ShipDesign.S(h.Stations[s].P[k].Y)).Append(']');
                 sb.Append("]}");
             }
-            sb.Append("],\"copies\":").Append(Light ? "null" : "[");
-            var key = Light ? "" : MeshKey(d, h);
-            for (var copy = 0; copy < (Light ? 0 : h.Copies); copy++)
+            sb.Append("],\"copies\":").Append(bare ? "null" : "[");
+            var key = bare ? "" : MeshKey(d, h);
+            for (var copy = 0; copy < (bare ? 0 : h.Copies); copy++)
             {
                 if (copy > 0) sb.Append(',');
                 if (!Meshes.TryGetValue((h.Id, copy), out var hit) || hit.Key != key)
@@ -1329,7 +1346,7 @@ public static partial class DesignScene
                 }
                 sb.Append(hit.Json);
             }
-            sb.Append(Light ? "}" : "]}");
+            sb.Append(bare ? "}" : "]}");
         }
         sb.Append("],\"joins\":[");
         for (var i = 0; i < d.Joins.Count; i++)
@@ -1344,6 +1361,9 @@ public static partial class DesignScene
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
               .Append(",\"material\":").Append(Q(d.Hull(j.A.Hull)?.Material ?? "Painted")).Append(",\"cladMaterial\":").Append(Q(d.Hull(j.A.Hull)?.CladMaterial ?? "Hull"))
               .Append(",\"mesh\":");
+            if (shown is not null)
+                sb.Append(empty);
+            else
             sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
                 () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); }));
             sb.Append('}');
@@ -1356,7 +1376,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : ""), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : ""), () =>
             {
                 var m = new DesignMesh();
                 m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size);
@@ -1418,7 +1438,9 @@ public static partial class DesignScene
             // A room's meshes follow the skin, its own plan and others' (edges, shared walls) and the doors.
             var rk = r.Id + ":" + shapes + "|" + plans + "|" + doorKey; // its own plan is in plans
             var ik = rk + "|" + r.ToJson().ToJsonString(); // its interior's look too
-            if (r.ToHull)
+            var full = shown?.Contains(r.Id) ?? false; // Room view: its shell and interior; the normal scene has neither
+            if (shown is not null && !full) { }
+            else if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
                 sb.Append(MeshPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset); return hm; }));
@@ -1430,14 +1452,14 @@ public static partial class DesignScene
                 sb.Append(MeshPart("rb" + r.Id, rk, () => RoomBoxMesh(d, r)));
             }
             sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
-            if (r.WallThick > 0.005)
+            if (full && r.WallThick > 0.005)
             {
                 sb.Append(",\"wallMesh\":");
                 sb.Append(MeshPart("rs" + r.Id, rk, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
               .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor));
-            if (r.Interior != "Off")
+            if (full && r.Interior != "Off")
             {
                 sb.Append(Part("ri" + r.Id, ik, () =>
                 {
@@ -1468,7 +1490,7 @@ public static partial class DesignScene
               .Append("],\"s1\":[").Append(string.Join(',', s1.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"hullWindows\":[");
-        for (var i = 0; i < d.Windows.Count; i++)
+        for (var i = 0; i < (shown is null ? d.Windows.Count : 0); i++)
         {
             var w = d.Windows[i];
             sb.Append(i > 0 ? "," : "").Append(Part("w" + w.Id, WindowKey(w) + FrameKey(d), () =>
