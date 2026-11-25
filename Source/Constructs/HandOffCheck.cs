@@ -28,14 +28,14 @@ public static class HandOffCheck
         using var inPlace = place.In();
         float G(float x, float z) => World.Map.GroundHeight(x, z);
 
-        // The station: a Foundation, the Building Station's Core on it and two Bay Blocks (as the Submodule Yard's).
+        // The station: a Foundation, the Building Station's Core (its dock pad) on it and four Bay Blocks out of its mouth.
         const string stationText = """
             { "format": "call-of-slop-construct-blueprint/1", "name": "Hand-off Station", "steps": [
               { "part": "Foundation" },
               { "part": "Foundation", "on": 0, "socket": "x+0", "by": "x-0" },
               { "part": "Building Station", "on": 0, "socket": "top01", "by": "-y.0.0" },
-              { "part": "Bay Block", "on": 2, "socket": "+x.1", "by": "-x" },
-              { "part": "Bay Block", "on": 2, "socket": "+x.2", "by": "-x" },
+              { "part": "Bay Block", "on": 2, "socket": "+x.0", "by": "-x" },
+              { "part": "Bay Block", "on": 3, "socket": "+z", "by": "-z" },
               { "part": "Bay Block", "on": 3, "socket": "+x", "by": "-x" },
               { "part": "Bay Block", "on": 4, "socket": "+x", "by": "-x" } ] }
             """;

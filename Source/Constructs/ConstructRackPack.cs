@@ -209,6 +209,12 @@ public static class ConstructRackPack
         var at = 0;
         for (var i = 0; i < slab && i < st.SlabN; i++)
             at = st.Slabs![i].Z0Mm + st.Slabs[i].LenMm + gap; // (Place's gap walk, up to the column it would go before)
+        if (slab >= st.SlabN && at + lenMm > HoldMm(rd))
+        {
+            at = 0; // (it goes in only once the columns close up: on the end of them closed up)
+            for (var i = 0; i < st.SlabN; i++)
+                at += st.Slabs![i].LenMm + gap;
+        }
         origin = Origin(rd, new RackSlab { Def = d.Id, Z0Mm = (ushort)at, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers }, d, 0, 0);
         return true;
     }

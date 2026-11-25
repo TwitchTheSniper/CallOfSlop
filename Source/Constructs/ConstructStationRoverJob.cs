@@ -248,13 +248,12 @@ public static partial class ConstructStation
     {
         var busy = false;
         Span<StationDock> docks = stackalloc StationDock[MaxArms];
-        var n = 0;
+        var n = StationRovers.Docks(c, t, docks); // (kept with the body's parts: a stamp check)
+        DockSwaps(world, c, j, docks, n);
         for (var a = 0; a < MaxArms; a++)
         {
             if (j.ArmTicks[a] == 0)
                 continue;
-            if (n == 0)
-                n = Math.Max(1, StationRovers.Docks(c, t, docks));
             var plan = j.Rov[a];
             var el = j.ArmTicks[a] - j.ArmLeft[a];
             var k = j.ArmStep[a];
@@ -313,8 +312,6 @@ public static partial class ConstructStation
         {
             if (j.ArmTicks[a] != 0 || !j.RovSet[a])
                 continue;
-            if (n == 0)
-                n = StationRovers.Docks(c, t, docks);
             if (a >= n)
             {
                 j.RovSet[a] = false; // (its dock is gone: so is it)
@@ -456,7 +453,7 @@ public static partial class ConstructStation
                             return false; // (no stand of its own reaches)
                         continue;
                     }
-                    if (++tries > 40)
+                    if (++tries > (n > 4 ? 12 : 40))
                         return true; // (enough looking: it goes, as the lab's rare overlaps do)
                     var hit = FirstClash(j, docks, n, a);
                     if (hit < 0)
@@ -467,6 +464,30 @@ public static partial class ConstructStation
         finally
         {
             j.ArmTicks[a] = keep;
+        }
+    }
+
+    /// <summary>
+    /// Server: a rover is numbered by its dock's place in the list, so a dock gone from the middle (taken off, shot away) moves the rest
+    /// onto other docks: each rover whose dock part changed stops where it is told (its trip and rest pose dropped, its step free again).
+    /// </summary>
+    private static void DockSwaps(ConstructWorld world, Construct c, StationJob j, ReadOnlySpan<StationDock> docks, int n)
+    {
+        for (var a = 0; a < MaxArms; a++)
+        {
+            var part = a < n ? docks[a].Part : None;
+            if (j.RovDock[a] == part)
+                continue;
+            if (j.ArmTicks[a] != 0 || j.RovSet[a])
+            {
+                j.ArmTicks[a] = 0;
+                j.ArmStep[a] = -1;
+                j.ArmPad[a] = None;
+                j.RovSet[a] = false;
+                j.RovIdle[a] = 0;
+                world.StationChanged(c);
+            }
+            j.RovDock[a] = part;
         }
     }
 

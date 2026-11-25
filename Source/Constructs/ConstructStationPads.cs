@@ -50,7 +50,17 @@ public static partial class ConstructStation
     }
 
     /// <summary>The heaviest piece station <paramref name="t"/>'s crane picks off its pick pads (kg; 0: it takes none).</summary>
-    public static float LiftKg(Construct c, int t) => c.DefOf(t).StationLiftKg;
+    public static float LiftKg(Construct c, int t)
+    {
+        if (!c.DefOf(t).StationNoHold)
+            return c.DefOf(t).StationLiftKg;
+        Span<StationDock> docks = stackalloc StationDock[MaxArms]; // (a rover station lifts what its largest rover lifts)
+        var n = StationRovers.Docks(c, t, docks);
+        var kg = 0f;
+        for (var a = 0; a < n; a++)
+            kg = MathF.Max(kg, StationRovers.Classes[docks[a].Cls].Kg);
+        return MathF.Min(kg, c.DefOf(t).StationLiftKg);
+    }
 
     /// <summary>
     /// A pad's deck in station <paramref name="t"/>'s bay frame (x across, z along, from the middle of its floor): its middle and its

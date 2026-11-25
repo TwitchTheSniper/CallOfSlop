@@ -87,6 +87,7 @@ public sealed partial class StationJob
     public double CostMs, WorstMs;
     public readonly int[] ArmStep = Filled(-1); // each rover's step on its way (-1: none; MaxArms long)
     public readonly int[] ArmLeft = new int[ConstructStation.MaxArms]; // ...ticks until its trip ends
+    public readonly ushort[] RovDock = FilledU(ushort.MaxValue); // ...the dock part each rover is numbered by (a dock gone from the middle renumbers the rest: theirs stop)
     public readonly ushort[] ArmPad = FilledU(ushort.MaxValue); // ...the pick pad it takes its part off (MaxValue: none; ConstructStationPads.cs)
     public readonly int[] RovIdle = new int[ConstructStation.MaxArms]; // ticks each rover has stood idle off its pad
     public readonly RoverPlan Try = new(); // (a trip being planned)
@@ -597,7 +598,9 @@ public static partial class ConstructStation
         string? stuck = null;
         if (firstKind >= 0 && j.KindReady[firstKind] > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
             && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) is var rc and not 0)
-            stuck = rc == 3 ? HasOwnPad(c, t) ? nd.Mass > LiftKg(c, t) ? $"too heavy for this station's crane ({nd.Mass / 1000f:0.#} t, it lifts {LiftKg(c, t) / 1000f:0.#} t): fit it by hand or with a Hall Crane" : null
+            stuck = rc == 3 && c.DefOf(t).StationNoHold ? !HasOwnPad(c, t) ? "no pick pad: lay Pad Tiles just past the bay's edge, where its rovers take its parts"
+                    : nd.Mass > LiftKg(c, t) ? $"too heavy for this station's rovers ({nd.Mass / 1000f:0.#} t, its largest lifts {LiftKg(c, t) / 1000f:0.#} t): weld a bigger Dock Expansion to the bay" : null
+                : rc == 3 ? HasOwnPad(c, t) ? nd.Mass > LiftKg(c, t) ? $"too heavy for this station's crane ({nd.Mass / 1000f:0.#} t, it lifts {LiftKg(c, t) / 1000f:0.#} t): fit it by hand or with a Hall Crane" : null
                 : ConstructLifters.HasPickPad(world, c, t, nd) ? null // (a crane or an arm fits it from a pick pad: it comes there, as an order)
                 : "too long for this station's hold: lay a Lay-down Pad under its crane just past the bay, or fit it by hand"
                 : tray.ItemCount > 0 && !MakeRoomFor(world, c, t, nd) ? "hold full of parts no step fits yet, no rack with room: take one out" : null;
