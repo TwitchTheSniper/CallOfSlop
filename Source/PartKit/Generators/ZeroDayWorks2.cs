@@ -350,16 +350,20 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                     var bed = name == "Smelter" ? "Hearth Block" : "Crucible Block";
                     var best = float.MaxValue;
                     var dir = flow;
+                    var seat = at;
                     foreach (var o in items)
                         if (Str(o, "name") == bed && new Vector2(Num(o, "x"), -Num(o, "z")) is var b && Vector2.Distance(b, at) is var dd && dd < best && dd < 8)
                         {
                             best = dd;
                             var v = b - at;
                             dir = MathF.Abs(v.X) > MathF.Abs(v.Y) ? new Vector2(MathF.Sign(v.X), 0) : new Vector2(0, MathF.Sign(v.Y));
+                            // (seated: the Core's cell butts that bed cell on the 2 m grid, its +x side socket on the block's;
+                            // the lab lays it about 1 m off and between two columns, which joins nothing)
+                            seat = b - dir * 2;
                         }
-                    var p = Piece(name, at, XFacing(dir), Refining);
-                    if (p != null && name != "Sawmill" && best < 8 && best > 2.6f)
-                        Note($"the {name} at ({at.X:0}, {at.Y:0}) stands {best - 2:0.#} m short of its {bed}s (as laid out): it isn't joined to that bed");
+                    if (name != "Sawmill" && best < 8 && Vector2.Distance(seat, at) > 0.01f)
+                        Note($"the {name} laid at ({at.X:0}, {at.Y:0}) is seated at ({seat.X:0}, {seat.Y:0}), butting its {bed}s");
+                    Piece(name, name == "Sawmill" ? at : seat, XFacing(dir), Refining);
                     return;
                 }
                 case "Assembler" or "Assembly Bed Block":
