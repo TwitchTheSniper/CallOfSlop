@@ -446,6 +446,7 @@ public static unsafe partial class Program
         if (!BuildInfo.IsRelease && args.Any(a => a.Equals("--no-splash", StringComparison.OrdinalIgnoreCase)))
             _noSplash = true;
         _settings = Settings.Load();
+        ShipDesignerArgs(args); // --ship-designer [MODE] [--sd-shot N]: open the Ship Designer at start (Program.ShipDesigner.cs)
         if (_windowShot)
             WindowShotSettings(args);
         // Steam, when this run asks for it (a Steam build, steam_appid.txt, --steam; Program.Steam.cs). A Steam build
@@ -966,6 +967,8 @@ public static unsafe partial class Program
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
                 DrawGunsmithPreview(showcase, now);
+            if (Ui.ShipDesignerOpen && _session == null && Ui.ShipYardFrame is { } designerFrame)
+                DrawShipDesignerYard(designerFrame); // the Ship Designer's 3D yard, behind its panels (UiShipDesigner.cs)
             if (Ui.AppearanceOpen && _session == null && Ui.LookPreview is { } lookPreview)
                 DrawAppearancePreview(lookPreview, now); // the APPEARANCE screen's turning model (Program.Appearance.cs)
             perf.Dispose();
@@ -1065,6 +1068,10 @@ public static unsafe partial class Program
                 {
                     Ui.DrawLobbyLoadouts(AudioSystem, now);
                 }
+                else if (Ui.ShipDesignerOpen)
+                {
+                    Ui.DrawShipDesigner(now); // main menu > Ship Designer (UiShipDesigner.cs)
+                }
                 else if (Ui.AppearanceOpen)
                 {
                     Ui.DrawAppearance(AudioSystem, now, _settings.Name); // main menu > Appearance (UiAppearance.cs)
@@ -1109,6 +1116,7 @@ public static unsafe partial class Program
             perf.Dispose();
             Perf.Gpu?.Mark(PerfGpuPass.Ui);
 
+            ShipDesignerShotFrame();
             if (_shotName != null)
             {
                 SaveScreenshot(_shotName);
@@ -1346,6 +1354,11 @@ public static unsafe partial class Program
         if ((_session == null || InLobbyRoom) && key == GlfwKey.Escape && Ui.LobbyLoadouts)
         {
             Ui.LoadoutBack();
+            return;
+        }
+        if (_session == null && key == GlfwKey.Escape && Ui.ShipDesignerOpen)
+        {
+            Ui.ShipDesignerEscape(); // main menu > Ship Designer: Esc drops the pick, then closes (UiShipDesignerInput.cs)
             return;
         }
         if (_session == null && key == GlfwKey.Escape && Ui.AppearanceOpen)
@@ -2417,6 +2430,21 @@ public static unsafe partial class Program
     /// The attachment showcase: paints the loadout window's backdrop, then the selected gun large and
     /// slowly turning in the middle (side-on, muzzle to the left). The UI cards are drawn over it.
     /// </summary>
+    /// <summary>The Ship Designer's yard in its viewport (Source/Render/ShipDesignerRenderer.cs).</summary>
+    private static void DrawShipDesignerYard(ShipDesignerFrame f)
+    {
+        var fb = _window.FramebufferSize;
+        var ws = _window.Size;
+        if (fb.X <= 0 || fb.Y <= 0 || ws.X <= 0 || ws.Y <= 0)
+            return;
+        float sx = fb.X / (float)ws.X, sy = fb.Y / (float)ws.Y;
+        int vx = (int)(f.Min.X * sx), vy = (int)(fb.Y - f.Max.Y * sy), vw = (int)((f.Max.X - f.Min.X) * sx), vh = (int)((f.Max.Y - f.Min.Y) * sy);
+        if (vw < 8 || vh < 8)
+            return;
+        ShipDesignerRenderer.Draw(Gfx, f.Objs, f.View, f.Proj, f.Eye, vx, vy, vw, vh, new System.Numerics.Vector3(0x1b / 255f, 0x23 / 255f, 0x29 / 255f));
+        Gfx.SetViewport(0, 0, fb.X, fb.Y);
+    }
+
     private static void DrawGunsmithPreview(GunsmithPreview pv, double now)
     {
         var fb = _window.FramebufferSize;
