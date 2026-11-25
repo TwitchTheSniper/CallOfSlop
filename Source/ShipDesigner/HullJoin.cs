@@ -662,7 +662,7 @@ public sealed class HullJoin
                 // The collar round this end (drawn below), then the ring lifted onto its top: the buttress stands on the pad.
                 var h = i == 0 ? ha : hb;
                 var face = i == 0 ? A.Face : B.Face;
-                collars.Add(CollarRing(r, c, rs, upv, h, face));
+                collars.Add(CollarRing(r, c, rs, upv, h, face, Follow && dl > 1e-4 ? ring : null));
                 for (var j = 0; j < r.Length; j++)
                     r[j] = OnTop(h, face, r[j].Item1, r[j].Item2, r[j].Item3, CollarHeight - 0.005);
             }
@@ -680,8 +680,11 @@ public sealed class HullJoin
         {
             blend = FollowRings;
             var lift = Collar ? CollarHeight - 0.005 : FollowLift;
-            FollowEnd(rings, centres, 0, 1, ha, A.Face, lift);
-            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb, B.Face, lift);
+            // With a collar, the fillet rises from the collar's clean inner top edge (Karl, 2026-11-25: no playdough).
+            var fa = Collar && collars.Count == 2 ? Lifted(collars[0][1]) : null;
+            var fb = Collar && collars.Count == 2 ? Lifted(collars[1][1]) : null;
+            FollowEnd(rings, centres, 0, 1, ha, A.Face, lift, fa);
+            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb, B.Face, lift, fb);
             last = rings.Count - 1;
         }
         for (var i = 0; i < last; i++)
@@ -918,7 +921,8 @@ public sealed class HullJoin
     /// [0] inner foot (sunk), [1] inner top (at the footprint), [2] outer top (Margin less the bevel out), [3] the bevel's foot on the
     /// outer edge (Height less the bevel), [4] the outer edge's foot (sunk). The outline grows from its middle in the end frame (rs, upv).
     /// </summary>
-    private (double, double, double)[][] CollarRing((double, double, double)[] r, double[] c, double[] rs, double[] upv, HullBody h, int face)
+    private (double, double, double)[][] CollarRing((double, double, double)[] r, double[] c, double[] rs, double[] upv, HullBody h, int face,
+        List<(double U, double V)>? clean = null)
     {
         var n = r.Length;
         double mu = 0, mv = 0;
@@ -935,6 +939,35 @@ public sealed class HullJoin
         var o = new (double, double, double)[5][];
         for (var k = 0; k < 5; k++)
             o[k] = new (double, double, double)[n];
+        if (clean is not null && clean.Count == n)
+        {
+            // A clean outline (Karl, 2026-11-25): the strut's own section scaled to the footprint's extents in the end frame, grown by
+            // scaling each axis (so straight edges stay straight and the margin is even on each side), then projected onto the skin.
+            double a = 1e-3, b = 1e-3;
+            for (var j = 0; j < n; j++)
+            {
+                a = Math.Max(a, Math.Abs(pu[j] - mu));
+                b = Math.Max(b, Math.Abs(pv[j] - mv));
+            }
+            double su = 0, sv = 0;
+            foreach (var (u, v) in clean) { su = Math.Max(su, Math.Abs(u)); sv = Math.Max(sv, Math.Abs(v)); }
+            su = Math.Max(su, 1e-6); sv = Math.Max(sv, 1e-6);
+            for (var j = 0; j < n; j++)
+            {
+                double cu = clean[j].U / su, cv = clean[j].V / sv;
+                (double, double, double) At(double g, double lift)
+                {
+                    double u = mu + cu * (a + g), v = mv + cv * (b + g);
+                    return OnTop(h, face, c[0] + rs[0] * u + upv[0] * v, c[1] + rs[1] * u + upv[1] * v, c[2] + rs[2] * u + upv[2] * v, lift);
+                }
+                o[0][j] = At(0, -CollarSinkDepth);
+                o[1][j] = At(0, CollarHeight);
+                o[2][j] = At(CollarMargin - CollarBevel, CollarHeight);
+                o[3][j] = At(CollarMargin, CollarHeight - CollarBevel);
+                o[4][j] = At(CollarMargin, -CollarSinkDepth);
+            }
+            return o;
+        }
         for (var j = 0; j < n; j++)
         {
             double du = pu[j] - mu, dv = pv[j] - mv, l = Math.Max(1e-9, Math.Sqrt(du * du + dv * dv));
@@ -975,21 +1008,65 @@ public sealed class HullJoin
     /// nearest skin point (its normal), and FollowRings rings put in between it and the strut's ring iStrut, each point's offset from the
     /// middle line growing from the strut's to the footprint's on an easing curve (a fillet), held FollowLift off the skin where it would dip in.
     /// </summary>
-    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h, int face, double lift)
+    private static (double, double, double)[] Lifted((double, double, double)[] top) => top.Select(p => p).ToArray();
+
+    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h, int face, double lift,
+        (double, double, double)[]? given = null)
     {
         var nr = rings[iEnd].Length;
-        var foot = new (double, double, double)[nr];
-        for (var j = 0; j < nr; j++)
-        {
-            var (x, y, z) = rings[iEnd][j];
-            foot[j] = OnTop(h, face, x, y, z, lift);
-        }
+        var foot = given ?? new (double, double, double)[nr];
+        if (given is null)
+            for (var j = 0; j < nr; j++)
+            {
+                var (x, y, z) = rings[iEnd][j];
+                foot[j] = OnTop(h, face, x, y, z, lift);
+            }
         double[] cf = [0, 0, 0];
         foreach (var (x, y, z) in foot)
         {
             cf[0] += x / nr; cf[1] += y / nr; cf[2] += z / nr;
         }
         var (rsS, csS) = (rings[iStrut], centres[iStrut]);
+        if (given is not null)
+        {
+            // A clean loft from the strut's ring down to the collar's top edge: each point on a quadratic curve that leaves the strut
+            // along its line and lands on the edge, the rings spaced evenly along it (no pushing onto the skin, so no lumps).
+            var nS = centres[iStrut];
+            var nP = centres[iStrut + (iEnd == 0 ? 1 : -1)];
+            double[] td = [nS[0] - nP[0], nS[1] - nP[1], nS[2] - nP[2]];
+            Norm(td);
+            var addC = new List<((double, double, double)[] R, double[] C)>();
+            for (var k = 1; k <= FollowRings; k++)
+            {
+                var v = (double)k / (FollowRings + 1);
+                double w0 = (1 - v) * (1 - v), w1 = 2 * v * (1 - v), w2 = v * v;
+                var r = new (double, double, double)[nr];
+                for (var j = 0; j < nr; j++)
+                {
+                    var s0 = rsS[j];
+                    var f = foot[j];
+                    var dd = Math.Max(0, (f.Item1 - s0.Item1) * td[0] + (f.Item2 - s0.Item2) * td[1] + (f.Item3 - s0.Item3) * td[2]);
+                    double cx = s0.Item1 + td[0] * dd, cy = s0.Item2 + td[1] * dd, cz = s0.Item3 + td[2] * dd;
+                    r[j] = (w0 * s0.Item1 + w1 * cx + w2 * f.Item1, w0 * s0.Item2 + w1 * cy + w2 * f.Item2, w0 * s0.Item3 + w1 * cz + w2 * f.Item3);
+                }
+                double[] c = [csS[0] + (cf[0] - csS[0]) * v, csS[1] + (cf[1] - csS[1]) * v, csS[2] + (cf[2] - csS[2]) * v];
+                addC.Add((r, c));
+            }
+            rings[iEnd] = foot;
+            centres[iEnd] = cf;
+            if (iEnd == 0)
+            {
+                addC.Reverse();
+                rings.InsertRange(1, addC.Select(a => a.R));
+                centres.InsertRange(1, addC.Select(a => a.C));
+            }
+            else
+            {
+                rings.InsertRange(iEnd, addC.Select(a => a.R));
+                centres.InsertRange(iEnd, addC.Select(a => a.C));
+            }
+            return;
+        }
         var add = new List<((double, double, double)[] R, double[] C)>();
         for (var k = 1; k <= FollowRings; k++)
         {
