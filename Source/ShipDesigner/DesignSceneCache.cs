@@ -44,6 +44,7 @@ public static partial class DesignScene
         foreach (var h in o["hulls"]!.AsArray())
         {
             h!.AsObject().Remove("clad");
+            h.AsObject().Remove("cladFrom");
             h.AsObject().Remove("paint");
             h.AsObject().Remove("material");
             h.AsObject().Remove("damage");
@@ -52,6 +53,8 @@ public static partial class DesignScene
         {
             j!.AsObject().Remove("clad");
             j.AsObject().Remove("buttressClad");
+            j.AsObject().Remove("matchClad");
+            j.AsObject().Remove("matchButtress");
         }
         foreach (var r in o["rooms"]!.AsArray())
             foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor" })

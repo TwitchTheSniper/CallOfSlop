@@ -58,6 +58,7 @@ public sealed class HullJoin
     public string ButtressClad = "Off"; // plated cladding on the flared ends (the buttresses), apart from the strut's: kind, seed, panel size, depth
     public int ButtressSeed = 1;
     public double ButtressSize = 0.8, ButtressDepth = 1;
+    public bool MatchClad, MatchButtress; // the strut's or the buttresses' cladding follows hull A's (its own values kept for when it's unticked)
     public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
@@ -158,7 +159,14 @@ public sealed class HullJoin
         ["leaveA"] = ShipDesign.R(LeaveA), ["leaveB"] = ShipDesign.R(LeaveB), ["leaveForeA"] = ShipDesign.R(LeaveForeA), ["leaveForeB"] = ShipDesign.R(LeaveForeB), ["tanA"] = ShipDesign.R(TanA), ["tanB"] = ShipDesign.R(TanB),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
         ["buttressClad"] = ButtressClad == "Off" ? null : new JsonObject { ["kind"] = ButtressClad, ["seed"] = ButtressSeed, ["size"] = ShipDesign.R(ButtressSize), ["depth"] = ShipDesign.R(ButtressDepth) },
+        ["matchClad"] = MatchClad ? true : null,
+        ["matchButtress"] = MatchButtress ? true : null,
     };
+
+    /// <summary>The cladding a section is drawn with: its own, or (matched) hull A's as that body draws it.</summary>
+    private readonly record struct CladSpec(string Kind, int Seed, double Size, double Depth, double Damage, int DamageSeed);
+
+    private static CladSpec Spec(HullBody s) => new(s.Clad, s.CladSeed, s.CladSize, s.CladDepth, s.Damage, s.DamageSeed);
 
     private static JsonObject EndJson(ShipDesign d, End e) => e.Face == FaceSide
         ? new() { ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["z"] = ShipDesign.R(e.Z), ["t"] = ShipDesign.R4(e.T), ["side"] = e.Side }
@@ -217,6 +225,8 @@ public sealed class HullJoin
             j.ButtressSize = ShipDesign.F(bc["size"], 0.8);
             j.ButtressDepth = ShipDesign.F(bc["depth"], 1);
         }
+        j.MatchClad = (bool?)o["matchClad"] ?? false;
+        j.MatchButtress = (bool?)o["matchButtress"] ?? false;
         j.Tidy();
         return j;
     }
@@ -411,6 +421,8 @@ public sealed class HullJoin
         var o = ToJson(d);
         o.Remove("clad");
         o.Remove("buttressClad");
+        o.Remove("matchClad");
+        o.Remove("matchButtress");
         return Id + ":" + o.ToJsonString() + "|" + d.Hull(A.Hull)?.ShapeKey() + "|" + d.Hull(B.Hull)?.ShapeKey();
     });
 
@@ -594,14 +606,17 @@ public sealed class HullJoin
                 m.Quad(rings[i][j], rings[i + 1][j], rings[i + 1][j1], rings[i][j1], shade, false);
             }
         // The strut's own rings are clad; the flared ends into the skins (dl > 0) stay bare.
-        if (Clad != "Off")
-            CladStrut(m, rings, centres, dl > 1e-4 ? 1 + blend : 0, dl > 1e-4 ? last - 1 - blend : last, col, ha);
+        var src = d.CladSource(ha);
+        var strut = MatchClad ? Spec(src) : new CladSpec(Clad, CladSeed, CladSize, CladDepth, ha.Damage, ha.DamageSeed);
+        var butt = MatchButtress ? Spec(src) : new CladSpec(ButtressClad, ButtressSeed, ButtressSize, ButtressDepth, ha.Damage, ha.DamageSeed);
+        if (strut.Kind != "Off")
+            CladStrut(m, rings, centres, dl > 1e-4 ? 1 + blend : 0, dl > 1e-4 ? last - 1 - blend : last, col, ha, strut);
         // The buttresses: their own cladding, in rows from the strut out to where the flare sinks under each skin.
-        if (ButtressClad != "Off" && dl > 1e-4)
+        if (butt.Kind != "Off" && dl > 1e-4)
         {
             bool Open((double X, double Y, double Z) p) => ends.Any(e => e.Holds(p.X, p.Y, p.Z));
-            CladButtress(m, rings, centres, 1 + blend, 0, col, ha, Open, 1);
-            CladButtress(m, rings, centres, last - 1 - blend, last, col, ha, Open, 2);
+            CladButtress(m, rings, centres, 1 + blend, 0, col, ha, Open, 1, butt);
+            CladButtress(m, rings, centres, last - 1 - blend, last, col, ha, Open, 2, butt);
         }
         if (Mirror && Math.Abs(a.P[0]) > 0.3)
             m.MirrorFrom(0, 0);
@@ -613,7 +628,7 @@ public sealed class HullJoin
     /// (by its length) and along the strut (by the middle line's), laid with the bodies' plates (<see cref="DesignScene.LayPlates"/>),
     /// each plate's normal out from the middle line. Seeded, so the same design always clads the same.
     /// </summary>
-    private void CladStrut(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int i0, int i1, (byte, byte, byte) col, HullBody ha)
+    private void CladStrut(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int i0, int i1, (byte, byte, byte) col, HullBody ha, CladSpec cs)
     {
         if (i1 <= i0)
             return;
@@ -682,11 +697,11 @@ public sealed class HullJoin
             var q = Nrm(u, v);
             return (p.X + q.X * off, p.Y + q.Y * off, p.Z + q.Z * off);
         }
-        var size = Math.Clamp(CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        var size = Math.Clamp(cs.Size, HullBody.CladSizeMin, HullBody.CladSizeMax);
         int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
         var start = m.Tris;
-        DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(CladSeed * 1000003 + Id * 7919)), Clad == "Heavy", CladDepth, col, P, Nrm, W, new bool[nu, nv],
-            (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell), 0, Clad == "Hex", ha.Damage, ha.DamageSeed);
+        DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(cs.Seed * 1000003 + Id * 7919)), cs.Kind == "Heavy", cs.Depth, col, P, Nrm, W, new bool[nu, nv],
+            (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell), 0, cs.Kind == "Hex", cs.Damage, cs.DamageSeed);
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
     }
@@ -697,7 +712,7 @@ public sealed class HullJoin
     /// widens. Cells that reach a mouth stay bare; the plates stand off the surface by at least LayPlates' floor (6 mm).
     /// </summary>
     private void CladButtress(DesignMesh m, List<(double, double, double)[]> rings, List<double[]> centres, int iS, int iE, (byte, byte, byte) col, HullBody ha,
-        Func<(double X, double Y, double Z), bool> open, int end)
+        Func<(double X, double Y, double Z), bool> open, int end, CladSpec cs)
     {
         var nr = rings[0].Length;
         // The rings from the strut (iS) to the skin (iE): one band, or several when the buttress follows the hull.
@@ -748,10 +763,10 @@ public sealed class HullJoin
                 reach += Math.Sqrt(Sq(rings[i + step][j].Item1 - rings[i][j].Item1) + Sq(rings[i + step][j].Item2 - rings[i][j].Item2) + Sq(rings[i + step][j].Item3 - rings[i][j].Item3)) / nr;
         if (reach < 0.1 || Girth(0) < 0.3)
             return;
-        var size = Math.Clamp(ButtressSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        var size = Math.Clamp(cs.Size, HullBody.CladSizeMin, HullBody.CladSizeMax);
         var rows = Math.Clamp((int)Math.Round(reach / size), 1, 24);
-        var heavy = ButtressClad == "Heavy";
-        var rng = new Random(unchecked(ButtressSeed * 1000003 + Id * 7919 + end * 31337));
+        var heavy = cs.Kind == "Heavy";
+        var rng = new Random(unchecked(cs.Seed * 1000003 + Id * 7919 + end * 31337));
         var start = m.Tris;
         for (var r = 0; r < rows; r++)
         {
@@ -797,8 +812,8 @@ public sealed class HullJoin
                         }
                     }
             }
-            DesignScene.LayPlates(m, cells, 1, rowArc, Math.Max(0.05, reach / rows), rng, heavy, ButtressDepth, col, P, N, W, taken,
-                (u, v, cell) => ha.Paint(v0 * reach, u, rowArc, Id * 12289 + end * 5000 + r * 97 + cell), 0, ButtressClad == "Hex", ha.Damage, ha.DamageSeed);
+            DesignScene.LayPlates(m, cells, 1, rowArc, Math.Max(0.05, reach / rows), rng, heavy, cs.Depth, col, P, N, W, taken,
+                (u, v, cell) => ha.Paint(v0 * reach, u, rowArc, Id * 12289 + end * 5000 + r * 97 + cell), 0, cs.Kind == "Hex", cs.Damage, cs.DamageSeed);
         }
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: buttress cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");

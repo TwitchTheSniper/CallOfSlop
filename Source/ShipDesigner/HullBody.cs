@@ -46,6 +46,8 @@ public sealed class HullBody
     public string Clad = "Off";
     public int CladSeed = 1;
     public double CladSize = 1.5, CladDepth = 1;
+    /// <summary>Another body whose cladding this one draws with (its id; 0 its own), live: kind, seed, size, depth, material and damage. Its own values are kept.</summary>
+    public int CladFrom;
     public const double CladSizeMin = 0.4, CladSizeMax = 6, CladDepthMin = 0.25, CladDepthMax = 2.5;
 
     public int Copies => Mirror && Math.Abs(X) > 0.01 ? 2 : 1;
@@ -324,7 +326,7 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
-        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, CladFrom = CladFrom, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
         Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 

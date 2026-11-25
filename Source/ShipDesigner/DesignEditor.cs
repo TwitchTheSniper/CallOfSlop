@@ -201,6 +201,8 @@ public sealed class DesignEditor
                 }
                 if (o["buttressSeed"] is not null) j.ButtressSeed = Math.Clamp(I(o, "buttressSeed"), 0, 99999);
                 if (o["buttressSize"] is not null) j.ButtressSize = Math.Clamp(Snap(D(o, "buttressSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+                if (o["matchClad"] is not null) j.MatchClad = (bool)o["matchClad"]!;
+                if (o["matchButtress"] is not null) j.MatchButtress = (bool)o["matchButtress"]!;
                 if (o["buttressDepth"] is not null) j.ButtressDepth = Math.Clamp(Snap(D(o, "buttressDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 j.Tidy();
                 return "";
@@ -229,6 +231,9 @@ public sealed class DesignEditor
                 d.Hulls.Remove(h);
                 d.Pieces.RemoveAll(p => p.Hull == h.Id);
                 d.Joins.RemoveAll(j => j.A.Hull == h.Id || j.B.Hull == h.Id);
+                foreach (var o2 in d.Hulls)
+                    if (o2.CladFrom == h.Id)
+                        o2.CladFrom = 0;
                 return "";
             }
             case "moveHull":
@@ -251,6 +256,14 @@ public sealed class DesignEditor
                     if (!HullBody.CladKinds.Contains(Str(o, "clad")))
                         return "cladding is Off, Plates, Heavy or Hex";
                     h.Clad = Str(o, "clad");
+                }
+                if (o.ContainsKey("cladFrom"))
+                {
+                    var f = o["cladFrom"] is null ? 0 : I(o, "cladFrom");
+                    if (f == 0) h.CladFrom = 0;
+                    else if (d.Hull(f) is not { } src) return "no such body to match";
+                    else if (!d.CanMatchClad(h, src)) return "that would match the cladding round in a loop";
+                    else h.CladFrom = f;
                 }
                 if (o["cladSeed"] is not null) h.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
                 if (o["cladSize"] is not null) h.CladSize = Math.Clamp(Snap(D(o, "cladSize"), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);

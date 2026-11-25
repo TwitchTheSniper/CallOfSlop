@@ -387,7 +387,7 @@ function rebuild() {
       for (const surf of ["skin", "fore", "aft", "skinClad", "foreClad", "aftClad"]) {
         if (!c[surf]?.p.length) continue;
         const isClad = surf.endsWith("Clad");
-        const mat = wornOpts(matOpts(isClad && h.clad?.material && h.clad.material !== "Hull" ? h.clad.material : (h.material || "Painted")), isClad ? h.damage ?? 0 : 0);
+        const mat = wornOpts(matOpts(isClad && h.clad?.material && h.clad.material !== "Hull" ? h.clad.material : (h.material || "Painted")), isClad ? h.clad?.damage ?? h.damage ?? 0 : 0);
         const selHull = sel.kind === "hull" && sel.id === h.id;
         // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
         const key = `${h.id}/${c.copy}/${surf}`;
@@ -1311,7 +1311,16 @@ function stationPanel(h) {
   box.append(el("h3", {}, "Material"),
     el("div", { class: "row" }, matSel(h.material || "Painted", MAT_NAMES, "Material", v => hs({ material: v })), resetAll("Material back to its default", () => hs(dfltOf("hull", ["material"])))),
     el("p", { class: "hint" }, "Painted is the flat look; metals reflect the room and tint the paint. Connections take hull A's material."));
+  // Match body (the user, 2026-11-25): follow another body's cladding live; this body's own settings stay as they were for when it's set back to None.
+  const others = S.hulls.filter(o => o.id !== h.id);
+  const reaches = (from, to) => { for (let b = S.hulls.find(x => x.id === from), n = 0; b && n <= S.hulls.length; b = S.hulls.find(x => x.id === b.cladFrom), n++) if (b.id === to) return true; return false; };
+  const matchSel = (() => { const s = el("select", { "aria-label": "Match body", id: "cladmatch" }); s.append(el("option", { value: "0", ...(h.cladFrom ? {} : { selected: "" }) }, "None"));
+    for (const o of others) s.append(el("option", { value: String(o.id), ...(h.cladFrom === o.id ? { selected: "" } : {}), ...(reaches(o.id, h.id) ? { disabled: "" } : {}) }, o.name));
+    s.addEventListener("change", () => hs({ cladFrom: +s.value || null })); return s; })();
+  const src = h.cladFrom && S.hulls.find(o => o.id === h.cladFrom);
   box.append(el("h3", {}, "Cladding"),
+    el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
+    ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
     el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
       resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
@@ -1321,7 +1330,7 @@ function stationPanel(h) {
       slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 }), dflt("hull", "cladDepth", 100)),
       el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
-        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
     el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
   // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
   box.append(el("h3", {}, "Damage"),
@@ -1497,24 +1506,31 @@ function inspector() {
     const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
     const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
+    // Match hull (the user, 2026-11-25): the section follows hull A's cladding live; unticked, the join's own settings come back as they were.
+    const matchBox = (key, on) => el("label", { class: "row" }, el("input", { type: "checkbox", id: key, ...(on ? { checked: "" } : {}), onchange: e => jc({ [key]: e.target.checked }) }), "Match hull");
+    const matchHint = el("p", { class: "hint" }, "Follows hull A's cladding (kind, seed, panel size, depth, material and damage). Untick for this connection's own.");
     I.append(el("h2", {}, "Connection"), el("p", { class: "hint" }, `Face: end A on the ${(j.faceA || "Side").toLowerCase()}${j.faceA && j.faceA !== "Side" ? " cap" : " skin"}, end B on the ${(j.faceB || "Side").toLowerCase()}${j.faceB && j.faceB !== "Side" ? " cap" : " skin"}.`), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
       el("h3", {}, "Cladding"),
+      matchBox("matchClad", !!j.matchClad),
+      ...(j.matchClad ? [matchHint] : [
       el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
         slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
         slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
         el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["cladSize", "cladDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
-          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
       el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
       el("h3", {}, "Buttress cladding"),
+      matchBox("matchButtress", !!j.matchButtress),
+      ...(j.matchButtress ? [matchHint.cloneNode(true)] : [
       el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
         slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
         slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),
         el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["buttressSize", "buttressDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(bcl.seed, v => jc({ buttressSeed: Math.round(v) }), 1),
-          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
       el("p", { class: "hint" }, "Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0."),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
     return;

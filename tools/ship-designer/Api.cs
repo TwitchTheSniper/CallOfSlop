@@ -40,13 +40,13 @@ public static partial class Api
                 ["w"] = j.WA, ["h"] = j.HA, ["wb"] = j.WB, ["hb"] = j.HB, ["twist"] = j.Twist, ["rotA"] = j.RotA, ["rotB"] = j.RotB, ["sweepUp"] = j.SweepUp, ["sweepFore"] = j.SweepFore,
                 ["bias"] = j.Bias, ["segments"] = j.Segments, ["flare"] = j.Flare, ["buttress"] = j.Buttress, ["openA"] = j.OpenA, ["openB"] = j.OpenB,
                 ["leaveA"] = j.LeaveA, ["leaveB"] = j.LeaveB, ["leaveForeA"] = j.LeaveForeA, ["leaveForeB"] = j.LeaveForeB, ["tanA"] = j.TanA, ["tanB"] = j.TanB,
-                ["cladSize"] = j.CladSize, ["cladDepth"] = j.CladDepth, ["buttressSize"] = j.ButtressSize, ["buttressDepth"] = j.ButtressDepth,
+                ["cladSize"] = j.CladSize, ["cladDepth"] = j.CladDepth, ["buttressSize"] = j.ButtressSize, ["buttressDepth"] = j.ButtressDepth, ["matchClad"] = j.MatchClad, ["matchButtress"] = j.MatchButtress,
             },
             ["hull"] = new JsonObject
             {
                 ["cladSize"] = h.CladSize, ["cladDepth"] = h.CladDepth, ["roundFore"] = h.RoundFore, ["roundAft"] = h.RoundAft,
                 ["accentAmount"] = h.AccentAmount, ["stripe"] = h.Stripe, ["wear"] = h.Wear,
-                ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed,
+                ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing },
         };

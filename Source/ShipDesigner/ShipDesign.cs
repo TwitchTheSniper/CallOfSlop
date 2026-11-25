@@ -68,6 +68,34 @@ public sealed class ShipDesign
     public int NewId() => _next++;
 
     public HullBody? Hull(int id) => Hulls.Find(h => h.Id == id);
+
+    /// <summary>The body whose cladding h draws with: h's own, or the end of its chain of matched bodies.</summary>
+    public HullBody CladSource(HullBody h)
+    {
+        var s = h;
+        for (var i = 0; i < MaxHulls && s.CladFrom != 0; i++)
+        {
+            if (Hull(s.CladFrom) is not { } n || n == h)
+                break;
+            s = n;
+        }
+        return s;
+    }
+
+    /// <summary>Whether h may follow src's cladding: another body, whose own chain doesn't lead back to h.</summary>
+    public bool CanMatchClad(HullBody h, HullBody src)
+    {
+        var s = src;
+        for (var i = 0; i <= MaxHulls; i++)
+        {
+            if (s == h)
+                return false;
+            if (s.CladFrom == 0 || Hull(s.CladFrom) is not { } n)
+                return true;
+            s = n;
+        }
+        return false;
+    }
     public Piece? PieceById(int id) => Pieces.Find(p => p.Id == id);
     public Room? RoomById(int id) => Rooms.Find(r => r.Id == id);
     public HullJoin? JoinById(int id) => Joins.Find(j => j.Id == id);
@@ -82,7 +110,7 @@ public sealed class ShipDesign
             ["version"] = Version,
             ["name"] = Name,
             ["decks orientation"] = Stacked ? "stacked" : "along",
-            ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; return (JsonNode)j; })]),
+            ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; if (h.CladFrom != 0 && HullIndex(h.CladFrom) is var ci && ci >= 0) j["cladFrom"] = ci; return (JsonNode)j; })]),
             ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
@@ -106,6 +134,11 @@ public sealed class ShipDesign
         foreach (var h in o["hulls"]?.AsArray() ?? [])
             if (h is JsonObject ho && d.Hulls.Count < MaxHulls)
                 d.Hulls.Add(HullBody.FromJson(ho, d.Take(ho)));
+        // A body's matched cladding names the other by its place in the list; one that would close a loop is dropped.
+        var hl = o["hulls"]?.AsArray().OfType<JsonObject>().Take(d.Hulls.Count).ToList() ?? [];
+        for (var i = 0; i < hl.Count; i++)
+            if ((int?)hl[i]["cladFrom"] is int ci && ci >= 0 && ci < d.Hulls.Count && d.CanMatchClad(d.Hulls[i], d.Hulls[ci]))
+                d.Hulls[i].CladFrom = d.Hulls[ci].Id;
         foreach (var k in o["decks"]?.AsArray() ?? [])
             if (k is JsonObject ko && d.Decks.Count < MaxDecks)
                 d.Decks.Add(new Deck { Floor = F(ko["floor"], 0.25), Height = Math.Clamp(F(ko["height"], 3), 2.2, 8) });

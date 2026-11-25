@@ -288,8 +288,9 @@ public static partial class DesignScene
         // Cladding stays off every opening: a cell any socket, mouth or window may reach, or another body cuts, is left bare.
         var cladSize = 0.0;
         CladFitSize = 0;
-        if (h.Clad != "Off")
-            cladSize = CladBody(skinClad, h, cx, (p, q) =>
+        var hc = CladView(d, h);
+        if (hc.Clad != "Off")
+            cladSize = CladBody(skinClad, hc, cx, (p, q) =>
             {
                 foreach (var k in cutouts)
                     if (k.Touches(p, q))
@@ -322,7 +323,7 @@ public static partial class DesignScene
         Cap(fore, cx, h, rings[0], DesignMesh.Tone(h.Paint(h.Front, 0.5, 1, 9001), 0.85), CapCut, CapTri);
         Cap(aft, cx, h, rings[^1], DesignMesh.Tone(dark, 1.2), CapCut, CapTri);
         // The end caps are plated too, in rings round the middle, clear of the drive bells and every other opening (the user, 2026-11-24).
-        if (h.Clad != "Off")
+        if (hc.Clad != "Off")
         {
             bool Open(double x, double y, double z)
             {
@@ -331,11 +332,32 @@ public static partial class DesignScene
                         return true;
                 return InHole(x, y, z) || CutBody(x, y, z);
             }
-            CladCap(foreClad, cx, h, rings[0], false, Open, cladSize);
-            CladCap(aftClad, cx, h, rings[^1], true, Open, cladSize);
+            CladCap(foreClad, cx, hc, rings[0], false, Open, cladSize);
+            CladCap(aftClad, cx, hc, rings[^1], true, Open, cladSize);
         }
         return (skin, fore, aft, skinClad, foreClad, aftClad);
     }
+
+    /// <summary>The body as its cladding is laid: itself, or (matched) a copy with the other body's cladding and damage, its own paint and shape.</summary>
+    private static HullBody CladView(ShipDesign d, HullBody h)
+    {
+        var s = d.CladSource(h);
+        if (s == h)
+            return h;
+        var v = h.Clone(h.Id);
+        (v.Clad, v.CladSeed, v.CladSize, v.CladDepth, v.Damage, v.DamageSeed) = (s.Clad, s.CladSeed, s.CladSize, s.CladDepth, s.Damage, s.DamageSeed);
+        return v;
+    }
+
+    /// <summary>The material a body's cladding is drawn in, the page's way: "Hull" for the body's own; matched, the source's as it draws it.</summary>
+    private static string CladMat(ShipDesign d, HullBody h)
+    {
+        var s = d.CladSource(h);
+        return s == h ? h.CladMaterial : s.CladMaterial == "Hull" ? s.Material : s.CladMaterial;
+    }
+
+    /// <summary>A matched body's or connection's cladding inputs, for a cache key.</summary>
+    private static string CladKeyOf(HullBody s) => (s.ToJson()["clad"]?.ToJsonString() ?? "off") + "/" + ShipDesign.R(s.Damage) + "/" + s.DamageSeed;
 
     /// <summary>An opening's outline: a convex polygon (u along X, v along Z) in the plane through O facing Y.</summary>
     private sealed class Cutout(double[] o, double[] x, double[] y, double[] z, List<(double U, double V)> poly, double edgeMin = 0.35, (double Lo, double Hi)? band = null)
@@ -1271,6 +1293,8 @@ public static partial class DesignScene
     private static string MeshKey(ShipDesign d, HullBody h)
     {
         var k = new StringBuilder(MeshJson(h)).Append(Holes ? 'H' : 'h');
+        if (d.CladSource(h) is var cs && cs != h)
+            k.Append('@').Append(CladKeyOf(cs));
         var box = h.Bounds();
         foreach (var o in d.Hulls)
             if (o != h && Overlap(o.Bounds(), box))
@@ -1324,7 +1348,9 @@ public static partial class DesignScene
             sb.Append("{\"id\":").Append(h.Id).Append(",\"name\":").Append(Q(h.Name))
               .Append(",\"x\":").Append(ShipDesign.S(h.X)).Append(",\"y\":").Append(ShipDesign.S(h.Y)).Append(",\"z\":").Append(ShipDesign.S(h.Z))
               .Append(",\"mirror\":").Append(h.Mirror ? "true" : "false").Append(",\"cut\":").Append(h.Cut ? "true" : "false").Append(",\"skin\":").Append(Q(h.Skin))
-              .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
+              .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(CladMat(d, h))).Append(",\"damage\":").Append(ShipDesign.S(d.CladSource(h).Damage)).Append('}')
+              .Append(",\"cladFrom\":").Append(h.CladFrom != 0 && d.Hull(h.CladFrom) is not null ? h.CladFrom.ToString() : "null")
+              .Append(",\"cladOwn\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
               .Append(",\"material\":").Append(Q(h.Material)).Append(",\"damage\":").Append(ShipDesign.S(h.Damage)).Append(",\"damageSeed\":").Append(h.DamageSeed)
               .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
               .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
@@ -1381,12 +1407,13 @@ public static partial class DesignScene
               .Append(",\"faceA\":").Append(Q(HullJoin.Faces[j.A.Face])).Append(",\"faceB\":").Append(Q(HullJoin.Faces[j.B.Face]))
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
+              .Append(",\"matchClad\":").Append(j.MatchClad ? "true" : "false").Append(",\"matchButtress\":").Append(j.MatchButtress ? "true" : "false")
               .Append(",\"material\":").Append(Q(d.Hull(j.A.Hull)?.Material ?? "Painted")).Append(",\"cladMaterial\":").Append(Q(d.Hull(j.A.Hull)?.CladMaterial ?? "Hull"))
               .Append(",\"mesh\":");
             if (shown is not null)
                 sb.Append(empty);
             else
-            sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
+            sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + (j.MatchClad || j.MatchButtress ? "@" + (d.Hull(j.A.Hull) is { } jha ? CladKeyOf(d.CladSource(jha)) : "") : "") + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
                 () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); }));
             sb.Append('}');
         }
