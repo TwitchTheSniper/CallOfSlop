@@ -28,7 +28,10 @@ public static partial class DesignScene
         // Local frame: a across, l along, u up from the floor (stacked plans have up as -Z, as the shell's door test does).
         var sg = d.Stacked ? -1.0 : 1.0;
         var floor = d.Stacked ? hi[up] : lo[up];
-        double A0 = lo[ax], A1 = hi[ax], L0 = lo[al], L1 = hi[al], H = hi[up] - lo[up];
+        // Inside its own shell (Karl, 2026-11-25: the walls sit in the room's box): the sides by the shell's depth, the ceiling too.
+        var sd = ShellDepth(r);
+        var sdl = sd > 0 ? sd + 0.003 : 0;
+        double A0 = lo[ax] + (r.ToHull ? 0 : sd), A1 = hi[ax] - (r.ToHull ? 0 : sd), L0 = lo[al] + sdl, L1 = hi[al] - sdl, H = hi[up] - lo[up] - sd;
         var panel = DesignMesh.Hex(r.PanelColour);
         var trim = DesignMesh.Hex(r.TrimColour);
         string Hx((byte R, byte G, byte B) c) => $"#{c.R:x2}{c.G:x2}{c.B:x2}";
@@ -80,7 +83,7 @@ public static partial class DesignScene
         }
 
         const double P = 0.003; // proud of the inside faces
-        const double FL = 0.089; // the floor layer sits on the page's 8 cm floor marker, 3 mm proud of its top
+        var FL = FloorTop(r) + 0.009; // the floor layer sits on the page's 8 cm floor marker (or the shell's floor), 9 mm proud of its top
         var sides = !r.ToHull;
         var foreEnd = !(r.ToHull && r.RunOn && !d.Stacked);
         var aftEnd = !(r.ToHull && r.RunAft && !d.Stacked);
@@ -98,7 +101,8 @@ public static partial class DesignScene
         // ---- floor: plates (the hull's plate layer, on a flat grid) over a dark groove base, lit strips along the walls.
         {
             double fa0 = A0 + P, fa1 = A1 - P, fl0 = L0 + P, fl1 = L1 - P;
-            Box(m, fa0, fa1, fl0, fl1, FL, FL + 0.004, groove, null);
+            if (r.Floor is "Plates" or "Hex") // the other floors are the shell's dressing
+                Box(m, fa0, fa1, fl0, fl1, FL, FL + 0.004, groove, null);
             int nu = Math.Clamp((int)Math.Round((fa1 - fa0) / 0.6), 1, 40), nv = Math.Clamp((int)Math.Round((fl1 - fl0) / 0.6), 1, 60);
             var taken = new bool[nu, nv];
             for (var x = 0; x < nu; x++)
@@ -109,7 +113,7 @@ public static partial class DesignScene
                     taken[x, y] = !Clear(W(fa0 + (fa1 - fa0) * x / nu, fl0 + (fl1 - fl0) * y / nv, 0), W(fa0 + (fa1 - fa0) * (x + 1) / nu, fl0 + (fl1 - fl0) * (y + 1) / nv, 0.02))
                         || !d.Hulls.Any(h => h.Depth(c[0], c[1], c[2]) > 0.01);
                 }
-            if (nu * nv * 30 < budget)
+            if (nu * nv * 30 < budget && r.Floor is ("Plates" or "Hex"))
             {
                 var fm = new DesignMesh();
                 var n1 = W(0, 0, 1);

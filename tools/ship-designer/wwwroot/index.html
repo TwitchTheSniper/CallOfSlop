@@ -103,6 +103,13 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
     padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.spick { position: relative; display: inline-block; }
+.spick > button { display: inline-flex; align-items: center; gap: 6px; }
+.spick .sw { width: 22px; height: 16px; border: 1px solid var(--line); border-radius: 3px; flex: none; }
+.spick .grid { position: absolute; z-index: 20; top: 100%; left: 0; display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.spick .grid button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; font-size: 11px; }
+.spick .grid button .sw { width: 52px; height: 36px; }
+.spick .grid button.on { outline: 2px solid var(--accent); }
 </style>
 
 <div class="app">
@@ -1128,6 +1135,31 @@ function slider(label, v, min, max, step, unit, onInput, onDone, def, onReset) {
 }
 // A default from the catalogue in slider units (x scale), and a "Reset all" button for a section.
 const dflt = (kind, key, scale = 1) => Math.round(CAT.defaults[kind][key] * scale * 1e6) / 1e6;
+// Swatches for the gallery drop-downs (Room view's walls and floors): a CSS picture of each look, no meshes.
+const SWATCH = {
+  Plates: "repeating-linear-gradient(0deg,#9aa3ab 0 10px,#3a3f45 10px 11px),#9aa3ab", Hex: "radial-gradient(circle at 50% 50%,#a9b1b8 45%,#3a3f45 47%) 0 0/9px 9px,#3a3f45",
+  Plain: "#7d848c", Diamond: "repeating-linear-gradient(45deg,#b7bec6 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,#b7bec6 0 2px,#9aa2aa 2px 7px)",
+  Grating: "repeating-linear-gradient(90deg,#7f878e 0 2px,#24282c 2px 5px)", Tiles: "linear-gradient(90deg,#3c4146 1px,transparent 1px) 0 0/10px 10px,linear-gradient(#3c4146 1px,#cfd3d6 1px) 0 0/10px 10px",
+  Rubber: "repeating-linear-gradient(90deg,#37393d 0 3px,#2b2d30 3px 5px)", Wood: "repeating-linear-gradient(0deg,#8a5d3b 0 5px,#2a1f17 5px 6px,#7a5034 6px 11px,#2a1f17 11px 12px,#9a6a44 12px 17px,#2a1f17 17px 18px)",
+  Hazard: "linear-gradient(#70777e,#70777e) center/60% 55% no-repeat,repeating-linear-gradient(45deg,#e2b21c 0 5px,#1c1d1f 5px 10px)",
+  Panels: "linear-gradient(90deg,#55606a 2px,transparent 2px) 0 0/16px 14px,linear-gradient(#55606a 2px,#a9b4bd 2px) 0 0/16px 14px",
+  Ribbed: "repeating-linear-gradient(90deg,#4d565e 0 4px,#8c97a0 4px 11px)", Padded: "radial-gradient(circle,#b9c2c9 55%,#7b858d 60%) 0 0/11px 11px,#7b858d",
+  Grate: "repeating-linear-gradient(0deg,#8a9097 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,#8a9097 0 2px,#4a5056 2px 12px)",
+  Conduit: "linear-gradient(transparent 20%,#6f7a80 20% 32%,transparent 32% 66%,#6f7a80 66% 80%,transparent 80%),#8c97a0",
+  Industrial: "linear-gradient(transparent 62%,#b48a3c 62% 68%,#4d565e 68%),repeating-linear-gradient(90deg,#8a9097 0 3px,#a3adb5 3px 16px)",
+};
+function swatchPick(label, value, options, onPick) {
+  const box = el("div", { class: "spick" });
+  const btn = el("button", { "aria-haspopup": "true", "aria-label": label }, el("span", { class: "sw", style: `background:${SWATCH[value] || "#888"}` }), value);
+  let grid = null;
+  const close = () => { grid?.remove(); grid = null; document.removeEventListener("pointerdown", away, true); };
+  const away = e => { if (!box.contains(e.target)) close(); };
+  btn.addEventListener("click", () => { if (grid) return close();
+    grid = el("div", { class: "grid" }, ...options.map(k => el("button", { class: k === value ? "on" : "", title: k, onclick: () => { close(); onPick(k); } }, el("span", { class: "sw", style: `background:${SWATCH[k] || "#888"}` }), k)));
+    box.append(grid); document.addEventListener("pointerdown", away, true); });
+  box.append(btn);
+  return box;
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1613,13 +1645,21 @@ function inspector() {
       ...(roomView ? [el("h3", {}, "Walls"),
       slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }, dflt("room", "wallThick", 100)),
       el("div", { class: "row" }, resetAll("Wall thickness back to its default", () => { const a = cmd({ op: "setRoom", id: r.id, ...dfltOf("room", ["wallThick"]) }); if (a.error) toast(a.error); })),
-      el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
+      el("p", { class: "hint" }, "A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none)."),
+      (() => { const setW = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
+        const wc = el("input", { type: "color", value: r.wallColour || "#6b7480", "aria-label": "Wall colour" }); wc.addEventListener("change", () => setW({ wallColour: wc.value }));
+        return el("div", {},
+          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"], k => setW({ wallStyle: k })),
+            el("span", {}, "Colour"), wc, el("button", { onclick: () => setW({ wallColour: "" }) }, "Kind's")),
+          el("div", { class: "row" }, el("span", {}, "Floor"), swatchPick("Floor", r.floor || "Plates", ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], k => setW({ floor: k }))),
+          slider("Seed", r.seed ?? 0, 0, 999, 1, "", () => {}, v => setW({ seed: v }), dflt("room", "seed")),
+          el("div", { class: "row" }, resetAll("Cladding, colour, floor and seed back to their defaults", () => setW(dfltOf("room", ["wallStyle", "wallColour", "floor", "seed"])))),
+          el("p", { class: "hint" }, "Cladding is relief on the walls when the interior style is Off (the interior has its own). Plates and Hex floors are the interior's plate layer; the others are laid with or without it.")); })(),
       el("h3", {}, "Interior"),
       (() => { const setI = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
         const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => setI({ [key]: c.value })); return c; };
         return el("div", {},
           el("div", { class: "row" }, el("span", {}, "Style"), ...["Off", "Clean", "Industrial"].map(k => el("button", { class: (r.interior || "Off") === k ? "on" : "", onclick: () => setI({ interior: k }) }, k))),
-          el("div", { class: "row" }, el("span", {}, "Floor"), ...["Plates", "Hex"].map(k => el("button", { class: (r.floor || "Plates") === k ? "on" : "", onclick: () => setI({ floor: k }) }, k))),
           slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v }), dflt("room", "ribSpacing")),
           el("div", { class: "row" }, resetAll("Rib spacing back to its default", () => setI(dfltOf("room", ["ribSpacing"])))),
           el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),

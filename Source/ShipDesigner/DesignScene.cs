@@ -1502,13 +1502,14 @@ public static partial class DesignScene
                 sb.Append(MeshPart("rb" + r.Id, rk, () => RoomBoxMesh(d, r)));
             }
             sb.Append(",\"wallThick\":").Append(ShipDesign.S(r.WallThick));
-            if (full && r.WallThick > 0.005)
+            if (full && (r.WallThick > 0.005 || r.Floor is not ("Plates" or "Hex")))
             {
                 sb.Append(",\"wallMesh\":");
-                sb.Append(MeshPart("rs" + r.Id, rk, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
+                sb.Append(MeshPart("rs" + r.Id, ik, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
-              .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor));
+              .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor))
+              .Append(",\"wallStyle\":").Append(Q(r.WallStyle)).Append(",\"wallColour\":").Append(Q(r.WallColour)).Append(",\"seed\":").Append(r.Seed);
             if (full && r.Interior != "Off")
             {
                 sb.Append(Part("ri" + r.Id, ik, () =>

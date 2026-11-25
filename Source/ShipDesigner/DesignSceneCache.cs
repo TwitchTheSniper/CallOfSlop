@@ -57,7 +57,7 @@ public static partial class DesignScene
             j.AsObject().Remove("matchButtress");
         }
         foreach (var r in o["rooms"]!.AsArray())
-            foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor" })
+            foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor", "wallStyle", "wallColour", "seed" })
                 r!.AsObject().Remove(k);
         var key = o.ToJsonString();
         if (_check is { } hit && hit.Key == key)
@@ -85,7 +85,7 @@ public static partial class DesignScene
         foreach (var r in d.Rooms)
         {
             var o = r.ToJson();
-            foreach (var n in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor" })
+            foreach (var n in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor", "wallStyle", "wallColour", "seed" })
                 o.Remove(n);
             k.Append(r.Id).Append(':').Append(o.ToJsonString()).Append('|');
         }

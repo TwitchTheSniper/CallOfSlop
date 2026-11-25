@@ -689,6 +689,9 @@ public sealed class DesignEditor
                     if (o["panelColour"] is not null) q.PanelColour = Room.Colour(Str(o, "panelColour"), q.PanelColour);
                     if (o["trimColour"] is not null) q.TrimColour = Room.Colour(Str(o, "trimColour"), q.TrimColour);
                     if (o["lights"] is not null) q.Lights = (bool)o["lights"]!;
+                    if (o["wallStyle"] is not null) q.WallStyle = Room.WallStyles.FirstOrDefault(k => string.Equals(k, Str(o, "wallStyle"), StringComparison.OrdinalIgnoreCase)) ?? q.WallStyle;
+                    if (o["wallColour"] is not null) q.WallColour = Str(o, "wallColour") is { Length: > 0 } wc ? Room.Colour(wc, q.WallColour) : "";
+                    if (o["seed"] is not null) q.Seed = Math.Clamp((int)Math.Round(D(o, "seed")), 0, Room.SeedMax);
                     if (o["floor"] is not null) q.Floor = Room.FloorKinds.FirstOrDefault(k => string.Equals(k, Str(o, "floor"), StringComparison.OrdinalIgnoreCase)) ?? q.Floor;
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.

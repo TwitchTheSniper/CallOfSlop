@@ -236,7 +236,7 @@ public sealed class Room
     public List<RoomExt> Exts = []; // the room grown out of a wall or up through its ceiling, in a shape (Karl, 2026-11-24)
     public bool RunAft; // the same at its aft end, into the stern (Karl, 2026-11-24: an option for the rear as well)
     public bool RunOn; // with ToHull: its open ends run on into the nose or the stern while there is floor (Karl, 2026-11-24), a player's choice
-    public double WallThick = 0.1; // its walls' shell, built outward from its box (Karl, 2026-11-24)
+    public double WallThick = 0.1; // its walls' shell, inside its box (Karl, 2026-11-25; outward before)
     public const double WallThickMax = 0.3;
     // Its interior cladding (the user's corridor references, 2026-11-24): a style, the ribs' spacing, two colours and its lights.
     public static readonly string[] InteriorStyles = ["Off", "Clean", "Industrial"];
@@ -247,7 +247,13 @@ public sealed class Room
     public string TrimColour = "#e0a526";
     public bool Lights = true;
     /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
-    public static readonly string[] FloorKinds = ["Plates", "Hex"];
+    public static readonly string[] FloorKinds = ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"];
+    /// <summary>Its walls' relief in Room view when it has no interior cladding (Karl, 2026-11-25).</summary>
+    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"];
+    public string WallStyle = "Plain";
+    public string WallColour = ""; // empty: its kind's colour, darkened
+    public int Seed; // varies the random parts of its walls and floor
+    public const int SeedMax = 999;
     public string Floor = "Plates";
     public static string Colour(string? v, string or) => v is { Length: 7 } && v[0] == '#' && v.Skip(1).All(Uri.IsHexDigit) ? v.ToLowerInvariant() : or;
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
@@ -260,7 +266,7 @@ public sealed class Room
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
         ["wallThick"] = ShipDesign.R(WallThick),
-        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights, ["floor"] = Floor,
+        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights, ["floor"] = Floor, ["wallStyle"] = WallStyle, ["wallColour"] = WallColour, ["seed"] = Seed,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -289,6 +295,9 @@ public sealed class Room
         r.TrimColour = Colour((string?)o["trimColour"], "#e0a526");
         r.Lights = (bool?)o["lights"] ?? true;
         r.Floor = FloorKinds.FirstOrDefault(k => string.Equals(k, (string?)o["floor"], StringComparison.OrdinalIgnoreCase)) ?? "Plates";
+        r.WallStyle = WallStyles.FirstOrDefault(k => string.Equals(k, (string?)o["wallStyle"], StringComparison.OrdinalIgnoreCase)) ?? "Plain";
+        r.WallColour = (string?)o["wallColour"] is { Length: > 0 } wc ? Colour(wc, "") : "";
+        r.Seed = Math.Clamp((int?)o["seed"] ?? 0, 0, SeedMax);
         r.Normalise();
         return r;
     }
