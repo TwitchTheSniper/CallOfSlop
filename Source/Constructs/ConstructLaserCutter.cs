@@ -28,7 +28,7 @@ public static partial class ConstructLaserCutter
         public int OffTenths; // the offcut, tenths of a unit of Material (the blank's mass less the cut part's)
         public float Longest, Next, Least; // the blank's bounds, sorted (m)
         public Vector2[]? Path; // the head's path over the blank (m: along, across), read once for the look (ConstructLaserCutterBed.cs)
-        public float PathLength;
+        public HeadPlan? Plan; // ...and the heads' plan over it for the bed it last lay on (ConstructLaserCutterBed.cs)
         public ConstructPartDef? BlankDef; // ...and the blank drawn on its bed, as it lies there (a turn for each way the bed runs)
         public byte BlankRotAlong = 255, BlankRotAcross = 255;
     }

@@ -56,14 +56,159 @@ public static partial class ConstructLaserCutter
 
     // ---- The look: the bridge and its heads follow the cut's outline -------------------------------------------------------------
 
-    /// <summary>How far the bridge parks in from the bed's in edge, and a head's reach either side of its block's middle (m).</summary>
-    private const float HeadRest = 0.48f, HeadReach = 0.72f, Margin = 0.25f;
+    /// <summary>How far the bridge parks in from the bed's in edge, the blank's margin, and the closest two heads come (a carriage's width, m).</summary>
+    private const float HeadRest = 0.48f, Margin = 0.25f, HeadGap = 0.4f;
+
+    /// <summary>
+    /// The heads' plan for one cut key on one size of bed (Laser Cutter Lab, Sean 2026-11-24): every head rides the bridge on its own
+    /// carriage, so heads cut at once wherever their cuts sit side by side along the bridge. Cuts whose outlines run through the same
+    /// stations along the bed (an opening repeated across the sheet, the corners at one end) are one pass, a block of neighbouring heads
+    /// taking one each; the heads with nothing to cut in a pass run out to the bridge's ends, packed a carriage apart, clear of the working
+    /// ones. The plan is walked over the cut's own time (the law already counts every head's power). Frames: the bridge's place along the
+    /// blank, each head's place across it, and which heads cut on the way into the frame. Blank-relative metres (along, across).
+    /// </summary>
+    public sealed class HeadPlan
+    {
+        public int Key;
+        public float[] Time = [];   // each frame's end, 0..1 of the cut
+        public float[] Along = [];  // the bridge's place (m along the blank)
+        public float[] Across = []; // frames x heads: each head's place (m across the blank)
+        public bool[] On = [];      // frames x heads: cutting on the way into the frame
+    }
+
+    /// <summary>The path's closed outlines, one cut each (CutOutline closes each one on its first point; the moves between them are dropped).</summary>
+    private static List<Vector2[]> Loops(Vector2[] path)
+    {
+        var loops = new List<Vector2[]>();
+        var start = 0;
+        for (var k = 1; k < path.Length; k++)
+            if (k - start >= 2 && Vector2.DistanceSquared(path[k], path[start]) < 1e-8f)
+            {
+                loops.Add(path[start..(k + 1)]);
+                start = k + 1;
+            }
+        if (path.Length - start >= 2)
+            loops.Add(path[start..]);
+        return loops;
+    }
+
+    /// <summary>
+    /// Builds a job's plan for a bed <paramref name="heads"/> blocks across and <paramref name="rows"/> along, its length along the bed's
+    /// longer side or not (<paramref name="along"/>). Allocates: once per key and bed size, by the job's cache.
+    /// </summary>
+    public static HeadPlan PlanHeads(Vector2[] path, float longest, float next, int heads, int rows, float cell, bool along)
+    {
+        int n = Math.Max(1, heads);
+        float alongLen = along ? longest : next, acrossLen = along ? next : longest;
+        var loops = Loops(path);
+        // (u: along the bed, the bridge's way; v: across it, the heads' way; both from the blank's corner)
+        var cuts = loops.ConvertAll(l => Array.ConvertAll(l, q => along ? q : new Vector2(q.Y, q.X)));
+        float aLo = acrossLen * 0.5f - n * cell * 0.5f, aHi = acrossLen * 0.5f + n * cell * 0.5f; // (the bridge's ends, across)
+        var restU = alongLen * 0.5f - (rows - 1) * cell * 0.5f - HeadRest; // (where the bridge parks: its rest over the first row)
+        var rest = new float[n];
+        for (var h = 0; h < n; h++)
+            rest[h] = aLo + (h + 0.5f) * cell;
+        var gap = MathF.Min(HeadGap, cell); // (packed a carriage apart)
+        // Passes: cuts that run through the same stations along the bed (point for point), wide apart across it.
+        var used = new bool[cuts.Count];
+        var passes = new List<List<int>>();
+        var order = Enumerable.Range(0, cuts.Count).OrderBy(i => cuts[i].Min(q => q.X)).ToList();
+        (float, float) Span(int i) => (cuts[i].Min(q => q.Y), cuts[i].Max(q => q.Y));
+        foreach (var i in order)
+        {
+            if (used[i])
+                continue;
+            used[i] = true;
+            var group = new List<int> { i };
+            foreach (var j in order)
+            {
+                if (used[j] || group.Count >= n || cuts[j].Length != cuts[i].Length)
+                    continue;
+                var same = true;
+                for (var k = 0; k < cuts[i].Length && same; k++)
+                    same = MathF.Abs(cuts[j][k].X - cuts[i][k].X) < 0.01f;
+                var (j0, j1) = Span(j);
+                foreach (var g in group)
+                {
+                    var (g0, g1) = Span(g);
+                    same &= j0 > g1 + gap || j1 < g0 - gap;
+                }
+                if (same)
+                {
+                    used[j] = true;
+                    group.Add(j);
+                }
+            }
+            group.Sort((x, y) => Span(x).Item1.CompareTo(Span(y).Item1));
+            passes.Add(group);
+        }
+        // Frames, weighted by length (a rapid move counts a quarter, a pierce a tenth of a metre), then scaled to 0..1.
+        var time = new List<float>();
+        var alongF = new List<float>();
+        var acrossF = new List<float>();
+        var onF = new List<bool>();
+        var cur = (float[])rest.Clone();
+        float curU = restU, t = 0;
+        void Frame(float w, float u, float[] a, bool[]? on)
+        {
+            t += MathF.Max(1e-3f, w);
+            time.Add(t);
+            alongF.Add(u);
+            acrossF.AddRange(a);
+            for (var h = 0; h < n; h++)
+                onF.Add(on != null && on[h]);
+            curU = u;
+            cur = a;
+        }
+        foreach (var group in passes)
+        {
+            var m = group.Count;
+            var mid = group.Average(g => (Span(g).Item1 + Span(g).Item2) * 0.5f);
+            var k0 = Math.Clamp((int)MathF.Round((mid - aLo) / cell - m * 0.5f), 0, n - m);
+            var lo = group.Min(g => Span(g).Item1);
+            var hi = group.Max(g => Span(g).Item2);
+            var a = new float[n];
+            for (var h = 0; h < n; h++)
+                a[h] = h < k0 ? MathF.Min(aLo + 0.2f + gap * h, lo - gap * (k0 - h))
+                    : h >= k0 + m ? MathF.Max(aHi - 0.2f - gap * (n - 1 - h), hi + gap * (h - k0 - m + 1))
+                    : cuts[group[h - k0]][0].Y;
+            var move = MathF.Abs(cuts[group[0]][0].X - curU);
+            for (var h = 0; h < n; h++)
+                move = MathF.Max(move, MathF.Abs(a[h] - cur[h]));
+            Frame(move * 0.25f, cuts[group[0]][0].X, a, null);
+            var on = new bool[n];
+            for (var h = k0; h < k0 + m; h++)
+                on[h] = true;
+            Frame(0.1f, curU, a, on); // (the pierce)
+            for (var k = 1; k < cuts[group[0]].Length; k++)
+            {
+                var b = (float[])cur.Clone();
+                var w = 0f;
+                for (var r = 0; r < m; r++)
+                {
+                    var q = cuts[group[r]];
+                    b[k0 + r] = q[k].Y;
+                    w = MathF.Max(w, Vector2.Distance(q[k], q[k - 1]));
+                }
+                Frame(w, cuts[group[0]][k].X, b, on);
+            }
+        }
+        var back = MathF.Abs(restU - curU);
+        for (var h = 0; h < n; h++)
+            back = MathF.Max(back, MathF.Abs(rest[h] - cur[h]));
+        Frame(back * 0.25f, restU, rest, null);
+        var plan = new HeadPlan { Time = [.. time], Along = [.. alongF], Across = [.. acrossF], On = [.. onF] };
+        for (var k = 0; k < plan.Time.Length; k++)
+            plan.Time[k] /= t;
+        return plan;
+    }
 
     /// <summary>
     /// The look of a Bed Block <paramref name="block"/> of cutter <paramref name="core"/> at time <paramref name="now"/> while it cuts: how far
     /// the bridge has run from its rest (body frame), how far this block's head stands off its block's middle along the bridge, whether this
-    /// block's head is the one cutting now, and the point under it (body frame, on the slats). False: the block isn't in the bed's first row
-    /// (it carries no bridge) or there is no job; everything stays at rest. Nothing allocates once the job's path is read.
+    /// block's head is cutting now, and the point under it (body frame, on the slats). False: the block isn't in the bed's first row (it
+    /// carries no bridge) or there is no job; everything stays at rest. Heads cut at once (<see cref="HeadPlan"/>). Nothing allocates once
+    /// the job's plan for this size of bed is made.
     /// </summary>
     public static bool LookPose(Construct c, int block, int core, double now, out Vector3 bridge, out Vector3 head, out bool active, out Vector3 tip)
     {
@@ -82,39 +227,46 @@ public static partial class ConstructLaserCutter
         int cx = (int)MathF.Round(mid.X / cell), cz = (int)MathF.Round(mid.Z / cell);
         if (cz != asm.Z0 || cx < asm.X0 || cx >= asm.X0 + asm.W)
             return false;
-        // Where the path is now: one cut a cycle, as long as the cut takes (every peer reads the same key and the same law).
-        if (j.Path == null)
-        {
-            j.Path = HullLoft.CutOutline(order.Name, j.Longest, j.Next) ?? [Vector2.Zero, new Vector2(j.Longest, 0)];
-            var len = 0f;
-            for (var k = 1; k < j.Path.Length; k++)
-                len += Vector2.Distance(j.Path[k - 1], j.Path[k]);
-            j.PathLength = MathF.Max(0.01f, len);
-        }
-        var secs = Seconds(j, c, core);
-        var s = (float)(now % secs / secs) * j.PathLength;
-        var at = j.Path[^1];
-        for (var k = 1; k < j.Path.Length; k++)
-        {
-            var seg = Vector2.Distance(j.Path[k - 1], j.Path[k]);
-            if (s <= seg)
-            {
-                at = Vector2.Lerp(j.Path[k - 1], j.Path[k], seg > 1e-5f ? s / seg : 1);
-                break;
-            }
-            s -= seg;
-        }
-        // The blank lies in the middle of the bed, its length along the bed's longer side.
+        // The blank lies in the middle of the bed, its length along the bed's longer side; the plan is read once per key and bed size.
         var along = asm.L >= asm.W;
-        float u = along ? at.X : at.Y, v = along ? at.Y : at.X;
-        float inEdge = o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * cell - (along ? j.Longest : j.Next) * 0.5f - Margin;
-        float sideEdge = o.X + (asm.X0 + (asm.W - 1) * 0.5f) * cell - (along ? j.Next : j.Longest) * 0.5f - Margin;
+        var key = asm.W * 64 + asm.L;
+        if (j.Plan == null || j.Plan.Key != key)
+        {
+            j.Path ??= HullLoft.CutOutline(order.Name, j.Longest, j.Next) ?? [Vector2.Zero, new Vector2(j.Longest, 0)];
+            j.Plan = PlanHeads(j.Path, j.Longest, j.Next, asm.W, asm.L, cell, along);
+            j.Plan.Key = key;
+        }
+        var plan = j.Plan;
+        var secs = Seconds(j, c, core);
+        var f = (float)(now % secs / secs);
+        int k = 0, lo = 0, hi = plan.Time.Length - 1;
+        while (lo <= hi) // (the first frame ending after f)
+        {
+            var m = (lo + hi) >> 1;
+            if (plan.Time[m] < f)
+                lo = m + 1;
+            else
+            {
+                k = m;
+                hi = m - 1;
+            }
+        }
+        if (lo >= plan.Time.Length)
+            k = plan.Time.Length - 1;
+        var t0 = k > 0 ? plan.Time[k - 1] : 0f;
+        var s = Math.Clamp((f - t0) / MathF.Max(1e-6f, plan.Time[k] - t0), 0f, 1f);
+        var h = cx - asm.X0;
+        int n = asm.W, k1 = k > 0 ? k - 1 : plan.Time.Length - 1; // (frame -1 is the last: the plan ends at its rest)
+        var u = float.Lerp(plan.Along[k1], plan.Along[k], s);
+        var v = float.Lerp(plan.Across[k1 * n + h], plan.Across[k * n + h], s);
+        float alongLen = along ? j.Longest : j.Next, acrossLen = along ? j.Next : j.Longest;
+        float inEdge = o.Z + (asm.Z0 + (asm.L - 1) * 0.5f) * cell - alongLen * 0.5f;
+        float sideEdge = o.X + (asm.X0 + (asm.W - 1) * 0.5f) * cell - acrossLen * 0.5f;
         var rowMid = o.Z + asm.Z0 * cell;
         var colMid = o.X + cx * cell;
-        var dz = Math.Clamp(inEdge + Margin + u - (rowMid - HeadRest), -0.12f, asm.L * cell - HeadRest);
-        var x = sideEdge + Margin + v;
-        var dx = Math.Clamp(x - colMid, -HeadReach, HeadReach);
-        active = MathF.Abs(x - colMid) <= cell * 0.5f || cx == asm.X0 && x < colMid || cx == asm.X0 + asm.W - 1 && x > colMid;
+        var dz = Math.Clamp(inEdge + u - (rowMid - HeadRest), -0.12f, asm.L * cell - HeadRest);
+        var dx = sideEdge + v - colMid;
+        active = plan.On[k * n + h];
         bridge = Vector3.Transform(new Vector3(0, 0, dz), turn);
         head = Vector3.Transform(new Vector3(dx, 0, 0), turn);
         tip = cp.Pos + Vector3.Transform(new Vector3(colMid + dx, d.ExtDieAt.Y, rowMid - HeadRest + dz), turn);
