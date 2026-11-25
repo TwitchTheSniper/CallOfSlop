@@ -57,6 +57,12 @@ public sealed partial class ConstructWorld
     public const float SupportReach = 0.15f; // a world node's surface is within its radius plus this
     public const float PipeFlow = 2f; // litres a second through a world pipe
     public const float CableFlow = 5f; // kW through a world power cable
+    public const float HeavyReserve = ConstructPower.StarterKJ * 2; // kJ a heavy cable leaves in its source's batteries (a genset's starter)
+
+    /// <summary>kW a world power cable from part <paramref name="from"/> to part <paramref name="to"/> carries: a heavy power cable (both ends a
+    /// heavy power terminal, a battery with a "cableKw") the lower of their ratings, any other <see cref="CableFlow"/>.</summary>
+    public static float CableKw(ConstructPartDef from, ConstructPartDef to) =>
+        from.CableKw > 0 && to.CableKw > 0 ? MathF.Min(from.CableKw, to.CableKw) : CableFlow;
 
     public readonly WLink[] WorldLinks = new WLink[MaxWorldLinks];
     public int WorldLinkCount;
@@ -479,7 +485,11 @@ public sealed partial class ConstructWorld
                     MoveFuel(cf, l.From, ct, PipeFlow * dt);
                 break;
             case RouteType.Power:
-                MoveCharge(cf, ct, CableFlow * dt);
+                var kw = CableKw(cf.DefOf(l.From), ct.DefOf(l.To));
+                if (kw > CableFlow)
+                    MoveCharge(cf, ct, MathF.Min(kw * dt, cf.Charge - HeavyReserve)); // (a heavy cable leaves its genset enough to start on)
+                else
+                    MoveCharge(cf, ct, CableFlow * dt);
                 break;
             case RouteType.Data:
                 ct.XWireIn++; // (the logic runs for it: ConstructLogic reads the source's value)

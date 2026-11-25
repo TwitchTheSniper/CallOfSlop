@@ -555,6 +555,7 @@ public static class ConstructBuild
         public List<int> StepFuse = new(); // each step's fused unit ("fuse": 1, 2, ...: the steps with one number are one unit, under a new tag when built; 0: none; ConstructFuse.cs)
         public List<byte> StepFinish = new(); // each step's texture ("finish": a material's name, Materials/Surfaces.json; 0: its own materials, or a name this build doesn't have; ConstructFinish.cs)
         public List<ConstructCargo.CarrySpec> Carry = new(); // craft it is built carrying in its docks ("carry": [{"blueprint", "at", "turn"}]: the Zero Day's Shuttle; ConstructCargo.BuildCarry)
+        public List<ConstructCargo.CarrySpec> Beside = new(); // anchored bodies spawned beside it ("beside": [{"blueprint", "at", "turn"}]: Zero Day Works II's gensets), each tied by a heavy power cable from its first heavy power terminal to this one's nearest (SpawnBeside)
         public string Tow = ""; // a blueprint it spawns coupled behind it ("tow"): its first eye on this one's first ball (BuildOnGround)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "raider"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
@@ -840,6 +841,12 @@ public static class ConstructBuild
                         throw new ConstructPartException($"{file}: \"carry\" lists up to 8 craft");
                     foreach (var cy in p.Value.EnumerateArray())
                         bp.Carry.Add(ConstructCargo.ParseCarry(cy, file, bp.Carry.Count));
+                    break;
+                case "beside":
+                    if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > 16)
+                        throw new ConstructPartException($"{file}: \"beside\" lists up to 16 bodies");
+                    foreach (var by in p.Value.EnumerateArray())
+                        bp.Beside.Add(ConstructCargo.ParseCarry(by, file, bp.Beside.Count, "beside"));
                     break;
                 case "tow":
                     bp.Tow = p.Value.GetString() ?? "";
@@ -1358,7 +1365,7 @@ public static class ConstructBuild
     /// upright along the local up there (a planetoid: away from its centre; <paramref name="yaw"/> turns it about that up).
     /// All at once: a big blueprint costs a tick 10 to 20 ms, so the game's spawns of big ones go through <see cref="GroundJob"/>.
     /// </summary>
-    public static Construct? BuildOnGround(ConstructWorld world, Blueprint bp, Vector3 ground, float yaw, out string why, Blueprint? tow = null)
+    public static Construct? BuildOnGround(ConstructWorld world, Blueprint bp, Vector3 ground, float yaw, out string why, Blueprint? tow = null, bool beside = true)
     {
         var rot = GroundRot(ground, yaw);
         var run = new BuildRun { KeepPartOf = bp.Loot.Count > 0 || bp.Stored.Count > 0 };
@@ -1372,7 +1379,61 @@ public static class ConstructBuild
         SetDown(world, c, bp, run.PartOf, ground, rot);
         if ((tow ?? (bp.Tow.Length > 0 ? FindBlueprint(bp.Tow) : null)) is { } behind)
             SpawnTow(world, c, behind, ground, yaw, rot, null);
+        if (beside)
+            SpawnBeside(world, c, bp);
         return c;
+    }
+
+    /// <summary>
+    /// The bodies a blueprint spawns beside it (<c>"beside"</c>: Zero Day Works II's gensets, each a body of its own, as a body runs one engine),
+    /// built where <paramref name="c"/> stands now, at their spots in its frame, and each tied to it by a heavy power cable: a world power link
+    /// from the body's first heavy power terminal (a battery with a <c>"cableKw"</c>) to <paramref name="c"/>'s nearest one, with no nodes.
+    /// Call it once <paramref name="c"/> is where it stays (a site start moves it first). What wouldn't build or link is logged and left out.
+    /// </summary>
+    public static List<Construct> SpawnBeside(ConstructWorld world, Construct c, Blueprint bp)
+    {
+        var made = new List<Construct>(bp.Beside.Count);
+        if (bp.Beside.Count == 0)
+            return made;
+        if (c.Dirty)
+            c.Rebuild();
+        foreach (var spec in bp.Beside)
+        {
+            if (FindBlueprint(spec.Blueprint) is not { } sub || sub.Beside.Count > 0)
+            {
+                Console.WriteLine($"[build] {bp.Name}: beside: no blueprint \"{spec.Blueprint}\" (or it has bodies beside it of its own): left out");
+                continue;
+            }
+            var b = Build(world, sub, c.ToWorld(spec.At), Quaternion.Normalize(c.Rot * Rot24.Quat(spec.Turn)), out var why);
+            if (b == null)
+            {
+                Console.WriteLine($"[build] {bp.Name}: beside: {spec.Blueprint} didn't build: {why}");
+                continue;
+            }
+            b.Owner = c.Owner;
+            b.NpcFaction = c.NpcFaction;
+            b.PrevPos = b.NetPos = b.NetFromPos = b.Pos;
+            b.NetHistReset();
+            b.Rebuild();
+            made.Add(b);
+            int from = -1, to = -1;
+            for (var i = 0; i < b.PartCount && from < 0; i++)
+                if (b.DefOf(i).CableKw > 0)
+                    from = i;
+            var best = float.MaxValue;
+            if (from >= 0)
+                for (var i = 0; i < c.PartCount; i++)
+                    if (c.DefOf(i).CableKw > 0 && Vector3.DistanceSquared(c.ToWorld(c.Parts[i].Pos), b.ToWorld(b.Parts[from].Pos)) is var d && d < best)
+                        (best, to) = (d, i);
+            if (from < 0 || to < 0)
+            {
+                Console.WriteLine($"[build] {bp.Name}: beside: {spec.Blueprint} has no heavy power cable to it (a Heavy Power Terminal on {(from < 0 ? "it" : "the " + bp.Name)} wanted)");
+                continue;
+            }
+            if (world.AddWorldLink(null, RouteType.Power, b, from, ConstructRoutes.PortByName(b.DefOf(from), RouteType.Power, "Power out", false), ReadOnlySpan<WNode>.Empty, c, to, ConstructRoutes.PortByName(c.DefOf(to), RouteType.Power, "Power in", true)) < 0)
+                Console.WriteLine($"[build] {bp.Name}: beside: the world's links are full: {spec.Blueprint} isn't cabled");
+        }
+        return made;
     }
 
     /// <summary>Upright on the ground there, turned by <paramref name="yaw"/> about its up.</summary>
@@ -1549,6 +1610,7 @@ public static class ConstructBuild
             SetDown(World, c, Bp, partOf, ground, rot);
             if (_towJob != null)
                 SpawnTow(World, c, _tow!, ground, yaw, rot, _towJob);
+            SpawnBeside(World, c, Bp);
             return c;
         }
     }

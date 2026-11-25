@@ -23,7 +23,25 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
     public const string File = "Constructs/Blueprints/ZeroDayWorks2.json";
     public const string Layout = "Constructs/Factories/Layouts/ZeroDayWorks2.json";
 
-    public void Make(PartOutput o) => o.File(File, Script.Build(o.Read(Layout)).Text());
+    public const string GensetFile = "Constructs/Blueprints/ZeroDayWorks2Genset.json";
+    public const string GensetName = "Zero Day Works II Genset";
+    public const string Terminal = "Heavy Power Terminal";
+
+    /// <summary>The works' sets: the Engine Kit's large militia set (800 kW asked, its head's 714 kW into the circuit).</summary>
+    private static EngineRequest GensetAsk() => EngineKitGenset.Request(new EngineRequest { PowerKw = EngineKitCli.Presets.First(p => p.Name == "large").Kw, Fuel = "petrol", Tier = 1, Layout = EngineLayout.Auto, Boost = EngineBoost.Auto, Size = -1, Seed = 0 });
+
+    /// <summary>
+    /// Two files: the genset, a blueprint of its own (a body runs one engine, so each set is a body: Sean, 2026-11-25) on its skid with a
+    /// Heavy Power Terminal, and the works, which spawns four of them beside it ("beside"), each on a heavy power cable to a terminal on the floor.
+    /// </summary>
+    public void Make(PartOutput o)
+    {
+        var set = EngineKitGenset.Make(GensetAsk(), "militia", GensetName, Terminal);
+        if (!set.Built)
+            throw new VehicleKitException($"Zero Day Works II's genset: {set.Note}");
+        o.File(GensetFile, set.Text);
+        o.File(File, Script.Build(o.Read(Layout)).Text());
+    }
 
     private sealed partial class Script : BlueprintScript
     {
@@ -573,14 +591,15 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         }
 
         /// <summary>
-        /// A large militia engine generator set (the Engine Kit's `--gen-engine --genset --preset large --style militia`: 800 kW asked, its
-        /// head's 714 kW into the circuit) on its 2 m Foundation skid, the skid's middle at <paramref name="at"/>.
+        /// A large militia engine generator set (<see cref="GensetAsk"/>) as a body of its own beside the works (<see cref="GensetName"/>: a body runs
+        /// one engine, so four on the works ran one), its skid's middle at <paramref name="at"/>, standing on the floor where it stood when it was
+        /// welded on; a Heavy Power Terminal on the floor just past its skid's +x edge, by its own, so the heavy power cable between them is short.
         /// </summary>
         private void Genset(Vector2 at, int n)
         {
-            var r = EngineKitGenset.Request(new EngineRequest { PowerKw = EngineKitCli.Presets.First(p => p.Name == "large").Kw, Fuel = "petrol", Tier = 1, Layout = EngineLayout.Auto, Boost = EngineBoost.Auto, Size = -1, Seed = 0 });
+            var r = GensetAsk();
             var engine = EngineKit.EngineKit.Request(r);
-            if (!engine.Built || engine.Plan is not { } plan)
+            if (!engine.Built || engine.Plan is null)
             {
                 Note($"genset {n}: the engine wouldn't build: {engine.Note}");
                 _missed++;
@@ -589,39 +608,18 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var head = EngineKitGenset.HeadFor(engine.Kw);
             var (tanks, batteries) = EngineKitGenset.Stores(engine);
             var (fx0, fx1, fz0, fz1) = EngineKitGenset.Footprint(engine, head, tanks, batteries);
-            // The skid: Foundations (2 m, their tops on a 0.5 m socket grid) from the floor's whole metres, the head's feet on their grid.
             var mid = new Vector2((fx0 + fx1) * 0.5f, (fz0 + fz1) * 0.5f);
-            var c0 = new Vector2(2 * MathF.Round((at.X - mid.X - 1) / 2) + 1, 2 * MathF.Round((at.Y - mid.Y - 1) / 2) + 1); // (a Foundation's middle under the feet, on an odd metre: never a slab's edge)
-            var feet = V(c0.X + 0.25f, FloorY + 0.3f, c0.Y + 0.25f);
-            int i0 = (int)MathF.Floor((feet.X + fx0 - c0.X + 1) / 2), i1 = (int)MathF.Ceiling((feet.X + fx1 - c0.X - 1) / 2);
-            int j0 = (int)MathF.Floor((feet.Z + fz0 - c0.Y + 1) / 2), j1 = (int)MathF.Ceiling((feet.Z + fz1 - c0.Y - 1) / 2);
-            var palette = FactoryKit.FactoryStyles.Find("militia");
-            var dice = Dice.Of(r.Seed);
-            string frame = palette.Colour(dice, "frame"), power = palette.Colour(dice, "power"), machine = palette.Colour(dice, "machine");
-            for (var j = j0; j <= j1; j++)
-                for (var i = i0; i <= i1; i++)
-                {
-                    var fc = new Vector2(c0.X + 2 * i, c0.Y + 2 * j);
-                    try
-                    {
-                        Keep(Put("Foundation", V(fc.X, FloorY + 0.15f, fc.Y), Up, 0.05f, Tile(fc.X, fc.Y)), fc, frame);
-                    }
-                    catch (VehicleKitException ex)
-                    {
-                        Note($"genset {n}: a Foundation at ({fc.X}, {fc.Y}) not placed: {ex.Message}");
-                        _missed++;
-                    }
-                }
-            try
-            {
-                EngineKitGenset.Place(this, feet, r, plan with { }, head, tanks, batteries, frame, power, machine);
-                Note($"genset {n}: a {engine.Name} ({engine.Kw:0} kW) on a {head}, {tanks} tank(s), {batteries} battery(ies), its skid's middle at ({at.X}, {at.Y})");
-            }
-            catch (VehicleKitException ex)
-            {
-                Note($"genset {n} at ({at.X}, {at.Y}) not placed: {ex.Message}");
-                _missed++;
-            }
+            var c0 = new Vector2(2 * MathF.Round((at.X - mid.X - 1) / 2) + 1, 2 * MathF.Round((at.Y - mid.Y - 1) / 2) + 1); // (its root Foundation's middle, on an odd metre: never a slab's edge)
+            // The set's own frame: its root Foundation (2 m, top at 0.3 m over the set's origin) at c0 on the floor.
+            var fd = Def("Foundation");
+            Beside.Add((GensetName, ToRest(V(c0.X, FloorY + 0.15f, c0.Y) - (fd.BoundsMin + fd.BoundsMax) * 0.5f), 0));
+            var term = EngineKitGenset.TerminalAt(engine, head, tanks, batteries);
+            var edge = c0.X + 2 * MathF.Ceiling((0.25f + term.X + 0.6f - 1) / 2) + 1; // (the skid's +x edge: EngineKitGenset.Build's Foundations)
+            var spot = new Vector2(edge + 0.5f, c0.Y + 0.25f + term.Z);
+            if (Piece(Terminal, spot, Up, Power) is { } t)
+                Note($"genset {n}: a {engine.Name} ({engine.Kw:0} kW) on a {head}, its own body (root Foundation at ({c0.X}, {c0.Y})), cabled to a {Terminal} at ({spot.X}, {spot.Y})");
+            else
+                Note($"genset {n}: no {Terminal} beside it: the set isn't cabled");
         }
     }
 }

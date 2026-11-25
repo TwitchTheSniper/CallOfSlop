@@ -557,7 +557,7 @@ the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (t
   depth must not hit anything; a world node must not sink deeper than it). A world node must sit on a surface (within its
   radius plus 15 cm). The end must be in reach of the player; the start may be any distance behind.
 - **What flows.** Fuel from a tank into another construct's tank (2 l/s, while it has room); charge from a battery or
-  alternator into another construct's batteries (5 kW); signals (the logic reads the source's value like a wire between
+  alternator into another construct's batteries (5 kW; a heavy power cable 1 MW, below); signals (the logic reads the source's value like a wire between
   constructs); items from storage to storage (a chute's move a second). Anchored constructs count as the world.
 - **Moving constructs.** A link with any point on a free (not anchored) construct snaps when that point moves more than
   5 cm or its construct turns more than 3 degrees since the link was made (`SnapMetres`, `SnapDegrees`): it is removed,
@@ -567,6 +567,22 @@ the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (t
 - **Ground going.** Each tick one world node checks its surface is still there (a ray the way it found it when made); if
   it is gone the link breaks ("the ground under it is gone"). Blasts now dig craters (decision 16,
   docs/sandbox/TERRAIN-DIGGING.md); the self-test stands in a world that loses its ground.
+
+- **Heavy power cables** (Sean, 2026-11-25: a body runs one engine, so a works' gensets are bodies of their own, and 5 kW
+  can't carry a genset's output). A **Heavy Power Terminal** (`Constructs/Parts/ShipPower`, the part kit's `ship_batteries`) is a
+  battery (2 MJ of buffer) with a `"cableKw"` in its battery block (1000). A world power cable from one terminal to another carries
+  the lower of the two ratings instead of `CableFlow`'s 5 kW (`WorldLinks.CableKw`), leaving `HeavyReserve` (two starter
+  pulls) in the source's batteries so a genset can always start again. The rating comes from the end parts' files, so the wire,
+  the saves and the linking tool need nothing new: a player lays one terminal-to-terminal with the ordinary power cable. Per tick
+  it is the same one `MoveCharge` as any power cable: no allocation, bounded by the link count (64).
+- **Bodies beside a blueprint** (`"beside": [{"blueprint", "at", "turn"}]`, `ConstructBuild.SpawnBeside`): each named blueprint is
+  built as a body of its own at that spot in the blueprint's frame, owned as it is, and tied to it by a heavy power cable with no
+  nodes from its first Heavy Power Terminal to the blueprint's nearest one. `BuildOnGround` and the sliced spawn's `Join` do it once
+  the body is set down; a site start does it once the site stands where it stays (`GameSiteStart`). What won't build or has no
+  terminal is a `[build] ... beside:` line in `callofslop.log`. Zero Day Works II spawns its four gensets this way
+  (`Zero Day Works II Genset`, from the same generator): measured headless, all four run at 713 kW and 2.85 MW goes down the
+  cables into the works. Not yet: removing the blueprint's body doesn't take the bodies beside it, and a blueprint saved from the
+  works (copy, stamp) doesn't carry them.
 
 ### Hoses (temporary connections)
 

@@ -649,10 +649,10 @@ public static class ConstructCargo
     public readonly record struct CarrySpec(string Blueprint, Vector3 At, byte Turn);
 
     /// <summary>A blueprint's <c>"carry"</c> list: <c>[{ "blueprint": "Shuttle", "at": [x, y, z], "turn": 0 }]</c>.</summary>
-    public static CarrySpec ParseCarry(JsonElement e, string file, int k)
+    public static CarrySpec ParseCarry(JsonElement e, string file, int k, string key = "carry")
     {
         if (e.ValueKind != JsonValueKind.Object)
-            throw new ConstructPartException($"{file}: carry[{k}] is {{\"blueprint\", \"at\", \"turn\"}}");
+            throw new ConstructPartException($"{file}: {key}[{k}] is {{\"blueprint\", \"at\", \"turn\"}}");
         string name = "";
         var at = Vector3.Zero;
         byte turn = 0;
@@ -662,22 +662,22 @@ public static class ConstructCargo
                 case "blueprint": name = f.Value.GetString() ?? ""; break;
                 case "at":
                     if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3)
-                        throw new ConstructPartException($"{file}: carry[{k}].at is [x, y, z]");
+                        throw new ConstructPartException($"{file}: {key}[{k}].at is [x, y, z]");
                     at = new Vector3(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle());
                     break;
                 case "turn":
                     var tn = f.Value.GetInt32();
                     if (tn < 0 || tn >= Rot24.Count)
-                        throw new ConstructPartException($"{file}: carry[{k}].turn is 0 to {Rot24.Count - 1}");
+                        throw new ConstructPartException($"{file}: {key}[{k}].turn is 0 to {Rot24.Count - 1}");
                     turn = (byte)tn;
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: carry[{k}]: unknown key \"{f.Name}\" (blueprint, at, turn)");
+                    throw new ConstructPartException($"{file}: {key}[{k}]: unknown key \"{f.Name}\" (blueprint, at, turn)");
             }
         if (name.Length == 0)
-            throw new ConstructPartException($"{file}: carry[{k}] names no blueprint");
+            throw new ConstructPartException($"{file}: {key}[{k}] names no blueprint");
         if (!float.IsFinite(at.X + at.Y + at.Z) || at.Length() > 200)
-            throw new ConstructPartException($"{file}: carry[{k}].at is more than 200 m out");
+            throw new ConstructPartException($"{file}: {key}[{k}].at is more than 200 m out");
         return new CarrySpec(name, at, turn);
     }
 

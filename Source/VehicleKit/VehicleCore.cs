@@ -674,6 +674,9 @@ public partial class BlueprintScript
     /// <summary>The blueprint spawned coupled behind this one: its first eye on this one's first ball.</summary>
     public string Tow { get; set; } = "";
 
+    /// <summary>Bodies spawned beside this one ("beside": ConstructBuild.SpawnBeside), each tied by a heavy power cable: (blueprint, its frame's origin here, its Rot24 turn).</summary>
+    public List<(string Blueprint, Vector3 At, int Turn)> Beside { get; } = new();
+
     public string Text()
     {
         using var time = KitProfile.Time(KitProfile.S.Text);
@@ -722,6 +725,8 @@ public partial class BlueprintScript
             sb.Append(",\n  \"cargo\": [\n    ").Append(string.Join(",\n    ", _cargo)).Append("\n  ]");
         if (Tow.Length > 0)
             sb.Append(",\n  \"tow\": ").Append(Quote(Tow));
+        if (Beside.Count > 0)
+            sb.Append(",\n  \"beside\": [\n    ").Append(string.Join(",\n    ", Beside.Select(b => $"{{\"blueprint\": {Quote(b.Blueprint)}, \"at\": [{N(b.At.X)}, {N(b.At.Y)}, {N(b.At.Z)}], \"turn\": {b.Turn}}}"))).Append("\n  ]");
         if (_loot.Count > 0)
             sb.Append(",\n  \"loot\": [").Append(string.Join(", ", _loot.Select(l => $"{{\"step\": {l.Step}, \"table\": {Quote(l.Table)}}}"))).Append(']');
         if (_stored.Count > 0)
