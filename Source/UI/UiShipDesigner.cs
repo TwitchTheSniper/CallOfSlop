@@ -28,6 +28,7 @@ public sealed partial class Ui
 
     private DesignSession? _sd;
     private JsonDocument? _sdDoc, _sdCatDoc;
+    private readonly List<JsonDocument> _sdOldDocs = [];
     private JsonElement S, CAT;
     private bool _sdLoaded;
 
@@ -107,7 +108,10 @@ public sealed partial class Ui
         foreach (var h in Arr(scene, "hulls"))
             if (h.TryGetProperty("copies", out var cs) && cs.ValueKind == JsonValueKind.Array)
                 _hullCopies[I(h, "id")] = cs.EnumerateArray().Select(c => (I(c, "copy"), Len(c, "skin"), Len(c, "fore"), Len(c, "aft"))).ToList();
-        _sdDoc?.Dispose(); // (after the old one is let go nothing may read it: the scene below is the new one)
+        // The panel being drawn may still read the old scene this frame (a button's command answers mid-draw), so the old
+        // document is freed when the next frame's draw starts.
+        if (_sdDoc != null)
+            _sdOldDocs.Add(_sdDoc);
         _sdDoc = doc;
         S = scene;
         _canUndo = B(a, "undo");
@@ -242,6 +246,9 @@ public sealed partial class Ui
         if (!ShipDesignerOpen || _sd == null)
             return;
         _sdNow = now;
+        foreach (var d in _sdOldDocs)
+            d.Dispose();
+        _sdOldDocs.Clear();
         Flush(); // (the page's animation frame: a drag's command, once a frame at most)
         MountTick();
 
