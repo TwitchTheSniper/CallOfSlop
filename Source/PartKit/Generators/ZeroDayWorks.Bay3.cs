@@ -143,8 +143,8 @@ public sealed partial class ZeroDayWorks
 
         /// <summary>
         /// A Press: its Core by its "-y.4.4" at (x, z), a 3 x 4 bed east of it, Press Blocks under the housings and Press Bed Blocks between (3 along x, the flow, from the Core's +x;
-        /// 4 rows south: the bed is the blocks beside the Core, not the Core), and one block on each cell of the north and south rows for
-        /// the shells (a 2 m swing strip north and south).
+        /// 4 rows south: the bed is the blocks beside the Core, not the Core). Its swing lid hinges on the south row and opens over a strip
+        /// south of it (ConstructPress.SwingReach).
         /// </summary>
         private VPart Press(float x, float z)
         {
@@ -158,10 +158,7 @@ public sealed partial class ZeroDayWorks
                 for (var i = 0; i < 3; i++)
                     bed[i, j] = Paint(Onto(bed[i, j - 1], "-z", "Press Bed Block", "+z"), General); // (the low bed between the housings' rows, at the rollers' height: Sean 2026-11-23)
             Chain(bed, "Press Block", "-z", "+z", "+x", "-x", General, rowZero: true);
-            foreach (var j in new[] { 0, 3 })
-                for (var i = 0; i < 3; i++)
-                    Paint(Onto(bed[i, j], "top", "Press Block", "bottom"), General);
-            return core;
+            return core; // (no wall blocks since the swing lid, 2026-11-25: the lid lies over the bed and opens over the south row's strip)
         }
 
         /// <summary>

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Press Block",
-  "description": "Weld it beside a Press Core, or beside or on another Press Block: blocks on the Core's layer make the bed (2 m a block, the widest blank it takes), blocks stacked on the bed's two long edges make the walls (the tallest). The bed is the largest full rectangle of blocks next to the Core; a block outside it idles.",
+  "description": "Weld it beside a Press Core or another Press Block: blocks on the Core's layer make the bed (2 m a block, the widest blank it takes); on a low bed the two long edges' rows are Press Blocks, the side frames the lid shuts on. The bed is the largest full rectangle of blocks next to the Core; a block outside it idles, and nothing stacks on the bed (the lid lies there). In a press the Core draws the bed whole.",
   "group": "Production",
   "section": "Presses",
   "role": "frame",
