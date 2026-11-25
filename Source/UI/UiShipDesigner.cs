@@ -73,6 +73,11 @@ public sealed partial class Ui
         JsonElement a = default;
         if (saved != null)
             a = Cmd(new JsonObject { ["op"] = "load", ["json"] = saved });
+        if (saved != null && Str(a, "error").Length > 0)
+        {
+            ShipDesignStore.KeepUnread(saved);
+            Toast($"Your saved design could not be read by this version; a copy is kept as {ShipDesignStore.UnreadName}.");
+        }
         if (saved == null || Str(a, "error").Length > 0)
             Take(_sd.Scene());
         _sdTip = SdTips[_sdMode];
@@ -107,7 +112,14 @@ public sealed partial class Ui
         // Hulls left out of a light answer are drawn from the last ones: keep which surfaces each copy had.
         foreach (var h in Arr(scene, "hulls"))
             if (h.TryGetProperty("copies", out var cs) && cs.ValueKind == JsonValueKind.Array)
-                _hullCopies[I(h, "id")] = cs.EnumerateArray().Select(c => (I(c, "copy"), Len(c, "skin"), Len(c, "fore"), Len(c, "aft"))).ToList();
+                _hullCopies[I(h, "id")] = cs.EnumerateArray().Select(c => (I(c, "copy"), D(c, "cladFit"))).ToList();
+        if (_roomView != null && !Has(scene, "roomView"))
+        {
+            // Its room went (deleted, undone): back to the ship.
+            _roomView = null;
+            _sdOldDocs.Add(doc);
+            return ViewCmd();
+        }
         // The panel being drawn may still read the old scene this frame (a button's command answers mid-draw), so the old
         // document is freed when the next frame's draw starts.
         if (_sdDoc != null)
@@ -127,6 +139,82 @@ public sealed partial class Ui
     }
 
     private static bool Len(JsonElement c, string surf) => c.TryGetProperty(surf, out var m) && m.TryGetProperty("p", out var p) && p.GetArrayLength() > 0;
+
+    // ---------- Room view (the Interior tab's drop-down): one room, or it and the rooms a door or riser joins to it
+
+    private (int Room, bool Connected)? _roomView;
+    private bool _roomOpaque;
+    private double _roomCut = 100;
+
+    /// <summary>Room view in or out: a scene with only the rooms it needs (no edit, no undo step).</summary>
+    private JsonElement ViewCmd(bool fit = false)
+    {
+        var rv = _roomView is { } v ? new JsonObject { ["room"] = v.Room, ["connected"] = v.Connected } : null;
+        var a = Take(_sd!.Apply(new JsonObject { ["op"] = "view", ["roomView"] = rv }.ToJsonString()));
+        if (fit)
+            FrameRoom();
+        return a;
+    }
+
+    private void EnterRoomView(int id, bool? connected = null)
+    {
+        var r = ById(Arr(S, "rooms").ToList(), id);
+        if (!Found(r))
+        {
+            Toast("Pick a room first.");
+            return;
+        }
+        if (_mounting != null)
+            StopMount();
+        _sdMode = "interior";
+        _sdDeck = I(r, "deck");
+        _roomView = (id, connected ?? _roomView?.Connected ?? false);
+        _selKind = "room";
+        _selId = id;
+        _selStation = -1;
+        ViewCmd(true);
+    }
+
+    /// <summary>--sd-do's cmd: one command as the panels send it.</summary>
+    public void ShipDesignerTestCmd(string json) => Cmd(JsonNode.Parse(json)!.AsObject());
+
+    /// <summary>--sd-do's room: Room view on a room (0: back to the ship).</summary>
+    public void ShipDesignerTestRoom(int id)
+    {
+        if (id == 0)
+            ExitRoomView();
+        else
+            EnterRoomView(id);
+    }
+
+    private void ExitRoomView()
+    {
+        if (_roomView == null)
+            return;
+        _roomView = null;
+        ViewCmd();
+        _sdFramePending = true;
+    }
+
+    /// <summary>The camera on the room: its angle and distance kept, only the orbit target moves to the room's middle (Karl, 2026-11-25).</summary>
+    private void FrameRoom()
+    {
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        var any = false;
+        foreach (var o in _sdObjs)
+            if (o.Pick?.Type == "room" && (_roomView == null || o.Pick.Id == _roomView.Value.Room) && o.Geo.Count > 0)
+            {
+                lo = Vector3.Min(lo, o.Geo.Min + o.Pos);
+                hi = Vector3.Max(hi, o.Geo.Max + o.Pos);
+                any = true;
+            }
+        if (!any)
+            return;
+        var c = (lo + hi) / 2;
+        var off = _camPos - _camTarget;
+        _camTarget = c;
+        _camPos = c + off;
+    }
 
     private JsonElement Cmd(JsonObject op, bool merge = false)
     {
@@ -226,6 +314,13 @@ public sealed partial class Ui
     {
         if (_mounting != null)
             StopMount();
+        if (_roomView != null)
+        {
+            _roomView = null;
+            _sdMode = m;
+            ViewCmd();
+            _sdFramePending = true;
+        }
         _sdMode = m;
         if (m != "hull" && _selKind == "hull")
             Select(null, 0, false);
@@ -339,9 +434,31 @@ public sealed partial class Ui
         ImGui.SameLine(0, 24 * _scale);
         foreach (var (k, t) in new[] { ("hull", "Hull"), ("pieces", "Pieces"), ("interior", "Interior"), ("connectors", "Connectors") })
         {
-            if (OnButton($"{t}##sdm{k}", _sdMode == k))
+            if (OnButton($"{t}##sdm{k}", _roomView == null && _sdMode == k))
                 SetMode(k);
             ImGui.SameLine();
+            if (k == "interior")
+            {
+                // Room view's drop-down: the tab's name, then every room by name and deck.
+                var rooms = Arr(S, "rooms").ToList();
+                var cur = _roomView is { } rv ? ById(rooms, rv.Room) : default;
+                ImGui.SetNextItemWidth(170 * _scale);
+                if (_roomView != null)
+                    ImGui.PushStyleColor(ImGuiCol.FrameBg, SdOn);
+                var open = ImGui.BeginCombo("##sdroomview"u8, Found(cur) ? $"{RoomName(cur)} (deck {I(cur, "deck") + 1})" : "Room view");
+                if (_roomView != null)
+                    ImGui.PopStyleColor();
+                if (open)
+                {
+                    if (ImGui.Selectable("Room view##sdrvnone"u8, _roomView == null))
+                        ExitRoomView();
+                    foreach (var r in rooms)
+                        if (ImGui.Selectable($"{RoomName(r)} (deck {I(r, "deck") + 1})##sdrv{I(r, "id")}", _roomView?.Room == I(r, "id")))
+                            EnterRoomView(I(r, "id"));
+                    ImGui.EndCombo();
+                }
+                ImGui.SameLine();
+            }
         }
         var right = ImGui.GetWindowPos().X + width - 470 * _scale;
         ImGui.SameLine(MathF.Max(ImGui.GetCursorPosX() + 20 * _scale, right - ImGui.GetWindowPos().X));
@@ -432,13 +549,18 @@ public sealed partial class Ui
     /// A slider whose command goes when it is let go (Karl, 2026-11-24: dragging lagged); dragging only moves the shown value.
     /// <paramref name="v"/> in the slider's own units (cm, %, m), snapped to <paramref name="step"/>.
     /// </summary>
-    private void Slider(string label, double v, double min, double max, double step, string unit, Action<double> done, string id = "")
+    /// <summary>
+    /// A slider whose command goes when it is let go. With <paramref name="def"/> (in the slider's own units, from the catalogue's
+    /// defaults) a reset button follows it; <paramref name="onReset"/>, when given, sends the default instead of <paramref name="done"/>.
+    /// </summary>
+    private void Slider(string label, double v, double min, double max, double step, string unit, Action<double> done, string id = "",
+        double? def = null, Action<double>? onReset = null)
     {
         var key = label + "##sl" + id;
         var shown = _sdHeld.TryGetValue(key, out var held) ? held : (float)v;
         ImGui.Text(label);
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(-1);
+        ImGui.SetNextItemWidth(def is null ? -1 : -30 * _scale);
         var fmt = (step >= 1 ? "%.0f" : step >= 0.1 ? "%.1f" : "%.2f") + unit.Replace("%", "%%");
         ImGui.SliderFloat("##" + key, ref shown, (float)min, (float)Math.Max(min, max), fmt, ImGuiSliderFlags.AlwaysClamp);
         if (step > 0)
@@ -452,6 +574,33 @@ public sealed partial class Ui
         }
         else if (!ImGui.IsItemActive())
             _sdHeld.Remove(key);
+        if (def is { } d)
+        {
+            ImGui.SameLine();
+            if (ImGui.SmallButton("R##rs" + key))
+                (onReset ?? done)(d);
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip($"Reset {label.ToLowerInvariant()} to {d}{unit}");
+        }
+    }
+
+    /// <summary>A default from the catalogue in slider units (x scale).</summary>
+    private double Dflt(string kind, string key, double scale = 1) => Math.Round(D(Get(Get(CAT, "defaults"), kind), key) * scale * 1e6) / 1e6;
+
+    /// <summary>The catalogue's defaults for those keys, as a command's fields.</summary>
+    private (string, JsonNode?)[] DfltOf(string kind, params string[] keys)
+    {
+        var k = Get(Get(CAT, "defaults"), kind);
+        return keys.Select(x => (x, k.TryGetProperty(x, out var e) ? JsonNode.Parse(e.GetRawText()) : null)).ToArray();
+    }
+
+    /// <summary>A section's Reset all button.</summary>
+    private bool ResetAll(string id, string title)
+    {
+        var hit = ImGui.SmallButton("Reset all##ra" + id);
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip(title);
+        return hit;
     }
 
     /// <summary>A number box that applies when it is left or Enter is pressed.</summary>

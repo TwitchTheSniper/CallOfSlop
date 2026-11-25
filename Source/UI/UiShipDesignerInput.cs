@@ -434,7 +434,11 @@ public sealed partial class Ui
         return at >= 0 && at + 1 < order.Count ? order[at + 1] : -1;
     }
 
-    private static JsonObject At(Hit h) => new() { ["hull"] = h.O.Pick!.Hull, ["copy"] = h.O.Pick.Copy, ["x"] = h.Point.X, ["y"] = h.Point.Y, ["z"] = h.Point.Z };
+    private static JsonObject At(Hit h) => new()
+    {
+        ["hull"] = h.O.Pick!.Hull, ["copy"] = h.O.Pick.Copy, ["x"] = h.Point.X, ["y"] = h.Point.Y, ["z"] = h.Point.Z,
+        ["face"] = h.O.Pick.Surface.Length > 0 ? h.O.Pick.Surface : "skin",
+    };
 
     private void PointerDown(float2 m, bool shift)
     {
@@ -658,6 +662,12 @@ public sealed partial class Ui
                 return;
             }
             var r = By("room");
+            // In Room view a click on a connected room makes it the room shown (Karl, 2026-11-25): the drop-down and its neighbours follow.
+            if (r is { } rv && _roomView is { } shown && rv.O.Pick!.Id != shown.Room)
+            {
+                EnterRoomView(rv.O.Pick.Id);
+                return;
+            }
             if (r is { } rh)
             {
                 Select("room", rh.O.Pick!.Id);
@@ -1038,6 +1048,8 @@ public sealed partial class Ui
             _sdFileOpen = false;
         else if (_mounting != null)
             StopMount();
+        else if (_roomView != null)
+            ExitRoomView();
         else if (_selKind != null)
             Select(null, 0);
         else

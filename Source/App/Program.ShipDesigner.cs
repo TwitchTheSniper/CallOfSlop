@@ -78,6 +78,8 @@ public static unsafe partial class Program
                 _shotFull = true;
                 SaveScreenshot("sd_" + w[1]);
                 break;
+            case "cmd": Ui.ShipDesignerTestCmd(step[4..]); break; // a designer command's JSON (no ';' in it)
+            case "room": Ui.ShipDesignerTestRoom(w.Length > 1 ? (int)F(1) : 0); break; // Room view on that room id (0: out)
             case "quit": _quit = true; break;
         }
     }
