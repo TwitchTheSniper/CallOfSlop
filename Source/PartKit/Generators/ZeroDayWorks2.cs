@@ -1,0 +1,590 @@
+using System.Globalization;
+using System.Numerics;
+using System.Text.Json;
+using CallOfSlop.EngineKit;
+using CallOfSlop.VehicleKit;
+
+namespace CallOfSlop.PartKit.Generators;
+
+/// <summary>
+/// Zero Day Works II (Sean's layout from the Factory Lab artifact, 2026-11-25): the new Zero Day factory floor as a real blueprint, every
+/// piece where his layout puts it, with no walls, roof or shell. The layout is data, <see cref="Layout"/> (the lab's export, copied
+/// unchanged: metres, y up, +z south in the lab); this lays it through the game's own rules (<see cref="BlueprintScript"/>), so a piece the
+/// rules refuse is named in the log (a "[zeroday_works2]" line) and left out, and nothing else moves. Reads the part files as the game
+/// loads them: run after the part generators. The old Zero Day Works (ZeroDayWorks*.cs) is untouched.
+/// <para>Lab to site: x stays, z turns round (the lab's +z south is the site's -z). A part item's rot is its flow by the lab's chain table
+/// (0 south, 1 west, 2 north, 3 east: the lab's portsOf turns 1 and 3 the other way, but its runs and lines flow toward the main station
+/// with these). A lab machine's bed cells and Core cell are where the lab draws them (three.js turns its local frame by rot).</para>
+/// </summary>
+public sealed class ZeroDayWorks2 : IPartGenerator
+{
+    public string Name => "zeroday_works2";
+
+    public const string File = "Constructs/Blueprints/ZeroDayWorks2.json";
+    public const string Layout = "Constructs/Factories/Layouts/ZeroDayWorks2.json";
+
+    public void Make(PartOutput o) => o.File(File, Script.Build(o.Read(Layout)).Text());
+
+    private sealed class Script : BlueprintScript
+    {
+        private Script() : base("Zero Day Works II")
+        {
+        }
+
+        public const float FloorY = 0.3f; // the Works Floor Slabs' tops
+        public const float Slab = 8f;
+        // The slabs' edges (where the floor has no socket) on x = 4 and z = 6 (mod 8): the residues the fewest of the layout's pieces stand on.
+        public const float EdgeX = 4f, EdgeZ = 6f;
+
+        public const string Floor = "#8c8576", Steel = "#4a5058", Line = "#3d7ab8", Stock = "#c9a24a", Station = "#2f8f8a", Oven = "#a8365e",
+            Refining = "#d17a22", Power = "#b5452b", Crane = "#f0c21a";
+
+        private readonly Dictionary<(int I, int J), VPart> _slabs = new();
+        private readonly Dictionary<(int, int), List<VPart>> _near = new(); // (placed parts by 4 m bucket of their footprint's middle)
+        private readonly Dictionary<VPart, Vector2> _at = new(); // (each placed piece's footprint middle)
+        private readonly List<string> _notes = new();
+        private int _welded, _chained, _missed;
+
+        private static Vector3 V(float x, float y, float z) => new(x, y, z);
+
+        private static Orient Facing(Vector2 d) => new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, new Vector3(d.X, 0, d.Y));
+
+        private static Orient XFacing(Vector2 d) => new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitX, new Vector3(d.X, 0, d.Y));
+
+        /// <summary>A part item's flow on the site for its lab rot (the lab's chain table: 0 +z, 1 -x, 2 -z, 3 +x in the lab; z turned round).</summary>
+        private static Vector2 Flow(int rot) => (((rot % 4) + 4) % 4) switch { 0 => new(0, -1), 1 => new(-1, 0), 2 => new(0, 1), _ => new(1, 0) };
+
+        /// <summary>A lab machine's local point (x across, z along) on the site: three.js turns it by rot quarter turns about y, then z turns round.</summary>
+        private static Vector2 Local(float x0, float z0, int rot, float lx, float lz)
+        {
+            var t = rot * MathF.PI / 2;
+            float c = MathF.Round(MathF.Cos(t)), s = MathF.Round(MathF.Sin(t));
+            return new Vector2(x0 + lx * c + lz * s, -(z0 - lx * s + lz * c));
+        }
+
+        private void Note(string line)
+        {
+            _notes.Add(line);
+            Console.WriteLine($"[zeroday_works2] {line}");
+        }
+
+        public static Script Build(string layoutText)
+        {
+            var s = new Script
+            {
+                Description = "Zero Day Works II: Sean's Zero Day factory floor from the Factory Lab (2026-11-25), every machine, roller run, pad, store, refiner, rover dock and genset where his layout puts them, " +
+                              "on Works Floor Slabs with no walls or roof. The main Building Station in the middle, the wide and narrow lines either side, materials north and south. Set it on flat ground on a planet.",
+                Group = "Factories",
+            };
+            using var doc = JsonDocument.Parse(layoutText);
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(e => e.Clone()).ToList();
+            s.Lay(items);
+            if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
+                throw new VehicleKitException($"Zero Day Works II: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
+            s.Note($"{s.Live.PartCount} parts, {s.Live.LinkCount} links; {s._chained} welded on a neighbour's side (on a slab's edge), {s._welded} welded freeform, {s._missed} not placed");
+            return s;
+        }
+
+        private static string Str(JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
+        private static float Num(JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : 0;
+        private static int Int(JsonElement e, string k) => (int)MathF.Round(Num(e, k));
+        private static bool Flag(JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.True;
+
+        // ---------------------------------------------------------------- the floor
+
+        private (int, int) SlabOf(float x, float z) => ((int)MathF.Floor((x - EdgeX) / Slab), (int)MathF.Floor((z - EdgeZ) / Slab));
+
+        private VPart Tile(float x, float z)
+        {
+            if (_slabs.TryGetValue(SlabOf(x, z), out var t))
+                return t;
+            throw new VehicleKitException($"no floor at ({x}, {z})");
+        }
+
+        private void LayFloor(float x0, float x1, float z0, float z1)
+        {
+            var (i0, j0) = SlabOf(x0, z0);
+            var (i1, j1) = SlabOf(x1, z1);
+            for (var j = j0; j <= j1; j++)
+                for (var i = i0; i <= i1; i++)
+                {
+                    var at = V(EdgeX + Slab * (i + 0.5f), 0.15f, EdgeZ + Slab * (j + 0.5f));
+                    var t = _slabs.Count == 0 ? Root("Works Floor Slab 8 m", at, Up) : Put("Works Floor Slab 8 m", at, Up, on: i > i0 ? _slabs[(i - 1, j)] : _slabs[(i, j - 1)]);
+                    _slabs[(i, j)] = t;
+                    Paint(t, Floor);
+                    Finish(t, "concrete");
+                }
+            Note($"floor: {(i1 - i0 + 1) * (j1 - j0 + 1)} slabs, x {EdgeX + Slab * i0:0} to {EdgeX + Slab * (i1 + 1):0}, z {EdgeZ + Slab * j0:0} to {EdgeZ + Slab * (j1 + 1):0}");
+        }
+
+        private static readonly Orient Up = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ);
+
+        // ---------------------------------------------------------------- placing one piece
+
+        private void Keep(VPart p, Vector2 at, string paint)
+        {
+            Paint(p, paint);
+            _at[p] = at;
+            var k = ((int)MathF.Floor(at.X / 4), (int)MathF.Floor(at.Y / 4));
+            if (!_near.TryGetValue(k, out var l))
+                _near[k] = l = new List<VPart>();
+            l.Add(p);
+        }
+
+        private IEnumerable<VPart> Near(Vector2 at, float r)
+        {
+            int kx0 = (int)MathF.Floor((at.X - r) / 4), kx1 = (int)MathF.Floor((at.X + r) / 4), kz0 = (int)MathF.Floor((at.Y - r) / 4), kz1 = (int)MathF.Floor((at.Y + r) / 4);
+            for (var a = kx0; a <= kx1; a++)
+                for (var b = kz0; b <= kz1; b++)
+                    if (_near.TryGetValue((a, b), out var l))
+                        foreach (var p in l)
+                            yield return p;
+        }
+
+        /// <summary>
+        /// A part with its footprint's middle at <paramref name="at"/> (own <paramref name="foot"/> there, its socket <paramref name="by"/> on
+        /// the floor), turned <paramref name="o"/>: stood on the floor; on a slab's edge (no socket), welded on a neighbour's side socket that
+        /// puts it there; else welded freeform. Null (and a note) when none takes it.
+        /// </summary>
+        private VPart? Piece(string part, Vector2 at, Orient o, string paint, string by = "bottom", Vector2 foot = default, bool chainFirst = false)
+        {
+            var def = Def(part);
+            var turn = FirstTurn(o);
+            var sock = Array.Find(def.Sockets, s => s.Name == by);
+            if (sock.Name == null)
+                throw new VehicleKitException($"a {part} has no socket \"{by}\"");
+            var off = Rot24.Apply(turn, sock.At - new Vector3(foot.X, 0, foot.Y));
+            var stand = V(at.X + off.X, FloorY, at.Y + off.Z);
+            string? why = null;
+            if (chainFirst && Chain(part, at, turn, foot) is { } c0)
+            {
+                Keep(c0, at, paint);
+                return c0;
+            }
+            if (_slabs.ContainsKey(SlabOf(stand.X, stand.Z)))
+                try
+                {
+                    var p = Stand(part, stand, o, Tile(stand.X, stand.Z), by);
+                    Keep(p, at, paint);
+                    return p;
+                }
+                catch (VehicleKitException ex)
+                {
+                    why = ex.Message;
+                }
+            if (!chainFirst && Chain(part, at, turn, foot) is { } c)
+            {
+                Keep(c, at, paint);
+                return c;
+            }
+            if (why != null && why.Contains("in the way"))
+            {
+                Note($"a {part} at ({at.X:0.##}, {at.Y:0.##}) not placed: {why}");
+                _missed++;
+                return null;
+            }
+            try
+            {
+                var mid = Rot24.Apply(turn, (def.BoundsMin + def.BoundsMax) * 0.5f - new Vector3(foot.X, 0, foot.Y));
+                var centre = V(at.X + mid.X, FloorY + 0.003f + ((def.BoundsMax.Y - def.BoundsMin.Y) * 0.5f), at.Y + mid.Z);
+                var p = Weld(part, Tile(centre.X, centre.Z), centre, o, 0, 0, 0);
+                _welded++;
+                Keep(p, at, paint);
+                return p;
+            }
+            catch (VehicleKitException ex)
+            {
+                Note($"a {part} at ({at.X:0.##}, {at.Y:0.##}) not placed: {why ?? ""} / {ex.Message}");
+                _missed++;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// A part welded on a placed neighbour's side socket so its footprint's middle lands on <paramref name="at"/> (within 0.2 m) at turn
+        /// <paramref name="turn"/>, its socket heights meeting. Null when no neighbour has one.
+        /// </summary>
+        private VPart? Chain(string part, Vector2 at, byte turn, Vector2 foot)
+        {
+            var def = Def(part);
+            var bottom = Array.Find(def.Sockets, s => ConstructParts.DirVector(s.Dir).Y < -0.9f);
+            var baseY = bottom.Name != null ? -bottom.At.Y : 0f; // (the new part's origin over the floor top)
+            foreach (var n in Near(at, 5f).ToList())
+            {
+                ref var np = ref Live.Parts[n.Index];
+                var nd = n.Def;
+                for (var s = 0; s < nd.Sockets.Length; s++)
+                {
+                    var face = Rot24.Apply(np.Rot, ConstructParts.DirVector(nd.Sockets[s].Dir));
+                    if (MathF.Abs(face.Y) > 0.1f)
+                        continue;
+                    var sw = FromRest(np.Pos + Rot24.Apply(np.Rot, nd.Sockets[s].At));
+                    for (var b = 0; b < def.Sockets.Length; b++)
+                    {
+                        var bs = def.Sockets[b];
+                        var bf = Rot24.Apply(turn, ConstructParts.DirVector(bs.Dir));
+                        if (Vector3.Dot(bf, face) > -0.9f)
+                            continue;
+                        var bw = Rot24.Apply(turn, bs.At - new Vector3(foot.X, 0, foot.Y));
+                        var want = V(at.X + bw.X, FloorY + baseY + bs.At.Y, at.Y + bw.Z);
+                        if (MathF.Abs(want.X - sw.X) > 0.2f || MathF.Abs(want.Z - sw.Z) > 0.2f || MathF.Abs(want.Y - sw.Y) > 0.06f)
+                            continue;
+                        for (var sp = 0; sp < 4; sp++)
+                        {
+                            if (TurnOf(n, nd.Sockets[s].Name, part, bs.Name, sp) != turn)
+                                continue;
+                            try
+                            {
+                                var p = Onto(n, nd.Sockets[s].Name, part, bs.Name, sp);
+                                _chained++;
+                                return p;
+                            }
+                            catch (VehicleKitException)
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>A Core welded on a bed cell's side by its own socket <paramref name="by"/>: on the neighbour at <paramref name="bed"/>, facing it.</summary>
+        private VPart? CoreOn(string part, string by, VPart? bed, Vector2 core, string paint, bool upright = true)
+        {
+            if (bed == null)
+            {
+                Note($"a {part} at ({core.X:0.##}, {core.Y:0.##}): its bed cell isn't there");
+                _missed++;
+                return null;
+            }
+            var d = Vector2.Normalize(_at[bed] - core);
+            ref var np = ref Live.Parts[bed.Index];
+            var nd = bed.Def;
+            for (var s = 0; s < nd.Sockets.Length; s++)
+            {
+                var face = Rot24.Apply(np.Rot, ConstructParts.DirVector(nd.Sockets[s].Dir));
+                if (Vector2.Dot(new Vector2(face.X, face.Z), -d) < 0.9f || MathF.Abs(face.Y) > 0.1f)
+                    continue;
+                for (var sp = 0; sp < 4; sp++)
+                {
+                    if (TurnOf(bed, nd.Sockets[s].Name, part, by, sp) is not { } t || (upright && Rot24.Apply(t, Vector3.UnitY).Y < 0.99f))
+                        continue;
+                    try
+                    {
+                        var p = Onto(bed, nd.Sockets[s].Name, part, by, sp);
+                        Keep(p, core, paint);
+                        return p;
+                    }
+                    catch (VehicleKitException)
+                    {
+                    }
+                }
+            }
+            Note($"a {part} at ({core.X:0.##}, {core.Y:0.##}) won't weld on its bed's side");
+            _missed++;
+            return null;
+        }
+
+        // ---------------------------------------------------------------- the layout
+
+        private static readonly Dictionary<string, string> BedOf = new()
+        {
+            ["panel-former"] = "Bed Block", ["laser-cutter"] = "Laser Bed Block", ["bake-oven"] = "Oven Bed Block", ["building-station"] = "Bay Block", ["press"] = "Press Bed Block",
+        };
+
+        private static readonly Dictionary<string, string> PaintOf = new()
+        {
+            ["panel-former"] = Line, ["laser-cutter"] = Line, ["bake-oven"] = Oven, ["building-station"] = Station, ["press"] = Steel, ["extruder"] = Line,
+        };
+
+        private void Lay(List<JsonElement> items)
+        {
+            // The floor under everything, a slab past the farthest piece.
+            float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+            foreach (var it in items)
+            {
+                var r = Str(it, "t") switch { "lab" => MathF.Max(Num(it, "w"), Num(it, "l")) + 2, "rover" => MathF.Max(Num(it, "w"), Num(it, "l")) * 2, _ => Str(it, "name").StartsWith("Kit Genset") ? 6 : 3 };
+                x0 = MathF.Min(x0, Num(it, "x") - r);
+                x1 = MathF.Max(x1, Num(it, "x") + r);
+                z0 = MathF.Min(z0, -Num(it, "z") - r);
+                z1 = MathF.Max(z1, -Num(it, "z") + r);
+            }
+            LayFloor(x0 - 1, x1 + 1, z0 - 1, z1 + 1);
+
+            // Pieces on the floor first (block parts, then the bigger ones), the lab machines, then what welds on them.
+            var parts = items.Where(i => Str(i, "t") == "part").ToList();
+            var cores = new[] { "Smelter", "Foundry", "Sawmill", "Assembler" };
+            foreach (var it in parts.Where(i => !cores.Contains(Str(i, "name")) && !Str(i, "name").StartsWith("Kit Genset")))
+                PartItem(it, items);
+            foreach (var it in items.Where(i => Str(i, "t") == "lab"))
+                LabItem(it);
+            foreach (var it in parts.Where(i => cores.Contains(Str(i, "name"))))
+                PartItem(it, items);
+            foreach (var it in items.Where(i => Str(i, "t") == "rover"))
+                RoverItem(it);
+            var g = 0;
+            foreach (var it in parts.Where(i => Str(i, "name").StartsWith("Kit Genset")))
+                Genset(new Vector2(Num(it, "x"), -Num(it, "z")), g++);
+        }
+
+        private void PartItem(JsonElement it, List<JsonElement> items)
+        {
+            var name = Str(it, "name");
+            var at = new Vector2(Num(it, "x"), -Num(it, "z"));
+            var flow = Flow(Int(it, "rot"));
+            switch (name)
+            {
+                case "Roller Tile":
+                    Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
+                    return;
+                case "Pad Tile":
+                    Piece(name, at, Facing(flow), Stock);
+                    return;
+                case "Hearth Block" or "Crucible Block":
+                    Piece(name, at, Facing(flow), Refining);
+                    return;
+                case "Smelter" or "Foundry" or "Sawmill":
+                {
+                    // (the Core's one side socket, +x, toward its bed: the nearest Hearth or Crucible Block of the layout)
+                    var bed = name == "Smelter" ? "Hearth Block" : "Crucible Block";
+                    var best = float.MaxValue;
+                    var dir = flow;
+                    foreach (var o in items)
+                        if (Str(o, "name") == bed && new Vector2(Num(o, "x"), -Num(o, "z")) is var b && Vector2.Distance(b, at) is var dd && dd < best && dd < 8)
+                        {
+                            best = dd;
+                            var v = b - at;
+                            dir = MathF.Abs(v.X) > MathF.Abs(v.Y) ? new Vector2(MathF.Sign(v.X), 0) : new Vector2(0, MathF.Sign(v.Y));
+                        }
+                    var p = Piece(name, at, XFacing(dir), Refining);
+                    if (p != null && name != "Sawmill" && best < 8 && best > 2.6f)
+                        Note($"the {name} at ({at.X:0}, {at.Y:0}) stands {best - 2:0.#} m short of its {bed}s (as laid out): it isn't joined to that bed");
+                    return;
+                }
+                case "Assembler" or "Assembly Bed Block":
+                    Piece(name, at, Facing(flow), Steel);
+                    return;
+                case "Ore Silo 4 m" or "Ore Bunker 4 m" or "Materials Bin":
+                    Piece(name, at, Facing(flow), Stock);
+                    return;
+                case "Line Console":
+                {
+                    var p = Piece(name, at, Facing(flow), Crane);
+                    if (p != null)
+                        Config(p, ("startOn", 0));
+                    return;
+                }
+                case "Die Rack":
+                {
+                    var d = Def(name);
+                    var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+                    Piece(name, at, Facing(flow), Steel, "-y.0.0", new Vector2(mid.X, mid.Z));
+                    return;
+                }
+                default:
+                    Piece(name, at, Facing(flow), Steel);
+                    return;
+            }
+        }
+
+        /// <summary>A lab machine: its bed cells w x l (2 m) and its Core where the lab draws it; the lab's flow by its chain table.</summary>
+        private void LabItem(JsonElement it)
+        {
+            var id = Str(it, "id");
+            int w = Int(it, "w"), l = Int(it, "l"), rot = Int(it, "rot");
+            float x = Num(it, "x"), z = Num(it, "z");
+            float sx = w * 2, sz = l * 2;
+            var flow = Flow(rot);
+            var paint = PaintOf.GetValueOrDefault(id, Steel);
+            var coreSide = id is "building-station" or "extruder" ? -1 : 1;
+            var coreLocal = new Vector2(coreSide * (sx / 2 + 1), Flag(it, "coreFar") ? sz / 2 - 1 : -sz / 2 + 1);
+            var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
+            Vector2 Cell(int i, int j) => Local(x, z, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
+            // (the row furthest down the flow: a former's and a cutter's Out Tables)
+            var lastRow = Vector2.Dot(Cell(0, l - 1) - Cell(0, 0), flow) > 0 ? l - 1 : 0;
+
+            if (id == "extruder")
+            {
+                Extruder(it, w, l, rot, x, z, flow);
+                return;
+            }
+            var cells = new VPart?[w, l];
+            for (var j = 0; j < l; j++)
+                for (var i = 0; i < w; i++)
+                {
+                    var part = BedOf[id];
+                    if (id is "panel-former" or "laser-cutter" && j == lastRow && l > 1)
+                        part = "Out Table";
+                    cells[i, j] = Piece(part, Cell(i, j), Facing(flow), paint);
+                }
+            // The Core: on the side cell beside its own cell (the bed's edge cell in the Core's row).
+            var edge = coreSide > 0 ? w - 1 : 0;
+            var row = Flag(it, "coreFar") ? l - 1 : 0;
+            var by = cells[edge, row];
+            switch (id)
+            {
+                case "panel-former":
+                {
+                    var c = CoreOn("Panel Former", "+z", by, core, paint);
+                    if (c != null)
+                        OrdersOnly(c);
+                    break;
+                }
+                case "laser-cutter":
+                {
+                    var c = CoreOn("Laser Cutter", "+x", by, core, paint);
+                    if (c != null)
+                        OrdersOnly(c);
+                    break;
+                }
+                case "bake-oven":
+                    CoreOn("Bake Oven", "+z", by, core, paint);
+                    break;
+                case "building-station":
+                    if (!Flag(it, "noCoreDock"))
+                        CoreOn("Building Station", "+x.0", by, core, paint);
+                    break;
+                case "press":
+                {
+                    // (the Press Core's own +x onto the bed; stood by its middle socket, as the old works stands its presses)
+                    var d = by != null ? Vector2.Normalize(_at[by] - core) : flow;
+                    var c = Piece("Press", core, XFacing(d), paint, "-y.4.4", new Vector2(1, 1), chainFirst: true);
+                    if (c != null)
+                        OrdersOnly(c);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A Sheet Extruder: its Core on an Extruder Plinth beside the die bank, w Die Blocks welded along its own +x on plinths, the die face
+        /// toward the lab's flow at the footprint's downstream row (raised a metre, so the die's foot is level with the Roller Tiles' tops).
+        /// </summary>
+        private void Extruder(JsonElement it, int w, int l, int rot, float x, float z, Vector2 flow)
+        {
+            float sx = w * 2, sz = l * 2;
+            // (the dies' row: the footprint's row furthest down the flow)
+            var rowZ = Vector2.Dot(Local(x, z, rot, 0, sz / 2 - 1) - Local(x, z, rot, 0, -sz / 2 + 1), flow) >= 0 ? sz / 2 - 1 : -sz / 2 + 1;
+            var o = Facing(flow);
+            var turn = FirstTurn(o);
+            var ownX = Rot24.Apply(turn, Vector3.UnitX);
+            var bankDir = Local(x, z, rot, 1, rowZ) - Local(x, z, rot, 0, rowZ); // (the lab's local +x on the site)
+            var coreLocalX = -sx / 2 - 1;
+            if (Vector2.Dot(new Vector2(ownX.X, ownX.Z), bankDir) < 0)
+            {
+                coreLocalX = sx / 2 + 1; // (the dies go on the Core's own +x: past the bank's other end when the site's turn puts its +x there)
+                Note($"the Extruder at ({x}, {-z}): its Core stands at the die bank's other end from the lab's (the dies weld on the Core's own +x)");
+            }
+            var at = Local(x, z, rot, coreLocalX, rowZ);
+            var plinth = Piece("Extruder Plinth", at, o, Steel);
+            if (plinth == null)
+                return;
+            Finish(plinth, "concrete");
+            ref var pp = ref Live.Parts[plinth.Index];
+            var top = FromRest(pp.Pos + Rot24.Apply(pp.Rot, Array.Find(plinth.Def.Sockets, s => s.Name == "top").At));
+            VPart core;
+            try
+            {
+                core = Stand("Extruder", top, o, plinth, "bottom");
+            }
+            catch (VehicleKitException ex)
+            {
+                Note($"the Extruder at ({at.X}, {at.Y}) not placed: {ex.Message}");
+                _missed++;
+                return;
+            }
+            Keep(core, at, Line);
+            OrdersOnly(core);
+            var cell = core;
+            for (var k = 0; k < w; k++)
+            {
+                var cx = coreLocalX < 0 ? -sx / 2 + 1 + 2 * k : sx / 2 - 1 - 2 * k;
+                var c2 = Local(x, z, rot, cx, rowZ);
+                var pl = Piece("Extruder Plinth", c2, o, Steel);
+                if (pl != null)
+                    Finish(pl, "concrete");
+                try
+                {
+                    cell = Onto(cell, "+x", "Die Block", "-x");
+                    Keep(cell, c2, Line);
+                }
+                catch (VehicleKitException ex)
+                {
+                    Note($"a Die Block at ({c2.X}, {c2.Y}) not placed: {ex.Message}");
+                    _missed++;
+                    break;
+                }
+            }
+        }
+
+        /// <summary>A Dock Expansion (or, for a station's Core, the Building Station pad) with its mouth (own +x) toward the bay.</summary>
+        private void RoverItem(JsonElement it)
+        {
+            var kind = Str(it, "kind") is { Length: > 0 } k ? k : "medium";
+            var core = Flag(it, "core");
+            var part = core ? "Building Station" : kind switch { "small" => "Dock Expansion", "large" => "Large Dock Expansion", _ => "Medium Dock Expansion" };
+            var rot = Int(it, "rot");
+            var t = rot * MathF.PI / 2;
+            var mouth = new Vector2(-MathF.Round(MathF.Sin(t)), MathF.Round(MathF.Cos(t))); // (the lab's local -z, z turned round)
+            var at = new Vector2(Num(it, "x"), -Num(it, "z"));
+            var d = Def(part);
+            var footX = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
+            var foot = new Vector2(MathF.Round(footX), 0); // (small -1, medium -2, large -5: the pad's middle behind its mouth)
+            var by = d.Sockets.First(s => s.Name.StartsWith("-y.")).Name;
+            Piece(part, at, XFacing(mouth), core ? Station : Crane, by, foot);
+        }
+
+        /// <summary>
+        /// A large militia engine generator set (the Engine Kit's `--gen-engine --genset --preset large --style militia`: 800 kW asked, its
+        /// head's 714 kW into the circuit) on its 2 m Foundation skid, the skid's middle at <paramref name="at"/>.
+        /// </summary>
+        private void Genset(Vector2 at, int n)
+        {
+            var r = EngineKitGenset.Request(new EngineRequest { PowerKw = EngineKitCli.Presets.First(p => p.Name == "large").Kw, Fuel = "petrol", Tier = 1, Layout = EngineLayout.Auto, Boost = EngineBoost.Auto, Size = -1, Seed = 0 });
+            var engine = EngineKit.EngineKit.Request(r);
+            if (!engine.Built || engine.Plan is not { } plan)
+            {
+                Note($"genset {n}: the engine wouldn't build: {engine.Note}");
+                _missed++;
+                return;
+            }
+            var head = EngineKitGenset.HeadFor(engine.Kw);
+            var (tanks, batteries) = EngineKitGenset.Stores(engine);
+            var (fx0, fx1, fz0, fz1) = EngineKitGenset.Footprint(engine, head, tanks, batteries);
+            // The skid: Foundations (2 m, their tops on a 0.5 m socket grid) from the floor's whole metres, the head's feet on their grid.
+            var mid = new Vector2((fx0 + fx1) * 0.5f, (fz0 + fz1) * 0.5f);
+            var c0 = new Vector2(2 * MathF.Round((at.X - mid.X - 1) / 2) + 1, 2 * MathF.Round((at.Y - mid.Y - 1) / 2) + 1); // (a Foundation's middle under the feet, on an odd metre: never a slab's edge)
+            var feet = V(c0.X + 0.25f, FloorY + 0.3f, c0.Y + 0.25f);
+            int i0 = (int)MathF.Floor((feet.X + fx0 - c0.X + 1) / 2), i1 = (int)MathF.Ceiling((feet.X + fx1 - c0.X - 1) / 2);
+            int j0 = (int)MathF.Floor((feet.Z + fz0 - c0.Y + 1) / 2), j1 = (int)MathF.Ceiling((feet.Z + fz1 - c0.Y - 1) / 2);
+            var palette = FactoryKit.FactoryStyles.Find("militia");
+            var dice = Dice.Of(r.Seed);
+            string frame = palette.Colour(dice, "frame"), power = palette.Colour(dice, "power"), machine = palette.Colour(dice, "machine");
+            for (var j = j0; j <= j1; j++)
+                for (var i = i0; i <= i1; i++)
+                {
+                    var fc = new Vector2(c0.X + 2 * i, c0.Y + 2 * j);
+                    try
+                    {
+                        Keep(Put("Foundation", V(fc.X, FloorY + 0.15f, fc.Y), Up, 0.05f, Tile(fc.X, fc.Y)), fc, frame);
+                    }
+                    catch (VehicleKitException ex)
+                    {
+                        Note($"genset {n}: a Foundation at ({fc.X}, {fc.Y}) not placed: {ex.Message}");
+                        _missed++;
+                    }
+                }
+            try
+            {
+                EngineKitGenset.Place(this, feet, r, plan with { }, head, tanks, batteries, frame, power, machine);
+                Note($"genset {n}: a {engine.Name} ({engine.Kw:0} kW) on a {head}, {tanks} tank(s), {batteries} battery(ies), its skid's middle at ({at.X}, {at.Y})");
+            }
+            catch (VehicleKitException ex)
+            {
+                Note($"genset {n} at ({at.X}, {at.Y}) not placed: {ex.Message}");
+                _missed++;
+            }
+        }
+    }
+}
