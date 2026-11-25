@@ -16,7 +16,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// (0 south, 1 west, 2 north, 3 east: the lab's portsOf turns 1 and 3 the other way, but its runs and lines flow toward the main station
 /// with these). A lab machine's bed cells and Core cell are where the lab draws them (three.js turns its local frame by rot).</para>
 /// </summary>
-public sealed class ZeroDayWorks2 : IPartGenerator
+public sealed partial class ZeroDayWorks2 : IPartGenerator
 {
     public string Name => "zeroday_works2";
 
@@ -25,7 +25,7 @@ public sealed class ZeroDayWorks2 : IPartGenerator
 
     public void Make(PartOutput o) => o.File(File, Script.Build(o.Read(Layout)).Text());
 
-    private sealed class Script : BlueprintScript
+    private sealed partial class Script : BlueprintScript
     {
         private Script() : base("Zero Day Works II")
         {
@@ -79,6 +79,7 @@ public sealed class ZeroDayWorks2 : IPartGenerator
             using var doc = JsonDocument.Parse(layoutText);
             var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(e => e.Clone()).ToList();
             s.Lay(items);
+            s.LayLinks();
             if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
                 throw new VehicleKitException($"Zero Day Works II: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
             s.Note($"{s.Live.PartCount} parts, {s.Live.LinkCount} links; {s._chained} welded on a neighbour's side (on a slab's edge), {s._welded} welded freeform, {s._missed} not placed");
@@ -188,6 +189,7 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                 var mid = Rot24.Apply(turn, (def.BoundsMin + def.BoundsMax) * 0.5f - new Vector3(foot.X, 0, foot.Y));
                 var centre = V(at.X + mid.X, FloorY + 0.003f + ((def.BoundsMax.Y - def.BoundsMin.Y) * 0.5f), at.Y + mid.Z);
                 var p = Weld(part, Tile(centre.X, centre.Z), centre, o, 0, 0, 0);
+                Welded(p, centre, turn);
                 _welded++;
                 Keep(p, at, paint);
                 return p;
@@ -301,16 +303,20 @@ public sealed class ZeroDayWorks2 : IPartGenerator
         private void Lay(List<JsonElement> items)
         {
             // The floor under everything, a slab past the farthest piece.
+            FindShifts(items);
             float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
             foreach (var it in items)
             {
-                var r = Str(it, "t") switch { "lab" => MathF.Max(Num(it, "w"), Num(it, "l")) + 2, "rover" => MathF.Max(Num(it, "w"), Num(it, "l")) * 2, _ => Str(it, "name").StartsWith("Kit Genset") ? 6 : 3 };
-                x0 = MathF.Min(x0, Num(it, "x") - r);
-                x1 = MathF.Max(x1, Num(it, "x") + r);
-                z0 = MathF.Min(z0, -Num(it, "z") - r);
-                z1 = MathF.Max(z1, -Num(it, "z") + r);
+                var r = Str(it, "t") switch { "lab" => MathF.Max(Num(it, "w"), Num(it, "l")) + 2 + (Str(it, "id") == "extruder" ? ExtruderBack : 0), "rover" => MathF.Max(Num(it, "w"), Num(it, "l")) * 2, _ => Str(it, "name").StartsWith("Kit Genset") ? 6 : 3 };
+                var c = new Vector2(Num(it, "x"), -Num(it, "z")) + ShiftOf(it);
+                x0 = MathF.Min(x0, c.X - r);
+                x1 = MathF.Max(x1, c.X + r);
+                z0 = MathF.Min(z0, c.Y - r);
+                z1 = MathF.Max(z1, c.Y + r);
             }
             LayFloor(x0 - 1, x1 + 1, z0 - 1, z1 + 1);
+            foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile"))
+                _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
 
             // Pieces on the floor first (block parts, then the bigger ones), the lab machines, then what welds on them.
             var parts = items.Where(i => Str(i, "t") == "part").ToList();
@@ -331,19 +337,23 @@ public sealed class ZeroDayWorks2 : IPartGenerator
         private void PartItem(JsonElement it, List<JsonElement> items)
         {
             var name = Str(it, "name");
-            var at = new Vector2(Num(it, "x"), -Num(it, "z"));
+            var at = new Vector2(Num(it, "x"), -Num(it, "z")) + ShiftOf(it);
             var flow = Flow(Int(it, "rot"));
+            var placed = PlacePartItem(it, items, name, at, flow);
+            if (placed != null)
+                Register(name, at, placed);
+        }
+
+        private VPart? PlacePartItem(JsonElement it, List<JsonElement> items, string name, Vector2 at, Vector2 flow)
+        {
             switch (name)
             {
                 case "Roller Tile":
-                    Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
-                    return;
+                    return Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
                 case "Pad Tile":
-                    Piece(name, at, Facing(flow), Stock);
-                    return;
+                    return Piece(name, at, Facing(flow), Stock);
                 case "Hearth Block" or "Crucible Block":
-                    Piece(name, at, Facing(flow), Refining);
-                    return;
+                    return Piece(name, at, Facing(flow), Refining);
                 case "Smelter" or "Foundry" or "Sawmill":
                 {
                     // (the Core's one side socket, +x, toward its bed: the nearest Hearth or Crucible Block of the layout)
@@ -363,32 +373,27 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                         }
                     if (name != "Sawmill" && best < 8 && Vector2.Distance(seat, at) > 0.01f)
                         Note($"the {name} laid at ({at.X:0}, {at.Y:0}) is seated at ({seat.X:0}, {seat.Y:0}), butting its {bed}s");
-                    Piece(name, name == "Sawmill" ? at : seat, XFacing(dir), Refining);
-                    return;
+                    return Piece(name, name == "Sawmill" ? at : seat, XFacing(dir), Refining);
                 }
                 case "Assembler" or "Assembly Bed Block":
-                    Piece(name, at, Facing(flow), Steel);
-                    return;
+                    return Piece(name, at, Facing(flow), Steel);
                 case "Ore Silo 4 m" or "Ore Bunker 4 m" or "Materials Bin":
-                    Piece(name, at, Facing(flow), Stock);
-                    return;
+                    return Piece(name, at, Facing(flow), Stock);
                 case "Line Console":
                 {
                     var p = Piece(name, at, Facing(flow), Crane);
                     if (p != null)
                         Config(p, ("startOn", 0));
-                    return;
+                    return p;
                 }
                 case "Die Rack":
                 {
                     var d = Def(name);
                     var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
-                    Piece(name, at, Facing(flow), Steel, "-y.0.0", new Vector2(mid.X, mid.Z));
-                    return;
+                    return Piece(name, at, Facing(flow), Steel, "-y.0.0", new Vector2(mid.X, mid.Z));
                 }
                 default:
-                    Piece(name, at, Facing(flow), Steel);
-                    return;
+                    return Piece(name, at, Facing(flow), Steel);
             }
         }
 
@@ -410,7 +415,8 @@ public sealed class ZeroDayWorks2 : IPartGenerator
 
             if (id == "extruder")
             {
-                Extruder(it, w, l, rot, x, z, flow);
+                if (Extruder(it, w, l, rot, x, z, flow) is { } ex)
+                    _labs.Add((id, new Vector2(x, -z), ex, flow));
                 return;
             }
             var cells = new VPart?[w, l];
@@ -432,14 +438,20 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                 {
                     var c = CoreOn("Panel Former", "+z", by, core, paint);
                     if (c != null)
+                    {
                         OrdersOnly(c);
+                        _labs.Add((id, new Vector2(x, -z), c, flow));
+                    }
                     break;
                 }
                 case "laser-cutter":
                 {
                     var c = CoreOn("Laser Cutter", "+x", by, core, paint);
                     if (c != null)
+                    {
                         OrdersOnly(c);
+                        _labs.Add((id, new Vector2(x, -z), c, flow));
+                    }
                     break;
                 }
                 case "bake-oven":
@@ -455,7 +467,10 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                     var d = by != null ? Vector2.Normalize(_at[by] - core) : flow;
                     var c = Piece("Press", core, XFacing(d), paint, "-y.4.4", new Vector2(1, 1), chainFirst: true);
                     if (c != null)
+                    {
                         OrdersOnly(c);
+                        _labs.Add((id, new Vector2(x, -z), c, flow));
+                    }
                     break;
                 }
             }
@@ -465,9 +480,12 @@ public sealed class ZeroDayWorks2 : IPartGenerator
         /// A Sheet Extruder: its Core on an Extruder Plinth beside the die bank, w Die Blocks welded along its own +x on plinths, the die face
         /// toward the lab's flow at the footprint's downstream row (raised a metre, so the die's foot is level with the Roller Tiles' tops).
         /// </summary>
-        private void Extruder(JsonElement it, int w, int l, int rot, float x, float z, Vector2 flow)
+        private VPart? Extruder(JsonElement it, int w, int l, int rot, float x, float z, Vector2 flow)
         {
             float sx = w * 2, sz = l * 2;
+            // (moved back up the flow by ExtruderBack, so its Run-out Tables fill the 8 m to the run Sean laid: the die's face lands on the
+            // run's first tile edge; its Materials Bin and Line Console move back with it, FindShifts)
+            var back = -flow * ExtruderBack;
             // (the dies' row: the footprint's row furthest down the flow)
             var rowZ = Vector2.Dot(Local(x, z, rot, 0, sz / 2 - 1) - Local(x, z, rot, 0, -sz / 2 + 1), flow) >= 0 ? sz / 2 - 1 : -sz / 2 + 1;
             var o = Facing(flow);
@@ -480,11 +498,26 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                 coreLocalX = sx / 2 + 1; // (the dies go on the Core's own +x: past the bank's other end when the site's turn puts its +x there)
                 Note($"the Extruder at ({x}, {-z}): its Core stands at the die bank's other end from the lab's (the dies weld on the Core's own +x)");
             }
-            var at = Local(x, z, rot, coreLocalX, rowZ);
-            var plinth = Piece("Extruder Plinth", at, o, Steel);
+            // (and across by a metre when that puts more of its die cells on the run's tile columns: a table meets a tile only square on its middle)
+            Vector2 Cell(int k) => Local(x, z, rot, coreLocalX < 0 ? -sx / 2 + 1 + 2 * k : sx / 2 - 1 - 2 * k, rowZ) + back;
+            int Meets(Vector2 side) => Enumerable.Range(0, w).Count(k => _tileAt.Contains(Round(Cell(k) + side + flow * (0.75f + ExtruderBack + 0.25f + 1f))));
+            var aside = new[] { Vector2.Zero, bankDir, -bankDir }.OrderByDescending(Meets).First();
+            if (aside != Vector2.Zero)
+            {
+                back += aside;
+                Note($"the Extruder at ({x}, {-z}) moves a metre across, to ({aside.X:0}, {aside.Y:0}), so its die cells meet its run's tiles");
+            }
+            // The die cells' plinths first, then the Core's (on a slab's edge it welds on a die plinth's side).
+            for (var k = 0; k < w; k++)
+                if (Piece("Extruder Plinth", Cell(k), o, Steel, "bottom ahead") is { } pl)
+                    Finish(pl, "concrete");
+            var at = Local(x, z, rot, coreLocalX, rowZ) + back;
+            var plinth = Piece("Extruder Plinth", at, o, Steel, "bottom ahead");
             if (plinth == null)
-                return;
+                return null;
             Finish(plinth, "concrete");
+            if (_free.ContainsKey(plinth))
+                Note($"the Extruder at ({at.X}, {at.Y}): its plinth is welded freeform");
             ref var pp = ref Live.Parts[plinth.Index];
             var top = FromRest(pp.Pos + Rot24.Apply(pp.Rot, Array.Find(plinth.Def.Sockets, s => s.Name == "top").At));
             VPart core;
@@ -496,18 +529,14 @@ public sealed class ZeroDayWorks2 : IPartGenerator
             {
                 Note($"the Extruder at ({at.X}, {at.Y}) not placed: {ex.Message}");
                 _missed++;
-                return;
+                return null;
             }
             Keep(core, at, Line);
             OrdersOnly(core);
             var cell = core;
             for (var k = 0; k < w; k++)
             {
-                var cx = coreLocalX < 0 ? -sx / 2 + 1 + 2 * k : sx / 2 - 1 - 2 * k;
-                var c2 = Local(x, z, rot, cx, rowZ);
-                var pl = Piece("Extruder Plinth", c2, o, Steel);
-                if (pl != null)
-                    Finish(pl, "concrete");
+                var c2 = Cell(k);
                 try
                 {
                     cell = Onto(cell, "+x", "Die Block", "-x");
@@ -519,7 +548,9 @@ public sealed class ZeroDayWorks2 : IPartGenerator
                     _missed++;
                     break;
                 }
+                RunOut(cell, c2, flow);
             }
+            return core;
         }
 
         /// <summary>A Dock Expansion (or, for a station's Core, the Building Station pad) with its mouth (own +x) toward the bay.</summary>
@@ -536,7 +567,9 @@ public sealed class ZeroDayWorks2 : IPartGenerator
             var footX = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
             var foot = new Vector2(MathF.Round(footX), 0); // (small -1, medium -2, large -5: the pad's middle behind its mouth)
             var by = d.Sockets.First(s => s.Name.StartsWith("-y.")).Name;
-            Piece(part, at, XFacing(mouth), core ? Station : Crane, by, foot);
+            var p = Piece(part, at, XFacing(mouth), core ? Station : Crane, by, foot);
+            if (core && p != null)
+                _stations.Add((at, p));
         }
 
         /// <summary>
