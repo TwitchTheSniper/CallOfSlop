@@ -35,7 +35,7 @@ public sealed class HullJoin
     public double W { get => Math.Max(WA, WB); set => WA = WB = value; }
     public double H { get => Math.Max(HA, HB); set => HA = HB = value; }
     public int Segments = 6;
-    public bool Mirror = true;
+    public bool Mirror; // off by default (Karl, 2026-11-25)
     public double Flare = 1.6, Buttress = 0.8; // the cladding at each end: how much wider it is where it meets the skin, and how far up the strut it runs (m)
     public bool Follow; // the buttresses' bases laid onto the skin, following its curve, the rings between blending out to them (the user, 2026-11-24)
     public double OpenA = 0.9, OpenB = 0.9;

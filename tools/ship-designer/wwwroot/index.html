@@ -1015,7 +1015,7 @@ function shapeIcon(p) {
 // The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
 // on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
 let conn = null;
-const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: true, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: false, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
 function gallery(pick, onPick, tall = 300) {
   const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
   for (const s of CAT.sections) {

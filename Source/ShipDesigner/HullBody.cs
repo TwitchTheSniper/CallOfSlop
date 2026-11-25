@@ -27,7 +27,7 @@ public sealed class HullBody
     public string Name = "Hull";
     public double X, Y, Z;
     public bool Mirror;
-    public bool Cut = true;
+    public bool Cut; // off by default (Karl, 2026-11-25): a body cuts others only when asked
     public string Skin = "#c9cdd2";
     public List<Station> Stations = [];
     /// <summary>Plated cladding on the skin (Off, Plates, Heavy): panels between stations from a seeded grid, merged into plates of
