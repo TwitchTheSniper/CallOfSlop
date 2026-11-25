@@ -44,15 +44,22 @@ public static partial class DesignScene
         foreach (var h in o["hulls"]!.AsArray())
         {
             h!.AsObject().Remove("clad");
+            h.AsObject().Remove("cladFrom");
             h.AsObject().Remove("paint");
+            h.AsObject().Remove("material");
+            h.AsObject().Remove("damage");
         }
         foreach (var j in o["joins"]!.AsArray())
         {
             j!.AsObject().Remove("clad");
             j.AsObject().Remove("buttressClad");
+            j.AsObject().Remove("matchClad");
+            j.AsObject().Remove("matchButtress");
+            j.AsObject().Remove("matchColour");
+            j.AsObject().Remove("paint");
         }
         foreach (var r in o["rooms"]!.AsArray())
-            foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights" })
+            foreach (var k in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor", "wallStyle", "wallColour", "seed" })
                 r!.AsObject().Remove(k);
         var key = o.ToJsonString();
         if (_check is { } hit && hit.Key == key)
@@ -80,7 +87,7 @@ public static partial class DesignScene
         foreach (var r in d.Rooms)
         {
             var o = r.ToJson();
-            foreach (var n in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights" })
+            foreach (var n in new[] { "interior", "ribSpacing", "panelColour", "trimColour", "lights", "floor", "wallStyle", "wallColour", "seed" })
                 o.Remove(n);
             k.Append(r.Id).Append(':').Append(o.ToJsonString()).Append('|');
         }
@@ -94,6 +101,16 @@ public static partial class DesignScene
             return "";
         var o = h.ToJson();
         o.Remove("clad");
+        o.Remove("material");
+        return o.ToJsonString();
+    }
+
+    /// <summary>A body's JSON for its mesh's key: all but its materials, which the page applies (the mesh is the same in any).</summary>
+    private static string MeshJson(HullBody h)
+    {
+        var o = h.ToJson();
+        o.Remove("material");
+        (o["clad"] as JsonObject)?.Remove("material");
         return o.ToJsonString();
     }
 

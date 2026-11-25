@@ -2,11 +2,14 @@ namespace CallOfSlop.ShipDesigner;
 
 public static partial class DesignScene
 {
-    /// <summary>The most triangles one copy of a body's cladding may add; past it the rest of the body is left bare (logged).</summary>
+    /// <summary>The most triangles one copy of a body's cladding may add; past it the panel size is raised until the whole body fits (logged).</summary>
     public const int MaxCladTris = 60000;
 
     /// <summary>The last body whose cladding hit the cap (its name), for the page's log; empty when none did.</summary>
     public static string CladCapped = "";
+
+    /// <summary>The panel size the last <see cref="CladBody"/> used when it had to raise it to fit the cap; 0 when the body's own size fitted.</summary>
+    public static double CladFitSize;
 
     private const double CladSeam = 0.02, CladSink = 0.03, CladMin = 0.01;
 
@@ -17,10 +20,43 @@ public static partial class DesignScene
     /// before), its skirt sunk 3 cm into the hull. Heavy plates rise higher and some carry a small box. Seeded, so the same design
     /// always clads the same; cells <paramref name="blocked"/> says an opening may reach (by two opposite world corners) stay bare.
     /// </summary>
-    private static void CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    /// <returns>The panel size used: the body's own, or larger when its cladding wouldn't fit <see cref="MaxCladTris"/> (2026-11-25: the cap
+    /// used to cut the cladding off part way, leaving most of a big hull bare; now the whole body is always covered, in bigger panels).</returns>
+    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    {
+        CladFitSize = 0;
+        var own = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        var size = own;
+        var start = m.Tris;
+        for (var tries = 0; ; tries++)
+        {
+            CladBodyAt(m, h, cx, blocked, size);
+            var made = m.Tris - start;
+            if (made <= MaxCladTris)
+                break;
+            if (size >= HullBody.CladSizeMax || tries >= 6)
+            {
+                CladCapped = h.Name;
+                Console.WriteLine($"ship designer: cladding on \"{h.Name}\" has {made} triangles even at {size * 100:0} cm panels, past its cap of {MaxCladTris}; kept whole");
+                break;
+            }
+            m.P.RemoveRange(start * 9, m.P.Count - start * 9);
+            m.C.RemoveRange(start * 9, m.C.Count - start * 9);
+            // Triangles go as 1/size^2; a margin and a 5 cm step so one more try is rarely needed.
+            size = Math.Min(HullBody.CladSizeMax, Math.Ceiling(size * Math.Sqrt((double)made / MaxCladTris) * 1.05 / 0.05) * 0.05);
+        }
+        if (size > own)
+        {
+            CladFitSize = size;
+            Console.WriteLine($"ship designer: cladding on \"{h.Name}\" raised from {own * 100:0} cm to {size * 100:0} cm panels to fit its cap of {MaxCladTris} triangles");
+        }
+        return size;
+    }
+
+    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, double size)
     {
         var heavy = h.Clad == "Heavy";
-        var start = m.Tris;
+        var hex = h.Clad == "Hex";
         var col = DesignMesh.Hex(h.Skin);
         var ah = new double[HullBody.MaxLoft + 2];
         var ay = new double[HullBody.MaxLoft + 2];
@@ -28,7 +64,6 @@ public static partial class DesignScene
         var by = new double[HullBody.MaxLoft + 2];
         var ca = new double[HullBody.MaxLoft + 2];
         var cb = new double[HullBody.MaxLoft + 2];
-        var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         var rings = h.Ring;
         for (var i = 0; i < rings.Count - 1; i++)
         {
@@ -55,12 +90,6 @@ public static partial class DesignScene
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
             foreach (var s in new[] { 1, -1 })
             {
-                if (m.Tris - start > MaxCladTris)
-                {
-                    CladCapped = h.Name;
-                    Console.WriteLine($"ship designer: cladding on \"{h.Name}\" hit its cap of {MaxCladTris} triangles; the rest of the body is left bare");
-                    return;
-                }
                 // The same seed a band on both sides, so the plating is symmetric but where an opening breaks it.
                 var rng = new Random(unchecked(h.CladSeed * 1000003 + i * 7919));
                 (double X, double Y, double Z) P(double u, double v)
@@ -92,7 +121,7 @@ public static partial class DesignScene
                 }
                 if (!terminus)
                 {
-                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777));
+                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -120,7 +149,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
                     LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0);
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed);
                 }
             }
         }
@@ -133,11 +162,10 @@ public static partial class DesignScene
     /// </summary>
     private static double CapSq(double v) => v * v;
 
-    private static void CladCap(DesignMesh m, double cx, HullBody h, Station s, bool aft, Func<double, double, double, bool> open)
+    private static void CladCap(DesignMesh m, double cx, HullBody h, Station s, bool aft, Func<double, double, double, bool> open, double size)
     {
         var heavy = h.Clad == "Heavy";
         var col = DesignMesh.Hex(h.Skin);
-        var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         // The outline as a closed ring (world), round the +x side and back down the -x; the fore cap the other way, so plates face out.
         var ring = new List<(double X, double Y)>();
         foreach (var (hh, y) in s.P)
@@ -211,14 +239,14 @@ public static partial class DesignScene
             }
             var ringLen = reach * (f0 - f1);
             LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell));
+                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed);
         }
     }
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0)
+        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
         var taken = new bool[nu, nv];
         for (var a = 0; a < nu; a++)
@@ -227,7 +255,7 @@ public static partial class DesignScene
                 double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
                 taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
             }
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed);
     }
 
     /// <summary>
@@ -237,8 +265,13 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
+        if (hex)
+        {
+            LayHex(m, nu, nv, arc, len, rng, depth, col, Nrm, W, taken, paint, damage, dseed);
+            return;
+        }
         var rise = (heavy ? 0.20 : 0.08) - CladMin;
         double du = CladSeam / arc, dv = CladSeam / len;
         var last = -1.0;
@@ -275,24 +308,66 @@ public static partial class DesignScene
                 if (pu1 <= pu0 || pv1 <= pv0)
                     continue;
                 var pc = paint?.Invoke((pu0 + pu1) / 2, (pv0 + pv1) / 2, b * 64 + a) ?? col;
-                var top = DesignMesh.Tone(pc, tone);
-                var side = DesignMesh.Tone(pc, tone * 0.72);
-                // The top follows the skin's curve: one quad a cell.
-                double U(int k) => pu0 + (pu1 - pu0) * k / cu;
-                double V(int k) => pv0 + (pv1 - pv0) * k / cv;
-                for (var x = 0; x < cu; x++)
-                    for (var y = 0; y < cv; y++)
-                        m.Quad(W(U(x), V(y), hgt), W(U(x + 1), V(y), hgt), W(U(x + 1), V(y + 1), hgt), W(U(x), V(y + 1), hgt), top, false);
-                // The skirt, sunk into the hull.
-                for (var x = 0; x < cu; x++)
+                var fx = Fx(damage, dseed, W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0));
+                if (fx.Gone)
                 {
-                    m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), W(U(x + 1), pv0, hgt), W(U(x), pv0, hgt), side, false);
-                    m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), W(U(x + 1), pv1, hgt), W(U(x), pv1, hgt), side, false);
+                    Under(m, pu0 - du, pu1 + du, pv0 - dv, pv1 + dv, arc, len, W, pc, dseed);
+                    continue;
                 }
-                for (var y = 0; y < cv; y++)
+                var top = DesignMesh.Tone(pc, tone * fx.Tone);
+                var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+                // Damage: a lift along one edge (a tilted plate) and a dent pushing the top's middle in towards the skin.
+                var hg0 = hgt;
+                double H(double u, double v)
                 {
-                    m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), W(pu0, V(y + 1), hgt), W(pu0, V(y), hgt), side, false);
-                    m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), W(pu1, V(y + 1), hgt), W(pu1, V(y), hgt), side, false);
+                    var su = (u - pu0) / (pu1 - pu0);
+                    var e = hg0 + fx.Lift * su;
+                    if (fx.Dent > 0)
+                        e -= fx.Dent * Math.Sin(Math.PI * Math.Clamp(su, 0, 1)) * Math.Sin(Math.PI * Math.Clamp((v - pv0) / (pv1 - pv0), 0, 1));
+                    return Math.Max(e, 0.006);
+                }
+                // The top follows the skin's curve: one quad a cell (a dented plate four).
+                var sub = fx.Dent > 0 ? 2 : 1;
+                int tu = cu * sub, tv = cv * sub;
+                double U(int k) => pu0 + (pu1 - pu0) * k / tu;
+                double V(int k) => pv0 + (pv1 - pv0) * k / tv;
+                (double, double, double) T(double u, double v) => W(u, v, H(u, v));
+                for (var x = 0; x < tu; x++)
+                    for (var y = 0; y < tv; y++)
+                        m.Quad(T(U(x), V(y)), T(U(x + 1), V(y)), T(U(x + 1), V(y + 1)), T(U(x), V(y + 1)), top, false);
+                // The skirt, sunk into the hull.
+                for (var x = 0; x < tu; x++)
+                {
+                    m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), T(U(x + 1), pv0), T(U(x), pv0), side, false);
+                    m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), T(U(x + 1), pv1), T(U(x), pv1), side, false);
+                }
+                for (var y = 0; y < tv; y++)
+                {
+                    m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), T(pu0, V(y + 1)), T(pu0, V(y)), side, false);
+                    m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), T(pu1, V(y + 1)), T(pu1, V(y)), side, false);
+                }
+                // Abrasion (vertex colour only): a worn plate's edges scuffed and a few scratches across its top, both lightened toward bare
+                // metal and lifted 3 mm off it; how worn each plate is varies with the damage seed, so worn plates sit by less worn ones.
+                var wear = damage <= 0 ? 0 : Math.Clamp(damage * (0.3 + 1.4 * DHash(dseed, W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0), 31)), 0, 1);
+                if (wear > 0.12)
+                {
+                    var bare = Bare(top, wear);
+                    (double, double, double) L(double u, double v) => W(u, v, H(u, v) + 0.003);
+                    double eu = Math.Min(0.03 / arc, (pu1 - pu0) / 6), ev = Math.Min(0.03 / len, (pv1 - pv0) / 6);
+                    m.Quad(L(pu0, pv0), L(pu1, pv0), L(pu1, pv0 + ev), L(pu0, pv0 + ev), bare, false);
+                    m.Quad(L(pu0, pv1 - ev), L(pu1, pv1 - ev), L(pu1, pv1), L(pu0, pv1), bare, false);
+                    m.Quad(L(pu0, pv0 + ev), L(pu0 + eu, pv0 + ev), L(pu0 + eu, pv1 - ev), L(pu0, pv1 - ev), bare, false);
+                    m.Quad(L(pu1 - eu, pv0 + ev), L(pu1, pv0 + ev), L(pu1, pv1 - ev), L(pu1 - eu, pv1 - ev), bare, false);
+                    var w0 = W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0);
+                    var scratches = (int)(wear * 3.5);
+                    for (var k = 0; k < scratches; k++)
+                    {
+                        // A thin streak (1 cm wide) slanting along the plate, inside its edges.
+                        double ua = pu0 + eu + (pu1 - pu0 - 2 * eu) * DHash(dseed, w0, 40 + k), ub = pu0 + eu + (pu1 - pu0 - 2 * eu) * DHash(dseed, w0, 50 + k);
+                        double va = pv0 + ev + (pv1 - pv0 - 2 * ev) * 0.1, vb = pv1 - ev - (pv1 - pv0 - 2 * ev) * 0.1;
+                        var hw = 0.005 / arc;
+                        m.Quad(L(ua - hw, va), L(ua + hw, va), L(ub + hw, vb), L(ub - hw, vb), Bare(top, wear * 0.8), false);
+                    }
                 }
                 if (greeble)
                 {
@@ -301,7 +376,7 @@ public static partial class DesignScene
                         continue;
                     // A small box on the plate, its own axes the skin's there (across, out, along).
                     double gu = pu0 + (pu1 - pu0) * (0.25 + 0.5 * gr.Item1), gv = pv0 + (pv1 - pv0) * (0.25 + 0.5 * gr.Item2);
-                    var o = W(gu, gv, hgt);
+                    var o = W(gu, gv, H(gu, gv));
                     var nn = Nrm(gu, gv);
                     var t = Sub(P(Math.Min(1, gu + 1e-3), gv), P(Math.Max(0, gu - 1e-3), gv));
                     var tl = Math.Sqrt(t.X * t.X + t.Y * t.Y + t.Z * t.Z);
@@ -316,6 +391,251 @@ public static partial class DesignScene
                     m.World();
                 }
             }
+    }
+
+    /// <summary>The primer under a missing plate (Karl, 2026-11-25): dark and matte, no paint pattern.</summary>
+    private static readonly (byte, byte, byte) Primer = (0x3a, 0x3d, 0x3c), FrameCol = (0x4e, 0x50, 0x52), Char = (0x16, 0x14, 0x12);
+
+    /// <summary>
+    /// What shows where a plate is gone (Karl, 2026-11-25), over the cell rectangle u0..u1, v0..v1 (shares; arc and len its metres): the
+    /// inner skin (matte primer, 4 mm off the hull), the frame (ribs along the seams, 2.5 cm up, and a bolt stub at each corner), a scorch
+    /// ring just inside the edge (7 mm up), and one or two torn plate edges bent up off the seam. Only built for missing plates, so an
+    /// intact hull costs nothing; about 40 triangles a gap. Heights all differ by at least 3 mm, so no faces share a plane.
+    /// </summary>
+    internal static void Under(DesignMesh m, double u0, double u1, double v0, double v1, double arc, double len,
+        Func<double, double, double, (double, double, double)> W, (byte, byte, byte) paint, int dseed)
+    {
+        if (u1 <= u0 || v1 <= v0)
+            return;
+        m.Quad(W(u0, v0, 0.004), W(u1, v0, 0.004), W(u1, v1, 0.004), W(u0, v1, 0.004), Primer, false);
+        // Scorch ring: a charred band round the inside of the gap.
+        double su = Math.Min(0.12 / arc, (u1 - u0) / 4), sv = Math.Min(0.12 / len, (v1 - v0) / 4);
+        const double hs = 0.007;
+        m.Quad(W(u0, v0, hs), W(u1, v0, hs), W(u1 - su, v0 + sv, hs), W(u0 + su, v0 + sv, hs), Char, false);
+        m.Quad(W(u1, v0, hs), W(u1, v1, hs), W(u1 - su, v1 - sv, hs), W(u1 - su, v0 + sv, hs), Char, false);
+        m.Quad(W(u1, v1, hs), W(u0, v1, hs), W(u0 + su, v1 - sv, hs), W(u1 - su, v1 - sv, hs), Char, false);
+        m.Quad(W(u0, v1, hs), W(u0, v0, hs), W(u0 + su, v0 + sv, hs), W(u0 + su, v1 - sv, hs), Char, false);
+        // Ribs (along v, at the u seams) and stringers (along u, at the v seams): a top and two sides each, 3 cm wide.
+        double ru = 0.015 / arc, rv = 0.015 / len;
+        const double hr = 0.025;
+        void Rib(double ua, double ub, double va, double vb)
+        {
+            m.Quad(W(ua, va, hr), W(ub, va, hr), W(ub, vb, hr), W(ua, vb, hr), FrameCol, false);
+            m.Quad(W(ua, va, -0.02), W(ua, va, hr), W(ua, vb, hr), W(ua, vb, -0.02), DesignMesh.Tone(FrameCol, 0.75), false);
+            m.Quad(W(ub, vb, -0.02), W(ub, vb, hr), W(ub, va, hr), W(ub, va, -0.02), DesignMesh.Tone(FrameCol, 0.75), false);
+        }
+        Rib(u0, u0 + ru, v0, v1);
+        Rib(u1 - ru, u1, v0, v1);
+        Rib(u0 + ru, u1 - ru, v0, v0 + rv);
+        Rib(u0 + ru, u1 - ru, v1 - rv, v1);
+        // Bolt stubs: a little pyramid on each corner bracket, 5 cm up.
+        double bu = 0.025 / arc, bv = 0.025 / len;
+        foreach (var (cu, cv) in new[] { (u0 + ru, v0 + rv), (u1 - ru, v0 + rv), (u1 - ru, v1 - rv), (u0 + ru, v1 - rv) })
+        {
+            var tip = W(cu, cv, 0.05);
+            (double, double, double) B(double a, double b) => W(cu + a * bu, cv + b * bv, hr + 0.003);
+            var bc = DesignMesh.Tone(FrameCol, 1.15);
+            m.Tri(B(-1, -1), B(1, -1), tip, bc, false);
+            m.Tri(B(1, -1), B(1, 1), tip, bc, false);
+            m.Tri(B(1, 1), B(-1, 1), tip, DesignMesh.Tone(bc, 0.8), false);
+            m.Tri(B(-1, 1), B(-1, -1), tip, DesignMesh.Tone(bc, 0.8), false);
+        }
+        // Torn edges: one or two ragged strips of the old plate still on a seam, bent up and out.
+        var mid = W((u0 + u1) / 2, (v0 + v1) / 2, 0);
+        var torn = DesignMesh.Tone(paint, 0.55);
+        var count = 1 + (DHash(dseed, mid, 70) < 0.5 ? 1 : 0);
+        for (var k = 0; k < count; k++)
+        {
+            var edge = (int)(DHash(dseed, mid, 71 + k) * 4) & 3;
+            double a = 0.15 + 0.3 * DHash(dseed, mid, 75 + k), b = a + 0.25 + 0.3 * DHash(dseed, mid, 79 + k);
+            b = Math.Min(b, 0.95);
+            var rise = 0.06 + 0.1 * DHash(dseed, mid, 83 + k);
+            var inward = 0.08 + 0.08 * DHash(dseed, mid, 87 + k);
+            (double, double, double) Pt(double s, double off, double h) => edge switch
+            {
+                0 => W(u0 + off / arc, v0 + (v1 - v0) * s, h),
+                1 => W(u1 - off / arc, v0 + (v1 - v0) * s, h),
+                2 => W(u0 + (u1 - u0) * s, v0 + off / len, h),
+                _ => W(u0 + (u1 - u0) * s, v1 - off / len, h),
+            };
+            // The bent lip: from the seam (on the frame) up to a jagged tip line partway in.
+            var r0 = Pt(a, 0.005, hr + 0.006);
+            var r1 = Pt(b, 0.005, hr + 0.006);
+            var t1 = Pt(b - 0.05, inward * 0.7, hr + rise * 0.8);
+            var tm = Pt((a + b) / 2, inward, hr + rise);
+            var t0 = Pt(a + 0.04, inward * 0.8, hr + rise * 0.6);
+            m.Quad(r0, r1, t1, t0, torn, false);
+            m.Tri(t0, t1, tm, torn, false);
+        }
+    }
+
+    /// <summary>A colour lightened toward bare metal by a plate's wear (0..1).</summary>
+    private static (byte, byte, byte) Bare((byte, byte, byte) c, double wear)
+    {
+        var f = 0.35 + 0.4 * wear;
+        static byte Mix(byte a, int b, double f) => (byte)Math.Clamp(a + (b - a) * f, 0, 255);
+        return (Mix(c.Item1, 0xd6, f), Mix(c.Item2, 0xda, f), Mix(c.Item3, 0xde, f));
+    }
+
+    /// <summary>A share in 0..1 from a seed and a point (to the centimetre), so the same place always takes the same damage.</summary>
+    internal static double DHash(int seed, (double X, double Y, double Z) p, int k)
+    {
+        unchecked
+        {
+            var x = (long)Math.Round(p.X * 100) * 73856093L ^ (long)Math.Round(p.Y * 100) * 19349663L ^ (long)Math.Round(p.Z * 100) * 83492791L ^ (seed + 1) * 2654435761L ^ k * 97531L;
+            x ^= x >> 33; x *= -49064778989728563L; x ^= x >> 33; x *= -4265267296055464877L; x ^= x >> 33;
+            return (x & 0xFFFFFF) / (double)0x1000000;
+        }
+    }
+
+    /// <summary>Scorch and grime (colour only): a factor for a point, patches about 2.5 m across darkening as damage rises.</summary>
+    internal static double Scorch(double damage, int seed, (double X, double Y, double Z) p)
+    {
+        if (damage <= 0)
+            return 1;
+        var cell = (Math.Floor(p.X / 2.5), Math.Floor(p.Y / 2.5), Math.Floor(p.Z / 2.5));
+        var hs = DHash(seed, cell, 11);
+        return hs < damage * 0.45 ? 0.42 + 0.3 * DHash(seed, cell, 12) : 1;
+    }
+
+    /// <summary>What damage does to one plate or tile, from its middle: gone, lifted along one edge, dented, and its tone.</summary>
+    internal static (bool Gone, double Lift, double Dent, double Tone) Fx(double damage, int seed, (double, double, double) p)
+    {
+        if (damage <= 0)
+            return (false, 0, 0, 1);
+        var gone = DHash(seed, p, 1) < damage * 0.35;
+        var lift = DHash(seed, p, 2) < damage * 0.3 ? 0.02 + 0.04 * DHash(seed, p, 3) : 0;
+        var dent = DHash(seed, p, 4) < damage * 0.3 ? 0.01 + 0.03 * DHash(seed, p, 5) : 0;
+        return (gone, lift, dent, Scorch(damage, seed, p));
+    }
+
+    /// <summary>
+    /// Hex cladding: a honeycomb of raised flat-topped hexagons over the grid's surface, about a cell across the flats, each inset by
+    /// a seam, clipped at the grid's edges (a skirt sunk into the skin on every edge), its flat top on the skin's offset at each corner.
+    /// The plates' rise, depth, paint and stagger; a tile any point of which lands in a taken cell (an opening) stays bare.
+    /// </summary>
+    private static void LayHex(DesignMesh m, int nu, int nv, double arc, double len, Random rng, double depth, (byte, byte, byte) col,
+        Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
+        Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
+    {
+        var rise = 0.08 - CladMin;
+        var cs = arc / nu;
+        cs = Math.Min(cs, Math.Max(len / nv, 0.5 * cs));
+        cs = Math.Max(cs, 0.1);
+        var R = cs / Math.Sqrt(3);
+        double dx = 1.5 * R, dy = Math.Sqrt(3) * R;
+        var ri = R - 2 * CladSeam / Math.Sqrt(3);
+        if (ri < 0.03)
+            return;
+        double e = CladSeam, x0 = e, x1 = arc - e, y0 = e, y1 = len - e;
+        if (x1 <= x0 || y1 <= y0)
+            return;
+        var full = 1.5 * Math.Sqrt(3) * ri * ri;
+        var last = -1.0;
+        var poly = new List<(double X, double Y)>(12);
+        var tmp = new List<(double X, double Y)>(12);
+        var topV = new (double, double, double)[16];
+        var botV = new (double, double, double)[16];
+        int ncol = (int)Math.Ceiling(arc / dx) + 1, nrow = (int)Math.Ceiling(len / dy) + 1;
+        for (var c = 0; c <= ncol; c++)
+            for (var r = -1; r <= nrow; r++)
+            {
+                double cxm = c * dx, cym = (r + ((c & 1) == 1 ? 0.5 : 0)) * dy;
+                poly.Clear();
+                for (var k = 0; k < 6; k++)
+                    poly.Add((cxm + ri * Math.Cos(Math.PI / 3 * k), cym + ri * Math.Sin(Math.PI / 3 * k)));
+                Clip(poly, tmp, 0, x0, true); Clip(poly, tmp, 0, x1, false); Clip(poly, tmp, 1, y0, true); Clip(poly, tmp, 1, y1, false);
+                if (poly.Count < 3)
+                    continue;
+                double area = 0, gx = 0, gy = 0;
+                for (var k = 0; k < poly.Count; k++)
+                {
+                    var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
+                    area += p.X * q.Y - q.X * p.Y;
+                    gx += p.X; gy += p.Y;
+                }
+                area = Math.Abs(area) / 2;
+                if (area < 0.12 * full)
+                    continue;
+                gx /= poly.Count; gy /= poly.Count;
+                int Cu(double x) => Math.Clamp((int)(x / arc * nu), 0, nu - 1);
+                int Cv(double y) => Math.Clamp((int)(y / len * nv), 0, nv - 1);
+                var blocked = taken[Cu(gx), Cv(gy)];
+                foreach (var p in poly)
+                    blocked |= taken[Cu(p.X), Cv(p.Y)];
+                var hgt = CladMin + rise * rng.NextDouble();
+                var tone = 0.88 + 0.18 * rng.NextDouble();
+                if (blocked)
+                    continue;
+                hgt = Math.Round(hgt / 0.005) * 0.005;
+                if (Math.Abs(hgt - last) < 0.005)
+                    hgt += hgt + 0.005 <= CladMin + rise ? 0.005 : -0.005;
+                last = hgt;
+                hgt = Math.Max(hgt * depth, 0.006);
+                double uc = gx / arc, vc = gy / len;
+                var fx = Fx(damage, dseed, W(uc, vc, 0));
+                var pc = paint?.Invoke(uc, vc, Cv(gy) * 64 + Cu(gx)) ?? col;
+                if (fx.Gone)
+                {
+                    // The tile's middle as a box (inside its outline, so the frame stays clear of the tiles round it).
+                    double hx = (poly.Max(q => q.X) - poly.Min(q => q.X)) * 0.36, hy = (poly.Max(q => q.Y) - poly.Min(q => q.Y)) * 0.36;
+                    Under(m, (gx - hx) / arc, (gx + hx) / arc, (gy - hy) / len, (gy + hy) / len, arc, len, W, pc, dseed);
+                    continue;
+                }
+                var top = DesignMesh.Tone(pc, tone * fx.Tone);
+                var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+                // Cheap tiles (2026-11-25: a ringed, edge-cut tile cost ~60 triangles and the body's cap left most hulls bare): a flat top
+                // over the clipped outline (a fan, 4 triangles for a whole hexagon) and one skirt quad an edge, each corner sampled once.
+                // A dent darkens the tile instead of bending it; a lift tilts it along the arc.
+                var lx = poly.Min(q => q.X);
+                var wx = Math.Max(1e-6, poly.Max(q => q.X) - lx);
+                if (fx.Dent > 0)
+                    top = DesignMesh.Tone(top, 0.85);
+                var nc = poly.Count;
+                if (topV.Length < nc)
+                {
+                    topV = new (double, double, double)[nc * 2];
+                    botV = new (double, double, double)[nc * 2];
+                }
+                for (var k = 0; k < nc; k++)
+                {
+                    var (px, py) = poly[k];
+                    double u = px / arc, v = py / len;
+                    topV[k] = W(u, v, Math.Max(hgt + fx.Lift * (px - lx) / wx, 0.006));
+                    botV[k] = W(u, v, -CladSink);
+                }
+                for (var k = 1; k < nc - 1; k++)
+                    m.Tri(topV[0], topV[k], topV[k + 1], top, false);
+                for (var k = 0; k < nc; k++)
+                {
+                    var k1 = (k + 1) % nc;
+                    m.Quad(botV[k], botV[k1], topV[k1], topV[k], side, false);
+                }
+            }
+    }
+
+    /// <summary>Clips a convex polygon to one side of an axis line (Sutherland-Hodgman), in place.</summary>
+    private static void Clip(List<(double X, double Y)> poly, List<(double X, double Y)> tmp, int axis, double at, bool keepAbove)
+    {
+        if (poly.Count == 0)
+            return;
+        tmp.Clear();
+        double Of((double X, double Y) p) => axis == 0 ? p.X : p.Y;
+        bool In((double X, double Y) p) => keepAbove ? Of(p) >= at : Of(p) <= at;
+        for (var k = 0; k < poly.Count; k++)
+        {
+            var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
+            bool ip = In(p), iq = In(q);
+            if (ip)
+                tmp.Add(p);
+            if (ip != iq)
+            {
+                var f = (at - Of(p)) / (Of(q) - Of(p));
+                tmp.Add((p.X + (q.X - p.X) * f, p.Y + (q.Y - p.Y) * f));
+            }
+        }
+        poly.Clear();
+        poly.AddRange(tmp);
     }
 
     private static int Centre(double[] hs, double[] ys, int n)
@@ -357,57 +677,51 @@ public static partial class DesignScene
 
     // ---- room shells (Karl, 2026-11-24: in place of partition walls)
 
+    /// <summary>The gap between a room's box and its shell's outer faces, so two rooms' shells sit back to back 8 mm apart, never on one plane.</summary>
+    public const double ShellGap = 0.004;
+
+    /// <summary>The most triangles one room's wall cladding and floor dressing may add together; past it the rest is left plain.</summary>
+    public const int MaxShellDressTris = 9000;
+
+    /// <summary>How far in from its box a room's shell reaches (0 without one): the interior cladding starts there.</summary>
+    public static double ShellDepth(Room r)
+    {
+        var t = Math.Clamp(r.WallThick, 0, Room.WallThickMax);
+        return t < 0.005 ? 0 : ShellGap + t;
+    }
+
+    /// <summary>The top of what lies on a room's floor (the page's 8 cm marker, or its shell's floor), from the box's floor.</summary>
+    public static double FloorTop(Room r) => Math.Max(0.08, ShellDepth(r));
+
     /// <summary>
-    /// A room's walls: a shell WallThick thick built outward from its box's floor, ceiling and four sides, so the room keeps its full
-    /// inside. Cut into cells about 30 cm square; a cell is left out where it is outside every hull (so the shell stops at the skin),
-    /// inside a room of the same group or an older room (a shared wall is drawn once), or in a door between rooms (0.55 m either
-    /// side of it, up to 2.1 m). A room out to the hull has no port or starboard walls, its floor and ceiling running out to the skin;
-    /// a run-on end has none either. Kept cells are merged into runs, each one box.
+    /// A room's walls, its own (Karl, 2026-11-25): a shell WallThick thick inside its box, ShellGap in from the box's floor, ceiling and four
+    /// sides, so two rooms side by side each have their own wall, back to back, and neither reaches into the other's space. Cut into cells
+    /// about 30 cm square; a cell is left out where it is outside every hull (so the shell stops at the skin), on a wall open to a room of
+    /// the same group, or in a door between rooms (0.55 m either side of it, up to 2.1 m). A room out to the hull follows the skin (its
+    /// <see cref="HullShell"/>); a run-on end has no wall. Kept cells are merged into runs, each one box. With no interior cladding, its
+    /// walls take their WallStyle's relief; and the floor its Floor's dressing where that is not the interior's plate layer.
     /// </summary>
     public static DesignMesh RoomShell(ShipDesign d, Room r, List<double[]> doors)
     {
         var m = new DesignMesh();
-        var t = Math.Clamp(r.WallThick, 0, Room.WallThickMax);
-        if (t < 0.005)
-            return m;
         m.World();
+        var t = Math.Clamp(r.WallThick, 0, Room.WallThickMax);
+        const double g = ShellGap;
         var b = d.Box(r);
-        // World axes: across (plan u, X), along (plan v) and up.
         int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
         var lo = new[] { b[0], b[2], b[4] };
         var hi = new[] { b[1], b[3], b[5] };
-        // Its inner faces 5 mm off the box's own (and so off the room's markers and the deck), never on them.
-        for (var k = 0; k < 3; k++)
-        {
-            lo[k] -= 0.005;
-            hi[k] += 0.005;
-        }
-        var colour = DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
+        var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) : DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
-        double wide0 = lo[ax], wide1 = hi[ax];
-        if (r.ToHull)
-            foreach (var h in d.Hulls)
-            {
-                var (x0, x1, _, _, _, _) = h.Bounds();
-                wide0 = Math.Min(wide0, x0);
-                wide1 = Math.Max(wide1, x1);
-            }
-        // Grown by their own shells, so where two shells would share a plane (side by side, floor under floor) only the older draws.
-        var others = d.Rooms.Where(o => o != r && ((r.Group != 0 && o.Group == r.Group) || o.Id < r.Id)).Select(o =>
-        {
-            var ob = (double[])d.Box(o).Clone();
-            var g = o.Group != 0 && o.Group == r.Group ? 0 : Math.Clamp(o.WallThick, 0, Room.WallThickMax) + 0.005;
-            for (var k = 0; k < 6; k++)
-                ob[k] += k % 2 == 0 ? -g : g;
-            return ob;
-        }).ToList();
-        bool Keep(double[] p, bool hull = true)
+        var mates = d.Rooms.Where(o => o != r && r.Group != 0 && o.Group == r.Group).Select(d.Box).ToList();
+        bool InMate(double[] p) => mates.Any(o => p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5]);
+        // probe: a point just beyond the wall's outer face (in a group-mate: the wall is open, left out).
+        bool Keep(double[] p, double[]? probe = null, bool hull = true)
         {
             if (hull && !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
                 return false;
-            foreach (var o in others)
-                if (p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5])
-                    return false;
+            if (probe is not null && InMate(probe))
+                return false;
             foreach (var q in doors)
             {
                 var rise = d.Stacked ? q[up] - p[up] : p[up] - q[up];
@@ -416,16 +730,48 @@ public static partial class DesignScene
             }
             return true;
         }
-        if (r.ToHull)
+        var shell = t >= 0.005;
+        if (shell && r.ToHull)
+            HullShell(d, r, t, colour, p => Keep(p, p, false), m, doors);
+        double[] V(double a, double b2, double u) { var v = new double[3]; v[ax] = a; v[al] = b2; v[up] = u; return v; }
+        // A slab: its extent on each world axis, cut along two of them (i, j), the third (n) its thickness; out is the side its outer face is on.
+        // A door's opening edges on one world axis (Karl, 2026-11-25: both rooms cut the very same opening, so the cells split at its
+        // edges, not on each room's own 30 cm grid, which put each room's opening somewhere else along the shared wall).
+        void DoorEdges(int k, List<double> e)
         {
-            HullShell(d, r, t, colour, p => Keep(p, false), m);
-            return m;
+            foreach (var q in doors)
+                if (k == up)
+                {
+                    if (d.Stacked) { e.Add(q[up] - 2.1); e.Add(q[up] + 0.3); }
+                    else { e.Add(q[up] - 0.3); e.Add(q[up] + 2.1); }
+                }
+                else { e.Add(q[k] - 0.55); e.Add(q[k] + 0.55); }
         }
-        // A slab: its extent on each world axis, cut along two of them (i across, j along), the third its thickness.
-        void Slab(double[] s0, double[] s1, int i, int j)
+        List<double> Breaks(double a, double b, int k)
         {
-            int ni = Math.Clamp((int)Math.Ceiling((s1[i] - s0[i]) / 0.3), 1, 160), nj = Math.Clamp((int)Math.Ceiling((s1[j] - s0[j]) / 0.3), 1, 160);
+            var n0 = Math.Clamp((int)Math.Ceiling((b - a) / 0.3), 1, 160);
+            var e = new List<double>(n0 + 8);
+            for (var q = 0; q <= n0; q++)
+                e.Add(a + (b - a) * q / n0);
+            var at = e.Count;
+            DoorEdges(k, e);
+            for (var q = e.Count - 1; q >= at; q--)
+                if (e[q] <= a + 0.002 || e[q] >= b - 0.002)
+                    e.RemoveAt(q);
+            e.Sort();
+            for (var q = e.Count - 1; q > 0; q--)
+                if (e[q] - e[q - 1] < 0.002 && q != e.Count - 1)
+                    e.RemoveAt(q);
+            return e;
+        }
+        // A slab: its extent on each world axis, cut along two of them (i, j), the third (n) its thickness; out is the side its outer face is on.
+        void Slab(double[] s0, double[] s1, int i, int j, int n, double out_)
+        {
+            var ei = Breaks(s0[i], s1[i], i);
+            var ej = Breaks(s0[j], s1[j], j);
+            int ni = ei.Count - 1, nj = ej.Count - 1;
             var p = new double[3];
+            var pr = new double[3];
             var c0 = new double[3];
             var c1 = new double[3];
             for (var bj = 0; bj < nj; bj++)
@@ -438,9 +784,11 @@ public static partial class DesignScene
                     {
                         for (var k = 0; k < 3; k++)
                             p[k] = (s0[k] + s1[k]) / 2;
-                        p[i] = s0[i] + (s1[i] - s0[i]) * (bi + 0.5) / ni;
-                        p[j] = s0[j] + (s1[j] - s0[j]) * (bj + 0.5) / nj;
-                        keep = Keep(p);
+                        p[i] = (ei[bi] + ei[bi + 1]) / 2;
+                        p[j] = (ej[bj] + ej[bj + 1]) / 2;
+                        Array.Copy(p, pr, 3);
+                        pr[n] = (out_ < 0 ? s0[n] : s1[n]) + out_ * 0.03;
+                        keep = Keep(p, n == up ? null : pr);
                     }
                     if (keep && run < 0)
                         run = bi;
@@ -448,61 +796,399 @@ public static partial class DesignScene
                     {
                         Array.Copy(s0, c0, 3);
                         Array.Copy(s1, c1, 3);
-                        c0[i] = s0[i] + (s1[i] - s0[i]) * run / ni;
-                        c1[i] = s0[i] + (s1[i] - s0[i]) * bi / ni;
-                        c0[j] = s0[j] + (s1[j] - s0[j]) * bj / nj;
-                        c1[j] = s0[j] + (s1[j] - s0[j]) * (bj + 1) / nj;
+                        c0[i] = ei[run];
+                        c1[i] = ei[bi];
+                        c0[j] = ej[bj];
+                        c1[j] = ej[bj + 1];
                         m.Box(c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], hex);
                         run = -1;
                     }
                 }
             }
         }
-        double[] V(double a, double b2, double u) { var v = new double[3]; v[ax] = a; v[al] = b2; v[up] = u; return v; }
-        // Floor and ceiling, over the whole footprint and its walls (offset 3 mm in from the sides' faces so no faces meet).
-        Slab(V(wide0 - t, lo[al] - t, lo[up] - t), V(wide1 + t, hi[al] + t, lo[up]), ax, al);
-        Slab(V(wide0 - t, lo[al] - t, hi[up]), V(wide1 + t, hi[al] + t, hi[up] + t), ax, al);
-        if (!r.ToHull)
-        {
-            Slab(V(lo[ax] - t, lo[al] - t, lo[up] + 0.003), V(lo[ax], hi[al] + t, hi[up] - 0.003), al, up);
-            Slab(V(hi[ax], lo[al] - t, lo[up] + 0.003), V(hi[ax] + t, hi[al] + t, hi[up] - 0.003), al, up);
-        }
-        // Fore and aft (stacked: below and above on the plan), less a run-on end.
+        // Its floor and ceiling ends (stacked plans: the floor is the box's top, as the interior's).
+        double fl = d.Stacked ? hi[up] : lo[up], sg = d.Stacked ? -1.0 : 1.0, ce = d.Stacked ? lo[up] : hi[up];
+        double Up(double u) => fl + sg * u; // a height up from the floor
+        var hgt = hi[up] - lo[up];
         var noLo = r.ToHull && r.RunOn && !d.Stacked;
         var noHi = r.ToHull && r.RunAft && !d.Stacked;
-        if (!noLo)
-            Slab(V(wide0 - 0.003 + (r.ToHull ? 0 : 0.006), lo[al] - t, lo[up] + 0.003), V(wide1 + 0.003 - (r.ToHull ? 0 : 0.006), lo[al], hi[up] - 0.003), ax, up);
-        if (!noHi)
-            Slab(V(wide0 - 0.003 + (r.ToHull ? 0 : 0.006), hi[al], lo[up] + 0.003), V(wide1 + 0.003 - (r.ToHull ? 0 : 0.006), hi[al] + t, hi[up] - 0.003), ax, up);
+        if (shell && !r.ToHull)
+        {
+            double a0 = lo[ax] + g, a1 = hi[ax] - g, l0 = lo[al] + g, l1 = hi[al] - g;
+            double Mn(double x, double y) => Math.Min(x, y);
+            double Mx(double x, double y) => Math.Max(x, y);
+            // Floor and ceiling over the whole inside of the box.
+            Slab(V(a0, l0, Mn(Up(g), Up(g + t))), V(a1, l1, Mx(Up(g), Up(g + t))), ax, al, up, -sg);
+            Slab(V(a0, l0, Mn(Up(hgt - g), Up(hgt - g - t))), V(a1, l1, Mx(Up(hgt - g), Up(hgt - g - t))), ax, al, up, sg);
+            // The side walls (3 mm in from the floor's and ceiling's ends, so no faces meet), then the ends between them (6 mm).
+            double u0 = Mn(Up(g + 0.003), Up(hgt - g - 0.003)), u1 = Mx(Up(g + 0.003), Up(hgt - g - 0.003));
+            double v0 = Mn(Up(g + 0.006), Up(hgt - g - 0.006)), v1 = Mx(Up(g + 0.006), Up(hgt - g - 0.006));
+            Slab(V(a0 + 0.003, l0 + 0.003, u0), V(a0 + t, l1 - 0.003, u1), al, up, ax, -1);
+            Slab(V(a1 - t, l0 + 0.003, u0), V(a1 - 0.003, l1 - 0.003, u1), al, up, ax, 1);
+            Slab(V(a0 + 0.006, l0 + 0.006, v0), V(a1 - 0.006, l0 + t + 0.003, v1), ax, up, al, -1);
+            Slab(V(a0 + 0.006, l1 - t - 0.003, v0), V(a1 - 0.006, l1 - 0.006, v1), ax, up, al, 1);
+        }
+        var budget = MaxShellDressTris;
+        var sh = ShellDepth(r);
+        // The inside: its walls' inner faces, its floor's top and its ceiling's underside, up from the floor.
+        double ia0 = lo[ax] + (r.ToHull ? 0.06 : sh), ia1 = hi[ax] - (r.ToHull ? 0.06 : sh);
+        double il0 = lo[al] + sh + (shell ? 0.003 : 0), il1 = hi[al] - sh - (shell ? 0.003 : 0);
+        double fTop = FloorTop(r), cBot = hgt - sh;
+        var rnd = new Random(unchecked(r.Id * 7919 + 101 + r.Seed * 31337));
+
+        // ---- wall cladding: relief on the inner faces of the box walls (a room out to the hull keeps its plain shell).
+        if (shell && !r.ToHull && r.Interior == "Off" && r.WallStyle != "Plain")
+        {
+            var dark = DesignMesh.Tone(colour, 0.62);
+            var light = DesignMesh.Tone(colour, 1.18);
+            string H((byte R, byte G, byte B) c) => $"#{c.R:x2}{c.G:x2}{c.B:x2}";
+            string hDark = H(dark), hLight = H(light), hMid = H(DesignMesh.Tone(colour, 0.85));
+            const string metal = "#8a9097", pipe = "#6f7a80", brass = "#b48a3c";
+            // Each wall: its normal axis, the plane of its inner face, the way into the room, the axis along it and its run.
+            var walls = new List<(int N, double F, double In, int W, double W0, double W1)>
+            {
+                (ax, ia0, 1, al, il0, il1), (ax, ia1, -1, al, il0, il1),
+            };
+            if (!noLo) walls.Add((al, il0, 1, ax, ia0, ia1));
+            if (!noHi) walls.Add((al, il1, -1, ax, ia0, ia1));
+            foreach (var (n, f, inw, w, w0, w1) in walls)
+            {
+                double[] At(double s, double hh, double dd) { var v = new double[3]; v[n] = f + inw * dd; v[w] = s; v[up] = Up(hh); return v; }
+                // A box of relief, s along the wall, h up, d out of it (embedded 5 mm in the wall, so its back never meets the face).
+                bool Rel(double s0, double s1, double h0, double h1, double dd, string col)
+                {
+                    if (budget < 12 || s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
+                        return false;
+                    s0 = Math.Max(s0, w0 + 0.004); s1 = Math.Min(s1, w1 - 0.004);
+                    h0 = Math.Max(h0, fTop + 0.004); h1 = Math.Min(h1, cBot - 0.004);
+                    if (s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
+                        return false;
+                    var mid = At((s0 + s1) / 2, (h0 + h1) / 2, -t / 2);
+                    var probe = At((s0 + s1) / 2, (h0 + h1) / 2, -t - g - 0.03);
+                    if (!Keep(mid, probe))
+                        return false;
+                    var c0 = At(s0, h0, -0.005);
+                    var c1 = At(s1, h1, dd);
+                    m.Box(Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2]), Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2]), col);
+                    budget -= 12;
+                    return true;
+                }
+                // Long pieces in chunks of about 1.2 m, so a door cuts only its own.
+                void Run(double s0, double s1, double h0, double h1, double dd, string col)
+                {
+                    var k = Math.Max(1, (int)Math.Round((s1 - s0) / 1.2));
+                    for (var i = 0; i < k; i++)
+                        Rel(s0 + (s1 - s0) * i / k + (i > 0 ? 0.002 : 0), s0 + (s1 - s0) * (i + 1) / k, h0, h1, dd, col);
+                }
+                double len = w1 - w0, top = cBot, bot = fTop;
+                switch (r.WallStyle)
+                {
+                    case "Panels":
+                    {
+                        int ns = Math.Max(1, (int)Math.Round(len / 1.2)), nh = Math.Max(1, (int)Math.Round((top - bot) / 1.0));
+                        for (var i = 0; i < ns; i++)
+                            for (var k = 0; k < nh; k++)
+                                Rel(w0 + len * i / ns + 0.012, w0 + len * (i + 1) / ns - 0.012, bot + (top - bot) * k / nh + 0.012, bot + (top - bot) * (k + 1) / nh - 0.012, 0.012,
+                                    rnd.NextDouble() < 0.15 ? hMid : hLight);
+                        break;
+                    }
+                    case "Ribbed":
+                    {
+                        var ns = Math.Max(1, (int)Math.Round(len / 0.5));
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.03, s + 0.03, bot, top, 0.045, hDark);
+                        }
+                        Run(w0, w1, bot, bot + 0.12, 0.03, hMid);
+                        Run(w0, w1, top - 0.1, top, 0.03, hMid);
+                        break;
+                    }
+                    case "Padded":
+                    {
+                        Run(w0, w1, bot, bot + 0.25, 0.02, hDark);
+                        int ns = Math.Max(1, (int)Math.Round(len / 0.5)), nh = Math.Max(1, (int)Math.Round((top - bot - 0.25) / 0.5));
+                        for (var i = 0; i < ns; i++)
+                            for (var k = 0; k < nh; k++)
+                            {
+                                double s0 = w0 + len * i / ns + 0.02, s1 = w0 + len * (i + 1) / ns - 0.02;
+                                double h0 = bot + 0.25 + (top - bot - 0.25) * k / nh + 0.02, h1 = bot + 0.25 + (top - bot - 0.25) * (k + 1) / nh - 0.02;
+                                if (Rel(s0, s1, h0, h1, 0.03, hLight))
+                                    Rel(s0 + 0.05, s1 - 0.05, h0 + 0.05, h1 - 0.05, 0.045, hLight);
+                            }
+                        break;
+                    }
+                    case "Grate":
+                    {
+                        var ns = Math.Max(1, (int)Math.Round(len / 0.6));
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.02, s + 0.02, bot, top, 0.06, metal);
+                        }
+                        for (var hh = bot + 0.1; hh < top - 0.05; hh += 0.1)
+                            Run(w0, w1, hh - 0.006, hh + 0.006, 0.07, metal);
+                        break;
+                    }
+                    case "Conduit":
+                    {
+                        foreach (var (hh, rr) in new[] { (bot + 0.35, 0.035), (bot + 0.48, 0.025), (top - 0.35, 0.05), (top - 0.2, 0.03) })
+                            Run(w0, w1, hh - rr, hh + rr, rr * 2 + 0.02, pipe);
+                        var ns = Math.Max(1, (int)Math.Round(len / 1.2));
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.025, s + 0.025, bot + 0.28, bot + 0.55, 0.1, hDark);
+                            Rel(s - 0.025, s + 0.025, top - 0.42, top - 0.14, 0.13, hDark);
+                        }
+                        for (var i = 0; i < ns; i++)
+                        {
+                            var s = w0 + len * (i + 0.5) / ns;
+                            if (rnd.NextDouble() < 0.6)
+                            {
+                                Rel(s - 0.025, s + 0.025, bot + 0.55, top - 0.42, 0.06, pipe);
+                                Rel(s - 0.14, s + 0.14, bot + 1.1, bot + 1.4, 0.09, hDark);
+                                Rel(s - 0.1, s + 0.1, bot + 1.15, bot + 1.35, 0.095, brass);
+                            }
+                        }
+                        break;
+                    }
+                    case "Hex":
+                    {
+                        // Flat hex tiles 1 cm proud, faceted as two quads each, a row offset by half.
+                        const double R = 0.17;
+                        double dx = R * 1.5, dy = R * Math.Sqrt(3);
+                        var cDark = DesignMesh.Tone(colour, 0.9);
+                        var i = 0;
+                        for (var s = w0 + R; s < w1 - R * 0.5; s += dx, i++)
+                            for (var hh = bot + dy * (i % 2 == 0 ? 0.5 : 1); hh < top - dy * 0.4; hh += dy)
+                            {
+                                if (budget < 4)
+                                    break;
+                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)))
+                                    continue;
+                                const double rr = R * 0.9;
+                                (double, double, double) Pt(double ang, double dd) { var v = At(s + rr * Math.Cos(ang), hh + rr * Math.Sin(ang), dd); return (v[0], v[1], v[2]); }
+                                var c = rnd.NextDouble() < 0.2 ? cDark : light;
+                                const double dd = 0.01;
+                                var p = new (double, double, double)[6];
+                                for (var k = 0; k < 6; k++)
+                                    p[k] = Pt(Math.PI / 3 * k, dd);
+                                m.Quad(p[0], p[1], p[2], p[3], c, false);
+                                m.Quad(p[0], p[3], p[4], p[5], c, false);
+                                budget -= 4; // the page draws both sides
+                            }
+                        break;
+                    }
+                    case "Industrial":
+                    {
+                        Run(w0, w1, bot, bot + 0.9, 0.025, hDark);
+                        Run(w0, w1, bot + 0.9, bot + 0.98, 0.05, brass);
+                        var ns = Math.Max(1, (int)Math.Round(len / 1.2));
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.06, s + 0.06, bot, top, 0.07, metal);
+                        }
+                        for (var i = 0; i < ns; i++)
+                        {
+                            double s0 = w0 + len * i / ns + 0.07, s1 = w0 + len * (i + 1) / ns - 0.07;
+                            Rel(s0 + 0.01, s1 - 0.01, bot + 1.0, top - 0.05, 0.01, hMid);
+                            if (rnd.NextDouble() < 0.4)
+                                for (var k = 0; k < 4; k++)
+                                    Rel(s0 + 0.15, s1 - 0.15, bot + 1.4 + k * 0.08, bot + 1.44 + k * 0.08, 0.025, hDark);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        // ---- floor dressing (the interior's plate layer does Plates and Hex), on what lies on the floor, inside the walls.
+        if (r.Floor is not ("Plates" or "Hex"))
+            FloorDress(d, r, m, V, Up, ia0 + 0.004, ia1 - 0.004, il0 + 0.004, il1 - 0.004, fTop, ax, al, rnd, ref budget);
         return m;
+    }
+
+    /// <summary>A room's floor in one of the dressings (Karl, 2026-11-25): its pieces in plan a (across) and l (along), u up from what it lies on.</summary>
+    private static void FloorDress(ShipDesign d, Room r, DesignMesh m, Func<double, double, double, double[]> V, Func<double, double> Up,
+        double a0, double a1, double l0, double l1, double fTop, int ax, int al, Random rnd, ref int budget)
+    {
+        if (a1 - a0 < 0.05 || l1 - l0 < 0.05)
+            return;
+        var left = budget;
+        bool Piece(double x0, double x1, double y0, double y1, double u0, double u1, string col)
+        {
+            x0 = Math.Max(x0, a0); x1 = Math.Min(x1, a1); y0 = Math.Max(y0, l0); y1 = Math.Min(y1, l1);
+            if (left < 12 || x1 - x0 < 1e-3 || y1 - y0 < 1e-3)
+                return false;
+            var mid = V((x0 + x1) / 2, (y0 + y1) / 2, Up(fTop + 0.02));
+            if (!d.Hulls.Any(h => h.Depth(mid[0], mid[1], mid[2]) > 0.01))
+                return false;
+            var c0 = V(x0, y0, Up(fTop + u0));
+            var c1 = V(x1, y1, Up(fTop + u1));
+            m.Box(Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2]), Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2]), col);
+            left -= 12;
+            return true;
+        }
+        // A whole layer in cells about 60 cm (a cell outside the hull is left out).
+        void Base(double u0, double u1, string col)
+        {
+            int ni = Math.Clamp((int)Math.Round((a1 - a0) / 0.6), 1, 60), nj = Math.Clamp((int)Math.Round((l1 - l0) / 0.6), 1, 80);
+            if (ni * nj * 12 > left / 2) { ni = 1; nj = 1; }
+            for (var i = 0; i < ni; i++)
+                for (var j = 0; j < nj; j++)
+                    Piece(a0 + (a1 - a0) * i / ni, a0 + (a1 - a0) * (i + 1) / ni, l0 + (l1 - l0) * j / nj, l0 + (l1 - l0) * (j + 1) / nj, u0, u1, col);
+        }
+        double wa = a1 - a0, wl = l1 - l0;
+        switch (r.Floor)
+        {
+            case "Plain":
+                Base(0.003, 0.013, "#7d848c");
+                break;
+            case "Diamond":
+            {
+                Base(0.003, 0.009, "#9aa2aa");
+                // Raised diamonds in a herringbone, as tread plate: flat lozenges 3 mm proud, rows turned each way.
+                const double s = 0.12;
+                var c = DesignMesh.Hex("#b7bec6");
+                for (var x = a0 + s / 2; x < a1 - s / 4; x += s)
+                    for (var y = l0 + s / 2; y < l1 - s / 4; y += s)
+                    {
+                        if (left < 2)
+                            break;
+                        var turn = ((int)((x - a0) / s) + (int)((y - l0) / s)) % 2 == 0;
+                        double hx = turn ? 0.045 : 0.012, hy = turn ? 0.012 : 0.045;
+                        (double, double, double) P(double px, double py) { var v = V(px, py, Up(fTop + 0.012)); return (v[0], v[1], v[2]); }
+                        var mid = V(x, y, Up(fTop));
+                        if (!d.Hulls.Any(h => h.Depth(mid[0], mid[1], mid[2]) > 0.01))
+                            continue;
+                        var q = (P(x - hx, y), P(x, y - hy), P(x + hx, y), P(x, y + hy));
+                        m.Quad(q.Item1, q.Item2, q.Item3, q.Item4, c, false);
+                        left -= 2;
+                    }
+                break;
+            }
+            case "Grating":
+            {
+                Base(0.003, 0.006, "#24282c");
+                // Bearing bars along the room every 4 cm on cross bars every 60 cm: an open grate over the dark pan.
+                for (var x = a0 + 0.03; x < a1 - 0.01; x += 0.06)
+                {
+                    var n = Math.Max(1, (int)Math.Round(wl / 1.2));
+                    for (var k = 0; k < n; k++)
+                        Piece(x - 0.005, x + 0.005, l0 + wl * k / n + 0.002, l0 + wl * (k + 1) / n, 0.008, 0.04, "#7f878e");
+                }
+                for (var y = l0 + 0.3; y < l1 - 0.1; y += 0.6)
+                    Piece(a0, a1, y - 0.006, y + 0.006, 0.01, 0.036, "#69727a");
+                break;
+            }
+            case "Tiles":
+            {
+                Base(0.003, 0.008, "#3c4146");
+                const double s = 0.5;
+                for (var x = a0; x < a1 - 0.01; x += s)
+                    for (var y = l0; y < l1 - 0.01; y += s)
+                        Piece(x + 0.006, x + s - 0.006, y + 0.006, y + s - 0.006, 0.006, 0.016, rnd.NextDouble() < 0.12 ? "#b8bcc0" : "#cfd3d6");
+                break;
+            }
+            case "Rubber":
+            {
+                Base(0.003, 0.012, "#2b2d30");
+                for (var x = a0 + 0.04; x < a1 - 0.02; x += 0.07)
+                {
+                    var n = Math.Max(1, (int)Math.Round(wl / 1.2));
+                    for (var k = 0; k < n; k++)
+                        Piece(x - 0.012, x + 0.012, l0 + wl * k / n + 0.03, l0 + wl * (k + 1) / n - 0.03, 0.01, 0.018, "#37393d");
+                }
+                break;
+            }
+            case "Wood":
+            {
+                Base(0.003, 0.007, "#2a1f17");
+                // Planks along the room, 14 cm wide, staggered lengths, three tones.
+                string[] tones = ["#8a5d3b", "#7a5034", "#9a6a44"];
+                for (var x = a0; x < a1 - 0.01; x += 0.14)
+                {
+                    var y = l0 - rnd.NextDouble() * 1.2;
+                    while (y < l1 - 0.01)
+                    {
+                        var ln = 1.2 + rnd.NextDouble() * 1.2;
+                        Piece(x + 0.003, x + 0.14 - 0.003, y + 0.003, y + ln - 0.003, 0.006, 0.02, tones[rnd.Next(3)]);
+                        y += ln;
+                    }
+                }
+                break;
+            }
+            case "Hazard":
+            {
+                // A grey deck in a 30 cm border of yellow and black blocks.
+                const double bw = 0.3;
+                Piece(a0 + bw + 0.004, a1 - bw - 0.004, l0 + bw + 0.004, l1 - bw - 0.004, 0.003, 0.012, "#70777e");
+                var i = 0;
+                for (var y = l0; y < l1 - 0.01; y += bw, i++)
+                {
+                    Piece(a0, a0 + bw, y + 0.002, y + bw - 0.002, 0.003, 0.016, i % 2 == 0 ? "#e2b21c" : "#1c1d1f");
+                    Piece(a1 - bw, a1, y + 0.002, y + bw - 0.002, 0.003, 0.016, i % 2 == 0 ? "#e2b21c" : "#1c1d1f");
+                }
+                i = 0;
+                for (var x = a0 + bw; x < a1 - bw - 0.01; x += bw, i++)
+                {
+                    Piece(x + 0.002, Math.Min(x + bw, a1 - bw) - 0.002, l0, l0 + bw, 0.003, 0.016, i % 2 == 0 ? "#1c1d1f" : "#e2b21c");
+                    Piece(x + 0.002, Math.Min(x + bw, a1 - bw) - 0.002, l1 - bw, l1, 0.003, 0.016, i % 2 == 0 ? "#1c1d1f" : "#e2b21c");
+                }
+                break;
+            }
+        }
+        budget = left;
     }
 
     /// <summary>
     /// The shell of a room out to the hull, from the very samples <see cref="RoomMesh"/> draws its volume with (its Span, its Edges at the
-    /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its inner face 5 mm off the hologram,
-    /// its outer face t beyond that. A quad whose middle is in a door, in an older room's shell or a group-mate's room is left out.
+    /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its outer face 4 mm in from the hologram,
+    /// its inner face t further in (Karl, 2026-11-25: inside its own room). A quad whose outside is in a door or a group-mate's room is left out.
     /// </summary>
-    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m)
+    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m, List<double[]> doors)
     {
-        const double g = 0.005;
+        const double g = ShellGap;
         var dk = d.DeckOf(r);
         var (s0, s1) = Span(d, r);
-        var nv = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
-        const int nu = 4;
         var hgt = dk.Height;
+        // Slices along the room and rows up it, split at every door's edges (Karl, 2026-11-25: both rooms cut the same opening).
+        int va_ = d.Stacked ? 1 : 2, up_ = d.Stacked ? 2 : 1;
+        var vs = new List<double>();
+        var n0 = Math.Max(1, (int)Math.Ceiling((s1 - s0) / 0.5));
+        for (var q = 0; q <= n0; q++)
+            vs.Add(s0 + (s1 - s0) * q / n0);
+        var us = new List<double> { 0, hgt / 4, hgt / 2, hgt * 3 / 4, hgt };
+        foreach (var q in doors)
+        {
+            foreach (var e in new[] { q[va_] - 0.55, q[va_] + 0.55 })
+                if (e > s0 + 0.002 && e < s1 - 0.002)
+                    vs.Add(e);
+            var fu = d.Stacked ? dk.Floor - q[up_] : q[up_] - dk.Floor;
+            if (Math.Abs(fu) < 0.05)
+                foreach (var e in new[] { fu + 2.1 })
+                    if (e > 0.002 && e < hgt - 0.002)
+                        us.Add(e);
+        }
+        vs.Sort();
+        us.Sort();
+        var nv = vs.Count - 1;
+        var nu = us.Count - 1;
         (double, double, double) P(double u, double v, double up) { var w = d.World(dk, u, v, up); return (w[0], w[1], w[2]); }
-        double V(int i) => s0 + (s1 - s0) * i / nv;
-        double Up(int k) => hgt * k / nu;
+        double V(int i) => vs[i];
+        double Up(int k) => us[k];
         var side = DesignMesh.Tone(col, 0.9);
         // Both faces of a strip of shell: inner (off by g) and outer (off by g + t), dir the plan offset per unit of push.
         void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c)
         {
-            var (a, b, cc, dd) = at(g);
-            var mid = new[] { (a.Item1 + cc.Item1) / 2, (a.Item2 + cc.Item2) / 2, (a.Item3 + cc.Item3) / 2 };
-            if (!keep(mid))
+            var (pa, _, pc, _) = at(0.03); // just outside its outer face: the probe for a door or a group-mate's room
+            if (!keep([(pa.Item1 + pc.Item1) / 2, (pa.Item2 + pc.Item2) / 2, (pa.Item3 + pc.Item3) / 2]))
                 return;
+            var (a, b, cc, dd) = at(-g);
             m.Quad(a, b, cc, dd, c, false);
-            var (a2, b2, c2, d2) = at(g + t);
+            var (a2, b2, c2, d2) = at(-(g + t));
             m.Quad(a2, b2, c2, d2, c, false);
             // Its rims, so the shell reads solid edge-on.
             m.Quad(a, b, b2, a2, side, false);
@@ -537,7 +1223,7 @@ public static partial class DesignScene
                 double ua = Up(k), ub = Up(k + 1);
                 var (a0, b0) = Edges(d, r, v, ua);
                 var (a1, b1) = Edges(d, r, v, ub);
-                Two(o => (P(a0 - g, v + sg * o, k == 0 ? ua - g : ua), P(b0 + g, v + sg * o, k == 0 ? ua - g : ua), P(b1 + g, v + sg * o, k == nu - 1 ? ub + g : ub), P(a1 - g, v + sg * o, k == nu - 1 ? ub + g : ub)), col);
+                Two(o => (P(a0 + g, v + sg * o, k == 0 ? ua - g : ua), P(b0 - g, v + sg * o, k == 0 ? ua - g : ua), P(b1 - g, v + sg * o, k == nu - 1 ? ub + g : ub), P(a1 + g, v + sg * o, k == nu - 1 ? ub + g : ub)), col);
             }
         }
     }

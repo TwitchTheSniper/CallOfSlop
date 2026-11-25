@@ -15,12 +15,31 @@ public sealed partial class Ui
     private readonly Dictionary<string, DesignGeo> _sdKeyed = [];
     private readonly HashSet<string> _sdKeyedUsed = [];
     private readonly Dictionary<string, (DesignGeo G, Vector3 At)> _hullGeo = [];
-    private readonly Dictionary<int, List<(int Copy, bool Skin, bool Fore, bool Aft)>> _hullCopies = [];
+    private readonly Dictionary<int, List<(int Copy, double CladFit)>> _hullCopies = [];
     private float _sdGridY;
 
     /// <summary>A material as the page gives its meshes: a colour (hex, sRGB), see-through or not, a glow, lit or not.</summary>
     private readonly record struct Mat(uint Hex = 0xffffff, float Alpha = 1, bool Transparent = false, bool DepthWrite = true, uint Emissive = 0,
-        bool Unlit = false, float Metal = 0.15f, bool DepthTest = true, int Order = 0);
+        bool Unlit = false, float Metal = 0.15f, bool DepthTest = true, int Order = 0, uint Tint = 0xffffff, float Rough = 0.7f, float Coat = 0, float Env = 0);
+
+    /// <summary>The page's body materials (MATS): a tint over the vertex colours, metalness, roughness and clearcoat; Painted is none.</summary>
+    private static readonly (string Name, uint Tint, float Metal, float Rough, float Coat)[] SdMats =
+    [
+        ("Painted", 0xffffff, 0.15f, 0.7f, 0), ("Steel", 0xc8ccd0, 0.85f, 0.38f, 0), ("Brushed aluminium", 0xe4e7ea, 0.9f, 0.5f, 0),
+        ("Titanium", 0xb6b2a8, 0.8f, 0.3f, 0), ("Copper", 0xf0a070, 0.95f, 0.28f, 0), ("Gloss plastic", 0xffffff, 0, 0.18f, 1),
+        ("Matte plastic", 0xffffff, 0, 0.92f, 0), ("Carbon", 0x3a3d42, 0.2f, 0.42f, 0.8f),
+    ];
+
+    /// <summary>A material by name, worn by damage as the page's wornOpts does (rougher, less metal, less clearcoat and reflection).</summary>
+    private static Mat MatNamed(string name, double dmg = 0)
+    {
+        var i = Array.FindIndex(SdMats, m => m.Name == name);
+        if (i <= 0)
+            return new Mat(0xffffff);
+        var m = SdMats[i];
+        var d = (float)Math.Clamp(dmg, 0, 1);
+        return new Mat(0xffffff, Tint: m.Tint, Metal: m.Metal * (1 - 0.55f * d), Rough: MathF.Min(1, m.Rough + 0.45f * d), Coat: m.Coat * (1 - d), Env: 0.8f * (1 - 0.45f * d));
+    }
 
     private static Vector3 Lin(uint hex) => new(SrgbToLinear((hex >> 16) & 255), SrgbToLinear((hex >> 8) & 255), SrgbToLinear(hex & 255));
 
@@ -134,7 +153,7 @@ public sealed partial class Ui
     {
         var o = new DesignObj
         {
-            Geo = g, Pos = pos, Tint = vertexColours ? Vector3.One : Lin(m.Hex), Alpha = m.Alpha, Transparent = m.Transparent || m.Alpha < 1,
+            Geo = g, Pos = pos, Tint = vertexColours ? Lin(m.Tint) : Lin(m.Hex) * Lin(m.Tint), Rough = m.Rough, Coat = m.Coat, Env = m.Env, Alpha = m.Alpha, Transparent = m.Transparent || m.Alpha < 1,
             DepthWrite = m.DepthWrite && !(m.Transparent && m.Alpha < 1 && !m.DepthWrite), Emissive = Lin(m.Emissive), Unlit = m.Unlit, Metal = m.Metal,
             DepthTest = m.DepthTest, Order = m.Order, Pick = pick, VertexColours = vertexColours,
         };
@@ -218,6 +237,19 @@ public sealed partial class Ui
         if (!_sdLoaded)
             return;
         ClearWorld();
+        ShipDesignerRenderer.Cut = null;
+        if (Has(S, "roomView"))
+        {
+            // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
+            DrawRooms(Arr(S, "roomView").Select(x => x.GetInt32()).ToHashSet());
+            if (_vPerson)
+                DrawPerson();
+            ApplyCut();
+            DrawGrid();
+            DropUnused();
+            _gizmoHull = 0;
+            return;
+        }
         var ghost = _vXray || Inside || _pickRoomFor != 0;
         var fresh = Arr(S, "hulls").All(h => Has(h, "copies"));
         if (fresh)
@@ -235,24 +267,29 @@ public sealed partial class Ui
                 : (_hullCopies.TryGetValue(hid, out var kept) ? kept.Select(k => (k.Copy, (JsonElement?)null)).ToList() : []);
             foreach (var (copy, c) in copies)
             {
-                foreach (var surf in new[] { "skin", "fore", "aft" })
+                foreach (var surf in new[] { "skin", "fore", "aft", "skinClad", "foreClad", "aftClad" })
                 {
+                    var isClad = surf.EndsWith("Clad");
+                    var clad = Get(h, "clad");
+                    var cm = Str(clad, "material");
+                    var hm = Str(h, "material", "Painted");
+                    var look = isClad ? MatNamed(cm.Length > 0 && cm != "Hull" ? cm : hm, Found(clad) && Has(clad, "damage") ? D(clad, "damage") : D(h, "damage")) : MatNamed(hm);
                     var key = $"{hid}/{copy}/{surf}";
                     if (c is { } ce)
                     {
                         var m = Get(ce, surf);
-                        if (Get(m, "p").GetArrayLength() == 0)
+                        if (!Found(m) || Get(m, "p").GetArrayLength() == 0)
                             continue;
                         _hullGeo[key] = (GeoOf(m), hpos);
                     }
                     if (!_hullGeo.TryGetValue(key, out var hg))
                         continue;
                     var selHull = _selKind == "hull" && _selId == hid && _sdMode == "hull";
-                    var mat = ghost ? ghostMat : new Mat(0xffffff);
+                    var mat = ghost ? look with { Alpha = ghostMat.Alpha, Transparent = true, DepthWrite = false } : look;
                     if (selHull)
                         mat = mat with { Emissive = 0x0d2a48 };
                     var off = new Vector3((copy == 1 ? -1 : 1) * (hpos.X - hg.At.X), hpos.Y - hg.At.Y, hpos.Z - hg.At.Z);
-                    Add(hg.G, mat, new DesignPick("hull", Hull: hid, Copy: copy, Surface: surf), true, off, true);
+                    Add(hg.G, mat, new DesignPick("hull", Hull: hid, Copy: copy, Surface: isClad ? surf[..^4] : surf), true, off, true);
                 }
             }
             if (_sdMode == "hull" && _selKind == "hull" && _selId == hid)
@@ -263,7 +300,8 @@ public sealed partial class Ui
             var mesh = Get(j, "mesh");
             if (Get(mesh, "p").GetArrayLength() == 0 || hideHull)
                 continue;
-            var mat = ghost ? ghostMat : new Mat(0xffffff);
+            var jl = MatNamed(Str(j, "material", "Painted"));
+            var mat = ghost ? jl with { Alpha = ghostMat.Alpha, Transparent = true, DepthWrite = false } : jl;
             if (_selKind == "join" && _selId == I(j, "id"))
                 mat = mat with { Emissive = 0x1d4f86 };
             Add(GeoOf(mesh), mat, new DesignPick("join", I(j, "id")), true, default, true);
@@ -374,6 +412,12 @@ public sealed partial class Ui
     private void DrawExts(JsonElement r, bool dim)
     {
         var col = HexOf(Str(r, "colour"));
+        // The model's mesh of them all, bent inside the skin; the rings (pulled in too) give the outline.
+        var em = Get(r, "extMesh");
+        var hasMesh = Found(em) && Get(em, "p").GetArrayLength() > 0;
+        if (hasMesh)
+            Add(GeoOf(em), new Mat(Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: _selKind == "room" && _selId == I(r, "id") ? 0x2a4f80u : 0),
+                new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0, default, true);
         foreach (var e in Arr(r, "exts"))
         {
             var A = Nums(Get(e, "a"));
@@ -405,12 +449,13 @@ public sealed partial class Ui
                 g.Tri(cb, Pb(i), Pb((i + 1) % n));
             }
             var picked = _selKind == "room" && _selId == I(r, "id");
-            Add(g, new Mat(col, Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x2a4f80u : 0), new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0);
+            if (!hasMesh)
+                Add(g, new Mat(col, Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x2a4f80u : 0), new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0);
             Add(l, new Mat(col, Alpha: dim ? 0.2f : 1, Transparent: dim, Unlit: true));
         }
     }
 
-    private void DrawRooms()
+    private void DrawRooms(HashSet<int>? only = null)
     {
         var decks = Arr(S, "decks").ToList();
         var rooms = Arr(S, "rooms").ToList();
@@ -422,12 +467,14 @@ public sealed partial class Ui
             if (rd >= decks.Count)
                 continue;
             var id = I(r, "id");
+            if (only != null && !only.Contains(id))
+                continue;
             var b = Nums(Get(r, "box"));
             if (b.Length < 6)
                 continue;
             // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
             var through = fl is { } f && (stacked ? b[4] < f - 0.1 && b[5] >= f - 0.01 : b[2] <= f + 0.01 && b[3] > f + 0.1);
-            var dim = Inside && rd != _sdDeck && !through;
+            var dim = only == null && Inside && rd != _sdDeck && !through;
             var pickRoom = !dim || _mergeFrom != 0;
             var picked = _selKind == "room" && _selId == id;
             var col = HexOf(Str(r, "colour"));
@@ -435,7 +482,11 @@ public sealed partial class Ui
             DrawExts(r, dim);
             var pick = new DesignPick("room", id);
             if (Has(r, "wallMesh"))
-                Add(GeoOf(Get(r, "wallMesh")), new Mat(Alpha: dim ? 0.15f : 1, Transparent: dim, Emissive: picked ? 0x1a3050u : 0), pick, pickRoom, default, true);
+            {
+                // In Room view see-through, so its interior shows from outside.
+                var see = only != null && !_roomOpaque;
+                Add(GeoOf(Get(r, "wallMesh")), new Mat(Alpha: dim ? 0.15f : see ? 0.3f : 1, Transparent: dim || see, DepthWrite: !see, Emissive: picked ? 0x1a3050u : 0), pick, pickRoom, default, true);
+            }
             var im = Get(r, "intMesh");
             if (Found(im) && Get(im, "p").GetArrayLength() > 0)
             {
@@ -450,7 +501,8 @@ public sealed partial class Ui
                 // A room out to the hull follows the skin: drawn from its own shape.
                 var group = I(r, "group");
                 var selGroup = _selKind == "room" && (_selId == id || (group != 0 && I(ById(rooms, _selId), "group") == group));
-                Add(GeoOf(Get(r, "mesh")), new Mat(Alpha: dim ? 0.08f : 0.38f, Transparent: true, DepthWrite: false, Emissive: selGroup ? 0x2a4f80u : (!ok ? 0x6a1a0au : 0)), pick, pickRoom, default, true);
+                var solid = only != null && _roomOpaque && !dim;
+                Add(GeoOf(Get(r, "mesh")), new Mat(Alpha: solid ? 1 : dim ? 0.08f : 0.38f, Transparent: !solid, DepthWrite: solid, Emissive: selGroup ? 0x2a4f80u : (!ok ? 0x6a1a0au : 0)), pick, pickRoom, default, true);
                 continue;
             }
             float bx0 = (float)b[0], bx1 = (float)b[1], by0 = (float)b[2], by1 = (float)b[3], bz0 = (float)b[4], bz1 = (float)b[5];
@@ -487,9 +539,13 @@ public sealed partial class Ui
         if (_sdMode == "connectors")
             foreach (var p in Arr(S, "placedDoors"))
                 DrawDoor(p);
+        bool NearShown(Vector3 q) => rooms.Any(r => only!.Contains(I(r, "id")) && Nums(Get(r, "box")) is { Length: 6 } o
+            && q.X >= o[0] - 0.3 && q.X <= o[1] + 0.3 && q.Y >= o[2] - 0.3 && q.Y <= o[3] + 0.3 && q.Z >= o[4] - 0.3 && q.Z <= o[5] + 0.3);
         foreach (var d in Arr(S, "doors"))
         {
             var v = V3(d);
+            if (only != null && !NearShown(v))
+                continue;
             var g = new GB();
             if (stacked)
                 g.Box(0.7f, 0.7f, 0.04f, v.X, v.Y, v.Z - 0.1f);
@@ -1016,5 +1072,34 @@ public sealed partial class Ui
         t = Math.Clamp(t, 0, 1);
         s = MathF.Max(0, Vector3.Dot(a + u * t - ro, rd) / A);
         return (Vector3.Distance(ro + rd * s, a + u * t), s);
+    }
+
+    /// <summary>
+    /// Room view's cutaway (the page's applyCut): a plane from the room's floor (0%) to a little over its ceiling (100%: nothing cut),
+    /// on everything drawn.
+    /// </summary>
+    private void ApplyCut()
+    {
+        ShipDesignerRenderer.Cut = null;
+        if (_roomView is not { } rv || _roomCut >= 100)
+            return;
+        var r = ById(Arr(S, "rooms").ToList(), rv.Room);
+        if (!Found(r))
+            return;
+        var b = Nums(Get(r, "box"));
+        if (b.Length < 6)
+            return;
+        if (Stacked)
+        {
+            var top = b[4] - 0.3;
+            var h = b[5] + (top - b[5]) * _roomCut / 100;
+            ShipDesignerRenderer.Cut = new Vector4(0, 0, 1, (float)-h); // keeps z >= h
+        }
+        else
+        {
+            var top = b[3] + 0.3;
+            var h = b[2] + (top - b[2]) * _roomCut / 100;
+            ShipDesignerRenderer.Cut = new Vector4(0, -1, 0, (float)h); // keeps y <= h
+        }
     }
 }

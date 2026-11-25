@@ -8,6 +8,9 @@ public static class ShipDesignStore
 {
     public const string FileName = "shipdesign.json";
 
+    /// <summary>A saved design this build could not read, kept aside before the designer writes over it (the page keeps one too).</summary>
+    public const string UnreadName = "shipdesign.unread.json";
+
     /// <summary>Test runs set this so nothing is written.</summary>
     public static bool ReadOnly;
 
@@ -23,6 +26,15 @@ public static class ShipDesignStore
             Console.WriteLine($"[ship designer] {FileName} not read: {ex.Message}");
             return null;
         }
+    }
+
+    /// <summary>Keeps a design that could not be read in <see cref="UnreadName"/> (an older copy there is replaced).</summary>
+    public static void KeepUnread(string json)
+    {
+        if (ReadOnly)
+            return;
+        if (!SavePaths.WriteAtomic(SavePaths.PathOf(UnreadName), json))
+            Console.WriteLine($"[ship designer] {UnreadName} not written");
     }
 
     public static void Save(string json)

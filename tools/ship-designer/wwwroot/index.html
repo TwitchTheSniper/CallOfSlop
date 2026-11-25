@@ -37,6 +37,8 @@ header.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
 .brand { font: 700 22px/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
 .brand small { font: 500 11px var(--mono); letter-spacing: .1em; color: var(--ink2); margin-left: 8px; text-transform: none; }
 .modes { display: flex; gap: 4px; }
+.modes select { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; width: 11em; }
+.modes select.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .modes button { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 14px; }
 .grow { flex: 1; }
 .tools { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -47,6 +49,7 @@ aside.right { border-left: 1px solid var(--line); }
 h2 { font: 600 17px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; margin: 0; display: flex; align-items: baseline; gap: 8px; }
 h2 .n { font: 500 11px var(--mono); color: var(--ink2); letter-spacing: .04em; text-transform: none; }
 .sec { display: grid; gap: 8px; }
+button.reset { padding: 1px 6px; font-size: 12px; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .row label { display: flex; gap: 6px; align-items: center; }
 .grid2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; }
@@ -100,6 +103,13 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
     padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.spick { position: relative; display: inline-block; }
+.spick > button { display: inline-flex; align-items: center; gap: 6px; }
+.spick .sw { width: 22px; height: 16px; border: 1px solid var(--line); border-radius: 3px; flex: none; }
+.spick .grid { position: absolute; z-index: 20; top: 100%; left: 0; display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.spick .grid button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px; font-size: 11px; }
+.spick .grid button .sw { width: 52px; height: 36px; }
+.spick .grid button.on { outline: 2px solid var(--accent); }
 </style>
 
 <div class="app">
@@ -109,6 +119,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
       <button id="m-hull" class="on">Hull</button>
       <button id="m-pieces">Pieces</button>
       <button id="m-interior">Interior</button>
+      <select id="m-rooms" aria-label="Room view"><option value="">Room view</option></select>
       <button id="m-connectors">Connectors</button>
     </nav>
     <div class="grow"></div>
@@ -177,19 +188,65 @@ const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
 const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true };
 let deck = 0;
+// Room view (Interior tab): only one room (and, ticked, the rooms a door or a riser joins to it) with its walls and interior; the model
+// builds nothing else while it is on. { room, connected } or null.
+let roomView = null;
+let roomOpaque = false; // Room view's Opaque box (Karl, 2026-11-25): shells, walls and floor drawn solid
+let roomCut = 100; // Room view's Cutaway slider, % of the room's height (100: no cut); a horizontal clipping plane on every mesh drawn
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
 
 function take(answerText) {
   const a = JSON.parse(answerText);
   S = a.scene;
-  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
+  if (roomView && !S.roomView) { roomView = null; viewCmd(); return a; } // its room went (deleted, undone): back to the ship
+  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, cladFit: c.cladFit, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
   $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
   if (a.error) toast(a.error);
+  tabs();
   rebuild();
   panels();
   if (S.hulls.every(h => h.copies)) try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
   return a;
 }
 const timing = { cs: 0, js: 0, size: 0 }; // the last command's time in C# and in the page, and its answer's length (for a page test)
+// Room view in or out: a scene with only the rooms it needs (no edit, no undo step).
+function viewCmd(fit = false) {
+  const t0 = performance.now(), text = api.Apply(JSON.stringify({ op: "view", roomView })), t1 = performance.now();
+  const a = take(text);
+  if (fit) frameRoom();
+  timing.cs = t1 - t0; timing.js = performance.now() - t1; timing.size = text.length;
+  return a;
+}
+function enterRoomView(id, connected = roomView?.connected ?? false) {
+  if (!S.rooms.some(r => r.id === id)) { toast("Pick a room first."); return; }
+  if (mounting) stopMount();
+  mode = "interior";
+  const r = S.rooms.find(r => r.id === id); deck = r.deck;
+  roomView = { room: id, connected }; sel.kind = "room"; sel.id = id; sel.station = -1;
+  tabs();
+  viewCmd(true);
+}
+function exitRoomView() { if (!roomView) return; roomView = null; tabs(); viewCmd(); frame(); }
+// The tab row: the mode buttons, and Room view's drop-down (its first entry the tab's name, then every room by name and deck).
+function tabs() {
+  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", !roomView && k === mode);
+  const t = $("m-rooms"); if (!t || !S) return;
+  t.replaceChildren(el("option", { value: "" }, "Room view"),
+    ...S.rooms.map(r => el("option", { value: r.id, ...(roomView?.room === r.id ? { selected: "" } : {}) }, `${r.label || r.kind} (deck ${r.deck + 1})`)));
+  t.value = roomView ? String(roomView.room) : "";
+  t.classList.toggle("on", !!roomView);
+}
+// The camera on the room (and its neighbours when they show).
+function frameRoom() {
+  const box = new THREE.Box3();
+  world.traverse(o => { if (o.isMesh && o.userData.type === "room" && (!roomView || o.userData.id === roomView.room)) box.expandByObject(o); });
+  if (box.isEmpty()) return;
+  // Karl, 2026-11-25: keep the camera's angle and distance, only the orbit target moves to the room's middle.
+  const c = box.getCenter(new THREE.Vector3()), off = camera.position.clone().sub(controls.target);
+  controls.target.copy(c);
+  camera.position.copy(c).add(off);
+  controls.update();
+}
 function cmd(op, merge = false) {
   op.merge = merge;
   const t0 = performance.now(), text = api.Apply(JSON.stringify(op)), t1 = performance.now();
@@ -228,6 +285,38 @@ controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE; // Karl, 2026-11-24: the midd
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x2a3036, 1.25));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(30, 50, -20); scene.add(sun);
 const fill = new THREE.DirectionalLight(0x9fc0e0, 0.5); fill.position.set(-30, -10, 40); scene.add(fill);
+// Metals need something to reflect: a small room environment, prefiltered once, given only to the non-painted materials (so Painted keeps its old look).
+// A generated gradient (sky, a bright horizon band, dark ground) on a sphere, so it is cheap and needs no file or untone-mapped room.
+const envMap = (() => {
+  const es = new THREE.Scene(), g = new THREE.SphereGeometry(10, 32, 16), pos = g.attributes.position, col = [];
+  const sky = new THREE.Color(0x8fa6bd), hor = new THREE.Color(0xe8eef4), gnd = new THREE.Color(0x2b3036), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { const y = pos.getY(i) / 10; if (y > 0) c.copy(hor).lerp(sky, Math.min(1, y * 1.6)); else c.copy(hor).lerp(gnd, Math.min(1, -y * 3)); col.push(c.r, c.g, c.b); }
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const t = new THREE.PMREMGenerator(renderer).fromScene(es, 0.02).texture; g.dispose(); return t;
+})();
+// Each body material as three.js properties (tint multiplies the vertex colours, so paint, wear and damage still show).
+const MATS = {
+  "Painted": null,
+  "Steel": { metalness: 0.85, roughness: 0.38, color: 0xc8ccd0 },
+  "Brushed aluminium": { metalness: 0.9, roughness: 0.5, color: 0xe4e7ea },
+  "Titanium": { metalness: 0.8, roughness: 0.3, color: 0xb6b2a8 },
+  "Copper": { metalness: 0.95, roughness: 0.28, color: 0xf0a070 },
+  "Gloss plastic": { metalness: 0, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 },
+  "Matte plastic": { metalness: 0, roughness: 0.92 },
+  "Carbon": { metalness: 0.2, roughness: 0.42, color: 0x3a3d42, clearcoat: 0.8, clearcoatRoughness: 0.2 },
+};
+const MAT_NAMES = Object.keys(MATS);
+// Damage wears the cladding's material (built from the scene each draw, so a damage-only change shows): rougher, less metal, less clearcoat.
+function wornOpts(o, dmg) {
+  if (!(dmg > 0)) return o;
+  const w = { ...o, roughness: Math.min(1, (o.roughness ?? 0.7) + 0.45 * dmg), metalness: (o.metalness ?? 0.15) * (1 - 0.55 * dmg) };
+  if (o.clearcoat !== undefined) { w.clearcoat = o.clearcoat * (1 - dmg); w.clearcoatRoughness = Math.min(1, (o.clearcoatRoughness ?? 0) + 0.6 * dmg); }
+  if (o.envMapIntensity !== undefined) w.envMapIntensity = o.envMapIntensity * (1 - 0.45 * dmg);
+  return w;
+}
+// The opts for a mesh in a material (empty for Painted); clearcoat asks for MeshPhysicalMaterial.
+function matOpts(name) { const m = MATS[name]; return m ? { ...m, envMap, envMapIntensity: 0.8 } : {}; }
 const grid = new THREE.GridHelper(200, 100, 0x3a4852, 0x26323a); scene.add(grid);
 const world = new THREE.Group(); scene.add(world);
 const gizmo = new TransformControls(camera, renderer.domElement);
@@ -280,9 +369,10 @@ function dropUnused() {
   for (const [k, g] of meshGeo) if (!geoUsed.has(k)) { g.dispose(); meshGeo.delete(k); }
 }
 function meshFrom(m, opts = {}, geo = null) {
-  if (!m) { if (geo?.userData.key) geoUsed.add(geo.userData.key); return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
-  const g = geoOf(m);
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts });
+  if (!m && geo?.userData.key) geoUsed.add(geo.userData.key);
+  const g = m ? geoOf(m) : geo;
+  const all = { vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts };
+  const mat = all.clearcoat !== undefined ? new THREE.MeshPhysicalMaterial(all) : new THREE.MeshStandardMaterial(all);
   return new THREE.Mesh(g, mat);
 }
 
@@ -291,6 +381,15 @@ function rebuild() {
   if (!S) return;
   clearWorld(); pickables = [];
   $("shipname").textContent = S.name;
+  if (S.roomView) {
+    // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
+    drawRooms(new Set(S.roomView));
+    if (view.person) drawPerson();
+    applyCut(true);
+    dropUnused();
+    gizmo.detach();
+    return;
+  }
   const ghost = view.xray || inside() || pickRoomFor;
   const fresh = S.hulls.every(h => h.copies);
   if (fresh) hullGeo.clear();
@@ -298,17 +397,19 @@ function rebuild() {
   for (const h of S.hulls) {
     if (hideHull) continue;
     for (const c of h.copies ?? hullCopies.get(h.id) ?? []) {
-      for (const surf of ["skin", "fore", "aft"]) {
-        if (!c[surf].p.length) continue;
+      for (const surf of ["skin", "fore", "aft", "skinClad", "foreClad", "aftClad"]) {
+        if (!c[surf]?.p.length) continue;
+        const isClad = surf.endsWith("Clad");
+        const mat = wornOpts(matOpts(isClad && h.clad?.material && h.clad.material !== "Hull" ? h.clad.material : (h.material || "Painted")), isClad ? h.clad?.damage ?? h.damage ?? 0 : 0);
         const selHull = sel.kind === "hull" && sel.id === h.id;
         // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
         const key = `${h.id}/${c.copy}/${surf}`;
         if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: geoOf(c[surf]), at: [h.x, h.y, h.z] });
         const hg = hullGeo.get(key);
-        const m = meshFrom(null, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}, hg.g);
+        const m = meshFrom(null, { ...mat, ...(ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}) }, hg.g);
         m.position.set((c.copy === 1 ? -1 : 1) * (h.x - hg.at[0]), h.y - hg.at[1], h.z - hg.at[2]);
         if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
-        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
+        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: isClad ? surf.slice(0, -4) : surf };
         world.add(m); pickables.push(m);
       }
     }
@@ -316,7 +417,7 @@ function rebuild() {
   }
   for (const j of S.joins ?? []) {
     if (!j.mesh.p.length || hideHull) continue;
-    const m = meshFrom(j.mesh, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {});
+    const m = meshFrom(j.mesh, { ...matOpts(j.material || "Painted"), ...(ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}) });
     if (sel.kind === "join" && sel.id === j.id) m.material.emissive = new THREE.Color(0x1d4f86);
     m.userData = { type: "join", id: j.id };
     world.add(m); pickables.push(m);
@@ -374,6 +475,12 @@ function drawRings(h) {
 const roomMats = new Map();
 // A room's extensions (Karl, 2026-11-24): two rings of the same count, sides between them and a fan cap on each, in its colour.
 function drawExts(r, dim) {
+  // The model's mesh of them all, bent inside the skin (Karl, 2026-11-25); the rings (pulled in too) give the outline.
+  if (r.extMesh && r.extMesh.p.length) {
+    const picked = sel.kind === "room" && sel.id === r.id;
+    const m = meshFrom(r.extMesh, { transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, flatShading: false, emissive: picked ? 0x2a4f80 : 0 });
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+  }
   for (const e of r.exts || []) {
     const A = e.a, B = e.b, n = A.length / 3; if (n < 3 || B.length !== A.length) continue;
     const pos = [...A, ...B], idx = [];
@@ -381,25 +488,53 @@ function drawExts(r, dim) {
     const cap = (off) => { let cx = 0, cy = 0, cz = 0; for (let i = 0; i < n; i++) { cx += pos[3 * (off + i)]; cy += pos[3 * (off + i) + 1]; cz += pos[3 * (off + i) + 2]; }
       const c = pos.length / 3; pos.push(cx / n, cy / n, cz / n); for (let i = 0; i < n; i++) idx.push(c, off + i, off + (i + 1) % n); };
     cap(0); cap(n);
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    let g = null; if (!r.extMesh) { g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); }
     const picked = sel.kind === "room" && sel.id === r.id;
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
-    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+    if (g) { const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m); }
     const lines = []; const V = (k) => new THREE.Vector3(pos[3 * k], pos[3 * k + 1], pos[3 * k + 2]);
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
   }
 }
-function drawRooms() {
+// Room view's cutaway: the plane runs from the room's floor (0%) to a little over its ceiling (100%, nothing cut). Every material in
+// the world gets it (only Room view's are, since rebuild makes new ones elsewhere); cut faces drawn by going double-sided while cut.
+function applyCut(all = false) {
+  const r = roomView && S?.rooms.find(r => r.id === roomView.room);
+  if (!r) return;
+  const b = r.box, st = S.stacked, cut = roomCut < 100;
+  if (st) { // stacked decks: the floor faces the bow at z = b[5], the room rising to b[4]
+    const top = b[4] - 0.3, h = b[5] + (top - b[5]) * roomCut / 100;
+    cutPlane.normal.set(0, 0, 1); cutPlane.constant = -h; // keeps z >= h
+  } else {
+    const top = b[3] + 0.3, h = b[2] + (top - b[2]) * roomCut / 100;
+    cutPlane.normal.set(0, -1, 0); cutPlane.constant = h; // keeps y <= h
+  }
+  if (!all && cut === applyCut.was) return;
+  applyCut.was = cut;
+  world.traverse(o => {
+    if (!o.material) return;
+    for (const m of [].concat(o.material)) {
+      if (m.userData.side0 === undefined) m.userData.side0 = m.side;
+      m.clippingPlanes = cut ? [cutPlane] : null;
+      m.side = cut ? THREE.DoubleSide : m.userData.side0;
+      m.needsUpdate = true;
+    }
+  });
+}
+function drawRooms(only = null) {
   for (const r of S.rooms) {
     const d = S.decks[r.deck]; if (!d) continue;
+    if (only && !only.has(r.id)) continue;
     // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
     const fl = S.decks[deck]?.floor, b = r.box, through = fl !== undefined && (S.stacked ? b[4] < fl - 0.1 && b[5] >= fl - 0.01 : b[2] <= fl + 0.01 && b[3] > fl + 0.1);
-    const dim = inside() && r.deck !== deck && !through;
+    const dim = !only && inside() && r.deck !== deck && !through;
     drawExts(r, dim);
     if (r.wallMesh) {
       // Its walls: a solid shell round the outside of the room, a little darker than its colour.
-      const wm = meshFrom(r.wallMesh, { transparent: dim, opacity: dim ? 0.15 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
+      // In Room view see-through, so its interior shows from outside.
+      const see = !!only && !roomOpaque;
+      const wm = meshFrom(r.wallMesh, { transparent: dim || see, opacity: dim ? 0.15 : see ? 0.3 : 1, depthWrite: !see, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
       wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
     }
     if (r.intMesh && r.intMesh.p.length) {
@@ -412,7 +547,8 @@ function drawRooms() {
     }
     if (r.mesh) {
       // A room out to the hull follows the skin: drawn from its own shape.
-      const m = meshFrom(r.mesh, { transparent: true, opacity: dim ? 0.08 : 0.38, depthWrite: false, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
+      const solid = !!only && roomOpaque && !dim;
+      const m = meshFrom(r.mesh, { transparent: !solid, opacity: solid ? 1 : dim ? 0.08 : 0.38, depthWrite: solid, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
       m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
       continue;
     }
@@ -471,7 +607,9 @@ function drawRooms() {
     }
     g.traverse(o => { o.renderOrder = 6; }); world.add(g); g.updateMatrixWorld(true);
   }
+  const nearShown = (x, y, z) => S.rooms.some(r => only.has(r.id) && x >= r.box[0] - 0.3 && x <= r.box[1] + 0.3 && y >= r.box[2] - 0.3 && y <= r.box[3] + 0.3 && z >= r.box[4] - 0.3 && z <= r.box[5] + 0.3);
   for (const [x, y, z] of S.doors) {
+    if (only && !nearShown(x, y, z)) continue;
     const m = new THREE.Mesh(S.stacked ? new THREE.BoxGeometry(0.7, 0.7, 0.04) : new THREE.BoxGeometry(0.7, 0.04, 0.7), new THREE.MeshBasicMaterial({ color: 0xffc35a }));
     m.position.set(x, S.stacked ? y : y + 0.1, S.stacked ? z - 0.1 : z); world.add(m);
   }
@@ -667,7 +805,7 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (st && !conn) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
     const h = hits.find(h => h.object.userData.type === "hull");
     if (h && conn) {
-      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z };
+      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, face: u.surface || "skin" };
       if (conn.step === "a") { conn = { step: "b", a: at, joinId: 0, hullId: 0, newBody: false }; leftPanel(); $("tip").textContent = "Set the connection, then click the second body where it meets, or add a new body."; return; }
       if (u.hull === conn.hullId) conn.hullId = 0; // (connecting to the body this tool made keeps it)
       conn.b = at; conn.newBody = false; placeJoin(); leftPanel(); return;
@@ -760,6 +898,8 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     const rz = hits.find(h => h.object.userData.type === "riser");
     if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
     const r = hits.find(h => h.object.userData.type === "room");
+    // In Room view a click on a connected room makes it the room shown (Karl, 2026-11-25): the drop-down and its neighbours follow.
+    if (r && roomView && r.object.userData.id !== roomView.room) { enterRoomView(r.object.userData.id); return; }
     if (r) {
       select("room", r.object.userData.id);
       const room = S.rooms.find(x => x.id === r.object.userData.id);
@@ -1014,7 +1154,7 @@ function shapeIcon(p) {
 // The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
 // on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
 let conn = null;
-const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: true, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, rotA: 0, rotB: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: false, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, leaveA: 0, leaveB: 0, leaveForeA: 0, leaveForeB: 0, tanA: 0.9, tanB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
 function gallery(pick, onPick, tall = 300) {
   const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
   for (const s of CAT.sections) {
@@ -1023,36 +1163,84 @@ function gallery(pick, onPick, tall = 300) {
   }
   return gal;
 }
-function slider(label, v, min, max, step, unit, onInput, onDone) {
+// def (in the slider's own units, from CAT.defaults) adds a reset button; onReset, when given, sends it instead of onDone (its own undo step).
+function slider(label, v, min, max, step, unit, onInput, onDone, def, onReset) {
   const r = el("input", { type: "range", min, max, step, value: v, "aria-label": label }), out = el("span", {}, `${v}${unit}`);
   // Dragging only moves the shown value; the command goes when the slider is released (the user, 2026-11-24: dragging lagged).
   r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; });
   r.addEventListener("change", () => { out.textContent = `${r.value}${unit}`; (onDone || onInput)(+r.value); });
-  return el("label", { class: "row" }, `${label} `, r, out);
+  const reset = def === undefined ? [] : [el("button", { class: "reset", title: `Reset ${label.toLowerCase()} to ${def}${unit}`, "aria-label": `Reset ${label}`, onclick: e => { e.preventDefault(); r.value = def; out.textContent = `${def}${unit}`; (onReset || onDone || onInput)(def); } }, "\u21ba")];
+  return el("label", { class: "row" }, `${label} `, r, out, ...reset);
 }
-function joinControls(o, apply) {
+// A default from the catalogue in slider units (x scale), and a "Reset all" button for a section.
+const dflt = (kind, key, scale = 1) => Math.round(CAT.defaults[kind][key] * scale * 1e6) / 1e6;
+// Swatches for the gallery drop-downs (Room view's walls and floors): a CSS picture of each look, no meshes.
+const SWATCH = {
+  Plates: "repeating-linear-gradient(0deg,#9aa3ab 0 10px,#3a3f45 10px 11px),#9aa3ab", Hex: "radial-gradient(circle at 50% 50%,#a9b1b8 45%,#3a3f45 47%) 0 0/9px 9px,#3a3f45",
+  Plain: "#7d848c", Diamond: "repeating-linear-gradient(45deg,#b7bec6 0 2px,transparent 2px 7px),repeating-linear-gradient(-45deg,#b7bec6 0 2px,#9aa2aa 2px 7px)",
+  Grating: "repeating-linear-gradient(90deg,#7f878e 0 2px,#24282c 2px 5px)", Tiles: "linear-gradient(90deg,#3c4146 1px,transparent 1px) 0 0/10px 10px,linear-gradient(#3c4146 1px,#cfd3d6 1px) 0 0/10px 10px",
+  Rubber: "repeating-linear-gradient(90deg,#37393d 0 3px,#2b2d30 3px 5px)", Wood: "repeating-linear-gradient(0deg,#8a5d3b 0 5px,#2a1f17 5px 6px,#7a5034 6px 11px,#2a1f17 11px 12px,#9a6a44 12px 17px,#2a1f17 17px 18px)",
+  Hazard: "linear-gradient(#70777e,#70777e) center/60% 55% no-repeat,repeating-linear-gradient(45deg,#e2b21c 0 5px,#1c1d1f 5px 10px)",
+  Panels: "linear-gradient(90deg,#55606a 2px,transparent 2px) 0 0/16px 14px,linear-gradient(#55606a 2px,#a9b4bd 2px) 0 0/16px 14px",
+  Ribbed: "repeating-linear-gradient(90deg,#4d565e 0 4px,#8c97a0 4px 11px)", Padded: "radial-gradient(circle,#b9c2c9 55%,#7b858d 60%) 0 0/11px 11px,#7b858d",
+  Grate: "repeating-linear-gradient(0deg,#8a9097 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,#8a9097 0 2px,#4a5056 2px 12px)",
+  Conduit: "linear-gradient(transparent 20%,#6f7a80 20% 32%,transparent 32% 66%,#6f7a80 66% 80%,transparent 80%),#8c97a0",
+  Industrial: "linear-gradient(transparent 62%,#b48a3c 62% 68%,#4d565e 68%),repeating-linear-gradient(90deg,#8a9097 0 3px,#a3adb5 3px 16px)",
+};
+function swatchPick(label, value, options, onPick) {
+  const box = el("div", { class: "spick" });
+  const btn = el("button", { "aria-haspopup": "true", "aria-label": label }, el("span", { class: "sw", style: `background:${SWATCH[value] || "#888"}` }), value);
+  let grid = null;
+  const close = () => { grid?.remove(); grid = null; document.removeEventListener("pointerdown", away, true); };
+  const away = e => { if (!box.contains(e.target)) close(); };
+  btn.addEventListener("click", () => { if (grid) return close();
+    grid = el("div", { class: "grid" }, ...options.map(k => el("button", { class: k === value ? "on" : "", title: k, onclick: () => { close(); onPick(k); } }, el("span", { class: "sw", style: `background:${SWATCH[k] || "#888"}` }), k)));
+    box.append(grid); document.addEventListener("pointerdown", away, true); });
+  box.append(btn);
+  return box;
+}
+const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
+const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
+function joinControls(o, apply, reset = apply) {
+  // Each slider resets to HullJoin's default; reset sends it as its own step (the inspector's apply merges a drag session).
+  const js = (label, key, scale, min, max, step, unit) => slider(label, Math.round(o[key] * scale * 1e6) / 1e6, min, max, step, unit, v => { o[key] = v / scale; apply(); }, undefined, dflt("join", key, scale), v => { o[key] = v / scale; reset(); });
+  const all = keys => resetAll("Every slider here back to its default", () => { Object.assign(o, dfltOf("join", keys)); reset(); });
   // The connection's own sections (the user, 2026-11-24: wing-like arms), beside the hull gallery's.
   const extra = el("div", { class: "row" }), gal = gallery(o.section, n => { o.section = n; for (const x of extra.children) x.classList.remove("on"); apply(); }, 150);
   for (const [n, label] of [["TriangleUp", "Triangle up"], ["TriangleDown", "Triangle down"], ["Wedge", "Wedge"], ["Diamond", "Diamond"], ["Hexagon", "Hexagon"]])
     extra.append(el("button", { class: o.section === n ? "on" : "", "data-sec": n, onclick: e => { o.section = n; for (const x of [...extra.children, ...gal.children]) x.classList.toggle("on", x === e.currentTarget); apply(); } }, label));
   return [el("h3", {}, "Connection shape"), gal, extra,
-    slider("Width A", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(); }),
-    slider("Height A", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(); }),
-    slider("Width B", o.wb, 0.2, 8, 0.1, " m", v => { o.wb = v; apply(); }),
-    slider("Height B", o.hb, 0.2, 8, 0.1, " m", v => { o.hb = v; apply(); }),
-    slider("Twist", o.twist, -180, 180, 1, " deg", v => { o.twist = v; apply(); }),
-    slider("Sweep up", o.sweepUp, -20, 20, 0.1, " m", v => { o.sweepUp = v; apply(); }),
-    slider("Sweep fore", o.sweepFore, -20, 20, 0.1, " m", v => { o.sweepFore = v; apply(); }),
-    slider("Thickness bias", Math.round(o.bias * 100), -90, 90, 5, "%", v => { o.bias = v / 100; apply(); }),
-    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(); }),
+    js("Width A", "w", 1, 0.2, 8, 0.1, " m"),
+    js("Height A", "h", 1, 0.2, 8, 0.1, " m"),
+    js("Width B", "wb", 1, 0.2, 8, 0.1, " m"),
+    js("Height B", "hb", 1, 0.2, 8, 0.1, " m"),
+    js("Twist", "twist", 1, -180, 180, 1, " deg"),
+    js("Rotate end A", "rotA", 1, -180, 180, 1, " deg"),
+    js("Rotate end B", "rotB", 1, -180, 180, 1, " deg"),
+    el("h3", {}, "Arch (how each end leaves its hull)"),
+    js("Leave A toward B", "leaveA", 1, -80, 80, 1, " deg"),
+    js("Leave A along hull", "leaveForeA", 1, -80, 80, 1, " deg"),
+    js("Tangent length A", "tanA", 100, 5, 250, 5, "%"),
+    js("Leave B toward A", "leaveB", 1, -80, 80, 1, " deg"),
+    js("Leave B along hull", "leaveForeB", 1, -80, 80, 1, " deg"),
+    js("Tangent length B", "tanB", 100, 5, 250, 5, "%"),
+    el("div", { class: "row" }, all(["leaveA", "leaveForeA", "tanA", "leaveB", "leaveForeB", "tanB"])),
+    el("h3", {}, "Sweep and bias"),
+    js("Sweep up", "sweepUp", 1, -20, 20, 0.1, " m"),
+    js("Sweep fore", "sweepFore", 1, -20, 20, 0.1, " m"),
+    js("Thickness bias", "bias", 100, -90, 90, 5, "%"),
+    js("Segments", "segments", 1, 1, 24, 1, ""),
+    el("div", { class: "row" }, all(["w", "h", "wb", "hb", "twist", "rotA", "rotB", "sweepUp", "sweepFore", "bias", "segments"])),
     el("h3", {}, "Buttress (the cladding where it meets each hull)"),
-    slider("Flare", Math.round(o.flare * 100), 100, 400, 5, "%", v => { o.flare = v / 100; apply(); }),
-    slider("Runs up", o.buttress, 0, 6, 0.1, " m", v => { o.buttress = v; apply(); }),
+    js("Flare", "flare", 100, 100, 400, 5, "%"),
+    js("Runs up", "buttress", 1, 0, 6, 0.1, " m"),
+    el("div", { class: "row" }, all(["flare", "buttress"])),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = !!o.follow; c.addEventListener("change", () => { o.follow = c.checked; apply(); }); return c; })(), "Follow the hull (its base laid onto the skin)"),
     el("h3", {}, "Sockets (the hole each end cuts)"),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.squareHole; c.addEventListener("change", () => { o.squareHole = c.checked; apply(); }); return c; })(), "Square holes (else oval)"),
-    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(); }),
-    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(); }),
+    js("First end", "openA", 100, 0, 150, 5, "%"),
+    js("Second end", "openB", 100, 0, 150, 5, "%"),
+    el("div", { class: "row" }, all(["openA", "openB"])),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
 }
 function connectSection() {
@@ -1080,7 +1268,7 @@ function connectSection() {
 // Places the connection again (the first placing is an undo step, the rest merge into it).
 function placeJoin() {
   if (!conn || (!conn.b && !conn.newBody)) return;
-  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, wb: cOpt.wb, hb: cOpt.hb, twist: cOpt.twist, sweepUp: cOpt.sweepUp, sweepFore: cOpt.sweepFore, bias: cOpt.bias, segments: cOpt.segments, mirror: cOpt.mirror, flare: cOpt.flare, buttress: cOpt.buttress, follow: cOpt.follow, squareHole: cOpt.squareHole, openA: cOpt.openA, openB: cOpt.openB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
+  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, wb: cOpt.wb, hb: cOpt.hb, twist: cOpt.twist, rotA: cOpt.rotA, rotB: cOpt.rotB, sweepUp: cOpt.sweepUp, sweepFore: cOpt.sweepFore, bias: cOpt.bias, segments: cOpt.segments, mirror: cOpt.mirror, flare: cOpt.flare, buttress: cOpt.buttress, follow: cOpt.follow, squareHole: cOpt.squareHole, openA: cOpt.openA, openB: cOpt.openB, leaveA: cOpt.leaveA, leaveB: cOpt.leaveB, leaveForeA: cOpt.leaveForeA, leaveForeB: cOpt.leaveForeB, tanA: cOpt.tanA, tanB: cOpt.tanB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
   if (conn.newBody) op.body = { ...cOpt.body }; else op.b = conn.b;
   const a = cmd(op, !!conn.joinId);
   if (a.error) { console.log("connect err", a.error); toast(a.error); return; }
@@ -1091,8 +1279,9 @@ let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
   if (mounting) stopMount();
+  if (roomView) { roomView = null; mode = m; viewCmd(); frame(); }
   mode = m;
-  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
+  tabs();
   if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
   $("tip").textContent = tips[m];
   rebuild(); panels();
@@ -1130,6 +1319,16 @@ function leftPanel() {
       L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
     }
   } else {
+    if (roomView) {
+      const r = S.rooms.find(r => r.id === roomView.room);
+      L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"), el("p", {}, r ? `${r.label || r.kind} (deck ${r.deck + 1})` : ""),
+        el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms"),
+        el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvopaque", ...(roomOpaque ? { checked: "" } : {}), onchange: e => { roomOpaque = e.target.checked; rebuild(); } }), "Opaque"),
+        (() => { const c = slider("Cutaway", roomCut, 0, 100, 1, "%", v => { roomCut = +v; applyCut(); }, undefined, 100); // live while dragging: only the plane moves
+          c.querySelector("input").addEventListener("input", e => { roomCut = +e.target.value; applyCut(); }); return c; })(),
+        el("p", { class: "hint" }, "Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.")));
+      return;
+    }
     const dsel = el("div", { class: "row" });
     S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
     dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
@@ -1181,29 +1380,56 @@ function stationPanel(h) {
     el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
   // Cladding (the user's Star Destroyer flank, 2026-11-24): plates of varied size laid on the skin, raised a few cm, off every opening.
   const clad = h.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+  const hs = o => cmd({ op: "setHull", hull: h.id, ...o });
+  const matSel = (v, names, label, send) => { const s = el("select", { "aria-label": label }); for (const n of names) s.append(el("option", n === v ? { selected: "" } : {}, n)); s.addEventListener("change", () => send(s.value)); return s; };
+  box.append(el("h3", {}, "Material"),
+    el("div", { class: "row" }, matSel(h.material || "Painted", MAT_NAMES, "Material", v => hs({ material: v })), resetAll("Material back to its default", () => hs(dfltOf("hull", ["material"])))),
+    el("p", { class: "hint" }, "Painted is the flat look; metals reflect the room and tint the paint. Connections take hull A's material."));
+  // Match body (the user, 2026-11-25): follow another body's cladding live; this body's own settings stay as they were for when it's set back to None.
+  const others = S.hulls.filter(o => o.id !== h.id);
+  const reaches = (from, to) => { for (let b = S.hulls.find(x => x.id === from), n = 0; b && n <= S.hulls.length; b = S.hulls.find(x => x.id === b.cladFrom), n++) if (b.id === to) return true; return false; };
+  const matchSel = (() => { const s = el("select", { "aria-label": "Match body", id: "cladmatch" }); s.append(el("option", { value: "0", ...(h.cladFrom ? {} : { selected: "" }) }, "None"));
+    for (const o of others) s.append(el("option", { value: String(o.id), ...(h.cladFrom === o.id ? { selected: "" } : {}), ...(reaches(o.id, h.id) ? { disabled: "" } : {}) }, o.name));
+    s.addEventListener("change", () => hs({ cladFrom: +s.value || null })); return s; })();
+  const src = h.cladFrom && S.hulls.find(o => o.id === h.cladFrom);
   box.append(el("h3", {}, "Cladding"),
-    el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
+    ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
+      resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
     ...(clad.kind === "Off" ? [] : [
-      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 })),
-      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 })),
+      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 }), dflt("hull", "cladSize", 100)),
+      ...((fit => fit ? [el("p", { class: "hint", id: "cladfit" }, `${clad.kind === "Hex" ? "Hex" : "Panel"} size raised to ${Math.round(fit * 100)} cm to fit`)] : [])((h.copies ?? hullCopies.get(h.id))?.[0]?.cladFit)),
+      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 }), dflt("hull", "cladDepth", 100)),
+      el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
-        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
-    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
+        el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
+  // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
+  box.append(el("h3", {}, "Damage"),
+    slider("Damage", Math.round((h.damage ?? 0) * 100), 0, 100, 1, "%", () => {}, v => hs({ damage: v / 100 }), dflt("hull", "damage", 100)),
+    el("div", { class: "row" }, el("span", {}, "Seed"), num(h.damageSeed ?? 1, v => hs({ damageSeed: Math.round(v) }), 1),
+      el("button", { onclick: () => hs({ damageSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"),
+      resetAll("Damage and its seed back to their defaults", () => hs(dfltOf("hull", ["damage", "damageSeed"])))),
+    el("p", { class: "hint" }, "Plates and tiles go missing, lift or dent; scorch and grime darken patches; past 60% the skin itself dents (drawn only: placement is unchanged). Connections take hull A's."));
   // Rounded ends: the skin curves into the cap over this radius.
   const rMaxF = Math.max(0, Math.floor((h.roundMaxFore ?? 0) * 20) * 5), rMaxA = Math.max(0, Math.floor((h.roundMaxAft ?? 0) * 20) * 5);
   box.append(el("h3", {}, "Rounded ends"),
-    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 })),
-    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 })),
+    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 }), dflt("hull", "roundFore", 100)),
+    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 }), dflt("hull", "roundAft", 100)),
+    el("div", { class: "row" }, resetAll("Both radii back to their defaults", () => hs(dfltOf("hull", ["roundFore", "roundAft"])))),
     el("p", { class: "hint" }, "0: a hard edge. At most half the end's smallest half-size, and short of the next station."));
   // Paint (the user's Rocinante: mostly dark with bold accent areas), over the facets and the cladding plates.
   const pa = h.paint || { accent: "#d8742a", amount: 0, pattern: "Blocks", stripe: 1.5, wear: 0, seed: 1 };
   const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, [key]: c.value })); return c; };
   box.append(el("h3", {}, "Paint"),
     el("div", { class: "row" }, el("span", {}, "Base"), colour(h.skin, "Base colour", "skin"), el("span", {}, "Accent"), colour(pa.accent, "Accent colour", "accent")),
-    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 })),
+    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 }), dflt("hull", "accentAmount", 100)),
     el("div", { class: "row" }, el("span", {}, "Pattern"), ...["Blocks", "Stripes", "Bands"].map(k => el("button", { class: pa.pattern === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, pattern: k }) }, k))),
-    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }))]),
-    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 })),
+    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }), dflt("hull", "stripe", 100))]),
+    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 }), dflt("hull", "wear", 100)),
+    el("div", { class: "row" }, resetAll("Accent amount, stripe width and wear back to their defaults", () => hs(dfltOf("hull", ["accentAmount", "stripe", "wear"])))),
     el("div", { class: "row" }, el("span", {}, "Seed"), num(pa.seed, v => cmd({ op: "setHull", hull: h.id, paintSeed: Math.round(v) }), 1),
       el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, paintSeed: Math.floor(Math.random() * 99999) }) }, "New pattern")),
     el("p", { class: "hint" }, "Blocks: that share of facets and plates in the accent. Stripes run along the ship, bands across it. Wear darkens and varies the tones. Connections take hull A's paint."));
@@ -1347,29 +1573,62 @@ function inspector() {
   }
   if (sel.kind === "join") {
     const j = S.joins.find(j => j.id === sel.id); if (!j) return;
-    const o = { section: j.section, w: j.w, h: j.h, wb: j.wb ?? j.w, hb: j.hb ?? j.h, twist: j.twist ?? 0, sweepUp: j.sweepUp ?? 0, sweepFore: j.sweepFore ?? 0, bias: j.bias ?? 0, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, follow: !!j.follow, squareHole: j.squareHole, openA: j.openA, openB: j.openB };
+    const o = { section: j.section, w: j.w, h: j.h, wb: j.wb ?? j.w, hb: j.hb ?? j.h, twist: j.twist ?? 0, rotA: j.rotA ?? 0, rotB: j.rotB ?? 0, sweepUp: j.sweepUp ?? 0, sweepFore: j.sweepFore ?? 0, bias: j.bias ?? 0, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, follow: !!j.follow, squareHole: j.squareHole, openA: j.openA, openB: j.openB, leaveA: j.leaveA ?? 0, leaveB: j.leaveB ?? 0, leaveForeA: j.leaveForeA ?? 0, leaveForeB: j.leaveForeB ?? 0, tanA: j.tanA ?? 0.9, tanB: j.tanB ?? 0.9 };
     let first = true;
     const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
     // Cladding on the strut, as a body's (the user, 2026-11-24: the nacelles' arms had none); the flared ends into the skins stay bare.
     const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
     const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
-    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
+    // Match hull (the user, 2026-11-25): the section follows hull A's cladding live; unticked, the join's own settings come back as they were.
+    const matchBox = (key, on) => el("label", { class: "row" }, el("input", { type: "checkbox", id: key, ...(on ? { checked: "" } : {}), onchange: e => jc({ [key]: e.target.checked }) }), "Match hull");
+    const matchHint = el("p", { class: "hint" }, "Follows hull A's cladding (kind, seed, panel size, depth, material and damage). Untick for this connection's own.");
+    I.append(el("h2", {}, "Connection"), el("p", { class: "hint" }, `Face: end A on the ${(j.faceA || "Side").toLowerCase()}${j.faceA && j.faceA !== "Side" ? " cap" : " skin"}, end B on the ${(j.faceB || "Side").toLowerCase()}${j.faceB && j.faceB !== "Side" ? " cap" : " skin"}.`), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
+      // The base plate (Karl, 2026-11-25; was the collar): a pad on the skin under each end that the buttress stands on.
+      el("h3", {}, "Base plate"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "collar", ...(j.collar !== false ? { checked: "" } : {}), onchange: e => jc({ collar: e.target.checked }) }), "Base plate"),
+      ...(j.collar === false ? [] : [
+        slider("Height", Math.round((j.collarHeight ?? 0.22) * 100), 2, 100, 1, " cm", () => {}, v => jc({ collarHeight: v / 100 }), dflt("join", "collarHeight", 100)),
+        slider("Margin", Math.round((j.collarMargin ?? 0.25) * 100), 0, 200, 1, " cm", () => {}, v => jc({ collarMargin: v / 100 }), dflt("join", "collarMargin", 100)),
+        slider("Bevel", Math.round((j.collarBevel ?? 0.05) * 100), 0, 50, 1, " cm", () => {}, v => jc({ collarBevel: v / 100 }), dflt("join", "collarBevel", 100)),
+        el("div", { class: "row" }, resetAll("Height, margin and bevel back to their defaults", () => jc(dfltOf("join", ["collarHeight", "collarMargin", "collarBevel"]))))]),
+      el("p", { class: "hint" }, "A pad laid over the skin round each end, following its curve; its top sits just above Heavy cladding (20 cm). The hull's plates stop at its edge and the buttress stands on it."),
+      // Match hull colour (Karl, 2026-11-25): the arm, its cladding and its base plates in hull A's paint and material; unticked, its own.
+      el("h3", {}, "Colour"),
+      el("label", { class: "row" }, el("input", { type: "checkbox", id: "matchColour", ...(j.matchColour !== false ? { checked: "" } : {}), onchange: e => jc({ matchColour: e.target.checked }) }), "Match hull colour"),
+      ...(j.matchColour !== false ? [el("p", { class: "hint" }, "Follows hull A's paint and material (base, accent, pattern, wear, seed). Untick for this connection's own.")] : (() => {
+        const p = j.paint || {};
+        const jp = v => jc({ paint: v });
+        const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => jp({ [key]: c.value })); return c; };
+        const pat = el("select", { "aria-label": "Pattern" }); for (const k of ["Blocks", "Stripes", "Bands"]) pat.append(el("option", { value: k, ...(k === p.pattern ? { selected: "" } : {}) }, k)); pat.addEventListener("change", () => jp({ pattern: pat.value }));
+        return [
+          el("div", { class: "grid2" }, el("span", {}, "base"), colour(p.skin || "#c9cdd2", "Base colour", "skin"), el("span", {}, "accent"), colour(p.accent || "#d8742a", "Accent colour", "accent"), el("span", {}, "pattern"), pat),
+          slider("Accent", Math.round((p.amount ?? 0) * 100), 0, 100, 1, "%", () => {}, v => jp({ amount: v / 100 })),
+          slider("Wear", Math.round((p.wear ?? 0) * 100), 0, 100, 1, "%", () => {}, v => jp({ wear: v / 100 })),
+          el("div", { class: "row" }, (() => { const s = el("select", { "aria-label": "Material" }); for (const n of MAT_NAMES) s.append(el("option", n === (p.material || "Painted") ? { selected: "" } : {}, n)); s.addEventListener("change", () => jp({ material: s.value })); return s; })(),
+            el("span", {}, "Seed"), num(p.seed ?? 1, v => jp({ seed: Math.round(v) }), 1))];
+      })()),
       el("h3", {}, "Cladding"),
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      matchBox("matchClad", !!j.matchClad),
+      ...(j.matchClad ? [matchHint] : [
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
-        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 })),
-        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 })),
+        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
+        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
+        el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["cladSize", "cladDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
-          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+          el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
       el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
       el("h3", {}, "Buttress cladding"),
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      matchBox("matchButtress", !!j.matchButtress),
+      ...(j.matchButtress ? [matchHint.cloneNode(true)] : [
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
-        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 })),
-        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 })),
+        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
+        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),
+        el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["buttressSize", "buttressDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(bcl.seed, v => jc({ buttressSeed: Math.round(v) }), 1),
-          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
+          el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
       el("p", { class: "hint" }, "Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0."),
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delJoin", id: j.id }); select(null, 0); } }, "Delete")));
     return;
@@ -1449,18 +1708,29 @@ function inspector() {
           ...(e.side === "up" ? [] : [slider("Width", Math.round(e.width * 100), 50, 1200, 5, " cm", () => {}, v => set({ width: v / 100 })),
             slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
       el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
-      el("h3", {}, "Walls"),
-      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }),
-      el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
+      ...(roomView ? [el("h3", {}, "Walls"),
+      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }, dflt("room", "wallThick", 100)),
+      el("div", { class: "row" }, resetAll("Wall thickness back to its default", () => { const a = cmd({ op: "setRoom", id: r.id, ...dfltOf("room", ["wallThick"]) }); if (a.error) toast(a.error); })),
+      el("p", { class: "hint" }, "A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none)."),
+      (() => { const setW = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
+        const wc = el("input", { type: "color", value: r.wallColour || "#6b7480", "aria-label": "Wall colour" }); wc.addEventListener("change", () => setW({ wallColour: wc.value }));
+        return el("div", {},
+          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"], k => setW({ wallStyle: k })),
+            el("span", {}, "Colour"), wc, el("button", { onclick: () => setW({ wallColour: "" }) }, "Kind's")),
+          el("div", { class: "row" }, el("span", {}, "Floor"), swatchPick("Floor", r.floor || "Plates", ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], k => setW({ floor: k }))),
+          slider("Seed", r.seed ?? 0, 0, 999, 1, "", () => {}, v => setW({ seed: v }), dflt("room", "seed")),
+          el("div", { class: "row" }, resetAll("Cladding, colour, floor and seed back to their defaults", () => setW(dfltOf("room", ["wallStyle", "wallColour", "floor", "seed"])))),
+          el("p", { class: "hint" }, "Cladding is relief on the walls when the interior style is Off (the interior has its own). Plates and Hex floors are the interior's plate layer; the others are laid with or without it.")); })(),
       el("h3", {}, "Interior"),
       (() => { const setI = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
         const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => setI({ [key]: c.value })); return c; };
         return el("div", {},
           el("div", { class: "row" }, el("span", {}, "Style"), ...["Off", "Clean", "Industrial"].map(k => el("button", { class: (r.interior || "Off") === k ? "on" : "", onclick: () => setI({ interior: k }) }, k))),
-          slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v })),
+          slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v }), dflt("room", "ribSpacing")),
+          el("div", { class: "row" }, resetAll("Rib spacing back to its default", () => setI(dfltOf("room", ["ribSpacing"])))),
           el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),
             el("button", { class: r.lights !== false ? "on" : "", onclick: () => setI({ lights: r.lights === false }) }, r.lights !== false ? "Lights on" : "Lights off")),
-          el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })(),
+          el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })()] : [el("p", { class: "hint" }, "Walls and interior cladding are set in Room view (left).")]),
       el("h3", {}, "Mount a socket from this room"),
       el("div", { class: "row" }, ...CAT.pieces.filter(k => k.socket && k.where === "skin").map(k => el("button", { class: mounting?.kind === k.name ? "on" : "", onclick: () => startMount(k.name, r.id) }, k.name))),
       slider("Size", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }),
@@ -1494,6 +1764,7 @@ function checks() {
 
 // ---------- the bar
 for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).addEventListener("click", () => setMode(k));
+$("m-rooms").addEventListener("change", e => { const id = +e.target.value; if (id) enterRoomView(id); else exitRoomView(); });
 $("undo").addEventListener("click", () => { take(api.Undo()); panels(); });
 $("redo").addEventListener("click", () => { take(api.Redo()); panels(); });
 $("start").addEventListener("change", e => { if (!e.target.value) return; cmd({ op: "start", name: e.target.value }); e.target.value = ""; select(null, 0); frame(); });
@@ -1534,10 +1805,10 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
-  } else if (e.key === "Escape") { if (mounting) stopMount(); else select(null, 0); }
+  } else if (e.key === "Escape") { if (mounting) stopMount(); else if (roomView) exitRoomView(); else select(null, 0); }
 });
 
-window.shipDesigner = { cmd, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
+window.shipDesigner = { cmd, enterRoomView, exitRoomView, roomView: () => roomView, world, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
 function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
 
 try {
@@ -1545,7 +1816,7 @@ try {
   CAT = JSON.parse(api.Catalogue());
   const st = $("start"); st.append(el("option", { value: "" }, "New from...")); for (const s of CAT.starts) st.append(el("option", { value: s }, s));
   let saved = null; try { saved = localStorage.getItem("shipdesigner.design"); } catch (e) {}
-  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) take(api.Scene()); } else take(api.Scene());
+  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) { try { localStorage.setItem("shipdesigner.design.unread." + Date.now(), saved); } catch (e) {} toast("Your saved design could not be read by this version; a copy is kept in browser storage."); take(api.Scene()); } } else take(api.Scene());
   $("boot").remove();
   $("tip").textContent = tips[mode];
   resize(); frame(); panels(); loop();
