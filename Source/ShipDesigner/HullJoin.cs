@@ -24,9 +24,10 @@ public sealed class HullJoin
     public string Section = "Round";
     public double WA = 1.2, HA = 1.2, WB = 1.2, HB = 1.2; // each end's size: the strut tapers between (the user, 2026-11-24: wing-like arms)
     public double Twist; // roll from end A to end B (degrees)
+    public double RotA, RotB; // each end's section rolled about the arm's axis where it meets the hull (degrees), blended along the loft into the twist
     public double SweepUp, SweepFore; // the middle line's bow at mid-span (m): up/down and fore/aft
     public double Bias; // -0.9..0.9: the section's mass shifted up (+) or down (-), one side thicker
-    public const double MaxSweep = 20, MaxTwist = 180, MaxBias = 0.9;
+    public const double MaxSweep = 20, MaxTwist = 180, MaxBias = 0.9, MaxRot = 180;
 
     /// <summary>The sections a connection takes beyond the hull gallery's (the user, 2026-11-24).</summary>
     public static readonly string[] ExtraSections = ["TriangleUp", "TriangleDown", "Wedge", "Diamond", "Hexagon"];
@@ -68,7 +69,7 @@ public sealed class HullJoin
     public JsonObject ToJson(ShipDesign d) => new()
     {
         ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(WA), ["h"] = ShipDesign.R(HA), ["wb"] = ShipDesign.R(WB), ["hb"] = ShipDesign.R(HB),
-        ["twist"] = ShipDesign.R(Twist), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
+        ["twist"] = ShipDesign.R(Twist), ["rotA"] = ShipDesign.R(RotA), ["rotB"] = ShipDesign.R(RotB), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["follow"] = Follow, ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
         ["buttressClad"] = ButtressClad == "Off" ? null : new JsonObject { ["kind"] = ButtressClad, ["seed"] = ButtressSeed, ["size"] = ShipDesign.R(ButtressSize), ["depth"] = ShipDesign.R(ButtressDepth) },
@@ -103,6 +104,8 @@ public sealed class HullJoin
         j.WB = ShipDesign.F(o["wb"], j.WA);
         j.HB = ShipDesign.F(o["hb"], j.HA);
         j.Twist = ShipDesign.F(o["twist"], 0);
+        j.RotA = ShipDesign.F(o["rotA"], 0);
+        j.RotB = ShipDesign.F(o["rotB"], 0);
         j.SweepUp = ShipDesign.F(o["sweepUp"], 0);
         j.SweepFore = ShipDesign.F(o["sweepFore"], 0);
         j.Bias = ShipDesign.F(o["bias"], 0);
@@ -133,6 +136,8 @@ public sealed class HullJoin
         WB = Math.Clamp(WB, 0.2, 20);
         HB = Math.Clamp(HB, 0.2, 20);
         Twist = Math.Clamp(Twist, -MaxTwist, MaxTwist);
+        RotA = Math.Clamp(RotA, -MaxRot, MaxRot);
+        RotB = Math.Clamp(RotB, -MaxRot, MaxRot);
         SweepUp = Math.Clamp(SweepUp, -MaxSweep, MaxSweep);
         SweepFore = Math.Clamp(SweepFore, -MaxSweep, MaxSweep);
         Bias = Math.Clamp(Bias, -MaxBias, MaxBias);
@@ -404,8 +409,9 @@ public sealed class HullJoin
             }
             Norm(side);
             var upv0 = Cross(t, side);
-            // The twist rolls this ring's frame round the line; the carried axis stays untwisted.
-            var tw = Twist * q * Math.PI / 180;
+            // The twist rolls this ring's frame round the line, on top of each end's own roll blended from A's to B's; the carried axis stays
+            // untwisted. The mouths take the end rings' frames, so the holes roll too; the twin is mirrored from it, so its roll is mirrored.
+            var tw = (RotA + (RotB - RotA) * q + Twist * q) * Math.PI / 180;
             double cs = Math.Cos(tw), sn = Math.Sin(tw);
             double[] rs = [side[0] * cs + upv0[0] * sn, side[1] * cs + upv0[1] * sn, side[2] * cs + upv0[2] * sn];
             double[] upv = [upv0[0] * cs - side[0] * sn, upv0[1] * cs - side[1] * sn, upv0[2] * cs - side[2] * sn];

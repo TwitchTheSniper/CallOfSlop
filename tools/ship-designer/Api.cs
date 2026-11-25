@@ -37,7 +37,7 @@ public static partial class Api
         {
             ["join"] = new JsonObject
             {
-                ["w"] = j.WA, ["h"] = j.HA, ["wb"] = j.WB, ["hb"] = j.HB, ["twist"] = j.Twist, ["sweepUp"] = j.SweepUp, ["sweepFore"] = j.SweepFore,
+                ["w"] = j.WA, ["h"] = j.HA, ["wb"] = j.WB, ["hb"] = j.HB, ["twist"] = j.Twist, ["rotA"] = j.RotA, ["rotB"] = j.RotB, ["sweepUp"] = j.SweepUp, ["sweepFore"] = j.SweepFore,
                 ["bias"] = j.Bias, ["segments"] = j.Segments, ["flare"] = j.Flare, ["buttress"] = j.Buttress, ["openA"] = j.OpenA, ["openB"] = j.OpenB,
                 ["cladSize"] = j.CladSize, ["cladDepth"] = j.CladDepth, ["buttressSize"] = j.ButtressSize, ["buttressDepth"] = j.ButtressDepth,
             },

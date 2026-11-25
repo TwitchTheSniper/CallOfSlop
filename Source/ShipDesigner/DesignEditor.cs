@@ -117,7 +117,7 @@ public sealed class DesignEditor
                 var ao = o["a"]?.AsObject() ?? throw new InvalidOperationException("no first point");
                 var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), WA = D(o, "w", 1.2), HA = D(o, "h", 1.2), Segments = I(o, "segments", 6),
-                    Twist = D(o, "twist", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
+                    Twist = D(o, "twist", 0), RotA = D(o, "rotA", 0), RotB = D(o, "rotB", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
                     Mirror = (bool?)o["mirror"] ?? false, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
                 j.WB = D(o, "wb", j.WA);
                 j.HB = D(o, "hb", j.HA);
@@ -164,6 +164,8 @@ public sealed class DesignEditor
                 j.WB = D(o, "wb", j.WB);
                 j.HB = D(o, "hb", j.HB);
                 j.Twist = D(o, "twist", j.Twist);
+                j.RotA = D(o, "rotA", j.RotA);
+                j.RotB = D(o, "rotB", j.RotB);
                 j.SweepUp = D(o, "sweepUp", j.SweepUp);
                 j.SweepFore = D(o, "sweepFore", j.SweepFore);
                 j.Bias = D(o, "bias", j.Bias);

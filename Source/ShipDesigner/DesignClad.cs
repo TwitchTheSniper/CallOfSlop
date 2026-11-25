@@ -343,6 +343,29 @@ public static partial class DesignScene
                     m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), T(pu0, V(y + 1)), T(pu0, V(y)), side, false);
                     m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), T(pu1, V(y + 1)), T(pu1, V(y)), side, false);
                 }
+                // Abrasion (vertex colour only): a worn plate's edges scuffed and a few scratches across its top, both lightened toward bare
+                // metal and lifted 3 mm off it; how worn each plate is varies with the damage seed, so worn plates sit by less worn ones.
+                var wear = damage <= 0 ? 0 : Math.Clamp(damage * (0.3 + 1.4 * DHash(dseed, W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0), 31)), 0, 1);
+                if (wear > 0.12)
+                {
+                    var bare = Bare(top, wear);
+                    (double, double, double) L(double u, double v) => W(u, v, H(u, v) + 0.003);
+                    double eu = Math.Min(0.03 / arc, (pu1 - pu0) / 6), ev = Math.Min(0.03 / len, (pv1 - pv0) / 6);
+                    m.Quad(L(pu0, pv0), L(pu1, pv0), L(pu1, pv0 + ev), L(pu0, pv0 + ev), bare, false);
+                    m.Quad(L(pu0, pv1 - ev), L(pu1, pv1 - ev), L(pu1, pv1), L(pu0, pv1), bare, false);
+                    m.Quad(L(pu0, pv0 + ev), L(pu0 + eu, pv0 + ev), L(pu0 + eu, pv1 - ev), L(pu0, pv1 - ev), bare, false);
+                    m.Quad(L(pu1 - eu, pv0 + ev), L(pu1, pv0 + ev), L(pu1, pv1 - ev), L(pu1 - eu, pv1 - ev), bare, false);
+                    var w0 = W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0);
+                    var scratches = (int)(wear * 3.5);
+                    for (var k = 0; k < scratches; k++)
+                    {
+                        // A thin streak (1 cm wide) slanting along the plate, inside its edges.
+                        double ua = pu0 + eu + (pu1 - pu0 - 2 * eu) * DHash(dseed, w0, 40 + k), ub = pu0 + eu + (pu1 - pu0 - 2 * eu) * DHash(dseed, w0, 50 + k);
+                        double va = pv0 + ev + (pv1 - pv0 - 2 * ev) * 0.1, vb = pv1 - ev - (pv1 - pv0 - 2 * ev) * 0.1;
+                        var hw = 0.005 / arc;
+                        m.Quad(L(ua - hw, va), L(ua + hw, va), L(ub + hw, vb), L(ub - hw, vb), Bare(top, wear * 0.8), false);
+                    }
+                }
                 if (greeble)
                 {
                     double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
@@ -365,6 +388,14 @@ public static partial class DesignScene
                     m.World();
                 }
             }
+    }
+
+    /// <summary>A colour lightened toward bare metal by a plate's wear (0..1).</summary>
+    private static (byte, byte, byte) Bare((byte, byte, byte) c, double wear)
+    {
+        var f = 0.35 + 0.4 * wear;
+        static byte Mix(byte a, int b, double f) => (byte)Math.Clamp(a + (b - a) * f, 0, 255);
+        return (Mix(c.Item1, 0xd6, f), Mix(c.Item2, 0xda, f), Mix(c.Item3, 0xde, f));
     }
 
     /// <summary>A share in 0..1 from a seed and a point (to the centimetre), so the same place always takes the same damage.</summary>
