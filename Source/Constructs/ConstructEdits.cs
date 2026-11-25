@@ -314,10 +314,11 @@ public sealed partial class ConstructEdits
         var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
         if (anchor && !InfiniteParts)
             return "anchoring to the ground is for creative: build on a foundation instead";
-        if (ConstructPlace.LimitRefusal(world, player) is { } full)
-            return full;
         if (ConstructPlace.Pose(Query, def, point, normal, yaw, turn, (flags & ConstructPlace.FlagGrid) != 0, out var fp) is { } where)
             return where;
+        // A tile beside a run the player may join squares up to it and joins it when done, so it adds no construct to the limit.
+        if (ConstructPlace.TileSnap(world, def, ref fp, player) == null && ConstructPlace.LimitRefusal(world, player) is { } full)
+            return full;
         if (ConstructPlace.Fits(world, Query, def, fp, Feet(world)) is { } blocked)
             return blocked;
         h.Edit = EditKind.PlaceNew;
@@ -381,6 +382,70 @@ public sealed partial class ConstructEdits
         keep.Owner = player; // (both were the player's, or free for anyone to take)
         Done.Add($"player {player}: joined construct {from} into construct {keep.Id}");
         return null;
+    }
+
+    /// <summary>
+    /// Server: Roller Tile or Turntable Tile <paramref name="part"/> of <paramref name="c"/>, just set down, welds into every
+    /// other body whose tile it touches (<see cref="ConstructPlace.FindJoin"/>), as F with the attach tool would (Sean,
+    /// 2026-11-25: tiles placed together are one body, so one run). The bigger body stays; <paramref name="c"/> and
+    /// <paramref name="part"/> follow the tile. Only bodies the player may join (their own, or free to salvage, not contested,
+    /// not driven). How many bodies joined.
+    /// </summary>
+    private int JoinTiles(ConstructWorld world, byte player, ref Construct c, ref int part)
+    {
+        var joined = 0;
+        for (var guard = 0; guard < 8; guard++)
+        {
+            Construct? other = null;
+            JoinPlan plan = default;
+            foreach (var o in world.Bodies)
+            {
+                if (o == c || Vector3.Distance(o.WorldCom, c.WorldCom) > o.Radius + c.Radius + 2f)
+                    continue;
+                if (ConstructPlace.FindJoin(world, c, part, out plan, only: o) && ConstructPlace.JoinsTiles(o.DefOf(plan.PartB))
+                    && Contested(o, player) == null && SalvageRefusal(o, player) == null && world.CanMerge(c, o) == null)
+                {
+                    other = o;
+                    break;
+                }
+            }
+            if (other == null || Contested(c, player) != null || SalvageRefusal(c, player) != null)
+                return joined;
+            // The bigger body stays (a whole run's, the works'), the tile's own goes into it.
+            var keep = c;
+            if (other.PartCount > c.PartCount)
+            {
+                var tileBody = c;
+                var before = other.PartCount;
+                if (!ConstructPlace.FindJoin(world, other, plan.PartB, out var back, only: c) || world.CanMerge(other, c) != null)
+                    return joined;
+                StopEdits(c.Id);
+                if (!world.Merge(other, back))
+                    return joined;
+                part += before; // (what joins goes after the kept body's parts)
+                keep = other;
+                Done.Add($"player {player}: Roller Tile joined construct {tileBody.Id} into construct {keep.Id}");
+            }
+            else
+            {
+                StopEdits(other.Id);
+                var from = other.Id;
+                if (!world.Merge(c, plan))
+                    return joined;
+                Done.Add($"player {player}: Roller Tile joined construct {from} into construct {c.Id}");
+            }
+            keep.Owner = player; // (both were the player's, or free for anyone to take: as Join)
+            c = keep;
+            joined++;
+        }
+        return joined;
+
+        void StopEdits(ushort gone)
+        {
+            for (var i = 0; i < Hands.Length; i++)
+                if (Hands[i].Edit is EditKind.Attach or EditKind.Remove && Hands[i].Body == gone)
+                    Hands[i].Edit = EditKind.None;
+        }
     }
 
     public string? BeginRemove(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, double now)
@@ -481,10 +546,12 @@ public sealed partial class ConstructEdits
                 }
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
-                SnapAfter(player, ref h, def, c, i);
                 MirrorAttach(world, player, ref h, c, def, i, eye); // (a Mirror Table: its image too; ConstructEditsAids.cs)
+                var tiles = ConstructPlace.JoinsTiles(def) ? JoinTiles(world, player, ref c, ref i) : 0;
+                SnapAfter(player, ref h, def, c, i); // (after the tiles' join: the undo names the body the part is in now)
                 var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the attach tool joins them)" : "";
-                return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
+                var joined = tiles > 0 ? $" (tiles beside it joined: {tiles} construct{(tiles == 1 ? "" : "s")})" : "";
+                return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{joined}{touches}";
             }
             case EditKind.PlaceNew:
             {
@@ -492,7 +559,8 @@ public sealed partial class ConstructEdits
                     return "failed: nothing to place";
                 // Checked again: something may have moved there meanwhile.
                 var fp = new FreePlacement { Pos = h.At, Rot = h.PlaceRot, Turn = h.PlaceTurn, Anchor = h.PlaceAnchor };
-                if ((ConstructPlace.LimitRefusal(world, player) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
+                var joinsRun = ConstructPlace.JoinsTiles(def) && ConstructPlace.TileSnap(world, def, ref fp, player) != null; // (a tile joining a run adds no construct)
+                if (((joinsRun ? null : ConstructPlace.LimitRefusal(world, player)) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
                     return $"failed: {why}";
                 if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
@@ -503,8 +571,13 @@ public sealed partial class ConstructEdits
                 ConstructAmmo.Fitted(world, c, 0, def, ref h, InfiniteParts); // (a magazine set down keeps what is in it)
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
-                SnapAfter(player, ref h, def, c, 0);
-                return $"ok: {def.Name} as new construct {c.Id}";
+                var part = 0;
+                var newId = c.Id;
+                var joinedTiles = ConstructPlace.JoinsTiles(def) && JoinTiles(world, player, ref c, ref part) > 0;
+                SnapAfter(player, ref h, def, c, part); // (after the tiles' join: the undo names the body the tile is in now)
+                if (joinedTiles)
+                    return $"ok: {def.Name} joined onto the tiles beside it, as part {part} of construct {c.Id}";
+                return $"ok: {def.Name} as new construct {newId}";
             }
             case EditKind.Remove:
             {
