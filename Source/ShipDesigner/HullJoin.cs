@@ -406,9 +406,43 @@ public sealed class HullJoin
         if (_mouths is { } hit && hit.Key == key)
             return hit.L;
         var l = new List<Mouth>();
-        Build(d, l);
+        var f = new List<Foot>();
+        Build(d, l, null, f);
         _mouths = (key, l);
+        _feet = (key, f);
         return l;
+    }
+
+    /// <summary>The buttresses' footprints on the skins at both ends (and the twin's), which a body's cladding stays off (Karl, 2026-11-25).</summary>
+    public List<Foot> Feet(ShipDesign d)
+    {
+        Mouths(d);
+        return _feet!.Value.L;
+    }
+
+    private (string Key, List<Foot> L)? _feet;
+
+    /// <summary>How far past a footprint's outline a body's plates stay off (m): a cell that straddles the edge goes bare, so the hull's plates don't poke through the buttress.</summary>
+    public const double FootMargin = 0.08;
+
+    /// <summary>
+    /// Where a connection's end ring (the flared buttress's base, or the strut's own) meets a skin, as an outline round the line in its end
+    /// frame (middle, along, across, up), grown by <see cref="FootMargin"/>.
+    /// </summary>
+    public sealed record Foot(int Hull, double[] C, double[] T, double[] S, double[] U, double[] Pu, double[] Pv, double Reach)
+    {
+        public bool Holds(double x, double y, double z)
+        {
+            double qx = x - C[0], qy = y - C[1], qz = z - C[2];
+            if (Math.Abs(qx * T[0] + qy * T[1] + qz * T[2]) > Reach)
+                return false;
+            double u = qx * S[0] + qy * S[1] + qz * S[2], v = qx * U[0] + qy * U[1] + qz * U[2];
+            var inside = false;
+            for (int i = 0, k = Pu.Length - 1; i < Pu.Length; k = i++)
+                if ((Pv[i] > v) != (Pv[k] > v) && u < (Pu[k] - Pu[i]) * (v - Pv[i]) / (Pv[k] - Pv[i]) + Pu[i])
+                    inside = !inside;
+            return inside;
+        }
     }
 
     // The last mouths and spine worked out, under the key of all they come from (the checks ask for them once a room).
@@ -426,7 +460,7 @@ public sealed class HullJoin
         return Id + ":" + o.ToJsonString() + "|" + d.Hull(A.Hull)?.ShapeKey() + "|" + d.Hull(B.Hull)?.ShapeKey();
     });
 
-    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U, double W, double H)>? spine = null)
+    private DesignMesh Build(ShipDesign d, List<Mouth>? mouths, List<(double[] C, double[] S, double[] U, double W, double H)>? spine = null, List<Foot>? feet = null)
     {
         var m = new DesignMesh();
         if (World(d, A) is not { } a || World(d, B) is not { } b)
@@ -579,6 +613,33 @@ public sealed class HullJoin
                     }
                     var e = At(hi + 0.01);
                     r[j] = (e[0], e[1], e[2]);
+                }
+                if (feet is not null)
+                {
+                    // The outline in the end frame, grown out from its middle by the margin.
+                    var n = r.Length;
+                    double[] pu = new double[n], pv = new double[n];
+                    double mu = 0, mv = 0, far = 0;
+                    for (var j = 0; j < n; j++)
+                    {
+                        double qx = r[j].Item1 - c[0], qy = r[j].Item2 - c[1], qz = r[j].Item3 - c[2];
+                        pu[j] = qx * rs[0] + qy * rs[1] + qz * rs[2];
+                        pv[j] = qx * upv[0] + qy * upv[1] + qz * upv[2];
+                        far = Math.Max(far, Math.Abs(qx * t[0] + qy * t[1] + qz * t[2]));
+                        mu += pu[j] / n;
+                        mv += pv[j] / n;
+                    }
+                    for (var j = 0; j < n; j++)
+                    {
+                        double du = pu[j] - mu, dv = pv[j] - mv, l = Math.Max(1e-9, Math.Sqrt(du * du + dv * dv));
+                        pu[j] += du / l * FootMargin;
+                        pv[j] += dv / l * FootMargin;
+                    }
+                    var hid = i == 0 ? A.Hull : B.Hull;
+                    var reachF = far + 0.5;
+                    feet.Add(new Foot(hid, c, t, rs, upv, pu, pv, reachF));
+                    if (Mirror && Math.Abs(a.P[0]) > 0.3)
+                        feet.Add(new Foot(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], pu, pv, reachF));
                 }
             }
             rings.Add(r);

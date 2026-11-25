@@ -149,6 +149,7 @@ public static partial class DesignScene
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
+        var feet = d.Joins.SelectMany(j => j.Feet(d)).Where(f => f.Hull == h.Id).ToList();
         // Every opening as an outline in its own plane (Karl, 2026-11-24: holes cut clean along their edge, not cell by cell).
         var cutouts = new List<Cutout>();
         foreach (var (w, hx, hz, round) in holes)
@@ -297,7 +298,7 @@ public static partial class DesignScene
                         return true;
                 var mid = ((p.Item1 + q.Item1) / 2, (p.Item2 + q.Item2) / 2, (p.Item3 + q.Item3) / 2);
                 foreach (var (x, y, z) in new[] { p, q, mid })
-                    if (InHole(x, y, z) || CutBody(x, y, z))
+                    if (InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z)))
                         return true;
                 return false;
             });
@@ -330,7 +331,7 @@ public static partial class DesignScene
                 foreach (var k in cutouts)
                     if (k.Covers((x, y, z)))
                         return true;
-                return InHole(x, y, z) || CutBody(x, y, z);
+                return InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z));
             }
             CladCap(foreClad, cx, hc, rings[0], false, Open, cladSize);
             CladCap(aftClad, cx, hc, rings[^1], true, Open, cladSize);
