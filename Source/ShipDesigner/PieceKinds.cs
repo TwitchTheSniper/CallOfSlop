@@ -9,7 +9,8 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// <summary>How far a socket may be from the room it opens into (the void between a room's wall and the skin, then a little).</summary>
     /// <summary>A drive's service socket (Karl, 2026-11-24): placed on the skin, it gets a socket on the inside, opposite it, in the
     /// room behind (its feed and access panel). It cuts no hole and is not a way aboard.</summary>
-    public bool Service => Group == "Drives";
+    /// RCS quads need none (Karl, 2026-11-25): they are fed by their pads, with no way in from inside.
+    public bool Service => Group == "Drives" && Name != "RCS quad";
 
     public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
 
