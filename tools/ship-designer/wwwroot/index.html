@@ -47,6 +47,7 @@ aside.right { border-left: 1px solid var(--line); }
 h2 { font: 600 17px/1.1 var(--display); letter-spacing: .06em; text-transform: uppercase; margin: 0; display: flex; align-items: baseline; gap: 8px; }
 h2 .n { font: 500 11px var(--mono); color: var(--ink2); letter-spacing: .04em; text-transform: none; }
 .sec { display: grid; gap: 8px; }
+button.reset { padding: 1px 6px; font-size: 12px; }
 .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .row label { display: flex; gap: 6px; align-items: center; }
 .grid2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; }
@@ -1023,36 +1024,48 @@ function gallery(pick, onPick, tall = 300) {
   }
   return gal;
 }
-function slider(label, v, min, max, step, unit, onInput, onDone) {
+// def (in the slider's own units, from CAT.defaults) adds a reset button; onReset, when given, sends it instead of onDone (its own undo step).
+function slider(label, v, min, max, step, unit, onInput, onDone, def, onReset) {
   const r = el("input", { type: "range", min, max, step, value: v, "aria-label": label }), out = el("span", {}, `${v}${unit}`);
   // Dragging only moves the shown value; the command goes when the slider is released (the user, 2026-11-24: dragging lagged).
   r.addEventListener("input", () => { out.textContent = `${r.value}${unit}`; });
   r.addEventListener("change", () => { out.textContent = `${r.value}${unit}`; (onDone || onInput)(+r.value); });
-  return el("label", { class: "row" }, `${label} `, r, out);
+  const reset = def === undefined ? [] : [el("button", { class: "reset", title: `Reset ${label.toLowerCase()} to ${def}${unit}`, "aria-label": `Reset ${label}`, onclick: e => { e.preventDefault(); r.value = def; out.textContent = `${def}${unit}`; (onReset || onDone || onInput)(def); } }, "\u21ba")];
+  return el("label", { class: "row" }, `${label} `, r, out, ...reset);
 }
-function joinControls(o, apply) {
+// A default from the catalogue in slider units (x scale), and a "Reset all" button for a section.
+const dflt = (kind, key, scale = 1) => Math.round(CAT.defaults[kind][key] * scale * 1e6) / 1e6;
+const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
+const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
+function joinControls(o, apply, reset = apply) {
+  // Each slider resets to HullJoin's default; reset sends it as its own step (the inspector's apply merges a drag session).
+  const js = (label, key, scale, min, max, step, unit) => slider(label, Math.round(o[key] * scale * 1e6) / 1e6, min, max, step, unit, v => { o[key] = v / scale; apply(); }, undefined, dflt("join", key, scale), v => { o[key] = v / scale; reset(); });
+  const all = keys => resetAll("Every slider here back to its default", () => { Object.assign(o, dfltOf("join", keys)); reset(); });
   // The connection's own sections (the user, 2026-11-24: wing-like arms), beside the hull gallery's.
   const extra = el("div", { class: "row" }), gal = gallery(o.section, n => { o.section = n; for (const x of extra.children) x.classList.remove("on"); apply(); }, 150);
   for (const [n, label] of [["TriangleUp", "Triangle up"], ["TriangleDown", "Triangle down"], ["Wedge", "Wedge"], ["Diamond", "Diamond"], ["Hexagon", "Hexagon"]])
     extra.append(el("button", { class: o.section === n ? "on" : "", "data-sec": n, onclick: e => { o.section = n; for (const x of [...extra.children, ...gal.children]) x.classList.toggle("on", x === e.currentTarget); apply(); } }, label));
   return [el("h3", {}, "Connection shape"), gal, extra,
-    slider("Width A", o.w, 0.2, 8, 0.1, " m", v => { o.w = v; apply(); }),
-    slider("Height A", o.h, 0.2, 8, 0.1, " m", v => { o.h = v; apply(); }),
-    slider("Width B", o.wb, 0.2, 8, 0.1, " m", v => { o.wb = v; apply(); }),
-    slider("Height B", o.hb, 0.2, 8, 0.1, " m", v => { o.hb = v; apply(); }),
-    slider("Twist", o.twist, -180, 180, 1, " deg", v => { o.twist = v; apply(); }),
-    slider("Sweep up", o.sweepUp, -20, 20, 0.1, " m", v => { o.sweepUp = v; apply(); }),
-    slider("Sweep fore", o.sweepFore, -20, 20, 0.1, " m", v => { o.sweepFore = v; apply(); }),
-    slider("Thickness bias", Math.round(o.bias * 100), -90, 90, 5, "%", v => { o.bias = v / 100; apply(); }),
-    slider("Segments", o.segments, 1, 24, 1, "", v => { o.segments = v; apply(); }),
+    js("Width A", "w", 1, 0.2, 8, 0.1, " m"),
+    js("Height A", "h", 1, 0.2, 8, 0.1, " m"),
+    js("Width B", "wb", 1, 0.2, 8, 0.1, " m"),
+    js("Height B", "hb", 1, 0.2, 8, 0.1, " m"),
+    js("Twist", "twist", 1, -180, 180, 1, " deg"),
+    js("Sweep up", "sweepUp", 1, -20, 20, 0.1, " m"),
+    js("Sweep fore", "sweepFore", 1, -20, 20, 0.1, " m"),
+    js("Thickness bias", "bias", 100, -90, 90, 5, "%"),
+    js("Segments", "segments", 1, 1, 24, 1, ""),
+    el("div", { class: "row" }, all(["w", "h", "wb", "hb", "twist", "sweepUp", "sweepFore", "bias", "segments"])),
     el("h3", {}, "Buttress (the cladding where it meets each hull)"),
-    slider("Flare", Math.round(o.flare * 100), 100, 400, 5, "%", v => { o.flare = v / 100; apply(); }),
-    slider("Runs up", o.buttress, 0, 6, 0.1, " m", v => { o.buttress = v; apply(); }),
+    js("Flare", "flare", 100, 100, 400, 5, "%"),
+    js("Runs up", "buttress", 1, 0, 6, 0.1, " m"),
+    el("div", { class: "row" }, all(["flare", "buttress"])),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = !!o.follow; c.addEventListener("change", () => { o.follow = c.checked; apply(); }); return c; })(), "Follow the hull (its base laid onto the skin)"),
     el("h3", {}, "Sockets (the hole each end cuts)"),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.squareHole; c.addEventListener("change", () => { o.squareHole = c.checked; apply(); }); return c; })(), "Square holes (else oval)"),
-    slider("First end", Math.round(o.openA * 100), 0, 150, 5, "%", v => { o.openA = v / 100; apply(); }),
-    slider("Second end", Math.round(o.openB * 100), 0, 150, 5, "%", v => { o.openB = v / 100; apply(); }),
+    js("First end", "openA", 100, 0, 150, 5, "%"),
+    js("Second end", "openB", 100, 0, 150, 5, "%"),
+    el("div", { class: "row" }, all(["openA", "openB"])),
     el("label", { class: "row" }, (() => { const c = el("input", { type: "checkbox" }); c.checked = o.mirror; c.addEventListener("change", () => { o.mirror = c.checked; apply(); }); return c; })(), "Mirror to the other side")];
 }
 function connectSection() {
@@ -1181,29 +1194,33 @@ function stationPanel(h) {
     el("label", {}, el("input", { type: "checkbox", ...(h.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHull", hull: h.id, mirror: e.target.checked }) }), "Mirrored pair")));
   // Cladding (the user's Star Destroyer flank, 2026-11-24): plates of varied size laid on the skin, raised a few cm, off every opening.
   const clad = h.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
+  const hs = o => cmd({ op: "setHull", hull: h.id, ...o });
   box.append(el("h3", {}, "Cladding"),
     el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [
-      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 })),
-      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 })),
+      slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 }), dflt("hull", "cladSize", 100)),
+      slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 }), dflt("hull", "cladDepth", 100)),
+      el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
     el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
   // Rounded ends: the skin curves into the cap over this radius.
   const rMaxF = Math.max(0, Math.floor((h.roundMaxFore ?? 0) * 20) * 5), rMaxA = Math.max(0, Math.floor((h.roundMaxAft ?? 0) * 20) * 5);
   box.append(el("h3", {}, "Rounded ends"),
-    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 })),
-    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 })),
+    slider("Fore radius", Math.round(Math.min(h.roundFore ?? 0, h.roundMaxFore ?? 0) * 100), 0, rMaxF, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundFore: v / 100 }), dflt("hull", "roundFore", 100)),
+    slider("Aft radius", Math.round(Math.min(h.roundAft ?? 0, h.roundMaxAft ?? 0) * 100), 0, rMaxA, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, roundAft: v / 100 }), dflt("hull", "roundAft", 100)),
+    el("div", { class: "row" }, resetAll("Both radii back to their defaults", () => hs(dfltOf("hull", ["roundFore", "roundAft"])))),
     el("p", { class: "hint" }, "0: a hard edge. At most half the end's smallest half-size, and short of the next station."));
   // Paint (the user's Rocinante: mostly dark with bold accent areas), over the facets and the cladding plates.
   const pa = h.paint || { accent: "#d8742a", amount: 0, pattern: "Blocks", stripe: 1.5, wear: 0, seed: 1 };
   const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => cmd({ op: "setHull", hull: h.id, [key]: c.value })); return c; };
   box.append(el("h3", {}, "Paint"),
     el("div", { class: "row" }, el("span", {}, "Base"), colour(h.skin, "Base colour", "skin"), el("span", {}, "Accent"), colour(pa.accent, "Accent colour", "accent")),
-    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 })),
+    slider("Accent amount", Math.round(pa.amount * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, accentAmount: v / 100 }), dflt("hull", "accentAmount", 100)),
     el("div", { class: "row" }, el("span", {}, "Pattern"), ...["Blocks", "Stripes", "Bands"].map(k => el("button", { class: pa.pattern === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, pattern: k }) }, k))),
-    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }))]),
-    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 })),
+    ...(pa.pattern === "Blocks" ? [] : [slider("Stripe width", Math.round(pa.stripe * 100), 20, 1000, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, stripe: v / 100 }), dflt("hull", "stripe", 100))]),
+    slider("Wear", Math.round(pa.wear * 100), 0, 100, 1, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, wear: v / 100 }), dflt("hull", "wear", 100)),
+    el("div", { class: "row" }, resetAll("Accent amount, stripe width and wear back to their defaults", () => hs(dfltOf("hull", ["accentAmount", "stripe", "wear"])))),
     el("div", { class: "row" }, el("span", {}, "Seed"), num(pa.seed, v => cmd({ op: "setHull", hull: h.id, paintSeed: Math.round(v) }), 1),
       el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, paintSeed: Math.floor(Math.random() * 99999) }) }, "New pattern")),
     el("p", { class: "hint" }, "Blocks: that share of facets and plates in the accent. Stripes run along the ship, bands across it. Wear darkens and varies the tones. Connections take hull A's paint."));
@@ -1354,20 +1371,22 @@ function inspector() {
     const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
     const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
-    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply),
+    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
       el("h3", {}, "Cladding"),
       el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
-        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 })),
-        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 })),
+        slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
+        slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
+        el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["cladSize", "cladDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => jc({ cladSeed: Math.round(v) }), 1),
           el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
       el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
       el("h3", {}, "Buttress cladding"),
       el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
-        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 })),
-        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 })),
+        slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
+        slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),
+        el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => jc(dfltOf("join", ["buttressSize", "buttressDepth"])))),
         el("div", { class: "row" }, el("span", {}, "Seed"), num(bcl.seed, v => jc({ buttressSeed: Math.round(v) }), 1),
           el("button", { onclick: () => jc({ buttressSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
       el("p", { class: "hint" }, "Rows of plates over each flared end, out to where it sinks under the skin; the mouths stay clear. Needs a buttress length above 0."),
@@ -1450,14 +1469,16 @@ function inspector() {
             slider("Along the wall", Math.round(e.t * 100), 0, 100, 1, "%", () => {}, v => set({ t: v / 100 }))])]; }),
       el("p", { class: "hint" }, "Grows the room out of a wall (a box, an angled bay, half a hexagon or a round apse) or raises its ceiling (vaulted, gabled or chamfered). Red: it pokes through the skin."),
       el("h3", {}, "Walls"),
-      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }),
+      slider("Wall thickness", Math.round((r.wallThick ?? 0.1) * 100), 0, 30, 1, " cm", () => {}, v => { const a = cmd({ op: "setRoom", id: r.id, wallThick: v / 100 }); if (a.error) toast(a.error); }, dflt("room", "wallThick", 100)),
+      el("div", { class: "row" }, resetAll("Wall thickness back to its default", () => { const a = cmd({ op: "setRoom", id: r.id, ...dfltOf("room", ["wallThick"]) }); if (a.error) toast(a.error); })),
       el("p", { class: "hint" }, "A shell round the room, outside its box, so it keeps its full inside space. It stops at the skin and leaves doors between rooms open (0: none)."),
       el("h3", {}, "Interior"),
       (() => { const setI = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
         const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => setI({ [key]: c.value })); return c; };
         return el("div", {},
           el("div", { class: "row" }, el("span", {}, "Style"), ...["Off", "Clean", "Industrial"].map(k => el("button", { class: (r.interior || "Off") === k ? "on" : "", onclick: () => setI({ interior: k }) }, k))),
-          slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v })),
+          slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v }), dflt("room", "ribSpacing")),
+          el("div", { class: "row" }, resetAll("Rib spacing back to its default", () => setI(dfltOf("room", ["ribSpacing"])))),
           el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),
             el("button", { class: r.lights !== false ? "on" : "", onclick: () => setI({ lights: r.lights === false }) }, r.lights !== false ? "Lights on" : "Lights off")),
           el("p", { class: "hint" }, "Cladding on the room's inside: framed panels, ribs at the spacing, a kick plate, light strips on the ceiling and floor. Industrial adds vents and hazard trim. Doors stay clear.")); })(),
