@@ -1816,7 +1816,7 @@ try {
   CAT = JSON.parse(api.Catalogue());
   const st = $("start"); st.append(el("option", { value: "" }, "New from...")); for (const s of CAT.starts) st.append(el("option", { value: s }, s));
   let saved = null; try { saved = localStorage.getItem("shipdesigner.design"); } catch (e) {}
-  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) take(api.Scene()); } else take(api.Scene());
+  if (saved) { const a = cmd({ op: "load", json: saved }); if (a.error) { try { localStorage.setItem("shipdesigner.design.unread." + Date.now(), saved); } catch (e) {} toast("Your saved design could not be read by this version; a copy is kept in browser storage."); take(api.Scene()); } } else take(api.Scene());
   $("boot").remove();
   $("tip").textContent = tips[mode];
   resize(); frame(); panels(); loop();
