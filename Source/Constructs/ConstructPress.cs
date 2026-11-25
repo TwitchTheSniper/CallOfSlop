@@ -20,7 +20,7 @@ public enum PressStall : byte
     ConveyorCut, // its Piece out conveyor is cut
     Bay2Short, // a sized die's pattern wants more of its kit in bay 2 than it holds
     WantsOrder, // it has a queue (Press phase 4) and the queue is empty: it presses nothing until an order comes
-    SwingBlocked, // a fixed part stands in a shell's swing (the clamshell, ConstructPressShells.cs): it never swings into its own machine's neighbours
+    SwingBlocked, // a fixed part stands in the lid's swing, or a block is stacked on the bed (ConstructPressLid.cs): it never swings into its own machine's neighbours
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -512,7 +512,9 @@ public static partial class ConstructPress
             : SwingBlocked(c, part) ? PressStall.SwingBlocked
             : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
         SetStall(world, st, why);
-        if (why != PressStall.None || held || p.Broken)
+        if (st.LidCool > 0)
+            st.LidCool--; // (the lid still opening on the last part: ConstructPressLid.cs)
+        if (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0)
         {
             st.JobTicks = 0;
             ConstructGatherer.SetBusy(world, st, false);
@@ -521,8 +523,9 @@ public static partial class ConstructPress
         var piece = PieceIn(c, part, bay);
         var blank = c.Parts[piece].D.ExKey with { Growing = false };
         // Every stroke takes time, in creative too (Sean, 2026-11-23: "the press frames were meant to close on the part to transform it"):
-        // the shells swing open over the blank, slam shut on it, and the part is made at the stroke's end, while they are shut. A
-        // stroke is never shorter than the shells' swing (StrokeMinSteps); a creative one takes CreativeStrokeSteps (it costs nothing).
+        // the lid swings shut on the blank, latches and squeezes, and the part is made at the stroke's end, while it is shut. A stroke is
+        // never shorter than the lid's shutting and latching (StrokeMinSteps); a creative one takes CreativeStrokeSteps (it costs nothing).
+        // After it the lid opens before the next (LidCool).
         var work = WorkOf(c, part);
         var full = world.CreativeRecycling ? CreativeStrokeSteps * work
             : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
@@ -545,6 +548,8 @@ public static partial class ConstructPress
         }
         if (!PutOut(world, query, c, part, st, output, 1))
             return false;
+        if (HasLid(c, part))
+            st.LidCool = LidOpenSteps;
         if (need > 0 && pattern!.Bay2 is { } kit)
         {
             if (kit.Part != null)
@@ -1483,7 +1488,7 @@ public static partial class ConstructPress
         PressStall.ConveyorCut => "Output conveyor cut",
         PressStall.Bay2Short => "Bay 2 needs its kit",
         PressStall.WantsOrder => "No orders: waiting",
-        PressStall.SwingBlocked => "Shell swing blocked",
+        PressStall.SwingBlocked => "Lid swing blocked",
         _ => "Ready",
     };
 

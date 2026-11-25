@@ -215,8 +215,10 @@ public static partial class ConstructRender
             return -1; // (a hidden socket connector: walked, and DrawPart draws nothing)
         if (p.D.HasMiddle && ModuleSockets.FrameLook(c, i))
             return -1; // (an Opening socket's frame, or the plug on one: walked, DrawPart leaves its middle out)
-        if (p.D.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _))
-            return -1; // (a Press's clamshell segment: walked, swung about its hinge while the press works, ConstructPressShells.cs)
+        if (p.D.BlockRole == BlockRole.Block && ConstructPress.Covered(c, i))
+            return 0; // (a cell of a Press's bed: nothing of its own, its Core draws the press over it: ConstructRenderPress.cs)
+        if (p.D.IsPress && p.D.BlockRole == BlockRole.Core)
+            return -1; // (a Press Core: walked, it draws its press's lid, jaws and pieces as they move)
         if (p.D.ShellBody)
             return -1; // (a standing shell: walked, drawn as a worn one (ConstructRenderShellRigs.cs) or with its fitted modules from their parts, ShellFittedLooks)
         if (c.DoorCount > 0 && c.DoorOfListed(i) >= 0)
@@ -302,7 +304,7 @@ public static partial class ConstructRender
         var d = p.D;
         if (p.Seg != 0 || p.Burn > 0 || d.HasWork && !d.WorkGlowOnly || d.Logic == CLogic.AnalogLever || d.Rotor != null || d.Role is PartRole.Joint or PartRole.Suspension || d.IsRail || d.HasRig || d.TrackRays > 0
             || _wheelMark[i] == _wheelToken || c.DoorCount > 0 && c.DoorOfListed(i) >= 0 || c.MergeOf[i] != 0 || c.EngineOf[i] != 0 || d.ShellBody
-            || d.BlockRole == BlockRole.Block && ConstructPress.Shell(c, i, out _) // (a Press's shell swings out past its welded cell)
+            || d.IsPress && d.BlockRole == BlockRole.Core // (a Press Core draws its whole press, and the lid swings out past its bed)
             || ModulePullLook.Walks(c, i) // (a module rocking under the physics gun's pull)
             || c.Growing(i)) // (a piece growing on a die: longer each step than the sphere it had when the body was planned)
             return new Vector4(0, 0, 0, -1);
