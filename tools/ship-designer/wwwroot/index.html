@@ -759,7 +759,7 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (st && !conn) { selectStation(st.object.userData.hull, st.object.userData.i); drag = { what: "station", hull: st.object.userData.hull, i: st.object.userData.i, x0: ev.clientX, y0: ev.clientY }; controls.enabled = false; dragFirst = true; return; }
     const h = hits.find(h => h.object.userData.type === "hull");
     if (h && conn) {
-      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z };
+      const u = h.object.userData, at = { hull: u.hull, copy: u.copy, x: h.point.x, y: h.point.y, z: h.point.z, face: u.surface || "skin" };
       if (conn.step === "a") { conn = { step: "b", a: at, joinId: 0, hullId: 0, newBody: false }; leftPanel(); $("tip").textContent = "Set the connection, then click the second body where it meets, or add a new body."; return; }
       if (u.hull === conn.hullId) conn.hullId = 0; // (connecting to the body this tool made keeps it)
       conn.b = at; conn.newBody = false; placeJoin(); leftPanel(); return;
@@ -1108,7 +1108,7 @@ function shapeIcon(p) {
 // The Connect tool (Karl, 2026-11-24): a first point on a hull, the connection's shape, size and segments, then the second body (a point
 // on one already there, or a new body set out at a distance); the design lofts the connection between. Every change places it again.
 let conn = null;
-const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, rotA: 0, rotB: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: false, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
+const cOpt = { section: "Round", w: 1.2, h: 1.6, wb: 1.2, hb: 1.6, twist: 0, rotA: 0, rotB: 0, sweepUp: 0, sweepFore: 0, bias: 0, segments: 6, mirror: false, flare: 1.6, buttress: 0.8, follow: false, squareHole: false, openA: 0.9, openB: 0.9, leaveA: 0, leaveB: 0, leaveForeA: 0, leaveForeB: 0, tanA: 0.9, tanB: 0.9, body: { section: "Barrel", w: 3, h: 3, len: 12, segments: 4, dist: 5, slide: 0 } };
 function gallery(pick, onPick, tall = 300) {
   const gal = el("div", { class: "gal", role: "listbox", style: `max-height:${tall}px` });
   for (const s of CAT.sections) {
@@ -1146,6 +1146,15 @@ function joinControls(o, apply, reset = apply) {
     js("Twist", "twist", 1, -180, 180, 1, " deg"),
     js("Rotate end A", "rotA", 1, -180, 180, 1, " deg"),
     js("Rotate end B", "rotB", 1, -180, 180, 1, " deg"),
+    el("h3", {}, "Arch (how each end leaves its hull)"),
+    js("Leave A toward B", "leaveA", 1, -80, 80, 1, " deg"),
+    js("Leave A along hull", "leaveForeA", 1, -80, 80, 1, " deg"),
+    js("Tangent length A", "tanA", 100, 5, 250, 5, "%"),
+    js("Leave B toward A", "leaveB", 1, -80, 80, 1, " deg"),
+    js("Leave B along hull", "leaveForeB", 1, -80, 80, 1, " deg"),
+    js("Tangent length B", "tanB", 100, 5, 250, 5, "%"),
+    el("div", { class: "row" }, all(["leaveA", "leaveForeA", "tanA", "leaveB", "leaveForeB", "tanB"])),
+    el("h3", {}, "Sweep and bias"),
     js("Sweep up", "sweepUp", 1, -20, 20, 0.1, " m"),
     js("Sweep fore", "sweepFore", 1, -20, 20, 0.1, " m"),
     js("Thickness bias", "bias", 100, -90, 90, 5, "%"),
@@ -1188,7 +1197,7 @@ function connectSection() {
 // Places the connection again (the first placing is an undo step, the rest merge into it).
 function placeJoin() {
   if (!conn || (!conn.b && !conn.newBody)) return;
-  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, wb: cOpt.wb, hb: cOpt.hb, twist: cOpt.twist, rotA: cOpt.rotA, rotB: cOpt.rotB, sweepUp: cOpt.sweepUp, sweepFore: cOpt.sweepFore, bias: cOpt.bias, segments: cOpt.segments, mirror: cOpt.mirror, flare: cOpt.flare, buttress: cOpt.buttress, follow: cOpt.follow, squareHole: cOpt.squareHole, openA: cOpt.openA, openB: cOpt.openB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
+  const op = { op: "connect", a: conn.a, section: cOpt.section, w: cOpt.w, h: cOpt.h, wb: cOpt.wb, hb: cOpt.hb, twist: cOpt.twist, rotA: cOpt.rotA, rotB: cOpt.rotB, sweepUp: cOpt.sweepUp, sweepFore: cOpt.sweepFore, bias: cOpt.bias, segments: cOpt.segments, mirror: cOpt.mirror, flare: cOpt.flare, buttress: cOpt.buttress, follow: cOpt.follow, squareHole: cOpt.squareHole, openA: cOpt.openA, openB: cOpt.openB, leaveA: cOpt.leaveA, leaveB: cOpt.leaveB, leaveForeA: cOpt.leaveForeA, leaveForeB: cOpt.leaveForeB, tanA: cOpt.tanA, tanB: cOpt.tanB, replaceJoin: conn.joinId || 0, replaceHull: conn.hullId || 0 };
   if (conn.newBody) op.body = { ...cOpt.body }; else op.b = conn.b;
   const a = cmd(op, !!conn.joinId);
   if (a.error) { console.log("connect err", a.error); toast(a.error); return; }
@@ -1481,14 +1490,14 @@ function inspector() {
   }
   if (sel.kind === "join") {
     const j = S.joins.find(j => j.id === sel.id); if (!j) return;
-    const o = { section: j.section, w: j.w, h: j.h, wb: j.wb ?? j.w, hb: j.hb ?? j.h, twist: j.twist ?? 0, rotA: j.rotA ?? 0, rotB: j.rotB ?? 0, sweepUp: j.sweepUp ?? 0, sweepFore: j.sweepFore ?? 0, bias: j.bias ?? 0, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, follow: !!j.follow, squareHole: j.squareHole, openA: j.openA, openB: j.openB };
+    const o = { section: j.section, w: j.w, h: j.h, wb: j.wb ?? j.w, hb: j.hb ?? j.h, twist: j.twist ?? 0, rotA: j.rotA ?? 0, rotB: j.rotB ?? 0, sweepUp: j.sweepUp ?? 0, sweepFore: j.sweepFore ?? 0, bias: j.bias ?? 0, segments: j.segments, mirror: j.mirror, flare: j.flare, buttress: j.buttress, follow: !!j.follow, squareHole: j.squareHole, openA: j.openA, openB: j.openB, leaveA: j.leaveA ?? 0, leaveB: j.leaveB ?? 0, leaveForeA: j.leaveForeA ?? 0, leaveForeB: j.leaveForeB ?? 0, tanA: j.tanA ?? 0.9, tanB: j.tanB ?? 0.9 };
     let first = true;
     const apply = () => { cmd({ op: "setJoin", id: j.id, ...o }, !first); first = false; };
     // Cladding on the strut, as a body's (the user, 2026-11-24: the nacelles' arms had none); the flared ends into the skins stay bare.
     const clad = j.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
     const bcl = j.buttressClad || { kind: "Off", seed: 1, size: 0.8, depth: 1 };
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
-    I.append(el("h2", {}, "Connection"), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
+    I.append(el("h2", {}, "Connection"), el("p", { class: "hint" }, `Face: end A on the ${(j.faceA || "Side").toLowerCase()}${j.faceA && j.faceA !== "Side" ? " cap" : " skin"}, end B on the ${(j.faceB || "Side").toLowerCase()}${j.faceB && j.faceB !== "Side" ? " cap" : " skin"}.`), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
       el("h3", {}, "Cladding"),
       el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [

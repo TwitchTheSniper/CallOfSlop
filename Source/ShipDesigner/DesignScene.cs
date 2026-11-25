@@ -153,8 +153,10 @@ public static partial class DesignScene
         var cutouts = new List<Cutout>();
         foreach (var (w, hx, hz, round) in holes)
             cutouts.Add(new Cutout(w.O, w.X, w.Y, w.Z, round ? Ellipse(hx, hx) : Rect(hx, hz)));
+        var mouthCuts = new List<Cutout>();
         foreach (var m in mouths)
-            cutouts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
+            mouthCuts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)));
+        cutouts.AddRange(mouthCuts);
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
         foreach (var hw in d.Windows)
             if (WindowCut(d, hw).Cut is { } wc)
@@ -182,6 +184,10 @@ public static partial class DesignScene
             foreach (var m in mouths)
                 if (m.Holds(x, y, z))
                     return true;
+            return InSocket(x, y, z);
+        }
+        bool InSocket(double x, double y, double z)
+        {
             foreach (var (w, hx, hz, round) in holes)
             {
                 double dx = x - w.O[0], dy = y - w.O[1], dz = z - w.O[2];
@@ -197,15 +203,6 @@ public static partial class DesignScene
         }
         bool CutBody(double x, double y, double z)
         {
-            foreach (var o in near)
-                if (o.Depth(x, y, z) > 0.02)
-                    return true;
-            return false;
-        }
-        bool Cut(double x, double y, double z)
-        {
-            if (InHole(x, y, z))
-                return true;
             foreach (var o in near)
                 if (o.Depth(x, y, z) > 0.02)
                     return true;
@@ -303,8 +300,27 @@ public static partial class DesignScene
                         return true;
                 return false;
             });
-        Cap(fore, cx, h, rings[0], DesignMesh.Tone(h.Paint(h.Front, 0.5, 1, 9001), 0.85), Cut);
-        Cap(aft, cx, h, rings[^1], DesignMesh.Tone(dark, 1.2), Cut);
+        // The caps: the sockets and other bodies drop whole fan triangles as before; the connections' mouths are cut along their outlines,
+        // as on the skin (the user, 2026-11-25: connections on the fore and aft ends).
+        bool CapCut(double x, double y, double z) => InSocket(x, y, z) || CutBody(x, y, z);
+        void CapTri(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (byte, byte, byte) col)
+        {
+            List<List<(double, double, double)>> polys = [[a, b, c]];
+            foreach (var k in mouthCuts)
+            {
+                var next = new List<List<(double, double, double)>>();
+                foreach (var poly in polys)
+                    next.AddRange(k.Subtract(poly));
+                polys = next;
+                if (polys.Count == 0)
+                    return;
+            }
+            foreach (var poly in polys)
+                for (var i = 1; i < poly.Count - 1; i++)
+                    m.Tri(poly[0], poly[i], poly[i + 1], col, false);
+        }
+        Cap(fore, cx, h, rings[0], DesignMesh.Tone(h.Paint(h.Front, 0.5, 1, 9001), 0.85), CapCut, CapTri);
+        Cap(aft, cx, h, rings[^1], DesignMesh.Tone(dark, 1.2), CapCut, CapTri);
         // The end caps are plated too, in rings round the middle, clear of the drive bells and every other opening (the user, 2026-11-24).
         if (h.Clad != "Off")
         {
@@ -507,7 +523,8 @@ public static partial class DesignScene
     }
 
     /// <summary>An end closed flat: a fan from the middle of the profile round both sides.</summary>
-    private static void Cap(DesignMesh m, double cx, HullBody h, Station s, (byte, byte, byte) col, Func<double, double, double, bool> cut)
+    private static void Cap(DesignMesh m, double cx, HullBody h, Station s, (byte, byte, byte) col, Func<double, double, double, bool> cut,
+        Action<DesignMesh, (double, double, double), (double, double, double), (double, double, double), (byte, byte, byte)> tri)
     {
         var ring = new List<(double, double, double)>();
         foreach (var (hh, y) in s.P)
@@ -521,7 +538,7 @@ public static partial class DesignScene
             var b = ring[(i + 1) % ring.Count];
             if (cut((a.Item1 + b.Item1 + mid.Item1) / 3, (a.Item2 + b.Item2 + mid.Item2) / 3, (a.Item3 + b.Item3 + mid.Item3) / 3))
                 continue;
-            m.Tri(mid, a, b, col, false);
+            tri(m, mid, a, b, col);
         }
     }
 
@@ -1359,6 +1376,9 @@ public static partial class DesignScene
               .Append(",\"h\":").Append(ShipDesign.S(j.HA)).Append(",\"wb\":").Append(ShipDesign.S(j.WB)).Append(",\"hb\":").Append(ShipDesign.S(j.HB))
               .Append(",\"twist\":").Append(ShipDesign.S(j.Twist)).Append(",\"rotA\":").Append(ShipDesign.S(j.RotA)).Append(",\"rotB\":").Append(ShipDesign.S(j.RotB)).Append(",\"sweepUp\":").Append(ShipDesign.S(j.SweepUp)).Append(",\"sweepFore\":").Append(ShipDesign.S(j.SweepFore)).Append(",\"bias\":").Append(ShipDesign.S(j.Bias)).Append(",\"segments\":").Append(j.Segments).Append(",\"mirror\":").Append(j.Mirror ? "true" : "false")
               .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"follow\":").Append(j.Follow ? "true" : "false").Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
+              .Append(",\"leaveA\":").Append(ShipDesign.S(j.LeaveA)).Append(",\"leaveB\":").Append(ShipDesign.S(j.LeaveB)).Append(",\"leaveForeA\":").Append(ShipDesign.S(j.LeaveForeA)).Append(",\"leaveForeB\":").Append(ShipDesign.S(j.LeaveForeB))
+              .Append(",\"tanA\":").Append(ShipDesign.S(j.TanA)).Append(",\"tanB\":").Append(ShipDesign.S(j.TanB))
+              .Append(",\"faceA\":").Append(Q(HullJoin.Faces[j.A.Face])).Append(",\"faceB\":").Append(Q(HullJoin.Faces[j.B.Face]))
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
               .Append(",\"material\":").Append(Q(d.Hull(j.A.Hull)?.Material ?? "Painted")).Append(",\"cladMaterial\":").Append(Q(d.Hull(j.A.Hull)?.CladMaterial ?? "Hull"))

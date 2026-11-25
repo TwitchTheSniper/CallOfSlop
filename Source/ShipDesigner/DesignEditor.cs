@@ -118,14 +118,15 @@ public sealed class DesignEditor
                 var ha = d.Hull(I(ao, "hull")) ?? throw new InvalidOperationException("no such hull");
                 var j = new HullJoin { Id = d.NewId(), Section = Str(o, "section", "Round"), WA = D(o, "w", 1.2), HA = D(o, "h", 1.2), Segments = I(o, "segments", 6),
                     Twist = D(o, "twist", 0), RotA = D(o, "rotA", 0), RotB = D(o, "rotB", 0), SweepUp = D(o, "sweepUp", 0), SweepFore = D(o, "sweepFore", 0), Bias = D(o, "bias", 0),
-                    Mirror = (bool?)o["mirror"] ?? false, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9) };
+                    Mirror = (bool?)o["mirror"] ?? false, Flare = D(o, "flare", 1.6), SquareHole = (bool?)o["squareHole"] ?? false, Buttress = D(o, "buttress", 0.8), Follow = (bool?)o["follow"] ?? false, OpenA = D(o, "openA", 0.9), OpenB = D(o, "openB", 0.9),
+                    LeaveA = D(o, "leaveA", 0), LeaveB = D(o, "leaveB", 0), LeaveForeA = D(o, "leaveForeA", 0), LeaveForeB = D(o, "leaveForeB", 0), TanA = D(o, "tanA", 0.9), TanB = D(o, "tanB", 0.9) };
                 j.WB = D(o, "wb", j.WA);
                 j.HB = D(o, "hb", j.HA);
-                j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"));
+                j.A = HullJoin.At(ha, I(ao, "copy"), D(ao, "x"), D(ao, "y"), D(ao, "z"), (string?)ao["face"]);
                 if (o["b"] is JsonObject bo)
                 {
                     var hb = d.Hull(I(bo, "hull")) ?? throw new InvalidOperationException("no such hull");
-                    j.B = HullJoin.At(hb, I(bo, "copy"), D(bo, "x"), D(bo, "y"), D(bo, "z"));
+                    j.B = HullJoin.At(hb, I(bo, "copy"), D(bo, "x"), D(bo, "y"), D(bo, "z"), (string?)bo["face"]);
                 }
                 else
                 {
@@ -137,12 +138,12 @@ public sealed class DesignEditor
                     var bh = D(no, "h", 3);
                     var len = D(no, "len", 12);
                     var body = DesignTemplates.Sized(d, Str(no, "section", "Barrel"), bw, bh, len, I(no, "segments", 4));
-                    // Its middle out along the normal: the gap, then half its own reach that way.
-                    var reach = Math.Sqrt(Math.Pow(na[0] * bw / 2, 2) + Math.Pow(na[1] * bh / 2, 2));
+                    // Its middle out along the normal: the gap, then half its own reach that way (along z too, off a cap).
+                    var reach = Math.Sqrt(Math.Pow(na[0] * bw / 2, 2) + Math.Pow(na[1] * bh / 2, 2) + Math.Pow(na[2] * len / 2, 2));
                     var gap = Math.Clamp(D(no, "dist", 4), 0, 100) + reach;
                     body.X = Math.Round(pa[0] + na[0] * gap, 2);
                     body.Y = Math.Round(pa[1] + na[1] * gap - bh / 2, 2);
-                    body.Z = Math.Round(pa[2] - len / 2 + D(no, "slide", 0), 2);
+                    body.Z = Math.Round(pa[2] + na[2] * gap - len / 2 + D(no, "slide", 0), 2);
                     body.Mirror = j.Mirror && Math.Abs(body.X) > 0.3;
                     body.Skin = ha.Skin;
                     d.Hulls.Add(body);
@@ -169,6 +170,12 @@ public sealed class DesignEditor
                 j.SweepUp = D(o, "sweepUp", j.SweepUp);
                 j.SweepFore = D(o, "sweepFore", j.SweepFore);
                 j.Bias = D(o, "bias", j.Bias);
+                j.LeaveA = D(o, "leaveA", j.LeaveA);
+                j.LeaveB = D(o, "leaveB", j.LeaveB);
+                j.LeaveForeA = D(o, "leaveForeA", j.LeaveForeA);
+                j.LeaveForeB = D(o, "leaveForeB", j.LeaveForeB);
+                j.TanA = D(o, "tanA", j.TanA);
+                j.TanB = D(o, "tanB", j.TanB);
                 j.Segments = I(o, "segments", j.Segments);
                 j.Mirror = (bool?)o["mirror"] ?? j.Mirror;
                 j.OpenA = D(o, "openA", j.OpenA);

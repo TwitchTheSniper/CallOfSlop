@@ -17,7 +17,14 @@ public sealed class HullJoin
     {
         public int Hull, Copy, Side;
         public double Z, T;
+        /// <summary>Which face the end is on (the user, 2026-11-25): the side skin (with its rounded ends), or the fore or aft cap.
+        /// On a cap, U (-1..1, across, a share of the half width at that height) and V (0 keel .. 1 spine) place it.</summary>
+        public int Face;
+        public double U, V;
     }
+
+    public const int FaceSide = 0, FaceFore = 1, FaceAft = 2;
+    public static readonly string[] Faces = ["Side", "Fore", "Aft"];
 
     public int Id;
     public End A, B;
@@ -28,6 +35,11 @@ public sealed class HullJoin
     public double SweepUp, SweepFore; // the middle line's bow at mid-span (m): up/down and fore/aft
     public double Bias; // -0.9..0.9: the section's mass shifted up (+) or down (-), one side thicker
     public const double MaxSweep = 20, MaxTwist = 180, MaxBias = 0.9, MaxRot = 180;
+    /// <summary>Arched arms (the user, 2026-11-25): each end leaves its skin along the normal tilted toward the other end (Leave) and along
+    /// the hull (LeaveFore), in degrees, and carries that way for Tan (a share of the span) before it bends into the other end.</summary>
+    public double LeaveA, LeaveB, LeaveForeA, LeaveForeB;
+    public double TanA = 0.9, TanB = 0.9;
+    public const double MaxLeave = 80, MinTan = 0.05, MaxTan = 2.5;
 
     /// <summary>The sections a connection takes beyond the hull gallery's (the user, 2026-11-24).</summary>
     public static readonly string[] ExtraSections = ["TriangleUp", "TriangleDown", "Wedge", "Diamond", "Hexagon"];
@@ -49,21 +61,93 @@ public sealed class HullJoin
     public bool SquareHole; // the hole each end cuts: a simple oval, or a rectangle (Karl, 2026-11-24: simple holes, not the section's outline) // each end's socket: the hole it cuts, a share of the connection's size (0 closed)
 
     /// <summary>The end nearest a world point on a body's copy.</summary>
-    public static End At(HullBody h, int copy, double x, double y, double z)
+    /// <summary>The end nearest a world point on a body's copy. face ("skin", "fore" or "aft": the surface clicked) picks the face;
+    /// without it the nearest of the side skin and the two caps.</summary>
+    public static End At(HullBody h, int copy, double x, double y, double z, string? face = null)
     {
         copy = Math.Clamp(copy, 0, h.Copies - 1);
-        double lx = x - h.CopyX(copy), ly = y - h.Y, lz = Math.Clamp(z - h.Z, h.Front, h.Back);
-        return new End { Hull = h.Id, Copy = copy, Z = lz, T = h.NearestT(lx, ly, lz), Side = lx < -0.01 ? -1 : 1 };
+        double lx = x - h.CopyX(copy), ly = y - h.Y, rz = z - h.Z, lz = Math.Clamp(rz, h.Front, h.Back);
+        var side = new End { Hull = h.Id, Copy = copy, Z = lz, T = h.NearestT(lx, ly, lz), Side = lx < -0.01 ? -1 : 1, Face = FaceSide, V = 0.5 };
+        var f = face switch { "fore" => FaceFore, "aft" => FaceAft, "skin" => FaceSide, _ => -1 };
+        if (f < 0)
+        {
+            var s = h.OnSkin(side.Z, side.T, side.Side);
+            var best = Math.Sqrt(Sq(lx - s.X) + Sq(ly - s.Y) + Sq(rz - s.Z));
+            f = FaceSide;
+            foreach (var c in new[] { FaceFore, FaceAft })
+            {
+                var (u, v) = CapUV(h, c, lx, ly);
+                var (cx, cy) = CapPoint(h, c, u, v);
+                var dc = Math.Sqrt(Sq(lx - cx) + Sq(ly - cy) + Sq(rz - CapZ(h, c)));
+                if (dc < best - 1e-3)
+                    (best, f) = (dc, c);
+            }
+        }
+        if (f == FaceSide)
+            return side;
+        var (cu, cv) = CapUV(h, f, lx, ly);
+        return new End { Hull = h.Id, Copy = copy, Face = f, U = cu, V = cv, Z = CapZ(h, f), T = 0.5, Side = 1 };
     }
 
-    /// <summary>An end's world point and outward normal (null when its body is gone).</summary>
+    /// <summary>A cap's plane (hull-local z).</summary>
+    public static double CapZ(HullBody h, int face) => face == FaceFore ? h.Front : h.Back;
+
+    /// <summary>The cap's keel and spine heights (hull-local).</summary>
+    private static (double Y0, double Y1) CapSpan(HullBody h, double z)
+    {
+        Span<double> hs = stackalloc double[HullBody.MaxLoft];
+        Span<double> ys = stackalloc double[HullBody.MaxLoft];
+        var n = h.At(z, hs, ys);
+        return n == 0 ? (0, 0) : (ys[0], ys[n - 1]);
+    }
+
+    /// <summary>A cap point (hull-local x, y) from its place on the cap.</summary>
+    public static (double X, double Y) CapPoint(HullBody h, int face, double u, double v)
+    {
+        var z = CapZ(h, face);
+        var (y0, y1) = CapSpan(h, z);
+        var y = y0 + (y1 - y0) * Math.Clamp(v, 0, 1);
+        var half = Math.Max(0, h.SkinHalf(z, Math.Clamp(y, y0, y1)));
+        return (Math.Clamp(u, -1, 1) * half, y);
+    }
+
+    /// <summary>The place on a cap of the cap point nearest a hull-local (x, y).</summary>
+    public static (double U, double V) CapUV(HullBody h, int face, double lx, double ly)
+    {
+        var z = CapZ(h, face);
+        var (y0, y1) = CapSpan(h, z);
+        var v = y1 - y0 < 1e-6 ? 0.5 : Math.Clamp((ly - y0) / (y1 - y0), 0, 1);
+        var half = Math.Max(0, h.SkinHalf(z, Math.Clamp(y0 + (y1 - y0) * v, y0, y1)));
+        return (half < 1e-6 ? 0 : Math.Clamp(lx / half, -1, 1), v);
+    }
+
+    /// <summary>An end's world point and outward normal (null when its body is gone). A cap's normal is -z (fore) or +z (aft); on a
+    /// rounded end's skin the normal tilts with the round.</summary>
     public static (double[] P, double[] N)? World(ShipDesign d, End e)
     {
         if (d.Hull(e.Hull) is not { } h)
             return null;
-        var s = h.OnSkin(e.Z, e.T, e.Side);
         var c = Math.Min(e.Copy, h.Copies - 1);
-        return ([h.CopyX(c) + s.X, h.Y + s.Y, h.Z + s.Z], [s.Nx, s.Ny, 0]);
+        if (e.Face != FaceSide)
+        {
+            var (x, y) = CapPoint(h, e.Face, e.U, e.V);
+            return ([h.CopyX(c) + x, h.Y + y, h.Z + CapZ(h, e.Face)], [0, 0, e.Face == FaceFore ? -1 : 1]);
+        }
+        var s = h.OnSkin(e.Z, e.T, e.Side);
+        double[] n = [s.Nx, s.Ny, 0];
+        double rf = Math.Min(h.RoundFore, h.RoundLimit(false)), ra = Math.Min(h.RoundAft, h.RoundLimit(true));
+        if ((rf >= 0.01 && e.Z < h.Front + rf + 1e-6) || (ra >= 0.01 && e.Z > h.Back - ra - 1e-6))
+        {
+            const double dz = 0.02;
+            double z0 = Math.Clamp(e.Z - dz, h.Front, h.Back), z1 = Math.Clamp(e.Z + dz, h.Front, h.Back);
+            if (z1 - z0 > 1e-6)
+            {
+                var (q0, q1) = (h.OnSkin(z0, e.T, e.Side), h.OnSkin(z1, e.T, e.Side));
+                n[2] = -(s.Nx * (q1.X - q0.X) + s.Ny * (q1.Y - q0.Y)) / (z1 - z0);
+                Norm(n);
+            }
+        }
+        return ([h.CopyX(c) + s.X, h.Y + s.Y, h.Z + s.Z], n);
     }
 
     public JsonObject ToJson(ShipDesign d) => new()
@@ -71,14 +155,14 @@ public sealed class HullJoin
         ["a"] = EndJson(d, A), ["b"] = EndJson(d, B), ["section"] = Section, ["w"] = ShipDesign.R(WA), ["h"] = ShipDesign.R(HA), ["wb"] = ShipDesign.R(WB), ["hb"] = ShipDesign.R(HB),
         ["twist"] = ShipDesign.R(Twist), ["rotA"] = ShipDesign.R(RotA), ["rotB"] = ShipDesign.R(RotB), ["sweepUp"] = ShipDesign.R(SweepUp), ["sweepFore"] = ShipDesign.R(SweepFore), ["bias"] = ShipDesign.R(Bias),
         ["segments"] = Segments, ["mirror"] = Mirror, ["flare"] = ShipDesign.R(Flare), ["buttress"] = ShipDesign.R(Buttress), ["follow"] = Follow, ["squareHole"] = SquareHole, ["openA"] = ShipDesign.R(OpenA), ["openB"] = ShipDesign.R(OpenB),
+        ["leaveA"] = ShipDesign.R(LeaveA), ["leaveB"] = ShipDesign.R(LeaveB), ["leaveForeA"] = ShipDesign.R(LeaveForeA), ["leaveForeB"] = ShipDesign.R(LeaveForeB), ["tanA"] = ShipDesign.R(TanA), ["tanB"] = ShipDesign.R(TanB),
         ["clad"] = Clad == "Off" ? null : new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) },
         ["buttressClad"] = ButtressClad == "Off" ? null : new JsonObject { ["kind"] = ButtressClad, ["seed"] = ButtressSeed, ["size"] = ShipDesign.R(ButtressSize), ["depth"] = ShipDesign.R(ButtressDepth) },
     };
 
-    private static JsonObject EndJson(ShipDesign d, End e) => new()
-    {
-        ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["z"] = ShipDesign.R(e.Z), ["t"] = ShipDesign.R4(e.T), ["side"] = e.Side,
-    };
+    private static JsonObject EndJson(ShipDesign d, End e) => e.Face == FaceSide
+        ? new() { ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["z"] = ShipDesign.R(e.Z), ["t"] = ShipDesign.R4(e.T), ["side"] = e.Side }
+        : new() { ["hull"] = d.HullIndex(e.Hull), ["copy"] = e.Copy, ["face"] = Faces[e.Face].ToLowerInvariant(), ["u"] = ShipDesign.R4(e.U), ["v"] = ShipDesign.R4(e.V) };
 
     /// <summary>Reads a join; null when an end names no body.</summary>
     public static HullJoin? FromJson(ShipDesign d, JsonObject o, int id)
@@ -90,10 +174,13 @@ public sealed class HullJoin
             var hi = (int?)e["hull"] ?? -1;
             if (hi < 0 || hi >= d.Hulls.Count)
                 return null;
+            // Files from before the cap ends hold no face: the side skin.
+            var face = ((string?)e["face"])?.ToLowerInvariant() switch { "fore" => FaceFore, "aft" => FaceAft, _ => FaceSide };
             return new End
             {
                 Hull = d.Hulls[hi].Id, Copy = (int?)e["copy"] is 1 ? 1 : 0, Z = ShipDesign.F(e["z"], 0), T = Math.Clamp(ShipDesign.F(e["t"], 0.5), 0, 1),
-                Side = (int?)e["side"] is -1 ? -1 : 1,
+                Side = (int?)e["side"] is -1 ? -1 : 1, Face = face,
+                U = Math.Clamp(ShipDesign.F(e["u"], 0), -1, 1), V = Math.Clamp(ShipDesign.F(e["v"], 0.5), 0, 1),
             };
         }
         if (E(o["a"]) is not { } a || E(o["b"]) is not { } b)
@@ -109,6 +196,13 @@ public sealed class HullJoin
         j.SweepUp = ShipDesign.F(o["sweepUp"], 0);
         j.SweepFore = ShipDesign.F(o["sweepFore"], 0);
         j.Bias = ShipDesign.F(o["bias"], 0);
+        // Files from before the arched arms: a straight departure along each normal.
+        j.LeaveA = ShipDesign.F(o["leaveA"], 0);
+        j.LeaveB = ShipDesign.F(o["leaveB"], 0);
+        j.LeaveForeA = ShipDesign.F(o["leaveForeA"], 0);
+        j.LeaveForeB = ShipDesign.F(o["leaveForeB"], 0);
+        j.TanA = ShipDesign.F(o["tanA"], 0.9);
+        j.TanB = ShipDesign.F(o["tanB"], 0.9);
         if (o["clad"] is JsonObject c)
         {
             j.Clad = (string?)c["kind"] ?? "Off";
@@ -141,6 +235,12 @@ public sealed class HullJoin
         SweepUp = Math.Clamp(SweepUp, -MaxSweep, MaxSweep);
         SweepFore = Math.Clamp(SweepFore, -MaxSweep, MaxSweep);
         Bias = Math.Clamp(Bias, -MaxBias, MaxBias);
+        LeaveA = Math.Clamp(LeaveA, -MaxLeave, MaxLeave);
+        LeaveB = Math.Clamp(LeaveB, -MaxLeave, MaxLeave);
+        LeaveForeA = Math.Clamp(LeaveForeA, -MaxLeave, MaxLeave);
+        LeaveForeB = Math.Clamp(LeaveForeB, -MaxLeave, MaxLeave);
+        TanA = Math.Clamp(TanA, MinTan, MaxTan);
+        TanB = Math.Clamp(TanB, MinTan, MaxTan);
         Segments = Math.Clamp(Segments, 1, MaxSegments);
         OpenA = Math.Clamp(OpenA, 0, 1.5);
         Flare = Math.Clamp(Flare, 1, 4);
@@ -319,14 +419,17 @@ public sealed class HullJoin
         var m = new DesignMesh();
         if (World(d, A) is not { } a || World(d, B) is not { } b)
             return m;
-        double[] p0 = [a.P[0] - a.N[0] * Sink, a.P[1] - a.N[1] * Sink, a.P[2]];
-        double[] p1 = [b.P[0] - b.N[0] * Sink, b.P[1] - b.N[1] * Sink, b.P[2]];
+        double[] p0 = [a.P[0] - a.N[0] * Sink, a.P[1] - a.N[1] * Sink, a.P[2] - a.N[2] * Sink];
+        double[] p1 = [b.P[0] - b.N[0] * Sink, b.P[1] - b.N[1] * Sink, b.P[2] - b.N[2] * Sink];
         var len = Math.Sqrt(Sq(p1[0] - p0[0]) + Sq(p1[1] - p0[1]) + Sq(p1[2] - p0[2]));
         if (len < 0.05)
             return m;
-        // A Hermite curve leaving each skin along its normal: a pylon stands off the hull and meets the pod square on.
-        var k = len * 0.9;
-        double[] m0 = [a.N[0] * k, a.N[1] * k, a.N[2] * k], m1 = [-b.N[0] * k, -b.N[1] * k, -b.N[2] * k];
+        // A Hermite curve (a cubic Bezier) leaving each skin along its normal, tilted by the end's leave angles and carried its tangent
+        // length before it bends: a pylon stands off the hull and meets the pod square on, or arches out of the top into a nacelle's side.
+        var da = Leave(a.N, [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]], LeaveA, LeaveForeA);
+        var db = Leave(b.N, [p0[0] - p1[0], p0[1] - p1[1], p0[2] - p1[2]], LeaveB, LeaveForeB);
+        double ka = len * TanA, kb = len * TanB;
+        double[] m0 = [da[0] * ka, da[1] * ka, da[2] * ka], m1 = [-db[0] * kb, -db[1] * kb, -db[2] * kb];
         var ring = Ring(Section);
         var col = DesignMesh.Hex(d.Hull(A.Hull)?.Skin ?? "#c9cdd2");
         var ha = d.Hull(A.Hull)!;
@@ -453,7 +556,7 @@ public sealed class HullJoin
                     if (inside ? In(h, At(-reach)) : !In(h, At(reach)))
                     {
                         // The line along the strut misses this body (a wide flare past a curved side): the nearest skin point instead.
-                        r[j] = Nearest(h, v.Item1, v.Item2, v.Item3);
+                        r[j] = Nearest(h, i == 0 ? A.Face : B.Face, v.Item1, v.Item2, v.Item3);
                         continue;
                     }
                     double lo = inside ? -reach : 0, hi = inside ? 0 : reach;
@@ -477,8 +580,8 @@ public sealed class HullJoin
         if (Follow && dl > 1e-4)
         {
             blend = FollowRings;
-            FollowEnd(rings, centres, 0, 1, ha);
-            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb);
+            FollowEnd(rings, centres, 0, 1, ha, A.Face);
+            FollowEnd(rings, centres, rings.Count - 1, rings.Count - 2, hb, B.Face);
             last = rings.Count - 1;
         }
         for (var i = 0; i < last; i++)
@@ -712,14 +815,14 @@ public sealed class HullJoin
     /// nearest skin point (its normal), and FollowRings rings put in between it and the strut's ring iStrut, each point's offset from the
     /// middle line growing from the strut's to the footprint's on an easing curve (a fillet), held FollowLift off the skin where it would dip in.
     /// </summary>
-    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h)
+    private static void FollowEnd(List<(double, double, double)[]> rings, List<double[]> centres, int iEnd, int iStrut, HullBody h, int face)
     {
         var nr = rings[iEnd].Length;
         var foot = new (double, double, double)[nr];
         for (var j = 0; j < nr; j++)
         {
             var (x, y, z) = rings[iEnd][j];
-            foot[j] = OnTop(h, x, y, z, FollowLift);
+            foot[j] = OnTop(h, face, x, y, z, FollowLift);
         }
         double[] cf = [0, 0, 0];
         foreach (var (x, y, z) in foot)
@@ -739,7 +842,7 @@ public sealed class HullJoin
                 double ox = rsS[j].Item1 - csS[0], oy = rsS[j].Item2 - csS[1], oz = rsS[j].Item3 - csS[2];
                 double fx = foot[j].Item1 - cf[0], fy = foot[j].Item2 - cf[1], fz = foot[j].Item3 - cf[2];
                 double px = c[0] + ox + (fx - ox) * e, py = c[1] + oy + (fy - oy) * e, pz = c[2] + oz + (fz - oz) * e;
-                r[j] = h.Depth(px, py, pz) > -FollowLift ? OnTop(h, px, py, pz, FollowLift) : (px, py, pz);
+                r[j] = h.Depth(px, py, pz) > -FollowLift ? OnTop(h, face, px, py, pz, FollowLift) : (px, py, pz);
             }
             add.Add((r, c));
         }
@@ -760,9 +863,11 @@ public sealed class HullJoin
     }
 
     /// <summary>The skin point nearest a world point on a body, lifted off it along its normal by lift (negative: in under it).</summary>
-    private static (double, double, double) OnTop(HullBody h, double x, double y, double z, double lift)
+    private static (double, double, double) OnTop(HullBody h, int face, double x, double y, double z, double lift)
     {
         var copy = h.Copies == 2 && Math.Abs(x - h.CopyX(1)) < Math.Abs(x - h.CopyX(0)) ? 1 : 0;
+        if (face != FaceSide)
+            return OnCap(h, face, copy, x, y, lift);
         double lx = x - h.CopyX(copy), ly = y - h.Y, lz = Math.Clamp(z - h.Z, h.Front, h.Back);
         var s = h.OnSkin(lz, h.NearestT(lx, ly, lz), lx < -0.01 ? -1 : 1);
         return (h.CopyX(copy) + s.X + s.Nx * lift, h.Y + s.Y + s.Ny * lift, h.Z + s.Z);
@@ -770,9 +875,47 @@ public sealed class HullJoin
 
     private static (double X, double Y, double Z) Sub((double X, double Y, double Z) a, (double X, double Y, double Z) b) => (a.X - b.X, a.Y - b.Y, a.Z - b.Z);
 
-    private static (double, double, double) Nearest(HullBody h, double x, double y, double z)
+    /// <summary>The cap point nearest a world point (its x and y), lifted off the cap by lift (negative: in behind it).</summary>
+    private static (double, double, double) OnCap(HullBody h, int face, int copy, double x, double y, double lift)
+    {
+        var (u, v) = CapUV(h, face, x - h.CopyX(copy), y - h.Y);
+        var (cx, cy) = CapPoint(h, face, u, v);
+        return (h.CopyX(copy) + cx, h.Y + cy, h.Z + CapZ(h, face) + (face == FaceFore ? -1 : 1) * lift);
+    }
+
+    /// <summary>A departure: the normal n tilted toward the other end (to, by tilt degrees) and along the hull (z; up on a cap, by fore degrees).</summary>
+    private static double[] Leave(double[] n, double[] to, double tilt, double fore)
+    {
+        double[] r = [n[0], n[1], n[2]];
+        if (Math.Abs(tilt) > 1e-3)
+        {
+            var k = to[0] * n[0] + to[1] * n[1] + to[2] * n[2];
+            double[] t = [to[0] - n[0] * k, to[1] - n[1] * k, to[2] - n[2] * k];
+            var l = Math.Sqrt(t[0] * t[0] + t[1] * t[1] + t[2] * t[2]);
+            if (l > 1e-6)
+            {
+                var g = Math.Tan(tilt * Math.PI / 180) / l;
+                for (var q = 0; q < 3; q++) r[q] += t[q] * g;
+            }
+        }
+        if (Math.Abs(fore) > 1e-3)
+        {
+            double[] ax = Math.Abs(n[2]) > 0.9 ? [0, 1, 0] : [0, 0, 1];
+            var k = ax[0] * n[0] + ax[1] * n[1] + ax[2] * n[2];
+            double[] t = [ax[0] - n[0] * k, ax[1] - n[1] * k, ax[2] - n[2] * k];
+            Norm(t);
+            var g = Math.Tan(fore * Math.PI / 180);
+            for (var q = 0; q < 3; q++) r[q] += t[q] * g;
+        }
+        Norm(r);
+        return r;
+    }
+
+    private static (double, double, double) Nearest(HullBody h, int face, double x, double y, double z)
     {
         var copy = h.Copies == 2 && Math.Abs(x - h.CopyX(1)) < Math.Abs(x - h.CopyX(0)) ? 1 : 0;
+        if (face != FaceSide)
+            return OnCap(h, face, copy, x, y, -0.01);
         double lx = x - h.CopyX(copy), ly = y - h.Y, lz = Math.Clamp(z - h.Z, h.Front, h.Back);
         var s = h.OnSkin(lz, h.NearestT(lx, ly, lz), lx < -0.01 ? -1 : 1);
         // 1 cm in under the skin, so no seam shows.
