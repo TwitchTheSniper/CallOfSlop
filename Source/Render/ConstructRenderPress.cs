@@ -11,6 +11,9 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class ConstructRender
 {
+    /// <summary>The store a press with none (a ghost, a preview) is drawn with: idle, its lid open.</summary>
+    private static readonly CStore IdlePress = new();
+
     private const float PressDetail = 45f; // (m: nearer, the hinge's cheeks, the hole liners, the jaws' screws and the die's marks are drawn too)
 
     private static readonly Vector3 PrPaint = Hex(0x2f5f8f), PrBase = Hex(0x22262b), PrDie = Hex(0x2f363d), PrSteel = Hex(0x98a1a9),

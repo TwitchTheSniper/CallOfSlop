@@ -57,12 +57,12 @@ public static partial class ConstructPress
 
     /// <summary>
     /// Is <paramref name="part"/> a cell of a Press's bed that its Core draws (the lid press's model covers the bed's rectangle on its
-    /// floor layer)? Its collision stays; it draws nothing of its own.
+    /// floor layer)? Its collision stays; it draws nothing of its own. A broken Core draws no lid, so its bed draws itself again.
     /// </summary>
     public static bool Covered(Construct c, int part)
     {
         if (c.Parts[part].D.BlockRole != BlockRole.Block || !MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0 || (uint)asm.Core >= (uint)c.PartCount
-            || !c.Parts[asm.Core].D.IsPress || !MachineBlocks.CellOf(c, part, out var x, out var y, out var z))
+            || !c.Parts[asm.Core].D.IsPress || c.Parts[asm.Core].Broken || !MachineBlocks.CellOf(c, part, out var x, out var y, out var z))
             return false;
         return y == 0 && x >= asm.X0 && x < asm.X0 + asm.W && z >= asm.Z0 && z < asm.Z0 + asm.L;
     }

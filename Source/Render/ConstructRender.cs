@@ -715,10 +715,10 @@ public static partial class ConstructRender
         _workCore = workPart; // (a Bed Block's pins read their Core's bed and order: ConstructPanelFormer.PinLift)
         var drive = DriveLooks(d) && !p.Broken && DrivePrepare(gfx, c, i, d, seg * body); // (a bell and its engine's pieces show the burn: ConstructRender.DriveFx.cs)
         // A Press Core has no work boxes of its own (Sean 2026-11-23: no clamshell on the control module), so its store is read here.
-        var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) : null;
-        if (pressStore != null)
+        var pressStore = d.IsPress && d.BlockRole == BlockRole.Core && !p.Broken ? world.StoreOf(c, i) ?? IdlePress : null; // (a body with no store, a ghost or a preview, draws its lid at rest: its bed cells draw nothing of their own, ConstructPress.Covered)
+        if (pressStore != null && pressStore != IdlePress)
             ConstructPress.StrokeUpdate(c, i, pressStore, Now); // (this peer's note of the stroke: when it began, what it presses and makes)
-        var pressWorking = pressStore != null && ProductionLines.Working(world, c, i, pressStore, Now);
+        var pressWorking = pressStore != null && pressStore != IdlePress && ProductionLines.Working(world, c, i, pressStore, Now);
         _pieceCm = working && d.HasPieceWork && c.Parts[workPart].D.IsExtruder ? ConstructExtruder.PieceCm(c, workPart) : 0; // (its rams and shear move by the piece on its die)
         _hubRise = d.HasHubSlide ? ConstructExtruder.HubRise(c, i) : 0; // (a Grow Former's hub stands raised on its slide while a piece is on it, working or not)
         var laserTip = Vector3.Zero;
