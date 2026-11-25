@@ -577,7 +577,7 @@ public sealed class HullJoin
         int nu = Math.Clamp((int)Math.Round(arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(len / size), 1, 64);
         var start = m.Tris;
         DesignScene.LayPlates(m, nu, nv, arc, len, new Random(unchecked(CladSeed * 1000003 + Id * 7919)), Clad == "Heavy", CladDepth, col, P, Nrm, W, new bool[nu, nv],
-            (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell));
+            (u, v, cell) => ha.Paint(len * v, u, arc, Id * 8191 + cell), 0, Clad == "Hex", ha.Damage, ha.DamageSeed);
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");
     }
@@ -689,7 +689,7 @@ public sealed class HullJoin
                     }
             }
             DesignScene.LayPlates(m, cells, 1, rowArc, Math.Max(0.05, reach / rows), rng, heavy, ButtressDepth, col, P, N, W, taken,
-                (u, v, cell) => ha.Paint(v0 * reach, u, rowArc, Id * 12289 + end * 5000 + r * 97 + cell));
+                (u, v, cell) => ha.Paint(v0 * reach, u, rowArc, Id * 12289 + end * 5000 + r * 97 + cell), 0, ButtressClad == "Hex", ha.Damage, ha.DamageSeed);
         }
         if (m.Tris - start > DesignScene.MaxCladTris)
             Console.WriteLine($"ship designer: buttress cladding on connection {Id} has {m.Tris - start} triangles, past the bodies' cap of {DesignScene.MaxCladTris}");

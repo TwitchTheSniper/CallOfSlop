@@ -121,7 +121,7 @@ public static partial class DesignScene
                 LayPlates(fm, nu, nv, arc, len, new Random(unchecked(r.Id * 7919 + 17)), ind, 0.12, DesignMesh.Tone(panel, ind ? 0.55 : 0.82),
                     (u, v) => T(W(fa0 + arc * u, fl0 + len * v, FL + 0.004)), (u, v) => nrm,
                     // Its skirts reach down to the groove base (the plate layer's sink is 3 cm; offset so they start in the base, not the floor).
-                    (u, v, h) => T(W(fa0 + arc * u, fl0 + len * v, FL + 0.004 + Math.Max(h, -0.003))), taken);
+                    (u, v, h) => T(W(fa0 + arc * u, fl0 + len * v, FL + 0.004 + Math.Max(h, -0.003))), taken, null, 0, r.Floor == "Hex");
                 m.P.AddRange(fm.P);
                 m.C.AddRange(fm.C);
                 budget -= fm.Tris;

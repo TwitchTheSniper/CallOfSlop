@@ -20,6 +20,7 @@ public static partial class DesignScene
     private static void CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
     {
         var heavy = h.Clad == "Heavy";
+        var hex = h.Clad == "Hex";
         var start = m.Tris;
         var col = DesignMesh.Hex(h.Skin);
         var ah = new double[HullBody.MaxLoft + 2];
@@ -92,7 +93,7 @@ public static partial class DesignScene
                 }
                 if (!terminus)
                 {
-                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777));
+                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -120,7 +121,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
                     LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0);
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed);
                 }
             }
         }
@@ -211,14 +212,14 @@ public static partial class DesignScene
             }
             var ringLen = reach * (f0 - f1);
             LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell));
+                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed);
         }
     }
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0)
+        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
         var taken = new bool[nu, nv];
         for (var a = 0; a < nu; a++)
@@ -227,7 +228,7 @@ public static partial class DesignScene
                 double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
                 taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
             }
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed);
     }
 
     /// <summary>
@@ -237,8 +238,13 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
+        if (hex)
+        {
+            LayHex(m, nu, nv, arc, len, rng, depth, col, Nrm, W, taken, paint, damage, dseed);
+            return;
+        }
         var rise = (heavy ? 0.20 : 0.08) - CladMin;
         double du = CladSeam / arc, dv = CladSeam / len;
         var last = -1.0;
@@ -275,24 +281,40 @@ public static partial class DesignScene
                 if (pu1 <= pu0 || pv1 <= pv0)
                     continue;
                 var pc = paint?.Invoke((pu0 + pu1) / 2, (pv0 + pv1) / 2, b * 64 + a) ?? col;
-                var top = DesignMesh.Tone(pc, tone);
-                var side = DesignMesh.Tone(pc, tone * 0.72);
-                // The top follows the skin's curve: one quad a cell.
-                double U(int k) => pu0 + (pu1 - pu0) * k / cu;
-                double V(int k) => pv0 + (pv1 - pv0) * k / cv;
-                for (var x = 0; x < cu; x++)
-                    for (var y = 0; y < cv; y++)
-                        m.Quad(W(U(x), V(y), hgt), W(U(x + 1), V(y), hgt), W(U(x + 1), V(y + 1), hgt), W(U(x), V(y + 1), hgt), top, false);
-                // The skirt, sunk into the hull.
-                for (var x = 0; x < cu; x++)
+                var fx = Fx(damage, dseed, W((pu0 + pu1) / 2, (pv0 + pv1) / 2, 0));
+                if (fx.Gone)
+                    continue;
+                var top = DesignMesh.Tone(pc, tone * fx.Tone);
+                var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+                // Damage: a lift along one edge (a tilted plate) and a dent pushing the top's middle in towards the skin.
+                var hg0 = hgt;
+                double H(double u, double v)
                 {
-                    m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), W(U(x + 1), pv0, hgt), W(U(x), pv0, hgt), side, false);
-                    m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), W(U(x + 1), pv1, hgt), W(U(x), pv1, hgt), side, false);
+                    var su = (u - pu0) / (pu1 - pu0);
+                    var e = hg0 + fx.Lift * su;
+                    if (fx.Dent > 0)
+                        e -= fx.Dent * Math.Sin(Math.PI * Math.Clamp(su, 0, 1)) * Math.Sin(Math.PI * Math.Clamp((v - pv0) / (pv1 - pv0), 0, 1));
+                    return Math.Max(e, 0.006);
                 }
-                for (var y = 0; y < cv; y++)
+                // The top follows the skin's curve: one quad a cell (a dented plate four).
+                var sub = fx.Dent > 0 ? 2 : 1;
+                int tu = cu * sub, tv = cv * sub;
+                double U(int k) => pu0 + (pu1 - pu0) * k / tu;
+                double V(int k) => pv0 + (pv1 - pv0) * k / tv;
+                (double, double, double) T(double u, double v) => W(u, v, H(u, v));
+                for (var x = 0; x < tu; x++)
+                    for (var y = 0; y < tv; y++)
+                        m.Quad(T(U(x), V(y)), T(U(x + 1), V(y)), T(U(x + 1), V(y + 1)), T(U(x), V(y + 1)), top, false);
+                // The skirt, sunk into the hull.
+                for (var x = 0; x < tu; x++)
                 {
-                    m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), W(pu0, V(y + 1), hgt), W(pu0, V(y), hgt), side, false);
-                    m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), W(pu1, V(y + 1), hgt), W(pu1, V(y), hgt), side, false);
+                    m.Quad(W(U(x), pv0, -CladSink), W(U(x + 1), pv0, -CladSink), T(U(x + 1), pv0), T(U(x), pv0), side, false);
+                    m.Quad(W(U(x), pv1, -CladSink), W(U(x + 1), pv1, -CladSink), T(U(x + 1), pv1), T(U(x), pv1), side, false);
+                }
+                for (var y = 0; y < tv; y++)
+                {
+                    m.Quad(W(pu0, V(y), -CladSink), W(pu0, V(y + 1), -CladSink), T(pu0, V(y + 1)), T(pu0, V(y)), side, false);
+                    m.Quad(W(pu1, V(y), -CladSink), W(pu1, V(y + 1), -CladSink), T(pu1, V(y + 1)), T(pu1, V(y)), side, false);
                 }
                 if (greeble)
                 {
@@ -301,7 +323,7 @@ public static partial class DesignScene
                         continue;
                     // A small box on the plate, its own axes the skin's there (across, out, along).
                     double gu = pu0 + (pu1 - pu0) * (0.25 + 0.5 * gr.Item1), gv = pv0 + (pv1 - pv0) * (0.25 + 0.5 * gr.Item2);
-                    var o = W(gu, gv, hgt);
+                    var o = W(gu, gv, H(gu, gv));
                     var nn = Nrm(gu, gv);
                     var t = Sub(P(Math.Min(1, gu + 1e-3), gv), P(Math.Max(0, gu - 1e-3), gv));
                     var tl = Math.Sqrt(t.X * t.X + t.Y * t.Y + t.Z * t.Z);
@@ -316,6 +338,166 @@ public static partial class DesignScene
                     m.World();
                 }
             }
+    }
+
+    /// <summary>A share in 0..1 from a seed and a point (to the centimetre), so the same place always takes the same damage.</summary>
+    internal static double DHash(int seed, (double X, double Y, double Z) p, int k)
+    {
+        unchecked
+        {
+            var x = (long)Math.Round(p.X * 100) * 73856093L ^ (long)Math.Round(p.Y * 100) * 19349663L ^ (long)Math.Round(p.Z * 100) * 83492791L ^ (seed + 1) * 2654435761L ^ k * 97531L;
+            x ^= x >> 33; x *= -49064778989728563L; x ^= x >> 33; x *= -4265267296055464877L; x ^= x >> 33;
+            return (x & 0xFFFFFF) / (double)0x1000000;
+        }
+    }
+
+    /// <summary>Scorch and grime (colour only): a factor for a point, patches about 2.5 m across darkening as damage rises.</summary>
+    internal static double Scorch(double damage, int seed, (double X, double Y, double Z) p)
+    {
+        if (damage <= 0)
+            return 1;
+        var cell = (Math.Floor(p.X / 2.5), Math.Floor(p.Y / 2.5), Math.Floor(p.Z / 2.5));
+        var hs = DHash(seed, cell, 11);
+        return hs < damage * 0.45 ? 0.42 + 0.3 * DHash(seed, cell, 12) : 1;
+    }
+
+    /// <summary>What damage does to one plate or tile, from its middle: gone, lifted along one edge, dented, and its tone.</summary>
+    internal static (bool Gone, double Lift, double Dent, double Tone) Fx(double damage, int seed, (double, double, double) p)
+    {
+        if (damage <= 0)
+            return (false, 0, 0, 1);
+        var gone = DHash(seed, p, 1) < damage * 0.35;
+        var lift = DHash(seed, p, 2) < damage * 0.3 ? 0.02 + 0.04 * DHash(seed, p, 3) : 0;
+        var dent = DHash(seed, p, 4) < damage * 0.3 ? 0.01 + 0.03 * DHash(seed, p, 5) : 0;
+        return (gone, lift, dent, Scorch(damage, seed, p));
+    }
+
+    /// <summary>
+    /// Hex cladding: a honeycomb of raised flat-topped hexagons over the grid's surface, about a cell across the flats, each inset by
+    /// a seam, clipped at the grid's edges (a skirt sunk into the skin on every edge), its top following the skin's curve in rings.
+    /// The plates' rise, depth, paint and stagger; a tile any point of which lands in a taken cell (an opening) stays bare.
+    /// </summary>
+    private static void LayHex(DesignMesh m, int nu, int nv, double arc, double len, Random rng, double depth, (byte, byte, byte) col,
+        Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
+        Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
+    {
+        var rise = 0.08 - CladMin;
+        var cs = arc / nu;
+        cs = Math.Min(cs, Math.Max(len / nv, 0.5 * cs));
+        cs = Math.Max(cs, 0.1);
+        var R = cs / Math.Sqrt(3);
+        double dx = 1.5 * R, dy = Math.Sqrt(3) * R;
+        var ri = R - 2 * CladSeam / Math.Sqrt(3);
+        if (ri < 0.03)
+            return;
+        double e = CladSeam, x0 = e, x1 = arc - e, y0 = e, y1 = len - e;
+        if (x1 <= x0 || y1 <= y0)
+            return;
+        var full = 1.5 * Math.Sqrt(3) * ri * ri;
+        var last = -1.0;
+        var poly = new List<(double X, double Y)>(12);
+        var tmp = new List<(double X, double Y)>(12);
+        var edge = new List<(double X, double Y)>(64);
+        int ncol = (int)Math.Ceiling(arc / dx) + 1, nrow = (int)Math.Ceiling(len / dy) + 1;
+        for (var c = 0; c <= ncol; c++)
+            for (var r = -1; r <= nrow; r++)
+            {
+                double cxm = c * dx, cym = (r + ((c & 1) == 1 ? 0.5 : 0)) * dy;
+                poly.Clear();
+                for (var k = 0; k < 6; k++)
+                    poly.Add((cxm + ri * Math.Cos(Math.PI / 3 * k), cym + ri * Math.Sin(Math.PI / 3 * k)));
+                Clip(poly, tmp, 0, x0, true); Clip(poly, tmp, 0, x1, false); Clip(poly, tmp, 1, y0, true); Clip(poly, tmp, 1, y1, false);
+                if (poly.Count < 3)
+                    continue;
+                double area = 0, gx = 0, gy = 0;
+                for (var k = 0; k < poly.Count; k++)
+                {
+                    var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
+                    area += p.X * q.Y - q.X * p.Y;
+                    gx += p.X; gy += p.Y;
+                }
+                area = Math.Abs(area) / 2;
+                if (area < 0.12 * full)
+                    continue;
+                gx /= poly.Count; gy /= poly.Count;
+                int Cu(double x) => Math.Clamp((int)(x / arc * nu), 0, nu - 1);
+                int Cv(double y) => Math.Clamp((int)(y / len * nv), 0, nv - 1);
+                var blocked = taken[Cu(gx), Cv(gy)];
+                foreach (var p in poly)
+                    blocked |= taken[Cu(p.X), Cv(p.Y)];
+                var hgt = CladMin + rise * rng.NextDouble();
+                var tone = 0.88 + 0.18 * rng.NextDouble();
+                if (blocked)
+                    continue;
+                hgt = Math.Round(hgt / 0.005) * 0.005;
+                if (Math.Abs(hgt - last) < 0.005)
+                    hgt += hgt + 0.005 <= CladMin + rise ? 0.005 : -0.005;
+                last = hgt;
+                hgt = Math.Max(hgt * depth, 0.006);
+                double uc = gx / arc, vc = gy / len;
+                var fx = Fx(damage, dseed, W(uc, vc, 0));
+                if (fx.Gone)
+                    continue;
+                var pc = paint?.Invoke(uc, vc, Cv(gy) * 64 + Cu(gx)) ?? col;
+                var top = DesignMesh.Tone(pc, tone * fx.Tone);
+                var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+                // The boundary, each edge cut to about 40 cm so the top and skirt follow the skin.
+                edge.Clear();
+                for (var k = 0; k < poly.Count; k++)
+                {
+                    var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
+                    var nseg = Math.Clamp((int)Math.Ceiling(Math.Sqrt(CapSq(q.X - p.X) + CapSq(q.Y - p.Y)) / 0.4), 1, 8);
+                    for (var t = 0; t < nseg; t++)
+                        edge.Add((p.X + (q.X - p.X) * t / nseg, p.Y + (q.Y - p.Y) * t / nseg));
+                }
+                var rings = Math.Clamp((int)Math.Ceiling(ri / 0.4), fx.Dent > 0 ? 2 : 1, 6);
+                var lx = edge.Min(q => q.X);
+                var wx = Math.Max(1e-6, edge.Max(q => q.X) - lx);
+                double Hh(double x, double t) => Math.Max(hgt + fx.Lift * (x - lx) / wx - fx.Dent * (1 - t * t), 0.006);
+                (double, double, double) Tp(double x, double y, double t) => W(x / arc, y / len, Hh(x, t));
+                (double X, double Y) L((double X, double Y) b, double t) => (gx + (b.X - gx) * t, gy + (b.Y - gy) * t);
+                for (var k = 0; k < edge.Count; k++)
+                {
+                    var (b0, b1) = (edge[k], edge[(k + 1) % edge.Count]);
+                    for (var t = 0; t < rings; t++)
+                    {
+                        double ta = (double)t / rings, tb = (double)(t + 1) / rings;
+                        var (o0, o1) = (L(b0, tb), L(b1, tb));
+                        if (t == 0)
+                            m.Tri(Tp(gx, gy, 0), Tp(o0.X, o0.Y, tb), Tp(o1.X, o1.Y, tb), top, false);
+                        else
+                        {
+                            var (i0, i1) = (L(b0, ta), L(b1, ta));
+                            m.Quad(Tp(i0.X, i0.Y, ta), Tp(o0.X, o0.Y, tb), Tp(o1.X, o1.Y, tb), Tp(i1.X, i1.Y, ta), top, false);
+                        }
+                    }
+                    m.Quad(W(b0.X / arc, b0.Y / len, -CladSink), W(b1.X / arc, b1.Y / len, -CladSink), Tp(b1.X, b1.Y, 1), Tp(b0.X, b0.Y, 1), side, false);
+                }
+            }
+    }
+
+    /// <summary>Clips a convex polygon to one side of an axis line (Sutherland-Hodgman), in place.</summary>
+    private static void Clip(List<(double X, double Y)> poly, List<(double X, double Y)> tmp, int axis, double at, bool keepAbove)
+    {
+        if (poly.Count == 0)
+            return;
+        tmp.Clear();
+        double Of((double X, double Y) p) => axis == 0 ? p.X : p.Y;
+        bool In((double X, double Y) p) => keepAbove ? Of(p) >= at : Of(p) <= at;
+        for (var k = 0; k < poly.Count; k++)
+        {
+            var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
+            bool ip = In(p), iq = In(q);
+            if (ip)
+                tmp.Add(p);
+            if (ip != iq)
+            {
+                var f = (at - Of(p)) / (Of(q) - Of(p));
+                tmp.Add((p.X + (q.X - p.X) * f, p.Y + (q.Y - p.Y) * f));
+            }
+        }
+        poly.Clear();
+        poly.AddRange(tmp);
     }
 
     private static int Centre(double[] hs, double[] ys, int n)

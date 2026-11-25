@@ -240,7 +240,7 @@ public sealed class DesignEditor
                 if (o["clad"] is not null)
                 {
                     if (!HullBody.CladKinds.Contains(Str(o, "clad")))
-                        return "cladding is Off, Plates or Heavy";
+                        return "cladding is Off, Plates, Heavy or Hex";
                     h.Clad = Str(o, "clad");
                 }
                 if (o["cladSeed"] is not null) h.CladSeed = Math.Clamp(I(o, "cladSeed"), 0, 99999);
@@ -259,6 +259,20 @@ public sealed class DesignEditor
                 if (o["wear"] is not null) h.Wear = Math.Clamp(D(o, "wear"), 0, 1);
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
+                if (o["material"] is not null)
+                {
+                    if (!HullBody.Materials.Contains(Str(o, "material")))
+                        return "unknown material " + Str(o, "material");
+                    h.Material = Str(o, "material");
+                }
+                if (o["cladMaterial"] is not null)
+                {
+                    if (Str(o, "cladMaterial") != "Hull" && !HullBody.Materials.Contains(Str(o, "cladMaterial")))
+                        return "unknown cladding material " + Str(o, "cladMaterial");
+                    h.CladMaterial = Str(o, "cladMaterial");
+                }
+                if (o["damage"] is not null) h.Damage = Math.Clamp(Math.Round(D(o, "damage"), 2), 0, 1);
+                if (o["damageSeed"] is not null) h.DamageSeed = Math.Clamp(I(o, "damageSeed"), 0, 99999);
                 return "";
             }
             case "moveStation":
@@ -653,6 +667,7 @@ public sealed class DesignEditor
                     if (o["panelColour"] is not null) q.PanelColour = Room.Colour(Str(o, "panelColour"), q.PanelColour);
                     if (o["trimColour"] is not null) q.TrimColour = Room.Colour(Str(o, "trimColour"), q.TrimColour);
                     if (o["lights"] is not null) q.Lights = (bool)o["lights"]!;
+                    if (o["floor"] is not null) q.Floor = Room.FloorKinds.FirstOrDefault(k => string.Equals(k, Str(o, "floor"), StringComparison.OrdinalIgnoreCase)) ?? q.Floor;
                 }
                 // Its own height, snapped to 25 cm; its deck's height (or 0) clears it.
                 if (o["height"] is not null)

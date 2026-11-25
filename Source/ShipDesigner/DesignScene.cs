@@ -101,7 +101,20 @@ public static partial class DesignScene
     /// <summary>The skin of one copy of a body: the side facets, the keel and the spine, each band a little toned so the stations show; cut where it meets a body set to cut.</summary>
     public static (DesignMesh Skin, DesignMesh Fore, DesignMesh Aft) HullMesh(ShipDesign d, HullBody h, int copy)
     {
+        var (s, f, a, sc, fc, ac) = HullMeshes(d, h, copy);
+        s.P.AddRange(sc.P); s.C.AddRange(sc.C);
+        f.P.AddRange(fc.P); f.C.AddRange(fc.C);
+        a.P.AddRange(ac.P); a.C.AddRange(ac.C);
+        return (s, f, a);
+    }
+
+    /// <summary>One copy's skin and end caps, and their cladding apart (the page draws cladding in its own material).</summary>
+    public static (DesignMesh Skin, DesignMesh Fore, DesignMesh Aft, DesignMesh SkinClad, DesignMesh ForeClad, DesignMesh AftClad) HullMeshes(ShipDesign d, HullBody h, int copy)
+    {
         var skin = new DesignMesh();
+        var skinClad = new DesignMesh();
+        var foreClad = new DesignMesh();
+        var aftClad = new DesignMesh();
         var fore = new DesignMesh();
         var aft = new DesignMesh();
         var cx = h.CopyX(copy);
@@ -207,11 +220,34 @@ public static partial class DesignScene
         void Facet(DesignMesh m, (double X, double Y, double Z) p0, (double X, double Y, double Z) p1, (double X, double Y, double Z) p2, (double X, double Y, double Z) p3,
             (byte, byte, byte) c, bool holed, double step, bool flip)
         {
+            if (h.Damage > 0)
+            {
+                var mid = (cx + (p0.X + p3.X) / 2, h.Y + (p0.Y + p3.Y) / 2, h.Z + (p0.Z + p3.Z) / 2);
+                c = DesignMesh.Tone(c, Scorch(h.Damage, h.DamageSeed, mid));
+                (p0, p1, p2, p3) = (Dent(p0), Dent(p1), Dent(p2), Dent(p3));
+            }
             var cutting = Near(p0, p1, p2, p3);
             var nz = !cutting ? 1 : Math.Clamp((int)Math.Ceiling((p2.Z - p0.Z) / step), 1, 80);
             Strip(m, cx, h, p0, p1, p2, p3, c, nz, cutting, CutBody, flip, step, cutouts.Count > 0 ? Emit : null);
         }
 
+        // Dents (damage past 60%): a few skin points moved 1.5-2.5 cm in towards the body's middle, in the drawn mesh only (OnSkin and
+        // placement read the stations), by the point itself so every facet sharing it agrees; never at the end stations (the caps meet them).
+        var yc = (h.Stations.Min(t => t.P.Min(q => q.Y)) + h.Stations.Max(t => t.P.Max(q => q.Y))) / 2;
+        double zEnd0 = h.Ring[0].Z, zEnd1 = h.Ring[^1].Z;
+        (double X, double Y, double Z) Dent((double X, double Y, double Z) p)
+        {
+            if (h.Damage <= 0.6 || Math.Abs(p.Z - zEnd0) < 1e-6 || Math.Abs(p.Z - zEnd1) < 1e-6)
+                return p;
+            var w = (Math.Abs(p.X), p.Y, p.Z);
+            if (DHash(h.DamageSeed, w, 21) >= (h.Damage - 0.6) * 0.6)
+                return p;
+            var r = Math.Sqrt(p.X * p.X + (p.Y - yc) * (p.Y - yc));
+            if (r < 0.3)
+                return p;
+            var k = 1 - (0.015 + 0.01 * DHash(h.DamageSeed, w, 22)) / r;
+            return (p.X * k, yc + (p.Y - yc) * k, p.Z);
+        }
         var col = DesignMesh.Hex(h.Skin);
         var dark = DesignMesh.Hex("#3a3e44");
         var ah = new double[HullBody.MaxLoft];
@@ -247,7 +283,7 @@ public static partial class DesignScene
         near.AddRange(cutters.Select(o => o.B).Distinct());
         // Cladding stays off every opening: a cell any socket, mouth or window may reach, or another body cuts, is left bare.
         if (h.Clad != "Off")
-            CladBody(skin, h, cx, (p, q) =>
+            CladBody(skinClad, h, cx, (p, q) =>
             {
                 foreach (var k in cutouts)
                     if (k.Touches(p, q))
@@ -270,10 +306,10 @@ public static partial class DesignScene
                         return true;
                 return InHole(x, y, z) || CutBody(x, y, z);
             }
-            CladCap(fore, cx, h, rings[0], false, Open);
-            CladCap(aft, cx, h, rings[^1], true, Open);
+            CladCap(foreClad, cx, h, rings[0], false, Open);
+            CladCap(aftClad, cx, h, rings[^1], true, Open);
         }
-        return (skin, fore, aft);
+        return (skin, fore, aft, skinClad, foreClad, aftClad);
     }
 
     /// <summary>An opening's outline: a convex polygon (u along X, v along Z) in the plane through O facing Y.</summary>
@@ -1207,11 +1243,11 @@ public static partial class DesignScene
 
     private static string MeshKey(ShipDesign d, HullBody h)
     {
-        var k = new StringBuilder(h.ToJson().ToJsonString()).Append(Holes ? 'H' : 'h');
+        var k = new StringBuilder(MeshJson(h)).Append(Holes ? 'H' : 'h');
         var box = h.Bounds();
         foreach (var o in d.Hulls)
             if (o != h && Overlap(o.Bounds(), box))
-                k.Append('|').Append(o.ToJson().ToJsonString());
+                k.Append('|').Append(MeshJson(o));
         if (Holes)
             foreach (var p in d.Pieces)
                 if (p.Hull == h.Id && PieceKinds.Find(p.Kind)?.Opening is not null)
@@ -1252,7 +1288,8 @@ public static partial class DesignScene
             sb.Append("{\"id\":").Append(h.Id).Append(",\"name\":").Append(Q(h.Name))
               .Append(",\"x\":").Append(ShipDesign.S(h.X)).Append(",\"y\":").Append(ShipDesign.S(h.Y)).Append(",\"z\":").Append(ShipDesign.S(h.Z))
               .Append(",\"mirror\":").Append(h.Mirror ? "true" : "false").Append(",\"cut\":").Append(h.Cut ? "true" : "false").Append(",\"skin\":").Append(Q(h.Skin))
-              .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append('}')
+              .Append(",\"clad\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
+              .Append(",\"material\":").Append(Q(h.Material)).Append(",\"damage\":").Append(ShipDesign.S(h.Damage)).Append(",\"damageSeed\":").Append(h.DamageSeed)
               .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
               .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
               .Append(",\"paint\":{\"accent\":").Append(Q(h.Accent)).Append(",\"amount\":").Append(ShipDesign.S(h.AccentAmount)).Append(",\"pattern\":").Append(Q(h.Pattern))
@@ -1273,9 +1310,15 @@ public static partial class DesignScene
                 if (copy > 0) sb.Append(',');
                 if (!Meshes.TryGetValue((h.Id, copy), out var hit) || hit.Key != key)
                 {
-                    var (skin, fore, aft) = HullMesh(d, h, copy);
+                    var (skin, fore, aft, sc, fc, ac) = HullMeshes(d, h, copy);
                     var one = new StringBuilder(1 << 14);
-                    one.Append("{\"copy\":").Append(copy).Append(",\"skin\":");
+                    one.Append("{\"copy\":").Append(copy).Append(",\"skinClad\":");
+                    sc.Write(one, Made($"h{h.Id}.{copy}.skinClad"));
+                    one.Append(",\"foreClad\":");
+                    fc.Write(one, Made($"h{h.Id}.{copy}.foreClad"));
+                    one.Append(",\"aftClad\":");
+                    ac.Write(one, Made($"h{h.Id}.{copy}.aftClad"));
+                    one.Append(",\"skin\":");
                     skin.Write(one, Made($"h{h.Id}.{copy}.skin"));
                     one.Append(",\"fore\":");
                     fore.Write(one, Made($"h{h.Id}.{copy}.fore"));
@@ -1299,6 +1342,7 @@ public static partial class DesignScene
               .Append(",\"squareHole\":").Append(j.SquareHole ? "true" : "false").Append(",\"flare\":").Append(ShipDesign.S(j.Flare)).Append(",\"buttress\":").Append(ShipDesign.S(j.Buttress)).Append(",\"follow\":").Append(j.Follow ? "true" : "false").Append(",\"openA\":").Append(ShipDesign.S(j.OpenA)).Append(",\"openB\":").Append(ShipDesign.S(j.OpenB))
               .Append(",\"clad\":{\"kind\":").Append(Q(j.Clad)).Append(",\"seed\":").Append(j.CladSeed).Append(",\"size\":").Append(ShipDesign.S(j.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(j.CladDepth)).Append('}')
               .Append(",\"buttressClad\":{\"kind\":").Append(Q(j.ButtressClad)).Append(",\"seed\":").Append(j.ButtressSeed).Append(",\"size\":").Append(ShipDesign.S(j.ButtressSize)).Append(",\"depth\":").Append(ShipDesign.S(j.ButtressDepth)).Append('}')
+              .Append(",\"material\":").Append(Q(d.Hull(j.A.Hull)?.Material ?? "Painted")).Append(",\"cladMaterial\":").Append(Q(d.Hull(j.A.Hull)?.CladMaterial ?? "Hull"))
               .Append(",\"mesh\":");
             sb.Append(Part("j" + j.Id, j.Id + ":" + j.ToJson(d).ToJsonString() + "|" + Paint(d.Hull(j.A.Hull)) + "|" + d.Hull(j.B.Hull)?.ShapeKey() + "|" + shapes,
                 () => { var t = new StringBuilder(); j.Mesh(d).Write(t, Made("j" + j.Id)); return t.ToString(); }));
@@ -1392,7 +1436,7 @@ public static partial class DesignScene
                 sb.Append(MeshPart("rs" + r.Id, rk, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
-              .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false");
+              .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor));
             if (r.Interior != "Off")
             {
                 sb.Append(Part("ri" + r.Id, ik, () =>

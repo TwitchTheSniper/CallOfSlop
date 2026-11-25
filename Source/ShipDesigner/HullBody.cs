@@ -32,7 +32,17 @@ public sealed class HullBody
     public List<Station> Stations = [];
     /// <summary>Plated cladding on the skin (Off, Plates, Heavy): panels between stations from a seeded grid, merged into plates of
     /// varied size, each raised a little, Heavy higher and with small box greebles. Size is a grid cell (m), Depth scales the rise.</summary>
-    public static readonly string[] CladKinds = ["Off", "Plates", "Heavy"];
+    public static readonly string[] CladKinds = ["Off", "Plates", "Heavy", "Hex"];
+    /// <summary>How the page draws a body (the mesh is the same for all): Painted is the old look, the rest metals and plastics.</summary>
+    public static readonly string[] Materials = ["Painted", "Steel", "Brushed aluminium", "Titanium", "Copper", "Gloss plastic", "Matte plastic", "Carbon"];
+    public string Material = "Painted";
+    /// <summary>The cladding's own material: "Hull" (the body's) or one of <see cref="Materials"/>.</summary>
+    public string CladMaterial = "Hull";
+    public static string MaterialOr(string? v, string or, bool clad = false) =>
+        (clad && string.Equals(v, "Hull", StringComparison.OrdinalIgnoreCase)) ? "Hull" : Materials.FirstOrDefault(k => string.Equals(k, v, StringComparison.OrdinalIgnoreCase)) ?? or;
+    /// <summary>Battle damage (0..1), apart from paint's Wear: plates missing, tilted and dented, scorched patches, dents in the drawn skin. Seeded.</summary>
+    public double Damage;
+    public int DamageSeed = 1;
     public string Clad = "Off";
     public int CladSeed = 1;
     public double CladSize = 1.5, CladDepth = 1;
@@ -230,6 +240,10 @@ public sealed class HullBody
         var o = Json0();
         if (Clad != "Off")
             o["clad"] = new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) };
+        if (Clad != "Off" && CladMaterial != "Hull")
+            o["clad"]!["material"] = CladMaterial;
+        if (Material != "Painted") o["material"] = Material;
+        if (Damage > 0) o["damage"] = new JsonObject { ["amount"] = ShipDesign.R(Damage), ["seed"] = DamageSeed };
         if (RoundFore > 0) o["roundFore"] = ShipDesign.R(RoundFore);
         if (RoundAft > 0) o["roundAft"] = ShipDesign.R(RoundAft);
         o["paint"] = new JsonObject { ["accent"] = Accent, ["amount"] = ShipDesign.R(AccentAmount), ["pattern"] = Pattern, ["stripe"] = ShipDesign.R(Stripe), ["wear"] = ShipDesign.R(Wear), ["seed"] = PaintSeed };
@@ -282,6 +296,13 @@ public sealed class HullBody
             h.CladSeed = Math.Clamp((int?)c["seed"] ?? 1, 0, 99999);
             h.CladSize = Math.Clamp(ShipDesign.F(c["size"], 1.5), CladSizeMin, CladSizeMax);
             h.CladDepth = Math.Clamp(ShipDesign.F(c["depth"], 1), CladDepthMin, CladDepthMax);
+            h.CladMaterial = MaterialOr((string?)c["material"], "Hull", true);
+        }
+        h.Material = MaterialOr((string?)o["material"], "Painted");
+        if (o["damage"] is JsonObject dm)
+        {
+            h.Damage = Math.Clamp(ShipDesign.F(dm["amount"], 0), 0, 1);
+            h.DamageSeed = Math.Clamp((int?)dm["seed"] ?? 1, 0, 99999);
         }
         h.RoundFore = Math.Clamp(ShipDesign.F(o["roundFore"], 0), 0, RoundMax);
         h.RoundAft = Math.Clamp(ShipDesign.F(o["roundAft"], 0), 0, RoundMax);
@@ -303,7 +324,7 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
-        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, RoundFore = RoundFore, RoundAft = RoundAft,
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
         Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 

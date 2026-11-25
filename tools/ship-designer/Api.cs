@@ -45,6 +45,7 @@ public static partial class Api
             {
                 ["cladSize"] = h.CladSize, ["cladDepth"] = h.CladDepth, ["roundFore"] = h.RoundFore, ["roundAft"] = h.RoundAft,
                 ["accentAmount"] = h.AccentAmount, ["stripe"] = h.Stripe, ["wear"] = h.Wear,
+                ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing },
         };

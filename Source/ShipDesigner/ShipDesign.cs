@@ -213,6 +213,9 @@ public sealed class Room
     public string PanelColour = "#d9dee3";
     public string TrimColour = "#e0a526";
     public bool Lights = true;
+    /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
+    public static readonly string[] FloorKinds = ["Plates", "Hex"];
+    public string Floor = "Plates";
     public static string Colour(string? v, string or) => v is { Length: 7 } && v[0] == '#' && v.Skip(1).All(Uri.IsHexDigit) ? v.ToLowerInvariant() : or;
     public bool ToHull; // its sides go out to the skin (lined 6 cm in) where no room is beyond them, so it follows the hull's shape
 
@@ -224,7 +227,7 @@ public sealed class Room
         ["kind"] = Kind, ["label"] = Label, ["toHull"] = ToHull, ["runOn"] = RunOn, ["runAft"] = RunAft, ["height"] = ShipDesign.R(Height), ["below"] = ShipDesign.R(Below), ["group"] = Group,
         ["exts"] = new JsonArray([.. Exts.Select(e => (JsonNode)new JsonObject { ["side"] = e.Side, ["shape"] = e.Shape, ["depth"] = ShipDesign.R(e.Depth), ["width"] = ShipDesign.R(e.Width), ["t"] = ShipDesign.R(e.T) })]),
         ["wallThick"] = ShipDesign.R(WallThick),
-        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights,
+        ["interior"] = Interior, ["ribSpacing"] = ShipDesign.R(RibSpacing), ["panelColour"] = PanelColour, ["trimColour"] = TrimColour, ["lights"] = Lights, ["floor"] = Floor,
     };
 
     public static Room FromJson(JsonObject o, int id)
@@ -252,6 +255,7 @@ public sealed class Room
         r.PanelColour = Colour((string?)o["panelColour"], "#d9dee3");
         r.TrimColour = Colour((string?)o["trimColour"], "#e0a526");
         r.Lights = (bool?)o["lights"] ?? true;
+        r.Floor = FloorKinds.FirstOrDefault(k => string.Equals(k, (string?)o["floor"], StringComparison.OrdinalIgnoreCase)) ?? "Plates";
         r.Normalise();
         return r;
     }

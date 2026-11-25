@@ -229,6 +229,30 @@ controls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE; // Karl, 2026-11-24: the midd
 scene.add(new THREE.HemisphereLight(0xdfe9f2, 0x2a3036, 1.25));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(30, 50, -20); scene.add(sun);
 const fill = new THREE.DirectionalLight(0x9fc0e0, 0.5); fill.position.set(-30, -10, 40); scene.add(fill);
+// Metals need something to reflect: a small room environment, prefiltered once, given only to the non-painted materials (so Painted keeps its old look).
+// A generated gradient (sky, a bright horizon band, dark ground) on a sphere, so it is cheap and needs no file or untone-mapped room.
+const envMap = (() => {
+  const es = new THREE.Scene(), g = new THREE.SphereGeometry(10, 32, 16), pos = g.attributes.position, col = [];
+  const sky = new THREE.Color(0x8fa6bd), hor = new THREE.Color(0xe8eef4), gnd = new THREE.Color(0x2b3036), c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) { const y = pos.getY(i) / 10; if (y > 0) c.copy(hor).lerp(sky, Math.min(1, y * 1.6)); else c.copy(hor).lerp(gnd, Math.min(1, -y * 3)); col.push(c.r, c.g, c.b); }
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  es.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  const t = new THREE.PMREMGenerator(renderer).fromScene(es, 0.02).texture; g.dispose(); return t;
+})();
+// Each body material as three.js properties (tint multiplies the vertex colours, so paint, wear and damage still show).
+const MATS = {
+  "Painted": null,
+  "Steel": { metalness: 0.85, roughness: 0.38, color: 0xc8ccd0 },
+  "Brushed aluminium": { metalness: 0.9, roughness: 0.5, color: 0xe4e7ea },
+  "Titanium": { metalness: 0.8, roughness: 0.3, color: 0xb6b2a8 },
+  "Copper": { metalness: 0.95, roughness: 0.28, color: 0xf0a070 },
+  "Gloss plastic": { metalness: 0, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.08 },
+  "Matte plastic": { metalness: 0, roughness: 0.92 },
+  "Carbon": { metalness: 0.2, roughness: 0.42, color: 0x3a3d42, clearcoat: 0.8, clearcoatRoughness: 0.2 },
+};
+const MAT_NAMES = Object.keys(MATS);
+// The opts for a mesh in a material (empty for Painted); clearcoat asks for MeshPhysicalMaterial.
+function matOpts(name) { const m = MATS[name]; return m ? { ...m, envMap, envMapIntensity: 0.8 } : {}; }
 const grid = new THREE.GridHelper(200, 100, 0x3a4852, 0x26323a); scene.add(grid);
 const world = new THREE.Group(); scene.add(world);
 const gizmo = new TransformControls(camera, renderer.domElement);
@@ -281,9 +305,10 @@ function dropUnused() {
   for (const [k, g] of meshGeo) if (!geoUsed.has(k)) { g.dispose(); meshGeo.delete(k); }
 }
 function meshFrom(m, opts = {}, geo = null) {
-  if (!m) { if (geo?.userData.key) geoUsed.add(geo.userData.key); return new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts })); }
-  const g = geoOf(m);
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts });
+  if (!m && geo?.userData.key) geoUsed.add(geo.userData.key);
+  const g = m ? geoOf(m) : geo;
+  const all = { vertexColors: true, flatShading: true, side: THREE.DoubleSide, metalness: 0.15, roughness: 0.7, ...opts };
+  const mat = all.clearcoat !== undefined ? new THREE.MeshPhysicalMaterial(all) : new THREE.MeshStandardMaterial(all);
   return new THREE.Mesh(g, mat);
 }
 
@@ -299,17 +324,19 @@ function rebuild() {
   for (const h of S.hulls) {
     if (hideHull) continue;
     for (const c of h.copies ?? hullCopies.get(h.id) ?? []) {
-      for (const surf of ["skin", "fore", "aft"]) {
-        if (!c[surf].p.length) continue;
+      for (const surf of ["skin", "fore", "aft", "skinClad", "foreClad", "aftClad"]) {
+        if (!c[surf]?.p.length) continue;
+        const isClad = surf.endsWith("Clad");
+        const mat = matOpts(isClad && h.clad?.material && h.clad.material !== "Hull" ? h.clad.material : (h.material || "Painted"));
         const selHull = sel.kind === "hull" && sel.id === h.id;
         // A drag's scene leaves the hulls out (they don't change): the last ones' geometry is drawn again.
         const key = `${h.id}/${c.copy}/${surf}`;
         if (!hullGeo.has(key) || h.copies) hullGeo.set(key, { g: geoOf(c[surf]), at: [h.x, h.y, h.z] });
         const hg = hullGeo.get(key);
-        const m = meshFrom(null, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}, hg.g);
+        const m = meshFrom(null, { ...mat, ...(ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}) }, hg.g);
         m.position.set((c.copy === 1 ? -1 : 1) * (h.x - hg.at[0]), h.y - hg.at[1], h.z - hg.at[2]);
         if (selHull && mode === "hull") m.material.emissive = new THREE.Color(0x0d2a48);
-        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: surf };
+        m.userData = { type: "hull", hull: h.id, copy: c.copy, surface: isClad ? surf.slice(0, -4) : surf };
         world.add(m); pickables.push(m);
       }
     }
@@ -317,7 +344,7 @@ function rebuild() {
   }
   for (const j of S.joins ?? []) {
     if (!j.mesh.p.length || hideHull) continue;
-    const m = meshFrom(j.mesh, ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {});
+    const m = meshFrom(j.mesh, { ...matOpts(j.material || "Painted"), ...(ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}) });
     if (sel.kind === "join" && sel.id === j.id) m.material.emissive = new THREE.Color(0x1d4f86);
     m.userData = { type: "join", id: j.id };
     world.add(m); pickables.push(m);
@@ -1195,15 +1222,28 @@ function stationPanel(h) {
   // Cladding (the user's Star Destroyer flank, 2026-11-24): plates of varied size laid on the skin, raised a few cm, off every opening.
   const clad = h.clad || { kind: "Off", seed: 1, size: 1.5, depth: 1 };
   const hs = o => cmd({ op: "setHull", hull: h.id, ...o });
+  const matSel = (v, names, label, send) => { const s = el("select", { "aria-label": label }); for (const n of names) s.append(el("option", n === v ? { selected: "" } : {}, n)); s.addEventListener("change", () => send(s.value)); return s; };
+  box.append(el("h3", {}, "Material"),
+    el("div", { class: "row" }, matSel(h.material || "Painted", MAT_NAMES, "Material", v => hs({ material: v })), resetAll("Material back to its default", () => hs(dfltOf("hull", ["material"])))),
+    el("p", { class: "hint" }, "Painted is the flat look; metals reflect the room and tint the paint. Connections take hull A's material."));
   box.append(el("h3", {}, "Cladding"),
-    el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
+      resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
     ...(clad.kind === "Off" ? [] : [
       slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 }), dflt("hull", "cladSize", 100)),
       slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 }), dflt("hull", "cladDepth", 100)),
       el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
-    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. Windows and sockets stay bare."));
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
+  // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
+  box.append(el("h3", {}, "Damage"),
+    slider("Damage", Math.round((h.damage ?? 0) * 100), 0, 100, 1, "%", () => {}, v => hs({ damage: v / 100 }), dflt("hull", "damage", 100)),
+    el("div", { class: "row" }, el("span", {}, "Seed"), num(h.damageSeed ?? 1, v => hs({ damageSeed: Math.round(v) }), 1),
+      el("button", { onclick: () => hs({ damageSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"),
+      resetAll("Damage and its seed back to their defaults", () => hs(dfltOf("hull", ["damage", "damageSeed"])))),
+    el("p", { class: "hint" }, "Plates and tiles go missing, lift or dent; scorch and grime darken patches; past 60% the skin itself dents (drawn only: placement is unchanged). Connections take hull A's."));
   // Rounded ends: the skin curves into the cap over this radius.
   const rMaxF = Math.max(0, Math.floor((h.roundMaxFore ?? 0) * 20) * 5), rMaxA = Math.max(0, Math.floor((h.roundMaxAft ?? 0) * 20) * 5);
   box.append(el("h3", {}, "Rounded ends"),
@@ -1373,7 +1413,7 @@ function inspector() {
     const jc = v => cmd({ op: "setJoin", id: j.id, ...v });
     I.append(el("h2", {}, "Connection"), ...joinControls(o, apply, () => { cmd({ op: "setJoin", id: j.id, ...o }); first = true; }),
       el("h3", {}, "Cladding"),
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
         slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
         slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
@@ -1382,7 +1422,7 @@ function inspector() {
           el("button", { onclick: () => jc({ cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))]),
       el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles); the depth slider scales that. The flared ends have their own cladding below."),
       el("h3", {}, "Buttress cladding"),
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
         slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
         slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),
@@ -1477,6 +1517,7 @@ function inspector() {
         const colour = (v, label, key) => { const c = el("input", { type: "color", value: v, "aria-label": label }); c.addEventListener("change", () => setI({ [key]: c.value })); return c; };
         return el("div", {},
           el("div", { class: "row" }, el("span", {}, "Style"), ...["Off", "Clean", "Industrial"].map(k => el("button", { class: (r.interior || "Off") === k ? "on" : "", onclick: () => setI({ interior: k }) }, k))),
+          el("div", { class: "row" }, el("span", {}, "Floor"), ...["Plates", "Hex"].map(k => el("button", { class: (r.floor || "Plates") === k ? "on" : "", onclick: () => setI({ floor: k }) }, k))),
           slider("Rib spacing", r.ribSpacing ?? 2, 1, 4, 0.25, " m", () => {}, v => setI({ ribSpacing: v }), dflt("room", "ribSpacing")),
           el("div", { class: "row" }, resetAll("Rib spacing back to its default", () => setI(dfltOf("room", ["ribSpacing"])))),
           el("div", { class: "row" }, el("span", {}, "Panels"), colour(r.panelColour || "#d9dee3", "Panel colour", "panelColour"), el("span", {}, "Trim"), colour(r.trimColour || "#e0a526", "Trim colour", "trimColour"),
