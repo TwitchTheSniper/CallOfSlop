@@ -2,11 +2,14 @@ namespace CallOfSlop.ShipDesigner;
 
 public static partial class DesignScene
 {
-    /// <summary>The most triangles one copy of a body's cladding may add; past it the rest of the body is left bare (logged).</summary>
+    /// <summary>The most triangles one copy of a body's cladding may add; past it the panel size is raised until the whole body fits (logged).</summary>
     public const int MaxCladTris = 60000;
 
     /// <summary>The last body whose cladding hit the cap (its name), for the page's log; empty when none did.</summary>
     public static string CladCapped = "";
+
+    /// <summary>The panel size the last <see cref="CladBody"/> used when it had to raise it to fit the cap; 0 when the body's own size fitted.</summary>
+    public static double CladFitSize;
 
     private const double CladSeam = 0.02, CladSink = 0.03, CladMin = 0.01;
 
@@ -17,11 +20,43 @@ public static partial class DesignScene
     /// before), its skirt sunk 3 cm into the hull. Heavy plates rise higher and some carry a small box. Seeded, so the same design
     /// always clads the same; cells <paramref name="blocked"/> says an opening may reach (by two opposite world corners) stay bare.
     /// </summary>
-    private static void CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    /// <returns>The panel size used: the body's own, or larger when its cladding wouldn't fit <see cref="MaxCladTris"/> (2026-11-25: the cap
+    /// used to cut the cladding off part way, leaving most of a big hull bare; now the whole body is always covered, in bigger panels).</returns>
+    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    {
+        CladFitSize = 0;
+        var own = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
+        var size = own;
+        var start = m.Tris;
+        for (var tries = 0; ; tries++)
+        {
+            CladBodyAt(m, h, cx, blocked, size);
+            var made = m.Tris - start;
+            if (made <= MaxCladTris)
+                break;
+            if (size >= HullBody.CladSizeMax || tries >= 6)
+            {
+                CladCapped = h.Name;
+                Console.WriteLine($"ship designer: cladding on \"{h.Name}\" has {made} triangles even at {size * 100:0} cm panels, past its cap of {MaxCladTris}; kept whole");
+                break;
+            }
+            m.P.RemoveRange(start * 9, m.P.Count - start * 9);
+            m.C.RemoveRange(start * 9, m.C.Count - start * 9);
+            // Triangles go as 1/size^2; a margin and a 5 cm step so one more try is rarely needed.
+            size = Math.Min(HullBody.CladSizeMax, Math.Ceiling(size * Math.Sqrt((double)made / MaxCladTris) * 1.05 / 0.05) * 0.05);
+        }
+        if (size > own)
+        {
+            CladFitSize = size;
+            Console.WriteLine($"ship designer: cladding on \"{h.Name}\" raised from {own * 100:0} cm to {size * 100:0} cm panels to fit its cap of {MaxCladTris} triangles");
+        }
+        return size;
+    }
+
+    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, double size)
     {
         var heavy = h.Clad == "Heavy";
         var hex = h.Clad == "Hex";
-        var start = m.Tris;
         var col = DesignMesh.Hex(h.Skin);
         var ah = new double[HullBody.MaxLoft + 2];
         var ay = new double[HullBody.MaxLoft + 2];
@@ -29,7 +64,6 @@ public static partial class DesignScene
         var by = new double[HullBody.MaxLoft + 2];
         var ca = new double[HullBody.MaxLoft + 2];
         var cb = new double[HullBody.MaxLoft + 2];
-        var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         var rings = h.Ring;
         for (var i = 0; i < rings.Count - 1; i++)
         {
@@ -56,12 +90,6 @@ public static partial class DesignScene
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
             foreach (var s in new[] { 1, -1 })
             {
-                if (m.Tris - start > MaxCladTris)
-                {
-                    CladCapped = h.Name;
-                    Console.WriteLine($"ship designer: cladding on \"{h.Name}\" hit its cap of {MaxCladTris} triangles; the rest of the body is left bare");
-                    return;
-                }
                 // The same seed a band on both sides, so the plating is symmetric but where an opening breaks it.
                 var rng = new Random(unchecked(h.CladSeed * 1000003 + i * 7919));
                 (double X, double Y, double Z) P(double u, double v)
@@ -134,11 +162,10 @@ public static partial class DesignScene
     /// </summary>
     private static double CapSq(double v) => v * v;
 
-    private static void CladCap(DesignMesh m, double cx, HullBody h, Station s, bool aft, Func<double, double, double, bool> open)
+    private static void CladCap(DesignMesh m, double cx, HullBody h, Station s, bool aft, Func<double, double, double, bool> open, double size)
     {
         var heavy = h.Clad == "Heavy";
         var col = DesignMesh.Hex(h.Skin);
-        var size = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
         // The outline as a closed ring (world), round the +x side and back down the -x; the fore cap the other way, so plates face out.
         var ring = new List<(double X, double Y)>();
         foreach (var (hh, y) in s.P)
@@ -374,7 +401,7 @@ public static partial class DesignScene
 
     /// <summary>
     /// Hex cladding: a honeycomb of raised flat-topped hexagons over the grid's surface, about a cell across the flats, each inset by
-    /// a seam, clipped at the grid's edges (a skirt sunk into the skin on every edge), its top following the skin's curve in rings.
+    /// a seam, clipped at the grid's edges (a skirt sunk into the skin on every edge), its flat top on the skin's offset at each corner.
     /// The plates' rise, depth, paint and stagger; a tile any point of which lands in a taken cell (an opening) stays bare.
     /// </summary>
     private static void LayHex(DesignMesh m, int nu, int nv, double arc, double len, Random rng, double depth, (byte, byte, byte) col,
@@ -397,7 +424,8 @@ public static partial class DesignScene
         var last = -1.0;
         var poly = new List<(double X, double Y)>(12);
         var tmp = new List<(double X, double Y)>(12);
-        var edge = new List<(double X, double Y)>(64);
+        var topV = new (double, double, double)[16];
+        var botV = new (double, double, double)[16];
         int ncol = (int)Math.Ceiling(arc / dx) + 1, nrow = (int)Math.Ceiling(len / dy) + 1;
         for (var c = 0; c <= ncol; c++)
             for (var r = -1; r <= nrow; r++)
@@ -441,37 +469,32 @@ public static partial class DesignScene
                 var pc = paint?.Invoke(uc, vc, Cv(gy) * 64 + Cu(gx)) ?? col;
                 var top = DesignMesh.Tone(pc, tone * fx.Tone);
                 var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
-                // The boundary, each edge cut to about 40 cm so the top and skirt follow the skin.
-                edge.Clear();
-                for (var k = 0; k < poly.Count; k++)
+                // Cheap tiles (2026-11-25: a ringed, edge-cut tile cost ~60 triangles and the body's cap left most hulls bare): a flat top
+                // over the clipped outline (a fan, 4 triangles for a whole hexagon) and one skirt quad an edge, each corner sampled once.
+                // A dent darkens the tile instead of bending it; a lift tilts it along the arc.
+                var lx = poly.Min(q => q.X);
+                var wx = Math.Max(1e-6, poly.Max(q => q.X) - lx);
+                if (fx.Dent > 0)
+                    top = DesignMesh.Tone(top, 0.85);
+                var nc = poly.Count;
+                if (topV.Length < nc)
                 {
-                    var (p, q) = (poly[k], poly[(k + 1) % poly.Count]);
-                    var nseg = Math.Clamp((int)Math.Ceiling(Math.Sqrt(CapSq(q.X - p.X) + CapSq(q.Y - p.Y)) / 0.4), 1, 8);
-                    for (var t = 0; t < nseg; t++)
-                        edge.Add((p.X + (q.X - p.X) * t / nseg, p.Y + (q.Y - p.Y) * t / nseg));
+                    topV = new (double, double, double)[nc * 2];
+                    botV = new (double, double, double)[nc * 2];
                 }
-                var rings = Math.Clamp((int)Math.Ceiling(ri / 0.4), fx.Dent > 0 ? 2 : 1, 6);
-                var lx = edge.Min(q => q.X);
-                var wx = Math.Max(1e-6, edge.Max(q => q.X) - lx);
-                double Hh(double x, double t) => Math.Max(hgt + fx.Lift * (x - lx) / wx - fx.Dent * (1 - t * t), 0.006);
-                (double, double, double) Tp(double x, double y, double t) => W(x / arc, y / len, Hh(x, t));
-                (double X, double Y) L((double X, double Y) b, double t) => (gx + (b.X - gx) * t, gy + (b.Y - gy) * t);
-                for (var k = 0; k < edge.Count; k++)
+                for (var k = 0; k < nc; k++)
                 {
-                    var (b0, b1) = (edge[k], edge[(k + 1) % edge.Count]);
-                    for (var t = 0; t < rings; t++)
-                    {
-                        double ta = (double)t / rings, tb = (double)(t + 1) / rings;
-                        var (o0, o1) = (L(b0, tb), L(b1, tb));
-                        if (t == 0)
-                            m.Tri(Tp(gx, gy, 0), Tp(o0.X, o0.Y, tb), Tp(o1.X, o1.Y, tb), top, false);
-                        else
-                        {
-                            var (i0, i1) = (L(b0, ta), L(b1, ta));
-                            m.Quad(Tp(i0.X, i0.Y, ta), Tp(o0.X, o0.Y, tb), Tp(o1.X, o1.Y, tb), Tp(i1.X, i1.Y, ta), top, false);
-                        }
-                    }
-                    m.Quad(W(b0.X / arc, b0.Y / len, -CladSink), W(b1.X / arc, b1.Y / len, -CladSink), Tp(b1.X, b1.Y, 1), Tp(b0.X, b0.Y, 1), side, false);
+                    var (px, py) = poly[k];
+                    double u = px / arc, v = py / len;
+                    topV[k] = W(u, v, Math.Max(hgt + fx.Lift * (px - lx) / wx, 0.006));
+                    botV[k] = W(u, v, -CladSink);
+                }
+                for (var k = 1; k < nc - 1; k++)
+                    m.Tri(topV[0], topV[k], topV[k + 1], top, false);
+                for (var k = 0; k < nc; k++)
+                {
+                    var k1 = (k + 1) % nc;
+                    m.Quad(botV[k], botV[k1], topV[k1], topV[k], side, false);
                 }
             }
     }

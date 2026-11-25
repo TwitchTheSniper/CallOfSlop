@@ -289,8 +289,10 @@ public static partial class DesignScene
         near.Clear();
         near.AddRange(cutters.Select(o => o.B).Distinct());
         // Cladding stays off every opening: a cell any socket, mouth or window may reach, or another body cuts, is left bare.
+        var cladSize = 0.0;
+        CladFitSize = 0;
         if (h.Clad != "Off")
-            CladBody(skinClad, h, cx, (p, q) =>
+            cladSize = CladBody(skinClad, h, cx, (p, q) =>
             {
                 foreach (var k in cutouts)
                     if (k.Touches(p, q))
@@ -313,8 +315,8 @@ public static partial class DesignScene
                         return true;
                 return InHole(x, y, z) || CutBody(x, y, z);
             }
-            CladCap(foreClad, cx, h, rings[0], false, Open);
-            CladCap(aftClad, cx, h, rings[^1], true, Open);
+            CladCap(foreClad, cx, h, rings[0], false, Open, cladSize);
+            CladCap(aftClad, cx, h, rings[^1], true, Open, cladSize);
         }
         return (skin, fore, aft, skinClad, foreClad, aftClad);
     }
@@ -1329,7 +1331,7 @@ public static partial class DesignScene
                 {
                     var (skin, fore, aft, sc, fc, ac) = HullMeshes(d, h, copy);
                     var one = new StringBuilder(1 << 14);
-                    one.Append("{\"copy\":").Append(copy).Append(",\"skinClad\":");
+                    one.Append("{\"copy\":").Append(copy).Append(",\"cladFit\":").Append(CladFitSize > 0 ? ShipDesign.S(CladFitSize) : "null").Append(",\"skinClad\":");
                     sc.Write(one, Made($"h{h.Id}.{copy}.skinClad"));
                     one.Append(",\"foreClad\":");
                     fc.Write(one, Made($"h{h.Id}.{copy}.foreClad"));

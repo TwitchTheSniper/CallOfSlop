@@ -37,6 +37,8 @@ header.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
 .brand { font: 700 22px/1 var(--display); letter-spacing: .02em; text-transform: uppercase; }
 .brand small { font: 500 11px var(--mono); letter-spacing: .1em; color: var(--ink2); margin-left: 8px; text-transform: none; }
 .modes { display: flex; gap: 4px; }
+.modes select { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; width: 11em; }
+.modes select.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .modes button { font: 600 15px var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 14px; }
 .grow { flex: 1; }
 .tools { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -110,6 +112,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
       <button id="m-hull" class="on">Hull</button>
       <button id="m-pieces">Pieces</button>
       <button id="m-interior">Interior</button>
+      <select id="m-rooms" aria-label="Room view"><option value="">Room view</option></select>
       <button id="m-connectors">Connectors</button>
     </nav>
     <div class="grow"></div>
@@ -186,9 +189,10 @@ function take(answerText) {
   const a = JSON.parse(answerText);
   S = a.scene;
   if (roomView && !S.roomView) { roomView = null; viewCmd(); return a; } // its room went (deleted, undone): back to the ship
-  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
+  for (const h of S.hulls) if (h.copies) hullCopies.set(h.id, h.copies.map(c => ({ copy: c.copy, cladFit: c.cladFit, skin: { p: c.skin.p.length ? [0] : [] }, fore: { p: c.fore.p.length ? [0] : [] }, aft: { p: c.aft.p.length ? [0] : [] } })));
   $("undo").disabled = !a.undo; $("redo").disabled = !a.redo;
   if (a.error) toast(a.error);
+  tabs();
   rebuild();
   panels();
   if (S.hulls.every(h => h.copies)) try { localStorage.setItem("shipdesigner.design", api.Save()); } catch (e) {}
@@ -205,12 +209,23 @@ function viewCmd(fit = false) {
 }
 function enterRoomView(id, connected = roomView?.connected ?? false) {
   if (!S.rooms.some(r => r.id === id)) { toast("Pick a room first."); return; }
-  if (mode !== "interior") { mode = "interior"; for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === mode); }
+  if (mounting) stopMount();
+  mode = "interior";
   const r = S.rooms.find(r => r.id === id); deck = r.deck;
   roomView = { room: id, connected }; sel.kind = "room"; sel.id = id; sel.station = -1;
+  tabs();
   viewCmd(true);
 }
-function exitRoomView() { if (!roomView) return; roomView = null; viewCmd(); frame(); }
+function exitRoomView() { if (!roomView) return; roomView = null; tabs(); viewCmd(); frame(); }
+// The tab row: the mode buttons, and Room view's drop-down (its first entry the tab's name, then every room by name and deck).
+function tabs() {
+  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", !roomView && k === mode);
+  const t = $("m-rooms"); if (!t || !S) return;
+  t.replaceChildren(el("option", { value: "" }, "Room view"),
+    ...S.rooms.map(r => el("option", { value: r.id, ...(roomView?.room === r.id ? { selected: "" } : {}) }, `${r.label || r.kind} (deck ${r.deck + 1})`)));
+  t.value = roomView ? String(roomView.room) : "";
+  t.classList.toggle("on", !!roomView);
+}
 // The camera on the room (and its neighbours when they show).
 function frameRoom() {
   const box = new THREE.Box3();
@@ -1172,9 +1187,9 @@ let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
   if (mounting) stopMount();
-  if (roomView && m !== "interior") { roomView = null; mode = m; viewCmd(); frame(); }
+  if (roomView) { roomView = null; mode = m; viewCmd(); frame(); }
   mode = m;
-  for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).classList.toggle("on", k === m);
+  tabs();
   if (m !== "hull" && sel.kind === "hull") select(null, 0, false);
   $("tip").textContent = tips[m];
   rebuild(); panels();
@@ -1212,15 +1227,12 @@ function leftPanel() {
       L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
     }
   } else {
-    if (mode === "interior") {
-      const pick = el("select", { "aria-label": "Room to view" });
-      for (const r of S.rooms) pick.append(el("option", { value: r.id, ...((roomView ? roomView.room : sel.kind === "room" ? sel.id : 0) === r.id ? { selected: "" } : {}) }, `${r.label || r.kind} (deck ${r.deck + 1})`));
-      pick.addEventListener("change", () => { const id = +pick.value; if (roomView) enterRoomView(id); else select("room", id); });
-      L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"),
-        el("div", { class: "row" }, pick, el("button", { id: "roomview", class: roomView ? "on" : "", onclick: () => roomView ? exitRoomView() : enterRoomView(+pick.value || sel.id) }, roomView ? "Exit room view" : "Room view")),
-        roomView ? el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms") : "",
-        el("p", { class: "hint" }, roomView ? "Only this room, with its walls and interior. Esc goes back to the ship." : "Shows one room alone with its walls and interior, to set them.")));
-      if (roomView) return;
+    if (roomView) {
+      const r = S.rooms.find(r => r.id === roomView.room);
+      L.append(el("div", { class: "sec" }, el("h2", {}, "Room view"), el("p", {}, r ? `${r.label || r.kind} (deck ${r.deck + 1})` : ""),
+        el("label", { class: "row" }, el("input", { type: "checkbox", id: "rvconn", ...(roomView.connected ? { checked: "" } : {}), onchange: e => enterRoomView(roomView.room, e.target.checked) }), "Show connected rooms"),
+        el("p", { class: "hint" }, "Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.")));
+      return;
     }
     const dsel = el("div", { class: "row" });
     S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
@@ -1284,6 +1296,7 @@ function stationPanel(h) {
       resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
     ...(clad.kind === "Off" ? [] : [
       slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => cmd({ op: "setHull", hull: h.id, cladSize: v / 100 }), dflt("hull", "cladSize", 100)),
+      ...((fit => fit ? [el("p", { class: "hint", id: "cladfit" }, `${clad.kind === "Hex" ? "Hex" : "Panel"} size raised to ${Math.round(fit * 100)} cm to fit`)] : [])((h.copies ?? hullCopies.get(h.id))?.[0]?.cladFit)),
       slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => cmd({ op: "setHull", hull: h.id, cladDepth: v / 100 }), dflt("hull", "cladDepth", 100)),
       el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
@@ -1608,6 +1621,7 @@ function checks() {
 
 // ---------- the bar
 for (const k of ["hull", "pieces", "interior", "connectors"]) $("m-" + k).addEventListener("click", () => setMode(k));
+$("m-rooms").addEventListener("change", e => { const id = +e.target.value; if (id) enterRoomView(id); else exitRoomView(); });
 $("undo").addEventListener("click", () => { take(api.Undo()); panels(); });
 $("redo").addEventListener("click", () => { take(api.Redo()); panels(); });
 $("start").addEventListener("change", e => { if (!e.target.value) return; cmd({ op: "start", name: e.target.value }); e.target.value = ""; select(null, 0); frame(); });
