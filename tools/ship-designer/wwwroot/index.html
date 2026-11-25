@@ -475,6 +475,12 @@ function drawRings(h) {
 const roomMats = new Map();
 // A room's extensions (Karl, 2026-11-24): two rings of the same count, sides between them and a fan cap on each, in its colour.
 function drawExts(r, dim) {
+  // The model's mesh of them all, bent inside the skin (Karl, 2026-11-25); the rings (pulled in too) give the outline.
+  if (r.extMesh && r.extMesh.p.length) {
+    const picked = sel.kind === "room" && sel.id === r.id;
+    const m = meshFrom(r.extMesh, { transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, flatShading: false, emissive: picked ? 0x2a4f80 : 0 });
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+  }
   for (const e of r.exts || []) {
     const A = e.a, B = e.b, n = A.length / 3; if (n < 3 || B.length !== A.length) continue;
     const pos = [...A, ...B], idx = [];
@@ -482,10 +488,10 @@ function drawExts(r, dim) {
     const cap = (off) => { let cx = 0, cy = 0, cz = 0; for (let i = 0; i < n; i++) { cx += pos[3 * (off + i)]; cy += pos[3 * (off + i) + 1]; cz += pos[3 * (off + i) + 2]; }
       const c = pos.length / 3; pos.push(cx / n, cy / n, cz / n); for (let i = 0; i < n; i++) idx.push(c, off + i, off + (i + 1) % n); };
     cap(0); cap(n);
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    let g = null; if (!r.extMesh) { g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); }
     const picked = sel.kind === "room" && sel.id === r.id;
-    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
-    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+    if (g) { const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m); }
     const lines = []; const V = (k) => new THREE.Vector3(pos[3 * k], pos[3 * k + 1], pos[3 * k + 2]);
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));

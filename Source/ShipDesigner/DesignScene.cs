@@ -1484,19 +1484,35 @@ public static partial class DesignScene
               .Append(",\"height\":").Append(ShipDesign.S(d.DeckOf(r).Height)).Append(",\"group\":").Append(r.Group).Append(",\"box\":[").Append(string.Join(',', d.Box(r).Select(ShipDesign.S))).Append(']')
               .Append(",\"exts\":[").Append(string.Join(',', r.Exts.Select(e =>
               {
-                  var (ra, rb) = ExtRings(d, r, e);
+                  var (_, ra, rb) = ExtMesh(d, r, e);
                   return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
               }))).Append(']')
               .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"runAft\":").Append(r.RunAft ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
             // A room's meshes follow the skin, its own plan and others' (edges, shared walls) and the doors.
             var rk = r.Id + ":" + shapes + "|" + plans + "|" + doorKey; // its own plan is in plans
             var ik = rk + "|" + r.ToJson().ToJsonString(); // its interior's look too
+            if (r.Exts.Count > 0)
+            {
+                // Its extensions' holograms, pulled inside the skin (the page drew its raw rings, which stuck out as wings).
+                sb.Append(",\"extMesh\":");
+                sb.Append(MeshPart("re" + r.Id, ik, () =>
+                {
+                    var all = new DesignMesh();
+                    foreach (var e in r.Exts)
+                    {
+                        var em = ExtMesh(d, r, e).Mesh;
+                        all.P.AddRange(em.P);
+                        all.C.AddRange(em.C);
+                    }
+                    return all;
+                }));
+            }
             var full = shown?.Contains(r.Id) ?? false; // Room view: its shell and interior; the normal scene has neither
             if (shown is not null && !full) { }
             else if (r.ToHull)
             {
                 sb.Append(",\"mesh\":");
-                sb.Append(MeshPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset); return hm; }));
+                sb.Append(MeshPart("rm" + r.Id, rk, () => { var hm = RoomMesh(d, r); ClipToHulls(d, hm, HoloInset, r); return hm; }));
             }
             else
             {
@@ -1508,7 +1524,7 @@ public static partial class DesignScene
             if (full && (r.WallThick > 0.005 || r.Floor is not ("Plates" or "Hex")))
             {
                 sb.Append(",\"wallMesh\":");
-                sb.Append(MeshPart("rs" + r.Id, ik, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset); return sm; }));
+                sb.Append(MeshPart("rs" + r.Id, ik, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset, r, r.WallThick); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
               .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor))
@@ -1518,8 +1534,8 @@ public static partial class DesignScene
                 sb.Append(Part("ri" + r.Id, ik, () =>
                 {
                     var (solid, glow) = RoomInterior(d, r, c.Doors);
-                    ClipToHulls(d, solid, InteriorInset);
-                    ClipToHulls(d, glow, InteriorInset);
+                    ClipToHulls(d, solid, InteriorInset, r);
+                    ClipToHulls(d, glow, InteriorInset, r);
                     var t = new StringBuilder(",\"intMesh\":");
                     solid.Write(t, Made("ri" + r.Id));
                     t.Append(",\"intGlow\":");

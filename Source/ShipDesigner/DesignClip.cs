@@ -11,10 +11,17 @@ public static partial class DesignScene
     public const double ShellInset = 0.012, HoloInset = 0.022, InteriorInset = 0.03;
 
     /// <summary>Pulls every vertex of a world-space mesh to at least inset inside a body's skin.</summary>
-    public static void ClipToHulls(ShipDesign d, DesignMesh m, double inset)
+    public static void ClipToHulls(ShipDesign d, DesignMesh m, double inset, Room? cap = null, double over = 0)
     {
         if (d.Hulls.Count == 0)
             return;
+        // Its top (Karl, 2026-11-25): pulled onto the skin, a vertex never rises above the room's own ceiling (plus over).
+        double top = double.NaN;
+        if (cap is not null)
+        {
+            var dk = d.DeckOf(cap);
+            top = d.Stacked ? dk.Floor - dk.Height - over : dk.Floor + dk.Height + over;
+        }
         var p = m.P;
         for (var i = 0; i + 2 < p.Count; i += 3)
         {
@@ -38,6 +45,11 @@ public static partial class DesignScene
                 var s = h0.OnSkin(lz, h0.NearestT(lx, ly, lz), lx < -0.01 ? -1 : 1);
                 (x, y, z) = (h0.CopyX(copy) + s.X - s.Nx * e, h0.Y + s.Y - s.Ny * e, h0.Z + lz);
             }
+            if (!double.IsNaN(top))
+            {
+                if (d.Stacked) z = Math.Max(z, top);
+                else y = Math.Min(y, top);
+            }
             (p[i], p[i + 1], p[i + 2]) = (x, y, z);
         }
     }
@@ -53,7 +65,7 @@ public static partial class DesignScene
         var b = d.Box(r);
         var col = DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour);
         GridBox(m, b[0] + 0.03, b[2] + 0.03, b[4] + 0.03, b[1] - 0.03, b[3] - 0.03, b[5] - 0.03, col, 0.4);
-        ClipToHulls(d, m, HoloInset);
+        ClipToHulls(d, m, HoloInset, r);
         return m;
     }
 
@@ -81,5 +93,63 @@ public static partial class DesignScene
                         m.Quad(Pt(i, j), Pt(i + 1, j), Pt(i + 1, j + 1), Pt(i, j + 1), c, false);
             }
         }
+    }
+
+    /// <summary>
+    /// An extension's hologram (Karl, 2026-11-25: wall and ceiling shapes stuck out of the hull as wings): its two rings joined by sides cut
+    /// about step long each way and a cap on each ring cut into bands, pulled inside the skin so it bends to the hull. Its rings come back
+    /// pulled in too, for its outline.
+    /// </summary>
+    public static (DesignMesh Mesh, List<double[]> A, List<double[]> B) ExtMesh(ShipDesign d, Room r, RoomExt e, double step = 0.4)
+    {
+        var (ra, rb) = ExtRings(d, r, e);
+        var m = new DesignMesh();
+        m.World();
+        var col = DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour);
+        var n = ra.Count;
+        if (n < 3 || rb.Count != n)
+            return (m, ra, rb);
+        static double[] L(double[] a, double[] b, double t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+        static double Dist(double[] a, double[] b) => Math.Sqrt((a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]));
+        static (double, double, double) T(double[] v) => (v[0], v[1], v[2]);
+        int Cuts(double len) => Math.Clamp((int)Math.Ceiling(len / step), 1, 100);
+        var nv = Cuts(Enumerable.Range(0, n).Max(i => Dist(ra[i], rb[i])));
+        for (var i = 0; i < n; i++)
+        {
+            var j = (i + 1) % n;
+            var nu = Cuts(Math.Max(Dist(ra[i], ra[j]), Dist(rb[i], rb[j])));
+            double[] P(int u, int v) => L(L(ra[i], ra[j], (double)u / nu), L(rb[i], rb[j], (double)u / nu), (double)v / nv);
+            for (var a = 0; a < nu; a++)
+                for (var b = 0; b < nv; b++)
+                    m.Quad(T(P(a, b)), T(P(a + 1, b)), T(P(a + 1, b + 1)), T(P(a, b + 1)), col, false);
+        }
+        foreach (var ring in new[] { ra, rb })
+        {
+            var c = new double[3];
+            foreach (var p in ring)
+                for (var k = 0; k < 3; k++)
+                    c[k] += p[k] / n;
+            for (var i = 0; i < n; i++)
+            {
+                var j = (i + 1) % n;
+                int nr = Cuts(Math.Max(Dist(c, ring[i]), Dist(c, ring[j]))), nu = Cuts(Dist(ring[i], ring[j]));
+                double[] P(int rr, int uu) => L(c, L(ring[i], ring[j], (double)uu / nu), (double)rr / nr);
+                for (var a = 0; a < nr; a++)
+                    for (var u = 0; u < nu; u++)
+                        if (a == 0)
+                            m.Tri(T(c), T(P(1, u)), T(P(1, u + 1)), col, false);
+                        else
+                            m.Quad(T(P(a, u)), T(P(a + 1, u)), T(P(a + 1, u + 1)), T(P(a, u + 1)), col, false);
+            }
+        }
+        var over = e.Side == "up" ? e.Depth : 0;
+        ClipToHulls(d, m, HoloInset, r, over);
+        var rings = new DesignMesh();
+        foreach (var p in ra.Concat(rb))
+            rings.P.AddRange(p);
+        ClipToHulls(d, rings, HoloInset, r, over);
+        var q = rings.P;
+        List<double[]> Ring(int o) => [.. Enumerable.Range(o, n).Select(i => new[] { q[3 * i], q[3 * i + 1], q[3 * i + 2] })];
+        return (m, Ring(0), Ring(n));
     }
 }
