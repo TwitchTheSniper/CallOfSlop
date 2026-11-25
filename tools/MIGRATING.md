@@ -22,6 +22,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
 | The `ConstructBlueprints` folder | Blueprints you saved at a Blueprint Desk in Sandbox |
 | `appearance.txt` | Your soldier's look (newer builds) |
+| `shipdesign.json` | The design open in the Ship Designer (newer builds) |
 | The `Worlds` folder | Your saved Sandbox worlds, one folder a world (newer builds) |
 
 (`progress.txt`, an older build's level, XP and prestige, is no longer read: levelling, prestige and the prestige hats were removed. It can stay or go.)
@@ -54,6 +55,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `blueprints.txt` (if you have it)
    - `audio_mix.json`
    - `appearance.txt` (if you have it)
+   - `shipdesign.json` (if you have it)
    - the `AudioMixes` folder
    - the `Worlds` folder (if you have it)
    - the `ConstructBlueprints` folder (with its subfolders: `.versions` holds older versions your blueprints' uses may name)

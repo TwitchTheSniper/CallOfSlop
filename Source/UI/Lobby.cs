@@ -216,6 +216,8 @@ public sealed partial class Ui
                         _page = Page.SinglePlayer;
                     if (BigButton("MULTIPLAYER"))
                         _page = Page.Multiplayer;
+                    if (BigButton("SHIP DESIGNER"))
+                        OpenShipDesigner(); // design a ship's hull, pieces and rooms (UiShipDesigner.cs)
                     if (BigButton("APPEARANCE"))
                         OpenAppearance(); // your look and your hat (UiAppearance.cs)
                     if (BigButton("MUSIC PLAYER"))

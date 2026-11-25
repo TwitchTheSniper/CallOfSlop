@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- The ship designer's web page (tools/ship-designer/README.md): the game's own Source/ShipDesigner, compiled to WebAssembly. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ApplicationIcon></ApplicationIcon>
+    <RootNamespace>CallOfSlop.ShipDesigner</RootNamespace>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Source/ShipDesigner/**/*.cs" />
+  </ItemGroup>
+</Project>

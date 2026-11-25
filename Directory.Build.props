@@ -3,6 +3,7 @@
   <PropertyGroup>
     <ApplicationIcon>Branding\CallOfSlop.ico</ApplicationIcon>
     <!-- The browser helper is a project of its own (tools/browser, Windows only): its sources aren't the game's. -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);tools/browser/**</DefaultItemExcludes>
+    <!-- The ship designer's web page is one too (tools/ship-designer): it compiles Source/ShipDesigner to WebAssembly. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);tools/browser/**;tools/ship-designer/**</DefaultItemExcludes>
   </PropertyGroup>
 </Project>
