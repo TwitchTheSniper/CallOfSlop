@@ -476,7 +476,20 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                         Note($"the {name} laid at ({at.X:0}, {at.Y:0}) is seated at ({seat.X:0}, {seat.Y:0}), butting its {bed}s");
                     return Piece(name, name == "Sawmill" ? at : seat, XFacing(dir), Refining);
                 }
-                case "Assembler" or "Assembly Bed Block":
+                case "Assembler":
+                {
+                    // (its three upgrade modules, as the first works' Assemblers carry: the frigate's doors, panels, racks and lights
+                    // need a Coolant Loop, a Power Coupling or a Servo Rack; 2026-11-26)
+                    var p = Piece(name, at, Facing(flow), Steel);
+                    if (p != null)
+                    {
+                        Onto(p, "module1", "Power Coupling", "mount");
+                        Onto(p, "module2", "Servo Rack", "mount");
+                        Onto(p, "module3", "Coolant Loop", "mount");
+                    }
+                    return p;
+                }
+                case "Assembly Bed Block":
                     return Piece(name, at, Facing(flow), Steel);
                 case "Ore Silo 4 m" or "Ore Bunker 4 m" or "Materials Bin":
                     return Piece(name, at, Facing(flow), Stock);
