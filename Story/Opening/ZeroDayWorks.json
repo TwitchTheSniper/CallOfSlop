@@ -7,6 +7,7 @@
   "wreck": "",
   "site": "Zero Day Works", // Source/PartKit/Generators/ZeroDayWorks.cs
   "siteGap": 20, // m past the yard's south edge
+  "siteStocked": true, // its silos and bunkers come full in survival too (Sean, 2026-11-26: the line runs from the start)
   "siteIdle": true, // its Line Console built stopped: nothing ordered until someone starts it
   "beats": {
     "placeholder": { "time": 0.5, "caption": "The Zero Day works." },

@@ -21,11 +21,11 @@ public static partial class ConstructPress
     }
 
     /// <summary>Is <paramref name="def"/> a die of the family <paramref name="die"/> that fits this press's die slot?</summary>
-    private static bool IsDieFor(ConstructPartDef def, PressDie die, ConstructPartDef press) =>
+    internal static bool IsDieFor(ConstructPartDef def, PressDie die, ConstructPartDef press) =>
         def.IsPressDie && def.DieFamily == die.Family && press.PressDieSocket >= 0 && DieClassOf(def) == press.Sockets[press.PressDieSocket].Class;
 
     /// <summary>A slot of a store holding a die of the family <paramref name="die"/> for this press, or -1.</summary>
-    private static int DieSlot(CStore st, PressDie die, ConstructPartDef press)
+    internal static int DieSlot(CStore st, PressDie die, ConstructPartDef press)
     {
         for (var k = 0; k < st.SlotCount; k++)
             if (st.Count[k] > 0 && ConstructParts.Get(st.Def[k]) is { } d && IsDieFor(d, die, press))
@@ -116,7 +116,37 @@ public static partial class ConstructPress
                 return true;
             }
         }
-        (rackBody, rack) = (null, -1);
+        return ConstructLifters.ArmDieRack(world, c, part, die, out rackBody, out rack); // (a Loader Arm reaching the press and a die rack: PressDieArm.cs)
+    }
+
+    /// <summary>Server: what the last die turned away says nothing now (a die changed in place by a Loader Arm, PressDieArm.cs).</summary>
+    public static void ClearRefusal(ConstructWorld world, CStore st) => SetRefusal(world, st, 0, BayRefuse.None);
+
+    /// <summary>
+    /// Server: a press whose head order needs a die it doesn't hold presses first a later order its fitted die makes, whose blank is
+    /// already in a bay (a swap costs two carries): that order moves to the head. True when one did.
+    /// </summary>
+    public static bool DieFirst(ConstructWorld world, Construct c, int part)
+    {
+        if (c.Parts[part].Orders is not { Bill: false, Count: > 1 } q || SizedDieOf(PressTable.Current, c, part) is not { } held || DieWanted(c, part) == null)
+            return false;
+        var bays = c.DefOf(part).PressBays.Length;
+        for (var k = 1; k < q.Count; k++)
+        {
+            if (Pressed.SpecOf(q.Items[k]) is not { } spec || !ReferenceEquals(spec.Die, held))
+                continue;
+            var ready = false;
+            for (var b = 0; b < bays && !ready; b++)
+                ready = b != HopperBay && PieceIn(c, part, b) is var i and >= 0 && (c.Parts[i].D.ExKey with { Growing = false }) == spec.Blank;
+            if (!ready)
+                continue;
+            var o = q.Items[k];
+            Array.Copy(q.Items, 0, q.Items, 1, k);
+            q.Items[0] = o;
+            world.OrdersChanged(c);
+            Console.WriteLine($"[press] the {c.DefOf(part).Name} presses its {o.Count} x {o.Name ?? ConstructParts.Def(o.Part).Name} on the {held.Family} Die it holds before it swaps");
+            return true;
+        }
         return false;
     }
 
@@ -213,7 +243,7 @@ public static partial class ConstructPress
     }
 
     /// <summary>The die a press's head order needs, or null (no order).</summary>
-    private static PressDie? DieOfHead(Construct c, int part) =>
+    internal static PressDie? DieOfHead(Construct c, int part) =>
         c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec ? spec.Die : null;
 
     /// <summary>
@@ -251,7 +281,7 @@ public static partial class ConstructPress
     /// <summary>A chute's plain die move into an empty slot (a press with no order): false for a die another press on the same rack waits for.</summary>
     public static bool FreeToTake(ConstructWorld world, Construct cf, int from, Construct ct, int to, ConstructPartDef def) => !SiblingWants(world, cf, from, ct, to, def);
 
-    private static int FreeDieSlot(ConstructWorld world, Construct c, int part, ConstructPartDef d)
+    internal static int FreeDieSlot(ConstructWorld world, Construct c, int part, ConstructPartDef d)
     {
         if (world.StoreOf(c, part) is not { } st)
             return -1;

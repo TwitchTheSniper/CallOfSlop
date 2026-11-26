@@ -229,8 +229,8 @@ public static class WorkOrders
         // A die it doesn't hold is fine when a chute into it comes from a rack that holds one: it swaps to it for this order (PressDieSwap.cs).
         var die = ConstructPress.SizedDieOf(PressTable.Current, c, part);
         if (!ReferenceEquals(die, spec.Die) && !ConstructPress.DieRackOf(world, c, part, spec.Die, out _, out _))
-            return die == null ? $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)"
-                : $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die (or a chute from a Die Rack holding one)";
+            return die == null ? $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die (or a Die Rack holding one, chuted in or in a Loader Arm's reach)"
+                : $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die (or a Die Rack holding one, chuted in or in a Loader Arm's reach)";
         var across = Pressed.Across(spec.Blank);
         if (!ConstructPress.Fits(c, part, spec.Blank))
             return $"the blank is {across / 100f:0.00} m across and {Math.Max(spec.Blank.W, spec.Blank.H) / 100f:0.00} m wide, {ConstructPress.TooBig(c, part)}";

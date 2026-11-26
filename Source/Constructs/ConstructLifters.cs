@@ -203,6 +203,7 @@ public sealed class CLift
     public ushort StationBody; // the station it works for in this move (0: none)
     public int Step = -1; // the station's step it carries (-1: none)
     public LiftPointKind ToKind; // (phase 4) a carry between points: what it puts to (StationBody is the point's body), else None
+    public ushort DieFromBody, DieFromPart; // (a die carry, server) the press or rack it came from: one change at a time per press (PressDieArm.cs)
     public ushort ToPart; // ...the point's part
     public byte ToBay; // ...a press bay's index
 

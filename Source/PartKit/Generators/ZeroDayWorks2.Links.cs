@@ -354,6 +354,7 @@ public sealed partial class ZeroDayWorks2
                 var press = _labs.Where(l => l.Id == "press").OrderBy(l => Vector2.Distance(l.At, P(s, x, -30))).FirstOrDefault().Core;
                 Chute(rack, null, press, null, 4f);
             }
+            DieCell(s);
             // The Assembler's stock (Orders pull their inputs from the stores chuted in), from the back row's bins, over everything at 18 m.
             var assembler = Find("Assembler", P(s, 33, -33));
             var up = 18f;
@@ -362,6 +363,85 @@ public sealed partial class ZeroDayWorks2
                 Chute(Find("Materials Bin", P(s, x, 114)), null, assembler, "Chute in", up);
                 up += 0.5f;
             }
+        }
+
+        /// <summary>
+        /// A press pair's die cell (Sean, 2026-11-26: "a die rack and a loader arm that swaps out dies on the presses, because otherwise we'll
+        /// need a press for every type in an area"): a Line Arm on the floor 3 m out from the middle of the pair's Cores (on the Cores' side,
+        /// away from the beds, past the lids' swing), and a Die Wall (every die family on a shelf) 3.5 m past it. The arm reaches both die
+        /// slots and the wall; it swaps a press's die for its head order's (PressDieArm.cs). Added beside Sean's pieces; none of his move.
+        /// </summary>
+        private void DieCell(float s)
+        {
+            var presses = _labs.Where(l => l.Id == "press" && MathF.Sign(l.At.X) == s).ToList();
+            if (presses.Count != 2)
+            {
+                Note($"die cell: {presses.Count} presses on side {s}, not two: no die cell");
+                return;
+            }
+            Vector2 SiteOf(VPart p)
+            {
+                var at = _free.TryGetValue(p, out var w) ? FromRest(w.Pos) : FromRest(Live.Parts[p.Index].Pos);
+                return new Vector2(at.X, at.Z);
+            }
+            Vector2 DieOf(VPart core)
+            {
+                var sock = core.Def.Sockets[core.Def.PressDieSocket].At;
+                var at = _free.TryGetValue(core, out var w) ? FromRest(w.Pos + Vector3.Transform(sock, w.Rot)) : FromRest(Live.Parts[core.Index].Pos + Rot24.Apply(Live.Parts[core.Index].Rot, sock));
+                return new Vector2(at.X, at.Z);
+            }
+            var dies = (DieOf(presses[0].Core) + DieOf(presses[1].Core)) * 0.5f;
+            var beds = (presses[0].At + presses[1].At) * 0.5f;
+            var along = Vector2.Normalize(DieOf(presses[1].Core) - DieOf(presses[0].Core));
+            var outward = new Vector2(-along.Y, along.X);
+            if (Vector2.Dot(outward, dies - beds) < 0)
+                outward = -outward;
+            // (the Core's box reaches 1 m past its die slot on this side, and the arm's Core 1.06 m round its shoulder: 2.5 m out leaves 0.45 m)
+            var arm = dies + outward * 2.5f;
+            arm = new Vector2(MathF.Round(arm.X * 2) / 2, MathF.Round(arm.Y * 2) / 2);
+            // The wall 2 m past the arm, unless Sean's two Die Racks stand on that side within reach: then in the gap between them, on their line.
+            var racks = new[] { 39f, 47f }.Select(x => Find("Die Rack", P(s, x, -24), 2f)).Where(r => r != null).Select(r => SiteOf(r!)).ToList();
+            var wall = dies + outward * 4.6f;
+            if (racks.Count == 2 && racks.All(r => Vector2.Dot(r - dies, outward) is > 2f and < 6f))
+            {
+                var gap = (racks[0] + racks[1]) * 0.5f + along * (Vector2.Dot(along, new Vector2(0.75f, 0.375f)) * 0); // (the racks' origins are their corners: their middles are 0.75 m in)
+                wall = new Vector2(gap.X + 0.6f * MathF.Sign(along.X), racks[0].Y + 0.375f);
+            }
+            var wallFace = MathF.Abs(outward.X) > MathF.Abs(outward.Y) ? new Vector2(1, 0) : new Vector2(0, 1); // (the shelves open toward the arm: the wall's long side across the outward line)
+            var d = Def("Die Wall");
+            var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+            var w = Piece("Die Wall", wall, Facing(wallFace), Steel, "-y.0.0", new Vector2(mid.X, mid.Z));
+            var core = KitArm("Line Arm", arm, -outward);
+            Note($"die cell on side {s}: dies at {DieOf(presses[0].Core)} {DieOf(presses[1].Core)}, racks {string.Join(" ", racks)}");
+            Note($"die cell on side {s}: a Line Arm at ({arm.X:0.0}, {arm.Y:0.0}){(core == null ? " NOT placed" : "")}, a Die Wall at ({wall.X:0.0}, {wall.Y:0.0}){(w == null ? " NOT placed" : "")}");
+        }
+
+        /// <summary>A kit arm preset (ArmKitParts) stood on the floor at <paramref name="at"/>, its rest facing <paramref name="face"/>: its Arm Core, or null with a note.</summary>
+        private VPart? KitArm(string preset, Vector2 at, Vector2 face)
+        {
+            var steps = ArmKitParts.PresetSteps(preset);
+            var placed = new VPart?[steps.Count];
+            VPart? core = null;
+            for (var k = 0; k < steps.Count; k++)
+            {
+                var (p, on, socket, own) = steps[k];
+                try
+                {
+                    placed[k] = on < 0 ? Piece(p, at, Facing(face), Crane) : placed[on] is { } under ? Onto(under, socket, p, own) : null;
+                }
+                catch (VehicleKitException ex)
+                {
+                    Note($"kit arm at ({at.X:0}, {at.Y:0}): the {p} not placed: {ex.Message}");
+                    placed[k] = null;
+                }
+                if (placed[k] is not { } q)
+                    return null;
+                if (!p.StartsWith("Pressed Part", StringComparison.Ordinal))
+                    Paint(q, Crane);
+                if (p == "Arm Core")
+                    core = q;
+            }
+            return core;
         }
 
         private readonly List<(Vector2 At, VPart Console)> _consoles = new();
