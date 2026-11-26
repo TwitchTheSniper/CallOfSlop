@@ -220,6 +220,8 @@ public static unsafe partial class Program
                         WsFail($"{World.Map.Name} isn't a Sandbox map");
                         return;
                     }
+                    if (_wsBlueprint.Length == 0 && _wsSpawnAt is { } sp0)
+                        me.Teleport(new Vector3(sp0.X, World.Map.GroundHeight(sp0.X, sp0.Z), sp0.Z)); // (no blueprint: the player stands there, for the actions)
                     if (_wsBlueprint.Length > 0)
                     {
                         var all = ConstructBuild.Blueprints;
