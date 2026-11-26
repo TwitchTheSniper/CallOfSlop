@@ -21,15 +21,27 @@ public static class ConstructStationConsole
     /// <summary>The console's output: 1 while its station's build is done, else 0.</summary>
     public static float Done(Construct c, ushort watch) => StationOf(c, watch) is var s and >= 0 && c.Parts[s].Station is { State: StationState.Done } ? 1 : 0;
 
-    /// <summary>A station's number on its body, 1 up, in part order (what a console's screen calls it).</summary>
+    /// <summary>
+    /// A station's number on its body, 1 up, in part order (what a console's screen calls it). The body's stations are listed once a body
+    /// and rebuild (a part walk), so the consoles in view, filling 4 times a second, only look them up.
+    /// </summary>
     public static int Number(Construct c, int station)
     {
-        var n = 1;
-        for (var k = 0; k < station && k < c.PartCount; k++)
-            if (c.DefOf(k).IsBuildStation)
-                n++;
-        return n;
+        if (_numBody != c.Id || _numStamp != c.RebuildStamp || _numParts != c.PartCount)
+        {
+            (_numBody, _numStamp, _numParts, _numN) = (c.Id, c.RebuildStamp, c.PartCount, 0);
+            for (var k = 0; k < c.PartCount && _numN < _numAt.Length; k++)
+                if (c.DefOf(k).IsBuildStation)
+                    _numAt[_numN++] = k;
+        }
+        for (var k = 0; k < _numN; k++)
+            if (_numAt[k] == station)
+                return k + 1;
+        return 0;
     }
+
+    private static int _numBody = -1, _numStamp = -1, _numParts = -1, _numN;
+    private static readonly int[] _numAt = new int[64];
 
     private static readonly string[] Titles = Enumerable.Range(0, 33).Select(n => $"STATION {n}").ToArray();
 
@@ -53,7 +65,7 @@ public static class ConstructStationConsole
             return;
         }
         var n = Number(c, s);
-        ConstructStation.Fill(world, c, s, card, n < Titles.Length ? Titles[n] : "BUILDING STATION");
+        ConstructStation.Fill(world, c, s, card, n > 0 && n < Titles.Length ? Titles[n] : "BUILDING STATION");
     }
 
     /// <summary>

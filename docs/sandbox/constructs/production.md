@@ -1945,7 +1945,7 @@ to a Building Station on the same body, as a Level Sensor's to a tank (the link 
   still needs the station itself.
 - **Done** is on while the station's build is done (waiting to be driven out): wire it to a lamp or a horn.
 - Nothing new goes on the wire: the watch link is an ordinary data link, and the station's job reaches clients as before. The new part
-  file moved the part ids (protocol 472). Its Assembler recipe is the Line Console's, at the end of the list (`Assembling.Tail`).
+  file moved the part ids (protocol 473). Its Assembler recipe is the Line Console's, at the end of the list (`Assembling.Tail`).
 - Not yet: a console on another body (a link stays on its body), and naming a station (it is a number).
 
 ### Submodules (sub-blueprints, 2026-11-16)

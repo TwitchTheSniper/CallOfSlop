@@ -60,14 +60,69 @@ public sealed partial class Ui
         ["interior"] = "Pick a deck. Drag on the deck with Draw rooms on (or hold Shift) to lay a room. Drag a room to move it, or its edge or corner to size it.",
     };
 
+    /// <summary>
+    /// The ship docked at a Ship Docking Station that the designer is open on (Program.SandboxDock.cs, GameSandboxDock.cs): its station,
+    /// the station's part and the ship's body. Null: the main menu's designer, which keeps its design in shipdesign.json.
+    /// </summary>
+    public (ushort Station, ushort Part, ushort Ship)? ShipDesignerDock;
+
+    /// <summary>The design APPLY TO SHIP asked for (docked only): Program takes it and sends it to the server.</summary>
+    public string? ShipDesignerApply;
+
+    /// <summary>The designer is open on a docked ship, over the match.</summary>
+    public bool ShipDesignerDocked => ShipDesignerOpen && ShipDesignerDock != null;
+
+    /// <summary>
+    /// Opens the designer over the match on a docked ship's design (its JSON from the shared design table). The main menu's design is
+    /// left in its file: the menu's designer opens on it again. Nothing is written to the save folder while docked.
+    /// </summary>
+    public bool OpenShipDesignerDocked(string json, ushort station, ushort part, ushort ship)
+    {
+        ResetSdView();
+        _sd = new DesignSession();
+        ShipDesignerDock = (station, part, ship);
+        ShipDesignerApply = null;
+        _sdCatDoc ??= JsonDocument.Parse(DesignSession.Catalogue());
+        CAT = _sdCatDoc.RootElement;
+        var a = Cmd(new JsonObject { ["op"] = "load", ["json"] = json });
+        if (Str(a, "error").Length > 0)
+        {
+            Console.WriteLine($"[ship designer] the docked ship's design isn't read: {Str(a, "error")}");
+            ShipDesignerDock = null;
+            _sd = null;
+            return false;
+        }
+        ShipDesignerOpen = true;
+        _sdTip = SdTips[_sdMode];
+        _sdFramePending = true;
+        return true;
+    }
+
+    /// <summary>The view's state back to a fresh designer's (a docked ship opens, or the menu's design after one).</summary>
+    private void ResetSdView()
+    {
+        _selKind = null;
+        _selId = 0;
+        _selStation = -1;
+        _roomView = null;
+        _mounting = null;
+        _linking = null;
+        _sdPending = null;
+        _sdFileOpen = false;
+        _sdHeld.Clear();
+        _hullCopies.Clear();
+        _sdMode = "hull";
+    }
+
     /// <summary>Main menu > Ship Designer: opens on the design kept last time (shipdesign.json), else the Zero Day.</summary>
     public void OpenShipDesigner()
     {
         ShipDesignerOpen = true;
         if (_sd != null)
             return;
+        ResetSdView();
         _sd = new DesignSession();
-        _sdCatDoc = JsonDocument.Parse(DesignSession.Catalogue());
+        _sdCatDoc ??= JsonDocument.Parse(DesignSession.Catalogue());
         CAT = _sdCatDoc.RootElement;
         var saved = ShipDesignStore.Load();
         JsonElement a = default;
@@ -82,6 +137,24 @@ public sealed partial class Ui
             Take(_sd.Scene());
         _sdTip = SdTips[_sdMode];
         _sdFramePending = true;
+    }
+
+    /// <summary>APPLY TO SHIP (and --window-shot's "dock apply"): the design to send (Program sends it: the server rebuilds the docked ship, Program.SandboxDock.cs), and the designer shuts.</summary>
+    public void ShipDesignerTestApply()
+    {
+        if (ShipDesignerDock == null || _sd == null)
+            return;
+        ShipDesignerApply = _sd.Save();
+        ForceCloseShipDesigner();
+    }
+
+    /// <summary>Shuts it whatever is open in it (a docked ship's designer that has to go: Program.SandboxDock.cs).</summary>
+    public void ForceCloseShipDesigner()
+    {
+        _sdFileOpen = false;
+        if (_mounting != null)
+            StopMount();
+        CloseShipDesigner();
     }
 
     /// <summary>Back to the main menu (the bar's Back and Esc). The design is kept as it is.</summary>
@@ -100,6 +173,11 @@ public sealed partial class Ui
         ShipDesignerOpen = false;
         ShipYardFrame = null;
         _sdHeld.Clear();
+        if (ShipDesignerDock != null)
+        {
+            ShipDesignerDock = null;
+            _sd = null; // (the menu's designer opens on its own file again)
+        }
     }
 
     // ---------- the C# side (the page's take, cmd, dragCmd, flush)
@@ -133,8 +211,8 @@ public sealed partial class Ui
             Toast(err);
         _sdLoaded = true;
         Rebuild();
-        if (Arr(S, "hulls").All(h => h.TryGetProperty("copies", out var c) && c.ValueKind == JsonValueKind.Array))
-            ShipDesignStore.Save(_sd!.Save());
+        if (ShipDesignerDock == null && Arr(S, "hulls").All(h => h.TryGetProperty("copies", out var c) && c.ValueKind == JsonValueKind.Array))
+            ShipDesignStore.Save(_sd!.Save()); // (a docked ship's design is the world's: not kept here)
         return a;
     }
 
@@ -176,7 +254,11 @@ public sealed partial class Ui
     }
 
     /// <summary>--sd-do's cmd: one command as the panels send it.</summary>
-    public void ShipDesignerTestCmd(string json) => Cmd(JsonNode.Parse(json)!.AsObject());
+    public void ShipDesignerTestCmd(string json)
+    {
+        if (_sd != null)
+            Cmd(JsonNode.Parse(json)!.AsObject());
+    }
 
     /// <summary>--sd-do's room: Room view on a room (0: back to the ship).</summary>
     public void ShipDesignerTestRoom(int id)
@@ -460,7 +542,7 @@ public sealed partial class Ui
                 ImGui.SameLine();
             }
         }
-        var right = ImGui.GetWindowPos().X + width - 470 * _scale;
+        var right = ImGui.GetWindowPos().X + width - (ShipDesignerDock != null ? 560 : 470) * _scale; // (docked: APPLY TO SHIP and CANCEL for BACK)
         ImGui.SameLine(MathF.Max(ImGui.GetCursorPosX() + 20 * _scale, right - ImGui.GetWindowPos().X));
         ImGui.SetNextItemWidth(130 * _scale);
         if (ImGui.BeginCombo("##sdstart"u8, "New from..."u8))
@@ -502,6 +584,19 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetTooltip("Keeps this design under its name in your ShipDesigns folder, so Creative can spawn it (one of that name is replaced)");
         ImGui.SameLine();
+        if (ShipDesignerDock != null)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Button, SdOn);
+            if (ImGui.Button("APPLY TO SHIP##sdapply"u8))
+                ShipDesignerTestApply();
+            ImGui.PopStyleColor();
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip("Rebuilds the docked ship as this design, where it lies, and closes the designer");
+            ImGui.SameLine();
+            if (ImGui.Button("CANCEL [Esc]##sdcancel"u8))
+                CloseShipDesigner();
+            return;
+        }
         if (ImGui.Button("BACK [Esc]##sdback"u8))
             CloseShipDesigner();
     }

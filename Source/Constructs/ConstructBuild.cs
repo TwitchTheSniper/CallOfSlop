@@ -1628,6 +1628,46 @@ public static class ConstructBuild
             SpawnBeside(World, c, Bp);
             return c;
         }
+
+        /// <summary>Why <see cref="JoinAt"/> would refuse now, or null, counting <paramref name="leaving"/> as gone (its id, parts and joints free).</summary>
+        public string? JoinRefusal(ushort id, Construct? leaving)
+        {
+            if (!_ready || _joined)
+                return "its steps aren't done";
+            if (_run.Body is not { } body)
+                return Why;
+            if (World.AdoptRefusal(_scratch, body, id, leaving) is not { } no)
+                return null;
+            return no == ConstructWorld.AdoptUnusual ? _scratch.Bodies.Count > 1 ? $"it comes apart into {_scratch.Bodies.Count} bodies" : no
+                : no.Length > 0 ? no : "the world is full";
+        }
+
+        /// <summary>
+        /// Once <see cref="Step"/> is true: the construct joins <see cref="World"/> exactly at <paramref name="pos"/> and <paramref name="rot"/>
+        /// (not set down on the ground) as body <paramref name="id"/> (0: a free one), still. A ship rebuilt in place at a Ship Docking Station
+        /// (GameSandboxDock.cs). Null and why when it can't; a blueprint with a tow leaves the tow behind.
+        /// </summary>
+        public Construct? JoinAt(Vector3 pos, Quaternion rot, ushort id, out string why)
+        {
+            if (!_ready || _joined)
+                throw new InvalidOperationException(_joined ? "a ground build joins once" : "its steps aren't done");
+            _joined = true;
+            if (_run.Body is not { } body)
+            {
+                why = Why;
+                return null;
+            }
+            var c = World.Adopt(_scratch, body, pos, rot, out why, id);
+            if (c == null)
+                return null;
+            _run.Why = "";
+            FinishBuild(World, c, Bp, _run.PartOf!, _run);
+            why = _run.Why;
+            if (_run.Built == null)
+                return null;
+            c.Vel = c.AngVel = Vector3.Zero;
+            return c;
+        }
     }
 
     private static int HitchOf(Construct c, HitchKind kind)

@@ -333,6 +333,7 @@ public static unsafe partial class Program
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => SandboxKeys.Line(d.Name, SandboxKeys.Join($"{part.Rounds} rounds", wrecked), part.Burn > 0 ? "ON FIRE" : null),
                     _ when d.LadderTop > 0 && near && !hit.Body.Loose => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, ConstructRide.NextLid(hit.Body, hit.Part) >= 0 || ConstructRide.StowedFoot(hit.Body, hit.Part) ? "open the way" : "climb")), // (a vertical ladder: up from its foot, down from its top; a shut deck hatch over its shaft is opened first)
+                    _ when d.ShipDockRange > 0 && near && !hit.Body.Loose => SandboxKeys.Line(d.Name, hp, null, SandboxKeys.Do(use, "edit the docked ship")), // (a Ship Docking Station: Program.SandboxDock.cs)
                     _ when part.Burn > 0 => SandboxKeys.Line(d.Name, hp, "ON FIRE"),
                     _ when hit.Body.Loose && near && h.Tool != ConstructTool.Hands && ToolUpgrades.Current.ModuleOf(d.Id) is { } up => UpgradeLook(g, me, hit.Body, d, up.Stat, up.Level),
                     _ when hit.Body.Loose && d.PhysicsOnly => SandboxKeys.Line(d.Name, carriedIn, "physics gun only"),
@@ -485,6 +486,8 @@ public static unsafe partial class Program
                 Ui.OpenSandboxBench(g, ConstructEdits.BenchCentre(hit.Body, hit.Part));
                 SetMouseCaptured(false);
             }
+            else if (aimed && !join && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).ShipDockRange > 0 && !hit.Body.Loose)
+                OpenShipDock(g, hit.Body, hit.Part); // (a Ship Docking Station: the docked ship in the Ship Designer, Program.SandboxDock.cs)
             else if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsOrdnanceBench && hit.SlotPlus1 == 0)
             {
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)

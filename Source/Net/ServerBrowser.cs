@@ -792,9 +792,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 471: ship designs as bodies (DesignParts.cs, Karl 2026-11-26): CBodyKind.ShipDesign carries a design's JSON (u32 bytes, its text) before
     //      any body that names its elements ("Design (#hash) element" keys travel as named run-time parts); CActKind.SpawnDesign (u32 bytes, the
     //      design's text) asks for one from the Creative parts menu, inside SpawnPrepare.
-    // 472: the Station Console (Constructs/Parts/Controls/StationConsole.json, a new part file: part ids after it shift; CLogic.StationConsole
+    // 472: the Ship Docking Station (GameSandboxDock.cs): its part file moves part ids, and CActKind.DockDesign (u16 station, u16 part,
+    //      u16 ship, u32 bytes, the edited design's text) rebuilds the docked ship as the edited design.
+    // 473: the Station Console (Constructs/Parts/Controls/StationConsole.json, a new part file: part ids after it shift; CLogic.StationConsole
     //      at the end of CLogic), a Building Station's screen at a desk by a watch link (ConstructStationConsole.cs).
-    public const ushort ProtocolVersion = 472;
+    public const ushort ProtocolVersion = 473;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
