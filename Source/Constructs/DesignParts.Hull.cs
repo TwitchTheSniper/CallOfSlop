@@ -413,16 +413,39 @@ public static partial class DesignParts
         yield return els.Count;
         var total = 0;
         foreach (var e in els)
-            total += e.Hulls.Length;
+            total += Colliders(e);
         if (total > MaxHulls)
         {
             var over = total - MaxHulls;
             _hc.Dropped = over;
             for (var k = els.Count - 1; k >= 0 && over > 0; k--)
             {
-                var cut = Math.Min(over, els[k].Hulls.Length);
-                els[k].Hulls = els[k].Hulls[..^cut];
-                over -= cut;
+                var e = els[k];
+                if (Colliders(e) == 0)
+                    continue;
+                if (e.Runs is { Count: > 0 } runs) // (a room's bent boxes and strips, hulls once IntoFrames makes them)
+                {
+                    var c = Math.Min(over, runs.Count);
+                    runs.RemoveRange(runs.Count - c, c);
+                    over -= c;
+                }
+                if (e.Boxes is { Count: > 0 } boxes && over > 0)
+                {
+                    var c = Math.Min(over, boxes.Count);
+                    boxes.RemoveRange(boxes.Count - c, c);
+                    over -= c;
+                }
+                if (e.Hulls.Length > 0 && over > 0)
+                {
+                    var c = Math.Min(over, e.Hulls.Length);
+                    e.Hulls = e.Hulls[..^c];
+                    over -= c;
+                }
+                if (e.Hulls.Length == 0 && (e.Runs?.Count ?? 0) == 0 && (e.Boxes?.Count ?? 0) == 0)
+                {
+                    over -= e.NoCollider || e.Kind == "band" || e.Boxes != null || e.Runs != null ? 0 : 1; // (its one mass box)
+                    e.NoCollider = true;
+                }
             }
             Console.WriteLine($"[design] \"{d.Name}\" makes {total} colliders, past the {MaxHulls} a design may: the last {total - MaxHulls} (from the end of its elements) are left out");
         }
@@ -433,6 +456,17 @@ public static partial class DesignParts
         LastHollow = $"{Math.Min(total, MaxHulls)} colliders (of {MaxHulls} at most): {_hc.Plates} plates ({_hc.Whole} facets whole, {_hc.Celled} in cells, {_hc.Open} open), {_hc.Refused} refused, the longest band's in {_hc.PlateMs:0.0} ms; "
             + $"{_hc.Clipped} joins or pieces kept out of {rooms} rooms and {keeps.Count - rooms} openings ({_hc.ClipHulls} hulls), {_hc.InHole} wholly in an opening" + (_hc.Dropped > 0 ? $"; {_hc.Dropped} left out past the cap" : "");
         _hc = default;
+    }
+
+    /// <summary>
+    /// What an element collides with, as <see cref="MaxHulls"/> counts it: its hulls, its hulls still to be made from points (a room's bent boxes
+    /// and hull-shell strips: <see cref="IntoFrames"/> makes them after the cap), its solid boxes; or its one mass box (none for a band with no
+    /// plates, or an element marked <see cref="Element.NoCollider"/>).
+    /// </summary>
+    private static int Colliders(Element e)
+    {
+        var n = e.Hulls.Length + (e.Runs?.Count ?? 0) + (e.Boxes?.Count ?? 0);
+        return n > 0 ? n : e.NoCollider || e.Kind == "band" || e.Boxes != null || e.Runs != null ? 0 : 1;
     }
 
     /// <summary>A box colliders are kept out of (a room, or a socket's opening through the skin and in and out from it), in its own frame.</summary>

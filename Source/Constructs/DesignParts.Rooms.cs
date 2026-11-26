@@ -22,6 +22,8 @@ public static partial class DesignParts
     public const int RoomBoxesPerPart = 240; // a room element's boxes (ConstructParts.MaxBoxes is 256): past it the rest go in another element
     public const int RoomHullsPerPart = 96; // a room element's thin hulls (bent boxes, hull-shell strips)
     public const float BentBy = 0.001f; // a box's corner moved by more than this by the clip to the skin: it is made a hull
+    private const int ClipSlice = 3000; // a room's mesh corners clipped to the skin a step (a few ms), and its boxes and strips BentSlice a step
+    private const int BentSlice = 64;
 
     /// <summary>The rooms: each its shell's elements, the first welded to the band of its deck's body there, the rest to it.</summary>
     private static IEnumerable<int> AddRooms(Steps st)
@@ -45,16 +47,27 @@ public static partial class DesignParts
             var boxes = new List<(double[] Lo, double[] Hi)>();
             var strips = new List<double[]>();
             var shell = DesignScene.RoomShell(d, r, check.Doors, boxes, strips);
-            yield return els.Count; // (the shell, then its clip and colliders: each a step)
-            DesignScene.ClipToHulls(d, shell, DesignScene.ShellInset, r, r.WallThick);
+            yield return els.Count; // (the shell, then its clip a slice of corners a step, its boxes and strips a slice a step, the merge: each a step)
+            // (a corner shared by several triangles, boxes or strips is pulled in once: one memo for the shell's clip, one for the interior's)
+            var memo = new Dictionary<(double, double, double), (double, double, double)>();
+            for (var v = 0; v < shell.Tris * 3; v += ClipSlice)
+            {
+                DesignScene.ClipToHulls(d, shell, DesignScene.ShellInset, r, r.WallThick, v, v + ClipSlice, memo);
+                yield return els.Count;
+            }
             var look = new LookBuilder();
             for (var tr = 0; tr < shell.Tris; tr++)
                 look.AddTri(shell, tr, Vector3.One, new Vector3(float.NaN));
             if (r.Interior != "Off")
             {
                 var (solid, glow) = DesignScene.RoomInterior(d, r, check.Doors);
-                DesignScene.ClipToHulls(d, solid, DesignScene.InteriorInset, r);
-                DesignScene.ClipToHulls(d, glow, DesignScene.InteriorInset, r);
+                var inMemo = new Dictionary<(double, double, double), (double, double, double)>();
+                foreach (var m in new[] { solid, glow })
+                    for (var v = 0; v < m.Tris * 3; v += ClipSlice)
+                    {
+                        DesignScene.ClipToHulls(d, m, DesignScene.InteriorInset, r, 0, v, v + ClipSlice, inMemo);
+                        yield return els.Count;
+                    }
                 for (var tr = 0; tr < solid.Tris; tr++)
                     look.AddTri(solid, tr, Vector3.One, new Vector3(float.NaN));
                 for (var tr = 0; tr < glow.Tris; tr++)
@@ -63,25 +76,32 @@ public static partial class DesignParts
             // Its colliders: the shell's boxes (merged), those the clip bent as hulls, and the hull shell's strips.
             var solids = new List<ElementBox>();
             var hulls = new List<Vector3[]>();
-            foreach (var (lo, hi) in boxes)
+            for (var bi = 0; bi < boxes.Count; bi++)
             {
-                var (bent, corners) = Bent(d, r, lo, hi);
+                if (bi > 0 && bi % BentSlice == 0)
+                    yield return els.Count;
+                var (lo, hi) = boxes[bi];
+                var (bent, corners) = Bent(d, r, lo, hi, memo);
                 if (bent)
                     hulls.Add(corners);
                 else
                     solids.Add(new ElementBox(new Vector3((float)lo[0], (float)lo[1], (float)lo[2]), new Vector3((float)hi[0], (float)hi[1], (float)hi[2])));
             }
-            foreach (var s in strips)
+            for (var si = 0; si < strips.Count; si++)
             {
+                if (si % BentSlice == 0)
+                    yield return els.Count;
+                var s = strips[si];
                 var tmp = new DesignMesh();
                 tmp.P.AddRange(s);
-                DesignScene.ClipToHulls(d, tmp, DesignScene.ShellInset, r, r.WallThick);
+                DesignScene.ClipToHulls(d, tmp, DesignScene.ShellInset, r, r.WallThick, 0, int.MaxValue, memo);
                 var c = new Vector3[8];
                 for (var k = 0; k < 8; k++)
                     c[k] = new Vector3((float)tmp.P[k * 3], (float)tmp.P[k * 3 + 1], (float)tmp.P[k * 3 + 2]);
                 hulls.Add(c);
             }
-            MergeBoxes(solids);
+            yield return els.Count;
+            MergeBoxes(solids); // (a step of its own)
             if (solids.Count == 0 && hulls.Count == 0)
                 // No shell: a slab under its box's floor, as before (stood on, its mass).
                 solids.Add(d.Stacked ? new ElementBox(new Vector3(x0, y0, z1 - 0.1f), new Vector3(x1, y1, z1)) : new ElementBox(new Vector3(x0, y0 - 0.1f, z0), new Vector3(x1, y0, z1)));
@@ -91,7 +111,7 @@ public static partial class DesignParts
             for (var k = 0; k < solids.Count; k += RoomBoxesPerPart)
             {
                 var part = solids.GetRange(k, Math.Min(RoomBoxesPerPart, solids.Count - k));
-                var e = new Element { Id = k == 0 ? $"r{ri}" : $"r{ri}.{k / RoomBoxesPerPart}", Kind = "floor", Name = $"{name} shell", Area = k == 0 ? area : 0, Kg = kgEach * part.Count, Boxes = part };
+                var e = new Element { Id = k == 0 ? $"room{ri}" : $"room{ri}.{k / RoomBoxesPerPart}", Kind = "floor", Name = $"{name} shell", Area = k == 0 ? area : 0, Kg = kgEach * part.Count, Boxes = part };
                 (e.BoxMin, e.BoxMax) = (part[0].Min, part[0].Max);
                 if (k == 0)
                     e.Mesh = look;
@@ -100,7 +120,7 @@ public static partial class DesignParts
             for (var k = 0; k < hulls.Count; k += RoomHullsPerPart)
             {
                 var n = Math.Min(RoomHullsPerPart, hulls.Count - k);
-                var e = new Element { Id = $"r{ri}.h{k / RoomHullsPerPart}", Kind = "floor", Name = $"{name} shell (to the skin)", Area = els.Count == first ? area : 0, Kg = kgEach * n, Points = [], Runs = [] };
+                var e = new Element { Id = $"room{ri}.h{k / RoomHullsPerPart}", Kind = "floor", Name = $"{name} shell (to the skin)", Area = els.Count == first ? area : 0, Kg = kgEach * n, Points = [], Runs = [] };
                 (e.BoxMin, e.BoxMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
                 for (var h = k; h < k + n; h++)
                 {
@@ -128,7 +148,7 @@ public static partial class DesignParts
     }
 
     /// <summary>A shell box through the clip to the skin the designer gives its mesh: whether it bent, and its 8 corners after.</summary>
-    private static (bool Bent, Vector3[] Corners) Bent(ShipDesign d, Room r, double[] lo, double[] hi)
+    private static (bool Bent, Vector3[] Corners) Bent(ShipDesign d, Room r, double[] lo, double[] hi, Dictionary<(double, double, double), (double, double, double)> memo)
     {
         var tmp = new DesignMesh();
         for (var i = 0; i < 8; i++)
@@ -138,7 +158,7 @@ public static partial class DesignParts
             tmp.P.Add((i & 4) == 0 ? lo[2] : hi[2]);
         }
         var before = tmp.P.ToArray();
-        DesignScene.ClipToHulls(d, tmp, DesignScene.ShellInset, r, r.WallThick);
+        DesignScene.ClipToHulls(d, tmp, DesignScene.ShellInset, r, r.WallThick, 0, int.MaxValue, memo);
         var bent = false;
         var c = new Vector3[8];
         for (var i = 0; i < 8; i++)

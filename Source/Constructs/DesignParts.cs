@@ -44,7 +44,7 @@ public static partial class DesignParts
     public const string Prefix = "Design (#";
     public const int MaxText = 1 << 20; // bytes of one design's text
     public const int MaxWorld = 256; // designs one world keeps
-    public const int MaxHulls = 1024; // convex colliders one design part makes (each band, join and piece; past it the rest are left out, logged)
+    public const int MaxHulls = 1024; // colliders one design makes (its bands', joins' and pieces' hulls, its rooms' boxes and thin hulls, one for an element with only its mass box: DesignParts.Hull.cs Colliders; past it the last are left out, logged)
 
     // ---- Mass: plain figures, all here (Karl's plan: skin area times a plate density, plus decks and pieces) ----
     public const float SkinKgPerM2 = 80f; // a hull plate, about 1 cm of steel with its frames
@@ -239,6 +239,8 @@ public static partial class DesignParts
         internal LookBuilder? Mesh; // (while it is made, in the ship's frame)
         internal List<Vector3>? Points; // (ditto: its hulls' points, in runs, before they are moved)
         internal List<int>? Runs;
+        /// <summary>It has no collider (its colliders were all left out past <see cref="MaxHulls"/>): PartOf gives it a 1 cm mass box, never its bounds.</summary>
+        public bool NoCollider;
     }
 
     /// <summary>One of an element's solid boxes (<see cref="Element.Boxes"/>): its corners (the ship's frame while made, the part's after) and its mass (0 for all: shared by volume).</summary>
@@ -664,7 +666,9 @@ public static partial class DesignParts
         }
         ConstructPartDef? def = null;
         if (!made.ById.TryGetValue(id, out var k))
-            LastRefusal = $"no element \"{id}\" in its design";
+            LastRefusal = OldRoom(id)
+                ? $"\"{id}\" is a room's floor slab from before walkable rooms (protocol 475), whose shells are elements \"room<n>\" now: an old body keeps its other parts and loses that floor (spawn the design again for its rooms)"
+                : $"no element \"{id}\" in its design";
         else
             def = PartOf(made, made.Elements[k], name);
         lock (Interned)
@@ -686,6 +690,13 @@ public static partial class DesignParts
     }
 
 
+    /// <summary>
+    /// An element id of a room as saves before walkable rooms (protocol 475) hold it: "r{n}", a 0.1 m floor slab under the room. The shell that
+    /// replaced it is "room{n}" (its own origin, with its ".k" and ".hk" elements), so an old body's slab is refused by name (logged, and the save
+    /// reader skips the part) rather than loaded as the new shell at the slab's origin.
+    /// </summary>
+    private static bool OldRoom(string id) => id.Length > 1 && id[0] == 'r' && id.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0;
+
     private static ConstructPartDef PartOf(Made made, Element e, string name)
     {
         var t = Template;
@@ -703,6 +714,17 @@ public static partial class DesignParts
             (def.BoundsMin, def.BoundsMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
             foreach (var b in boxes)
                 (def.BoundsMin, def.BoundsMax) = (Vector3.Min(def.BoundsMin, b.Min), Vector3.Max(def.BoundsMax, b.Max));
+        }
+        else if (e.NoCollider || (e.Kind == "band" && e.Hulls.Length == 0))
+        {
+            // No collider (a band all of whose skin is open or cut away by another body, or an element whose colliders went past MaxHulls): a
+            // 1 cm mass box at the bottom of its bounds' middle (on the keel's line, under any room), never a box as big as its cross-section.
+            var half = new Vector3(0.005f);
+            var centre = new Vector3((e.BoxMin.X + e.BoxMax.X) * 0.5f, e.BoxMin.Y + half.Y, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f);
+            def.Boxes = [new CPartBox(centre, half, new Vector3(0.6f), Hidden: true, Paintable: false)];
+            def.SolidBoxes = 1;
+            def.BoxMass = null;
+            (def.BoundsMin, def.BoundsMax) = (centre - half, centre + half);
         }
         else
         {
@@ -863,6 +885,7 @@ public static partial class DesignParts
             wires |= e.Wires.Count > 0;
             yield return k;
         }
+        yield return made.Elements.Count; // (the welds and the body's rebuild a step of their own)
         for (var k = 0; k < made.Elements.Count; k++)
             foreach (var n in made.Elements[k].Links)
                 if (n > k && !world.AddLink(c, partOf[k], 0, partOf[n], 0))
@@ -873,6 +896,7 @@ public static partial class DesignParts
         c.Rebuild();
         if (!wires)
             yield break;
+        yield return made.Elements.Count;
         for (var k = 0; k < made.Elements.Count; k++)
             foreach (var n in made.Elements[k].Wires)
             {

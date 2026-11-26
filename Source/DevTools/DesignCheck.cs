@@ -77,6 +77,9 @@ public static partial class DesignCheck
             yard.RestoreProps();
             World.SetMap(yard);
         }
+        // The part table loaded first, as the game has it from its start (a check run that skips the blueprint check finds it unloaded, and
+        // its 5-6 s first load fell in the flight computer's step: not the design's cost).
+        _ = ConstructParts.All.Count;
         var world = new ConstructWorld();
         var bp = DesignParts.BlueprintOf(hash, what);
         var t2 = Stopwatch.GetTimestamp();
