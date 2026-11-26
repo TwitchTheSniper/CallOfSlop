@@ -95,13 +95,38 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(e => e.Clone()).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).ToList();
             s.Lay(items);
             s.LayLinks();
             if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
                 throw new VehicleKitException($"Zero Day Works II: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
             s.Note($"{s.Live.PartCount} parts, {s.Live.LinkCount} links; {s._chained} welded on a neighbour's side (on a slab's edge), {s._welded} welded freeform, {s._missed} not placed");
             return s;
+        }
+
+        /// <summary>
+        /// Changes Sean chose to the lab's export, laid over it here so a new export keeps them, by kind, name and place in the layout
+        /// (its own x, z): what to set. 2026-11-26: the Housing press (the east row's inner press) a 4-row bed, for 3.6 m of daylight
+        /// (a Fuel Pump M and a Drive Core M are 1.9 m across), grown by a row on its far side from its Core; its Die Rack 2 m further
+        /// out of the lid's way.
+        /// </summary>
+        private static readonly (string Kind, float X, float Z, (string Key, float Value)[] Set)[] Revisions =
+        [
+            ("press", 39, 30, [("w", 4), ("z", 29)]),
+            ("Die Rack", 39, 24, [("z", 22)]),
+        ];
+
+        private static JsonElement Revised(JsonElement e)
+        {
+            foreach (var (kind, x, z, set) in Revisions)
+                if ((Str(e, "id") == kind || Str(e, "name") == kind) && MathF.Abs(Num(e, "x") - x) < 0.01f && MathF.Abs(Num(e, "z") - z) < 0.01f)
+                {
+                    var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+                    foreach (var (k, v) in set)
+                        node[k] = v;
+                    return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+                }
+            return e.Clone();
         }
 
         private static string Str(JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
@@ -422,6 +447,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 RoverItem(it);
             PadMasts();
+            BigAssembler();
             var g = 0;
             foreach (var it in parts.Where(i => Str(i, "name").StartsWith("Kit Genset")))
                 Genset(new Vector2(Num(it, "x"), -Num(it, "z")), g++);
@@ -539,8 +565,11 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             }
             var cells = new VPart?[w, l];
             for (var j = 0; j < l; j++)
-                for (var i = 0; i < w; i++)
+                for (var k = 0; k < w; k++)
                 {
+                    // (a press's cells from its Core's side out: a widened bed's new row stands on a floor slab's seam, where a block
+                    // welds onto its neighbour's side, so that neighbour goes first; 2026-11-26)
+                    var i = id == "press" ? w - 1 - k : k;
                     var part = BedOf[id];
                     if (id is "panel-former" or "laser-cutter" && j == lastRow && l > 1)
                         part = "Out Table";
@@ -611,10 +640,57 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         }
 
         /// <summary>
+        /// The big Assembler by the main station (Sean, 2026-11-26: "add one big Assembler by the station"), on the free floor west of its
+        /// south-west pick pad (pad 1615's, at about (-19, -29)), past the west press line's die cell: its Core at (-35, -23), a 4 x 4 bed
+        /// east of it, three Mast Blocks on each bed corner (6 m clear: the frigate's ladders, bulkhead doors, reactor, hatches, shower and
+        /// Robot Shell Docks), a Gantry Carriage on each row, its three modules, and a Kit Long Arm between the bed and the pad, which carries
+        /// what it builds onto the pad for the station's rovers. Added beside Sean's pieces; none of his move. Stocked and run as the other
+        /// Assemblers are (<see cref="Lines"/>, <see cref="Orders"/>: it is one of the "Assembler" items).
+        /// </summary>
+        private void BigAssembler()
+        {
+            var at = new Vector2(BigAsmX, BigAsmZ);
+            var core = Piece("Assembler", at, XFacing(new Vector2(1, 0)), Steel);
+            if (core == null)
+            {
+                Note("big Assembler: its Core is NOT placed");
+                return;
+            }
+            const int n = 4, masts = 3;
+            var bed = new VPart[n, n];
+            for (var i = 0; i < n; i++)
+                Paint(bed[i, 0] = Onto(i == 0 ? core : bed[i - 1, 0], "+x", "Assembly Bed Block", "-x"), Steel);
+            for (var j = 1; j < n; j++)
+                for (var i = 0; i < n; i++)
+                    Paint(bed[i, j] = Onto(bed[i, j - 1], "+z", "Assembly Bed Block", "-z"), Steel);
+            foreach (var (c, side, by) in new[] { (bed[0, 0], "-z", "+z.low"), (bed[n - 1, 0], "-z", "+z.low"), (bed[0, n - 1], "+z", "-z.low"), (bed[n - 1, n - 1], "+z", "-z.low") })
+            {
+                var m = Onto(c, side, "Mast Block", by);
+                Paint(m, Steel);
+                for (var k = 1; k < masts; k++)
+                    Paint(m = Onto(m, "top", "Mast Block", "bottom"), Steel);
+            }
+            for (var j = 0; j < n; j++)
+                Paint(Onto(bed[0, j], "carriage", "Gantry Carriage", "bottom"), Crane);
+            Onto(core, "module1", "Power Coupling", "mount");
+            Onto(core, "module2", "Servo Rack", "mount");
+            Onto(core, "module3", "Coolant Loop", "mount");
+            Register("Assembler", at, core);
+            _bigAsm = core;
+            var arm = KitArm("Kit Long Arm", new Vector2(BigArmX, BigArmZ), new Vector2(-1, 0)); // (14 m of reach, 6 t: the bed's far corner is 13 m off and the reactor 5 t)
+            Note($"big Assembler at ({at.X:0}, {at.Y:0}), a 4 x 4 bed, masts {masts} high; its arm at ({BigArmX:0}, {BigArmZ:0}){(arm == null ? " NOT placed" : "")}");
+        }
+
+        private const float BigAsmX = -35, BigAsmZ = -23, BigArmX = -23, BigArmZ = -25; // (the big Assembler's Core and its Line Arm, site metres: Core 2 m cells at odd metres as the others; the bed's north masts 2 m clear of the west press row's Assembler bed, or the masts join the two beds into one machine)
+        private VPart? _bigAsm;
+
+        /// <summary>
         /// A Mast Block on each corner tile of the pads the press lines' rows end on (<see cref="_padAlong"/>): a pad holds what lies under
         /// its corner masts' top, and with none only a metre (a pressed Leg Pod Housing XL is 1.25 m tall; 2026-11-26). Their corners are
         /// off the row's line, so the run's pieces come onto the pad between them.
         /// </summary>
+        private const int PadMastBlocks = 3;
+
         private void PadMasts()
         {
             if (_padAlong.Count == 0 || !_items.TryGetValue("Pad Tile", out var tiles))
@@ -626,7 +702,11 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     foreach (var (at, tile) in tiles)
                         if (Round(at) == (cx, cz))
                         {
-                            Paint(Onto(tile, "top", "Mast Block", "bottom"), Steel);
+                            // (three high: the big Assembler's tallest piece, the Shuttle Ladder, stands 4.3 m on the pad, 2026-11-26)
+                            var m = Onto(tile, "top", "Mast Block", "bottom");
+                            Paint(m, Steel);
+                            for (var k = 1; k < PadMastBlocks; k++)
+                                Paint(m = Onto(m, "top", "Mast Block", "bottom"), Steel);
                             break;
                         }
             }

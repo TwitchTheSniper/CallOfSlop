@@ -417,9 +417,9 @@ public static partial class SelfTest
         // ---- F: a held part it wants, carried material it wants, the tray, then its input back after a recipe change.
         var eye = ft + Vector3.Transform(bay.Parts[asm].Pos, fq) + new Vector3(0, 1.5f, 0);
         ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Control Unit"));
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Servo Motor"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Alternator")); // (the Servo Motor is pressed now, 2026-11-26: the Alternator takes steel and a Bearing as it did)
         Run(0.2f);
-        Want(Recipe()?.Name == "Servo Motor", "the recipe didn't change");
+        Want(Recipe()?.Name == "Alternator", "the recipe didn't change");
         inv.AddMaterial(steel, 40);
         var why = edits.UseBin(w, me, eye, bay.Id, asm);
         Want(why == null && st.MixOf(steel) > 0 && inv.Materials[steel] < 40, $"F tips what it wants: \"{why}\", {st.MixOf(steel)}");
@@ -474,7 +474,7 @@ public static partial class SelfTest
 
         // ---- A broken machine spills its input, materials and parts, and its tray.
         var bearing = ConstructParts.Need("Bearing");
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Servo Motor"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Alternator"));
         Run(0.2f);
         w.FeedAssembler(bay, asm, 8, steel);
         w.FeedPart(bay, asm, bearing);
