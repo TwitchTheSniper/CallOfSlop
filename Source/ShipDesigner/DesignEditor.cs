@@ -459,6 +459,10 @@ public sealed class DesignEditor
                 if (o["recess"] is not null) p.Recess = Math.Clamp(Snap(D(o, "recess"), 0.05), 0, 2);
                 if (o["clad"] is not null) p.Clad = Math.Clamp(Snap(D(o, "clad"), 0.05), 0, 2);
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
+                if (o["gap"] is not null) p.Gap = D(o, "gap") < 0 ? -1 : Math.Clamp(Snap(D(o, "gap"), 0.01), 0, 2);
+                if (o["hole"] is not null) p.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
+                if (o["depth"] is not null) p.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
+                if (o["double"] is not null) p.Double = (bool)o["double"]!;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
@@ -537,6 +541,29 @@ public sealed class DesignEditor
             {
                 if (d.Decks.Count >= ShipDesign.MaxDecks)
                     return $"at most {ShipDesign.MaxDecks} decks";
+                // A deck in a body (Karl, 2026-11-26: a side pod's own decks): the first goes 40 cm over its keel, the next over the
+                // last of that body's; its rooms clip to that body.
+                if (I(o, "hull") is var bh and > 0)
+                {
+                    var hb = d.Hull(bh) ?? throw new InvalidOperationException("no such hull");
+                    var bb = hb.Bounds();
+                    var own = d.Decks.Where(k => k.Hull == hb.Id).ToList();
+                    Deck nd;
+                    if (d.Stacked)
+                    {
+                        var fore = own.MinBy(k => k.Floor);
+                        nd = new Deck { Floor = fore is null ? Snap(bb.Z1 - 1, 0.25) : fore.Floor - fore.Height - 0.25, Height = fore?.Height ?? 3 };
+                    }
+                    else
+                    {
+                        var last = own.MaxBy(k => k.Floor);
+                        var room = bb.Y1 - bb.Y0 - 0.8;
+                        nd = new Deck { Floor = last is null ? Math.Ceiling((bb.Y0 + 0.4) * 4) / 4 : last.Ceiling + 0.25, Height = last?.Height ?? Math.Clamp(Math.Floor(room * 4) / 4, 2.2, 3) };
+                    }
+                    nd.Hull = hb.Id;
+                    d.Decks.Add(nd);
+                    return "";
+                }
                 if (d.Stacked)
                 {
                     var fore = d.Decks.Count == 0 ? null : d.Decks.MinBy(k => k.Floor);
@@ -574,8 +601,45 @@ public sealed class DesignEditor
                     if (k.To == i) k.To = -1; else if (k.To > i) k.To--;
                 }
                 d.Risers.RemoveAll(k => k.From < 0 || k.To < 0 || k.From == k.To);
+                d.Passages.RemoveAll(k => d.RoomById(k.A) is null || d.RoomById(k.B) is null);
                 return "";
             }
+            case "setDeckHull":
+            {
+                var i = I(o, "deck");
+                if (i < 0 || i >= d.Decks.Count)
+                    return "no such deck";
+                d.Decks[i].Hull = I(o, "hull") is var sh and > 0 ? (d.Hull(sh) ?? throw new InvalidOperationException("no such hull")).Id : 0;
+                return "";
+            }
+            // ---- passages through an arm between bodies (Karl, 2026-11-26)
+            case "addPassage":
+            {
+                if (d.Passages.Count >= ShipDesign.MaxPassages)
+                    return $"at most {ShipDesign.MaxPassages} passages";
+                var (a, b) = (d.RoomById(I(o, "a")), d.RoomById(I(o, "b")));
+                if (a is null || b is null || a == b)
+                    return "pick two rooms";
+                if (d.Passages.Any(q => q.Joins(a.Id, b.Id)))
+                    return "those rooms already have a passage between them";
+                var k = new Passage { Id = d.NewId(), A = a.Id, B = b.Id, Kind = Passage.Kinds.Contains(Str(o, "kind")) ? Str(o, "kind") : "Lift" };
+                var (why, lay) = DesignScene.LayPassage(d, k);
+                if (lay is null)
+                    return why;
+                k.Join = lay.Join.Id;
+                d.Passages.Add(k);
+                o["id"] = k.Id;
+                return "";
+            }
+            case "setPassage":
+            {
+                var k = d.Passages.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such passage");
+                if (o["kind"] is not null && Passage.Kinds.Contains(Str(o, "kind"))) k.Kind = Str(o, "kind");
+                return "";
+            }
+            case "delPassage":
+                d.Passages.RemoveAll(q => q.Id == I(o, "id"));
+                return "";
             // ---- ladders and lifts between decks (Karl, 2026-11-24)
             case "addRiser":
             {
@@ -653,6 +717,10 @@ public sealed class DesignEditor
                 if (o["h"] is not null) w.H = Math.Clamp(Snap(D(o, "h"), 0.05), 0.3, 6);
                 if (o["sill"] is not null) w.Sill = Math.Clamp(Snap(D(o, "sill"), 0.05), 0, 6);
                 if (o["shape"] is not null && HullWindow.Shapes.Contains(Str(o, "shape"))) w.Shape = Str(o, "shape");
+                if (o["gap"] is not null) w.Gap = D(o, "gap") < 0 ? -1 : Math.Clamp(Snap(D(o, "gap"), 0.01), 0, 2);
+                if (o["hole"] is not null) w.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
+                if (o["depth"] is not null) w.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
+                if (o["double"] is not null) w.Double = (bool)o["double"]!;
                 return "";
             }
             case "delHullWindow":
@@ -673,6 +741,7 @@ public sealed class DesignEditor
                 if (deck < 0 || deck >= d.Decks.Count)
                     return "no such deck";
                 var r = new Room { Id = d.NewId(), Deck = deck, Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? "Cabin" };
+                r.KindDefaults();
                 SetBox(r, o);
                 d.Rooms.Add(r);
                 o["id"] = r.Id;
@@ -685,7 +754,7 @@ public sealed class DesignEditor
                 // A room in parts is one room: its kind, name and way to the skin go to every part.
                 foreach (var q in d.Rooms.Where(q => q == r || (r.Group != 0 && q.Group == r.Group)))
                 {
-                    if (o["kind"] is not null) q.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? q.Kind;
+                    if (o["kind"] is not null) { q.Kind = RoomKinds.Find(Str(o, "kind"))?.Name ?? q.Kind; if (o["wallStyle"] is null && o["floor"] is null) q.KindDefaults(); }
                     if (o["label"] is not null) q.Label = Str(o, "label");
                     if (o["toHull"] is not null) q.ToHull = (bool)o["toHull"]!;
                     if (o["runOn"] is not null) q.RunOn = (bool)o["runOn"]!;
@@ -748,6 +817,11 @@ public sealed class DesignEditor
                         if (k.A == other.Id) k.A = own.Id;
                         if (k.B == other.Id) k.B = own.Id;
                     }
+                    foreach (var k in d.Passages)
+                    {
+                        if (k.A == other.Id) k.A = own.Id;
+                        if (k.B == other.Id) k.B = own.Id;
+                    }
                     o["id"] = own.Id;
                     return "";
                 }
@@ -773,6 +847,11 @@ public sealed class DesignEditor
                     foreach (var hw in d.Windows.Where(q => q.Room == b.Id))
                         hw.Room = a.Id;
                     foreach (var k in d.Doors)
+                    {
+                        if (k.A == b.Id) k.A = a.Id;
+                        if (k.B == b.Id) k.B = a.Id;
+                    }
+                    foreach (var k in d.Passages)
                     {
                         if (k.A == b.Id) k.A = a.Id;
                         if (k.B == b.Id) k.B = a.Id;
@@ -888,6 +967,7 @@ public sealed class DesignEditor
                 var r = Rm();
                 d.Rooms.Remove(r);
                 d.Doors.RemoveAll(q => q.A == r.Id || q.B == r.Id);
+                d.Passages.RemoveAll(q => q.A == r.Id || q.B == r.Id);
                 d.Windows.RemoveAll(q => q.Room == r.Id);
                 foreach (var p in d.Pieces)
                     if (p.Room == r.Id)
