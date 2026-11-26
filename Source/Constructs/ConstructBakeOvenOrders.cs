@@ -63,19 +63,74 @@ public static partial class ConstructBakeOven
             return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
         if (OrdersConsole(c, near) && LineLacks(world, c, near, bp) is { } lacks)
             return $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
+        if (PadLacks(world, c, near, bp) is { } wide)
+            return $"the {made.Name} kit's {wide} fits none of the pick pads of the Building Station nearest the {d.Name}"; // (a 2.75 m wall plate and a narrow line's 2 m strip pad, 2026-11-26)
         return null;
     }
 
     /// <summary>
-    /// A kit's first piece kind that no machine station <paramref name="t"/>'s Line Consoles run takes an order for (a laid part, a Hull Dress piece,
-    /// comes from steel at the station), or null. Allocates nothing.
+    /// A kit's first piece kind that none of rover station <paramref name="t"/>'s pick pads could ever hold, or null (a station with a hold,
+    /// or with no pick pads, says nothing here). Its pieces come only by its pads, so such a kit would wait for ever. Allocates nothing.
     /// </summary>
-    private static string? LineLacks(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp)
+    private static string? PadLacks(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp)
     {
-        // The machines its own Line Consoles run, not the whole network the conveyors join: on Zero Day Works II every line's runs meet,
-        // so a small line's station counted another line's Extruder, whose pieces go through that line's Panel Former and never reach it
-        // (2026-11-26: the 14.1 m wall plates).
+        if (!c.DefOf(t).StationNoHold)
+            return null;
+        Span<ushort> pads = stackalloc ushort[ConstructStation.MaxOwnPads];
+        var pn = ConstructStation.OwnPads(c, t, pads);
+        if (pn == 0)
+            return null;
+        // (the pads its own lines' bed machines drop onto, when they drop onto its pads: a narrow line's pieces reach only the strip at its
+        // Laser Cutter's Out Table, not the station's wide bay-side pads, so those alone say whether its pieces can lie there, 2026-11-26)
         Span<int> mine = stackalloc int[64];
+        var mn = LineMachines(c, t, mine);
+        Span<ushort> outs = stackalloc ushort[16];
+        var on = 0;
+        for (var m = 0; m < mn && on < outs.Length; m++)
+        {
+            // (down its out runs a few beds deep: a narrow line's console runs its Extruder and Panel Former, whose runs and a turntable field end at a Laser
+            // Cutter's bed, and that cutter's Out Table butts the pad)
+            var at = mine[m];
+            for (var hop = 0; hop < 8 && at >= 0 && at < c.PartCount; hop++)
+            {
+                if (ConstructConveyor.OutPad(c, at) is >= 0 and < ushort.MaxValue and var op)
+                {
+                    if (ConstructStation.IsOwnPad(c, t, op) && outs[..on].IndexOf((ushort)op) < 0)
+                        outs[on++] = (ushort)op;
+                    break;
+                }
+                at = ConstructConveyor.Out(c, at) is >= 0 and var o && c.Routes[o].To < c.PartCount ? c.Routes[o].To : -1; // (a run, a turntable field's crossing, the next bed)
+            }
+        }
+        if (on > 0)
+        {
+            pads = outs;
+            pn = on;
+        }
+        for (var k = 0; k < bp.Steps.Count; k++)
+        {
+            var name = bp.Steps[k].Part;
+            var seen = false;
+            for (var e = 0; e < k && !seen; e++)
+                seen = bp.Steps[e].Part == name;
+            if (seen)
+                continue;
+            var pd = ConstructParts.Find(name) ?? (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(name) is { } key
+                ? Extrusion.Def(key with { Growing = false }) : null);
+            if (pd == null || ConstructStation.IsLaid(pd))
+                continue;
+            var any = false;
+            for (var p = 0; p < pn && !any; p++)
+                any = world.StoreOf(c, pads[p]) is { } ps && !ConstructLifters.NeverHolds(c, pads[p], ps, pd);
+            if (!any)
+                return pd.Name;
+        }
+        return null;
+    }
+
+    /// <summary>The machines (not ovens) station <paramref name="t"/>'s own Line Consoles run, into <paramref name="mine"/>; their count. Allocates nothing.</summary>
+    private static int LineMachines(Construct c, int t, Span<int> mine)
+    {
         Span<int> line = stackalloc int[32];
         var mn = 0;
         for (var k = 0; k < c.RouteCount; k++)
@@ -88,6 +143,20 @@ public static partial class ConstructBakeOven
                 if (!mine[..mn].Contains(line[j]) && !c.DefOf(line[j]).IsBakeOven)
                     mine[mn++] = line[j];
         }
+        return mn;
+    }
+
+    /// <summary>
+    /// A kit's first piece kind that no machine station <paramref name="t"/>'s Line Consoles run takes an order for (a laid part, a Hull Dress piece,
+    /// comes from steel at the station), or null. Allocates nothing.
+    /// </summary>
+    private static string? LineLacks(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp)
+    {
+        // The machines its own Line Consoles run, not the whole network the conveyors join: on Zero Day Works II every line's runs meet,
+        // so a small line's station counted another line's Extruder, whose pieces go through that line's Panel Former and never reach it
+        // (2026-11-26: the 14.1 m wall plates).
+        Span<int> mine = stackalloc int[64];
+        var mn = LineMachines(c, t, mine);
         for (var k = 0; k < bp.Steps.Count; k++)
         {
             var name = bp.Steps[k].Part;

@@ -393,6 +393,24 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                         _layBy.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
                 }
             }
+            // The narrow lines' last strip, the column of Roller Tiles past each 10 x 3 Laser Cutter's Out Tables: their line's end, where the
+            // pieces wait for their station, laid as Pad Tiles in the same cells as the big stations' lay-bys are, so the strip butting the
+            // station's dock is one of its pick pads (2026-11-26: the strip was a run with no way on, and a line's pieces stopped there).
+            foreach (var lc in items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "laser-cutter" && Int(i, "l") <= 3))
+            {
+                int w = Int(lc, "w"), l = Int(lc, "l"), rot = Int(lc, "rot");
+                float lx = Num(lc, "x"), lz = Num(lc, "z"), sx = w * 2, sz = l * 2;
+                var flow = Flow(rot);
+                Vector2 At(int i, int j) => Local(lx, lz, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
+                var last = Vector2.Dot(At(0, l - 1) - At(0, 0), flow) > 0 ? l - 1 : 0;
+                var strip = Enumerable.Range(0, w).Select(i => Round(At(i, last) + flow * 2)).ToList();
+                var tiles = items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).Select(i => Round(new Vector2(Num(i, "x"), -Num(i, "z")))).ToHashSet();
+                if (strip.All(tiles.Contains))
+                    foreach (var cell in strip)
+                        _layBy.Add(cell);
+                else
+                    Note($"the narrow Laser Cutter at ({lx}, {-lz}) has no full strip of Roller Tiles past its Out Tables: it stays as laid");
+            }
             // The press lines' Turntable Tiles that butt a Press's bed are laid as Roller Tiles rolling into it: a short run from the
             // turntables into the bed (Sean 2026-11-26, "Lay a short roller run"), since a Turntable Tile passes only onto runs, never
             // into a bed, and the press line's blanks met no way into a press.

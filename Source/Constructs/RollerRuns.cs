@@ -268,8 +268,9 @@ public static class RollerRuns
     {
         ref readonly var r = ref c.Routes[k];
         if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count < 2 || r.From == r.To
-            || r.From >= c.PartCount || r.To >= c.PartCount || !c.Parts[r.From].D.IsTurntable || !c.Parts[r.To].D.IsTurntable)
-            return false;
+            || r.From >= c.PartCount || r.To >= c.PartCount || !c.Parts[r.From].D.IsTurntable
+            || !c.Parts[r.To].D.IsTurntable && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is not { OnBed: true })
+            return false; // (it ends on a tile of the field, or on the bed the field's way out leads into)
         for (var n = 0; n < r.Count; n++)
             if (c.RouteNodes[r.Start + n].Host is var h && (h >= c.PartCount || !c.Parts[h].D.IsTurntable
                 || Vector3.DistanceSquared(c.RouteNodes[r.Start + n].Pos, CrossNode(c, h)) > Cell * Cell * 0.25f))
@@ -356,18 +357,26 @@ public static class RollerRuns
             }
             if (x.NodeN < 2 || _crossHosts[hosts + x.NodeN - 1] != x.To)
                 continue; // (a way with more turns than a crossing keeps)
-            // Its ports: out of the first tile's face toward the second node, into the last tile's face it comes in by.
+            // Its ports: out of the first tile's face toward the second node, into the last tile's face it comes in by; or, when the way
+            // out of the field is a strip into a bed beside it (the narrow lines' 2 m strip by the Panel Former, too short for a bar lying
+            // across it), on into that bed's Bed in: the piece slides off the field sideways onto the bed.
             if (FacePort(c, t, c.Parts[_crossHosts[hosts + 1]].Pos - c.Parts[t].Pos, "Out ") is not (var fp and >= 0)
                 || FacePort(c, x.To, c.Parts[_crossHosts[hosts + x.NodeN - 2]].Pos - c.Parts[x.To].Pos, "In ") is not (var tp and >= 0))
                 continue;
             (x.FromPort, x.ToPort) = ((byte)fp, (byte)tp);
+            var intoBed = false;
+            for (var k = 0; k < c.RouteCount && !intoBed; k++)
+                if (Meets(c, k, x.To, false) && c.Routes[k].To < c.PartCount && ConstructRoutes.PortOf(c.DefOf(c.Routes[k].To), RouteType.Conveyor, c.Routes[k].ToPort) is { OnBed: true }
+                    && ConstructConveyor.Length(c, k) < Cell * 4f)
+                    (intoBed, x.To, x.ToPort) = (true, c.Routes[k].To, c.Routes[k].ToPort);
             // Its nodes as a run's: the ends just inside the faces it leaves and comes in by, the turns on their tiles' middles.
             for (var i = 0; i < x.NodeN; i++)
                 _crossAt[hosts + i] = CrossNode(c, _crossHosts[hosts + i]);
             var first = Vector3.Normalize(_crossAt[hosts + 1] - _crossAt[hosts]);
             var last = Vector3.Normalize(_crossAt[hosts + x.NodeN - 1] - _crossAt[hosts + x.NodeN - 2]);
             _crossAt[hosts] += first * (Cell * 0.5f - EndIn);
-            _crossAt[hosts + x.NodeN - 1] -= last * (Cell * 0.5f - EndIn);
+            if (!intoBed)
+                _crossAt[hosts + x.NodeN - 1] -= last * (Cell * 0.5f - EndIn); // (into a bed: its last node is the exit tile's middle, then on to the Bed in)
             var width = 0;
             for (var k = 0; k < c.RouteCount; k++)
                 if (Meets(c, k, t, true))
@@ -501,11 +510,50 @@ public static class RollerRuns
             return false;
         if (Butted(c, a, last, x0, across, 4, end, out var to, out var toPort, wantOut: false))
             (w.To, w.ToPort) = ((ushort)to, toPort);
+        else if (SideBed(c, seed, rot, x0, across, first, last, w.From, out var sb, out var sbPort, out var sbZ))
+        {
+            // (nothing on its out end, but a bed along its side: it hands its pieces sideways onto that bed, from the tile level with the
+            // bed's middle; Zero Day Works II's narrow lines, whose strips lie beside their Laser Cutters' beds, 2026-11-26)
+            (w.To, w.ToPort) = ((ushort)sb, sbPort);
+            w.N1 = Body(Math.Clamp(sbZ, zs + EndIn + 0.1f, ze - EndIn));
+        }
         else if (PortByte(c.Parts[h1].D, even ? EndPortHalf : EndPort) is var ep and >= 0)
             (w.To, w.ToPort) = ((ushort)h1, (byte)ep);
         else
             return false;
         return true;
+    }
+
+    /// <summary>
+    /// A bed (a Panel Former's or a Laser Cutter's, with a Bed in) lying along one long side of run <paramref name="seed"/>'s tiles, not the
+    /// machine the run starts from: its Core, its Bed in and the run's local z level with the middle of the rows the bed lies beside. False: none.
+    /// </summary>
+    private static bool SideBed(Construct c, int seed, byte rot, int x0, int across, int first, int last, ushort from, out int core, out byte port, out float z)
+    {
+        (core, port, z) = (-1, 255, 0);
+        if (last - first < 1)
+            return false; // (a one-row strip: what lies beside it is its end's business)
+        var fromCore = from < c.PartCount && MachineBlocks.TryOf(c, from, out var fa) ? fa.Core : -1;
+        for (var side = -1; side <= 1; side += 2)
+        {
+            var lx = side < 0 ? x0 * Cell - Cell * 0.5f - 0.25f : (x0 + across - 1) * Cell + Cell * 0.5f + 0.25f;
+            int bed = -1, rows = 0;
+            float sum = 0;
+            for (var tz = first; tz <= last; tz++)
+            {
+                var at = c.Parts[seed].Pos + Rot24.Apply(rot, new Vector3(lx, RunY, tz * Cell));
+                var b = MachineBlocks.BedAt(c, at);
+                if (b < 0 || b == fromCore || bed >= 0 && b != bed)
+                    continue;
+                (bed, rows, sum) = (b, rows + 1, sum + tz * Cell);
+            }
+            if (bed >= 0 && rows >= 2 && PortByte(c.DefOf(bed), ConstructParts.BedInPort) is var bp and >= 0)
+            {
+                (core, port, z) = (bed, (byte)bp, sum / rows);
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>
