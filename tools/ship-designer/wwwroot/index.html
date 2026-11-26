@@ -812,6 +812,13 @@ function drawLinks() {
     const dot = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, depthTest: false }));
     dot.position.set(...l.b); dot.renderOrder = 6; world.add(dot);
   }
+  // An ammo socket's feed to its gun (Karl, 2026-11-26): an orange line from the socket to the weapon.
+  for (const p of S.pieces) {
+    const g = p.feeds && S.pieces.find(q => q.id === p.feeds); if (!g) continue;
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p.at), new THREE.Vector3(...g.at)]);
+    const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: 0xff9a2e, dashSize: 0.5, gapSize: 0.15, depthTest: false, transparent: true }));
+    line.computeLineDistances(); line.renderOrder = 6; world.add(line);
+  }
 }
 
 let deckPlane = null;
@@ -1288,6 +1295,27 @@ function cutControls(o, send, kind, glass) {
       el("button", { class: "reset", title: "Glazing back to its default", onclick: () => send({ depth: D.depth, double: D.double }) }, "\u21ba")));
   return out;
 }
+// An airlock's chamber and doors, and an ammo socket's gun (Karl, 2026-11-26; Source/ShipDesigner/DesignDocking.cs).
+function dockControls(p) {
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.piece;
+  if (p.socket === "airlock") {
+    const s = (label, key) => { let f = true; return slider(label, Math.round(p[key] * 100), key === "airD" ? 60 : key === "airH" ? 120 : 60, 600, 5, " cm",
+      v => { cmd({ op: "setPiece", id: p.id, [key]: v / 100, preview: true, light: true }, !f); f = false; }, v => send({ [key]: v / 100 }), Math.round(D[key] * 100), () => send({ [key]: D[key] })); };
+    const type = el("div", { class: "row" }, el("span", {}, "Doors"), ...["sliding", "hinged", "iris"].map(t => el("button", { class: p.door === t ? "on" : "", onclick: () => send({ door: t }) }, t[0].toUpperCase() + t.slice(1))));
+    return [el("h3", {}, "Chamber"), s("Width", "airW"), s("Height", "airH"), s("Depth", "airD"), s("Door width", "doorW"), type,
+      el("div", { class: "row" }, resetAll("Chamber and doors back to their defaults", () => send(dfltOf("piece", ["airW", "airH", "airD", "doorW", "door"])))),
+      el("p", { class: "hint" }, "An outer hatch on the skin, the chamber, and an inner door into the room. Width runs along the hull, height across the hatch.")];
+  }
+  if (p.kind === "Ammo socket") {
+    const guns = S.pieces.filter(q => q.id !== p.id && q.kind !== "Ammo socket" && CAT.pieces.find(k => k.name === q.kind)?.group === "Weapons");
+    const sel = el("select", { "aria-label": "Gun it feeds", onchange: e => send({ feed: +e.target.value }) }, el("option", { value: "0" }, "Nearest weapon"),
+      ...guns.map(q => el("option", { value: q.id, ...(p.feed === q.id ? { selected: "" } : {}) }, `${q.kind} #${q.id}`)));
+    const to = S.pieces.find(q => q.id === p.feeds);
+    return [el("h3", {}, "Feed"), el("div", { class: "row" }, el("span", {}, "Feeds"), sel),
+      el("p", { class: "hint" }, to ? `Feeds the ${to.kind} #${to.id} (the orange line).` : "Feeds nothing: there is no weapon on the ship.")];
+  }
+  return [];
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1405,7 +1433,7 @@ function leftPanel() {
         b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
         pal.append(b);
       }
-      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
+      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g === "Docking" ? "Docking clamps and locks" : g === "Boarding" ? "Boarding" : g), pal));
     }
   } else {
     if (roomView) {
@@ -1752,6 +1780,7 @@ function inspector() {
       ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
+      ...dockControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),

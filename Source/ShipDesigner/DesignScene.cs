@@ -136,7 +136,7 @@ public static partial class DesignScene
         var holeCut = new List<(double Gap, double Band, bool CladOnly)>();
         foreach (var p in Holes ? d.Pieces : [])
         {
-            if (p.Hull != h.Id || PieceKinds.Find(p.Kind) is not { } pk || pk.Footprint is not { } op)
+            if (p.Hull != h.Id || PieceKinds.Find(p.Kind) is not { } pk || PieceDocking.FootprintOf(p, pk) is not { } op)
                 continue;
             var fo = pk.Opening is null;
             var hs = p.Size * p.Hole;
@@ -1546,9 +1546,11 @@ public static partial class DesignScene
                     PieceKinds.WindowFrame(m);
                     PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
                 }
+                else if (kind.Socket == "airlock")
+                    PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
                 else
                     kind.Draw(m);
-                if (p.Clad > 0 && kind.Opening is { } op)
+                if (p.Clad > 0 && (kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
                 {
                     // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
                     double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
@@ -1569,6 +1571,8 @@ public static partial class DesignScene
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
+              .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
+              .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(p.Kind == "Ammo socket" && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
