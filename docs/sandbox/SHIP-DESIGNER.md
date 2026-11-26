@@ -77,3 +77,12 @@ gains `--fingerprint` (prints only the hashes of the elements and of the built b
 and `--walk`, `--doors` and `--systems` (stubs for now, which say "not made yet"). The test tools spawn designs too:
 `--window-shot --design NAME|FILE` sets one down in front of the host's player, its elements answering the verbs by id,
 name, kind or role (`sit Helm seat`), and `--ladder-check --design NAME|FILE[,...]` climbs a design's ladders.
+
+**The hollow hull** (DesignParts.Hull.cs). The skin collides as thin plates (`PlateM`, 5 cm, thickened inwards), one a facet
+of the loft between two rings plus strips across the two true end caps, so a person fits inside; the rings between bands
+are open. A facet is plated where the designer's own skin mesh covers it, so every socket's opening, connection mouth and
+cutting body the designer cut is left open: a facet covered whole is one plate, one covered in part is tested in 20 cm cells
+merged into rectangles. Joins' and pieces' colliders are kept out of the rooms and out of the sockets' openings (split by
+the side they are on, so a hatch keeps its frame; a fitting wholly inside a room keeps its collider). A design's colliders
+are held to `MaxHulls` (the overflow is logged). `--design-check NAME --hollow` prints the counts, stands a person in each
+room, measures each opening's clearance, drops a chest on the spine at 8 to 153 m/s (tunnelling) and drops the ship rolled.
