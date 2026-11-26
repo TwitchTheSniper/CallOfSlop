@@ -10,7 +10,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// <summary>A drive's service socket (Karl, 2026-11-24): placed on the skin, it gets a socket on the inside, opposite it, in the
     /// room behind (its feed and access panel). It cuts no hole and is not a way aboard.</summary>
     /// RCS quads need none (Karl, 2026-11-25): they are fed by their pads, with no way in from inside.
-    public bool Service => Group == "Drives" && Name != "RCS quad";
+    public bool Service => Group == "Drives" && !DesignFittings.NoService(Name);
 
     public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
 
@@ -29,7 +29,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// clearance and hole size sliders (Karl, 2026-11-25).</summary>
     public (double Hx, double Hz, bool Round)? Footprint => Opening ?? Name switch
     {
-        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => PieceDocking.Footprint(Name),
+        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => PieceDocking.Footprint(Name) ?? DesignFittings.Footprint(Name),
     };
 }
 
@@ -182,6 +182,8 @@ public static class PieceKinds
         .. PieceDocking.Kinds,
         // Hangar bays, their fittings, the lift platform and the ramp deck (Karl, 2026-11-26): DesignHangar.
         ..DesignHangar.Kinds,
+        // Floodlights, the long-range sensor, the heavy RCS and tow points (Karl, 2026-11-26): DesignFittings.
+        ..DesignFittings.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

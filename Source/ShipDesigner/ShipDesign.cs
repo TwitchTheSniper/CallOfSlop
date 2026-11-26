@@ -370,17 +370,20 @@ public sealed class Piece
     public double BayDoorW = 5, BayDoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
     public string BayDoorType = "Sliding";
     public int Link;
+    // A floodlight's (DesignFittings, Karl 2026-11-26): its aim off the skin's normal and about it (degrees), and its beam's colour.
+    public double Pitch = DesignFittings.DefPitch, Yaw = DesignFittings.DefYaw;
+    public string Beam = DesignFittings.DefBeam;
 
-    public JsonObject ToJson() => DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed,
-    });
+    }));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
-    public static Piece FromJson(JsonObject o, int id) => DesignHangar.Read(o, new()
+    public static Piece FromJson(JsonObject o, int id) => DesignFittings.Read(o, DesignHangar.Read(o, new()
     {
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
@@ -389,7 +392,7 @@ public sealed class Piece
         AirW = Math.Clamp(ShipDesign.F(o["airW"], PieceDocking.AirW), 0.8, 6), AirH = Math.Clamp(ShipDesign.F(o["airH"], PieceDocking.AirH), 1.2, 6),
         AirD = Math.Clamp(ShipDesign.F(o["airD"], PieceDocking.AirD), 0.6, 6), DoorW = Math.Clamp(ShipDesign.F(o["doorW"], PieceDocking.DoorW), 0.6, 6),
         Door = Array.IndexOf(PieceDocking.Doors, (string?)o["door"]) >= 0 ? (string)o["door"]! : "sliding", Feed = (int?)o["feed"] ?? 0,
-    });
+    }));
 }
 
 

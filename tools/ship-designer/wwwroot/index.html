@@ -142,6 +142,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
         <button id="v-person" class="on">Person</button>
         <button id="v-hull" class="on" title="Show or hide the hull (and its connections) outside the Hull tab">Hull shown</button>
         <button id="v-parts" class="on" title="Show or hide the pieces on the hull outside the Pieces tab">Parts shown</button>
+        <button id="v-lights" title="Turn the floodlights on: each lights the scene along its beam">Lights</button>
       </div>
       <div class="tip" id="tip"></div>
     </div>
@@ -186,7 +187,7 @@ let S = null;          // the scene from C#
 let CAT = null;        // the catalogue
 const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
-const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true };
+const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true, lights: false };
 let deck = 0;
 // Room view (Interior tab): only one room (and, ticked, the rooms a door or a riser joins to it) with its walls and interior; the model
 // builds nothing else while it is on. { room, connected } or null.
@@ -432,6 +433,7 @@ function rebuild() {
     world.add(m); pickables.push(m);
   }
   if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
+  if (view.parts || mode === "pieces") drawBeams();
   if (view.parts) drawConnectors();
   if (inside() || view.xray) drawRisers();
   if (inside() || view.xray) drawPassages();
@@ -818,6 +820,21 @@ function drawLinks() {
     const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p.at), new THREE.Vector3(...g.at)]);
     const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: 0xff9a2e, dashSize: 0.5, gapSize: 0.15, depthTest: false, transparent: true }));
     line.computeLineDistances(); line.renderOrder = 6; world.add(line);
+  }
+}
+
+// Floodlights' beams (Karl, 2026-11-26): a faint cone along each beam always, brighter with Lights on, and then a real SpotLight too.
+function drawBeams() {
+  for (const p of S.pieces) for (const b of p.beams ?? []) {
+    const at = new THREE.Vector3(...b.at), dir = new THREE.Vector3(...b.dir).normalize(), col = new THREE.Color(p.beam);
+    const len = view.lights ? b.range * 0.3 : Math.min(b.range * 0.2, 12), spread = Math.tan(0.35);
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r + len * spread, len, 24, 1, true),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: view.lights ? 0.08 : 0.06, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); cone.position.copy(at).addScaledVector(dir, len / 2);
+    world.add(cone);
+    if (!view.lights) continue;
+    const s = new THREE.SpotLight(col, 60, b.range, 0.35, 0.45, 1.2);
+    s.position.copy(at); s.target.position.copy(at).addScaledVector(dir, 10); world.add(s, s.target);
   }
 }
 
@@ -1346,6 +1363,22 @@ function hangarControls(p) {
   }
   return [];
 }
+// A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
+function fittingControls(p) {
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.fitting;
+  if (p.beam !== undefined) {
+    const c = el("input", { type: "color", value: p.beam, "aria-label": "Beam colour" }); c.addEventListener("change", () => send({ beam: c.value }));
+    return [el("h3", {}, "Beam"),
+      slider("Pitch", p.pitch, -90, 90, 1, " deg", () => {}, v => send({ pitch: v }), D.pitch),
+      slider("Yaw", p.yaw, -180, 180, 1, " deg", () => {}, v => send({ yaw: v }), D.yaw),
+      el("div", { class: "row" }, el("span", {}, "Colour"), c, el("button", { class: "reset", title: `Reset beam colour to ${D.beam}`, onclick: () => send({ beam: D.beam }) }, "\u21ba"),
+        resetAll("Aim and colour back to their defaults", () => send(dfltOf("fitting", ["pitch", "yaw", "beam"])))),
+      el("p", { class: "hint" }, "Pitch tilts the beam off the skin towards the bow (negative: the stern); yaw swings it round. Tick Lights in the view bar to light the scene.")];
+  }
+  if (p.kind === "Tow eye" || p.kind === "Tow hitch")
+    return [el("p", { class: "hint" }, "A tow point belongs on the keel or the centreline, or a tow pulls the ship round: press Centre.")];
+  return [];
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1812,6 +1845,7 @@ function inspector() {
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
       ...dockControls(p),
       ...hangarControls(p),
+      ...fittingControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
@@ -1820,8 +1854,8 @@ function inspector() {
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
-      k.group === "Drives" ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
-      k.group === "Drives" ? el("div", { class: "row" },
+      k.service ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
+      k.service ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
       k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
@@ -1952,7 +1986,7 @@ $("dload").addEventListener("click", () => {
 });
 $("v-frame").addEventListener("click", frame);
 const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
-toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull"); toggle("v-parts", "parts");
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull"); toggle("v-parts", "parts"); toggle("v-lights", "lights");
 window.addEventListener("keydown", e => {
   if (e.target.closest?.("input, textarea, select")) return;
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();

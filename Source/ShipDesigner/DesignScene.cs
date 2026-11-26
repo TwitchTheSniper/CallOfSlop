@@ -1055,6 +1055,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             if (DesignHangar.Check(d, p, c, entries))
                 continue;
+            DesignFittings.Check(d, p, c);
             var ok = true;
             if (p.Surface != "skin")
             {
@@ -1552,7 +1553,7 @@ public static partial class DesignScene
                 }
                 else if (kind.Socket == "airlock")
                     PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
-                else if (!DesignHangar.Draw(d, p, w, m))
+                else if (!DesignHangar.Draw(d, p, w, m) && !DesignFittings.Draw(p, w, m))
                     kind.Draw(m);
                 if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
                 {
@@ -1580,7 +1581,7 @@ public static partial class DesignScene
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(DesignHangar.SceneJson(d, p))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);
