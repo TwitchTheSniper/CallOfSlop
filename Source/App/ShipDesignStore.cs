@@ -112,8 +112,9 @@ public static class ShipDesignStore
         {
             return (ShipDesigner.ShipDesign.FromJson(json).Name, json);
         }
-        catch (FormatException)
+        catch (Exception ex) when (ex is FormatException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or ArgumentException)
         {
+            Console.WriteLine($"[ship designer] a design file isn't read: {ex.Message}");
             return null;
         }
     }

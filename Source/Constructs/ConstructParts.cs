@@ -527,6 +527,7 @@ public sealed partial class ConstructPartDef
     internal ConvexHull[]? Hulls; // its convex colliders, made on first use (ConstructHulls)
     internal bool[]? HullCovers; // per solid box: a hull stands for it
     internal bool[]? HullSkin; // per hull: made from a "hull" shape (a plate of skin a player stands on as well: ConstructRideMove.Gather)
+    public bool SkinOnly; // players meet only its skin (HullSkin), never its solid boxes: a ship design's element, whose box is its bounds (DesignParts.cs)
     public bool HasSkin; // a "hull" shaped detail box collides (ConstructHulls): SkinMin..SkinMax reaches past the solid boxes' bounds
     public Vector3 SkinMin, SkinMax; // the "hull" shapes' bounds in the part's frame (Construct.ReachBounds)
     public bool ColliderBoxes; // "collider": "boxes": its hidden solid boxes collide whatever its shapes (ConstructHulls)

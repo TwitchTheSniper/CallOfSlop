@@ -44,17 +44,6 @@ public static class DesignCheck
             return fails;
         }
         Console.WriteLine($"[design] {what}: {text.Length} bytes, hash {hash}, read in {Ms(t0):0} ms");
-        var t1 = Stopwatch.GetTimestamp();
-        if (DesignParts.Elements(hash) is not { } els)
-        {
-            Fail("its elements couldn't be made");
-            return fails;
-        }
-        Console.WriteLine($"[design] elements in {Ms(t1):0} ms: {DesignParts.LastSummary}");
-        foreach (var g in els.GroupBy(e => e.Kind))
-            Console.WriteLine($"[design]   {g.Key}: {g.Count()}, {g.Sum(e => e.Kg) / 1000:0.0} t, hulls {g.Sum(e => e.Hulls.Length)} (most corners {g.SelectMany(e => e.Hulls).Select(h => h.V.Length).DefaultIfEmpty(0).Max()}), triangles {g.Sum(e => e.Look.Vertices) / 3}");
-        foreach (var e in els.Where(e => e.Kind != "floor" && e.Hulls.Length == 0))
-            Console.WriteLine($"[design]   no collider: {e.Id} ({e.Name})");
         // Built as the held spawn builds it, then joined on the ground of the proving ground (flat and wide: the bare map's ground ends 20 m out).
         if (Maps.Find("Proving Ground") is { } yard)
         {
@@ -74,6 +63,16 @@ public static class DesignCheck
             Fail($"refused: {job.Why}");
             return fails;
         }
+        if (DesignParts.Elements(hash) is not { } els)
+        {
+            Fail("its elements couldn't be made");
+            return fails;
+        }
+        Console.WriteLine($"[design] elements (made in {DesignParts.LastBuildMs:0} ms, its longest step {DesignParts.LastStepMs:0.0} ms): {DesignParts.LastSummary}");
+        foreach (var g in els.GroupBy(e => e.Kind))
+            Console.WriteLine($"[design]   {g.Key}: {g.Count()}, {g.Sum(e => e.Kg) / 1000:0.0} t, hulls {g.Sum(e => e.Hulls.Length)} (most corners {g.SelectMany(e => e.Hulls).Select(h => h.V.Length).DefaultIfEmpty(0).Max()}), triangles {g.Sum(e => e.Look.Vertices) / 3}");
+        foreach (var e in els.Where(e => e.Kind != "floor" && e.Hulls.Length == 0))
+            Console.WriteLine($"[design]   no collider: {e.Id} ({e.Name})");
         var low = ConstructBuild.LowOf(job.Scratch, scratch);
         var ground = ConstructWorld.Ground(World.Query, 0, 0);
         var t3 = Stopwatch.GetTimestamp();
@@ -121,6 +120,22 @@ public static class DesignCheck
         DesignParts.ReadSave(new SaveReader(sw.Span.ToArray()), third);
         if (third.ShipDesigns.Count != 1 || third.ShipDesigns[0] != hash)
             Fail("the save's copy doesn't match");
+        // A player's blueprint of it (the selector's Save): its designs go in the file, and it builds again from that.
+        var bpText = ConstructClip.Of(c, "design check").ToBlueprint("design check", "", out var bpWhy);
+        if (bpText == null)
+            Fail($"no player blueprint of it: {bpWhy}");
+        else
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(bpText);
+            var embedded = doc.RootElement.TryGetProperty("shipDesigns", out var sd) && sd.GetArrayLength() == 1 && DesignParts.Canon(sd[0].GetRawText()) is { } back ? DesignParts.HashOf(back) : "";
+            if (embedded != hash)
+                Fail("the player blueprint doesn't carry its design");
+            var again = ConstructBuild.BuildOnGround(new ConstructWorld(), ConstructBuild.ParseBlueprint(bpText, "design check.json"), ground + new Vector3(200, 0, 0), 0, out var bw);
+            if (again?.PartCount != c.PartCount)
+                Fail($"the player blueprint built {again?.PartCount ?? 0} parts, not {c.PartCount}: {bw}");
+            else
+                Console.WriteLine($"[design] a player blueprint of it: {bpText.Length} bytes, its design in it, built again with {again.PartCount} parts");
+        }
         Console.WriteLine(fails == 0 ? "[design] check: passed" : $"[design] check: {fails} failure(s)");
         return fails;
     }

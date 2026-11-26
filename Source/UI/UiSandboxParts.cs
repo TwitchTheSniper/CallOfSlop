@@ -89,7 +89,7 @@ public sealed partial class Ui
     private SbTab _sbTab;
     private int _sbTabRequest = -1;
     private int _sbGroupSel = -1, _sbSectionSel = -1; // the tree's selection (-1: all)
-    private readonly (int Group, int Section)[] _sbTabNode = [(-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1)]; // per tab: the selection it comes back to, for the session
+    private readonly (int Group, int Section)[] _sbTabNode = Enumerable.Repeat((-1, -1), Enum.GetValues<SbTab>().Length).ToArray(); // per tab: the selection it comes back to, for the session
     private int _sbSize = -1; // the Parts tab's size filter (a size class; -1: every size), for the session
     private bool _sbOptionsOpen; // the left pane's options are unfolded
     private int[] _sbVisItem = [], _sbVisSection = [];

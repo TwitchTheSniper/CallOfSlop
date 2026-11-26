@@ -512,8 +512,9 @@ public sealed partial class Ui
         {
             return ShipDesigner.ShipDesign.FromJson(json).Name;
         }
-        catch (FormatException)
+        catch (Exception ex) when (ex is FormatException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or ArgumentException)
         {
+            Console.WriteLine($"[ship designer] its name isn't read: {ex.Message}");
             return "Ship";
         }
     }

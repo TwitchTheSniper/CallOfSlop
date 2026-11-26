@@ -64,7 +64,7 @@ public static class DesignParts
     [ThreadStatic] public static string? LastRefusal;
 
     /// <summary>The last design made into its elements: how long it took and what it came to (a check reads these).</summary>
-    public static double LastBuildMs;
+    public static double LastBuildMs, LastStepMs; // the last design made: in all, and its longest step (ElementSteps)
     public static string LastSummary = "";
 
     public static bool IsName(string name) => name.StartsWith(Prefix, StringComparison.Ordinal);
@@ -91,6 +91,29 @@ public static class DesignParts
             return null;
         lock (Interned)
             return Info.TryGetValue(d, out var i) ? i.E : null;
+    }
+
+    /// <summary>
+    /// A blueprint's <c>"shipDesigns"</c> (ConstructClip.ToBlueprint): the design of every design part in it, so a player's blueprint of a
+    /// design ship builds in a world that never saw that design. Null when it has none.
+    /// </summary>
+    public static string? BlueprintBlock(Construct c)
+    {
+        List<Entry>? used = null;
+        for (var i = 0; i < c.PartCount; i++)
+            if (EntryOf(c.DefOf(i)) is { } e && !(used ??= []).Contains(e))
+                used.Add(e);
+        return used == null ? null : "[" + string.Join(", ", used.Select(e => e.Text)) + "]";
+    }
+
+    /// <summary>A blueprint's <c>"shipDesigns"</c> read: each one into the table (before its steps name their parts).</summary>
+    public static void ReadBlueprintBlock(System.Text.Json.JsonElement v, string file)
+    {
+        if (v.ValueKind != System.Text.Json.JsonValueKind.Array)
+            throw new ConstructPartException($"{file}: \"shipDesigns\" is a list of ship designs");
+        foreach (var one in v.EnumerateArray())
+            if (Canon(one.GetRawText()) is not { } text || Register(text) is null)
+                throw new ConstructPartException($"{file}: a ship design in \"shipDesigns\" isn't read: {LastRefusal}");
     }
 
     public static Entry? Find(string hash)
@@ -131,7 +154,7 @@ public static class DesignParts
         {
             d = ShipDesign.FromJson(text);
         }
-        catch (FormatException ex)
+        catch (Exception ex) when (ex is FormatException or InvalidOperationException or System.Text.Json.JsonException or ArgumentException or KeyNotFoundException)
         {
             LastRefusal = "not a ship design: " + ex.Message;
             return null;
@@ -187,6 +210,18 @@ public static class DesignParts
     public static List<Element> ElementsOf(ShipDesign d)
     {
         var els = new List<Element>();
+        foreach (var _ in ElementSteps(d, els))
+        {
+        }
+        return els;
+    }
+
+    /// <summary>
+    /// <see cref="ElementsOf"/> a step at a time into <paramref name="els"/>: a step a hull body's copy, a join, a piece or an element's
+    /// colliders, so the held spawn makes a new design over several ticks (each a few milliseconds) instead of one long one.
+    /// </summary>
+    public static IEnumerable<int> ElementSteps(ShipDesign d, List<Element> els)
+    {
         var bandOf = new Dictionary<(int Hull, int Copy), (int First, int Count, double[] Z)>();
         // The hull bodies: each copy's bands, its skin and cladding cut between their rings (the end caps with the end bands).
         for (var hi = 0; hi < d.Hulls.Count; hi++)
@@ -205,7 +240,9 @@ public static class DesignParts
                 for (var i = 0; i + 1 < rings.Count; i++)
                     els.Add(new Element { Id = $"h{hi}.{copy}.b{i}", Kind = "band", Name = $"{h.Name}{(h.Copies > 1 ? copy == 0 ? " (right)" : " (left)" : "")}, band {i + 1}", Mesh = new LookBuilder(), Points = [], Runs = [] });
                 Bands(h, copy, els, first);
+                yield return els.Count;
                 var (skin, fore, aft, sc, fc, ac) = DesignScene.HullMeshes(d, h, copy);
+                yield return els.Count;
                 var axis = new Vector3((float)h.CopyX(copy), (float)(h.Y + 0.5 * (h.Bounds().Y0 + h.Bounds().Y1) - h.Y), float.NaN);
                 void Slice(DesignMesh m, Vector3 t)
                 {
@@ -227,6 +264,7 @@ public static class DesignParts
                     if (k > first)
                         Weld(els, k - 1, k);
                 bandOf[(h.Id, copy)] = (first, rings.Count - 1, zs);
+                yield return els.Count;
             }
         }
         int BandAt(int hull, int copy, double z)
@@ -269,6 +307,7 @@ public static class DesignParts
                     if (BandAt(end.Hull, s == 1 && sides > 1 ? 1 - end.Copy : end.Copy, mid.Z) is var b and >= 0)
                         Weld(els, b, at);
             }
+            yield return els.Count;
         }
         // Pieces: one element a copy (its mirrored twin, its pair on the other body), welded to the band it stands on.
         for (var pi = 0; pi < d.Pieces.Count; pi++)
@@ -299,6 +338,7 @@ public static class DesignParts
                 if (BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
                     Weld(els, b, at);
             }
+            yield return els.Count;
         }
         // Rooms' floors: a slab each (solid inside the bands for now), welded to the band of its deck's body there.
         for (var ri = 0; ri < d.Rooms.Count; ri++)
@@ -338,9 +378,10 @@ public static class DesignParts
             e.Hulls = [.. e.Hulls.Select(hl => hl.MovedInto(null, Quaternion.Identity, -e.Origin))];
             e.Look = e.Mesh?.Done(-e.Origin) ?? new Look();
             e.Mesh = null;
+            if (e.Hulls.Length > 0)
+                yield return els.Count;
         }
         Connect(els);
-        return els;
     }
 
     private static void Weld(List<Element> els, int a, int b)
@@ -410,46 +451,99 @@ public static class DesignParts
 
     private static Made? MadeOf(string hash, out string why)
     {
-        why = "";
+        var r = new MakeRun();
+        foreach (var _ in MakeSteps(hash, r))
+        {
+        }
+        why = r.Why;
+        return r.Made;
+    }
+
+    /// <summary>What <see cref="MakeSteps"/> came to: the made design, or why not.</summary>
+    private sealed class MakeRun
+    {
+        public Made? Made;
+        public string Why = "";
+        public double LongestMs;
+    }
+
+    private static bool Bad(Exception ex) => ex is FormatException or InvalidOperationException or ArgumentException or IndexOutOfRangeException or NullReferenceException or KeyNotFoundException;
+
+    /// <summary>A design's elements made a step at a time (<see cref="ElementSteps"/>), once a process per design; <paramref name="run"/> holds the result.</summary>
+    private static IEnumerable<int> MakeSteps(string hash, MakeRun run)
+    {
         Entry? e;
         lock (Interned)
         {
             if (Makes.TryGetValue(hash, out var have))
-                return have;
+            {
+                run.Made = have;
+                yield break;
+            }
             if (!Known.TryGetValue(hash, out e))
             {
-                why = "its design hasn't come to this peer (a design part is made from its world's design store)";
-                return null;
+                run.Why = "its design hasn't come to this peer (a design part is made from its world's design store)";
+                yield break;
             }
         }
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        List<Element> els;
+        var els = new List<Element>();
+        ShipDesign? d = null;
         try
         {
-            els = ElementsOf(ShipDesign.FromJson(e.Text));
+            d = ShipDesign.FromJson(e.Text);
         }
-        catch (Exception ex) when (ex is FormatException or InvalidOperationException or ArgumentException or IndexOutOfRangeException or NullReferenceException or KeyNotFoundException)
+        catch (Exception ex) when (Bad(ex))
         {
-            why = "its design couldn't be made: " + ex.Message;
-            Console.WriteLine($"[design] REFUSED design {hash} (\"{e.Name}\"): {why}");
-            return null;
+            run.Why = "its design couldn't be read: " + ex.Message;
+        }
+        if (d == null)
+        {
+            Console.WriteLine($"[design] REFUSED design {hash} (\"{e.Name}\"): {run.Why}");
+            yield break;
+        }
+        using (var steps = ElementSteps(d, els).GetEnumerator())
+        {
+            var step = System.Diagnostics.Stopwatch.GetTimestamp();
+            while (true)
+            {
+                bool more;
+                try
+                {
+                    more = steps.MoveNext();
+                }
+                catch (Exception ex) when (Bad(ex))
+                {
+                    run.Why = "its design couldn't be made: " + ex.Message;
+                    Console.WriteLine($"[design] REFUSED design {hash} (\"{e.Name}\"): {run.Why}");
+                    yield break;
+                }
+                var now = System.Diagnostics.Stopwatch.GetTimestamp();
+                run.LongestMs = Math.Max(run.LongestMs, (now - step) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+                if (!more)
+                    break;
+                yield return els.Count;
+                step = System.Diagnostics.Stopwatch.GetTimestamp();
+            }
         }
         var made = new Made { E = e, Elements = els };
         for (var k = 0; k < els.Count; k++)
             made.ById[els[k].Id] = k;
         LastBuildMs = clock.Elapsed.TotalMilliseconds;
+        LastStepMs = run.LongestMs;
         var tris = els.Sum(x => x.Look.Vertices) / 3;
         var kg = els.Sum(x => x.Kg);
         made.Summary = $"{els.Count} parts ({els.Count(x => x.Kind == "band")} bands, {els.Count(x => x.Kind == "join")} joins, {els.Count(x => x.Kind == "piece")} pieces, {els.Count(x => x.Kind == "floor")} floors), {tris} triangles, {els.Sum(x => x.Hulls.Length)} hulls, {kg / 1000:0.0} t";
         LastSummary = made.Summary;
-        Console.WriteLine($"[design] made \"{e.Name}\" ({hash}) in {LastBuildMs:0} ms: {made.Summary}");
+        Console.WriteLine($"[design] made \"{e.Name}\" ({hash}) in {LastBuildMs:0} ms (its longest step {run.LongestMs:0.0} ms): {made.Summary}");
         lock (Interned)
         {
             if (Makes.TryGetValue(hash, out var raced))
-                return raced;
-            Makes[hash] = made;
+                made = raced;
+            else
+                Makes[hash] = made;
         }
-        return made;
+        run.Made = made;
     }
 
     /// <summary>A design's elements (made the first time it is asked for), or null when it isn't known here or can't be made.</summary>
@@ -530,10 +624,19 @@ public static class DesignParts
             hl.Bounds(out var mn, out var mx);
             (def.BoundsMin, def.BoundsMax) = (Vector3.Min(def.BoundsMin, mn), Vector3.Max(def.BoundsMax, mx));
         }
-        def.HasSkin = false;
         def.Hulls = e.Hulls;
         def.HullCovers = e.Hulls.Length > 0 ? [true] : []; // (its hulls stand for it; a floor, with none, collides as its slab)
-        def.HullSkin = null;
+        // A player meets its hulls as skin (ConstructRideMove.AddSkin, ConstructWorld.SkinBlock), never its bounding box.
+        def.HasSkin = def.SkinOnly = e.Hulls.Length > 0;
+        def.HullSkin = def.HasSkin ? Enumerable.Repeat(true, e.Hulls.Length).ToArray() : null;
+        (def.SkinMin, def.SkinMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        foreach (var hl in e.Hulls)
+        {
+            hl.Bounds(out var mn, out var mx);
+            (def.SkinMin, def.SkinMax) = (Vector3.Min(def.SkinMin, mn), Vector3.Max(def.SkinMax, mx));
+        }
+        if (!def.HasSkin)
+            (def.SkinMin, def.SkinMax) = (Vector3.Zero, Vector3.Zero);
         def.ColliderBoxes = false;
         def.Sockets = [t.Sockets[0] with { Name = "s0", At = Vector3.Zero }]; // (one socket the welds between elements hang on)
         def.Lamps = [];
@@ -582,9 +685,12 @@ public static class DesignParts
     /// </summary>
     public static IEnumerable<int> BuildSteps(ConstructWorld world, Construct c, string hash, ConstructBuild.BuildRun run)
     {
-        if (MadeOf(hash, out var why) is not { } made)
+        var mr = new MakeRun();
+        foreach (var k in MakeSteps(hash, mr))
+            yield return -1; // (the elements made a step a tick-slice: the first spawn of a design)
+        if (mr.Made is not { } made)
         {
-            run.Why = why;
+            run.Why = mr.Why;
             yield break;
         }
         var partOf = new int[made.Elements.Count];

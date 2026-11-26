@@ -885,6 +885,9 @@ public static class ConstructBuild
                 case "module":
                     bp.Module = ModuleBlueprints.Parse(p.Value, file);
                     break;
+                case "shipDesigns":
+                    DesignParts.ReadBlueprintBlock(p.Value, file); // (ahead of "steps": the design parts they name are made from these)
+                    break;
                 case "packed":
                     bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
                     break;

@@ -1616,7 +1616,7 @@ public sealed partial class ConstructWorld
             var i = _partHits[ci];
             c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
             var iq = Quaternion.Conjugate(q);
-            for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+            for (var k = c.PlayerSolids(i) - 1; k >= 0; k--)
             {
                 c.SolidBox(i, k, out var centre, out var half);
                 for (var s = 0; s <= steps; s++)
@@ -1651,7 +1651,7 @@ public sealed partial class ConstructWorld
                 var i = _partHits[ci];
                 c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
                 var m = Matrix4x4.CreateFromQuaternion(q);
-                for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+                for (var k = c.PlayerSolids(i) - 1; k >= 0; k--)
                 {
                     c.SolidBox(i, k, out var centre, out var half);
                     var wc = t + Vector3.Transform(centre, q);
@@ -1723,7 +1723,7 @@ public sealed partial class ConstructWorld
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
                 var upLocal = Vector3.Transform(Vector3.UnitY, iq);
-                var boxes = c.SolidCount(i);
+                var boxes = c.PlayerSolids(i);
                 var grip = p.D.CfgSlot[(int)CfgKey.Grip] >= 0 && ConstructConfig.Get(p, p.D, CfgKey.Grip, 0) >= 0.5f;
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
