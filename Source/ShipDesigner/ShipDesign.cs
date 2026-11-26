@@ -12,7 +12,7 @@ namespace CallOfSlop.ShipDesigner;
 public sealed class ShipDesign
 {
     public const int Version = 1;
-    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40, MaxRisers = 40;
+    public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40, MaxRisers = 40, MaxPassages = 40;
 
     public string Name = "New ship";
 
@@ -36,7 +36,7 @@ public sealed class ShipDesign
             return Decks[r.Deck];
         var dk = Decks[r.Deck];
         var h = r.Height > 0 ? r.Height : dk.Height;
-        return new Deck { Floor = dk.Floor - (Stacked ? -r.Below : r.Below), Height = h + r.Below };
+        return new Deck { Floor = dk.Floor - (Stacked ? -r.Below : r.Below), Height = h + r.Below, Hull = dk.Hull };
     }
 
     /// <summary>Which of two decks is under the other (stacked decks: up is -z, so the one aft).</summary>
@@ -63,6 +63,7 @@ public sealed class ShipDesign
     public List<Riser> Risers = [];
     public List<RoomDoor> Doors = [];
     public List<HullWindow> Windows = [];
+    public List<Passage> Passages = [];
     private int _next = 1;
 
     public int NewId() => _next++;
@@ -111,13 +112,14 @@ public sealed class ShipDesign
             ["name"] = Name,
             ["decks orientation"] = Stacked ? "stacked" : "along",
             ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; if (h.CladFrom != 0 && HullIndex(h.CladFrom) is var ci && ci >= 0) j["cladFrom"] = ci; return (JsonNode)j; })]),
-            ["decks"] = new JsonArray([.. Decks.Select(d => (JsonNode)new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) })]),
+            ["decks"] = new JsonArray([.. Decks.Select(d => { var j = new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) }; if (d.Hull != 0 && HullIndex(d.Hull) is var di && di >= 0) j["hull"] = di; return (JsonNode)j; })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
             ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape, ["gap"] = R(k.Gap), ["hole"] = R(k.Hole), ["depth"] = R(k.Depth), ["double"] = k.Double })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
+            ["passages"] = new JsonArray([.. Passages.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["join"] = Joins.FindIndex(j => j.Id == k.Join), ["kind"] = k.Kind })]),
         };
         return o.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
     }
@@ -141,7 +143,8 @@ public sealed class ShipDesign
                 d.Hulls[i].CladFrom = d.Hulls[ci].Id;
         foreach (var k in o["decks"]?.AsArray() ?? [])
             if (k is JsonObject ko && d.Decks.Count < MaxDecks)
-                d.Decks.Add(new Deck { Floor = F(ko["floor"], 0.25), Height = Math.Clamp(F(ko["height"], 3), 2.2, 8) });
+                d.Decks.Add(new Deck { Floor = F(ko["floor"], 0.25), Height = Math.Clamp(F(ko["height"], 3), 2.2, 8),
+                    Hull = (int?)ko["hull"] is int dh && dh >= 0 && dh < d.Hulls.Count ? d.Hulls[dh].Id : 0 });
         foreach (var r in o["rooms"]?.AsArray() ?? [])
             if (r is JsonObject ro && d.Rooms.Count < MaxRooms)
                 d.Rooms.Add(Room.FromJson(ro, d.Take(ro)));
@@ -179,6 +182,14 @@ public sealed class ShipDesign
                         Kind = (string?)dob["kind"] == "Window" ? "Window" : "Door", Shape = RoomDoor.Shapes.Contains((string?)dob["shape"]) ? (string)dob["shape"]! : "Rect",
                         W = Math.Clamp(F(dob["w"], (string?)dob["kind"] == "Window" ? 1.2 : 0.9), 0.3, 6), H = Math.Clamp(F(dob["h"], (string?)dob["kind"] == "Window" ? 0.8 : 2.1), 0.3, 3), Sill = Math.Clamp(F(dob["sill"], 1), 0, 3) });
             }
+        // Passages through an arm name their rooms and their arm by place in the list.
+        foreach (var j in o["passages"]?.AsArray() ?? [])
+            if (j is JsonObject po && d.Passages.Count < MaxPassages)
+            {
+                var (a, b, ji) = ((int?)po["a"] ?? -1, (int?)po["b"] ?? -1, (int?)po["join"] ?? -1);
+                if (a >= 0 && b >= 0 && a < d.Rooms.Count && b < d.Rooms.Count && a != b)
+                    d.Passages.Add(new Passage { Id = d.Take(po), A = d.Rooms[a].Id, B = d.Rooms[b].Id, Join = ji >= 0 && ji < d.Joins.Count ? d.Joins[ji].Id : 0, Kind = Passage.Kinds.Contains((string?)po["kind"]) ? (string)po["kind"]! : "Lift" });
+            }
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
         return d;
@@ -188,7 +199,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id) || Passages.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;
@@ -219,6 +230,8 @@ public sealed class ShipDesign
 public sealed class Deck
 {
     public double Floor = 0.25, Height = 3.0;
+    /// <summary>The body it is in (Karl, 2026-11-26: decks and rooms in a side pod or a nacelle): its rooms clip to that body's skin; 0, whichever body a room's floor is in.</summary>
+    public int Hull;
     public double Ceiling => Floor + Height;
 }
 
@@ -505,4 +518,18 @@ public sealed class RoomExt
                 return [(-h, 0), (-h, d), (h, d), (h, 0)];
         }
     }
+}
+
+
+/// <summary>A way between rooms in two bodies through the arm that joins them (Karl, 2026-11-26): a lift car on a track, or a walkway,
+/// along the strut's curved spine from a door in one room's wall to a door in the other's. Join names the arm (0: the one between
+/// the rooms' bodies).</summary>
+public sealed class Passage
+{
+    public static readonly string[] Kinds = ["Lift", "Walkway"];
+    /// <summary>The clear width a person needs inside the arm.</summary>
+    public const double MinClear = 1.2;
+    public int Id, A, B, Join;
+    public string Kind = "Lift";
+    public bool Joins(int a, int b) => (A == a && B == b) || (A == b && B == a);
 }

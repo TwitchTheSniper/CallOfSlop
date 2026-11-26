@@ -384,6 +384,7 @@ function rebuild() {
   if (S.roomView) {
     // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
     drawRooms(new Set(S.roomView));
+    drawPassages(new Set(S.roomView));
     if (view.person) drawPerson();
     applyCut(true);
     dropUnused();
@@ -433,6 +434,7 @@ function rebuild() {
   if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
   if (view.parts) drawConnectors();
   if (inside() || view.xray) drawRisers();
+  if (inside() || view.xray) drawPassages();
   if (view.hull || inside()) drawHullWindows();
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
@@ -479,7 +481,7 @@ function drawExts(r, dim) {
   if (r.extMesh && r.extMesh.p.length) {
     const picked = sel.kind === "room" && sel.id === r.id;
     const m = meshFrom(r.extMesh, { transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, flatShading: false, emissive: picked ? 0x2a4f80 : 0 });
-    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom || linking) pickables.push(m);
   }
   for (const e of r.exts || []) {
     const A = e.a, B = e.b, n = A.length / 3; if (n < 3 || B.length !== A.length) continue;
@@ -491,7 +493,7 @@ function drawExts(r, dim) {
     let g = null; if (!r.extMesh) { g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); }
     const picked = sel.kind === "room" && sel.id === r.id;
     if (g) { const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: new THREE.Color(r.colour), transparent: true, opacity: dim ? 0.06 : 0.3, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x2a4f80 : 0 }));
-    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m); }
+    m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom || linking) pickables.push(m); }
     const lines = []; const V = (k) => new THREE.Vector3(pos[3 * k], pos[3 * k + 1], pos[3 * k + 2]);
     for (let i = 0; i < n; i++) { const j = (i + 1) % n; lines.push(V(i), V(j), V(n + i), V(n + j), V(i), V(n + i)); }
     world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lines), new THREE.LineBasicMaterial({ color: new THREE.Color(r.colour), transparent: dim, opacity: dim ? 0.2 : 1 })));
@@ -535,7 +537,7 @@ function drawRooms(only = null) {
       // In Room view see-through, so its interior shows from outside.
       const see = !!only && !roomOpaque;
       const wm = meshFrom(r.wallMesh, { transparent: dim || see, opacity: dim ? 0.15 : see ? 0.3 : 1, depthWrite: !see, emissive: sel.kind === "room" && sel.id === r.id ? 0x1a3050 : 0x000000 });
-      wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom) pickables.push(wm);
+      wm.userData = { type: "room", id: r.id }; world.add(wm); if (!dim || mergeFrom || linking) pickables.push(wm);
     }
     if (r.intMesh && r.intMesh.p.length) {
       // Its interior cladding; the glow mesh unlit, so its strips read as lamps.
@@ -549,7 +551,7 @@ function drawRooms(only = null) {
       // A room out to the hull follows the skin: drawn from its own shape.
       const solid = !!only && roomOpaque && !dim;
       const m = meshFrom(r.mesh, { transparent: !solid, opacity: solid ? 1 : dim ? 0.08 : 0.38, depthWrite: solid, emissive: sel.kind === "room" && (sel.id === r.id || (r.group && S.rooms.find(o => o.id === sel.id)?.group === r.group)) ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) });
-      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom) pickables.push(m);
+      m.userData = { type: "room", id: r.id }; world.add(m); if (!dim || mergeFrom || linking) pickables.push(m);
       continue;
     }
     const [bx0, bx1, by0, by1, bz0, bz1] = r.box, st = S.stacked;
@@ -558,13 +560,13 @@ function drawRooms(only = null) {
     const floor = new THREE.Mesh(st ? new THREE.BoxGeometry(bx1 - bx0 - gap, by1 - by0 - gap, 0.08) : new THREE.BoxGeometry(bx1 - bx0 - gap, 0.08, bz1 - bz0 - gap), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8, transparent: dim, opacity: dim ? 0.25 : 1, emissive: sel.kind === "room" && sel.id === r.id ? 0x2a4f80 : (!r.ok ? 0x6a1a0a : 0x000000) }));
     floor.position.set((bx0 + bx1) / 2, st ? (by0 + by1) / 2 : by0 + 0.043, st ? bz1 - 0.043 : (bz0 + bz1) / 2); // 3 mm off the deck and the shell
     floor.userData = { type: "room", id: r.id, floor: true };
-    world.add(floor); if (!dim || mergeFrom) pickables.push(floor);
+    world.add(floor); if (!dim || mergeFrom || linking) pickables.push(floor);
     // Its box bent inside the skin where the hull curves over it (the model's mesh); a plain box only if none came.
     const box = r.boxMesh ? new THREE.Mesh(geoOf(r.boxMesh), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false, side: THREE.DoubleSide }))
       : new THREE.Mesh(new THREE.BoxGeometry(bx1 - bx0 - 0.06, by1 - by0 - 0.06, bz1 - bz0 - 0.06), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: dim ? 0.03 : 0.1, depthWrite: false }));
     if (!r.boxMesh) box.position.set((bx0 + bx1) / 2, (by0 + by1) / 2, (bz0 + bz1) / 2);
     box.userData = { type: "room", id: r.id }; // its walls can be grabbed too, from any angle
-    world.add(box); if (!dim || mergeFrom) pickables.push(box);
+    world.add(box); if (!dim || mergeFrom || linking) pickables.push(box);
     // Its outline; a room in parts (merged or split) leaves out the edges on the walls its parts share, so it reads as one.
     const mates = r.group ? S.rooms.filter(o => o !== r && o.group === r.group && o.deck === r.deck && !o.mesh) : [];
     const onMate = (x, y, z) => mates.some(o => { const b = o.box, e = 0.05; return x >= b[0] - e && x <= b[1] + e && y >= b[2] - e && y <= b[3] + e && z >= b[4] - e && z <= b[5] + e; });
@@ -646,6 +648,50 @@ function drawRisers() {
     hit.userData = { type: "riser", id: k.id };
     g.traverse(o => { o.renderOrder = 5; });
     world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
+  }
+}
+// Passages through an arm between bodies (Karl, 2026-11-26): a glass tube along the arm's curved spine from a door in one room
+// to a door in the other, a track along its floor and, for a lift, its car halfway. Red when the arm is too thin. Pickable.
+function drawPassages(only = null) {
+  for (const k of S.passages || []) {
+    if (k.pts.length < 6 || (only && !only.has(k.a) && !only.has(k.b))) continue;
+    const P = [], U = [];
+    for (let i = 0; i + 2 < k.pts.length; i += 3) { P.push(new THREE.Vector3(k.pts[i], k.pts[i + 1], k.pts[i + 2])); U.push(new THREE.Vector3(k.ups[i], k.ups[i + 1], k.ups[i + 2]).normalize()); }
+    const picked = sel.kind === "passage" && sel.id === k.id, rad = Math.max(0.35, Math.min(0.75, (k.clear || 1.2) / 2));
+    const curve = new THREE.CatmullRomCurve3(P, false, "centripetal");
+    const g = new THREE.Group();
+    const glass = new THREE.MeshStandardMaterial({ color: k.ok ? 0x9fd3ff : 0xff6a50, transparent: true, opacity: only ? 0.18 : 0.32, depthWrite: false, side: THREE.DoubleSide, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const steel = new THREE.MeshStandardMaterial({ color: k.ok ? 0xd8b04a : 0xff5a44, metalness: 0.5, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, P.length * 8), rad, 14, false), glass);
+    tube.userData = { type: "passage", id: k.id }; g.add(tube); pickables.push(tube);
+    // Its track: two rails on the tube's floor, each frame's up from the model (the arm's own up inside it).
+    const N = Math.max(24, P.length * 8), side = new THREE.Vector3(), rails = [[], []], ups = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, p = curve.getPointAt(t), tg = curve.getTangentAt(t), f = Math.min(U.length - 1.001, t * (U.length - 1)), up = U[Math.floor(f)].clone().lerp(U[Math.ceil(f)], f - Math.floor(f)).normalize();
+      side.crossVectors(tg, up).normalize(); const fl = up; ups.push(fl);
+      for (const [j, s] of [[0, -1], [1, 1]]) rails[j].push(p.clone().addScaledVector(fl, -rad * 0.82).addScaledVector(side, s * rad * 0.42));
+    }
+    for (const r of rails) { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(r), N, 0.035, 6, false), steel); m.userData = { type: "passage", id: k.id }; g.add(m); pickables.push(m); }
+    // The car (a lift's) at the middle, facing along the track; a walkway gets a grating strip instead.
+    if (k.kind === "Lift") {
+      const t = 0.5, p = curve.getPointAt(t), tg = curve.getTangentAt(t), up = ups[Math.round(t * N)], ch = Math.min(1.9, 2 * rad * 0.85);
+      const car = new THREE.Mesh(new THREE.BoxGeometry(rad * 1.2, ch, Math.min(1.4, rad * 1.8)), new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 }));
+      const m4 = new THREE.Matrix4(), sd = new THREE.Vector3().crossVectors(up, tg).normalize(), u2 = new THREE.Vector3().crossVectors(tg, sd).normalize();
+      m4.makeBasis(sd, u2, tg); car.quaternion.setFromRotationMatrix(m4);
+      car.position.copy(p).addScaledVector(u2, -rad * 0.82 + ch / 2 + 0.05); car.userData = { type: "passage", id: k.id }; g.add(car); pickables.push(car);
+    } else for (let i = 0; i < N; i += 2) {
+      const p = curve.getPointAt((i + 0.5) / N), tg = curve.getTangentAt((i + 0.5) / N), up = ups[i], sd = new THREE.Vector3().crossVectors(up, tg).normalize(), u2 = new THREE.Vector3().crossVectors(tg, sd).normalize();
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(rad * 1.1, 0.03, curve.getLength() / N * 1.6), steel), m4 = new THREE.Matrix4();
+      m4.makeBasis(sd, u2, tg); plank.quaternion.setFromRotationMatrix(m4); plank.position.copy(p).addScaledVector(u2, -rad * 0.8); g.add(plank);
+    }
+    // A door frame at each end, in the room's wall, facing along the tube.
+    for (const [p, tg] of [[P[0], curve.getTangentAt(0)], [P[P.length - 1], curve.getTangentAt(1)]]) {
+      const fr = new THREE.Group(), up = S.stacked ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0), flat = tg.clone().addScaledVector(up, -tg.dot(up)).normalize();
+      const sd = new THREE.Vector3().crossVectors(up, flat).normalize(), m4 = new THREE.Matrix4(); m4.makeBasis(sd, up, flat); fr.quaternion.setFromRotationMatrix(m4); fr.position.copy(p);
+      for (const [bw, bh, x, y] of [[0.1, 2.1, -0.5, 0], [0.1, 2.1, 0.5, 0], [1.1, 0.1, 0, 1.05]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.2), steel); b.position.set(x, y, 0); fr.add(b); }
+      g.add(fr);
+    }
+    g.traverse(o => { o.renderOrder = 5; }); world.add(g);
   }
 }
 // The deck a new ladder or lift reaches from this one: the next deck up (fore when stacked), else the next one down.
@@ -892,6 +938,17 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (h) select(h.object.userData.type, h.object.userData.id); else select(null, 0);
     return;
   }
+  if (mode === "interior" && linking) {
+    const h = hits.find(h => h.object.userData.type === "room");
+    if (!h) { linking = null; leftPanel(); rebuild(); toast("Stopped linking."); return; }
+    const id = h.object.userData.id;
+    if (!linking.from) { linking.from = id; select("room", id); $("tip").textContent = "Now click a room in the body at the arm's other end."; return; }
+    if (id === linking.from) return;
+    const a = cmd({ op: "addPassage", a: linking.from, b: id, kind: linking.kind }); linking = null; leftPanel();
+    if (a.error) { toast(a.error); rebuild(); return; }
+    select("passage", a.id); toast(`${a.scene?.passages?.find(k => k.id === a.id)?.ok === false ? "Laid, but the arm is too thin: see the checks." : "Linked through the arm."}`, true);
+    return;
+  }
   if (mode === "interior" && mergeFrom) {
     const h = hits.find(h => h.object.userData.type === "room"), from = mergeFrom; mergeFrom = 0;
     const other = h && S.rooms.find(r => r.id === h.object.userData.id), mine = S.rooms.find(r => r.id === from);
@@ -910,8 +967,8 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     if (hw?.object.userData.type === "hullwin" && !placingRiser && !mergeFrom) { select("hullwin", hw.object.userData.id); return; }
   }
   if (mode === "interior") {
-    const rz = hits.find(h => h.object.userData.type === "riser");
-    if (rz && rz === hits.find(h => ["riser", "room"].includes(h.object.userData.type))) { select("riser", rz.object.userData.id); return; }
+    const rz = hits.find(h => ["riser", "passage"].includes(h.object.userData.type));
+    if (rz && rz === hits.find(h => ["riser", "passage", "room"].includes(h.object.userData.type))) { select(rz.object.userData.type, rz.object.userData.id); return; }
     const r = hits.find(h => h.object.userData.type === "room");
     // In Room view a click on a connected room makes it the room shown (Karl, 2026-11-25): the drop-down and its neighbours follow.
     if (r && roomView && r.object.userData.id !== roomView.room) { enterRoomView(r.object.userData.id); return; }
@@ -1013,6 +1070,7 @@ function axisZ(ev, h) {
 }
 // Mounting a socket from a room (Karl, 2026-11-24): hover the room's wall, floor or ceiling and a holo of the piece shows where the
 // line out from that face leaves the hull; a click fits it there, opening into the room. Esc stops.
+let linking = null, deckBody = 0; // the Link rooms tool ({kind, from}); the body whose decks the Interior tab shows (0: all)
 let mounting = null, pieceSize = 1, pieceRecess = 0, extShape = "Box", extUp = "Vault", mergeFrom = 0, mergeAcross = null;
 function startMount(kind, room) {
   stopMount();
@@ -1360,9 +1418,16 @@ function leftPanel() {
         el("p", { class: "hint" }, "Only this room, with its walls and interior. Pick another room above to switch; any other tab or Esc goes back to the ship.")));
       return;
     }
+    // Which body's decks (Karl, 2026-11-26): a side pod or a nacelle holds its own decks and rooms, clipped to its skin.
+    if (deckBody && !S.hulls.some(h => h.id === deckBody)) deckBody = 0;
+    const bodyName = id => S.hulls.find(h => h.id === id)?.name ?? "";
+    const bsel = el("div", { class: "row" }, el("span", {}, "Body"),
+      el("button", { class: deckBody === 0 ? "on" : "", onclick: () => { deckBody = 0; panels(); } }, "All"),
+      ...S.hulls.map(h => el("button", { class: deckBody === h.id ? "on" : "", onclick: () => { deckBody = h.id; const i = S.decks.findIndex(d => d.hull === h.id || (!d.hull && h === S.hulls[0])); if (i >= 0) deck = i; rebuild(); panels(); } }, h.name)));
     const dsel = el("div", { class: "row" });
-    S.decks.forEach((d, i) => dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}`)));
-    dsel.append(el("button", { onclick: () => { cmd({ op: "addDeck" }); deck = S.decks.length - 1; rebuild(); panels(); } }, "+ Deck"));
+    S.decks.forEach((d, i) => { if (deckBody && !(d.hull === deckBody || (!d.hull && deckBody === S.hulls[0].id))) return;
+      dsel.append(el("button", { class: i === deck ? "on" : "", onclick: () => { deck = i; rebuild(); panels(); } }, `Deck ${i + 1}${d.hull ? ` (${bodyName(d.hull)})` : ""}`)); });
+    dsel.append(el("button", { title: deckBody ? "A deck in this body: its rooms clip to its skin" : "A deck over the whole ship", onclick: () => { const a = cmd({ op: "addDeck", ...(deckBody && deckBody !== S.hulls[0].id ? { hull: deckBody } : {}) }); if (a.error) { toast(a.error); return; } deck = S.decks.length - 1; rebuild(); panels(); } }, deckBody && deckBody !== S.hulls[0].id ? `+ Deck in ${bodyName(deckBody)}` : "+ Deck"));
     const d = S.decks[deck];
     if (mode === "connectors") {
       L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), dsel),
@@ -1374,7 +1439,7 @@ function leftPanel() {
     const orient = el("div", { class: "row" },
       el("button", { class: S.stacked ? "" : "on", onclick: () => { if (S.stacked) { cmd({ op: "orient", stacked: false }); deck = 0; toast("Decks laid along the length. Undo brings the old decks and rooms back.", true); panels(); } } }, "Along the length"),
       el("button", { class: S.stacked ? "on" : "", onclick: () => { if (!S.stacked) { cmd({ op: "orient", stacked: true }); deck = 0; toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true); panels(); } } }, "Stacked (thrust is down)"));
-    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), el("p", { class: "hint" }, "Orientation"), orient, dsel,
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Decks"), el("p", { class: "hint" }, "Orientation"), orient, bsel, dsel,
       d ? el("div", { class: "grid2" },
         el("span", {}, S.stacked ? "floor at z" : "floor m"), num(d.floor, v => cmd({ op: "setDeck", deck, floor: v }), 0.05, "deckfloor"),
         el("span", {}, "clear m"), num(d.height, v => cmd({ op: "setDeck", deck, height: v }), 0.05, "deckheight")) : "",
@@ -1388,7 +1453,10 @@ function leftPanel() {
     L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "drawon", ...(drawing ? { checked: "" } : {}), onchange: e => drawing = e.target.checked }), "Draw rooms by dragging"),
       kinds,
-      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")));
+      el("p", { class: "hint" }, "Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.")),
+      el("div", { class: "sec" }, el("h2", {}, "Between bodies", el("span", { class: "n" }, `${(S.passages || []).length}`)),
+        el("div", { class: "row" }, ...["Lift", "Walkway"].map(k => el("button", { class: linking?.kind === k ? "on" : "", onclick: () => { linking = linking?.kind === k ? null : { kind: k, from: 0 }; leftPanel(); rebuild(); $("tip").textContent = linking ? "Link rooms: click a room, then a room in the body at the other end of an arm." : tips[mode]; } }, `Link rooms: ${k.toLowerCase()}`))),
+        el("p", { class: "hint" }, `Runs through the arm that joins the two rooms' bodies, along its curve, with a door in each room's wall. The arm needs ${"1.2"} m clear inside.`)));
   }
 }
 
@@ -1587,6 +1655,16 @@ function inspector() {
       I.append(el("div", { class: "row" }, ...["Rect", "Round", "Oval", "Arch"].map(sh => el("button", { class: p.shape === sh ? "on" : "", onclick: () => cmd({ op: "setDoor", id: p.id, shape: sh }) }, sh === "Rect" ? "Square" : sh))),
         sl("Width", "w", p.w, 30, 400, 5, " cm", 100), ...(p.shape === "Round" ? [] : [sl("Height", "h", p.h, 30, 240, 5, " cm", 100)]), sl("Sill", "sill", p.sill, 0, 200, 5, " cm", 100));
     I.append(el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delDoor", id: p.id }); select(null, 0); } }, p.kind === "Window" ? "Delete" : "Back to the middle")));
+    return;
+  }
+  if (sel.kind === "passage") {
+    const k = (S.passages || []).find(k => k.id === sel.id); if (!k) return;
+    const nm = id => { const r = S.rooms.find(r => r.id === id); return r ? r.label || r.kind : "?"; };
+    I.append(el("h2", {}, k.kind, el("span", { class: "n" }, k.ok ? `${fmt(k.clear)} m clear` : k.pts.length ? "arm too thin" : "see checks")),
+      el("p", { class: "hint" }, `From ${nm(k.a)} through the arm to ${nm(k.b)}, along the arm's curve, with a door in each room's wall.`),
+      el("div", { class: "row" }, ...["Lift", "Walkway"].map(t => el("button", { class: k.kind === t ? "on" : "", onclick: () => cmd({ op: "setPassage", id: k.id, kind: t }) }, t))),
+      el("div", { class: "row" }, ...[k.a, k.b].map(id => el("button", { onclick: () => enterRoomView(id, true) }, `Room view: ${nm(id)}`))),
+      el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPassage", id: k.id }); select(null, 0); } }, "Delete")));
     return;
   }
   if (sel.kind === "riser") {
@@ -1789,10 +1867,11 @@ function checks() {
     const [k, id] = i.what.split(":");
     if (k === "room") { const r = S.rooms.find(r => r.id === +id); if (r) { deck = r.deck; if (mode !== "interior") setMode("interior"); select("room", +id); } }
     else if (k === "piece") { if (mode !== "pieces") setMode("pieces"); select("piece", +id); }
+    else if (k === "passage") { if (mode !== "interior") setMode("interior"); select("passage", +id); }
   } }, i.text));
   const st = S.stats;
   $("stats").replaceChildren(...[["length", `${fmt(st.length)} m`], ["beam", `${fmt(st.beam)} m`], ["height", `${fmt(st.height)} m`], ["floor", `${fmt(st.floor)} m2`],
-    ["cargo hold", `${fmt(st.hold)} m3`], ["bunks", `${st.bunks}`], ["rooms", `${st.rooms}`], ["pieces", `${st.pieces}`]].map(([k, v]) => el("div", { class: "stat" }, el("b", {}, v), el("span", {}, k))));
+    ["cargo hold", `${fmt(st.hold)} m3`], ["bunks", `${st.bunks}`], ["rooms", `${st.rooms}${st.podRooms ? ` (${st.podRooms} in pods)` : ""}`], ...(st.podRooms ? [["pod floor", `${fmt(st.podFloor)} m2`]] : []), ...(st.passages ? [["passages", `${st.passages}`]] : []), ["pieces", `${st.pieces}`]].map(([k, v]) => el("div", { class: "stat" }, el("b", {}, v), el("span", {}, k))));
 }
 
 // ---------- the bar
@@ -1835,10 +1914,11 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "room") { cmd({ op: "delRoom", id: sel.id }); select(null, 0); }
     else if (sel.kind === "join") { cmd({ op: "delJoin", id: sel.id }); select(null, 0); }
     else if (sel.kind === "riser") { cmd({ op: "delRiser", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "passage") { cmd({ op: "delPassage", id: sel.id }); select(null, 0); }
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
-  } else if (e.key === "Escape") { if (mounting) stopMount(); else if (roomView) exitRoomView(); else select(null, 0); }
+  } else if (e.key === "Escape") { if (linking) { linking = null; leftPanel(); rebuild(); } else if (mounting) stopMount(); else if (roomView) exitRoomView(); else select(null, 0); }
 });
 
 window.shipDesigner = { cmd, enterRoomView, exitRoomView, roomView: () => roomView, world, selectStation, select, setMode, camera, controls, timing }; // (for a page test)

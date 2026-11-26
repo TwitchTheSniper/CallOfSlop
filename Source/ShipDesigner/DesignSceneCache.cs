@@ -76,7 +76,7 @@ public static partial class DesignScene
         foreach (var h in d.Hulls)
             k.Append('|').Append(h.ShapeKey());
         foreach (var dk in d.Decks)
-            k.Append('/').Append(ShipDesign.R(dk.Floor)).Append(',').Append(ShipDesign.R(dk.Height));
+            k.Append('/').Append(ShipDesign.R(dk.Floor)).Append(',').Append(ShipDesign.R(dk.Height)).Append(',').Append(d.HullIndex(dk.Hull));
         return k.ToString();
     }
 

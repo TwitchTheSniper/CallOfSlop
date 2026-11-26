@@ -33,6 +33,8 @@ public static partial class DesignScene
         public readonly HashSet<int> Reached = [];
         /// <summary>Each room's neighbours through a door, a shaft or a riser (what Room view's connected rooms are).</summary>
         public Dictionary<int, List<int>> Joined = [];
+        /// <summary>Each passage through an arm as laid (null where it can't be).</summary>
+        public readonly List<(Passage K, PassageLay? L)> Passages = [];
     }
 
     // ---- where a piece sits
@@ -1022,6 +1024,25 @@ public static partial class DesignScene
                 c.Issues.Add(new("warn", $"{k.Kind} has no room round it on deck {string.Join(", ", stops)} (it needs a room its whole {2 * k.Half.Hx:0.0} x {2 * k.Half.Hz:0.0} m fits in)", $"riser:{k.Id}"));
         }
 
+        // Passages through the arms between bodies (Karl, 2026-11-26): each joins its two rooms through a door in each one's wall.
+        foreach (var k in d.Passages)
+        {
+            var (why, lay) = LayPassage(d, k);
+            c.Passages.Add((k, lay));
+            var ra = d.RoomById(k.A);
+            if (lay is null)
+            {
+                c.Issues.Add(new("warn", $"The {k.Kind.ToLowerInvariant()} from {(ra is null ? "a room" : Name(ra))} can't be laid: {why}", $"passage:{k.Id}"));
+                continue;
+            }
+            joins[k.A].Add(k.B);
+            joins[k.B].Add(k.A);
+            c.Doors.Add(lay.DoorA);
+            c.Doors.Add(lay.DoorB);
+            if (lay.Clear < Passage.MinClear)
+                c.Issues.Add(new("warn", $"The arm is too thin for the {k.Kind.ToLowerInvariant()} from {Name(ra!)}: {Math.Max(0, lay.Clear):0.00} m clear inside, a person needs {Passage.MinClear:0.0} m. Make the arm wider and taller", $"passage:{k.Id}"));
+        }
+
         // Pieces: on their hull, not where the skin is cut away; sockets reach a room of the kind they need.
         var lowest = d.Decks.Count == 0 ? -1 : d.Decks.IndexOf(d.Decks.MinBy(k => k.Floor)!);
         var entries = new List<int>();
@@ -1558,7 +1579,8 @@ public static partial class DesignScene
         }
         sb.Append("],\"decks\":[");
         for (var i = 0; i < d.Decks.Count; i++)
-            sb.Append(i > 0 ? "," : "").Append("{\"floor\":").Append(ShipDesign.S(d.Decks[i].Floor)).Append(",\"height\":").Append(ShipDesign.S(d.Decks[i].Height)).Append('}');
+            sb.Append(i > 0 ? "," : "").Append("{\"floor\":").Append(ShipDesign.S(d.Decks[i].Floor)).Append(",\"height\":").Append(ShipDesign.S(d.Decks[i].Height))
+              .Append(",\"hull\":").Append(d.Decks[i].Hull != 0 && d.Hull(d.Decks[i].Hull) is not null ? d.Decks[i].Hull : 0).Append('}');
         sb.Append("],\"rooms\":[");
         for (var i = 0; i < d.Rooms.Count; i++)
         {
@@ -1572,7 +1594,7 @@ public static partial class DesignScene
                   var (_, ra, rb) = ExtMesh(d, r, e);
                   return $"{{\"side\":{Q(e.Side)},\"shape\":{Q(e.Shape)},\"depth\":{ShipDesign.S(e.Depth)},\"width\":{ShipDesign.S(e.Width)},\"t\":{ShipDesign.S(e.T)},\"a\":[{string.Join(',', ra.SelectMany(p => p).Select(ShipDesign.S))}],\"b\":[{string.Join(',', rb.SelectMany(p => p).Select(ShipDesign.S))}]}}";
               }))).Append(']')
-              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"runAft\":").Append(r.RunAft ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r)));
+              .Append(",\"toHull\":").Append(r.ToHull ? "true" : "false").Append(",\"runOn\":").Append(r.RunOn ? "true" : "false").Append(",\"runAft\":").Append(r.RunAft ? "true" : "false").Append(",\"area\":").Append(ShipDesign.S(Area(d, r))).Append(",\"body\":").Append(HomeBody(d, r)?.Id ?? 0);
             // A room's meshes follow the skin, its own plan and others' (edges, shared walls) and the doors.
             var rk = r.Id + ":" + shapes + "|" + plans + "|" + doorKey; // its own plan is in plans
             var ik = rk + "|" + r.ToJson().ToJsonString(); // its interior's look too
@@ -1680,6 +1702,15 @@ public static partial class DesignScene
               .Append(",\"stops\":[").Append(string.Join(',', d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).Select(q => ShipDesign.S(q.Floor)))).Append(']')
               .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append("]}");
         }
+        sb.Append("],\"passages\":[");
+        for (var i = 0; i < c.Passages.Count; i++)
+        {
+            var (k, l) = c.Passages[i];
+            sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(k.Id).Append(",\"a\":").Append(k.A).Append(",\"b\":").Append(k.B).Append(",\"kind\":").Append(Q(k.Kind))
+              .Append(",\"join\":").Append(l?.Join.Id ?? 0).Append(",\"ok\":").Append(l is not null && l.Clear >= Passage.MinClear ? "true" : "false").Append(",\"clear\":").Append(ShipDesign.S(l?.Clear ?? 0))
+              .Append(",\"pts\":[").Append(l is null ? "" : string.Join(',', l.Pts.SelectMany(p => p).Select(ShipDesign.S)))
+              .Append("],\"ups\":[").Append(l is null ? "" : string.Join(',', l.Ups.SelectMany(p => p).Select(ShipDesign.S))).Append("]}");
+        }
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {
@@ -1706,9 +1737,12 @@ public static partial class DesignScene
         var floor = d.Rooms.Sum(r => Area(d, r));
         var hold = d.Rooms.Where(r => r.Kind == "Hold").Sum(r => Area(d, r) * d.DeckOf(r).Height);
         var bunks = d.Rooms.Where(r => r.Kind == "Cabin").Sum(r => Math.Floor(Area(d, r) / 6));
+        // Rooms in bodies other than the first (side pods, nacelles: Karl, 2026-11-26) count in all of the above; their share apart.
+        var main = d.Hulls.Count > 0 ? d.Hulls[0] : null;
+        var away = d.Rooms.Where(r => HomeBody(d, r) is { } hb && hb != main).ToList();
         sb.Append("{\"length\":").Append(ShipDesign.S(z1 - z0)).Append(",\"beam\":").Append(ShipDesign.S(x1 - x0)).Append(",\"height\":").Append(ShipDesign.S(y1 - y0))
           .Append(",\"floor\":").Append(ShipDesign.S(floor)).Append(",\"hold\":").Append(ShipDesign.S(hold)).Append(",\"bunks\":").Append(bunks)
-          .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => (p.Mirror ? 2 : 1) * (p.Pair && d.Hull(p.Hull)?.Copies == 2 ? 2 : 1))).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');
+          .Append(",\"rooms\":").Append(d.Rooms.Count).Append(",\"podRooms\":").Append(away.Count).Append(",\"podFloor\":").Append(ShipDesign.S(away.Sum(r => Area(d, r)))).Append(",\"passages\":").Append(d.Passages.Count).Append(",\"pieces\":").Append(d.Pieces.Sum(p => (p.Mirror ? 2 : 1) * (p.Pair && d.Hull(p.Hull)?.Copies == 2 ? 2 : 1))).Append(",\"hulls\":").Append(d.Hulls.Count).Append('}');
     }
 
     public static string Q(string s)
