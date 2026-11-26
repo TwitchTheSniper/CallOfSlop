@@ -50,6 +50,9 @@ public static class LogicBlocks
             case CLogic.DamageSensor:
                 d.DataOut = ["hit", ConstructRoutes.WatchName];
                 break;
+            case CLogic.StationConsole:
+                d.DataOut = ["Done", ConstructRoutes.WatchName];
+                break;
             case CLogic.BusIn:
                 d.DataIn = Numbered(BusWidth);
                 break;

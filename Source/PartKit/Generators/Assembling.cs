@@ -1111,6 +1111,8 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Large Dock Expansion", 120, 3, m: [("steel", 2000), ("rubber", 200), ("copper", 80)], p: [("Wiring Loom", 3), ("Gear Set", 8)])),
         // (the Die Wall, a Die Rack of twenty shelves for a press pair's Loader Arm, Sean 2026-11-26; after everything: AfterCloche)
         (null, null, Rec("Die Wall", 12, 1, m: [("steel", 120), ("rubber", 10)])),
+        // (the Station Console, a Building Station's screen at a desk, Sean 2026-11-26: the Line Console's recipe; after everything: AfterCloche)
+        (null, null, Rec("Station Console", 3.2, 3, m: [("steel", 8), ("copper", 13)], p: [("Circuit Board", 1)])),
     ];
 
     /// <summary>

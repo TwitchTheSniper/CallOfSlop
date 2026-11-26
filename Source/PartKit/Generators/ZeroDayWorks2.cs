@@ -98,6 +98,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             s.Lay(items);
             s.LayLinks();
+            s.StationConsoles();
             if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
                 throw new VehicleKitException($"Zero Day Works II: {s.Live.PartCount} parts and {s.Live.LinkCount} links, past three quarters of a body's caps ({Construct.MaxParts}, {Construct.MaxLinks})");
             s.Note($"{s.Live.PartCount} parts, {s.Live.LinkCount} links; {s._chained} welded on a neighbour's side (on a slab's edge), {s._welded} welded freeform, {s._missed} not placed");
@@ -456,6 +457,10 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 _roverAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
 
+            // Every Line Console in the control row by the west gensets (ZeroDayWorks2.ControlRow.cs), in the order of where the layout puts it.
+            foreach (var it in items.Where(i => Str(i, "name") == "Line Console").OrderBy(i => Num(i, "x")).ThenBy(i => Num(i, "z")))
+                _rowSlot[Key(it)] = _rowSlot.Count;
+
             // Pieces on the floor first (block parts, then the bigger ones), the lab machines, then what welds on them.
             var parts = items.Where(i => Str(i, "t") == "part").ToList();
             var cores = new[] { "Smelter", "Foundry", "Sawmill", "Assembler" };
@@ -542,7 +547,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     return Piece(name, at, Facing(flow), Stock);
                 case "Line Console":
                 {
-                    var p = Piece(name, at, Facing(flow), Crane);
+                    // (in the control row, not where the layout puts it: its links are still worked out from there, ZeroDayWorks2.ControlRow.cs)
+                    var p = Piece(name, RowSpot(_rowSlot[Key(it)]), Facing(RowFaces), Crane);
                     if (p != null)
                         Config(p, ("startOn", 0));
                     return p;
