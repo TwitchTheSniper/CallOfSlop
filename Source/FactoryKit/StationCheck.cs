@@ -152,6 +152,21 @@ public static class StationCheck
                                 var into = new int[32];
                                 return into.Take(ProductionLines.Machines(c, c.Routes[k].Source, into)).Select(m => $"{c.DefOf(m).Name} {m}").ToArray();
                             })));
+        void Consoles() // (--consoles: each Station Console, the station its watch link names, its Done output and its screen as a peer fills it)
+        {
+            if (!args.Contains("--consoles"))
+                return;
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).Logic == CLogic.StationConsole && c.DefOf(i).Panels is [{ Fill: { } fill } panel, ..])
+                {
+                    var card = new PanelCard();
+                    fill(w, c, i, panel, card);
+                    var lines = string.Join(" | ", Enumerable.Range(0, PanelCard.MaxLines).Where(l => card.Line(l).Length > 0).Select(l => new string(card.Line(l))));
+                    var st = ConstructStationConsole.StationOf(c, c.Parts[i].Watch);
+                    Console.WriteLine($"  Station Console {i} at {c.Parts[i].Pos.X:0.#},{c.Parts[i].Pos.Z:0.#}: watches {(st < 0 ? "nothing" : $"station {st} (Station {ConstructStationConsole.Number(c, st)})")}, Done {ConstructStationConsole.Done(c, c.Parts[i].Watch)}, screen: {lines}");
+                }
+        }
+        Consoles();
         if (Arg("--floor-map") is { } mapArg && mapArg.Split(',') is [var mx0, var mz0, var mx1, var mz1]) // (--floor-map X0,Z0,X1,Z1: a 1 m map of what stands on the floor there, # taken, . free; for laying a site out)
         {
             int ax = (int)float.Parse(mx0), az = (int)float.Parse(mz0), bx = (int)float.Parse(mx1), bz = (int)float.Parse(mz1);
@@ -318,6 +333,7 @@ public static class StationCheck
             foreach (var line in AllocProfile.SlowTicks)
                 Console.WriteLine($"    {line}");
         }
+        Consoles();
         string Holds(int i) => w.StoreOf(c, i) is not { } st ? "no store" : $"{st.Amount} {RecyclingTable.Current.NameOf(st.Material)}"
             + (st.InAmount > 0 ? $", in {st.InAmount} {RecyclingTable.Current.NameOf(st.InMaterial)}" : "")
             + (st.MixN > 0 ? ", mix " + string.Join(" ", Enumerable.Range(0, st.MixN).Select(k => $"{st.MixAmount![k]} {RecyclingTable.Current.NameOf(st.MixMat![k])}")) : "");
