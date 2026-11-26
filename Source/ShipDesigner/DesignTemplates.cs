@@ -192,6 +192,7 @@ public static class DesignTemplates
         At("Cargo hatch", 21, -1, 1.5);
         Keel("Docking collar", 29);
         Keel("Boarding hatch", 14);
+        PieceWeapons.Migrate(d); // its guns on mounts (Karl, 2026-11-26)
         return d;
     }
 }

@@ -182,6 +182,8 @@ public static class PieceKinds
         .. PieceDocking.Kinds,
         // Hangar bays, their fittings, the lift platform and the ramp deck (Karl, 2026-11-26): DesignHangar.
         ..DesignHangar.Kinds,
+        // Weapon mounts, the shell magazine and the ammo hoist (Karl, 2026-11-26): DesignWeaponMounts.cs.
+        .. PieceWeapons.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

@@ -435,6 +435,7 @@ function rebuild() {
   if (view.parts) drawConnectors();
   if (inside() || view.xray) drawRisers();
   if (inside() || view.xray) drawPassages();
+  drawReserves();
   if (view.hull || inside()) drawHullWindows();
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
@@ -621,6 +622,23 @@ function drawRooms(only = null) {
 // corner posts and its car at the lowest stop; amber frames mark where it passes each deck. Pickable in the interior.
 let placingRiser = null, doorFrom = 0, doorKind = "Door";
 const inside = () => mode === "interior" || mode === "connectors";
+// Weapons' reserved volumes behind their mounts (Karl, 2026-11-26; Source/ShipDesigner/DesignWeaponMounts.cs): hologram boxes, red where a
+// room or the skin clips them. Shown in X-ray, inside, and for the picked mount.
+function drawReserves() {
+  for (const p of S.pieces) {
+    if (!p.reserve?.length || !(view.xray || inside() || (sel.kind === "piece" && sel.id === p.id))) continue;
+    for (const r of p.reserve) {
+      const [cx, cy, cz, ax, ay, az, bx, by, bz, dx, dy, dz, bad] = r;
+      const A = new THREE.Vector3(ax, ay, az), B = new THREE.Vector3(bx, by, bz), D = new THREE.Vector3(dx, dy, dz);
+      const mtx = new THREE.Matrix4().makeBasis(A.clone().normalize(), B.clone().normalize(), D.clone().normalize()).setPosition(cx, cy, cz);
+      const geo = new THREE.BoxGeometry(2 * A.length(), 2 * B.length(), 2 * D.length()), col = bad ? 0xff5a44 : 0x46d2ff;
+      const box = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18, depthWrite: false, depthTest: false }));
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.9, depthTest: false }));
+      for (const o of [box, edge]) { o.matrixAutoUpdate = false; o.matrix.copy(mtx); o.renderOrder = 7; world.add(o); }
+    }
+  }
+}
+
 function drawRisers() {
   for (const k of S.risers || []) {
     const a = new THREE.Vector3(...k.a), b = new THREE.Vector3(...k.b), len = a.distanceTo(b); if (len < 0.1) continue;
@@ -1306,10 +1324,10 @@ function dockControls(p) {
       el("div", { class: "row" }, resetAll("Chamber and doors back to their defaults", () => send(dfltOf("piece", ["airW", "airH", "airD", "doorW", "door"])))),
       el("p", { class: "hint" }, "An outer hatch on the skin, the chamber, and an inner door into the room. Width runs along the hull, height across the hatch.")];
   }
-  if (p.kind === "Ammo socket") {
-    const guns = S.pieces.filter(q => q.id !== p.id && q.kind !== "Ammo socket" && CAT.pieces.find(k => k.name === q.kind)?.group === "Weapons");
+  if ((CAT.feeders || ["Ammo socket"]).includes(p.kind)) {
+    const guns = S.pieces.filter(q => q.id !== p.id && !(CAT.feeders || ["Ammo socket"]).includes(q.kind) && CAT.pieces.find(k => k.name === q.kind)?.group === "Weapons");
     const sel = el("select", { "aria-label": "Gun it feeds", onchange: e => send({ feed: +e.target.value }) }, el("option", { value: "0" }, "Nearest weapon"),
-      ...guns.map(q => el("option", { value: q.id, ...(p.feed === q.id ? { selected: "" } : {}) }, `${q.kind} #${q.id}`)));
+      ...guns.map(q => el("option", { value: q.id, ...(p.feed === q.id ? { selected: "" } : {}) }, `${q.kind}${q.fit ? " (" + q.fit + ")" : ""} #${q.id}`)));
     const to = S.pieces.find(q => q.id === p.feeds);
     return [el("h3", {}, "Feed"), el("div", { class: "row" }, el("span", {}, "Feeds"), sel),
       el("p", { class: "hint" }, to ? `Feeds the ${to.kind} #${to.id} (the orange line).` : "Feeds nothing: there is no weapon on the ship.")];
@@ -1345,6 +1363,18 @@ function hangarControls(p) {
       el("p", { class: "hint" }, p.link ? "Linked to the bay and its door (the dashed lines with Socket links on); it sits on the bay's floor." : "Not linked: it sits where it was dropped. Pick the bay it serves.")];
   }
   return [];
+}
+// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller.
+function mountControls(p) {
+  if (!p.mountClass) return [];
+  const send = o => { const a = cmd({ op: "setPiece", id: p.id, ...o }); if (a?.error) toast(a.error); }, D = CAT.defaults.piece, cls = "SML";
+  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass);
+  const s = el("select", { "aria-label": "Weapon fitted", onchange: e => send({ fit: e.target.value }) }, el("option", { value: "" }, "Empty mount"),
+    ...ws.map(w => el("option", { value: w.name, title: w.desc, ...(p.fit === w.name ? { selected: "" } : {}) }, `${w.name} (${cls[w.class - 1]})`)));
+  const w = (CAT.weapons || []).find(w => w.name === p.fit), bad = p.reserve?.some(r => r[12]);
+  return [el("h3", {}, "Weapon"), el("div", { class: "row" }, el("span", {}, "Fitted"), s,
+      el("button", { class: "reset", title: "Back to an empty mount", onclick: () => send({ fit: D.fit }) }, "\u21ba")),
+    el("p", { class: "hint" }, w ? `${w.desc} It reserves its ${w.reserve} behind the mount (the hologram box)${bad ? ": a room or the skin clips it" : ""}.` : `A size ${cls[p.mountClass - 1]} mount: fit a weapon of that size or smaller.`)];
 }
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
@@ -1458,7 +1488,7 @@ function leftPanel() {
       slider("Size to place", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }), slider("Recess to place", Math.round(pieceRecess * 100), 0, 200, 5, " cm", v => { pieceRecess = v / 100; })));
     for (const g of groups) {
       const pal = el("div", { class: "pal" });
-      for (const k of CAT.pieces.filter(p => p.group === g)) {
+      for (const k of CAT.pieces.filter(p => p.group === g && !(CAT.legacy || []).includes(p.name))) {
         const b = el("button", { class: k.socket ? "sock" : "", title: k.desc }, el("b", {}, k.name), el("i", {}, k.socket ? `needs ${k.needs}` : (k.where === "skin" ? "on the skin" : "on a hull's end")));
         b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
         pal.append(b);
@@ -1812,6 +1842,7 @@ function inspector() {
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
       ...dockControls(p),
       ...hangarControls(p),
+      ...mountControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
