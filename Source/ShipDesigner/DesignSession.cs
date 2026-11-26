@@ -74,6 +74,7 @@ public sealed class DesignSession
         var h = new HullBody();
         var r = new Room();
         // Weapon mounts' fittings and the pieces that feed them (Karl, 2026-11-26; DesignWeaponMounts.cs).
+        c["roles"] = new JsonArray([.. DesignSeats.Roles.Select(r => (JsonNode)r)]); // a seat's roles (DesignSeats)
         c["weapons"] = new JsonArray([.. PieceWeapons.Weapons.Select(w => (JsonNode)new JsonObject { ["name"] = w.Name, ["class"] = w.Class, ["desc"] = w.Desc, ["reserve"] = w.Reserve })]);
         c["feeders"] = new JsonArray([.. PieceWeapons.Feeders.Select(f => (JsonNode)f)]);
         c["legacy"] = new JsonArray([.. PieceWeapons.Legacy.Select(f => (JsonNode)f)]);
@@ -103,6 +104,8 @@ public sealed class DesignSession
             ["hangar"] = DesignHangar.Defaults(),
             // A floodlight's aim and beam (DesignFittings).
             ["fitting"] = DesignFittings.Defaults(),
+            // A seat's role (DesignSeats).
+            ["seat"] = DesignSeats.Defaults(),
         };
         return c.ToJsonString();
     }

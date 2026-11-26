@@ -1253,6 +1253,13 @@ public sealed partial class ConstructEdits
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
+        if (d.Role != PartRole.Seat && DesignParts.BoardSeat(c, part) is var board and >= 0)
+        {
+            // A ship design's hull is solid until its rooms are walkable (the plan's step 4): F on it sits the player at its helm, or
+            // its first free seat, as if they had walked in (DesignParts.cs).
+            part = board;
+            d = c.DefOf(part);
+        }
         if (d.ToolDock)
             return DockUse(world, player, c, part);
         if (d.ModPart == ModPart.Socket || d.ModPart == ModPart.Plug && ModuleSockets.ModuleOfPart(c, part) is var mp and >= 0 && (c.Modules[mp].Socket >= 0 || c.Modules[mp].OnStand))

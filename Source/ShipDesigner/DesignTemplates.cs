@@ -193,6 +193,11 @@ public static class DesignTemplates
         Keel("Docking collar", 29);
         Keel("Boarding hatch", 14);
         PieceWeapons.Migrate(d); // its guns on mounts (Karl, 2026-11-26)
+        // The bridge's seats (Karl, 2026-11-26: step 3, a design flies from its helm): the helm forward, the captain behind it.
+        var bridge = d.Rooms.First(r => r.Kind == "Bridge").Id;
+        void Seat(double z, string role) => d.Pieces.Add(new Piece { Id = d.NewId(), Kind = DesignSeats.Kind, Hull = hull.Id, Z = z, T = 1, Room = bridge, Role = role });
+        Seat(10, "Helm");
+        Seat(12, "Captain");
         return d;
     }
 }

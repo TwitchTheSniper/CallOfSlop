@@ -246,6 +246,14 @@ public enum CfgKey : byte
 /// <summary>One setting a part declares (its file's <c>"config"</c> list; docs/sandbox/CONSTRUCTS.md, "The configure tool").</summary>
 public sealed class CConfigDef
 {
+    /// <summary>A copy with another default (a design's flight computer: DesignParts.cs).</summary>
+    public CConfigDef Copy(float dflt)
+    {
+        var c = (CConfigDef)MemberwiseClone();
+        c.Default = dflt;
+        return c;
+    }
+
     public string Key = "";
     public CfgKey Id;
     public CfgType Type;

@@ -1122,8 +1122,8 @@ public static partial class DesignScene
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
                 {
-                    if (kind.Socket is not null && kind.Socket != "window")
-                        entries.Add(best!.Id); // a window looks out; it isn't a way aboard
+                    if (kind.Socket is not null && kind.Socket is not ("window" or "seat"))
+                        entries.Add(best!.Id); // a window looks out and a seat sits inside: neither is a way aboard
                 }
                 else if (kind.Service)
                 {
@@ -1142,6 +1142,7 @@ public static partial class DesignScene
             c.PieceOk[p.Id] = ok;
         }
         PieceWeapons.Check(d, c); // weapons' reserved volumes (Karl, 2026-11-26)
+        DesignSeats.Check(d, c); // a helm to fly it (Karl, 2026-11-26)
 
         // Every room reachable from a way aboard.
         var queue = new Queue<int>(entries.Distinct());
@@ -1420,7 +1421,7 @@ public static partial class DesignScene
     {
         var h = d.Hull(p.Hull)!;
         var kind = PieceKinds.Find(p.Kind)!;
-        var w = DesignHangar.PlaceOf(d, p) ?? Where(h, p);
+        var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
         var m = new DesignMesh();
         var across = kind.Footprint is not null ? p.Hole : 1;
         m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
@@ -1585,9 +1586,9 @@ public static partial class DesignScene
             var p = d.Pieces[i];
             var h = d.Hull(p.Hull)!;
             var kind = PieceKinds.Find(p.Kind)!;
-            var w = DesignHangar.PlaceOf(d, p) ?? Where(h, p);
+            var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : "") + DesignHangar.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 PieceMesh(d, p).Write(text, Made("p" + p.Id));
@@ -1603,7 +1604,7 @@ public static partial class DesignScene
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);

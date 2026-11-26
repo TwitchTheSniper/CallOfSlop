@@ -146,7 +146,7 @@ public sealed partial class Construct
             if (d.Role != PartRole.Thruster)
                 continue;
             var at = p.Pos + Rot24.Apply(p.Rot, d.ThrustAt);
-            var dir = -ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
+            var dir = d.ThrustExhaust != Vector3.Zero ? -Rot24.Apply(p.Rot, d.ThrustExhaust) : -ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
             ref var t = ref Thrusters[ThrusterCount];
             ConstructWorks.CapOf(this, i, out var cap, out var burnShare); // (what its works let it push: a dead drive isn't counted on for yaw)
             t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && (ConstructWorks.InjectorFedHead(d) ? ConstructWorks.TrainFed(this, i) : FuelReaches(i)), Cap = cap, Burn = burnShare };
@@ -728,7 +728,12 @@ public static partial class ConstructPhysics
             return ConstructConfig.Get(p, p.D, CfgKey.Grain, 0) < p.D.BurnTime;
         if (p.D.ThrustOx > 0 && c.OxLeft <= 0)
             return false;
-        return p.D.ThrustFuel == EngineFuel.Fuel ? (t.Fed || t.Buffer > 0) && c.FuelLeft > 0 : c.Electrical && ConstructPower.On(c, t.Part);
+        return p.D.ThrustFuel switch
+        {
+            EngineFuel.Fuel => (t.Fed || t.Buffer > 0) && c.FuelLeft > 0,
+            EngineFuel.Electric => c.Electrical && ConstructPower.On(c, t.Part),
+            _ => true, // (unfed: a ship design's drives and RCS, which carry no tanks yet: DesignParts.cs)
+        };
     }
 }
 

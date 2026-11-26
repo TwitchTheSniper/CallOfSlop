@@ -12,7 +12,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// RCS quads need none (Karl, 2026-11-25): they are fed by their pads, with no way in from inside.
     public bool Service => Group == "Drives" && !DesignFittings.NoService(Name);
 
-    public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
+    public double Reach => Service ? 3.0 : Socket switch { "seat" => DesignScene.MaxConnector, "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
 
     /// <summary>How far in from the skin a boarding ramp's room floor may be (Karl, 2026-11-24): its well and stair make up the rest.</summary>
     public const double RampReach = 3.0;
@@ -186,6 +186,8 @@ public static class PieceKinds
         .. PieceWeapons.Kinds,
         // Floodlights, the long-range sensor, the heavy RCS and tow points (Karl, 2026-11-26): DesignFittings.
         ..DesignFittings.Kinds,
+        // The crew seat with its role (Karl, 2026-11-26): DesignSeats.
+        ..DesignSeats.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

@@ -628,6 +628,7 @@ public sealed partial class ConstructPartDef
     public float RepulsorRange; // repulsor: metres it reaches
     public byte ThrustDir; // thruster: the way its exhaust leaves (a direction index): the push is the other way
     public Vector3 ThrustAt; // thruster: where the push acts, and the exhaust starts (part frame)
+    public Vector3 ThrustExhaust; // thruster: the way its exhaust leaves exactly, when it isn't along an axis (a ship design's RCS nozzle on a curved skin: DesignParts.cs); zero: ThrustDir
     public FlameDef[] Flames = []; // "flame" (one or a list): flames drawn by data (ConstructRenderFlames.cs); a thruster or burner that gives none gets one of its own
     public Vector3 SmokeAt; // "smoke": the top of the stack (part frame)
     public float SmokeSize; // "smoke": the puffs' size (m); 0: no smoke

@@ -1186,6 +1186,15 @@ public sealed partial class Ui
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");
             CutControls(p, kv => Cmd(C("setPiece", [("id", pid), .. kv])), "piece", Str(p, "socket") == "window");
+            if (Str(p, "kind") == ShipDesigner.DesignSeats.Kind)
+            {
+                // A seat's role (DesignSeats, Karl 2026-11-26): the Helm flies the ship.
+                H3("Crew");
+                ImGui.Text("Role");
+                Row();
+                MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
+                Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
+            }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
                 Checkbox("Both bodies of the pair##sdpcp", B(p, "pair"), v => Cmd(C("setPiece", ("id", pid), ("pair", v))));
