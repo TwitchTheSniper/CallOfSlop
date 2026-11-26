@@ -5,7 +5,8 @@
   "material": "steel",
   // (Sean, 2026-11-23: the decks, keel and hull pieces on line C, whose oven's bed is 7 x 13 cells; the walls on lines A and B, 5 x 9)
   "bigBed": { "cells": 80, "prefixes": [ "Zero Day Lower Deck", "Zero Day Upper Deck", "Zero Day Keel", "Zero Day Spine", "Zero Day Stern",
-    "Zero Day Lower Fore Hull", "Zero Day Lower Aft Hull", "Zero Day Upper Fore Hull", "Zero Day Upper Aft Hull" ] },
+    "Zero Day Lower Fore Hull", "Zero Day Lower Aft Hull", "Zero Day Upper Fore Hull", "Zero Day Upper Aft Hull",
+    "Zero Day Bow", "Zero Day Drive Collar", "Zero Day Upper Aft Ceiling", "Zero Day Upper Fore Ceiling" ] },
   "parts": [
     "Zero Day Lower Deck Fore",
     "Zero Day Lower Deck Aft",
@@ -42,6 +43,15 @@
     "Zero Day Upper Fore Wall 8",
     "Zero Day Upper Fore Wall 9",
     "Zero Day Upper Fore Wall 10",
-    "Zero Day Upper Fore Wall 11"
+    "Zero Day Upper Fore Wall 11",
+    // (Sean, 2026-11-26: "hulls should almost always be made exclusively on extrusion lines": the hull pieces that had no listed kit,
+    // the Bow's skins past one part's boxes, made from their solid boxes as the decks are)
+    "Zero Day Bow",
+    "Zero Day Drive Collar",
+    "Zero Day Spine 5",
+    "Zero Day Torpedo Bay L",
+    "Zero Day Torpedo Bay R",
+    "Zero Day Upper Aft Ceiling",
+    "Zero Day Upper Fore Ceiling"
   ]
 }

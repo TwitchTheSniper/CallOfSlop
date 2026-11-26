@@ -123,7 +123,7 @@ public static class ConstructPanelFormer
     public static string? Refusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (o.Name == null)
-            return $"not a panel: the {d.Name} forms panels, {(o.IsPiece ? $"a {Extrusion.Label(o.Key)} is {WorkOrders.Maker(o.Key)}'s order" : $"{ConstructParts.Def(o.Part).Name} is an Assembler's order")}";
+            return $"not a panel: the {d.Name} forms panels, {(o.IsPiece ? $"a {Extrusion.Label(o.Key)} is {WorkOrders.Maker(o.Key)}'s order" : $"{ConstructParts.Def(o.Part).Name} is {WorkOrders.CatalogueMaker(o)}'s order")}";
         if (o.Count is < 1 or > WorkOrders.MaxCount)
             return $"an order is for 1 to {WorkOrders.MaxCount} panels";
         if (HullLoft.IsSectionName(o.Name) && !HullLoft.IsPlainSectionName(o.Name))
