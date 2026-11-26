@@ -355,6 +355,7 @@ public sealed partial class ZeroDayWorks2
                 Chute(rack, null, press, null, 4f);
             }
             DieCell(s);
+            JoinSecondRun(s);
             // The Assembler's stock (Orders pull their inputs from the stores chuted in), from the back row's bins, over everything at 18 m.
             var assembler = Find("Assembler", P(s, 33, -33));
             var up = 18f;
@@ -364,6 +365,40 @@ public sealed partial class ZeroDayWorks2
                 if (s < 0 && _bigAsm != null) // (the big Assembler by the main station, from the same bins, a level up)
                     Chute(Find("Materials Bin", P(s, x, 114)), null, _bigAsm, "Chute in", up + 2.5f);
                 up += 0.5f;
+            }
+        }
+
+        /// <summary>
+        /// The second blank Extruder's run (<see cref="Additions"/>) into its line: a conveyor from its last tile's Piece out, along the row
+        /// of the line's turntables at the run's height, into the side of the turntable the first Extruder's run ends in (its In port that
+        /// faces the new run), over the idle turntable beside it. That turntable passes a piece on into the press beds as the first run's.
+        /// </summary>
+        private void JoinSecondRun(float s)
+        {
+            var end = Find("Roller Tile", new Vector2(s * 61, -34), 0.5f);
+            var entry = Find("Roller Tile", new Vector2(s * 53, -32), 0.5f);
+            if (end == null || entry == null || !entry.Def.IsTurntable)
+            {
+                Note($"second run on side {s}: no run end or entry turntable");
+                _linkMissed++;
+                return;
+            }
+            try
+            {
+                var (a, fa) = PortOf(end, "Piece out");
+                var toward = new Vector3(s, 0, 0); // (from the entry turntable out toward the new run)
+                var port = entry.Def.NamedPorts.Where(np => np.Name.StartsWith("In ", StringComparison.Ordinal))
+                    .OrderByDescending(np => Vector3.Dot(PortOf(entry, np.Name).Face, toward)).First().Name;
+                var (b, fb) = PortOf(entry, port);
+                Vector3 a1 = a + fa, b1 = b + fb;
+                Link("conveyor", end, entry, "Piece out", port, Line, false, null, Cut(a, a1, b1));
+                _links++;
+                Note($"second run on side {s}: a conveyor from its end at ({a.X:0.#}, {a.Z:0.#}) into the turntable's {port} at ({b.X:0.#}, {b.Z:0.#})");
+            }
+            catch (VehicleKitException ex)
+            {
+                Note($"second run on side {s}: the conveyor not laid: {ex.Message}");
+                _linkMissed++;
             }
         }
 
