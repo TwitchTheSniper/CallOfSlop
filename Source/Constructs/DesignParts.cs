@@ -18,9 +18,9 @@ namespace CallOfSlop;
 /// </para>
 /// <para>
 /// <b>The part.</b> Drawn as the designer's own meshes (skin, cladding, joins, pieces), merged into one vertex-coloured mesh (<see cref="Look"/>,
-/// drawn by Renderer.Design.cs). It collides as convex hulls (ConstructHulls, the narrow phase's hull tests, the collider's tree): one a band between
-/// two rings of each hull body's copy (split across its profile when a band has more corners than <see cref="ConvexHull.MaxCorners"/>), one for
-/// each join and each piece that stands out of the bands (from its mesh's extreme points). For now it is solid: interiors are a later step. Its
+/// drawn by Renderer.Design.cs). It collides as convex hulls (ConstructHulls, the narrow phase's hull tests, the collider's tree): the skin hollow, as thin
+/// plates where the designer's skin is (each band's facets and the two end caps, openings left open: DesignParts.Hull.cs), and one or a few for
+/// each join and each piece (from its mesh's extreme points, kept out of the rooms). Its
 /// solid boxes are hidden and stand for no collider (every one is covered by the hulls): they carry the mass, each its own share
 /// (<see cref="ConstructPartDef.BoxMass"/>): the skin's area at <see cref="SkinKgPerM2"/>, the rooms' floors at <see cref="DeckKgPerM2"/> and the
 /// pieces' surfaces at <see cref="PieceKgPerM2"/>.
@@ -381,6 +381,8 @@ public static partial class DesignParts
         foreach (var n in AddRisers(st)) // DesignParts.Risers.cs
             yield return n;
         foreach (var n in AddSystems(st)) // DesignParts.Systems.cs
+            yield return n;
+        foreach (var n in ClipHulls(st)) // DesignParts.Hull.cs (joins and pieces kept out of the rooms; MaxHulls)
             yield return n;
         foreach (var n in IntoFrames(els))
             yield return n;
@@ -906,6 +908,7 @@ public static partial class DesignParts
         private readonly List<float> _p = new(1024), _n = new(1024);
         private readonly List<uint> _c = new(256);
         public float Area;
+        public List<float> Pos => _p; // (its corners so far, x y z a corner: what a collider is cut from)
 
         /// <param name="middle">What a normal faces away from: a point, or (NaN z) a line along z through x, y; all NaN: the triangle's own side (as drawn).</param>
         public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle)

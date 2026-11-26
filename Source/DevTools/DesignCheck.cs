@@ -167,6 +167,8 @@ public static partial class DesignCheck
                 Console.WriteLine($"[design] a player blueprint of it: {bpText.Length} bytes, its design in it, built again with {again.PartCount} parts");
         }
         (run.Hash, run.Text, run.World, run.Body, run.Els, run.Blueprint, run.Ground) = (hash, text, world, c, els, bpText, ground);
+        if (run.Has("--hollow"))
+            Hollow(run); // DesignCheck.Hull.cs
         if (run.Has("--walk"))
             Walk(run); // DesignCheck.Walk.cs
         if (run.Has("--doors"))
