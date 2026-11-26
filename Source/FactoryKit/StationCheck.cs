@@ -86,6 +86,17 @@ public static class StationCheck
                     keep.Add((bin, RecyclingTable.Current.IdOf(fm), pn));
                 Console.WriteLine($"  fill: {put} {fm} into the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz}");
             }
+        // Every Line Console started, as a player starting the works would (Zero Day Works II's consoles are laid stopped): a stopped
+        // console holds its machines (a Bake Oven never starts its kit).
+        var started = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (ProductionLines.IsConsole(c.DefOf(i)) && (c.Parts[i].State & 1) == 0)
+            {
+                ProductionLines.Run(c, i); // (Start: it wakes the body, as a player's press does)
+                started++;
+            }
+        if (started > 0)
+            Console.WriteLine($"  {started} stopped Line Console(s) started");
         // --roll-tiles "X,Z;X,Z...": Roller Tiles welded onto the site (turned as its runs south are, at their height) before the run: a way
         // out of a station's bay or into an oven's bed tried on a site that doesn't lay one (ConstructRollOut.cs).
         if (Arg("--roll-tiles") is { } rollTiles)
@@ -299,6 +310,14 @@ public static class StationCheck
             return Math.Max(1, preview.Unmade);
         }
         Console.WriteLine($"  after {seconds} s: {ConstructStation.StateText(j)}, {j.Fitted}/{j.Steps} fitted: {j.Note}");
+        // Each station's roll-out (its runs are laid on the first conveyor step): the oven whose bed its kits roll into.
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsBuildStation)
+            {
+                var run = ConstructRollOut.RunOut(c, i);
+                Console.WriteLine($"  Building Station part {i}: " + (run < 0 ? "no roll-out run" : ConstructRollOut.OvenOf(c, run) is var oven and >= 0
+                    ? $"rolls out into the bed of the Bake Oven part {oven} at {c.Parts[oven].Pos.X:0}, {c.Parts[oven].Pos.Z:0}" : $"rolls out on run {run}, into no oven's bed: {ConstructRollOut.NoOvenWhy(c, run)}"));
+            }
         if (args.Contains("--reach"))
             Reach(w, c, t, j);
         var whys = new Dictionary<string, List<string>>();

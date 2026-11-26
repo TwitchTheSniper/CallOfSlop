@@ -335,6 +335,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             LayFloor(x0 - 1, x1 + 1, z0 - 1, z1 + 1);
             foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile"))
                 _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
+            foreach (var it in items.Where(i => Str(i, "t") == "rover"))
+                _roverAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
 
             // Pieces on the floor first (block parts, then the bigger ones), the lab machines, then what welds on them.
             var parts = items.Where(i => Str(i, "t") == "part").ToList();
@@ -425,11 +427,15 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var flow = Flow(rot);
             var paint = PaintOf.GetValueOrDefault(id, Steel);
             var coreSide = id is "building-station" or "extruder" ? -1 : 1;
-            var coreLocal = new Vector2(coreSide * (sx / 2 + 1), Flag(it, "coreFar") ? sz / 2 - 1 : -sz / 2 + 1);
-            var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
             Vector2 Cell(int i, int j) => Local(x, z, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
             // (the row furthest down the flow: a former's and a cutter's Out Tables)
             var lastRow = Vector2.Dot(Cell(0, l - 1) - Cell(0, 0), flow) > 0 ? l - 1 : 0;
+            // A Bake Oven's tunnel runs from its Core's row (its way in) to the far row (its way out): its Core stands by the row up the
+            // flow, so a kit rolled out of its line's station bay comes in at the in end and the baked part rolls on toward the main station
+            // (Sean's layout drew each oven's Core at its down-flow end, where the kits rolled into the tunnel's out end: 2026-11-26).
+            var far = id == "bake-oven" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
+            var coreLocal = new Vector2(coreSide * (sx / 2 + 1), far ? sz / 2 - 1 : -sz / 2 + 1);
+            var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
 
             if (id == "extruder")
             {
@@ -448,7 +454,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 }
             // The Core: on the side cell beside its own cell (the bed's edge cell in the Core's row).
             var edge = coreSide > 0 ? w - 1 : 0;
-            var row = Flag(it, "coreFar") ? l - 1 : 0;
+            var row = far ? l - 1 : 0;
             var by = cells[edge, row];
             switch (id)
             {
@@ -473,11 +479,14 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     break;
                 }
                 case "bake-oven":
-                    CoreOn("Bake Oven", "+z", by, core, paint);
+                {
+                    if (CoreOn("Bake Oven", "+z", by, core, paint) is { } c)
+                        _labs.Add((id, new Vector2(x, -z), c, flow));
                     break;
+                }
                 case "building-station":
-                    if (!Flag(it, "noCoreDock"))
-                        CoreOn("Building Station", "+x.0", by, core, paint);
+                    if (!Flag(it, "noCoreDock") && CoreOn("Building Station", "+x.0", by, core, paint) is { } st)
+                        _stations.Add((new Vector2(x, -z), st));
                     break;
                 case "press":
                 {
@@ -580,6 +589,33 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             return core;
         }
 
+        private readonly HashSet<(int, int)> _roverAt = new(); // (the layout's rover docks, by whole metre)
+
+        /// <summary>
+        /// A dock's spot slid along its bay's edge (2 m a step, away from the oven, past the layout's other docks) when a Bake Oven's Core
+        /// stands on it: an oven's Core goes at its bed's in end (<see cref="LabItem"/>), where the small lines' layout has a dock (2026-11-26).
+        /// </summary>
+        private Vector2 ClearOfOvenCores(Vector2 at, Vector2 mouth)
+        {
+            var side = new Vector2(mouth.Y, -mouth.X);
+            bool Hits(Vector2 p) => _labs.Any(l => l.Id == "bake-oven" && _at.TryGetValue(l.Core, out var c)
+                && MathF.Abs(Vector2.Dot(c - p, mouth)) < 3f && MathF.Abs(Vector2.Dot(c - p, side)) < 2f);
+            var oven = _labs.Where(l => l.Id == "bake-oven" && _at.TryGetValue(l.Core, out var c) && Hits(at)).Select(l => l.At).FirstOrDefault();
+            if (!Hits(at))
+                return at;
+            var away = Vector2.Dot(at - oven, side) >= 0 ? side : -side;
+            for (var k = 1; k <= 6; k++)
+            {
+                var p = at + away * (2f * k);
+                if (!Hits(p) && !_roverAt.Contains(Round(p)))
+                {
+                    Note($"the dock at ({at.X:0}, {at.Y:0}) slides {2 * k} m along its bay's edge, to ({p.X:0}, {p.Y:0}): a Bake Oven's Core stands at its bed's in end there");
+                    return p;
+                }
+            }
+            return at;
+        }
+
         /// <summary>A Dock Expansion (or, for a station's Core, the Building Station pad) with its mouth (own +x) toward the bay.</summary>
         private void RoverItem(JsonElement it)
         {
@@ -594,6 +630,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var footX = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
             var foot = new Vector2(MathF.Round(footX), 0); // (small -1, medium -2, large -5: the pad's middle behind its mouth)
             var by = d.Sockets.First(s => s.Name.StartsWith("-y.")).Name;
+            if (!core)
+                at = ClearOfOvenCores(at, mouth);
             var p = Piece(part, at, XFacing(mouth), core ? Station : Crane, by, foot);
             if (core && p != null)
                 _stations.Add((at, p));

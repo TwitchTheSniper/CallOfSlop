@@ -121,7 +121,7 @@ public static partial class ConstructLaserCutter
     public static string? Refusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (o.Name == null)
-            return $"not a cut part: the {d.Name} cuts panels and plates, {(o.IsPiece ? $"a {Extrusion.Label(o.Key)} is {WorkOrders.Maker(o.Key)}'s order" : $"{ConstructParts.Def(o.Part).Name} is an Assembler's order")}";
+            return $"not a cut part: the {d.Name} cuts panels and plates, {(o.IsPiece ? $"a {Extrusion.Label(o.Key)} is {WorkOrders.Maker(o.Key)}'s order" : $"{ConstructParts.Def(o.Part).Name} is {WorkOrders.CatalogueMaker(o)}'s order")}";
         if (o.Count is < 1 or > WorkOrders.MaxCount)
             return $"an order is for 1 to {WorkOrders.MaxCount} parts";
         if (!HullLoft.IsCutName(o.Name))

@@ -187,7 +187,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private const string KitOut = "Constructs/BakeKits";
     private const string PlainKits = "Zero Day Keel"; // (Sean's card 2026-11-23: the keel's plates bent on the Panel Former, welded and baked; every other piece's skins are dressed first)
-    private static readonly string[] NoKit = ["Zero Day Bow"]; // (its skins are 592 boxes plain, past the 256 one baked part holds: it stays an Assembler's)
+    private static readonly string[] NoKit = ["Zero Day Bow"]; // (its skins are 592 boxes plain, past the 256 one baked part holds: its kit is its solid boxes, Constructs/BakeKits.json "parts")
     private const string KitStyle = "it"; // (the dress a hull piece's skins take at the Building Station before the bake: Constructs/DressStyles.json)
 
     /// <summary>

@@ -125,7 +125,7 @@ public static class WorkOrders
         if (IsWholeFormer(d) && !(d.IsGrowFormer && o.IsPiece && o.Key.Shape == ExShape.Wheel))
             return FormerRefusal(world, c, part, d, o); // (a Grow Former's wheel goes on to the wheel's checks below)
         if (!o.IsPiece)
-            return $"the {d.Name} makes pieces: {ConstructParts.Def(o.Part).Name} is an Assembler's order";
+            return $"the {d.Name} makes pieces: {ConstructParts.Def(o.Part).Name} is {CatalogueMaker(o)}'s order";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} pieces";
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
@@ -243,7 +243,7 @@ public static class WorkOrders
     {
         if (!FormerPresets.KeyFor(o, out var k))
             return o.Name != null ? $"the {d.Name} takes no panels or pressed parts: {o.Name} is another machine's order"
-                : AssemblingTable.Current.Of(o.Part) != null ? $"the {ConstructParts.Def(o.Part).Name} is an Assembler's order"
+                : AssemblingTable.Current.Of(o.Part) != null ? $"the {ConstructParts.Def(o.Part).Name} is {CatalogueMaker(o)}'s order"
                 : $"no former's preset makes the {ConstructParts.Def(o.Part).Name}";
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} pieces";
@@ -271,6 +271,18 @@ public static class WorkOrders
     public static WorkOrder? PressedOrder(string key, int count) => Pressed.SpecOf(key) is { } s
         ? new WorkOrder { Name = key, Key = new ExtrusionKey(0, 0, 0, 0, s.Blank.Material, false, ExShape.Section), Part = ConstructParts.None, Count = (ushort)Math.Clamp(count, 1, MaxCount) }
         : null;
+
+    /// <summary>
+    /// Which machine makes a catalogue part's order: "a Bake Oven" for a part baked from a kit of extrusions (the frigate's hull pieces,
+    /// decks and walls: Sean, 2026-11-23 and 2026-11-26), "a Press" for a die's preset, else "an Assembler". A refusal names the real maker,
+    /// not the Assembler (Sean saw 147 hull pieces called "an Assembler's order" at Zero Day Works II).
+    /// </summary>
+    public static string CatalogueMaker(in WorkOrder o) =>
+        o.IsMade ? "an Assembler"
+        : o.IsPiece || o.Name != null ? "another machine"
+        : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) ? "a Bake Oven"
+        : Pressed.SpecOf(o) != null ? "a Press"
+        : "an Assembler";
 
     /// <summary>Which machine makes a piece: "an Extruder", "a Wheel Former"...</summary>
     public static string Maker(in ExtrusionKey k) => k.Shape switch

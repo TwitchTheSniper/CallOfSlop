@@ -315,10 +315,21 @@ public sealed partial class ZeroDayWorks2
         {
             var bunker = new[] { 24f, 32f, 40f }.Select(x => Find("Ore Bunker 4 m", P(s, x, 58))).ToArray();
             var high = 16f;
+            // Each Extruder's own console: the one behind it (up its flow, within 6 m of its line), as the consoles moved back with their
+            // Extruders (BinBack): by distance alone one console was nearest two Extruders, and two lines shared it.
+            var ownConsole = new Dictionary<VPart, VPart>();
+            if (_items.TryGetValue("Line Console", out var cl))
+                foreach (var l in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s))
+                {
+                    var side = new Vector2(l.Flow.Y, -l.Flow.X);
+                    if (cl.Where(e => Vector2.Distance(e.At, l.At) < 20 && Vector2.Dot(e.At - l.At, l.Flow) < 0 && MathF.Abs(Vector2.Dot(e.At - l.At, side)) < 6)
+                            .OrderBy(e => Vector2.Distance(e.At, l.At)).Select(e => e.P).FirstOrDefault() is { } con)
+                        ownConsole[l.Core] = con;
+                }
             foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s).OrderByDescending(l => l.At.Y))
             {
                 var bin = Nearest("Materials Bin", at, 20); // (16 m, and 20 since the bins stand BinBack behind the moved Extruder)
-                var console = Nearest("Line Console", at, 20);
+                var console = ownConsole.GetValueOrDefault(core);
                 Fill(bin, "steel");
                 // (the big lines from the second and third bunkers, the small line and the press line from the fourth)
                 var from = at.Y > 60 ? bunker[0] : at.Y < -60 ? bunker[1] : bunker[2];
@@ -326,14 +337,11 @@ public sealed partial class ZeroDayWorks2
                 high += 0.5f;
                 Chute(bin, null, core, "Chute in", 4.5f);
                 if (console == null)
+                {
+                    Note($"links: no Line Console within 20 m of the Extruder at ({at.X:0}, {at.Y:0})");
                     continue;
-                Cable(console, core, "Run", 6f);
-                if (NearestLab("panel-former", at, 30) is { } former)
-                    Cable(console, former, "Run", 6.5f);
-                foreach (var press in _labs.Where(l => l.Id == "press" && Vector2.Distance(l.At, at) < 20))
-                    Cable(console, press.Core, "Run", 6.5f);
-                if (_labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, at) < 20) && Nearest("Assembler", at, 25) is { } asm)
-                    Cable(console, asm, "Run", 7f);
+                }
+                Cable(console, core, "Run", 6f); // (its Panel Former's, presses' and Assembler's Runs come from a station's console: Orders)
                 _consoles.Add((at, console));
             }
             // A press swaps its die from a Die Rack chuted into it (PressDieSwap): each rack into the press beside it.
@@ -365,20 +373,69 @@ public sealed partial class ZeroDayWorks2
         private VPart? NearestLab(string id, Vector2 at, float r) =>
             _labs.Where(e => e.Id == id && Vector2.Distance(e.At, at) < r).OrderBy(e => Vector2.Distance(e.At, at)).Select(e => e.Core).FirstOrDefault();
 
-        /// <summary>Each Building Station (a station takes one console) wired from the nearest Line Console not yet used.</summary>
+        /// <summary>
+        /// What each Building Station orders through (a station takes one console; Sean, 2026-11-26: the frigate's hull pieces are made on the
+        /// extrusion lines, never the Assembler). A line's station is the one nearest the end of its Laser Cutter (the line rolls Extruder,
+        /// Panel Former, cutter, station bay): its first line's console goes into the station's Orders and is wired to every Extruder and Panel
+        /// Former of the lines that end there, so a kit's plates and skins are ordered from them. The main station (no line ends there) takes the
+        /// press line's console, wired to every Bake Oven, Press and Assembler on the site: its hull pieces are the ovens' orders, each oven builds
+        /// its kit at its line's station, and its fittings the presses' and the Assemblers'.
+        /// </summary>
         private void Orders()
         {
-            var used = new HashSet<VPart>();
-            foreach (var (at, station) in _stations)
+            var lines = new Dictionary<VPart, List<(Vector2 At, VPart Console)>>();
+            foreach (var c in _consoles)
             {
-                var best = _consoles.Where(c => !used.Contains(c.Console)).OrderBy(c => Vector2.Distance(c.At, at)).FirstOrDefault();
+                if (_labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20) || NearestLab("laser-cutter", c.At, 45) is not { } cutter)
+                    continue;
+                var at = _at.TryGetValue(cutter, out var a) ? a : c.At;
+                var station = _stations.OrderBy(s => Vector2.Distance(s.At, at)).FirstOrDefault().Core;
+                if (station == null)
+                    continue;
+                if (!lines.TryGetValue(station, out var l))
+                    lines[station] = l = new();
+                l.Add(c);
+            }
+            var used = new HashSet<VPart>();
+            foreach (var (station, l) in lines)
+            {
+                var console = l[0].Console;
+                used.Add(console);
+                var sa = _at.GetValueOrDefault(station);
+                Note($"links: the Building Station at ({sa.X:0}, {sa.Y:0}) orders through the console of the Extruder at ({l[0].At.X:0}, {l[0].At.Y:0}), {l.Count} line(s)");
+                Cable(console, station, "Orders", 7.5f);
+                for (var k = 0; k < l.Count; k++)
+                {
+                    var (at, other) = l[k];
+                    used.Add(other);
+                    if (k > 0)
+                        Cable(console, NearestLab("extruder", at, 12), "Run", 8f);
+                    // (a Panel Former takes one input: its Run from this console only)
+                    if (NearestLab("panel-former", at, 30) is { } former)
+                        Cable(console, former, "Run", 6.5f + 0.5f * k);
+                }
+            }
+            foreach (var (at, station) in _stations.Where(s => !lines.ContainsKey(s.Core)))
+            {
+                var best = _consoles.Where(c => !used.Contains(c.Console)).OrderBy(c => _labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20) ? 0 : 1)
+                    .ThenBy(c => Vector2.Distance(c.At, at)).FirstOrDefault();
                 if (best.Console == null)
                 {
                     Note($"links: no console for the Building Station at ({at.X:0}, {at.Y:0})");
                     continue;
                 }
                 used.Add(best.Console);
+                Note($"links: the Building Station at ({at.X:0}, {at.Y:0}) orders through the console of the Extruder at ({best.At.X:0}, {best.At.Y:0}): every oven, press and Assembler");
                 Cable(best.Console, station, "Orders", 7.5f);
+                // (a Press, an Assembler and a Panel Former take one input each: their Run from this console only; the other press line's
+                // Extruder is run from here too, as its pieces feed those presses)
+                foreach (var m in _labs.Where(l => l.Id is "bake-oven" or "press"))
+                    Cable(best.Console, m.Core, "Run", 9f);
+                foreach (var c in _consoles.Where(c => c.Console != best.Console && !used.Contains(c.Console) && _labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20)))
+                    Cable(best.Console, NearestLab("extruder", c.At, 12), "Run", 8f);
+                if (_items.TryGetValue("Assembler", out var asms))
+                    foreach (var (_, asm) in asms)
+                        Cable(best.Console, asm, "Run", 7f);
             }
         }
     }
