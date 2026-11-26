@@ -954,8 +954,17 @@ public static partial class DesignScene
             foreach (var (n, f, inw, w, w0, w1) in walls)
             {
                 double[] At(double s, double hh, double dd) { var v = new double[3]; v[n] = f + inw * dd; v[w] = s; v[up] = Up(hh); return v; }
-                // A box of relief, s along the wall, h up, d out of it (embedded 5 mm in the wall, so its back never meets the face).
+                // The doors through this wall, as openings in its (s, h) (Karl, 2026-11-25: cladding runs right up to them).
+                var holes = DoorHoles(d, doors, n, f - inw * t / 2, w, fl, sg);
+                // A box of relief, cut round the doors' openings: the pieces left beside, under and over each.
                 bool Rel(double s0, double s1, double h0, double h1, double dd, string col)
+                {
+                    var any = false;
+                    AroundHoles(s0, s1, h0, h1, holes, 0, (a, b2, c, e) => any |= Rel1(a, b2, c, e, dd, col));
+                    return any;
+                }
+                // One box of relief, s along the wall, h up, d out of it (embedded 5 mm in the wall, so its back never meets the face).
+                bool Rel1(double s0, double s1, double h0, double h1, double dd, string col)
                 {
                     if (budget < 12 || s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
                         return false;
@@ -1065,7 +1074,7 @@ public static partial class DesignScene
                             {
                                 if (budget < 4)
                                     break;
-                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)))
+                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)) || holes.Any(o => s > o.S0 - R && s < o.S1 + R && hh > o.H0 - R && hh < o.H1 + R))
                                     continue;
                                 const double rr = R * 0.9;
                                 (double, double, double) Pt(double ang, double dd) { var v = At(s + rr * Math.Cos(ang), hh + rr * Math.Sin(ang), dd); return (v[0], v[1], v[2]); }
@@ -1134,6 +1143,15 @@ public static partial class DesignScene
                         break;
                     }
                 }
+                // A frame lining each opening's sides and head through the wall, its architrave over the cladding's cut ends.
+                DoorFrames(holes, w0, w1, bot, cBot, -t + 0.004, 0.052, (s0, s1, h0, h1, d0, d1, c) =>
+                {
+                    if (budget < 12) return;
+                    var c0 = At(s0, h0, d0);
+                    var c1 = At(s1, h1, d1);
+                    m.Box(Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2]), Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2]), c);
+                    budget -= 12;
+                }, metal, hDark);
             }
             // The corridor's arches close over the ceiling, across its narrow way, at the frames' spacing along its long way.
             if (r.WallStyle == "Corridor")
@@ -1162,6 +1180,80 @@ public static partial class DesignScene
         if (r.Floor is not ("Plates" or "Hex"))
             FloorDress(d, r, m, V, Up, ia0 + 0.004, ia1 - 0.004, il0 + 0.004, il1 - 0.004, fTop, ax, al, rnd, ref budget);
         return m;
+    }
+
+    /// <summary>The doors through a wall whose middle plane is at plane on axis n, as openings in its (s along axis w, h up from the floor
+    /// at fl, sg the way up): the shell's door clearance, 0.55 m either side and 0.3 m under to 2.1 m over the door's point.</summary>
+    internal static List<(double S0, double S1, double H0, double H1)> DoorHoles(ShipDesign d, List<double[]> doors, int n, double plane, int w, double fl, double sg)
+    {
+        var up = d.Stacked ? 2 : 1;
+        var o = new List<(double, double, double, double)>();
+        foreach (var q in doors)
+            if (Math.Abs(plane - q[n]) < 0.55)
+            {
+                var hc = sg * (q[up] - fl);
+                o.Add((q[w] - 0.55, q[w] + 0.55, hc - 0.3, hc + 2.1));
+            }
+        return o;
+    }
+
+    /// <summary>A wall piece (s0..s1, h0..h1) less the openings from index i on: emit gets what is left beside, under and over each.</summary>
+    internal static void AroundHoles(double s0, double s1, double h0, double h1, List<(double S0, double S1, double H0, double H1)> holes, int i,
+        Action<double, double, double, double> emit)
+    {
+        if (s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
+            return;
+        if (i >= holes.Count)
+        {
+            emit(s0, s1, h0, h1);
+            return;
+        }
+        var o = holes[i];
+        if (s1 <= o.S0 || s0 >= o.S1 || h1 <= o.H0 || h0 >= o.H1)
+        {
+            AroundHoles(s0, s1, h0, h1, holes, i + 1, emit);
+            return;
+        }
+        AroundHoles(s0, Math.Min(s1, o.S0), h0, h1, holes, i + 1, emit);
+        AroundHoles(Math.Max(s0, o.S1), s1, h0, h1, holes, i + 1, emit);
+        double m0 = Math.Max(s0, o.S0), m1 = Math.Min(s1, o.S1);
+        AroundHoles(m0, m1, h0, Math.Min(h1, o.H0), holes, i + 1, emit);
+        AroundHoles(m0, m1, Math.Max(h0, o.H1), h1, holes, i + 1, emit);
+    }
+
+    /// <summary>
+    /// Frames for a wall's openings (Karl, 2026-11-25): a lining 37 mm thick on each side and the head, from back (in the wall) to just
+    /// short of front, and an architrave 12 cm wide over the cladding's cut ends, front proud of the wall face. Head and jambs differ in
+    /// their faces by 3-4 mm where they overlap, so none are coplanar. box gets (s0, s1, h0, h1, d0, d1, colour).
+    /// </summary>
+    internal static void DoorFrames(List<(double S0, double S1, double H0, double H1)> holes, double w0, double w1, double bot, double top,
+        double back, double front, Action<double, double, double, double, double, double, string> box, string lining, string trim)
+    {
+        back = Math.Min(back, -0.004);
+        foreach (var o in holes)
+        {
+            var head = o.H1 < top - 0.06;
+            double jt = head ? o.H1 - 0.003 : top - 0.004, ft = head ? Math.Min(o.H1 + 0.08, top - 0.004) : top - 0.004;
+            if (o.S0 > w0 + 0.1 && o.S0 < w1)
+            {
+                box(o.S0 + 0.003, o.S0 + 0.04, bot + 0.004, jt, back, front - 0.012, lining);
+                box(o.S0 - 0.08, o.S0 + 0.043, bot + 0.004, ft, -0.005, front, trim);
+            }
+            if (o.S1 < w1 - 0.1 && o.S1 > w0)
+            {
+                box(o.S1 - 0.04, o.S1 - 0.003, bot + 0.004, jt, back, front - 0.012, lining);
+                box(o.S1 - 0.043, o.S1 + 0.08, bot + 0.004, ft, -0.005, front, trim);
+            }
+            if (head)
+            {
+                double a = Math.Max(o.S0, w0 + 0.004), b = Math.Min(o.S1, w1 - 0.004);
+                if (b - a > 0.1)
+                {
+                    box(a + 0.041, b - 0.041, o.H1 - 0.04, o.H1 - 0.003, back, front - 0.012, lining);
+                    box(Math.Max(o.S0 - 0.083, w0 + 0.004), Math.Min(o.S1 + 0.083, w1 - 0.004), o.H1 - 0.043, Math.Min(o.H1 + 0.083, top - 0.004), -0.005, front + 0.004, trim);
+                }
+            }
+        }
     }
 
     /// <summary>A room's floor in one of the dressings (Karl, 2026-11-25): its pieces in plan a (across) and l (along), u up from what it lies on.</summary>
