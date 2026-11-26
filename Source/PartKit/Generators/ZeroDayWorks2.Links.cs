@@ -218,7 +218,7 @@ public sealed partial class ZeroDayWorks2
 
         private void Fill(VPart? store, string material)
         {
-            if (store != null) // (a Materials Bin too: its creative Material and Fill, ConstructStoreVolume.IsFillBin; Sean 2026-11-26: every store full, so the lines start at once)
+            if (store != null && store.Name != "Materials Bin") // (a bin takes any material and has no settings: it fills from its chute; a blueprint refuses a bin's "material", 2026-11-26)
                 Config(store, ("material", material), ("fill", 100));
         }
 
