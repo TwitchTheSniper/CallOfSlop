@@ -39,6 +39,7 @@ public struct CMachineAsm
     public byte Masts; // an Assembler's masts outside its bed: the shortest of its four corner columns, in cells (0: a corner has none)
     public byte Tool; // the tool block docked in an Assembler's Tool Bay: an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
     public ushort ToolPart; // that block's part (ushort.MaxValue: none)
+    public int OutPad; // the pick pad its Out Table butts, plus 1 (0: not looked for since the rebuild, -1: none; ConstructConveyor.OutPad)
     public bool LowBed; // a Press whose bed between its housings' rows is Press Bed Blocks, at the rollers' height: runs roll blanks on and made parts off (its Core's Bed in and Bed out)
     // A Core that splits its blocks into squares ("squares": the refiners, docs/sandbox/constructs/production.md "Refiners as block machines"):
     public short SquareFirst; // its first square in Construct.MachineSquares

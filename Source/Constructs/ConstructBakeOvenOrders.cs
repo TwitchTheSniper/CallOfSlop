@@ -67,24 +67,44 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>
-    /// A kit's first piece kind that no machine on station <paramref name="t"/>'s network takes an order for (a laid part, a Hull Dress piece,
-    /// comes from steel at the station), or null. Allocates nothing past the network's cache.
+    /// A kit's first piece kind that no machine station <paramref name="t"/>'s Line Consoles run takes an order for (a laid part, a Hull Dress piece,
+    /// comes from steel at the station), or null. Allocates nothing.
     /// </summary>
     private static string? LineLacks(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp)
     {
-        var net = ConstructCrafting.NetOf(world, c, t);
+        // The machines its own Line Consoles run, not the whole network the conveyors join: on Zero Day Works II every line's runs meet,
+        // so a small line's station counted another line's Extruder, whose pieces go through that line's Panel Former and never reach it
+        // (2026-11-26: the 14.1 m wall plates).
+        Span<int> mine = stackalloc int[64];
+        Span<int> line = stackalloc int[32];
+        var mn = 0;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref readonly var r = ref c.Routes[k];
+            if (r.Type != RouteType.Data || r.To != t || !r.FedEnd || r.Source >= c.PartCount || !ProductionLines.IsConsole(c.DefOf(r.Source)))
+                continue;
+            var m = ProductionLines.Machines(c, r.Source, line);
+            for (var j = 0; j < m && mn < mine.Length; j++)
+                if (!mine[..mn].Contains(line[j]) && !c.DefOf(line[j]).IsBakeOven)
+                    mine[mn++] = line[j];
+        }
         for (var k = 0; k < bp.Steps.Count; k++)
         {
             var name = bp.Steps[k].Part;
             var seen = false;
             for (var e = 0; e < k && !seen; e++)
                 seen = bp.Steps[e].Part == name;
-            if (seen || ConstructParts.Find(name) is not { } pd || ConstructStation.IsLaid(pd))
+            if (seen)
+                continue;
+            // (an extrusion's def is made at run time: one no machine has made yet isn't found by name, 2026-11-26)
+            var pd = ConstructParts.Find(name) ?? (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(name) is { } key
+                ? Extrusion.Def(key with { Growing = false }) : null);
+            if (pd == null || ConstructStation.IsLaid(pd))
                 continue;
             var o = ConstructStation.OrderFor(pd, 1);
             var any = false;
-            for (var m = 0; m < net.MachineN && !any; m++)
-                any = !c.DefOf(net.Machines[m]).IsBakeOven && WorkOrders.Refusal(world, c, net.Machines[m], o) == null;
+            for (var m = 0; m < mn && !any; m++)
+                any = WorkOrders.Refusal(world, c, mine[m], o) == null;
             if (!any)
                 return pd.Name;
         }

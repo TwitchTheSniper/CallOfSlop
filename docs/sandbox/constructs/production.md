@@ -2471,8 +2471,18 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   station takes the press line's console, wired to every Bake Oven, Press and Assembler. Each oven's Core stands by its bed's up-flow
   row, the tunnel's in end (Sean's card, 2026-11-26: the layout drew them at the out end; a small line's rover dock in the way slides
   2 m along its bay). `--station-check` starts every stopped Line Console and prints each station's roll-out (into which oven's bed,
-  or why none). The frigate's bill there: every deck, wall, keel and hull piece an oven's order. Open: the big line stations have no
-  pick pad where their runs end, so their rovers never take a kit's pieces.
+  or why none). The frigate's bill there: every deck, wall, keel and hull piece an oven's order.
+- **Works II pick pads and presses (2026-11-26).** The big square stations' roller lay-bys are laid as Pad Tiles in the same cells
+  (Sean's card: "Swap them to Pad Tiles"), turned so a pad's z runs along the bay's side. A bed machine with no out conveyor hands to
+  the pick pad its Out Table butts (`ConstructConveyor.OutPad`): a Laser Cutter's cut part, and a piece rolling through its bed for a
+  station's order. An Extruder refuses an order longer than its conveyor out (the piece rides it whole and would wait as "conveyor
+  full"), and an oven's kit check asks only the machines its station's own Line Consoles run (`LineLacks`), so the small lines' ovens
+  refuse the 14.1 m wall kits and the long lines take them (Lower Aft Wall 1 baked end to end in 274 s). Each press starts with a die
+  (Housing, Bracket, Plate, Actuator; a blueprint can't shelve dies on a Die Rack), and the turntable each press line's run comes into
+  hands on through one Roller Tile into the press bed beside it (Sean's card: "Lay a short roller run"). Open: a pressed part drops
+  loose beside its press (no way on to the main station), the Actuator die's Motor Hinge needs Servo Motors no Assembler there makes,
+  and the two unfed presses and the Housing die's big blanks (too big for a 6 m bed) wait for a layout change.
+  `--station-check` tools: `--press-order PART --oven-at X,Z [--via-station]`, `--why "PART;..."`, `--near X0,Z0,X1,Z1`, `--nets`.
 
 ## Production Showcase
 

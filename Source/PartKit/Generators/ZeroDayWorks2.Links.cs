@@ -38,6 +38,9 @@ public sealed partial class ZeroDayWorks2
 
         private readonly Dictionary<(string, float, float), Vector2> _shift = new();
         private readonly List<(string Id, Vector2 At, VPart Core, Vector2 Flow)> _labs = new();
+
+        private static readonly string[] PressDies = ["Housing Die", "Bracket Die", "Plate Die", "Actuator Die"]; // (in the order the presses are laid: the two the press lines feed get the small blanks, brackets and hinges)
+        private int _pressDie;
         private readonly List<(Vector2 At, VPart Core)> _stations = new();
         private readonly Dictionary<string, List<(Vector2 At, VPart P)>> _items = new();
         private readonly Dictionary<VPart, (Vector3 Pos, Quaternion Rot)> _free = new();
@@ -364,6 +367,12 @@ public sealed partial class ZeroDayWorks2
         private readonly List<(Vector2 At, VPart Console)> _consoles = new();
 
         private readonly HashSet<(int, int)> _tileAt = new(); // (the layout's Roller Tiles, by whole metre)
+
+        private readonly HashSet<(int, int)> _layBy = new(); // (the big stations' lay-by Roller Tiles, laid as Pad Tiles: their pick pads)
+
+        private readonly Dictionary<(int, int), Vector2> _intoPress = new(); // (turntables butting a press bed, laid as Roller Tiles rolling into it: their flow)
+
+        private const float LayBy = 4; // (m past a big station's bay side that its lay-by rows cover: two 2 m rows)
 
         private static (int, int) Round(Vector2 v) => ((int)MathF.Round(v.X), (int)MathF.Round(v.Y));
 

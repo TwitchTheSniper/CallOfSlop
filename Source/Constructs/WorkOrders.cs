@@ -164,6 +164,10 @@ public static class WorkOrders
                 return $"a piece {k.L / 100f:0.##} m long: the {d.Name} makes {Extrusion.StepCm / 100f:0.##} to {most / 100f:0.##} m, in {Extrusion.StepCm} cm steps";
             if (k.L > most)
                 return $"a piece {k.L / 100f:0.##} m long is longer than the {d.Name} makes ({most / 100f:0.##} m): {ConstructExtruder.LongFix(d, k.L, k.W, k.H)}";
+            // A piece rides its conveyor whole (ConstructConveyor.HandOff): one longer than the link off its die would wait there as "conveyor
+            // full" for good (Zero Day Works II's small lines, 12.1 m to their Turntable Tile, took the 14.1 m wall plates, 2026-11-26).
+            if (ConstructConveyor.Out(c, part) is var way and >= 0 && ConstructConveyor.Length(c, way) is var ride && k.L > ride * 100 + 1)
+                return $"a piece {k.L / 100f:0.##} m long won't ride the {d.Name}'s conveyor out ({ride:0.#} m long): a longer run, or another line";
         }
         // Whatever no def can be made for (too thin, a round or pipe not square, a pipe's wall, a section with a wall): taken, it would stall for good.
         if (Extrusion.KeyRefusal(k) is { } invalid)

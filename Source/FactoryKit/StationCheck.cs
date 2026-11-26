@@ -137,13 +137,51 @@ public static class StationCheck
                 if (score > best)
                     (best, t) = (score, i);
             }
+        if (args.Contains("--nets")) // (each station's order network: the machines its Line Console brings in)
+            RollerRuns.Sync(w, c);
+        if (args.Contains("--nets"))
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).IsBuildStation && ConstructCrafting.NetOf(w, c, i) is var net)
+                    Console.WriteLine($"  station {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0} rolls to oven {(ConstructRollOut.RunOut(c, i) is var ro and >= 0 ? ConstructRollOut.OvenOf(c, ro) : -2)}; network: " + string.Join(", ", Enumerable.Range(0, net.MachineN).Select(m => net.Machines[m])
+                        .Select(m => $"{c.DefOf(m).Name} {m} at {c.Parts[m].Pos.X:0},{c.Parts[m].Pos.Z:0}"))
+                        + "; its consoles run: " + string.Join(", ", Enumerable.Range(0, c.RouteCount).Where(k => c.Routes[k].Type == RouteType.Data && c.Routes[k].To == i
+                            && c.Routes[k].Source < c.PartCount && ProductionLines.IsConsole(c.DefOf(c.Routes[k].Source))).SelectMany(k =>
+                            {
+                                var into = new int[32];
+                                return into.Take(ProductionLines.Machines(c, c.Routes[k].Source, into)).Select(m => $"{c.DefOf(m).Name} {m}").ToArray();
+                            })));
+        if (Arg("--near") is { } nearArg && nearArg.Split(',') is [var nx0, var nz0, var nx1, var nz1]) // (--near X0,Z0,X1,Z1: the parts in that rectangle, by kind and row)
+        {
+            float ax = float.Parse(nx0), az = float.Parse(nz0), bx = float.Parse(nx1), bz = float.Parse(nz1);
+            foreach (var g in Enumerable.Range(0, c.PartCount).Where(i => c.Parts[i].Pos.X >= ax && c.Parts[i].Pos.X <= bx && c.Parts[i].Pos.Z >= az && c.Parts[i].Pos.Z <= bz)
+                .GroupBy(i => (c.DefOf(i).Name, MathF.Round(c.Parts[i].Pos.Z))).OrderBy(g => g.Key.Item2))
+                Console.WriteLine($"  near: z {g.Key.Item2}: {g.Count()} x {g.Key.Name}, x {g.Min(i => c.Parts[i].Pos.X):0.0}..{g.Max(i => c.Parts[i].Pos.X):0.0}, y {c.Parts[g.First()].Pos.Y:0.00}"
+                    + string.Concat(g.Where(i => c.DefOf(i).ExtRunOut > 0).Select(i => $" [{i} table of {ConstructExtruder.TableMachine(c, i)}, run {RollerRuns.RunOf(c, i)}, links {string.Join("/", Enumerable.Range(0, 1).SelectMany(_ => { var l = new List<string>(); for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e)) l.Add(c.DefOf(c.OtherEnd(e)).Name); return l; }))}]"))
+                    + string.Concat(g.Where(i => c.DefOf(i).IsRollerTile).Select(i => $" [{i} run {RollerRuns.RunOf(c, i)}]"))
+                    + string.Concat(g.Where(i => WorkOrders.TakesOrders(c.DefOf(i))).Select(i => ConstructConveyor.Out(c, i) is var o and >= 0
+                        ? $" [{i} out {o}: {ConstructConveyor.Length(c, o):0.0} m to {c.DefOf(c.Routes[o].To).Name} {c.Routes[o].To} at {c.Parts[c.Routes[o].To].Pos.X:0},{c.Parts[c.Routes[o].To].Pos.Z:0}]" : $" [{i} no out]"))
+                    + string.Concat(g.Where(i => WorkOrders.TakesOrders(c.DefOf(i)) || c.DefOf(i).IsTurntable).SelectMany(i => Enumerable.Range(0, c.RouteCount)
+                        .Where(k => c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To < c.PartCount && c.Routes[k].From < c.PartCount && (MachineBlocks.Owner(c, c.Routes[k].To) == i || c.Routes[k].From == i))
+                        .Select(k => $" [{i}: link {k} {c.DefOf(c.Routes[k].From).Name} {c.Routes[k].From} at {c.Parts[c.Routes[k].From].Pos.X:0},{c.Parts[c.Routes[k].From].Pos.Z:0} -> {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0}]"))));
+        }
+        if (Arg("--why") is { } whyParts) // (--why "PART;PART": each machine's answer to an order for it)
+            foreach (var wn in whyParts.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                if (ConstructParts.Find(wn.Trim()) is { } wd)
+                    for (var i = 0; i < c.PartCount; i++)
+                        if (WorkOrders.TakesOrders(c.DefOf(i)) && !c.DefOf(i).IsBakeOven)
+                            Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}");
         if (t < 0)
         {
             Console.WriteLine("  no Building Station in it");
             return 1;
         }
+        if (Arg("--press-order") is { } pressOrder) // (--press-order PART --oven-at X,Z: an order queued at the Press nearest the point, run and watched)
+            return PressOrder(w, q, c, place, pressOrder, Arg("--oven-at"), seconds, keep, Fill, args.Contains("--via-station") ? t : -1);
         if (Arg("--oven-order") is { } ovenOrder)
-            return OvenOrder(w, q, c, place, ovenOrder, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
+            using (place.In())
+                RollerRuns.Sync(w, c); // (the stations' roll-outs, as the first conveyor step lays them: an oven's order asks the station that rolls to it)
+        if (Arg("--oven-order") is { } ovenOrder2)
+            return OvenOrder(w, q, c, place, ovenOrder2, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
         if (string.IsNullOrEmpty(build))
             return 0;
         if (ConstructStation.Find(build) is not { } target)
@@ -289,7 +327,10 @@ public static class StationCheck
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 for (var k = 0; k < mo.Count; k++)
-                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}"
+                        + (w.StoreOf(c, i) is { } ms ? $" (store {ms.Amount} of {RecyclingTable.Current.NameOf(ms.Material)}, in {ms.InAmount}, busy {ms.Busy}, held {ms.Held}, blocked {ms.Blocked}, refused {(ExtrudeStall)ms.Refused})" : "")
+                        + string.Concat(Enumerable.Range(0, c.RouteCount).Where(k => MachineBlocks.Owner(c, c.Routes[k].From) == i)
+                            .Select(k => $" [route {k} to {c.DefOf(MachineBlocks.Owner(c, c.Routes[k].To)).Name} {ConstructConveyor.Length(c, k):0.0} m, riders {Enumerable.Range(0, c.ConveyedCount).Count(j => c.Conveyed[j].Route == k)}]")));
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref readonly var cr = ref c.Conveyed[i];
@@ -497,6 +538,67 @@ public static class StationCheck
     /// <c>--oven-order PART [--oven-at X,Z]</c>: an order for a part made from a kit (BakeKits.cs) queued on the site's Bake Oven nearest the
     /// point, then the site run: the kit started at a station, built, carried to the bed, baked and picked off. Reports each stage's time.
     /// </summary>
+    private static int PressOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds,
+        List<(int Bin, int Material, int N)> keep, Func<int, int, byte, int> fill, int station)
+    {
+        if (ConstructParts.Find(partName) is not { } d)
+        {
+            Console.WriteLine($"--press-order: no part \"{partName}\"");
+            return 1;
+        }
+        var point = at?.Split(',') is [var xs, var zs] && float.TryParse(xs, out var x) && float.TryParse(zs, out var z) ? new Vector2(x, z) : Vector2.Zero;
+        var press = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsPress).OrderBy(i => Vector2.Distance(point, new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z))).FirstOrDefault(-1);
+        if (press < 0)
+        {
+            Console.WriteLine("  no Press on the site");
+            return 1;
+        }
+        string? why;
+        using (place.In())
+            why = station >= 0 ? ConstructCrafting.Place(w, c, station, ConstructStation.OrderFor(d, 1)) : WorkOrders.Queue(w, c, press, ConstructStation.OrderFor(d, 1)); // (--via-station: the station's own ask, which chains the blank)
+        Console.WriteLine($"  {(station >= 0 ? $"station {station}'s ask; " : "")}the Press at {c.Parts[press].Pos.X:0}, {c.Parts[press].Pos.Z:0} (part {press}): order for the {d.Name}: {why ?? "taken"}");
+        if (why != null)
+            return 1;
+        var last = "";
+        using (place.In())
+            for (var k = 0; k < seconds * World.TickRate; k++)
+            {
+                MoverPhysics.Clock++;
+                w.Step(q, World.TickDt);
+                if (k % World.TickRate == 0)
+                    foreach (var (bin, mat, n) in keep)
+                        if (c.DefOf(bin).IsAssembler)
+                            fill(bin, n, (byte)mat);
+                        else if (w.StoreOf(c, bin) is { } st && (st.Amount == 0 || st.Material == mat) && st.Amount < n)
+                            w.Deposit(c, bin, n - st.Amount, (byte)mat);
+                if (k % (5 * World.TickRate) == 0 && press < c.PartCount && c.DefOf(press).IsPress && w.StoreOf(c, press) is { } pst)
+                {
+                    var look = ConstructPress.Look(c, press, pst, false, null, c.Parts[press].Pos);
+                    if (look != last)
+                        Console.WriteLine($"  {k / World.TickRate,6} s: press: {last = look}");
+                    if (station < 0 && c.Parts[press].Orders is not { Count: > 0 })
+                    {
+                        Console.WriteLine($"  {k / World.TickRate,6} s: the order is done");
+                        return 0;
+                    }
+                }
+            }
+        Console.WriteLine($"  after {seconds} s the order is still open");
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Craft is { Count: > 0 } cq)
+                for (var k = 0; k < cq.Count; k++)
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i}'s ask: {ConstructCrafting.StateText(c, cq.Items[k])}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To}");
+        foreach (var b in w.Bodies)
+            if (b != c && b.PartCount < 4)
+                Console.WriteLine($"  loose: {b.DefOf(0).Name} at {b.Pos.X:0.0}, {b.Pos.Y:0.0}, {b.Pos.Z:0.0}");
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Orders is { Count: > 0 } mo)
+                Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}");
+        return 1;
+    }
+
     private static int OvenOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds, bool trace,
         List<(int Bin, int Material, int N)> keep, Func<int, int, byte, int> fill)
     {
@@ -621,7 +723,10 @@ public static class StationCheck
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 for (var k = 0; k < mo.Count; k++)
-                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}"
+                        + (w.StoreOf(c, i) is { } ms ? $" (store {ms.Amount} of {RecyclingTable.Current.NameOf(ms.Material)}, in {ms.InAmount}, busy {ms.Busy}, held {ms.Held}, blocked {ms.Blocked}, refused {(ExtrudeStall)ms.Refused})" : "")
+                        + string.Concat(Enumerable.Range(0, c.RouteCount).Where(k => MachineBlocks.Owner(c, c.Routes[k].From) == i)
+                            .Select(k => $" [route {k} to {c.DefOf(MachineBlocks.Owner(c, c.Routes[k].To)).Name} {ConstructConveyor.Length(c, k):0.0} m, riders {Enumerable.Range(0, c.ConveyedCount).Count(j => c.Conveyed[j].Route == k)}]")));
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref readonly var cr = ref c.Conveyed[i];
