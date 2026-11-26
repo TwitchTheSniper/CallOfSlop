@@ -86,6 +86,8 @@ public static class StationCheck
                     keep.Add((bin, RecyclingTable.Current.IdOf(fm), pn));
                 Console.WriteLine($"  fill: {put} {fm} into the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz}");
             }
+        if (args.Contains("--dies")) // (--dies: every Die Wall stocked with a die of each family, as a creative site start does: PressDieArm.cs)
+            Console.WriteLine($"  dies: {ConstructLifters.StockDieWalls(w, c)} set on the Die Walls");
         // Every Line Console started, as a player starting the works would (Zero Day Works II's consoles are laid stopped): a stopped
         // console holds its machines (a Bake Oven never starts its kit).
         var started = 0;

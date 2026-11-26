@@ -579,7 +579,7 @@ public sealed partial class PressParts : IPartGenerator
     /// one kind), split by a post. Either rack holds dies and tool blocks alike, whatever fits a bay; a chute from it into a press brings
     /// the press a die, and one into an Assembler brings the tool block its recipe needs.
     /// </summary>
-    internal static Part Rack(Cls c, int nx, int ny, int nz, string? name = null, string? desc = null, int bays = 1, string label = "Dies", string folder = Section)
+    internal static Part Rack(Cls c, int nx, int ny, int nz, string? name = null, string? desc = null, int bays = 1, string label = "Dies", string folder = Section, int levels = 1)
     {
         var k = c.Cell;
         double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), y1 = c.Hi(ny), z0 = c.Lo(), z1 = c.Hi(nz);
@@ -597,14 +597,27 @@ public sealed partial class PressParts : IPartGenerator
             foreach (var z in new[] { z0, z1 - post })
                 p.Add(Box([x, y0 + board, z], [x + post, y1, z + post]));
         }
+        // (more than one level: a shelf board across each level's floor, between the posts, so each bay of each level is a slot: the Die
+        // Wall, a shelf a family for a press pair's Loader Arm, Sean 2026-11-26. A board stops 3 mm short of the posts and the frame's end
+        // posts, so no face of it lies on theirs.)
+        var level = (y1 - y0 - board - (levels - 1) * board) / levels; // (each level's clear height, over its board)
+        for (var v = 1; v < levels; v++)
+        {
+            var sy = y0 + board + v * level + (v - 1) * board;
+            p.Add(Box([x0 + post + 0.003, sy, z0 + 0.003], [x1 - post - 0.003, sy + board, z1 - 0.003], Bed));
+        }
         BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(2, "+x", "-x", "+y", "-y"));
-        p.Stats(60 * c.X, 200 * c.X, c.Armour, c == Small ? 3 : null);
+        p.Stats(60 * c.X * levels, 200 * c.X, c.Armour, c == Small ? 3 : null);
         var gap = 0.015 * c.X;
         var slots = Py.L();
-        for (var b = 0; b < bays; b++)
+        for (var v = 0; v < levels; v++)
         {
-            var bx0 = x0 + post + b * (bay + post);
-            slots.Add(Kw(("min", Py.L(R3(bx0 + gap), R3(y0 + board + gap), R3(z0 + gap))), ("max", Py.L(R3(bx0 + bay - gap), R3(y1 - gap), R3(z1 - gap))), ("rack", true), ("label", label)));
+            var ly0 = y0 + board + v * (level + board);
+            for (var b = 0; b < bays; b++)
+            {
+                var bx0 = x0 + post + b * (bay + post);
+                slots.Add(Kw(("min", Py.L(R3(bx0 + gap), R3(ly0 + gap), R3(z0 + gap))), ("max", Py.L(R3(bx0 + bay - gap), R3(ly0 + level - gap), R3(z1 - gap))), ("rack", true), ("label", label)));
+            }
         }
         p.Set(("storage", Kw(("slots", slots))));
         return p;
@@ -1347,6 +1360,10 @@ public sealed partial class PressParts : IPartGenerator
         foreach (var (family, _, colour) in Families)
             parts.Add(("Dies", Die(family, colour)));
         parts.Add(("", Rack(Small, 6, 6, 3)));
+        // The Die Wall: twelve shelves (four bays on three levels; a store holds at most 12 slots), a die family on each, beside a press pair,
+        // where a Loader Arm takes the die a press's order needs and puts the old one back (PressDieArm.cs; Sean 2026-11-26: "a die rack
+        // and a loader arm that swaps out dies on the presses"). With the pair's two fitted dies, fourteen families to hand.
+        parts.Add(("", Rack(Small, 12, 8, 3, "Die Wall", "A wall of twelve shelves, a press die on each. A Loader Arm in reach of it and of a press carries the die the press's order needs from it into the press, and the old die back.", bays: 4, levels: 3)));
         foreach (var (side, c, n) in Housings)
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));

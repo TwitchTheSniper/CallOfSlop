@@ -14,6 +14,8 @@ public enum LiftPointKind : byte
     Tray, // (phase 5b) a Crafting Terminal's tray: put (a part one of its open orders still waits for)
     RunEnd, // a Roller Tile run's last tile with no way on (RollerRuns.EndRunAt): pick (the lead piece waiting at its end)
     RunStart, // a Roller Tile run's own first tile, nothing butted on its in end (RollerRuns.StartRunAt): put (a piece handed on toward a station: ConstructLifterHandOff.cs)
+    DieSlot, // a press's die slot: pick (a die its order no longer needs), put (the die its head order needs) (PressDieArm.cs)
+    DieRack, // a die rack's shelves (Die Rack, Die Wall): pick (a die a press in reach wants), put (a die off a press) (PressDieArm.cs)
 }
 
 /// <summary>A point in a lifter's reach (server; found every <see cref="ConstructLifters.PointEvery"/> ticks, never per tick).</summary>
@@ -141,6 +143,8 @@ public static partial class ConstructLifters
                 b.WorldFrame(b.Parts[pt.Part].Seg, out var rq, out var rt);
                 at = rt + Vector3.Transform(b.RouteNodes[b.Routes[run].Start + 1].Pos, rq); // (the run's last node, over its end tile)
                 return true;
+            case LiftPointKind.DieSlot or LiftPointKind.DieRack:
+                return DiePointAt(b, pt, d, out at);
             case LiftPointKind.RunStart:
                 if (RollerRuns.StartRunAt(b, pt.Part) is not (var srun and >= 0))
                     return false;
@@ -209,7 +213,8 @@ public static partial class ConstructLifters
             if (i == self || b.Parts[i].Broken)
                 continue;
             var d = b.DefOf(i);
-            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile && !d.IsBakeOven)
+            var dieRack = IsDieRack(d);
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer && !d.IsRollerTile && !d.IsBakeOven && !dieRack)
                 continue;
             if (d.IsPieceRack && ConstructPads.IsMember(b, i))
                 continue; // (a tile of a bigger pad: its owner tile is the pad's one point)
@@ -223,6 +228,10 @@ public static partial class ConstructLifters
                 half = MathF.Max(MathF.Abs(pd.RackHoldMin.X), MathF.Abs(pd.RackHoldMax.X)) + MathF.Max(MathF.Abs(pd.RackHoldMin.Z), MathF.Abs(pd.RackHoldMax.Z)) + pd.RackHoldMax.Y + 0.5f; // (a pad's owner: its whole rectangle, measured from the tile)
             if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
                 continue; // (a big body's far parts; one on a moving segment is tested whole)
+            if (dieRack || HasDieSlot(d))
+                DiePointsOn(pts, ref n, b, i, d, ld, shoulder, lr); // (a die rack, or a press's die slot: PressDieArm.cs)
+            if (dieRack)
+                continue;
             if (d.IsRollerTile)
             {
                 // A run's end tile with no way on: its pieces wait there for a crane (the Hall Crane picks from a run's end).
@@ -319,6 +328,8 @@ public static partial class ConstructLifters
     private static int PutFor(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, bool storage, int skip, out Vector3 at, bool asNew = true)
     {
         at = default;
+        if (d.IsPressDie)
+            return DiePutFor(world, l, ld, shoulder, lr, d, skip, out at); // (a die goes only to a press that wants it or a die shelf: PressDieArm.cs)
         var lift = WristLift(d);
         var fromPad = skip >= 0 && l.Points![skip].Kind == LiftPointKind.Rack && world.Get(l.Points[skip].Body) is { } sb && l.Points[skip].Part < sb.PartCount && sb.DefOf(l.Points[skip].Part).IsLayDownPad;
         for (var k = 0; k < l.PointN; k++)
@@ -384,6 +395,11 @@ public static partial class ConstructLifters
         if (l.PointN == 0)
         {
             return false; // (the caller sets the idle reason)
+        }
+        if (CarryDie(world, c, l, ld))
+        {
+            l.PointsAt = world.LiftTick - PointEvery; // (a die off or onto a press renumbers its body's parts: look again next time)
+            return true;
         }
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
         // A run's end takes its turn with the outs: tried first when it comes before every out from where the turn stands (else an
@@ -756,6 +772,8 @@ public static partial class ConstructLifters
     /// <summary>The carry's end: the piece into its point. Refused: another taker in reach, else it waits in the hand (Stuck).</summary>
     private static void Put(ConstructWorld world, IWorldQuery? query, Construct c, CLift l, LifterDef ld)
     {
+        if (l.ToKind == LiftPointKind.DieSlot && PutDieSlot(world, c, l, ld))
+            return; // (a die into a press, the old one changed for it and on its way to a shelf: PressDieArm.cs)
         var d = ConstructParts.Get(l.Def);
         var ok = d != null && world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount && PutPiece(world, query, b, l.ToKind, l.ToPart, l.ToBay, d, l.Health, l.Paint);
         if (ok)
@@ -822,6 +840,8 @@ public static partial class ConstructLifters
             LiftPointKind.Rack or LiftPointKind.Tray => $"the {name}",
             LiftPointKind.PressBay => $"the {name}'s bay {l.ToBay + 1}",
             LiftPointKind.RunStart => $"the start of the {name} run",
+            LiftPointKind.DieSlot => $"the {name}'s die slot",
+            LiftPointKind.DieRack => $"the {name}'s shelf",
             _ => $"the {name}'s Piece in",
         };
     }
@@ -860,8 +880,11 @@ public static partial class ConstructLifters
             case LiftPointKind.RunStart:
                 ok = health == 255 && paint == 0 && PutOnRun(world, b, part, d); // (a run carries a piece as new: a damaged or painted one stays in the hand)
                 break;
+            case LiftPointKind.DieSlot or LiftPointKind.DieRack:
+                ok = PutDie(world, b, kind, part, d); // (PressDieArm.cs)
+                break;
         }
-        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray or LiftPointKind.RunStart) && world.ChainCount > 0)
+        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray or LiftPointKind.RunStart or LiftPointKind.DieSlot or LiftPointKind.DieRack) && world.ChainCount > 0)
             ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
         if (ok)
         {
