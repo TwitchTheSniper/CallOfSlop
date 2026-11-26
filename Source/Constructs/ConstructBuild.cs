@@ -1341,11 +1341,12 @@ public static class ConstructBuild
         // A ship the game spawns in survival comes with its magazines full (Karl, 2026-11-17): a store the blueprint fills with ammo is
         // filled in any world but by a player's build (a Building Station's fit: PlayerBuild), which comes empty and is filled by hand.
         var magazine = !world.Creative && !world.PlayerBuild && def.IsVolumeStore && FillsAmmo(def, values);
+        var stock = magazine || (world.StockAll && ConstructStoreVolume.HasContents(def));
         foreach (var (slot, v) in values)
-            if (world.Creative || magazine || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
+            if (world.Creative || stock || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
                 ConstructConfig.Set(ref c.Parts[part], def, slot, v);
         ConstructConfig.StartState(ref c.Parts[part], def);
-        if (ConstructStoreVolume.HasContents(def) && (world.Creative || magazine))
+        if (ConstructStoreVolume.HasContents(def) && (world.Creative || stock))
             ConstructStoreVolume.SetContents(world, c, part, limit: false); // (its walls may not be up yet: an open box spills what it must later)
     }
 
