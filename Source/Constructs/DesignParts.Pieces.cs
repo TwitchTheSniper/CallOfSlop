@@ -108,6 +108,17 @@ public static partial class DesignParts
         e.Kg = SeatKg * s;
         e.SeatAt = a.O + a.Z * (0.3f * s) + a.Y * 0.004f; // (the sitter's feet, at the seat pan's front edge)
         e.Rot = Facing(-a.Z, a.Y); // (a seat's sitter faces its part's -z: Construct.SeatForward)
+        e.SeatTurn = TurnPast(e.Rot, a.Z); // (and the rest of the designer's free turn, about its up: ConstructPartDef.SeatTurn)
+    }
+
+    /// <summary>
+    /// The yaw (radians, about the part's +y) that turns a part already turned by <paramref name="rot"/> so its -z points along
+    /// <paramref name="ahead"/> (the ship's frame), as near as a turn about its up can: within 45 degrees, since Rot24 is the nearest.
+    /// </summary>
+    private static float TurnPast(byte rot, Vector3 ahead)
+    {
+        var v = Vector3.Transform(Vector3.Normalize(ahead), Quaternion.Conjugate(Rot24.Quat(rot))); // (where its sitter should look, in the part's frame)
+        return v.X * v.X + v.Z * v.Z < 1e-8f ? 0 : MathF.Atan2(-v.X, -v.Z); // (a turn of t about +y takes -z to (-sin t, 0, -cos t))
     }
 
     /// <summary>
@@ -153,6 +164,7 @@ public static partial class DesignParts
     private static void SeatFinish(Element e, ConstructPartDef def)
     {
         def.SeatAt = e.SeatAt;
+        def.SeatTurn = e.SeatTurn == 0 ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(Vector3.UnitY, e.SeatTurn);
         var (station, helm) = DesignSeats.StationOf(e.Role);
         def.Helm = helm;
         def.DefaultSetting = (byte)station; // (its Station setting: CockpitStations)
