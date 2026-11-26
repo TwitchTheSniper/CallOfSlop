@@ -254,7 +254,11 @@ public sealed partial class Ui
     }
 
     /// <summary>--sd-do's cmd: one command as the panels send it.</summary>
-    public void ShipDesignerTestCmd(string json) => Cmd(JsonNode.Parse(json)!.AsObject());
+    public void ShipDesignerTestCmd(string json)
+    {
+        if (_sd != null)
+            Cmd(JsonNode.Parse(json)!.AsObject());
+    }
 
     /// <summary>--sd-do's room: Room view on a room (0: back to the ship).</summary>
     public void ShipDesignerTestRoom(int id)
@@ -538,7 +542,7 @@ public sealed partial class Ui
                 ImGui.SameLine();
             }
         }
-        var right = ImGui.GetWindowPos().X + width - 470 * _scale;
+        var right = ImGui.GetWindowPos().X + width - (ShipDesignerDock != null ? 560 : 470) * _scale; // (docked: APPLY TO SHIP and CANCEL for BACK)
         ImGui.SameLine(MathF.Max(ImGui.GetCursorPosX() + 20 * _scale, right - ImGui.GetWindowPos().X));
         ImGui.SetNextItemWidth(130 * _scale);
         if (ImGui.BeginCombo("##sdstart"u8, "New from..."u8))

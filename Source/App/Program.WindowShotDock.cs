@@ -3,10 +3,10 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The window-shot tool's actions for the Ship Docking Station (Program.SandboxDock.cs, GameSandboxDock.cs): <c>dock ship NAME</c> (host: a
-/// ship design spawned 20 m beside the first docking station, set down as the parts menu's big blueprints are), <c>dock open</c> (the use
+/// The window-shot tool's actions for the Ship Docking Station (Program.SandboxDock.cs, GameSandboxDock.cs): <c>dock ship NAME [M]</c> (host: a
+/// ship design spawned M m (30) beside the first docking station, set down as the parts menu's big blueprints are), <c>dock open</c> (the use
 /// key's own call on the first docking station), <c>dock cmd JSON</c> (a designer command, as its panels send it), <c>dock apply</c> (the
-/// APPLY TO SHIP button) and <c>dock info</c> (each design body as this peer has it: its id, design, parts, place, owner, and the riders).
+/// APPLY TO SHIP button), <c>dock owner N</c> (host: every design body's owner) and <c>dock info</c> (each design body as this peer has it: its id, design, parts, place, owner, and the riders).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -37,6 +37,9 @@ public static unsafe partial class Program
                     WsFail("dock ship: the host, with a docking station in the world");
                     return true;
                 }
+                var dist = 30f;
+                if (rest.LastIndexOf(' ') is var ds and > 0 && float.TryParse(rest[(ds + 1)..], System.Globalization.CultureInfo.InvariantCulture, out var dv))
+                    (rest, dist) = (rest[..ds], dv);
                 var listed = ShipDesignStore.List().FirstOrDefault(x => x.Name.Equals(rest, StringComparison.OrdinalIgnoreCase));
                 if (listed.Json == null || DesignParts.Canon(listed.Json) is not { } text || DesignParts.Register(text) is not { } hash)
                 {
@@ -44,13 +47,31 @@ public static unsafe partial class Program
                     return true;
                 }
                 g.Constructs.KeepShipDesign(hash);
-                var at = Game.DockPad(st.Body, st.Part) + new Vector3(30, 0, 0);
+                var at = Game.DockPad(st.Body, st.Part) + new Vector3(dist, 0, 0);
                 var ground = ConstructWorld.Ground(World.Query, at + new Vector3(0, 20, 0));
                 var why = g.VehicleSpawn.RequestBlueprint(DesignParts.BlueprintOf(hash, listed.Name), ground, 0, g.LocalId, 255, null);
                 WsSay(why == null ? $"dock ship: {listed.Name} ({hash}) asked for at {ground:0.0}" : $"dock ship: refused: {why}");
                 _wsWait = 60;
                 return true;
             }
+            case "owner": // host: every design body's owner set (255: nobody's)
+                foreach (var b in g.Constructs.Bodies)
+                    if (g.IsServer && b.PartCount > 0 && DesignParts.EntryOf(b.DefOf(0)) != null && byte.TryParse(rest, out var who))
+                    {
+                        b.Owner = who;
+                        g.Constructs.StructureDirty.Add(b.Id);
+                    }
+                return true;
+            case "board": // host: player N (this one when left out) dropped onto the first design body's top
+                foreach (var b in g.Constructs.Bodies)
+                    if (g.IsServer && b.PartCount > 0 && DesignParts.EntryOf(b.DefOf(0)) != null && g.Players.GetValueOrDefault(byte.TryParse(rest, out var pid) ? pid : g.LocalId) is { } lp)
+                    {
+                        lp.Teleport(new Vector3(b.Pos.X, b.WorldCom.Y + b.Radius * 0.5f + 2, b.Pos.Z)); // (over its frame's origin: by a dock it is beside the pad)
+                        lp.NoclipWanted = false;
+                        _wsWait = 240;
+                        return true;
+                    }
+                return true;
             case "open":
                 if (WsDockStation(g) is not { } os)
                 {
