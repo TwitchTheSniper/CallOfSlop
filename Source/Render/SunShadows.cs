@@ -723,6 +723,11 @@ public static unsafe class SunShadows
     private static void AddPart(Construct c, int i, ref int n, ref int sv, ref int groups)
     {
         ref var part = ref c.Parts[i];
+        if (c.HasDesign && DesignParts.LookOf(c.DefOf(i)) is { } look)
+        {
+            AddDesign(look, part.Pos, part.Rot, ref sv, ref groups); // (its one box is hidden: the drawn mesh casts, Renderer.Design.cs)
+            return;
+        }
         foreach (var b in c.DefOf(i).Boxes)
         {
             if (b.Hidden || b.Glass > 0f || b.BySeams && b.SeamHidden(i < c.BlockJoined.Length ? c.BlockJoined[i] : (byte)0))
@@ -760,6 +765,48 @@ public static unsafe class SunShadows
             (_boxes[o], _boxes[o + 1], _boxes[o + 2], _boxes[o + 3], _boxes[o + 4], _boxes[o + 5]) = (centre.X, centre.Y, centre.Z, half.X, half.Y, half.Z);
             n++;
         }
+    }
+
+    /// <summary>Triangles of a ship design's look per shape group (a group goes into one cell: a long hull band is cut into many).</summary>
+    private const int DesignGroupTris = 64;
+
+    /// <summary>
+    /// A ship design part's look (DesignParts.Look, its triangles in the part's frame) onto the shape list, in groups of
+    /// <see cref="DesignGroupTris"/> triangles: the sun, the dark interiors and the lamps see the hull as it is drawn (Karl, 2026-11-26: a
+    /// design cast nothing, its hidden box being all the caster knew of it).
+    /// </summary>
+    private static void AddDesign(DesignParts.Look look, Vector3 pos, byte rot, ref int sv, ref int groups)
+    {
+        var verts = look.Vertices - look.Vertices % 3;
+        if (verts <= 0)
+            return;
+        if ((sv + verts) * 6 > _shapes.Length)
+            Array.Resize(ref _shapes, Math.Max(_shapes.Length * 2, (sv + verts) * 6));
+        var p = look.Pos;
+        for (var v = 0; v < verts; v++)
+        {
+            var at = pos + Rot24.Apply(rot, new Vector3(p[v * 3], p[v * 3 + 1], p[v * 3 + 2]));
+            var so = (sv + v) * 6;
+            (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
+        }
+        for (var first = 0; first < verts; first += DesignGroupTris * 3)
+        {
+            var end = Math.Min(verts, first + DesignGroupTris * 3);
+            if (groups == _grpFirst.Length)
+            {
+                Array.Resize(ref _grpFirst, groups * 2);
+                Array.Resize(ref _grpCentre, groups * 2);
+            }
+            var sum = Vector3.Zero;
+            for (var v = first; v < end; v++)
+            {
+                var so = (sv + v) * 6;
+                sum += new Vector3(_shapes[so], _shapes[so + 1], _shapes[so + 2]);
+            }
+            _grpFirst[groups] = sv + first;
+            _grpCentre[groups++] = sum / (end - first);
+        }
+        sv += verts;
     }
 
     private static int[] _grpFirst = new int[64], _cellOf = new int[256], _cellCount = [], _cellAt = [];
