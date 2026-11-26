@@ -25,8 +25,21 @@ namespace CallOfSlop;
 /// (<see cref="ConstructPartDef.BoxMass"/>): the skin's area at <see cref="SkinKgPerM2"/>, the rooms' floors at <see cref="DeckKgPerM2"/> and the
 /// pieces' surfaces at <see cref="PieceKgPerM2"/>.
 /// </para>
+/// <para>
+/// <b>The files</b> (one partial class; each kind of element is one file's, so builders working on different kinds never share one):
+/// <list type="bullet">
+/// <item>DesignParts.cs (this one): the table of designs, <see cref="Element"/>, the steps' pipeline (<see cref="ElementSteps"/>), the kinds'
+/// tables (<see cref="KindTable"/>), the part a key names (<see cref="PartOf"/>), the body built (<see cref="BuildSteps"/>), the look, the wire and the save.</item>
+/// <item>DesignParts.Hull.cs: the bands, the joins and the colliders taken from a mesh. DesignParts.Pieces.cs: the pieces, the drives, RCS,
+/// seats and the flight computer. DesignParts.Rooms.cs: the rooms. DesignParts.Doors.cs, DesignParts.Risers.cs, DesignParts.Systems.cs:
+/// doors and hatches; ladders and lifts; tow points, lights, clamps, guns and turrets. DesignParts.Templates.cs: the part files a working def starts from.</item>
+/// </list>
+/// A kind file gives the pipeline a stage (<c>AddX(Steps)</c>, called in order from <see cref="ElementSteps"/>) and fills the tables in its
+/// <c>RegisterX(KindTable)</c>: what a piece kind does (<see cref="KindTable.Piece"/>, called for each of its copies) and, for an
+/// <see cref="Element.Fn"/>, the def it starts from and what is set on it once the structure's numbers are in (<see cref="KindTable.Fn"/>).
+/// </para>
 /// </summary>
-public static class DesignParts
+public static partial class DesignParts
 {
     public const string Prefix = "Design (#";
     public const int MaxText = 1 << 20; // bytes of one design's text
@@ -69,7 +82,6 @@ public static class DesignParts
     private static readonly Dictionary<string, ConstructPartDef?> Interned = new(StringComparer.Ordinal); // by key
     private static readonly Dictionary<ConstructPartDef, (Entry E, Element El)> Info = new(ReferenceEqualityComparer.Instance);
     private static readonly HashSet<string> Unknown = new(StringComparer.Ordinal);
-    private static ConstructPartDef? _template;
 
     [ThreadStatic] public static string? LastRefusal;
 
@@ -185,26 +197,124 @@ public static class DesignParts
     /// piece (each copy), a room's floor. <see cref="Id"/> names it within its design (the part's key is the design's and this); its geometry is
     /// in the part's frame, which stands at <see cref="Origin"/> in the ship's. A bill of materials reads <see cref="Kind"/>, <see cref="Name"/>,
     /// <see cref="Area"/> and <see cref="Kg"/>.
+    /// <para>
+    /// While it is made (a stage of <see cref="ElementSteps"/>) everything is in the ship's frame: points, boxes, directions, a door's or a joint's
+    /// pivot and axis, a ladder's heights; <see cref="IntoFrames"/> then moves each into the part's own frame (by <see cref="Origin"/>, the middle of
+    /// <see cref="BoxMin"/>..<see cref="BoxMax"/>, and <see cref="Rot"/>).
+    /// </para>
     /// </summary>
     public sealed class Element
     {
         public string Id = "", Kind = "", Name = "";
         public Vector3 Origin;
         public float Area, Kg;
-        public Vector3 BoxMin, BoxMax; // where its mass is (part frame)
+        public Vector3 BoxMin, BoxMax; // where its mass is (part frame); with Boxes, at least their bounds
         public ConvexHull[] Hulls = [];
         public Look Look = new();
         public readonly List<int> Links = []; // the elements it is welded to (by index)
-        /// <summary>What its part does in the game: "" structure, "thrust" (a drive, an RCS nozzle), "seat", "flight" (the flight computer).</summary>
+        /// <summary>What its part does in the game: "" structure, "thrust" (a drive, an RCS nozzle), "seat", "flight" (the flight computer); each a <see cref="KindTable.Fn"/>.</summary>
         public string Fn = "";
         public string Role = ""; // a seat's (DesignSeats.Roles)
         public byte Rot; // the part's turn (Rot24): a seat faces its own way; everything else stands in the ship's frame
         public Vector3 Exhaust, ThrustAt, SeatAt; // thrust: the way its exhaust leaves and where it pushes; a seat: the sitter's feet (the ship's frame, then the part's)
         public float Force; // thrust: N at full
         public float Mouth; // thrust: its bell's or nozzle's mouth radius (m), which sizes its flame
+
+        // ---- Hooks for walkable designs and ship systems (steps 4 and 5): each is applied by PartOf or BuildSteps when set ----
+        /// <summary>Solid boxes (a room's floor, walls and ceiling; a door's leaf), in place of the one hidden mass box: they collide as boxes, hidden (its look draws it), each with its share of <see cref="Kg"/>. Null: none.</summary>
+        public List<ElementBox>? Boxes;
+        /// <summary>An event door's leaf (ConstructDoors): copied onto the def, which becomes PartRole.Door. Its Pivot and Axis as the ship has them while made.</summary>
+        public CDoorDef? Door;
+        /// <summary>A vertical ladder: its landing's and its foot's heights (the ship's Y while made; the part's frame after). NaN: not a ladder. Its part keeps its +y up.</summary>
+        public float LadderTop = float.NaN, LadderFoot = float.NaN;
+        /// <summary>A seat's turn about its up past its Rot24 (radians): the designer's free yaw (the plan's package D reads it). Not applied yet.</summary>
+        public float SeatTurn;
+        /// <summary>The segment its part hangs on (CPart.Seg): 0 the body; k the k-th joint the design makes (elements with <see cref="Joint"/>, in element order), which must come before it.</summary>
+        public byte Seg;
+        /// <summary>Its part is a joint (a hinge, turntable or piston): the parts with <see cref="Seg"/> naming it move on it (BuildSteps adds the joint). Null: not one.</summary>
+        public JointSpec? Joint;
+        /// <summary>The elements its part's output is wired into (by index; BuildSteps lays each wire, logging one refused).</summary>
+        public readonly List<int> Wires = [];
+
         internal LookBuilder? Mesh; // (while it is made, in the ship's frame)
         internal List<Vector3>? Points; // (ditto: its hulls' points, in runs, before they are moved)
         internal List<int>? Runs;
+    }
+
+    /// <summary>One of an element's solid boxes (<see cref="Element.Boxes"/>): its corners (the ship's frame while made, the part's after) and its mass (0 for all: shared by volume).</summary>
+    public record struct ElementBox(Vector3 Min, Vector3 Max, float Kg = 0);
+
+    /// <summary>An element's joint (<see cref="Element.Joint"/>): its type and limits, its pivot and axis (the ship's frame while made, the part's after).</summary>
+    public sealed class JointSpec
+    {
+        public JointType Type = JointType.Passive;
+        public Vector3 Pivot;
+        public byte Axis; // a direction (0..5: ConstructParts.DirVector)
+        public float Min, Max; // radians (metres for a piston)
+        public float Speed, Strength; // radians or metres a second; N m or N
+        public bool Limited = true;
+    }
+
+    /// <summary>What a piece kind's work (<see cref="KindTable.Piece"/>) is handed: the piece, its copy's element and index, its copy's place, the list.</summary>
+    private readonly record struct PieceAt(Piece P, Element E, int At, DesignScene.Place W, List<Element> Els)
+    {
+        public float S => (float)P.Size;
+        public Vector3 O => V(W.O) - V(W.Y) * (float)P.Recess; // (its foot on the skin, past its recess)
+        public Vector3 X => V(W.X);
+        public Vector3 Y => V(W.Y); // (out of the skin)
+        public Vector3 Z => V(W.Z);
+    }
+
+    private delegate void PieceWork(in PieceAt a);
+
+    /// <summary>
+    /// The kinds' tables, filled once by each kind file's <c>RegisterX</c> (listed in <see cref="Make"/>): what a piece kind does, and for each
+    /// <see cref="Element.Fn"/> the def its part starts from and what is set on it after <see cref="PartOf"/> has put in the structure's numbers.
+    /// </summary>
+    private sealed class KindTable
+    {
+        public readonly Dictionary<string, PieceWork> Pieces = new(StringComparer.Ordinal); // by PieceKinds kind
+        public readonly Dictionary<string, (Func<Element, ConstructPartDef> Start, Action<Element, ConstructPartDef>? Finish)> Fns = new(StringComparer.Ordinal); // by Element.Fn
+
+        /// <summary>What a piece of <paramref name="kind"/> does: called for each copy's element once it is in the list (it may add elements of its own, welded to it).</summary>
+        public void Piece(string kind, PieceWork work) => Pieces.Add(kind, work);
+
+        /// <summary>
+        /// An element function: <paramref name="start"/> gives its part's def (a template's copy: DesignParts.Templates.cs), <paramref name="finish"/>
+        /// sets what it does once the boxes, hulls and bounds are in (its mass and health come after, from the element's).
+        /// </summary>
+        public void Fn(string fn, Func<Element, ConstructPartDef> start, Action<Element, ConstructPartDef>? finish = null) => Fns.Add(fn, (start, finish));
+
+        public static KindTable Make()
+        {
+            var k = new KindTable();
+            RegisterPieces(k);
+            RegisterRooms(k);
+            RegisterDoors(k);
+            RegisterRisers(k);
+            RegisterSystems(k);
+            return k;
+        }
+    }
+
+    private static readonly Lazy<KindTable> Kinds = new(KindTable.Make);
+
+    /// <summary>What a piece's element does in the game, from its place (a mirrored copy's own): its kind's work, or nothing (structure).</summary>
+    private static void Works(in PieceAt a)
+    {
+        if (Kinds.Value.Pieces.TryGetValue(a.P.Kind, out var work))
+            work(a);
+    }
+
+    /// <summary>The working part an element starts from (its Fn's), or null for structure.</summary>
+    private static ConstructPartDef? Working(Element e)
+    {
+        if (e.Fn.Length == 0)
+            return null;
+        if (Kinds.Value.Fns.TryGetValue(e.Fn, out var f))
+            return f.Start(e);
+        Console.WriteLine($"[design] an element's function \"{e.Fn}\" ({e.Id}, {e.Name}) is no kind's: it is made as structure");
+        return null;
     }
 
     /// <summary>A design made into its elements once a run (the first of its parts asked for makes them all).</summary>
@@ -232,155 +342,54 @@ public static class DesignParts
         }
         return els;
     }
-
-    /// <summary>
-    /// <see cref="ElementsOf"/> a step at a time into <paramref name="els"/>: a step a hull body's copy, a join, a piece or an element's
-    /// colliders, so the held spawn makes a new design over several ticks (each a few milliseconds) instead of one long one.
-    /// </summary>
-    public static IEnumerable<int> ElementSteps(ShipDesign d, List<Element> els)
+    /// <summary>What the stages of <see cref="ElementSteps"/> share: the design, the list, and each hull body's copy's bands (<see cref="AddBands"/> fills them).</summary>
+    private sealed class Steps(ShipDesign d, List<Element> els)
     {
-        var bandOf = new Dictionary<(int Hull, int Copy), (int First, int Count, double[] Z)>();
-        // The hull bodies: each copy's bands, its skin and cladding cut between their rings (the end caps with the end bands).
-        for (var hi = 0; hi < d.Hulls.Count; hi++)
+        public readonly ShipDesign D = d;
+        public readonly List<Element> Els = els;
+        public readonly Dictionary<(int Hull, int Copy), (int First, int Count, double[] Z)> BandOf = new();
+
+        /// <summary>The band of a body's copy at <paramref name="z"/> (its first copy's when it has no such copy), or -1.</summary>
+        public int BandAt(int hull, int copy, double z)
         {
-            var h = d.Hulls[hi];
-            var rings = h.Ring;
-            if (rings.Count < 2)
-                continue;
-            var tint = Tint(h.Material);
-            var src = d.CladSource(h);
-            var cladTint = Tint(src.CladMaterial is "Hull" or "" ? h.Material : src.CladMaterial);
-            var zs = rings.Select(r => h.Z + r.Z).ToArray();
-            for (var copy = 0; copy < h.Copies; copy++)
-            {
-                var first = els.Count;
-                for (var i = 0; i + 1 < rings.Count; i++)
-                    els.Add(new Element { Id = $"h{hi}.{copy}.b{i}", Kind = "band", Name = $"{h.Name}{(h.Copies > 1 ? copy == 0 ? " (right)" : " (left)" : "")}, band {i + 1}", Mesh = new LookBuilder(), Points = [], Runs = [] });
-                Bands(h, copy, els, first);
-                yield return els.Count;
-                var (skin, fore, aft, sc, fc, ac) = DesignScene.HullMeshes(d, h, copy);
-                yield return els.Count;
-                var axis = new Vector3((float)h.CopyX(copy), (float)(h.Y + 0.5 * (h.Bounds().Y0 + h.Bounds().Y1) - h.Y), float.NaN);
-                void Slice(DesignMesh m, Vector3 t)
-                {
-                    for (var tr = 0; tr < m.Tris; tr++)
-                    {
-                        var z = (m.P[tr * 9 + 2] + m.P[tr * 9 + 5] + m.P[tr * 9 + 8]) / 3;
-                        var b = Array.BinarySearch(zs, z);
-                        b = b >= 0 ? b : ~b - 1;
-                        els[first + Math.Clamp(b, 0, rings.Count - 2)].Mesh!.AddTri(m, tr, t, axis);
-                    }
-                }
-                Slice(skin, tint);
-                Slice(fore, tint);
-                Slice(aft, tint);
-                Slice(sc, cladTint);
-                Slice(fc, cladTint);
-                Slice(ac, cladTint);
-                for (var k = first; k < els.Count; k++)
-                    if (k > first)
-                        Weld(els, k - 1, k);
-                bandOf[(h.Id, copy)] = (first, rings.Count - 1, zs);
-                yield return els.Count;
-            }
-        }
-        int BandAt(int hull, int copy, double z)
-        {
-            if (!bandOf.TryGetValue((hull, copy), out var b) && !bandOf.TryGetValue((hull, 0), out b))
+            if (!BandOf.TryGetValue((hull, copy), out var b) && !BandOf.TryGetValue((hull, 0), out b))
                 return -1;
             var i = Array.BinarySearch(b.Z, z);
             i = i >= 0 ? i : ~i - 1;
             return b.First + Math.Clamp(i, 0, b.Count - 1);
         }
-        // Joins: one element a side (a mirrored one's twin is its own), welded to the bands it meets.
-        for (var ji = 0; ji < d.Joins.Count; ji++)
-        {
-            var j = d.Joins[ji];
-            var m = j.Mesh(d);
-            var tint = Tint(j.PaintOf(d).Material);
-            var sides = j.Mirror ? 2 : 1;
-            for (var s = 0; s < sides; s++)
-            {
-                var e = new Element { Id = sides > 1 ? $"j{ji}.{s}" : $"j{ji}", Kind = "join", Name = $"join {ji + 1}{(sides > 1 ? s == 0 ? " (right)" : " (left)" : "")}", Mesh = new LookBuilder() };
-                var pts = new List<double>();
-                for (var tr = 0; tr < m.Tris; tr++)
-                {
-                    var x = m.P[tr * 9] + m.P[tr * 9 + 3] + m.P[tr * 9 + 6];
-                    if (sides > 1 && (x < 0) != (s == 1))
-                        continue;
-                    e.Mesh.AddTri(m, tr, tint, new Vector3(float.NaN));
-                    for (var k = 0; k < 9; k++)
-                        pts.Add(m.P[tr * 9 + k]);
-                }
-                if (pts.Count == 0)
-                    continue;
-                e.Area = e.Mesh.Area;
-                e.Kg = e.Area * SkinKgPerM2;
-                HullOf(e, pts);
-                var at = els.Count;
-                els.Add(e);
-                var mid = (e.BoxMin + e.BoxMax) * 0.5f;
-                foreach (var end in new[] { j.A, j.B })
-                    if (BandAt(end.Hull, s == 1 && sides > 1 ? 1 - end.Copy : end.Copy, mid.Z) is var b and >= 0)
-                        Weld(els, b, at);
-            }
-            yield return els.Count;
-        }
-        // Pieces: one element a copy (its mirrored twin, its pair on the other body), welded to the band it stands on.
-        for (var pi = 0; pi < d.Pieces.Count; pi++)
-        {
-            var p = d.Pieces[pi];
-            if (d.Hull(p.Hull) is not { } h || PieceKinds.Find(p.Kind) is null)
-                continue;
-            var one = DesignScene.PieceMesh(d, p, copies: false);
-            if (one.Tris == 0)
-                continue;
-            var w0 = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
-            var sets = new List<(DesignMesh M, int Copy, DesignScene.Place W)> { (one, p.Copy, w0) };
-            if (p.Mirror)
-            {
-                var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
-                sets.Add((Mirror(one, cx), p.Copy, Mirror(w0, cx))); // (its twin across its own body's centreline)
-            }
-            if (p.Pair && h.Copies == 2)
-                for (int k = 0, n = sets.Count; k < n; k++)
-                    sets.Add((Mirror(sets[k].M, 0), 1 - sets[k].Copy, Mirror(sets[k].W, 0))); // (the same on the other body of the pair, across the ship)
-            for (var k = 0; k < sets.Count; k++)
-            {
-                var m = sets[k].M;
-                var e = new Element { Id = sets.Count > 1 ? $"p{pi}.{k}" : $"p{pi}", Kind = "piece", Name = p.Kind, Mesh = new LookBuilder() };
-                for (var tr = 0; tr < m.Tris; tr++)
-                    e.Mesh.AddTri(m, tr, Vector3.One, new Vector3(float.NaN));
-                e.Area = e.Mesh.Area;
-                e.Kg = e.Area * PieceKgPerM2;
-                HullOf(e, m.P);
-                var at = els.Count;
-                els.Add(e);
-                if (BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
-                    Weld(els, b, at);
-                Works(p, e, at, sets[k].W, els);
-            }
-            yield return els.Count;
-        }
-        Flight(els);
-        // Rooms' floors: a slab each (solid inside the bands for now), welded to the band of its deck's body there.
-        for (var ri = 0; ri < d.Rooms.Count; ri++)
-        {
-            var r = d.Rooms[ri];
-            var bx = d.Box(r);
-            var (x0, x1, y0, y1, z0, z1) = ((float)bx[0], (float)bx[1], (float)bx[2], (float)bx[3], (float)bx[4], (float)bx[5]);
-            var area = d.Stacked ? (x1 - x0) * (y1 - y0) : (x1 - x0) * (z1 - z0);
-            if (area <= 0.01f)
-                continue;
-            var e = new Element { Id = $"r{ri}", Kind = "floor", Name = $"{DesignScene.Name(r)} floor", Area = area, Kg = area * DeckKgPerM2 };
-            (e.BoxMin, e.BoxMax) = d.Stacked ? (new Vector3(x0, y0, z1 - 0.1f), new Vector3(x1, y1, z1)) : (new Vector3(x0, y0 - 0.1f, z0), new Vector3(x1, y0, z1));
-            var at = els.Count;
-            els.Add(e);
-            var hull = d.Decks[r.Deck].Hull != 0 ? d.Decks[r.Deck].Hull : d.Hulls.Count > 0 ? d.Hulls[0].Id : 0;
-            if (BandAt(hull, (x0 + x1) < 0 ? 1 : 0, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
-                Weld(els, b, at);
-        }
-        // The bands' looks and hulls; then each element into its own frame.
+    }
+
+    /// <summary>
+    /// <see cref="ElementsOf"/> a step at a time into <paramref name="els"/>: a step a hull body's copy, a join, a piece or an element's
+    /// colliders, so the held spawn makes a new design over several ticks (each a few milliseconds) instead of one long one. The stages run in
+    /// this order, each its kind file's; the elements' order (which their welds and a joint's segment number go by) is theirs.
+    /// </summary>
+    public static IEnumerable<int> ElementSteps(ShipDesign d, List<Element> els)
+    {
+        var st = new Steps(d, els);
+        foreach (var n in AddBands(st)) // DesignParts.Hull.cs
+            yield return n;
+        foreach (var n in AddJoins(st)) // DesignParts.Hull.cs
+            yield return n;
+        foreach (var n in AddPieces(st)) // DesignParts.Pieces.cs (and the flight computer)
+            yield return n;
+        foreach (var n in AddRooms(st)) // DesignParts.Rooms.cs
+            yield return n;
+        foreach (var n in AddDoors(st)) // DesignParts.Doors.cs
+            yield return n;
+        foreach (var n in AddRisers(st)) // DesignParts.Risers.cs
+            yield return n;
+        foreach (var n in AddSystems(st)) // DesignParts.Systems.cs
+            yield return n;
+        foreach (var n in IntoFrames(els))
+            yield return n;
+        Connect(els);
+    }
+
+    /// <summary>The bands' looks and hulls; then each element into its own frame (moved to its origin, then turned back by its Rot).</summary>
+    private static IEnumerable<int> IntoFrames(List<Element> els)
+    {
         foreach (var e in els)
         {
             if (e.Points != null)
@@ -394,12 +403,16 @@ public static class DesignParts
                 }
                 e.Points = null;
             }
+            if (e.Boxes is { Count: > 0 } boxes)
+                foreach (var b in boxes)
+                    (e.BoxMin, e.BoxMax) = (Vector3.Min(e.BoxMin, b.Min), Vector3.Max(e.BoxMax, b.Max));
             var middle = (e.BoxMin + e.BoxMax) * 0.5f;
             e.Origin = ConstructWorld.Quantise(middle);
             // Into the part's frame: moved to its origin, then turned back by its Rot (a seat facing its own way; 0 for the rest).
             var back = Quaternion.Conjugate(Rot24.Quat(e.Rot));
+            var inv = Rot24.Inverse(e.Rot);
             var mid = Vector3.Transform(middle - e.Origin, back);
-            var half = Rot24.ApplyHalf(Rot24.Inverse(e.Rot), (e.BoxMax - e.BoxMin) * 0.5f);
+            var half = Rot24.ApplyHalf(inv, (e.BoxMax - e.BoxMin) * 0.5f);
             (e.BoxMin, e.BoxMax) = (mid - half, mid + half);
             e.Hulls = [.. e.Hulls.Select(hl => hl.MovedInto(null, back, -Vector3.Transform(e.Origin, back)))];
             e.Exhaust = Vector3.Transform(e.Exhaust, back);
@@ -407,10 +420,27 @@ public static class DesignParts
             e.SeatAt = Vector3.Transform(e.SeatAt - e.Origin, back);
             e.Look = e.Mesh?.Done(-e.Origin, back) ?? new Look();
             e.Mesh = null;
+            if (e.Boxes != null)
+                for (var b = 0; b < e.Boxes.Count; b++)
+                {
+                    var (bm, bh) = (Vector3.Transform((e.Boxes[b].Min + e.Boxes[b].Max) * 0.5f - e.Origin, back), Rot24.ApplyHalf(inv, (e.Boxes[b].Max - e.Boxes[b].Min) * 0.5f));
+                    e.Boxes[b] = e.Boxes[b] with { Min = bm - bh, Max = bm + bh };
+                }
+            if (e.Door != null)
+            {
+                e.Door.Pivot = Vector3.Transform(e.Door.Pivot - e.Origin, back);
+                e.Door.Axis = Rot24.ApplyDir(inv, e.Door.Axis);
+            }
+            if (e.Joint != null)
+            {
+                e.Joint.Pivot = Vector3.Transform(e.Joint.Pivot - e.Origin, back);
+                e.Joint.Axis = Rot24.ApplyDir(inv, e.Joint.Axis);
+            }
+            if (!float.IsNaN(e.LadderTop))
+                (e.LadderTop, e.LadderFoot) = (e.LadderTop - e.Origin.Y, float.IsNaN(e.LadderFoot) ? float.NaN : e.LadderFoot - e.Origin.Y);
             if (e.Hulls.Length > 0)
                 yield return els.Count;
         }
-        Connect(els);
     }
 
     private static void Weld(List<Element> els, int a, int b)
@@ -486,54 +516,6 @@ public static class DesignParts
 
     private static Vector3 V(double[] v) => new((float)v[0], (float)v[1], (float)v[2]);
 
-    /// <summary>
-    /// What a piece's element does in the game (step 3, Karl 2026-11-26), from its place <paramref name="w"/> (a mirrored copy's own): a drive
-    /// pushes along its bell's axis, away from its exhaust; an RCS quad gets an element for each of its four nozzles, welded to it; a seat is
-    /// sat in, facing the way its place faces.
-    /// </summary>
-    private static void Works(Piece p, Element e, int at, DesignScene.Place w, List<Element> els)
-    {
-        var s = (float)p.Size;
-        var o = V(w.O) - V(w.Y) * (float)p.Recess;
-        Vector3 x = V(w.X), y = V(w.Y), z = V(w.Z);
-        switch (p.Kind)
-        {
-            case "Main drive" or "Small drive":
-                var main = p.Kind == "Main drive";
-                e.Fn = "thrust";
-                e.Exhaust = Vector3.Normalize(y);
-                e.ThrustAt = o + y * ((main ? MainDriveBell : SmallDriveBell) * s);
-                e.Force = (main ? MainDriveN : SmallDriveN) * s * s;
-                e.Mouth = (main ? 2.0f : 1.0f) * s; // (the bell's mouth in PieceKinds' drawing)
-                break;
-            case "RCS quad" or "Heavy RCS":
-                var k = (float)(p.Kind == "Heavy RCS" ? DesignFittings.HeavyRcs : 1) * s;
-                // The four nozzles as the drawing has them (DesignFittings.Rcs): along its X at 0.55, along its Z at 0.6, 0.3 out.
-                Span<(Vector3 Dir, float Out)> nozzles = [(x, 0.55f), (-x, 0.55f), (z, 0.6f), (-z, 0.6f)];
-                for (var n = 0; n < nozzles.Length; n++)
-                {
-                    var dir = Vector3.Normalize(nozzles[n].Dir);
-                    var mid = o + y * (0.3f * k) + dir * (0.2f * k); // (its box inside the quad's block, under its hull)
-                    var ne = new Element
-                    {
-                        Id = $"{e.Id}.n{n}", Kind = "nozzle", Name = $"{p.Kind} nozzle", Fn = "thrust", Exhaust = dir, ThrustAt = o + y * (0.3f * k) + dir * (nozzles[n].Out * k),
-                        Force = RcsNozzleN * k * k, Mouth = (n < 2 ? 0.08f : 0.1f) * k, Kg = e.Kg * NozzleShare, BoxMin = mid - new Vector3(0.06f * k), BoxMax = mid + new Vector3(0.06f * k),
-                    };
-                    e.Kg -= ne.Kg;
-                    els.Add(ne);
-                    Weld(els, at, els.Count - 1);
-                }
-                break;
-            case DesignSeats.Kind:
-                e.Fn = "seat";
-                e.Role = p.Role;
-                e.Kg = SeatKg * s;
-                e.SeatAt = o + z * (0.3f * s) + y * 0.004f; // (the sitter's feet, at the seat pan's front edge)
-                e.Rot = Facing(-z, y); // (a seat's sitter faces its part's -z: Construct.SeatForward)
-                break;
-        }
-    }
-
     /// <summary>The Rot24 turn nearest the one that takes a part's +z to <paramref name="zAxis"/> and its +y to <paramref name="up"/>.</summary>
     private static byte Facing(Vector3 zAxis, Vector3 up)
     {
@@ -542,24 +524,6 @@ public static class DesignParts
         var xAxis = Vector3.Cross(up, zAxis);
         var m = new Matrix4x4(xAxis.X, xAxis.Y, xAxis.Z, 0, up.X, up.Y, up.Z, 0, zAxis.X, zAxis.Y, zAxis.Z, 0, 0, 0, 0, 1);
         return Rot24.Nearest(Quaternion.CreateFromRotationMatrix(m), out _);
-    }
-
-    /// <summary>
-    /// The flight computer: a design with thrust and a seat gets one Flight Stabilizer of its own (a hidden element inside its helm, else its
-    /// first seat), so the helm flies it with nothing wired: it finds the drives and the nozzles as it finds any thrusters.
-    /// </summary>
-    private static void Flight(List<Element> els)
-    {
-        if (!els.Any(x => x.Fn == "thrust"))
-            return;
-        var seat = els.FindIndex(x => x.Fn == "seat" && x.Role == "Helm");
-        if (seat < 0)
-            seat = els.FindIndex(x => x.Fn == "seat");
-        if (seat < 0)
-            return;
-        var at = ((els[seat].BoxMin + els[seat].BoxMax) * 0.5f) with { Y = els[seat].BoxMin.Y + 0.2f };
-        els.Add(new Element { Id = "flight", Kind = "flight", Name = "flight computer", Fn = "flight", Kg = FlightKg, BoxMin = at - new Vector3(0.08f), BoxMax = at + new Vector3(0.08f) });
-        Weld(els, seat, els.Count - 1);
     }
 
     private static Made? MadeOf(string hash, out string why)
@@ -676,6 +640,7 @@ public static class DesignParts
         return element.Length > 0;
     }
 
+
     /// <summary>The design part a key names, made the first time it is asked for. Null: not a design key, a design not heard of here, or one that can't be made.</summary>
     public static ConstructPartDef? Parse(string name)
     {
@@ -718,20 +683,35 @@ public static class DesignParts
         }
     }
 
+
     private static ConstructPartDef PartOf(Made made, Element e, string name)
     {
-        var t = _template ??= ConstructParts.Parse(TemplateJson, "a design part's template");
+        var t = Template;
         var def = Working(e) ?? t.ShallowCopy();
         def.Name = name;
         def.File = "";
         def.Description = $"{e.Name} of \"{made.E.Name}\", a ship from the Ship Designer.";
-        var half = Vector3.Max((e.BoxMax - e.BoxMin) * 0.5f, new Vector3(0.02f));
-        var centre = (e.BoxMax + e.BoxMin) * 0.5f;
-        def.Boxes = [new CPartBox(centre, half, new Vector3(0.6f), Hidden: true, Paintable: false)];
-        def.SolidBoxes = 1;
-        def.BoxMass = null;
+        if (e.Boxes is { Count: > 0 } boxes)
+        {
+            // Its own solid boxes (hidden: its look draws it), each colliding as a box, with its share of the mass.
+            def.Boxes = [.. boxes.Select(b => new CPartBox((b.Min + b.Max) * 0.5f, Vector3.Max((b.Max - b.Min) * 0.5f, new Vector3(0.005f)), new Vector3(0.6f), Hidden: true, Paintable: false))];
+            def.SolidBoxes = def.Boxes.Length;
+            var kg = boxes.Sum(b => b.Kg);
+            def.BoxMass = kg > 0 ? [.. boxes.Select(b => b.Kg / kg)] : null;
+            (def.BoundsMin, def.BoundsMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+            foreach (var b in boxes)
+                (def.BoundsMin, def.BoundsMax) = (Vector3.Min(def.BoundsMin, b.Min), Vector3.Max(def.BoundsMax, b.Max));
+        }
+        else
+        {
+            var half = Vector3.Max((e.BoxMax - e.BoxMin) * 0.5f, new Vector3(0.02f));
+            var centre = (e.BoxMax + e.BoxMin) * 0.5f;
+            def.Boxes = [new CPartBox(centre, half, new Vector3(0.6f), Hidden: true, Paintable: false)];
+            def.SolidBoxes = 1;
+            def.BoxMass = null;
+            (def.BoundsMin, def.BoundsMax) = (centre - half, centre + half);
+        }
         def.HasGlass = false;
-        (def.BoundsMin, def.BoundsMax) = (centre - half, centre + half);
         foreach (var hl in e.Hulls)
         {
             hl.Bounds(out var mn, out var mx);
@@ -753,26 +733,24 @@ public static class DesignParts
         def.ColliderBoxes = false;
         def.Sockets = [t.Sockets[0] with { Name = "s0", At = Vector3.Zero }]; // (one socket the welds between elements hang on)
         def.Lamps = [];
-        if (e.Fn == "thrust")
+        if (e.Door != null)
         {
-            // Pushes away from its exhaust, exactly (Construct.BuildThrusters reads ThrustExhaust); its flame along the nearest axis.
-            def.ThrustExhaust = Vector3.Normalize(e.Exhaust);
-            def.ThrustDir = NearestDir(def.ThrustExhaust);
-            def.ThrustAt = e.ThrustAt;
-            def.ThrustForce = e.Force;
-            def.ThrustSpool = e.Kind == "nozzle" ? 0.15f : 0.5f;
-            // Its flame from its mouth, not its force (a part file's sqrt(F) rule made a 5 MN nozzle's jet 4.5 m wide and 29 m long
-            // from a 12 cm nozzle): a drive's a long plume, a nozzle's a short puff.
-            var r = 0.9f * e.Mouth;
-            def.Flames = [new FlameDef { At = e.ThrustAt, Dir = def.ThrustDir, Radius = r, Length = r * (e.Kind == "nozzle" ? 5f : 4f), Kind = FxKind.Rocket, Source = FlameSource.Thrust }];
+            def.Door = e.Door; // (an event door's leaf: DesignParts.Doors.cs)
+            def.Role = PartRole.Door;
         }
-        else if (e.Fn == "seat")
+        if (!float.IsNaN(e.LadderTop))
         {
-            def.SeatAt = e.SeatAt;
-            var (station, helm) = DesignSeats.StationOf(e.Role);
-            def.Helm = helm;
-            def.DefaultSetting = (byte)station; // (its Station setting: CockpitStations)
+            def.LadderTop = e.LadderTop;
+            def.LadderFoot = float.IsNaN(e.LadderFoot) ? def.BoundsMin.Y : e.LadderFoot;
         }
+        if (e.Joint is { } j)
+        {
+            def.Role = j.Type == JointType.Passive ? PartRole.Hinge : PartRole.Joint;
+            (def.JointType, def.JointPivot, def.JointAxis, def.JointMin, def.JointMax) = (j.Type, j.Pivot, j.Axis, j.Min, j.Max);
+            (def.MotorSpeed, def.MotorStrength, def.JointLimited) = (j.Speed, j.Strength, j.Limited);
+        }
+        if (e.Fn.Length > 0 && Kinds.Value.Fns.TryGetValue(e.Fn, out var fn))
+            fn.Finish?.Invoke(e, def);
         def.Mass = Math.Clamp(e.Kg, 0.5f, ConstructParts.MaxPartMass);
         def.Health = Math.Clamp(e.Kg * HpPerKg, 1f, ConstructParts.MaxPartHealth);
         def.SurfaceOverride = 0;
@@ -828,73 +806,16 @@ public static class DesignParts
         return best;
     }
 
-    /// <summary>The working part an element starts from (a thruster, a seat, the flight computer), or null for structure.</summary>
-    private static ConstructPartDef? Working(Element e)
-    {
-        switch (e.Fn)
-        {
-            case "thrust":
-            {
-                var d = (_thrustTemplate ??= ConstructParts.Parse(ThrustJson, "a design thruster's template")).ShallowCopy();
-                d.ThrustFuel = EngineFuel.None; // (unfed: a design carries no tanks yet; ConstructPhysics.ThrusterLive)
-                d.ThrustPower = 0;
-                return d;
-            }
-            case "seat":
-                return (_seatTemplate ??= ConstructParts.Parse(SeatJson, "a design seat's template")).ShallowCopy();
-            case "flight":
-            {
-                // The Flight Stabilizer itself, on Ship keys (its keys setting's default; the rest of its settings as the part's).
-                var d = ConstructParts.Need("Flight Stabilizer").ShallowCopy();
-                d.Config = [.. d.Config.Select(c => c.Id == CfgKey.Keys ? c.Copy(dflt: (float)FlightPattern.Ship) : c)];
-                d.Gyro = 0; // (it turns the ship by its RCS)
-                d.Panels = [];
-                return d;
-            }
-            default:
-                return null;
-        }
-    }
-
-    private static ConstructPartDef? _thrustTemplate, _seatTemplate;
-
-    /// <summary>The nearest of the six directions to <paramref name="v"/> (ConstructParts.DirVector's index).</summary>
-    private static byte NearestDir(Vector3 v)
-    {
-        byte best = 0;
-        var most = float.MinValue;
-        for (byte k = 0; k < 6; k++)
-            if (Vector3.Dot(ConstructParts.DirVector(k), v) is var dot && dot > most)
-                (most, best) = (dot, k);
-        return best;
-    }
-
-    private const string ThrustJson = """
-        {"format":"call-of-slop-construct-part/1","name":"Design thruster","description":"A drive or an RCS nozzle of a ship from the Ship Designer.","group":"Production","section":"Designs",
-         "role":"thruster","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
-         "thruster":{"force":1000,"fuel":"electric","power":1,"exhaust":"-y"},
-         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
-         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
-        """;
-
-    private const string SeatJson = """
-        {"format":"call-of-slop-construct-part/1","name":"Design seat","description":"A seat of a ship from the Ship Designer.","group":"Production","section":"Designs",
-         "role":"seat","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
-         "seat":{"at":[0,0,0]},
-         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
-         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
-        """;
-
-    private const string TemplateJson = """
-        {"format":"call-of-slop-construct-part/1","name":"Design part","description":"A part of a ship from the Ship Designer.","group":"Production","section":"Designs",
-         "role":"frame","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
-         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
-         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
-        """;
+    /// <summary>
+    /// Whether F on a design part works the part itself rather than sitting the player at the ship's helm (<see cref="BoardSeat"/>,
+    /// ConstructEdits.Use): a door, a ladder, a hitch, a dock or a lamp is used where it is.
+    /// </summary>
+    public static bool KeepsUse(ConstructPartDef d) => d.Door != null || d.LadderTop > 0 || d.Role == PartRole.Hitch || d.DockSide > 0 || d.Lamps.Length > 0 || d.LightRange > 0;
 
     /// <summary>
     /// A design's body built in <paramref name="c"/> (ConstructBuild.BuildSteps, for a blueprint of <see cref="BlueprintOf"/>): its elements'
-    /// parts where the design has them, then the welds between them; one step an element (the held spawn builds it a slice a tick).
+    /// parts where the design has them (each on its segment, a joint added on each joint element's part), then the welds, then the wires;
+    /// one step an element (the held spawn builds it a slice a tick).
     /// </summary>
     public static IEnumerable<int> BuildSteps(ConstructWorld world, Construct c, string hash, ConstructBuild.BuildRun run)
     {
@@ -907,6 +828,8 @@ public static class DesignParts
             yield break;
         }
         var partOf = new int[made.Elements.Count];
+        var joints = 0;
+        var wires = false;
         for (var k = 0; k < made.Elements.Count; k++)
         {
             var e = made.Elements[k];
@@ -915,12 +838,27 @@ public static class DesignParts
                 run.Why = $"its {e.Name} couldn't be made ({LastRefusal})";
                 yield break;
             }
-            partOf[k] = world.AddPart(c, def, e.Origin, e.Rot);
+            if (e.Seg > joints)
+            {
+                run.Why = $"its {e.Name} rides on joint {e.Seg}, which isn't made before it";
+                yield break;
+            }
+            partOf[k] = world.AddPart(c, def, e.Origin, e.Rot, e.Seg);
             if (partOf[k] < 0)
             {
                 run.Why = "the world is full";
                 yield break;
             }
+            if (e.Joint != null)
+            {
+                if (world.AddJoint(c, partOf[k]) != joints + 1)
+                {
+                    run.Why = $"its {e.Name}'s joint couldn't be added (too many joints)";
+                    yield break;
+                }
+                joints++;
+            }
+            wires |= e.Wires.Count > 0;
             yield return k;
         }
         for (var k = 0; k < made.Elements.Count; k++)
@@ -931,106 +869,21 @@ public static class DesignParts
                     yield break;
                 }
         c.Rebuild();
-    }
-
-    // ---- Colliders ---------------------------------------------------------------------------------------------------------
-
-    /// <summary>A body copy's bands from element <paramref name="first"/> on: each one's hull points (one run, or a few across a big profile), skin area, mass and bounds.</summary>
-    private static void Bands(HullBody h, int copy, List<Element> els, int first)
-    {
-        var rings = h.Ring;
-        var cx = h.CopyX(copy);
-        Span<double> ah = stackalloc double[HullBody.MaxLoft], ay = stackalloc double[HullBody.MaxLoft];
-        Span<double> bh = stackalloc double[HullBody.MaxLoft], by = stackalloc double[HullBody.MaxLoft];
-        for (var i = 0; i + 1 < rings.Count; i++)
-        {
-            var e = els[first + i];
-            var za = (float)(h.Z + rings[i].Z);
-            var zb = (float)(h.Z + rings[i + 1].Z);
-            var n = h.Pair(i, ah, ay, bh, by);
-            var sh = ah.ToArray();
-            var sy = ay.ToArray();
-            var th = bh.ToArray();
-            var ty = by.ToArray();
-            Vector3 A(int k, int s) => new((float)(cx + s * sh[k]), (float)(h.Y + sy[k]), za);
-            Vector3 B(int k, int s) => new((float)(cx + s * th[k]), (float)(h.Y + ty[k]), zb);
-            var area = 0f;
-            for (var k = 0; k + 1 < n; k++)
-                area += 2 * Quad(A(k, 1), A(k + 1, 1), B(k + 1, 1), B(k, 1));
-            area += Quad(A(0, -1), A(0, 1), B(0, 1), B(0, -1)) + Quad(A(n - 1, -1), A(n - 1, 1), B(n - 1, 1), B(n - 1, -1));
-            e.Area = area;
-            e.Kg = area * SkinKgPerM2;
-            Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
-            for (var k = 0; k < n; k++)
-                foreach (var v in new[] { A(k, 1), A(k, -1), B(k, 1), B(k, -1) })
-                    (lo, hi) = (Vector3.Min(lo, v), Vector3.Max(hi, v));
-            (e.BoxMin, e.BoxMax) = (lo, hi);
-            if (MathF.Abs(zb - za) < 1e-3f)
-                continue;
-            var pts = e.Points!;
-            if (4 * n <= ConvexHull.MaxCorners)
+        if (!wires)
+            yield break;
+        for (var k = 0; k < made.Elements.Count; k++)
+            foreach (var n in made.Elements[k].Wires)
             {
-                for (var k = 0; k < n; k++)
+                if (ConstructBuild.CanWire(world, c, partOf[k], partOf[n]) is { } no)
+                    Console.WriteLine($"[design] a wire from {made.Elements[k].Id} to {made.Elements[n].Id} of \"{made.E.Name}\" is refused: {no}");
+                else if (!world.AddWire(c, partOf[k], partOf[n], rebuild: false))
                 {
-                    pts.Add(A(k, 1)); pts.Add(A(k, -1)); pts.Add(B(k, 1)); pts.Add(B(k, -1));
+                    run.Why = "too many wires";
+                    yield break;
                 }
-                e.Runs!.Add(pts.Count);
-                continue;
             }
-            // Too many corners for one: each side in runs of points, each run closed on the centreline.
-            const int Run = ConvexHull.MaxCorners / 2 - 3;
-            foreach (var s in new[] { -1, 1 })
-                for (var k0 = 0; k0 < n - 1; k0 += Run - 1)
-                {
-                    var k1 = Math.Min(n - 1, k0 + Run - 1);
-                    for (var k = k0; k <= k1; k++)
-                    {
-                        pts.Add(A(k, s)); pts.Add(B(k, s));
-                    }
-                    pts.Add(A(k0, 0)); pts.Add(A(k1, 0)); pts.Add(B(k0, 0)); pts.Add(B(k1, 0));
-                    e.Runs!.Add(pts.Count);
-                }
-        }
+        c.Rebuild();
     }
-
-    /// <summary>The 26 directions a hull of a mesh is taken along (the cube's faces, edges and corners): its extreme point along each.</summary>
-    private static readonly Vector3[] Dirs = MakeDirs();
-
-    private static Vector3[] MakeDirs()
-    {
-        var l = new List<Vector3>();
-        for (var x = -1; x <= 1; x++)
-            for (var y = -1; y <= 1; y++)
-                for (var z = -1; z <= 1; z++)
-                    if (x != 0 || y != 0 || z != 0)
-                        l.Add(Vector3.Normalize(new Vector3(x, y, z)));
-        return [.. l];
-    }
-
-    /// <summary>An element's hull from its mesh's points (the extreme point along each of <see cref="Dirs"/>) and its bounds.</summary>
-    private static void HullOf(Element e, IReadOnlyList<double> p)
-    {
-        Span<Vector3> best = stackalloc Vector3[26];
-        Span<float> at = stackalloc float[26];
-        at.Fill(float.MinValue);
-        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
-        for (var i = 0; i + 2 < p.Count; i += 3)
-        {
-            var v = new Vector3((float)p[i], (float)p[i + 1], (float)p[i + 2]);
-            (lo, hi) = (Vector3.Min(lo, v), Vector3.Max(hi, v));
-            for (var k = 0; k < Dirs.Length; k++)
-            {
-                var s = Vector3.Dot(v, Dirs[k]);
-                if (s > at[k])
-                    (at[k], best[k]) = (s, v);
-            }
-        }
-        (e.BoxMin, e.BoxMax) = (lo, hi);
-        if (ConvexHull.Of(best) is { } hull)
-            e.Hulls = [hull];
-    }
-
-    private static float Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d) => 0.5f * Vector3.Cross(c - a, d - b).Length();
 
     // ---- The look ----------------------------------------------------------------------------------------------------------
 

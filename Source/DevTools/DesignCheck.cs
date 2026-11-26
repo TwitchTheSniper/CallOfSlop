@@ -36,7 +36,7 @@ public static class DesignCheck
         var si = Array.FindIndex(args, a => a.Equals("--seconds", StringComparison.OrdinalIgnoreCase));
         var seconds = si >= 0 && si + 1 < args.Length && float.TryParse(args[si + 1], System.Globalization.CultureInfo.InvariantCulture, out var sv) ? sv : 6f;
         string? json = File.Exists(what) ? File.ReadAllText(what) : ShipDesignStore.List().FirstOrDefault(x => x.Name.Equals(what, StringComparison.OrdinalIgnoreCase)).Json;
-        json ??= DesignTemplates.Start("Zero Day").ToJson();
+        json ??= DesignTemplates.Start(DesignTemplates.Starts.FirstOrDefault(n => n.Equals(what, StringComparison.OrdinalIgnoreCase)) ?? "Zero Day").ToJson(); // (a designer template by name: "Blank hull")
         var t0 = Stopwatch.GetTimestamp();
         if (DesignParts.Canon(json) is not { } text || DesignParts.Register(text) is not { } hash)
         {
@@ -86,6 +86,7 @@ public static class DesignCheck
             Fail($"join refused: {why}");
             return fails;
         }
+        Console.WriteLine($"[design] fingerprint: {els.Count} elements, {els.Sum(e => (double)e.Kg) / 1000:0.000} t, elements {ElementsHash(els):x16}, body {BodyHash(c):x16}");
         Console.WriteLine($"[design] joined in {Ms(t3):0} ms: construct {c.Id}, {c.PartCount} parts, {c.LinkCount} welds, {c.Mass / 1000:0.0} t, bounds {c.LocalMin} .. {c.LocalMax}, low {low:0.00}, ground {ground.Y:0.00}");
         var steps = (int)(seconds * World.TickRate);
         double worst = 0, sum = 0, last = 0;
@@ -219,6 +220,72 @@ public static class DesignCheck
         c.DriverSeat = -1;
         return up < 10 ? $"Shift for 6 s lifted it {up:0.0} m (at least 10)" : hover < 0.5f * up ? $"let go, it sank to {hover:0.0} m" : ahead < 30 ? $"W for 5 s took it {ahead:0.0} m (at least 30)"
             : turn < 30 ? $"D for 5 s turned it {turn:0} degrees (at least 30)" : rest > 1 ? $"Ctrl for 12 s left it {rest:0.0} m up" : worst > 8 ? $"a step took {worst:0.0} ms (at most 8)" : null;
+    }
+
+    /// <summary>A hash of everything a design's elements hold (ids, kinds, places, turns, mass, colliders, looks, welds, what they do): a change to how elements are made shows here.</summary>
+    internal static ulong ElementsHash(IReadOnlyList<DesignParts.Element> els)
+    {
+        var h = new Fnv();
+        foreach (var e in els)
+        {
+            h.S(e.Id).S(e.Kind).S(e.Name).S(e.Fn).S(e.Role).V(e.Origin).F(e.Area).F(e.Kg).V(e.BoxMin).V(e.BoxMax).U(e.Rot)
+                .V(e.Exhaust).V(e.ThrustAt).V(e.SeatAt).F(e.Force).F(e.Mouth).U((uint)e.Links.Count);
+            foreach (var l in e.Links)
+                h.U((uint)l);
+            foreach (var hl in e.Hulls)
+            {
+                h.U((uint)hl.V.Length);
+                foreach (var v in hl.V)
+                    h.V(v);
+            }
+            foreach (var f in e.Look.Pos)
+                h.F(f);
+            foreach (var f in e.Look.Normal)
+                h.F(f);
+            foreach (var u in e.Look.Colour)
+                h.U(u);
+        }
+        return h.H;
+    }
+
+    /// <summary>A hash of a built body's parts as the game sees them (each def's name, role, mass, health, bounds, thrust and seat), its places and welds.</summary>
+    internal static ulong BodyHash(Construct c)
+    {
+        var h = new Fnv();
+        h.U((uint)c.PartCount).U((uint)c.LinkCount).U((uint)c.JointCount).U((uint)c.RouteCount);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            h.S(d.Name).U((uint)d.Role).F(d.Mass).F(d.Health).V(d.BoundsMin).V(d.BoundsMax).F(d.ThrustForce).V(d.ThrustAt).V(d.SeatAt).U(d.Helm ? 1u : 0u)
+                .V(c.Parts[i].Pos).U(c.Parts[i].Rot).U(c.Parts[i].Seg).U((uint)d.Hulls.Length).U((uint)d.Boxes.Length);
+        }
+        for (var k = 0; k < c.LinkCount; k++)
+            h.U(c.Links[k].A).U(c.Links[k].B);
+        return h.H;
+    }
+
+    private sealed class Fnv
+    {
+        public ulong H = 14695981039346656037ul;
+
+        public Fnv U(uint v)
+        {
+            for (var k = 0; k < 4; k++, v >>= 8)
+                H = (H ^ (v & 255)) * 1099511628211ul;
+            return this;
+        }
+
+        public Fnv F(float f) => U(BitConverter.SingleToUInt32Bits(f));
+
+        public Fnv V(Vector3 v) => F(v.X).F(v.Y).F(v.Z);
+
+        public Fnv S(string s)
+        {
+            U((uint)s.Length);
+            foreach (var ch in s)
+                U(ch);
+            return this;
+        }
     }
 
     private static double Ms(long from) => (Stopwatch.GetTimestamp() - from) * 1000.0 / Stopwatch.Frequency;
