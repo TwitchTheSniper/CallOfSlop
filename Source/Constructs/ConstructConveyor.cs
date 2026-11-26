@@ -1344,11 +1344,14 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
         {
-            if (PassesBed(c, c.Routes[route].To, r) && PassesThrough(c, to, d))
+            // (sent elsewhere, or sent nowhere and no order of this machine takes it: a whole piece that needs no forming or no cut rolls
+            // on across the bed, never left on it for ever; Sean, 2026-11-26)
+            var idle = r.Dest == 0 && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { OnBed: true } && !ConstructPanelFormer.Takes(c, to, d);
+            if ((idle || PassesBed(c, c.Routes[route].To, r)) && PassesThrough(c, to, d))
             {
                 if (Out(c, to) < 0 && OutPad(c, to) is >= 0 and var pad)
                 {
-                    if (ConstructLogistics.PartOfStore(c, r.Dest) is var holder && holder != pad
+                    if (!idle && ConstructLogistics.PartOfStore(c, r.Dest) is var holder && holder != pad
                         && !(holder >= 0 && c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, pad)))
                         return false; // (another holder's piece: it waits here, as with no way on, never left on a pad nothing takes it from)
                     // (no out run: it rolls across the bed onto the pick pad its Out Table butts, Zero Day Works II's big lines, 2026-11-26)
@@ -1359,7 +1362,7 @@ public static class ConstructConveyor
                     ConstructLifters.PadArrived(world, c, pad, ordered ? r.Tag : (ushort)0, d);
                     return true;
                 }
-                return PassOn(c, to, r, d); // (made for another's order: it rolls on across the bed, never into the machine)
+                return PassOn(c, to, r, d); // (made for another's order, or of no use here: it rolls on across the bed, never into the machine)
             }
             if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d, scrap: true))) // (extruded sheet into its bin; a cutter's blank onto its bed)
                 return false;
