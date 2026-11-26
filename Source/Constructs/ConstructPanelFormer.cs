@@ -695,7 +695,13 @@ public static class ConstructPanelFormer
             pose.Slide = pose.Stage == 0 ? pose.U - 1 : pose.Stage == 5 && st.FormRollsOut ? pose.U : 0;
         }
         else if (st.OnBed && st.Progress >= 100)
-            (pose.Stage, pose.U, pose.Slide) = (5, 1, st.FormRollsOut ? 1 : 0); // (formed, waiting at the out end: its run out is full)
+        {
+            // Formed, waiting at the out end: its run out is full (or its offcut bin). A peer that joined or loaded while it waits never saw
+            // the stroke begin: it reads the out run here (only while it says none, so a former with a run reads it once).
+            if (!st.FormRollsOut)
+                st.FormRollsOut = ConstructConveyor.Out(c, core) >= 0;
+            (pose.Stage, pose.U, pose.Slide) = (5, 1, st.FormRollsOut ? 1 : 0);
+        }
         else if (now - st.FormChangeAt < ChangeSeconds)
         {
             pose.Stage = 6;
