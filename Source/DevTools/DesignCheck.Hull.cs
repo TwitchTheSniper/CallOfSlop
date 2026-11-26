@@ -85,10 +85,23 @@ public static partial class DesignCheck
         }
     }
 
-    /// <summary>The first of a body's hull colliders a world ray meets (its distance, or NaN).</summary>
-    private static float RayHulls(Construct c, Vector3 o, Vector3 dir, float max)
+    /// <summary>The kind of element a body's part is (its key ends in the element's id), or "".</summary>
+    private static string KindOf(Run r, Construct c, int part)
+    {
+        var name = c.DefOf(part).Name;
+        foreach (var e in r.Els)
+            if (name.EndsWith(" " + e.Id, StringComparison.Ordinal))
+                return e.Kind;
+        return "";
+    }
+
+    /// <summary>The first of a body's hull colliders a world ray meets (its distance, or NaN), and whose part it is.</summary>
+    private static float RayHulls(Construct c, Vector3 o, Vector3 dir, float max) => RayHulls(c, o, dir, max, out _);
+
+    private static float RayHulls(Construct c, Vector3 o, Vector3 dir, float max, out int part)
     {
         var best = float.NaN;
+        part = -1;
         for (var k = 0; k < c.PartCount; k++)
         {
             var q = c.Rot * Rot24.Quat(c.Parts[k].Rot);
@@ -97,7 +110,7 @@ public static partial class DesignCheck
             var ld = Vector3.Transform(dir, back);
             foreach (var hl in c.DefOf(k).Hulls)
                 if (hl.Ray(lo, ld, max, out var t, out _) && !(t >= best))
-                    best = t;
+                    (best, part) = (t, k);
         }
         return best;
     }
@@ -122,12 +135,21 @@ public static partial class DesignCheck
                 r.Fail($"the tunnelling drop's ship wasn't built: {why}");
                 return;
             }
-            // Down the middle of its length, over the spine (or whatever stands on it there).
-            var mid = ship.ToWorld((ship.LocalMin + ship.LocalMax) * 0.5f) with { Y = ship.ToWorld(ship.LocalMax).Y + 5 };
-            var top = mid.Y - RayHulls(ship, mid, -Vector3.UnitY, 50);
+            // Down onto the spine: the spot nearest the middle of its length where a ray from above meets a band's plate first (not a piece).
+            var (lo, hi) = (ship.LocalMin, ship.LocalMax);
+            var mid = Vector3.Zero;
+            var top = float.NaN;
+            for (var k = 0; k <= 40 && float.IsNaN(top); k++)
+            {
+                var f = 0.5f + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) / 41f;
+                var from = ship.ToWorld(new Vector3((lo.X + hi.X) / 2, hi.Y + 5, lo.Z + (hi.Z - lo.Z) * f));
+                var t = RayHulls(ship, from, -Vector3.UnitY, 50, out var part);
+                if (!float.IsNaN(t) && part >= 0 && KindOf(r, ship, part) == "band")
+                    (mid, top) = (from, from.Y - t);
+            }
             if (float.IsNaN(top))
             {
-                Console.WriteLine("[design] hollow: no skin under the middle of its spine to drop on");
+                Console.WriteLine("[design] hollow: no bare spine to drop on");
                 return;
             }
             var box = ConstructBuild.BuildOnGround(world, chest, mid with { Y = r.Ground.Y + 200 }, 0, out why, beside: false);
@@ -136,8 +158,8 @@ public static partial class DesignCheck
                 r.Fail($"the chest wasn't built: {why}");
                 return;
             }
-            box.Pos += new Vector3(mid.X, top + height, mid.Z) - box.WorldCom;
-            box.Vel = new Vector3(0, -MathF.Sqrt(2 * 9.81f * height), 0); // (as fast as it would fall from there)
+            box.Pos += new Vector3(mid.X, top + 1.5f, mid.Z) - box.WorldCom;
+            box.Vel = new Vector3(0, -MathF.Sqrt(2 * 9.81f * height), 0); // (1.5 m over the skin, as fast as it would come falling from that height)
             box.Wake();
             double worst = 0;
             var meet = MathF.Abs(box.Vel.Y);
@@ -161,8 +183,10 @@ public static partial class DesignCheck
     /// <summary>The ship dropped rolled over on the ground (its side on the ground, many plates at once): the step's cost, and it resting.</summary>
     private static void Rolled(Run r)
     {
-        foreach (var roll in new[] { 25f, 90f, 25f }) // (25 again: the first ran the contacts' JIT)
+        var rolls = new[] { 25f, 90f, 25f }; // (25 again: the first ran the contacts' JIT, so its worst step is not held to the budget)
+        for (var ri = 0; ri < rolls.Length; ri++)
         {
+            var roll = rolls[ri];
             var world = new ConstructWorld();
             var ship = ConstructBuild.BuildOnGround(world, ConstructBuild.ParseBlueprint(r.Blueprint!, "design check.json"), r.Ground, 0, out var why);
             if (ship == null)
@@ -193,7 +217,7 @@ public static partial class DesignCheck
             Console.WriteLine($"[design] hollow: dropped rolled {roll:0} deg from 12 m: {world.Bodies.Count} bodies, lowest collider {low - r.Ground.Y:+0.00;-0.00} m off the ground, speed {ship.Vel.Length():0.00} m/s, asleep {ship.Asleep}; step mean {sum / (n - 11):0.000} ms, worst {worst:0.00} ms at {worstAt:0.00} s");
             if (low < r.Ground.Y - 0.5f)
                 r.Fail($"rolled {roll:0} deg it sank {r.Ground.Y - low:0.00} m into the ground");
-            if (worst > 8)
+            if (worst > 8 && ri > 0)
                 r.Fail($"rolled {roll:0} deg a step took {worst:0.0} ms");
         }
     }

@@ -50,7 +50,8 @@ public static partial class DesignParts
                 Slice(sc, cladTint);
                 Slice(fc, cladTint);
                 Slice(ac, cladTint);
-                Plates(h, copy, els, first, zs, skin, fore, aft); // (the colliders: thin plates where the skin is, its openings left open)
+                foreach (var _ in Plates(h, copy, els, first, zs, skin, fore, aft)) // (the colliders: thin plates where the skin is, its openings left open)
+                    yield return els.Count;
                 for (var k = first; k < els.Count; k++)
                     if (k > first)
                         Weld(els, k - 1, k);
@@ -118,6 +119,7 @@ public static partial class DesignParts
     private struct HollowCount
     {
         public int Plates, Whole, Celled, Open, Refused, Clipped, ClipHulls, Dropped, InHole;
+        public double PlateMs; // (the longest band's plates took, a step)
     }
 
     /// <summary>A body copy's bands from element <paramref name="first"/> on: each one's skin area, mass and bounds (its plates are <see cref="Plates"/>'s).</summary>
@@ -157,13 +159,15 @@ public static partial class DesignParts
 
     /// <summary>
     /// A body copy's skin and end caps (<paramref name="skin"/>, <paramref name="fore"/>, <paramref name="aft"/>: its drawn meshes, already cut
-    /// for every opening) into each band's plates: every facet of the loft between its two rings, and the end caps on the end bands.
+    /// for every opening) into each band's plates: every facet of the loft between its two rings, and the end caps on the end bands. A step a band
+    /// (the held spawn's ticks).
     /// </summary>
-    private static void Plates(HullBody h, int copy, List<Element> els, int first, double[] zs, DesignMesh skin, DesignMesh fore, DesignMesh aft)
+    private static IEnumerable<int> Plates(HullBody h, int copy, List<Element> els, int first, double[] zs, DesignMesh skin, DesignMesh fore, DesignMesh aft)
     {
         var rings = h.Ring;
         var bands = rings.Count - 1;
         var cx = h.CopyX(copy);
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         // Each band's triangles, by the z of their middle (as Slice cuts the look).
         var tris = new List<Tri>[bands];
         for (var b = 0; b < bands; b++)
@@ -183,12 +187,17 @@ public static partial class DesignParts
                 at = Math.Clamp(at >= 0 ? at : ~at - 1, 0, bands - 1);
                 tris[at].Add(new Tri(a, b, c, Vector3.Min(a, Vector3.Min(b, c)), Vector3.Max(a, Vector3.Max(b, c)), nn / len, 0.5f * len));
             }
-        Span<double> ah = stackalloc double[HullBody.MaxLoft], ay = stackalloc double[HullBody.MaxLoft];
-        Span<double> bh = stackalloc double[HullBody.MaxLoft], by = stackalloc double[HullBody.MaxLoft];
+        double[] ah = new double[HullBody.MaxLoft], ay = new double[HullBody.MaxLoft], bh = new double[HullBody.MaxLoft], by = new double[HullBody.MaxLoft];
         var hulls = new List<ConvexHull>();
         var near = new List<Tri>();
         for (var i = 0; i < bands; i++)
         {
+            if (i > 0)
+            {
+                _hc.PlateMs = Math.Max(_hc.PlateMs, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+                yield return i;
+                t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            }
             var e = els[first + i];
             var za = (float)zs[i];
             var zb = (float)zs[i + 1];
@@ -227,6 +236,7 @@ public static partial class DesignParts
                     Facet(B(k, -1), B(k, 1), B(k + 1, -1), B(k + 1, 1), centre with { Z = zb - 1 }, band, near, hulls);
             e.Hulls = [.. hulls];
         }
+        _hc.PlateMs = Math.Max(_hc.PlateMs, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
     }
 
     /// <summary>
@@ -263,27 +273,40 @@ public static partial class DesignParts
             Plate(0, 1, 0, 1);
             return;
         }
-        if (covered <= 0.005f * area)
-        {
-            _hc.Open++;
-            return;
-        }
-        // Covered in part (an opening, a mouth, another body's cut): in cells, each cell whose middle the skin covers plated, merged in rectangles.
-        _hc.Celled++;
+        // Not covered whole by triangles lying in it (an opening, a mouth, another body's cut; or an end cap's fan, whose triangles cross
+        // several strips): in cells, each cell whose middle the skin covers plated, merged in rectangles.
         var nu = Math.Clamp((int)MathF.Ceiling(MathF.Max(Vector3.Distance(p00, p10), Vector3.Distance(p01, p11)) / PlateCell), 1, 128);
         var nt = Math.Clamp((int)MathF.Ceiling(MathF.Max(Vector3.Distance(p00, p01), Vector3.Distance(p10, p11)) / PlateCell), 1, 512);
         var cov = new bool[nu * nt];
+        var count = 0;
+        var last = 0;
         for (var t = 0; t < nt; t++)
             for (var u = 0; u < nu; u++)
             {
                 var p = At((u + 0.5f) / nu, (t + 0.5f) / nt);
-                foreach (var tr in near)
-                    if (OnTri(p, tr.A, tr.B, tr.C))
-                    {
-                        cov[t * nu + u] = true;
-                        break;
-                    }
+                for (var k = 0; k < near.Count; k++)
+                {
+                    var tr = near[(last + k) % near.Count]; // (the one that held the last cell first: neighbours mostly share one)
+                    if (p.X < tr.Lo.X - OnSkin || p.X > tr.Hi.X + OnSkin || p.Y < tr.Lo.Y - OnSkin || p.Y > tr.Hi.Y + OnSkin || p.Z < tr.Lo.Z - OnSkin || p.Z > tr.Hi.Z + OnSkin || !OnTri(p, tr.A, tr.B, tr.C))
+                        continue;
+                    cov[t * nu + u] = true;
+                    count++;
+                    last = (last + k) % near.Count;
+                    break;
+                }
             }
+        if (count == cov.Length)
+        {
+            _hc.Whole++;
+            Plate(0, 1, 0, 1);
+            return;
+        }
+        if (count == 0)
+        {
+            _hc.Open++;
+            return;
+        }
+        _hc.Celled++;
         for (var t = 0; t < nt; t++)
             for (var u = 0; u < nu; u++)
             {
@@ -407,7 +430,7 @@ public static partial class DesignParts
             Console.WriteLine($"[design] \"{d.Name}\": {_hc.Refused} hull plates came out flat and are left out (holes in its collider)");
         if (_hc.InHole > 0)
             Console.WriteLine($"[design] \"{d.Name}\": {_hc.InHole} pieces lie wholly in a socket's opening and keep their collider there (it closes the hole)");
-        LastHollow = $"{Math.Min(total, MaxHulls)} colliders (of {MaxHulls} at most): {_hc.Plates} plates ({_hc.Whole} facets whole, {_hc.Celled} in cells, {_hc.Open} open), {_hc.Refused} refused; "
+        LastHollow = $"{Math.Min(total, MaxHulls)} colliders (of {MaxHulls} at most): {_hc.Plates} plates ({_hc.Whole} facets whole, {_hc.Celled} in cells, {_hc.Open} open), {_hc.Refused} refused, the longest band's in {_hc.PlateMs:0.0} ms; "
             + $"{_hc.Clipped} joins or pieces kept out of {rooms} rooms and {keeps.Count - rooms} openings ({_hc.ClipHulls} hulls), {_hc.InHole} wholly in an opening" + (_hc.Dropped > 0 ? $"; {_hc.Dropped} left out past the cap" : "");
         _hc = default;
     }
