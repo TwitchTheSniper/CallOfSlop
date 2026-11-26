@@ -2215,10 +2215,10 @@ public sealed partial class Construct
     public Vector3 SeatForward()
     {
         if (ControlSeat >= 0 && ControlSeat < PartCount && Parts[ControlSeat].Seg == 0)
-            return Rot24.Apply(Parts[ControlSeat].Rot, -Vector3.UnitZ);
+            return Parts[ControlSeat].D.SeatAhead(Parts[ControlSeat].Rot);
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0)
-                return Rot24.Apply(Parts[i].Rot, -Vector3.UnitZ);
+                return Parts[i].D.SeatAhead(Parts[i].Rot);
         return -Vector3.UnitZ;
     }
 

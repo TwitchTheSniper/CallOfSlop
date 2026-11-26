@@ -185,7 +185,7 @@ public static partial class DesignCheck
         foreach (var e in els)
         {
             h.S(e.Id).S(e.Kind).S(e.Name).S(e.Fn).S(e.Role).V(e.Origin).F(e.Area).F(e.Kg).V(e.BoxMin).V(e.BoxMax).U(e.Rot)
-                .V(e.Exhaust).V(e.ThrustAt).V(e.SeatAt).F(e.Force).F(e.Mouth).U((uint)e.Links.Count);
+                .V(e.Exhaust).V(e.ThrustAt).V(e.SeatAt).F(e.SeatTurn).F(e.Force).F(e.Mouth).U((uint)e.Links.Count);
             foreach (var l in e.Links)
                 h.U((uint)l);
             foreach (var hl in e.Hulls)

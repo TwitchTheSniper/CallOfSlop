@@ -227,7 +227,7 @@ public static partial class DesignParts
         public CDoorDef? Door;
         /// <summary>A vertical ladder: its landing's and its foot's heights (the ship's Y while made; the part's frame after). NaN: not a ladder. Its part keeps its +y up.</summary>
         public float LadderTop = float.NaN, LadderFoot = float.NaN;
-        /// <summary>A seat's turn about its up past its Rot24 (radians): the designer's free yaw (the plan's package D reads it). Not applied yet.</summary>
+        /// <summary>A seat's turn about its up past its Rot24 (radians): the designer's free yaw, onto its def's ConstructPartDef.SeatTurn (every seat reader turns by it: SeatRot).</summary>
         public float SeatTurn;
         /// <summary>The segment its part hangs on (CPart.Seg): 0 the body; k the k-th joint the design makes (elements with <see cref="Joint"/>, in element order), which must come before it.</summary>
         public byte Seg;
