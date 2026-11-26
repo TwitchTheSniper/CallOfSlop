@@ -2187,7 +2187,9 @@ logistics map's node to it, and `ConstructPads.RackDef` gives every tile the rec
 capped at `CStore.MaxPerKind`), so packing, drawing and lifters read the same places from any tile. Lists of stores (racks, lifter
 points, stock targets, the dock's fill) skip the other tiles. The stack is 1 m with no mast, and 2 m more for each Mast Block on the
 tallest column stood on the rectangle; the hold sits inside the kerb and the corner posts, but a mast in the middle of a pad stands in
-its hold. The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
+its hold. A pad lies flat and open, so one piece wider than its hold may use it to its tiles' edges, and with no mast on it one piece
+of any height lies there alone (`ConstructRackPack.Fit`; Sean, 2026-11-26: Works II's keel Hull Sections, 3.83 m wide and 2 m tall,
+sat on a Laser Cutter's bed for good, as the 4 m lay-by pad it rolls onto could never hold them). The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
 them only on its open edges. A **Rack Side** is drawn only: a 2 m fence of bars welded to a tile's side; sides end to end show one post
 at each joint (`"seamSame"`: a part's seams hide on faces welded to its own kind, `MachineBlocks.SeamSame`). A tile's own store
 holds nothing while it is in a bigger pad; pieces it held from before it joined show again if it is split off. Not yet: the showcases'
