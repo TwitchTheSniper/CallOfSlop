@@ -1191,7 +1191,7 @@ public static partial class DesignScene
             q[k] = Math.Clamp(at[k], lo[k], hi[k]);
         var inPlan = at[ax] > lo[ax] + 0.05 && at[ax] < hi[ax] - 0.05 && at[al] > lo[al] + 0.05 && at[al] < hi[al] - 0.05;
         double fl = d.Stacked ? hi[up] : lo[up], ce = d.Stacked ? lo[up] : hi[up];
-        if (inPlan || kind.Socket is "shaft" or "cargo")
+        if (inPlan || kind.Socket == "shaft") // (a boarding hatch is always under its room: DesignScene.Run)
         {
             // A hatch through the floor (or the ceiling), kept a little in from the walls so the hole is in the room.
             var half = op is { } o ? Math.Max(DoorHalfDefault, Math.Max(o.Hx, o.Hz) * size) : DoorHalfDefault;

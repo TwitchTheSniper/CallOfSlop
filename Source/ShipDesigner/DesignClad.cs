@@ -810,8 +810,8 @@ public static partial class DesignScene
         var o = new List<double[]>();
         foreach (var q in doors)
         {
-            var half = DoorHalf(q);
-            if (q[0] < a0 - half || q[0] > a1 + half || q[al] < l0 - half || q[al] > l1 + half)
+            const double on = 0.05; // (a door's foot is on the room's wall, a hole's inside its plan)
+            if (q[0] < a0 - on || q[0] > a1 + on || q[al] < l0 - on || q[al] > l1 + on)
                 continue;
             if (IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
                 o.Add(q);
