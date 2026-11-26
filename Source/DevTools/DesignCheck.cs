@@ -44,6 +44,10 @@ public static class DesignCheck
             return fails;
         }
         Console.WriteLine($"[design] {what}: {text.Length} bytes, hash {hash}, read in {Ms(t0):0} ms");
+        var issues = DesignScene.Run(ShipDesign.FromJson(text)).Issues;
+        Console.WriteLine($"[design] the designer's checks: {issues.Count(i => i.Level == "error")} errors, {issues.Count(i => i.Level == "warn")} warnings");
+        foreach (var i in issues)
+            Console.WriteLine($"[design]   {i.Level}: {i.Text}");
         // Built as the held spawn builds it, then joined on the ground of the proving ground (flat and wide: the bare map's ground ends 20 m out).
         if (Maps.Find("Proving Ground") is { } yard)
         {
@@ -148,7 +152,7 @@ public static class DesignCheck
             Console.WriteLine($"[design] aircraft flight check in {Ms(t4):0} ms: {(fr.Ok ? "flies" : "refused: " + fr.Why)}; {fr.Line}");
         }
         if (c.StabCount > 0 && c.DriveSeat >= 0 && !args.Any(a => a.Equals("--no-fly", StringComparison.OrdinalIgnoreCase)))
-            if ((Sortie(world, c) is null ? null : Sortie(world, c)) is { } bad) // (a second sortie when the first fails: the first touchdown runs the JIT on the contact paths)
+            if ((Sortie(world, c) is not null ? Sortie(world, c) : null) is { } bad) // (a second sortie when the first fails: the first touchdown runs the JIT on the contact paths)
                 Fail("from its helm: " + bad);
         Console.WriteLine(fails == 0 ? "[design] check: passed" : $"[design] check: {fails} failure(s)");
         return fails;
