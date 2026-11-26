@@ -371,19 +371,22 @@ public sealed class Piece
     public string BayDoorType = "Sliding";
     public int Link;
     public string Fit = ""; // a weapon mount's weapon (DesignWeaponMounts.cs; "": empty)
+    // A floodlight's (DesignFittings, Karl 2026-11-26): its aim off the skin's normal and about it (degrees), and its beam's colour.
+    public double Pitch = DesignFittings.DefPitch, Yaw = DesignFittings.DefYaw;
+    public string Beam = DesignFittings.DefBeam;
 
-    public JsonObject ToJson() => DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    });
+    }));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignHangar.Read(o, Read(o, id));
+        var p = DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         PieceWeapons.Migrate(p); // an old PDC turret, railgun or torpedo sponson: a mount with it fitted (Karl, 2026-11-26)

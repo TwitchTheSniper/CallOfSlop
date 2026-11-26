@@ -101,6 +101,8 @@ public sealed class DesignSession
             ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },
             // Each hangar piece's sizes (DesignHangar.Init), by kind.
             ["hangar"] = DesignHangar.Defaults(),
+            // A floodlight's aim and beam (DesignFittings).
+            ["fitting"] = DesignFittings.Defaults(),
         };
         return c.ToJsonString();
     }
@@ -108,7 +110,7 @@ public sealed class DesignSession
     private static string Basic()
     {
         var sb = new StringBuilder("{\"pieces\":[");
-        sb.AppendJoin(',', PieceKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"group\":{DesignScene.Q(k.Group)},\"where\":{DesignScene.Q(k.Where)},\"socket\":{(k.Socket is null ? "null" : DesignScene.Q(k.Socket))},\"needs\":{DesignScene.Q(k.Needs)},\"desc\":{DesignScene.Q(k.Desc)}}}"));
+        sb.AppendJoin(',', PieceKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"group\":{DesignScene.Q(k.Group)},\"where\":{DesignScene.Q(k.Where)},\"socket\":{(k.Socket is null ? "null" : DesignScene.Q(k.Socket))},\"needs\":{DesignScene.Q(k.Needs)},\"desc\":{DesignScene.Q(k.Desc)},\"service\":{(k.Service ? "true" : "false")}}}"));
         sb.Append("],\"rooms\":[");
         sb.AppendJoin(',', RoomKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"colour\":{DesignScene.Q(k.Colour)},\"desc\":{DesignScene.Q(k.Desc)}}}"));
         sb.Append("],\"sections\":[");

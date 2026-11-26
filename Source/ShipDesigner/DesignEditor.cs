@@ -484,6 +484,8 @@ public sealed class DesignEditor
                 }
                 if (DesignHangar.Set(d, p, o) is { Length: > 0 } herr)
                     return herr;
+                if (DesignFittings.Set(p, o) is { Length: > 0 } ferr)
+                    return ferr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
