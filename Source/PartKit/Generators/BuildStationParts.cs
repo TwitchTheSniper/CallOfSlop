@@ -6,8 +6,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The Building Station on the block system (the Building Station Lab's rover design, Sean 2026-11-24; docs/sandbox/constructs/production.md,
 /// "Building station"; MachineBlocks.cs): the station's Core, the Bay Block and the Dock Expansions. The Core ("Building Station") is a
-/// flat 4 x 2 m dock pad for one rover, its deck level with the Bay Blocks, with a console at its back end (the screen tilted up to the
-/// player, the keys, the stop, the lamp), a link-stock hopper (Chute in) and the fluid inlet; it holds the job and the power and has no
+/// flat 4 x 2 m dock pad for one rover, its deck level with the Bay Blocks, with a console at its back end (the screen on its back face, towards
+/// the player on the works floor, the keys, the stop, the lamp), a link-stock hopper (Chute in) and the fluid inlet; it holds the job and the power and has no
 /// hold (<c>noHold</c>: every piece goes to its pick pads). Its mouth (+x.0) welds to the bay. A Dock Expansion (small 4 x 2 m, medium
 /// 6 x 4, large 12 x 8) is a dock pad for one more rover of its class, its mouth on the bay's edge. Bay Blocks are 2 x 2 m floor tiles
 /// welded beside it and to each other: the bay is the largest full rectangle of them. It has no height of its own: what
@@ -112,31 +112,32 @@ public sealed class BuildStationParts : IPartGenerator
             "A Building Station's Core: the dock for its first arm rover (a small one: 9 m reach, 8 t), and the console that builds a blueprint in its bay, part by part. Weld its mouth to the edge of a bay of Bay Blocks (up to 32 x 32) and weld Dock Expansions along the bay's edge for more rovers. A bay builds as high as is clear over it and its rovers can reach. Rovers take pieces off pick pads and Part Pads beside the bay. Pick a blueprint on its screen. Needs power.",
             role: "storage", tool: "welder", color: Body, group: "Production");
         DockPad(p, 4, 2, 1, true);
-        // ---- The console at the pad's back end: a cabinet on the deck, its screen tipped back towards whoever stands in front of it, the job lamp on top.
-        double h = Floor, cx0 = -2.98, cx1 = -2.5, cz0 = -0.92, cz1 = 0.2;
-        p.Add(Box([cx0, h - 0.004, cz0], [cx1, h + 0.95, cz1]));
+        // ---- The console at the pad's back end: a cabinet on the deck, its screen on the back face, towards the works floor where a player
+        // stands (Sean 2026-11-26: not over the rover's deck), at a standing eye's height off the floor; the keys on a shelf under it, the job lamp on top.
+        double h = Floor, cx0 = -2.94, cx1 = -2.46, cz0 = -0.97, cz1 = 0.3; // (the bezel stays inside the pad's back edge: a Mast Block may stand just past it)
+        p.Add(Box([cx0, h - 0.004, cz0], [cx1, h + 1.0, cz1]));
         p.Add(L([cx1 - 0.004, h + 0.1, cz0 + 0.06], [cx1 + 0.012, h + 0.16, cz1 - 0.06], MachineLook.Accent, "hazard paint")); // (a kick band)
-        // The screen's housing leans back over the cabinet in three steps, so the face looks up at a standing eye.
-        for (var k = 0; k < 3; k++)
-            p.Add(L([cx0 + 0.04 + k * 0.05, h + 0.95 + k * 0.18, cz0 + 0.02], [cx1 - 0.04 - (2 - k) * 0.02, h + 1.13 + k * 0.18, cz1 - 0.02], MachineLook.Base));
-        p.Add(L([cx1 - 0.1, h + 1.0, cz0 + 0.1], [cx1 - 0.084, h + 1.5, cz1 - 0.1], Screen)); // (what its panel stands on)
-        p.Add(L([cx0 + 0.06, h + 0.95, cz0 + 0.12], [cx1 + 0.12, h + 0.964, cz1 - 0.12], MachineLook.Steel, "steel")); // (a work shelf under the screen)
+        // The screen: a solid bezel proud of the back face (a screen with buttons stands on a solid box, so the crosshair's ray finds it), its glass face 4 mm out.
+        double sy0 = h + 0.18, sy1 = h + 0.94;
+        p.Add(Box([cx0 - 0.03, sy0, cz0 + 0.04], [cx0 + 0.01, sy1, cz1 - 0.04], Screen));
+        p.Add(L([cx0 - 0.05, sy1 - 0.004, cz0 + 0.02], [cx0 + 0.004, sy1 + 0.04, cz1 - 0.02], MachineLook.Base)); // (its hood)
+        p.Add(L([cx0 - 0.17, h + 0.1, cz0 + 0.1], [cx0 - 0.004, h + 0.114, cz1 - 0.1], MachineLook.Steel, "steel")); // (a work shelf under the screen)
         for (var k = 0; k < 3; k++) // (three keys and a stop on the shelf)
-            p.Add(L([cx1 - 0.02, h + 0.964, cz0 + 0.2 + k * 0.22], [cx1 + 0.1, h + 0.984, cz0 + 0.34 + k * 0.22], MachineLook.Accent));
-        p.Add(L([cx1 - 0.02, h + 0.964, cz1 - 0.3], [cx1 + 0.1, h + 0.996, cz1 - 0.16], MachineLook.Stop));
-        p.Add(L([cx0 + 0.16, h + 1.49, -0.46], [cx0 + 0.32, h + 1.6, -0.26], MachineLook.Accent)); // (the job lamp's hood)
-        // The power meter and the maker's plate on its back, a cable gland where the charge line runs under the deck to the plate.
-        p.Add(L([cx0 - 0.016, h + 0.4, -0.6], [cx0 + 0.004, h + 0.66, -0.34], "#e8e6df", shape: Cyl("-x", 14)));
-        p.Add(L([cx0 - 0.016, h + 0.24, -0.1], [cx0 + 0.004, h + 0.34, 0.1], MachineLook.In));
+            p.Add(L([cx0 - 0.14, h + 0.114, cz0 + 0.2 + k * 0.22], [cx0 - 0.02, h + 0.134, cz0 + 0.34 + k * 0.22], MachineLook.Accent));
+        p.Add(L([cx0 - 0.14, h + 0.114, cz1 - 0.3], [cx0 - 0.02, h + 0.146, cz1 - 0.16], MachineLook.Stop));
+        p.Add(L([cx0 + 0.16, h + 1.0, -0.46], [cx0 + 0.32, h + 1.11, -0.26], MachineLook.Accent)); // (the job lamp's hood)
+        // The power meter and the maker's plate on its front (the rover side), a cable gland where the charge line runs under the deck to the plate.
+        p.Add(L([cx1 - 0.004, h + 0.4, -0.6], [cx1 + 0.016, h + 0.66, -0.34], "#e8e6df", shape: Cyl("+x", 14)));
+        p.Add(L([cx1 - 0.004, h + 0.24, -0.1], [cx1 + 0.016, h + 0.34, 0.1], MachineLook.In));
         p.Add(L([cx1 - 0.004, h - 0.004, -0.06], [cx1 + 0.18, h + 0.04, 0.06], MachineLook.Steel, "steel"));
         // The link stock hopper beside it (copper for wires, steel for pipes): a post with the chute's port on its top.
-        p.Add(Box([cx0, h - 0.004, 0.34], [cx0 + 0.42, h + 1.16, 0.9]));
-        MachineLook.Port(p, [cx0 + 0.21, h + 1.16, 0.62], 1, 1, 0.16, 0.1, true);
-        // The fluid inlet on the console's back (a pipe for the fill stage), at the deck's back edge.
-        MachineLook.Port(p, [cx0, h + 0.75, 0.0], 0, -1, 0.08, 0.1, true);
+        p.Add(Box([cx0, h - 0.004, 0.38], [cx0 + 0.42, h + 1.16, 0.92]));
+        MachineLook.Port(p, [cx0 + 0.21, h + 1.16, 0.65], 1, 1, 0.16, 0.1, true);
+        // The fluid inlet on the console's side (a pipe for the fill stage), clear of the screen.
+        MachineLook.Port(p, [Py.Round((cx0 + cx1) / 2, 3), h + 0.6, cz0], 2, -1, 0.08, 0.1, true);
         p.Stats(1400, 1600, 4, 10.0);
         p.Set(("power", 600), ("onBreak", "disable"));
-        p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(Py.Round(cx1 - 0.08, 3), h + 1.25, Py.Round((cz0 + cz1) / 2, 3))), ("size", Py.L(0.96, 0.46)), ("face", "+x"), ("up", "+y"), ("rows", 8), ("range", 12)))));
+        p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(Py.Round(cx0 - 0.034, 3), Py.Round((sy0 + sy1) / 2, 3), Py.Round((cz0 + cz1) / 2, 3))), ("size", Py.L(1.14, 0.72)), ("face", "-x"), ("up", "+y"), ("rows", 8), ("range", 12)))));
         static PyDict Fill(string key, string label, string tip) => Kw(("key", key), ("label", label), ("group", "Fill"), ("min", 0), ("max", 100), ("step", 5), ("default", 100), ("unit", "%"),
             ("tooltip", "Survival: a build is filled to this share. " + tip + " 0: none, 100: full."));
         var config = Py.L(
@@ -163,8 +164,8 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(0.3, 0.3)), ("length", 0.4), ("count", 400), ("crafting", true), ("station", true), ("lift", LiftKg), ("noHold", true),
             ("hold", Py.L(Py.L(cx0 + 0.05, h + 0.1, cz0 + 0.05), Py.L(cx1 - 0.05, h + 0.6, cz1 - 0.05))))))));
         p.Set(("ports", Py.L(
-            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(cx0, Py.Round(h + 0.75, 3), 0.0)), ("face", "-x")),
-            Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(Py.Round(cx0 + 0.21, 3), Py.Round(h + 1.16, 3), 0.62)), ("face", "+y")))));
+            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(Py.Round((cx0 + cx1) / 2, 3), Py.Round(h + 0.6, 3), cz0)), ("face", "-z")),
+            Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(Py.Round(cx0 + 0.21, 3), Py.Round(h + 1.16, 3), 0.65)), ("face", "+y")))));
         p.Set(("machineBlock", BlockKey("core")));
         return p;
     }
