@@ -197,7 +197,7 @@ public sealed partial class ZeroDayWorks2
         }
 
         /// <summary>A data cable from a Line Console's foot up to <paramref name="height"/>, along x then z, to over the target and down to it.</summary>
-        private void Cable(VPart console, VPart? to, string toPort, float height)
+        private void Cable(VPart console, VPart? to, string toPort, float height, string? fromPort = null)
         {
             if (to == null)
             {
@@ -209,7 +209,7 @@ public sealed partial class ZeroDayWorks2
                 // (a console welded freeform, off a slab's lattice, has its pose in _free, as a target's)
                 var at = _free.TryGetValue(console, out var cw) ? FromRest(cw.Pos) : FromRest(Live.Parts[console.Index].Pos);
                 var t = _free.TryGetValue(to, out var w) ? FromRest(w.Pos) : FromRest(Live.Parts[to.Index].Pos);
-                Link("data", console, to, null, toPort, Crane, false, null, Cut(at, V(at.X, height, at.Z), V(t.X, height, at.Z), V(t.X, height, t.Z)));
+                Link("data", console, to, fromPort, toPort, Crane, false, null, Cut(at, V(at.X, height, at.Z), V(t.X, height, at.Z), V(t.X, height, t.Z)));
                 _links++;
             }
             catch (VehicleKitException ex)

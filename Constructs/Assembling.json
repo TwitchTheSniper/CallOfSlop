@@ -2791,6 +2791,7 @@
     {"output": "Breaker Core", "materials": {"steel": 260}, "parts": {"Gear Set": 4, "Wiring Loom": 3}, "seconds": 40, "techTier": 2, "needs": ["Power Coupling"]},
     {"output": "Shredder Block", "materials": {"steel": 600}, "parts": {"Gear Set": 6}, "seconds": 50, "techTier": 2},
     {"output": "Die Wall", "materials": {"steel": 120, "rubber": 10}, "seconds": 12},
-    {"output": "Heavy Power Terminal", "materials": {"steel": 36, "copper": 60}, "parts": {"Control Unit": 4}, "seconds": 7.4, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
+    {"output": "Heavy Power Terminal", "materials": {"steel": 36, "copper": 60}, "parts": {"Control Unit": 4}, "seconds": 7.4, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Station Console", "materials": {"steel": 8, "copper": 13}, "parts": {"Circuit Board": 1}, "seconds": 3.2, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
   ]
 }

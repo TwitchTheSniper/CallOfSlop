@@ -31,6 +31,8 @@ public static unsafe partial class Program
     private static readonly Vector3[] _sbFeet = new Vector3[64];
     private static long _sbJoinKey = -1;
     private static long _sbPieceKey = -1; // what a machine holds under the crosshair, and its look line
+    private static long _sbConsoleKey = -1; // a Station Console under the crosshair, and its look line
+    private static string _sbConsoleText = "";
     private static string _sbPieceText = "";
     private static string _sbJoinText = "";
 
@@ -433,7 +435,28 @@ public static unsafe partial class Program
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (podFrame.Body != null && Pressed(GameAction.Interact) && !magFill && !leverTook && !terminalTook && !_scrTook)
+        // A Station Console: its station's number and the use key that opens that station's panel from here (ConstructStationConsole.cs).
+        var consoleOf = aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Logic == CLogic.StationConsole
+            ? ConstructStationConsole.StationOf(hit.Body, hit.Body.Parts[hit.Part].Watch) : -1;
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Logic == CLogic.StationConsole && !join)
+        {
+            var near = hit.Distance <= ConstructBuild.UseReach;
+            var ck = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 20) ^ ((long)(consoleOf + 1) << 2) ^ (near ? 1 : 0);
+            if (ck != _sbConsoleKey)
+            {
+                _sbConsoleKey = ck;
+                _sbConsoleText = consoleOf < 0
+                    ? SandboxKeys.Line("Station Console", "watches no station: link its watch output to a Building Station", null, null)
+                    : SandboxKeys.Line("Station Console", $"Building Station {ConstructStationConsole.Number(hit.Body, consoleOf)}", null, near ? SandboxKeys.Do(SandboxKeys.Use, "open its panel") : null);
+            }
+            g.SandboxLookText = _sbConsoleText;
+        }
+        if (consoleOf >= 0 && Pressed(GameAction.Interact) && !magFill && !join && hit.Distance <= ConstructBuild.UseReach && !leverTook && !terminalTook && !_scrTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) && !MenusOpen)
+        {
+            Ui.OpenCrafting(hit.Body.Id, consoleOf); // (the station's own panel, worked from the desk: the server takes a console that watches it as reach)
+            SetMouseCaptured(false);
+        }
+        else if (podFrame.Body != null && Pressed(GameAction.Interact) && !magFill && !leverTook && !terminalTook && !_scrTook)
             g.SandboxSend(CActKind.Use, body: podFrame.Body.Id, part: (ushort)podFrame.Part); // (the pod's button: the server folds the shell away)
         else if (Pressed(GameAction.Interact) && !magFill && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)

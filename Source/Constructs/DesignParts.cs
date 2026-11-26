@@ -201,6 +201,7 @@ public static class DesignParts
         public byte Rot; // the part's turn (Rot24): a seat faces its own way; everything else stands in the ship's frame
         public Vector3 Exhaust, ThrustAt, SeatAt; // thrust: the way its exhaust leaves and where it pushes; a seat: the sitter's feet (the ship's frame, then the part's)
         public float Force; // thrust: N at full
+        public float Mouth; // thrust: its bell's or nozzle's mouth radius (m), which sizes its flame
         internal LookBuilder? Mesh; // (while it is made, in the ship's frame)
         internal List<Vector3>? Points; // (ditto: its hulls' points, in runs, before they are moved)
         internal List<int>? Runs;
@@ -503,6 +504,7 @@ public static class DesignParts
                 e.Exhaust = Vector3.Normalize(y);
                 e.ThrustAt = o + y * ((main ? MainDriveBell : SmallDriveBell) * s);
                 e.Force = (main ? MainDriveN : SmallDriveN) * s * s;
+                e.Mouth = (main ? 2.0f : 1.0f) * s; // (the bell's mouth in PieceKinds' drawing)
                 break;
             case "RCS quad" or "Heavy RCS":
                 var k = (float)(p.Kind == "Heavy RCS" ? DesignFittings.HeavyRcs : 1) * s;
@@ -515,7 +517,7 @@ public static class DesignParts
                     var ne = new Element
                     {
                         Id = $"{e.Id}.n{n}", Kind = "nozzle", Name = $"{p.Kind} nozzle", Fn = "thrust", Exhaust = dir, ThrustAt = o + y * (0.3f * k) + dir * (nozzles[n].Out * k),
-                        Force = RcsNozzleN * k * k, Kg = e.Kg * NozzleShare, BoxMin = mid - new Vector3(0.06f * k), BoxMax = mid + new Vector3(0.06f * k),
+                        Force = RcsNozzleN * k * k, Mouth = (n < 2 ? 0.08f : 0.1f) * k, Kg = e.Kg * NozzleShare, BoxMin = mid - new Vector3(0.06f * k), BoxMax = mid + new Vector3(0.06f * k),
                     };
                     e.Kg -= ne.Kg;
                     els.Add(ne);
@@ -759,8 +761,10 @@ public static class DesignParts
             def.ThrustAt = e.ThrustAt;
             def.ThrustForce = e.Force;
             def.ThrustSpool = e.Kind == "nozzle" ? 0.15f : 0.5f;
-            var r = MathF.Sqrt(e.Force) * 0.002f + 0.05f;
-            def.Flames = [new FlameDef { At = e.ThrustAt, Dir = def.ThrustDir, Radius = r, Length = r * 6.5f, Kind = FxKind.Rocket, Source = FlameSource.Thrust }];
+            // Its flame from its mouth, not its force (a part file's sqrt(F) rule made a 5 MN nozzle's jet 4.5 m wide and 29 m long
+            // from a 12 cm nozzle): a drive's a long plume, a nozzle's a short puff.
+            var r = 0.9f * e.Mouth;
+            def.Flames = [new FlameDef { At = e.ThrustAt, Dir = def.ThrustDir, Radius = r, Length = r * (e.Kind == "nozzle" ? 5f : 4f), Kind = FxKind.Rocket, Source = FlameSource.Thrust }];
         }
         else if (e.Fn == "seat")
         {

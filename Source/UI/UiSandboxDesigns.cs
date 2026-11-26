@@ -29,7 +29,7 @@ public sealed partial class Ui
         }
         _sbDesignsShown = true;
         ImGui.Spacing();
-        ImGui.TextColored(Dim, "Click: it is made ready, then place it by aiming (as a blueprint). Keep your own from the Ship Designer with \"Keep in my designs\"."u8);
+        ImGui.TextColored(Dim, "Click: it is made ready, then place it by aiming (as a blueprint). Keep your own from the Ship Designer with 'Keep in my designs'."u8);
         if (ImGui.Button("Refresh##sbdrefresh"u8))
             _sbDesigns = null;
         SbDrawSpawnNote(game);

@@ -48,6 +48,9 @@ public sealed partial class ConstructEdits
         var near = float.MaxValue;
         foreach (var i in parts)
             near = MathF.Min(near, Vector3.Distance(eye, d.IsSizedBox ? ConstructStoreVolume.NearestPoint(c, i, eye) : ReachPoint(c, i, eye))); // (a big box is set from wherever its face is)
+        if (near > ConstructConfig.Reach && d.IsBuildStation)
+            foreach (var i in parts)
+                near = MathF.Min(near, ConstructStationConsole.ReachFrom(c, i, eye)); // (a station's fill settings from its panel, opened at a Station Console that watches it)
         if (near > ConstructConfig.Reach)
             return "too far away";
         var changed = 0;

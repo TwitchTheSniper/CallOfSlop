@@ -1930,6 +1930,24 @@ a hand-delivered part fitted at once; copper and steel as the link stock, a unit
 the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
 blueprints by name.
 
+### The Station Console (2026-11-26)
+
+Sean: "a console ... similar to the line console that just mirrors the build station screen so that a player could set up a control
+room with a bunch of consoles and not have to walk around the entire factory." The **Station Console** (`Constructs/Parts/Controls/
+StationConsole.json`, `ControlParts.StationConsole`; code `Source/Constructs/ConstructStationConsole.cs`) is the Line Console's desk
+in the station colour. It is a logic part (`CLogic.StationConsole`) whose outputs are **Done** and **watch**: link the watch output
+to a Building Station on the same body, as a Level Sensor's to a tank (the link carries no signal; `CPart.Watch` names the station).
+- **Its screen** (panel source `station.remote`) is the station's own screen (`ConstructStation.Fill`: parts, links, hold, what it
+  waits for), titled **STATION n**: the station's number on the body, 1 up in part order, the same number its look line gives. Unlinked
+  it says how to link it; unpowered, "No power".
+- **The use key** at the desk opens that station's panel (pick a blueprint, cancel, release, repeat) as if at the station. The server
+  takes a Station Console that watches the station as reach for those (`ConstructStationConsole.ReachFrom`); handing it a part (Give)
+  still needs the station itself.
+- **Done** is on while the station's build is done (waiting to be driven out): wire it to a lamp or a horn.
+- Nothing new goes on the wire: the watch link is an ordinary data link, and the station's job reaches clients as before. The new part
+  file moved the part ids (protocol 473). Its Assembler recipe is the Line Console's, at the end of the list (`Assembling.Tail`).
+- Not yet: a console on another body (a link stays on its body), and naming a station (it is a number).
+
 ### Submodules (sub-blueprints, 2026-11-16)
 
 Design and the user's answers: `docs/sandbox/design/sub-blueprints.md`; status and what is left: `sub-blueprints-notes.md` beside it.
@@ -2424,7 +2442,10 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   orders go to the former. A formed skin meant for a station rides past the Laser Cutter as a deck's plate rides past the former: it
   rolls on across the cutter's bed to its pick run's end, where the bay crane lifts it (2026-11-23, rolling through; before, it
   waited at the cutter bed's edge: `ConstructConveyor.PastBed`; `RollerRuns.BedRunAt` also takes a
-  run onto a Lay-down Pad, where a skin too long for the pad or not its way waits at the pad's edge). Line C's store,
+  run onto a Lay-down Pad, where a skin too long for the pad or not its way waits at the pad's edge). A piece with no order's address
+  that no order of the cutter (or the Panel Former) takes rolls on across its bed the same way, onto its out run or its Out Table's pick
+  pad (Sean, 2026-11-26: a whole piece needing no cut sat on the cutter's bed for good; `ConstructConveyor.Deliver`'s `idle`; a former
+  sheared such a piece into its offcut bin before, and still does where nothing leads on). Line C's store,
   the kit station's and the yard station's pick pad, is 18 x 12 m turned East (its hold 17.7 m long across the bay, a deck 17.25 m) with
   two masts a corner (its stack 4 m: a lower deck is 3.25 m tall); a pad takes a part only along its own z. A 9000 s
   `--station-check "Zero Day Works" --build "Zero Day Frigate"` run (2026-11-23): the Keel bands and the decks made and baked on line C
@@ -2505,6 +2526,12 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
     Input Reader and Leg Pod Carriage XL have no maker. The Railgun is longer than any Assembler bed.
   - *Check tools.* `--station-check` adds `--floor-map X0,Z0,X1,Z1` (a 1 m map of the floor), Assembler and Extruder looks in
     `--press-order`, and, for a loose piece, why each lifter near it does or doesn't take it (`ConstructLifters.OutWhy`).
+- **Works II control row (2026-11-26).** Sean: "all of the line consoles for this entire factory are sitting next to each other in a
+  line, so I can just walk through them all", on the open floor by the west gensets. Every Line Console stands in one row along z at
+  x -45 from z -38.5 south, a desk every 1.5 m, screens east to the walk by the gensets (`ZeroDayWorks2.ControlRow.cs`); which machines
+  and station each one runs is still worked out from where the layout puts it, so only the cables are longer. After a one-desk gap,
+  a Station Console for each Building Station (Station 1 to 5, in the order the consoles number them), its watch link over the works
+  at 10 m and up.
 
 ## Production Showcase
 
