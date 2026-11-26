@@ -48,6 +48,16 @@ public static class ConstructRackPack
         lanes = Math.Min(MaxLanes, (int)((w.X + GapX + 1e-4f) / (s.X + GapX)));
         layers = Math.Min(255, (int)((w.Y + GapY + 1e-4f) / (s.Y + GapY)));
         lenMm = (int)MathF.Ceiling(s.Z * 1000 - 0.01f);
+        if (rd.BlockSeed && rd.BlockCell > 0)
+        {
+            // A Pad Tile pad lies flat and open: one piece wider than its hold may use it to its tiles' edges (a 4 m pad's hold is 3.66 m),
+            // and with no masts on it one piece of any height lies there alone (Sean, 2026-11-26: Works II's keel Hull Sections, 3.83 m
+            // wide and 2 m tall, sat on the Laser Cutter's bed for good, as its lay-by pad could never hold them).
+            if (lanes == 0 && s.X <= MathF.Ceiling(w.X / rd.BlockCell - 0.01f) * rd.BlockCell + 1e-4f)
+                lanes = 1;
+            if (layers == 0 && w.Y < ConstructPads.BaseStack + ConstructPads.PerMast * 0.5f)
+                layers = 1;
+        }
         return lanes > 0 && layers > 0 && lenMm <= (int)(w.Z * 1000 + 0.5f) && s.Z > 0;
     }
 
