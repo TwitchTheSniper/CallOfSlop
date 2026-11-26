@@ -196,7 +196,8 @@ public static class StationCheck
             return 1;
         }
         if (Arg("--press-order") is { } pressOrder) // (--press-order PART --oven-at X,Z: an order queued at the Press nearest the point, run and watched)
-            return PressOrder(w, q, c, place, pressOrder, Arg("--oven-at"), seconds, keep, Fill, args.Contains("--via-station") ? t : -1);
+            return PressOrder(w, q, c, place, pressOrder, Arg("--oven-at"), seconds, keep, Fill, args.Contains("--via-station") ? t : -1,
+                int.TryParse(Arg("--count"), out var pcount) ? Math.Clamp(pcount, 1, WorkOrders.MaxCount) : 1); // (--count N: N of the part, so a line's Extruders share the blanks)
         if (Arg("--oven-order") is { } ovenOrder)
             using (place.In())
                 RollerRuns.Sync(w, c); // (the stations' roll-outs, as the first conveyor step lays them: an oven's order asks the station that rolls to it)
@@ -559,7 +560,7 @@ public static class StationCheck
     /// point, then the site run: the kit started at a station, built, carried to the bed, baked and picked off. Reports each stage's time.
     /// </summary>
     private static int PressOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds,
-        List<(int Bin, int Material, int N)> keep, Func<int, int, byte, int> fill, int station)
+        List<(int Bin, int Material, int N)> keep, Func<int, int, byte, int> fill, int station, int count)
     {
         if (ConstructParts.Find(partName) is not { } d)
         {
@@ -575,16 +576,22 @@ public static class StationCheck
         }
         string? why;
         using (place.In())
-            why = station >= 0 ? ConstructCrafting.Place(w, c, station, ConstructStation.OrderFor(d, 1)) : WorkOrders.Queue(w, c, press, ConstructStation.OrderFor(d, 1)); // (--via-station: the station's own ask, which chains the blank)
+            why = station >= 0 ? ConstructCrafting.Place(w, c, station, ConstructStation.OrderFor(d, count)) : WorkOrders.Queue(w, c, press, ConstructStation.OrderFor(d, count)); // (--via-station: the station's own ask, which chains the blank)
         Console.WriteLine($"  {(station >= 0 ? $"station {station}'s ask; " : "")}the Press at {c.Parts[press].Pos.X:0}, {c.Parts[press].Pos.Z:0} (part {press}): order for the {d.Name}: {why ?? "taken"}");
         if (why != null)
             return 1;
         var last = "";
+        var exCores = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i) is { IsExtruder: true, IsPanelFormer: false, BlockRole: BlockRole.Core }).ToArray();
+        var exLast = new string[exCores.Length];
         using (place.In())
             for (var k = 0; k < seconds * World.TickRate; k++)
             {
                 MoverPhysics.Clock++;
                 w.Step(q, World.TickDt);
+                if (k % World.TickRate == 0) // (each Extruder's queue as it changes: which of a line's Extruders makes the blanks)
+                    for (var e = 0; e < exCores.Length; e++)
+                        if ((c.Parts[exCores[e]].Orders is { Count: > 0 } eo ? $"{eo.Count} order(s), head x{eo.Items[0].Left}" : "idle") is var et && et != (exLast[e] ?? "idle"))
+                            Console.WriteLine($"  {k / World.TickRate,6} s: Extruder {exCores[e]} at {c.Parts[exCores[e]].Pos.X:0}, {c.Parts[exCores[e]].Pos.Z:0}: {exLast[e] = et}");
                 if (k % World.TickRate == 0)
                     foreach (var (bin, mat, n) in keep)
                         if (c.DefOf(bin).IsAssembler)
@@ -604,6 +611,9 @@ public static class StationCheck
                 }
             }
         Console.WriteLine($"  after {seconds} s the order is still open");
+        foreach (var e in exCores) // (which presses each Extruder's pieces can reach: a line's Extruders share a press's blanks, ConstructLogisticsPlan.FindMaker)
+            if (Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i) is { IsPress: true, IsLathe: false } && ConstructLogisticsPlan.Leads(c, e, i)).ToList() is { Count: > 0 } reach)
+                Console.WriteLine($"  Extruder {e} at {c.Parts[e].Pos.X:0}, {c.Parts[e].Pos.Z:0} leads to the Press(es) " + string.Join(", ", reach.Select(i => $"{i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}")));
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Craft is { Count: > 0 } cq)
                 for (var k = 0; k < cq.Count; k++)

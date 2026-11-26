@@ -95,7 +95,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             s.Lay(items);
             s.LayLinks();
             if (s.Live.LinkCount > Construct.MaxLinks * 3 / 4 || s.Live.PartCount > Construct.MaxParts * 3 / 4)
@@ -114,6 +114,27 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         [
             ("press", 39, 30, [("w", 4), ("z", 29)]),
             ("Die Rack", 39, 24, [("z", 22)]),
+        ];
+
+        /// <summary>
+        /// Pieces added to the lab's export, in its own x, z, beside Sean's (none of his move). 2026-11-26, Sean chose "Add one per line":
+        /// a second blank Extruder on each small-parts press line, as a blank takes 15-17 s an Extruder and a small stroke 7 s, so one
+        /// Extruder kept a press pair half idle. Each stands 9 m out from the first (its Core 2 m clear of the first's), its run of two
+        /// Roller Tiles down to the row of the line's turntables, and a conveyor from the run's end along that row into the side of the
+        /// turntable the first's run comes into (<see cref="JoinSecondRun"/>; a Turntable Tile passes only onto runs and links, so three more
+        /// turntables in a row would have led nowhere); its own Materials Bin and Line Console behind it, where the first's stand behind the
+        /// first (they move back with it, FindShifts).
+        /// </summary>
+        private static readonly string[] Additions =
+        [
+            .. new[] { 1, -1 }.SelectMany(s => new[]
+            {
+                $$"""{"t": "lab", "id": "extruder", "w": 2, "l": 2, "x": {{s * 62}}, "z": 39, "rot": 2, "mirror": false}""",
+                $$"""{"t": "part", "name": "Roller Tile", "x": {{s * 61}}, "z": 36, "rot": 2}""",
+                $$"""{"t": "part", "name": "Roller Tile", "x": {{s * 61}}, "z": 34, "rot": 2}""",
+                $$"""{"t": "part", "name": "Materials Bin", "x": {{s * 62}}, "z": 44, "rot": 0}""",
+                $$"""{"t": "part", "name": "Line Console", "x": {{(s > 0 ? 66 : -58)}}, "z": 44, "rot": 0}""",
+            }),
         ];
 
         private static JsonElement Revised(JsonElement e)

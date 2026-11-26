@@ -507,7 +507,7 @@ public static class ConstructLogisticsPlan
     /// a Wheel and its Tyre Carcass on one Assembler, where AheadOfUsers puts the input's line first) takes <paramref name="count"/>: one already making the kind first, else
     /// the shortest queue; queued there, marked with the entry. Nobody: the entry's reason.
     /// </summary>
-    private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count)
+    private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count, int ways = 0)
     {
         var what = OrderOf(e.Kind, count) with { Chain = e.Id };
         var refusalKin = false;
@@ -515,6 +515,7 @@ public static class ConstructLogisticsPlan
         var best = -1;
         var bestScore = int.MaxValue;
         string? noWay = null;
+        var alike = 0; // (the Extruders that would take it and lead to Dest)
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
@@ -543,12 +544,21 @@ public static class ConstructLogisticsPlan
                 }
                 score += 1000 * 256;
             }
+            if (c.DefOf(mk) is { IsExtruder: true, IsPanelFormer: false })
+                alike++;
             if (c.DefOf(mk).IsBakeOven && MachineBlocks.TryOf(c, mk, out var oa))
                 score += Math.Min(255, oa.W * oa.L); // (of ovens alike, the smallest bed that takes it: the works' walls on lines A and B, its decks on line C)
             if (score < bestScore)
                 (best, bestScore) = (mk, score);
         }
-        if (best >= 0 && WorkOrders.Queue(world, c, best, what) is var no && no == null)
+        // A press's blanks are shared over the Extruders that lead to it (Sean, 2026-11-26: a second blank Extruder on each small press
+        // line, as a blank takes 15-17 s and a stroke 7 s): this entry keeps its share and a sibling entry asks the next maker for the rest,
+        // which then has the shortest queue. Only a fresh entry splits (nothing made yet), so a re-ask never splits again.
+        var share = count;
+        ways = ways > 0 ? Math.Min(ways, alike) : alike; // (a sibling shares what is left over the makers not yet asked: 6 over two is 3 and 3)
+        if (best >= 0 && ways > 1 && count > 1 && what.IsPiece && c.DefOf(e.Dest).IsPress && e.Made == 0 && count == e.Asked && world.ChainCount < MaxEntries)
+            share = (count + ways - 1) / ways;
+        if (best >= 0 && WorkOrders.Queue(world, c, best, what with { Count = (ushort)share }) is var no && no == null)
         {
             var at = Ranked(world, c, best, IsStock(e) ? (byte)1 : (byte)(e.Class + 2)); // (where the line went: AheadOfUsers moves that one, not the last)
             if (at >= 0)
@@ -556,6 +566,21 @@ public static class ConstructLogisticsPlan
             e.Maker = (ushort)best;
             e.Flags &= unchecked((byte)~ChainFlags.Expanded);
             e.Reason = "";
+            if (share < count)
+            {
+                e.Asked = (ushort)share;
+                var rest = e;
+                rest.Id = NextId(world);
+                rest.Asked = (ushort)(count - share);
+                rest.Maker = NoPart;
+                rest.Made = 0;
+                rest.Born = world.ChainStepNo;
+                rest.NoteText = null;
+                rest.NoteKey = 0;
+                // (ranked as this entry, it goes in after it: this entry's ref stays good)
+                var at2 = Insert(world, rest);
+                FindMaker(world, c, net, ref world.Chains[at2], count - share, Math.Max(1, ways - 1));
+            }
             return;
         }
         var name = ConstructParts.Get(e.Kind)?.Name ?? "part";
