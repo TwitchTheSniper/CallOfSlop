@@ -969,7 +969,7 @@ public static unsafe partial class Program
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
                 DrawGunsmithPreview(showcase, now);
-            if (Ui.ShipDesignerOpen && _session == null && Ui.ShipYardFrame is { } designerFrame)
+            if (Ui.ShipDesignerOpen && (_session == null || Ui.ShipDesignerDocked) && Ui.ShipYardFrame is { } designerFrame)
                 DrawShipDesignerYard(designerFrame); // the Ship Designer's 3D yard, behind its panels (UiShipDesigner.cs)
             if (Ui.AppearanceOpen && _session == null && Ui.LookPreview is { } lookPreview)
                 DrawAppearancePreview(lookPreview, now); // the APPEARANCE screen's turning model (Program.Appearance.cs)
@@ -990,7 +990,7 @@ public static unsafe partial class Program
             else if (_session is { } g)
             {
                 // While the weapon workbench is open over the match the player HUD is not drawn at all (the match keeps running).
-                var benchCovers = Ui.WorkbenchOpen || Ui.CommandOpen; // (the command view has the whole screen too: Program.Command.cs)
+                var benchCovers = Ui.WorkbenchOpen || Ui.CommandOpen || Ui.ShipDesignerDocked; // (the command view and the Ship Designer over a docked ship have the whole screen too: Program.Command.cs, Program.SandboxDock.cs)
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
                 if (!benchCovers)
@@ -1307,7 +1307,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.FactionsOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen || Ui.ShellGantryOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.FactionsOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen || Ui.LinkedOpen || Ui.ShellGantryOpen || Ui.ShipDesignerDocked; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1361,6 +1361,13 @@ public static unsafe partial class Program
         if (_session == null && key == GlfwKey.Escape && Ui.ShipDesignerOpen)
         {
             Ui.ShipDesignerEscape(); // main menu > Ship Designer: Esc drops the pick, then closes (UiShipDesignerInput.cs)
+            return;
+        }
+        if (_session != null && key == GlfwKey.Escape && Ui.ShipDesignerDocked)
+        {
+            Ui.ShipDesignerEscape(); // the Ship Designer over a docked ship: Esc drops the pick, then cancels (Program.SandboxDock.cs)
+            if (!Ui.ShipDesignerDocked)
+                CloseShipDock();
             return;
         }
         if (_session == null && key == GlfwKey.Escape && Ui.AppearanceOpen)

@@ -134,7 +134,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "oven" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsScriptKnown(action) || WsPlayKnown(action) || WsHeldKnown(action) || WsBoreKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "oven" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "subbp" or "linked" or "bpui" or "lifter" or "aimlink" or "aim" or "near" or "from" or "inside" or "me" or "mmu" or "coast" or "person" or "use" or "waitnear" or "key" or "touch" or "ladder" or "ladderclimb" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsDockKnown(action) || WsNavKnown(action) || WsTourKnown(action) || WsScriptKnown(action) || WsPlayKnown(action) || WsHeldKnown(action) || WsBoreKnown(action);
 
     private static void WsSay(string s)
     {
@@ -582,6 +582,8 @@ public static unsafe partial class Program
             return; // (cut parts: Program.WindowShotCuts.cs)
         if (WsGhostVerb(g, me, verb, arg))
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
+        if (WsDockVerb(g, verb, arg))
+            return; // (the Ship Docking Station's: Program.WindowShotDock.cs)
         if (WsHeldVerb(g, verb, arg))
             return; // (the physics gun's swing: Program.WindowShotPhysGun.cs)
         if (WsBoreVerb(g, verb, arg))

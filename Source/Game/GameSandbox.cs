@@ -120,6 +120,7 @@ public enum CActKind : byte
     Reactor, // u16 body (the seat's): the seated player shuts that craft's power plants down or starts them (protocol 418; ConstructShutdown.ToggleReactor)
     Thrusters, // u16 body (the seat's): ...its thrusters (protocol 418; ConstructShutdown.ToggleThrusters)
     SpawnDesign, // u32 bytes, a ship design's JSON: Creative's Designs tab spawns it, inside SpawnPrepare (protocol 471; GameSandboxDesigns.cs)
+    DockDesign, // u16 station body, u16 station part, u16 ship body, u32 bytes, the edited design's JSON: rebuild the docked ship as it (protocol 472; GameSandboxDock.cs)
 }
 
 /// <summary>
@@ -192,6 +193,7 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
+        SandboxDockReset(); // (nor ships being rebuilt at a dock: GameSandboxDock.cs)
         Crew.Clear(this); // (no crews from the last world: GameCrew.cs)
         MineReset(); // (nor their miners: GameCrewMine.cs)
         CrewFactionsClear(); // (nor standings: GameCrewFactions.cs; a saved world's follow from its Crew section)
@@ -488,6 +490,8 @@ public sealed partial class Game
         var perf = Perf.Measure(PerfArea.SandboxWorld);
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
+        if (_dockJobs.Count > 0)
+            SandboxDockTick(); // ships rebuilt at a Ship Docking Station, a slice a tick (GameSandboxDock.cs)
         SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
         SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
@@ -1445,6 +1449,8 @@ public sealed partial class Game
                 return SandboxSpawnPrepareAct(p, ref r, now); // (GameSandboxBlueprintGhost.cs)
             case CActKind.SpawnDesign:
                 return SandboxSpawnDesign(p, ref r); // (GameSandboxDesigns.cs)
+            case CActKind.DockDesign:
+                return SandboxDockAct(p, ref r); // (a ship rebuilt at a Ship Docking Station: GameSandboxDock.cs)
             case CActKind.SpawnPlace:
             {
                 var token = r.U16();

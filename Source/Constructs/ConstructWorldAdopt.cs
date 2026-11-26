@@ -18,7 +18,8 @@ public sealed partial class ConstructWorld
     /// stores from this pool (with the bulk a creative Storage Volume was filled with), the world's caps. Null, with why, when
     /// this world can't take it (it stays in <paramref name="from"/>); <see cref="AdoptUnusual"/> for a body it doesn't take as it is.
     /// </summary>
-    public Construct? Adopt(ConstructWorld from, Construct c, Vector3 pos, Quaternion rot, out string why)
+    /// <param name="id">the id it takes (0: a free one); one in use refuses (a rebuild in place frees its old body's first: GameSandboxDock.cs)</param>
+    public Construct? Adopt(ConstructWorld from, Construct c, Vector3 pos, Quaternion rot, out string why, ushort id = 0)
     {
         why = "";
         if (from.Bodies.Count != 1 || !ReferenceEquals(from.Bodies[0], c))
@@ -34,9 +35,14 @@ public sealed partial class ConstructWorld
             }
         if (Bodies.Count >= BodyCap || Bodies.Count >= ushort.MaxValue - 1 || PartTally + c.PartCount > PartCap || TotalJoints + c.JointCount > JointCap)
             return null; // ("": the caller says the world is full, as for a body Create refuses)
+        if (id != 0 && _byId.ContainsKey(id))
+        {
+            why = $"body {id} is still in the world";
+            return null;
+        }
         from.Bodies.Clear();
         from._byId.Clear();
-        c.Id = FreeId();
+        c.Id = id != 0 ? id : FreeId();
         c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = pos;
         c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rot;
         c.StorePool = Stores;

@@ -103,6 +103,7 @@ public static class PartKit
         new Generators.ArmKitParts(),
         new Generators.LinkedLogisticsParts(), // (linked logistics: link ends, the Cargo Dock and Port, the Route Computer, the Dispatcher)
         new Generators.PanelDesignerParts(),
+        new Generators.ShipDockParts(), // (the Ship Docking Station: a design ship docked at it opens in the Ship Designer, GameSandboxDock.cs)
         new Generators.StructureParts(),
         new Generators.CapitalParts(),
         new Generators.LargeSystems(),
