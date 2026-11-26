@@ -61,6 +61,9 @@ public static partial class DesignScene
     /// <summary>The hull body a room belongs to: the one its floor's middle is deepest inside (null with no bodies).</summary>
     public static HullBody? HomeBody(ShipDesign d, Room r)
     {
+        // A deck laid in a body (a side pod's) keeps its rooms in that body.
+        if (r.Deck >= 0 && r.Deck < d.Decks.Count && d.Decks[r.Deck].Hull != 0 && d.Hull(d.Decks[r.Deck].Hull) is { } own)
+            return own;
         var b = d.Box(r);
         double cx = (b[0] + b[1]) / 2, cz = (b[4] + b[5]) / 2, fy = d.Stacked ? b[2] : b[2] + 0.3;
         HullBody? best = null;

@@ -48,6 +48,8 @@ public sealed class DesignSession
             id = _ed.Design.Windows.Count == 0 ? 0 : _ed.Design.Windows[^1].Id;
         else if (err.Length == 0 && op == "addDoor")
             id = _ed.Design.Doors.Count == 0 ? 0 : _ed.Design.Doors.Max(k => k.Id);
+        else if (err.Length == 0 && op == "addPassage")
+            id = _ed.Design.Passages.Count == 0 ? 0 : _ed.Design.Passages[^1].Id;
         else if (err.Length == 0 && op == "addRiser")
             id = _ed.Design.Risers.Count == 0 ? 0 : _ed.Design.Risers[^1].Id;
         else if (err.Length == 0 && op is "addPiece" or "addRoom" or "pastePiece" or "pasteRoom" or "splitRoom" or "mount")
@@ -88,6 +90,10 @@ public sealed class DesignSession
                 ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing, ["wallStyle"] = r.WallStyle, ["wallColour"] = r.WallColour, ["seed"] = r.Seed, ["floor"] = r.Floor },
+            ["piece"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
+            ["hullWindow"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
+            // A corridor's own defaults (Room.KindDefaults), over the room's.
+            ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },
         };
         return c.ToJsonString();
     }

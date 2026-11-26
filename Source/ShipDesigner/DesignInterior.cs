@@ -59,13 +59,13 @@ public static partial class DesignScene
             return true;
         }
         // A box in the local frame; probe is a point just beyond the face it is on (open to a group-mate, or past the skin: left out).
-        bool Box(DesignMesh into, double a0, double a1, double l0, double l1, double u0, double u1, string col, double[]? probe = null)
+        bool Box(DesignMesh into, double a0, double a1, double l0, double l1, double u0, double u1, string col, double[]? probe = null, bool cut = false)
         {
             if (budget < 12 || a1 - a0 < 1e-4 || l1 - l0 < 1e-4 || u1 - u0 < 1e-4)
                 return false;
             var c0 = W(a0, l0, u0);
             var c1 = W(a1, l1, u1);
-            if (!Clear(c0, c1))
+            if (!cut && !Clear(c0, c1))
                 return false;
             var mid = W((a0 + a1) / 2, (l0 + l1) / 2, (u0 + u1) / 2);
             if (!d.Hulls.Any(h => h.Depth(mid[0], mid[1], mid[2]) > 0.01))
@@ -163,13 +163,24 @@ public static partial class DesignScene
         {
             // across: the wall's plane is at a = at (a side wall, running along l); else at l = at (an end wall, running across a).
             double[] Pt(double s, double off, double u) => across ? W(at + inward * off, s, u) : W(s, at + inward * off, u);
-            bool WBox(DesignMesh into, double sa, double sb, double o0, double o1, double u0, double u1, string col)
+            // The doors through this wall, as openings (Karl, 2026-11-25): the panels are cut round them, not dropped.
+            var wt = sd > 0 ? sd - ShellGap : 0;
+            var holes = DoorHoles(d, doors, across ? ax : al, at - inward * wt / 2, across ? al : ax, floor, sg);
+            bool WBox1(DesignMesh into, double sa, double sb, double o0, double o1, double u0, double u1, string col)
             {
                 var probe = Pt((sa + sb) / 2, -0.3, (u0 + u1) / 2);
                 double x0 = at + inward * o0, x1 = at + inward * o1;
                 if (x1 < x0) (x0, x1) = (x1, x0);
-                return across ? Box(into, x0, x1, sa, sb, u0, u1, col, probe) : Box(into, sa, sb, x0, x1, u0, u1, col, probe);
+                return across ? Box(into, x0, x1, sa, sb, u0, u1, col, probe, true) : Box(into, sa, sb, x0, x1, u0, u1, col, probe, true);
             }
+            bool WBox(DesignMesh into, double sa, double sb, double o0, double o1, double u0, double u1, string col)
+            {
+                var any = false;
+                AroundHoles(sa, sb, u0, u1, holes, 0, (a, b2, c, e) => any |= WBox1(into, a, b2, o0, o1, c, e, col));
+                return any;
+            }
+            // Its doors' frames: a lining through the shell and an architrave over the panels' cut ends.
+            DoorFrames(holes, s0, s1, FL - 0.009, H, -wt + 0.004, P + 0.04, (a, b2, c, e, o0, o1, col) => WBox1(m, a, b2, o0, o1, c, e, col), pFrame, tHex);
             // Columns: between the ribs on a side wall, about a metre on an end wall.
             var cuts = new List<double> { s0 };
             if (across)
@@ -206,7 +217,7 @@ public static partial class DesignScene
                 {
                     // A vent box: a housing high on the wall with grille slats across it.
                     double vm = (sa + sb) / 2, vu = Math.Min(H - 0.45, 1.85);
-                    if (WBox(m, vm - 0.28, vm + 0.28, P + 0.008, P + 0.08, vu, vu + 0.3, pDark))
+                    if (!holes.Any(o => vm + 0.28 > o.S0 - 0.1 && vm - 0.28 < o.S1 + 0.1 && vu + 0.3 > o.H0 - 0.1 && vu < o.H1 + 0.1) && WBox(m, vm - 0.28, vm + 0.28, P + 0.008, P + 0.08, vu, vu + 0.3, pDark))
                         for (var k = 0; k < 4; k++)
                             WBox(m, vm - 0.24, vm + 0.24, P + 0.08, P + 0.095, vu + 0.04 + k * 0.065, vu + 0.075 + k * 0.065, groove);
                 }

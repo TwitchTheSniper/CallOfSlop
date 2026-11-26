@@ -22,7 +22,7 @@ public static partial class DesignScene
     /// </summary>
     /// <returns>The panel size used: the body's own, or larger when its cladding wouldn't fit <see cref="MaxCladTris"/> (2026-11-25: the cap
     /// used to cut the cladding off part way, leaving most of a big hull bare; now the whole body is always covered, in bigger panels).</returns>
-    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked)
+    private static double CladBody(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, Func<(double, double, double), (double, double, double), bool> nearCut, Func<(double, double, double), bool> fine)
     {
         CladFitSize = 0;
         var own = Math.Clamp(h.CladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
@@ -30,7 +30,7 @@ public static partial class DesignScene
         var start = m.Tris;
         for (var tries = 0; ; tries++)
         {
-            CladBodyAt(m, h, cx, blocked, size);
+            CladBodyAt(m, h, cx, new(blocked, nearCut, fine), size);
             var made = m.Tris - start;
             if (made <= MaxCladTris)
                 break;
@@ -53,7 +53,7 @@ public static partial class DesignScene
         return size;
     }
 
-    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, Func<(double, double, double), (double, double, double), bool> blocked, double size)
+    private static void CladBodyAt(DesignMesh m, HullBody h, double cx, CladMask blocked, double size)
     {
         var heavy = h.Clad == "Heavy";
         var hex = h.Clad == "Hex";
@@ -246,16 +246,115 @@ public static partial class DesignScene
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        Func<(double, double, double), (double, double, double), bool> blocked, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
     {
         var taken = new bool[nu, nv];
+        var trim = new bool[nu, nv];
+        var any = false;
         for (var a = 0; a < nu; a++)
             for (var b = 0; b < nv; b++)
             {
                 double u0 = (double)a / nu, u1 = (double)(a + 1) / nu, v0 = (double)b / nv, v1 = (double)(b + 1) / nv;
-                taken[a, b] = blocked(W(u0, v0, 0), W(u1, v1, 0)) || blocked(W(u1, v0, 0), W(u0, v1, 0));
+                var (p0, p1, p2, p3) = (W(u0, v0, 0), W(u1, v1, 0), W(u1, v0, 0), W(u0, v1, 0));
+                taken[a, b] = mask.Blocked(p0, p1) || mask.Blocked(p2, p3);
+                // A cell an opening reaches is trimmed round it, not dropped (Karl, 2026-11-25); hex tiles still drop whole.
+                if (!taken[a, b] && (mask.Near(p0, p1) || mask.Near(p2, p3)))
+                {
+                    taken[a, b] = true;
+                    trim[a, b] = !hex;
+                    any |= !hex;
+                }
             }
+        // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
+        var trng = new Random(rng.Next());
         LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed);
+        if (!any)
+            return;
+        for (var a = 0; a < nu; a++)
+            for (var b = 0; b < nv; b++)
+                if (trim[a, b])
+                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed);
+    }
+
+    /// <summary>What may hold cladding: Blocked cells stay bare, Near cells (an opening's clearance reaches them) are trimmed point by point with Fine.</summary>
+    private sealed record CladMask(Func<(double, double, double), (double, double, double), bool> Blocked,
+        Func<(double, double, double), (double, double, double), bool> Near, Func<(double, double, double), bool> Fine);
+
+    /// <summary>
+    /// One cell an opening reaches, as a plate trimmed round it (Karl, 2026-11-25: whole plates dropped left a big bare square round a
+    /// porthole): the cell split into a fine grid (about 5 cm, at most 20 a side), a sub-cell left bare when any corner or its middle is in the
+    /// opening's clearance, the rest laid as rows of strips at one height (runs merged across, equal runs merged along), seamed at the cell's
+    /// edge, a skirt on every edge that borders bare.
+    /// </summary>
+    private static void TrimCell(DesignMesh m, int a, int b, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
+        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
+    {
+        double cw = arc / nu, cl = len / nv;
+        int nx = Math.Clamp((int)Math.Ceiling(cw / 0.05), 2, 20), ny = Math.Clamp((int)Math.Ceiling(cl / 0.05), 2, 20);
+        double du = CladSeam / arc, dv = CladSeam / len;
+        double ua = (double)a / nu + du, ub = (double)(a + 1) / nu - du, va = (double)b / nv + dv, vb = (double)(b + 1) / nv - dv;
+        if (ub <= ua || vb <= va)
+            return;
+        double U(int i) => ua + (ub - ua) * i / nx;
+        double V(int j) => va + (vb - va) * j / ny;
+        var free = new bool[nx, ny];
+        var pts = new bool[nx + 1, ny + 1];
+        for (var i = 0; i <= nx; i++)
+            for (var j = 0; j <= ny; j++)
+                pts[i, j] = fine(W(U(i), V(j), 0));
+        var anyFree = false;
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < ny; j++)
+            {
+                free[i, j] = !(pts[i, j] || pts[i + 1, j] || pts[i, j + 1] || pts[i + 1, j + 1] || fine(W((U(i) + U(i + 1)) / 2, (V(j) + V(j + 1)) / 2, 0)));
+                anyFree |= free[i, j];
+            }
+        var rise = (heavy ? 0.20 : 0.08) - CladMin;
+        var hgt = Math.Max((CladMin + rise * rng.NextDouble()) * depth, 0.006);
+        var tone = 0.88 + 0.18 * rng.NextDouble();
+        if (!anyFree)
+            return;
+        var pc = paint?.Invoke((ua + ub) / 2, (va + vb) / 2, b * 64 + a) ?? col;
+        var fx = Fx(damage, dseed, W((ua + ub) / 2, (va + vb) / 2, 0));
+        if (fx.Gone)
+            return;
+        var top = DesignMesh.Tone(pc, tone * fx.Tone);
+        var side = DesignMesh.Tone(pc, tone * 0.72 * fx.Tone);
+        (double, double, double) T(double u, double v) => W(u, v, hgt);
+        (double, double, double) S(double u, double v) => W(u, v, -CladSink);
+        // Tops: runs across each row, a run carried along while the next row has the same.
+        var done = new bool[nx, ny];
+        for (var j = 0; j < ny; j++)
+            for (var i = 0; i < nx; i++)
+            {
+                if (!free[i, j] || done[i, j])
+                    continue;
+                var i1 = i;
+                while (i1 + 1 < nx && free[i1 + 1, j] && !done[i1 + 1, j])
+                    i1++;
+                var j1 = j;
+                while (j1 + 1 < ny && Enumerable.Range(i, i1 - i + 1).All(k => free[k, j1 + 1] && !done[k, j1 + 1]) && (i == 0 || !free[i - 1, j1 + 1]) && (i1 == nx - 1 || !free[i1 + 1, j1 + 1]))
+                    j1++;
+                for (var x = i; x <= i1; x++)
+                    for (var y = j; y <= j1; y++)
+                        done[x, y] = true;
+                m.Quad(T(U(i), V(j)), T(U(i1 + 1), V(j)), T(U(i1 + 1), V(j1 + 1)), T(U(i), V(j1 + 1)), top, false);
+            }
+        // Skirts on every sub-cell edge between plate and bare (or the cell's edge), the same winding as LayPlates.
+        for (var i = 0; i < nx; i++)
+            for (var j = 0; j < ny; j++)
+            {
+                if (!free[i, j])
+                    continue;
+                if (j == 0 || !free[i, j - 1])
+                    m.Quad(S(U(i), V(j)), S(U(i + 1), V(j)), T(U(i + 1), V(j)), T(U(i), V(j)), side, false);
+                if (j == ny - 1 || !free[i, j + 1])
+                    m.Quad(S(U(i), V(j + 1)), S(U(i + 1), V(j + 1)), T(U(i + 1), V(j + 1)), T(U(i), V(j + 1)), side, false);
+                if (i == 0 || !free[i - 1, j])
+                    m.Quad(S(U(i), V(j)), S(U(i), V(j + 1)), T(U(i), V(j + 1)), T(U(i), V(j)), side, false);
+                if (i == nx - 1 || !free[i + 1, j])
+                    m.Quad(S(U(i + 1), V(j)), S(U(i + 1), V(j + 1)), T(U(i + 1), V(j + 1)), T(U(i + 1), V(j)), side, false);
+            }
     }
 
     /// <summary>
@@ -682,6 +781,7 @@ public static partial class DesignScene
 
     /// <summary>The most triangles one room's wall cladding and floor dressing may add together; past it the rest is left plain.</summary>
     public const int MaxShellDressTris = 9000;
+    const double CorridorFrame = 1.35; // the Corridor lining's frame spacing, m
 
     /// <summary>How far in from its box a room's shell reaches (0 without one): the interior cladding starts there.</summary>
     public static double ShellDepth(Room r)
@@ -854,8 +954,17 @@ public static partial class DesignScene
             foreach (var (n, f, inw, w, w0, w1) in walls)
             {
                 double[] At(double s, double hh, double dd) { var v = new double[3]; v[n] = f + inw * dd; v[w] = s; v[up] = Up(hh); return v; }
-                // A box of relief, s along the wall, h up, d out of it (embedded 5 mm in the wall, so its back never meets the face).
+                // The doors through this wall, as openings in its (s, h) (Karl, 2026-11-25: cladding runs right up to them).
+                var holes = DoorHoles(d, doors, n, f - inw * t / 2, w, fl, sg);
+                // A box of relief, cut round the doors' openings: the pieces left beside, under and over each.
                 bool Rel(double s0, double s1, double h0, double h1, double dd, string col)
+                {
+                    var any = false;
+                    AroundHoles(s0, s1, h0, h1, holes, 0, (a, b2, c, e) => any |= Rel1(a, b2, c, e, dd, col));
+                    return any;
+                }
+                // One box of relief, s along the wall, h up, d out of it (embedded 5 mm in the wall, so its back never meets the face).
+                bool Rel1(double s0, double s1, double h0, double h1, double dd, string col)
                 {
                     if (budget < 12 || s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
                         return false;
@@ -965,7 +1074,7 @@ public static partial class DesignScene
                             {
                                 if (budget < 4)
                                     break;
-                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)))
+                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)) || holes.Any(o => s > o.S0 - R && s < o.S1 + R && hh > o.H0 - R && hh < o.H1 + R))
                                     continue;
                                 const double rr = R * 0.9;
                                 (double, double, double) Pt(double ang, double dd) { var v = At(s + rr * Math.Cos(ang), hh + rr * Math.Sin(ang), dd); return (v[0], v[1], v[2]); }
@@ -978,6 +1087,39 @@ public static partial class DesignScene
                                 m.Quad(p[0], p[3], p[4], p[5], c, false);
                                 budget -= 4; // the page draws both sides
                             }
+                        break;
+                    }
+                    case "Corridor":
+                    {
+                        // A ship corridor (Karl, 2026-11-25): arch frames every ~1.35 m (met by the ceiling's below), recessed
+                        // panels between, a kick plate, a cable tray under the ceiling and a light strip in each top corner.
+                        var ns = Math.Max(1, (int)Math.Round(len / CorridorFrame));
+                        Run(w0, w1, bot, bot + 0.16, 0.035, hDark);                       // kick plate
+                        Run(w0, w1, bot + 0.163, bot + 0.185, 0.045, brass);               // its trim
+                        for (var i = 0; i <= ns; i++)
+                        {
+                            var s = w0 + len * i / ns;
+                            Rel(s - 0.07, s + 0.07, bot, top, 0.085, metal);              // the frame's leg
+                            Rel(s - 0.035, s + 0.035, bot + 0.25, top - 0.55, 0.098, hDark); // its rib
+                        }
+                        for (var i = 0; i < ns; i++)
+                        {
+                            double s0 = w0 + len * i / ns + 0.075, s1 = w0 + len * (i + 1) / ns - 0.075;
+                            // The recessed panel: a frame around a face set back from it.
+                            Rel(s0, s1, bot + 0.19, top - 0.5, 0.012, hLight);
+                            Rel(s0 + 0.003, s1 - 0.003, bot + 0.19, bot + 0.25, 0.034, hMid);
+                            Rel(s0 + 0.003, s1 - 0.003, top - 0.56, top - 0.5, 0.034, hMid);
+                            if (rnd.NextDouble() < 0.35)
+                                Rel((s0 + s1) / 2 - 0.12, (s0 + s1) / 2 + 0.12, bot + 1.05, bot + 1.3, 0.02, hDark); // a service hatch
+                        }
+                        // The cable tray: a shelf, its lip and two cable runs on it.
+                        Run(w0, w1, top - 0.42, top - 0.39, 0.16, metal);
+                        Run(w0, w1, top - 0.387, top - 0.33, 0.165, metal);
+                        Run(w0, w1, top - 0.385, top - 0.34, 0.09, pipe);
+                        Run(w0, w1, top - 0.385, top - 0.355, 0.135, "#a0442c");
+                        // The light strip where wall meets ceiling.
+                        Run(w0, w1, top - 0.06, top - 0.024, 0.05, "#f2f6ff");
+                        Run(w0, w1, top - 0.02, top, 0.06, hDark);
                         break;
                     }
                     case "Industrial":
@@ -1001,6 +1143,36 @@ public static partial class DesignScene
                         break;
                     }
                 }
+                // A frame lining each opening's sides and head through the wall, its architrave over the cladding's cut ends.
+                DoorFrames(holes, w0, w1, bot, cBot, -t + 0.004, 0.052, (s0, s1, h0, h1, d0, d1, c) =>
+                {
+                    if (budget < 12) return;
+                    var c0 = At(s0, h0, d0);
+                    var c1 = At(s1, h1, d1);
+                    m.Box(Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2]), Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2]), c);
+                    budget -= 12;
+                }, metal, hDark);
+            }
+            // The corridor's arches close over the ceiling, across its narrow way, at the frames' spacing along its long way.
+            if (r.WallStyle == "Corridor")
+            {
+                bool longAl = il1 - il0 >= ia1 - ia0;
+                double l0 = longAl ? il0 : ia0, l1 = longAl ? il1 : ia1, c0 = longAl ? ia0 : il0, c1 = longAl ? ia1 : il1;
+                var ns = Math.Max(1, (int)Math.Round((l1 - l0) / CorridorFrame));
+                for (var i = 0; i <= ns && budget >= 24; i++)
+                {
+                    var s = l0 + (l1 - l0) * i / ns;
+                    double[] P(double c, double sAt, double h) => longAl ? V(c, sAt, Up(h)) : V(sAt, c, Up(h));
+                    void B(double[] p, double[] q, string col)
+                    {
+                        m.Box(Math.Min(p[0], q[0]), Math.Min(p[1], q[1]), Math.Min(p[2], q[2]), Math.Max(p[0], q[0]), Math.Max(p[1], q[1]), Math.Max(p[2], q[2]), col);
+                        budget -= 12;
+                    }
+                    // Between the legs (4 mm short of their faces) and 5 mm into the ceiling; the rib a little lower.
+                    double sa = Math.Max(s - 0.07, l0 + 0.004), sb = Math.Min(s + 0.07, l1 - 0.004);
+                    B(P(c0 + 0.089, sa + 0.002, cBot + 0.005), P(c1 - 0.089, sb - 0.002, cBot - 0.085), metal);
+                    B(P(c0 + 0.24, s - 0.033, cBot - 0.08), P(c1 - 0.24, s + 0.033, cBot - 0.103), hDark);
+                }
             }
         }
 
@@ -1008,6 +1180,80 @@ public static partial class DesignScene
         if (r.Floor is not ("Plates" or "Hex"))
             FloorDress(d, r, m, V, Up, ia0 + 0.004, ia1 - 0.004, il0 + 0.004, il1 - 0.004, fTop, ax, al, rnd, ref budget);
         return m;
+    }
+
+    /// <summary>The doors through a wall whose middle plane is at plane on axis n, as openings in its (s along axis w, h up from the floor
+    /// at fl, sg the way up): the shell's door clearance, 0.55 m either side and 0.3 m under to 2.1 m over the door's point.</summary>
+    internal static List<(double S0, double S1, double H0, double H1)> DoorHoles(ShipDesign d, List<double[]> doors, int n, double plane, int w, double fl, double sg)
+    {
+        var up = d.Stacked ? 2 : 1;
+        var o = new List<(double, double, double, double)>();
+        foreach (var q in doors)
+            if (Math.Abs(plane - q[n]) < 0.55)
+            {
+                var hc = sg * (q[up] - fl);
+                o.Add((q[w] - 0.55, q[w] + 0.55, hc - 0.3, hc + 2.1));
+            }
+        return o;
+    }
+
+    /// <summary>A wall piece (s0..s1, h0..h1) less the openings from index i on: emit gets what is left beside, under and over each.</summary>
+    internal static void AroundHoles(double s0, double s1, double h0, double h1, List<(double S0, double S1, double H0, double H1)> holes, int i,
+        Action<double, double, double, double> emit)
+    {
+        if (s1 - s0 < 1e-3 || h1 - h0 < 1e-3)
+            return;
+        if (i >= holes.Count)
+        {
+            emit(s0, s1, h0, h1);
+            return;
+        }
+        var o = holes[i];
+        if (s1 <= o.S0 || s0 >= o.S1 || h1 <= o.H0 || h0 >= o.H1)
+        {
+            AroundHoles(s0, s1, h0, h1, holes, i + 1, emit);
+            return;
+        }
+        AroundHoles(s0, Math.Min(s1, o.S0), h0, h1, holes, i + 1, emit);
+        AroundHoles(Math.Max(s0, o.S1), s1, h0, h1, holes, i + 1, emit);
+        double m0 = Math.Max(s0, o.S0), m1 = Math.Min(s1, o.S1);
+        AroundHoles(m0, m1, h0, Math.Min(h1, o.H0), holes, i + 1, emit);
+        AroundHoles(m0, m1, Math.Max(h0, o.H1), h1, holes, i + 1, emit);
+    }
+
+    /// <summary>
+    /// Frames for a wall's openings (Karl, 2026-11-25): a lining 37 mm thick on each side and the head, from back (in the wall) to just
+    /// short of front, and an architrave 12 cm wide over the cladding's cut ends, front proud of the wall face. Head and jambs differ in
+    /// their faces by 3-4 mm where they overlap, so none are coplanar. box gets (s0, s1, h0, h1, d0, d1, colour).
+    /// </summary>
+    internal static void DoorFrames(List<(double S0, double S1, double H0, double H1)> holes, double w0, double w1, double bot, double top,
+        double back, double front, Action<double, double, double, double, double, double, string> box, string lining, string trim)
+    {
+        back = Math.Min(back, -0.004);
+        foreach (var o in holes)
+        {
+            var head = o.H1 < top - 0.06;
+            double jt = head ? o.H1 - 0.003 : top - 0.004, ft = head ? Math.Min(o.H1 + 0.08, top - 0.004) : top - 0.004;
+            if (o.S0 > w0 + 0.1 && o.S0 < w1)
+            {
+                box(o.S0 + 0.003, o.S0 + 0.04, bot + 0.004, jt, back, front - 0.012, lining);
+                box(o.S0 - 0.08, o.S0 + 0.043, bot + 0.004, ft, -0.005, front, trim);
+            }
+            if (o.S1 < w1 - 0.1 && o.S1 > w0)
+            {
+                box(o.S1 - 0.04, o.S1 - 0.003, bot + 0.004, jt, back, front - 0.012, lining);
+                box(o.S1 - 0.043, o.S1 + 0.08, bot + 0.004, ft, -0.005, front, trim);
+            }
+            if (head)
+            {
+                double a = Math.Max(o.S0, w0 + 0.004), b = Math.Min(o.S1, w1 - 0.004);
+                if (b - a > 0.1)
+                {
+                    box(a + 0.041, b - 0.041, o.H1 - 0.04, o.H1 - 0.003, back, front - 0.012, lining);
+                    box(Math.Max(o.S0 - 0.083, w0 + 0.004), Math.Min(o.S1 + 0.083, w1 - 0.004), o.H1 - 0.043, Math.Min(o.H1 + 0.083, top - 0.004), -0.005, front + 0.004, trim);
+                }
+            }
+        }
     }
 
     /// <summary>A room's floor in one of the dressings (Karl, 2026-11-25): its pieces in plan a (across) and l (along), u up from what it lies on.</summary>
