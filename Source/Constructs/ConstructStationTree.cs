@@ -265,7 +265,7 @@ public static partial class ConstructStationTree
     {
         ConstructStation.Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(body.WorldCom - floor, Quaternion.Conjugate(rot));
-        return MathF.Abs(local.X) <= bay.X * 0.5f + HandReach && MathF.Abs(local.Z) <= bay.Z * 0.5f + HandReach && local.Y > -HandReach && local.Y < bay.Y + HandReach;
+        return MathF.Abs(local.X) <= bay.X * 0.5f + HandReach && MathF.Abs(local.Z) <= bay.Z * 0.5f + HandReach && local.Y > -HandReach && local.Y < ConstructStation.InTop(bay) + HandReach;
     }
 
     public const int LooseLooks = 8; // bodies near the bay a look checks for a use at most
@@ -287,7 +287,7 @@ public static partial class ConstructStationTree
             if (b.Uses == null || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Driver != 255 || b.Anchored || b.Id == j.Body || b.PartCount > row.Steps)
                 continue;
             var local = Vector3.Transform(b.WorldCom - floor, inv);
-            if (MathF.Abs(local.X) > bay.X * 0.5f + HandReach || MathF.Abs(local.Z) > bay.Z * 0.5f + HandReach || local.Y < -HandReach || local.Y > bay.Y + HandReach)
+            if (MathF.Abs(local.X) > bay.X * 0.5f + HandReach || MathF.Abs(local.Z) > bay.Z * 0.5f + HandReach || local.Y < -HandReach || local.Y > ConstructStation.InTop(bay) + HandReach)
                 continue;
             if (b.SubStamp != 0 && b.SubStamp != j.Stamp || !Factions.Shares(b.Owner, c.Owner) && b.Owner != 255)
                 continue; // (another station's sub-job body, or someone else's)
@@ -370,7 +370,7 @@ public static partial class ConstructStationTree
                 continue;
             ConstructStation.Bay(c, s, out var floor, out _, out _);
             var touch = BaysTouch(c, t, s);
-            score[n] = (touch ? 0 : 1e9f) + bay.X * bay.Y * bay.Z * 1000f + Vector3.Distance(floor, rootFloor);
+            score[n] = (touch ? 0 : 1e9f) + bay.X * ConstructStation.InTop(bay) * bay.Z * 1000f + Vector3.Distance(floor, rootFloor);
             cand[n++] = s;
         }
         if (n == 0 && LinkSub.Offer(world, c, t, j, r, tag))

@@ -134,6 +134,9 @@ public sealed partial class Construct
     internal int StationDockStamp = -1, StationDockCount = -1;
     internal ushort[] StationDockParts = [];
     internal int StationDockN;
+    // Each Building Station's clear height over its bay (ConstructStation.ClearHeight), by part, again at a change of its parts.
+    internal int BayClearStamp = int.MinValue, BayClearParts = -1;
+    internal Dictionary<int, float>? BayClear;
 }
 
 /// <summary>

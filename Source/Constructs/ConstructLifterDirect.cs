@@ -67,7 +67,7 @@ public static partial class ConstructLifters
             if (kind < 0 || job.KindNeed[kind] - job.KindFit[kind] <= 0 || !ConstructRecycler.Powered(world, b, p))
                 continue; // (the build doesn't use the kind, or every one is fitted or claimed)
             ConstructStation.Bay(b, p, out var floor, out _, out var bay);
-            if (Vector3.Distance(floor, shoulder) > ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down)
+            if (Vector3.Distance(floor, shoulder) > ld.ReachMax + ld.Travel + ConstructStation.FloorRadius(bay) + ld.Down)
                 continue;
             var looked = 0;
             for (var k = job.Cursor; k < job.PartOf.Length && looked < ConstructStation.OfferLooks; k++)

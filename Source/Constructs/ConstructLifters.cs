@@ -710,7 +710,7 @@ public static partial class ConstructLifters
                 if (world.StoreOf(sc, t) is not { } tray || !ConstructRecycler.Powered(world, sc, t))
                     continue;
                 ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
-                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down)
+                if (Vector3.Distance(floor, shoulder) > ld.ReachMax + ld.Travel + ConstructStation.FloorRadius(bay) + ld.Down)
                     continue;
                 // The pick: the nearest point along the hold's side the empty hand reaches, a hand's height over its floor (the user, 2026-11-13).
                 // Phase 5: or a pick pad (a Lay-down Pad among its points) that holds the step's part, for a bay longer than the hold's side reaches.

@@ -153,25 +153,111 @@ public static partial class ConstructStation
 
     /// <summary>
     /// The bay's size (across, away from the Core; up; along) from the station's assembly (design page drawing 18; MachineBlocks.cs): its floor is
-    /// the largest full rectangle of Bay Blocks beside the Core, its height the shortest of the Mast Blocks stacked on that rectangle's four
-    /// corners (<see cref="MastStep"/> a block), <see cref="LowBay"/> with none. Zero with no rectangle: weld Bay Blocks beside the Core.
+    /// the largest full rectangle of Bay Blocks beside the Core, its height the clear space over that floor up to the first part of the body that
+    /// stands over it (a roof, a girder, a walkway), <see cref="OpenSky"/> with nothing over it (Sean, 2026-11-26: bays have no height of their
+    /// own; a build fits as long as nothing stands in its way overhead and its rovers can reach it). Zero with no rectangle: weld Bay Blocks
+    /// beside the Core.
     /// </summary>
     public static Vector3 BaySize(Construct c, int part)
     {
         if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
             return Vector3.Zero;
         var cell = c.Parts[asm.Core].D.BlockCell;
-        var masts = MachineBlocks.CornerColumns(c, asm);
-        return new Vector3(asm.W * cell, masts > 0 ? masts * MastStep : LowBay, asm.L * cell);
+        return new Vector3(asm.W * cell, ClearHeight(c, part, asm.W * cell, asm.L * cell), asm.L * cell);
     }
 
-    public const float MastStep = 2f; // m of bay height a Mast Block stacked on each corner adds
-    public const float LowBay = 2f; // m: a bay with no masts builds things this low
+    public const float OpenSky = 200f; // m: the height of a bay with nothing over it (what limits a build then is its rovers' reach: LoaderRefusal)
+    public const float OverheadFrom = 0.3f; // m: a part over the bay counts as overhead when its underside is at least this far over the floor (lower ones stand on it)
+    private const float OverheadInset = 0.1f; // m: a part over the bay's edge by less than this (a wall or a rail beside it) doesn't count
     public const int MaxArms = 16; // docks a station takes (the Core and 15 Dock Expansions; ArmStep is this long, and the wire sends a rover by its index)
 
-    /// <summary>The side of the corner cells a build may not take (the masts stand there), or 0 when the bay has no masts.</summary>
-    public static float BayCorner(Construct c, int part) =>
-        MachineBlocks.TryOf(c, part, out var asm) && asm.W > 0 && MachineBlocks.CornerColumns(c, asm) > 0 ? c.Parts[asm.Core].D.BlockCell : 0f;
+    public const float NearTop = 32f; // m: how high over the floor a body still counts as in the bay (a bay open to the sky: a craft lifting off has left it)
+
+    /// <summary>How high over the bay's floor a body or a part still counts as in the bay: its clear height, at most <see cref="NearTop"/>.</summary>
+    public static float InTop(Vector3 bay) => MathF.Min(bay.Y, NearTop);
+
+    /// <summary>Half the bay floor's diagonal: what a lifter's reach test adds for the bay (never the height: an open bay is 200 m).</summary>
+    public static float FloorRadius(Vector3 bay) => MathF.Sqrt(bay.X * bay.X + bay.Z * bay.Z) * 0.5f;
+
+    /// <summary>Is the bay open to the sky (nothing of its body stands over it)?</summary>
+    public static bool IsOpen(Vector3 bay) => bay.Y >= OpenSky - 0.01f;
+
+    /// <summary>A bay's height as words: "open above", or "12.0 m high".</summary>
+    public static string HeightText(Vector3 bay) => IsOpen(bay) ? "open above" : $"{bay.Y:0.0} m high";
+
+    private static readonly int[] OverheadScratch = new int[Construct.MaxParts];
+
+    /// <summary>
+    /// The clear height over station <paramref name="part"/>'s bay floor (<paramref name="w"/> across, <paramref name="l"/> along): the lowest
+    /// underside of any part of its body over the floor, but the station's own blocks (Bay Blocks, masts), lifters (they carry over it) and
+    /// parts standing on the floor. Kept per body while its structure holds (<see cref="Construct.StructStamp"/>: not a piece growing on a
+    /// die), so asking it each tick costs a dictionary look; measured through the part tree. Either peer, the same.
+    /// </summary>
+    private static float ClearHeight(Construct c, int part, float w, float l)
+    {
+        if (c.BayClearStamp != c.StructStamp || c.BayClearParts != c.PartCount)
+        {
+            (c.BayClearStamp, c.BayClearParts) = (c.StructStamp, c.PartCount);
+            (c.BayClear ??= new()).Clear();
+        }
+        else if (c.BayClear!.TryGetValue(part, out var kept))
+            return kept;
+        var h = MeasureClear(c, part, w, l);
+        c.BayClear[part] = h;
+        return h;
+    }
+
+    private static float MeasureClear(Construct c, int part, float w, float l)
+    {
+        Freeform.PartWorld(c, part, out var pos, out var rot);
+        var floor = pos + Vector3.Transform(BayFloor(c, part), rot);
+        var inv = Quaternion.Conjugate(rot);
+        var me = MachineBlocks.AsmOf(c, part);
+        float hx = w * 0.5f - OverheadInset, hz = l * 0.5f - OverheadInset;
+        // The column over the bay as a box in the body's frame, for the part tree.
+        var binv = Quaternion.Conjugate(c.Rot);
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var k = 0; k < 8; k++)
+        {
+            var p = Vector3.Transform(floor + Vector3.Transform(new Vector3((k & 1) == 0 ? -hx : hx, (k & 2) == 0 ? OverheadFrom : OpenSky, (k & 4) == 0 ? -hz : hz), rot) - c.Pos, binv);
+            lo = Vector3.Min(lo, p);
+            hi = Vector3.Max(hi, p);
+        }
+        var n = c.PartsInBox(lo, hi, OverheadScratch);
+        var best = OpenSky;
+        for (var q = 0; q < n; q++)
+        {
+            var i = OverheadScratch[q];
+            if (i == part || i >= c.PartCount || c.Parts[i].Broken || me >= 0 && MachineBlocks.AsmOf(c, i) == me)
+                continue;
+            var d = c.DefOf(i);
+            if (d.Lifter != null || d.ArmPiece != ArmPieceKind.None)
+                continue; // (a crane or an arm, and a kit arm's pieces, carry over the bay: loaders, not a roof)
+            Freeform.PartWorld(c, i, out var pp, out var pr);
+            var centre = Vector3.Transform(pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr) - floor, inv);
+            var turn = inv * pr;
+            var e = (d.BoundsMax - d.BoundsMin) * 0.5f;
+            var ax = Vector3.Abs(Vector3.Transform(Vector3.UnitX, turn)) * e.X + Vector3.Abs(Vector3.Transform(Vector3.UnitY, turn)) * e.Y + Vector3.Abs(Vector3.Transform(Vector3.UnitZ, turn)) * e.Z;
+            if (MathF.Abs(centre.X) - ax.X >= hx || MathF.Abs(centre.Z) - ax.Z >= hz)
+                continue; // (beside the bay)
+            var under = centre.Y - ax.Y;
+            if (under >= OverheadFrom && under < best)
+                best = under;
+        }
+        return best;
+    }
+
+    /// <summary>The side of the corner cells a build may not take (masts stand there), or 0 when no corner of the bay has one.</summary>
+    public static float BayCorner(Construct c, int part)
+    {
+        if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
+            return 0f;
+        int x1 = asm.X0 + asm.W - 1, z1 = asm.Z0 + asm.L - 1;
+        var any = MachineBlocks.ColumnAt(c, asm, asm.X0, asm.Z0) > 0 || MachineBlocks.ColumnAt(c, asm, x1, asm.Z0) > 0
+            || MachineBlocks.ColumnAt(c, asm, asm.X0, z1) > 0 || MachineBlocks.ColumnAt(c, asm, x1, z1) > 0;
+        return any ? c.Parts[asm.Core].D.BlockCell : 0f;
+    }
 
     /// <summary>The bay in the world: the middle of its floor (the Bay Blocks' top), its turn, its size (x across, y up, z along).</summary>
     public static void Bay(Construct c, int part, out Vector3 floor, out Quaternion rot, out Vector3 size)
@@ -210,7 +296,9 @@ public static partial class ConstructStation
         if (fits)
             return null;
         var masts = corner > 0 ? $", less its {corner:0.#} m mast corners" : "";
-        return $"doesn't fit the bay: it is {need.X:0.0} x {need.Z:0.0} m and {need.Y:0.0} m high, the bay {bay.X:0.0} x {bay.Z:0.0} m{masts} and {bay.Y:0.0} m high (add Bay Blocks for room, Mast Blocks on its corners for height)";
+        return need.X <= bay.X + e && need.Z <= bay.Z + e && (corner <= 0 || need.X <= bay.X - 2 * corner + e || need.Z <= bay.Z - 2 * corner + e)
+            ? $"doesn't fit the bay: it is {need.Y:0.0} m high, and something of the station's body stands {bay.Y:0.0} m over the bay's floor (clear what is over the bay)"
+            : $"doesn't fit the bay: it is {need.X:0.0} x {need.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m{masts} (add Bay Blocks for room)";
     }
 
     /// <summary>
@@ -288,11 +376,11 @@ public static partial class ConstructStation
             var (p0, p1, p2) = Sorted(s);
             var (b0, b1, b2) = Sorted(bay);
             if (p0 > b0 + 0.01f || p1 > b1 + 0.01f || p2 > b2 + 0.01f)
-                return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high (add Bay Blocks for room, Mast Blocks on its corners for height)";
+                return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)} ({(IsOpen(bay) ? "add Bay Blocks for room" : "add Bay Blocks for room, or clear what is over the bay")})";
             volume += s.X * s.Y * s.Z;
         }
         return volume > room * 1.5
-            ? $"doesn't fit the bay: its {bp.Steps.Count} parts take about {volume:0} m3, the bay holds {room:0} m3 ({bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high: add Bay Blocks or Mast Blocks)"
+            ? $"doesn't fit the bay: its {bp.Steps.Count} parts take about {volume:0} m3, the bay holds {room:0} m3 ({bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)}: add Bay Blocks)"
             : null;
     }
 
@@ -325,7 +413,7 @@ public static partial class ConstructStation
         var size = BaySize(c, t);
         var sb = new System.Text.StringBuilder(c.DefOf(t).Name).Append(": ");
         if (j == null || j.State == StationState.Idle)
-            sb.Append($"bay {size.X:0.#} x {size.Z:0.#} x {size.Y:0.#} m, ").Append(ConstructCrafting.Sees(ConstructCrafting.NetOf(world, c, t)));
+            sb.Append($"bay {size.X:0.#} x {size.Z:0.#} m, {HeightText(size)}, ").Append(ConstructCrafting.Sees(ConstructCrafting.NetOf(world, c, t)));
         else
             sb.Append(StateText(j));
         if (!ConstructRecycler.Powered(world, c, t))
@@ -358,7 +446,11 @@ public static partial class ConstructStation
         {
             card.State = PanelState.Ok;
             var s = BaySize(c, part);
-            card.Add(1, "Bay ").AddShort(1, s.X).Add(1, 'x').AddShort(1, s.Z).Add(1, 'x').AddShort(1, s.Y);
+            card.Add(1, "Bay ").AddShort(1, s.X).Add(1, 'x').AddShort(1, s.Z);
+            if (IsOpen(s))
+                card.Add(1, " open");
+            else
+                card.Add(1, 'x').AddShort(1, s.Y);
             card.Add(3, "Use the screen:");
             card.Add(4, "pick a blueprint");
             return;
@@ -653,7 +745,7 @@ public static partial class ConstructStation
             if (b.PartCount != 1 || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Id == j.Body)
                 continue;
             var local = Vector3.Transform(b.WorldCom - floor, inv);
-            if (MathF.Abs(local.X) > bay.X * 0.5f || MathF.Abs(local.Z) > bay.Z * 0.5f || local.Y < -0.5f || local.Y > bay.Y)
+            if (MathF.Abs(local.X) > bay.X * 0.5f || MathF.Abs(local.Z) > bay.Z * 0.5f || local.Y < -0.5f || local.Y > InTop(bay))
                 continue;
             var kind = KindOf(j, b.Parts[0].Def);
             if (kind < 0 || j.KindFit[kind] + ConstructCrafting.Holds(tray, b.Parts[0].Def) >= j.KindNeed[kind])
@@ -1436,6 +1528,7 @@ public static partial class ConstructStation
         MakeKinds(j);
         LiftCost(j, run, built); // (each step's place on the body, for the lifters: ConstructLifters.cs)
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
+        var fresh = !j.Resume; // (a load's job was checked when it began)
         if (j.Resume)
         {
             j.Resume = false;
@@ -1474,6 +1567,11 @@ public static partial class ConstructStation
             j.Cursor = 0;
         }
         BuildOrder(c, t, j); // (the rovers' order: keel, under the lowest deck, deck by deck; and the build's keep-out ring)
+        if (fresh && LoaderRefusal(world, c, t, j) is { } loader)
+        {
+            Fail(world, c, t, j, loader); // (no rover or crane over the bay can lift or reach one of its parts: told before anything is ordered)
+            return;
+        }
         j.State = StationState.Building;
         ResetArms(world, c, j);
         j.FitTicks = World.TickRate / 2;
@@ -1524,7 +1622,7 @@ public static partial class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
         var r = b.Radius;
-        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
+        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > InTop(bay) + r || local.Y < -r;
     }
 
     /// <summary>Is the bay clear of the construct just built (Repeat waits for it)?</summary>
@@ -1535,7 +1633,7 @@ public static partial class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
         var r = b.Radius;
-        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
+        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > InTop(bay) + r || local.Y < -r;
     }
 
     /// <summary>

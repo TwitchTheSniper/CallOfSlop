@@ -121,7 +121,7 @@ public static class StationCheck
             {
                 var size = ConstructStation.BaySize(c, i);
                 var p = c.Parts[i].Pos;
-                Console.WriteLine($"  Building Station part {i} at {p.X:0.0}, {p.Z:0.0}: bay {size.X:0.#} x {size.Y:0.#} x {size.Z:0.#} m");
+                Console.WriteLine($"  Building Station part {i} at {p.X:0.0}, {p.Z:0.0}: bay {size.X:0.#} x {size.Z:0.#} m, {ConstructStation.HeightText(size)}");
                 var score = near is { } n ? -Vector2.Distance(n, new Vector2(p.X, p.Z)) : size.X * size.Z;
                 if (score > best)
                     (best, t) = (score, i);

@@ -217,7 +217,7 @@ public static partial class ConstructStation
             if (b.PartCount != 1 || b.HeldBy != 0 || b.GrabbedBy != 255 || !IsPlainSkin(b.DefOf(0)))
                 continue;
             var local = System.Numerics.Vector3.Transform(b.WorldCom - floor, inv);
-            if (MathF.Abs(local.X) <= bay.X * 0.5f && MathF.Abs(local.Z) <= bay.Z * 0.5f && local.Y >= -0.5f && local.Y <= bay.Y && into.Count < 64)
+            if (MathF.Abs(local.X) <= bay.X * 0.5f && MathF.Abs(local.Z) <= bay.Z * 0.5f && local.Y >= -0.5f && local.Y <= ConstructStation.InTop(bay) && into.Count < 64)
                 into.Add(b.DefOf(0));
         }
     }

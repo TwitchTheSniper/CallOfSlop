@@ -567,6 +567,8 @@ public static class RouteRender
         }
     }
 
+    private const float OpenPosts = 1.5f; // m: the corner posts of a bay open to the sky
+
     /// <summary>A Building Station's bay as an outline: amber looked at, red when the picked blueprint doesn't fit or the job failed, green while a build is on.</summary>
     private static void DrawBayBox(Renderer gfx, StationJob? j, Vector3 floor, Quaternion rot, Vector3 size)
     {
@@ -574,7 +576,10 @@ public static class RouteRender
             var frame = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(floor);
             var colour = BayBad || j is { State: StationState.Failed } ? new Vector3(1f, 0.25f, 0.2f) : building ? new Vector3(0.3f, 1f, 0.45f) : new Vector3(1f, 0.72f, 0.15f);
             const float t = 0.04f;
-            for (var y = 0; y < 2; y++)
+            var open = ConstructStation.IsOpen(size); // (nothing over the bay: its floor's outline and short corner posts, no lid in the sky)
+            if (open)
+                size.Y = OpenPosts;
+            for (var y = 0; y < (open ? 1 : 2); y++)
             {
                 var h = y == 0 ? t * 0.5f + 0.01f : size.Y;
                 for (var s = -1; s <= 1; s += 2)

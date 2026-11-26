@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Building Station",
-  "description": "A Building Station's Core: the dock for its first arm rover (a small one: 9 m reach, 8 t), and the console that builds a blueprint in its bay, part by part. Weld its mouth to the edge of a bay of Bay Blocks (up to 32 x 32), stack Mast Blocks on the bay's corners for height, and weld Dock Expansions along the bay's edge for more rovers. Rovers take pieces off pick pads and Part Pads beside the bay. Pick a blueprint on its screen. Needs power.",
+  "description": "A Building Station's Core: the dock for its first arm rover (a small one: 9 m reach, 8 t), and the console that builds a blueprint in its bay, part by part. Weld its mouth to the edge of a bay of Bay Blocks (up to 32 x 32) and weld Dock Expansions along the bay's edge for more rovers. A bay builds as high as is clear over it and its rovers can reach. Rovers take pieces off pick pads and Part Pads beside the bay. Pick a blueprint on its screen. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",
