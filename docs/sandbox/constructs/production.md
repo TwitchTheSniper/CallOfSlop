@@ -2221,8 +2221,11 @@ field. A run that ends in a tile of a field with no way on from it is carried ac
 of the same field that a run or a link starts from: one conveyor from tile to tile through each turn, laid by the server as a run's is
 (`RollerRuns.SyncCrossings`, `IsCrossing`; out of the first tile's face it leaves by, into the last tile's face it comes in by) and matched
 again after each rebuild; the log says "a turntable field carries pieces from tile A to tile B". Before, a piece waited for ever on the
-first tile. Not yet: a run doesn't carry a person along, and no run moves a piece sideways (the narrow lines' 2 m strips beside their
-formers and cutters, which the layout means pieces to cross side on).
+first tile. A crossing whose exit tile hands on only to a short run (under 4 cells) into a bed's Bed in ends in that bed instead, from
+the exit tile's middle, so a piece leaves the field sideways straight onto the Panel Former beside it. **Side beds:** a run with nothing
+butted on its out end and a bed lying along its long side (two rows or more, its Bed in on that side, not the machine it comes from)
+ends in that bed (`RollerRuns.SideBed`), at the bed's point along the run: the narrow lines' 2 m strip between a former's Out Tables and
+its Laser Cutter hands each piece sideways onto the cutter. Not yet: a run doesn't carry a person along.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
@@ -2544,9 +2547,16 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   keel), so one line ran; it now orders in batches (above, "The Core") and all four ovens start kits together, with every press and
   Assembler taking orders; early parts wait on their runs, never on the yard's pick pads. Two faults on the narrow lines came out on the
   way: their turntable fields had no way across (now crossings, "Roller Tiles" above), and their 10 x 3 Panel Formers had no bed (each
-  Core stood on the Out Table row, welded to Out Tables only; now by the up-flow row, as an oven's). Still open there: the layout moves
-  pieces sideways off the field onto a 2 m strip, across the former and onto the cutter, which no run does (an 8.3 m bar waits at the
-  field's exit); the wide lines' pieces wait at their Laser Cutters (another change); the Fuel Pump M's blank is too wide for its run.
+  Core stood on the Out Table row, welded to Out Tables only; now by the up-flow row, as an oven's). Pieces now go sideways off the field
+  onto the former and off its strip onto the cutter ("Side beds" above), and the strip past each narrow cutter's Out Tables, which butts
+  the station's dock, is laid as Pad Tiles: the line's end pick pad (`ZeroDayWorks2.Lay`). The west narrow line ran end to end (Lower Aft
+  Wall 3 and 5 built and baked). **An oven refuses a kit its station's end pads can't hold:** for a rover station, a kit piece kind that
+  fits none of the pads its own lines' bed machines drop onto (followed down their out runs, a turntable field's crossing included), or
+  of all its pick pads when no line drops onto one, is refused with "fits none of the pick pads" (`ConstructBakeOven.PadLacks`), so the
+  kit goes to another oven: the 2.75 m plates of Lower Aft Wall 4 waited for ever at the east narrow cutter, whose strip is 2 m deep,
+  and now bake on a wide line. Still open: most frigate walls have 3 m plates, so the narrow lines make only the walls whose plates are
+  2 m or less (asked of Sean: a deeper strip); the decks' 7.5 to 9.5 m plates fit no wide line's pad either, so nothing takes the deck
+  kits; the Fuel Pump M's blank is too wide for its run.
 - **Works II control row (2026-11-26).** Sean: "all of the line consoles for this entire factory are sitting next to each other in a
   line, so I can just walk through them all", on the open floor by the west gensets. Every Line Console stands in one row along z at
   x -45 from z -38.5 south, a desk every 1.5 m, screens east to the walk by the gensets (`ZeroDayWorks2.ControlRow.cs`); which machines
