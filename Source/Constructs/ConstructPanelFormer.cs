@@ -627,8 +627,9 @@ public static class ConstructPanelFormer
     /// <summary>
     /// Where a former is in its look (Sean, 2026-11-24: the Panel Former Lab's stretch former), worked out from its store each frame:
     /// a stroke runs from when the drawing first saw it at work (or back from its Progress, joined mid-stroke); a changeover runs when the
-    /// head order's panel shape is not the one the die shows. Stage 0 ready (or idle), 1 the jaws grip, 2 the die rises and wraps the
-    /// sheet, 3 it holds, 4 it lets go and sinks; 6 a changeover (<see cref="Morph"/> 0 to 1). All values 0 to 1.
+    /// head order's panel shape is not the one the die shows. Stage 0 ready (or idle; in a stroke, the blank rolling in), 1 the jaws grip,
+    /// 2 the die rises and wraps the sheet, 3 it holds, 4 it lets go and sinks, 5 the panel rolls out; 6 a changeover (<see cref="Morph"/>
+    /// 0 to 1). All values 0 to 1 but <see cref="Slide"/>.
     /// </summary>
     public struct FormPose
     {
@@ -639,11 +640,15 @@ public static class ConstructPanelFormer
         public float Hold; // the jaws ride with the sheet's edge height (1) or are back down at the roll line (0)
         public float Shape; // the sheet: 0 the flat blank, 1 the formed panel (the die's shape exactly)
         public float Morph; // a changeover's progress, or -1
+        public float Slide; // where the sheet's middle is along the bed: -1 at its in end (rolling in), 0 its middle, 1 its out end (rolling out)
         public DieInfo? Die, From; // the shape the die shows and, in a changeover, the one it leaves
     }
 
-    /// <summary>The fractions of a stroke each stage ends at: the jaws grip, the die wraps, holds, then lets go and sinks.</summary>
-    public const float GripEnd = 0.15f, WrapEnd = 0.6f, HoldEnd = 0.75f;
+    /// <summary>
+    /// The fractions of a stroke each stage ends at, as the Lab runs it: the blank rolls in, the jaws grip, the die wraps, holds, lets go and
+    /// sinks, and the panel rolls out to the bed's out end, where the server hands it to the out run.
+    /// </summary>
+    public const float RollEnd = 0.15f, GripEnd = 0.25f, WrapEnd = 0.6f, HoldEnd = 0.7f, ReleaseEnd = 0.85f;
     public const float ChangeSeconds = 4; // a changeover between two panels' shapes: the columns drop, wave to the new shape and the jaws set
     public const float DieBelow = 0.05f; // the die's highest point at rest, under the roll line
 
@@ -670,7 +675,10 @@ public static class ConstructPanelFormer
             }
             var dur = StrokeSeconds / MathF.Max(0.05f, d.ExtSpeed);
             if (st.Busy && (!st.StrokeOn || st.Progress + 10 < st.StrokeSeen))
+            {
                 (st.StrokeOn, st.StrokeSince) = (true, now - st.Progress / 100.0 * dur);
+                st.FormRollsOut = ConstructConveyor.Out(c, core) >= 0; // (with no out run the server drops the panel on the bed's middle: it stays there)
+            }
             else if (!st.Busy)
                 st.StrokeOn = false;
             st.StrokeSeen = st.Progress;
@@ -680,9 +688,19 @@ public static class ConstructPanelFormer
         if (st.StrokeOn)
         {
             var ph = (float)Math.Clamp((now - st.StrokeSince) / Math.Max(0.1, st.StrokeEnd), 0, 1);
-            (pose.Stage, pose.U) = ph < GripEnd ? (1, ph / GripEnd) : ph < WrapEnd ? (2, (ph - GripEnd) / (WrapEnd - GripEnd))
-                : ph < HoldEnd ? (3, (ph - WrapEnd) / (HoldEnd - WrapEnd)) : (4, (ph - HoldEnd) / (1 - HoldEnd));
+            (pose.Stage, pose.U) = ph < RollEnd ? (0, ph / RollEnd) : ph < GripEnd ? (1, (ph - RollEnd) / (GripEnd - RollEnd))
+                : ph < WrapEnd ? (2, (ph - GripEnd) / (WrapEnd - GripEnd)) : ph < HoldEnd ? (3, (ph - WrapEnd) / (HoldEnd - WrapEnd))
+                : ph < ReleaseEnd ? (4, (ph - HoldEnd) / (ReleaseEnd - HoldEnd)) : (5, (ph - ReleaseEnd) / (1 - ReleaseEnd));
             pose.U = Smooth(pose.U);
+            pose.Slide = pose.Stage == 0 ? pose.U - 1 : pose.Stage == 5 && st.FormRollsOut ? pose.U : 0;
+        }
+        else if (st.OnBed && st.Progress >= 100)
+        {
+            // Formed, waiting at the out end: its run out is full (or its offcut bin). A peer that joined or loaded while it waits never saw
+            // the stroke begin: it reads the out run here (only while it says none, so a former with a run reads it once).
+            if (!st.FormRollsOut)
+                st.FormRollsOut = ConstructConveyor.Out(c, core) >= 0;
+            (pose.Stage, pose.U, pose.Slide) = (5, 1, st.FormRollsOut ? 1 : 0);
         }
         else if (now - st.FormChangeAt < ChangeSeconds)
         {
@@ -699,7 +717,7 @@ public static class ConstructPanelFormer
         pose.Shape = pose.Stage switch
         {
             2 => hi > 0.01f ? Math.Clamp((hi - (1 - pose.Rise) * (DieBelow + hi)) / hi, 0, 1) : pose.Rise,
-            3 or 4 => 1,
+            3 or 4 or 5 => 1,
             _ => 0,
         };
         return pose;
@@ -869,6 +887,9 @@ public static class ConstructPanelFormer
         LaidBounds(def, own, out var lmin, out var lmax);
         var foot = (lmin + lmax) * 0.5f;
         foot.Y = lmin.Y;
+        // Rolling in from the bed's in end or out to its out end (the Lab's roll; the out run takes it from there).
+        var roll = pose.Slide * (alongX ? asm.W : asm.L) * d.BlockCell * 0.5f;
+        mid += asm.OutSide switch { 0 => new Vector3(roll, 0, 0), 1 => new Vector3(-roll, 0, 0), 4 => new Vector3(0, 0, roll), _ => new Vector3(0, 0, -roll) };
         at = mid + new Vector3(0, 0.004f, 0) - Rot24.Apply(bed, foot); // (on the lanes: 4 mm over the rollers' tops)
         if (formed && pose.Shape < 0.999f && blank != null)
         {

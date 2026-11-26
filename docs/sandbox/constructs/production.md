@@ -685,9 +685,12 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   tilted to the head order's panel shape (`ConstructPanelFormer.Die`: the key's surface as it lies, no depth cap). Two jaw sets: swing-out
   **end gates** (two half-gates each end, hinged on lift cylinders in the post zones) for shapes along the bed, and **side jaws** (a beam
   each side on thick carriages riding out-rigger rails through the slots, parked 0.4 m past the bed's edge) for shapes across it
-  (`DieInfo.SideGrip`). The stroke (`ConstructPanelFormer.Pose`, clocked on the store from when the drawing first saw it at work): the
-  jaws grip, the die rises and the sheet takes its shape exactly (the blank, then the panel drawn squashed toward it, `BedLook`), it
-  holds, the jaws let go and ease down, the die sinks. Columns past the sheet's edge stay down. **Pre-positioning**: while a blank rolls
+  (`DieInfo.SideGrip`). The stroke (`ConstructPanelFormer.Pose`, clocked on the store from when the drawing first saw it at work), as the
+  Lab runs it: the blank rolls in from the bed's in end, the jaws grip, the die rises and the sheet takes its shape exactly (the blank,
+  then the panel drawn squashed toward it, `BedLook`) while the end gates pull it 0.2 m out along the bed, it holds, the jaws let go and
+  ease down, the die sinks, and the panel rolls to the bed's out end, where the out run takes it (`FormPose.Slide`; with no out run the
+  panel stays on the bed's middle, where the server drops it). Each die column is its body, a face plate on its tilted top and thin
+  skins cut along the face's edge where it rises (a plate made thick along its tilted normal once stood out sideways over the bed). Columns past the sheet's edge stay down. **Pre-positioning**: while a blank rolls
   in, the set the head order needs waits at its sheet (the gates open at its ends, the side jaws 12 cm outside its edges), the other set
   stowed. A **changeover** (a head order of another shape, 4 s): the die sinks, its columns run a travelling wave (amplitude 0.5) while
   their tops tilt to the new shape, and the jaw sets move to the new panel's spots. A key with no shape (a kit's loft, a plain skin) has
