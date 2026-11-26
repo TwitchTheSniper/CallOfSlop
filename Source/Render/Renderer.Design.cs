@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// <summary>
 /// Ship design bodies (DesignParts.cs): a body's design elements as one merged, vertex-coloured triangle mesh in its frame (made by
 /// ConstructRenderDesign.cs), drawn with the box shader's own fragment shader (<see cref="InstancedFragment"/>), so the sun, sky, fog and lamps
-/// light it as they light the boxes round it. A vertex is its position, flat normal and colour (linear, kept as its square root).
+/// light it as they light the boxes round it. A vertex is its position, flat normal and colour (as the designer's sRGB, the way every box colour is given). Its triangles cast
+/// into the sun shadows, the dark interiors and the lamp shadows as shapes (SunShadows.AddDesign).
 /// </summary>
 public sealed unsafe partial class Renderer
 {
@@ -67,7 +68,7 @@ public sealed unsafe partial class Renderer
                     vBodyN = aNormal;
                     vUpL = vec3(uBody[0].y, uBody[1].y, uBody[2].y);
                     vModeI = 0.0;
-                    vColorI = vec4(aCol.rgb * aCol.rgb, 1.0);
+                    vColorI = vec4(aCol.rgb, 1.0);
                     vLayerI = 0.0;
                     gl_Position = uViewProj * w;
                 }
