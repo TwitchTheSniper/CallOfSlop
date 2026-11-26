@@ -788,7 +788,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 467: engine trains: the Turbopump Drive XS part file moves part ids (and a big train-fed pressed bell needs a fuel pump).
     // 468: the rover Building Station: a station's arms are rovers on the wire (dock count, rest poses, driving plans), the Dock Expansion part files move part ids.
     // 469: the Heavy Power Terminal part file moves part ids.
-    public const ushort ProtocolVersion = 469;
+    // 470: Works II press lines: a block Assembler's bed has Bed in / Bed out ports (pieces roll through it and a low press bed), the Servo Motor is pressed (its Assembler row is gone, so recipe indexes move).
+    public const ushort ProtocolVersion = 470;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

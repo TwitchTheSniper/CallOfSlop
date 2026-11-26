@@ -944,6 +944,16 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Would this Assembler take a part now? (For a chute looking through its source: nothing is noted.)</summary>
+    /// <summary>
+    /// Does this Assembler use <paramref name="item"/>: its recipe setting or an order queued at it? A piece rolling across its bed that it
+    /// doesn't goes on to the bed's out run (ConstructConveyor.Deliver); one it does waits at its bed for room. Allocates nothing.
+    /// </summary>
+    public bool Keeps(Construct c, int part, ushort item)
+    {
+        var d = c.DefOf(part);
+        return d.IsAssembler && (UsedByQueue(c, part, item) || ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.CountOf(item) > 0);
+    }
+
     public bool WantsPart(Construct c, int part, ushort item)
     {
         if (StoreOf(c, part) is not { } st)

@@ -68,15 +68,16 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-24-arms";
+    public const string RowsMark = "asm-rows-2026-11-26-servo";
 
     /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
-    public static readonly string[] Marks = ["asm-rows-2026-11-24", RowsMark];
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", RowsMark];
 
     /// <summary>
     /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
     /// an old choice of a gone row becomes its To row's (null: After's). Mark 0: the refiner block machines' Workshop to Plasma tiers.
     /// Mark 1 (2026-11-24): the fixed loader arms, now kit presets (an old choice builds an Arm Core; MIGRATING.md).
+    /// Mark 2 (2026-11-26): the Servo Motor, now pressed (an Actuator Die round a Copper Coil; an old choice builds the Control Unit before it).
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -87,7 +88,7 @@ public sealed class AssemblingTable
         (1, "Lifter Cab", ["Loader Arm", "Military Loader Arm", "Plasma Loader Arm", "Workshop Loader Arm"], "Arm Core"),
         (1, "Half Shell", ["Module Fitter S"], "Arm Core"),
         (1, "Press Bed Block", ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"], "Arm Core"),
-        
+        (2, "Control Unit", ["Servo Motor"], null),
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice

@@ -109,7 +109,16 @@ public sealed partial class PressParts
         ("housing", "fuelselector", "Fuel Selector XS", "fuel selector", "hollow 70x70x40 steel", ["hollow"]),
         ("housing", "boreadapter", "Bore Adapter XS", "bore adapter", "hollow 140x140x75 steel", ["hollow"]),
         ("housing", "turbopump", "Turbopump Drive XS", "turbopump drive", "hollow 70x70x50 steel", ["hollow"]),
+        // Servo Motors (Sean, 2026-11-26: "Motors should be made in the presses if possible, 2 items pressed together"): a steel housing blank
+        // pressed round a Copper Coil in bay 2 (OwnKits); the two Bearings of its Assembler row are dropped, as the leg pods' were.
+        ("actuator", "servo", "Servo Motor", "servo motor", "solid 20x20x35 steel", ["solid"]),
     ];
+
+    /// <summary>A new kind's own bay 2 kit, in place of its die's (Kit: part, base, rate, by, max).</summary>
+    private static readonly Dictionary<string, (string What, double Base, double Rate, string By, int Max)> OwnKits = new(StringComparer.Ordinal)
+    {
+        ["servo"] = ("Copper Coil", 1, 0, "mass", 1),
+    };
 
     /// <summary>The new gearboxes and axles, appended to <see cref="DrivePatterns"/> (each its like part's preset).</summary>
     private static readonly (string Id, string Like, string Label, string Blank)[] MoreDrivePatterns =
@@ -265,8 +274,8 @@ public sealed partial class PressParts
     /// <summary>A die's new kinds as patterns, to append to its list (a kit, numbers and a like body as the die's own patterns take).</summary>
     private static IEnumerable<object?> More(string die, PyDict? bay2 = null, List<object?>? scale = null, string? along = null) =>
         MorePatterns.Where(m => m.Die == die).Select(m => EngineTrainScale(m.Id) is { } train ? (object?)EngineTrainPattern(m, train)
-            : Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: bay2, scale: scale,
-                along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : along, auto: false));
+            : Pattern(m.Id, m.Like, m.Label, m.Blank, blanks: m.Only, bay2: OwnKits.TryGetValue(m.Id, out var own) ? Kit(own.What, true, own.Base, own.Rate, own.By, own.Max) : bay2, scale: scale,
+                along: m.Like.StartsWith("Leg Pod ", StringComparison.Ordinal) ? "" : m.Id == "servo" ? "z" : along, auto: false)); // (a Servo Motor's length is its shaft's, along z)
 
     /// <summary>
     /// An engine train piece's numbers by its blank (Sean, 2026-11-24: any length and diameter; what it serves goes with length times

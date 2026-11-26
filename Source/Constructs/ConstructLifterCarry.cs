@@ -625,6 +625,46 @@ public static partial class ConstructLifters
     }
 
     /// <summary>
+    /// For a check run (--station-check): why lifter <paramref name="part"/> doesn't take loose piece <paramref name="lo"/> off a machine's out:
+    /// the first rule it fails, by the order the carry tries them, or null when it would take it.
+    /// </summary>
+    public static string? OutWhy(ConstructWorld world, Construct c, int part, Construct lo)
+    {
+        if (DefOf(c, part) is not { } ld || Find(world, c.Id, part) is not { Points: not null } l)
+            return "no lifter state";
+        Frame(c, part, ld, out _, out var lr, out var shoulder);
+        var d = lo.DefOf(0);
+        var why = "no out point";
+        for (var k = 0; k < l.PointN; k++)
+        {
+            var pt = l.Points[k];
+            if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || !PointAt(b, pt, out var outAt))
+                continue;
+            var zone = OutZone.Of(b, pt.Part, outAt);
+            why = !zone.Holds(lo, d) ? $"not in {b.DefOf(pt.Part).Name} {pt.Part}'s out zone" : lo.Vel.LengthSquared() > 0.25f ? "moving" : !Carries(ld, d) ? "can't carry it"
+                : !MadeBy(b, pt.Part, d) ? "not made by it" : PickWhy(world, lo) is { } pw ? pw : null!;
+            if (why != null)
+                continue;
+            Freeform.PartWorld(lo, 0, out var pp, out var pr);
+            var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
+            if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
+            {
+                why = $"out of reach at {from}";
+                continue;
+            }
+            var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out _, true);
+            if (to >= 0)
+                return null;
+            var racks = "";
+            for (var r = 0; r < l.PointN; r++)
+                if (l.Points[r] is { Kind: LiftPointKind.Rack } rp && world.Get(rp.Body) is { } rb && rp.Part < rb.PartCount && world.StoreOf(rb, rp.Part) is { } rst)
+                    racks += $"; {rb.DefOf(rp.Part).Name} {rp.Part}: refused now {RefusedNow(world, l, rp)}, rack check {ConstructConveyor.RackCheck(rb, rp.Part, rst, d)}, accepts {StockTargets.Accepts(world, rb, rp.Part, rst, d)}, spot {PutSpot(rb, rp.Part, rst, d, ld, shoulder, lr, WristLift(d), out _)}";
+            return "nowhere in reach takes it" + racks;
+        }
+        return why;
+    }
+
+    /// <summary>
     /// Could this machine have made this piece (an Assembler's recipe output, a press's row output, an Extruder's piece)? A loose part
     /// someone left by a machine's out is not taken. An Assembler: any part its machine's recipes make, not only its recipe now (Zero Day
     /// works, 2026-11-22: once its order queue moved on, "waiting for orders", the keel it had left on its bed was never lifted).

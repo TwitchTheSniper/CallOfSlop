@@ -804,7 +804,7 @@ public static class ConstructCrafting
         };
     }
 
-    private const string RidingToHold = "riding to the hold", RidingToPad = "riding to its pick pad", NoPadRoom = "held: waits for room on a pick pad";
+    private const string RidingToHold = "riding to the hold", RidingToPad = "riding to its pick pad", NoPadRoom = "held: waits for room on a pick pad", OnItsPad = "on its pick pad: the build takes it from there";
     private const string LooseHeld = "held, cancel it: "; // (its own prefix: the step keeps this note without making it again)
 
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
@@ -1275,6 +1275,8 @@ public static class ConstructCrafting
                 if (via == -1)
                 {
                     state = CraftState.Collect;
+                    if (c.DefOf(t).IsBuildStation && ConstructStation.IsOwnPad(c, t, ConstructPads.Owner(c, where)))
+                        note = OnItsPad; // (no conveyor on from its own pick pad: its fitting arms or rovers take it from there for the build)
                     continue;
                 }
                 state = CraftState.Fetching;

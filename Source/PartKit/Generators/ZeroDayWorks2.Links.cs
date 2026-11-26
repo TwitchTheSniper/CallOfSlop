@@ -350,7 +350,7 @@ public sealed partial class ZeroDayWorks2
             // A press swaps its die from a Die Rack chuted into it (PressDieSwap): each rack into the press beside it.
             foreach (var x in new[] { 39f, 47f })
             {
-                var rack = Find("Die Rack", P(s, x, -24));
+                var rack = Find("Die Rack", P(s, x, -24), 2.5f); // (2.5 m: the Housing press's rack stands 2 m further out, ZeroDayWorks2.Revisions)
                 var press = _labs.Where(l => l.Id == "press").OrderBy(l => Vector2.Distance(l.At, P(s, x, -30))).FirstOrDefault().Core;
                 Chute(rack, null, press, null, 4f);
             }
@@ -361,6 +361,8 @@ public sealed partial class ZeroDayWorks2
             foreach (var x in new[] { 36f, 26f, 41f, 46f })
             {
                 Chute(Find("Materials Bin", P(s, x, 114)), null, assembler, "Chute in", up);
+                if (s < 0 && _bigAsm != null) // (the big Assembler by the main station, from the same bins, a level up)
+                    Chute(Find("Materials Bin", P(s, x, 114)), null, _bigAsm, "Chute in", up + 2.5f);
                 up += 0.5f;
             }
         }
@@ -400,7 +402,7 @@ public sealed partial class ZeroDayWorks2
             var arm = dies + outward * 2.5f;
             arm = new Vector2(MathF.Round(arm.X * 2) / 2, MathF.Round(arm.Y * 2) / 2);
             // The wall 2 m past the arm, unless Sean's two Die Racks stand on that side within reach: then in the gap between them, on their line.
-            var racks = new[] { 39f, 47f }.Select(x => Find("Die Rack", P(s, x, -24), 2f)).Where(r => r != null).Select(r => SiteOf(r!)).ToList();
+            var racks = new[] { 39f, 47f }.Select(x => Find("Die Rack", P(s, x, -24), 2.5f)).Where(r => r != null).Select(r => SiteOf(r!)).ToList();
             var wall = dies + outward * 4.6f;
             if (racks.Count == 2 && racks.All(r => Vector2.Dot(r - dies, outward) is > 2f and < 6f))
             {
@@ -451,6 +453,10 @@ public sealed partial class ZeroDayWorks2
         private readonly HashSet<(int, int)> _layBy = new(); // (the big stations' lay-by Roller Tiles, laid as Pad Tiles: their pick pads)
 
         private readonly Dictionary<(int, int), Vector2> _intoPress = new(); // (turntables butting a press bed, laid as Roller Tiles rolling into it: their flow)
+        private readonly Dictionary<(int, int), Vector2> _towardStation = new(); // (a press line row's plain Roller Tiles: their flow, toward the row's station)
+        private readonly Dictionary<(int, int), Vector2> _padAlong = new(); // (the Pad Tiles a press line's row ends on: their pad's z, along the row)
+        private const float PadSide = 6; // (how far either side of a press row's line its station's pad may reach, m)
+        private const float PressRow = 40; // (how far from a press its row's tiles toward the station are looked for, m)
 
         private const float LayBy = 4; // (m past a big station's bay side that its lay-by rows cover: two 2 m rows)
 

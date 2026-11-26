@@ -2483,6 +2483,28 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   loose beside its press (no way on to the main station), the Actuator die's Motor Hinge needs Servo Motors no Assembler there makes,
   and the two unfed presses and the Housing die's big blanks (too big for a 6 m bed) wait for a layout change.
   `--station-check` tools: `--press-order PART --oven-at X,Z [--via-station]`, `--why "PART;..."`, `--near X0,Z0,X1,Z1`, `--nets`.
+- **Works II press lines carry on to the main station (2026-11-26).** Sean: "Motors should be made in the presses if possible, 2
+  items pressed together", and fix the rest. What now happens:
+  - *Rolling through beds.* A low press bed and a block Assembler's bed pass a piece on when it isn't theirs
+    (`ConstructConveyor.RollsThrough`), as a Panel Former's does. Each has implicit `Bed in`/`Bed out` ports (`ConstructPorts`), and the
+    piece goes on unless a queued order or the current recipe uses it (`ConstructPress.Keeps`, `ConstructWorld.Keeps`). The logistics
+    reach walk counts those beds as passing. So the inner press is fed through the outer one, and a pressed part rolls on through the
+    Assembler and the row's tiles onto the station's pick pad.
+  - *The generator's changes.* The row's tiles face the station (`_towardStation`) and the pad's tiles lie along the row (`_padAlong`).
+    Each pad corner carries three Mast Blocks (6 m stack). A pad butting one of the station's own bay or dock blocks outside its bay
+    rectangle is one of its pick pads (`ConstructStationPads.ButtOff`).
+  - *Turntable runs.* A run from a Turntable Tile takes a piece up to half a tile longer than itself (`TurnOver`: the 5.65 m Housing blank).
+  - *Servo Motors.* The `actuator.servo` pattern presses a Servo Motor from a solid 20x20x35 steel blank with a Copper Coil in bay 2.
+    Its Assembler row is gone: rows mark `asm-rows-2026-11-26-servo`, and old choices of it become the Control Unit.
+  - *The Housing press.* It has a 4-row bed (3.6 m of daylight, for the Fuel Pump M and Drive Core M) and its Die Rack stands 2 m
+    further out. Both come from `ZeroDayWorks2.Revisions`, Sean's card answers laid over the lab's export.
+  - *Assemblers.* Every Works II Assembler carries a Power Coupling, a Servo Rack and a Coolant Loop. A big Assembler stands west of
+    the south-west pick pad (`BigAssembler`: 4 x 4 bed, three Mast Blocks a corner for 6 m clear, a Kit Long Arm onto the pad) for the
+    ladders, bulkhead doors, reactor, hatches, shower, Robot Shell Docks and ord racks.
+  - *Still open.* The Fuel Pump M's 2.2 m blank is wider than the 2 m roller runs to its press. The Button, Bakelite Switch, OR Gate,
+    Input Reader and Leg Pod Carriage XL have no maker. The Railgun is longer than any Assembler bed.
+  - *Check tools.* `--station-check` adds `--floor-map X0,Z0,X1,Z1` (a 1 m map of the floor), Assembler and Extruder looks in
+    `--press-order`, and, for a loose piece, why each lifter near it does or doesn't take it (`ConstructLifters.OutWhy`).
 
 ## Production Showcase
 

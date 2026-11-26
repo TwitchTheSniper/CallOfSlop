@@ -297,7 +297,7 @@ public static class MachineBlocks
     }
 
     /// <summary>
-    /// The Core of a bed fed by conveyor (a Panel Former's, a Laser Cutter's, a low-bedded Press's) whose bed holds body point <paramref name="at"/> (within its
+    /// The Core of a bed fed by conveyor (a Panel Former's, a Laser Cutter's, a low-bedded Press's, a block Assembler's) whose bed holds body point <paramref name="at"/> (within its
     /// rectangle's outline, up to a cell over its foot), or -1. A run whose end meets a bed off its cells' grid (a Laser Cutter's 1 m Core
     /// puts its bed half a tile off its feed's) still feeds it (RollerRuns.Butted). Server, at a run's laying; allocates nothing.
     /// </summary>
@@ -309,8 +309,8 @@ public static class MachineBlocks
             if (asm.W == 0 || (uint)asm.Core >= (uint)c.PartCount)
                 continue;
             ref readonly var p = ref c.Parts[asm.Core];
-            if (!(p.D.IsPanelFormer || p.D.IsPress && asm.LowBed) || p.D.BlockRole != BlockRole.Core)
-                continue; // (a Press's bed only when it is low: Press Bed Blocks at the rollers' height)
+            if (!(p.D.IsPanelFormer || p.D.IsPress && asm.LowBed || p.D.IsAssembler) || p.D.BlockRole != BlockRole.Core)
+                continue; // (a Press's bed only when it is low: Press Bed Blocks at the rollers' height; an Assembler's low bed always, 2026-11-26)
             var cell = p.D.BlockCell;
             var rel = Rot24.Apply(Rot24Inverse(p.Rot), at - p.Pos);
             var mid = Rot24.Apply(Rot24Inverse(p.Rot), CoreMid(c, asm.Core) - p.Pos);

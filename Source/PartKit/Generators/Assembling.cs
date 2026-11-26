@@ -1323,7 +1323,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker", "Breaker Core", "Shredder Block", "Die Wall"];
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker", "Breaker Core", "Shredder Block", "Die Wall", "Heavy Power Terminal"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

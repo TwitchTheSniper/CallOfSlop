@@ -96,6 +96,10 @@ public static partial class ConstructStation
                 continue;
             var taken = 0;
             float hx = bay.X * 0.5f, hz = bay.Z * 0.5f;
+            // (the station's own blocks outside its bay's rectangle, in the bay's frame: its rover docks' strip and Dock Expansions, where a
+            // pad laid against them is the station's input too, Zero Day Works II's press lines' pads, 2026-11-26)
+            Span<Vector2> outside = stackalloc Vector2[MaxOutsideBlocks];
+            var outN = OutsideBlocks(c, t, hx, hz, outside);
             // The nearest pads first: a few passes, each taking the nearest pad not yet taken (MaxOwnPads is small).
             for (var pass = 0; pass < MaxOwnPads; pass++)
             {
@@ -109,7 +113,7 @@ public static partial class ConstructStation
                     // At the bay's floor, wholly past one side of the bay and within reach of it: past an end across (x) within the bay's
                     // length, or past a long side (z) within its width (Sean, 2026-11-23: a pad attached to the station is its input, where
                     // a roller run from the line sets a piece down). The runway or the bridges reach on over it (StationRender.cs).
-                    if (MathF.Abs(mid.Y) > 3f || SideOff(mid, half, hx, hz) is not { } off)
+                    if (MathF.Abs(mid.Y) > 3f || (SideOff(mid, half, hx, hz) ?? ButtOff(mid, half, outside[..outN])) is not { } off)
                         continue;
                     if (off < bestOff)
                         (best, bestOff) = (p, off);
@@ -140,6 +144,38 @@ public static partial class ConstructStation
         var offZ = MathF.Abs(mid.Z) - half.Z - hz;
         if (MathF.Abs(mid.X) + half.X <= hx + 0.05f && offZ >= -0.05f && MathF.Abs(mid.Z) + half.Z <= hz + PadReach)
             return offZ;
+        return null;
+    }
+
+    private const int MaxOutsideBlocks = 128;
+
+    /// <summary>The middles (bay frame, x and z) of station <paramref name="t"/>'s own machine blocks that lie outside its bay's rectangle: how many.</summary>
+    private static int OutsideBlocks(Construct c, int t, float hx, float hz, Span<Vector2> into)
+    {
+        var a = MachineBlocks.AsmOf(c, t);
+        if (a < 0)
+            return 0;
+        Bay(c, t, out var floor, out var rot, out _);
+        var inv = Quaternion.Conjugate(rot);
+        var n = 0;
+        for (var i = 0; i < c.PartCount && n < into.Length; i++)
+        {
+            if (i == t || MachineBlocks.AsmOf(c, i) != a)
+                continue;
+            Freeform.PartWorld(c, i, out var pos, out _);
+            var at = Vector3.Transform(pos - floor, inv);
+            if (MathF.Abs(at.X) > hx || MathF.Abs(at.Z) > hz)
+                into[n++] = new Vector2(at.X, at.Z);
+        }
+        return n;
+    }
+
+    /// <summary>A pad's deck (bay frame) butting one of the station's own blocks outside its bay (<see cref="OutsideBlocks"/>): how far it lies past the bay, or null.</summary>
+    private static float? ButtOff(Vector3 mid, Vector3 half, ReadOnlySpan<Vector2> blocks)
+    {
+        foreach (var b in blocks)
+            if (MathF.Abs(b.X - mid.X) <= half.X + 1.6f && MathF.Abs(b.Y - mid.Z) <= half.Z + 1.6f) // (a 2 m block's middle a metre off the deck's edge, and a little)
+                return PadReach + Vector2.Distance(b, new Vector2(mid.X, mid.Z)); // (after every pad beside the bay itself)
         return null;
     }
 

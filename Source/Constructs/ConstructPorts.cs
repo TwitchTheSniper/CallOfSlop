@@ -194,6 +194,14 @@ public static partial class ConstructParts
             list.Add(new NamedPort { Name = BedInPort, Type = RouteType.Conveyor, In = true, At = new Vector3(0, ppin.At.Y, d.BoundsMax.Z), Face = 4, Opening = ppin.Opening, Implicit = true, OnBed = true });
             list.Add(new NamedPort { Name = BedOutPort, Type = RouteType.Conveyor, Out = true, At = new Vector3(0, ppin.At.Y, d.BoundsMin.Z), Face = 5, Opening = ppin.Opening, Implicit = true, OnBed = true });
         }
+        // A block Assembler's Core the same (Zero Day Works II's press lines, 2026-11-26: a pressed part rolls on through the Assembler's bed
+        // to the main station's pad): a run butted on its bed brings its inputs to the bed's middle, a run leaving the bed's other side takes
+        // what it builds and what only rolls through (ConstructConveyor.PassesThrough). Last, after its Piece out and Piece in.
+        if (d.IsAssembler && d.BlockRole == BlockRole.Core && list.Find(x => x.Type == RouteType.Conveyor && x.In && x.Name == "Piece in") is { } apin)
+        {
+            list.Add(new NamedPort { Name = BedInPort, Type = RouteType.Conveyor, In = true, At = new Vector3(0, apin.At.Y, d.BoundsMax.Z), Face = 4, Opening = apin.Opening, Implicit = true, OnBed = true });
+            list.Add(new NamedPort { Name = BedOutPort, Type = RouteType.Conveyor, Out = true, At = new Vector3(0, apin.At.Y, d.BoundsMin.Z), Face = 5, Opening = apin.Opening, Implicit = true, OnBed = true });
+        }
         d.IsConveyorJunction = !d.IsExtruder && !d.IsPress && !d.IsPieceRack && !d.IsAssembler && list.Any(x => x.Type == RouteType.Conveyor && x.In) && list.Any(x => x.Type == RouteType.Conveyor && x.Out);
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];

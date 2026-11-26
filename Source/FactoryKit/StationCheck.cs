@@ -152,6 +152,24 @@ public static class StationCheck
                                 var into = new int[32];
                                 return into.Take(ProductionLines.Machines(c, c.Routes[k].Source, into)).Select(m => $"{c.DefOf(m).Name} {m}").ToArray();
                             })));
+        if (Arg("--floor-map") is { } mapArg && mapArg.Split(',') is [var mx0, var mz0, var mx1, var mz1]) // (--floor-map X0,Z0,X1,Z1: a 1 m map of what stands on the floor there, # taken, . free; for laying a site out)
+        {
+            int ax = (int)float.Parse(mx0), az = (int)float.Parse(mz0), bx = (int)float.Parse(mx1), bz = (int)float.Parse(mz1);
+            var taken = new bool[bx - ax, bz - az];
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                if (c.DefOf(i).Name.StartsWith("Works Floor Slab", StringComparison.Ordinal))
+                    continue;
+                c.PartBounds(i, out var a, out var b);
+                if (Vector3.Distance(a, -b) < 4f && c.FrameOf(c.Parts[i].Seg) != 0)
+                    continue; // (a freeform weld's bounds are in its own frame)
+                for (var gx = Math.Max(ax, (int)MathF.Floor(a.X + 0.05f)); gx < Math.Min(bx, (int)MathF.Ceiling(b.X - 0.05f)); gx++)
+                    for (var gz = Math.Max(az, (int)MathF.Floor(a.Z + 0.05f)); gz < Math.Min(bz, (int)MathF.Ceiling(b.Z - 0.05f)); gz++)
+                        taken[gx - ax, gz - az] = true;
+            }
+            for (var gz = az; gz < bz; gz++)
+                Console.WriteLine($"  map {gz,4} " + string.Concat(Enumerable.Range(ax, bx - ax).Select(gx => taken[gx - ax, gz - az] ? '#' : (gx % 10 == 0 ? '|' : '.'))));
+        }
         if (Arg("--near") is { } nearArg && nearArg.Split(',') is [var nx0, var nz0, var nx1, var nz1]) // (--near X0,Z0,X1,Z1: the parts in that rectangle, by kind and row)
         {
             float ax = float.Parse(nx0), az = float.Parse(nz0), bx = float.Parse(nx1), bz = float.Parse(nz1);
@@ -164,7 +182,7 @@ public static class StationCheck
                         ? $" [{i} out {o}: {ConstructConveyor.Length(c, o):0.0} m to {c.DefOf(c.Routes[o].To).Name} {c.Routes[o].To} at {c.Parts[c.Routes[o].To].Pos.X:0},{c.Parts[c.Routes[o].To].Pos.Z:0}]" : $" [{i} no out]"))
                     + string.Concat(g.Where(i => WorkOrders.TakesOrders(c.DefOf(i)) || c.DefOf(i).IsTurntable).SelectMany(i => Enumerable.Range(0, c.RouteCount)
                         .Where(k => c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To < c.PartCount && c.Routes[k].From < c.PartCount && (MachineBlocks.Owner(c, c.Routes[k].To) == i || c.Routes[k].From == i))
-                        .Select(k => $" [{i}: link {k} {c.DefOf(c.Routes[k].From).Name} {c.Routes[k].From} at {c.Parts[c.Routes[k].From].Pos.X:0},{c.Parts[c.Routes[k].From].Pos.Z:0} -> {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0}]"))));
+                        .Select(k => $" [{i}: link {k} ({ConstructConveyor.Length(c, k):0.0} m) {c.DefOf(c.Routes[k].From).Name} {c.Routes[k].From} at {c.Parts[c.Routes[k].From].Pos.X:0},{c.Parts[c.Routes[k].From].Pos.Z:0} -> {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0}]"))));
         }
         if (Arg("--why") is { } whyParts) // (--why "PART;PART": each machine's answer to an order for it)
             foreach (var wn in whyParts.Split(';', StringSplitOptions.RemoveEmptyEntries))
@@ -591,14 +609,44 @@ public static class StationCheck
                 for (var k = 0; k < cq.Count; k++)
                     Console.WriteLine($"  {c.DefOf(i).Name} {i}'s ask: {ConstructCrafting.StateText(c, cq.Items[k])}");
         for (var i = 0; i < c.ConveyedCount; i++)
-            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To}");
+            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To} at {c.Parts[c.Routes[c.Conveyed[i].Route].To].Pos.X:0},{c.Parts[c.Routes[c.Conveyed[i].Route].To].Pos.Z:0} from {c.DefOf(c.Routes[c.Conveyed[i].Route].From).Name} {c.Routes[c.Conveyed[i].Route].From} at {c.Parts[c.Routes[c.Conveyed[i].Route].From].Pos.X:0},{c.Parts[c.Routes[c.Conveyed[i].Route].From].Pos.Z:0}, dest {c.Conveyed[i].Dest} (part {ConstructLogistics.PartOfStore(c, c.Conveyed[i].Dest)} {(ConstructLogistics.PartOfStore(c, c.Conveyed[i].Dest) is var dpp and >= 0 ? c.DefOf(dpp).Name : "")}), way {(ConstructLogistics.Map(c) is var lm && lm.RouterSlot(c.Routes[c.Conveyed[i].Route].To) is var lrs and >= 0 ? ConstructLogistics.TurntableWay(c, lm, lrs, c.Conveyed[i].Route, c.Conveyed[i]) : -9)}, flags {c.Conveyed[i].Flags}; outs from there: " + string.Join("; ", Enumerable.Range(0, c.RouteCount).Where(k => c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].From == c.Routes[c.Conveyed[i].Route].To).Select(k => $"link {k} {ConstructConveyor.Length(c, k):0.0} m to {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0} riders {c.Routes[k].Count}"))
+                + (ConstructPads.Owner(c, c.Routes[c.Conveyed[i].Route].To) is var rto && w.StoreOf(c, rto) is { } rst && ConstructParts.Def(c.Conveyed[i].Def) is { } rdef
+                    ? $" (rack check {ConstructConveyor.RackCheck(c, rto, rst, rdef)}, dest {c.Conveyed[i].Dest}, tag {c.Conveyed[i].Tag}, bounds {rdef.BoundsMax - rdef.BoundsMin}, pad {rto} hold {Hold(ConstructPads.RackDef(c, rto))})" : ""));
         foreach (var b in w.Bodies)
             if (b != c && b.PartCount < 4)
+            {
                 Console.WriteLine($"  loose: {b.DefOf(0).Name} at {b.Pos.X:0.0}, {b.Pos.Y:0.0}, {b.Pos.Z:0.0}");
+                for (var i = 0; i < c.PartCount; i++) // (the lifters within 20 m of it, and what each says)
+                    if (ConstructLifters.DefOf(c, i) != null && Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(b.Pos.X, b.Pos.Z)) < 20)
+                    {
+                        Console.WriteLine($"    lifter {i} {c.DefOf(i).Name} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {ConstructLifters.Look(w, c, i)}");
+                        var lpts = new LiftPoint[64];
+                        var lpn = ConstructLifters.PanelPoints(w, c, i, lpts);
+                        Console.WriteLine("      points: " + string.Join("; ", lpts[..lpn].Select(pt => $"{ConstructLifters.PointName(w, pt)} {pt.Part}")));
+                        Console.WriteLine($"      takes it? {ConstructLifters.OutWhy(w, c, i, b) ?? "yes"}");
+                    }
+            }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
-                Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}");
+                Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}" + (c.DefOf(i).IsExtruder && !c.DefOf(i).IsPanelFormer && w.StoreOf(c, i) is { } exs ? $"; looks: {ConstructExtruder.Look(c, i, exs, false, new SandboxInventory())}" : ""));
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i) is { IsAssembler: true, BlockRole: BlockRole.Core } ad && w.StoreOf(c, i) is { } ast3 && (c.Parts[i].Orders is { Count: > 0 } || ast3.ItemCount > 0))
+                Console.WriteLine($"  Assembler {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: " + ConstructAssembling.Look(ad, ast3, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[i], ad), ConstructAssembling.FitOf(c, i), false, new SandboxInventory(), null, c.Parts[i].Orders is { Bill: false }, null));
+        Span<ushort> own = stackalloc ushort[ConstructStation.MaxOwnPads];
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsBuildStation && ConstructStation.OwnPads(c, i, own) is var pn)
+                Console.WriteLine($"  station {i}'s pick pads: " + string.Join(", ", own[..pn].ToArray().Select(p => $"{p} at {c.Parts[p].Pos.X:0},{c.Parts[p].Pos.Z:0} holds {w.StoreOf(c, p)?.ItemCount ?? 0}")));
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsLayDownPad && ConstructPads.Owner(c, i) == i && w.StoreOf(c, i) is { ItemCount: > 0 } ps)
+                Console.WriteLine($"  pad {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0} holds {ps.ItemCount}" + string.Concat(Enumerable.Range(0, c.PartCount).Where(t => c.DefOf(t).IsBuildStation)
+                    .Select(t => ConstructStation.PadInBay(c, t, i, out var pm, out var ph) ? $"; in station {t}'s bay ({ConstructStation.BaySize(c, t)}): at {pm.X:0.0},{pm.Y:0.0},{pm.Z:0.0} half {ph.X:0.0},{ph.Z:0.0}" : "")));
         return 1;
+    }
+
+    private static string Hold(ConstructPartDef rd)
+    {
+        ConstructRackPack.Hold(rd, out var lo, out var hi);
+        return $"{hi - lo}";
     }
 
     private static int OvenOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds, bool trace,
