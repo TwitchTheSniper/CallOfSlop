@@ -580,7 +580,9 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             // A Bake Oven's tunnel runs from its Core's row (its way in) to the far row (its way out): its Core stands by the row up the
             // flow, so a kit rolled out of its line's station bay comes in at the in end and the baked part rolls on toward the main station
             // (Sean's layout drew each oven's Core at its down-flow end, where the kits rolled into the tunnel's out end: 2026-11-26).
-            var far = id == "bake-oven" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
+            // A Panel Former's Core likewise stands by the up-flow row: on the narrow lines' 10 x 3 formers the layout's Core row was the Out
+            // Table row, and a Core welded only to Out Tables has no bed (2026-11-26: those two formers had no cells, so nothing ran there).
+            var far = id is "bake-oven" or "panel-former" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
             var coreLocal = new Vector2(coreSide * (sx / 2 + 1), far ? sz / 2 - 1 : -sz / 2 + 1);
             var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
 

@@ -396,6 +396,10 @@ public static class StationCheck
                 Console.WriteLine($"  Building Station part {i}: " + (run < 0 ? "no roll-out run" : ConstructRollOut.OvenOf(c, run) is var oven and >= 0
                     ? $"rolls out into the bed of the Bake Oven part {oven} at {c.Parts[oven].Pos.X:0}, {c.Parts[oven].Pos.Z:0}" : $"rolls out on run {run}, into no oven's bed: {ConstructRollOut.NoOvenWhy(c, run)}"));
             }
+        // Each other station's job as it stands (a line's kit station: what it builds and waits for).
+        for (var i = 0; i < c.PartCount; i++)
+            if (i != t && c.DefOf(i).IsBuildStation && c.Parts[i].Station is { } oj)
+                Console.WriteLine($"  Building Station part {i}: {ConstructStation.StateText(oj)}, {oj.Fitted}/{oj.Steps} fitted: {oj.Note}");
         if (args.Contains("--reach"))
             Reach(w, c, t, j);
         var whys = new Dictionary<string, List<string>>();

@@ -1775,8 +1775,13 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   screen tilted to the player, and a link-stock hopper with the **Chute in** on top; also **Fluid in** and **Orders**. Its mouth
   (`+x.0`) welds to a Bay Block's side; its foot is `-y.0.0`. It has no hold (`"noHold"` on its pieces store, `StationNoHold`): every
   piece goes to its pick pads (`RackCheck` 3), and an order is taken there (`ConstructCrafting.RouteTo` counts a run ending on one of its
-  own pick pads, or a Router with a way there, as the route to the station). A station with no hold orders only what a step can take
-  (no pad batches): its pads are its hold, and a piece waits at its store ("waits for room on a pick pad") until the rovers clear one.
+  own pick pads, or a Router with a way there, as the route to the station). It orders in batches as a station
+  with pick pads does (the first `BatchSteps` unfitted steps in build order; Sean, 2026-11-26: "have the other lines start production as
+  well ... can be run in batches"), so every line works at once, but its pick pads take only a piece a step can fit now
+  (`ConstructStation.PadEarly`: the kind's ready steps less what its pads hold). An early piece waits where it is: on its run, on its
+  machine's bed, at its store ("waits for room on a pick pad"), in a rack a lifter keeps it in; the conveyors' Deliver, a bed's or a Laser
+  Cutter's hand-off to its pad, a lifter's want, storage and hand-off all ask. So a pad never fills with parts whose parents can't come,
+  and the build-order stall rule (`StallTicks`) keeps the ready ones moving.
   A Piece Rack or pad whose gaps together hold a piece closes its columns up (`ConstructRackPack.Place`).
 - **Dock Expansions** (`stationDock`: small 4 x 2 m, medium 6 x 4, large 12 x 8; Assembler recipes at the end of its list) each hold one
   more rover. A dock is the station's when its mouth lies on the bay's edge (within 0.35 m) and opens into the bay; one on two
@@ -2209,7 +2214,13 @@ reads its next hop, never back out the side the piece came in; while that way is
 a piece with none, or with no way from here, goes each way in turn as before, and a turntable never sets a piece off the line, holds
 it stuck or has an Alarm. Hall Bay has a line: a Pad Tile, two tiles, a turntable, then one tile north into the big pad and one
 tile east into a one-tile pad (`logi spawn 3` sends three Gear Sets along it; `logi dest Pad Tile@<tile>` gives every rider that
-pad as its destination). Not yet: a run doesn't carry a person along.
+pad as its destination). **Turntable fields** (2026-11-26, Zero Day Works II's narrow lines): Turntable Tiles butted side by side, level, are a
+field. A run that ends in a tile of a field with no way on from it is carried across, along the field's rows and columns, to the nearest tile
+of the same field that a run or a link starts from: one conveyor from tile to tile through each turn, laid by the server as a run's is
+(`RollerRuns.SyncCrossings`, `IsCrossing`; out of the first tile's face it leaves by, into the last tile's face it comes in by) and matched
+again after each rebuild; the log says "a turntable field carries pieces from tile A to tile B". Before, a piece waited for ever on the
+first tile. Not yet: a run doesn't carry a person along, and no run moves a piece sideways (the narrow lines' 2 m strips beside their
+formers and cutters, which the layout means pieces to cross side on).
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
@@ -2526,6 +2537,14 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
     Input Reader and Leg Pod Carriage XL have no maker. The Railgun is longer than any Assembler bed.
   - *Check tools.* `--station-check` adds `--floor-map X0,Z0,X1,Z1` (a 1 m map of the floor), Assembler and Extruder looks in
     `--press-order`, and, for a loose piece, why each lifter near it does or doesn't take it (`ConstructLifters.OutWhy`).
+- **Works II lines all at once (2026-11-26).** Sean: "Have the other lines start production as well for pieces, like the side pieces
+  that come after the keel. Can be run in batches." The yard's rover station used to order only what its next step could take (the
+  keel), so one line ran; it now orders in batches (above, "The Core") and all four ovens start kits together, with every press and
+  Assembler taking orders; early parts wait on their runs, never on the yard's pick pads. Two faults on the narrow lines came out on the
+  way: their turntable fields had no way across (now crossings, "Roller Tiles" above), and their 10 x 3 Panel Formers had no bed (each
+  Core stood on the Out Table row, welded to Out Tables only; now by the up-flow row, as an oven's). Still open there: the layout moves
+  pieces sideways off the field onto a 2 m strip, across the former and onto the cutter, which no run does (an 8.3 m bar waits at the
+  field's exit); the wide lines' pieces wait at their Laser Cutters (another change); the Fuel Pump M's blank is too wide for its run.
 - **Works II control row (2026-11-26).** Sean: "all of the line consoles for this entire factory are sitting next to each other in a
   line, so I can just walk through them all", on the open floor by the west gensets. Every Line Console stands in one row along z at
   x -45 from z -38.5 south, a desk every 1.5 m, screens east to the walk by the gensets (`ZeroDayWorks2.ControlRow.cs`); which machines

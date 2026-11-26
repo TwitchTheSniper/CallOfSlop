@@ -238,6 +238,213 @@ public static class RollerRuns
             }
             c.Routes[k].ConvW = c.Routes[k].ConvH = want.Width;
         }
+        SyncCrossings(world, c);
+    }
+
+    // ---- Turntable fields ------------------------------------------------------------------------------------------------
+
+    private const int MaxCrossings = 32, MaxField = 256, MaxCrossNodes = 6;
+
+    private struct Crossing
+    {
+        public ushort From, To;
+        public byte FromPort, ToPort;
+        public int NodeN;
+        public ushort Width;
+        public bool Have;
+    }
+
+    private static readonly Crossing[] _crossings = new Crossing[MaxCrossings];
+    private static readonly ushort[] _crossHosts = new ushort[MaxCrossings * MaxCrossNodes];
+    private static readonly Vector3[] _crossAt = new Vector3[MaxCrossings * MaxCrossNodes];
+    private static readonly ushort[] _field = new ushort[MaxField];
+    private static readonly short[] _fieldFrom = new short[MaxField];
+
+    /// <summary>
+    /// Is link <paramref name="k"/> a turntable field's crossing (Zero Day Works II, 2026-11-26): a conveyor laid by the server from a Turntable
+    /// Tile a run ends in to the one in the same field a run starts from, every node on a Turntable Tile, the ends the tiles themselves?
+    /// </summary>
+    public static bool IsCrossing(Construct c, int k)
+    {
+        ref readonly var r = ref c.Routes[k];
+        if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count < 2 || r.From == r.To
+            || r.From >= c.PartCount || r.To >= c.PartCount || !c.Parts[r.From].D.IsTurntable || !c.Parts[r.To].D.IsTurntable)
+            return false;
+        for (var n = 0; n < r.Count; n++)
+            if (c.RouteNodes[r.Start + n].Host is var h && (h >= c.PartCount || !c.Parts[h].D.IsTurntable
+                || Vector3.DistanceSquared(c.RouteNodes[r.Start + n].Pos, CrossNode(c, h)) > Cell * Cell * 0.25f))
+                return false; // (every node on its tile, at the run's height: a player's link between two turntables is no crossing)
+        return true;
+    }
+
+    /// <summary>Conveyor <paramref name="k"/> a run or a link that isn't a crossing, into (<paramref name="into"/>) or out of Turntable Tile <paramref name="t"/>?</summary>
+    private static bool Meets(Construct c, int k, int t, bool into)
+    {
+        ref readonly var r = ref c.Routes[k];
+        return r.Type == RouteType.Conveyor && (into ? r.To == t : r.Parent == 255 && r.From == t) && !IsCrossing(c, k);
+    }
+
+    /// <summary>
+    /// Turntable Tiles butted side by side are a field (Sean's Works II layout: a 3 x 10 field between a narrow line's Extruder and its
+    /// Panel Former). A run that ends in one tile of a field and has no way on from it is carried across the field, along its rows and
+    /// columns, to the nearest tile of the same field a run (or a link) starts from: one conveyor from tile to tile, laid by the server as
+    /// a run's is and matched again after each rebuild. Before this a piece waited for ever on the tile it came to.
+    /// </summary>
+    private static void SyncCrossings(ConstructWorld world, Construct c)
+    {
+        var n = 0;
+        var hosts = 0;
+        Span<int> path = stackalloc int[MaxField];
+        for (var t = 0; t < c.PartCount && n < MaxCrossings; t++)
+        {
+            if (!c.Parts[t].D.IsTurntable || c.Parts[t].Seg != 0 || c.Parts[t].Broken)
+                continue;
+            bool fed = false, goes = false;
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                fed |= Meets(c, k, t, true);
+                goes |= Meets(c, k, t, false);
+            }
+            if (!fed || goes)
+                continue;
+            // The field from tile t, breadth first by the 2 m grid, until a tile a way leaves from.
+            var fn = 1;
+            _field[0] = (ushort)t;
+            _fieldFrom[0] = -1;
+            var found = -1;
+            for (var q = 0; q < fn && found < 0; q++)
+            {
+                var at = c.Parts[_field[q]].Pos;
+                for (var o = 0; o < c.PartCount && found < 0; o++)
+                {
+                    if (!c.Parts[o].D.IsTurntable || c.Parts[o].Seg != 0 || c.Parts[o].Broken || o == _field[q])
+                        continue;
+                    var dv = c.Parts[o].Pos - at;
+                    if (MathF.Abs(dv.Y) > 0.1f || MathF.Abs(MathF.Abs(dv.X) + MathF.Abs(dv.Z) - Cell) > 0.1f || MathF.Abs(dv.X) > 0.1f && MathF.Abs(dv.Z) > 0.1f)
+                        continue; // (a neighbour: one tile along x or z, level)
+                    if (Array.IndexOf(_field, (ushort)o, 0, fn) >= 0)
+                        continue;
+                    if (fn >= MaxField)
+                        break;
+                    _field[fn] = (ushort)o;
+                    _fieldFrom[fn] = (short)q;
+                    for (var k = 0; k < c.RouteCount && found < 0; k++)
+                        if (Meets(c, k, o, false))
+                            found = fn;
+                    fn++;
+                }
+            }
+            if (found < 0)
+                continue;
+            // Its nodes: the first tile, each tile where the way turns, the last.
+            var pn = 0;
+            for (var q = found; q >= 0; q = _fieldFrom[q])
+                path[pn++] = _field[q];
+            path[..pn].Reverse();
+            ref var x = ref _crossings[n];
+            x = new Crossing { From = (ushort)t, To = (ushort)path[pn - 1] };
+            for (var i = 0; i < pn && x.NodeN < MaxCrossNodes; i++)
+            {
+                if (i > 0 && i < pn - 1)
+                {
+                    var d0 = c.Parts[path[i]].Pos - c.Parts[path[i - 1]].Pos;
+                    var d1 = c.Parts[path[i + 1]].Pos - c.Parts[path[i]].Pos;
+                    if (Vector3.DistanceSquared(d0, d1) < 0.01f)
+                        continue; // (straight on: no node)
+                }
+                _crossHosts[hosts + x.NodeN++] = (ushort)path[i];
+            }
+            if (x.NodeN < 2 || _crossHosts[hosts + x.NodeN - 1] != x.To)
+                continue; // (a way with more turns than a crossing keeps)
+            // Its ports: out of the first tile's face toward the second node, into the last tile's face it comes in by.
+            if (FacePort(c, t, c.Parts[_crossHosts[hosts + 1]].Pos - c.Parts[t].Pos, "Out ") is not (var fp and >= 0)
+                || FacePort(c, x.To, c.Parts[_crossHosts[hosts + x.NodeN - 2]].Pos - c.Parts[x.To].Pos, "In ") is not (var tp and >= 0))
+                continue;
+            (x.FromPort, x.ToPort) = ((byte)fp, (byte)tp);
+            // Its nodes as a run's: the ends just inside the faces it leaves and comes in by, the turns on their tiles' middles.
+            for (var i = 0; i < x.NodeN; i++)
+                _crossAt[hosts + i] = CrossNode(c, _crossHosts[hosts + i]);
+            var first = Vector3.Normalize(_crossAt[hosts + 1] - _crossAt[hosts]);
+            var last = Vector3.Normalize(_crossAt[hosts + x.NodeN - 1] - _crossAt[hosts + x.NodeN - 2]);
+            _crossAt[hosts] += first * (Cell * 0.5f - EndIn);
+            _crossAt[hosts + x.NodeN - 1] -= last * (Cell * 0.5f - EndIn);
+            var width = 0;
+            for (var k = 0; k < c.RouteCount; k++)
+                if (Meets(c, k, t, true))
+                    width = Math.Max(width, c.Routes[k].ConvW);
+            x.Width = (ushort)Math.Max(width, (int)(Cell * 100));
+            hosts += MaxCrossNodes;
+            n++;
+        }
+        // Keep the crossings that are still wanted, drop the rest, lay the new ones.
+        Span<bool> gone = stackalloc bool[Construct.MaxRoutes];
+        gone.Clear();
+        var drop = false;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            if (!IsCrossing(c, k))
+                continue;
+            var match = -1;
+            for (var w = 0; w < n && match < 0; w++)
+                if (!_crossings[w].Have && SameCrossing(c, k, w))
+                    match = w;
+            if (match < 0)
+            {
+                gone[k] = drop = true;
+                continue;
+            }
+            _crossings[match].Have = true;
+            if (c.Routes[k].ConvW != _crossings[match].Width)
+            {
+                c.Routes[k].ConvW = c.Routes[k].ConvH = _crossings[match].Width;
+                world.StructureDirty.Add(c.Id);
+            }
+        }
+        if (drop)
+            ConstructRoutes.RemoveMany(world, c, gone);
+        Span<CRouteNode> nodes = stackalloc CRouteNode[MaxCrossNodes];
+        for (var w = 0; w < n; w++)
+        {
+            ref readonly var x = ref _crossings[w];
+            if (x.Have)
+                continue;
+            for (var i = 0; i < x.NodeN; i++)
+                nodes[i] = new CRouteNode { Pos = _crossAt[w * MaxCrossNodes + i], Host = _crossHosts[w * MaxCrossNodes + i] };
+            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, x.From, x.FromPort, 255, 0, default, nodes[..x.NodeN], x.To, x.ToPort);
+            if (k < 0)
+            {
+                Console.WriteLine($"[rollers] {c.Id}: no room for a turntable field's crossing (links {c.RouteCount}/{Construct.MaxRoutes})");
+                break;
+            }
+            c.Routes[k].ConvW = c.Routes[k].ConvH = x.Width;
+            Console.WriteLine($"[rollers] {c.Id}: a turntable field carries pieces from tile {x.From} to tile {x.To}, {ConstructConveyor.Length(c, k):0.0} m");
+        }
+    }
+
+    /// <summary>Turntable Tile <paramref name="tile"/>'s conveyor port ("Out " or "In " and its face) on the side toward <paramref name="toward"/> (body frame), or -1.</summary>
+    private static int FacePort(Construct c, int tile, Vector3 toward, string kind)
+    {
+        var l = Rot24.Apply(MachineBlocks.Rot24Inverse(c.Parts[tile].Rot), toward);
+        var face = MathF.Abs(l.X) > MathF.Abs(l.Z) ? (l.X > 0 ? "+x" : "-x") : (l.Z > 0 ? "+z" : "-z");
+        foreach (var np in c.Parts[tile].D.NamedPorts)
+            if (np.Type == RouteType.Conveyor && np.Name.Length == kind.Length + 2 && np.Name.StartsWith(kind, StringComparison.Ordinal) && np.Name.EndsWith(face, StringComparison.Ordinal))
+                return np.Byte;
+        return -1;
+    }
+
+    private static Vector3 CrossNode(Construct c, int tile) => c.Parts[tile].Pos + Rot24.Apply(c.Parts[tile].Rot, new Vector3(0, RunY, 0));
+
+    private static bool SameCrossing(Construct c, int k, int w)
+    {
+        ref readonly var r = ref c.Routes[k];
+        ref readonly var x = ref _crossings[w];
+        if (r.From != x.From || r.To != x.To || r.FromPort != x.FromPort || r.ToPort != x.ToPort || r.Count != x.NodeN)
+            return false;
+        for (var i = 0; i < x.NodeN; i++)
+            if (c.RouteNodes[r.Start + i].Host != _crossHosts[w * MaxCrossNodes + i]
+                || Vector3.DistanceSquared(c.RouteNodes[r.Start + i].Pos, ConstructWorld.Quantise(_crossAt[w * MaxCrossNodes + i])) > 1e-4f)
+                return false;
+        return true;
     }
 
     private static bool Same(Construct c, in CRoute r, in Want w) =>
