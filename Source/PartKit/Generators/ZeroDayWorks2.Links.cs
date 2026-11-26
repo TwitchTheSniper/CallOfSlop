@@ -27,8 +27,12 @@ public sealed partial class ZeroDayWorks2
         /// <summary>How far an Extruder moves back up its flow: a Run-out Table is 8 m, and the die's face (0.75 m ahead of its cell) lands on the run's first tile edge.</summary>
         public const float ExtruderBack = 7.75f;
 
-        /// <summary>How far an Extruder's Materials Bin and Line Console move back with it (on the floor's whole metres, behind the plinths).</summary>
-        public const float BinBack = 8f;
+        /// <summary>
+        /// How far an Extruder's Materials Bin and Line Console move back with it (on the floor's whole metres): clear of the press it
+        /// draws behind its die (ExtruderRender: its cylinder platen's back face 8.8 m up the flow from the die face), Sean 2026-11-26:
+        /// at 8 m they stood inside it, 7 m behind the face.
+        /// </summary>
+        public const float BinBack = 11f;
 
         public const float SegmentMax = 7.5f; // (a chute's segment reaches at most 8 m)
 
@@ -199,8 +203,8 @@ public sealed partial class ZeroDayWorks2
             }
             try
             {
-                ref var cp = ref Live.Parts[console.Index];
-                var at = FromRest(cp.Pos);
+                // (a console welded freeform, off a slab's lattice, has its pose in _free, as a target's)
+                var at = _free.TryGetValue(console, out var cw) ? FromRest(cw.Pos) : FromRest(Live.Parts[console.Index].Pos);
                 var t = _free.TryGetValue(to, out var w) ? FromRest(w.Pos) : FromRest(Live.Parts[to.Index].Pos);
                 Link("data", console, to, null, toPort, Crane, false, null, Cut(at, V(at.X, height, at.Z), V(t.X, height, at.Z), V(t.X, height, t.Z)));
                 _links++;
@@ -214,7 +218,7 @@ public sealed partial class ZeroDayWorks2
 
         private void Fill(VPart? store, string material)
         {
-            if (store != null && store.Name != "Materials Bin") // (a bin takes any material and has no settings: it fills from its chute)
+            if (store != null) // (a Materials Bin too: its creative Material and Fill, ConstructStoreVolume.IsFillBin; Sean 2026-11-26: every store full, so the lines start at once)
                 Config(store, ("material", material), ("fill", 100));
         }
 
@@ -313,8 +317,8 @@ public sealed partial class ZeroDayWorks2
             var high = 16f;
             foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s).OrderByDescending(l => l.At.Y))
             {
-                var bin = Nearest("Materials Bin", at, 16);
-                var console = Nearest("Line Console", at, 16);
+                var bin = Nearest("Materials Bin", at, 20); // (16 m, and 20 since the bins stand BinBack behind the moved Extruder)
+                var console = Nearest("Line Console", at, 20);
                 Fill(bin, "steel");
                 // (the big lines from the second and third bunkers, the small line and the press line from the fourth)
                 var from = at.Y > 60 ? bunker[0] : at.Y < -60 ? bunker[1] : bunker[2];

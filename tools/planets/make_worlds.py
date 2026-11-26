@@ -367,6 +367,7 @@ WORLDS = [
     },
     {
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
+        "pole": False,  # (no pole post: the Zero Day works sites build over the pole, and the post stood through them, Sean 2026-11-26)
         "ore": {"stone seam": 2, "iron vein": 1.5, "sand bed": 0.5},
         "description": "Caledon, the 24 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
         "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520,

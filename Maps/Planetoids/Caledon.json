@@ -1072,16 +1072,6 @@
     },
     {
       "op": "SurfaceBlock",
-      "lat": 90,
-      "lon": 0,
-      "w": 1.2,
-      "h": 6,
-      "d": 1.2,
-      "color": "#8a8f99",
-      "material": "Concrete"
-    },
-    {
-      "op": "SurfaceBlock",
       "lat": 30,
       "lon": 150,
       "w": 0.8,
