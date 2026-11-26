@@ -193,6 +193,9 @@ public sealed partial class Construct
     /// <summary>How many solid boxes part <paramref name="i"/> collides, is hit and blocks with: a merged receiver's lead has the one merged box, its other members none (they are inside it).</summary>
     public int SolidCount(int i) => Rides(i) ? 0 : MergeOf[i] != 0 ? MergeLead(i) ? 1 : 0 : Parts[i].D.IsEnvelope && !Parts[i].Broken ? Parts[i].D.SolidBoxes + 1 : Parts[i].D.IsVolumeStore && ConstructStoreVolume.Walled(Parts[i], Parts[i].D) ? Parts[i].D.SolidBoxes + ConstructStoreVolume.WallBoxes : Parts[i].D.SolidBoxes; // (a lift cell's envelope is its last box; a rider on a leg segment has none: the leg code hits it, ConstructWalkRiders.cs)
 
+    /// <summary>The solid boxes a player meets (stands on, is blocked by, rides among): none of a part whose skin alone meets them (<see cref="ConstructPartDef.SkinOnly"/>).</summary>
+    public int PlayerSolids(int i) => Parts[i].D.SkinOnly && MergeOf[i] == 0 ? 0 : SolidCount(i);
+
     /// <summary>Solid box <paramref name="b"/> of part <paramref name="i"/> (rest frame): <see cref="BoxOf"/>, or a merged receiver's one box as drawn.</summary>
     public void SolidBox(int i, int b, out Vector3 centre, out Vector3 half)
     {

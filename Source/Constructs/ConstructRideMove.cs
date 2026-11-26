@@ -500,7 +500,7 @@ public static partial class ConstructRide
                     rt = Vector3.Transform(tk - ts, iqs);
                 }
             }
-            var boxes = c.SolidCount(i);
+            var boxes = c.PlayerSolids(i);
             for (var b = 0; b < boxes; b++)
             {
                 c.SolidBox(i, b, out var centre, out var half);
@@ -532,7 +532,7 @@ public static partial class ConstructRide
                 o.WorldFrame(p.Seg, out var q2, out var t2);
                 var r = iqf * q2;
                 var off = Vector3.Transform(t2 - tf, iqf);
-                var boxes = o.SolidCount(i);
+                var boxes = o.PlayerSolids(i);
                 for (var b = 0; b < boxes; b++)
                 {
                     o.SolidBox(i, b, out var centre, out var half);

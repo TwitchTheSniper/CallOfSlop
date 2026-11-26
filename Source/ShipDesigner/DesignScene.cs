@@ -1415,6 +1415,62 @@ public static partial class DesignScene
         return k.ToString();
     }
 
+    /// <summary>A piece's mesh in the ship's frame (what the scene sends for it); <paramref name="copies"/> false leaves out its mirrored and paired copies (DesignParts' colliders mirror one piece's hull themselves).</summary>
+    public static DesignMesh PieceMesh(ShipDesign d, Piece p, bool copies = true)
+    {
+        var h = d.Hull(p.Hull)!;
+        var kind = PieceKinds.Find(p.Kind)!;
+        var w = DesignHangar.PlaceOf(d, p) ?? Where(h, p);
+        var m = new DesignMesh();
+        var across = kind.Footprint is not null ? p.Hole : 1;
+        m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
+        if (kind.Socket == "ramp")
+        {
+            // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
+            // skin to that floor, and the stair hangs from there down out of the hatch.
+            var t = RampDepth(d, p, w);
+            PieceKinds.RampFrame(m, t ?? 1.0);
+            var dd = (t ?? 0) + p.Recess;
+            m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size, across);
+            PieceKinds.RampStair(m, t ?? 0);
+        }
+        else if (kind.Socket == "window")
+        {
+            // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
+            PieceKinds.WindowFrame(m);
+            PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
+        }
+        else if (kind.Socket == "airlock")
+            PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
+        else if (PieceWeapons.MountOf(p.Kind) is { } mk)
+        {
+            // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).
+            double[] ro = [w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess];
+            PieceWeapons.Draw(m, p, mk, (lo, ax, ay, az) =>
+            {
+                double[] L(double[] v) => [w.X[0] * v[0] + w.Y[0] * v[1] + w.Z[0] * v[2], w.X[1] * v[0] + w.Y[1] * v[1] + w.Z[1] * v[2], w.X[2] * v[0] + w.Y[2] * v[1] + w.Z[2] * v[2]];
+                var oo = L(lo);
+                m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
+            });
+        }
+        else if (!DesignHangar.Draw(d, p, w, m) && !DesignFittings.Draw(p, w, m))
+            kind.Draw(m);
+        if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
+        {
+            // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
+            double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
+            m.Box(-hx - cl, 0.005, -hz - cl, hx + cl, 0.07, -hz, PieceKinds.Armour);
+            m.Box(-hx - cl, 0.005, hz, hx + cl, 0.07, hz + cl, PieceKinds.Armour);
+            m.Box(-hx - cl, 0.005, -hz, -hx, 0.07, hz, PieceKinds.Armour);
+            m.Box(hx, 0.005, -hz, hx + cl, 0.07, hz, PieceKinds.Armour);
+        }
+        if (copies && p.Mirror)
+            m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
+        if (copies && p.Pair && h.Copies == 2)
+            m.MirrorFrom(0, 0);
+        return m;
+    }
+
     public static string Json(ShipDesign d)
     {
         if (Meshes.Count > 4 * ShipDesign.MaxHulls)
@@ -1533,55 +1589,8 @@ public static partial class DesignScene
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
             var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
-                var m = new DesignMesh();
-                var across = kind.Footprint is not null ? p.Hole : 1;
-                m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
-                if (kind.Socket == "ramp")
-                {
-                    // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
-                    // skin to that floor, and the stair hangs from there down out of the hatch.
-                    var t = RampDepth(d, p, w);
-                    PieceKinds.RampFrame(m, t ?? 1.0);
-                    var dd = (t ?? 0) + p.Recess;
-                    m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size, across);
-                    PieceKinds.RampStair(m, t ?? 0);
-                }
-                else if (kind.Socket == "window")
-                {
-                    // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
-                    PieceKinds.WindowFrame(m);
-                    PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
-                }
-                else if (kind.Socket == "airlock")
-                    PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
-                else if (PieceWeapons.MountOf(p.Kind) is { } mk)
-                {
-                    // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).
-                    double[] ro = [w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess];
-                    PieceWeapons.Draw(m, p, mk, (lo, ax, ay, az) =>
-                    {
-                        double[] L(double[] v) => [w.X[0] * v[0] + w.Y[0] * v[1] + w.Z[0] * v[2], w.X[1] * v[0] + w.Y[1] * v[1] + w.Z[1] * v[2], w.X[2] * v[0] + w.Y[2] * v[1] + w.Z[2] * v[2]];
-                        var oo = L(lo);
-                        m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
-                    });
-                }
-                else if (!DesignHangar.Draw(d, p, w, m) && !DesignFittings.Draw(p, w, m))
-                    kind.Draw(m);
-                if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
-                {
-                    // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
-                    double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
-                    m.Box(-hx - cl, 0.005, -hz - cl, hx + cl, 0.07, -hz, PieceKinds.Armour);
-                    m.Box(-hx - cl, 0.005, hz, hx + cl, 0.07, hz + cl, PieceKinds.Armour);
-                    m.Box(-hx - cl, 0.005, -hz, -hx, 0.07, hz, PieceKinds.Armour);
-                    m.Box(hx, 0.005, -hz, hx + cl, 0.07, hz, PieceKinds.Armour);
-                }
-                if (p.Mirror)
-                    m.MirrorFrom(0, h.CopyX(Math.Min(p.Copy, h.Copies - 1)));
-                if (p.Pair && h.Copies == 2)
-                    m.MirrorFrom(0, 0);
                 var text = new StringBuilder();
-                m.Write(text, Made("p" + p.Id));
+                PieceMesh(d, p).Write(text, Made("p" + p.Id));
                 return text.ToString();
             });
             if (i > 0) sb.Append(',');

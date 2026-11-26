@@ -361,7 +361,7 @@ public sealed partial class Game
         var names = new WorldNamesRead();
         WorldSections(ws, main, (tag, r) =>
         {
-            if (tag is WorldSaveWriter.BakedTag or WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Players or WorldSaveWriter.SpaceSeats or WorldSaveWriter.Story
+            if (tag is WorldSaveWriter.BakedTag or WorldSaveWriter.ShipDesignTag or WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Players or WorldSaveWriter.SpaceSeats or WorldSaveWriter.Story
                     or WorldSaveWriter.CrewTag or WorldSaveWriter.PowersTag // (credits and standings travel with the people: the Players section clears them)
                 || plan.Travel && tag == WorldSaveWriter.Space)
                 WorldReadSection(tag, r, ws, names, ref kept, ref lost, ref nextTag);
@@ -373,7 +373,7 @@ public sealed partial class Game
             var thereNames = new WorldNamesRead();
             WorldSections(ws, there, (tag, r) =>
             {
-                if (tag is WorldSaveWriter.BakedTag or WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Stores or WorldSaveWriter.Bodies or WorldSaveWriter.Links
+                if (tag is WorldSaveWriter.BakedTag or WorldSaveWriter.ShipDesignTag or WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Stores or WorldSaveWriter.Bodies or WorldSaveWriter.Links
                     or WorldSaveWriter.Connectors or WorldSaveWriter.NoCollide or WorldSaveWriter.Ground or WorldSaveWriter.Resources)
                     WorldReadSection(tag, r, ws, thereNames, ref kept, ref lost, ref thereTag);
                 else if (tag == WorldSaveWriter.MarketsTag)
@@ -462,6 +462,9 @@ public sealed partial class Game
             {
                 case WorldSaveWriter.BakedTag:
                     BakedParts.ReadSave(r, Constructs); // (baked designs before the names that make their parts)
+                    break;
+                case WorldSaveWriter.ShipDesignTag:
+                    DesignParts.ReadSave(r, Constructs); // (ship designs before the names that make their elements' parts)
                     break;
                 case WorldSaveWriter.Names:
                     shipNames.Read(r);

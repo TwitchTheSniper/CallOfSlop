@@ -556,6 +556,7 @@ public static class ConstructBuild
         public List<byte> StepFinish = new(); // each step's texture ("finish": a material's name, Materials/Surfaces.json; 0: its own materials, or a name this build doesn't have; ConstructFinish.cs)
         public List<ConstructCargo.CarrySpec> Carry = new(); // craft it is built carrying in its docks ("carry": [{"blueprint", "at", "turn"}]: the Zero Day's Shuttle; ConstructCargo.BuildCarry)
         public List<ConstructCargo.CarrySpec> Beside = new(); // anchored bodies spawned beside it ("beside": [{"blueprint", "at", "turn"}]: Zero Day Works II's gensets), each tied by a heavy power cable from its first heavy power terminal to this one's nearest (SpawnBeside)
+        public string DesignHash = ""; // a ship design's body (DesignParts.cs): built from the design's elements, not steps (it has none)
         public string Tow = ""; // a blueprint it spawns coupled behind it ("tow"): its first eye on this one's first ball (BuildOnGround)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "raider"}]; ConstructLoot.cs)
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
@@ -884,6 +885,9 @@ public static class ConstructBuild
                 case "module":
                     bp.Module = ModuleBlueprints.Parse(p.Value, file);
                     break;
+                case "shipDesigns":
+                    DesignParts.ReadBlueprintBlock(p.Value, file); // (ahead of "steps": the design parts they name are made from these)
+                    break;
                 case "packed":
                     bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
                     break;
@@ -1135,6 +1139,16 @@ public static class ConstructBuild
         {
             run.Why = "too many constructs";
             yield break;
+        }
+        if (bp.DesignHash.Length > 0)
+        {
+            foreach (var k in DesignParts.BuildSteps(world, c, bp.DesignHash, run))
+                yield return k;
+            if (run.Why.Length > 0)
+            {
+                world.Remove(c);
+                yield break;
+            }
         }
         var partOf = new int[Math.Max(1, bp.Steps.Count)];
         bool weldRebuild = false, lastWeld = false; // (a weld step's rebuild, put off until a step needs it)

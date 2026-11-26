@@ -358,6 +358,8 @@ public static partial class HullLoft
             return HullHoles.Read(name); // (protocol 352: a part a cutter holed travels the same way)
         if (BakedParts.IsName(name))
             return BakedParts.ReadWire(name); // (protocol 422: a baked part too; its design came first, CBodyKind.Baked)
+        if (DesignParts.IsName(name))
+            return DesignParts.ReadWire(name); // (protocol 471: an element of a ship design; its design came first, CBodyKind.ShipDesign)
         if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) && !IsSectionName(name) && !IsDressName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return (FromWire(name) ?? Parse(name)) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id; // (many new keys at once: stand-ins past the update's budget, HullLoft.FirstParts.cs)

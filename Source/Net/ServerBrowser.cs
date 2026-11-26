@@ -789,7 +789,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 468: the rover Building Station: a station's arms are rovers on the wire (dock count, rest poses, driving plans), the Dock Expansion part files move part ids.
     // 469: the Heavy Power Terminal part file moves part ids.
     // 470: Works II press lines: a block Assembler's bed has Bed in / Bed out ports (pieces roll through it and a low press bed), the Servo Motor is pressed (its Assembler row is gone, so recipe indexes move).
-    public const ushort ProtocolVersion = 470;
+    // 471: ship designs as bodies (DesignParts.cs, Karl 2026-11-26): CBodyKind.ShipDesign carries a design's JSON (u32 bytes, its text) before
+    //      any body that names its elements ("Design (#hash) element" keys travel as named run-time parts); CActKind.SpawnDesign (u32 bytes, the
+    //      design's text) asks for one from the Creative parts menu, inside SpawnPrepare.
+    public const ushort ProtocolVersion = 471;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

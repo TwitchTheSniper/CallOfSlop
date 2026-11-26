@@ -460,6 +460,7 @@ public sealed partial class ConstructWorld
         PodReleaseCount = 0;
         PodAuthority = false; // (the pods' first tick in the next world gives any untagged docked shell its tag)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
+        ClearShipDesigns(); // (the ship designs' list too: DesignParts.cs)
         ClearBaked(); // (and its baked designs' list; the shared table keeps them by hash: BakedParts.cs)
         DesignStamp++;
         foreach (var c in Bodies)
@@ -590,6 +591,8 @@ public sealed partial class ConstructWorld
             c.Charge += def.BatteryCapacity; // (a new battery comes charged)
         if (def.IsNamedRuntime && BakedParts.IsName(def.Name))
             BakedParts.NoteInUse(this, def); // (a baked part from a blueprint or a hand: its design goes to everyone before the body)
+        else if (def.IsNamedRuntime && DesignParts.IsName(def.Name))
+            DesignParts.NoteInUse(this, def); // (a ship design's element: its design goes to everyone before the body)
         return i;
     }
 
@@ -1613,7 +1616,7 @@ public sealed partial class ConstructWorld
             var i = _partHits[ci];
             c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
             var iq = Quaternion.Conjugate(q);
-            for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+            for (var k = c.PlayerSolids(i) - 1; k >= 0; k--)
             {
                 c.SolidBox(i, k, out var centre, out var half);
                 for (var s = 0; s <= steps; s++)
@@ -1648,7 +1651,7 @@ public sealed partial class ConstructWorld
                 var i = _partHits[ci];
                 c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
                 var m = Matrix4x4.CreateFromQuaternion(q);
-                for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+                for (var k = c.PlayerSolids(i) - 1; k >= 0; k--)
                 {
                     c.SolidBox(i, k, out var centre, out var half);
                     var wc = t + Vector3.Transform(centre, q);
@@ -1720,7 +1723,7 @@ public sealed partial class ConstructWorld
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
                 var upLocal = Vector3.Transform(Vector3.UnitY, iq);
-                var boxes = c.SolidCount(i);
+                var boxes = c.PlayerSolids(i);
                 var grip = p.D.CfgSlot[(int)CfgKey.Grip] >= 0 && ConstructConfig.Get(p, p.D, CfgKey.Grip, 0) >= 0.5f;
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.

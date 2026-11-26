@@ -24,6 +24,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `appearance.txt` | Your soldier's look (newer builds) |
 | `shipdesign.json` | The design open in the Ship Designer (newer builds) |
 | `shipdesign.unread.json` | A saved design this build could not read, kept aside (newer builds) |
+| The `ShipDesigns` folder | Ship designs you kept from the Ship Designer, which Creative can spawn (newer builds) |
 | The `Worlds` folder | Your saved Sandbox worlds, one folder a world (newer builds) |
 
 (`progress.txt`, an older build's level, XP and prestige, is no longer read: levelling, prestige and the prestige hats were removed. It can stay or go.)
@@ -59,6 +60,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `shipdesign.json` and `shipdesign.unread.json` (if you have them)
    - the `AudioMixes` folder
    - the `Worlds` folder (if you have it)
+   - the `ShipDesigns` folder (if you have it)
    - the `ConstructBlueprints` folder (with its subfolders: `.versions` holds older versions your blueprints' uses may name)
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
 5. Start the new build and check your loadouts in the main menu.

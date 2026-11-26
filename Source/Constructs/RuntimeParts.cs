@@ -127,6 +127,7 @@ public static class RuntimeParts
         Pressed.Forget(Doomed);
         HullHoles.Forget(Doomed);
         BakedParts.Forget(Doomed);
+        DesignParts.Forget(Doomed);
         Ordnance.Forget(Doomed);
         ModularRack.Forget(Doomed);
         PartMaterials.Forget(Doomed);

@@ -103,6 +103,7 @@ if ($Step -ne "zip") {
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
     if (Test-Path (Join-Path $folder "Worlds")) { Remove-Item -Recurse -Force (Join-Path $folder "Worlds") }
     if (Test-Path (Join-Path $folder "ConstructBlueprints")) { Remove-Item -Recurse -Force (Join-Path $folder "ConstructBlueprints") }
+    if (Test-Path (Join-Path $folder "ShipDesigns")) { Remove-Item -Recurse -Force (Join-Path $folder "ShipDesigns") } # the players' own ship designs (ShipDesignStore.cs)
     if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached maps and nav graphs)
     if (Test-Path (Join-Path $folder "DevEdits")) { Remove-Item -Recurse -Force (Join-Path $folder "DevEdits") } # prop editor change packages (portable mode)
     if (Test-Path (Join-Path $folder "Logs")) { Remove-Item -Recurse -Force (Join-Path $folder "Logs") } # the game's own reports (portable mode: stuck-spot reports)

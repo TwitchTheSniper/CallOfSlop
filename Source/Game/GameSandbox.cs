@@ -119,6 +119,7 @@ public enum CActKind : byte
     ModControl, // u16 body, u16 part, u8 control (1 eject, 2 lock, 3 gun pull on, 4 off), vec point (body frame): a module socket's controls (protocol 394; ModuleGuide.cs)
     Reactor, // u16 body (the seat's): the seated player shuts that craft's power plants down or starts them (protocol 418; ConstructShutdown.ToggleReactor)
     Thrusters, // u16 body (the seat's): ...its thrusters (protocol 418; ConstructShutdown.ToggleThrusters)
+    SpawnDesign, // u32 bytes, a ship design's JSON: Creative's Designs tab spawns it, inside SpawnPrepare (protocol 471; GameSandboxDesigns.cs)
 }
 
 /// <summary>
@@ -593,6 +594,16 @@ public sealed partial class Game
     private void SandboxFlush()
     {
         var w = SbW;
+        if (Constructs.ShipDesignsNew.Count > 0)
+        {
+            foreach (var hash in Constructs.ShipDesignsNew)
+                if (!Net.IsOffline && DesignParts.Find(hash) is { } sd)
+                {
+                    DesignParts.Write(w, sd); // (before the bodies that name its elements: DesignParts.cs)
+                    Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+                }
+            Constructs.ShipDesignsNew.Clear();
+        }
         if (Constructs.BakedNew.Count > 0)
         {
             foreach (var hash in Constructs.BakedNew)
@@ -861,6 +872,13 @@ public sealed partial class Game
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        DesignParts.NoteInUse(Constructs);
+        foreach (var hash in Constructs.ShipDesigns)
+            if (DesignParts.Find(hash) is { } sd)
+            {
+                DesignParts.Write(w, sd); // (the ship designs, before any body that names one's elements: DesignParts.cs)
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
         BakedParts.NoteInUse(Constructs); // (a baked part brought by a blueprint or another world, which no oven here made)
         foreach (var hash in Constructs.Baked)
             if (BakedParts.Find(hash) is { } bd)
@@ -1425,6 +1443,8 @@ public sealed partial class Game
                 return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
             case CActKind.SpawnPrepare:
                 return SandboxSpawnPrepareAct(p, ref r, now); // (GameSandboxBlueprintGhost.cs)
+            case CActKind.SpawnDesign:
+                return SandboxSpawnDesign(p, ref r); // (GameSandboxDesigns.cs)
             case CActKind.SpawnPlace:
             {
                 var token = r.U16();

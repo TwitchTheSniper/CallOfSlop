@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The window-shot tool's actions for the blueprint ghost (Program.SandboxBlueprintGhost.cs), kept apart from the others:
-/// <c>ghost NAME</c> (the parts menu's own Spawn of a shipped blueprint), <c>ghostveh STYLE|SHAPE</c> (the vehicle tab's, made on the host),
+/// <c>ghost NAME</c> (the parts menu's own Spawn of a shipped blueprint), <c>shipdesign NAME</c> (the Designs tab's own Spawn of a ship design, shipped or kept), <c>ghostveh STYLE|SHAPE</c> (the vehicle tab's, made on the host),
 /// <c>waitghost</c> (until the ghost is out, at most about 20 s), <c>look YAW PITCH</c> (degrees), <c>swheel N</c> (Shift + wheel),
 /// <c>esc</c>, and <c>ghostinfo</c> (this peer's ghost, the host's pending spawns, the newest bodies and their poses).
 /// </summary>
@@ -12,7 +12,7 @@ public static unsafe partial class Program
 {
     private static int _wsGhostTries;
 
-    private static bool WsGhostKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "ghost" or "ghostveh" or "waitghost" or "look" or "swheel" or "esc" or "ghostinfo";
+    private static bool WsGhostKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "ghost" or "shipdesign" or "ghostveh" or "waitghost" or "look" or "swheel" or "esc" or "ghostinfo";
 
     private static bool WsGhostVerb(Game g, Player me, string verb, string arg)
     {
@@ -31,6 +31,18 @@ public static unsafe partial class Program
                     return true;
                 }
                 Ui.SandboxPartsSpawn(g, index);
+                _wsWait = 3;
+                return true;
+            }
+            case "shipdesign":
+            {
+                var listed = ShipDesignStore.List().FirstOrDefault(x => x.Name.Equals(arg.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (listed.Json == null)
+                {
+                    WsFail($"no ship design \"{arg}\"");
+                    return true;
+                }
+                g.SandboxPrepareDesign(listed.Json, listed.Name);
                 _wsWait = 3;
                 return true;
             }

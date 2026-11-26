@@ -449,7 +449,7 @@ public sealed partial class Construct
         RestBounds(i, out var mn, out var mx);
         var pm = PartMass(i) * sign;
         _sM += pm;
-        _sC.Add((mn + mx) * 0.5f, pm);
+        _sC.Add(MassMiddle(i, mn, mx), pm); // (a design part: where its mass is, DesignParts.cs)
         var d = Parts[i].D;
         var vol = 0f;
         for (var b = 0; b < d.SolidBoxes; b++)
@@ -462,7 +462,7 @@ public sealed partial class Construct
         for (var b = 0; b < d.SolidBoxes; b++)
         {
             BoxOf(i, b, out var c, out var h);
-            var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
+            var m = PartMass(i) * (d.BoxMass is { } share ? share[b] : d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z / MathF.Max(vol, 1e-9f)); // (a design part: each box its share of the mass, DesignParts.cs)
             var s = h * 2;
             var r = c;
             float xx = 0, yy = 0, zz = 0, xy = 0, xz = 0, yz = 0;

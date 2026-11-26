@@ -493,8 +493,30 @@ public sealed partial class Ui
             _sdFileOpen = true;
         }
         ImGui.SameLine();
+        if (ImGui.Button("Keep in my designs##sdkeep"u8))
+        {
+            var json = _sd!.Save();
+            var name = DesignNameOf(json);
+            Toast(ShipDesignStore.Keep(name, json) ? $"Kept as {ShipDesignStore.FileOf(name)}: Sandbox Creative's parts menu lists it under Designs." : "Not kept: the file couldn't be written (see the log).");
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("Keeps this design under its name in your ShipDesigns folder, so Creative can spawn it (one of that name is replaced)");
+        ImGui.SameLine();
         if (ImGui.Button("BACK [Esc]##sdback"u8))
             CloseShipDesigner();
+    }
+
+    private static string DesignNameOf(string json)
+    {
+        try
+        {
+            return ShipDesigner.ShipDesign.FromJson(json).Name;
+        }
+        catch (Exception ex) when (ex is FormatException or InvalidOperationException or System.Text.Json.JsonException or KeyNotFoundException or ArgumentException)
+        {
+            Console.WriteLine($"[ship designer] its name isn't read: {ex.Message}");
+            return "Ship";
+        }
     }
 
     private void DesignFileDialog()
