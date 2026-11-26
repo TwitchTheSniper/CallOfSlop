@@ -874,12 +874,9 @@ public static class DesignParts
 
         private static uint Pack(Vector3 srgb)
         {
-            static uint L(float v)
-            {
-                v = Math.Clamp(v, 0, 1);
-                var lin = v <= 0.04045f ? v / 12.92f : MathF.Pow((v + 0.055f) / 1.055f, 2.4f); // (the box shader's colours are linear: Renderer.cs)
-                return (uint)MathF.Round(MathF.Sqrt(lin) * 255f); // (kept as its square root: 8 bits keep the darks; the vertex shader squares it)
-            }
+            // As the designer's sRGB colour: the game's box shader lights colours as they are written (a part file's, a paint's) and
+            // writes no gamma at the end, so a linear colour came out far too dark (Karl, 2026-11-26: grey plates near black).
+            static uint L(float v) => (uint)MathF.Round(Math.Clamp(v, 0, 1) * 255f);
             return L(srgb.X) | L(srgb.Y) << 8 | L(srgb.Z) << 16 | 0xff000000u;
         }
 
