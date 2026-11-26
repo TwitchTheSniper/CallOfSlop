@@ -315,10 +315,21 @@ public sealed partial class ZeroDayWorks2
         {
             var bunker = new[] { 24f, 32f, 40f }.Select(x => Find("Ore Bunker 4 m", P(s, x, 58))).ToArray();
             var high = 16f;
+            // Each Extruder's own console: the one behind it (up its flow, within 6 m of its line), as the consoles moved back with their
+            // Extruders (BinBack): by distance alone one console was nearest two Extruders, and two lines shared it.
+            var ownConsole = new Dictionary<VPart, VPart>();
+            if (_items.TryGetValue("Line Console", out var cl))
+                foreach (var l in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s))
+                {
+                    var side = new Vector2(l.Flow.Y, -l.Flow.X);
+                    if (cl.Where(e => Vector2.Distance(e.At, l.At) < 20 && Vector2.Dot(e.At - l.At, l.Flow) < 0 && MathF.Abs(Vector2.Dot(e.At - l.At, side)) < 6)
+                            .OrderBy(e => Vector2.Distance(e.At, l.At)).Select(e => e.P).FirstOrDefault() is { } con)
+                        ownConsole[l.Core] = con;
+                }
             foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s).OrderByDescending(l => l.At.Y))
             {
                 var bin = Nearest("Materials Bin", at, 20); // (16 m, and 20 since the bins stand BinBack behind the moved Extruder)
-                var console = Nearest("Line Console", at, 20);
+                var console = ownConsole.GetValueOrDefault(core);
                 Fill(bin, "steel");
                 // (the big lines from the second and third bunkers, the small line and the press line from the fourth)
                 var from = at.Y > 60 ? bunker[0] : at.Y < -60 ? bunker[1] : bunker[2];
@@ -326,7 +337,10 @@ public sealed partial class ZeroDayWorks2
                 high += 0.5f;
                 Chute(bin, null, core, "Chute in", 4.5f);
                 if (console == null)
+                {
+                    Note($"links: no Line Console within 20 m of the Extruder at ({at.X:0}, {at.Y:0})");
                     continue;
+                }
                 Cable(console, core, "Run", 6f); // (its Panel Former's, presses' and Assembler's Runs come from a station's console: Orders)
                 _consoles.Add((at, console));
             }
@@ -387,6 +401,8 @@ public sealed partial class ZeroDayWorks2
             {
                 var console = l[0].Console;
                 used.Add(console);
+                var sa = _at.GetValueOrDefault(station);
+                Note($"links: the Building Station at ({sa.X:0}, {sa.Y:0}) orders through the console of the Extruder at ({l[0].At.X:0}, {l[0].At.Y:0}), {l.Count} line(s)");
                 Cable(console, station, "Orders", 7.5f);
                 for (var k = 0; k < l.Count; k++)
                 {
@@ -409,6 +425,7 @@ public sealed partial class ZeroDayWorks2
                     continue;
                 }
                 used.Add(best.Console);
+                Note($"links: the Building Station at ({at.X:0}, {at.Y:0}) orders through the console of the Extruder at ({best.At.X:0}, {best.At.Y:0}): every oven, press and Assembler");
                 Cable(best.Console, station, "Orders", 7.5f);
                 // (a Press, an Assembler and a Panel Former take one input each: their Run from this console only; the other press line's
                 // Extruder is run from here too, as its pieces feed those presses)

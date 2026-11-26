@@ -92,7 +92,7 @@ public static class StationCheck
         for (var i = 0; i < c.PartCount; i++)
             if (ProductionLines.IsConsole(c.DefOf(i)) && (c.Parts[i].State & 1) == 0)
             {
-                c.Parts[i].State |= 1;
+                ProductionLines.Run(c, i); // (Start: it wakes the body, as a player's press does)
                 started++;
             }
         if (started > 0)
