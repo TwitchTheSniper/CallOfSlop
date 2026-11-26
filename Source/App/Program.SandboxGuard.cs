@@ -67,6 +67,7 @@ public static unsafe partial class Program
             Ui.CloseCrafting();
             SetCommandOpen(false);
             Ui.CloseDesigner();
+            CloseShipDock(); // (the Ship Designer over a docked ship: Program.SandboxDock.cs)
             Ui.CloseLifter();
             Ui.CloseShellGantry();
             Ui.CloseLinked();
@@ -126,6 +127,7 @@ public static unsafe partial class Program
             DrawRecipePickerInMatch(now);
             DrawCraftingInMatch(now);
             DrawDesignerInMatch(now);
+            DrawShipDockInMatch(now); // (the Ship Designer over a docked ship: Program.SandboxDock.cs)
             DrawLifterInMatch(now);
             DrawShellGantryInMatch(now);
             DrawLinkedInMatch(now);
