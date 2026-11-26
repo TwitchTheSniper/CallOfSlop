@@ -63,3 +63,17 @@ is in `DesignParts.cs` (the bill of materials):
   wires, which takes the helm (Shift up, Ctrl down, W ahead, A/D turn, as any ship).
 - `--design-check [NAME]` prints the flight line and flies a sortie from the helm on the proving ground (lift, hover, ahead,
   stop, turn, hold, land), judging each leg and the world step's time (`--no-fly` skips it).
+
+## Walking inside a design (step 4)
+
+The groundwork is in; the walking is not yet. `DesignParts` is now one partial class: the core (`DesignParts.cs`: the
+elements, the stage pipeline AddBands, AddJoins, AddPieces, AddRooms, AddDoors, AddRisers, AddSystems, the kinds' tables
+and `PartOf`) and a file per kind (`.Hull`, `.Pieces`, `.Rooms`, `.Doors`, `.Risers`, `.Systems`, `.Templates`). An element
+can now carry boxes, a door, a ladder, a seat turn, a segment and joint, and wires, and `BuildSteps` adds the joints and
+wires. Today a room's floor is still a slab welded to its band (the room's own shell replaces it later), and no doors,
+ladders or lifts are made yet; F on a design's door, ladder, hitch, dock or lamp is no longer sent to the helm.
+`ProtocolVersion` is 475, since a design key now names elements an older peer builds differently. `--design-check`
+gains `--fingerprint` (prints only the hashes of the elements and of the built body, for a before and after, and stops),
+and `--walk`, `--doors` and `--systems` (stubs for now, which say "not made yet"). The test tools spawn designs too:
+`--window-shot --design NAME|FILE` sets one down in front of the host's player, its elements answering the verbs by id,
+name, kind or role (`sit Helm seat`), and `--ladder-check --design NAME|FILE[,...]` climbs a design's ladders.
