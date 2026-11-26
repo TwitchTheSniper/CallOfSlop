@@ -585,6 +585,11 @@ public static class StationCheck
             if (c.Parts[i].Craft is { Count: > 0 } cq)
                 for (var k = 0; k < cq.Count; k++)
                     Console.WriteLine($"  {c.DefOf(i).Name} {i}'s ask: {ConstructCrafting.StateText(c, cq.Items[k])}");
+        for (var i = 0; i < c.ConveyedCount; i++)
+            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To}");
+        foreach (var b in w.Bodies)
+            if (b != c && b.PartCount < 4)
+                Console.WriteLine($"  loose: {b.DefOf(0).Name} at {b.Pos.X:0.0}, {b.Pos.Y:0.0}, {b.Pos.Z:0.0}");
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}");

@@ -346,6 +346,29 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                         _layBy.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
                 }
             }
+            // The press lines' Turntable Tiles that butt a Press's bed are laid as Roller Tiles rolling into it: a short run from the
+            // turntables into the bed (Sean 2026-11-26, "Lay a short roller run"), since a Turntable Tile passes only onto runs, never
+            // into a bed, and the press line's blanks met no way into a press.
+            // (only the one in line with the turntable the press line's run comes into: a run of welded tiles is one conveyor from what
+            // butts its in end, so a whole column would start at the middle turntable, which nothing feeds)
+            var swivels = items.Where(i => Str(i, "name") == "Roller Tile" && Flag(i, "swivel")).Select(i => Round(new Vector2(Num(i, "x"), -Num(i, "z")))).ToHashSet();
+            var plain = items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).Select(i => Round(new Vector2(Num(i, "x"), -Num(i, "z")))).ToHashSet();
+            bool Entry((int X, int Z) s) => swivels.Contains(s) && (plain.Contains((s.X + 2, s.Z)) || plain.Contains((s.X - 2, s.Z)) || plain.Contains((s.X, s.Z + 2)) || plain.Contains((s.X, s.Z - 2)));
+            foreach (var pr in items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "press"))
+            {
+                float half = Int(pr, "w"), px = Num(pr, "x"), pz = -Num(pr, "z");
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && Flag(i, "swivel")))
+                {
+                    float dx = Num(it, "x") - px, dz = -Num(it, "z") - pz;
+                    if (MathF.Abs(MathF.Abs(dx) - (half + 1)) < 0.1f && MathF.Abs(dz) < half)
+                        _intoPress[Round(new Vector2(Num(it, "x"), -Num(it, "z")))] = new Vector2(-MathF.Sign(dx), 0);
+                    else if (MathF.Abs(MathF.Abs(dz) - (half + 1)) < 0.1f && MathF.Abs(dx) < half)
+                        _intoPress[Round(new Vector2(Num(it, "x"), -Num(it, "z")))] = new Vector2(0, -MathF.Sign(dz));
+                }
+            }
+            foreach (var (cell, into) in _intoPress.ToList())
+                if (!Entry(((int)(cell.Item1 - 2 * into.X), (int)(cell.Item2 - 2 * into.Y))))
+                    _intoPress.Remove(cell);
             foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile"))
                 if (!_layBy.Contains(Round(new Vector2(Num(it, "x"), -Num(it, "z")))))
                     _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
@@ -384,6 +407,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             {
                 case "Roller Tile" when _layBy.Contains(Round(new Vector2(Num(it, "x"), -Num(it, "z")))):
                     return Piece("Pad Tile", at, Facing(new Vector2(-flow.Y, flow.X)), Stock); // (a big station's lay-by: its pick pad, turned so its own z runs along the bay's side: a pad takes a part only along its z, and the line's pieces lie that way)
+                case "Roller Tile" when _intoPress.TryGetValue(Round(new Vector2(Num(it, "x"), -Num(it, "z"))), out var into):
+                    return Piece("Roller Tile", at, Facing(into), Line); // (a turntable beside a press's bed: a short run into it)
                 case "Roller Tile":
                     return Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
                 case "Pad Tile":
